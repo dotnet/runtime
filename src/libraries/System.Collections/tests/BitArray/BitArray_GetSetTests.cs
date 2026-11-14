@@ -239,6 +239,29 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => bitArray.Length = -1);
         }
 
+        [Theory]
+        [InlineData(800, 10, 1000)]
+        [InlineData(800, 10, 500)]
+        [InlineData(800, 0, 1000)]
+        [InlineData(800, 32, 1000)]
+        [InlineData(800, 33, 1000)]
+        [InlineData(16384, 10, 20000)]
+        public static void Length_ShrinkThenGrow(int originalSize, int shrunkSize, int newSize)
+        {
+            BitArray bitArray = new BitArray(originalSize, true);
+            bitArray.Length = shrunkSize;
+            Assert.Equal(shrunkSize, bitArray.PopCount());
+
+            bitArray.Length = newSize;
+
+            Assert.Equal(newSize, bitArray.Length);
+            for (int i = 0; i < newSize; i++)
+            {
+                Assert.Equal(i < shrunkSize, bitArray[i]);
+            }
+            Assert.Equal(shrunkSize, bitArray.PopCount());
+        }
+
         public static IEnumerable<object[]> CopyTo_Array_TestData()
         {
             yield return new object[] { new BitArray(0), 0, 0, new bool[0], default(bool) };
