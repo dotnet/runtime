@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using WasiHttpWorld;
@@ -13,7 +14,7 @@ using static WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.IStreamsImports;
 namespace System.Net.Http
 {
     // on top of https://github.com/WebAssembly/wasi-io/blob/main/wit/streams.wit
-    internal sealed class WasiInputStream : Stream
+    internal sealed class WasiInputStream : HttpBaseStream
     {
         private WasiRequestWrapper wrapper; // owned by this instance
         private IncomingBody body; // owned by this instance
@@ -29,7 +30,6 @@ namespace System.Net.Http
 
         public override bool CanRead => !isClosed;
         public override bool CanWrite => false;
-        public override bool CanSeek => false;
 
         public WasiInputStream(WasiRequestWrapper wrapper, IncomingBody body)
         {
@@ -74,23 +74,6 @@ namespace System.Net.Http
 
             base.Dispose(disposing);
         }
-
-        public override Task<int> ReadAsync(
-            byte[] bytes,
-            int offset,
-            int length,
-            CancellationToken cancellationToken
-        )
-        {
-            ValidateBufferArguments(bytes, offset, length);
-            return ReadAsyncCore(bytes, offset, length, cancellationToken);
-        }
-
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
-
-        public override int EndRead(IAsyncResult asyncResult) =>
-            TaskToAsyncResult.End<int>(asyncResult);
 
         private async Task<int> ReadAsyncCore(
             byte[] bytes,
@@ -173,64 +156,31 @@ namespace System.Net.Http
             ObjectDisposedException.ThrowIf(isClosed, this);
         }
 
-        public override async ValueTask<int> ReadAsync(
+        public override ValueTask<int> ReadAsync(
             Memory<byte> buffer,
             CancellationToken cancellationToken = default
         )
         {
-            // TODO: avoid copy when possible and use ArrayPool when not
+            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment))
+            {
+                return new ValueTask<int>(ReadAsyncCore(segment.Array!, segment.Offset, segment.Count, cancellationToken));
+            }
+
+            return ReadIntoTemporaryAsync(buffer, cancellationToken);
+        }
+
+        private async ValueTask<int> ReadIntoTemporaryAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        {
             var dst = new byte[buffer.Length];
-            // We disable "CA1835: Prefer the memory-based overloads of
-            // ReadAsync/WriteAsync methods in stream-based classes" for
-            // now, since `ReadyAsync(byte[], int, int, CancellationToken)`
-            // is where the implementation currently resides, but we should
-            // revisit this if/when `wit-bindgen` learns to generate
-            // memory-based bindings.
-#pragma warning disable CA1835
-            var result = await ReadAsync(dst, 0, buffer.Length, cancellationToken)
-                .ConfigureAwait(false);
-#pragma warning restore CA1835
+            var result = await ReadAsyncCore(dst, 0, dst.Length, cancellationToken).ConfigureAwait(false);
             new ReadOnlySpan<byte>(dst, 0, result).CopyTo(buffer.Span);
             return result;
         }
 
-        #region NotSupported
+        // A synchronous read would block, which isn't possible on single-threaded WASI.
+        public override int Read(Span<byte> buffer) => throw new PlatformNotSupportedException();
 
-        public override void Flush()
-        {
-            // ignore
-        }
-
-        public override void SetLength(long length)
-        {
-            throw new NotSupportedException();
-        }
-
-        public override int Read(byte[] buffer, int offset, int length)
-        {
-            ValidateBufferArguments(buffer, offset, length);
-
-            // A synchronous read would block, which isn't possible on single-threaded WASI.
-            throw new PlatformNotSupportedException();
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException();
-        }
-
-        public override void Write(byte[] buffer, int offset, int length)
-        {
-            throw new NotSupportedException();
-        }
-
-        public override long Length => throw new NotSupportedException();
-        public override long Position
-        {
-            get => throw new NotSupportedException();
-            set => throw new NotSupportedException();
-        }
-
-        #endregion
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken) =>
+            ValueTask.FromException(new NotSupportedException());
     }
 }

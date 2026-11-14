@@ -641,6 +641,45 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [Fact]
+        public async Task PostAsync_ContentWrittenWithBeginEndWrite_ServerReceivesBody()
+        {
+            byte[] body = Encoding.ASCII.GetBytes("Hello from BeginWrite/EndWrite");
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion, Content = new BeginEndWriteContent(body) };
+                using HttpResponseMessage response = await client.SendAsync(TestAsync, request);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }, async server =>
+            {
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
+                Assert.Equal(body, requestData.Body);
+            });
+        }
+
+        private sealed class BeginEndWriteContent : HttpContent
+        {
+            private readonly byte[] _data;
+
+            public BeginEndWriteContent(byte[] data) => _data = data;
+
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+                Task.Factory.FromAsync(stream.BeginWrite, stream.EndWrite, _data, 0, _data.Length, null);
+
+#if !NETFRAMEWORK
+            protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+                stream.EndWrite(stream.BeginWrite(_data, 0, _data.Length, null, null));
+#endif
+
+            protected override bool TryComputeLength(out long length)
+            {
+                length = _data.Length;
+                return true;
+            }
+        }
+
         public static IEnumerable<object[]> GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly_MemberData() =>
             from newline in new[] { "\n", "\r\n" }
             from fold in new[] { "", newline + " ", newline + "\t", newline + "    " }

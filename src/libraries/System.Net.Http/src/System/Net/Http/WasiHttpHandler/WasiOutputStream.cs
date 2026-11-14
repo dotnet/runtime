@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using WasiHttpWorld;
@@ -13,7 +14,7 @@ using static WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.IStreamsImports;
 namespace System.Net.Http
 {
     // on top of https://github.com/WebAssembly/wasi-io/blob/main/wit/streams.wit
-    internal sealed class WasiOutputStream : Stream
+    internal sealed class WasiOutputStream : HttpBaseStream
     {
         private OutputStream stream; // owned by this instance
         private OutgoingBody body; // owned by this instance
@@ -24,7 +25,6 @@ namespace System.Net.Http
 
         public override bool CanRead => false;
         public override bool CanWrite => true;
-        public override bool CanSeek => false;
 
         public WasiOutputStream(OutgoingBody body)
         {
@@ -60,7 +60,7 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        public override async Task WriteAsync(
+        private async Task WriteAsyncCore(
             byte[] bytes,
             int offset,
             int length,
@@ -131,51 +131,25 @@ namespace System.Net.Http
             CancellationToken cancellationToken = default
         )
         {
-            // TODO: avoid copy when possible and use ArrayPool when not
-            var copy = new byte[buffer.Length];
-            buffer.Span.CopyTo(copy);
-            return new ValueTask(WriteAsync(copy, 0, buffer.Length, cancellationToken));
+            if (!MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment))
+            {
+                segment = buffer.ToArray();
+            }
+
+            return new ValueTask(WriteAsyncCore(segment.Array!, segment.Offset, segment.Count, cancellationToken));
         }
 
-        #region PlatformNotSupported
-
-        public override void Flush()
+        public override void Write(byte[] buffer, int offset, int count)
         {
-            // ignore
-            //
-            // Note that flushing a `wasi:io/streams/output-stream` is an
-            // asynchronous operation, so it's not clear how we would
-            // implement it here instead of taking care of it as part of
-            // `WriteAsync`.
-        }
+            ValidateBufferArguments(buffer, offset, count);
 
-        public override long Seek(long offset, SeekOrigin origin)
-        {
+            // A synchronous write would block, which isn't possible on single-threaded WASI.
             throw new PlatformNotSupportedException();
         }
 
-        public override void SetLength(long length)
-        {
-            throw new PlatformNotSupportedException();
-        }
+        public override int Read(Span<byte> buffer) => throw new NotSupportedException();
 
-        public override int Read(byte[] buffer, int offset, int length)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public override void Write(byte[] buffer, int offset, int length)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public override long Length => throw new PlatformNotSupportedException();
-        public override long Position
-        {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
-        }
-
-        #endregion
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) =>
+            ValueTask.FromException<int>(new NotSupportedException());
     }
 }
