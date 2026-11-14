@@ -1878,7 +1878,7 @@ public static partial class DataContractSerializerTests
         Queue<int> value = new Queue<int>();
         value.Enqueue(1);
         object syncRoot = ((ICollection)value).SyncRoot;
-        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Queue<int>>(value, @"<QueueOfint xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:int>1</a:int><a:int>0</a:int><a:int>0</a:int><a:int>0</a:int></_array><_head>0</_head><_size>1</_size><_tail>1</_tail><_version>2</_version></QueueOfint>");
+        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Queue<int>>(value, @"<QueueOfint xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:int>1</a:int><a:int>0</a:int><a:int>0</a:int><a:int>0</a:int></_array><_head>0</_head><_size>1</_size><_tail>1</_tail><_version>1</_version></QueueOfint>");
         var a1 = value.ToArray();
         var a2 = deserializedValue.ToArray();
         Assert.Equal(a1.Length, a2.Length);
@@ -4117,7 +4117,7 @@ public static partial class DataContractSerializerTests
         Queue<string> q = new Queue<string>();
         q.Enqueue("first");
         q.Enqueue("second");
-        Queue<string> q2 = DataContractSerializerHelper.SerializeAndDeserialize<Queue<string>>(q, "<QueueOfstring xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections.Generic\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_array xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:string>first</a:string><a:string>second</a:string><a:string i:nil=\"true\"/><a:string i:nil=\"true\"/></_array><_head>0</_head><_size>2</_size><_tail>2</_tail><_version>3</_version></QueueOfstring>");
+        Queue<string> q2 = DataContractSerializerHelper.SerializeAndDeserialize<Queue<string>>(q, "<QueueOfstring xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections.Generic\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_array xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:string>first</a:string><a:string>second</a:string><a:string i:nil=\"true\"/><a:string i:nil=\"true\"/></_array><_head>0</_head><_size>2</_size><_tail>2</_tail><_version>2</_version></QueueOfstring>");
         Assert.Equal(q, q2);
         Assert.Equal(q.Count, q2.Count);
         Assert.Equal(q.Dequeue(), q2.Dequeue());

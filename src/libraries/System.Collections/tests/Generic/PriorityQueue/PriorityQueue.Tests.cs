@@ -414,7 +414,6 @@ namespace System.Collections.Tests
             yield return WrapArg(queue => queue.EnqueueRange(new[] { (1, 2) }), 10);
             yield return WrapArg(queue => queue.EnqueueRange(new[] { 1, 2 }, 42), 0);
             yield return WrapArg(queue => queue.EnqueueRange(new[] { 1, 2 }, 42), 10);
-            yield return WrapArg(queue => queue.EnsureCapacity(2 * queue.Count), 4);
             yield return WrapArg(queue => queue.Clear(), 5);
             yield return WrapArg(queue => queue.Clear(), 0);
 
@@ -431,8 +430,37 @@ namespace System.Collections.Tests
             yield return WrapArg(queue => queue.EnqueueRange(Array.Empty<(int, int)>()), 5);
             yield return WrapArg(queue => queue.EnqueueRange(Array.Empty<int>(), 42), 5);
             yield return WrapArg(queue => queue.EnsureCapacity(5), 5);
+            yield return WrapArg(queue => queue.EnsureCapacity(2 * queue.Count), 4);
 
             static object[] WrapArg(Action<PriorityQueue<int, int>> arg, int queueCount) => new object[] { arg, queueCount };
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        public void PriorityQueue_Enumeration_ValidOnCapacityChange(int count)
+        {
+            PriorityQueue<int, int> queue = CreatePriorityQueue(initialCapacity: count, count: count);
+            var expected = new List<(int, int)>(queue.UnorderedItems);
+
+            using var enumerator = queue.UnorderedItems.GetEnumerator();
+            Assert.True(enumerator.MoveNext());
+            var actual = new List<(int, int)> { enumerator.Current };
+
+            queue.EnsureCapacity(count * 4);
+            Assert.InRange(queue.Capacity, count * 4, int.MaxValue);
+            if (enumerator.MoveNext())
+            {
+                actual.Add(enumerator.Current);
+            }
+
+            queue.TrimExcess();
+            Assert.Equal(count, queue.Capacity);
+            while (enumerator.MoveNext())
+            {
+                actual.Add(enumerator.Current);
+            }
+
+            Assert.Equal(expected, actual);
         }
 
         #endregion
