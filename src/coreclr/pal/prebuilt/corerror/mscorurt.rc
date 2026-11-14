@@ -287,6 +287,7 @@ BEGIN
 	MSG_FOR_URT_HR(CORDBG_E_DATA_TARGET_ERROR) "Failure when calling a data target method."
 	MSG_FOR_URT_HR(CORDBG_E_UNSUPPORTED_DELEGATE) "The delegate contains a delegate currently not supported by the API."
 	MSG_FOR_URT_HR(CORDBG_E_ASSEMBLY_UPDATES_APPLIED) "The operation is not supported because assembly updates have been applied."
+	MSG_FOR_URT_HR(CORDBG_E_DEBUGGER_TRANSPORT_NOT_FOUND) "The debugger could not find the target process's debugger transport. The process may have been started with DOTNET_EnableDiagnostics=0 or DOTNET_EnableDiagnostics_Debugger=0, or the debugger may be looking for it in a different location, for example because it uses a different temporary directory or runs in a different container."
 	MSG_FOR_URT_HR(PEFMT_E_64BIT) "File is PE32+."
 	MSG_FOR_URT_HR(PEFMT_E_32BIT) "File is PE32"
 	MSG_FOR_URT_HR(CLR_E_BIND_ARCHITECTURE_MISMATCH) "The assembly architecture is not compatible with the current process architecture."
