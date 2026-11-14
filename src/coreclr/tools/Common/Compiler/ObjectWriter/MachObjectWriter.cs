@@ -267,12 +267,12 @@ namespace ILCompiler.ObjectWriter
             {
                 case TargetOS.OSX:
                     buildVersion.Platform = PLATFORM_MACOS;
-                    buildVersion.MinimumPlatformVersion = 0x0C_00_00; // 12.0.0
+                    buildVersion.MinimumPlatformVersion = 0x0E_00_00; // 14.0.0
                     break;
 
                 case TargetOS.MacCatalyst:
                     buildVersion.Platform = PLATFORM_MACCATALYST;
-                    buildVersion.MinimumPlatformVersion = 0x0F_02_00; // 15.2.0
+                    buildVersion.MinimumPlatformVersion = 0x11_00_00; // 17.0.0
                     break;
 
                 case TargetOS.iOS:
@@ -287,7 +287,7 @@ namespace ILCompiler.ObjectWriter
                         TargetOS.tvOSSimulator => PLATFORM_TVOSSIMULATOR,
                         _ => 0,
                     };
-                    buildVersion.MinimumPlatformVersion = 0x0D_00_00; // 13.0.0
+                    buildVersion.MinimumPlatformVersion = 0x0F_00_00; // 15.0.0
                     break;
             }
             buildVersion.Write(outputFileStream);
@@ -345,13 +345,16 @@ namespace ILCompiler.ObjectWriter
                 "rdata" => "__const",
                 "bss" => "__bss",
                 ".eh_frame" => "__eh_frame",
+                ".debug_addr" => "__debug_addr",
                 ".debug_info" => "__debug_info",
                 ".debug_abbrev" => "__debug_abbrev",
                 ".debug_ranges" => "__debug_ranges",
+                ".debug_rnglists" => "__debug_rnglists",
                 ".debug_aranges" => "__debug_aranges",
                 ".debug_str" => "__debug_str",
                 ".debug_line" => "__debug_line",
                 ".debug_loc" => "__debug_loc",
+                ".debug_loclists" => "__debug_loclists",
                 _ => section.Name
             };
 

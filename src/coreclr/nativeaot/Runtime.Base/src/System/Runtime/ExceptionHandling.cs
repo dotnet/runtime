@@ -942,14 +942,9 @@ namespace System.Runtime
 #if FEATURE_OBJCMARSHAL
             if (pReversePInvokePropagationCallback != IntPtr.Zero)
             {
-#if TARGET_AMD64
                 InternalCalls.RhpPopExInfo(ref exInfo, frameIter.SP);
                 InternalCalls.RhpCallPropagateExceptionCallback(
                     pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, frameIter.PreviousTransitionFrame);
-#else
-                InternalCalls.RhpCallPropagateExceptionCallback(
-                    pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, ref exInfo, frameIter.PreviousTransitionFrame);
-#endif
                 // the helper should jump to propagation handler and not return
                 Debug.Fail("unreachable");
                 FallbackFailFast(RhFailFastReason.InternalError, null);
@@ -962,17 +957,11 @@ namespace System.Runtime
             //
             // ------------------------------------------------
             exInfo._idxCurClause = catchingTryRegionIdx;
-#if TARGET_AMD64
             UIntPtr funcletCallerSP;
             byte* pResumeIP = InternalCalls.CallEHFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, &funcletCallerSP);
             InternalCalls.RhpPopExInfo(ref exInfo, frameIter.SP);
             InternalCalls.RhpResumeAfterCatch(frameIter.RegisterSet, pResumeIP);
-#else
-            InternalCalls.RhpCallCatchFunclet(
-                exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
-            // currently, RhpCallCatchFunclet will resume after the catch
-#endif
             Debug.Fail("unreachable");
             FallbackFailFast(RhFailFastReason.InternalError, null);
 #endif // !NATIVEAOT
@@ -1106,14 +1095,9 @@ namespace System.Runtime
 #if NATIVEAOT
                     try
                     {
-#if TARGET_AMD64
                         UIntPtr funcletCallerSP;
                         shouldInvokeHandler =
                             InternalCalls.CallEHFilterFunclet(exception, frameIter.RegisterSet, pFilterFunclet, &funcletCallerSP) != 0;
-#else
-                        shouldInvokeHandler =
-                            InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);
-#endif
                     }
                     catch when (true)
                     {
@@ -1259,12 +1243,8 @@ namespace System.Runtime
 
                 byte* pFinallyHandler = ehClause._handlerAddress;
                 exInfo._idxCurClause = curIdx;
-#if TARGET_AMD64
                 UIntPtr funcletCallerSP;
                 InternalCalls.CallEHFunclet(null, pFinallyHandler, exInfo._frameIter.RegisterSet, &funcletCallerSP);
-#else
-                InternalCalls.RhpCallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet);
-#endif
                 exInfo._idxCurClause = MaxTryRegionIdx;
             }
         }

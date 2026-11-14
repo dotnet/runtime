@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+    <WasmPInvokeModulesPropsPath Condition="'$(WasmPInvokeModulesPropsPath)' == ''">$(MSBuildThisFileDirectory)WasmPInvokeModules.props</WasmPInvokeModulesPropsPath>
+    <WasmAppRuntimeFlavor>CoreCLR</WasmAppRuntimeFlavor>
+  </PropertyGroup>
   <Import Project="$(WasmPInvokeModulesPropsPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ComputeWasmPInvokeModules"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
@@ -55,8 +59,7 @@
   </PropertyGroup>
 
   <!-- Reuse the shared WASI bundling; the Mono-only clang-link targets stay inert (gated on
-       WasmBuildNative). Imported first so the CoreCLR overrides below win over its
-       WasmAppRuntimeFlavor=Mono default. -->
+       WasmBuildNative). Imported first so the CoreCLR overrides below win. -->
   <Import Project="$(MSBuildThisFileDirectory)WasiApp.targets" />
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.FilterManagedAssemblies" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
@@ -66,7 +69,7 @@
 
   <PropertyGroup>
     <WasmAppRuntimeFlavor>CoreCLR</WasmAppRuntimeFlavor>
-    <UseMonoRuntime>false</UseMonoRuntime>
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == ''">false</UseMonoRuntime>
     <RequiresCrossgen2Pack Condition="'$(RequiresCrossgen2Pack)' == ''">true</RequiresCrossgen2Pack>
     <!-- The Mono per-app clang relink (WasmBuildNative) is not used; CoreCLR links the
          wasihost corehost (libWasiHost.a) per-app through its own targets below. -->
@@ -236,6 +239,7 @@
       <_WasiCoreClrCompatHeader Condition="'$(CORECLR_COMPAT_HEADER)' != ''">$([System.IO.Path]::GetFullPath('$(CORECLR_COMPAT_HEADER)'))</_WasiCoreClrCompatHeader>
       <_WasiCoreClrCompatHeader Condition="'$(_WasiCoreClrCompatHeader)' == ''">$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'browser', 'build', 'coreclr_compat.h'))</_WasiCoreClrCompatHeader>
       <_WasiVmWasmIncludeDir Condition="'$(CORECLR_VM_WASM_INCLUDE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(CORECLR_VM_WASM_INCLUDE_DIR)'))))</_WasiVmWasmIncludeDir>
+      <_WasiVmWasmIncludeDir Condition="'$(_WasiVmWasmIncludeDir)' == '' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include\callhelpers.hpp')">$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)', 'include'))</_WasiVmWasmIncludeDir>
       <_WasiVmWasmIncludeDir Condition="'$(_WasiVmWasmIncludeDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'coreclr', 'vm', 'wasm'))</_WasiVmWasmIncludeDir>
       <_WasiMinipalIncludeRoot Condition="'$(MINIPAL_INCLUDE_DIR)' != ''">$([MSBuild]::NormalizeDirectory($([System.IO.Path]::GetFullPath('$(MINIPAL_INCLUDE_DIR)')), '..'))</_WasiMinipalIncludeRoot>
       <_WasiMinipalIncludeRoot Condition="'$(_WasiMinipalIncludeRoot)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'native'))</_WasiMinipalIncludeRoot>
@@ -264,6 +268,11 @@
     <ItemGroup>
       <_WasiBundledFile Include="$(WasmAppDir)managed\*.dll" />
       <_WasiPInvokeModules Remove="@(_WasiPInvokeModules)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(PublishTrimmed)' == 'true' and '$(IntermediateLinkDir)' != ''">
+      <_WasiBundledFileR2RRemap Include="@(_WasiBundledFile)" Condition="Exists('$(IntermediateLinkDir)%(FileName)%(Extension)')" />
+      <_WasiBundledFile Remove="@(_WasiBundledFileR2RRemap)" />
+      <_WasiBundledFile Include="@(_WasiBundledFileR2RRemap->'$(IntermediateLinkDir)%(FileName)%(Extension)')" />
     </ItemGroup>
     <ComputeWasmPInvokeModules TargetOS="wasi"
                                InvariantGlobalization="$(InvariantGlobalization)"
@@ -475,7 +484,7 @@
       <_WasiRelinkLinkFlags Include="@(_WasiHostLibsPost->'&quot;%(Identity)&quot;')" />
       <_WasiRelinkLinkFlags Include="-o &quot;$(_WasiRelinkOutput.Replace('\','/'))&quot;" />
     </ItemGroup>
-    <WriteLinesToFile Lines="@(_WasiRelinkLinkFlags)" File="$(_WasiRelinkLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile Lines="@(_WasiRelinkLinkFlags->Replace('\','/'))" File="$(_WasiRelinkLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
     <Message Text="Linking CoreCLR-WASI wasihost host with per-app callhelper thunks ..." Importance="High" />
     <Exec Command="&quot;$(_WasiClangxx)&quot; &quot;@$(_WasiRelinkLinkRsp)&quot;"
