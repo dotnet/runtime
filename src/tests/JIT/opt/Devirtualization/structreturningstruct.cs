@@ -38,7 +38,6 @@ public class X
         return r;
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/134949", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasi), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
     [Fact]
     public static int TestEntryPoint()
     {

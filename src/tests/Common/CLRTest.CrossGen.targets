@@ -88,7 +88,7 @@ fi
 if [ ! -z ${RunCrossGen2+x} ]%3B then
   export TEST_READY_TO_RUN_MODE=1
   if [ "$(TargetOS)" == "wasi" ]; then
-    # WASI loads R2R code from a single composite spliced into the host.
+    # WASI loads R2R code from the test composite (plus Core_Root's R2R CoreLib) spliced into the host.
     export CompositeBuildMode=1
   fi
   compilationDoneFlagFile="$crossgen2OutputDirectory/done"
@@ -288,7 +288,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
           if [ -f "$PWD/corerun.wasm" ]; then
             __WasiR2RComponent="$PWD/corerun.wasm"
           fi
-          "$__DotNet" msbuild "$CORE_ROOT/wasi-r2r/WasiR2RComposer.proj" -nologo -t:Compose "/p:CompositePath=$PWD/composite-r2r.wasm" "/p:ComponentPath=$__WasiR2RComponent" "/p:OutputDirectory=$PWD/$crossgen2OutputDirectory/wasi-r2r/work" "/p:OutputPath=$PWD/$crossgen2OutputDirectory/wasi-r2r/corerun-composite.wasm" "/p:WasmToolsPath=%24(command -v wasm-tools)" "/p:WasmMergePath=%24(command -v wasm-merge)" "/p:WasmOptPath=%24(command -v wasm-opt)" "/p:StubOutputDirectory=$PWD/$crossgen2OutputDirectory/wasi-r2r/comp" "/p:ComponentStubsDirectory=$PWD"
+          "$__DotNet" msbuild "$CORE_ROOT/wasi-r2r/WasiR2RComposer.proj" -nologo -t:Compose "/p:CompositePath=$PWD/composite-r2r.wasm" "/p:ComponentPath=$__WasiR2RComponent" "/p:OutputDirectory=$PWD/$crossgen2OutputDirectory/wasi-r2r/work" "/p:OutputPath=$PWD/$crossgen2OutputDirectory/wasi-r2r/corerun-composite.wasm" "/p:WasmToolsPath=%24(command -v wasm-tools)" "/p:WasmMergePath=%24(command -v wasm-merge)" "/p:WasmOptPath=%24(command -v wasm-opt)" "/p:StubOutputDirectory=$PWD/$crossgen2OutputDirectory/wasi-r2r/comp" "/p:ComponentStubsDirectory=$PWD" "/p:CompositeIncludesCoreLib=${WholeProgramCompositeBuildMode+true}"
         )
         __linkExitCode=$?
         if [ $__linkExitCode -ne 0 ]; then

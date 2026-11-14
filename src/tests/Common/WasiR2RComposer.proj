@@ -1,6 +1,8 @@
 <Project>
   <PropertyGroup>
     <WasmAppBuilderTasksAssemblyPath Condition="'$(WasmAppBuilderTasksAssemblyPath)' == ''">$(MSBuildThisFileDirectory)WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
+    <!-- This project is deployed to $(CORE_ROOT)/wasi-r2r, next to Core_Root's prebuilt R2R CoreLib. -->
+    <CoreLibR2RImagePath Condition="'$(CoreLibR2RImagePath)' == ''">$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'System.Private.CoreLib.wasm'))</CoreLibR2RImagePath>
   </PropertyGroup>
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ComposeWasiReadyToRun"
@@ -11,9 +13,15 @@
     <!-- A test that links its own native code keeps its own host (corerun.wasm) beside the stubs. -->
     <_ComponentStub Include="$(ComponentStubsDirectory)/*.wasm"
                     Exclude="$(CompositePath);$(ComponentPath)" />
+    <!-- R2R code outside CoreLib requires an R2R CoreLib, so merge Core_Root's prebuilt image alongside the test composite. -->
+    <!-- Under WholeProgramCompositeBuildMode the test composite already contains CoreLib (set
+         CompositeIncludesCoreLib=true); the prebuilt image would shadow it there. -->
+    <_AdditionalR2RImage Include="$(CoreLibR2RImagePath)" Condition="'$(CompositeIncludesCoreLib)' != 'true'" />
   </ItemGroup>
 
   <Target Name="Compose">
+    <Error Condition="'$(CompositeIncludesCoreLib)' != 'true' and !Exists('$(CoreLibR2RImagePath)')"
+           Text="The R2R System.Private.CoreLib image was not found at '$(CoreLibR2RImagePath)'. WASI R2R tests require an R2R CoreLib in Core_Root." />
     <ComposeWasiReadyToRun CompositePath="$(CompositePath)"
                            ComponentPath="$(ComponentPath)"
                            OutputDirectory="$(OutputDirectory)"
@@ -22,6 +30,7 @@
                            WasmMergePath="$(WasmMergePath)"
                            WasmOptPath="$(WasmOptPath)"
                            ComponentStubs="@(_ComponentStub)"
+                           AdditionalImages="@(_AdditionalR2RImage)"
                            StubOutputDirectory="$(StubOutputDirectory)" />
   </Target>
 </Project>

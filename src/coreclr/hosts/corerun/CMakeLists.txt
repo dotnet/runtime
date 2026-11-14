@@ -4,9 +4,13 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CORERUN_IN_BROWSER 0)
 
-# Reserve the composite's function-table slots in the standalone WASI test host.
-option(CORERUN_WASI_COMPOSITE_R2R "Reserve table slots for a spliced WASI R2R composite" ON)
-set(CORERUN_WASI_R2R_TABLE_BASE "65537" CACHE STRING "First table slot for corerun functions")
+# Reserve linear memory and function-table slots for the R2R images the WASI composer merges into the
+# standalone WASI test host: the prebuilt R2R System.Private.CoreLib plus a test composite. CoreLib alone
+# needs roughly 14.6 MB and 64K slots, so the defaults leave about 2x headroom for CoreLib growth and
+# merged-runner composites. The composer rejects images that do not fit before merging.
+option(CORERUN_WASI_COMPOSITE_R2R "Reserve table slots for spliced WASI R2R images" ON)
+set(CORERUN_WASI_R2R_TABLE_BASE "131073" CACHE STRING "First table slot for corerun functions (R2R images use slots 1..N-1)")
+set(CORERUN_WASI_R2R_IMAGE_CAP "33554432" CACHE STRING "Bytes reserved for merged R2R image payloads")
 
 if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DFX_VER_INTERNALNAME_STR=corerun.exe)
@@ -172,6 +176,7 @@ else()
                     -Wl,--export-table
                     -Wl,--export=__stack_pointer
                     -Wl,--export=__coreclr_wasm_rtlrestorecontext_tag)
+                target_compile_definitions(corerun PRIVATE WASI_R2R_IMAGE_CAP=${CORERUN_WASI_R2R_IMAGE_CAP}u)
             else()
                 target_compile_definitions(corerun PRIVATE WASI_R2R_IMAGE_CAP=64u)
             endif()

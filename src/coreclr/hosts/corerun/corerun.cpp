@@ -361,7 +361,7 @@ extern "C" bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ v
 
 #ifdef TARGET_WASI
 #ifndef WASI_R2R_IMAGE_CAP
-#define WASI_R2R_IMAGE_CAP (16u * 1024u * 1024u)
+#define WASI_R2R_IMAGE_CAP (32u * 1024u * 1024u)
 #endif
 #define CORERUN_WASI_R2R_STRONG_CAP
 #include "wasi_r2r_probe.hpp"
