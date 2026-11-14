@@ -318,6 +318,7 @@ public class AsAnyTests
             TestIntPtrArray();
             TestUIntPtrArray();
             TestLayout();
+            TestLayoutConvertToNativeExceptionPath();
             RunAsAnyFieldTests();
             TestUnicodeString();
             TestUnicodeStringArray();
@@ -652,6 +653,16 @@ public class AsAnyTests
 
         Assert.Equal(layoutStruct.b, PassLayout(layoutStruct));
         Console.WriteLine("------------------------");
+    }
+
+    private static void TestLayoutConvertToNativeExceptionPath()
+    {
+        // AsAnyField contains a field with [MarshalAs(UnmanagedType.AsAny)], which is not
+        // supported in layout marshaling. When passed via AsAny, LayoutImplementation.ConvertToNative
+        // allocates a native buffer and then calls LayoutTypeConvertToUnmanaged, which throws
+        // TypeLoadException. Verify the exception propagates correctly; the fix ensures the
+        // native buffer is freed on this exception path rather than leaked.
+        Assert.Throws<TypeLoadException>(() => PassLayout(new AsAnyField()));
     }
 
     static void CharArrayInit(char[] unMappableCharArray_In, char[] unMappableCharArray_InOut, char[] unMappableCharArray_Out,
