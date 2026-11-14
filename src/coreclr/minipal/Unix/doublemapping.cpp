@@ -67,9 +67,8 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
     // POSIX fallback
     if (fd == -1)
     {
-        char name[24];
-        sprintf(name, "/shm-dotnet-%d", getpid());
-        name[sizeof(name) - 1] = '\0';
+        char name[64];
+        snprintf(name, sizeof(name), "/shm-dotnet-%d", getpid());
         shm_unlink(name);
         fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
         shm_unlink(name);
@@ -445,9 +444,8 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
         // POSIX fallback
         if (fd == -1)
         {
-            char name[24];
-            sprintf(name, "/shm-dotnet-template-%d", getpid());
-            name[sizeof(name) - 1] = '\0';
+            char name[64];
+            snprintf(name, sizeof(name), "/shm-dotnet-template-%d", getpid());
             shm_unlink(name);
             fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
             shm_unlink(name);
