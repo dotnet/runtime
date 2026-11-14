@@ -1,11 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: StubGen.h
-//
-
-//
-
 
 #ifndef __STUBGEN_H__
 #define __STUBGEN_H__
@@ -723,6 +717,7 @@ public:
 
     void SetStubMethodDesc(MethodDesc *pMD);
 protected:
+    static constexpr UINT_PTR SECRET_STUB_ARGUMENT = static_cast<UINT_PTR>(-1);
 
     void DeleteCodeLabels();
     void DeleteCodeStreams();
@@ -734,9 +729,6 @@ protected:
         INT16       iStackDelta;
         UINT_PTR    uArg;
     };
-
-    static void PatchInstructionArgument(ILCodeLabel* pLabel, UINT_PTR uNewArg
-        DEBUG_ARG(UINT16 uExpectedInstruction));
 
 #ifdef _DEBUG
     bool IsInCodeStreamList(ILCodeStream* pcs);
@@ -849,6 +841,7 @@ protected:
 
     DWORD SetStubTargetArgType(CorElementType typ, bool fConsumeStubArg = true);
     DWORD SetStubTargetArgType(LocalDesc* pLoc = NULL, bool fConsumeStubArg = true);       // passing pLoc = NULL means "use stub arg type"
+    void SetSecretStubArgumentIndex(DWORD uArgIdx);
     void SetStubTargetReturnType(CorElementType typ);
     void SetStubTargetReturnType(LocalDesc* pLoc);
     void SetStubTargetCallingConv(CorCallingConvention uNativeCallingConv);
@@ -874,6 +867,7 @@ protected:
     INT     m_iTargetStackDelta;
     DWORD   m_cbCurrentCompressedSigLen;
     DWORD   m_nLocals;
+    DWORD   m_uSecretStubArgumentIndex;
 
     bool    m_fHasThis;
 
@@ -1072,6 +1066,7 @@ public:
 
     void EmitLabel(ILCodeLabel* pLabel);
     void EmitLoadThis ();
+    void EmitLoadSecretStubArgument();
     void EmitLoadNullPtr();
 
     ILCodeLabel* NewCodeLabel();

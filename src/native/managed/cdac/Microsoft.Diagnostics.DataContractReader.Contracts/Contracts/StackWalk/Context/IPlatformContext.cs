@@ -1,11 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 public interface IPlatformContext
 {
     uint Size { get; }
+
+    uint GetSize() => Size;
+
     uint ContextControlFlags { get; }
     uint FullContextFlags { get; }
     uint AllContextFlags { get; }
@@ -32,4 +37,8 @@ public interface IPlatformContext
 
     bool TrySetRegister(int number, TargetNUInt value);
     bool TryReadRegister(int number, out TargetNUInt value);
+    bool TryReadFloatingPointRegister(int index, out double value);
+    bool TryWriteFloatingPointRegister(int index, double value);
+
+    void CopyContext(ReadOnlySpan<byte> source);
 }

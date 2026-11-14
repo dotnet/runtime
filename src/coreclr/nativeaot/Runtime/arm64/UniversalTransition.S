@@ -95,10 +95,7 @@
         PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -STACK_SIZE           // ;; Push down stack pointer and store FP and LR
 
         // Floating point registers
-        stp         q0, q1, [sp, #(FLOAT_ARG_OFFSET       )]
-        stp         q2, q3, [sp, #(FLOAT_ARG_OFFSET + 0x20)]
-        stp         q4, q5, [sp, #(FLOAT_ARG_OFFSET + 0x40)]
-        stp         q6, q7, [sp, #(FLOAT_ARG_OFFSET + 0x60)]
+        SAVE_FLOAT_ARGUMENT_REGISTERS sp, FLOAT_ARG_OFFSET
 
         // Space for return buffer data (0x40 bytes)
 
@@ -136,10 +133,7 @@ ALTERNATE_ENTRY ReturnFrom\FunctionName
         mov         x12, x0
 
         // Restore floating point registers
-        ldp         q0, q1, [sp, #(FLOAT_ARG_OFFSET       )]
-        ldp         q2, q3, [sp, #(FLOAT_ARG_OFFSET + 0x20)]
-        ldp         q4, q5, [sp, #(FLOAT_ARG_OFFSET + 0x40)]
-        ldp         q6, q7, [sp, #(FLOAT_ARG_OFFSET + 0x60)]
+        RESTORE_FLOAT_ARGUMENT_REGISTERS sp, FLOAT_ARG_OFFSET
 
         // Restore the argument registers
         ldp         x0, x1,  [sp, #(ARGUMENT_REGISTERS_OFFSET       )]

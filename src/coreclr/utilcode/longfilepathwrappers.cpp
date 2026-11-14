@@ -31,7 +31,6 @@ public:
         static BOOL IsDevice(const SString & path);
         static void NormalizeDirectorySeparators(SString& path);
 };
-#endif // HOST_WINDOWS
 
 DWORD
 SearchPathWrapper(
@@ -56,7 +55,6 @@ SearchPathWrapper(
 
     EX_TRY
     {
-#ifdef HOST_WINDOWS
         LongPathString Existingpath(LongPathString::Literal, lpPath);
         if (lpPath != NULL)
         {
@@ -69,7 +67,6 @@ SearchPathWrapper(
                 lpPath = Existingpath.GetUnicode();
             }
         }
-#endif // HOST_WINDOWS
 
         if (!getPath)
         {
@@ -128,6 +125,7 @@ SearchPathWrapper(
     return ret;
 
 }
+#endif // HOST_WINDOWS
 
 DWORD
 GetModuleFileNameWrapper(
@@ -373,61 +371,6 @@ int u16_fopen_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode)
     EX_END_CATCH
 
     return -1;
-}
-
-BOOL
-CopyFileExWrapper(
-        _In_        LPCWSTR lpExistingFileName,
-        _In_        LPCWSTR lpNewFileName,
-        _In_opt_    LPPROGRESS_ROUTINE lpProgressRoutine,
-        _In_opt_    LPVOID lpData,
-        _When_(pbCancel != NULL, _Pre_satisfies_(*pbCancel == FALSE))
-        _Inout_opt_ LPBOOL pbCancel,
-        _In_        DWORD dwCopyFlags
-        )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr  = S_OK;
-    BOOL    ret = FALSE;
-    DWORD lastError = 0;
-
-    EX_TRY
-    {
-        LongPathString Existingpath(LongPathString::Literal, lpExistingFileName);
-        LongPathString Newpath(LongPathString::Literal, lpNewFileName);
-
-        if (SUCCEEDED(LongFile::NormalizePath(Existingpath)) && SUCCEEDED(LongFile::NormalizePath(Newpath)))
-        {
-            ret = CopyFileExW(
-                    Existingpath.GetUnicode(),
-                    Newpath.GetUnicode(),
-                    lpProgressRoutine,
-                    lpData,
-                    pbCancel,
-                    dwCopyFlags
-                    );
-        }
-
-        lastError = GetLastError();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK )
-    {
-        SetLastError(hr);
-    }
-    else if(ret == FALSE)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
 }
 
 //Implementation of LongFile Helpers

@@ -16,10 +16,7 @@ public class Runtime_133120
     };
 
     [Fact]
-    public static void TestEntryPoint()
-    {
-        ValidateAsync().GetAwaiter().GetResult();
-    }
+    public static Task TestEntryPoint() => ValidateAsync();
 
     private static async Task ValidateAsync(CancellationToken cancellationToken = default)
     {

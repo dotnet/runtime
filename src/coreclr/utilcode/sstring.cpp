@@ -1,10 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// ---------------------------------------------------------------------------
-// SString.cpp
-//
-
-// ---------------------------------------------------------------------------
 
 #include "stdafx.h"
 #include "sstring.h"
@@ -755,8 +750,6 @@ void SString::ConvertToUnicode(SString &s) const
     }
     CONTRACTL_END;
 
-    int page = 0;
-
     switch (GetRepresentation())
     {
     case REPRESENTATION_EMPTY:
@@ -770,7 +763,6 @@ void SString::ConvertToUnicode(SString &s) const
         return;
 
     case REPRESENTATION_UTF8:
-        page = CP_UTF8;
         break;
 
     case REPRESENTATION_ASCII:
@@ -782,15 +774,12 @@ void SString::ConvertToUnicode(SString &s) const
         UNREACHABLE();
     }
 
-    COUNT_T length = MultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, 0, 0);
-    if (length == 0)
-        ThrowLastError();
+    size_t length = minipal_get_length_utf8_to_utf16(GetRawUTF8(), GetRawCount() + 1, 0);
 
-    s.Resize(length-1, REPRESENTATION_UNICODE);
+    s.Resize((COUNT_T)(length - 1), REPRESENTATION_UNICODE);
 
-    length = MultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, s.GetRawUnicode(), length);
-    if (length == 0)
-        ThrowLastError();
+    if (minipal_convert_utf8_to_utf16(GetRawUTF8(), GetRawCount() + 1, (CHAR16_T*)s.GetRawUnicode(), length, 0) == 0)
+        ThrowWin32(errno);
 
     _ASSERTE(s.IsRepresentation(REPRESENTATION_UNICODE));
 }
@@ -828,28 +817,24 @@ COUNT_T SString::ConvertToUTF8(SString &s) const
         UNREACHABLE();
     }
 
-    // <TODO> @todo: use WC_NO_BEST_FIT_CHARS </TODO>
-    bool  allAscii;
-    DWORD length;
+    size_t length = minipal_get_length_utf16_to_utf8((const CHAR16_T*)GetRawUnicode(), GetRawCount() + 1, 0);
+    if (length == 0)
+        ThrowWin32(errno);
 
-    HRESULT hr = FString::Unicode_Utf8_Length(GetRawUnicode(), & allAscii, & length);
+    if (!FitsIn<COUNT_T>(length))
+        ThrowHR(COR_E_OVERFLOW);
 
-    if (SUCCEEDED(hr))
+    s.Resize((COUNT_T)(length - 1), REPRESENTATION_UTF8);
+
+    // Resizing to zero switches to the shared empty buffer, which must not be written to
+    if (length > 1)
     {
-        s.Resize(length, REPRESENTATION_UTF8);
-
-	//FString::Unicode_Utf8 expects an array all the time
-        //we optimize the empty string by replacing it with null for SString above in Resize
-        if (length > 0)
-        {
-            hr = FString::Unicode_Utf8(GetRawUnicode(), allAscii, (LPSTR) s.GetRawUTF8(), length);
-        }
+        if (minipal_convert_utf16_to_utf8((const CHAR16_T*)GetRawUnicode(), GetRawCount() + 1, (LPSTR)s.GetRawUTF8(), length, 0) == 0)
+            ThrowWin32(errno);
     }
 
-    IfFailThrow(hr);
-
     _ASSERTE(s.IsRepresentation(REPRESENTATION_UTF8));
-    return length + 1;
+    return (COUNT_T)length;
 }
 
 //-----------------------------------------------------------------------------
@@ -1648,31 +1633,6 @@ void SString::LowerCase(__inout_z LPWSTR wszString)
 }
 
 //-----------------------------------------------------------------------------
-// Convert string to unicode uppercase using the invariant culture
-// Note: Please don't use it in PATH as multiple character can map to the same
-// upper case symbol
-//-----------------------------------------------------------------------------
-void SString::UpperCase()
-{
-    SS_CONTRACT_VOID
-    {
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(this));
-        if (IsRepresentation(REPRESENTATION_UNICODE)) NOTHROW; else THROWS;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    SS_CONTRACT_END;
-
-    ConvertToUnicode();
-
-    for (WCHAR *pwch = GetRawUnicode(); pwch < GetRawUnicode() + GetRawCount(); ++pwch)
-    {
-        *pwch = (CAN_SIMPLE_UPCASE(*pwch) ? SIMPLE_UPCASE(*pwch) : MapChar(*pwch, LCMAP_UPPERCASE));
-    }
-}
-
-//-----------------------------------------------------------------------------
 // Safe version of sprintf.
 // Prints formatted ansi text w/ var args to this buffer.
 //-----------------------------------------------------------------------------
@@ -1792,6 +1752,28 @@ void SString::AppendVPrintf(const CHAR *format, va_list args)
 // Format the message and put the contents in this string
 //----------------------------------------------------------------------------
 
+namespace
+{
+    template<typename T>
+    struct LocalAllocTraits final
+    {
+        using Type = T;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type h) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+#ifdef HOST_WINDOWS
+            ::LocalFree((void*)h);
+#else
+            ::free((void*)h);
+#endif
+        }
+    };
+
+    template<typename T>
+    using LocalAllocHolder = LifetimeHolder<LocalAllocTraits<T>>;
+}
+
 BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD dwLanguageId,
                             const SString &arg1, const SString &arg2,
                             const SString &arg3, const SString &arg4,
@@ -1837,7 +1819,6 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
 
     // We don't have enough space in our buffer, do dynamic allocation.
     LocalAllocHolder<LPWSTR> string;
-
     DWORD result = ::FormatMessage(dwFlags | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_ARGUMENT_ARRAY,
                                       lpSource, dwMessageId, dwLanguageId,
                                       (LPWSTR)(LPWSTR*)&string, 0, (va_list*)args);
@@ -2248,7 +2229,6 @@ bool SString::DacGetUnicode(COUNT_T                                   cBufChars,
     SUPPORTS_DAC;
 
     PVOID pContent = NULL;
-    int iPage = CP_ACP;
 
     if (IsEmpty() || (GetRepresentation() == REPRESENTATION_EMPTY))
     {
@@ -2295,22 +2275,24 @@ bool SString::DacGetUnicode(COUNT_T                                   cBufChars,
             return true;
 
         case REPRESENTATION_UTF8:
-            iPage = CP_UTF8;
-            FALLTHROUGH;
         case REPRESENTATION_ASCII:
-            // iPage defaults to CP_ACP.
+        {
+            PSTR pString = reinterpret_cast<PSTR>(pContent);
+            size_t length = strlen(pString) + 1;
             if (pcNeedChars)
             {
-                *pcNeedChars = MultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, NULL, 0);
+                size_t cchNeed = minipal_get_length_utf8_to_utf16(pString, length, 0);
+                *pcNeedChars = (COUNT_T)cchNeed;
             }
             if (pBuffer && cBufChars)
             {
-                if (!MultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, pBuffer, cBufChars))
+                if (minipal_convert_utf8_to_utf16(pString, length, (CHAR16_T*)pBuffer, cBufChars, 0) == 0)
                 {
                     return false;
                 }
             }
             return true;
+        }
 
         default:
             DacNotImpl();

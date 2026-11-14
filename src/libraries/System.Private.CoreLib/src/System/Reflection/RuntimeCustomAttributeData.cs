@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 #if NATIVEAOT
 using System.Reflection.Runtime.EventInfos;
@@ -15,11 +18,11 @@ using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.Modules;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.PropertyInfos;
 
 using Internal.Metadata.NativeFormat;
 
+using IRuntimeMethodInfo = System.Reflection.Runtime.MethodInfos.RuntimeConstructorInfo;
 using ResolutionScope = Internal.Metadata.NativeFormat.MetadataReader;
 #else
 using ResolutionScope = System.Reflection.RuntimeModule;
@@ -34,11 +37,7 @@ namespace System.Reflection
         {
             Debug.Assert(target is not null);
 
-#if NATIVEAOT
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-#endif
+            IList<CustomAttributeData> cad = GetCustomAttributes(new QCustomAttributeList(target));
             ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), ref pcas);
             return pcas.Count > 0 ? GetCombinedList(cad, ref pcas) : cad;
@@ -48,11 +47,7 @@ namespace System.Reflection
         {
             Debug.Assert(target is not null);
 
-#if NATIVEAOT
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-#endif
+            IList<CustomAttributeData> cad = GetCustomAttributes(new QCustomAttributeList(target));
             ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), ref pcas);
             return pcas.Count > 0 ? GetCombinedList(cad, ref pcas) : cad;
@@ -62,11 +57,7 @@ namespace System.Reflection
         {
             Debug.Assert(target is not null);
 
-#if NATIVEAOT
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-#endif
+            IList<CustomAttributeData> cad = GetCustomAttributes(new QCustomAttributeList(target));
             ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), ref pcas);
             return pcas.Count > 0 ? GetCombinedList(cad, ref pcas) : cad;
@@ -76,33 +67,21 @@ namespace System.Reflection
         {
             Debug.Assert(target is not null);
 
-#if NATIVEAOT
-            return GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            return GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(target));
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeEventInfo target)
         {
             Debug.Assert(target is not null);
 
-#if NATIVEAOT
-            return GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            return GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(target));
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimePropertyInfo target)
         {
             Debug.Assert(target is not null);
 
-#if NATIVEAOT
-            return GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            return GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(target));
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeModule target)
@@ -112,11 +91,7 @@ namespace System.Reflection
             if (target.IsResource())
                 return new List<CustomAttributeData>();
 
-#if NATIVEAOT
-            return GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            return GetCustomAttributes(target, target.MetadataToken);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(target));
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeAssembly target)
@@ -125,11 +100,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeAssembly
 
-#if NATIVEAOT
-            return GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            return GetCustomAttributes((RuntimeModule)target.ManifestModule, RuntimeAssembly.GetToken(target));
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(target));
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeParameterInfo target)
@@ -137,11 +108,7 @@ namespace System.Reflection
             Debug.Assert(target is not null);
 
             ListBuilder<Attribute> pcas = default;
-#if NATIVEAOT
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetMetadataReader(), target.GetCustomAttributeHandles());
-#else
-            IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule()!, target.MetadataToken);
-#endif
+            IList<CustomAttributeData> cad = GetCustomAttributes(new QCustomAttributeList(target));
             PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), ref pcas);
             return pcas.Count > 0 ? GetCombinedList(cad, ref pcas) : cad;
         }
@@ -509,7 +476,7 @@ namespace System.Reflection
     public readonly partial struct CustomAttributeTypedArgument
     {
         #region Private Static Methods
-        private static Type CustomAttributeEncodingToType(CustomAttributeEncoding encodedType)
+        internal static Type CustomAttributeEncodingToType(CustomAttributeEncoding encodedType)
         {
             return encodedType switch
             {
@@ -666,6 +633,332 @@ namespace System.Reflection
 
     internal sealed partial class CustomAttributeEncodedArgument
     {
+        private static CustomAttributeEncodedArgument ParseCustomAttributeValue(
+            ref CustomAttributeDataParser parser,
+            CustomAttributeType type,
+            ResolutionScope module)
+        {
+            CustomAttributeType attributeType = type.EncodedType == CustomAttributeEncoding.Object
+                ? ParseCustomAttributeType(ref parser, module)
+                : type;
+
+            CustomAttributeEncodedArgument arg = new(attributeType);
+
+            CustomAttributeEncoding underlyingType = attributeType.EncodedType == CustomAttributeEncoding.Enum
+                ? attributeType.EncodedEnumType
+                : attributeType.EncodedType;
+
+            switch (underlyingType)
+            {
+                case CustomAttributeEncoding.Boolean:
+                case CustomAttributeEncoding.Byte:
+                case CustomAttributeEncoding.SByte:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = parser.GetU1() };
+                    break;
+                case CustomAttributeEncoding.Char:
+                case CustomAttributeEncoding.Int16:
+                case CustomAttributeEncoding.UInt16:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = parser.GetU2() };
+                    break;
+                case CustomAttributeEncoding.Int32:
+                case CustomAttributeEncoding.UInt32:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = parser.GetI4() };
+                    break;
+                case CustomAttributeEncoding.Int64:
+                case CustomAttributeEncoding.UInt64:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte8 = parser.GetI8() };
+                    break;
+                case CustomAttributeEncoding.Float:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = BitConverter.SingleToInt32Bits(parser.GetR4()) };
+                    break;
+                case CustomAttributeEncoding.Double:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte8 = BitConverter.DoubleToInt64Bits(parser.GetR8()) };
+                    break;
+                case CustomAttributeEncoding.String:
+#if !NATIVEAOT
+                case CustomAttributeEncoding.Type:
+#endif
+                    arg.StringValue = parser.GetString();
+                    break;
+#if NATIVEAOT
+                case CustomAttributeEncoding.Type:
+                    arg.TypeValue = parser.GetTypeValue();
+                    break;
+#endif
+                case CustomAttributeEncoding.Array:
+                {
+                    arg.ArrayValue = null;
+                    int len = parser.GetI4();
+                    if (len != -1) // indicates array is null - ECMA-335 II.23.3.
+                    {
+                        attributeType = new CustomAttributeType(
+                            attributeType.EncodedArrayType,
+                            CustomAttributeEncoding.Undefined, // Array type
+                            attributeType.EncodedEnumType,
+                            attributeType.EnumType);
+                        arg.ArrayValue = new CustomAttributeEncodedArgument[len];
+                        for (int i = 0; i < len; ++i)
+                        {
+                            arg.ArrayValue[i] = ParseCustomAttributeValue(ref parser, attributeType, module);
+                        }
+                    }
+                    break;
+                }
+                default:
+                    throw new BadImageFormatException();
+            }
+
+            return arg;
+        }
+
+        private static CustomAttributeType ParseNamedArgumentTarget(
+            ref CustomAttributeDataParser parser, ResolutionScope module, out string? argumentName)
+        {
+            // Determine if a field or property.
+            CustomAttributeEncoding namedArgFieldOrProperty = parser.GetTag();
+            if (namedArgFieldOrProperty is not CustomAttributeEncoding.Field
+                && namedArgFieldOrProperty is not CustomAttributeEncoding.Property)
+            {
+                throw new BadImageFormatException(SR.Arg_CustomAttributeFormatException);
+            }
+
+            CustomAttributeType argumentType = ParseCustomAttributeType(ref parser, module);
+            argumentName = parser.GetString();
+            return argumentType;
+        }
+
+        private static CustomAttributeType ParseCustomAttributeType(ref CustomAttributeDataParser parser, ResolutionScope module)
+        {
+            CustomAttributeEncoding arrayTag = CustomAttributeEncoding.Undefined;
+            CustomAttributeEncoding enumTag = CustomAttributeEncoding.Undefined;
+            Type? enumType = null;
+
+            CustomAttributeEncoding tag = parser.GetTag();
+            if (tag is CustomAttributeEncoding.Array)
+            {
+                arrayTag = parser.GetTag();
+            }
+
+            // Load the enum type if needed.
+            if (tag is CustomAttributeEncoding.Enum
+                || (tag is CustomAttributeEncoding.Array
+                    && arrayTag is CustomAttributeEncoding.Enum))
+            {
+#if NATIVEAOT
+                enumType = parser.GetTypeValue();
+                Debug.Assert(enumType is not null && enumType.IsEnum);
+#else
+                // We cannot determine the underlying type without loading the enum.
+                string enumTypeMaybe = parser.GetString() ?? throw new BadImageFormatException();
+                enumType = TypeNameResolver.GetTypeReferencedByCustomAttribute(enumTypeMaybe, module);
+                if (!enumType.IsEnum)
+                {
+                    throw new BadImageFormatException();
+                }
+#endif
+
+                enumTag = RuntimeCustomAttributeData.TypeToCustomAttributeEncoding((RuntimeType)enumType.GetEnumUnderlyingType());
+            }
+            return new CustomAttributeType(tag, arrayTag, enumTag, enumType);
+        }
+
+        /// <summary>
+        /// Used to parse CustomAttribute data. See ECMA-335 II.23.3.
+        /// </summary>
+        internal ref struct CustomAttributeDataParser
+        {
+            private int _curr;
+            private readonly ReadOnlySpan<byte> _blob;
+
+#if NATIVEAOT
+            private readonly MetadataReader _reader;
+
+            public CustomAttributeDataParser(CustomAttribute attribute, MetadataReader reader)
+                : this(attribute.Blob.AsSpan(), reader)
+            {
+            }
+
+            internal CustomAttributeDataParser(ReadOnlySpan<byte> blob, MetadataReader reader)
+            {
+                _blob = blob;
+                _curr = 0;
+                _reader = reader;
+            }
+#else
+            public CustomAttributeDataParser(ConstArray attributeBlob)
+            {
+                unsafe
+                {
+                    _blob = new ReadOnlySpan<byte>((void*)attributeBlob.Signature, attributeBlob.Length);
+                }
+                _curr = 0;
+            }
+
+            internal CustomAttributeDataParser(ReadOnlySpan<byte> blob)
+            {
+                _blob = blob;
+                _curr = 0;
+            }
+#endif
+
+            internal int Consumed => _curr;
+            internal int Remaining => _blob.Length - _curr;
+
+            private ReadOnlySpan<byte> PeekData(int size)
+            {
+                if ((uint)size > (uint)Remaining)
+                {
+                    throw new CustomAttributeFormatException();
+                }
+
+                return _blob.Slice(_curr, size);
+            }
+
+            internal ReadOnlySpan<byte> ReadData(int size)
+            {
+                ReadOnlySpan<byte> tmp = PeekData(size);
+                Debug.Assert(size <= (_blob.Length - _curr));
+                _curr += size;
+                return tmp;
+            }
+
+            public byte GetU1()
+            {
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(byte));
+                return tmp[0];
+            }
+
+            public sbyte GetI1() => (sbyte)GetU1();
+
+            public ushort GetU2()
+            {
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(ushort));
+                return BinaryPrimitives.ReadUInt16LittleEndian(tmp);
+            }
+
+            public short GetI2() => (short)GetU2();
+
+            public uint GetU4()
+            {
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(uint));
+                return BinaryPrimitives.ReadUInt32LittleEndian(tmp);
+            }
+
+            public int GetI4() => (int)GetU4();
+
+            public ulong GetU8()
+            {
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(ulong));
+                return BinaryPrimitives.ReadUInt64LittleEndian(tmp);
+            }
+
+            public long GetI8() => (long)GetU8();
+
+            public float GetR4()
+            {
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(float));
+                return BinaryPrimitives.ReadSingleLittleEndian(tmp);
+            }
+
+            public CustomAttributeEncoding GetTag()
+            {
+                return (CustomAttributeEncoding)GetI1();
+            }
+
+            public double GetR8()
+            {
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(double));
+                return BinaryPrimitives.ReadDoubleLittleEndian(tmp);
+            }
+
+            public bool ValidateProlog()
+            {
+#if NATIVEAOT
+                return true;
+#else
+                ushort val = GetU2();
+                return val == 0x0001;
+#endif
+            }
+
+            public int GetNamedArgumentCount() => GetI2();
+
+#if NATIVEAOT
+            public string? GetString()
+            {
+                BlobReader blob = new BlobReader(_blob.Slice(_curr));
+                ConstantStringValueHandle handle = blob.ReadStringHandle();
+                _curr += blob.Offset;
+                return handle.GetStringOrNull(_reader);
+            }
+
+            public RuntimeType? GetTypeValue()
+            {
+                BlobReader blob = new BlobReader(_blob.Slice(_curr));
+                Handle handle = blob.ReadTypeHandle();
+                _curr += blob.Offset;
+                return handle.IsNil ? null : handle.Resolve(_reader, default).ToType();
+            }
+
+#else
+            public string? GetString()
+            {
+                ReadOnlySpan<byte> utf8Bytes = GetStringBytes(out bool isNull);
+                return isNull ? null : utf8Bytes.IsEmpty ? string.Empty : Encoding.UTF8.GetString(utf8Bytes);
+            }
+
+            internal ReadOnlySpan<byte> GetStringBytes(out bool isNull)
+            {
+                byte packedLengthBegin = PeekData(sizeof(byte))[0];
+
+                // Check if the embedded string indicates a 'null' string (0xff).
+                if (packedLengthBegin == 0xff) // ECMA 335- II.23.3
+                {
+                    // Consume the indicator.
+                    ReadData(1);
+                    isNull = true;
+                    return default;
+                }
+
+                isNull = false;
+                int length = GetPackedLength(packedLengthBegin);
+                return ReadData(length);
+            }
+
+            private int GetPackedLength(byte firstByte)
+            {
+                if ((firstByte & 0x80) == 0)
+                {
+                    // Consume one byte.
+                    ReadData(1);
+                    return firstByte & 0x7f;
+                }
+
+                int len;
+                ReadOnlySpan<byte> data;
+                if ((firstByte & 0xC0) == 0x80)
+                {
+                    // Consume the bytes.
+                    data = ReadData(2);
+                    len = (data[0] & 0x3f) << 8;
+                    return len + data[1];
+                }
+
+                if ((firstByte & 0xE0) == 0xC0)
+                {
+                    // Consume the bytes.
+                    data = ReadData(4);
+                    len = (data[0] & 0x1f) << 24;
+                    len += data[1] << 16;
+                    len += data[2] << 8;
+                    return len + data[3];
+                }
+
+                throw new CustomAttributeFormatException();
+            }
+#endif
+        }
+
         internal static void ParseAttributeArguments(
 #if NATIVEAOT
             CustomAttribute attributeData,
@@ -723,24 +1016,12 @@ namespace System.Reflection
             CustomAttributeCtorParameter[] customAttributeCtorParameters,
             ResolutionScope module)
         {
-#if NATIVEAOT
-            HandleCollection.Enumerator fixedArguments = parser.Attribute.FixedArguments.GetEnumerator();
-#endif
             foreach (CustomAttributeCtorParameter p in customAttributeCtorParameters)
             {
-#if NATIVEAOT
-                if (!fixedArguments.MoveNext())
-                {
-                    throw new BadImageFormatException();
-                }
-
-                p.EncodedArgument = parser.ParseValue(fixedArguments.Current, p.CustomAttributeType);
-#else
                 p.EncodedArgument = ParseCustomAttributeValue(
                     ref parser,
                     p.CustomAttributeType,
                     module);
-#endif
             }
         }
 
@@ -749,35 +1030,12 @@ namespace System.Reflection
             CustomAttributeNamedParameter[] customAttributeNamedParameters,
             ResolutionScope module)
         {
-#if NATIVEAOT
-            foreach (NamedArgumentHandle namedArgumentHandle in parser.Attribute.NamedArguments)
-            {
-                NamedArgument namedArgument = namedArgumentHandle.GetNamedArgument(module);
-#else
-            // Parse the named arguments in the custom attribute.
-            int argCount = parser.GetI2();
+            int argCount = parser.GetNamedArgumentCount();
 
             for (int i = 0; i < argCount; ++i)
             {
-                // Determine if a field or property.
-                CustomAttributeEncoding namedArgFieldOrProperty = parser.GetTag();
-                if (namedArgFieldOrProperty is not CustomAttributeEncoding.Field
-                    && namedArgFieldOrProperty is not CustomAttributeEncoding.Property)
-                {
-                    throw new BadImageFormatException(SR.Arg_CustomAttributeFormatException);
-                }
-#endif
-
                 // Parse the encoded type for the named argument.
-#if NATIVEAOT
-                RuntimeType argumentType = (RuntimeType)namedArgument.Type.Resolve(module, default).ToType();
-                CustomAttributeType argType = new CustomAttributeType(argumentType);
-                string? argName = namedArgument.Name.GetString(module);
-#else
-                CustomAttributeType argType = ParseCustomAttributeType(ref parser, module);
-
-                string? argName = parser.GetString();
-#endif
+                CustomAttributeType argType = ParseNamedArgumentTarget(ref parser, module, out string? argName);
 
                 // Argument name must be non-null and non-empty.
                 if (string.IsNullOrEmpty(argName))
@@ -840,11 +1098,7 @@ namespace System.Reflection
                     throw new BadImageFormatException(SR.Arg_CustomAttributeDuplicateNamedArgument);
                 }
 
-#if NATIVEAOT
-                parameterToUpdate.EncodedArgument = parser.ParseValue(namedArgument.Value, argType);
-#else
                 parameterToUpdate.EncodedArgument = ParseCustomAttributeValue(ref parser, argType, module);
-#endif
             }
         }
 
@@ -913,8 +1167,512 @@ namespace System.Reflection
         public Type? EnumType { get; }
     }
 
-    internal static partial class RuntimeCustomAttribute
+    internal static unsafe partial class RuntimeCustomAttribute
     {
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:MethodParameterDoesntMeetThisParameterRequirements",
+            Justification = "Linker guarantees presence of all the constructor parameters, property setters and fields which are accessed by any " +
+                            "attribute instantiation which is present in the code linker has analyzed." +
+                            "As such the reflection usage in this method will never fail as those methods/fields will be present.")]
+#if NATIVEAOT
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:MethodParameterDoesntMeetThisParameterRequirements",
+            Justification = "Linker guarantees presence of all the constructor parameters which are accessed by any " +
+                            "attribute instantiation which is present in the code linker has analyzed.")]
+#endif
+        private static void AddCustomAttributes(
+            ref ListBuilder<object> attributes,
+            QCustomAttributeList customAttributes,
+            RuntimeType? attributeFilterType, bool mustBeInheritable,
+            // The derivedAttributes list must be passed by value so that it is not modified with the discovered attributes
+            ListBuilder<object> derivedAttributes)
+        {
+#if NATIVEAOT
+            MetadataReader? decoratedModule = customAttributes.Reader;
+            if (decoratedModule is null)
+                return;
+
+            foreach (CustomAttributeHandle customAttributeHandle in customAttributes.Handles)
+            {
+                CustomAttribute customAttribute = customAttributeHandle.GetCustomAttribute(decoratedModule);
+
+                if (!FilterCustomAttributeRecord(
+                    customAttribute,
+                    decoratedModule,
+                    attributeFilterType!,
+                    mustBeInheritable,
+                    ref derivedAttributes,
+                    out RuntimeType attributeType))
+#else
+            RuntimeModule decoratedModule = customAttributes.Module;
+            int decoratedMetadataToken = customAttributes.MetadataToken;
+            CustomAttributeRecord[] car = RuntimeCustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedMetadataToken);
+
+            if (attributeFilterType is null && car.Length == 0)
+            {
+                return;
+            }
+
+            MetadataImport scope = decoratedModule.MetadataImport;
+            for (int i = 0; i < car.Length; i++)
+            {
+                ref CustomAttributeRecord caRecord = ref car[i];
+
+                IntPtr blobStart = caRecord.blob.Signature;
+                IntPtr blobEnd = (IntPtr)((byte*)blobStart + caRecord.blob.Length);
+
+                if (!FilterCustomAttributeRecord(caRecord.tkCtor, in scope,
+                                                 decoratedModule, decoratedMetadataToken, attributeFilterType!, mustBeInheritable,
+                                                 ref derivedAttributes,
+                                                 out RuntimeType attributeType, out IRuntimeMethodInfo? ctorWithParameters, out bool isVarArg))
+#endif
+                {
+                    continue;
+                }
+
+#if NATIVEAOT
+                ReadOnlySpan<byte> attributeBlob = customAttribute.Blob.AsSpan();
+                // NativeFormat metadata is backed by unmanaged memory.
+                IntPtr blobStart = (IntPtr)Unsafe.AsPointer(ref MemoryMarshal.GetReference(attributeBlob));
+                IntPtr blobEnd = blobStart + attributeBlob.Length;
+
+                // TODO-NativeAOT: Match CoreCLR's custom attribute constructor visibility checks.
+                RuntimeConstructorInfo constructor = (RuntimeConstructorInfo)RuntimeCustomAttributeData.ResolveAttributeConstructor(decoratedModule, customAttribute, attributeType);
+                IRuntimeMethodInfo? ctorWithParameters = constructor.GetParametersAsSpan().IsEmpty ? null : constructor;
+                bool isVarArg = (constructor.CallingConvention & CallingConventions.VarArgs) != 0;
+#endif
+                // Leverage RuntimeConstructorInfo standard .ctor verification
+                RuntimeConstructorInfo.CheckCanCreateInstance(attributeType, isVarArg);
+
+                // Create custom attribute object
+                int cNamedArgs;
+                object attribute;
+                if (ctorWithParameters is not null)
+                {
+                    attribute = CreateCustomAttributeInstance(decoratedModule, attributeType, ctorWithParameters, ref blobStart, blobEnd, out cNamedArgs);
+                }
+                else
+                {
+                    attribute = attributeType.CreateInstanceDefaultCtor(publicOnly: false, wrapExceptions: false)!;
+
+                    // It is allowed by the ECMA spec to have an empty signature blob
+                    int blobLen = (int)((byte*)blobEnd - (byte*)blobStart);
+                    if (blobLen == 0)
+                    {
+                        cNamedArgs = 0;
+                    }
+                    else
+                    {
+#if NATIVEAOT
+                        var parser = new CustomAttributeEncodedArgument.CustomAttributeDataParser(GetAttributeBlob(blobStart, blobEnd), decoratedModule);
+#else
+                        var parser = new CustomAttributeEncodedArgument.CustomAttributeDataParser(GetAttributeBlob(blobStart, blobEnd));
+#endif
+                        if (!parser.ValidateProlog())
+                        {
+                            throw new CustomAttributeFormatException();
+                        }
+                        cNamedArgs = parser.GetI2();
+                        blobStart += parser.Consumed;
+                    }
+                }
+
+                for (int j = 0; j < cNamedArgs; j++)
+                {
+                    GetPropertyOrFieldData(decoratedModule, ref blobStart, blobEnd, out string name, out bool isProperty, out RuntimeType? type, out object? value);
+
+                    try
+                    {
+                        if (isProperty)
+                        {
+                            if (type is null && value is not null)
+                            {
+                                type = (RuntimeType)value.GetType();
+                                if (type == typeof(RuntimeType))
+                                {
+                                    type = (RuntimeType)typeof(Type);
+                                }
+                            }
+
+                            RuntimePropertyInfo? property = (RuntimePropertyInfo?)(type is null ?
+                                attributeType.GetProperty(name) :
+                                attributeType.GetProperty(name, type, [])) ??
+                                throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
+                            RuntimeMethodInfo setMethod = property.GetSetMethod(true)!;
+
+                            // Public properties may have non-public setter methods
+                            if (!setMethod.IsPublic)
+                            {
+                                continue;
+                            }
+
+                            setMethod.InvokePropertySetter(attribute, BindingFlags.Default, null, value, null);
+                        }
+                        else
+                        {
+                            FieldInfo field = attributeType.GetField(name)!;
+                            field.SetValue(attribute, value, BindingFlags.Default, Type.DefaultBinder, null);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        throw new CustomAttributeFormatException(
+                            SR.Format(isProperty ? SR.RFLCT_InvalidPropFail : SR.RFLCT_InvalidFieldFail, name), e);
+                    }
+                }
+
+                if (blobStart != blobEnd)
+                {
+                    throw new CustomAttributeFormatException();
+                }
+
+                attributes.Add(attribute);
+            }
+            GC.KeepAlive(decoratedModule);
+        }
+
+        private static object CreateCustomAttributeInstance(ResolutionScope module, RuntimeType type, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
+        {
+#if NATIVEAOT
+            RuntimeConstructorInfo constructor = ctor;
+#else
+            // A shared generic constructor handle does not preserve its declaring type's instantiation.
+            if (RuntimeType.GetMethodBase(type, ctor) is not RuntimeConstructorInfo constructor)
+            {
+                throw new CustomAttributeFormatException();
+            }
+#endif
+
+            RuntimeType[] argumentTypes = constructor.ArgumentTypes;
+            int argumentCount = argumentTypes.Length;
+#if NATIVEAOT
+            var parser = new CustomAttributeEncodedArgument.CustomAttributeDataParser(GetAttributeBlob(blob, blobEnd), module);
+#else
+            var parser = new CustomAttributeEncodedArgument.CustomAttributeDataParser(GetAttributeBlob(blob, blobEnd));
+#endif
+            if (!parser.ValidateProlog())
+            {
+                throw new CustomAttributeFormatException();
+            }
+
+            // Keep fixed primitives unboxed. Only the bounded common case uses stack storage.
+            const int MaxStackAttributeArguments = 4;
+            InlineArray4<object?> referenceStorage = default;
+            InlineArray4<ulong> primitiveStorage = default;
+            InlineArray4<IntPtr> byrefStorage = default;
+            Span<object?> references = argumentCount <= MaxStackAttributeArguments
+                ? ((Span<object?>)referenceStorage).Slice(0, argumentCount)
+                : new object?[argumentCount];
+            Span<ulong> primitives = argumentCount <= MaxStackAttributeArguments
+                ? primitiveStorage
+                : new ulong[argumentCount];
+            Span<IntPtr> byrefs = argumentCount <= MaxStackAttributeArguments
+                ? byrefStorage
+                : new IntPtr[argumentCount];
+
+            fixed (IntPtr* argumentStorage = byrefs)
+            {
+                GCFrameRegistration registration = new((void**)argumentStorage, (uint)argumentCount, areByRefs: true);
+                try
+                {
+                    GCFrameRegistration.RegisterForGCReporting(&registration);
+                    for (int i = 0; i < argumentCount; i++)
+                    {
+                        RuntimeType argumentType = argumentTypes[i];
+                        CustomAttributeEncoding encoding = GetPrimitiveEncoding(argumentType);
+                        int size = GetPrimitiveSize(encoding);
+                        if (size != 0)
+                        {
+                            Span<byte> value = MemoryMarshal.AsBytes(primitives.Slice(i, 1)).Slice(0, size);
+                            ReadPrimitiveData(ref parser, encoding).CopyTo(value);
+                            if (!BitConverter.IsLittleEndian)
+                            {
+                                value.Reverse();
+                            }
+                            StoreArgumentReference(argumentStorage + i, ref MemoryMarshal.GetReference(value));
+                        }
+                        else
+                        {
+                            references[i] = ReadAttributeValue(ref parser, argumentType, module);
+                            StoreArgumentReference(argumentStorage + i, ref references[i]);
+                        }
+                    }
+
+                    namedArgs = parser.Remaining == 0 ? 0 : parser.GetU2();
+                    if (namedArgs == 0 && parser.Remaining != 0)
+                    {
+                        throw new CustomAttributeFormatException();
+                    }
+
+                    blob += parser.Consumed;
+                    return constructor.InvokeDirectByRef(argumentStorage);
+                }
+                finally
+                {
+                    GCFrameRegistration.UnregisterForGCReporting(&registration);
+                    GC.KeepAlive(module);
+                    GC.KeepAlive(type);
+                }
+            }
+        }
+
+        // The caller registers this native vector as byrefs for the lifetime of the invocation.
+        private static void StoreArgumentReference<T>(IntPtr* storage, scoped ref T value) =>
+            *storage = (IntPtr)Unsafe.AsPointer(ref value);
+
+        private static void GetPropertyOrFieldData(
+            ResolutionScope module, ref IntPtr blobStart, IntPtr blobEnd, out string name, out bool isProperty, out RuntimeType? type, out object? value)
+        {
+            try
+            {
+#if NATIVEAOT
+                var parser = new CustomAttributeEncodedArgument.CustomAttributeDataParser(GetAttributeBlob(blobStart, blobEnd), module);
+#else
+                var parser = new CustomAttributeEncodedArgument.CustomAttributeDataParser(GetAttributeBlob(blobStart, blobEnd));
+#endif
+                CustomAttributeEncoding memberKind = parser.GetTag();
+                if (memberKind is not CustomAttributeEncoding.Field and not CustomAttributeEncoding.Property)
+                {
+                    throw new CustomAttributeFormatException();
+                }
+                isProperty = memberKind == CustomAttributeEncoding.Property;
+
+                CustomAttributeEncoding encoding = parser.GetTag();
+                RuntimeType declaredType = ReadAttributeType(ref parser, encoding, module);
+                name = parser.GetString()!;
+                value = ReadAttributeValue(ref parser, declaredType, module);
+
+                type = encoding is CustomAttributeEncoding.Object or CustomAttributeEncoding.Enum ? declaredType : null;
+                if (value is null && encoding is CustomAttributeEncoding.String or CustomAttributeEncoding.Type or CustomAttributeEncoding.Array)
+                {
+                    // A null enum array leaves type unspecified for the existing named-member lookup.
+                    if (encoding != CustomAttributeEncoding.Array || !declaredType.GetElementType()!.IsEnum)
+                    {
+                        type = declaredType;
+                    }
+                }
+
+                blobStart += parser.Consumed;
+            }
+            finally
+            {
+                GC.KeepAlive(module);
+            }
+        }
+
+        private static ReadOnlySpan<byte> GetAttributeBlob(IntPtr start, IntPtr end)
+        {
+            nuint length = (nuint)end - (nuint)start;
+            if (length > int.MaxValue)
+            {
+                throw new CustomAttributeFormatException();
+            }
+
+            return new ReadOnlySpan<byte>((void*)start, (int)length);
+        }
+
+        private static CustomAttributeEncoding GetPrimitiveEncoding(RuntimeType type) =>
+            RuntimeCustomAttributeData.TypeToCustomAttributeEncoding(type.IsActualEnum
+                ? (RuntimeType)type.GetEnumUnderlyingType()
+                : type);
+
+        private static int GetPrimitiveSize(CustomAttributeEncoding encoding) => encoding switch
+        {
+            CustomAttributeEncoding.Boolean or CustomAttributeEncoding.SByte or CustomAttributeEncoding.Byte => 1,
+            CustomAttributeEncoding.Char or CustomAttributeEncoding.Int16 or CustomAttributeEncoding.UInt16 => 2,
+            CustomAttributeEncoding.Int32 or CustomAttributeEncoding.UInt32 or CustomAttributeEncoding.Float => 4,
+            CustomAttributeEncoding.Int64 or CustomAttributeEncoding.UInt64 or CustomAttributeEncoding.Double => 8,
+            _ => 0
+        };
+
+        private static ReadOnlySpan<byte> ReadPrimitiveData(ref CustomAttributeEncodedArgument.CustomAttributeDataParser parser, CustomAttributeEncoding encoding)
+        {
+            int size = GetPrimitiveSize(encoding);
+            if (size == 0)
+            {
+                throw new CustomAttributeFormatException();
+            }
+
+            return parser.ReadData(size);
+        }
+
+        private static object? ReadAttributeValue(ref CustomAttributeEncodedArgument.CustomAttributeDataParser parser, RuntimeType type, ResolutionScope module)
+        {
+            CustomAttributeEncoding encoding = GetPrimitiveEncoding(type);
+            int size = GetPrimitiveSize(encoding);
+            if (size != 0)
+            {
+                ReadOnlySpan<byte> data = ReadPrimitiveData(ref parser, encoding);
+                if (BitConverter.IsLittleEndian || size == 1)
+                {
+                    return RuntimeHelpers.Box(ref MemoryMarshal.GetReference(data), type.TypeHandle);
+                }
+
+                InlineArray8<byte> reversedStorage = default;
+                Span<byte> reversed = ((Span<byte>)reversedStorage).Slice(0, size);
+                data.CopyTo(reversed);
+                reversed.Reverse();
+                return RuntimeHelpers.Box(ref MemoryMarshal.GetReference(reversed), type.TypeHandle);
+            }
+
+            if (type == typeof(string))
+            {
+                return parser.GetString();
+            }
+
+            if (type == typeof(Type))
+            {
+                return ReadAttributeTypeName(ref parser, module);
+            }
+
+            if (type == typeof(object))
+            {
+                RuntimeType valueType = ReadAttributeType(ref parser, parser.GetTag(), module);
+                return ReadAttributeValue(ref parser, valueType, module);
+            }
+
+            if (type.IsSZArray)
+            {
+                return ReadAttributeArray(ref parser, (RuntimeType)type.GetElementType()!, module);
+            }
+
+            throw new CustomAttributeFormatException();
+        }
+
+#if NATIVEAOT
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The compiler ensures we have array types referenced from custom attribute blobs.")]
+#endif
+        private static RuntimeType ReadAttributeType(
+            ref CustomAttributeEncodedArgument.CustomAttributeDataParser parser, CustomAttributeEncoding encoding, ResolutionScope module, bool allowArray = true)
+        {
+            if (GetPrimitiveSize(encoding) != 0 || encoding is CustomAttributeEncoding.String or CustomAttributeEncoding.Type or CustomAttributeEncoding.Object)
+            {
+                return (RuntimeType)CustomAttributeTypedArgument.CustomAttributeEncodingToType(encoding);
+            }
+
+            if (encoding == CustomAttributeEncoding.Enum)
+            {
+                RuntimeType? enumType = ReadAttributeTypeName(ref parser, module);
+                if (enumType is null || !enumType.IsActualEnum)
+                {
+                    throw new CustomAttributeFormatException();
+                }
+                return enumType;
+            }
+
+            if (allowArray && encoding == CustomAttributeEncoding.Array)
+            {
+                RuntimeType elementType = ReadAttributeType(ref parser, parser.GetTag(), module, allowArray: false);
+                return (RuntimeType)elementType.MakeArrayType();
+            }
+
+            throw new CustomAttributeFormatException();
+        }
+
+        private static RuntimeType? ReadAttributeTypeName(ref CustomAttributeEncodedArgument.CustomAttributeDataParser parser, ResolutionScope module)
+        {
+#if NATIVEAOT
+            return parser.GetTypeValue();
+#else
+            ReadOnlySpan<byte> utf8Name = parser.GetStringBytes(out bool isNull);
+            if (isNull)
+            {
+                return null;
+            }
+            if (utf8Name.IsEmpty)
+            {
+                throw new CustomAttributeFormatException();
+            }
+
+            // Type names in the native metadata path are null-terminated, unlike string values.
+            int terminator = utf8Name.IndexOf((byte)0);
+            if (terminator >= 0)
+            {
+                utf8Name = utf8Name.Slice(0, terminator);
+            }
+
+            const int StackNameLength = 128;
+            char[]? rented = null;
+            Span<char> name = utf8Name.Length <= StackNameLength
+                ? stackalloc char[StackNameLength]
+                : (rented = System.Buffers.ArrayPool<char>.Shared.Rent(utf8Name.Length));
+            try
+            {
+                int written = Encoding.UTF8.GetChars(utf8Name, name);
+                return TypeNameResolver.GetTypeHelper(name.Slice(0, written), module.GetRuntimeAssembly(),
+                    throwOnError: true, requireAssemblyQualifiedName: false);
+            }
+            finally
+            {
+                if (rented is not null)
+                {
+                    System.Buffers.ArrayPool<char>.Shared.Return(rented);
+                }
+            }
+#endif
+        }
+
+#if NATIVEAOT
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The compiler ensures we have array types referenced from custom attribute blobs.")]
+#endif
+        private static Array? ReadAttributeArray(ref CustomAttributeEncodedArgument.CustomAttributeDataParser parser, RuntimeType elementType, ResolutionScope module)
+        {
+            int length = parser.GetI4();
+            if (length == -1)
+            {
+                return null;
+            }
+            if (length < 0)
+            {
+                throw new OverflowException();
+            }
+
+            CustomAttributeEncoding encoding = GetPrimitiveEncoding(elementType);
+            int elementSize = GetPrimitiveSize(encoding);
+            if (elementSize != 0)
+            {
+                if (length > parser.Remaining / elementSize)
+                {
+                    throw new CustomAttributeFormatException();
+                }
+
+                Array array = Array.CreateInstance(elementType, length);
+                Span<byte> data = new(ref MemoryMarshal.GetArrayDataReference(array), length * elementSize);
+                if (BitConverter.IsLittleEndian || elementSize == 1)
+                {
+                    parser.ReadData(data.Length).CopyTo(data);
+                }
+                else
+                {
+                    for (int i = 0; i < length; i++)
+                    {
+                        Span<byte> element = data.Slice(i * elementSize, elementSize);
+                        ReadPrimitiveData(ref parser, encoding).CopyTo(element);
+                        element.Reverse();
+                    }
+                }
+                return array;
+            }
+
+            if (elementType != typeof(string) && elementType != typeof(Type) &&
+                elementType != typeof(object) && !elementType.IsSZArray)
+            {
+                throw new CustomAttributeFormatException();
+            }
+
+            // Every reference element consumes at least a string/tag/array-length byte.
+            if (length > parser.Remaining)
+            {
+                throw new CustomAttributeFormatException();
+            }
+            var references = (object?[])Array.CreateInstance(elementType, length);
+            for (int i = 0; i < references.Length; i++)
+            {
+                references[i] = ReadAttributeValue(ref parser, elementType, module);
+            }
+            return references;
+        }
+
         internal static bool IsDefined(RuntimeType type, RuntimeType? caType, bool inherit)
         {
             Debug.Assert(type is not null);
@@ -925,11 +1683,7 @@ namespace System.Reflection
             if (PseudoCustomAttribute.IsDefined(type, caType))
                 return true;
 
-#if NATIVEAOT
-            if (IsCustomAttributeDefined(type.GetMetadataReader(), type.GetCustomAttributeHandles(), caType))
-#else
-            if (IsCustomAttributeDefined(type.GetRuntimeModule(), type.MetadataToken, caType))
-#endif
+            if (IsCustomAttributeDefined(new QCustomAttributeList(type), caType))
                 return true;
 
             if (!inherit)
@@ -939,11 +1693,7 @@ namespace System.Reflection
 
             while (type is not null)
             {
-#if NATIVEAOT
-                if (IsCustomAttributeDefined(type.GetMetadataReader(), type.GetCustomAttributeHandles(), caType, inherit))
-#else
-                if (IsCustomAttributeDefined(type.GetRuntimeModule(), type.MetadataToken, caType, 0, inherit))
-#endif
+                if (IsCustomAttributeDefined(new QCustomAttributeList(type), caType, inherit))
                     return true;
 
                 type = (type.BaseType as RuntimeType)!;
@@ -960,11 +1710,7 @@ namespace System.Reflection
             if (PseudoCustomAttribute.IsDefined(method, caType))
                 return true;
 
-#if NATIVEAOT
-            if (IsCustomAttributeDefined(method.GetMetadataReader(), method.GetCustomAttributeHandles(), caType))
-#else
-            if (IsCustomAttributeDefined(method.GetRuntimeModule(), method.MetadataToken, caType))
-#endif
+            if (IsCustomAttributeDefined(new QCustomAttributeList(method), caType))
                 return true;
 
             if (!inherit)
@@ -974,11 +1720,7 @@ namespace System.Reflection
 
             while (method is not null)
             {
-#if NATIVEAOT
-                if (IsCustomAttributeDefined(method.GetMetadataReader(), method.GetCustomAttributeHandles(), caType, inherit))
-#else
-                if (IsCustomAttributeDefined(method.GetRuntimeModule(), method.MetadataToken, caType, 0, inherit))
-#endif
+                if (IsCustomAttributeDefined(new QCustomAttributeList(method), caType, inherit))
                     return true;
 
                 method = method.GetParentDefinition()!;
@@ -994,11 +1736,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeConstructorInfo
 
-#if NATIVEAOT
-            return IsCustomAttributeDefined(ctor.GetMetadataReader(), ctor.GetCustomAttributeHandles(), caType);
-#else
-            return IsCustomAttributeDefined(ctor.GetRuntimeModule(), ctor.MetadataToken, caType);
-#endif
+            return IsCustomAttributeDefined(new QCustomAttributeList(ctor), caType);
         }
 
         internal static bool IsDefined(RuntimePropertyInfo property, RuntimeType caType)
@@ -1008,11 +1746,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimePropertyInfo
 
-#if NATIVEAOT
-            return IsCustomAttributeDefined(property.GetMetadataReader(), property.GetCustomAttributeHandles(), caType);
-#else
-            return IsCustomAttributeDefined(property.GetRuntimeModule(), property.MetadataToken, caType);
-#endif
+            return IsCustomAttributeDefined(new QCustomAttributeList(property), caType);
         }
 
         internal static bool IsDefined(RuntimeEventInfo e, RuntimeType caType)
@@ -1022,11 +1756,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeEventInfo
 
-#if NATIVEAOT
-            return IsCustomAttributeDefined(e.GetMetadataReader(), e.GetCustomAttributeHandles(), caType);
-#else
-            return IsCustomAttributeDefined(e.GetRuntimeModule(), e.MetadataToken, caType);
-#endif
+            return IsCustomAttributeDefined(new QCustomAttributeList(e), caType);
         }
 
         internal static bool IsDefined(RuntimeFieldInfo field, RuntimeType caType)
@@ -1037,11 +1767,7 @@ namespace System.Reflection
             if (PseudoCustomAttribute.IsDefined(field, caType))
                 return true;
 
-#if NATIVEAOT
-            return IsCustomAttributeDefined(field.GetMetadataReader(), field.GetCustomAttributeHandles(), caType);
-#else
-            return IsCustomAttributeDefined(field.GetRuntimeModule(), field.MetadataToken, caType);
-#endif
+            return IsCustomAttributeDefined(new QCustomAttributeList(field), caType);
         }
 
         internal static bool IsDefined(RuntimeParameterInfo parameter, RuntimeType caType)
@@ -1052,11 +1778,7 @@ namespace System.Reflection
             if (PseudoCustomAttribute.IsDefined(parameter, caType))
                 return true;
 
-#if NATIVEAOT
-            return IsCustomAttributeDefined(parameter.GetMetadataReader(), parameter.GetCustomAttributeHandles(), caType);
-#else
-            return IsCustomAttributeDefined(parameter.GetRuntimeModule()!, parameter.MetadataToken, caType);
-#endif
+            return IsCustomAttributeDefined(new QCustomAttributeList(parameter), caType);
         }
 
         internal static bool IsDefined(RuntimeAssembly assembly, RuntimeType caType)
@@ -1065,11 +1787,7 @@ namespace System.Reflection
             Debug.Assert(caType is not null);
 
             // No pseudo attributes for RuntimeAssembly
-#if NATIVEAOT
-            return IsCustomAttributeDefined(assembly.GetMetadataReader(), assembly.GetCustomAttributeHandles(), caType);
-#else
-            return IsCustomAttributeDefined((assembly.ManifestModule as RuntimeModule)!, RuntimeAssembly.GetToken(assembly), caType);
-#endif
+            return IsCustomAttributeDefined(new QCustomAttributeList(assembly), caType);
         }
 
         internal static bool IsDefined(RuntimeModule module, RuntimeType caType)
@@ -1079,11 +1797,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeModule
 
-#if NATIVEAOT
-            return IsCustomAttributeDefined(module.GetMetadataReader(), module.GetCustomAttributeHandles(), caType);
-#else
-            return IsCustomAttributeDefined(module, module.MetadataToken, caType);
-#endif
+            return IsCustomAttributeDefined(new QCustomAttributeList(module), caType);
         }
 
         internal static object[] GetCustomAttributes(RuntimeType type, RuntimeType caType, bool inherit)
@@ -1105,11 +1819,7 @@ namespace System.Reflection
             // ... however if the attribute is sealed we can rely on the attribute usage
             if (!inherit || (caType.IsSealed && !GetAttributeUsage(caType).Inherited))
             {
-#if NATIVEAOT
-                object[] attributes = GetCustomAttributes(type.GetMetadataReader(), type.GetCustomAttributeHandles(), pcas.Count, caType);
-#else
-                object[] attributes = GetCustomAttributes(type.GetRuntimeModule(), type.MetadataToken, pcas.Count, caType);
-#endif
+                object[] attributes = GetCustomAttributes(new QCustomAttributeList(type), pcas.Count, caType);
                 if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);
                 return attributes;
             }
@@ -1122,11 +1832,7 @@ namespace System.Reflection
 
             do
             {
-#if NATIVEAOT
-                AddCustomAttributes(ref result, type.GetMetadataReader(), type.GetCustomAttributeHandles(), caType, mustBeInheritable, result);
-#else
-                AddCustomAttributes(ref result, type.GetRuntimeModule(), type.MetadataToken, caType, mustBeInheritable, result);
-#endif
+                AddCustomAttributes(ref result, new QCustomAttributeList(type), caType, mustBeInheritable, result);
                 mustBeInheritable = true;
                 type = (type.BaseType as RuntimeType)!;
             } while (type != (RuntimeType)typeof(object) && type != null);
@@ -1155,11 +1861,7 @@ namespace System.Reflection
             // ... however if the attribute is sealed we can rely on the attribute usage
             if (!inherit || (caType.IsSealed && !GetAttributeUsage(caType).Inherited))
             {
-#if NATIVEAOT
-                object[] attributes = GetCustomAttributes(method.GetMetadataReader(), method.GetCustomAttributeHandles(), pcas.Count, caType);
-#else
-                object[] attributes = GetCustomAttributes(method.GetRuntimeModule(), method.MetadataToken, pcas.Count, caType);
-#endif
+                object[] attributes = GetCustomAttributes(new QCustomAttributeList(method), pcas.Count, caType);
                 if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);
                 return attributes;
             }
@@ -1172,11 +1874,7 @@ namespace System.Reflection
 
             while (method != null)
             {
-#if NATIVEAOT
-                AddCustomAttributes(ref result, method.GetMetadataReader(), method.GetCustomAttributeHandles(), caType, mustBeInheritable, result);
-#else
-                AddCustomAttributes(ref result, method.GetRuntimeModule(), method.MetadataToken, caType, mustBeInheritable, result);
-#endif
+                AddCustomAttributes(ref result, new QCustomAttributeList(method), caType, mustBeInheritable, result);
                 mustBeInheritable = true;
                 method = method.GetParentDefinition()!;
             }
@@ -1196,11 +1894,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeConstructorInfo
 
-#if NATIVEAOT
-            return GetCustomAttributes(ctor.GetMetadataReader(), ctor.GetCustomAttributeHandles(), 0, caType);
-#else
-            return GetCustomAttributes(ctor.GetRuntimeModule(), ctor.MetadataToken, 0, caType);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(ctor), 0, caType);
         }
 
         internal static object[] GetCustomAttributes(RuntimePropertyInfo property, RuntimeType caType)
@@ -1210,11 +1904,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimePropertyInfo
 
-#if NATIVEAOT
-            return GetCustomAttributes(property.GetMetadataReader(), property.GetCustomAttributeHandles(), 0, caType);
-#else
-            return GetCustomAttributes(property.GetRuntimeModule(), property.MetadataToken, 0, caType);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(property), 0, caType);
         }
 
         internal static object[] GetCustomAttributes(RuntimeEventInfo e, RuntimeType caType)
@@ -1224,11 +1914,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeEventInfo
 
-#if NATIVEAOT
-            return GetCustomAttributes(e.GetMetadataReader(), e.GetCustomAttributeHandles(), 0, caType);
-#else
-            return GetCustomAttributes(e.GetRuntimeModule(), e.MetadataToken, 0, caType);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(e), 0, caType);
         }
 
         internal static object[] GetCustomAttributes(RuntimeFieldInfo field, RuntimeType caType)
@@ -1238,11 +1924,7 @@ namespace System.Reflection
 
             ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(field, caType, ref pcas);
-#if NATIVEAOT
-            object[] attributes = GetCustomAttributes(field.GetMetadataReader(), field.GetCustomAttributeHandles(), pcas.Count, caType);
-#else
-            object[] attributes = GetCustomAttributes(field.GetRuntimeModule(), field.MetadataToken, pcas.Count, caType);
-#endif
+            object[] attributes = GetCustomAttributes(new QCustomAttributeList(field), pcas.Count, caType);
             if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);
             return attributes;
         }
@@ -1254,11 +1936,7 @@ namespace System.Reflection
 
             ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(parameter, caType, ref pcas);
-#if NATIVEAOT
-            object[] attributes = GetCustomAttributes(parameter.GetMetadataReader(), parameter.GetCustomAttributeHandles(), pcas.Count, caType);
-#else
-            object[] attributes = GetCustomAttributes(parameter.GetRuntimeModule()!, parameter.MetadataToken, pcas.Count, caType);
-#endif
+            object[] attributes = GetCustomAttributes(new QCustomAttributeList(parameter), pcas.Count, caType);
             if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);
             return attributes;
         }
@@ -1270,12 +1948,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeAssembly
 
-#if NATIVEAOT
-            return GetCustomAttributes(assembly.GetMetadataReader(), assembly.GetCustomAttributeHandles(), 0, caType);
-#else
-            int assemblyToken = RuntimeAssembly.GetToken(assembly);
-            return GetCustomAttributes((assembly.ManifestModule as RuntimeModule)!, assemblyToken, 0, caType);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(assembly), 0, caType);
         }
 
         internal static object[] GetCustomAttributes(RuntimeModule module, RuntimeType caType)
@@ -1285,28 +1958,16 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeModule
 
-#if NATIVEAOT
-            return GetCustomAttributes(module.GetMetadataReader(), module.GetCustomAttributeHandles(), 0, caType);
-#else
-            return GetCustomAttributes(module, module.MetadataToken, 0, caType);
-#endif
+            return GetCustomAttributes(new QCustomAttributeList(module), 0, caType);
         }
 
         private static object[] GetCustomAttributes(
-#if NATIVEAOT
-            MetadataReader? reader, CustomAttributeHandleCollection customAttributeHandles,
-#else
-            RuntimeModule decoratedModule, int decoratedMetadataToken,
-#endif
+            QCustomAttributeList customAttributes,
             int pcaCount, RuntimeType attributeFilterType)
         {
             ListBuilder<object> attributes = default;
 
-#if NATIVEAOT
-            AddCustomAttributes(ref attributes, reader, customAttributeHandles, attributeFilterType, false, default);
-#else
-            AddCustomAttributes(ref attributes, decoratedModule, decoratedMetadataToken, attributeFilterType, false, default);
-#endif
+            AddCustomAttributes(ref attributes, customAttributes, attributeFilterType, false, default);
 
             object[] result = CreateAttributeArrayHelper(attributeFilterType, attributes.Count + pcaCount);
             for (int i = 0; i < attributes.Count; i++)

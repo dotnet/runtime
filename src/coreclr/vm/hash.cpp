@@ -1,15 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-/*++
-
-Module Name:
-
-    synchash.cpp
-
---*/
-
 #include "common.h"
 
 #include "hash.h"
@@ -1104,77 +1095,3 @@ HashMap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 
 #endif // DACCESS_COMPILE
-
-#if 0 // Perf test code, enabled on-demand for private testing.
-#ifndef DACCESS_COMPILE
-// This is for testing purposes only!
-void HashMap::HashMapTest()
-{
-    minipal_log_print_info("HashMap test\n");
-
-    const unsigned int MinValue = 2;  // Deleted is reserved, and is 1.
-    const unsigned int MinThreshold = 10000;
-    const unsigned int MaxThreshold = 30000;
-    HashMap * table = new HashMap();
-    Crst m_lock("HashMap", CrstSyncHashLock, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_ANYMODE));
-    CrstHolder holder(&m_lock);
-    LockOwner lock = {&m_lock, IsOwnerOfCrst};
-    table->Init(10, (CompareFnPtr) NULL, false, &lock);
-    for(unsigned int i=MinValue; i < MinThreshold; i++)
-        table->InsertValue(i, i);
-    minipal_log_print_info("Added %d values.\n", MinThreshold);
-    //table.DumpStatistics();
-
-    LookupPerfTest(table, MinThreshold);
-
-    INT64 t0 = minipal_lowres_ticks();
-    INT64 t1;
-    for(int rep = 0; rep < 10000000; rep++) {
-        for(unsigned int i=MinThreshold; i < MaxThreshold; i++) {
-            table->InsertValue(rep + i, rep + i);
-        }
-        for(unsigned int i=MinThreshold; i < MaxThreshold; i++) {
-            table->DeleteValue(rep + i, rep + i);
-        }
-        for(unsigned int i=MinValue; i < MinThreshold; i++)
-            table->DeleteValue(i, i);
-        for(unsigned int i=MinValue; i < MinThreshold; i++)
-            table->InsertValue(i, i);
-
-        if (rep % 500 == 0) {
-            t1 = minipal_lowres_ticks();
-            minipal_log_print_info("Repetition %d, took %d ms\n", rep, (int) (t1-t0));
-            t0 = t1;
-            LookupPerfTest(table, MinThreshold);
-            //table.DumpStatistics();
-        }
-    }
-    delete table;
-}
-
-// For testing purposes only.
-void HashMap::LookupPerfTest(HashMap * table, const unsigned int MinThreshold)
-{
-    INT64 t0 = minipal_lowres_ticks();
-    for(int rep = 0; rep < 1000; rep++) {
-        for(unsigned int i=2; i<MinThreshold; i++) {
-            UPTR v = table->LookupValue(i, i);
-            if (v != i) {
-                minipal_log_print_info("LookupValue didn't return the expected value!\n");
-                _ASSERTE(v == i);
-            }
-        }
-    }
-    INT64 t1 = minipal_lowres_ticks();
-    for(unsigned int i = MinThreshold * 80; i < MinThreshold * 80 + 1000; i++)
-        table->LookupValue(i, i);
-    //cout << "Lookup perf test (1000 * " << MinThreshold << ": " << (t1-t0) << " ms." << endl;
-#ifdef HASHTABLE_PROFILE
-    minipal_log_print_info("Lookup perf test time: %d ms  table size: %d  max failure probe: %d  longest collision chain: %d\n", (int) (t1-t0), (int) GetSize(table->Buckets()), (int) table->maxFailureProbe, (int) table->m_cbMaxCollisionLength);
-    table->DumpStatistics();
-#else // !HASHTABLE_PROFILE
-    minipal_log_print_info("Lookup perf test time: %d ms   table size: %d\n", (int) (t1-t0), GetSize(table->Buckets()));
-#endif // !HASHTABLE_PROFILE
-}
-#endif // !DACCESS_COMPILE
-#endif // 0 // Perf test code, enabled on-demand for private testing.

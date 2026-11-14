@@ -18,6 +18,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         private const string AppLoadAssemblyBytesArg = "app_load_assembly_bytes";
         private const string ComponentLoadAssemblyBytesArg = "component_load_assembly_bytes";
 
+        private const string DefaultLoadContextArg = "<default>";
+
         private readonly SharedTestState sharedState;
 
         public LoadAssembly(SharedTestState sharedTestState)
@@ -69,7 +71,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             {
                 loadAssemblyBytes ? ComponentLoadAssemblyBytesArg : ComponentLoadAssemblyArg,
                 sharedState.HostFxrPath,
-                component.RuntimeConfigJson
+                component.RuntimeConfigJson,
+                DefaultLoadContextArg
             }.Concat(sharedState.GetComponentLoadArgs(loadAssemblyBytes, loadSymbolBytes));
 
             CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
@@ -94,6 +97,79 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         public void ComponentContext_Bytes(bool loadSymbolBytes)
         {
             ComponentContext(loadAssemblyBytes: true, loadSymbolBytes);
+        }
+
+        private void ComponentContext_LoadContextIdentifier(bool loadAssemblyBytes, bool useSameIdentifier)
+        {
+            TestApp component = sharedState.Component;
+            using TestApp componentCopy = component.Copy();
+            string testName = loadAssemblyBytes
+                ? nameof(ComponentContext_Bytes_LoadContextIdentifier)
+                : nameof(ComponentContext_FilePath_LoadContextIdentifier);
+            string identifierA = $"{nameof(LoadAssembly)}.{testName}.A";
+            string identifierB = useSameIdentifier ? identifierA : $"{nameof(LoadAssembly)}.{testName}.B";
+            string entryPoint = sharedState.ComponentEntryPoint1;
+            List<string> args = new()
+            {
+                loadAssemblyBytes ? ComponentLoadAssemblyBytesArg : ComponentLoadAssemblyArg,
+                sharedState.HostFxrPath,
+                component.RuntimeConfigJson,
+                identifierA,
+                component.AppDll,
+            };
+            if (loadAssemblyBytes)
+                args.Add("nullptr");
+
+            args.AddRange(
+            [
+                sharedState.ComponentTypeName,
+                entryPoint,
+                identifierB,
+                componentCopy.AppDll,
+            ]);
+            if (loadAssemblyBytes)
+                args.Add("nullptr");
+
+            args.Add(sharedState.ComponentTypeName);
+            args.Add(entryPoint);
+
+            CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
+                .Execute();
+
+            result.Should().Pass()
+                .And.InitializeContextForConfig(component.RuntimeConfigJson)
+                .And.ExecuteInNamedContext(component.AssemblyName, identifierA);
+
+            if (loadAssemblyBytes)
+                result.Should().ExecuteWithLocation(component.AssemblyName, string.Empty);
+
+            if (useSameIdentifier)
+            {
+                result.Should().ExecuteFunctionPointer(methodName: entryPoint, callCount: 1, returnValue: 1)
+                    .And.ExecuteFunctionPointer(methodName: entryPoint, callCount: 2, returnValue: 2);
+            }
+            else
+            {
+                result.Should().ExecuteInNamedContext(component.AssemblyName, identifierB)
+                    .And.ExecuteFunctionPointer(methodName: entryPoint, callCount: 1, returnValue: 1);
+                Assert.Equal(2, result.StdOut.Split($"{entryPoint} delegate result: 0x1").Length - 1);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ComponentContext_FilePath_LoadContextIdentifier(bool useSameIdentifier)
+        {
+            ComponentContext_LoadContextIdentifier(loadAssemblyBytes: false, useSameIdentifier);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ComponentContext_Bytes_LoadContextIdentifier(bool useSameIdentifier)
+        {
+            ComponentContext_LoadContextIdentifier(loadAssemblyBytes: true, useSameIdentifier);
         }
 
         private void SelfContainedApplicationContext(bool loadAssemblyBytes, bool loadSymbolBytes)

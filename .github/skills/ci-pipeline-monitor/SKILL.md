@@ -139,7 +139,7 @@ CREATE TABLE failures (
     github_issue_state    TEXT,                -- OPEN | CLOSED
     github_issue_assigned TEXT,
     labels                TEXT,
-    milestone             TEXT DEFAULT '11.0.0'
+    milestone             TEXT DEFAULT '12.0.0'
 );
 
 CREATE TABLE failure_pipelines (

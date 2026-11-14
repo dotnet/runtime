@@ -10,15 +10,10 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using TestLibrary;
 using Xunit;
-
-[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2SimpleEH
 {
     [Fact]
-    public static void TestThrowAfterYield()
-    {
-        Task.Run(AsyncEntry).Wait();
-    }
+    public static Task TestThrowAfterYield() => Task.Run(AsyncEntry);
 
     [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     public static async Task AsyncEntry()
@@ -53,12 +48,7 @@ public class Async2SimpleEH
     }
 
     [Fact]
-    public static int TestDefinesIntButThrows()
-    {
-        return TestDefinesIntButThrowsAsync().GetAwaiter().GetResult();
-    }
-
-    private static async Task<int> TestDefinesIntButThrowsAsync()
+    public static async Task<int> TestDefinesIntButThrowsAsync()
     {
         int x = GetValue();
         try
@@ -81,12 +71,7 @@ public class Async2SimpleEH
     private struct S { public long A, B, C, D; }
 
     [Fact]
-    public static int TestDefinesSButThrows()
-    {
-        return TestDefinesSButThrowsAsync().GetAwaiter().GetResult();
-    }
-
-    private static async Task<int> TestDefinesSButThrowsAsync()
+    public static async Task<int> TestDefinesSButThrowsAsync()
     {
         S x = new S { A = GetValue(), B = GetValue() + 1, C = GetValue() + 2, D = GetValue() + 3 };
         try

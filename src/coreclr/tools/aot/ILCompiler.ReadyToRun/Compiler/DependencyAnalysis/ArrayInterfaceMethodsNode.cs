@@ -37,16 +37,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
-            List<CombinedDependencyListEntry> result = new List<CombinedDependencyListEntry>();
-
             MetadataType szArrayHelper = factory.TypeSystemContext.SystemModule.GetType("System"u8, "SZArrayHelper"u8, throwIfNotFound: false);
             if (szArrayHelper == null)
-                return result;
+                return;
 
             TypeDesc elementType = _arrayType.ElementType;
 
@@ -69,14 +67,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (!factory.CompilationModuleGroup.ContainsMethodBody(canonHelperMethod, false))
                         continue;
 
-                    result.Add(new CombinedDependencyListEntry(
+                    sink.Add(new CombinedDependencyListEntry(
                         factory.CompiledMethodNode(canonHelperMethod),
                         factory.VirtualMethodUse(interfaceMethod),
                         "Array generic interface method implemented by SZArrayHelper"));
                 }
             }
-
-            return result;
         }
 
         protected override string GetName(NodeFactory factory) => $"Array interface methods on {_arrayType}";

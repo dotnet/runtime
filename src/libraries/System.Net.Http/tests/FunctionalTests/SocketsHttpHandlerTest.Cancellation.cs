@@ -33,7 +33,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ConnectTimeout_TimesOutSSLAuth_Throws()
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion.Version30 || !PlatformDetection.IsTlsSupported)
             {
                 return;
             }
@@ -63,6 +63,11 @@ namespace System.Net.Http.Functional.Tests
             if (UseVersion == HttpVersion.Version30)
             {
                 // HTTP3 does not support ConnectCallback
+                return;
+            }
+
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
                 return;
             }
 
@@ -116,6 +121,11 @@ namespace System.Net.Http.Functional.Tests
             if (UseVersion == HttpVersion.Version30)
             {
                 // HTTP3 does not support ConnectCallback
+                return;
+            }
+
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
                 return;
             }
 
@@ -208,7 +218,8 @@ namespace System.Net.Http.Functional.Tests
             bool seenRequest2 = false;
             bool seenRequest3 = false;
 
-            var uri = new Uri("https://example.com");
+            // Without TLS support the requests would fail before the ConnectCallback runs.
+            var uri = new Uri(PlatformDetection.IsTlsSupported ? "https://example.com" : "http://example.com");
             HttpRequestMessage request1 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
             HttpRequestMessage request2 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
             HttpRequestMessage request3 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);

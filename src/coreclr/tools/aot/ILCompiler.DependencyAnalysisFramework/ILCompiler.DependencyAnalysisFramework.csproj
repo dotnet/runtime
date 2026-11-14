@@ -16,11 +16,11 @@
     <Configurations>Debug;Release;Checked</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ComputedStaticDependencyNode.cs" />
     <Compile Include="DependencyAnalyzer.cs" />
     <Compile Include="DependencyAnalyzerBase.cs" />
     <Compile Include="DependencyNode.cs" />
     <Compile Include="DependencyNodeCore.cs" />
+    <Compile Include="DependencySink.cs" />
     <Compile Include="DgmlWriter.cs" />
     <Compile Include="EventSourceLogStrategy.cs" />
     <Compile Include="FirstMarkLogStrategy.cs" />
@@ -29,6 +29,7 @@
     <Compile Include="IDependencyAnalyzerLogNodeVisitor.cs" />
     <Compile Include="IDependencyAnalysisMarkStrategy.cs" />
     <Compile Include="IDependencyNode.cs" />
+    <Compile Include="IDependencySink.cs" />
     <Compile Include="NoLogStrategy.cs" />
     <Compile Include="PerfEventSource.cs" />
     <Compile Include="..\..\Common\Sorting\ArrayAccessor.cs">

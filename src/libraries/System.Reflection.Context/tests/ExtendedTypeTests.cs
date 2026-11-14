@@ -38,6 +38,14 @@ namespace System.Reflection.Context.Tests
         public void UnmanagedParameter(delegate* unmanaged<string, int> f) { }
     }
 
+    internal class GenericMethodOverloads
+    {
+        public void Method() { }
+        public void Method<T>() { }
+        public void Method(string value) { }
+        public void Method<T>(string value) { }
+    }
+
     public class ExtendedTypeTests
     {
         private readonly CustomReflectionContext _customReflectionContext = new TestCustomReflectionContext();
@@ -495,6 +503,55 @@ namespace System.Reflection.Context.Tests
         {
             TypeInfo customType = _customReflectionContext.MapType(type.GetTypeInfo());
             Assert.Equal(expected, customType.MemberType);
+        }
+
+        [Fact]
+        public void GetMethod_WithGenericParameterCount_ReturnsProjectedMethod()
+        {
+            TypeInfo customType = _customReflectionContext.MapType(typeof(GenericMethodOverloads).GetTypeInfo());
+            MethodInfo[] methods = customType.GetMethods().Where(m => m.Name == nameof(GenericMethodOverloads.Method)).ToArray();
+            Type customStringType = _customReflectionContext.MapType(typeof(string).GetTypeInfo());
+
+            MethodInfo nonGeneric = customType.GetMethod(nameof(GenericMethodOverloads.Method), 0, Type.EmptyTypes);
+            Assert.Equal(methods.Single(m => !m.IsGenericMethodDefinition && m.GetParameters().Length == 0), nonGeneric);
+
+            MethodInfo generic = customType.GetMethod(nameof(GenericMethodOverloads.Method), 1, Type.EmptyTypes);
+            Assert.Equal(methods.Single(m => m.IsGenericMethodDefinition && m.GetParameters().Length == 0), generic);
+
+            MethodInfo genericWithParameter = customType.GetMethod(nameof(GenericMethodOverloads.Method), 1, BindingFlags.Public | BindingFlags.Instance, [customStringType]);
+            Assert.Equal(methods.Single(m => m.IsGenericMethodDefinition && m.GetParameters().Length == 1), genericWithParameter);
+
+            Assert.Null(customType.GetMethod(nameof(GenericMethodOverloads.Method), 2, Type.EmptyTypes));
+        }
+
+        [Theory]
+        [InlineData(typeof(TestObject))]
+        [InlineData(typeof(DerivedTestObject))]
+        public void GetMethod_WithGenericParameterCount_ReturnsAddedGetterForCountZero(Type type)
+        {
+            TypeInfo customType = _customReflectionContext.MapType(type.GetTypeInfo());
+
+            MethodInfo getter = customType.GetMethod("get_number", 0, Type.EmptyTypes);
+            Assert.NotNull(getter);
+            Assert.Equal(customType.GetMethod("get_number", Type.EmptyTypes), getter);
+
+            Assert.Null(customType.GetMethod("get_number", 1, Type.EmptyTypes));
+        }
+
+        [Theory]
+        [InlineData(typeof(TestObject))]
+        [InlineData(typeof(DerivedTestObject))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135298", TestRuntimes.Mono)]
+        public void GetMethod_WithGenericParameterCount_ReturnsAddedSetterForCountZero(Type type)
+        {
+            TypeInfo customType = _customReflectionContext.MapType(type.GetTypeInfo());
+            Type customIntType = _customReflectionContext.MapType(typeof(int).GetTypeInfo());
+
+            MethodInfo setter = customType.GetMethod("set_number", 0, [customIntType]);
+            Assert.NotNull(setter);
+            Assert.Equal(customType.GetMethod("set_number", [customIntType]), setter);
+
+            Assert.Null(customType.GetMethod("set_number", 1, [customIntType]));
         }
     }
 }

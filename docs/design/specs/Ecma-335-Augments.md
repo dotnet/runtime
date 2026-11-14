@@ -26,6 +26,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Debug Interchange Format](#debug-interchange-format)
 - [Extended layout](#extended-layout)
 - [Implicit argument coercion rules](#implicit-argument-coercion-rules)
+- [Init-only static fields](#init-only-static-fields)
 
 ## Signatures
 
@@ -1190,3 +1191,7 @@ In section II.23.1.15, the following row is added to the table:
 ## Implict argument coercion rules
 
 Implicit argument coercion as defined in section III.1.6 does not match with existing practice in CLR runtimes. Notably, implicit argument coercion of an `int32` on the IL evaluation stack to a `native unsigned int` is a sign extending operation, not a zero-extending operation.
+
+## Init-only static fields
+
+The notes in sections "III.4.28 stfld" and "III.4.30 stsfld" are replaced with: "Changing the value of a static, init-only field outside the body of the class initializer can compromise memory integrity and type safety." Init-only instance fields are not affected.

@@ -153,17 +153,3 @@ namespace System.Reflection.Runtime.Modules.NativeFormat
         }
     }
 }
-
-namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // ParameterInfos for MethodBase objects with Parameter metadata.
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class NativeFormatMethodParameterInfo
-    {
-        internal static NativeFormatMethodParameterInfo GetNativeFormatMethodParameterInfo(MethodBase member, int position, ParameterHandle parameterHandle, QSignatureTypeHandle qualifiedParameterType, TypeContext typeContext)
-        {
-            return new NativeFormatMethodParameterInfo(member, position, parameterHandle, qualifiedParameterType, typeContext);
-        }
-    }
-}

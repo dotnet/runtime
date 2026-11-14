@@ -19,6 +19,9 @@ namespace System.Net.Http
         private OutgoingBody body; // owned by this instance
         internal bool isClosed;
 
+        // Canceled before the stream is dropped, so that a pending write's pollable (a child of the stream) is released first.
+        private readonly CancellationTokenSource closeCts = new CancellationTokenSource();
+
         public override bool CanRead => false;
         public override bool CanWrite => true;
         public override bool CanSeek => false;
@@ -34,15 +37,15 @@ namespace System.Net.Http
             Dispose(false);
         }
 
-        public override void Close()
+        // Completes the request body. Disposing the stream without finishing it aborts the request body instead.
+        public void Finish()
         {
-            if (!isClosed)
-            {
-                isClosed = true;
-                stream.Dispose();
-                OutgoingBody.Finish(body, null);
-            }
-            base.Close();
+            ObjectDisposedException.ThrowIf(isClosed, this);
+            isClosed = true;
+            closeCts.Cancel();
+            stream.Dispose();
+            OutgoingBody.Finish(body, null); // passing body ownership
+            GC.SuppressFinalize(this);
         }
 
         protected override void Dispose(bool disposing)
@@ -50,6 +53,7 @@ namespace System.Net.Http
             if (!isClosed)
             {
                 isClosed = true;
+                closeCts.Cancel();
                 stream.Dispose();
                 body.Dispose();
             }
@@ -71,7 +75,7 @@ namespace System.Net.Http
                 var count = (int)stream.CheckWrite();
                 if (count == 0)
                 {
-                    await WasiHttpInterop.RegisterWasiPollable(stream.Subscribe(), cancellationToken).ConfigureAwait(false);
+                    await WaitAsync(stream.Subscribe(), cancellationToken).ConfigureAwait(false);
                     ObjectDisposedException.ThrowIf(isClosed, this);
                 }
                 else if (offset == limit)
@@ -105,6 +109,21 @@ namespace System.Net.Http
                     offset += min;
                 }
             }
+        }
+
+        private async Task WaitAsync(IPollImports.Pollable pollable, CancellationToken cancellationToken)
+        {
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, closeCts.Token);
+            try
+            {
+                await WasiHttpInterop.RegisterWasiPollable(pollable, linkedCts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                ObjectDisposedException.ThrowIf(isClosed, this);
+                throw;
+            }
+            ObjectDisposedException.ThrowIf(isClosed, this);
         }
 
         public override ValueTask WriteAsync(

@@ -31,7 +31,6 @@ struct LineCodeDescr
 };
 
 void printLine(void* GUICookie, _In_ __nullterminated const char* string);
-void printLineW(void* GUICookie, _In_ __nullterminated const WCHAR* string);
 void printError(void* GUICookie, _In_ __nullterminated const char* string);
 
 char* AnsiToUtf(_In_ __nullterminated const char* sz);
@@ -155,5 +154,3 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString,
 #define SZSTRING_SIZE_M4 (SZSTRING_SIZE - 4)
 #define CHECK_REMAINING_SIZE if(ovadd_le((size_t)szString, SZSTRING_SIZE_M4, (size_t)szptr)) break;
 #define SZSTRING_REMAINING_SIZE(x) (ovadd_le((size_t)szString,SZSTRING_SIZE,(size_t)(x))?0:(SZSTRING_SIZE-((size_t)(x)-(size_t)szString)))
-
-

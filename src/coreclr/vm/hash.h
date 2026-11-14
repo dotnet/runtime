@@ -1,15 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 /*++---------------------------------------------------------------------------------------
-
 Module Name:
-
     hash.h
 
 Abstract:
-
     Fast hash table classes,
 --*/
 
@@ -262,13 +258,6 @@ public:
 
     void DumpStatistics();
 #endif // HASHTABLE_PROFILE
-
-#if 0 // Test-only code for debugging this class.
-#ifndef DACCESS_COMPILE
-    static void LookupPerfTest(HashMap * table, const unsigned int MinThreshold);
-    static void HashMapTest();
-#endif // !DACCESS_COMPILE
-#endif // 0 // Test-only code for debugging this class.
 
 protected:
     // static helper function

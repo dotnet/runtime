@@ -1113,25 +1113,6 @@ gc_heap* gc_heap::make_gc_heap (
 #endif //MULTIPLE_HEAPS
 }
 
-// Destroys resources owned by gc. It is assumed that a last GC has been performed and that
-// the finalizer queue has been drained.
-void gc_heap::shutdown_gc()
-{
-    destroy_semi_shared();
-
-#ifdef MULTIPLE_HEAPS
-    //delete the heaps array
-    delete[] g_heaps;
-    destroy_thread_support();
-    n_heaps = 0;
-#endif //MULTIPLE_HEAPS
-    //destroy seg_manager
-
-    destroy_initial_memory();
-
-    GCToOSInterface::Shutdown();
-}
-
 void gc_heap::init_records()
 {
     // An option is to move this to be after we figure out which gen to condemn so we don't

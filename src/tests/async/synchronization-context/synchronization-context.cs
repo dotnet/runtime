@@ -10,19 +10,11 @@ using Xunit;
 
 public class Async2SynchronizationContext
 {
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestSyncContextContinue()
+    [Fact]
+    public static async Task TestSyncContextContinue()
     {
-        SynchronizationContext prevContext = SynchronizationContext.Current;
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(new MySyncContext());
-            TestSyncContextContinueAsync().GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(prevContext);
-        }
+        SynchronizationContext.SetSynchronizationContext(new MySyncContext());
+        await TestSyncContextContinueAsync();
     }
 
     private static async Task TestSyncContextContinueAsync()
@@ -112,18 +104,10 @@ public class Async2SynchronizationContext
     }
 
     [Fact]
-    public static void TestSyncContextSaveRestore()
+    public static async Task TestSyncContextSaveRestore()
     {
-        SynchronizationContext prevContext = SynchronizationContext.Current;
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(new SyncContextWithoutRestore());
-            TestSyncContextSaveRestoreAsync().GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(prevContext);
-        }
+        SynchronizationContext.SetSynchronizationContext(new SyncContextWithoutRestore());
+        await TestSyncContextSaveRestoreAsync();
     }
 
     private static async Task TestSyncContextSaveRestoreAsync()
@@ -138,19 +122,11 @@ public class Async2SynchronizationContext
         SynchronizationContext.SetSynchronizationContext(null);
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestSyncContextNotRestored()
+    [Fact]
+    public static async Task TestSyncContextNotRestored()
     {
-        SynchronizationContext prevContext = SynchronizationContext.Current;
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(new SyncContextWithoutRestore());
-            TestSyncContextNotRestoredAsync().GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(prevContext);
-        }
+        SynchronizationContext.SetSynchronizationContext(new SyncContextWithoutRestore());
+        await TestSyncContextNotRestoredAsync();
     }
 
     private static async Task TestSyncContextNotRestoredAsync()
@@ -185,21 +161,8 @@ public class Async2SynchronizationContext
         }
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestContinueOnCorrectSyncContext()
-    {
-        SynchronizationContext prevContext = SynchronizationContext.Current;
-        try
-        {
-            TestContinueOnCorrectSyncContextAsync().GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(prevContext);
-        }
-    }
-
-    private static async Task TestContinueOnCorrectSyncContextAsync()
+    [Fact]
+    public static async Task TestContinueOnCorrectSyncContextAsync()
     {
         MySyncContext context1 = new MySyncContext();
         MySyncContext context2 = new MySyncContext();
@@ -220,19 +183,14 @@ public class Async2SynchronizationContext
             await Task.Yield();
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestNoSyncContextInRuntimeCallableThunk()
+    [Fact]
+    public static async Task TestNoSyncContextInRuntimeCallableThunk()
     {
-        SynchronizationContext prevContext = SynchronizationContext.Current;
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(new MySyncContext());
-            TestNoSyncContextInRuntimeCallableThunkAsync().GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(prevContext);
-        }
+        SynchronizationContext.SetSynchronizationContext(new MySyncContext());
+        Task task = TestNoSyncContextInRuntimeCallableThunkAsync();
+#pragma warning disable xUnit1030 // Keep the test's own continuation from posting to the context under test.
+        await task.ConfigureAwait(false);
+#pragma warning restore xUnit1030
     }
 
     private static async Task TestNoSyncContextInRuntimeCallableThunkAsync()
@@ -243,12 +201,7 @@ public class Async2SynchronizationContext
     }
 
     [Fact]
-    public static void TestAsyncToSyncContextSwitch()
-    {
-        TestAsyncToSyncContextSwitchAsync().GetAwaiter().GetResult();
-    }
-
-    private static async Task TestAsyncToSyncContextSwitchAsync()
+    public static async Task TestAsyncToSyncContextSwitchAsync()
     {
         MySyncContext context1 = new MySyncContext();
         MySyncContext context2 = new MySyncContext();

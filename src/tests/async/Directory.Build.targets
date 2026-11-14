@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <!-- Mono does not support runtime async. Wasm tests must explicitly opt in after avoiding unsupported operations such as synchronous waits. -->
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono' or ('$(TargetArchitecture)' == 'wasm' and '$(EnableRuntimeAsyncOnWasm)' != 'true')">true</DisableProjectBuild>
+    <!-- Mono does not support runtime async. -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup Condition="'$(MSBuildProjectFullPath)' != '$(MSBuildThisFileDirectory)async.csproj'">
     <ProjectReference Include="$(TestLibraryProjectPath)" />

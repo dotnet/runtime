@@ -9,7 +9,7 @@ using Xunit;
 public class RuntimeAsyncDiagnosticIPStackTrace
 {
     [Fact]
-    public static void TestEntryPoint()
+    public static async Task TestEntryPoint()
     {
         // Exercise both the cold and warm ResumeInterpreterContinuation FCall paths.
         for (int i = 0; i < 2; i++)
@@ -24,7 +24,7 @@ public class RuntimeAsyncDiagnosticIPStackTrace
             InvalidOperationException? exception = null;
             try
             {
-                task.GetAwaiter().GetResult();
+                await task;
             }
             catch (InvalidOperationException ex)
             {

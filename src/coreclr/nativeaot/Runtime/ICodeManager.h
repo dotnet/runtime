@@ -132,6 +132,13 @@ enum UnwindStackFrameFlags
 class ICodeManager
 {
 public:
+#ifdef FEATURE_PORTABLE_HELPERS
+    // Portable frames carry enough state to recover FP and IP from the shadow SP.
+    static uintptr_t GetFramePointerFromSP(uintptr_t shadowSP);
+    static uintptr_t GetIPFromSP(uintptr_t shadowSP);
+    static void UnwindEHHelperFrame(REGDISPLAY* pRegisterSet);
+#endif
+
     virtual bool IsSafePoint(PTR_VOID pvAddress) PURE_VIRTUAL
 
     virtual bool FindMethodInfo(PTR_VOID        ControlPC,

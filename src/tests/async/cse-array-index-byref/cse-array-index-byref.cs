@@ -8,11 +8,11 @@ using Xunit;
 
 public class CseArrayIndexByref
 {
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestEntryPoint()
+    [Fact]
+    public static async Task TestEntryPoint()
     {
         int[] arr = new int[1];
-        AsyncTestEntryPoint(arr, 0).Wait();
+        await AsyncTestEntryPoint(arr, 0);
         Assert.Equal(199_990_000, arr[0]);
     }
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -65,6 +66,47 @@ namespace System.Threading.Tests
             Assert.True(lockObj.IsHeldByCurrentThread);
             lockObj.Exit();
             Assert.False(lockObj.IsHeldByCurrentThread);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [InlineData(0)]
+        [InlineData(20)]
+        public static void TryEnterOnJSInteropThreadHonorsFiniteTimeouts(int millisecondsTimeout)
+        {
+            Lock lockObj = new();
+            using ManualResetEventSlim entered = new(false);
+            using ManualResetEventSlim release = new(false);
+            Thread thread = ThreadTestHelpers.CreateGuardedThread(out Action waitForThread, () =>
+            {
+                using (lockObj.EnterScope())
+                {
+                    entered.Set();
+                    release.CheckedWait();
+                }
+            });
+            thread.IsBackground = true;
+            thread.Start();
+            try
+            {
+                entered.CheckedWait();
+                ThreadTestHelpers.RunWithJSInteropBlockingPolicy(() =>
+                {
+                    Stopwatch stopwatch = Stopwatch.StartNew();
+                    Assert.False(lockObj.TryEnter(millisecondsTimeout));
+                    Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                    stopwatch.Restart();
+                    Assert.False(lockObj.TryEnter(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                    Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                    Assert.Throws<PlatformNotSupportedException>(() => lockObj.Enter());
+                });
+            }
+            finally
+            {
+                release.Set();
+                waitForThread();
+            }
+            Assert.True(lockObj.TryEnter(0));
+            lockObj.Exit();
         }
 
         // Attempts to overflow the recursion count of a newly-created lock.

@@ -368,7 +368,7 @@ namespace ILCompiler
                 case ReadyToRunHelperId.ObjectAllocator:
                     {
                         var type = (TypeDesc)targetOfLookup;
-                        return NodeFactory.ExternFunctionSymbol(new Utf8String(JitHelper.GetNewObjectHelperForType(type)));
+                        return NodeFactory.ReadyToRunHelper(JitHelper.GetNewObjectHelperForType(type));
                     }
 
                 default:

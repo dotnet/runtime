@@ -55,6 +55,11 @@ internal sealed class MdBinaryReaderGen : CsWriter
             EmitReadCollection($"{typeName}Handle");
         }
 
+        foreach (var typeName in SchemaDef.TypeNamesWithHashtableTypes)
+        {
+            EmitReadHashtable($"{typeName}HandleHashtable");
+        }
+
         CloseScope("MdBinaryReader");
         CloseScope("Internal.Metadata.NativeFormat");
     }
@@ -72,6 +77,15 @@ internal sealed class MdBinaryReaderGen : CsWriter
         WriteLine("    offset = reader.SkipInteger(offset);");
         WriteLine("}");
         WriteLine("return offset;");
+        CloseScope("Read");
+    }
+
+    private void EmitReadHashtable(string typeName)
+    {
+        OpenScope($"public static uint Read(this NativeReader reader, uint offset, out {typeName} values)");
+        WriteLine("NativeParser parser = new NativeParser(reader, offset);");
+        WriteLine($"values = new {typeName}(new NativeHashtable(parser.GetParserFromRelativeOffset()));");
+        WriteLine("return parser.Offset;");
         CloseScope("Read");
     }
 

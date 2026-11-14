@@ -1,9 +1,61 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using Xunit;
 
 namespace System.Numerics.Tensors.Tests
 {
     public class TensorDimensionSpanTests
     {
+        [Theory]
+        [InlineData(0, 2, new int[] { 3, 4 })]
+        [InlineData(1, 4, new int[] { 4 })]
+        public void TensorDimensionSpan_ConvertsToReadOnlyView(int dimension, int expectedLength, int[] expectedSlice)
+        {
+            Tensor<int> tensor = Tensor.Create([1, 2, 3, 4], [2, 2]);
+            TensorDimensionSpan<int> mutableView = tensor.GetDimensionSpan(dimension);
+            ReadOnlyTensorDimensionSpan<int> readonlyView = mutableView;
+
+            Assert.Equal(expectedLength, readonlyView.Length);
+            ReadOnlyTensorSpan<int> slice = readonlyView[readonlyView.Length - 1];
+            int[] actualSlice = new int[slice.FlattenedLength];
+            slice.FlattenTo(actualSlice);
+            Assert.Equal(expectedSlice, actualSlice);
+        }
+
+        [Fact]
+        public void TensorAuditDimensionSpanAllowsEmptyRows()
+        {
+            Tensor<int> tensor = Tensor.CreateFromShape<int>([2, 0]);
+            TensorDimensionSpan<int> rows = tensor.GetDimensionSpan(0);
+            ReadOnlyTensorDimensionSpan<int> readOnlyRows = tensor.AsReadOnlyTensorSpan().GetDimensionSpan(0);
+
+            Assert.Equal(2, rows.Length);
+            Assert.Equal([0], rows[0].Lengths);
+            Assert.Equal([0], rows[1].Lengths);
+            Assert.Equal([0], readOnlyRows[0].Lengths);
+            Assert.Equal([0], readOnlyRows[1].Lengths);
+        }
+
+        [Fact]
+        public void TensorAuditDimensionSpanRejectsOverflowedSliceCount()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(static () =>
+            {
+                TensorSpan<int> tensor = new TensorSpan<int>(Array.Empty<int>(), [nint.MaxValue, 2, 0]);
+                _ = tensor.GetDimensionSpan(1);
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(static () =>
+            {
+                ReadOnlyTensorSpan<int> tensor = new ReadOnlyTensorSpan<int>(Array.Empty<int>(), [nint.MaxValue, 2, 0]);
+                _ = tensor.GetDimensionSpan(1);
+            });
+
+            TensorSpan<int> empty = new TensorSpan<int>(Array.Empty<int>(), [nint.MaxValue, 2, 0]);
+            Assert.Equal(0, empty.GetDimensionSpan(2).Length);
+            Assert.Equal(0, ((ReadOnlyTensorSpan<int>)empty).GetDimensionSpan(2).Length);
+        }
+
         [Fact]
         public void TensorDimensionSpan_GetDimension_ValidDimension_ReturnsCorrectView()
         {

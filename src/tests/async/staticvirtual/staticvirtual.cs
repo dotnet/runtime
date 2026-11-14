@@ -20,9 +20,6 @@ public class StaticVirtual
 
     static async Task CallDoTask<T>() where T : IHaveStaticVirtuals => await T.DoTask();
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestEntryPoint()
-    {
-        CallDoTask<ClassWithStaticVirtuals>().Wait();
-    }
+    [Fact]
+    public static Task TestEntryPoint() => CallDoTask<ClassWithStaticVirtuals>();
 }

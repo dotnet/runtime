@@ -1444,14 +1444,18 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef DACCESS_COMPILE
         return m_pGuidInfo;
+#else
+        return VolatileLoad(&m_pGuidInfo);
+#endif
     }
 
     inline void SetGuidInfo(GuidInfo* pGuidInfo)
     {
         WRAPPER_NO_CONTRACT;
         #ifndef DACCESS_COMPILE
-        m_pGuidInfo = pGuidInfo;
+        VolatileStore(&m_pGuidInfo, pGuidInfo);
         #endif // DACCESS_COMPILE
     }
 

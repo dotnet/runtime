@@ -28,8 +28,13 @@ internal sealed partial class EEClass : IData<EEClass>
     [Field] public partial TargetPointer OptionalFields { get; }
 
     private const uint HasLayoutFlag = 0x00000040;
+    // EEClass::VMFLAG_INLINE_ARRAY (class.h): set for the compiler-generated buffer types backing
+    // C# inline arrays (InlineArrayAttribute). Their single instance field is repeated across the
+    // whole array rather than declared once per element.
+    private const uint InlineArrayFlag = 0x00010000;
 
     [Field] public partial uint? VMFlags { get; }
 
     public bool HasLayout => VMFlags.HasValue && (VMFlags.Value & HasLayoutFlag) != 0;
+    public bool IsInlineArray => VMFlags.HasValue && (VMFlags.Value & InlineArrayFlag) != 0;
 }

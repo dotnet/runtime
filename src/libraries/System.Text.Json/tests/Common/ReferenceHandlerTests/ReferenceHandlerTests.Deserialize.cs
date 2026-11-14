@@ -993,27 +993,67 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("""{"$iz": "1"}""", "$['$iz']")]
-        [InlineData("""{"$rez": "1"}""", "$['$rez']")]
-        [InlineData("""{"$valuez": []}""", "$['$valuez']")]
         [InlineData("""{"$type": "derivedType"}""", "$['$type']")]
-        [InlineData("""{"$PropertyWithDollarSign": "1"}""", "$['$PropertyWithDollarSign']")]
-        [InlineData("""{"$id" : "1", "$iz": "1"}""", "$['$iz']")]
-        [InlineData("""{"$id" : "1", "$rez": "1"}""", "$['$rez']")]
         [InlineData("""{"$id" : "1", "$id" : 1 }""", "$['$id']")]
         [InlineData("""{"$id" : "1", "$ref" : 1 }""", "$['$ref']")]
-        [InlineData("""{"$id" : "1", "$valuez": "[]"}""", "$['$valuez']")]
         [InlineData("""{"$id" : "1", "$type": "derivedType"}""", "$['$type']")]
-        [InlineData("""{"$id" : "1", "$PropertyWithDollarSign": "1"}""", "$['$PropertyWithDollarSign']")]
-        [InlineData("""{"$id" : "1", "NonMetadataProperty" : 42, "$iz": "1"}""", "$['$iz']")]
-        [InlineData("""{"$id" : "1", "NonMetadataProperty" : 42, "$rez": "1"}""", "$['$rez']")]
-        [InlineData("""{"$id" : "1", "NonMetadataProperty" : 42, "$valuez": "[]"}""", "$['$valuez']")]
         [InlineData("""{"$id" : "1", "NonMetadataProperty" : 42, "$type": "derivedType"}""", "$['$type']")]
-        [InlineData("""{"$id" : "1", "NonMetadataProperty" : 42, "$PropertyWithDollarSign": "1"}""", "$['$PropertyWithDollarSign']")]
         public async Task InvalidMetadataPropertyNameIsRejected(string json, string expectedPath)
         {
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
             Assert.Equal(expectedPath, ex.Path);
+        }
+
+        [Theory]
+        [InlineData("$")]
+        [InlineData("$iz")]
+        [InlineData("$rez")]
+        [InlineData("$valuez")]
+        [InlineData("$PropertyWithDollarSign")]
+        [InlineData("$ID")]
+        [InlineData("$Type")]
+        [InlineData("$idSuffix")]
+        [InlineData("$refSuffix")]
+        [InlineData("$typeSuffix")]
+        [InlineData("$valuesSuffix")]
+        public async Task NonMetadataPropertyWithLeadingDollarSignIsAccepted(string propertyName)
+        {
+            foreach (bool allowOutOfOrderMetadata in new[] { false, true })
+            {
+                JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+                {
+                    if (typeInfo.Type == typeof(Employee))
+                    {
+                        foreach (var property in typeInfo.Properties)
+                        {
+                            if (property.Name == nameof(Employee.Name))
+                            {
+                                property.Name = propertyName;
+                            }
+                        }
+                    }
+                });
+                options.ReferenceHandler = ReferenceHandler.Preserve;
+                options.AllowOutOfOrderMetadataProperties = allowOutOfOrderMetadata;
+
+                foreach (string jsonPropertyName in new[] { propertyName, "\\u0024" + propertyName.Substring(1) })
+                {
+                    foreach (string prefix in new[] { "", "\"$id\":\"1\",", "\"$id\":\"1\",\"NonMetadataProperty\":\"other\"," })
+                    {
+                        string json = $"{{{prefix}\"{jsonPropertyName}\":\"value\"}}";
+
+                        Employee employee = await Serializer.DeserializeWrapper<Employee>(json, options);
+                        Assert.Equal("value", employee.Name);
+
+                        EmployeeExtensionData extensionData = await Serializer.DeserializeWrapper<EmployeeExtensionData>(json, options);
+                        Assert.Equal("value", Assert.IsType<JsonElement>(extensionData.ExtensionData[propertyName]).GetString());
+
+                        Dictionary<string, string> dictionary = await Serializer.DeserializeWrapper<Dictionary<string, string>>(json, options);
+                        Assert.Equal("value", dictionary[propertyName]);
+                        Assert.False(dictionary.ContainsKey("$id"));
+                    }
+                }
+            }
         }
         #endregion
 
@@ -1633,7 +1673,6 @@ namespace System.Text.Json.Serialization.Tests
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$['$values']", ex.Path);
 
-            // $.* Not valid (i.e: $test)
             json = """
                     {
                                     "$id": "1",
@@ -1641,11 +1680,11 @@ namespace System.Text.Json.Serialization.Tests
                                 }
                 """;
 
-            ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<EmployeeExtensionData>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$['$test']", ex.Path);
+            EmployeeExtensionData employee = await Serializer.DeserializeWrapper<EmployeeExtensionData>(json, s_deserializerOptionsPreserve);
+            Assert.Equal("test", Assert.IsType<JsonElement>(employee.ExtensionData["$test"]).GetString());
 
-            ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$['$test']", ex.Path);
+            Dictionary<string, string> dictionary = await Serializer.DeserializeWrapper<Dictionary<string, string>>(json, s_deserializerOptionsPreserve);
+            Assert.Equal("test", dictionary["$test"]);
 
             json = """
                     {
@@ -1654,12 +1693,11 @@ namespace System.Text.Json.Serialization.Tests
                                 }
                 """;
 
-            // Escaped JSON properties still not valid
-            ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<EmployeeExtensionData>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$['$test']", ex.Path);
+            employee = await Serializer.DeserializeWrapper<EmployeeExtensionData>(json, s_deserializerOptionsPreserve);
+            Assert.Equal("test", Assert.IsType<JsonElement>(employee.ExtensionData["$test"]).GetString());
 
-            ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$['$test']", ex.Path);
+            dictionary = await Serializer.DeserializeWrapper<Dictionary<string, string>>(json, s_deserializerOptionsPreserve);
+            Assert.Equal("test", dictionary["$test"]);
         }
         #endregion
 
@@ -1691,7 +1729,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(root);
             Assert.Equal(0, root.Count);
 
-            // $.* Not valid (i.e: $test)
+            // Collection wrappers cannot contain non-metadata properties.
             json = """
                     {
                                     "$id": "1",

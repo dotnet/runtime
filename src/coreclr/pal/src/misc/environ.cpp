@@ -2,26 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     environ.cpp
 
 Abstract:
-
     Implementation of functions manipulating environment variables.
-
-Revision History:
-
-
-
 --*/
 
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/environ.h"
+#include <minipal/utf8.h>
 
 #if HAVE_CRT_EXTERNS_H
 #include <crt_externs.h>
@@ -164,7 +155,7 @@ GetEnvironmentVariableW(
 {
     CHAR *inBuff = nullptr;
     CHAR *outBuff = nullptr;
-    INT inBuffSize;
+    size_t inBuffSize;
     DWORD size = 0;
 
     PERF_ENTRY(GetEnvironmentVariableW);
@@ -172,8 +163,7 @@ GetEnvironmentVariableW(
           lpName ? lpName : W16_NULLSTRING,
           lpName ? lpName : W16_NULLSTRING, lpBuffer, nSize);
 
-    inBuffSize = WideCharToMultiByte(CP_ACP, 0, lpName, -1,
-                                     inBuff, 0, nullptr, nullptr);
+    inBuffSize = lpName != nullptr ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpName, minipal_u16_strlen((const CHAR16_T*)lpName) + 1, 0) : 0;
     if (0 == inBuffSize)
     {
         ERROR("lpName has to be a valid parameter\n");
@@ -200,10 +190,9 @@ GetEnvironmentVariableW(
         }
     }
 
-    if (0 == WideCharToMultiByte(CP_ACP, 0, lpName, -1, inBuff,
-                                   inBuffSize, nullptr, nullptr))
+    if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpName, minipal_u16_strlen((const CHAR16_T*)lpName) + 1, inBuff, inBuffSize, 0))
     {
-        ASSERT("WideCharToMultiByte failed!\n");
+        ASSERT("UTF-16 to UTF-8 conversion failed!\n");
         SetLastError(ERROR_INTERNAL_ERROR);
         goto done;
     }
@@ -225,7 +214,8 @@ GetEnvironmentVariableW(
     }
     else
     {
-        size = MultiByteToWideChar(CP_ACP, 0, outBuff, -1, lpBuffer, nSize);
+        size_t converted = minipal_convert_utf8_to_utf16(outBuff, strlen(outBuff) + 1, (CHAR16_T*)lpBuffer, nSize, 0);
+        size = (DWORD)converted;
         if (0 != size)
         {
             // -1 for the null.
@@ -233,7 +223,7 @@ GetEnvironmentVariableW(
         }
         else
         {
-            ASSERT("MultiByteToWideChar failed!\n");
+            ASSERT("UTF-8 to UTF-16 conversion failed!\n");
             SetLastError(ERROR_INTERNAL_ERROR);
             size = 0;
             *lpBuffer = '\0';
@@ -291,8 +281,8 @@ SetEnvironmentVariableW(
 {
     PCHAR name = nullptr;
     PCHAR value = nullptr;
-    INT nameSize = 0;
-    INT valueSize = 0;
+    size_t nameSize = 0;
+    size_t valueSize = 0;
     BOOL bRet = FALSE;
 
     PERF_ENTRY(SetEnvironmentVariableW);
@@ -300,10 +290,9 @@ SetEnvironmentVariableW(
         lpName?lpName:W16_NULLSTRING,
         lpName?lpName:W16_NULLSTRING, lpValue?lpValue:W16_NULLSTRING, lpValue?lpValue:W16_NULLSTRING);
 
-    if ((nameSize = WideCharToMultiByte(CP_ACP, 0, lpName, -1, name, 0,
-                                        nullptr, nullptr)) == 0)
+    if ((nameSize = lpName != nullptr ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpName, minipal_u16_strlen((const CHAR16_T*)lpName) + 1, 0) : 0) == 0)
     {
-        ERROR("WideCharToMultiByte failed\n");
+        ERROR("UTF-16 to UTF-8 conversion failed\n");
         SetLastError(ERROR_INVALID_PARAMETER);
         goto done;
     }
@@ -316,20 +305,18 @@ SetEnvironmentVariableW(
         goto done;
     }
 
-    if (0 == WideCharToMultiByte(CP_ACP, 0, lpName,  -1,
-                                 name,  nameSize, nullptr, nullptr))
+    if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpName, minipal_u16_strlen((const CHAR16_T*)lpName) + 1, name, nameSize, 0))
     {
-        ASSERT("WideCharToMultiByte returned 0\n");
+        ASSERT("UTF-16 to UTF-8 conversion returned 0\n");
         SetLastError(ERROR_INTERNAL_ERROR);
         goto done;
     }
 
     if (lpValue != nullptr)
     {
-        if ((valueSize = WideCharToMultiByte(CP_ACP, 0, lpValue, -1, value,
-                                             0, nullptr, nullptr)) == 0)
+        if ((valueSize = minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpValue, minipal_u16_strlen((const CHAR16_T*)lpValue) + 1, 0)) == 0)
         {
-            ERROR("WideCharToMultiByte failed\n");
+            ERROR("UTF-16 to UTF-8 conversion failed\n");
             SetLastError(ERROR_INVALID_PARAMETER);
             goto done;
         }
@@ -343,10 +330,9 @@ SetEnvironmentVariableW(
             goto done;
         }
 
-        if (0 == WideCharToMultiByte(CP_ACP, 0, lpValue, -1,
-                                     value, valueSize, nullptr, nullptr))
+        if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpValue, minipal_u16_strlen((const CHAR16_T*)lpValue) + 1, value, valueSize, 0))
         {
-            ASSERT("WideCharToMultiByte failed\n");
+            ASSERT("UTF-16 to UTF-8 conversion failed\n");
             SetLastError( ERROR_INTERNAL_ERROR );
             goto done;
         }
@@ -394,7 +380,8 @@ GetEnvironmentStringsW(
                VOID)
 {
     WCHAR *wenviron = nullptr, *tempEnviron;
-    int i, len, envNum;
+    int i;
+    size_t len, envNum;
 
     PERF_ENTRY(GetEnvironmentStringsW);
     ENTRY("GetEnvironmentStringsW()\n");
@@ -408,7 +395,7 @@ GetEnvironmentStringsW(
     /* get total length of the bytes that we need to allocate */
     for (i = 0; palEnvironment[i] != 0; i++)
     {
-        len = MultiByteToWideChar(CP_ACP, 0, palEnvironment[i], -1, wenviron, 0);
+        len = minipal_get_length_utf8_to_utf16(palEnvironment[i], strlen(palEnvironment[i]) + 1, 0);
         envNum += len;
     }
 
@@ -424,7 +411,7 @@ GetEnvironmentStringsW(
     tempEnviron = wenviron;
     for (i = 0; palEnvironment[i] != 0; i++)
     {
-        len = MultiByteToWideChar(CP_ACP, 0, palEnvironment[i], -1, tempEnviron, envNum);
+        len = minipal_convert_utf8_to_utf16(palEnvironment[i], strlen(palEnvironment[i]) + 1, (CHAR16_T*)tempEnviron, envNum, 0);
         tempEnviron += len;
         envNum      -= len;
     }
@@ -567,7 +554,7 @@ SetEnvironmentVariableA(
         }
 
         sprintf_s(string, iLen, "%s=%s", lpName, lpValue);
-        nResult = EnvironPutenv(string, FALSE) ? 0 : -1;
+        nResult = EnvironPutenv(string) ? 0 : -1;
 
         free(string);
         string = nullptr;
@@ -693,20 +680,16 @@ Parameters
 
     entry
             [in] The variable string to add. Should be in the format
-                 "name=value", where value might be empty (see below).
-    deleteIfEmpty
-            [in] If this is TRUE, "name=" will unset the 'name' variable.
+                 "name=value", where value might be empty.
 
 Return Values
 
     TRUE on success, FALSE otherwise
 
 --*/
-BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
+BOOL EnvironPutenv(const char* entry)
 {
     BOOL result = FALSE;
-
-    bool fOwningCS = false;
 
     CPalThread * pthrCurrent = InternalGetCurrentThread();
 
@@ -725,83 +708,59 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
 
     int nameLength = equalsSignPosition - entry;
 
-    if (equalsSignPosition[1] == '\0' && deleteIfEmpty)
+    // See if we are replacing an item or adding one.
+
+    minipal_mutex_enter(&gcsEnvironment);
+
+    int i;
+    for (i = 0; palEnvironment[i] != nullptr; i++)
     {
-        // "foo=" removes foo from the environment in _putenv() on Windows.
-        // The same string can result from a call to SetEnvironmentVariable()
-        // with the empty string as the value, but in that case we want to
-        // set the variable's value to "". deleteIfEmpty will be FALSE in
-        // that case.
+        const char *existingEquals = strchr(palEnvironment[i], '=');
+        if (existingEquals == nullptr)
+        {
+            // The PAL screens out malformed strings, but the strings which
+            // came from the system during initialization might not have the
+            // equals sign. We treat the entire string as a name in that case.
+            existingEquals = palEnvironment[i] + strlen(palEnvironment[i]);
+        }
 
-        // Change '=' to '\0'
-        copy[nameLength] = '\0';
+        if (existingEquals - palEnvironment[i] == nameLength)
+        {
+            if (memcmp(entry, palEnvironment[i], nameLength) == 0)
+            {
+                free(palEnvironment[i]);
+                palEnvironment[i] = copy;
 
-        EnvironUnsetenv(copy);
-        free(copy);
+                result = TRUE;
+                break;
+            }
+        }
+    }
+
+    if (palEnvironment[i] == nullptr)
+    {
+        _ASSERTE(i < palEnvironmentCapacity);
+        if (i == (palEnvironmentCapacity - 1))
+        {
+            // We found the first null, but it's the last element in our environment
+            // block. We need more space in our environment, so let's double its size.
+            int resizeRet = ResizeEnvironment(palEnvironmentCapacity * 2);
+            if (resizeRet != TRUE)
+            {
+                free(copy);
+                goto done;
+            }
+        }
+
+        _ASSERTE(copy != nullptr);
+        palEnvironment[i] = copy;
+        palEnvironment[i + 1] = nullptr;
+        palEnvironmentCount++;
 
         result = TRUE;
     }
-    else
-    {
-        // See if we are replacing an item or adding one.
-
-        minipal_mutex_enter(&gcsEnvironment);
-        fOwningCS = true;
-
-        int i;
-        for (i = 0; palEnvironment[i] != nullptr; i++)
-        {
-            const char *existingEquals = strchr(palEnvironment[i], '=');
-            if (existingEquals == nullptr)
-            {
-                // The PAL screens out malformed strings, but the strings which
-                // came from the system during initialization might not have the
-                // equals sign. We treat the entire string as a name in that case.
-                existingEquals = palEnvironment[i] + strlen(palEnvironment[i]);
-            }
-
-            if (existingEquals - palEnvironment[i] == nameLength)
-            {
-                if (memcmp(entry, palEnvironment[i], nameLength) == 0)
-                {
-                    free(palEnvironment[i]);
-                    palEnvironment[i] = copy;
-
-                    result = TRUE;
-                    break;
-                }
-            }
-        }
-
-        if (palEnvironment[i] == nullptr)
-        {
-            _ASSERTE(i < palEnvironmentCapacity);
-            if (i == (palEnvironmentCapacity - 1))
-            {
-                // We found the first null, but it's the last element in our environment
-                // block. We need more space in our environment, so let's double its size.
-                int resizeRet = ResizeEnvironment(palEnvironmentCapacity * 2);
-                if (resizeRet != TRUE)
-                {
-                    free(copy);
-                    goto done;
-                }
-            }
-
-            _ASSERTE(copy != nullptr);
-            palEnvironment[i] = copy;
-            palEnvironment[i + 1] = nullptr;
-            palEnvironmentCount++;
-
-            result = TRUE;
-        }
-    }
 done:
-
-    if (fOwningCS)
-    {
-        minipal_mutex_leave(&gcsEnvironment);
-    }
+    minipal_mutex_leave(&gcsEnvironment);
 
     return result;
 }
@@ -974,38 +933,6 @@ EnvironInitialize(void)
     }
 
     minipal_mutex_leave(&gcsEnvironment);
-    return ret;
-}
-
-/*++
-
-Function : _putenv.
-
-See MSDN for more details.
-
-Note:   The BSD implementation can cause
-        memory leaks. See man pages for more details.
---*/
-int
-__cdecl
-_putenv( const char * envstring )
-{
-    int ret = -1;
-
-    PERF_ENTRY(_putenv);
-    ENTRY( "_putenv( %p (%s) )\n", envstring ? envstring : "NULL", envstring ? envstring : "NULL") ;
-
-    if (envstring != nullptr)
-    {
-        ret = EnvironPutenv(envstring, TRUE) ? 0 : -1;
-    }
-    else
-    {
-        ERROR( "_putenv() called with NULL envstring!\n");
-    }
-
-    LOGEXIT( "_putenv returning %d\n", ret);
-    PERF_EXIT(_putenv);
     return ret;
 }
 

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
 {
@@ -12,13 +10,9 @@ namespace Microsoft.Interop
     /// </summary>
     public abstract record ManagedTypeInfo(string FullTypeName, string DiagnosticFormattedName)
     {
-        private TypeSyntax? _syntax;
-        public TypeSyntax Syntax => _syntax ??= SyntaxFactory.ParseTypeName(FullTypeName);
-
         public virtual bool Equals(ManagedTypeInfo? other)
         {
             return other is not null
-                && Syntax.IsEquivalentTo(other.Syntax)
                 && FullTypeName == other.FullTypeName
                 && DiagnosticFormattedName == other.DiagnosticFormattedName;
         }
@@ -32,9 +26,6 @@ namespace Microsoft.Interop
         {
             FullTypeName = original.FullTypeName;
             DiagnosticFormattedName = original.DiagnosticFormattedName;
-            // Explicitly don't initialize _syntax here. We want Syntax to be recalculated
-            // from the results of a with-expression, which assigns the new property values
-            // to the result of this constructor.
         }
 
         public static ManagedTypeInfo CreateTypeInfoForTypeSymbol(ITypeSymbol type)

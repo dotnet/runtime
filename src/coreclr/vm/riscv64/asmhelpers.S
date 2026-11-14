@@ -535,84 +535,6 @@ GenerateRedirectedHandledJITCaseStub GCStress
 #endif
 
 
-// ------------------------------------------------------------------
-// This helper enables us to call into a funclet after restoring Fp register
-NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
-    // On entry:
-    //
-    // a0 = throwable
-    // a1 = PC to invoke
-    // a2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
-    // a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-    //
-
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 128, 0
-
-    // Spill callee saved registers
-    PROLOG_SAVE_REG_PAIR   s1, s2, 16
-    PROLOG_SAVE_REG_PAIR   s3, s4, 32
-    PROLOG_SAVE_REG_PAIR   s5, s6, 48
-    PROLOG_SAVE_REG_PAIR   s7, s8, 64
-    PROLOG_SAVE_REG_PAIR   s9, s10, 80
-    PROLOG_SAVE_REG_PAIR   s11, gp, 96
-    PROLOG_SAVE_REG tp, 112
-
-    // Save the SP of this function
-    sd  sp, 0(a3)
-
-    ld  gp, OFFSETOF__CONTEXT__Gp(a2)
-    ld  tp, OFFSETOF__CONTEXT__Tp(a2)
-    ld  fp, OFFSETOF__CONTEXT__Fp(a2)
-    ld  s1, OFFSETOF__CONTEXT__S1(a2)
-    ld  s2, OFFSETOF__CONTEXT__S2(a2)
-    ld  s3, OFFSETOF__CONTEXT__S2+8(a2)
-    ld  s4, OFFSETOF__CONTEXT__S2+16(a2)
-    ld  s5, OFFSETOF__CONTEXT__S2+24(a2)
-    ld  s6, OFFSETOF__CONTEXT__S2+32(a2)
-    ld  s7, OFFSETOF__CONTEXT__S2+40(a2)
-    ld  s8, OFFSETOF__CONTEXT__S2+48(a2)
-    ld  s9, OFFSETOF__CONTEXT__S2+56(a2)
-    ld  s10, OFFSETOF__CONTEXT__S2+64(a2)
-    ld  s11, OFFSETOF__CONTEXT__S2+72(a2)
-
-    // Invoke the funclet
-    jalr a1
-
-    EPILOG_RESTORE_REG_PAIR   s1, s2, 16
-    EPILOG_RESTORE_REG_PAIR   s3, s4, 32
-    EPILOG_RESTORE_REG_PAIR   s5, s6, 48
-    EPILOG_RESTORE_REG_PAIR   s7, s8, 64
-    EPILOG_RESTORE_REG_PAIR   s9, s10, 80
-    EPILOG_RESTORE_REG_PAIR   s11, gp, 96
-    EPILOG_RESTORE_REG tp, 112
-
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 128
-    EPILOG_RETURN
-NESTED_END CallEHFunclet, _TEXT
-
-// This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
-// frame pointer for accessing the locals in the parent method.
-NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16, 0
-
-    // On entry:
-    //
-    // a0 = throwable
-    // a1 = FP of main function
-    // a2 = PC to invoke
-    // a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-    //
-    // Save the SP of this function
-    sd  sp, 0(a3)
-    // Restore frame pointer
-    mv  fp, a1
-    // Invoke the filter funclet
-    jalr a2
-
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
-    EPILOG_RETURN
-NESTED_END CallEHFilterFunclet, _TEXT
-
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
@@ -767,17 +689,6 @@ LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
     EPILOG_RETURN
 LEAF_END GetThreadStaticsVariableOffset, _TEXT
 #endif // !TARGET_LINUX_MUSL
-
-LEAF_ENTRY JIT_PollGC, _TEXT
-        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, t0
-        lw      t0, 0(t0)
-        bnez    t0, LOCAL_LABEL(JIT_PollGCRarePath)
-        ret
-LOCAL_LABEL(JIT_PollGCRarePath):
-        PREPARE_EXTERNAL_VAR g_pPollGC, t0
-        ld      t0, 0(t0)
-        jr      t0
-LEAF_END JIT_PollGC, _TEXT
 
 //a0 -This pointer
 //a1 -ReturnBuffer

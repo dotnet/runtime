@@ -8,7 +8,7 @@ using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     public sealed class PreprocessedTokenSource : ITokenSource
     {
@@ -82,11 +82,15 @@ namespace ILAssembler
 
         private IToken NextTokenWithoutNestedEof(bool errorOnEof = false)
         {
-            IToken nextToken = CurrentTokenSource.NextToken();
-
-            if (nextToken.Type == CILLexer.Eof)
+            while (true)
             {
-                // Skip the nested file EOF token.
+                IToken nextToken = CurrentTokenSource.NextToken();
+                if (nextToken.Type != CILLexer.Eof)
+                {
+                    return nextToken;
+                }
+
+                // Skip nested file EOF tokens until reaching a parent with more input.
                 // Native ILASM only failed to parse across include file boundaries for the following cases:
                 // - A comment tries to cross the file boundary.
                 // - The included file does not have at least one fully parsable rule.
@@ -96,15 +100,27 @@ namespace ILAssembler
                 {
                     ReportPreprocessorSyntaxError(nextToken);
                 }
-                _includeSourceStack.Pop();
-                if (_includeSourceStack.Count == 0)
+
+                if (_includeSourceStack.Count == 1)
                 {
                     // If we hit EOF of our entry file, return the EOF token.
                     return nextToken;
                 }
-                nextToken = CurrentTokenSource.NextToken();
+
+                int activeIfDefBlocks = ActiveIfDefBlocksInCurrentSource;
+                if (activeIfDefBlocks != 0 && !errorOnEof)
+                {
+                    ReportPreprocessorSyntaxError(nextToken);
+                }
+
+                for (int i = 0; i < activeIfDefBlocks; i++)
+                {
+                    _activeIfDefBlocks.Pop();
+                }
+
+                _includeSourceStack.Pop();
+                errorOnEof = activeIfDefBlocks == 0 && ActiveIfDefBlocksInCurrentSource != 0;
             }
-            return nextToken;
         }
 
         // Stack of tokens produced by macro expansion re-lexing
@@ -141,6 +157,12 @@ namespace ILAssembler
                 IToken valueMaybe = NextTokenWithoutNestedEof(errorOnEof: ActiveIfDefBlocksInCurrentSource != 0);
                 if (valueMaybe.Type == CILLexer.QSTRING)
                 {
+                    if (valueMaybe.Text.Contains("\\\"", StringComparison.Ordinal))
+                    {
+                        ReportPreprocessorSyntaxError(valueMaybe);
+                        return NextToken();
+                    }
+
                     _definedVars.Add(identifier.Text, StringHelpers.ParseQuotedString(valueMaybe.Text));
                     return NextToken();
                 }
@@ -183,9 +205,10 @@ namespace ILAssembler
                     ReportPreprocessorSyntaxError(nextToken);
                     return NextTokenWithoutNestedEof(false);
                 }
+                _activeIfDefBlocks.Pop();
                 var (source, activeIfDef, includedFromFile, includedFromLine) = _includeSourceStack.Pop();
                 _includeSourceStack.Push((source, --activeIfDef, includedFromFile, includedFromLine));
-                return NextTokenWithoutNestedEof(activeIfDef != 0);
+                return NextToken();
             }
             else if (nextToken.Type == CILLexer.ID && _definedVars.TryGetValue(nextToken.Text, out string? newValue) && newValue is not null)
             {
@@ -265,7 +288,7 @@ namespace ILAssembler
                 // then we'll only check syntax of preprocessor tokens and ignore all other tokens until we've seen a matching #endif
                 if (numNestedPreprocessorBlocks > 0)
                 {
-                    if (nextToken.Type == CILLexer.PP_IFDEF || nextToken.Type == CILLexer.PP_ENDIF)
+                    if (nextToken.Type == CILLexer.PP_IFDEF || nextToken.Type == CILLexer.PP_IFNDEF)
                     {
                         IToken identifier = NextTokenWithoutNestedEof(errorOnEof: true);
                         if (identifier.Type != CILLexer.ID)
@@ -293,9 +316,9 @@ namespace ILAssembler
                     var (source, activeIfDef, includedFromFile, includedFromLine) = _includeSourceStack.Pop();
                     _includeSourceStack.Push((source, ++activeIfDef, includedFromFile, includedFromLine));
 
-                    return NextTokenWithoutNestedEof(errorOnEof: true);
+                    return NextToken();
                 }
-                if (nextToken.Type == CILLexer.PP_IFDEF || nextToken.Type == CILLexer.PP_ENDIF)
+                if (nextToken.Type == CILLexer.PP_IFDEF || nextToken.Type == CILLexer.PP_IFNDEF)
                 {
                     numNestedPreprocessorBlocks++;
                 }
@@ -307,7 +330,7 @@ namespace ILAssembler
                 var (source, activeIfDef, includedFromFile, includedFromLine) = _includeSourceStack.Pop();
                 _includeSourceStack.Push((source, --activeIfDef, includedFromFile, includedFromLine));
             }
-            return NextTokenWithoutNestedEof(ActiveIfDefBlocksInCurrentSource != 0);
+            return NextToken();
         }
 
         public event Action<string, int, int, string>? OnPreprocessorSyntaxError;
@@ -316,7 +339,8 @@ namespace ILAssembler
         {
             string text = token.TokenSource.InputStream.GetText(Interval.Of(token.StartIndex, token.TokenSource.InputStream.Index));
             string msg = "preprocessor syntax error at: '" + GetErrorDisplay(text) + "'";
-            OnPreprocessorSyntaxError?.Invoke(token.TokenSource.SourceName, token.StartIndex, token.StopIndex - token.StartIndex, msg);
+            SourceSpan span = Location.GetSourceSpan(token);
+            OnPreprocessorSyntaxError?.Invoke(token.TokenSource.SourceName, span.Start, span.Length, msg);
         }
 
         private static string GetErrorDisplay(string s)

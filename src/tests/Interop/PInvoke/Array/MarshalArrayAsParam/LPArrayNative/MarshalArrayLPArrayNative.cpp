@@ -39,6 +39,114 @@ bool Equals(T *pActual, int cActual, T *pExpected, int cExpected)
     return true;
 }
 
+using PointerArrayAddressCallback = uintptr_t* (__cdecl *)(uintptr_t*, intptr_t);
+using PointerArrayCallback = int32_t (__cdecl *)(uintptr_t*, int32_t, const uintptr_t*);
+
+extern "C" DLL_EXPORT uintptr_t* __cdecl GetPointerArrayAddress(uintptr_t* values, PointerArrayAddressCallback callback, intptr_t context)
+{
+    if (callback != nullptr && callback(values, context) != values)
+    {
+        return nullptr;
+    }
+
+    return values;
+}
+
+extern "C" DLL_EXPORT BOOL __cdecl ReversePointerArray(uintptr_t* values, int32_t count, const uintptr_t* expected, uintptr_t* original, BOOL pinned)
+{
+    if (values == nullptr || expected == nullptr)
+    {
+        return values == nullptr && expected == nullptr;
+    }
+
+    if ((values == original) != (pinned != FALSE))
+    {
+        return FALSE;
+    }
+
+    for (int32_t i = 0; i < count; i++)
+    {
+        if (values[i] != expected[i])
+        {
+            return FALSE;
+        }
+    }
+
+    for (int32_t i = 0; i < count; i++)
+    {
+        values[i] = expected[count - i - 1];
+    }
+
+    return TRUE;
+}
+
+extern "C" DLL_EXPORT BOOL __cdecl ReversePointerArrayByRef(uintptr_t** values, int32_t count, const uintptr_t* expected, uintptr_t* original)
+{
+    return ReversePointerArray(*values, count, expected, original, FALSE);
+}
+
+extern "C" DLL_EXPORT BOOL __cdecl CreatePointerArray(uintptr_t** values, int32_t count, const uintptr_t* expected)
+{
+    *values = nullptr;
+    if (expected == nullptr)
+    {
+        return TRUE;
+    }
+
+    *values = static_cast<uintptr_t*>(CoreClrAlloc(sizeof(uintptr_t) * (count == 0 ? 1 : count)));
+    if (*values == nullptr)
+    {
+        return FALSE;
+    }
+
+    for (int32_t i = 0; i < count; i++)
+    {
+        (*values)[i] = expected[i];
+    }
+
+    return TRUE;
+}
+
+extern "C" DLL_EXPORT BOOL __cdecl CallPointerArrayCallback(PointerArrayCallback callback, uintptr_t* values, int32_t count, const uintptr_t* expected)
+{
+    if (callback(values, count, expected) == 0)
+    {
+        return FALSE;
+    }
+
+    for (int32_t i = 0; i < count; i++)
+    {
+        if (values[i] != expected[count - i - 1])
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+extern "C" DLL_EXPORT uint8_t* __cdecl ReverseArrayElements(uint8_t* values, int32_t count, int32_t elementSize)
+{
+    for (int32_t i = 0; i < count / 2; i++)
+    {
+        for (int32_t j = 0; j < elementSize; j++)
+        {
+            uint8_t temporary = values[i * elementSize + j];
+            values[i * elementSize + j] = values[(count - i - 1) * elementSize + j];
+            values[(count - i - 1) * elementSize + j] = temporary;
+        }
+    }
+
+    return values;
+}
+
+using ArrayElementReverser = uint8_t* (__cdecl *)(uint8_t*, int32_t, int32_t);
+
+extern "C" DLL_EXPORT ArrayElementReverser __cdecl GetArrayElementReverser()
+{
+    return &ReverseArrayElements;
+}
+
 #define EQUALS(__actual, __cActual, __expected) Equals((__actual), (__cActual), (__expected), (int)sizeof(__expected) / sizeof(__expected[0]))
 #define INIT_EXPECTED(__type, __size) 	\
     __type expected[(__size)]; \

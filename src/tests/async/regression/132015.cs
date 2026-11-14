@@ -5,21 +5,19 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
-
-[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Runtime_132015
 {
     [Fact]
-    public static void AssignInFilterIsVisibleAfterSuspension()
+    public static async Task AssignInFilterIsVisibleAfterSuspension()
     {
-        Assert.Equal("success", AssignInFilter().GetAwaiter().GetResult());
+        Assert.Equal("success", await AssignInFilter());
     }
 
     [Fact]
-    public static void AssignInNestedFinallyIsVisibleAfterSuspension()
+    public static async Task AssignInNestedFinallyIsVisibleAfterSuspension()
     {
-        Assert.Equal("success", AssignInNestedFinally().GetAwaiter().GetResult());
-        Assert.Equal("success", AssignInNestedFinallyWithFilter().GetAwaiter().GetResult());
+        Assert.Equal("success", await AssignInNestedFinally());
+        Assert.Equal("success", await AssignInNestedFinallyWithFilter());
     }
 
     // The filter assigns the exception variable, which must survive the

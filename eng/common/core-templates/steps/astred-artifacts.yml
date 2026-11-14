@@ -21,7 +21,7 @@ steps:
     FeedUrl: 'https://pkgs.dev.azure.com/dnceng/_packaging/dotnet-internal-FoSSE/nuget/v3/index.json'
 
 - pwsh: |
-    $ErrorActionPreference = 'Continue'
+    $ErrorActionPreference = 'Stop'
     $apjOut = Join-Path $env:ASTRED_CAPTURE_PATH 'apj'
     New-Item -ItemType Directory -Force -Path $apjOut | Out-Null
 
@@ -34,17 +34,19 @@ steps:
 
     $project = Join-Path $apjOut '.astred.project.json'
     $binlogPaths = @($binlogs.FullName)
+    $responseFile = Join-Path $apjOut 'binlogs.rsp'
+    $binlogPaths | ForEach-Object { '"{0}"' -f $_ } |
+      Set-Content -LiteralPath $responseFile -Encoding utf8
     Write-Host "astproj: processing $($binlogPaths.Count) binlog(s)"
-    astred astproj -nofolders @binlogPaths "-o:$project"
+    astred astproj -nofolders "@$responseFile" "-o:$project"
     if ($LASTEXITCODE -ne 0) {
-      Write-Host "##vso[task.logissue type=warning]astproj failed (exit $LASTEXITCODE)"
+      throw "astproj failed (exit $LASTEXITCODE)"
     }
   displayName: Generate Astred Project Files
   workingDirectory: ${{ parameters.sourcesPath }}
   env:
     ASTRED_BINLOG_DIR: ${{ parameters.binlogDir }}
     ASTRED_CAPTURE_PATH: ${{ parameters.capturePath }}
-  condition: succeededOrFailed()
   continueOnError: true
 
 - pwsh: |
@@ -91,12 +93,12 @@ steps:
   env:
     ASTRED_SOURCES_PATH: ${{ parameters.sourcesPath }}
     ASTRED_CAPTURE_PATH: ${{ parameters.capturePath }}
-  condition: succeededOrFailed()
   continueOnError: true
 
 - task: UploadAstred@0
   displayName: Upload Digest to Astred
-  condition: and(succeededOrFailed(), eq(variables['ASTRED_DIGEST_READY'], 'true'))
+  condition: and(succeeded(), eq(variables['ASTRED_DIGEST_READY'], 'true'))
+  continueOnError: true
   inputs:
     SourcePath: ${{ parameters.capturePath }}/upload
   env:

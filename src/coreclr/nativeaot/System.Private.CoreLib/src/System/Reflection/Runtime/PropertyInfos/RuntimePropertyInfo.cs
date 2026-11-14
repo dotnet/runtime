@@ -8,7 +8,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -80,9 +79,9 @@ namespace System.Reflection.Runtime.PropertyInfos
             {
                 bool useGetter = CanRead;
                 RuntimeMethodInfo accessor = (useGetter ? Getter : Setter);
-                RuntimeParameterInfo[] runtimeMethodParameterInfos = accessor.RuntimeParameters;
+                RuntimeParameterInfo[] runtimeMethodParameterInfos = accessor?.RuntimeParameters ?? [];
                 int count = runtimeMethodParameterInfos.Length;
-                if (!useGetter)
+                if (!useGetter && accessor is not null)
                     count--;  // If we're taking the parameters off the setter, subtract one for the "value" parameter.
                 if (count == 0)
                 {
@@ -93,7 +92,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                     indexParameters = new ParameterInfo[count];
                     for (int i = 0; i < count; i++)
                     {
-                        indexParameters[i] = RuntimePropertyIndexParameterInfo.GetRuntimePropertyIndexParameterInfo(this, runtimeMethodParameterInfos[i]);
+                        indexParameters[i] = new RuntimeParameterInfo(runtimeMethodParameterInfos[i], this);
                     }
                     _lazyIndexParameters = indexParameters;
                 }
@@ -325,6 +324,8 @@ namespace System.Reflection.Runtime.PropertyInfos
         /// Return a qualified handle that can be used to get the type of the property.
         /// </summary>
         protected abstract QSignatureTypeHandle PropertyTypeHandle { get; }
+
+        internal abstract QSignatureTypeHandle GetParameterTypeHandle(int position);
 
         protected enum PropertyMethodSemantics
         {

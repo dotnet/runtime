@@ -769,7 +769,7 @@ OBJECTREF CLRException::GetThrowableFromExceptionRecord(EXCEPTION_RECORD *pExcep
     return NULL;
 }
 
-void CLRException::HandlerState::CleanupTry()
+void CLRException::HandlerState::CleanupTry() noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;

@@ -77,7 +77,7 @@ namespace System.CommandLine
 
             return token.ToLowerInvariant() switch
             {
-                "linux" or "android" => TargetOS.Linux,
+                "linux" or "android" or "openharmony" => TargetOS.Linux,
                 "win" or "windows" => TargetOS.Windows,
                 "osx" => TargetOS.OSX,
                 "freebsd" => TargetOS.FreeBSD,
@@ -132,6 +132,9 @@ namespace System.CommandLine
 
             TargetArchitecture targetArchitecture = GetTargetArchitecture(targetArchitectureToken);
             TargetOS targetOS = GetTargetOS(targetOSToken);
+            if (targetArchitecture == TargetArchitecture.X86 && targetOS != TargetOS.Windows)
+                throw new CommandLineException("Target architecture 'x86' is only supported on Windows");
+
             TargetAbi targetAbi = (targetOSToken, targetArchitectureToken) switch
             {
                 (_, "armel") => TargetAbi.NativeAotArmel,

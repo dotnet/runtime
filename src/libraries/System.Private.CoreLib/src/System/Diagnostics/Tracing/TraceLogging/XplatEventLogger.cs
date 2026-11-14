@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -57,26 +56,26 @@ namespace System.Diagnostics.Tracing
         [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
         private static partial void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload);
 
-        private static readonly List<char> escape_seq = new List<char> { '\b', '\f', '\n', '\r', '\t', '\"', '\\' };
-        private static readonly Dictionary<char, string> seq_mapping = new Dictionary<char, string>()
-        {
-            {'\b', "b"},
-            {'\f', "f"},
-            {'\n', "n"},
-            {'\r', "r"},
-            {'\t', "t"},
-            {'\"', "\\\""},
-            {'\\', "\\\\"}
-        };
-
         private static void MinimalJsonserializer(string payload, ref ValueStringBuilder sb)
         {
-            foreach (var elem in payload)
+            foreach (char elem in payload)
             {
-                if (escape_seq.Contains(elem))
+                string? escaped = elem switch
+                {
+                    '\b' => "b",
+                    '\f' => "f",
+                    '\n' => "n",
+                    '\r' => "r",
+                    '\t' => "t",
+                    '\"' => "\\\"",
+                    '\\' => "\\\\",
+                    _ => null,
+                };
+
+                if (escaped is not null)
                 {
                     sb.Append("\\\\");
-                    sb.Append(seq_mapping[elem]);
+                    sb.Append(escaped);
                 }
                 else
                 {

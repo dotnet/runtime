@@ -1741,6 +1741,159 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(verifySignatureOnly: true);
         }
 
+        [Fact]
+        public static void LargeSignerCountSanityTest()
+        {
+            // Ignoring the fact that they long preceded computers, pretend the 1789 U.S. Electoral College
+            // signed their vote tallies with CMS.
+            //
+            // Build that, and make sure the document works at scale.
+
+            const int ElectorsCount = 69;
+            X509Certificate2 root = null;
+            X509Certificate2 issuer = null;
+            X509Certificate2 lastSigner = null;
+            string dateSuffix = $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.ffff}";
+
+            ContentInfo content = new ContentInfo(
+                Text.Encoding.ASCII.GetBytes(@"
+President:
+George Washington (69)
+
+Vice President:
+John Adams (34)
+
+No Office:
+John Jay (9)
+Robert H. Harrison (6)
+John Rutledge (6)
+John Hancock (4)
+George Clinton (3)
+Samuel Huntington (2)
+John Milton (2)
+James Armstrong (1)
+Benjamin Lincoln (1)
+Edward Telfair (1)
+"));
+
+            byte[] encoded;
+
+            try
+            {
+                SignedCms builder = new SignedCms(content, detached: false);
+
+                root = MakeRoot(dateSuffix);
+                issuer = MakeChild("Elector Issuing Authority", root, dateSuffix, isCA: true);
+
+                for (int i = 0; i < ElectorsCount; i++)
+                {
+                    lastSigner?.Dispose();
+                    lastSigner = MakeChild($"Elector {i + 1} of {ElectorsCount}", issuer, dateSuffix);
+
+                    // Alternate between IssuerAndSerialNumber and SubjectKeyIdentifier to make sure both work.
+                    SubjectIdentifierType type = (SubjectIdentifierType)(1 + i & 1);
+                    CmsSigner signer = new CmsSigner(type, lastSigner)
+                    {
+                        IncludeOption = X509IncludeOption.EndCertOnly,
+                    };
+
+                    if (i == 0)
+                    {
+                        signer.Certificates.Add(issuer);
+                        signer.Certificates.Add(root);
+                    }
+
+                    builder.ComputeSignature(signer, silent: true);
+                }
+
+                encoded = builder.Encode();
+            }
+            finally
+            {
+                lastSigner?.Dispose();
+                issuer?.Dispose();
+                root?.Dispose();
+            }
+
+            SignedCms verifier = new SignedCms();
+            verifier.Decode(encoded);
+
+            AssertExtensions.Equal(ElectorsCount + 2, verifier.Certificates.Count);
+
+            foreach (SignerInfo signerInfo in verifier.SignerInfos)
+            {
+                Assert.NotNull(signerInfo.Certificate);
+
+                // Assert.NoThrow
+                signerInfo.CheckSignature(verifySignatureOnly: true);
+            }
+
+            // Assert.NoThrow
+            verifier.CheckSignature(verifySignatureOnly: true);
+
+            static X509Certificate2 MakeRoot(string dateSuffix)
+            {
+                using (ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP521))
+                {
+                    CertificateRequest req = new CertificateRequest(
+                        $"CN=Elector Root Authority {dateSuffix}, O=Mythical Elector Attestation",
+                        key,
+                        HashAlgorithmName.SHA512);
+
+                    req.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
+                    req.CertificateExtensions.Add(
+                        new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
+                    DateTimeOffset now = DateTimeOffset.UtcNow;
+                    return req.CreateSelfSigned(now.AddMinutes(-3), now.AddMinutes(120));
+                }
+            }
+
+            static X509Certificate2 MakeChild(string cn, X509Certificate2 issuer, string dateSuffix, bool isCA = false)
+            {
+                ECCurve curve = isCA ? ECCurve.NamedCurves.nistP384 : ECCurve.NamedCurves.nistP256;
+
+                using (ECDsa key = ECDsa.Create(curve))
+                {
+                    CertificateRequest req = new CertificateRequest(
+                        $"CN={cn} {dateSuffix}, O=Mythical Elector Attestation",
+                        key,
+                        HashAlgorithmName.SHA512);
+
+                    req.CertificateExtensions.Add(new X509BasicConstraintsExtension(isCA, false, 0, true));
+                    req.CertificateExtensions.Add(
+                        new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
+
+#if NET
+                    req.CertificateExtensions.Add(
+                        X509AuthorityKeyIdentifierExtension.CreateFromCertificate(issuer, true, true));
+#endif
+
+                    byte[] serial = new byte[20];
+#if NET
+                    RandomNumberGenerator.Fill(serial);
+#else
+                    using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+                    {
+                        rng.GetBytes(serial);
+                    }
+#endif
+
+                    // Ensure positive serial number
+                    serial[0] &= 0x7F;
+
+                    X509Certificate2 pubOnly = req.Create(
+                        issuer,
+                        issuer.NotBefore.AddMinutes(1),
+                        issuer.NotAfter.AddMinutes(-1),
+                        serial);
+
+                    X509Certificate2 withKey = pubOnly.CopyWithPrivateKey(key);
+                    pubOnly.Dispose();
+                    return withKey;
+                }
+            }
+        }
+
         // Ed25519 certificate from https://datatracker.ietf.org/doc/html/rfc8410#section-10.2
         private const string UnknownAlgorithmCert =
             """

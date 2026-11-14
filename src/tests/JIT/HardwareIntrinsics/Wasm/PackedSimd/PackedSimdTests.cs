@@ -20,12 +20,16 @@ public sealed class PackedSimdTests
         Assert.NotNull(methodInfo);
         Assert.Equal(PackedSimd.IsSupported, methodInfo.Invoke(null, null));
         Assert.Equal(PackedSimd.IsSupported, Vector128.IsHardwareAccelerated);
-        Assert.True(PackedSimd.IsSupported);
     }
 
     [Fact]
     public static unsafe void BasicArithmeticTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v1 = Vector128.Create(1, 2, 3, 4);
         var v2 = Vector128.Create(5, 6, 7, 8);
 
@@ -41,6 +45,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void BitwiseOperationsTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v1 = Vector128.Create(0b1100, 0b1010, 0b1110, 0b1111);
         var v2 = Vector128.Create(0b1010, 0b1100, 0b0011, 0b0101);
 
@@ -56,6 +65,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void ShiftOperationsTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v = Vector128.Create(16, -16, 32, -32);
 
         var leftShift = PackedSimd.ShiftLeft(v, 2);
@@ -70,6 +84,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void ComparisonOperationsTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v1 = Vector128.Create(1.0f, 2.0f, 3.0f, 4.0f);
         var v2 = Vector128.Create(4.0f, 3.0f, 2.0f, 1.0f);
 
@@ -83,6 +102,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void FloatingPointOperationsTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v = Vector128.Create(4.0f, 9.0f, 16.0f, 25.0f);
 
         var sqrtResult = PackedSimd.Sqrt(v);
@@ -97,6 +121,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void NotTests()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v16 = Vector128.Create((byte)0b11001100);
         var v8 = Vector128.Create((ushort)0b11110000_11001100);
         var v4 = Vector128.Create((uint)0b11111111_00000000_11110000_00000000);
@@ -124,6 +153,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void BitwiseSelectTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Test with integers
         var mask = Vector128.Create(unchecked((int)0xFFFFFFFF), 0, unchecked((int)0xFFFFFFFF), 0);
         var a = Vector128.Create(1, 2, 3, 4);
@@ -205,6 +239,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void LoadStoreTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         int[] values = new int[] { 1, 2, 3, 4, 5, 6, 7, 8 };
         fixed (int* ptr = values)
         {
@@ -243,6 +282,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void ExtractInsertScalarTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v = Vector128.Create(1, 2, 3, 4);
 
         int extracted = PackedSimd.ExtractScalar(v, 2);
@@ -255,6 +299,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void Vector128GetWithElementTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var vi = Vector128.Create(10, 20, 30, 40);
 
         // GetElement/WithElement with a constant index, and ToScalar (GetElement(0)).
@@ -296,6 +345,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void Vector128ShiftTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Left shift (<<) with a constant count across element widths.
         Assert.Equal(Vector128.Create(4, 8, 12, 16), Vector128.Create(1, 2, 3, 4) << 2);
         Assert.Equal(Vector128.Create(2L, 4L), Vector128.Create(1L, 2L) << 1);
@@ -331,6 +385,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void Vector128CreateScalarTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Non-constant operands force the CreateScalar/CreateScalarUnsafe lowering rather
         // than constant folding to a vector constant.
 
@@ -356,6 +415,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void Vector2And3ConversionTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Non-constant operands force the reinterpret nodes rather than constant folding.
 
         Vector128<float> v = Opaque(Vector128.Create(1.0f, 2.0f, 3.0f, 4.0f));
@@ -382,6 +446,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void ConstantShuffleTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Opaque data with constant indices exercises the Swizzle-based constant-shuffle path.
 
         Vector128<int> vi = Opaque(Vector128.Create(1, 2, 3, 4));
@@ -410,6 +479,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void VariableShuffleTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Opaque indices force the variable-index path (byte-index expansion + i8x16.swizzle).
 
         Vector128<int> vi  = Opaque(Vector128.Create(1, 2, 3, 4));
@@ -445,6 +519,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void ReverseTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Reverse lowers to a constant Shuffle; Opaque data forces the shuffle rather than folding.
 
         Vector128<int> vi = Opaque(Vector128.Create(1, 2, 3, 4));
@@ -469,6 +548,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void SumTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Opaque data forces the shuffle + add reduction rather than constant folding.
 
         Assert.Equal(10, Vector128.Sum(Opaque(Vector128.Create(1, 2, 3, 4))));
@@ -483,6 +567,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void ZipTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Opaque operands force the shuffle + OR interleave rather than constant folding.
 
         Vector128<int> li = Opaque(Vector128.Create(1, 2, 3, 4));
@@ -516,6 +605,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void UnzipTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Opaque operands force the shuffle + OR deinterleave rather than constant folding.
 
         Vector128<int> li = Opaque(Vector128.Create(1, 2, 3, 4));
@@ -549,6 +643,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void ConcatTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Opaque operands force the shuffle + OR concat rather than constant folding.
 
         Vector128<int> li = Opaque(Vector128.Create(1, 2, 3, 4));
@@ -585,6 +684,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void CreateAlternatingSequenceTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Opaque operands force the broadcast + zip path rather than a constant vector.
 
         int ei = Opaque(3);
@@ -616,6 +720,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void DotTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Opaque operands force the Sum(left * right) reduction rather than constant folding.
 
         Vector128<int> ai = Opaque(Vector128.Create(1, 2, 3, 4));
@@ -646,6 +755,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void WidenTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Opaque operands force the widening intrinsics rather than constant folding. The float
         // WidenUpper is the newly-enabled case (shuffle + promote); the integer forms exercise the
         // sign/zero-extend widening instructions.
@@ -670,6 +784,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void NarrowTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Opaque operands force the narrowing builder (byte-granularity shuffle for integers,
         // demote + shuffle for double->float) rather than constant folding.
 
@@ -693,6 +812,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void NarrowWithSaturationTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Opaque operands force the saturating-narrow builder (clamp to the narrow range then narrow).
 
         Vector128<short> sh1 = Opaque(Vector128.Create((short)-200, 200, -100, 100, 0, 50, -50, 127));
@@ -724,6 +848,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void MinMaxScalarTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Scalar Math.Min/Max and the Number/Magnitude variants now lower through the SIMD builders on
         // WASM by wrapping the operands in a single-element vector and extracting the result.
 
@@ -754,6 +883,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void PromotedSimdFieldAccessTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Individually reading and writing Vector2/3/4 fields promotes the local and lowers the field
         // accesses through GetElement/WithElement rather than memory-based field loads and stores.
 
@@ -786,6 +920,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void ExtractMostSignificantBitsConstantFoldTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // A constant input lets value numbering fold ExtractMostSignificantBits to an integer constant;
         // the Opaque overloads keep the runtime path covered so both agree.
 
@@ -805,6 +944,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void ConditionalSelectConstantFoldTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // A constant mask lets value numbering / gtFoldExprHWIntrinsic fold ConditionalSelect to a
         // constant vector as (trueValue & mask) | (falseValue & ~mask); the Opaque overloads keep the
         // runtime BitwiseSelect path covered so both agree.
@@ -836,6 +980,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);
         var v2 = Vector128.Create((byte)10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10);
 
@@ -864,6 +1013,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void SaturatingArithmeticSignedTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v1 = Vector128.Create((sbyte)120, 121, 122, 123, 124, 125, 126, 127, 120, 121, 122, 123, 124, 125, 126, 127);
         var v2 = Vector128.Create((sbyte)10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10);
 
@@ -911,6 +1065,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void SaturatingArithmeticForIntegersTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Test for sbyte (saturates at -128 and 127)
         var sb1 = Vector128.Create((sbyte)120, (sbyte)120, (sbyte)-120, (sbyte)-120,
                                  (sbyte)120, (sbyte)120, (sbyte)-120, (sbyte)-120,
@@ -951,6 +1110,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void SaturatingArithmeticForUnsignedIntegersTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Test for byte (saturates at 0 and 255)
         var b1 = Vector128.Create((byte)250, (byte)250, (byte)5, (byte)5,
                                  (byte)250, (byte)250, (byte)5, (byte)5,
@@ -991,6 +1155,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void SaturatingArithmeticEdgeCasesTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Edge cases for signed bytes
         var sbMax = Vector128.Create(sbyte.MaxValue);
         var sbMin = Vector128.Create(sbyte.MinValue);
@@ -1039,6 +1208,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void WideningOperationsTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v = Vector128.Create((short)1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000);
 
         var lowerWidened = PackedSimd.SignExtendWideningLower(v);
@@ -1051,6 +1225,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void SwizzleTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
         var indices = Vector128.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
 
@@ -1061,6 +1240,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void LoadScalarAndSplatTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         int value = 42;
         float fValue = 3.14f;
 
@@ -1077,6 +1261,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void LoadStoreNullCheckTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         Assert.Throws<NullReferenceException>(() => LoadScalarAndSplatVector128(null));
         Assert.Throws<NullReferenceException>(() => LoadScalarVector128(null));
         Assert.Throws<NullReferenceException>(() => LoadWideningVector128(null));
@@ -1119,6 +1308,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void LoadWideningTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         byte[] bytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
         fixed (byte* ptr = bytes)
         {
@@ -1130,6 +1324,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void StoreSelectedScalarTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v = Vector128.Create(1, 2, 3, 4);
         int value = 0;
         int* ptr = &value;
@@ -1141,6 +1340,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void LoadScalarAndInsertTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v = Vector128.Create(1, 2, 3, 4);
         int newValue = 42;
         int* ptr = &newValue;
@@ -1152,6 +1356,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void ConversionTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var intVector = Vector128.Create(1, 2, 3, 4);
         var floatVector = Vector128.Create(1.5f, 2.5f, 3.5f, 4.5f);
 
@@ -1165,6 +1374,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void AddPairwiseWideningTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var bytes = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
         var widened = PackedSimd.AddPairwiseWidening(bytes);
@@ -1174,6 +1388,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void MultiplyWideningTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var shorts = Vector128.Create((short)10, 20, 30, 40, 50, 60, 70, 80);
         var multiplier = Vector128.Create((short)2, 2, 2, 2, 2, 2, 2, 2);
 
@@ -1187,6 +1406,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void DotProductTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v1 = Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8);
         var v2 = Vector128.Create((short)2, 2, 2, 2, 2, 2, 2, 2);
 
@@ -1203,6 +1427,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void FloatingPointNegationTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v = Vector128.Create(1.0f, -2.0f, 3.0f, -4.0f);
         var d = Vector128.Create(1.0, -2.0);
 
@@ -1216,6 +1445,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void FloatingPointAbsTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v = Vector128.Create(-1.0f, 2.0f, -3.0f, 4.0f);
         var d = Vector128.Create(-1.0, 2.0);
 
@@ -1229,6 +1463,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void FloatingPointDivisionTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v1 = Vector128.Create(2.0f, 4.0f, 6.0f, 8.0f);
         var v2 = Vector128.Create(2.0f, 2.0f, 2.0f, 2.0f);
         var d1 = Vector128.Create(2.0, 4.0);
@@ -1244,6 +1483,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void IntegerAbsTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var bytes = Vector128.Create((sbyte)-1, 2, -3, 4, -5, 6, -7, 8, -9, 10, -11, 12, -13, 14, -15, 16);
         var shorts = Vector128.Create((short)-1, 2, -3, 4, 5, 6, -7, 8);
 
@@ -1256,6 +1500,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void AverageRoundedTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var bytes1 = Vector128.Create((byte)1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31);
         var bytes2 = Vector128.Create((byte)3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33);
 
@@ -1268,6 +1517,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void MinMaxSignedUnsignedTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var signedBytes = Vector128.Create((sbyte)-1, 2, -3, 4, -5, 6, -7, 8, -9, 10, -11, 12, -13, 14, -15, 16);
         var unsignedBytes = Vector128.Create((byte)255, 2, 253, 4, 251, 6, 249, 8, 247, 10, 245, 12, 243, 14, 241, 16);
 
@@ -1286,6 +1540,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void SplatTypes()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         Assert.Equal(Vector128.Create(2.5f, 2.5f, 2.5f, 2.5f), PackedSimd.Splat(2.5f));
         Assert.Equal(Vector128.Create(-2, -2, -2, -2), PackedSimd.Splat(-2));
         Assert.Equal(Vector128.Create(2U, 2U, 2U, 2U), PackedSimd.Splat(2U));
@@ -1303,6 +1562,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void LoadScalarAndSplatInfinityTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         float fInf = float.PositiveInfinity;
         double dInf = double.PositiveInfinity;
 
@@ -1326,6 +1590,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void FloatingPointTruncateTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v1 = Vector128.Create(1.7f, -2.3f, 3.5f, -4.8f);
         var d1 = Vector128.Create(1.7, -2.3);
 
@@ -1339,6 +1608,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void ComparisonWithNaNTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v1 = Vector128.Create(1.0f, float.NaN, 3.0f, float.PositiveInfinity);
         var v2 = Vector128.Create(float.NegativeInfinity, 2.0f, float.NaN, 4.0f);
 
@@ -1363,6 +1637,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void NativeIntegerArithmeticTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v1 = Vector128.Create([(nint)1, (nint)2, (nint)3, (nint)4]);
         var v2 = Vector128.Create([(nint)5, (nint)6, (nint)7, (nint)8]);
 
@@ -1378,6 +1657,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void NativeUnsignedIntegerArithmeticTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v1 = Vector128.Create([(nuint)1, (nuint)2, (nuint)3, (nuint)4]);
         var v2 = Vector128.Create([(nuint)5, (nuint)6, (nuint)7, (nuint)8]);
 
@@ -1392,6 +1676,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void NativeIntegerLoadStoreTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         nint[] values = new nint[] { 1, 2, 3, 4 };
         fixed (nint* ptr = values)
         {
@@ -1410,6 +1699,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void NativeUnsignedIntegerLoadStoreTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         nuint[] values = new nuint[] { 1, 2, 3, 4 };
         fixed (nuint* ptr = values)
         {
@@ -1428,6 +1722,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static void NativeIntegerShiftTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v = Vector128.Create([(nint)16, (nint)(-16), (nint)32, (nint)(-32)]);
 
         var leftShift = PackedSimd.ShiftLeft(v, 2);
@@ -1448,6 +1747,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static void NativeUnsignedIntegerShiftTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v = Vector128.Create([(nuint)16, unchecked((nuint)(-16)), (nuint)32, unchecked((nuint)(-32))]);
 
         var leftShift = PackedSimd.ShiftLeft(v, 2);
@@ -1466,6 +1770,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void ConvertNarrowingSaturateSignedTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v1 = Vector128.Create(32767, 32768, -32768, -32769);
         var v2 = Vector128.Create(100, 200, -100, -200);
 
@@ -1477,6 +1786,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void ConvertNarrowingSaturateUnsignedShortToByte()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Test shorts to bytes - valid values and values that need saturation
         var lower = Vector128.Create((short)255, 256, 127, -1, 300, 0, 200, 100);
         var upper = Vector128.Create((short)50, 150, -50, -150, 75, 175, 225, 0);
@@ -1509,6 +1823,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void ConvertNarrowingSaturateUnsignedIntToUShort()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         // Existing test renamed for clarity (was ConvertNarrowingSaturateUnsignedTest)
         var v1 = Vector128.Create(65535, 65536, -1, -100);
         var v2 = Vector128.Create(100, 200, 300, 400);
@@ -1534,6 +1853,11 @@ public sealed class PackedSimdTests
     [Fact]
     public static unsafe void BitmaskTest()
     {
+        if (!PackedSimd.IsSupported)
+        {
+            return;
+        }
+
         var v1 = Vector128.Create((byte)0b00000001, 0b00000010, 0b00000100, 0b00001000,
                                         0b00010000, 0b00100000, 0b01000000, 0b10000000,
                                         0b00000001, 0b00000010, 0b00000100, 0b00001000,

@@ -308,30 +308,6 @@ inline bool CountInstrumentationDataSize(const uint8_t *pByte, size_t cbDataMax,
     return ReadInstrumentationSchema(pByte, cbDataMax, [pInstrumentationSchemaCount](const ICorJitInfo::PgoInstrumentationSchema& schema) { (*pInstrumentationSchemaCount)++; return true; });
 }
 
-inline bool ComparePgoSchemaEquals(const uint8_t *pByte, size_t cbDataMax, const ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas)
-{
-    size_t iSchema = 0;
-    return ReadInstrumentationSchema(pByte, cbDataMax, [schemaTable, cSchemas, &iSchema](const ICorJitInfo::PgoInstrumentationSchema& schema)
-    {
-        if (iSchema >= cSchemas)
-            return false;
-
-        if (schema.InstrumentationKind != schemaTable[iSchema].InstrumentationKind)
-            return false;
-
-        if (schema.ILOffset != schemaTable[iSchema].ILOffset)
-            return false;
-
-        if (schema.Count != schemaTable[iSchema].Count)
-            return false;
-
-        if (schema.Other != schemaTable[iSchema].Other)
-            return false;
-
-        return true;
-    });
-}
-
 inline void LayoutPgoInstrumentationSchema(const ICorJitInfo::PgoInstrumentationSchema& prevSchema, ICorJitInfo::PgoInstrumentationSchema* currentSchema)
 {
     size_t instrumentationSize = InstrumentationKindToSize(currentSchema->InstrumentationKind);

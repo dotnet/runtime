@@ -124,6 +124,11 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Kill_EntireProcessTree_MinimalExceptions()
         {
+            RemoteExecutor.Invoke(KillEntireProcessTreeMinimalExceptions).Dispose();
+        }
+
+        private static void KillEntireProcessTreeMinimalExceptions()
+        {
             // This test validates that Kill(true) doesn't throw excessive exceptions internally
             // during process enumeration, which causes severe performance degradation with debugger attached.
             // See https://github.com/dotnet/runtime/issues/121279

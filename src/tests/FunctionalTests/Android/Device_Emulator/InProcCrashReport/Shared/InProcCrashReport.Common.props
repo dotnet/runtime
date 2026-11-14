@@ -1,0 +1,58 @@
+<Project>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <TestRuntime>true</TestRuntime>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <ExpectedExitCode>100</ExpectedExitCode>
+    <DefineConstants>$(DefineConstants);INPROC_ANDROID</DefineConstants>
+    <!-- The test library links its own PAL/reporter; the managed host remains dynamic. -->
+    <StaticLinkedRuntime>false</StaticLinkedRuntime>
+    <CrashReportArtifactPath>/sdcard/Android/data/net.dot.$(AssemblyName)/files/inproccrashreport.zip</CrashReportArtifactPath>
+    <AdditionalXHarnessArguments>$(AdditionalXHarnessArguments) --device-out-folder=$(CrashReportArtifactPath)</AdditionalXHarnessArguments>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CrashReportAndroidDir>$(MSBuildThisFileDirectory)</CrashReportAndroidDir>
+    <CrashReportSharedDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'tests', 'baseservices', 'exceptions', 'inproccrashreport', 'Shared'))</CrashReportSharedDir>
+    <CrashReportSourceDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr', 'debug', 'crashreport'))</CrashReportSourceDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CrashReportSharedDir)Program.cs" />
+    <AndroidEnv Include="DOTNET_InProcCrashReportTestArchive" Value="$(CrashReportArtifactPath)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ExtraAppNativeSources Include="$(CrashReportSharedDir)inproccrashreport_test_driver.cpp" />
+    <ExtraAppNativeSources Include="$(CrashReportAndroidDir)android_log_interpose.c" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <RuntimeHeaders Include="$(CrashReportSourceDir.TrimEnd('\').TrimEnd('/'))" />
+    <RuntimeHeaders Include="$(CrashReportAndroidDir.TrimEnd('\').TrimEnd('/'))" />
+    <RuntimeHeaders Include="$(CoreClrProjectRoot)pal\inc" />
+  </ItemGroup>
+
+  <Target Name="ConfigureCrashReportNativeLibraries" BeforeTargets="_AndroidGenerateAppBundle">
+    <!-- Android CI builds CoreCLR and the APK in the same job; these archives are link inputs, not Helix payload files. -->
+    <PropertyGroup>
+      <CrashReportPalLibrary>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', 'lib', 'libcoreclrpal.a'))</CrashReportPalLibrary>
+      <CrashReportMinipalLibrary>$([MSBuild]::NormalizePath('$(ArtifactsObjDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)', 'shared_minipal', 'libminipal.a'))</CrashReportMinipalLibrary>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(CrashReportPalLibrary)')" Text="Build CoreCLR first; missing PAL library: $(CrashReportPalLibrary)" />
+    <Error Condition="!Exists('$(CrashReportMinipalLibrary)')" Text="Build CoreCLR first; missing minipal library: $(CrashReportMinipalLibrary)" />
+
+    <!-- AndroidAppBuilder uses ANDROID_STL=none. Supply NDK C++ support statically to avoid packaging libc++_shared.so. -->
+    <ItemGroup>
+      <RuntimeHeaders Include="$([MSBuild]::NormalizeDirectory('$(ANDROID_NDK_ROOT)', 'toolchains', 'llvm', 'prebuilt', '$(NdkToolchainPrebuiltOS)', 'sysroot', 'usr', 'include', 'c++', 'v1'))" />
+      <ExtraAppLinkerArgs Include="$(CrashReportPalLibrary.Replace('\', '/'))" />
+      <ExtraAppLinkerArgs Include="$(CrashReportMinipalLibrary.Replace('\', '/'))" />
+      <ExtraAppLinkerArgs Include="-lc++_static" />
+      <ExtraAppLinkerArgs Include="-lc++abi" />
+      <ExtraAppLinkerArgs Include="-Wl,--wrap=__android_log_write" />
+      <!-- Keep the test's PAL and C++ runtime private from the hosting CoreCLR. -->
+      <ExtraAppLinkerArgs Include="-Wl,--exclude-libs,ALL" />
+    </ItemGroup>
+  </Target>
+</Project>

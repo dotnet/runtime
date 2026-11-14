@@ -347,9 +347,17 @@ namespace System.Net.Security
         /// validation logic.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// Must be called only after <see cref="TlsBufferSession.Handshake"/> returned
         /// <see cref="TlsOperationStatus.NeedsCertificateValidation"/> and before
         /// <see cref="SetRemoteCertificateValidationResult"/> is called.
+        /// </para>
+        /// <para>
+        /// Any <see cref="SslCertificateTrust"/> associated with the session's certificate
+        /// context is used for chain validation unless a custom chain policy is specified by
+        /// <see cref="SslClientAuthenticationOptions.CertificateChainPolicy"/> or
+        /// <see cref="SslServerAuthenticationOptions.CertificateChainPolicy"/>.
+        /// </para>
         /// </remarks>
         public SslPolicyErrors AcceptWithDefaultValidation()
         {
@@ -360,14 +368,9 @@ namespace System.Net.Security
                     SR.Format(SR.net_tlssession_validation_not_pending, nameof(AcceptWithDefaultValidation)));
             }
 
-            // Build a fresh X509Chain locally and seed it with the peer-sent intermediates.
-            // The chain instance is never exposed to TlsSession callers; once validation is
-            // recorded it is disposed in SetRemoteCertificateValidationResult below.
+            // Build a fresh X509Chain locally. VerifyRemoteCertificateCore applies the configured
+            // chain policy before adding the peer-sent intermediates captured by this session.
             using X509Chain chain = new X509Chain();
-            if (_externalRemoteCertificates is { Count: > 0 } intermediates)
-            {
-                chain.ChainPolicy.ExtraStore.AddRange(intermediates);
-            }
 
             ProtocolToken alertToken = default;
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
@@ -380,16 +383,22 @@ namespace System.Net.Security
                 // populated with the same instance.
                 ok = SslStream.VerifyRemoteCertificateCore(
                     this,
+                    // The external certificate is being (re)validated after the handshake, so the
+                    // resumption shortcut in VerifyRemoteCertificateCore must not apply here.
+                    isInitialHandshake: false,
                     _options,
                     _securityContext,
                     ref _remoteCertificate,
                     ref _connectionInfo,
                     _externalPendingCert,
                     chain,
-                    trust: null,
+                    trust: SessionCertificateContext?.Trust,
                     ref alertToken,
                     ref sslPolicyErrors,
-                    out _);
+                    out _,
+                    out _,
+                    _externalRemoteCertificates,
+                    cloneCertificateChainPolicy: true);
             }
             finally
             {
@@ -488,7 +497,7 @@ namespace System.Net.Security
                 // are drained to the caller first).
                 if (_isHandshakeComplete)
                 {
-                    _externalValidationFault = new AuthenticationException(SR.net_ssl_io_cert_validation);
+                    _externalValidationFault = new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, errors));
                 }
                 else if (_resumeAfterCertValidation)
                 {
@@ -502,7 +511,7 @@ namespace System.Net.Security
                     // which checks _externalValidationFault. On OpenSSL 3.0+ retry-verify the
                     // fault will instead be set by the natural token-failed branch when
                     // SSL_do_handshake emits the fatal alert.
-                    _externalValidationFault = new AuthenticationException(SR.net_ssl_io_cert_validation);
+                    _externalValidationFault = new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, errors));
                 }
 
                 // VerifyRemoteCertificateCore assigns _remoteCertificate to the candidate before it
@@ -1008,6 +1017,13 @@ namespace System.Net.Security
                 {
                     EnsureCredentialsAcquired();
 
+                    // Resuming after CertificateRequested: SecureTransport does not stop again, so the
+                    // CredentialsNeeded path below never runs; install the certificate here.
+                    if (isCredentialResume && _securityContext is not null && _options.CertificateContext is not null)
+                    {
+                        SslStreamPal.TryUpdateClintCertificate(ActiveCredentialsRef(), _securityContext, _options);
+                    }
+
                     string hostName = TargetHostNameHelper.NormalizeHostName(_options.TargetHost);
                     token = SslStreamPal.InitializeSecurityContext(
                         ref ActiveCredentialsRef(),
@@ -1016,6 +1032,27 @@ namespace System.Net.Security
                         input,
                         out bytesConsumed,
                         _options);
+
+                    // Certificate configured before the handshake: SecureTransport still stops at
+                    // CertificateRequest, so install it here and continue.
+                    if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded &&
+                        _options.CertificateContext is not null &&
+                        SslStreamPal.TryUpdateClintCertificate(ActiveCredentialsRef(), _securityContext, _options))
+                    {
+                        if (token.Size > 0)
+                        {
+                            Debug.Assert(token.Payload != null);
+                            AppendPending(new ReadOnlySpan<byte>(token.Payload, 0, token.Size));
+                        }
+                        token.ReleasePayload();
+                        token = SslStreamPal.InitializeSecurityContext(
+                            ref ActiveCredentialsRef(),
+                            ref _securityContext,
+                            hostName,
+                            ReadOnlySpan<byte>.Empty,
+                            out _,
+                            _options);
+                    }
                 }
 
                 // Stage any handshake bytes the PAL produced.
@@ -1480,12 +1517,16 @@ namespace System.Net.Security
                 bool staged = false;
                 try
                 {
-                    if (token.Failed)
+                    // NoRenegotiation means no request can be made (e.g. a TLS 1.3 client that didn't offer
+                    // post-handshake authentication, or renegotiation disabled in the OpenSSL configuration),
+                    // not a failure: nothing is staged, so the session stays in its completed state below.
+                    bool noRenegotiation = token.Status.ErrorCode == SecurityStatusPalErrorCode.NoRenegotiation;
+                    if (token.Failed && !noRenegotiation)
                     {
                         throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
                     }
 
-                    if (token.Size > 0)
+                    if (token.Size > 0 && !noRenegotiation)
                     {
                         Debug.Assert(token.Payload != null);
                         AppendPending(new ReadOnlySpan<byte>(token.Payload, 0, token.Size));
@@ -1856,25 +1897,69 @@ namespace System.Net.Security
         // when AcceptWithDefaultValidation runs.
         private void CaptureRemoteCertificateForExternalValidation()
         {
+            X509ChainPolicy? chainPolicy = _options.CertificateChainPolicy?.Clone();
+            int preexistingExtraCertsCount = chainPolicy?.ExtraStore.Count ?? 0;
             X509Chain? chain = null;
-            _externalPendingCert = CertificateValidationPal.GetRemoteCertificate(
-                _securityContext, ref chain, _options.CertificateChainPolicy);
+            X509Certificate2Collection? intermediates = null;
 
-            // Snapshot the peer-sent intermediates into a flat collection and dispose the
-            // platform-built chain immediately. The chain instance never escapes the PAL
-            // boundary into TlsSession state or its public surface.
-            if (chain is not null)
+            try
             {
-                if (chain.ChainElements.Count > 1)
+                _externalPendingCert = CertificateValidationPal.GetRemoteCertificate(
+                    _securityContext, ref chain, chainPolicy);
+
+                if (chain is not null)
                 {
-                    X509Certificate2Collection intermediates = new X509Certificate2Collection();
-                    for (int i = 1; i < chain.ChainElements.Count; i++)
+                    X509Certificate2Collection extraStore = chain.ChainPolicy.ExtraStore;
+                    while (extraStore.Count > preexistingExtraCertsCount)
                     {
-                        intermediates.Add(new X509Certificate2(chain.ChainElements[i].Certificate));
+                        X509Certificate2 certificate = extraStore[preexistingExtraCertsCount];
+                        extraStore.RemoveAt(preexistingExtraCertsCount);
+
+                        bool transferred = false;
+                        try
+                        {
+                            if (_externalPendingCert is null ||
+                                !certificate.RawDataMemory.Span.SequenceEqual(_externalPendingCert.RawDataMemory.Span))
+                            {
+                                (intermediates ??= new X509Certificate2Collection()).Add(certificate);
+                                transferred = true;
+                            }
+                        }
+                        finally
+                        {
+                            if (!transferred)
+                            {
+                                certificate.Dispose();
+                            }
+                        }
                     }
-                    _externalRemoteCertificates = intermediates;
                 }
-                chain.Dispose();
+
+                _externalRemoteCertificates = intermediates;
+                intermediates = null;
+            }
+            finally
+            {
+                if (intermediates is not null)
+                {
+                    foreach (X509Certificate2 certificate in intermediates)
+                    {
+                        certificate.Dispose();
+                    }
+                }
+
+                if (chain is not null)
+                {
+                    X509Certificate2Collection extraStore = chain.ChainPolicy.ExtraStore;
+                    while (extraStore.Count > preexistingExtraCertsCount)
+                    {
+                        X509Certificate2 certificate = extraStore[preexistingExtraCertsCount];
+                        extraStore.RemoveAt(preexistingExtraCertsCount);
+                        certificate.Dispose();
+                    }
+
+                    chain.Dispose();
+                }
             }
 
             _externalValidationPending = true;

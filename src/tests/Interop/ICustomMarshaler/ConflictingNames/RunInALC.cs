@@ -13,7 +13,7 @@ using Xunit;
 [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
 public class RunInALC
 {
-    [Fact]
+    [ConditionalFact(typeof(Utilities), nameof(Utilities.HasAssemblyFiles))]
     public static int TestEntryPoint()
     {
         try

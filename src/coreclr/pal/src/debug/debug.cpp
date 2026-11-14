@@ -2,30 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     debug.c
 
 Abstract:
-
     Implementation of Win32 debugging API functions.
-
-Revision History:
-
-
-
 --*/
-
 
 #include "pal/dbgmsg.h"
 SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do this first
 
 #include "pal/thread.hpp"
 #include "pal/procobj.hpp"
-#include "pal/file.hpp"
 
 #include "pal/palinternal.h"
 #include "pal/process.h"
@@ -34,8 +22,9 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include "pal/environ.h"
 #include "pal/module.h"
 #include "pal/stackstring.hpp"
-#include "pal/virtual.h"
 #include "pal/utils.h"
+#include <minipal/ospagesize.h>
+#include <minipal/utf8.h>
 
 #include <signal.h>
 #include <unistd.h>
@@ -76,12 +65,6 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 using namespace CorUnix;
 
 extern "C" void DBG_DebugBreak_End();
-
-#if HAVE_PROCFS_CTL
-#define CTL_ATTACH      "attach"
-#define CTL_DETACH      "detach"
-#define CTL_WAIT        "wait"
-#endif   // HAVE_PROCFS_CTL
 
 /* ------------------- Constant definitions ----------------------------------*/
 
@@ -188,7 +171,7 @@ OutputDebugStringW(
         IN LPCWSTR lpOutputString)
 {
     CHAR *lpOutputStringA;
-    int strLen;
+    size_t strLen;
 
     PERF_ENTRY(OutputDebugStringW);
     ENTRY("OutputDebugStringW (lpOutputString=%p (%S))\n",
@@ -201,8 +184,7 @@ OutputDebugStringW(
         goto EXIT;
     }
 
-    if ((strLen = WideCharToMultiByte(CP_ACP, 0, lpOutputString, -1, NULL, 0,
-                                      NULL, NULL))
+    if ((strLen = minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpOutputString, minipal_u16_strlen((const CHAR16_T*)lpOutputString) + 1, 0))
         == 0)
     {
         ASSERT("failed to get wide chars length\n");
@@ -218,8 +200,8 @@ OutputDebugStringW(
         goto EXIT;
     }
 
-    if(! WideCharToMultiByte(CP_ACP, 0, lpOutputString, -1,
-                             lpOutputStringA, strLen, NULL, NULL))
+    if(! minipal_convert_utf16_to_utf8((const CHAR16_T*)lpOutputString, minipal_u16_strlen((const CHAR16_T*)lpOutputString) + 1,
+                                       lpOutputStringA, strLen, 0))
     {
         ASSERT("failed to convert wide chars to multibytes\n");
         SetLastError(ERROR_INTERNAL_ERROR);
@@ -339,7 +321,7 @@ DebugBreakCommand()
 
         if (exe_module.lib_name != NULL)
         {
-            libNameLength = PAL_wcslen(exe_module.lib_name);
+            libNameLength = minipal_u16_strlen((const CHAR16_T*)exe_module.lib_name);
         }
 
         SIZE_T dwexe_buf = strlen(EXE_TEXT) + libNameLength + 1;
@@ -365,7 +347,7 @@ DebugBreakCommand()
            variables in the child process, but if we do that we can't check
            for errors. putenv/setenv can fail when out of memory */
 
-        if (!EnvironPutenv (pid_buf, FALSE) || !EnvironPutenv (exe_buf, FALSE))
+        if (!EnvironPutenv (pid_buf) || !EnvironPutenv (exe_buf))
         {
             goto FAILED;
         }
@@ -634,7 +616,7 @@ PAL_ProbeMemory(
         }
 
         // Round to the beginning of the next page
-        pBuffer = PVOID(ALIGN_DOWN((SIZE_T)pBuffer, GetVirtualPageSize()) + GetVirtualPageSize());
+        pBuffer = PVOID(ALIGN_DOWN((SIZE_T)pBuffer, minipal_getpagesize()) + minipal_getpagesize());
     }
 
     close(fds[0]);

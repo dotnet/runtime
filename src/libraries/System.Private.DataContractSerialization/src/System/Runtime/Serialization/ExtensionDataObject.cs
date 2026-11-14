@@ -197,7 +197,7 @@ namespace System.Runtime.Serialization
 
         internal ClassDataNode()
         {
-            dataType = Globals.TypeOfClassDataNode;
+            dataType = typeof(ClassDataNode);
         }
 
         internal IList<ExtensionDataMember>? Members
@@ -221,7 +221,7 @@ namespace System.Runtime.Serialization
 
         internal XmlDataNode()
         {
-            dataType = Globals.TypeOfXmlDataNode;
+            dataType = typeof(XmlDataNode);
         }
 
         internal IList<XmlAttribute>? XmlAttributes
@@ -260,7 +260,7 @@ namespace System.Runtime.Serialization
 
         internal CollectionDataNode()
         {
-            dataType = Globals.TypeOfCollectionDataNode;
+            dataType = typeof(CollectionDataNode);
         }
 
         internal IList<IDataNode?>? Items
@@ -310,7 +310,7 @@ namespace System.Runtime.Serialization
 
         internal ISerializableDataNode()
         {
-            dataType = Globals.TypeOfISerializableDataNode;
+            dataType = typeof(ISerializableDataNode);
         }
 
         internal string? FactoryTypeName

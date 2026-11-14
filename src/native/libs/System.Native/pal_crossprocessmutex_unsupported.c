@@ -47,14 +47,14 @@ int32_t SystemNative_LowLevelCrossProcessMutex_Destroy(LowLevelCrossProcessMutex
     return Error_EINVAL;
 }
 
-void SystemNative_LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t* pOwnerProcessId, uint32_t* pOwnerThreadId)
+void SystemNative_LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t* pOwnerProcessId, uint64_t* pOwnerThreadId)
 {
     (void)mutex;
     (void)pOwnerProcessId;
     (void)pOwnerThreadId;
 }
 
-void SystemNative_LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t ownerProcessId, uint32_t ownerThreadId)
+void SystemNative_LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t ownerProcessId, uint64_t ownerThreadId)
 {
     (void)mutex;
     (void)ownerProcessId;

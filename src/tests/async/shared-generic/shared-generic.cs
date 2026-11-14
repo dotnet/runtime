@@ -17,38 +17,38 @@ public class Async2SharedGeneric
         public T t;
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestEntryPoint()
+    [Fact]
+    public static async Task TestEntryPoint()
     {
         // simple cases
-        Async1EntryPoint<int>(typeof(int), 42).Wait();
-        Async1EntryPoint<string>(typeof(string), "abc").Wait();
-        Async1EntryPoint<object>(typeof(object), "def").Wait();
+        await Async1EntryPoint<int>(typeof(int), 42);
+        await Async1EntryPoint<string>(typeof(string), "abc");
+        await Async1EntryPoint<object>(typeof(object), "def");
 
         // struct with an obj and its nullable
-        Async1EntryPoint<S0>(typeof(S0), new S0(42)).Wait();
-        Async1EntryPoint<S0?>(typeof(S0?), new S0(42)).Wait();
-        Async1EntryPoint<S0?>(typeof(S0?), null).Wait();
+        await Async1EntryPoint<S0>(typeof(S0), new S0(42));
+        await Async1EntryPoint<S0?>(typeof(S0?), new S0(42));
+        await Async1EntryPoint<S0?>(typeof(S0?), null);
 
         // generic struct with an obj and its nullable
-        Async1EntryPoint<S1<string>>(typeof(S1<string>), new S1<string> { t = "ghj" }).Wait();
-        Async1EntryPoint<S1<string>?>(typeof(S1<string>?), new S1<string> { t = "qwe" }).Wait();
-        Async1EntryPoint<S1<string>?>(typeof(S1<string>?), null).Wait();
+        await Async1EntryPoint<S1<string>>(typeof(S1<string>), new S1<string> { t = "ghj" });
+        await Async1EntryPoint<S1<string>?>(typeof(S1<string>?), new S1<string> { t = "qwe" });
+        await Async1EntryPoint<S1<string>?>(typeof(S1<string>?), null);
 
         // simple cases
-        Async2EntryPoint<int>(typeof(int), 142).Wait();
-        Async2EntryPoint<string>(typeof(string), "ghi").Wait();
-        Async2EntryPoint<object>(typeof(object), "jkl").Wait();
+        await Async2EntryPoint<int>(typeof(int), 142);
+        await Async2EntryPoint<string>(typeof(string), "ghi");
+        await Async2EntryPoint<object>(typeof(object), "jkl");
 
         // struct with an obj and its nullable
-        Async2EntryPoint<S0>(typeof(S0), new S0(4242)).Wait();
-        Async2EntryPoint<S0?>(typeof(S0?), new S0(424242)).Wait();
-        Async2EntryPoint<S0?>(typeof(S0?), null).Wait();
+        await Async2EntryPoint<S0>(typeof(S0), new S0(4242));
+        await Async2EntryPoint<S0?>(typeof(S0?), new S0(424242));
+        await Async2EntryPoint<S0?>(typeof(S0?), null);
 
         // generic struct with an obj and its nullable
-        Async2EntryPoint<S1<string>>(typeof(S1<string>), new S1<string> { t = "kl" }).Wait();
-        Async2EntryPoint<S1<string>?>(typeof(S1<string>?), new S1<string> { t = "zx" }).Wait();
-        Async2EntryPoint<S1<string>?>(typeof(S1<string>?), null).Wait();
+        await Async2EntryPoint<S1<string>>(typeof(S1<string>), new S1<string> { t = "kl" });
+        await Async2EntryPoint<S1<string>?>(typeof(S1<string>?), new S1<string> { t = "zx" });
+        await Async2EntryPoint<S1<string>?>(typeof(S1<string>?), null);
     }
 
     [RuntimeAsyncMethodGeneration(false)]
@@ -81,10 +81,7 @@ public class Async2SharedGeneric
     }
 
     [Fact]
-    public static void TestInterface()
-    {
-        TestInterfaceAsync(new JsonDeserializer<ArrayReader>()).GetAwaiter().GetResult();
-    }
+    public static Task TestInterface() => TestInterfaceAsync(new JsonDeserializer<ArrayReader>());
 
     private static async Task TestInterfaceAsync(ITypeDeserializer deserializer)
     {

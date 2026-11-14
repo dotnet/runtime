@@ -73,9 +73,13 @@ namespace Microsoft.Win32.SafeHandles
         {
             ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_CCtx_reset(this, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only));
 
-            // prefix is not sticky and is cleared by reset
+            // Restore the dictionary or clear the prefix before releasing its pinned memory.
             if (_prefixHandle != null)
             {
+                nuint result = _dictionary is not null
+                    ? Interop.Zstd.ZSTD_CCtx_refCDict(this, _dictionary)
+                    : Interop.Zstd.ZSTD_CCtx_refPrefix(this, null, 0);
+                ZstandardUtils.ThrowIfError(result);
                 _prefixHandle.Value.Dispose();
                 _prefixHandle = null;
             }
@@ -148,9 +152,13 @@ namespace Microsoft.Win32.SafeHandles
         {
             ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_DCtx_reset(this, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only));
 
-            // prefix is not sticky and is cleared by reset
+            // Restore the dictionary or clear the prefix before releasing its pinned memory.
             if (_prefixHandle != null)
             {
+                nuint result = _dictionary is not null
+                    ? Interop.Zstd.ZSTD_DCtx_refDDict(this, _dictionary)
+                    : Interop.Zstd.ZSTD_DCtx_refPrefix(this, null, 0);
+                ZstandardUtils.ThrowIfError(result);
                 _prefixHandle.Value.Dispose();
                 _prefixHandle = null;
             }

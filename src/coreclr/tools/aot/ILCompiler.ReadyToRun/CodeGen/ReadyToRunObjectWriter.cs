@@ -116,6 +116,7 @@ namespace ILCompiler.DependencyAnalysis
         /// This is used to support loading via large pages on Linux.
         /// </summary>
         private readonly int _customPESectionAlignment;
+        private readonly WasmDebugInfo _wasmDebugInfo;
 
         public ReadyToRunObjectWriter(
             string objectFilePath,
@@ -132,7 +133,8 @@ namespace ILCompiler.DependencyAnalysis
             int perfMapFormatVersion,
             bool generateProfileFile,
             CallChainProfile callChainProfile,
-            int customPESectionAlignment)
+            int customPESectionAlignment,
+            WasmDebugInfo wasmDebugInfo)
         {
             _objectFilePath = objectFilePath;
             _componentModule = componentModule;
@@ -140,6 +142,7 @@ namespace ILCompiler.DependencyAnalysis
             _nodes = nodes;
             _nodeFactory = factory;
             _customPESectionAlignment = customPESectionAlignment;
+            _wasmDebugInfo = wasmDebugInfo;
             _generateMapFile = generateMapFile;
             _generateMapCsvFile = generateMapCsvFile;
             _generatePdbFile = generatePdbFile;
@@ -174,9 +177,17 @@ namespace ILCompiler.DependencyAnalysis
         public void EmitReadyToRunObjects(ReadyToRunContainerFormat format, Logger logger)
         {
             bool succeeded = false;
+            string wasmSymbolMapPath = format == ReadyToRunContainerFormat.Wasm
+                ? Path.ChangeExtension(_objectFilePath, ".symbols")
+                : null;
 
             try
             {
+                if (wasmSymbolMapPath is not null && File.Exists(wasmSymbolMapPath))
+                {
+                    File.Delete(wasmSymbolMapPath);
+                }
+
                 var stopwatch = Stopwatch.StartNew();
 
                 ObjectWriter.ObjectWriter objectWriter = format switch
@@ -195,6 +206,12 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     objectWriter.EmitObject(stream, _nodes, dumper: null, logger);
                     outputFileSize = stream.Length;
+                }
+
+                if (objectWriter is WebCilObjectWriter webCilObjectWriter &&
+                    (_wasmDebugInfo & WasmDebugInfo.SymbolMap) != 0)
+                {
+                    webCilObjectWriter.EmitSymbolMap(wasmSymbolMapPath);
                 }
 
                 if (_outputInfoBuilder is not null)
@@ -273,6 +290,17 @@ namespace ILCompiler.DependencyAnalysis
                     catch
                     {
                     }
+
+                    if (wasmSymbolMapPath is not null)
+                    {
+                        try
+                        {
+                            File.Delete(wasmSymbolMapPath);
+                        }
+                        catch
+                        {
+                        }
+                    }
                 }
             }
         }
@@ -309,7 +337,11 @@ namespace ILCompiler.DependencyAnalysis
 
         private WasmObjectWriter CreateWasmObjectWriter()
         {
-            return new WebCilObjectWriter(_nodeFactory, ObjectWritingOptions.None, _outputInfoBuilder);
+            return new WebCilObjectWriter(
+                _nodeFactory,
+                ObjectWritingOptions.None,
+                _outputInfoBuilder,
+                emitNameSection: (_wasmDebugInfo & WasmDebugInfo.NameSection) != 0);
         }
 
         public static void EmitObject(
@@ -329,6 +361,7 @@ namespace ILCompiler.DependencyAnalysis
             CallChainProfile callChainProfile,
             ReadyToRunContainerFormat format,
             int customPESectionAlignment,
+            WasmDebugInfo wasmDebugInfo,
             Logger logger)
         {
             Console.WriteLine($@"Emitting R2R {format} file: {objectFilePath}");
@@ -347,7 +380,8 @@ namespace ILCompiler.DependencyAnalysis
                 perfMapFormatVersion: perfMapFormatVersion,
                 generateProfileFile: generateProfileFile,
                 callChainProfile,
-                customPESectionAlignment);
+                customPESectionAlignment,
+                wasmDebugInfo);
 
             objectWriter.EmitReadyToRunObjects(format, logger);
         }

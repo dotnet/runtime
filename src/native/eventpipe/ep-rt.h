@@ -235,6 +235,20 @@ void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider);
 
 /*
+ * Session lifecycle notifications.
+ */
+
+// Invoked while a session is stopping, before its providers are disabled and its buffers are flushed, so the
+// runtime can emit any pending end-of-session data (e.g. block-count PGO) into the still-open session. The
+// caller has already validated the session and bound the current thread to it as its rundown session, so the
+// runtime gates on ep_event_is_enabled_for_current_thread and its emitted events route only to that session.
+// Runs before the EventPipe lock is taken, because emitting events re-enters the write path and must not run
+// with that lock held.
+static
+void
+ep_rt_session_stopping (void);
+
+/*
  * Arrays.
  */
 

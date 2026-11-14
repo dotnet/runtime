@@ -7,6 +7,8 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <NativeAotIncompatible>true</NativeAotIncompatible>
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</CLRTestTargetUnsupported>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134571 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' == 'true'">true</CLRTestTargetUnsupported>
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>

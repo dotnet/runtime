@@ -473,12 +473,17 @@ RegMeta::QueryInterface(
 
     if (riid == IID_IUnknown)
     {
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
         *ppUnk = (IUnknown *)(IMetaDataImport2 *)this;
+#else
+        *ppUnk = static_cast<IUnknown *>(static_cast<IMDCommon *>(this));
+#endif
     }
     else if (riid == IID_IMDCommon)
     {
         *ppUnk = (IMDCommon *)this;
     }
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
     else if (riid == IID_IMetaDataImport)
     {
         *ppUnk = (IMetaDataImport2 *)this;
@@ -491,6 +496,8 @@ RegMeta::QueryInterface(
     {
         *ppUnk = (IMetaDataAssemblyImport *)this;
     }
+#endif
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
     else if (riid == IID_IMetaDataTables)
     {
         *ppUnk = static_cast<IMetaDataTables *>(this);
@@ -504,8 +511,9 @@ RegMeta::QueryInterface(
     {
         *ppUnk = static_cast<IMetaDataInfo *>(this);
     }
+#endif
 
-#ifdef FEATURE_METADATA_EMIT
+#if defined(FEATURE_METADATA_EMIT) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
     else if (riid == IID_IMetaDataEmit)
     {
         *ppUnk = (IMetaDataEmit2 *)this;
@@ -532,7 +540,7 @@ RegMeta::QueryInterface(
         *ppUnk = (IMetaDataAssemblyEmit *)this;
         fIsInterfaceRW = true;
     }
-#endif //FEATURE_METADATA_EMIT
+#endif // FEATURE_METADATA_EMIT && FEATURE_METADATA_PUBLIC_INTERFACES
 
 
 #ifdef FEATURE_METADATA_EMIT_ALL
@@ -550,20 +558,13 @@ RegMeta::QueryInterface(
     else if (riid == IID_IMDInternalEmit)
     {
         *ppUnk = static_cast<IMDInternalEmit *>(this);
+        fIsInterfaceRW = true;
     }
     else if (riid == IID_IGetIMDInternalImport)
     {
         *ppUnk = static_cast<IGetIMDInternalImport *>(this);
     }
 #endif //FEATURE_METADATA_INTERNAL_APIS
-
-#if defined(FEATURE_METADATA_EMIT) && defined(FEATURE_METADATA_INTERNAL_APIS)
-    else if (riid == IID_IMetaDataEmitHelper)
-    {
-        *ppUnk = (IMetaDataEmitHelper *)this;
-        fIsInterfaceRW = true;
-    }
-#endif //FEATURE_METADATA_EMIT && FEATURE_METADATA_INTERNAL_APIS
 
 #ifdef FEATURE_METADATA_IN_VM
 #ifdef FEATURE_COMINTEROP
@@ -579,7 +580,9 @@ RegMeta::QueryInterface(
                 if (m_pFreeThreadedMarshaler == NULL)
                 {
                     // First time! Create the FreeThreadedMarshaler
-                    IfFailGo(CoCreateFreeThreadedMarshaler((IUnknown *)(IMetaDataEmit2 *)this, &m_pFreeThreadedMarshaler));
+                    IfFailGo(CoCreateFreeThreadedMarshaler(
+                        (IUnknown *)(IMetaDataEmit2 *)this,
+                        &m_pFreeThreadedMarshaler));
                 }
             }
 
@@ -665,6 +668,7 @@ ErrExit:
 //          - The file is not NT PE file (e.g. it is NT OBJ = .obj file produced by managed C++).
 //    E_INVALIDARG       - NULL was passed as an argument value.
 //
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 HRESULT
 RegMeta::GetFileMapping(
     const void ** ppvData,
@@ -726,12 +730,13 @@ ErrExit:
 
     return hr;
 } // RegMeta::GetFileMapping
+#endif
 
 
 //------------------------------------------------------------------------------
 // Metadata dump
 //
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
 
 #define STRING_BUFFER_LEN 1024
 #define ENUM_BUFFER_SIZE 10
@@ -1272,7 +1277,7 @@ int DumpMD(UINT_PTR iMD)
     return DumpMD_impl(pMD);
 }
 
-#endif //_DEBUG
+#endif // _DEBUG && FEATURE_METADATA_PUBLIC_INTERFACES
 
 //*****************************************************************************
 // Using the existing RegMeta and reopen with another chuck of memory. Make sure that all stgdb
@@ -1404,7 +1409,11 @@ HRESULT RegMeta::GetIMDInternalImport(
     MDInternalRW *pInternalRW = NULL;
     bool          isLockedForWrite = false;
     IUnknown     *pIUnkInternal = NULL;
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
     IUnknown     *pThis = (IMetaDataImport2*)this;
+#else
+    IUnknown     *pThis = static_cast<IUnknown *>(static_cast<IMDCommon *>(this));
+#endif
 
     pIUnkInternal = this->GetCachedInternalInterface(TRUE);
     if (pIUnkInternal)

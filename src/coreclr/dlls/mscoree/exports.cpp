@@ -14,6 +14,7 @@
 #include <utilcode.h>
 #include <corhost.h>
 #include <configuration.h>
+#include <minipal.h>
 #include "../../vm/ceemain.h"
 #ifdef FEATURE_GDBJIT
 #include "../../vm/gdbjithelpers.h"
@@ -48,29 +49,42 @@ public:
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
 
 // Holder for array of wide strings
-class ConstWStringArrayHolder : public NewArrayHolder<LPCWSTR>
+class ConstWStringArrayHolder final
 {
-    int m_cElements;
+    struct Traits
+    {
+        struct Type
+        {
+            LPCWSTR* values;
+            int count;
+        };
+
+        static Type Default() { return {}; }
+
+        static void Free(Type array) noexcept
+        {
+            if (array.values != nullptr)
+            {
+                for (int i = 0; i < array.count; i++)
+                {
+                    delete[] array.values[i];
+                }
+                delete[] array.values;
+            }
+        }
+    };
+
+    LifetimeHolder<Traits> m_array;
 
 public:
-    ConstWStringArrayHolder() :
-        NewArrayHolder<LPCWSTR>(),
-        m_cElements(0)
-    {
-    }
-
     void Set(LPCWSTR* value, int cElements)
     {
-        NewArrayHolder<LPCWSTR>::operator=(value);
-        m_cElements = cElements;
+        m_array = Traits::Type{ value, cElements };
     }
 
-    ~ConstWStringArrayHolder()
+    operator LPCWSTR*() const
     {
-        for (int i = 0; i < m_cElements; i++)
-        {
-            delete [] this->m_value[i];
-        }
+        return static_cast<Traits::Type>(m_array).values;
     }
 };
 
@@ -119,13 +133,14 @@ struct HostPropertyArraysTraits final
 // Convert 8 bit string to unicode
 static LPCWSTR StringToUnicode(LPCSTR str)
 {
-    int length = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
+    size_t cch = strlen(str) + 1;
+    size_t length = minipal_get_length_utf8_to_utf16(str, cch, 0);
     ASSERTE_ALL_BUILDS(length != 0);
 
     LPWSTR result = new (nothrow) WCHAR[length];
     ASSERTE_ALL_BUILDS(result != NULL);
 
-    length = MultiByteToWideChar(CP_UTF8, 0, str, -1, result, length);
+    length = minipal_convert_utf8_to_utf16(str, cch, (CHAR16_T*)result, length, 0);
     ASSERTE_ALL_BUILDS(length != 0);
 
     return result;
@@ -382,7 +397,7 @@ int coreclr_initialize(
     hr = host->Start();
     IfFailRet(hr);
 
-    ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
+    ConstWStringHolder appDomainFriendlyNameW(StringToUnicode(appDomainFriendlyName));
     hr = host->CreateAppDomainWithManager(
         appDomainFriendlyNameW,
         0,
@@ -507,9 +522,9 @@ int coreclr_create_delegate(
 {
     ICLRRuntimeHost4* host = reinterpret_cast<ICLRRuntimeHost4*>(hostHandle);
 
-    ConstWStringHolder entryPointAssemblyNameW = StringToUnicode(entryPointAssemblyName);
-    ConstWStringHolder entryPointTypeNameW = StringToUnicode(entryPointTypeName);
-    ConstWStringHolder entryPointMethodNameW = StringToUnicode(entryPointMethodName);
+    ConstWStringHolder entryPointAssemblyNameW(StringToUnicode(entryPointAssemblyName));
+    ConstWStringHolder entryPointTypeNameW(StringToUnicode(entryPointTypeName));
+    ConstWStringHolder entryPointMethodNameW(StringToUnicode(entryPointMethodName));
 
     HRESULT hr = host->CreateDelegate(
                             domainId,
@@ -561,7 +576,7 @@ int coreclr_execute_assembly(
     ConstWStringArrayHolder argvW;
     argvW.Set(StringArrayToUnicode(argc, argv), argc);
 
-    ConstWStringHolder managedAssemblyPathW = StringToUnicode(managedAssemblyPath);
+    ConstWStringHolder managedAssemblyPathW(StringToUnicode(managedAssemblyPath));
 
     HRESULT hr = host->ExecuteAssembly(domainId, managedAssemblyPathW, argc, argvW, (DWORD *)exitCode);
     IfFailRet(hr);

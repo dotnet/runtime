@@ -163,6 +163,134 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("hello", GetUnionValue(fromString!));
         }
 
+        [Theory]
+        [InlineData(null, "42")]
+        [InlineData(typeof(bool), "true")]
+        [InlineData(typeof(int?), "42")]
+        [InlineData(typeof(OtherCase), "{}")]
+        [InlineData(typeof(List<>), "[]")]
+        [InlineData(typeof(void), "{}")]
+        public async Task CustomTypeClassifier_UnsupportedType_ThrowsBeforeResolvingMetadata(Type? caseType, string json)
+        {
+            bool caseMetadataResolved = false;
+            bool constructorInvoked = false;
+
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(UnionWithCustomClassifier))
+                {
+                    typeInfo.TypeClassifier = (ref Utf8JsonReader _) => caseType;
+                    typeInfo.UnionConstructor = (_, _) =>
+                    {
+                        constructorInvoked = true;
+                        return new UnionWithCustomClassifier(42);
+                    };
+                }
+                else if (typeInfo.Type == caseType)
+                {
+                    caseMetadataResolved = true;
+                }
+            });
+            options.DefaultBufferSize = 1;
+
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<UnionWithCustomClassifier>(json, options));
+
+            Assert.Contains(nameof(UnionWithCustomClassifier), ex.Message);
+            if (caseType is not null)
+            {
+                Assert.Contains(caseType.ToString(), ex.Message);
+            }
+
+            Assert.False(caseMetadataResolved);
+            Assert.False(constructorInvoked);
+        }
+
+        [Fact]
+        public async Task CustomTypeClassifier_UndeclaredSubtype_Throws()
+        {
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(HierarchyUnion))
+                {
+                    typeInfo.TypeClassifier = static (ref Utf8JsonReader _) => typeof(Lab);
+                }
+            });
+
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<HierarchyUnion>("{}", options));
+
+            Assert.Contains(nameof(HierarchyUnion), ex.Message);
+            Assert.Contains(nameof(Lab), ex.Message);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CustomTypeClassifier_UsesModifiedUnionCases(bool addCase)
+        {
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(UnionWithCustomClassifier))
+                {
+                    if (addCase)
+                    {
+                        typeInfo.UnionCases.Add(new JsonUnionCaseInfo(typeof(OtherCase)));
+                    }
+
+                    typeInfo.TypeClassifier = static (ref Utf8JsonReader _) => typeof(OtherCase);
+                    typeInfo.UnionConstructor = static (_, _) => new UnionWithCustomClassifier("custom");
+                }
+            });
+            options.DefaultBufferSize = 1;
+
+            if (addCase)
+            {
+                UnionWithCustomClassifier? result =
+                    await Serializer.DeserializeWrapper<UnionWithCustomClassifier>("{}", options);
+
+                Assert.Equal("custom", GetUnionValue(result!));
+            }
+            else
+            {
+                await Assert.ThrowsAsync<JsonException>(
+                    () => Serializer.DeserializeWrapper<UnionWithCustomClassifier>("{}", options));
+            }
+        }
+
+        [Fact]
+        public async Task CustomTypeClassifier_RemovedCase_Throws()
+        {
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(UnionWithCustomClassifier))
+                {
+                    typeInfo.UnionCases.Remove(typeInfo.UnionCases.Single(c => c.CaseType == typeof(int)));
+                    typeInfo.TypeClassifier = static (ref Utf8JsonReader _) => typeof(int);
+                }
+            });
+
+            await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<UnionWithCustomClassifier>("42", options));
+        }
+
+        [Fact]
+        public async Task CustomTypeClassifier_DeclaredNullableCase_Deserializes()
+        {
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(SingleNullableValueTypeUnion))
+                {
+                    typeInfo.TypeClassifier = static (ref Utf8JsonReader _) => typeof(int?);
+                }
+            });
+
+            SingleNullableValueTypeUnion? result =
+                await Serializer.DeserializeWrapper<SingleNullableValueTypeUnion>("42", options);
+
+            Assert.Equal(42, GetUnionValue(result!));
+        }
+
         // The factory-resolved JsonTypeClassifier delegate must be visible on
         // JsonTypeInfo.TypeClassifier by the time any modifier runs, otherwise modifiers
         // cannot inspect, wrap, or replace the resolved classifier — which is the whole
@@ -1911,6 +2039,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(leaf, GetUnionValue(deserialized!));
         }
 
+#if false // ActiveIssue https://github.com/dotnet/roslyn/issues/85762
         // The self-referential case is nullable, which makes it the union's null case as well:
         // the generated null arm reports typeof(NullableNat?) while the non-null arm matches
         // the unwrapped NullableNat payload.
@@ -1949,6 +2078,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(deserialized);
             Assert.Null(GetUnionValue(deserialized!));
         }
+#endif
 
         #endregion
 
