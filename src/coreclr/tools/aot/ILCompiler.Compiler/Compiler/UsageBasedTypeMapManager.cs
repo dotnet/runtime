@@ -16,7 +16,7 @@ namespace ILCompiler
 {
     public sealed class UsageBasedTypeMapManager : TypeMapManager
     {
-        private sealed class AllTypeMapsNode(TypeMapMetadata typeMapState) : DependencyNodeCore<NodeFactory>
+        private sealed class AllTypeMapsNode(TypeMapMetadata typeMapState, HashSet<TypeDesc> staticKeyGroups) : DependencyNodeCore<NodeFactory>
         {
             public override bool InterestingForDynamicDependencyAnalysis => false;
 
@@ -30,8 +30,9 @@ namespace ILCompiler
             {
                 foreach ((TypeDesc typeMapGroup, TypeMapMetadata.Map typeMap) in typeMapState.Maps)
                 {
-                    sink.Add(new CombinedDependencyListEntry(GetExternalTypeMapNode(typeMapGroup, typeMap), context.ExternalTypeMapRequest(typeMapGroup), "ExternalTypeMap"));
-                    sink.Add(new CombinedDependencyListEntry(GetProxyTypeMapNode(typeMapGroup, typeMap), context.ProxyTypeMapRequest(typeMapGroup), "ProxyTypeMap"));
+                    bool staticKeys = staticKeyGroups.Contains(typeMapGroup);
+                    sink.Add(new CombinedDependencyListEntry(GetExternalTypeMapNode(typeMapGroup, typeMap, staticKeys), context.ExternalTypeMapRequest(typeMapGroup), "ExternalTypeMap"));
+                    sink.Add(new CombinedDependencyListEntry(GetProxyTypeMapNode(typeMapGroup, typeMap, staticKeys), context.ProxyTypeMapRequest(typeMapGroup), "ProxyTypeMap"));
                 }
             }
 
@@ -39,18 +40,18 @@ namespace ILCompiler
             public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
             protected override string GetName(NodeFactory context) => $"Type maps root node: {typeMapState.DiagnosticName}";
 
-            private static IExternalTypeMapNode GetExternalTypeMapNode(TypeDesc typeMapGroup, IExternalTypeMap map)
+            private static IExternalTypeMapNode GetExternalTypeMapNode(TypeDesc typeMapGroup, IExternalTypeMap map, bool staticKeys)
             {
                 return map.ThrowingMethodStub is not null
                     ? new InvalidExternalTypeMapNode(typeMapGroup, map.ThrowingMethodStub)
-                    : new ExternalTypeMapNode(typeMapGroup, map.TypeMap);
+                    : new ExternalTypeMapNode(typeMapGroup, map.TypeMap, staticKeys);
             }
 
-            private static IProxyTypeMapNode GetProxyTypeMapNode(TypeDesc typeMapGroup, IProxyTypeMap map)
+            private static IProxyTypeMapNode GetProxyTypeMapNode(TypeDesc typeMapGroup, IProxyTypeMap map, bool staticKeys)
             {
                 return map.ThrowingMethodStub is not null
                     ? new InvalidProxyTypeMapNode(typeMapGroup, map.ThrowingMethodStub)
-                    : new ProxyTypeMapNode(typeMapGroup, map.TypeMap);
+                    : new ProxyTypeMapNode(typeMapGroup, map.TypeMap, staticKeys);
             }
         }
 
@@ -61,10 +62,44 @@ namespace ILCompiler
 
         private readonly TypeMapMetadata _typeMaps;
 
-        public UsageBasedTypeMapManager(TypeMapMetadata state)
+        private readonly HashSet<TypeDesc> _staticKeyGroups = [];
+        private readonly List<string> _unmatchedStaticKeyGroupSelectors = [];
+
+        /// <param name="state">The type maps.</param>
+        /// <param name="staticKeyGroupSelector">
+        /// Selects type map groups whose keys are assumed to be created only by code in the compilation.
+        /// For these groups, entries are not kept merely because the type loader could create the key
+        /// (or the trim target) at runtime.
+        /// </param>
+        public UsageBasedTypeMapManager(TypeMapMetadata state, TypeMapGroupSelector staticKeyGroupSelector = null)
         {
             _typeMaps = state;
+
+            if (staticKeyGroupSelector is not null)
+            {
+                bool[] matched = new bool[staticKeyGroupSelector.Selectors.Count];
+                foreach ((TypeDesc typeMapGroup, _) in state.Maps)
+                {
+                    foreach (int selector in staticKeyGroupSelector.GetMatchingSelectors(typeMapGroup))
+                    {
+                        _staticKeyGroups.Add(typeMapGroup);
+                        matched[selector] = true;
+                    }
+                }
+
+                for (int i = 0; i < matched.Length; i++)
+                {
+                    string selector = staticKeyGroupSelector.Selectors[i];
+                    if (!matched[i] && selector != TypeMapGroupSelector.AllGroups)
+                        _unmatchedStaticKeyGroupSelectors.Add(selector);
+                }
+            }
         }
+
+        /// <summary>
+        /// Selectors passed to the constructor that did not select any type map group.
+        /// </summary>
+        public IReadOnlyList<string> UnmatchedStaticKeyGroupSelectors => _unmatchedStaticKeyGroupSelectors;
 
         protected override bool IsEmpty => _typeMaps.IsEmpty;
 
@@ -143,7 +178,7 @@ namespace ILCompiler
                 return; // No type maps to process
             }
 
-            rootProvider.AddCompilationRoot(new AllTypeMapsNode(_typeMaps), "TypeMapManager");
+            rootProvider.AddCompilationRoot(new AllTypeMapsNode(_typeMaps, _staticKeyGroups), "TypeMapManager");
         }
     }
 }

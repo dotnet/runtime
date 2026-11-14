@@ -16,10 +16,12 @@ namespace ILCompiler.DependencyAnalysis
     internal sealed class ProxyTypeMapNode : SortableDependencyNode, IProxyTypeMapNode
     {
         private readonly IEnumerable<KeyValuePair<TypeDesc, TypeMapMetadata.ProxyTypeMapEntry>> _mapEntries;
+        private readonly bool _staticKeys;
 
-        public ProxyTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<TypeDesc, TypeMapMetadata.ProxyTypeMapEntry>> mapEntries)
+        public ProxyTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<TypeDesc, TypeMapMetadata.ProxyTypeMapEntry>> mapEntries, bool staticKeys = false)
         {
             _mapEntries = mapEntries;
+            _staticKeys = staticKeys;
             TypeMapGroup = typeMapGroup;
         }
 
@@ -49,6 +51,10 @@ namespace ILCompiler.DependencyAnalysis
 
                 // If the key type has a canonical form, it could be created at runtime by the type loader.
                 // If there is a type loader template for it, create the generic type instantiation eagerly.
+                // Keys of a static key group are not created by the type loader at runtime.
+                if (_staticKeys)
+                    continue;
+
                 TypeDesc canonKey = key.ConvertToCanonForm(CanonicalFormKind.Specific);
                 if (canonKey != key && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonKey))
                 {

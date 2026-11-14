@@ -14,10 +14,12 @@ namespace ILCompiler.DependencyAnalysis
     internal sealed class ExternalTypeMapNode : SortableDependencyNode, IExternalTypeMapNode
     {
         private readonly IEnumerable<KeyValuePair<string, TypeMapMetadata.ExternalTypeMapEntry>> _mapEntries;
+        private readonly bool _staticKeys;
 
-        public ExternalTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<string, TypeMapMetadata.ExternalTypeMapEntry>> mapEntries)
+        public ExternalTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<string, TypeMapMetadata.ExternalTypeMapEntry>> mapEntries, bool staticKeys = false)
         {
             _mapEntries = mapEntries;
+            _staticKeys = staticKeys;
             TypeMapGroup = typeMapGroup;
         }
 
@@ -46,7 +48,11 @@ namespace ILCompiler.DependencyAnalysis
                         effectiveTrimTargetType,
                         "Type in external type map is cast target"));
 
-                    RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(sink, context, effectiveTrimTargetType, "External type map trim target that could be loaded at runtime");
+                    // Keys of a static key group are not created by the type loader at runtime.
+                    if (!_staticKeys)
+                    {
+                        RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(sink, context, effectiveTrimTargetType, "External type map trim target that could be loaded at runtime");
+                    }
                 }
             }
 

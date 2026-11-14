@@ -186,6 +186,8 @@ namespace ILCompiler
             new("--disable-generated-code-heuristics") { Description = "Disable heuristics for detecting compiler-generated code" };
         public Option<string> TypeMapEntryAssembly { get; } =
             new("--typemap-entry-assembly") { Description = "Assembly name to use as entry point for TypeMap generation" };
+        public Option<string[]> TypeMapStaticKeyGroups { get; } =
+            new("--typemap-assume-static-keys") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Type map group (type name, optionally with ',AssemblyName') whose keys are assumed to be created only by code in the compilation; entries are not kept just because the type loader could create the key at runtime. '*' selects all groups" };
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
@@ -277,6 +279,7 @@ namespace ILCompiler
             Options.Add(UnmanagedEntryPointsAssemblies);
             Options.Add(DisableGeneratedCodeHeuristics);
             Options.Add(TypeMapEntryAssembly);
+            Options.Add(TypeMapStaticKeyGroups);
 
             this.SetAction(result =>
             {

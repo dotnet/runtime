@@ -49,6 +49,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <IlcTypeMapStaticKeyGroup Include="DeadCodeElimination+TestInteropMapStaticKeys+StaticKeysUniverse" />
+  </ItemGroup>
+
+  <ItemGroup>
     <IlcArg Include="--substitution:$(MSBuildThisFileDirectory)NonEmbedded.ILLink.Substitutions1.xml" />
     <IlcArg Include="--substitution:$(MSBuildThisFileDirectory)NonEmbedded.ILLink.Substitutions2.xml" />
   </ItemGroup>

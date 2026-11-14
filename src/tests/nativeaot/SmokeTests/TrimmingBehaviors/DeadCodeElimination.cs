@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using SK = DeadCodeElimination.TestInteropMapStaticKeys;
 
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapTrimming.Universe>("Foo", typeof(DeadCodeElimination.TestInteropMapTrimming.ConditionalTypeMapEntry), typeof(DeadCodeElimination.TestInteropMapTrimming.TypeMapTrimTarget))]
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapTrimming.Universe>("Bar", typeof(DeadCodeElimination.TestInteropMapTrimming.UnconditionalTypeMapEntry))]
@@ -25,6 +26,25 @@ using System.Runtime.InteropServices;
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("G", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target7), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget7[]))]
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("H", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target8), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget8[]))]
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("I", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target9), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget9[,]))]
+
+[assembly: TypeMapAssociation<SK.StaticKeysUniverse>(typeof(SK.SKeyStatic<SK.Atom>), typeof(SK.SProxyStatic))]
+[assembly: TypeMapAssociation<SK.StaticKeysUniverse>(typeof(SK.SKeyRuntime<SK.Atom>), typeof(SK.SProxyRuntime))]
+[assembly: TypeMapAssociation<SK.StaticKeysUniverse>(typeof(SK.SKeyGeneric<SK.Wrapper<SK.Atom>>), typeof(SK.SProxyGeneric))]
+[assembly: TypeMapAssociation<SK.StaticKeysUniverse>(typeof(SK.SKeyArray<SK.Atom[]>), typeof(SK.SProxyArray))]
+[assembly: TypeMap<SK.StaticKeysUniverse>("ExternalStatic", typeof(SK.SExternalStatic), typeof(SK.SExtKeyStatic<SK.Atom>))]
+[assembly: TypeMap<SK.StaticKeysUniverse>("ExternalRuntime", typeof(SK.SExternalRuntime), typeof(SK.SExtKeyRuntime<SK.Atom>))]
+[assembly: TypeMap<SK.StaticKeysUniverse>("ExternalGeneric", typeof(SK.SExternalGeneric), typeof(SK.SExtKeyGeneric<SK.Wrapper<SK.Atom>>))]
+[assembly: TypeMap<SK.StaticKeysUniverse>("ExternalArray", typeof(SK.SExternalArray), typeof(SK.SExtKeyArray<SK.Atom[]>))]
+[assembly: TypeMapAssociation<SK.DefaultUniverse>(typeof(SK.DKeyStatic<SK.Atom>), typeof(SK.DProxyStatic))]
+[assembly: TypeMapAssociation<SK.DefaultUniverse>(typeof(SK.DKeyRuntime<SK.Atom>), typeof(SK.DProxyRuntime))]
+[assembly: TypeMapAssociation<SK.DefaultUniverse>(typeof(SK.DKeyGeneric<SK.Wrapper<SK.Atom>>), typeof(SK.DProxyGeneric))]
+[assembly: TypeMapAssociation<SK.DefaultUniverse>(typeof(SK.DKeyArray<SK.Atom[]>), typeof(SK.DProxyArray))]
+[assembly: TypeMap<SK.DefaultUniverse>("ExternalStatic", typeof(SK.DExternalStatic), typeof(SK.DExtKeyStatic<SK.Atom>))]
+[assembly: TypeMap<SK.DefaultUniverse>("ExternalRuntime", typeof(SK.DExternalRuntime), typeof(SK.DExtKeyRuntime<SK.Atom>))]
+[assembly: TypeMap<SK.DefaultUniverse>("ExternalGeneric", typeof(SK.DExternalGeneric), typeof(SK.DExtKeyGeneric<SK.Wrapper<SK.Atom>>))]
+[assembly: TypeMap<SK.DefaultUniverse>("ExternalArray", typeof(SK.DExternalArray), typeof(SK.DExtKeyArray<SK.Atom[]>))]
+[assembly: TypeMapAssociation<SK.StaticKeysUniverse>(typeof(SK.SharedKey<SK.Atom>), typeof(SK.SProxyShared))]
+[assembly: TypeMapAssociation<SK.DefaultUniverse>(typeof(SK.SharedKey<SK.Atom>), typeof(SK.DProxyShared))]
 
 class DeadCodeElimination
 {
@@ -57,6 +77,7 @@ class DeadCodeElimination
         TestMetadataMethodTables.Run();
         TestInteropMapTrimming.Run();
         TestInteropMapArrayTrimming.Run();
+        TestInteropMapStaticKeys.Run();
 
         return 100;
     }
@@ -1378,6 +1399,144 @@ class DeadCodeElimination
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TypeCheckUnknown<T>() where T : class => GetUnknown() is GenUsedForExternal<T>;
+    }
+
+    // Two type map groups in the same binary with the same shape. StaticKeysUniverse is listed in
+    // <IlcTypeMapStaticKeyGroup> in the project file, DefaultUniverse is not. The key types differ per group
+    // because a key kept for one group is kept for all groups that use it.
+    internal class TestInteropMapStaticKeys
+    {
+        internal class StaticKeysUniverse;
+        internal class DefaultUniverse;
+
+        internal class Atom;
+        internal class Wrapper<T> where T : class;
+
+        internal class SKeyStatic<T> where T : class;
+        internal class SKeyRuntime<T> where T : class;
+        internal class SKeyGeneric<T> where T : class;
+        internal class SKeyArray<T> where T : class;
+        internal class SProxyStatic;
+        internal class SProxyRuntime;
+        internal class SProxyGeneric;
+        internal class SProxyArray;
+        internal class SExtKeyStatic<T> where T : class;
+        internal class SExtKeyRuntime<T> where T : class;
+        internal class SExtKeyGeneric<T> where T : class;
+        internal class SExtKeyArray<T> where T : class;
+        internal class SExternalStatic;
+        internal class SExternalRuntime;
+        internal class SExternalGeneric;
+        internal class SExternalArray;
+
+        internal class DKeyStatic<T> where T : class;
+        internal class DKeyRuntime<T> where T : class;
+        internal class DKeyGeneric<T> where T : class;
+        internal class DKeyArray<T> where T : class;
+        internal class DProxyStatic;
+        internal class DProxyRuntime;
+        internal class DProxyGeneric;
+        internal class DProxyArray;
+        internal class DExtKeyStatic<T> where T : class;
+        internal class DExtKeyRuntime<T> where T : class;
+        internal class DExtKeyGeneric<T> where T : class;
+        internal class DExtKeyArray<T> where T : class;
+        internal class DExternalStatic;
+        internal class DExternalRuntime;
+        internal class DExternalGeneric;
+        internal class DExternalArray;
+
+        // A key used by both groups. The default group keeps it, so it is also found in the group that assumes static keys.
+        internal class SharedKey<T> where T : class;
+        internal class SProxyShared;
+        internal class DProxyShared;
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type Hide(Type t) => t;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Consume(object o) { }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055", Justification = "That's the point")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050", Justification = "That's the point")]
+        static Type MakeGeneric(Type definition, Type argument) => Hide(definition).MakeGenericType(argument);
+
+        // Makes sure there are type loader templates for all the generic types used as keys.
+        // Nothing instantiates the keys over the arguments used in the maps, except for the keys named "Static".
+        public static object[] MakeTemplates<T>() where T : class
+        {
+            return [
+                new SKeyStatic<T>(), new SKeyRuntime<T>(), new SKeyGeneric<T>(), new SKeyArray<T>(),
+                new SExtKeyStatic<T>(), new SExtKeyRuntime<T>(), new SExtKeyGeneric<T>(), new SExtKeyArray<T>(),
+                new DKeyStatic<T>(), new DKeyRuntime<T>(), new DKeyGeneric<T>(), new DKeyArray<T>(),
+                new DExtKeyStatic<T>(), new DExtKeyRuntime<T>(), new DExtKeyGeneric<T>(), new DExtKeyArray<T>(),
+                new Wrapper<T>(), new SharedKey<T>(),
+            ];
+        }
+
+        public static void Run()
+        {
+            typeof(TestInteropMapStaticKeys).GetMethod(nameof(MakeTemplates)).MakeGenericMethod(Hide(typeof(Atom))).Invoke(null, []);
+
+            // These keys are visible to the compiler.
+            Consume(new SKeyStatic<Atom>());
+            Consume(new SExtKeyStatic<Atom>());
+            Consume(new DKeyStatic<Atom>());
+            Consume(new DExtKeyStatic<Atom>());
+
+            var staticProxyMap = TypeMapping.GetOrCreateProxyTypeMapping<StaticKeysUniverse>();
+            var staticExternalMap = TypeMapping.GetOrCreateExternalTypeMapping<StaticKeysUniverse>();
+            var defaultProxyMap = TypeMapping.GetOrCreateProxyTypeMapping<DefaultUniverse>();
+            var defaultExternalMap = TypeMapping.GetOrCreateExternalTypeMapping<DefaultUniverse>();
+
+            Type atom = Hide(typeof(Atom));
+            Type wrapperOfAtom = MakeGeneric(typeof(Wrapper<>), atom);
+            Type arrayOfAtom = atom.MakeArrayType();
+
+            List<string> failures = [];
+
+            // The keys only the type loader can create are kept in the default group (unchanged behavior)
+            // and not kept in the group that assumes static keys. Keys created by code in the app are kept in both.
+            CheckProxy(failures, staticProxyMap, typeof(SKeyStatic<Atom>), nameof(SProxyStatic), expectPresent: true);
+            CheckProxy(failures, staticProxyMap, MakeGeneric(typeof(SKeyRuntime<>), atom), nameof(SProxyRuntime), expectPresent: false);
+            CheckProxy(failures, staticProxyMap, MakeGeneric(typeof(SKeyGeneric<>), wrapperOfAtom), nameof(SProxyGeneric), expectPresent: false);
+            CheckProxy(failures, staticProxyMap, MakeGeneric(typeof(SKeyArray<>), arrayOfAtom), nameof(SProxyArray), expectPresent: false);
+            CheckExternal(failures, staticExternalMap, "ExternalStatic", nameof(SExternalStatic), expectPresent: true);
+            CheckExternal(failures, staticExternalMap, "ExternalRuntime", nameof(SExternalRuntime), expectPresent: false);
+            CheckExternal(failures, staticExternalMap, "ExternalGeneric", nameof(SExternalGeneric), expectPresent: false);
+            CheckExternal(failures, staticExternalMap, "ExternalArray", nameof(SExternalArray), expectPresent: false);
+
+            CheckProxy(failures, defaultProxyMap, typeof(DKeyStatic<Atom>), nameof(DProxyStatic), expectPresent: true);
+            CheckProxy(failures, defaultProxyMap, MakeGeneric(typeof(DKeyRuntime<>), atom), nameof(DProxyRuntime), expectPresent: true);
+            CheckProxy(failures, defaultProxyMap, MakeGeneric(typeof(DKeyGeneric<>), wrapperOfAtom), nameof(DProxyGeneric), expectPresent: true);
+            CheckProxy(failures, defaultProxyMap, MakeGeneric(typeof(DKeyArray<>), arrayOfAtom), nameof(DProxyArray), expectPresent: true);
+            CheckExternal(failures, defaultExternalMap, "ExternalStatic", nameof(DExternalStatic), expectPresent: true);
+            CheckExternal(failures, defaultExternalMap, "ExternalRuntime", nameof(DExternalRuntime), expectPresent: true);
+            CheckExternal(failures, defaultExternalMap, "ExternalGeneric", nameof(DExternalGeneric), expectPresent: true);
+            CheckExternal(failures, defaultExternalMap, "ExternalArray", nameof(DExternalArray), expectPresent: true);
+
+            Type sharedKey = MakeGeneric(typeof(SharedKey<>), atom);
+            CheckProxy(failures, staticProxyMap, sharedKey, nameof(SProxyShared), expectPresent: true);
+            CheckProxy(failures, defaultProxyMap, sharedKey, nameof(DProxyShared), expectPresent: true);
+
+            if (failures.Count > 0)
+                throw new Exception(string.Join(", ", failures));
+        }
+
+        static void CheckProxy(List<string> failures, IReadOnlyDictionary<Type, Type> map, Type key, string proxyName, bool expectPresent)
+        {
+            bool found = map.TryGetValue(key, out Type proxy) && proxy.Name == proxyName;
+            bool typePresent = GetTypeSecretly(typeof(TestInteropMapStaticKeys), proxyName) != null;
+            if (found != expectPresent || typePresent != expectPresent)
+                failures.Add($"{proxyName}: expected {(expectPresent ? "present" : "trimmed")}, lookup {found}, type {typePresent}");
+        }
+
+        static void CheckExternal(List<string> failures, IReadOnlyDictionary<string, Type> map, string name, string targetName, bool expectPresent)
+        {
+            bool found = map.TryGetValue(name, out Type target) && target.Name == targetName;
+            bool typePresent = GetTypeSecretly(typeof(TestInteropMapStaticKeys), targetName) != null;
+            if (found != expectPresent || typePresent != expectPresent)
+                failures.Add($"{targetName}: expected {(expectPresent ? "present" : "trimmed")}, lookup {found}, type {typePresent}");
+        }
     }
 
     internal class TestInteropMapArrayTrimming

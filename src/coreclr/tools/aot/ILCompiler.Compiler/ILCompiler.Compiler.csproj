@@ -736,6 +736,7 @@
     <Compile Include="Compiler\TypePreinit.cs" />
     <Compile Include="Compiler\UsageBasedInteropStubManager.cs" />
     <Compile Include="Compiler\UsageBasedMetadataManager.cs" />
+    <Compile Include="Compiler\TypeMapGroupSelector.cs" />
     <Compile Include="Compiler\UsageBasedTypeMapManager.cs" />
     <Compile Include="Compiler\UserDefinedTypeDescriptor.cs" />
     <Compile Include="Compiler\UnixNodeMangler.cs" />
