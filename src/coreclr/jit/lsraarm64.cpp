@@ -686,6 +686,10 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildStoreLoc(tree->AsLclVarCommon());
             break;
 
+        case GT_STORE_LCL_VARS:
+            srcCount = BuildStoreLclVars(tree->AsStoreLclVars());
+            break;
+
         case GT_FIELD_LIST:
             // These should always be contained. We don't correctly allocate or
             // generate code for a non-contained GT_FIELD_LIST.

@@ -70,9 +70,9 @@ void Compiler::optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName)
     JITDUMP("{ ");
     for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
     {
-        unsigned             defLclNum  = iter->GetKey();
-        GenTreeLclVarCommon* lclDefNode = iter->GetValue()->Top().GetDefNode()->AsLclVarCommon();
-        LclSsaVarDsc*        ssaDef     = iter->GetValue()->Top().GetSsaDef();
+        unsigned      defLclNum  = iter->GetKey();
+        GenTree*      lclDefNode = iter->GetValue()->Top().GetDefNode();
+        LclSsaVarDsc* ssaDef     = iter->GetValue()->Top().GetSsaDef();
 
         if (ssaDef != nullptr)
         {
@@ -320,18 +320,14 @@ bool Compiler::optCopyProp(
 //    ssaNum     - The SSA number of the definition
 //    curSsaName - The map of local numbers to stacks of their defs
 //
-void Compiler::optCopyPropPushDef(GenTreeLclVarCommon* lclNode,
-                                  unsigned             lclNum,
-                                  unsigned             ssaNum,
-                                  LclNumToLiveDefsMap* curSsaName)
+void Compiler::optCopyPropPushDef(GenTree* lclNode, unsigned lclNum, unsigned ssaNum, LclNumToLiveDefsMap* curSsaName)
 {
     // Shadowed parameters are special: they will (at most) have one use, as values in a store
     // to their shadow, and we must not substitute them anywhere. So we'll not push any defs.
-    unsigned nodeLclNum = lclNode->GetLclNum();
-    if ((gsShadowVarInfo != nullptr) && lvaGetDesc(nodeLclNum)->lvIsParam &&
-        (gsShadowVarInfo[nodeLclNum].shadowCopy != BAD_VAR_NUM))
+    if ((gsShadowVarInfo != nullptr) && lvaGetDesc(lclNum)->lvIsParam &&
+        (gsShadowVarInfo[lclNum].shadowCopy != BAD_VAR_NUM))
     {
-        assert(!curSsaName->Lookup(nodeLclNum));
+        assert(!curSsaName->Lookup(lclNum));
         return;
     }
 

@@ -82,10 +82,8 @@ struct Access
 
     // Number of times we saw the access.
     unsigned Count = 0;
-    // Number of times this is stored from the result of a call. This includes
-    // being passed as the retbuf. These stores cannot be decomposed and are
-    // handled via readback.
-    unsigned CountStoredFromCall = 0;
+    // Number of times this is passed as the retbuf. These stores need a readback.
+    unsigned CountPassedAsRetbuf = 0;
     // Number of times this is passed as a call arg. We insert writebacks
     // before these.
     unsigned CountCallArgs = 0;
@@ -94,7 +92,7 @@ struct Access
     unsigned CountRegCallArgs = 0;
 
     weight_t CountWtd               = 0;
-    weight_t CountStoredFromCallWtd = 0;
+    weight_t CountPassedAsRetbufWtd = 0;
     weight_t CountCallArgsWtd       = 0;
     weight_t CountRegCallArgsWtd    = 0;
 
@@ -104,14 +102,10 @@ struct Access
     // Number of times this access is the destination of a store.
     unsigned CountStoreDestination = 0;
     unsigned CountReturns          = 0;
-    // Number of times this is stored by being passed as the retbuf.
-    // These stores need a readback
-    unsigned CountPassedAsRetbuf = 0;
 
     weight_t CountStoreSourceWtd      = 0;
     weight_t CountStoreDestinationWtd = 0;
     weight_t CountReturnsWtd          = 0;
-    weight_t CountPassedAsRetbufWtd   = 0;
 #endif
 
     Access(unsigned offset, var_types accessType, ClassLayout* layout)
@@ -146,11 +140,10 @@ struct Access
 
 enum class AccessKindFlags : uint32_t
 {
-    None             = 0,
-    IsCallArg        = 1,
-    IsRegCallArg     = 2,
-    IsStoredFromCall = 4,
-    IsCallRetBuf     = 8,
+    None         = 0,
+    IsCallArg    = 1,
+    IsRegCallArg = 2,
+    IsCallRetBuf = 8,
 #ifdef DEBUG
     IsStoreSource      = 16,
     IsStoreDestination = 32,
@@ -396,19 +389,13 @@ public:
             }
         }
 
-        if ((flags & (AccessKindFlags::IsStoredFromCall | AccessKindFlags::IsCallRetBuf)) != AccessKindFlags::None)
-        {
-            access->CountStoredFromCall++;
-            access->CountStoredFromCallWtd += weight;
-        }
-
-#ifdef DEBUG
         if ((flags & AccessKindFlags::IsCallRetBuf) != AccessKindFlags::None)
         {
             access->CountPassedAsRetbuf++;
             access->CountPassedAsRetbufWtd += weight;
         }
 
+#ifdef DEBUG
         if ((flags & AccessKindFlags::IsStoreSource) != AccessKindFlags::None)
         {
             access->CountStoreSource++;
@@ -701,11 +688,11 @@ public:
             }
         }
 
-        unsigned countOverlappedCallArg        = 0;
-        unsigned countOverlappedStoredFromCall = 0;
+        unsigned countOverlappedCallArg = 0;
+        unsigned countOverlappedRetbuf  = 0;
 
-        weight_t countOverlappedCallArgWtd        = 0;
-        weight_t countOverlappedStoredFromCallWtd = 0;
+        weight_t countOverlappedCallArgWtd = 0;
+        weight_t countOverlappedRetbufWtd  = 0;
 
         bool overlap = false;
         for (const Access& otherAccess : m_accesses)
@@ -726,10 +713,10 @@ public:
             }
 
             countOverlappedCallArg += otherAccess.CountCallArgs;
-            countOverlappedStoredFromCall += otherAccess.CountStoredFromCall;
+            countOverlappedRetbuf += otherAccess.CountPassedAsRetbuf;
 
             countOverlappedCallArgWtd += otherAccess.CountCallArgsWtd;
-            countOverlappedStoredFromCallWtd += otherAccess.CountStoredFromCallWtd;
+            countOverlappedRetbufWtd += otherAccess.CountPassedAsRetbufWtd;
 
             if (otherAccess.CountRegCallArgs > 0)
             {
@@ -797,14 +784,10 @@ public:
             }
         }
 
-        // If the struct is stored from a call (either due to a multireg
-        // return or by being passed as the retbuffer) then we need a readback
-        // after.
-        //
-        // In the future we could allow multireg returns without a readback by
-        // a sort of forward substitution optimization in the backend.
-        countReadBacksWtd += countOverlappedStoredFromCallWtd;
-        countReadBacks += countOverlappedStoredFromCall;
+        // Retbuf stores require readbacks. For register returns, optimistically
+        // assume no spill to the stack and negligible field extraction cost.
+        countReadBacksWtd += countOverlappedRetbufWtd;
+        countReadBacks += countOverlappedRetbuf;
 
         // A readback turns into a stack load.
         costWith += countReadBacksWtd * COST_STRUCT_ACCESS_CYCLES;
@@ -1510,15 +1493,12 @@ private:
         assert(lcl->OperIsLocalRead() || lcl->OperIsLocalStore());
 
         AccessKindFlags flags = AccessKindFlags::None;
+#ifdef DEBUG
         if (lcl->OperIsLocalStore())
         {
-            INDEBUG(flags |= AccessKindFlags::IsStoreDestination);
-
-            if (lcl->AsLclVarCommon()->Data()->gtEffectiveVal()->IsCall())
-            {
-                flags |= AccessKindFlags::IsStoredFromCall;
-            }
+            flags |= AccessKindFlags::IsStoreDestination;
         }
+#endif
 
         if (user == nullptr)
         {

@@ -5263,6 +5263,18 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
             // that the compiler creates.
             switch (oper)
             {
+                case GT_STORE_LCL_VARS:
+                    tree->VisitLogicalLocalDefs(this, [&](const auto& def) {
+                        if (lvaVarAddrExposed(def.GetLclNum()))
+                        {
+                            memoryHavoc |= memoryKindSet(ByrefExposed);
+                            return GenTree::VisitResult::Abort;
+                        }
+                        return GenTree::VisitResult::Continue;
+                    });
+                    // A source VN cannot be propagated without selecting the individual slice.
+                    break;
+
                 case GT_STORE_LCL_VAR:
                 case GT_STORE_LCL_FLD:
                 {

@@ -1384,6 +1384,160 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
 
     JITDUMP("Processing block operation [%06u] that involves replacements\n", Compiler::dspTreeID(store));
 
+#if HAS_FIXED_REGISTER_SET
+    if (dstInvolvesReplacements && src->IsCall() && src->TypeIs(TYP_STRUCT) && !src->AsCall()->ShouldHaveRetBufArg() &&
+        !src->AsCall()->CanTailCall()
+#ifdef SWIFT_SUPPORT
+        && (src->AsCall()->GetUnmanagedCallConv() != CorInfoCallConvExtension::Swift)
+#endif
+    )
+    {
+        unsigned start      = dstLcl->GetLclOffs();
+        unsigned size       = dstLcl->GetLayout(m_compiler)->GetSize();
+        bool     canReplace = true;
+        for (Replacement* rep = dstFirstRep; rep != dstEndRep; rep++)
+        {
+            canReplace &= (rep->Offset >= start) && (rep->Offset + genTypeSize(rep->AccessType) <= start + size) &&
+                          !varTypeIsSIMD(rep->AccessType);
+#ifndef TARGET_64BIT
+            canReplace &= !varTypeIsLong(rep->AccessType);
+#endif
+        }
+        if (canReplace)
+        {
+            struct Remainder
+            {
+                unsigned  Local;
+                unsigned  Offset;
+                var_types Type;
+            };
+            jitstd::vector<Remainder> remainder(m_compiler->getAllocator(CMK_Promotion));
+            AggregateInfo*            aggregate = m_aggregates.Lookup(dstLcl->GetLclNum());
+            ClassLayout*              layout    = m_compiler->lvaGetDesc(dstLcl)->GetLayout();
+            SegmentList               remaining(m_compiler->getAllocator(CMK_Promotion));
+            for (const SegmentList::Segment& segment : aggregate->Unpromoted)
+            {
+                unsigned segmentStart = max(start, segment.Start);
+                unsigned segmentEnd   = min(start + size, segment.End);
+                if (segmentStart < segmentEnd)
+                {
+                    remaining.Add(SegmentList::Segment(segmentStart, segmentEnd));
+                }
+            }
+
+            // Keep a returned register intact when it contains only remainder
+            // and padding. Unpacking it into fields just to rebuild the same
+            // stack bytes introduces unnecessary extracts and stores.
+            ReturnTypeDesc retStorage;
+            retStorage.InitializeStructCallReturnType(m_compiler, src->AsCall());
+            const ReturnTypeDesc* ret = &retStorage;
+            for (unsigned i = 0; i < ret->GetReturnRegCount(); i++)
+            {
+                var_types type   = ret->GetReturnRegType(i);
+                unsigned  offset = ret->GetReturnFieldOffset(i);
+                unsigned  width  = genTypeSize(type);
+                if (varTypeIsSIMD(type) || offset > size || width > size - offset)
+                {
+                    continue;
+                }
+                unsigned targetOffset = start + offset;
+                if (targetOffset % width != 0)
+                {
+                    continue;
+                }
+                SegmentList::Segment chunk(targetOffset, targetOffset + width);
+                Replacement*         overlap;
+                if (!remaining.Intersects(chunk) ||
+                    aggregate->OverlappingReplacements(targetOffset, width, &overlap, nullptr))
+                {
+                    continue;
+                }
+
+                bool compatible;
+                if (varTypeIsGC(type))
+                {
+                    compatible = (targetOffset % TARGET_POINTER_SIZE == 0) && (width == TARGET_POINTER_SIZE) &&
+                                 (layout->GetGCPtrType(targetOffset / TARGET_POINTER_SIZE) == type);
+                }
+                else
+                {
+                    compatible = true;
+                    for (unsigned slot = targetOffset / TARGET_POINTER_SIZE;
+                         slot <= (targetOffset + width - 1) / TARGET_POINTER_SIZE; slot++)
+                    {
+                        compatible &= !layout->IsGCPtr(slot);
+                    }
+                }
+                if (!compatible)
+                {
+                    continue;
+                }
+
+                unsigned local = m_compiler->lvaGrabTemp(true DEBUGARG("promoted call remainder register"));
+                m_compiler->lvaGetDesc(local)->lvType = type;
+                remainder.push_back({local, targetOffset, type});
+                remaining.Subtract(chunk);
+            }
+
+            for (const SegmentList::Segment& segment : remaining)
+            {
+                unsigned offset = segment.Start;
+                unsigned end    = segment.End;
+                while (offset < end)
+                {
+                    unsigned  width = 1;
+                    var_types type  = TYP_UBYTE;
+                    if ((offset % TARGET_POINTER_SIZE == 0) && (end - offset >= TARGET_POINTER_SIZE) &&
+                        layout->IsGCPtr(offset / TARGET_POINTER_SIZE))
+                    {
+                        type  = layout->GetGCPtrType(offset / TARGET_POINTER_SIZE);
+                        width = TARGET_POINTER_SIZE;
+                    }
+                    else
+                    {
+                        while ((width < TARGET_POINTER_SIZE) && ((offset % (width * 2)) == 0) &&
+                               (end - offset >= width * 2))
+                        {
+                            width *= 2;
+                        }
+                        type = width == 8 ? TYP_LONG : width == 4 ? TYP_INT : width == 2 ? TYP_USHORT : TYP_UBYTE;
+                    }
+                    unsigned local = m_compiler->lvaGrabTemp(true DEBUGARG("promoted call remainder"));
+                    m_compiler->lvaGetDesc(local)->lvType = type;
+                    remainder.push_back({local, offset, type});
+                    offset += width;
+                }
+            }
+
+            DecompositionStatementList result;
+            EliminateCommasInBlockOp(store, &result);
+            unsigned             count = static_cast<unsigned>(dstEndRep - dstFirstRep + remainder.size());
+            GenTreeStoreLclVars* defs  = m_compiler->gtNewStoreLclVarsNode(src, count);
+            unsigned             index = 0;
+            for (Replacement* rep = dstFirstRep; rep != dstEndRep; rep++)
+            {
+                m_compiler->gtSetStoreLclVarsDestination(defs, index++, rep->LclNum, rep->Offset - start);
+                ClearNeedsReadBack(*rep);
+                SetNeedsWriteBack(*rep);
+            }
+            for (const Remainder& rem : remainder)
+            {
+                m_compiler->gtSetStoreLclVarsDestination(defs, index++, rem.Local, rem.Offset - start);
+            }
+            result.AddStatement(defs);
+            for (const Remainder& rem : remainder)
+            {
+                GenTree* value = m_compiler->gtNewLclvNode(rem.Local, genActualType(rem.Type));
+                result.AddStatement(m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), rem.Type, rem.Offset, value));
+                m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            }
+            *use          = result.ToCommaTree(m_compiler);
+            m_madeChanges = true;
+            return;
+        }
+    }
+
+#endif
     if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK) || src->IsConstInitVal())
     {
         DecompositionStatementList result;

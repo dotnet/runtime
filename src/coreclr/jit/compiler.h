@@ -2207,7 +2207,7 @@ class FlowGraphNaturalLoop
     template<typename TFunc>
     bool VisitDefs(TFunc func);
 
-    GenTreeLclVarCommon* FindDef(unsigned lclNum);
+    GenTree* FindDef(unsigned lclNum);
 
     bool MatchLimit(unsigned iterVar, GenTree* test, NaturalLoopIterInfo* info);
     bool FindConstInit(BasicBlock* preheader, NaturalLoopIterInfo* info);
@@ -3435,6 +3435,11 @@ public:
     GenTree* gtNewConWithPattern(var_types type, uint8_t pattern);
 
     GenTreeLclVar* gtNewStoreLclVarNode(unsigned lclNum, GenTree* value);
+    GenTreeStoreLclVars* gtNewStoreLclVarsNode(GenTree* source, unsigned count);
+    void gtSetStoreLclVarsDestination(GenTreeStoreLclVars* store, unsigned index, unsigned lclNum, unsigned offset);
+
+    static bool gtCanExtractRegisterField(bool fromFloatReg, var_types fieldType, unsigned offset);
+    GenTree*    gtNewRegisterFieldExtraction(unsigned regLclNum, var_types fieldType, unsigned offset);
 
     GenTreeLclFld* gtNewStoreLclFldNode(
         unsigned lclNum, var_types type, ClassLayout* layout, unsigned offset, GenTree* value);
@@ -8155,7 +8160,7 @@ public:
                      LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
     bool optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optCopyPropPushDef(GenTreeLclVarCommon* lclNode,
+    void optCopyPropPushDef(GenTree* lclNode,
                             unsigned             lclNum,
                             unsigned             ssaNum,
                             LclNumToLiveDefsMap* curSsaName);

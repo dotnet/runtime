@@ -178,6 +178,7 @@ private:
     void       LowerJmpMethod(GenTree* jmp);
     void       LowerRet(GenTreeOp* ret);
     GenTree*   LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
+    GenTree*   LowerStoreLclVars(GenTreeStoreLclVars* store);
     void       LowerRetStruct(GenTreeUnOp* ret);
     void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
     GenTree*   LowerAsyncContinuation(GenTree* asyncCont);
@@ -185,6 +186,11 @@ private:
     void       LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList);
     unsigned   StoreFieldListToNewLocal(ClassLayout* layout, GenTreeFieldList* fieldList);
     void       LowerArgFieldList(CallArg* arg, GenTreeFieldList* fieldList);
+
+    static bool          IsDirectReturnRegisterDestination(var_types type, var_types regType);
+    static bool          IsReturnRegisterCaptureType(var_types type, var_types regType);
+    GenTreeStoreLclVars* TryLowerStoreLclVarsByExtraction(GenTreeStoreLclVars* store, const ReturnTypeDesc& ret);
+
     template <typename GetRegisterInfoFunc>
     bool IsFieldListCompatibleWithRegisters(GenTreeFieldList* fieldList, unsigned numRegs, GetRegisterInfoFunc func);
     template <typename GetRegisterInfoFunc>

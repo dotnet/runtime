@@ -109,6 +109,68 @@ bool TreeLifeUpdater<ForCodeGen>::UpdateLifeFieldVar(GenTreeLclVar* lclNode, uns
 }
 
 //------------------------------------------------------------------------
+// UpdateLifeScalar: Update a scalar local's liveness independently of the
+// representation of its defining node.
+//
+template <bool ForCodeGen>
+void TreeLifeUpdater<ForCodeGen>::UpdateLifeScalar(GenTree* tree, unsigned lclNum, GenTreeFlags flags, regNumber reg)
+{
+    LclVarDsc* varDsc           = m_compiler->lvaGetDesc(lclNum);
+    m_compiler->compCurLifeTree = tree;
+    if (!varDsc->lvTracked)
+    {
+        return;
+    }
+    assert(!varDsc->lvPromoted);
+    StoreCurrentLifeForDump();
+    bool isBorn  = ((flags & GTF_VAR_DEF) != 0) && ((flags & GTF_VAR_USEASG) == 0);
+    bool isDying = (flags & GTF_VAR_DEATH) != 0;
+    if (isBorn || isDying)
+    {
+        bool previouslyLive =
+            ForCodeGen && VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, varDsc->lvVarIndex);
+        UpdateLifeBit(m_compiler->compCurLife, varDsc, isBorn, isDying);
+        if (ForCodeGen)
+        {
+            if (isBorn && varDsc->lvIsRegCandidate() && reg != REG_NA)
+            {
+                varDsc->SetRegNum(reg);
+            }
+            bool isInReg    = varDsc->lvIsInReg() && reg != REG_NA;
+            bool isInMemory = !isInReg || varDsc->IsAlwaysAliveInMemory();
+            if (isInReg)
+            {
+                m_compiler->codeGen->genUpdateRegLife(varDsc, isBorn, isDying DEBUGARG(tree));
+            }
+            if (isInMemory &&
+                VarSetOps::IsMember(m_compiler, m_compiler->codeGen->gcInfo.gcTrkStkPtrLcls, varDsc->lvVarIndex))
+            {
+                UpdateLifeBit(m_compiler->codeGen->gcInfo.gcVarPtrSetCur, varDsc, isBorn, isDying);
+            }
+            if (isDying == previouslyLive)
+            {
+                m_compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(varDsc, lclNum, !isDying,
+                                                                                              isDying);
+            }
+        }
+    }
+#if HAS_FIXED_REGISTER_SET
+    if (ForCodeGen && ((flags & GTF_SPILL) != 0))
+    {
+        if (!tree->OperIs(GT_STORE_LCL_VARS))
+        {
+            m_compiler->codeGen->genSpillVar(tree);
+        }
+        if (VarSetOps::IsMember(m_compiler, m_compiler->codeGen->gcInfo.gcTrkStkPtrLcls, varDsc->lvVarIndex))
+        {
+            VarSetOps::AddElemD(m_compiler, m_compiler->codeGen->gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
+        }
+    }
+#endif
+    DumpLifeDelta(tree);
+}
+
+//------------------------------------------------------------------------
 // UpdateLifeVar: Update live sets for a given tree.
 //
 // Arguments:
@@ -145,58 +207,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
     if (varDsc->lvTracked)
     {
         assert(!varDsc->lvPromoted && !lclVarTree->IsMultiRegLclVar());
-
-        const bool isDying = (lclVarTree->gtFlags & GTF_VAR_DEATH) != 0;
-
-        if (isBorn || isDying)
-        {
-            const bool previouslyLive =
-                ForCodeGen && VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, varDsc->lvVarIndex);
-            UpdateLifeBit(m_compiler->compCurLife, varDsc, isBorn, isDying);
-
-            if (ForCodeGen)
-            {
-                if (isBorn && varDsc->lvIsRegCandidate() && tree->gtHasReg(m_compiler))
-                {
-                    m_compiler->codeGen->genUpdateVarReg(varDsc, tree);
-                }
-
-                const bool isInReg    = varDsc->lvIsInReg() && (tree->GetRegNum() != REG_NA);
-                const bool isInMemory = !isInReg || varDsc->IsAlwaysAliveInMemory();
-                if (isInReg)
-                {
-                    m_compiler->codeGen->genUpdateRegLife(varDsc, isBorn, isDying DEBUGARG(tree));
-                }
-
-                if (isInMemory &&
-                    VarSetOps::IsMember(m_compiler, m_compiler->codeGen->gcInfo.gcTrkStkPtrLcls, varDsc->lvVarIndex))
-                {
-                    UpdateLifeBit(m_compiler->codeGen->gcInfo.gcVarPtrSetCur, varDsc, isBorn, isDying);
-                }
-
-                if (isDying == previouslyLive)
-                {
-                    m_compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(varDsc, lclNum,
-                                                                                                  !isDying, isDying);
-                }
-            }
-        }
-
-#if HAS_FIXED_REGISTER_SET
-        if (ForCodeGen && ((lclVarTree->gtFlags & GTF_SPILL) != 0))
-        {
-            m_compiler->codeGen->genSpillVar(tree);
-
-            if (VarSetOps::IsMember(m_compiler, m_compiler->codeGen->gcInfo.gcTrkStkPtrLcls, varDsc->lvVarIndex))
-            {
-                if (!VarSetOps::IsMember(m_compiler, m_compiler->codeGen->gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex))
-                {
-                    VarSetOps::AddElemD(m_compiler, m_compiler->codeGen->gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
-                    JITDUMP("\t\t\t\t\t\t\tVar V%02u becoming live\n", lclNum);
-                }
-            }
-        }
-#endif // HAS_FIXED_REGISTER_SET
+        UpdateLifeScalar(tree, lclNum, lclVarTree->gtFlags, ForCodeGen ? tree->GetRegNum() : REG_NA);
     }
     else if (varDsc->lvPromoted)
     {
@@ -298,7 +309,19 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLife(GenTree* tree)
     }
 
     // Note that after lowering, we can see indirect uses and definitions of tracked variables.
-    if (tree->OperIsNonPhiLocal())
+    if (tree->OperIs(GT_STORE_LCL_VARS))
+    {
+        // Code generation updates these one at a time, after consuming the
+        // corresponding source register. Analysis sees simultaneous definitions.
+        assert(!ForCodeGen);
+        GenTreeStoreLclVars* store = tree->AsStoreLclVars();
+        for (unsigned i = 0; i < store->gtCount; i++)
+        {
+            GenTreeStoreLclVars::Destination& def = store->GetDestination(i);
+            UpdateLifeScalar(tree, def.LclNum, def.Flags, REG_NA);
+        }
+    }
+    else if (tree->OperIsNonPhiLocal())
     {
         UpdateLifeVar(tree, tree->AsLclVarCommon());
     }

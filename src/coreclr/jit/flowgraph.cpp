@@ -5578,12 +5578,12 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
 //   Does not support promoted struct locals, but does support fields of
 //   promoted structs.
 //
-GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
+GenTree* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 {
     LclVarDsc* dsc = m_dfsTree->GetCompiler()->lvaGetDesc(lclNum);
     assert(!dsc->lvPromoted);
 
-    GenTreeLclVarCommon* result = nullptr;
+    GenTree* result = nullptr;
     VisitDefs([&result, lclNum](const auto& def) {
         if (def.GetLclNum() == lclNum)
         {
@@ -5922,7 +5922,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
             return false;
         }
 
-        GenTreeLclVarCommon* def = FindDef(limitOp->AsLclVarCommon()->GetLclNum());
+        GenTree* def = FindDef(limitOp->AsLclVarCommon()->GetLclNum());
         if (def != nullptr)
         {
             JITDUMP("    Limit var V%02u modified by [%06u]\n", limitOp->AsLclVarCommon()->GetLclNum(),
@@ -5951,7 +5951,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
             return false;
         }
 
-        GenTreeLclVarCommon* def = FindDef(array->AsLclVarCommon()->GetLclNum());
+        GenTree* def = FindDef(array->AsLclVarCommon()->GetLclNum());
         if (def != nullptr)
         {
             JITDUMP("    Array limit var V%02u modified by [%06u]\n", array->AsLclVarCommon()->GetLclNum(),

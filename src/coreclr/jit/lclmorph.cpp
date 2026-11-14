@@ -84,6 +84,10 @@ public:
         {
             SequenceCall(node->AsCall());
         }
+        else if (node->OperIs(GT_STORE_LCL_VARS))
+        {
+            SequenceLocal(node);
+        }
 
         return fgWalkResult::WALK_CONTINUE;
     }
@@ -975,6 +979,18 @@ public:
 
         switch (node->OperGet())
         {
+            case GT_STORE_LCL_VARS:
+                node->VisitLogicalLocalDefs(m_compiler, [=](const auto& def) {
+                    UpdateEarlyRefCount(def.GetLclNum(), node, user);
+                    LclVarDsc* dsc = m_compiler->lvaGetDesc(def.GetLclNum());
+                    if (dsc->lvIsStructField)
+                    {
+                        UpdateEarlyRefCount(dsc->lvParentLcl, node, user);
+                    }
+                    return GenTree::VisitResult::Continue;
+                });
+                break;
+
             case GT_IND:
             case GT_BLK:
             case GT_STOREIND:
@@ -1049,6 +1065,19 @@ public:
 
         switch (node->OperGet())
         {
+            case GT_STORE_LCL_VARS:
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                if (m_lclAddrAssertions != nullptr)
+                {
+                    node->VisitLogicalLocalDefs(m_compiler, [=](const auto& def) {
+                        m_lclAddrAssertions->Clear(def.GetLclNum());
+                        return GenTree::VisitResult::Continue;
+                    });
+                }
+                SequenceLocal(node);
+                break;
+
             case GT_STORE_LCL_FLD:
                 if (node->IsPartialLclFld(m_compiler))
                 {

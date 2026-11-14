@@ -284,6 +284,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForStoreLclVar(treeNode->AsLclVar());
             break;
 
+        case GT_STORE_LCL_VARS:
+            genStoreLclVars(treeNode->AsStoreLclVars());
+            break;
+
         case GT_RETFILT:
         case GT_RETURN:
             genReturn(treeNode);
