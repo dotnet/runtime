@@ -22,10 +22,6 @@ System.Runtime.Caching.FileChangeMonitor
 System.Runtime.Caching.HostFileChangeMonitor
 System.Runtime.Caching.MemoryCache
 System.Runtime.Caching.ObjectCache</PackageDescription>
-
-    <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
-    <Nullable>disable</Nullable>
-    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

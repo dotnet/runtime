@@ -17,17 +17,27 @@ namespace System.Collections.Tests
         }
 
         protected override bool Enumerator_Empty_UsesSingletonInstance => true;
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
 
-        protected override ModifyOperation ModifyEnumeratorThrows => base.ModifyEnumeratorAllowed & ~ModifyOperation.Remove;
+        protected override ModifyOperation ModifyEnumeratorThrows => base.ModifyEnumeratorThrows & ~(ModifyOperation.Remove | ModifyOperation.Clear);
 
-        protected override ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.Overwrite | ModifyOperation.Remove;
+        protected override ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.Overwrite | ModifyOperation.Remove | ModifyOperation.Clear;
 
         /// <summary>
         /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
         /// </summary>
         protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations)
         {
+            if ((operations & ModifyOperation.Add) == ModifyOperation.Add)
+            {
+                yield return (IEnumerable enumerable) =>
+                {
+                    HashSet<string> casted = ((HashSet<string>)enumerable);
+                    casted.Add(CreateT(casted, 4531));
+                    return true;
+                };
+            }
             if ((operations & ModifyOperation.Clear) == ModifyOperation.Clear)
             {
                 yield return (IEnumerable enumerable) =>

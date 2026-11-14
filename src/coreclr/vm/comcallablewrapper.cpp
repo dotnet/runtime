@@ -96,7 +96,6 @@ typedef ComCallWrapper *ComCallWrapperPtr;
 // This is used to hold a newly created CCW. It will release the CCW (and linked wrappers)
 // upon exit, if SuppressRelease() is not called. It doesn't try to release the SimpleComCallWrapper
 // or destroy the handle
-// I need to use BaseHolder instead of BaseWrapper because BaseHolder allows me to use a class as BASE
 //
 class NewCCWHolder : public BaseHolder<ComCallWrapperPtr, NewCCWHolderBase>
 {
@@ -1899,7 +1898,8 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                 pStartWrapper = GetWrapperForObject(pServer, pTemplate);
                 if (pStartWrapper == NULL)
                 {
-                    Wrapper<OBJECTHANDLE, DoNothing, DestroyRefcountedHandle> oh;
+                    RefcountedHandleHolder ownedHandle;
+                    OBJECTHANDLE oh = NULL;
 
                     ComCallWrapper *pRootWrapper = GetWrapperForObject(pServer, NULL);
                     if (pRootWrapper == NULL)
@@ -1909,13 +1909,13 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                         // attempt to hand this out to another domain then we will assume that the object is truly
                         // agile and will convert the handle to a global handle.
                         oh = GetAppDomain()->CreateRefcountedHandle(NULL);
+                        ownedHandle = oh;
                         _ASSERTE(oh);
                     }
                     else
                     {
                         // if the object already has a CCW, we reuse the handle
                         oh = pRootWrapper->GetObjectHandle();
-                        oh.SuppressRelease();
                     }
 
                     // copy from template
@@ -1946,7 +1946,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                         ComCallWrapper::SetNext(pRootWrapper, pNewCCW);
                     }
 
-                    oh.SuppressRelease();
+                    ownedHandle.Detach();
                     pNewCCW.SuppressRelease();
                     pSimpleWrap.Detach();
 

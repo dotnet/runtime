@@ -17,10 +17,27 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Runtime.WebAssembly.Sdk\Microsoft.NET.Runtime.WebAssembly.Sdk.pkgproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
+    <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk\Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.pkgproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsWasm)' == 'true'">
     <ProjectReference Include="$(MonoProjectRoot)\wasm\templates\Microsoft.NET.Runtime.WebAssembly.Templates.csproj" />
     <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\Microsoft.NET.Sdk.WebAssembly.Pack.pkgproj" />
+    <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest\Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest.pkgproj" />
 
     <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Runtime.WorkloadTesting.Internal\Microsoft.NET.Runtime.WorkloadTesting.Internal.pkgproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetsAndroid)' == 'true'">
+    <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Runtime.LibraryBuilder.Sdk\Microsoft.NET.Runtime.LibraryBuilder.Sdk.pkgproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
+    <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Runtime.MonoTargets.Sdk\Microsoft.NET.Runtime.MonoTargets.Sdk.pkgproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
   </ItemGroup>
 
   <Import Project="versioning.targets" />

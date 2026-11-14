@@ -290,7 +290,12 @@ namespace System.Collections.Generic
                 _count = 0;
                 _freeList = -1;
                 _freeCount = 0;
-                Array.Clear(_entries, 0, count);
+                // Resetting the buckets and counts hides old entries. Insertion initializes
+                // every field before an entry is reused.
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<Entry>())
+                {
+                    Array.Clear(_entries, 0, count);
+                }
             }
         }
 

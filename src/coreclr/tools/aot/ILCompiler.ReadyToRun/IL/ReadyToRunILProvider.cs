@@ -102,6 +102,21 @@ namespace Internal.IL
         /// </summary>
         private MethodIL TryGetPerInstantiationIntrinsicMethodIL(MethodDesc method)
         {
+            // Per-instantiation intrinsics inspect compile-time metadata (fields, interfaces, constructors)
+            // of their generic arguments without emitting runtime layout or interface checks, so every
+            // non-canonical instantiation argument must version with the current compilation.
+            foreach (TypeDesc t in method.Instantiation)
+            {
+                if (!t.IsCanonicalSubtype(CanonicalFormKind.Any) && !_compilationModuleGroup.VersionsWithType(t))
+                    return null;
+            }
+
+            foreach (TypeDesc t in method.OwningType.Instantiation)
+            {
+                if (!t.IsCanonicalSubtype(CanonicalFormKind.Any) && !_compilationModuleGroup.VersionsWithType(t))
+                    return null;
+            }
+
             var mdType = method.OwningType as MetadataType;
             if (mdType == null)
                 return null;

@@ -33,8 +33,7 @@ namespace Microsoft.Extensions.Hosting
         {
             base.Start(args);
 
-            // get the process
-            _remoteInvokeHandle.Process.Dispose();
+            _remoteInvokeHandle.Process?.Dispose();
             _remoteInvokeHandle.Process = null;
 
             var statusEx = QueryServiceStatusEx();
@@ -76,6 +75,10 @@ namespace Microsoft.Extensions.Hosting
             // create remote executor commandline arguments
             var startInfo = remoteInvokeHandle.Process.StartInfo;
             string commandLine = startInfo.FileName + " " + startInfo.Arguments;
+
+            // SCM starts the real process; the unstarted placeholder must not be waited on during disposal.
+            remoteInvokeHandle.Process.Dispose();
+            remoteInvokeHandle.Process = null;
 
             // install the service
             using (var serviceManagerHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL)))
@@ -142,16 +145,32 @@ namespace Microsoft.Extensions.Hosting
 
         protected override void Dispose(bool disposing)
         {
-            if (_remoteInvokeHandle != null)
+            try
             {
-                _remoteInvokeHandle.Dispose();               
+                if (disposing)
+                {
+                    _remoteInvokeHandle.Dispose();
+                }
             }
-
-            if (!_serviceHandle.IsInvalid)
+            finally
             {
-                // delete the temporary test service
-                Interop.Advapi32.DeleteService(_serviceHandle);
-                _serviceHandle.Close();
+                try
+                {
+                    if (!_serviceHandle.IsClosed)
+                    {
+                        using (_serviceHandle)
+                        {
+                            if (!_serviceHandle.IsInvalid && !Interop.Advapi32.DeleteService(_serviceHandle))
+                            {
+                                throw new Win32Exception();
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    base.Dispose(disposing);
+                }
             }
         }
     }

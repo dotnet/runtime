@@ -515,8 +515,8 @@ struct ProcessModIter
                 kIncludeLoaded | kIncludeExecution));
         }
 
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-        if (!m_assemIter.Next(pAssembly.This()))
+        CollectibleAssemblyHolder pAssembly;
+        if (!m_assemIter.Next(&pAssembly))
         {
             return NULL;
         }

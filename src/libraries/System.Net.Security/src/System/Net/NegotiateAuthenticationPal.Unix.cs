@@ -96,6 +96,7 @@ namespace System.Net
             private string _package;
             private string? _spn;
             private ChannelBinding? _channelBinding;
+            private readonly bool _requireChannelBinding;
             private readonly Interop.NetSecurityNative.PackageType _packageType;
             private IIdentity? _remoteIdentity;
 
@@ -316,15 +317,13 @@ namespace System.Net
                     _ => 0
                 };
 
-                // NOTE: Historically serverOptions.Policy was ignored on Unix without an exception
-                // or error message. We continue to do so for compatibility reasons and because there
-                // are no direct equivalents in GSSAPI.
-
                 _isServer = true;
                 _securityContext = null;
                 _requestedContextFlags = contextFlags;
                 _package = serverOptions.Package;
                 _channelBinding = serverOptions.Binding;
+                _requireChannelBinding = serverOptions.Binding is not null &&
+                    serverOptions.Policy?.PolicyEnforcement == PolicyEnforcement.Always;
                 _packageType = GetPackageType(_package);
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Peer SPN-> '{_spn}'");
@@ -390,7 +389,7 @@ namespace System.Net
                 if (statusCode >= NegotiateAuthenticationStatusCode.GenericFailure)
                 {
                     Dispose();
-                    _isAuthenticated = true;
+                    _isAuthenticated = false;
                     _tokenBuffer = null;
                     return null;
                 }
@@ -833,6 +832,15 @@ namespace System.Net
                         resultBlobLength = 0;
                         contextFlags = 0;
                         return NegotiateAuthenticationStatusCode.Unsupported;
+                    }
+
+                    if (status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE &&
+                        _requireChannelBinding &&
+                        (outputFlags & (uint)Interop.NetSecurityNative.GssFlags.GSS_C_CHANNEL_BOUND_FLAG) == 0)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "The GSSAPI provider did not confirm matching channel bindings.");
+                        resultBlobLength = 0;
+                        return NegotiateAuthenticationStatusCode.BadBinding;
                     }
 
                     resultBlob = token.ToByteArray();

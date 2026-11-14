@@ -1122,13 +1122,18 @@ void gc_heap::fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
 
     if (for_gc_p)
     {
-        // We need to update the alloc_bytes to reflect the portion that we have not used
-        acontext->alloc_bytes -= (acontext->alloc_limit - acontext->alloc_ptr);
-        total_alloc_bytes_soh -= (acontext->alloc_limit - acontext->alloc_ptr);
-
-        acontext->alloc_ptr = 0;
-        acontext->alloc_limit = acontext->alloc_ptr;
+        retire_allocation_context (acontext);
     }
+}
+
+void gc_heap::retire_allocation_context (alloc_context* acontext)
+{
+    size_t unused_bytes = acontext->alloc_limit - acontext->alloc_ptr;
+    acontext->alloc_bytes -= unused_bytes;
+    total_alloc_bytes_soh -= unused_bytes;
+
+    acontext->alloc_ptr = 0;
+    acontext->alloc_limit = acontext->alloc_ptr;
 }
 
 //used by the heap verification for concurrent gc.
@@ -1146,22 +1151,23 @@ void repair_allocation (gc_alloc_context* acontext, void*)
     }
 }
 
-void void_allocation (gc_alloc_context* acontext, void*)
+void gc_heap::retire_allocation (gc_alloc_context* gc_context, void*)
 {
-    uint8_t*  point = acontext->alloc_ptr;
+    alloc_context* acontext = static_cast<alloc_context*>(gc_context);
+    uint8_t* point = acontext->alloc_ptr;
 
     if (point != 0)
     {
-        dprintf (3, ("Void [%zx, %zx[", (size_t)acontext->alloc_ptr,
+        dprintf (3, ("Retire [%zx, %zx[", (size_t)acontext->alloc_ptr,
                      (size_t)acontext->alloc_limit+Align(min_obj_size)));
-        acontext->alloc_ptr = 0;
-        acontext->alloc_limit = acontext->alloc_ptr;
+        gc_heap* hp = heap_of (point);
+        hp->retire_allocation_context (acontext);
     }
 }
 
 void gc_heap::repair_allocation_contexts (BOOL repair_p)
 {
-    GCToEEInterface::GcEnumAllocContexts (repair_p ? repair_allocation : void_allocation, NULL);
+    GCToEEInterface::GcEnumAllocContexts (repair_p ? repair_allocation : retire_allocation, NULL);
 }
 
 struct fix_alloc_context_args

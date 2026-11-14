@@ -62,6 +62,70 @@ public class Runtime_135530
         }
     }
 
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void CancelInGenericFrames(bool methodContext)
+    {
+        for (int iteration = 0; iteration < 10; iteration++)
+        {
+            using var ready = new ManualResetEventSlim();
+            using var cts = new CancellationTokenSource();
+            Task cancellation = Task.Run(() =>
+            {
+                ready.Wait();
+                Thread.Sleep(1);
+                cts.Cancel();
+            });
+
+            OperationCanceledException exception = Assert.Throws<OperationCanceledException>(() =>
+                ControlledExecution.Run(
+                    methodContext ? () => RunGenericLoop<string>(ready) : () => GenericLoop<string>.Run(ready),
+                    cts.Token));
+            Assert.Equal(cts.Token, exception.CancellationToken);
+            cancellation.GetAwaiter().GetResult();
+        }
+
+        Console.WriteLine($"{nameof(CancelInGenericFrames)}({methodContext}): 10 cancellations passed.");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void RunGenericLoop<T>(ManualResetEventSlim ready)
+    {
+        ready.Set();
+        while (true)
+        {
+            GenericFrame<T>();
+        }
+    }
+
+    private static class GenericLoop<T>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void Run(ManualResetEventSlim ready)
+        {
+            ready.Set();
+            while (true)
+            {
+                GenericFrame<T>();
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void GenericFrame<T>()
+    {
+        Span<int> values = stackalloc int[32];
+        values[0] = typeof(T).GetHashCode();
+        Consume(values);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void Consume(Span<int> values)
+    {
+        s_counter = values[0];
+    }
+
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
