@@ -346,6 +346,71 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
+        public void DefineField_ModifiedSignatureType_ModifiersRoundTrip()
+        {
+            Type fieldType = Type.MakeModifiedSignatureType(typeof(int), [typeof(IsVolatile), typeof(IsConst)], [typeof(IsLong)]);
+
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            type.DefineField("F", fieldType, FieldAttributes.Public | FieldAttributes.Static);
+            FieldInfo field = type.CreateType().GetField("F");
+
+            Assert.Equal(typeof(int), field.FieldType);
+            Assert.Equal([typeof(IsVolatile), typeof(IsConst)], field.GetModifiedFieldType().GetRequiredCustomModifiers());
+            Assert.Equal([typeof(IsLong)], field.GetModifiedFieldType().GetOptionalCustomModifiers());
+        }
+
+        [Fact]
+        [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
+        public void DefineField_TypeDelegatorOverModifiedType_ModifiersRoundTrip()
+        {
+            Type fieldType = new TypeDelegator(Type.MakeModifiedSignatureType(typeof(int), [typeof(IsVolatile)], [typeof(IsLong)]));
+
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            type.DefineField("F", fieldType, FieldAttributes.Public | FieldAttributes.Static);
+            FieldInfo field = type.CreateType().GetField("F");
+
+            Assert.Equal(typeof(int), field.FieldType);
+            Assert.Equal([typeof(IsVolatile)], field.GetModifiedFieldType().GetRequiredCustomModifiers());
+            Assert.Equal([typeof(IsLong)], field.GetModifiedFieldType().GetOptionalCustomModifiers());
+        }
+
+        [Fact]
+        public void DefineField_EnumTypeBuilderFieldType_WritesEnumType()
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            TypeBuilder enumType = module.DefineType("E", TypeAttributes.Public | TypeAttributes.Sealed, typeof(Enum));
+            enumType.DefineField("value__", typeof(int), FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName);
+            TypeBuilder type = module.DefineType("C", TypeAttributes.Public);
+            type.DefineField("F", enumType, FieldAttributes.Public | FieldAttributes.Static);
+
+            Type createdEnum = enumType.CreateType();
+            FieldInfo field = type.CreateType().GetField("F");
+
+            Assert.Equal(createdEnum, field.FieldType);
+        }
+
+        public static IEnumerable<object[]> InvalidCustomModifiers_TestData()
+        {
+            yield return [typeof(int[])];
+            yield return [typeof(int).MakePointerType()];
+            yield return [typeof(int).MakeByRefType()];
+            yield return [typeof(List<>)];
+            yield return [typeof(List<>).GetGenericArguments()[0]];
+        }
+
+        [Theory]
+        [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
+        [MemberData(nameof(InvalidCustomModifiers_TestData))]
+        public void DefineField_ModifiedSignatureTypeWithInvalidModifier_ThrowsArgumentException(Type customModifier)
+        {
+            Type fieldType = Type.MakeModifiedSignatureType(typeof(int), [customModifier], null);
+
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            AssertExtensions.Throws<ArgumentException>(null, () => type.DefineField("F", fieldType, FieldAttributes.Public | FieldAttributes.Static));
+        }
+
+        [Fact]
         public void GetField_TypeNotCreated_ThrowsNotSupportedException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
