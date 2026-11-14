@@ -3782,6 +3782,9 @@ PhaseStatus Compiler::fgWasmForwardLocalCopies()
         return varDsc->lvImplicitlyReferenced || varDsc->IsAddressExposed() || varDsc->lvPromoted;
     };
 
+    // Capping the pending set bounds the per-node scans, keeping the phase linear in the size of the
+    // visited blocks. Calls with many arguments can have one pending copy per argument.
+    const int               maxPendingCopies = 256;
     ArrayStack<PendingCopy> pending(getAllocator(CMK_Lower));
     auto                    removePending = [&pending](int index) {
         pending.BottomRef(index) = pending.Top();
@@ -3883,7 +3886,7 @@ PhaseStatus Compiler::fgWasmForwardLocalCopies()
                 });
             }
 
-            if (!node->OperIs(GT_STORE_LCL_VAR))
+            if (!node->OperIs(GT_STORE_LCL_VAR) || (pending.Height() >= maxPendingCopies))
             {
                 continue;
             }
