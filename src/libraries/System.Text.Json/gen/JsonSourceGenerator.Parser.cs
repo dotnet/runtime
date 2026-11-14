@@ -405,6 +405,7 @@ namespace System.Text.Json.SourceGeneration
                 int? indentSize = null;
                 bool? allowDuplicateProperties = null;
                 bool? inferClosedTypePolymorphism = null;
+                bool? emitAttributeProviders = null;
 
                 if (attributeData.ConstructorArguments.Length > 0)
                 {
@@ -538,6 +539,10 @@ namespace System.Text.Json.SourceGeneration
                             inferClosedTypePolymorphism = (bool)namedArg.Value.Value!;
                             break;
 
+                        case nameof(JsonSourceGenerationOptionsAttribute.EmitAttributeProviders):
+                            emitAttributeProviders = (bool)namedArg.Value.Value!;
+                            break;
+
                         case nameof(JsonSourceGenerationOptionsAttribute.TypeClassifiers):
                             typeClassifiers = new List<TypeRef>();
                             foreach (TypedConstant element in namedArg.Value.Values)
@@ -592,6 +597,7 @@ namespace System.Text.Json.SourceGeneration
                     IndentSize = indentSize,
                     AllowDuplicateProperties = allowDuplicateProperties,
                     InferClosedTypePolymorphism = inferClosedTypePolymorphism,
+                    EmitAttributeProviders = emitAttributeProviders,
                 };
             }
 

@@ -68,6 +68,71 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 #endif
 
         [Fact]
+        public void EmitAttributeProviders_OnlyAffectsOptedOutContexts()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                [JsonSerializable(typeof(Model))]
+                [JsonSerializable(typeof(ModelWithConstructor))]
+                [JsonSourceGenerationOptions(EmitAttributeProviders = false, IncludeFields = true)]
+                internal partial class OmitContext : JsonSerializerContext { }
+
+                [JsonSerializable(typeof(Model))]
+                [JsonSerializable(typeof(ModelWithConstructor))]
+                [JsonSourceGenerationOptions(IncludeFields = true)]
+                internal partial class DefaultContext : JsonSerializerContext { }
+
+                [JsonSerializable(typeof(Model))]
+                [JsonSourceGenerationOptions(EmitAttributeProviders = true, IncludeFields = true)]
+                internal partial class ExplicitContext : JsonSerializerContext { }
+
+                public class Model
+                {
+                    public int Id { get; set; }
+                    public string Name { get; set; }
+                    public int Field;
+                    [JsonIgnore]
+                    public UnusedType Ignored { get; set; }
+                }
+
+                public class UnusedType { }
+
+                public class ModelWithConstructor
+                {
+                    public ModelWithConstructor(int x, string y) { X = x; Y = y; }
+                    public int X { get; }
+                    public string Y { get; }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            string GetContextSource(string contextName) => string.Concat(result.NewCompilation.SyntaxTrees
+                .Where(tree => IO.Path.GetFileName(tree.FilePath).StartsWith(contextName + ".", StringComparison.Ordinal))
+                .Select(tree => tree.ToString()));
+
+            string omitSource = GetContextSource("OmitContext");
+            Assert.Contains("AttributeProviderFactory = null,", omitSource);
+            Assert.Contains("ConstructorAttributeProviderFactory = null,", omitSource);
+            Assert.DoesNotContain("AttributeProviderFactory = static", omitSource);
+            Assert.DoesNotContain("static () => null", omitSource);
+            Assert.DoesNotContain(".GetConstructor(InstanceMemberBindingFlags", omitSource);
+
+            foreach (string contextName in new[] { "DefaultContext", "ExplicitContext" })
+            {
+                string contextSource = GetContextSource(contextName);
+                Assert.Contains("AttributeProviderFactory = static () => typeof(global::Model).GetProperty(\"Id\"", contextSource);
+                Assert.Contains("AttributeProviderFactory = static () => typeof(global::Model).GetField(\"Field\"", contextSource);
+                Assert.DoesNotContain("AttributeProviderFactory = null", contextSource);
+                Assert.Contains("AttributeProviderFactory = static () => null", contextSource);
+            }
+
+            Assert.Contains("ConstructorAttributeProviderFactory = static () => typeof(global::ModelWithConstructor).GetConstructor(", GetContextSource("DefaultContext"));
+        }
+
+        [Fact]
         public void TypeDiscoveryPrimitivePOCO()
         {
             string source = """
