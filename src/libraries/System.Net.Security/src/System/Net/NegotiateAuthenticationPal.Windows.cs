@@ -243,7 +243,7 @@ namespace System.Net
                 _securityContext = null;
                 _requestedContextFlags = contextFlags;
                 _package = serverOptions.Package;
-                _channelBinding = serverOptions.Binding;
+                _channelBinding = serverOptions.Binding ?? serverOptions.Policy?.CustomChannelBinding;
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Peer SPN-> '{_spn}'");
 
