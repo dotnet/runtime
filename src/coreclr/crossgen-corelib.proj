@@ -213,7 +213,6 @@
       <!-- wasm: enable cross-module inlining/optimization across the whole shared framework (the -r IL closure). -->
       <_CoreLibCrossgen2ExtraArgs Include="--opt-cross-module:*"
         Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
-      <!-- On wasm, every ReadyToRun image must target the instruction sets CoreLib was compiled for. -->
       <_CoreLibCrossgen2ExtraArgs Include="--instruction-set:$(PublishReadyToRunInstructionSet)"
         Condition="'$(PublishReadyToRunInstructionSet)' != ''" />
       <_CoreLibCrossgen2ExtraArgs Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)')"
