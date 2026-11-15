@@ -210,12 +210,11 @@ namespace System.Reflection.Runtime.TypeInfos
             Type? match = null;
             foreach (Type ifc in GetInterfaces())
             {
-                string ifcSimpleName = ifc.Name;
-
                 // Interfaces with a name that was stripped by the compiler can't be found by name.
-                if (ifcSimpleName.Length == 0)
+                if (ifc.ToRuntimeTypeInfo().IsNameStripped)
                     continue;
 
+                string ifcSimpleName = ifc.Name;
                 bool simpleNameMatches = ignoreCase
                     ? (0 == CultureInfo.InvariantCulture.CompareInfo.Compare(simpleName, ifcSimpleName, CompareOptions.IgnoreCase))  // @todo: This could be expressed simpler but the necessary parts of String api not yet ported.
                     : simpleName.Equals(ifcSimpleName);

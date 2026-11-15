@@ -595,6 +595,12 @@ namespace System.Reflection.Runtime.TypeInfos
         internal abstract string InternalFullNameOfAssembly { get; }
 
         //
+        // Returns true if the compiler stripped the name of this type from the metadata (see IlcStripNamesAssembly).
+        // Getting the name of such a type throws.
+        //
+        internal virtual bool IsNameStripped => false;
+
+        //
         // Left unsealed as HasElement types must override this.
         //
         internal virtual RuntimeTypeInfo InternalRuntimeElementType
@@ -729,7 +735,15 @@ namespace System.Reflection.Runtime.TypeInfos
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
-                _debugName = ToString() ?? "";
+                try
+                {
+                    _debugName = ToString() ?? "";
+                }
+                catch (NotSupportedException)
+                {
+                    // The name of the type was stripped
+                    _debugName = "";
+                }
             }
 #endif
             return this;

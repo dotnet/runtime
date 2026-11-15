@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Reflection.Runtime.General;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -318,8 +319,9 @@ namespace System
             {
                 MethodInfo mi = ReflectionAugments.GetDelegateMethod(this);
 
-                // Declaring types with a name that was stripped by the compiler have no information to report.
-                if (mi.DeclaringType!.Name.Length == 0)
+                // Declaring types with a name that was stripped by the compiler have no information to report,
+                // which is consistent with the stack trace data of the methods of such types.
+                if (mi.DeclaringType!.ToRuntimeTypeInfo().IsNameStripped)
                     return null;
 
                 Type? declaringType = mi.DeclaringType;

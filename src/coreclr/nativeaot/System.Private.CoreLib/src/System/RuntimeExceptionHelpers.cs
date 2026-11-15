@@ -295,7 +295,7 @@ namespace System
                             Internal.Console.Error.Write(exception.ToString());
                             Internal.Console.Error.WriteLine();
                         }
-                        catch
+                        catch (Exception toStringException)
                         {
                             // If ToString() fails (for example, due to OOM), fall back to a simpler message.
                             try
@@ -304,7 +304,19 @@ namespace System
                                 Internal.Console.Error.Write(exception.GetMethodTable() == Internal.Runtime.MethodTable.Of<OutOfMemoryException>() ? "Out of memory." : exception.GetType().FullName);
                                 Internal.Console.Error.WriteLine();
                             }
-                            catch { }
+                            catch
+                            {
+                                // The name of the type of the exception might not be available (see IlcStripNamesAssembly).
+                                // Print the reason and the stack trace, which doesn't need the names of types.
+                                try
+                                {
+                                    Internal.Console.Error.Write(toStringException.Message);
+                                    Internal.Console.Error.WriteLine();
+                                    Internal.Console.Error.Write(exception.StackTrace);
+                                    Internal.Console.Error.WriteLine();
+                                }
+                                catch { }
+                            }
                         }
                     }
 
@@ -314,7 +326,15 @@ namespace System
                         var reporter = new EventReporter(reason);
                         if (exception != null && reason is not RhFailFastReason.AssertionFailure)
                         {
-                            reporter.AddDescription($"{exception.GetType()}: {exception.Message}");
+                            try
+                            {
+                                reporter.AddDescription($"{exception.GetType()}: {exception.Message}");
+                            }
+                            catch (Exception ex)
+                            {
+                                // The name of the type of the exception might not be available (see IlcStripNamesAssembly)
+                                reporter.AddDescription(ex.Message);
+                            }
                             reporter.AddStackTrace(exception.StackTrace);
                         }
                         else

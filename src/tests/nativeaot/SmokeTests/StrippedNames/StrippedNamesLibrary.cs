@@ -60,12 +60,28 @@ namespace StrippedNamesLibrary
     public class GenericHolder<T>
     {
         public T Value;
+
+        public class Inner { }
     }
 
     public enum Color
     {
         Red,
         Green,
+    }
+
+    [Flags]
+    public enum Options
+    {
+        None = 0,
+        First = 1,
+        Second = 2,
+    }
+
+    public class StrippedException : Exception
+    {
+        public StrippedException() { }
+        public StrippedException(string message) : base(message) { }
     }
 
     public delegate int Callback(int x);

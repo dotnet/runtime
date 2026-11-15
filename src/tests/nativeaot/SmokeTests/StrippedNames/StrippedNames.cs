@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
+using ControlNamespace;
 using StrippedNamesLibrary;
 
 // The StrippedNamesLibrary assembly is listed in IlcStripNamesAssembly (see StrippedNames.csproj), so the reflection
@@ -44,43 +45,99 @@ internal static class Program
     // Prevents the names from being constant folded into the program, which would defeat the check for the image contents.
     private static string Join(params string[] parts) => string.Concat(parts);
 
+    private static void TakesWidget(Widget value) { }
+
+    private static void AssertNameIsNotAvailable(Func<object> getName, [CallerArgumentExpression(nameof(getName))] string message = null)
+    {
+        try
+        {
+            getName();
+        }
+        catch (NotSupportedException)
+        {
+            return;
+        }
+
+        throw new Exception(message);
+    }
+
     private static class TestNamesOfStrippedTypes
     {
         public static void Run()
         {
             Type widget = Keep(typeof(Widget));
 
-            Assert(widget.Name == string.Empty);
-            Assert(widget.FullName is null);
-            Assert(widget.Namespace is null);
-            Assert(widget.AssemblyQualifiedName is null);
-            Assert(widget.ToString() == string.Empty);
+            // Getting any name of the type fails
+            AssertNameIsNotAvailable(() => widget.Name);
+            AssertNameIsNotAvailable(() => widget.Namespace);
+            AssertNameIsNotAvailable(() => widget.FullName);
+            AssertNameIsNotAvailable(() => widget.AssemblyQualifiedName);
+            AssertNameIsNotAvailable(() => widget.ToString());
+            AssertNameIsNotAvailable(() => new Widget().ToString());
+            AssertNameIsNotAvailable(() => default(Point).ToString());
+            AssertNameIsNotAvailable(() => Keep(typeof(Widget.Nested)).Name);
+            AssertNameIsNotAvailable(() => Keep(typeof(Widget.Nested)).FullName);
+            AssertNameIsNotAvailable(() => typeof(Color).Name);
+            AssertNameIsNotAvailable(() => typeof(Callback).Name);
+            AssertNameIsNotAvailable(() => typeof(GenericHolder<>).Name);
+            AssertNameIsNotAvailable(() => typeof(GenericHolder<>).ToString());
+
+            // ... also if the type is a part of another type
+            AssertNameIsNotAvailable(() => typeof(Widget[]).Name);
+            AssertNameIsNotAvailable(() => typeof(Widget[]).FullName);
+            AssertNameIsNotAvailable(() => typeof(Widget).MakeByRefType().ToString());
+            AssertNameIsNotAvailable(() => typeof(Widget).MakePointerType().AssemblyQualifiedName);
+            AssertNameIsNotAvailable(() => typeof(GenericHolder<int>).Name);
+            AssertNameIsNotAvailable(() => typeof(GenericHolder<int>).FullName);
+            AssertNameIsNotAvailable(() => typeof(GenericHolder<Widget>).ToString());
+            AssertNameIsNotAvailable(() => typeof(List<Widget>).FullName);
+            AssertNameIsNotAvailable(() => typeof(List<Widget>).AssemblyQualifiedName);
+            AssertNameIsNotAvailable(() => typeof(List<Widget>).ToString());
+
+            // The error message mentions how to restore the names
+            try
+            {
+                _ = widget.Name;
+            }
+            catch (NotSupportedException ex)
+            {
+                Assert(ex.Message.Contains("IlcStripNamesAssembly", StringComparison.Ordinal));
+            }
+
+            // Everything that doesn't need the name works
             Assert(widget.Assembly == typeof(Base).Assembly);
-
-            Type nested = Keep(typeof(Widget.Nested));
-            Assert(nested.Name == string.Empty);
-            Assert(nested.FullName is null);
-            Assert(nested.DeclaringType == widget);
-
-            Assert(typeof(Widget[]).FullName is null);
-            Assert(typeof(Widget).MakeByRefType().FullName is null);
-            Assert(typeof(Widget).MakePointerType().FullName is null);
-
-            // Constructed generic types have no full name if any of their components has no name
-            Assert(typeof(GenericHolder<>).FullName is null);
-            Assert(typeof(GenericHolder<Widget>).FullName is null);
-            Assert(typeof(GenericHolder<string>).FullName is null);
-            Assert(typeof(List<Widget>).FullName is null);
-            Assert(typeof(List<Widget>).AssemblyQualifiedName is null);
-            Assert(typeof(List<Widget>).ToString() is not null);
+            Assert(Keep(typeof(Widget.Nested)).DeclaringType == widget);
             Assert(typeof(List<Widget>).GetGenericArguments()[0] == typeof(Widget));
+            Assert(typeof(Widget[]).GetElementType() == widget);
+            Assert(typeof(GenericHolder<int>).GetGenericTypeDefinition() == typeof(GenericHolder<>));
+            Assert(typeof(GenericHolder<>).GetGenericArguments()[0].Name == "T");
+            Assert(widget.IsClass && !widget.IsValueType && typeof(Point).IsValueType && typeof(Color).IsEnum);
 
-            // ... but they keep it if they are not involved
-            Assert(typeof(List<string>).FullName is not null);
+            // ... and the types that are not involved are not affected
             Assert(typeof(List<string>).FullName.StartsWith("System.Collections.Generic.List`1[[System.String", StringComparison.Ordinal));
+            Assert(typeof(string[]).Name == "String[]");
 
-            Assert(typeof(Color).Name == string.Empty);
-            Assert(typeof(Callback).Name == string.Empty);
+            // Exceptions of the assembly have no name to print unless they have a message, and the stack trace doesn't need the name
+            AssertNameIsNotAvailable(() => new StrippedException().Message);
+            AssertNameIsNotAvailable(() => new StrippedException("message").ToString());
+            Assert(new StrippedException("message").Message == "message");
+            try
+            {
+                throw new StrippedException("message");
+            }
+            catch (StrippedException ex)
+            {
+                Assert(!string.IsNullOrEmpty(ex.StackTrace));
+            }
+
+            // The names of enum members work as usual
+            Assert((Options.First | Options.Second).ToString() == "First, Second");
+
+            // Types of the assembly are returned from the reflection API of other types
+            MethodInfo takesWidget = Keep(typeof(Program)).GetMethod(nameof(TakesWidget), BindingFlags.NonPublic | BindingFlags.Static);
+            Assert(takesWidget.GetParameters()[0].ParameterType == widget);
+            Assert(takesWidget.GetParameters()[0].Name == "value");
+            AssertNameIsNotAvailable(() => takesWidget.GetParameters()[0].ParameterType.Name);
         }
     }
 
@@ -133,6 +190,10 @@ internal static class Program
             Assert(widget.GetNestedType(string.Empty, BindingFlags.Public | BindingFlags.IgnoreCase) is null);
             Assert(widget.GetMember(string.Empty, MemberTypes.NestedType, BindingFlags.Public | BindingFlags.NonPublic).Length == 0);
             Assert(widget.GetMember(string.Empty).Length == 0);
+
+            // ... including when the nested type is reached through a constructed generic type
+            Type innerDefinition = Keep(typeof(GenericHolder<>)).GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic).Single();
+            Assert(constructed.GetMemberWithSameMetadataDefinitionAs(innerDefinition) == innerDefinition);
         }
     }
 
@@ -300,6 +361,11 @@ internal static class Program
             Assert(converter.GetInterface(string.Empty) is null);
             Assert(converter.GetInterface(string.Empty, ignoreCase: true) is null);
             Assert(converter.GetInterface(Join("IConv", "erter`1")) is null);
+
+            // GetInterface looks at the names of all interfaces of the type, which includes the ones that don't have a name
+            Assert(converter.GetInterfaces().Length == 1);
+            Assert(converter.GetInterface("IDisposable") is null);
+            Assert(converter.GetMember(Join("Conv", "ert"), MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance).Length == 1);
         }
     }
 

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.General;
@@ -119,6 +120,12 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                     ns = NamespaceDefinition.Name.GetStringOrNull(_reader).EscapeTypeNameIdentifier() ?? string.Empty;
                     _lazyNamespace = ns;
                 }
+
+                // The types with a name that was stripped are in the global namespace, which doesn't tell them from types
+                // that have a name in the global namespace.
+                if (ns.Length == 0 && IsNameStripped)
+                    ThrowNameStripped();
+
                 return ns.Length == 0 ? null : ns;
             }
         }
@@ -142,16 +149,11 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             StringBuilder? sb = null;
 
-            // The name of the type was stripped by the compiler, so there is nothing to print.
-            string? fullName = FullName;
-            if (fullName is null)
-                return Name;
-
             foreach (GenericParameterHandle genericParameterHandle in _typeDefinition.GenericParameters)
             {
                 if (sb == null)
                 {
-                    sb = new StringBuilder(fullName);
+                    sb = new StringBuilder(FullName);
                     sb.Append('[');
                 }
                 else
@@ -164,7 +166,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 
             if (sb == null)
             {
-                return fullName;
+                return FullName;
             }
             else
             {
@@ -209,9 +211,17 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 ConstantStringValueHandle nameHandle = _typeDefinition.Name;
                 string name = nameHandle.GetString(_reader);
 
+                if (name.Length == 0)
+                    ThrowNameStripped();
+
                 return name.EscapeTypeNameIdentifier();
             }
         }
+
+        internal sealed override bool IsNameStripped => _typeDefinition.Name.StringEquals(string.Empty, _reader);
+
+        [DoesNotReturn]
+        private void ThrowNameStripped() => throw new NotSupportedException(SR.Format(SR.NotSupported_StrippedTypeName, InternalFullNameOfAssembly));
 
         internal sealed override MetadataReader GetMetadataReader() => _reader;
 

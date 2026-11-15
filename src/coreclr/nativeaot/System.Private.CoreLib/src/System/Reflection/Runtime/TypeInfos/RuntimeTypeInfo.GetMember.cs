@@ -171,7 +171,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             // Nested types with a name that was stripped by the compiler can't be filtered by name, so the metadata definition comparison below does all the work.
             BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
-            QueryResult<M> members = member.Name.Length == 0 ? Query<M>(policies, flags) : Query<M>(policies, member.Name, flags);
+            QueryResult<M> members = member is Type ? Query<M>(policies, flags) : Query<M>(policies, member.Name, flags);
             foreach (M candidate in members)
             {
                 if (candidate.HasSameMetadataDefinitionAs(member))

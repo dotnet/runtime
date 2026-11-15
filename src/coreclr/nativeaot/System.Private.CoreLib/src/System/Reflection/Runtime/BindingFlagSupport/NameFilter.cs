@@ -26,7 +26,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
         }
 
-        public sealed override bool Matches(string name) => CanMatch && name.Equals(ExpectedName, StringComparison.Ordinal);
+        public sealed override bool Matches(string name) => name.Equals(ExpectedName, StringComparison.Ordinal);
     }
 
     internal sealed partial class NameFilterCaseInsensitive : NameFilter
@@ -36,6 +36,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
         }
 
-        public sealed override bool Matches(string name) => CanMatch && name.Equals(ExpectedName, StringComparison.OrdinalIgnoreCase);
+        public sealed override bool Matches(string name) => name.Equals(ExpectedName, StringComparison.OrdinalIgnoreCase);
     }
 }
