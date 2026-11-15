@@ -21,7 +21,7 @@ namespace System.Security.Authentication.ExtendedProtection
         [UnsupportedOSPlatform("browser")]
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException();
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             if (destinationType == typeof(InstanceDescriptor))
             {

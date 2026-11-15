@@ -11,19 +11,19 @@ namespace System.Net.Sockets
     {
         public UnixDomainSocketEndPoint(string path)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
         }
 
         internal UnixDomainSocketEndPoint(ReadOnlySpan<byte> socketAddress)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
         }
 
         internal string? BoundFileName
         {
             get
             {
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
             }
         }
 
@@ -31,43 +31,43 @@ namespace System.Net.Sockets
         {
             get
             {
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
             }
         }
 
         public override System.Net.EndPoint Create(System.Net.SocketAddress socketAddress)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
         }
 
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
         }
 
         public override int GetHashCode()
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
         }
 
         public override System.Net.SocketAddress Serialize()
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
         }
 
         public override string ToString()
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
         }
 
         internal UnixDomainSocketEndPoint CreateBoundEndPoint()
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
         }
 
         internal UnixDomainSocketEndPoint CreateUnboundEndPoint()
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
         }
     }
 }

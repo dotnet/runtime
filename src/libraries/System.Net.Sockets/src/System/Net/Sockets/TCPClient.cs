@@ -121,7 +121,7 @@ namespace System.Net.Sockets
         // Connects the Client to the specified port on the specified host.
         public void Connect(string hostname, int port)
         {
-            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
 
@@ -140,7 +140,7 @@ namespace System.Net.Sockets
         // Connects the Client to the specified port on the specified host.
         public void Connect(IPAddress address, int port)
         {
-            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
 
@@ -157,7 +157,7 @@ namespace System.Net.Sockets
         // Connect the Client to the specified end point.
         public void Connect(IPEndPoint remoteEP)
         {
-            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
 
@@ -170,7 +170,7 @@ namespace System.Net.Sockets
 
         public void Connect(IPAddress[] ipAddresses, int port)
         {
-            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
 
