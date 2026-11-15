@@ -17,7 +17,8 @@ namespace Microsoft.Win32.SafeHandles
         {
             IntPtr addr = handle;
             handle = new IntPtr(-1);
-            return Interop.Sys.MUnmap(addr, base.ByteLength) == 0;
+            // An empty view maps one byte, but its reported length remains zero.
+            return Interop.Sys.MUnmap(addr, Math.Max(1UL, base.ByteLength)) == 0;
         }
     }
 }
