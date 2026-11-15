@@ -537,7 +537,7 @@ static bool IsFastPathSupportedHelper(FieldDesc* pFieldDesc)
         !(pFieldDesc->IsCollectible() && pFieldDesc->IsStatic());
 }
 
-FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::IsFastPathSupported, ReflectFieldObject *pFieldUNSAFE)
+FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle_IsFastPathSupported, ReflectFieldObject *pFieldUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -549,7 +549,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::IsFastPathSupported, ReflectFieldObject
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeFieldHandle::GetInstanceFieldOffset, ReflectFieldObject *pFieldUNSAFE)
+FCIMPL1(INT32, RuntimeFieldHandle_GetInstanceFieldOffset, ReflectFieldObject *pFieldUNSAFE)
 {
     CONTRACTL
     {
@@ -571,7 +571,7 @@ FCIMPL1(INT32, RuntimeFieldHandle::GetInstanceFieldOffset, ReflectFieldObject *p
 }
 FCIMPLEND
 
-FCIMPL1(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pFieldUNSAFE)
+FCIMPL1(void*, RuntimeFieldHandle_GetStaticFieldAddress, ReflectFieldObject *pFieldUNSAFE)
 {
     CONTRACTL
     {
@@ -837,7 +837,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_PrepareDelegate(QCall::ObjectHand
 // This method checks and returns whether there is sufficient stack to execute the
 // average Framework method, but rather than throwing, it simply returns a
 // Boolean: true for sufficient stack space, otherwise false.
-FCIMPL0(FC_BOOL_RET, ReflectionInvocation::TryEnsureSufficientExecutionStack)
+FCIMPL0(FC_BOOL_RET, RuntimeHelpers_TryEnsureSufficientExecutionStack)
 {
 	FCALL_CONTRACT;
 

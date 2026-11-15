@@ -609,612 +609,1028 @@ const void* callhelpers_pinvoke_override(const char* library_name, const char* e
     return nullptr;
 }
 extern "C" {
-    void QCall_AppContext_SetFirstChanceExceptionHandler () __asm__("AppContext_SetFirstChanceExceptionHandler");
-    int32_t QCall_AppContext_TryGetHostPropertyValue (void *, void *, void *) __asm__("AppContext_TryGetHostPropertyValue");
-    void QCall_AppDomain_CreateDynamicAssembly (void *, void *, int32_t, int32_t, void *, void *) __asm__("AppDomain_CreateDynamicAssembly");
-    void QCall_AppendExceptionStackFrame (void *, void *, void *, int32_t, void *, void *) __asm__("AppendExceptionStackFrame");
-    void QCall_Array_CreateInstance (void *, int32_t, void *, void *, int32_t, void *, void *) __asm__("Array_CreateInstance");
-    void QCall_Array_Ctor (void *, uint32_t, void *, void *, void *) __asm__("Array_Ctor");
-    void * QCall_Array_GetElementConstructorEntrypoint (void *, void *) __asm__("Array_GetElementConstructorEntrypoint");
-    void QCall_AssemblyHandle_GetManifestModuleSlow (void *, void *, void *) __asm__("AssemblyHandle_GetManifestModuleSlow");
-    void QCall_AssemblyName_InitializeAssemblySpec (void *, void *, void *) __asm__("AssemblyName_InitializeAssemblySpec");
-    void QCall_AssemblyNative_ApplyUpdate (void *, void *, int32_t, void *, int32_t, void *, int32_t, void *) __asm__("AssemblyNative_ApplyUpdate");
-    uint32_t QCall_AssemblyNative_GetAssemblyCount () __asm__("AssemblyNative_GetAssemblyCount");
-    int32_t QCall_AssemblyNative_GetCodeBase (void *, void *, void *) __asm__("AssemblyNative_GetCodeBase");
-    void QCall_AssemblyNative_GetEntryAssembly (void *, void *) __asm__("AssemblyNative_GetEntryAssembly");
-    void QCall_AssemblyNative_GetEntryPoint (void *, void *, void *) __asm__("AssemblyNative_GetEntryPoint");
-    void QCall_AssemblyNative_GetExecutingAssembly (void *, void *, void *) __asm__("AssemblyNative_GetExecutingAssembly");
-    void QCall_AssemblyNative_GetExportedTypes (void *, void *, void *) __asm__("AssemblyNative_GetExportedTypes");
-    int32_t QCall_AssemblyNative_GetFlags (void *, void *) __asm__("AssemblyNative_GetFlags");
-    void QCall_AssemblyNative_GetForwardedType (void *, int32_t, void *, void *) __asm__("AssemblyNative_GetForwardedType");
-    void QCall_AssemblyNative_GetFullName (void *, void *, void *) __asm__("AssemblyNative_GetFullName");
-    int32_t QCall_AssemblyNative_GetHashAlgorithm (void *, void *) __asm__("AssemblyNative_GetHashAlgorithm");
-    void QCall_AssemblyNative_GetImageRuntimeVersion (void *, void *, void *) __asm__("AssemblyNative_GetImageRuntimeVersion");
-    void * QCall_AssemblyNative_GetLoadContextForAssembly (void *, void *) __asm__("AssemblyNative_GetLoadContextForAssembly");
-    void QCall_AssemblyNative_GetLoadedAssemblies (void *, void *) __asm__("AssemblyNative_GetLoadedAssemblies");
-    void QCall_AssemblyNative_GetLocale (void *, void *, void *) __asm__("AssemblyNative_GetLocale");
-    void QCall_AssemblyNative_GetLocation (void *, void *, void *) __asm__("AssemblyNative_GetLocation");
-    int32_t QCall_AssemblyNative_GetManifestResourceInfo (void *, void *, void *, void *, void *) __asm__("AssemblyNative_GetManifestResourceInfo");
-    void QCall_AssemblyNative_GetManifestResourceNames (void *, void *, void *) __asm__("AssemblyNative_GetManifestResourceNames");
-    void QCall_AssemblyNative_GetModule (void *, void *, void *, void *) __asm__("AssemblyNative_GetModule");
-    void QCall_AssemblyNative_GetModules (void *, int32_t, int32_t, void *, void *) __asm__("AssemblyNative_GetModules");
-    void QCall_AssemblyNative_GetPublicKey (void *, void *, void *) __asm__("AssemblyNative_GetPublicKey");
-    void QCall_AssemblyNative_GetReferencedAssemblies (void *, void *, void *) __asm__("AssemblyNative_GetReferencedAssemblies");
-    void * QCall_AssemblyNative_GetResource (void *, void *, void *, void *) __asm__("AssemblyNative_GetResource");
-    void QCall_AssemblyNative_GetSimpleName (void *, void *, void *) __asm__("AssemblyNative_GetSimpleName");
-    void QCall_AssemblyNative_GetTypeCore (void *, void *, void *, int32_t, void *, void *) __asm__("AssemblyNative_GetTypeCore");
-    void QCall_AssemblyNative_GetTypeCoreIgnoreCase (void *, void *, void *, int32_t, void *, void *) __asm__("AssemblyNative_GetTypeCoreIgnoreCase");
-    void QCall_AssemblyNative_GetVersion (void *, void *, void *, void *, void *, void *) __asm__("AssemblyNative_GetVersion");
-    void * QCall_AssemblyNative_InitializeAssemblyLoadContext (void *, int32_t, int32_t, void *) __asm__("AssemblyNative_InitializeAssemblyLoadContext");
-    void QCall_AssemblyNative_InternalLoad (void *, void *, void *, int32_t, void *, void *, void *) __asm__("AssemblyNative_InternalLoad");
-    int32_t QCall_AssemblyNative_InternalTryGetRawMetadata (void *, void *, void *, void *) __asm__("AssemblyNative_InternalTryGetRawMetadata");
-    int32_t QCall_AssemblyNative_IsApplyUpdateSupported (void *) __asm__("AssemblyNative_IsApplyUpdateSupported");
-    void QCall_AssemblyNative_LoadFromPath (void *, void *, void *, void *) __asm__("AssemblyNative_LoadFromPath");
-    void QCall_AssemblyNative_LoadFromStream (void *, void *, int32_t, void *, int32_t, void *, void *) __asm__("AssemblyNative_LoadFromStream");
-    void QCall_AssemblyNative_PrepareForAssemblyLoadContextRelease (void *, void *, void *) __asm__("AssemblyNative_PrepareForAssemblyLoadContextRelease");
-    void QCall_AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked (void *, int32_t, void *, void *, void *) __asm__("AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked");
-    void QCall_AssemblyNative_TraceAssemblyResolveHandlerInvoked (void *, void *, void *, void *, void *) __asm__("AssemblyNative_TraceAssemblyResolveHandlerInvoked");
-    void QCall_AssemblyNative_TraceResolvingHandlerInvoked (void *, void *, void *, void *, void *, void *) __asm__("AssemblyNative_TraceResolvingHandlerInvoked");
-    void QCall_AssemblyNative_TraceSatelliteSubdirectoryPathProbed (void *, int32_t, void *) __asm__("AssemblyNative_TraceSatelliteSubdirectoryPathProbed");
-    void QCall_AsyncHelpers_AddContinuationToExInternal (void *, void *, void *) __asm__("AsyncHelpers_AddContinuationToExInternal");
-    uint32_t QCall_CallFilterFunclet (void *, void *, void *, void *) __asm__("CallFilterFunclet");
-    int32_t QCall_CustomAttribute_ParseAttributeUsageAttribute (void *, int32_t, void *, void *, void *) __asm__("CustomAttribute_ParseAttributeUsageAttribute");
-    void QCall_DebugDebugger_Break (void *) __asm__("DebugDebugger_Break");
-    void QCall_DebugDebugger_CustomNotification (void *, void *) __asm__("DebugDebugger_CustomNotification");
-    void QCall_DebugDebugger_GetFuncEvalArgumentType (void *, uint32_t, void *, void *) __asm__("DebugDebugger_GetFuncEvalArgumentType");
-    void QCall_DebugDebugger_GetFuncEvalMethod (void *, void *, void *, void *) __asm__("DebugDebugger_GetFuncEvalMethod");
-    int32_t QCall_DebugDebugger_IsLoggingHelper () __asm__("DebugDebugger_IsLoggingHelper");
-    int32_t QCall_DebugDebugger_IsManagedDebuggerAttached () __asm__("DebugDebugger_IsManagedDebuggerAttached");
-    int32_t QCall_DebugDebugger_Launch () __asm__("DebugDebugger_Launch");
-    void QCall_DebugDebugger_Log (int32_t, void *, void *) __asm__("DebugDebugger_Log");
-    void QCall_DebugDebugger_PrepareFuncEvalResult (void *, void *, void *) __asm__("DebugDebugger_PrepareFuncEvalResult");
-    int32_t QCall_DebugDebugger_ReadFuncEvalPrimitiveRegister (void *, uint32_t, void *) __asm__("DebugDebugger_ReadFuncEvalPrimitiveRegister");
-    void QCall_DebugDebugger_WriteFuncEvalObjectRegister (void *, uint32_t, void *, void *) __asm__("DebugDebugger_WriteFuncEvalObjectRegister");
-    void QCall_DebugDebugger_WriteFuncEvalRegister (void *, uint32_t, void *, uint32_t, void *) __asm__("DebugDebugger_WriteFuncEvalRegister");
-    void * QCall_Delegate_AdjustTarget (void *, void *, void *) __asm__("Delegate_AdjustTarget");
-    int32_t QCall_Delegate_BindToMethodInfo (void *, void *, void *, void *, int32_t, void *, void *, void *) __asm__("Delegate_BindToMethodInfo");
-    int32_t QCall_Delegate_BindToMethodName (void *, void *, void *, void *, int32_t, void *, void *, void *) __asm__("Delegate_BindToMethodName");
-    void QCall_Delegate_Construct (void *, void *, void *, void *, void *) __asm__("Delegate_Construct");
-    void QCall_Delegate_CreateMethodInfo (void *, void *, void *) __asm__("Delegate_CreateMethodInfo");
-    void * QCall_Delegate_GetMethodDesc (void *, void *) __asm__("Delegate_GetMethodDesc");
-    void * QCall_Delegate_GetMulticastInvokeSlow (void *, void *) __asm__("Delegate_GetMulticastInvokeSlow");
-    void QCall_Delegate_InitializeVirtualCallStub (void *, void *, void *) __asm__("Delegate_InitializeVirtualCallStub");
-    void * QCall_DependentHandle_InternalAllocWithGCTransition (void *, void *, void *) __asm__("DependentHandle_InternalAllocWithGCTransition");
-    void QCall_DependentHandle_InternalFreeWithGCTransition (void *, void *) __asm__("DependentHandle_InternalFreeWithGCTransition");
-    uint32_t QCall_EHEnumInitFromStackFrameIterator (void *, void *, void *) __asm__("EHEnumInitFromStackFrameIterator");
-    uint32_t QCall_EHEnumNext (void *, void *, void *) __asm__("EHEnumNext");
-    void QCall_Enum_GetValuesAndNames (void *, void *, void *, int32_t, void *) __asm__("Enum_GetValuesAndNames");
-    void QCall_Environment_Exit (int32_t, void *) __asm__("Environment_Exit");
-    void QCall_Environment_FailFast (void *, void *, void *, void *, void *) __asm__("Environment_FailFast");
-    void * QCall_EventPipeInternal_CreateProvider (void *, void *, void *, void *) __asm__("EventPipeInternal_CreateProvider");
-    void * QCall_EventPipeInternal_DefineEvent (void *, uint32_t, int64_t, uint32_t, uint32_t, void *, uint32_t, void *) __asm__("EventPipeInternal_DefineEvent");
-    void QCall_EventPipeInternal_DeleteProvider (void *, void *) __asm__("EventPipeInternal_DeleteProvider");
-    void QCall_EventPipeInternal_Disable (uint64_t, void *) __asm__("EventPipeInternal_Disable");
-    uint64_t QCall_EventPipeInternal_Enable (void *, int32_t, uint32_t, void *, uint32_t, void *) __asm__("EventPipeInternal_Enable");
-    int32_t QCall_EventPipeInternal_EventActivityIdControl (uint32_t, void *, void *) __asm__("EventPipeInternal_EventActivityIdControl");
-    int32_t QCall_EventPipeInternal_GetNextEvent (uint64_t, void *, void *) __asm__("EventPipeInternal_GetNextEvent");
-    void * QCall_EventPipeInternal_GetProvider (void *, void *) __asm__("EventPipeInternal_GetProvider");
-    int32_t QCall_EventPipeInternal_GetSessionInfo (uint64_t, void *, void *) __asm__("EventPipeInternal_GetSessionInfo");
-    int32_t QCall_EventPipeInternal_SignalSession (uint64_t, void *) __asm__("EventPipeInternal_SignalSession");
-    int32_t QCall_EventPipeInternal_WasiRunJobs (void *) __asm__("EventPipeInternal_WasiRunJobs");
-    void QCall_EventPipeInternal_WriteEventData (void *, void *, uint32_t, void *, void *, void *) __asm__("EventPipeInternal_WriteEventData");
-    void QCall_ExceptionNative_GetFrozenStackTrace (void *, void *, void *) __asm__("ExceptionNative_GetFrozenStackTrace");
-    void QCall_ExceptionNative_GetMessageFromNativeResources (int32_t, void *, void *) __asm__("ExceptionNative_GetMessageFromNativeResources");
-    void QCall_ExceptionNative_GetMethodFromStackTrace (void *, void *, void *) __asm__("ExceptionNative_GetMethodFromStackTrace");
-    void QCall_ExceptionNative_ThrowAmbiguousResolutionException (void *, void *, void *, void *) __asm__("ExceptionNative_ThrowAmbiguousResolutionException");
-    void QCall_ExceptionNative_ThrowClassAccessException (void *, void *, void *) __asm__("ExceptionNative_ThrowClassAccessException");
-    void QCall_ExceptionNative_ThrowEntryPointNotFoundException (void *, void *, void *, void *) __asm__("ExceptionNative_ThrowEntryPointNotFoundException");
-    void QCall_ExceptionNative_ThrowFieldAccessException (void *, void *, void *) __asm__("ExceptionNative_ThrowFieldAccessException");
-    void QCall_ExceptionNative_ThrowMethodAccessException (void *, void *, void *) __asm__("ExceptionNative_ThrowMethodAccessException");
-    void QCall_FileLoadException_GetMessageForHR (int32_t, void *, void *) __asm__("FileLoadException_GetMessageForHR");
-    int32_t QCall_FreeEnvironmentStringsW (void *) __asm__("FreeEnvironmentStringsW");
-    void * QCall_GCHandle_InternalAllocWithGCTransition (void *, int32_t, void *) __asm__("GCHandle_InternalAllocWithGCTransition");
-    void QCall_GCHandle_InternalFreeWithGCTransition (void *, void *) __asm__("GCHandle_InternalFreeWithGCTransition");
-    void QCall_GCInterface_AllocateNewArray (void *, int32_t, int32_t, void *, void *) __asm__("GCInterface_AllocateNewArray");
-    void QCall_GCInterface_Collect (int32_t, int32_t, uint32_t, void *) __asm__("GCInterface_Collect");
-    int32_t QCall_GCInterface_EnableNoGCRegionCallback (void *, int64_t, void *) __asm__("GCInterface_EnableNoGCRegionCallback");
-    int32_t QCall_GCInterface_EndNoGCRegion (void *) __asm__("GCInterface_EndNoGCRegion");
-    void QCall_GCInterface_EnumerateConfigurationValues (void *, void *, void *) __asm__("GCInterface_EnumerateConfigurationValues");
-    int64_t QCall_GCInterface_GetGenerationBudget (int32_t, void *) __asm__("GCInterface_GetGenerationBudget");
-    void * QCall_GCInterface_GetNextFinalizableObject (void *, void *) __asm__("GCInterface_GetNextFinalizableObject");
-    int64_t QCall_GCInterface_GetTotalAllocatedBytesPrecise (void *) __asm__("GCInterface_GetTotalAllocatedBytesPrecise");
-    int64_t QCall_GCInterface_GetTotalMemory (void *) __asm__("GCInterface_GetTotalMemory");
-    void QCall_GCInterface_ReRegisterForFinalize (void *, void *) __asm__("GCInterface_ReRegisterForFinalize");
-    int32_t QCall_GCInterface_RefreshMemoryLimit (void *, void *) __asm__("GCInterface_RefreshMemoryLimit");
-    void * QCall_GCInterface_RegisterFrozenSegment (void *, void *, void *) __asm__("GCInterface_RegisterFrozenSegment");
-    int32_t QCall_GCInterface_StartNoGCRegion (int64_t, int32_t, int64_t, int32_t, void *) __asm__("GCInterface_StartNoGCRegion");
-    void QCall_GCInterface_UnregisterFrozenSegment (void *, void *) __asm__("GCInterface_UnregisterFrozenSegment");
-    int32_t QCall_GCInterface_WaitForFullGCApproach (int32_t, void *) __asm__("GCInterface_WaitForFullGCApproach");
-    int32_t QCall_GCInterface_WaitForFullGCComplete (int32_t, void *) __asm__("GCInterface_WaitForFullGCComplete");
-    void QCall_GCInterface_WaitForPendingFinalizers (void *) __asm__("GCInterface_WaitForPendingFinalizers");
-    void * QCall_GenericHandleWorker (void *, void *, void *, uint32_t, void *, void *) __asm__("GenericHandleWorker");
-    void * QCall_GetCurrentExInfo () __asm__("GetCurrentExInfo");
-    void * QCall_GetEnvironmentStringsW () __asm__("GetEnvironmentStringsW");
-    uint32_t QCall_GetEnvironmentVariableW (void *, void *, uint32_t) __asm__("GetEnvironmentVariableW");
-    void QCall_GetFileLoadExceptionMessage (int32_t, void *, void *) __asm__("GetFileLoadExceptionMessage");
-    void QCall_GetTypeLoadExceptionMessage (int32_t, void *, void *) __asm__("GetTypeLoadExceptionMessage");
-    void QCall_InitClassHelper (void *, void *) __asm__("InitClassHelper");
-    void QCall_Interlocked_MemoryBarrierProcessWide () __asm__("Interlocked_MemoryBarrierProcessWide");
-    int32_t QCall_IsInstanceOf_NoCacheLookup (void *, int32_t, void *, void *) __asm__("IsInstanceOf_NoCacheLookup");
-    int32_t QCall_LoaderAllocator_Destroy (void *, void *) __asm__("LoaderAllocator_Destroy");
-    void QCall_MarshalNative_GetDelegateForFunctionPointerInternal (void *, void *, void *, void *) __asm__("MarshalNative_GetDelegateForFunctionPointerInternal");
-    void QCall_MarshalNative_GetExceptionForHR (int32_t, void *, void *, void *) __asm__("MarshalNative_GetExceptionForHR");
-    void * QCall_MarshalNative_GetFunctionPointerForDelegateInternal (void *, void *) __asm__("MarshalNative_GetFunctionPointerForDelegateInternal");
-    int32_t QCall_MarshalNative_HasLayout (void *, void *, void *, void *) __asm__("MarshalNative_HasLayout");
-    void * QCall_MarshalNative_OffsetOf (void *, void *) __asm__("MarshalNative_OffsetOf");
-    void QCall_MarshalNative_Prelink (void *, void *) __asm__("MarshalNative_Prelink");
-    int32_t QCall_MarshalNative_SizeOfHelper (void *, int32_t, void *) __asm__("MarshalNative_SizeOfHelper");
-    int32_t QCall_MdUtf8String_EqualsCaseInsensitive (void *, void *, int32_t, void *) __asm__("MdUtf8String_EqualsCaseInsensitive");
-    void QCall_MetadataImport_Enum (void *, int32_t, int32_t, void *, void *, void *, void *) __asm__("MetadataImport_Enum");
-    int32_t QCall_MetadataImport_GetMarshalAs (void *, int32_t, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) __asm__("MetadataImport_GetMarshalAs");
-    void * QCall_MethodBase_GetCurrentMethod (void *, void *) __asm__("MethodBase_GetCurrentMethod");
-    int32_t QCall_MethodTable_CanCompareBitsOrUseFastGetHashCode (void *, void *) __asm__("MethodTable_CanCompareBitsOrUseFastGetHashCode");
-    int32_t QCall_ModuleBuilder_GetArrayMethodToken (void *, int32_t, void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetArrayMethodToken");
-    int32_t QCall_ModuleBuilder_GetMemberRef (void *, void *, int32_t, int32_t, void *) __asm__("ModuleBuilder_GetMemberRef");
-    int32_t QCall_ModuleBuilder_GetMemberRefFromSignature (void *, int32_t, void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetMemberRefFromSignature");
-    int32_t QCall_ModuleBuilder_GetMemberRefOfFieldInfo (void *, int32_t, void *, int32_t, void *) __asm__("ModuleBuilder_GetMemberRefOfFieldInfo");
-    int32_t QCall_ModuleBuilder_GetMemberRefOfMethodInfo (void *, int32_t, void *, void *) __asm__("ModuleBuilder_GetMemberRefOfMethodInfo");
-    int32_t QCall_ModuleBuilder_GetStringConstant (void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetStringConstant");
-    int32_t QCall_ModuleBuilder_GetTokenFromTypeSpec (void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetTokenFromTypeSpec");
-    int32_t QCall_ModuleBuilder_GetTypeRef (void *, void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetTypeRef");
-    void QCall_ModuleBuilder_SetFieldRVAContent (void *, int32_t, void *, int32_t, void *) __asm__("ModuleBuilder_SetFieldRVAContent");
-    void QCall_ModuleHandle_GetDynamicMethod (void *, void *, void *, int32_t, void *, int32_t, void *, void *) __asm__("ModuleHandle_GetDynamicMethod");
-    int32_t QCall_ModuleHandle_GetMDStreamVersion (void *) __asm__("ModuleHandle_GetMDStreamVersion");
-    void QCall_ModuleHandle_GetModuleType (void *, void *, void *) __asm__("ModuleHandle_GetModuleType");
-    void QCall_ModuleHandle_GetPEKind (void *, void *, void *, void *) __asm__("ModuleHandle_GetPEKind");
-    int32_t QCall_ModuleHandle_GetToken (void *) __asm__("ModuleHandle_GetToken");
-    void QCall_ModuleHandle_ResolveField (void *, int32_t, void *, int32_t, void *, int32_t, void *, void *) __asm__("ModuleHandle_ResolveField");
-    void * QCall_ModuleHandle_ResolveMethod (void *, int32_t, void *, int32_t, void *, int32_t, void *) __asm__("ModuleHandle_ResolveMethod");
-    void QCall_ModuleHandle_ResolveType (void *, int32_t, void *, int32_t, void *, int32_t, void *, void *) __asm__("ModuleHandle_ResolveType");
-    void * QCall_NativeLibrary_LoadByName (void *, void *, int32_t, uint32_t, int32_t, void *) __asm__("NativeLibrary_LoadByName");
-    void QCall_NativeRuntimeEventSource_LogContentionLockCreated (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogContentionLockCreated");
-    void QCall_NativeRuntimeEventSource_LogContentionStart (uint32_t, uint32_t, void *, void *, uint64_t, void *) __asm__("NativeRuntimeEventSource_LogContentionStart");
-    void QCall_NativeRuntimeEventSource_LogContentionStop (uint32_t, uint32_t, double, void *) __asm__("NativeRuntimeEventSource_LogContentionStop");
-    void QCall_NativeRuntimeEventSource_LogDecreaseMemoryPressure (uint64_t, void *) __asm__("NativeRuntimeEventSource_LogDecreaseMemoryPressure");
-    void QCall_NativeRuntimeEventSource_LogIncreaseMemoryPressure (uint64_t, void *) __asm__("NativeRuntimeEventSource_LogIncreaseMemoryPressure");
-    void QCall_NativeRuntimeEventSource_LogThreadPoolIODequeue (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIODequeue");
-    void QCall_NativeRuntimeEventSource_LogThreadPoolIOEnqueue (void *, void *, int32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIOEnqueue");
-    void QCall_NativeRuntimeEventSource_LogThreadPoolIOPack (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIOPack");
-    void QCall_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolMinMaxThreads");
-    void QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment (double, uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment");
-    void QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample (double, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample");
-    void QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats (double, double, double, double, double, double, double, double, double, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats");
-    void QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart (uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart");
-    void QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop (uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop");
-    void QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait (uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait");
-    void QCall_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount (uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount");
-    void QCall_NativeRuntimeEventSource_LogWaitHandleWaitStart (uint32_t, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogWaitHandleWaitStart");
-    void QCall_NativeRuntimeEventSource_LogWaitHandleWaitStop (uint32_t, void *) __asm__("NativeRuntimeEventSource_LogWaitHandleWaitStop");
-    void QCall_ObjectHeader_GetOrCreateLockObject (void *, void *, void *) __asm__("ObjectHeader_GetOrCreateLockObject");
-    void QCall_ObjectNative_AllocateUninitializedClone (void *, void *) __asm__("ObjectNative_AllocateUninitializedClone");
-    int32_t QCall_ObjectNative_GetHashCodeSlow (void *, void *) __asm__("ObjectNative_GetHashCodeSlow");
-    void * QCall_QCall_FreeGCHandleForTypeHandle (void *, void *, void *) __asm__("QCall_FreeGCHandleForTypeHandle");
-    void * QCall_QCall_GetGCHandleForTypeHandle (void *, int32_t, void *) __asm__("QCall_GetGCHandleForTypeHandle");
-    void QCall_ReflectionInvocation_CompileMethod (void *, void *) __asm__("ReflectionInvocation_CompileMethod");
-    void QCall_ReflectionInvocation_GetBoxInfo (void *, void *, void *, void *, void *, void *) __asm__("ReflectionInvocation_GetBoxInfo");
-    void QCall_ReflectionInvocation_GetGuid (void *, void *, void *) __asm__("ReflectionInvocation_GetGuid");
-    void QCall_ReflectionInvocation_PrepareDelegate (void *, void *) __asm__("ReflectionInvocation_PrepareDelegate");
-    void QCall_ReflectionInvocation_PrepareMethod (void *, void *, int32_t, void *) __asm__("ReflectionInvocation_PrepareMethod");
-    void QCall_ReflectionInvocation_RunClassConstructor (void *, void *) __asm__("ReflectionInvocation_RunClassConstructor");
-    void QCall_ReflectionInvocation_RunModuleConstructor (void *, void *) __asm__("ReflectionInvocation_RunModuleConstructor");
-    int32_t QCall_ReflectionInvocation_SizeOf (void *) __asm__("ReflectionInvocation_SizeOf");
-    void QCall_ReflectionSerialization_GetCreateUninitializedObjectInfo (void *, void *, void *, void *) __asm__("ReflectionSerialization_GetCreateUninitializedObjectInfo");
-    void * QCall_ResolveVirtualFunctionPointer (void *, void *, void *, void *) __asm__("ResolveVirtualFunctionPointer");
-    void * QCall_RuntimeFieldHandle_GetEnCFieldAddr (void *, void *, void *) __asm__("RuntimeFieldHandle_GetEnCFieldAddr");
-    void QCall_RuntimeFieldHandle_GetFieldDataReference (void *, void *, void *, void *) __asm__("RuntimeFieldHandle_GetFieldDataReference");
-    int32_t QCall_RuntimeFieldHandle_GetRVAFieldInfo (void *, void *, void *, void *) __asm__("RuntimeFieldHandle_GetRVAFieldInfo");
-    void QCall_RuntimeFieldHandle_GetValue (void *, void *, void *, void *, void *, void *, void *) __asm__("RuntimeFieldHandle_GetValue");
-    void QCall_RuntimeFieldHandle_GetValueDirect (void *, void *, void *, void *, void *, void *) __asm__("RuntimeFieldHandle_GetValueDirect");
-    void QCall_RuntimeFieldHandle_SetValue (void *, void *, void *, void *, void *, void *, void *) __asm__("RuntimeFieldHandle_SetValue");
-    void QCall_RuntimeFieldHandle_SetValueDirect (void *, void *, void *, void *, void *, void *) __asm__("RuntimeFieldHandle_SetValueDirect");
-    void QCall_RuntimeMethodHandle_ConstructInstantiation (void *, int32_t, void *, void *) __asm__("RuntimeMethodHandle_ConstructInstantiation");
-    void QCall_RuntimeMethodHandle_Destroy (void *, void *) __asm__("RuntimeMethodHandle_Destroy");
-    void * QCall_RuntimeMethodHandle_GetDiagnosticCodeStart (void *, void *) __asm__("RuntimeMethodHandle_GetDiagnosticCodeStart");
-    void * QCall_RuntimeMethodHandle_GetFunctionPointer (void *, void *) __asm__("RuntimeMethodHandle_GetFunctionPointer");
-    void QCall_RuntimeMethodHandle_GetMethodBody (void *, void *, void *, void *) __asm__("RuntimeMethodHandle_GetMethodBody");
-    void QCall_RuntimeMethodHandle_GetMethodInstantiation (void *, void *, int32_t, void *) __asm__("RuntimeMethodHandle_GetMethodInstantiation");
-    void * QCall_RuntimeMethodHandle_GetStubIfNeededSlow (void *, void *, void *, void *) __asm__("RuntimeMethodHandle_GetStubIfNeededSlow");
-    void QCall_RuntimeMethodHandle_GetTypicalMethodDefinition (void *, void *, void *) __asm__("RuntimeMethodHandle_GetTypicalMethodDefinition");
-    void * QCall_RuntimeMethodHandle_GetVirtualFunctionPointer (void *, void *, void *, void *) __asm__("RuntimeMethodHandle_GetVirtualFunctionPointer");
-    int32_t QCall_RuntimeMethodHandle_IsCAVisibleFromDecoratedType (void *, void *, void *, void *, void *) __asm__("RuntimeMethodHandle_IsCAVisibleFromDecoratedType");
-    void QCall_RuntimeMethodHandle_StripMethodInstantiation (void *, void *, void *) __asm__("RuntimeMethodHandle_StripMethodInstantiation");
-    void QCall_RuntimeModule_GetFullyQualifiedName (void *, void *, void *) __asm__("RuntimeModule_GetFullyQualifiedName");
-    void QCall_RuntimeModule_GetScopeName (void *, void *, void *) __asm__("RuntimeModule_GetScopeName");
-    void QCall_RuntimeModule_GetTypes (void *, void *, void *, void *) __asm__("RuntimeModule_GetTypes");
-    void * QCall_RuntimeTypeHandle_AllocateTypeAssociatedMemory (void *, uint32_t, void *) __asm__("RuntimeTypeHandle_AllocateTypeAssociatedMemory");
-    void * QCall_RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned (void *, uint32_t, uint32_t, void *) __asm__("RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned");
-    void QCall_RuntimeTypeHandle_ConstructName (void *, int32_t, void *, void *) __asm__("RuntimeTypeHandle_ConstructName");
-    void QCall_RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter (void *, void *, int32_t, void *, void *) __asm__("RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter");
-    void QCall_RuntimeTypeHandle_GetActivationInfo (void *, void *, void *, void *, void *, void *, void *) __asm__("RuntimeTypeHandle_GetActivationInfo");
-    void QCall_RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer (void *, void *, void *) __asm__("RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer");
-    void QCall_RuntimeTypeHandle_GetAssemblySlow (void *, void *, void *) __asm__("RuntimeTypeHandle_GetAssemblySlow");
-    void QCall_RuntimeTypeHandle_GetConstraints (void *, void *, void *) __asm__("RuntimeTypeHandle_GetConstraints");
-    void QCall_RuntimeTypeHandle_GetDeclaringMethodForGenericParameter (void *, void *, void *) __asm__("RuntimeTypeHandle_GetDeclaringMethodForGenericParameter");
-    void * QCall_RuntimeTypeHandle_GetDeclaringTypeHandle (void *, void *) __asm__("RuntimeTypeHandle_GetDeclaringTypeHandle");
-    void * QCall_RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable (void *, void *) __asm__("RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable");
-    int32_t QCall_RuntimeTypeHandle_GetFields (void *, void *, void *, void *) __asm__("RuntimeTypeHandle_GetFields");
-    void QCall_RuntimeTypeHandle_GetGenericTypeDefinition (void *, void *, void *) __asm__("RuntimeTypeHandle_GetGenericTypeDefinition");
-    void QCall_RuntimeTypeHandle_GetInstantiation (void *, void *, int32_t, void *) __asm__("RuntimeTypeHandle_GetInstantiation");
-    void * QCall_RuntimeTypeHandle_GetInterfaceMethodImplementation (void *, void *, void *, void *) __asm__("RuntimeTypeHandle_GetInterfaceMethodImplementation");
-    void QCall_RuntimeTypeHandle_GetInterfaces (void *, void *, void *) __asm__("RuntimeTypeHandle_GetInterfaces");
-    void * QCall_RuntimeTypeHandle_GetMethodAt (void *, int32_t, void *) __asm__("RuntimeTypeHandle_GetMethodAt");
-    void QCall_RuntimeTypeHandle_GetModuleSlow (void *, void *, void *) __asm__("RuntimeTypeHandle_GetModuleSlow");
-    int32_t QCall_RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals (void *, void *) __asm__("RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals");
-    void QCall_RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow (void *, void *, void *) __asm__("RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow");
-    void QCall_RuntimeTypeHandle_Instantiate (void *, void *, int32_t, void *, void *) __asm__("RuntimeTypeHandle_Instantiate");
-    void QCall_RuntimeTypeHandle_InternalAlloc (void *, void *, void *) __asm__("RuntimeTypeHandle_InternalAlloc");
-    void QCall_RuntimeTypeHandle_InternalAllocNoChecks (void *, void *, void *) __asm__("RuntimeTypeHandle_InternalAllocNoChecks");
-    int32_t QCall_RuntimeTypeHandle_IsVisible (void *, void *) __asm__("RuntimeTypeHandle_IsVisible");
-    void QCall_RuntimeTypeHandle_MakeArray (void *, int32_t, void *, void *) __asm__("RuntimeTypeHandle_MakeArray");
-    void QCall_RuntimeTypeHandle_MakeByRef (void *, void *, void *) __asm__("RuntimeTypeHandle_MakeByRef");
-    void QCall_RuntimeTypeHandle_MakeFunctionPointer (void *, int32_t, int32_t, void *, void *) __asm__("RuntimeTypeHandle_MakeFunctionPointer");
-    void QCall_RuntimeTypeHandle_MakePointer (void *, void *, void *) __asm__("RuntimeTypeHandle_MakePointer");
-    void QCall_RuntimeTypeHandle_MakeSZArray (void *, void *, void *) __asm__("RuntimeTypeHandle_MakeSZArray");
-    void QCall_RuntimeTypeHandle_RegisterCollectibleTypeDependency (void *, void *, void *) __asm__("RuntimeTypeHandle_RegisterCollectibleTypeDependency");
-    int32_t QCall_RuntimeTypeHandle_SatisfiesConstraints (void *, void *, void *, void *, void *) __asm__("RuntimeTypeHandle_SatisfiesConstraints");
-    void QCall_RuntimeTypeHandle_VerifyInterfaceIsImplemented (void *, void *, void *) __asm__("RuntimeTypeHandle_VerifyInterfaceIsImplemented");
-    int32_t QCall_SetEnvironmentVariableW (void *, void *) __asm__("SetEnvironmentVariableW");
-    uint32_t QCall_SfiInit (void *, void *, uint32_t, void *, void *) __asm__("SfiInit");
-    uint32_t QCall_SfiNext (void *, void *, void *, void *, void *) __asm__("SfiNext");
-    int32_t QCall_Signature_AreEqual (void *, int32_t, void *, void *, int32_t, void *, void *) __asm__("Signature_AreEqual");
-    void QCall_Signature_GetCustomModifiersAtOffset (void *, int32_t, int32_t, void *, void *) __asm__("Signature_GetCustomModifiersAtOffset");
-    void QCall_Signature_Init (void *, void *, int32_t, void *, void *, void *) __asm__("Signature_Init");
-    void * QCall_StackFrame_GetMethodDescFromNativeIP (void *, void *) __asm__("StackFrame_GetMethodDescFromNativeIP");
-    void QCall_StackTrace_GetStackFramesInternal (void *, int32_t, void *, void *) __asm__("StackTrace_GetStackFramesInternal");
-    int32_t QCall_Stream_HasOverriddenSlow (void *, int32_t, void *) __asm__("Stream_HasOverriddenSlow");
-    void QCall_String_Intern (void *, void *) __asm__("String_Intern");
-    void QCall_String_IsInterned (void *, void *) __asm__("String_IsInterned");
-    void QCall_StubHelpers_CreateCustomMarshaler (void *, int32_t, void *, void *, void *) __asm__("StubHelpers_CreateCustomMarshaler");
-    void QCall_StubHelpers_CreateLayoutClassMarshalStubs (void *, void *, void *, void *, void *) __asm__("StubHelpers_CreateLayoutClassMarshalStubs");
-    void QCall_StubHelpers_MulticastDebuggerTraceHelper (void *, int32_t, void *) __asm__("StubHelpers_MulticastDebuggerTraceHelper");
-    void QCall_StubHelpers_ThrowInteropException (int32_t, int32_t, void *) __asm__("StubHelpers_ThrowInteropException");
-    void QCall_StubHelpers_ThrowInteropParamException (int32_t, int32_t, void *) __asm__("StubHelpers_ThrowInteropParamException");
-    void QCall_StubHelpers_ValidateByref (void *, void *, void *) __asm__("StubHelpers_ValidateByref");
-    void QCall_StubHelpers_ValidateObject (void *, void *, void *) __asm__("StubHelpers_ValidateObject");
-    void * QCall_TailCallHelp_AllocTailCallArgBufferInternal (int32_t, void *) __asm__("TailCallHelp_AllocTailCallArgBufferInternal");
-    void QCall_ThreadNative_Abort (void *, void *) __asm__("ThreadNative_Abort");
-    void QCall_ThreadNative_GetQCallSpecialException (void *, void *, void *) __asm__("ThreadNative_GetQCallSpecialException");
-    int32_t QCall_ThreadNative_GetThreadState (void *) __asm__("ThreadNative_GetThreadState");
-    void QCall_ThreadNative_ResetAbort () __asm__("ThreadNative_ResetAbort");
-    void QCall_ThrowInvalidCastException (void *, void *, void *) __asm__("ThrowInvalidCastException");
-    void QCall_TypeBuilder_AddInterfaceImpl (void *, int32_t, int32_t, void *) __asm__("TypeBuilder_AddInterfaceImpl");
-    void QCall_TypeBuilder_DefineCustomAttribute (void *, int32_t, int32_t, void *, int32_t, void *) __asm__("TypeBuilder_DefineCustomAttribute");
-    int32_t QCall_TypeBuilder_DefineEvent (void *, int32_t, void *, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineEvent");
-    int32_t QCall_TypeBuilder_DefineField (void *, int32_t, void *, void *, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineField");
-    int32_t QCall_TypeBuilder_DefineGenericParam (void *, void *, int32_t, int32_t, int32_t, void *, void *) __asm__("TypeBuilder_DefineGenericParam");
-    int32_t QCall_TypeBuilder_DefineMethod (void *, int32_t, void *, void *, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineMethod");
-    void QCall_TypeBuilder_DefineMethodImpl (void *, int32_t, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineMethodImpl");
-    void QCall_TypeBuilder_DefineMethodSemantics (void *, int32_t, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineMethodSemantics");
-    int32_t QCall_TypeBuilder_DefineMethodSpec (void *, int32_t, void *, int32_t, void *) __asm__("TypeBuilder_DefineMethodSpec");
-    int32_t QCall_TypeBuilder_DefineProperty (void *, int32_t, void *, int32_t, void *, int32_t, void *) __asm__("TypeBuilder_DefineProperty");
-    int32_t QCall_TypeBuilder_DefineType (void *, void *, int32_t, int32_t, int32_t, void *, void *) __asm__("TypeBuilder_DefineType");
-    int32_t QCall_TypeBuilder_GetTokenFromSig (void *, void *, int32_t, void *) __asm__("TypeBuilder_GetTokenFromSig");
-    void QCall_TypeBuilder_SetClassLayout (void *, int32_t, int32_t, int32_t, void *) __asm__("TypeBuilder_SetClassLayout");
-    void QCall_TypeBuilder_SetConstantValue (void *, int32_t, int32_t, void *, void *) __asm__("TypeBuilder_SetConstantValue");
-    void QCall_TypeBuilder_SetFieldLayoutOffset (void *, int32_t, int32_t, void *) __asm__("TypeBuilder_SetFieldLayoutOffset");
-    void QCall_TypeBuilder_SetMethodIL (void *, int32_t, int32_t, void *, int32_t, void *, int32_t, int32_t, void *, int32_t, void *) __asm__("TypeBuilder_SetMethodIL");
-    void QCall_TypeBuilder_SetMethodImpl (void *, int32_t, int32_t, void *) __asm__("TypeBuilder_SetMethodImpl");
-    void QCall_TypeBuilder_SetPInvokeData (void *, void *, void *, int32_t, int32_t, void *) __asm__("TypeBuilder_SetPInvokeData");
-    int32_t QCall_TypeBuilder_SetParamInfo (void *, int32_t, int32_t, int32_t, void *, void *) __asm__("TypeBuilder_SetParamInfo");
-    void QCall_TypeBuilder_SetParentType (void *, int32_t, int32_t, void *) __asm__("TypeBuilder_SetParentType");
-    void QCall_TypeBuilder_TermCreateClass (void *, int32_t, void *, void *) __asm__("TypeBuilder_TermCreateClass");
-    int32_t QCall_TypeHandle_CanCastTo_NoCacheLookup (void *, void *, void *) __asm__("TypeHandle_CanCastTo_NoCacheLookup");
-    int32_t QCall_TypeHandle_GetCorElementType (void *) __asm__("TypeHandle_GetCorElementType");
-    void * QCall_TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry (void *, void *, void *, void *) __asm__("TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry");
-    void * QCall_TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry (void *, void *, void *, void *) __asm__("TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry");
-    void QCall_TypeMapLazyDictionary_ProcessAttributes (void *, void *, void *, void *, void *, void *, void *, void *) __asm__("TypeMapLazyDictionary_ProcessAttributes");
-    void * QCall_UnsafeAccessors_ResolveGenericParamToTypeHandle (void *, int32_t, uint32_t, void *) __asm__("UnsafeAccessors_ResolveGenericParamToTypeHandle");
-    int32_t QCall_ValueType_GetHashCodeStrategy (void *, void *, void *, void *, void *, void *) __asm__("ValueType_GetHashCodeStrategy");
-    int32_t QCall_VersionResilientHashCode_TypeHashCode (void *, void *) __asm__("VersionResilientHashCode_TypeHashCode");
-    void QCall_WasiFinalizer_RunWorker (void *) __asm__("WasiFinalizer_RunWorker");
-    int32_t QCall_WasiFinalizer_TryClearPending (void *) __asm__("WasiFinalizer_TryClearPending");
+    void RuntimeHelper_AppContext_SetFirstChanceExceptionHandler () __asm__("AppContext_SetFirstChanceExceptionHandler");
+    int32_t RuntimeHelper_AppContext_TryGetHostPropertyValue (void *, void *, void *) __asm__("AppContext_TryGetHostPropertyValue");
+    void RuntimeHelper_AppDomain_CreateDynamicAssembly (void *, void *, int32_t, int32_t, void *, void *) __asm__("AppDomain_CreateDynamicAssembly");
+    void RuntimeHelper_AppendExceptionStackFrame (void *, void *, void *, int32_t, void *, void *) __asm__("AppendExceptionStackFrame");
+    void RuntimeHelper_Array_CreateInstance (void *, int32_t, void *, void *, int32_t, void *, void *) __asm__("Array_CreateInstance");
+    void RuntimeHelper_Array_Ctor (void *, uint32_t, void *, void *, void *) __asm__("Array_Ctor");
+    uint32_t RuntimeHelper_Array_GetCorElementTypeOfElementType (uintptr_t, void *, uintptr_t) __asm__("Array_GetCorElementTypeOfElementType");
+    void * RuntimeHelper_Array_GetElementConstructorEntrypoint (void *, void *) __asm__("Array_GetElementConstructorEntrypoint");
+    void RuntimeHelper_AssemblyHandle_GetManifestModuleSlow (void *, void *, void *) __asm__("AssemblyHandle_GetManifestModuleSlow");
+    int32_t RuntimeHelper_AssemblyLoadContext_IsTracingEnabled (uintptr_t, uintptr_t) __asm__("AssemblyLoadContext_IsTracingEnabled");
+    void RuntimeHelper_AssemblyName_InitializeAssemblySpec (void *, void *, void *) __asm__("AssemblyName_InitializeAssemblySpec");
+    void RuntimeHelper_AssemblyNative_ApplyUpdate (void *, void *, int32_t, void *, int32_t, void *, int32_t, void *) __asm__("AssemblyNative_ApplyUpdate");
+    uint32_t RuntimeHelper_AssemblyNative_GetAssemblyCount () __asm__("AssemblyNative_GetAssemblyCount");
+    int32_t RuntimeHelper_AssemblyNative_GetCodeBase (void *, void *, void *) __asm__("AssemblyNative_GetCodeBase");
+    void RuntimeHelper_AssemblyNative_GetEntryAssembly (void *, void *) __asm__("AssemblyNative_GetEntryAssembly");
+    void RuntimeHelper_AssemblyNative_GetEntryPoint (void *, void *, void *) __asm__("AssemblyNative_GetEntryPoint");
+    void RuntimeHelper_AssemblyNative_GetExecutingAssembly (void *, void *, void *) __asm__("AssemblyNative_GetExecutingAssembly");
+    void RuntimeHelper_AssemblyNative_GetExportedTypes (void *, void *, void *) __asm__("AssemblyNative_GetExportedTypes");
+    int32_t RuntimeHelper_AssemblyNative_GetFlags (void *, void *) __asm__("AssemblyNative_GetFlags");
+    void RuntimeHelper_AssemblyNative_GetForwardedType (void *, int32_t, void *, void *) __asm__("AssemblyNative_GetForwardedType");
+    void RuntimeHelper_AssemblyNative_GetFullName (void *, void *, void *) __asm__("AssemblyNative_GetFullName");
+    int32_t RuntimeHelper_AssemblyNative_GetHashAlgorithm (void *, void *) __asm__("AssemblyNative_GetHashAlgorithm");
+    void RuntimeHelper_AssemblyNative_GetImageRuntimeVersion (void *, void *, void *) __asm__("AssemblyNative_GetImageRuntimeVersion");
+    void * RuntimeHelper_AssemblyNative_GetLoadContextForAssembly (void *, void *) __asm__("AssemblyNative_GetLoadContextForAssembly");
+    void RuntimeHelper_AssemblyNative_GetLoadedAssemblies (void *, void *) __asm__("AssemblyNative_GetLoadedAssemblies");
+    void RuntimeHelper_AssemblyNative_GetLocale (void *, void *, void *) __asm__("AssemblyNative_GetLocale");
+    void RuntimeHelper_AssemblyNative_GetLocation (void *, void *, void *) __asm__("AssemblyNative_GetLocation");
+    int32_t RuntimeHelper_AssemblyNative_GetManifestResourceInfo (void *, void *, void *, void *, void *) __asm__("AssemblyNative_GetManifestResourceInfo");
+    void RuntimeHelper_AssemblyNative_GetManifestResourceNames (void *, void *, void *) __asm__("AssemblyNative_GetManifestResourceNames");
+    void RuntimeHelper_AssemblyNative_GetModule (void *, void *, void *, void *) __asm__("AssemblyNative_GetModule");
+    void RuntimeHelper_AssemblyNative_GetModules (void *, int32_t, int32_t, void *, void *) __asm__("AssemblyNative_GetModules");
+    void RuntimeHelper_AssemblyNative_GetPublicKey (void *, void *, void *) __asm__("AssemblyNative_GetPublicKey");
+    void RuntimeHelper_AssemblyNative_GetReferencedAssemblies (void *, void *, void *) __asm__("AssemblyNative_GetReferencedAssemblies");
+    void * RuntimeHelper_AssemblyNative_GetResource (void *, void *, void *, void *) __asm__("AssemblyNative_GetResource");
+    void RuntimeHelper_AssemblyNative_GetSimpleName (void *, void *, void *) __asm__("AssemblyNative_GetSimpleName");
+    void RuntimeHelper_AssemblyNative_GetTypeCore (void *, void *, void *, int32_t, void *, void *) __asm__("AssemblyNative_GetTypeCore");
+    void RuntimeHelper_AssemblyNative_GetTypeCoreIgnoreCase (void *, void *, void *, int32_t, void *, void *) __asm__("AssemblyNative_GetTypeCoreIgnoreCase");
+    void RuntimeHelper_AssemblyNative_GetVersion (void *, void *, void *, void *, void *, void *) __asm__("AssemblyNative_GetVersion");
+    void * RuntimeHelper_AssemblyNative_InitializeAssemblyLoadContext (void *, int32_t, int32_t, void *) __asm__("AssemblyNative_InitializeAssemblyLoadContext");
+    void RuntimeHelper_AssemblyNative_InternalLoad (void *, void *, void *, int32_t, void *, void *, void *) __asm__("AssemblyNative_InternalLoad");
+    int32_t RuntimeHelper_AssemblyNative_InternalTryGetRawMetadata (void *, void *, void *, void *) __asm__("AssemblyNative_InternalTryGetRawMetadata");
+    int32_t RuntimeHelper_AssemblyNative_IsApplyUpdateSupported (void *) __asm__("AssemblyNative_IsApplyUpdateSupported");
+    void RuntimeHelper_AssemblyNative_LoadFromPath (void *, void *, void *, void *) __asm__("AssemblyNative_LoadFromPath");
+    void RuntimeHelper_AssemblyNative_LoadFromStream (void *, void *, int32_t, void *, int32_t, void *, void *) __asm__("AssemblyNative_LoadFromStream");
+    void RuntimeHelper_AssemblyNative_PrepareForAssemblyLoadContextRelease (void *, void *, void *) __asm__("AssemblyNative_PrepareForAssemblyLoadContextRelease");
+    void RuntimeHelper_AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked (void *, int32_t, void *, void *, void *) __asm__("AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked");
+    void RuntimeHelper_AssemblyNative_TraceAssemblyResolveHandlerInvoked (void *, void *, void *, void *, void *) __asm__("AssemblyNative_TraceAssemblyResolveHandlerInvoked");
+    void RuntimeHelper_AssemblyNative_TraceResolvingHandlerInvoked (void *, void *, void *, void *, void *, void *) __asm__("AssemblyNative_TraceResolvingHandlerInvoked");
+    void RuntimeHelper_AssemblyNative_TraceSatelliteSubdirectoryPathProbed (void *, int32_t, void *) __asm__("AssemblyNative_TraceSatelliteSubdirectoryPathProbed");
+    void RuntimeHelper_AsyncHelpers_AddContinuationToExInternal (void *, void *, void *) __asm__("AsyncHelpers_AddContinuationToExInternal");
+    void * RuntimeHelper_AsyncHelpers_ResumeInterpreterContinuation (uintptr_t, void *, void *, uintptr_t) __asm__("AsyncHelpers_ResumeInterpreterContinuation");
+    void RuntimeHelper_Buffer_BulkMoveWithWriteBarrierInternal (uintptr_t, void *, void *, void *, uintptr_t) __asm__("Buffer_BulkMoveWithWriteBarrierInternal");
+    uint32_t RuntimeHelper_CallFilterFunclet (void *, void *, void *, void *) __asm__("CallFilterFunclet");
+    int32_t RuntimeHelper_CustomAttribute_ParseAttributeUsageAttribute (void *, int32_t, void *, void *, void *) __asm__("CustomAttribute_ParseAttributeUsageAttribute");
+    void RuntimeHelper_DebugDebugger_Break (void *) __asm__("DebugDebugger_Break");
+    void RuntimeHelper_DebugDebugger_CustomNotification (void *, void *) __asm__("DebugDebugger_CustomNotification");
+    void RuntimeHelper_DebugDebugger_GetFuncEvalArgumentType (void *, uint32_t, void *, void *) __asm__("DebugDebugger_GetFuncEvalArgumentType");
+    void RuntimeHelper_DebugDebugger_GetFuncEvalMethod (void *, void *, void *, void *) __asm__("DebugDebugger_GetFuncEvalMethod");
+    int32_t RuntimeHelper_DebugDebugger_IsLoggingHelper () __asm__("DebugDebugger_IsLoggingHelper");
+    int32_t RuntimeHelper_DebugDebugger_IsManagedDebuggerAttached () __asm__("DebugDebugger_IsManagedDebuggerAttached");
+    int32_t RuntimeHelper_DebugDebugger_Launch () __asm__("DebugDebugger_Launch");
+    void RuntimeHelper_DebugDebugger_Log (int32_t, void *, void *) __asm__("DebugDebugger_Log");
+    void RuntimeHelper_DebugDebugger_PrepareFuncEvalResult (void *, void *, void *) __asm__("DebugDebugger_PrepareFuncEvalResult");
+    int32_t RuntimeHelper_DebugDebugger_ReadFuncEvalPrimitiveRegister (void *, uint32_t, void *) __asm__("DebugDebugger_ReadFuncEvalPrimitiveRegister");
+    void RuntimeHelper_DebugDebugger_WriteFuncEvalObjectRegister (void *, uint32_t, void *, void *) __asm__("DebugDebugger_WriteFuncEvalObjectRegister");
+    void RuntimeHelper_DebugDebugger_WriteFuncEvalRegister (void *, uint32_t, void *, uint32_t, void *) __asm__("DebugDebugger_WriteFuncEvalRegister");
+    void * RuntimeHelper_Delegate_AdjustTarget (void *, void *, void *) __asm__("Delegate_AdjustTarget");
+    int32_t RuntimeHelper_Delegate_BindToMethodInfo (void *, void *, void *, void *, int32_t, void *, void *, void *) __asm__("Delegate_BindToMethodInfo");
+    int32_t RuntimeHelper_Delegate_BindToMethodName (void *, void *, void *, void *, int32_t, void *, void *, void *) __asm__("Delegate_BindToMethodName");
+    void RuntimeHelper_Delegate_Construct (void *, void *, void *, void *, void *) __asm__("Delegate_Construct");
+    void RuntimeHelper_Delegate_CreateMethodInfo (void *, void *, void *) __asm__("Delegate_CreateMethodInfo");
+    void * RuntimeHelper_Delegate_GetInvokeMethod (uintptr_t, void *, uintptr_t) __asm__("Delegate_GetInvokeMethod");
+    void * RuntimeHelper_Delegate_GetMethodDesc (void *, void *) __asm__("Delegate_GetMethodDesc");
+    void * RuntimeHelper_Delegate_GetMulticastInvoke (uintptr_t, void *, uintptr_t) __asm__("Delegate_GetMulticastInvoke");
+    void * RuntimeHelper_Delegate_GetMulticastInvokeSlow (void *, void *) __asm__("Delegate_GetMulticastInvokeSlow");
+    void RuntimeHelper_Delegate_InitializeVirtualCallStub (void *, void *, void *) __asm__("Delegate_InitializeVirtualCallStub");
+    void * RuntimeHelper_DependentHandle_InternalAlloc (uintptr_t, void *, void *, uintptr_t) __asm__("DependentHandle_InternalAlloc");
+    void * RuntimeHelper_DependentHandle_InternalAllocWithGCTransition (void *, void *, void *) __asm__("DependentHandle_InternalAllocWithGCTransition");
+    int32_t RuntimeHelper_DependentHandle_InternalFree (uintptr_t, void *, uintptr_t) __asm__("DependentHandle_InternalFree");
+    void RuntimeHelper_DependentHandle_InternalFreeWithGCTransition (void *, void *) __asm__("DependentHandle_InternalFreeWithGCTransition");
+    void * RuntimeHelper_DependentHandle_InternalGetDependent (uintptr_t, void *, uintptr_t) __asm__("DependentHandle_InternalGetDependent");
+    void * RuntimeHelper_DependentHandle_InternalGetTargetAndDependent (uintptr_t, void *, void *, uintptr_t) __asm__("DependentHandle_InternalGetTargetAndDependent");
+    void * RuntimeHelper_DependentHandle_InternalGetTargetWithDebugValidation (uintptr_t, void *, uintptr_t) __asm__("DependentHandle_InternalGetTargetWithDebugValidation");
+    void RuntimeHelper_DependentHandle_InternalSetDependent (uintptr_t, void *, void *, uintptr_t) __asm__("DependentHandle_InternalSetDependent");
+    void RuntimeHelper_DependentHandle_InternalSetTargetToNull (uintptr_t, void *, uintptr_t) __asm__("DependentHandle_InternalSetTargetToNull");
+    uint32_t RuntimeHelper_EHEnumInitFromStackFrameIterator (void *, void *, void *) __asm__("EHEnumInitFromStackFrameIterator");
+    uint32_t RuntimeHelper_EHEnumNext (void *, void *, void *) __asm__("EHEnumNext");
+    void RuntimeHelper_Enum_GetValuesAndNames (void *, void *, void *, int32_t, void *) __asm__("Enum_GetValuesAndNames");
+    void RuntimeHelper_Environment_Exit (int32_t, void *) __asm__("Environment_Exit");
+    void RuntimeHelper_Environment_FailFast (void *, void *, void *, void *, void *) __asm__("Environment_FailFast");
+    int32_t RuntimeHelper_Environment_get_ExitCode (uintptr_t, uintptr_t) __asm__("Environment_get_ExitCode");
+    void RuntimeHelper_Environment_set_ExitCode (uintptr_t, int32_t, uintptr_t) __asm__("Environment_set_ExitCode");
+    void * RuntimeHelper_EventPipeInternal_CreateProvider (void *, void *, void *, void *) __asm__("EventPipeInternal_CreateProvider");
+    void * RuntimeHelper_EventPipeInternal_DefineEvent (void *, uint32_t, int64_t, uint32_t, uint32_t, void *, uint32_t, void *) __asm__("EventPipeInternal_DefineEvent");
+    void RuntimeHelper_EventPipeInternal_DeleteProvider (void *, void *) __asm__("EventPipeInternal_DeleteProvider");
+    void RuntimeHelper_EventPipeInternal_Disable (uint64_t, void *) __asm__("EventPipeInternal_Disable");
+    uint64_t RuntimeHelper_EventPipeInternal_Enable (void *, int32_t, uint32_t, void *, uint32_t, void *) __asm__("EventPipeInternal_Enable");
+    int32_t RuntimeHelper_EventPipeInternal_EventActivityIdControl (uint32_t, void *, void *) __asm__("EventPipeInternal_EventActivityIdControl");
+    int32_t RuntimeHelper_EventPipeInternal_GetNextEvent (uint64_t, void *, void *) __asm__("EventPipeInternal_GetNextEvent");
+    void * RuntimeHelper_EventPipeInternal_GetProvider (void *, void *) __asm__("EventPipeInternal_GetProvider");
+    int32_t RuntimeHelper_EventPipeInternal_GetSessionInfo (uint64_t, void *, void *) __asm__("EventPipeInternal_GetSessionInfo");
+    int32_t RuntimeHelper_EventPipeInternal_SignalSession (uint64_t, void *) __asm__("EventPipeInternal_SignalSession");
+    int32_t RuntimeHelper_EventPipeInternal_WasiRunJobs (void *) __asm__("EventPipeInternal_WasiRunJobs");
+    void RuntimeHelper_EventPipeInternal_WriteEventData (void *, void *, uint32_t, void *, void *, void *) __asm__("EventPipeInternal_WriteEventData");
+    void RuntimeHelper_ExceptionNative_GetFrozenStackTrace (void *, void *, void *) __asm__("ExceptionNative_GetFrozenStackTrace");
+    void RuntimeHelper_ExceptionNative_GetMessageFromNativeResources (int32_t, void *, void *) __asm__("ExceptionNative_GetMessageFromNativeResources");
+    void RuntimeHelper_ExceptionNative_GetMethodFromStackTrace (void *, void *, void *) __asm__("ExceptionNative_GetMethodFromStackTrace");
+    void RuntimeHelper_ExceptionNative_ThrowAmbiguousResolutionException (void *, void *, void *, void *) __asm__("ExceptionNative_ThrowAmbiguousResolutionException");
+    void RuntimeHelper_ExceptionNative_ThrowClassAccessException (void *, void *, void *) __asm__("ExceptionNative_ThrowClassAccessException");
+    void RuntimeHelper_ExceptionNative_ThrowEntryPointNotFoundException (void *, void *, void *, void *) __asm__("ExceptionNative_ThrowEntryPointNotFoundException");
+    void RuntimeHelper_ExceptionNative_ThrowFieldAccessException (void *, void *, void *) __asm__("ExceptionNative_ThrowFieldAccessException");
+    void RuntimeHelper_ExceptionNative_ThrowMethodAccessException (void *, void *, void *) __asm__("ExceptionNative_ThrowMethodAccessException");
+    uint32_t RuntimeHelper_Exception_GetExceptionCount (uintptr_t, uintptr_t) __asm__("Exception_GetExceptionCount");
+    int32_t RuntimeHelper_Exception_IsImmutableException (uintptr_t, void *, uintptr_t) __asm__("Exception_IsImmutableException");
+    void RuntimeHelper_Exception_PrepareForForeignExceptionRaise (uintptr_t, uintptr_t) __asm__("Exception_PrepareForForeignExceptionRaise");
+    void RuntimeHelper_FileLoadException_GetMessageForHR (int32_t, void *, void *) __asm__("FileLoadException_GetMessageForHR");
+    int32_t RuntimeHelper_FreeEnvironmentStringsW (void *) __asm__("FreeEnvironmentStringsW");
+    void RuntimeHelper_GCFrameRegistration_RegisterForGCReporting (uintptr_t, void *, uintptr_t) __asm__("GCFrameRegistration_RegisterForGCReporting");
+    void RuntimeHelper_GCFrameRegistration_UnregisterForGCReporting (uintptr_t, void *, uintptr_t) __asm__("GCFrameRegistration_UnregisterForGCReporting");
+    void * RuntimeHelper_GCHandle_InternalAllocWithGCTransition (void *, int32_t, void *) __asm__("GCHandle_InternalAllocWithGCTransition");
+    void * RuntimeHelper_GCHandle_InternalCompareExchange (uintptr_t, void *, void *, void *, uintptr_t) __asm__("GCHandle_InternalCompareExchange");
+    void RuntimeHelper_GCHandle_InternalFreeWithGCTransition (void *, void *) __asm__("GCHandle_InternalFreeWithGCTransition");
+    void * RuntimeHelper_GCHandle_InternalGetWithDebugValidation (uintptr_t, void *, uintptr_t) __asm__("GCHandle_InternalGetWithDebugValidation");
+    void RuntimeHelper_GCHandle_InternalSet (uintptr_t, void *, void *, uintptr_t) __asm__("GCHandle_InternalSet");
+    void * RuntimeHelper_GCHandle__InternalAlloc (uintptr_t, void *, int32_t, uintptr_t) __asm__("GCHandle__InternalAlloc");
+    int32_t RuntimeHelper_GCHandle__InternalFree (uintptr_t, void *, uintptr_t) __asm__("GCHandle__InternalFree");
+    void RuntimeHelper_GCInterface_AllocateNewArray (void *, int32_t, int32_t, void *, void *) __asm__("GCInterface_AllocateNewArray");
+    void RuntimeHelper_GCInterface_Collect (int32_t, int32_t, uint32_t, void *) __asm__("GCInterface_Collect");
+    int32_t RuntimeHelper_GCInterface_EnableNoGCRegionCallback (void *, int64_t, void *) __asm__("GCInterface_EnableNoGCRegionCallback");
+    int32_t RuntimeHelper_GCInterface_EndNoGCRegion (void *) __asm__("GCInterface_EndNoGCRegion");
+    void RuntimeHelper_GCInterface_EnumerateConfigurationValues (void *, void *, void *) __asm__("GCInterface_EnumerateConfigurationValues");
+    int64_t RuntimeHelper_GCInterface_GetGenerationBudget (int32_t, void *) __asm__("GCInterface_GetGenerationBudget");
+    void * RuntimeHelper_GCInterface_GetNextFinalizableObject (void *, void *) __asm__("GCInterface_GetNextFinalizableObject");
+    int64_t RuntimeHelper_GCInterface_GetTotalAllocatedBytesPrecise (void *) __asm__("GCInterface_GetTotalAllocatedBytesPrecise");
+    int64_t RuntimeHelper_GCInterface_GetTotalMemory (void *) __asm__("GCInterface_GetTotalMemory");
+    void RuntimeHelper_GCInterface_ReRegisterForFinalize (void *, void *) __asm__("GCInterface_ReRegisterForFinalize");
+    int32_t RuntimeHelper_GCInterface_RefreshMemoryLimit (void *, void *) __asm__("GCInterface_RefreshMemoryLimit");
+    void * RuntimeHelper_GCInterface_RegisterFrozenSegment (void *, void *, void *) __asm__("GCInterface_RegisterFrozenSegment");
+    int32_t RuntimeHelper_GCInterface_StartNoGCRegion (int64_t, int32_t, int64_t, int32_t, void *) __asm__("GCInterface_StartNoGCRegion");
+    void RuntimeHelper_GCInterface_UnregisterFrozenSegment (void *, void *) __asm__("GCInterface_UnregisterFrozenSegment");
+    int32_t RuntimeHelper_GCInterface_WaitForFullGCApproach (int32_t, void *) __asm__("GCInterface_WaitForFullGCApproach");
+    int32_t RuntimeHelper_GCInterface_WaitForFullGCComplete (int32_t, void *) __asm__("GCInterface_WaitForFullGCComplete");
+    void RuntimeHelper_GCInterface_WaitForPendingFinalizers (void *) __asm__("GCInterface_WaitForPendingFinalizers");
+    int32_t RuntimeHelper_GCSettings_GetGCLatencyMode (uintptr_t, uintptr_t) __asm__("GCSettings_GetGCLatencyMode");
+    int32_t RuntimeHelper_GCSettings_GetLOHCompactionMode (uintptr_t, uintptr_t) __asm__("GCSettings_GetLOHCompactionMode");
+    int32_t RuntimeHelper_GCSettings_SetGCLatencyMode (uintptr_t, int32_t, uintptr_t) __asm__("GCSettings_SetGCLatencyMode");
+    void RuntimeHelper_GCSettings_SetLOHCompactionMode (uintptr_t, int32_t, uintptr_t) __asm__("GCSettings_SetLOHCompactionMode");
+    int32_t RuntimeHelper_GCSettings_get_IsServerGC (uintptr_t, uintptr_t) __asm__("GCSettings_get_IsServerGC");
+    int64_t RuntimeHelper_GC_GetAllocatedBytesForCurrentThread (uintptr_t, uintptr_t) __asm__("GC_GetAllocatedBytesForCurrentThread");
+    int64_t RuntimeHelper_GC_GetCurrentObjSize (uintptr_t, uintptr_t) __asm__("GC_GetCurrentObjSize");
+    int64_t RuntimeHelper_GC_GetGCNow (uintptr_t, uintptr_t) __asm__("GC_GetGCNow");
+    int32_t RuntimeHelper_GC_GetGenerationInternal (uintptr_t, void *, uintptr_t) __asm__("GC_GetGenerationInternal");
+    uint64_t RuntimeHelper_GC_GetGenerationSize (uintptr_t, int32_t, uintptr_t) __asm__("GC_GetGenerationSize");
+    int64_t RuntimeHelper_GC_GetLastGCDuration (uintptr_t, uintptr_t) __asm__("GC_GetLastGCDuration");
+    int32_t RuntimeHelper_GC_GetLastGCPercentTimeInGC (uintptr_t, uintptr_t) __asm__("GC_GetLastGCPercentTimeInGC");
+    int64_t RuntimeHelper_GC_GetLastGCStartTime (uintptr_t, uintptr_t) __asm__("GC_GetLastGCStartTime");
+    int32_t RuntimeHelper_GC_GetMaxGeneration (uintptr_t, uintptr_t) __asm__("GC_GetMaxGeneration");
+    void RuntimeHelper_GC_GetMemoryInfo (uintptr_t, void *, int32_t, uintptr_t) __asm__("GC_GetMemoryInfo");
+    uint64_t RuntimeHelper_GC_GetSegmentSize (uintptr_t, uintptr_t) __asm__("GC_GetSegmentSize");
+    int64_t RuntimeHelper_GC_GetTotalAllocatedBytesApproximate (uintptr_t, uintptr_t) __asm__("GC_GetTotalAllocatedBytesApproximate");
+    void RuntimeHelper_GC_SuppressFinalizeInternal (uintptr_t, void *, uintptr_t) __asm__("GC_SuppressFinalizeInternal");
+    int32_t RuntimeHelper_GC__CancelFullGCNotification (uintptr_t, uintptr_t) __asm__("GC__CancelFullGCNotification");
+    int32_t RuntimeHelper_GC__CollectionCount (uintptr_t, int32_t, int32_t, uintptr_t) __asm__("GC__CollectionCount");
+    int64_t RuntimeHelper_GC__GetTotalPauseDuration (uintptr_t, uintptr_t) __asm__("GC__GetTotalPauseDuration");
+    int32_t RuntimeHelper_GC__RegisterForFullGCNotification (uintptr_t, int32_t, int32_t, uintptr_t) __asm__("GC__RegisterForFullGCNotification");
+    void * RuntimeHelper_GenericHandleWorker (void *, void *, void *, uint32_t, void *, void *) __asm__("GenericHandleWorker");
+    void * RuntimeHelper_GetCurrentExInfo () __asm__("GetCurrentExInfo");
+    void * RuntimeHelper_GetEnvironmentStringsW () __asm__("GetEnvironmentStringsW");
+    uint32_t RuntimeHelper_GetEnvironmentVariableW (void *, void *, uint32_t) __asm__("GetEnvironmentVariableW");
+    void RuntimeHelper_GetFileLoadExceptionMessage (int32_t, void *, void *) __asm__("GetFileLoadExceptionMessage");
+    void RuntimeHelper_GetTypeLoadExceptionMessage (int32_t, void *, void *) __asm__("GetTypeLoadExceptionMessage");
+    void RuntimeHelper_InitClassHelper (void *, void *) __asm__("InitClassHelper");
+    int32_t RuntimeHelper_Interlocked_CompareExchange32 (uintptr_t, void *, int32_t, int32_t, uintptr_t) __asm__("Interlocked_CompareExchange32");
+    int32_t RuntimeHelper_Interlocked_CompareExchange32Pointer (uintptr_t, void *, int32_t, int32_t, uintptr_t) __asm__("Interlocked_CompareExchange32Pointer");
+    int64_t RuntimeHelper_Interlocked_CompareExchange64 (uintptr_t, void *, int64_t, int64_t, uintptr_t) __asm__("Interlocked_CompareExchange64");
+    void * RuntimeHelper_Interlocked_CompareExchangeObject (uintptr_t, void *, void *, void *, uintptr_t) __asm__("Interlocked_CompareExchangeObject");
+    int32_t RuntimeHelper_Interlocked_Exchange32 (uintptr_t, void *, int32_t, uintptr_t) __asm__("Interlocked_Exchange32");
+    int64_t RuntimeHelper_Interlocked_Exchange64 (uintptr_t, void *, int64_t, uintptr_t) __asm__("Interlocked_Exchange64");
+    int32_t RuntimeHelper_Interlocked_ExchangeAdd32 (uintptr_t, void *, int32_t, uintptr_t) __asm__("Interlocked_ExchangeAdd32");
+    int64_t RuntimeHelper_Interlocked_ExchangeAdd64 (uintptr_t, void *, int64_t, uintptr_t) __asm__("Interlocked_ExchangeAdd64");
+    void * RuntimeHelper_Interlocked_ExchangeObject (uintptr_t, void *, void *, uintptr_t) __asm__("Interlocked_ExchangeObject");
+    void RuntimeHelper_Interlocked_MemoryBarrierProcessWide () __asm__("Interlocked_MemoryBarrierProcessWide");
+    int32_t RuntimeHelper_IsInstanceOf_NoCacheLookup (void *, int32_t, void *, void *) __asm__("IsInstanceOf_NoCacheLookup");
+    int64_t RuntimeHelper_JitInfo_GetCompilationTimeInTicks (uintptr_t, int32_t, uintptr_t) __asm__("JitInfo_GetCompilationTimeInTicks");
+    int64_t RuntimeHelper_JitInfo_GetCompiledILBytes (uintptr_t, int32_t, uintptr_t) __asm__("JitInfo_GetCompiledILBytes");
+    int64_t RuntimeHelper_JitInfo_GetCompiledMethodCount (uintptr_t, int32_t, uintptr_t) __asm__("JitInfo_GetCompiledMethodCount");
+    int32_t RuntimeHelper_LoaderAllocator_Destroy (void *, void *) __asm__("LoaderAllocator_Destroy");
+    void RuntimeHelper_MarshalNative_GetDelegateForFunctionPointerInternal (void *, void *, void *, void *) __asm__("MarshalNative_GetDelegateForFunctionPointerInternal");
+    void RuntimeHelper_MarshalNative_GetExceptionForHR (int32_t, void *, void *, void *) __asm__("MarshalNative_GetExceptionForHR");
+    void * RuntimeHelper_MarshalNative_GetFunctionPointerForDelegateInternal (void *, void *) __asm__("MarshalNative_GetFunctionPointerForDelegateInternal");
+    void * RuntimeHelper_MarshalNative_GetIsInCooperativeGCModeFunctionPointer () __asm__("MarshalNative_GetIsInCooperativeGCModeFunctionPointer");
+    int32_t RuntimeHelper_MarshalNative_HasLayout (void *, void *, void *, void *) __asm__("MarshalNative_HasLayout");
+    void * RuntimeHelper_MarshalNative_OffsetOf (void *, void *) __asm__("MarshalNative_OffsetOf");
+    void RuntimeHelper_MarshalNative_Prelink (void *, void *) __asm__("MarshalNative_Prelink");
+    int32_t RuntimeHelper_MarshalNative_SizeOfHelper (void *, int32_t, void *) __asm__("MarshalNative_SizeOfHelper");
+    int32_t RuntimeHelper_Marshal_GetExceptionCode (uintptr_t, uintptr_t) __asm__("Marshal_GetExceptionCode");
+    void * RuntimeHelper_Marshal_GetExceptionPointers (uintptr_t, uintptr_t) __asm__("Marshal_GetExceptionPointers");
+    int32_t RuntimeHelper_Marshal_GetLastPInvokeError (uintptr_t, uintptr_t) __asm__("Marshal_GetLastPInvokeError");
+    void RuntimeHelper_Marshal_SetLastPInvokeError (uintptr_t, int32_t, uintptr_t) __asm__("Marshal_SetLastPInvokeError");
+    float RuntimeHelper_MathF_Acos (uintptr_t, float, uintptr_t) __asm__("MathF_Acos");
+    float RuntimeHelper_MathF_Acosh (uintptr_t, float, uintptr_t) __asm__("MathF_Acosh");
+    float RuntimeHelper_MathF_Asin (uintptr_t, float, uintptr_t) __asm__("MathF_Asin");
+    float RuntimeHelper_MathF_Asinh (uintptr_t, float, uintptr_t) __asm__("MathF_Asinh");
+    float RuntimeHelper_MathF_Atan (uintptr_t, float, uintptr_t) __asm__("MathF_Atan");
+    float RuntimeHelper_MathF_Atan2 (uintptr_t, float, float, uintptr_t) __asm__("MathF_Atan2");
+    float RuntimeHelper_MathF_Atanh (uintptr_t, float, uintptr_t) __asm__("MathF_Atanh");
+    float RuntimeHelper_MathF_Cbrt (uintptr_t, float, uintptr_t) __asm__("MathF_Cbrt");
+    float RuntimeHelper_MathF_Ceiling (uintptr_t, float, uintptr_t) __asm__("MathF_Ceiling");
+    float RuntimeHelper_MathF_Cos (uintptr_t, float, uintptr_t) __asm__("MathF_Cos");
+    float RuntimeHelper_MathF_Cosh (uintptr_t, float, uintptr_t) __asm__("MathF_Cosh");
+    float RuntimeHelper_MathF_Exp (uintptr_t, float, uintptr_t) __asm__("MathF_Exp");
+    float RuntimeHelper_MathF_Floor (uintptr_t, float, uintptr_t) __asm__("MathF_Floor");
+    float RuntimeHelper_MathF_FusedMultiplyAdd (uintptr_t, float, float, float, uintptr_t) __asm__("MathF_FusedMultiplyAdd");
+    float RuntimeHelper_MathF_Log (uintptr_t, float, uintptr_t) __asm__("MathF_Log");
+    float RuntimeHelper_MathF_Log10 (uintptr_t, float, uintptr_t) __asm__("MathF_Log10");
+    float RuntimeHelper_MathF_Log2 (uintptr_t, float, uintptr_t) __asm__("MathF_Log2");
+    float RuntimeHelper_MathF_ModF (uintptr_t, float, void *, uintptr_t) __asm__("MathF_ModF");
+    float RuntimeHelper_MathF_Pow (uintptr_t, float, float, uintptr_t) __asm__("MathF_Pow");
+    float RuntimeHelper_MathF_Sin (uintptr_t, float, uintptr_t) __asm__("MathF_Sin");
+    void RuntimeHelper_MathF_SinCos (uintptr_t, float, void *, void *, uintptr_t) __asm__("MathF_SinCos");
+    float RuntimeHelper_MathF_Sinh (uintptr_t, float, uintptr_t) __asm__("MathF_Sinh");
+    float RuntimeHelper_MathF_Sqrt (uintptr_t, float, uintptr_t) __asm__("MathF_Sqrt");
+    float RuntimeHelper_MathF_Tan (uintptr_t, float, uintptr_t) __asm__("MathF_Tan");
+    float RuntimeHelper_MathF_Tanh (uintptr_t, float, uintptr_t) __asm__("MathF_Tanh");
+    double RuntimeHelper_Math_Acos (uintptr_t, double, uintptr_t) __asm__("Math_Acos");
+    double RuntimeHelper_Math_Acosh (uintptr_t, double, uintptr_t) __asm__("Math_Acosh");
+    double RuntimeHelper_Math_Asin (uintptr_t, double, uintptr_t) __asm__("Math_Asin");
+    double RuntimeHelper_Math_Asinh (uintptr_t, double, uintptr_t) __asm__("Math_Asinh");
+    double RuntimeHelper_Math_Atan (uintptr_t, double, uintptr_t) __asm__("Math_Atan");
+    double RuntimeHelper_Math_Atan2 (uintptr_t, double, double, uintptr_t) __asm__("Math_Atan2");
+    double RuntimeHelper_Math_Atanh (uintptr_t, double, uintptr_t) __asm__("Math_Atanh");
+    double RuntimeHelper_Math_Cbrt (uintptr_t, double, uintptr_t) __asm__("Math_Cbrt");
+    double RuntimeHelper_Math_Ceiling (uintptr_t, double, uintptr_t) __asm__("Math_Ceiling");
+    double RuntimeHelper_Math_Cos (uintptr_t, double, uintptr_t) __asm__("Math_Cos");
+    double RuntimeHelper_Math_Cosh (uintptr_t, double, uintptr_t) __asm__("Math_Cosh");
+    int32_t RuntimeHelper_Math_DivInt32Internal (uintptr_t, int32_t, int32_t, uintptr_t) __asm__("Math_DivInt32Internal");
+    int64_t RuntimeHelper_Math_DivInt64Internal (uintptr_t, int64_t, int64_t, uintptr_t) __asm__("Math_DivInt64Internal");
+    uint32_t RuntimeHelper_Math_DivUInt32Internal (uintptr_t, uint32_t, uint32_t, uintptr_t) __asm__("Math_DivUInt32Internal");
+    uint64_t RuntimeHelper_Math_DivUInt64Internal (uintptr_t, uint64_t, uint64_t, uintptr_t) __asm__("Math_DivUInt64Internal");
+    double RuntimeHelper_Math_Exp (uintptr_t, double, uintptr_t) __asm__("Math_Exp");
+    double RuntimeHelper_Math_Floor (uintptr_t, double, uintptr_t) __asm__("Math_Floor");
+    double RuntimeHelper_Math_FusedMultiplyAdd (uintptr_t, double, double, double, uintptr_t) __asm__("Math_FusedMultiplyAdd");
+    double RuntimeHelper_Math_Log (uintptr_t, double, uintptr_t) __asm__("Math_Log");
+    double RuntimeHelper_Math_Log10 (uintptr_t, double, uintptr_t) __asm__("Math_Log10");
+    double RuntimeHelper_Math_Log2 (uintptr_t, double, uintptr_t) __asm__("Math_Log2");
+    double RuntimeHelper_Math_ModF (uintptr_t, double, void *, uintptr_t) __asm__("Math_ModF");
+    int32_t RuntimeHelper_Math_ModInt32Internal (uintptr_t, int32_t, int32_t, uintptr_t) __asm__("Math_ModInt32Internal");
+    int64_t RuntimeHelper_Math_ModInt64Internal (uintptr_t, int64_t, int64_t, uintptr_t) __asm__("Math_ModInt64Internal");
+    uint32_t RuntimeHelper_Math_ModUInt32Internal (uintptr_t, uint32_t, uint32_t, uintptr_t) __asm__("Math_ModUInt32Internal");
+    uint64_t RuntimeHelper_Math_ModUInt64Internal (uintptr_t, uint64_t, uint64_t, uintptr_t) __asm__("Math_ModUInt64Internal");
+    double RuntimeHelper_Math_Pow (uintptr_t, double, double, uintptr_t) __asm__("Math_Pow");
+    double RuntimeHelper_Math_Sin (uintptr_t, double, uintptr_t) __asm__("Math_Sin");
+    void RuntimeHelper_Math_SinCos (uintptr_t, double, void *, void *, uintptr_t) __asm__("Math_SinCos");
+    double RuntimeHelper_Math_Sinh (uintptr_t, double, uintptr_t) __asm__("Math_Sinh");
+    double RuntimeHelper_Math_Sqrt (uintptr_t, double, uintptr_t) __asm__("Math_Sqrt");
+    double RuntimeHelper_Math_Tan (uintptr_t, double, uintptr_t) __asm__("Math_Tan");
+    double RuntimeHelper_Math_Tanh (uintptr_t, double, uintptr_t) __asm__("Math_Tanh");
+    int32_t RuntimeHelper_MdUtf8String_EqualsCaseInsensitive (void *, void *, int32_t, void *) __asm__("MdUtf8String_EqualsCaseInsensitive");
+    void RuntimeHelper_MetadataImport_Enum (void *, int32_t, int32_t, void *, void *, void *, void *) __asm__("MetadataImport_Enum");
+    int32_t RuntimeHelper_MetadataImport_GetClassLayout (uintptr_t, void *, int32_t, void *, void *, uintptr_t) __asm__("MetadataImport_GetClassLayout");
+    int32_t RuntimeHelper_MetadataImport_GetCustomAttributeProps (uintptr_t, void *, int32_t, void *, void *, uintptr_t) __asm__("MetadataImport_GetCustomAttributeProps");
+    int32_t RuntimeHelper_MetadataImport_GetDefaultValue (uintptr_t, void *, int32_t, void *, void *, void *, void *, uintptr_t) __asm__("MetadataImport_GetDefaultValue");
+    int32_t RuntimeHelper_MetadataImport_GetEventProps (uintptr_t, void *, int32_t, void *, void *, uintptr_t) __asm__("MetadataImport_GetEventProps");
+    int32_t RuntimeHelper_MetadataImport_GetFieldDefProps (uintptr_t, void *, int32_t, void *, uintptr_t) __asm__("MetadataImport_GetFieldDefProps");
+    int32_t RuntimeHelper_MetadataImport_GetFieldMarshal (uintptr_t, void *, int32_t, void *, uintptr_t) __asm__("MetadataImport_GetFieldMarshal");
+    int32_t RuntimeHelper_MetadataImport_GetFieldOffset (uintptr_t, void *, int32_t, int32_t, void *, void *, uintptr_t) __asm__("MetadataImport_GetFieldOffset");
+    int32_t RuntimeHelper_MetadataImport_GetGenericParamProps (uintptr_t, void *, int32_t, void *, uintptr_t) __asm__("MetadataImport_GetGenericParamProps");
+    int32_t RuntimeHelper_MetadataImport_GetMarshalAs (void *, int32_t, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) __asm__("MetadataImport_GetMarshalAs");
+    int32_t RuntimeHelper_MetadataImport_GetMemberRefProps (uintptr_t, void *, int32_t, void *, uintptr_t) __asm__("MetadataImport_GetMemberRefProps");
+    void * RuntimeHelper_MetadataImport_GetMetadataImport (uintptr_t, void *, uintptr_t) __asm__("MetadataImport_GetMetadataImport");
+    int32_t RuntimeHelper_MetadataImport_GetName (uintptr_t, void *, int32_t, void *, uintptr_t) __asm__("MetadataImport_GetName");
+    int32_t RuntimeHelper_MetadataImport_GetNamespace (uintptr_t, void *, int32_t, void *, uintptr_t) __asm__("MetadataImport_GetNamespace");
+    int32_t RuntimeHelper_MetadataImport_GetPInvokeMap (uintptr_t, void *, int32_t, void *, void *, void *, uintptr_t) __asm__("MetadataImport_GetPInvokeMap");
+    int32_t RuntimeHelper_MetadataImport_GetParamDefProps (uintptr_t, void *, int32_t, void *, void *, uintptr_t) __asm__("MetadataImport_GetParamDefProps");
+    int32_t RuntimeHelper_MetadataImport_GetParentToken (uintptr_t, void *, int32_t, void *, uintptr_t) __asm__("MetadataImport_GetParentToken");
+    int32_t RuntimeHelper_MetadataImport_GetPropertyProps (uintptr_t, void *, int32_t, void *, void *, void *, uintptr_t) __asm__("MetadataImport_GetPropertyProps");
+    int32_t RuntimeHelper_MetadataImport_GetScopeProps (uintptr_t, void *, void *, uintptr_t) __asm__("MetadataImport_GetScopeProps");
+    int32_t RuntimeHelper_MetadataImport_GetSigOfFieldDef (uintptr_t, void *, int32_t, void *, uintptr_t) __asm__("MetadataImport_GetSigOfFieldDef");
+    int32_t RuntimeHelper_MetadataImport_GetSigOfMethodDef (uintptr_t, void *, int32_t, void *, uintptr_t) __asm__("MetadataImport_GetSigOfMethodDef");
+    int32_t RuntimeHelper_MetadataImport_GetSignatureFromToken (uintptr_t, void *, int32_t, void *, uintptr_t) __asm__("MetadataImport_GetSignatureFromToken");
+    int32_t RuntimeHelper_MetadataImport_GetUserString (uintptr_t, void *, int32_t, void *, void *, uintptr_t) __asm__("MetadataImport_GetUserString");
+    int32_t RuntimeHelper_MetadataImport_IsValidToken (uintptr_t, void *, int32_t, uintptr_t) __asm__("MetadataImport_IsValidToken");
+    void * RuntimeHelper_MethodBase_GetCurrentMethod (void *, void *) __asm__("MethodBase_GetCurrentMethod");
+    int32_t RuntimeHelper_MethodTable_CanCompareBitsOrUseFastGetHashCode (void *, void *) __asm__("MethodTable_CanCompareBitsOrUseFastGetHashCode");
+    void * RuntimeHelper_MethodTable_GetLoaderAllocatorHandle (uintptr_t, void *, uintptr_t) __asm__("MethodTable_GetLoaderAllocatorHandle");
+    void * RuntimeHelper_MethodTable_GetMethodTableMatchingParentClass (uintptr_t, void *, void *, uintptr_t) __asm__("MethodTable_GetMethodTableMatchingParentClass");
+    uint32_t RuntimeHelper_MethodTable_GetNumInstanceFieldBytes (uintptr_t, void *, uintptr_t) __asm__("MethodTable_GetNumInstanceFieldBytes");
+    uint32_t RuntimeHelper_MethodTable_GetPrimitiveCorElementType (uintptr_t, void *, uintptr_t) __asm__("MethodTable_GetPrimitiveCorElementType");
+    int32_t RuntimeHelper_ModuleBuilder_GetArrayMethodToken (void *, int32_t, void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetArrayMethodToken");
+    int32_t RuntimeHelper_ModuleBuilder_GetMemberRef (void *, void *, int32_t, int32_t, void *) __asm__("ModuleBuilder_GetMemberRef");
+    int32_t RuntimeHelper_ModuleBuilder_GetMemberRefFromSignature (void *, int32_t, void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetMemberRefFromSignature");
+    int32_t RuntimeHelper_ModuleBuilder_GetMemberRefOfFieldInfo (void *, int32_t, void *, int32_t, void *) __asm__("ModuleBuilder_GetMemberRefOfFieldInfo");
+    int32_t RuntimeHelper_ModuleBuilder_GetMemberRefOfMethodInfo (void *, int32_t, void *, void *) __asm__("ModuleBuilder_GetMemberRefOfMethodInfo");
+    int32_t RuntimeHelper_ModuleBuilder_GetStringConstant (void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetStringConstant");
+    int32_t RuntimeHelper_ModuleBuilder_GetTokenFromTypeSpec (void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetTokenFromTypeSpec");
+    int32_t RuntimeHelper_ModuleBuilder_GetTypeRef (void *, void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetTypeRef");
+    void RuntimeHelper_ModuleBuilder_SetFieldRVAContent (void *, int32_t, void *, int32_t, void *) __asm__("ModuleBuilder_SetFieldRVAContent");
+    void RuntimeHelper_ModuleHandle_GetDynamicMethod (void *, void *, void *, int32_t, void *, int32_t, void *, void *) __asm__("ModuleHandle_GetDynamicMethod");
+    int32_t RuntimeHelper_ModuleHandle_GetMDStreamVersion (void *) __asm__("ModuleHandle_GetMDStreamVersion");
+    void RuntimeHelper_ModuleHandle_GetModuleType (void *, void *, void *) __asm__("ModuleHandle_GetModuleType");
+    void RuntimeHelper_ModuleHandle_GetPEKind (void *, void *, void *, void *) __asm__("ModuleHandle_GetPEKind");
+    int32_t RuntimeHelper_ModuleHandle_GetToken (void *) __asm__("ModuleHandle_GetToken");
+    void RuntimeHelper_ModuleHandle_ResolveField (void *, int32_t, void *, int32_t, void *, int32_t, void *, void *) __asm__("ModuleHandle_ResolveField");
+    void * RuntimeHelper_ModuleHandle_ResolveMethod (void *, int32_t, void *, int32_t, void *, int32_t, void *) __asm__("ModuleHandle_ResolveMethod");
+    void RuntimeHelper_ModuleHandle_ResolveType (void *, int32_t, void *, int32_t, void *, int32_t, void *, void *) __asm__("ModuleHandle_ResolveType");
+    void * RuntimeHelper_NativeLibrary_LoadByName (void *, void *, int32_t, uint32_t, int32_t, void *) __asm__("NativeLibrary_LoadByName");
+    void RuntimeHelper_NativeRuntimeEventSource_LogContentionLockCreated (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogContentionLockCreated");
+    void RuntimeHelper_NativeRuntimeEventSource_LogContentionStart (uint32_t, uint32_t, void *, void *, uint64_t, void *) __asm__("NativeRuntimeEventSource_LogContentionStart");
+    void RuntimeHelper_NativeRuntimeEventSource_LogContentionStop (uint32_t, uint32_t, double, void *) __asm__("NativeRuntimeEventSource_LogContentionStop");
+    void RuntimeHelper_NativeRuntimeEventSource_LogDecreaseMemoryPressure (uint64_t, void *) __asm__("NativeRuntimeEventSource_LogDecreaseMemoryPressure");
+    void RuntimeHelper_NativeRuntimeEventSource_LogIncreaseMemoryPressure (uint64_t, void *) __asm__("NativeRuntimeEventSource_LogIncreaseMemoryPressure");
+    void RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolIODequeue (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIODequeue");
+    void RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolIOEnqueue (void *, void *, int32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIOEnqueue");
+    void RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolIOPack (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIOPack");
+    void RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolMinMaxThreads");
+    void RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment (double, uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment");
+    void RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample (double, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample");
+    void RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats (double, double, double, double, double, double, double, double, double, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats");
+    void RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart (uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart");
+    void RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop (uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop");
+    void RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait (uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait");
+    void RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount (uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount");
+    void RuntimeHelper_NativeRuntimeEventSource_LogWaitHandleWaitStart (uint32_t, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogWaitHandleWaitStart");
+    void RuntimeHelper_NativeRuntimeEventSource_LogWaitHandleWaitStop (uint32_t, void *) __asm__("NativeRuntimeEventSource_LogWaitHandleWaitStop");
+    void * RuntimeHelper_ObjectHeader_GetLockHandleIfExists (uintptr_t, void *, uintptr_t) __asm__("ObjectHeader_GetLockHandleIfExists");
+    void RuntimeHelper_ObjectHeader_GetOrCreateLockObject (void *, void *, void *) __asm__("ObjectHeader_GetOrCreateLockObject");
+    void RuntimeHelper_ObjectNative_AllocateUninitializedClone (void *, void *) __asm__("ObjectNative_AllocateUninitializedClone");
+    int32_t RuntimeHelper_ObjectNative_GetHashCodeSlow (void *, void *) __asm__("ObjectNative_GetHashCodeSlow");
+    void * RuntimeHelper_QCall_FreeGCHandleForTypeHandle (void *, void *, void *) __asm__("QCall_FreeGCHandleForTypeHandle");
+    void * RuntimeHelper_QCall_GetGCHandleForTypeHandle (void *, int32_t, void *) __asm__("QCall_GetGCHandleForTypeHandle");
+    void RuntimeHelper_ReflectionInvocation_CompileMethod (void *, void *) __asm__("ReflectionInvocation_CompileMethod");
+    void RuntimeHelper_ReflectionInvocation_GetBoxInfo (void *, void *, void *, void *, void *, void *) __asm__("ReflectionInvocation_GetBoxInfo");
+    void RuntimeHelper_ReflectionInvocation_GetGuid (void *, void *, void *) __asm__("ReflectionInvocation_GetGuid");
+    void RuntimeHelper_ReflectionInvocation_PrepareDelegate (void *, void *) __asm__("ReflectionInvocation_PrepareDelegate");
+    void RuntimeHelper_ReflectionInvocation_PrepareMethod (void *, void *, int32_t, void *) __asm__("ReflectionInvocation_PrepareMethod");
+    void RuntimeHelper_ReflectionInvocation_RunClassConstructor (void *, void *) __asm__("ReflectionInvocation_RunClassConstructor");
+    void RuntimeHelper_ReflectionInvocation_RunModuleConstructor (void *, void *) __asm__("ReflectionInvocation_RunModuleConstructor");
+    int32_t RuntimeHelper_ReflectionInvocation_SizeOf (void *) __asm__("ReflectionInvocation_SizeOf");
+    void RuntimeHelper_ReflectionSerialization_GetCreateUninitializedObjectInfo (void *, void *, void *, void *) __asm__("ReflectionSerialization_GetCreateUninitializedObjectInfo");
+    void * RuntimeHelper_ResolveVirtualFunctionPointer (void *, void *, void *, void *) __asm__("ResolveVirtualFunctionPointer");
+    int32_t RuntimeHelper_RuntimeAssembly_GetIsCollectible (uintptr_t, void *, uintptr_t) __asm__("RuntimeAssembly_GetIsCollectible");
+    int32_t RuntimeHelper_RuntimeAssembly_GetIsDynamic (uintptr_t, void *, uintptr_t) __asm__("RuntimeAssembly_GetIsDynamic");
+    void * RuntimeHelper_RuntimeAssembly_GetManifestModule (uintptr_t, void *, uintptr_t) __asm__("RuntimeAssembly_GetManifestModule");
+    int32_t RuntimeHelper_RuntimeAssembly_GetTokenInternal (uintptr_t, void *, uintptr_t) __asm__("RuntimeAssembly_GetTokenInternal");
+    int32_t RuntimeHelper_RuntimeFieldHandle_AcquiresContextFromThis (uintptr_t, void *, uintptr_t) __asm__("RuntimeFieldHandle_AcquiresContextFromThis");
+    void * RuntimeHelper_RuntimeFieldHandle_GetApproxDeclaringMethodTable (uintptr_t, void *, uintptr_t) __asm__("RuntimeFieldHandle_GetApproxDeclaringMethodTable");
+    int32_t RuntimeHelper_RuntimeFieldHandle_GetAttributes (uintptr_t, void *, uintptr_t) __asm__("RuntimeFieldHandle_GetAttributes");
+    void * RuntimeHelper_RuntimeFieldHandle_GetEnCFieldAddr (void *, void *, void *) __asm__("RuntimeFieldHandle_GetEnCFieldAddr");
+    void RuntimeHelper_RuntimeFieldHandle_GetFieldDataReference (void *, void *, void *, void *) __asm__("RuntimeFieldHandle_GetFieldDataReference");
+    int32_t RuntimeHelper_RuntimeFieldHandle_GetInstanceFieldOffset (uintptr_t, void *, uintptr_t) __asm__("RuntimeFieldHandle_GetInstanceFieldOffset");
+    void * RuntimeHelper_RuntimeFieldHandle_GetLoaderAllocatorInternal (uintptr_t, void *, uintptr_t) __asm__("RuntimeFieldHandle_GetLoaderAllocatorInternal");
+    int32_t RuntimeHelper_RuntimeFieldHandle_GetRVAFieldInfo (void *, void *, void *, void *) __asm__("RuntimeFieldHandle_GetRVAFieldInfo");
+    void * RuntimeHelper_RuntimeFieldHandle_GetStaticFieldAddress (uintptr_t, void *, uintptr_t) __asm__("RuntimeFieldHandle_GetStaticFieldAddress");
+    void * RuntimeHelper_RuntimeFieldHandle_GetStaticFieldForGenericType (uintptr_t, void *, void *, uintptr_t) __asm__("RuntimeFieldHandle_GetStaticFieldForGenericType");
+    int32_t RuntimeHelper_RuntimeFieldHandle_GetToken (uintptr_t, void *, uintptr_t) __asm__("RuntimeFieldHandle_GetToken");
+    void * RuntimeHelper_RuntimeFieldHandle_GetUtf8NameInternal (uintptr_t, void *, uintptr_t) __asm__("RuntimeFieldHandle_GetUtf8NameInternal");
+    void RuntimeHelper_RuntimeFieldHandle_GetValue (void *, void *, void *, void *, void *, void *, void *) __asm__("RuntimeFieldHandle_GetValue");
+    void RuntimeHelper_RuntimeFieldHandle_GetValueDirect (void *, void *, void *, void *, void *, void *) __asm__("RuntimeFieldHandle_GetValueDirect");
+    int32_t RuntimeHelper_RuntimeFieldHandle_IsFastPathSupported (uintptr_t, void *, uintptr_t) __asm__("RuntimeFieldHandle_IsFastPathSupported");
+    void RuntimeHelper_RuntimeFieldHandle_SetValue (void *, void *, void *, void *, void *, void *, void *) __asm__("RuntimeFieldHandle_SetValue");
+    void RuntimeHelper_RuntimeFieldHandle_SetValueDirect (void *, void *, void *, void *, void *, void *) __asm__("RuntimeFieldHandle_SetValueDirect");
+    int32_t RuntimeHelper_RuntimeHelpers_ContentEquals (uintptr_t, void *, void *, uintptr_t) __asm__("RuntimeHelpers_ContentEquals");
+    void * RuntimeHelper_RuntimeHelpers_GetTailCallArgBuffer (uintptr_t, uintptr_t) __asm__("RuntimeHelpers_GetTailCallArgBuffer");
+    void * RuntimeHelper_RuntimeHelpers_GetTailCallInfo (uintptr_t, void *, void *, uintptr_t) __asm__("RuntimeHelpers_GetTailCallInfo");
+    int32_t RuntimeHelper_RuntimeHelpers_TryEnsureSufficientExecutionStack (uintptr_t, uintptr_t) __asm__("RuntimeHelpers_TryEnsureSufficientExecutionStack");
+    int32_t RuntimeHelper_RuntimeHelpers_TryGetHashCode (uintptr_t, void *, uintptr_t) __asm__("RuntimeHelpers_TryGetHashCode");
+    void RuntimeHelper_RuntimeMethodHandle_ConstructInstantiation (void *, int32_t, void *, void *) __asm__("RuntimeMethodHandle_ConstructInstantiation");
+    void RuntimeHelper_RuntimeMethodHandle_Destroy (void *, void *) __asm__("RuntimeMethodHandle_Destroy");
+    int32_t RuntimeHelper_RuntimeMethodHandle_GetAttributes (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_GetAttributes");
+    void * RuntimeHelper_RuntimeMethodHandle_GetDiagnosticCodeStart (void *, void *) __asm__("RuntimeMethodHandle_GetDiagnosticCodeStart");
+    void * RuntimeHelper_RuntimeMethodHandle_GetFunctionPointer (void *, void *) __asm__("RuntimeMethodHandle_GetFunctionPointer");
+    int32_t RuntimeHelper_RuntimeMethodHandle_GetGenericParameterCount (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_GetGenericParameterCount");
+    int32_t RuntimeHelper_RuntimeMethodHandle_GetImplAttributes (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_GetImplAttributes");
+    void * RuntimeHelper_RuntimeMethodHandle_GetLoaderAllocatorInternal (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_GetLoaderAllocatorInternal");
+    void RuntimeHelper_RuntimeMethodHandle_GetMethodBody (void *, void *, void *, void *) __asm__("RuntimeMethodHandle_GetMethodBody");
+    int32_t RuntimeHelper_RuntimeMethodHandle_GetMethodDef (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_GetMethodDef");
+    void * RuntimeHelper_RuntimeMethodHandle_GetMethodFromCanonical (uintptr_t, void *, void *, uintptr_t) __asm__("RuntimeMethodHandle_GetMethodFromCanonical");
+    void RuntimeHelper_RuntimeMethodHandle_GetMethodInstantiation (void *, void *, int32_t, void *) __asm__("RuntimeMethodHandle_GetMethodInstantiation");
+    void * RuntimeHelper_RuntimeMethodHandle_GetMethodTable (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_GetMethodTable");
+    void * RuntimeHelper_RuntimeMethodHandle_GetResolver (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_GetResolver");
+    int32_t RuntimeHelper_RuntimeMethodHandle_GetSlot (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_GetSlot");
+    void * RuntimeHelper_RuntimeMethodHandle_GetStubIfNeededInternal (uintptr_t, void *, void *, uintptr_t) __asm__("RuntimeMethodHandle_GetStubIfNeededInternal");
+    void * RuntimeHelper_RuntimeMethodHandle_GetStubIfNeededSlow (void *, void *, void *, void *) __asm__("RuntimeMethodHandle_GetStubIfNeededSlow");
+    void RuntimeHelper_RuntimeMethodHandle_GetTypicalMethodDefinition (void *, void *, void *) __asm__("RuntimeMethodHandle_GetTypicalMethodDefinition");
+    void * RuntimeHelper_RuntimeMethodHandle_GetUtf8NameInternal (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_GetUtf8NameInternal");
+    void * RuntimeHelper_RuntimeMethodHandle_GetVirtualFunctionPointer (void *, void *, void *, void *) __asm__("RuntimeMethodHandle_GetVirtualFunctionPointer");
+    int32_t RuntimeHelper_RuntimeMethodHandle_HasMethodInstantiation (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_HasMethodInstantiation");
+    int32_t RuntimeHelper_RuntimeMethodHandle_IsAsyncMethod (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_IsAsyncMethod");
+    int32_t RuntimeHelper_RuntimeMethodHandle_IsCAVisibleFromDecoratedType (void *, void *, void *, void *, void *) __asm__("RuntimeMethodHandle_IsCAVisibleFromDecoratedType");
+    int32_t RuntimeHelper_RuntimeMethodHandle_IsCollectible (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_IsCollectible");
+    int32_t RuntimeHelper_RuntimeMethodHandle_IsConstructor (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_IsConstructor");
+    int32_t RuntimeHelper_RuntimeMethodHandle_IsDynamicMethod (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_IsDynamicMethod");
+    int32_t RuntimeHelper_RuntimeMethodHandle_IsGenericMethodDefinition (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_IsGenericMethodDefinition");
+    int32_t RuntimeHelper_RuntimeMethodHandle_IsTypicalMethodDefinition (uintptr_t, void *, uintptr_t) __asm__("RuntimeMethodHandle_IsTypicalMethodDefinition");
+    void RuntimeHelper_RuntimeMethodHandle_StripMethodInstantiation (void *, void *, void *) __asm__("RuntimeMethodHandle_StripMethodInstantiation");
+    void RuntimeHelper_RuntimeModule_GetFullyQualifiedName (void *, void *, void *) __asm__("RuntimeModule_GetFullyQualifiedName");
+    void RuntimeHelper_RuntimeModule_GetScopeName (void *, void *, void *) __asm__("RuntimeModule_GetScopeName");
+    void RuntimeHelper_RuntimeModule_GetTypes (void *, void *, void *, void *) __asm__("RuntimeModule_GetTypes");
+    void * RuntimeHelper_RuntimeTypeHandle_AllocateTypeAssociatedMemory (void *, uint32_t, void *) __asm__("RuntimeTypeHandle_AllocateTypeAssociatedMemory");
+    void * RuntimeHelper_RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned (void *, uint32_t, uint32_t, void *) __asm__("RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned");
+    int32_t RuntimeHelper_RuntimeTypeHandle_CompareCanonicalHandles (uintptr_t, void *, void *, uintptr_t) __asm__("RuntimeTypeHandle_CompareCanonicalHandles");
+    void RuntimeHelper_RuntimeTypeHandle_ConstructName (void *, int32_t, void *, void *) __asm__("RuntimeTypeHandle_ConstructName");
+    int32_t RuntimeHelper_RuntimeTypeHandle_ContainsGenericVariables (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_ContainsGenericVariables");
+    void RuntimeHelper_RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter (void *, void *, int32_t, void *, void *) __asm__("RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter");
+    void RuntimeHelper_RuntimeTypeHandle_GetActivationInfo (void *, void *, void *, void *, void *, void *, void *) __asm__("RuntimeTypeHandle_GetActivationInfo");
+    void RuntimeHelper_RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer (void *, void *, void *) __asm__("RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer");
+    int32_t RuntimeHelper_RuntimeTypeHandle_GetArrayRank (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetArrayRank");
+    void * RuntimeHelper_RuntimeTypeHandle_GetAssemblyIfExists (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetAssemblyIfExists");
+    void RuntimeHelper_RuntimeTypeHandle_GetAssemblySlow (void *, void *, void *) __asm__("RuntimeTypeHandle_GetAssemblySlow");
+    int32_t RuntimeHelper_RuntimeTypeHandle_GetAttributes (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetAttributes");
+    void RuntimeHelper_RuntimeTypeHandle_GetConstraints (void *, void *, void *) __asm__("RuntimeTypeHandle_GetConstraints");
+    void RuntimeHelper_RuntimeTypeHandle_GetDeclaringMethodForGenericParameter (void *, void *, void *) __asm__("RuntimeTypeHandle_GetDeclaringMethodForGenericParameter");
+    void * RuntimeHelper_RuntimeTypeHandle_GetDeclaringTypeHandle (void *, void *) __asm__("RuntimeTypeHandle_GetDeclaringTypeHandle");
+    void * RuntimeHelper_RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable (void *, void *) __asm__("RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable");
+    void * RuntimeHelper_RuntimeTypeHandle_GetElementTypeHandle (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetElementTypeHandle");
+    int32_t RuntimeHelper_RuntimeTypeHandle_GetFields (void *, void *, void *, void *) __asm__("RuntimeTypeHandle_GetFields");
+    void * RuntimeHelper_RuntimeTypeHandle_GetFirstIntroducedMethod (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetFirstIntroducedMethod");
+    void RuntimeHelper_RuntimeTypeHandle_GetGenericTypeDefinition (void *, void *, void *) __asm__("RuntimeTypeHandle_GetGenericTypeDefinition");
+    int32_t RuntimeHelper_RuntimeTypeHandle_GetGenericVariableIndex (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetGenericVariableIndex");
+    void RuntimeHelper_RuntimeTypeHandle_GetInstantiation (void *, void *, int32_t, void *) __asm__("RuntimeTypeHandle_GetInstantiation");
+    void * RuntimeHelper_RuntimeTypeHandle_GetInterfaceMethodImplementation (void *, void *, void *, void *) __asm__("RuntimeTypeHandle_GetInterfaceMethodImplementation");
+    void RuntimeHelper_RuntimeTypeHandle_GetInterfaces (void *, void *, void *) __asm__("RuntimeTypeHandle_GetInterfaces");
+    void * RuntimeHelper_RuntimeTypeHandle_GetMethodAt (void *, int32_t, void *) __asm__("RuntimeTypeHandle_GetMethodAt");
+    void * RuntimeHelper_RuntimeTypeHandle_GetModuleIfExists (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetModuleIfExists");
+    void RuntimeHelper_RuntimeTypeHandle_GetModuleSlow (void *, void *, void *) __asm__("RuntimeTypeHandle_GetModuleSlow");
+    void RuntimeHelper_RuntimeTypeHandle_GetNextIntroducedMethod (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetNextIntroducedMethod");
+    int32_t RuntimeHelper_RuntimeTypeHandle_GetNumVirtuals (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetNumVirtuals");
+    int32_t RuntimeHelper_RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals (void *, void *) __asm__("RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals");
+    void RuntimeHelper_RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow (void *, void *, void *) __asm__("RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow");
+    int32_t RuntimeHelper_RuntimeTypeHandle_GetToken (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetToken");
+    void * RuntimeHelper_RuntimeTypeHandle_GetUtf8NameInternal (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetUtf8NameInternal");
+    void RuntimeHelper_RuntimeTypeHandle_Instantiate (void *, void *, int32_t, void *, void *) __asm__("RuntimeTypeHandle_Instantiate");
+    void RuntimeHelper_RuntimeTypeHandle_InternalAlloc (void *, void *, void *) __asm__("RuntimeTypeHandle_InternalAlloc");
+    void RuntimeHelper_RuntimeTypeHandle_InternalAllocNoChecks (void *, void *, void *) __asm__("RuntimeTypeHandle_InternalAllocNoChecks");
+    void * RuntimeHelper_RuntimeTypeHandle_InternalAllocNoChecks_FastPath (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_InternalAllocNoChecks_FastPath");
+    int32_t RuntimeHelper_RuntimeTypeHandle_IsGenericVariable (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_IsGenericVariable");
+    int32_t RuntimeHelper_RuntimeTypeHandle_IsUnmanagedFunctionPointer (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_IsUnmanagedFunctionPointer");
+    int32_t RuntimeHelper_RuntimeTypeHandle_IsVisible (void *, void *) __asm__("RuntimeTypeHandle_IsVisible");
+    void RuntimeHelper_RuntimeTypeHandle_MakeArray (void *, int32_t, void *, void *) __asm__("RuntimeTypeHandle_MakeArray");
+    void RuntimeHelper_RuntimeTypeHandle_MakeByRef (void *, void *, void *) __asm__("RuntimeTypeHandle_MakeByRef");
+    void RuntimeHelper_RuntimeTypeHandle_MakeFunctionPointer (void *, int32_t, int32_t, void *, void *) __asm__("RuntimeTypeHandle_MakeFunctionPointer");
+    void RuntimeHelper_RuntimeTypeHandle_MakePointer (void *, void *, void *) __asm__("RuntimeTypeHandle_MakePointer");
+    void RuntimeHelper_RuntimeTypeHandle_MakeSZArray (void *, void *, void *) __asm__("RuntimeTypeHandle_MakeSZArray");
+    void RuntimeHelper_RuntimeTypeHandle_RegisterCollectibleTypeDependency (void *, void *, void *) __asm__("RuntimeTypeHandle_RegisterCollectibleTypeDependency");
+    int32_t RuntimeHelper_RuntimeTypeHandle_SatisfiesConstraints (void *, void *, void *, void *, void *) __asm__("RuntimeTypeHandle_SatisfiesConstraints");
+    void RuntimeHelper_RuntimeTypeHandle_VerifyInterfaceIsImplemented (void *, void *, void *) __asm__("RuntimeTypeHandle_VerifyInterfaceIsImplemented");
+    int32_t RuntimeHelper_SetEnvironmentVariableW (void *, void *) __asm__("SetEnvironmentVariableW");
+    uint32_t RuntimeHelper_SfiInit (void *, void *, uint32_t, void *, void *) __asm__("SfiInit");
+    uint32_t RuntimeHelper_SfiNext (void *, void *, void *, void *, void *) __asm__("SfiNext");
+    int32_t RuntimeHelper_Signature_AreEqual (void *, int32_t, void *, void *, int32_t, void *, void *) __asm__("Signature_AreEqual");
+    int32_t RuntimeHelper_Signature_GetCallingConventionFromFunctionPointerAtOffsetInternal (uintptr_t, void *, int32_t, int32_t, uintptr_t) __asm__("Signature_GetCallingConventionFromFunctionPointerAtOffsetInternal");
+    void RuntimeHelper_Signature_GetCustomModifiersAtOffset (void *, int32_t, int32_t, void *, void *) __asm__("Signature_GetCustomModifiersAtOffset");
+    int32_t RuntimeHelper_Signature_GetParameterOffsetInternal (uintptr_t, void *, int32_t, int32_t, uintptr_t) __asm__("Signature_GetParameterOffsetInternal");
+    int32_t RuntimeHelper_Signature_GetTypeParameterOffsetInternal (uintptr_t, void *, int32_t, int32_t, int32_t, uintptr_t) __asm__("Signature_GetTypeParameterOffsetInternal");
+    void RuntimeHelper_Signature_Init (void *, void *, int32_t, void *, void *, void *) __asm__("Signature_Init");
+    void * RuntimeHelper_StackFrame_GetMethodDescFromNativeIP (void *, void *) __asm__("StackFrame_GetMethodDescFromNativeIP");
+    void RuntimeHelper_StackTrace_GetStackFramesInternal (void *, int32_t, void *, void *) __asm__("StackTrace_GetStackFramesInternal");
+    int32_t RuntimeHelper_Stream_HasOverriddenSlow (void *, int32_t, void *) __asm__("Stream_HasOverriddenSlow");
+    void RuntimeHelper_String_Intern (void *, void *) __asm__("String_Intern");
+    void RuntimeHelper_String_IsInterned (void *, void *) __asm__("String_IsInterned");
+    void RuntimeHelper_StubHelpers_ClearLastError (uintptr_t, uintptr_t) __asm__("StubHelpers_ClearLastError");
+    void RuntimeHelper_StubHelpers_CreateCustomMarshaler (void *, int32_t, void *, void *, void *) __asm__("StubHelpers_CreateCustomMarshaler");
+    void RuntimeHelper_StubHelpers_CreateLayoutClassMarshalStubs (void *, void *, void *, void *, void *) __asm__("StubHelpers_CreateLayoutClassMarshalStubs");
+    void RuntimeHelper_StubHelpers_LogPinnedArgument (uintptr_t, void *, void *, uintptr_t) __asm__("StubHelpers_LogPinnedArgument");
+    void RuntimeHelper_StubHelpers_MulticastDebuggerTraceHelper (void *, int32_t, void *) __asm__("StubHelpers_MulticastDebuggerTraceHelper");
+    void RuntimeHelper_StubHelpers_SetLastError (uintptr_t, uintptr_t) __asm__("StubHelpers_SetLastError");
+    void RuntimeHelper_StubHelpers_ThrowInteropException (int32_t, int32_t, void *) __asm__("StubHelpers_ThrowInteropException");
+    void RuntimeHelper_StubHelpers_ThrowInteropParamException (int32_t, int32_t, void *) __asm__("StubHelpers_ThrowInteropParamException");
+    void RuntimeHelper_StubHelpers_ValidateByref (void *, void *, void *) __asm__("StubHelpers_ValidateByref");
+    void RuntimeHelper_StubHelpers_ValidateObject (void *, void *, void *) __asm__("StubHelpers_ValidateObject");
+    void * RuntimeHelper_TailCallHelp_AllocTailCallArgBufferInternal (int32_t, void *) __asm__("TailCallHelp_AllocTailCallArgBufferInternal");
+    void RuntimeHelper_ThreadNative_Abort (void *, void *) __asm__("ThreadNative_Abort");
+    void RuntimeHelper_ThreadNative_GetQCallSpecialException (void *, void *, void *) __asm__("ThreadNative_GetQCallSpecialException");
+    int32_t RuntimeHelper_ThreadNative_GetThreadState (void *) __asm__("ThreadNative_GetThreadState");
+    void RuntimeHelper_ThreadNative_ResetAbort () __asm__("ThreadNative_ResetAbort");
+    void RuntimeHelper_ThrowInvalidCastException (void *, void *, void *) __asm__("ThrowInvalidCastException");
+    void RuntimeHelper_TypeBuilder_AddInterfaceImpl (void *, int32_t, int32_t, void *) __asm__("TypeBuilder_AddInterfaceImpl");
+    void RuntimeHelper_TypeBuilder_DefineCustomAttribute (void *, int32_t, int32_t, void *, int32_t, void *) __asm__("TypeBuilder_DefineCustomAttribute");
+    int32_t RuntimeHelper_TypeBuilder_DefineEvent (void *, int32_t, void *, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineEvent");
+    int32_t RuntimeHelper_TypeBuilder_DefineField (void *, int32_t, void *, void *, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineField");
+    int32_t RuntimeHelper_TypeBuilder_DefineGenericParam (void *, void *, int32_t, int32_t, int32_t, void *, void *) __asm__("TypeBuilder_DefineGenericParam");
+    int32_t RuntimeHelper_TypeBuilder_DefineMethod (void *, int32_t, void *, void *, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineMethod");
+    void RuntimeHelper_TypeBuilder_DefineMethodImpl (void *, int32_t, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineMethodImpl");
+    void RuntimeHelper_TypeBuilder_DefineMethodSemantics (void *, int32_t, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineMethodSemantics");
+    int32_t RuntimeHelper_TypeBuilder_DefineMethodSpec (void *, int32_t, void *, int32_t, void *) __asm__("TypeBuilder_DefineMethodSpec");
+    int32_t RuntimeHelper_TypeBuilder_DefineProperty (void *, int32_t, void *, int32_t, void *, int32_t, void *) __asm__("TypeBuilder_DefineProperty");
+    int32_t RuntimeHelper_TypeBuilder_DefineType (void *, void *, int32_t, int32_t, int32_t, void *, void *) __asm__("TypeBuilder_DefineType");
+    int32_t RuntimeHelper_TypeBuilder_GetTokenFromSig (void *, void *, int32_t, void *) __asm__("TypeBuilder_GetTokenFromSig");
+    void RuntimeHelper_TypeBuilder_SetClassLayout (void *, int32_t, int32_t, int32_t, void *) __asm__("TypeBuilder_SetClassLayout");
+    void RuntimeHelper_TypeBuilder_SetConstantValue (void *, int32_t, int32_t, void *, void *) __asm__("TypeBuilder_SetConstantValue");
+    void RuntimeHelper_TypeBuilder_SetFieldLayoutOffset (void *, int32_t, int32_t, void *) __asm__("TypeBuilder_SetFieldLayoutOffset");
+    void RuntimeHelper_TypeBuilder_SetMethodIL (void *, int32_t, int32_t, void *, int32_t, void *, int32_t, int32_t, void *, int32_t, void *) __asm__("TypeBuilder_SetMethodIL");
+    void RuntimeHelper_TypeBuilder_SetMethodImpl (void *, int32_t, int32_t, void *) __asm__("TypeBuilder_SetMethodImpl");
+    void RuntimeHelper_TypeBuilder_SetPInvokeData (void *, void *, void *, int32_t, int32_t, void *) __asm__("TypeBuilder_SetPInvokeData");
+    int32_t RuntimeHelper_TypeBuilder_SetParamInfo (void *, int32_t, int32_t, int32_t, void *, void *) __asm__("TypeBuilder_SetParamInfo");
+    void RuntimeHelper_TypeBuilder_SetParentType (void *, int32_t, int32_t, void *) __asm__("TypeBuilder_SetParentType");
+    void RuntimeHelper_TypeBuilder_TermCreateClass (void *, int32_t, void *, void *) __asm__("TypeBuilder_TermCreateClass");
+    int32_t RuntimeHelper_TypeHandle_CanCastTo_NoCacheLookup (void *, void *, void *) __asm__("TypeHandle_CanCastTo_NoCacheLookup");
+    int32_t RuntimeHelper_TypeHandle_GetCorElementType (void *) __asm__("TypeHandle_GetCorElementType");
+    void * RuntimeHelper_TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry (void *, void *, void *, void *) __asm__("TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry");
+    void * RuntimeHelper_TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry (void *, void *, void *, void *) __asm__("TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry");
+    void RuntimeHelper_TypeMapLazyDictionary_ProcessAttributes (void *, void *, void *, void *, void *, void *, void *, void *) __asm__("TypeMapLazyDictionary_ProcessAttributes");
+    void * RuntimeHelper_UnsafeAccessors_ResolveGenericParamToTypeHandle (void *, int32_t, uint32_t, void *) __asm__("UnsafeAccessors_ResolveGenericParamToTypeHandle");
+    int32_t RuntimeHelper_ValueType_GetHashCodeStrategy (void *, void *, void *, void *, void *, void *) __asm__("ValueType_GetHashCodeStrategy");
+    int32_t RuntimeHelper_VersionResilientHashCode_TypeHashCode (void *, void *) __asm__("VersionResilientHashCode_TypeHashCode");
+    void RuntimeHelper_WasiFinalizer_RunWorker (void *) __asm__("WasiFinalizer_RunWorker");
+    int32_t RuntimeHelper_WasiFinalizer_TryClearPending (void *) __asm__("WasiFinalizer_TryClearPending");
 } // extern "C"
 
-static const Entry s_QCall[] = {
-    { "AppContext_SetFirstChanceExceptionHandler", (void*)&QCall_AppContext_SetFirstChanceExceptionHandler },
-    { "AppContext_TryGetHostPropertyValue", (void*)&QCall_AppContext_TryGetHostPropertyValue },
-    { "AppDomain_CreateDynamicAssembly", (void*)&QCall_AppDomain_CreateDynamicAssembly },
-    { "AppendExceptionStackFrame", (void*)&QCall_AppendExceptionStackFrame },
-    { "Array_CreateInstance", (void*)&QCall_Array_CreateInstance },
-    { "Array_Ctor", (void*)&QCall_Array_Ctor },
-    { "Array_GetElementConstructorEntrypoint", (void*)&QCall_Array_GetElementConstructorEntrypoint },
-    { "AssemblyHandle_GetManifestModuleSlow", (void*)&QCall_AssemblyHandle_GetManifestModuleSlow },
-    { "AssemblyName_InitializeAssemblySpec", (void*)&QCall_AssemblyName_InitializeAssemblySpec },
-    { "AssemblyNative_ApplyUpdate", (void*)&QCall_AssemblyNative_ApplyUpdate },
-    { "AssemblyNative_GetAssemblyCount", (void*)&QCall_AssemblyNative_GetAssemblyCount },
-    { "AssemblyNative_GetCodeBase", (void*)&QCall_AssemblyNative_GetCodeBase },
-    { "AssemblyNative_GetEntryAssembly", (void*)&QCall_AssemblyNative_GetEntryAssembly },
-    { "AssemblyNative_GetEntryPoint", (void*)&QCall_AssemblyNative_GetEntryPoint },
-    { "AssemblyNative_GetExecutingAssembly", (void*)&QCall_AssemblyNative_GetExecutingAssembly },
-    { "AssemblyNative_GetExportedTypes", (void*)&QCall_AssemblyNative_GetExportedTypes },
-    { "AssemblyNative_GetFlags", (void*)&QCall_AssemblyNative_GetFlags },
-    { "AssemblyNative_GetForwardedType", (void*)&QCall_AssemblyNative_GetForwardedType },
-    { "AssemblyNative_GetFullName", (void*)&QCall_AssemblyNative_GetFullName },
-    { "AssemblyNative_GetHashAlgorithm", (void*)&QCall_AssemblyNative_GetHashAlgorithm },
-    { "AssemblyNative_GetImageRuntimeVersion", (void*)&QCall_AssemblyNative_GetImageRuntimeVersion },
-    { "AssemblyNative_GetLoadContextForAssembly", (void*)&QCall_AssemblyNative_GetLoadContextForAssembly },
-    { "AssemblyNative_GetLoadedAssemblies", (void*)&QCall_AssemblyNative_GetLoadedAssemblies },
-    { "AssemblyNative_GetLocale", (void*)&QCall_AssemblyNative_GetLocale },
-    { "AssemblyNative_GetLocation", (void*)&QCall_AssemblyNative_GetLocation },
-    { "AssemblyNative_GetManifestResourceInfo", (void*)&QCall_AssemblyNative_GetManifestResourceInfo },
-    { "AssemblyNative_GetManifestResourceNames", (void*)&QCall_AssemblyNative_GetManifestResourceNames },
-    { "AssemblyNative_GetModule", (void*)&QCall_AssemblyNative_GetModule },
-    { "AssemblyNative_GetModules", (void*)&QCall_AssemblyNative_GetModules },
-    { "AssemblyNative_GetPublicKey", (void*)&QCall_AssemblyNative_GetPublicKey },
-    { "AssemblyNative_GetReferencedAssemblies", (void*)&QCall_AssemblyNative_GetReferencedAssemblies },
-    { "AssemblyNative_GetResource", (void*)&QCall_AssemblyNative_GetResource },
-    { "AssemblyNative_GetSimpleName", (void*)&QCall_AssemblyNative_GetSimpleName },
-    { "AssemblyNative_GetTypeCore", (void*)&QCall_AssemblyNative_GetTypeCore },
-    { "AssemblyNative_GetTypeCoreIgnoreCase", (void*)&QCall_AssemblyNative_GetTypeCoreIgnoreCase },
-    { "AssemblyNative_GetVersion", (void*)&QCall_AssemblyNative_GetVersion },
-    { "AssemblyNative_InitializeAssemblyLoadContext", (void*)&QCall_AssemblyNative_InitializeAssemblyLoadContext },
-    { "AssemblyNative_InternalLoad", (void*)&QCall_AssemblyNative_InternalLoad },
-    { "AssemblyNative_InternalTryGetRawMetadata", (void*)&QCall_AssemblyNative_InternalTryGetRawMetadata },
-    { "AssemblyNative_IsApplyUpdateSupported", (void*)&QCall_AssemblyNative_IsApplyUpdateSupported },
-    { "AssemblyNative_LoadFromPath", (void*)&QCall_AssemblyNative_LoadFromPath },
-    { "AssemblyNative_LoadFromStream", (void*)&QCall_AssemblyNative_LoadFromStream },
-    { "AssemblyNative_PrepareForAssemblyLoadContextRelease", (void*)&QCall_AssemblyNative_PrepareForAssemblyLoadContextRelease },
-    { "AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked", (void*)&QCall_AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked },
-    { "AssemblyNative_TraceAssemblyResolveHandlerInvoked", (void*)&QCall_AssemblyNative_TraceAssemblyResolveHandlerInvoked },
-    { "AssemblyNative_TraceResolvingHandlerInvoked", (void*)&QCall_AssemblyNative_TraceResolvingHandlerInvoked },
-    { "AssemblyNative_TraceSatelliteSubdirectoryPathProbed", (void*)&QCall_AssemblyNative_TraceSatelliteSubdirectoryPathProbed },
-    { "AsyncHelpers_AddContinuationToExInternal", (void*)&QCall_AsyncHelpers_AddContinuationToExInternal },
-    { "CallFilterFunclet", (void*)&QCall_CallFilterFunclet },
-    { "CustomAttribute_ParseAttributeUsageAttribute", (void*)&QCall_CustomAttribute_ParseAttributeUsageAttribute },
-    { "DebugDebugger_Break", (void*)&QCall_DebugDebugger_Break },
-    { "DebugDebugger_CustomNotification", (void*)&QCall_DebugDebugger_CustomNotification },
-    { "DebugDebugger_GetFuncEvalArgumentType", (void*)&QCall_DebugDebugger_GetFuncEvalArgumentType },
-    { "DebugDebugger_GetFuncEvalMethod", (void*)&QCall_DebugDebugger_GetFuncEvalMethod },
-    { "DebugDebugger_IsLoggingHelper", (void*)&QCall_DebugDebugger_IsLoggingHelper },
-    { "DebugDebugger_IsManagedDebuggerAttached", (void*)&QCall_DebugDebugger_IsManagedDebuggerAttached },
-    { "DebugDebugger_Launch", (void*)&QCall_DebugDebugger_Launch },
-    { "DebugDebugger_Log", (void*)&QCall_DebugDebugger_Log },
-    { "DebugDebugger_PrepareFuncEvalResult", (void*)&QCall_DebugDebugger_PrepareFuncEvalResult },
-    { "DebugDebugger_ReadFuncEvalPrimitiveRegister", (void*)&QCall_DebugDebugger_ReadFuncEvalPrimitiveRegister },
-    { "DebugDebugger_WriteFuncEvalObjectRegister", (void*)&QCall_DebugDebugger_WriteFuncEvalObjectRegister },
-    { "DebugDebugger_WriteFuncEvalRegister", (void*)&QCall_DebugDebugger_WriteFuncEvalRegister },
-    { "Delegate_AdjustTarget", (void*)&QCall_Delegate_AdjustTarget },
-    { "Delegate_BindToMethodInfo", (void*)&QCall_Delegate_BindToMethodInfo },
-    { "Delegate_BindToMethodName", (void*)&QCall_Delegate_BindToMethodName },
-    { "Delegate_Construct", (void*)&QCall_Delegate_Construct },
-    { "Delegate_CreateMethodInfo", (void*)&QCall_Delegate_CreateMethodInfo },
-    { "Delegate_GetMethodDesc", (void*)&QCall_Delegate_GetMethodDesc },
-    { "Delegate_GetMulticastInvokeSlow", (void*)&QCall_Delegate_GetMulticastInvokeSlow },
-    { "Delegate_InitializeVirtualCallStub", (void*)&QCall_Delegate_InitializeVirtualCallStub },
-    { "DependentHandle_InternalAllocWithGCTransition", (void*)&QCall_DependentHandle_InternalAllocWithGCTransition },
-    { "DependentHandle_InternalFreeWithGCTransition", (void*)&QCall_DependentHandle_InternalFreeWithGCTransition },
-    { "EHEnumInitFromStackFrameIterator", (void*)&QCall_EHEnumInitFromStackFrameIterator },
-    { "EHEnumNext", (void*)&QCall_EHEnumNext },
-    { "Enum_GetValuesAndNames", (void*)&QCall_Enum_GetValuesAndNames },
-    { "Environment_Exit", (void*)&QCall_Environment_Exit },
-    { "Environment_FailFast", (void*)&QCall_Environment_FailFast },
-    { "EventPipeInternal_CreateProvider", (void*)&QCall_EventPipeInternal_CreateProvider },
-    { "EventPipeInternal_DefineEvent", (void*)&QCall_EventPipeInternal_DefineEvent },
-    { "EventPipeInternal_DeleteProvider", (void*)&QCall_EventPipeInternal_DeleteProvider },
-    { "EventPipeInternal_Disable", (void*)&QCall_EventPipeInternal_Disable },
-    { "EventPipeInternal_Enable", (void*)&QCall_EventPipeInternal_Enable },
-    { "EventPipeInternal_EventActivityIdControl", (void*)&QCall_EventPipeInternal_EventActivityIdControl },
-    { "EventPipeInternal_GetNextEvent", (void*)&QCall_EventPipeInternal_GetNextEvent },
-    { "EventPipeInternal_GetProvider", (void*)&QCall_EventPipeInternal_GetProvider },
-    { "EventPipeInternal_GetSessionInfo", (void*)&QCall_EventPipeInternal_GetSessionInfo },
-    { "EventPipeInternal_SignalSession", (void*)&QCall_EventPipeInternal_SignalSession },
-    { "EventPipeInternal_WasiRunJobs", (void*)&QCall_EventPipeInternal_WasiRunJobs },
-    { "EventPipeInternal_WriteEventData", (void*)&QCall_EventPipeInternal_WriteEventData },
-    { "ExceptionNative_GetFrozenStackTrace", (void*)&QCall_ExceptionNative_GetFrozenStackTrace },
-    { "ExceptionNative_GetMessageFromNativeResources", (void*)&QCall_ExceptionNative_GetMessageFromNativeResources },
-    { "ExceptionNative_GetMethodFromStackTrace", (void*)&QCall_ExceptionNative_GetMethodFromStackTrace },
-    { "ExceptionNative_ThrowAmbiguousResolutionException", (void*)&QCall_ExceptionNative_ThrowAmbiguousResolutionException },
-    { "ExceptionNative_ThrowClassAccessException", (void*)&QCall_ExceptionNative_ThrowClassAccessException },
-    { "ExceptionNative_ThrowEntryPointNotFoundException", (void*)&QCall_ExceptionNative_ThrowEntryPointNotFoundException },
-    { "ExceptionNative_ThrowFieldAccessException", (void*)&QCall_ExceptionNative_ThrowFieldAccessException },
-    { "ExceptionNative_ThrowMethodAccessException", (void*)&QCall_ExceptionNative_ThrowMethodAccessException },
-    { "FileLoadException_GetMessageForHR", (void*)&QCall_FileLoadException_GetMessageForHR },
-    { "FreeEnvironmentStringsW", (void*)&QCall_FreeEnvironmentStringsW },
-    { "GCHandle_InternalAllocWithGCTransition", (void*)&QCall_GCHandle_InternalAllocWithGCTransition },
-    { "GCHandle_InternalFreeWithGCTransition", (void*)&QCall_GCHandle_InternalFreeWithGCTransition },
-    { "GCInterface_AllocateNewArray", (void*)&QCall_GCInterface_AllocateNewArray },
-    { "GCInterface_Collect", (void*)&QCall_GCInterface_Collect },
-    { "GCInterface_EnableNoGCRegionCallback", (void*)&QCall_GCInterface_EnableNoGCRegionCallback },
-    { "GCInterface_EndNoGCRegion", (void*)&QCall_GCInterface_EndNoGCRegion },
-    { "GCInterface_EnumerateConfigurationValues", (void*)&QCall_GCInterface_EnumerateConfigurationValues },
-    { "GCInterface_GetGenerationBudget", (void*)&QCall_GCInterface_GetGenerationBudget },
-    { "GCInterface_GetNextFinalizableObject", (void*)&QCall_GCInterface_GetNextFinalizableObject },
-    { "GCInterface_GetTotalAllocatedBytesPrecise", (void*)&QCall_GCInterface_GetTotalAllocatedBytesPrecise },
-    { "GCInterface_GetTotalMemory", (void*)&QCall_GCInterface_GetTotalMemory },
-    { "GCInterface_ReRegisterForFinalize", (void*)&QCall_GCInterface_ReRegisterForFinalize },
-    { "GCInterface_RefreshMemoryLimit", (void*)&QCall_GCInterface_RefreshMemoryLimit },
-    { "GCInterface_RegisterFrozenSegment", (void*)&QCall_GCInterface_RegisterFrozenSegment },
-    { "GCInterface_StartNoGCRegion", (void*)&QCall_GCInterface_StartNoGCRegion },
-    { "GCInterface_UnregisterFrozenSegment", (void*)&QCall_GCInterface_UnregisterFrozenSegment },
-    { "GCInterface_WaitForFullGCApproach", (void*)&QCall_GCInterface_WaitForFullGCApproach },
-    { "GCInterface_WaitForFullGCComplete", (void*)&QCall_GCInterface_WaitForFullGCComplete },
-    { "GCInterface_WaitForPendingFinalizers", (void*)&QCall_GCInterface_WaitForPendingFinalizers },
-    { "GenericHandleWorker", (void*)&QCall_GenericHandleWorker },
-    { "GetCurrentExInfo", (void*)&QCall_GetCurrentExInfo },
-    { "GetEnvironmentStringsW", (void*)&QCall_GetEnvironmentStringsW },
-    { "GetEnvironmentVariableW", (void*)&QCall_GetEnvironmentVariableW },
-    { "GetFileLoadExceptionMessage", (void*)&QCall_GetFileLoadExceptionMessage },
-    { "GetTypeLoadExceptionMessage", (void*)&QCall_GetTypeLoadExceptionMessage },
-    { "InitClassHelper", (void*)&QCall_InitClassHelper },
-    { "Interlocked_MemoryBarrierProcessWide", (void*)&QCall_Interlocked_MemoryBarrierProcessWide },
-    { "IsInstanceOf_NoCacheLookup", (void*)&QCall_IsInstanceOf_NoCacheLookup },
-    { "LoaderAllocator_Destroy", (void*)&QCall_LoaderAllocator_Destroy },
-    { "MarshalNative_GetDelegateForFunctionPointerInternal", (void*)&QCall_MarshalNative_GetDelegateForFunctionPointerInternal },
-    { "MarshalNative_GetExceptionForHR", (void*)&QCall_MarshalNative_GetExceptionForHR },
-    { "MarshalNative_GetFunctionPointerForDelegateInternal", (void*)&QCall_MarshalNative_GetFunctionPointerForDelegateInternal },
-    { "MarshalNative_HasLayout", (void*)&QCall_MarshalNative_HasLayout },
-    { "MarshalNative_OffsetOf", (void*)&QCall_MarshalNative_OffsetOf },
-    { "MarshalNative_Prelink", (void*)&QCall_MarshalNative_Prelink },
-    { "MarshalNative_SizeOfHelper", (void*)&QCall_MarshalNative_SizeOfHelper },
-    { "MdUtf8String_EqualsCaseInsensitive", (void*)&QCall_MdUtf8String_EqualsCaseInsensitive },
-    { "MetadataImport_Enum", (void*)&QCall_MetadataImport_Enum },
-    { "MetadataImport_GetMarshalAs", (void*)&QCall_MetadataImport_GetMarshalAs },
-    { "MethodBase_GetCurrentMethod", (void*)&QCall_MethodBase_GetCurrentMethod },
-    { "MethodTable_CanCompareBitsOrUseFastGetHashCode", (void*)&QCall_MethodTable_CanCompareBitsOrUseFastGetHashCode },
-    { "ModuleBuilder_GetArrayMethodToken", (void*)&QCall_ModuleBuilder_GetArrayMethodToken },
-    { "ModuleBuilder_GetMemberRef", (void*)&QCall_ModuleBuilder_GetMemberRef },
-    { "ModuleBuilder_GetMemberRefFromSignature", (void*)&QCall_ModuleBuilder_GetMemberRefFromSignature },
-    { "ModuleBuilder_GetMemberRefOfFieldInfo", (void*)&QCall_ModuleBuilder_GetMemberRefOfFieldInfo },
-    { "ModuleBuilder_GetMemberRefOfMethodInfo", (void*)&QCall_ModuleBuilder_GetMemberRefOfMethodInfo },
-    { "ModuleBuilder_GetStringConstant", (void*)&QCall_ModuleBuilder_GetStringConstant },
-    { "ModuleBuilder_GetTokenFromTypeSpec", (void*)&QCall_ModuleBuilder_GetTokenFromTypeSpec },
-    { "ModuleBuilder_GetTypeRef", (void*)&QCall_ModuleBuilder_GetTypeRef },
-    { "ModuleBuilder_SetFieldRVAContent", (void*)&QCall_ModuleBuilder_SetFieldRVAContent },
-    { "ModuleHandle_GetDynamicMethod", (void*)&QCall_ModuleHandle_GetDynamicMethod },
-    { "ModuleHandle_GetMDStreamVersion", (void*)&QCall_ModuleHandle_GetMDStreamVersion },
-    { "ModuleHandle_GetModuleType", (void*)&QCall_ModuleHandle_GetModuleType },
-    { "ModuleHandle_GetPEKind", (void*)&QCall_ModuleHandle_GetPEKind },
-    { "ModuleHandle_GetToken", (void*)&QCall_ModuleHandle_GetToken },
-    { "ModuleHandle_ResolveField", (void*)&QCall_ModuleHandle_ResolveField },
-    { "ModuleHandle_ResolveMethod", (void*)&QCall_ModuleHandle_ResolveMethod },
-    { "ModuleHandle_ResolveType", (void*)&QCall_ModuleHandle_ResolveType },
-    { "NativeLibrary_LoadByName", (void*)&QCall_NativeLibrary_LoadByName },
-    { "NativeRuntimeEventSource_LogContentionLockCreated", (void*)&QCall_NativeRuntimeEventSource_LogContentionLockCreated },
-    { "NativeRuntimeEventSource_LogContentionStart", (void*)&QCall_NativeRuntimeEventSource_LogContentionStart },
-    { "NativeRuntimeEventSource_LogContentionStop", (void*)&QCall_NativeRuntimeEventSource_LogContentionStop },
-    { "NativeRuntimeEventSource_LogDecreaseMemoryPressure", (void*)&QCall_NativeRuntimeEventSource_LogDecreaseMemoryPressure },
-    { "NativeRuntimeEventSource_LogIncreaseMemoryPressure", (void*)&QCall_NativeRuntimeEventSource_LogIncreaseMemoryPressure },
-    { "NativeRuntimeEventSource_LogThreadPoolIODequeue", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIODequeue },
-    { "NativeRuntimeEventSource_LogThreadPoolIOEnqueue", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIOEnqueue },
-    { "NativeRuntimeEventSource_LogThreadPoolIOPack", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIOPack },
-    { "NativeRuntimeEventSource_LogThreadPoolMinMaxThreads", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads },
-    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment },
-    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample },
-    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats },
-    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart },
-    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop },
-    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait },
-    { "NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount },
-    { "NativeRuntimeEventSource_LogWaitHandleWaitStart", (void*)&QCall_NativeRuntimeEventSource_LogWaitHandleWaitStart },
-    { "NativeRuntimeEventSource_LogWaitHandleWaitStop", (void*)&QCall_NativeRuntimeEventSource_LogWaitHandleWaitStop },
-    { "ObjectHeader_GetOrCreateLockObject", (void*)&QCall_ObjectHeader_GetOrCreateLockObject },
-    { "ObjectNative_AllocateUninitializedClone", (void*)&QCall_ObjectNative_AllocateUninitializedClone },
-    { "ObjectNative_GetHashCodeSlow", (void*)&QCall_ObjectNative_GetHashCodeSlow },
-    { "QCall_FreeGCHandleForTypeHandle", (void*)&QCall_QCall_FreeGCHandleForTypeHandle },
-    { "QCall_GetGCHandleForTypeHandle", (void*)&QCall_QCall_GetGCHandleForTypeHandle },
-    { "ReflectionInvocation_CompileMethod", (void*)&QCall_ReflectionInvocation_CompileMethod },
-    { "ReflectionInvocation_GetBoxInfo", (void*)&QCall_ReflectionInvocation_GetBoxInfo },
-    { "ReflectionInvocation_GetGuid", (void*)&QCall_ReflectionInvocation_GetGuid },
-    { "ReflectionInvocation_PrepareDelegate", (void*)&QCall_ReflectionInvocation_PrepareDelegate },
-    { "ReflectionInvocation_PrepareMethod", (void*)&QCall_ReflectionInvocation_PrepareMethod },
-    { "ReflectionInvocation_RunClassConstructor", (void*)&QCall_ReflectionInvocation_RunClassConstructor },
-    { "ReflectionInvocation_RunModuleConstructor", (void*)&QCall_ReflectionInvocation_RunModuleConstructor },
-    { "ReflectionInvocation_SizeOf", (void*)&QCall_ReflectionInvocation_SizeOf },
-    { "ReflectionSerialization_GetCreateUninitializedObjectInfo", (void*)&QCall_ReflectionSerialization_GetCreateUninitializedObjectInfo },
-    { "ResolveVirtualFunctionPointer", (void*)&QCall_ResolveVirtualFunctionPointer },
-    { "RuntimeFieldHandle_GetEnCFieldAddr", (void*)&QCall_RuntimeFieldHandle_GetEnCFieldAddr },
-    { "RuntimeFieldHandle_GetFieldDataReference", (void*)&QCall_RuntimeFieldHandle_GetFieldDataReference },
-    { "RuntimeFieldHandle_GetRVAFieldInfo", (void*)&QCall_RuntimeFieldHandle_GetRVAFieldInfo },
-    { "RuntimeFieldHandle_GetValue", (void*)&QCall_RuntimeFieldHandle_GetValue },
-    { "RuntimeFieldHandle_GetValueDirect", (void*)&QCall_RuntimeFieldHandle_GetValueDirect },
-    { "RuntimeFieldHandle_SetValue", (void*)&QCall_RuntimeFieldHandle_SetValue },
-    { "RuntimeFieldHandle_SetValueDirect", (void*)&QCall_RuntimeFieldHandle_SetValueDirect },
-    { "RuntimeMethodHandle_ConstructInstantiation", (void*)&QCall_RuntimeMethodHandle_ConstructInstantiation },
-    { "RuntimeMethodHandle_Destroy", (void*)&QCall_RuntimeMethodHandle_Destroy },
-    { "RuntimeMethodHandle_GetDiagnosticCodeStart", (void*)&QCall_RuntimeMethodHandle_GetDiagnosticCodeStart },
-    { "RuntimeMethodHandle_GetFunctionPointer", (void*)&QCall_RuntimeMethodHandle_GetFunctionPointer },
-    { "RuntimeMethodHandle_GetMethodBody", (void*)&QCall_RuntimeMethodHandle_GetMethodBody },
-    { "RuntimeMethodHandle_GetMethodInstantiation", (void*)&QCall_RuntimeMethodHandle_GetMethodInstantiation },
-    { "RuntimeMethodHandle_GetStubIfNeededSlow", (void*)&QCall_RuntimeMethodHandle_GetStubIfNeededSlow },
-    { "RuntimeMethodHandle_GetTypicalMethodDefinition", (void*)&QCall_RuntimeMethodHandle_GetTypicalMethodDefinition },
-    { "RuntimeMethodHandle_GetVirtualFunctionPointer", (void*)&QCall_RuntimeMethodHandle_GetVirtualFunctionPointer },
-    { "RuntimeMethodHandle_IsCAVisibleFromDecoratedType", (void*)&QCall_RuntimeMethodHandle_IsCAVisibleFromDecoratedType },
-    { "RuntimeMethodHandle_StripMethodInstantiation", (void*)&QCall_RuntimeMethodHandle_StripMethodInstantiation },
-    { "RuntimeModule_GetFullyQualifiedName", (void*)&QCall_RuntimeModule_GetFullyQualifiedName },
-    { "RuntimeModule_GetScopeName", (void*)&QCall_RuntimeModule_GetScopeName },
-    { "RuntimeModule_GetTypes", (void*)&QCall_RuntimeModule_GetTypes },
-    { "RuntimeTypeHandle_AllocateTypeAssociatedMemory", (void*)&QCall_RuntimeTypeHandle_AllocateTypeAssociatedMemory },
-    { "RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned", (void*)&QCall_RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned },
-    { "RuntimeTypeHandle_ConstructName", (void*)&QCall_RuntimeTypeHandle_ConstructName },
-    { "RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter", (void*)&QCall_RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter },
-    { "RuntimeTypeHandle_GetActivationInfo", (void*)&QCall_RuntimeTypeHandle_GetActivationInfo },
-    { "RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer", (void*)&QCall_RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer },
-    { "RuntimeTypeHandle_GetAssemblySlow", (void*)&QCall_RuntimeTypeHandle_GetAssemblySlow },
-    { "RuntimeTypeHandle_GetConstraints", (void*)&QCall_RuntimeTypeHandle_GetConstraints },
-    { "RuntimeTypeHandle_GetDeclaringMethodForGenericParameter", (void*)&QCall_RuntimeTypeHandle_GetDeclaringMethodForGenericParameter },
-    { "RuntimeTypeHandle_GetDeclaringTypeHandle", (void*)&QCall_RuntimeTypeHandle_GetDeclaringTypeHandle },
-    { "RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable", (void*)&QCall_RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable },
-    { "RuntimeTypeHandle_GetFields", (void*)&QCall_RuntimeTypeHandle_GetFields },
-    { "RuntimeTypeHandle_GetGenericTypeDefinition", (void*)&QCall_RuntimeTypeHandle_GetGenericTypeDefinition },
-    { "RuntimeTypeHandle_GetInstantiation", (void*)&QCall_RuntimeTypeHandle_GetInstantiation },
-    { "RuntimeTypeHandle_GetInterfaceMethodImplementation", (void*)&QCall_RuntimeTypeHandle_GetInterfaceMethodImplementation },
-    { "RuntimeTypeHandle_GetInterfaces", (void*)&QCall_RuntimeTypeHandle_GetInterfaces },
-    { "RuntimeTypeHandle_GetMethodAt", (void*)&QCall_RuntimeTypeHandle_GetMethodAt },
-    { "RuntimeTypeHandle_GetModuleSlow", (void*)&QCall_RuntimeTypeHandle_GetModuleSlow },
-    { "RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals", (void*)&QCall_RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals },
-    { "RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow", (void*)&QCall_RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow },
-    { "RuntimeTypeHandle_Instantiate", (void*)&QCall_RuntimeTypeHandle_Instantiate },
-    { "RuntimeTypeHandle_InternalAlloc", (void*)&QCall_RuntimeTypeHandle_InternalAlloc },
-    { "RuntimeTypeHandle_InternalAllocNoChecks", (void*)&QCall_RuntimeTypeHandle_InternalAllocNoChecks },
-    { "RuntimeTypeHandle_IsVisible", (void*)&QCall_RuntimeTypeHandle_IsVisible },
-    { "RuntimeTypeHandle_MakeArray", (void*)&QCall_RuntimeTypeHandle_MakeArray },
-    { "RuntimeTypeHandle_MakeByRef", (void*)&QCall_RuntimeTypeHandle_MakeByRef },
-    { "RuntimeTypeHandle_MakeFunctionPointer", (void*)&QCall_RuntimeTypeHandle_MakeFunctionPointer },
-    { "RuntimeTypeHandle_MakePointer", (void*)&QCall_RuntimeTypeHandle_MakePointer },
-    { "RuntimeTypeHandle_MakeSZArray", (void*)&QCall_RuntimeTypeHandle_MakeSZArray },
-    { "RuntimeTypeHandle_RegisterCollectibleTypeDependency", (void*)&QCall_RuntimeTypeHandle_RegisterCollectibleTypeDependency },
-    { "RuntimeTypeHandle_SatisfiesConstraints", (void*)&QCall_RuntimeTypeHandle_SatisfiesConstraints },
-    { "RuntimeTypeHandle_VerifyInterfaceIsImplemented", (void*)&QCall_RuntimeTypeHandle_VerifyInterfaceIsImplemented },
-    { "SetEnvironmentVariableW", (void*)&QCall_SetEnvironmentVariableW },
-    { "SfiInit", (void*)&QCall_SfiInit },
-    { "SfiNext", (void*)&QCall_SfiNext },
-    { "Signature_AreEqual", (void*)&QCall_Signature_AreEqual },
-    { "Signature_GetCustomModifiersAtOffset", (void*)&QCall_Signature_GetCustomModifiersAtOffset },
-    { "Signature_Init", (void*)&QCall_Signature_Init },
-    { "StackFrame_GetMethodDescFromNativeIP", (void*)&QCall_StackFrame_GetMethodDescFromNativeIP },
-    { "StackTrace_GetStackFramesInternal", (void*)&QCall_StackTrace_GetStackFramesInternal },
-    { "Stream_HasOverriddenSlow", (void*)&QCall_Stream_HasOverriddenSlow },
-    { "String_Intern", (void*)&QCall_String_Intern },
-    { "String_IsInterned", (void*)&QCall_String_IsInterned },
-    { "StubHelpers_CreateCustomMarshaler", (void*)&QCall_StubHelpers_CreateCustomMarshaler },
-    { "StubHelpers_CreateLayoutClassMarshalStubs", (void*)&QCall_StubHelpers_CreateLayoutClassMarshalStubs },
-    { "StubHelpers_MulticastDebuggerTraceHelper", (void*)&QCall_StubHelpers_MulticastDebuggerTraceHelper },
-    { "StubHelpers_ThrowInteropException", (void*)&QCall_StubHelpers_ThrowInteropException },
-    { "StubHelpers_ThrowInteropParamException", (void*)&QCall_StubHelpers_ThrowInteropParamException },
-    { "StubHelpers_ValidateByref", (void*)&QCall_StubHelpers_ValidateByref },
-    { "StubHelpers_ValidateObject", (void*)&QCall_StubHelpers_ValidateObject },
-    { "TailCallHelp_AllocTailCallArgBufferInternal", (void*)&QCall_TailCallHelp_AllocTailCallArgBufferInternal },
-    { "ThreadNative_Abort", (void*)&QCall_ThreadNative_Abort },
-    { "ThreadNative_GetQCallSpecialException", (void*)&QCall_ThreadNative_GetQCallSpecialException },
-    { "ThreadNative_GetThreadState", (void*)&QCall_ThreadNative_GetThreadState },
-    { "ThreadNative_ResetAbort", (void*)&QCall_ThreadNative_ResetAbort },
-    { "ThrowInvalidCastException", (void*)&QCall_ThrowInvalidCastException },
-    { "TypeBuilder_AddInterfaceImpl", (void*)&QCall_TypeBuilder_AddInterfaceImpl },
-    { "TypeBuilder_DefineCustomAttribute", (void*)&QCall_TypeBuilder_DefineCustomAttribute },
-    { "TypeBuilder_DefineEvent", (void*)&QCall_TypeBuilder_DefineEvent },
-    { "TypeBuilder_DefineField", (void*)&QCall_TypeBuilder_DefineField },
-    { "TypeBuilder_DefineGenericParam", (void*)&QCall_TypeBuilder_DefineGenericParam },
-    { "TypeBuilder_DefineMethod", (void*)&QCall_TypeBuilder_DefineMethod },
-    { "TypeBuilder_DefineMethodImpl", (void*)&QCall_TypeBuilder_DefineMethodImpl },
-    { "TypeBuilder_DefineMethodSemantics", (void*)&QCall_TypeBuilder_DefineMethodSemantics },
-    { "TypeBuilder_DefineMethodSpec", (void*)&QCall_TypeBuilder_DefineMethodSpec },
-    { "TypeBuilder_DefineProperty", (void*)&QCall_TypeBuilder_DefineProperty },
-    { "TypeBuilder_DefineType", (void*)&QCall_TypeBuilder_DefineType },
-    { "TypeBuilder_GetTokenFromSig", (void*)&QCall_TypeBuilder_GetTokenFromSig },
-    { "TypeBuilder_SetClassLayout", (void*)&QCall_TypeBuilder_SetClassLayout },
-    { "TypeBuilder_SetConstantValue", (void*)&QCall_TypeBuilder_SetConstantValue },
-    { "TypeBuilder_SetFieldLayoutOffset", (void*)&QCall_TypeBuilder_SetFieldLayoutOffset },
-    { "TypeBuilder_SetMethodIL", (void*)&QCall_TypeBuilder_SetMethodIL },
-    { "TypeBuilder_SetMethodImpl", (void*)&QCall_TypeBuilder_SetMethodImpl },
-    { "TypeBuilder_SetPInvokeData", (void*)&QCall_TypeBuilder_SetPInvokeData },
-    { "TypeBuilder_SetParamInfo", (void*)&QCall_TypeBuilder_SetParamInfo },
-    { "TypeBuilder_SetParentType", (void*)&QCall_TypeBuilder_SetParentType },
-    { "TypeBuilder_TermCreateClass", (void*)&QCall_TypeBuilder_TermCreateClass },
-    { "TypeHandle_CanCastTo_NoCacheLookup", (void*)&QCall_TypeHandle_CanCastTo_NoCacheLookup },
-    { "TypeHandle_GetCorElementType", (void*)&QCall_TypeHandle_GetCorElementType },
-    { "TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry", (void*)&QCall_TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry },
-    { "TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry", (void*)&QCall_TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry },
-    { "TypeMapLazyDictionary_ProcessAttributes", (void*)&QCall_TypeMapLazyDictionary_ProcessAttributes },
-    { "UnsafeAccessors_ResolveGenericParamToTypeHandle", (void*)&QCall_UnsafeAccessors_ResolveGenericParamToTypeHandle },
-    { "ValueType_GetHashCodeStrategy", (void*)&QCall_ValueType_GetHashCodeStrategy },
-    { "VersionResilientHashCode_TypeHashCode", (void*)&QCall_VersionResilientHashCode_TypeHashCode },
-    { "WasiFinalizer_RunWorker", (void*)&QCall_WasiFinalizer_RunWorker },
-    { "WasiFinalizer_TryClearPending", (void*)&QCall_WasiFinalizer_TryClearPending },
+static const Entry s_RuntimeHelpers[] = {
+    { "AppContext_SetFirstChanceExceptionHandler", (void*)&RuntimeHelper_AppContext_SetFirstChanceExceptionHandler },
+    { "AppContext_TryGetHostPropertyValue", (void*)&RuntimeHelper_AppContext_TryGetHostPropertyValue },
+    { "AppDomain_CreateDynamicAssembly", (void*)&RuntimeHelper_AppDomain_CreateDynamicAssembly },
+    { "AppendExceptionStackFrame", (void*)&RuntimeHelper_AppendExceptionStackFrame },
+    { "Array_CreateInstance", (void*)&RuntimeHelper_Array_CreateInstance },
+    { "Array_Ctor", (void*)&RuntimeHelper_Array_Ctor },
+    { "Array_GetCorElementTypeOfElementType", (void*)&RuntimeHelper_Array_GetCorElementTypeOfElementType },
+    { "Array_GetElementConstructorEntrypoint", (void*)&RuntimeHelper_Array_GetElementConstructorEntrypoint },
+    { "AssemblyHandle_GetManifestModuleSlow", (void*)&RuntimeHelper_AssemblyHandle_GetManifestModuleSlow },
+    { "AssemblyLoadContext_IsTracingEnabled", (void*)&RuntimeHelper_AssemblyLoadContext_IsTracingEnabled },
+    { "AssemblyName_InitializeAssemblySpec", (void*)&RuntimeHelper_AssemblyName_InitializeAssemblySpec },
+    { "AssemblyNative_ApplyUpdate", (void*)&RuntimeHelper_AssemblyNative_ApplyUpdate },
+    { "AssemblyNative_GetAssemblyCount", (void*)&RuntimeHelper_AssemblyNative_GetAssemblyCount },
+    { "AssemblyNative_GetCodeBase", (void*)&RuntimeHelper_AssemblyNative_GetCodeBase },
+    { "AssemblyNative_GetEntryAssembly", (void*)&RuntimeHelper_AssemblyNative_GetEntryAssembly },
+    { "AssemblyNative_GetEntryPoint", (void*)&RuntimeHelper_AssemblyNative_GetEntryPoint },
+    { "AssemblyNative_GetExecutingAssembly", (void*)&RuntimeHelper_AssemblyNative_GetExecutingAssembly },
+    { "AssemblyNative_GetExportedTypes", (void*)&RuntimeHelper_AssemblyNative_GetExportedTypes },
+    { "AssemblyNative_GetFlags", (void*)&RuntimeHelper_AssemblyNative_GetFlags },
+    { "AssemblyNative_GetForwardedType", (void*)&RuntimeHelper_AssemblyNative_GetForwardedType },
+    { "AssemblyNative_GetFullName", (void*)&RuntimeHelper_AssemblyNative_GetFullName },
+    { "AssemblyNative_GetHashAlgorithm", (void*)&RuntimeHelper_AssemblyNative_GetHashAlgorithm },
+    { "AssemblyNative_GetImageRuntimeVersion", (void*)&RuntimeHelper_AssemblyNative_GetImageRuntimeVersion },
+    { "AssemblyNative_GetLoadContextForAssembly", (void*)&RuntimeHelper_AssemblyNative_GetLoadContextForAssembly },
+    { "AssemblyNative_GetLoadedAssemblies", (void*)&RuntimeHelper_AssemblyNative_GetLoadedAssemblies },
+    { "AssemblyNative_GetLocale", (void*)&RuntimeHelper_AssemblyNative_GetLocale },
+    { "AssemblyNative_GetLocation", (void*)&RuntimeHelper_AssemblyNative_GetLocation },
+    { "AssemblyNative_GetManifestResourceInfo", (void*)&RuntimeHelper_AssemblyNative_GetManifestResourceInfo },
+    { "AssemblyNative_GetManifestResourceNames", (void*)&RuntimeHelper_AssemblyNative_GetManifestResourceNames },
+    { "AssemblyNative_GetModule", (void*)&RuntimeHelper_AssemblyNative_GetModule },
+    { "AssemblyNative_GetModules", (void*)&RuntimeHelper_AssemblyNative_GetModules },
+    { "AssemblyNative_GetPublicKey", (void*)&RuntimeHelper_AssemblyNative_GetPublicKey },
+    { "AssemblyNative_GetReferencedAssemblies", (void*)&RuntimeHelper_AssemblyNative_GetReferencedAssemblies },
+    { "AssemblyNative_GetResource", (void*)&RuntimeHelper_AssemblyNative_GetResource },
+    { "AssemblyNative_GetSimpleName", (void*)&RuntimeHelper_AssemblyNative_GetSimpleName },
+    { "AssemblyNative_GetTypeCore", (void*)&RuntimeHelper_AssemblyNative_GetTypeCore },
+    { "AssemblyNative_GetTypeCoreIgnoreCase", (void*)&RuntimeHelper_AssemblyNative_GetTypeCoreIgnoreCase },
+    { "AssemblyNative_GetVersion", (void*)&RuntimeHelper_AssemblyNative_GetVersion },
+    { "AssemblyNative_InitializeAssemblyLoadContext", (void*)&RuntimeHelper_AssemblyNative_InitializeAssemblyLoadContext },
+    { "AssemblyNative_InternalLoad", (void*)&RuntimeHelper_AssemblyNative_InternalLoad },
+    { "AssemblyNative_InternalTryGetRawMetadata", (void*)&RuntimeHelper_AssemblyNative_InternalTryGetRawMetadata },
+    { "AssemblyNative_IsApplyUpdateSupported", (void*)&RuntimeHelper_AssemblyNative_IsApplyUpdateSupported },
+    { "AssemblyNative_LoadFromPath", (void*)&RuntimeHelper_AssemblyNative_LoadFromPath },
+    { "AssemblyNative_LoadFromStream", (void*)&RuntimeHelper_AssemblyNative_LoadFromStream },
+    { "AssemblyNative_PrepareForAssemblyLoadContextRelease", (void*)&RuntimeHelper_AssemblyNative_PrepareForAssemblyLoadContextRelease },
+    { "AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked", (void*)&RuntimeHelper_AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked },
+    { "AssemblyNative_TraceAssemblyResolveHandlerInvoked", (void*)&RuntimeHelper_AssemblyNative_TraceAssemblyResolveHandlerInvoked },
+    { "AssemblyNative_TraceResolvingHandlerInvoked", (void*)&RuntimeHelper_AssemblyNative_TraceResolvingHandlerInvoked },
+    { "AssemblyNative_TraceSatelliteSubdirectoryPathProbed", (void*)&RuntimeHelper_AssemblyNative_TraceSatelliteSubdirectoryPathProbed },
+    { "AsyncHelpers_AddContinuationToExInternal", (void*)&RuntimeHelper_AsyncHelpers_AddContinuationToExInternal },
+    { "AsyncHelpers_ResumeInterpreterContinuation", (void*)&RuntimeHelper_AsyncHelpers_ResumeInterpreterContinuation },
+    { "Buffer_BulkMoveWithWriteBarrierInternal", (void*)&RuntimeHelper_Buffer_BulkMoveWithWriteBarrierInternal },
+    { "CallFilterFunclet", (void*)&RuntimeHelper_CallFilterFunclet },
+    { "CustomAttribute_ParseAttributeUsageAttribute", (void*)&RuntimeHelper_CustomAttribute_ParseAttributeUsageAttribute },
+    { "DebugDebugger_Break", (void*)&RuntimeHelper_DebugDebugger_Break },
+    { "DebugDebugger_CustomNotification", (void*)&RuntimeHelper_DebugDebugger_CustomNotification },
+    { "DebugDebugger_GetFuncEvalArgumentType", (void*)&RuntimeHelper_DebugDebugger_GetFuncEvalArgumentType },
+    { "DebugDebugger_GetFuncEvalMethod", (void*)&RuntimeHelper_DebugDebugger_GetFuncEvalMethod },
+    { "DebugDebugger_IsLoggingHelper", (void*)&RuntimeHelper_DebugDebugger_IsLoggingHelper },
+    { "DebugDebugger_IsManagedDebuggerAttached", (void*)&RuntimeHelper_DebugDebugger_IsManagedDebuggerAttached },
+    { "DebugDebugger_Launch", (void*)&RuntimeHelper_DebugDebugger_Launch },
+    { "DebugDebugger_Log", (void*)&RuntimeHelper_DebugDebugger_Log },
+    { "DebugDebugger_PrepareFuncEvalResult", (void*)&RuntimeHelper_DebugDebugger_PrepareFuncEvalResult },
+    { "DebugDebugger_ReadFuncEvalPrimitiveRegister", (void*)&RuntimeHelper_DebugDebugger_ReadFuncEvalPrimitiveRegister },
+    { "DebugDebugger_WriteFuncEvalObjectRegister", (void*)&RuntimeHelper_DebugDebugger_WriteFuncEvalObjectRegister },
+    { "DebugDebugger_WriteFuncEvalRegister", (void*)&RuntimeHelper_DebugDebugger_WriteFuncEvalRegister },
+    { "Delegate_AdjustTarget", (void*)&RuntimeHelper_Delegate_AdjustTarget },
+    { "Delegate_BindToMethodInfo", (void*)&RuntimeHelper_Delegate_BindToMethodInfo },
+    { "Delegate_BindToMethodName", (void*)&RuntimeHelper_Delegate_BindToMethodName },
+    { "Delegate_Construct", (void*)&RuntimeHelper_Delegate_Construct },
+    { "Delegate_CreateMethodInfo", (void*)&RuntimeHelper_Delegate_CreateMethodInfo },
+    { "Delegate_GetInvokeMethod", (void*)&RuntimeHelper_Delegate_GetInvokeMethod },
+    { "Delegate_GetMethodDesc", (void*)&RuntimeHelper_Delegate_GetMethodDesc },
+    { "Delegate_GetMulticastInvoke", (void*)&RuntimeHelper_Delegate_GetMulticastInvoke },
+    { "Delegate_GetMulticastInvokeSlow", (void*)&RuntimeHelper_Delegate_GetMulticastInvokeSlow },
+    { "Delegate_InitializeVirtualCallStub", (void*)&RuntimeHelper_Delegate_InitializeVirtualCallStub },
+    { "DependentHandle_InternalAlloc", (void*)&RuntimeHelper_DependentHandle_InternalAlloc },
+    { "DependentHandle_InternalAllocWithGCTransition", (void*)&RuntimeHelper_DependentHandle_InternalAllocWithGCTransition },
+    { "DependentHandle_InternalFree", (void*)&RuntimeHelper_DependentHandle_InternalFree },
+    { "DependentHandle_InternalFreeWithGCTransition", (void*)&RuntimeHelper_DependentHandle_InternalFreeWithGCTransition },
+    { "DependentHandle_InternalGetDependent", (void*)&RuntimeHelper_DependentHandle_InternalGetDependent },
+    { "DependentHandle_InternalGetTargetAndDependent", (void*)&RuntimeHelper_DependentHandle_InternalGetTargetAndDependent },
+    { "DependentHandle_InternalGetTargetWithDebugValidation", (void*)&RuntimeHelper_DependentHandle_InternalGetTargetWithDebugValidation },
+    { "DependentHandle_InternalSetDependent", (void*)&RuntimeHelper_DependentHandle_InternalSetDependent },
+    { "DependentHandle_InternalSetTargetToNull", (void*)&RuntimeHelper_DependentHandle_InternalSetTargetToNull },
+    { "EHEnumInitFromStackFrameIterator", (void*)&RuntimeHelper_EHEnumInitFromStackFrameIterator },
+    { "EHEnumNext", (void*)&RuntimeHelper_EHEnumNext },
+    { "Enum_GetValuesAndNames", (void*)&RuntimeHelper_Enum_GetValuesAndNames },
+    { "Environment_Exit", (void*)&RuntimeHelper_Environment_Exit },
+    { "Environment_FailFast", (void*)&RuntimeHelper_Environment_FailFast },
+    { "Environment_get_ExitCode", (void*)&RuntimeHelper_Environment_get_ExitCode },
+    { "Environment_set_ExitCode", (void*)&RuntimeHelper_Environment_set_ExitCode },
+    { "EventPipeInternal_CreateProvider", (void*)&RuntimeHelper_EventPipeInternal_CreateProvider },
+    { "EventPipeInternal_DefineEvent", (void*)&RuntimeHelper_EventPipeInternal_DefineEvent },
+    { "EventPipeInternal_DeleteProvider", (void*)&RuntimeHelper_EventPipeInternal_DeleteProvider },
+    { "EventPipeInternal_Disable", (void*)&RuntimeHelper_EventPipeInternal_Disable },
+    { "EventPipeInternal_Enable", (void*)&RuntimeHelper_EventPipeInternal_Enable },
+    { "EventPipeInternal_EventActivityIdControl", (void*)&RuntimeHelper_EventPipeInternal_EventActivityIdControl },
+    { "EventPipeInternal_GetNextEvent", (void*)&RuntimeHelper_EventPipeInternal_GetNextEvent },
+    { "EventPipeInternal_GetProvider", (void*)&RuntimeHelper_EventPipeInternal_GetProvider },
+    { "EventPipeInternal_GetSessionInfo", (void*)&RuntimeHelper_EventPipeInternal_GetSessionInfo },
+    { "EventPipeInternal_SignalSession", (void*)&RuntimeHelper_EventPipeInternal_SignalSession },
+    { "EventPipeInternal_WasiRunJobs", (void*)&RuntimeHelper_EventPipeInternal_WasiRunJobs },
+    { "EventPipeInternal_WriteEventData", (void*)&RuntimeHelper_EventPipeInternal_WriteEventData },
+    { "ExceptionNative_GetFrozenStackTrace", (void*)&RuntimeHelper_ExceptionNative_GetFrozenStackTrace },
+    { "ExceptionNative_GetMessageFromNativeResources", (void*)&RuntimeHelper_ExceptionNative_GetMessageFromNativeResources },
+    { "ExceptionNative_GetMethodFromStackTrace", (void*)&RuntimeHelper_ExceptionNative_GetMethodFromStackTrace },
+    { "ExceptionNative_ThrowAmbiguousResolutionException", (void*)&RuntimeHelper_ExceptionNative_ThrowAmbiguousResolutionException },
+    { "ExceptionNative_ThrowClassAccessException", (void*)&RuntimeHelper_ExceptionNative_ThrowClassAccessException },
+    { "ExceptionNative_ThrowEntryPointNotFoundException", (void*)&RuntimeHelper_ExceptionNative_ThrowEntryPointNotFoundException },
+    { "ExceptionNative_ThrowFieldAccessException", (void*)&RuntimeHelper_ExceptionNative_ThrowFieldAccessException },
+    { "ExceptionNative_ThrowMethodAccessException", (void*)&RuntimeHelper_ExceptionNative_ThrowMethodAccessException },
+    { "Exception_GetExceptionCount", (void*)&RuntimeHelper_Exception_GetExceptionCount },
+    { "Exception_IsImmutableException", (void*)&RuntimeHelper_Exception_IsImmutableException },
+    { "Exception_PrepareForForeignExceptionRaise", (void*)&RuntimeHelper_Exception_PrepareForForeignExceptionRaise },
+    { "FileLoadException_GetMessageForHR", (void*)&RuntimeHelper_FileLoadException_GetMessageForHR },
+    { "FreeEnvironmentStringsW", (void*)&RuntimeHelper_FreeEnvironmentStringsW },
+    { "GCFrameRegistration_RegisterForGCReporting", (void*)&RuntimeHelper_GCFrameRegistration_RegisterForGCReporting },
+    { "GCFrameRegistration_UnregisterForGCReporting", (void*)&RuntimeHelper_GCFrameRegistration_UnregisterForGCReporting },
+    { "GCHandle_InternalAllocWithGCTransition", (void*)&RuntimeHelper_GCHandle_InternalAllocWithGCTransition },
+    { "GCHandle_InternalCompareExchange", (void*)&RuntimeHelper_GCHandle_InternalCompareExchange },
+    { "GCHandle_InternalFreeWithGCTransition", (void*)&RuntimeHelper_GCHandle_InternalFreeWithGCTransition },
+    { "GCHandle_InternalGetWithDebugValidation", (void*)&RuntimeHelper_GCHandle_InternalGetWithDebugValidation },
+    { "GCHandle_InternalSet", (void*)&RuntimeHelper_GCHandle_InternalSet },
+    { "GCHandle__InternalAlloc", (void*)&RuntimeHelper_GCHandle__InternalAlloc },
+    { "GCHandle__InternalFree", (void*)&RuntimeHelper_GCHandle__InternalFree },
+    { "GCInterface_AllocateNewArray", (void*)&RuntimeHelper_GCInterface_AllocateNewArray },
+    { "GCInterface_Collect", (void*)&RuntimeHelper_GCInterface_Collect },
+    { "GCInterface_EnableNoGCRegionCallback", (void*)&RuntimeHelper_GCInterface_EnableNoGCRegionCallback },
+    { "GCInterface_EndNoGCRegion", (void*)&RuntimeHelper_GCInterface_EndNoGCRegion },
+    { "GCInterface_EnumerateConfigurationValues", (void*)&RuntimeHelper_GCInterface_EnumerateConfigurationValues },
+    { "GCInterface_GetGenerationBudget", (void*)&RuntimeHelper_GCInterface_GetGenerationBudget },
+    { "GCInterface_GetNextFinalizableObject", (void*)&RuntimeHelper_GCInterface_GetNextFinalizableObject },
+    { "GCInterface_GetTotalAllocatedBytesPrecise", (void*)&RuntimeHelper_GCInterface_GetTotalAllocatedBytesPrecise },
+    { "GCInterface_GetTotalMemory", (void*)&RuntimeHelper_GCInterface_GetTotalMemory },
+    { "GCInterface_ReRegisterForFinalize", (void*)&RuntimeHelper_GCInterface_ReRegisterForFinalize },
+    { "GCInterface_RefreshMemoryLimit", (void*)&RuntimeHelper_GCInterface_RefreshMemoryLimit },
+    { "GCInterface_RegisterFrozenSegment", (void*)&RuntimeHelper_GCInterface_RegisterFrozenSegment },
+    { "GCInterface_StartNoGCRegion", (void*)&RuntimeHelper_GCInterface_StartNoGCRegion },
+    { "GCInterface_UnregisterFrozenSegment", (void*)&RuntimeHelper_GCInterface_UnregisterFrozenSegment },
+    { "GCInterface_WaitForFullGCApproach", (void*)&RuntimeHelper_GCInterface_WaitForFullGCApproach },
+    { "GCInterface_WaitForFullGCComplete", (void*)&RuntimeHelper_GCInterface_WaitForFullGCComplete },
+    { "GCInterface_WaitForPendingFinalizers", (void*)&RuntimeHelper_GCInterface_WaitForPendingFinalizers },
+    { "GCSettings_GetGCLatencyMode", (void*)&RuntimeHelper_GCSettings_GetGCLatencyMode },
+    { "GCSettings_GetLOHCompactionMode", (void*)&RuntimeHelper_GCSettings_GetLOHCompactionMode },
+    { "GCSettings_SetGCLatencyMode", (void*)&RuntimeHelper_GCSettings_SetGCLatencyMode },
+    { "GCSettings_SetLOHCompactionMode", (void*)&RuntimeHelper_GCSettings_SetLOHCompactionMode },
+    { "GCSettings_get_IsServerGC", (void*)&RuntimeHelper_GCSettings_get_IsServerGC },
+    { "GC_GetAllocatedBytesForCurrentThread", (void*)&RuntimeHelper_GC_GetAllocatedBytesForCurrentThread },
+    { "GC_GetCurrentObjSize", (void*)&RuntimeHelper_GC_GetCurrentObjSize },
+    { "GC_GetGCNow", (void*)&RuntimeHelper_GC_GetGCNow },
+    { "GC_GetGenerationInternal", (void*)&RuntimeHelper_GC_GetGenerationInternal },
+    { "GC_GetGenerationSize", (void*)&RuntimeHelper_GC_GetGenerationSize },
+    { "GC_GetLastGCDuration", (void*)&RuntimeHelper_GC_GetLastGCDuration },
+    { "GC_GetLastGCPercentTimeInGC", (void*)&RuntimeHelper_GC_GetLastGCPercentTimeInGC },
+    { "GC_GetLastGCStartTime", (void*)&RuntimeHelper_GC_GetLastGCStartTime },
+    { "GC_GetMaxGeneration", (void*)&RuntimeHelper_GC_GetMaxGeneration },
+    { "GC_GetMemoryInfo", (void*)&RuntimeHelper_GC_GetMemoryInfo },
+    { "GC_GetSegmentSize", (void*)&RuntimeHelper_GC_GetSegmentSize },
+    { "GC_GetTotalAllocatedBytesApproximate", (void*)&RuntimeHelper_GC_GetTotalAllocatedBytesApproximate },
+    { "GC_SuppressFinalizeInternal", (void*)&RuntimeHelper_GC_SuppressFinalizeInternal },
+    { "GC__CancelFullGCNotification", (void*)&RuntimeHelper_GC__CancelFullGCNotification },
+    { "GC__CollectionCount", (void*)&RuntimeHelper_GC__CollectionCount },
+    { "GC__GetTotalPauseDuration", (void*)&RuntimeHelper_GC__GetTotalPauseDuration },
+    { "GC__RegisterForFullGCNotification", (void*)&RuntimeHelper_GC__RegisterForFullGCNotification },
+    { "GenericHandleWorker", (void*)&RuntimeHelper_GenericHandleWorker },
+    { "GetCurrentExInfo", (void*)&RuntimeHelper_GetCurrentExInfo },
+    { "GetEnvironmentStringsW", (void*)&RuntimeHelper_GetEnvironmentStringsW },
+    { "GetEnvironmentVariableW", (void*)&RuntimeHelper_GetEnvironmentVariableW },
+    { "GetFileLoadExceptionMessage", (void*)&RuntimeHelper_GetFileLoadExceptionMessage },
+    { "GetTypeLoadExceptionMessage", (void*)&RuntimeHelper_GetTypeLoadExceptionMessage },
+    { "InitClassHelper", (void*)&RuntimeHelper_InitClassHelper },
+    { "Interlocked_CompareExchange32", (void*)&RuntimeHelper_Interlocked_CompareExchange32 },
+    { "Interlocked_CompareExchange32Pointer", (void*)&RuntimeHelper_Interlocked_CompareExchange32Pointer },
+    { "Interlocked_CompareExchange64", (void*)&RuntimeHelper_Interlocked_CompareExchange64 },
+    { "Interlocked_CompareExchangeObject", (void*)&RuntimeHelper_Interlocked_CompareExchangeObject },
+    { "Interlocked_Exchange32", (void*)&RuntimeHelper_Interlocked_Exchange32 },
+    { "Interlocked_Exchange64", (void*)&RuntimeHelper_Interlocked_Exchange64 },
+    { "Interlocked_ExchangeAdd32", (void*)&RuntimeHelper_Interlocked_ExchangeAdd32 },
+    { "Interlocked_ExchangeAdd64", (void*)&RuntimeHelper_Interlocked_ExchangeAdd64 },
+    { "Interlocked_ExchangeObject", (void*)&RuntimeHelper_Interlocked_ExchangeObject },
+    { "Interlocked_MemoryBarrierProcessWide", (void*)&RuntimeHelper_Interlocked_MemoryBarrierProcessWide },
+    { "IsInstanceOf_NoCacheLookup", (void*)&RuntimeHelper_IsInstanceOf_NoCacheLookup },
+    { "JitInfo_GetCompilationTimeInTicks", (void*)&RuntimeHelper_JitInfo_GetCompilationTimeInTicks },
+    { "JitInfo_GetCompiledILBytes", (void*)&RuntimeHelper_JitInfo_GetCompiledILBytes },
+    { "JitInfo_GetCompiledMethodCount", (void*)&RuntimeHelper_JitInfo_GetCompiledMethodCount },
+    { "LoaderAllocator_Destroy", (void*)&RuntimeHelper_LoaderAllocator_Destroy },
+    { "MarshalNative_GetDelegateForFunctionPointerInternal", (void*)&RuntimeHelper_MarshalNative_GetDelegateForFunctionPointerInternal },
+    { "MarshalNative_GetExceptionForHR", (void*)&RuntimeHelper_MarshalNative_GetExceptionForHR },
+    { "MarshalNative_GetFunctionPointerForDelegateInternal", (void*)&RuntimeHelper_MarshalNative_GetFunctionPointerForDelegateInternal },
+    { "MarshalNative_GetIsInCooperativeGCModeFunctionPointer", (void*)&RuntimeHelper_MarshalNative_GetIsInCooperativeGCModeFunctionPointer },
+    { "MarshalNative_HasLayout", (void*)&RuntimeHelper_MarshalNative_HasLayout },
+    { "MarshalNative_OffsetOf", (void*)&RuntimeHelper_MarshalNative_OffsetOf },
+    { "MarshalNative_Prelink", (void*)&RuntimeHelper_MarshalNative_Prelink },
+    { "MarshalNative_SizeOfHelper", (void*)&RuntimeHelper_MarshalNative_SizeOfHelper },
+    { "Marshal_GetExceptionCode", (void*)&RuntimeHelper_Marshal_GetExceptionCode },
+    { "Marshal_GetExceptionPointers", (void*)&RuntimeHelper_Marshal_GetExceptionPointers },
+    { "Marshal_GetLastPInvokeError", (void*)&RuntimeHelper_Marshal_GetLastPInvokeError },
+    { "Marshal_SetLastPInvokeError", (void*)&RuntimeHelper_Marshal_SetLastPInvokeError },
+    { "MathF_Acos", (void*)&RuntimeHelper_MathF_Acos },
+    { "MathF_Acosh", (void*)&RuntimeHelper_MathF_Acosh },
+    { "MathF_Asin", (void*)&RuntimeHelper_MathF_Asin },
+    { "MathF_Asinh", (void*)&RuntimeHelper_MathF_Asinh },
+    { "MathF_Atan", (void*)&RuntimeHelper_MathF_Atan },
+    { "MathF_Atan2", (void*)&RuntimeHelper_MathF_Atan2 },
+    { "MathF_Atanh", (void*)&RuntimeHelper_MathF_Atanh },
+    { "MathF_Cbrt", (void*)&RuntimeHelper_MathF_Cbrt },
+    { "MathF_Ceiling", (void*)&RuntimeHelper_MathF_Ceiling },
+    { "MathF_Cos", (void*)&RuntimeHelper_MathF_Cos },
+    { "MathF_Cosh", (void*)&RuntimeHelper_MathF_Cosh },
+    { "MathF_Exp", (void*)&RuntimeHelper_MathF_Exp },
+    { "MathF_Floor", (void*)&RuntimeHelper_MathF_Floor },
+    { "MathF_FusedMultiplyAdd", (void*)&RuntimeHelper_MathF_FusedMultiplyAdd },
+    { "MathF_Log", (void*)&RuntimeHelper_MathF_Log },
+    { "MathF_Log10", (void*)&RuntimeHelper_MathF_Log10 },
+    { "MathF_Log2", (void*)&RuntimeHelper_MathF_Log2 },
+    { "MathF_ModF", (void*)&RuntimeHelper_MathF_ModF },
+    { "MathF_Pow", (void*)&RuntimeHelper_MathF_Pow },
+    { "MathF_Sin", (void*)&RuntimeHelper_MathF_Sin },
+    { "MathF_SinCos", (void*)&RuntimeHelper_MathF_SinCos },
+    { "MathF_Sinh", (void*)&RuntimeHelper_MathF_Sinh },
+    { "MathF_Sqrt", (void*)&RuntimeHelper_MathF_Sqrt },
+    { "MathF_Tan", (void*)&RuntimeHelper_MathF_Tan },
+    { "MathF_Tanh", (void*)&RuntimeHelper_MathF_Tanh },
+    { "Math_Acos", (void*)&RuntimeHelper_Math_Acos },
+    { "Math_Acosh", (void*)&RuntimeHelper_Math_Acosh },
+    { "Math_Asin", (void*)&RuntimeHelper_Math_Asin },
+    { "Math_Asinh", (void*)&RuntimeHelper_Math_Asinh },
+    { "Math_Atan", (void*)&RuntimeHelper_Math_Atan },
+    { "Math_Atan2", (void*)&RuntimeHelper_Math_Atan2 },
+    { "Math_Atanh", (void*)&RuntimeHelper_Math_Atanh },
+    { "Math_Cbrt", (void*)&RuntimeHelper_Math_Cbrt },
+    { "Math_Ceiling", (void*)&RuntimeHelper_Math_Ceiling },
+    { "Math_Cos", (void*)&RuntimeHelper_Math_Cos },
+    { "Math_Cosh", (void*)&RuntimeHelper_Math_Cosh },
+    { "Math_DivInt32Internal", (void*)&RuntimeHelper_Math_DivInt32Internal },
+    { "Math_DivInt64Internal", (void*)&RuntimeHelper_Math_DivInt64Internal },
+    { "Math_DivUInt32Internal", (void*)&RuntimeHelper_Math_DivUInt32Internal },
+    { "Math_DivUInt64Internal", (void*)&RuntimeHelper_Math_DivUInt64Internal },
+    { "Math_Exp", (void*)&RuntimeHelper_Math_Exp },
+    { "Math_Floor", (void*)&RuntimeHelper_Math_Floor },
+    { "Math_FusedMultiplyAdd", (void*)&RuntimeHelper_Math_FusedMultiplyAdd },
+    { "Math_Log", (void*)&RuntimeHelper_Math_Log },
+    { "Math_Log10", (void*)&RuntimeHelper_Math_Log10 },
+    { "Math_Log2", (void*)&RuntimeHelper_Math_Log2 },
+    { "Math_ModF", (void*)&RuntimeHelper_Math_ModF },
+    { "Math_ModInt32Internal", (void*)&RuntimeHelper_Math_ModInt32Internal },
+    { "Math_ModInt64Internal", (void*)&RuntimeHelper_Math_ModInt64Internal },
+    { "Math_ModUInt32Internal", (void*)&RuntimeHelper_Math_ModUInt32Internal },
+    { "Math_ModUInt64Internal", (void*)&RuntimeHelper_Math_ModUInt64Internal },
+    { "Math_Pow", (void*)&RuntimeHelper_Math_Pow },
+    { "Math_Sin", (void*)&RuntimeHelper_Math_Sin },
+    { "Math_SinCos", (void*)&RuntimeHelper_Math_SinCos },
+    { "Math_Sinh", (void*)&RuntimeHelper_Math_Sinh },
+    { "Math_Sqrt", (void*)&RuntimeHelper_Math_Sqrt },
+    { "Math_Tan", (void*)&RuntimeHelper_Math_Tan },
+    { "Math_Tanh", (void*)&RuntimeHelper_Math_Tanh },
+    { "MdUtf8String_EqualsCaseInsensitive", (void*)&RuntimeHelper_MdUtf8String_EqualsCaseInsensitive },
+    { "MetadataImport_Enum", (void*)&RuntimeHelper_MetadataImport_Enum },
+    { "MetadataImport_GetClassLayout", (void*)&RuntimeHelper_MetadataImport_GetClassLayout },
+    { "MetadataImport_GetCustomAttributeProps", (void*)&RuntimeHelper_MetadataImport_GetCustomAttributeProps },
+    { "MetadataImport_GetDefaultValue", (void*)&RuntimeHelper_MetadataImport_GetDefaultValue },
+    { "MetadataImport_GetEventProps", (void*)&RuntimeHelper_MetadataImport_GetEventProps },
+    { "MetadataImport_GetFieldDefProps", (void*)&RuntimeHelper_MetadataImport_GetFieldDefProps },
+    { "MetadataImport_GetFieldMarshal", (void*)&RuntimeHelper_MetadataImport_GetFieldMarshal },
+    { "MetadataImport_GetFieldOffset", (void*)&RuntimeHelper_MetadataImport_GetFieldOffset },
+    { "MetadataImport_GetGenericParamProps", (void*)&RuntimeHelper_MetadataImport_GetGenericParamProps },
+    { "MetadataImport_GetMarshalAs", (void*)&RuntimeHelper_MetadataImport_GetMarshalAs },
+    { "MetadataImport_GetMemberRefProps", (void*)&RuntimeHelper_MetadataImport_GetMemberRefProps },
+    { "MetadataImport_GetMetadataImport", (void*)&RuntimeHelper_MetadataImport_GetMetadataImport },
+    { "MetadataImport_GetName", (void*)&RuntimeHelper_MetadataImport_GetName },
+    { "MetadataImport_GetNamespace", (void*)&RuntimeHelper_MetadataImport_GetNamespace },
+    { "MetadataImport_GetPInvokeMap", (void*)&RuntimeHelper_MetadataImport_GetPInvokeMap },
+    { "MetadataImport_GetParamDefProps", (void*)&RuntimeHelper_MetadataImport_GetParamDefProps },
+    { "MetadataImport_GetParentToken", (void*)&RuntimeHelper_MetadataImport_GetParentToken },
+    { "MetadataImport_GetPropertyProps", (void*)&RuntimeHelper_MetadataImport_GetPropertyProps },
+    { "MetadataImport_GetScopeProps", (void*)&RuntimeHelper_MetadataImport_GetScopeProps },
+    { "MetadataImport_GetSigOfFieldDef", (void*)&RuntimeHelper_MetadataImport_GetSigOfFieldDef },
+    { "MetadataImport_GetSigOfMethodDef", (void*)&RuntimeHelper_MetadataImport_GetSigOfMethodDef },
+    { "MetadataImport_GetSignatureFromToken", (void*)&RuntimeHelper_MetadataImport_GetSignatureFromToken },
+    { "MetadataImport_GetUserString", (void*)&RuntimeHelper_MetadataImport_GetUserString },
+    { "MetadataImport_IsValidToken", (void*)&RuntimeHelper_MetadataImport_IsValidToken },
+    { "MethodBase_GetCurrentMethod", (void*)&RuntimeHelper_MethodBase_GetCurrentMethod },
+    { "MethodTable_CanCompareBitsOrUseFastGetHashCode", (void*)&RuntimeHelper_MethodTable_CanCompareBitsOrUseFastGetHashCode },
+    { "MethodTable_GetLoaderAllocatorHandle", (void*)&RuntimeHelper_MethodTable_GetLoaderAllocatorHandle },
+    { "MethodTable_GetMethodTableMatchingParentClass", (void*)&RuntimeHelper_MethodTable_GetMethodTableMatchingParentClass },
+    { "MethodTable_GetNumInstanceFieldBytes", (void*)&RuntimeHelper_MethodTable_GetNumInstanceFieldBytes },
+    { "MethodTable_GetPrimitiveCorElementType", (void*)&RuntimeHelper_MethodTable_GetPrimitiveCorElementType },
+    { "ModuleBuilder_GetArrayMethodToken", (void*)&RuntimeHelper_ModuleBuilder_GetArrayMethodToken },
+    { "ModuleBuilder_GetMemberRef", (void*)&RuntimeHelper_ModuleBuilder_GetMemberRef },
+    { "ModuleBuilder_GetMemberRefFromSignature", (void*)&RuntimeHelper_ModuleBuilder_GetMemberRefFromSignature },
+    { "ModuleBuilder_GetMemberRefOfFieldInfo", (void*)&RuntimeHelper_ModuleBuilder_GetMemberRefOfFieldInfo },
+    { "ModuleBuilder_GetMemberRefOfMethodInfo", (void*)&RuntimeHelper_ModuleBuilder_GetMemberRefOfMethodInfo },
+    { "ModuleBuilder_GetStringConstant", (void*)&RuntimeHelper_ModuleBuilder_GetStringConstant },
+    { "ModuleBuilder_GetTokenFromTypeSpec", (void*)&RuntimeHelper_ModuleBuilder_GetTokenFromTypeSpec },
+    { "ModuleBuilder_GetTypeRef", (void*)&RuntimeHelper_ModuleBuilder_GetTypeRef },
+    { "ModuleBuilder_SetFieldRVAContent", (void*)&RuntimeHelper_ModuleBuilder_SetFieldRVAContent },
+    { "ModuleHandle_GetDynamicMethod", (void*)&RuntimeHelper_ModuleHandle_GetDynamicMethod },
+    { "ModuleHandle_GetMDStreamVersion", (void*)&RuntimeHelper_ModuleHandle_GetMDStreamVersion },
+    { "ModuleHandle_GetModuleType", (void*)&RuntimeHelper_ModuleHandle_GetModuleType },
+    { "ModuleHandle_GetPEKind", (void*)&RuntimeHelper_ModuleHandle_GetPEKind },
+    { "ModuleHandle_GetToken", (void*)&RuntimeHelper_ModuleHandle_GetToken },
+    { "ModuleHandle_ResolveField", (void*)&RuntimeHelper_ModuleHandle_ResolveField },
+    { "ModuleHandle_ResolveMethod", (void*)&RuntimeHelper_ModuleHandle_ResolveMethod },
+    { "ModuleHandle_ResolveType", (void*)&RuntimeHelper_ModuleHandle_ResolveType },
+    { "NativeLibrary_LoadByName", (void*)&RuntimeHelper_NativeLibrary_LoadByName },
+    { "NativeRuntimeEventSource_LogContentionLockCreated", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogContentionLockCreated },
+    { "NativeRuntimeEventSource_LogContentionStart", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogContentionStart },
+    { "NativeRuntimeEventSource_LogContentionStop", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogContentionStop },
+    { "NativeRuntimeEventSource_LogDecreaseMemoryPressure", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogDecreaseMemoryPressure },
+    { "NativeRuntimeEventSource_LogIncreaseMemoryPressure", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogIncreaseMemoryPressure },
+    { "NativeRuntimeEventSource_LogThreadPoolIODequeue", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolIODequeue },
+    { "NativeRuntimeEventSource_LogThreadPoolIOEnqueue", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolIOEnqueue },
+    { "NativeRuntimeEventSource_LogThreadPoolIOPack", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolIOPack },
+    { "NativeRuntimeEventSource_LogThreadPoolMinMaxThreads", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads },
+    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment },
+    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample },
+    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats },
+    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart },
+    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop },
+    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait },
+    { "NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount },
+    { "NativeRuntimeEventSource_LogWaitHandleWaitStart", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogWaitHandleWaitStart },
+    { "NativeRuntimeEventSource_LogWaitHandleWaitStop", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogWaitHandleWaitStop },
+    { "ObjectHeader_GetLockHandleIfExists", (void*)&RuntimeHelper_ObjectHeader_GetLockHandleIfExists },
+    { "ObjectHeader_GetOrCreateLockObject", (void*)&RuntimeHelper_ObjectHeader_GetOrCreateLockObject },
+    { "ObjectNative_AllocateUninitializedClone", (void*)&RuntimeHelper_ObjectNative_AllocateUninitializedClone },
+    { "ObjectNative_GetHashCodeSlow", (void*)&RuntimeHelper_ObjectNative_GetHashCodeSlow },
+    { "QCall_FreeGCHandleForTypeHandle", (void*)&RuntimeHelper_QCall_FreeGCHandleForTypeHandle },
+    { "QCall_GetGCHandleForTypeHandle", (void*)&RuntimeHelper_QCall_GetGCHandleForTypeHandle },
+    { "ReflectionInvocation_CompileMethod", (void*)&RuntimeHelper_ReflectionInvocation_CompileMethod },
+    { "ReflectionInvocation_GetBoxInfo", (void*)&RuntimeHelper_ReflectionInvocation_GetBoxInfo },
+    { "ReflectionInvocation_GetGuid", (void*)&RuntimeHelper_ReflectionInvocation_GetGuid },
+    { "ReflectionInvocation_PrepareDelegate", (void*)&RuntimeHelper_ReflectionInvocation_PrepareDelegate },
+    { "ReflectionInvocation_PrepareMethod", (void*)&RuntimeHelper_ReflectionInvocation_PrepareMethod },
+    { "ReflectionInvocation_RunClassConstructor", (void*)&RuntimeHelper_ReflectionInvocation_RunClassConstructor },
+    { "ReflectionInvocation_RunModuleConstructor", (void*)&RuntimeHelper_ReflectionInvocation_RunModuleConstructor },
+    { "ReflectionInvocation_SizeOf", (void*)&RuntimeHelper_ReflectionInvocation_SizeOf },
+    { "ReflectionSerialization_GetCreateUninitializedObjectInfo", (void*)&RuntimeHelper_ReflectionSerialization_GetCreateUninitializedObjectInfo },
+    { "ResolveVirtualFunctionPointer", (void*)&RuntimeHelper_ResolveVirtualFunctionPointer },
+    { "RuntimeAssembly_GetIsCollectible", (void*)&RuntimeHelper_RuntimeAssembly_GetIsCollectible },
+    { "RuntimeAssembly_GetIsDynamic", (void*)&RuntimeHelper_RuntimeAssembly_GetIsDynamic },
+    { "RuntimeAssembly_GetManifestModule", (void*)&RuntimeHelper_RuntimeAssembly_GetManifestModule },
+    { "RuntimeAssembly_GetTokenInternal", (void*)&RuntimeHelper_RuntimeAssembly_GetTokenInternal },
+    { "RuntimeFieldHandle_AcquiresContextFromThis", (void*)&RuntimeHelper_RuntimeFieldHandle_AcquiresContextFromThis },
+    { "RuntimeFieldHandle_GetApproxDeclaringMethodTable", (void*)&RuntimeHelper_RuntimeFieldHandle_GetApproxDeclaringMethodTable },
+    { "RuntimeFieldHandle_GetAttributes", (void*)&RuntimeHelper_RuntimeFieldHandle_GetAttributes },
+    { "RuntimeFieldHandle_GetEnCFieldAddr", (void*)&RuntimeHelper_RuntimeFieldHandle_GetEnCFieldAddr },
+    { "RuntimeFieldHandle_GetFieldDataReference", (void*)&RuntimeHelper_RuntimeFieldHandle_GetFieldDataReference },
+    { "RuntimeFieldHandle_GetInstanceFieldOffset", (void*)&RuntimeHelper_RuntimeFieldHandle_GetInstanceFieldOffset },
+    { "RuntimeFieldHandle_GetLoaderAllocatorInternal", (void*)&RuntimeHelper_RuntimeFieldHandle_GetLoaderAllocatorInternal },
+    { "RuntimeFieldHandle_GetRVAFieldInfo", (void*)&RuntimeHelper_RuntimeFieldHandle_GetRVAFieldInfo },
+    { "RuntimeFieldHandle_GetStaticFieldAddress", (void*)&RuntimeHelper_RuntimeFieldHandle_GetStaticFieldAddress },
+    { "RuntimeFieldHandle_GetStaticFieldForGenericType", (void*)&RuntimeHelper_RuntimeFieldHandle_GetStaticFieldForGenericType },
+    { "RuntimeFieldHandle_GetToken", (void*)&RuntimeHelper_RuntimeFieldHandle_GetToken },
+    { "RuntimeFieldHandle_GetUtf8NameInternal", (void*)&RuntimeHelper_RuntimeFieldHandle_GetUtf8NameInternal },
+    { "RuntimeFieldHandle_GetValue", (void*)&RuntimeHelper_RuntimeFieldHandle_GetValue },
+    { "RuntimeFieldHandle_GetValueDirect", (void*)&RuntimeHelper_RuntimeFieldHandle_GetValueDirect },
+    { "RuntimeFieldHandle_IsFastPathSupported", (void*)&RuntimeHelper_RuntimeFieldHandle_IsFastPathSupported },
+    { "RuntimeFieldHandle_SetValue", (void*)&RuntimeHelper_RuntimeFieldHandle_SetValue },
+    { "RuntimeFieldHandle_SetValueDirect", (void*)&RuntimeHelper_RuntimeFieldHandle_SetValueDirect },
+    { "RuntimeHelpers_ContentEquals", (void*)&RuntimeHelper_RuntimeHelpers_ContentEquals },
+    { "RuntimeHelpers_GetTailCallArgBuffer", (void*)&RuntimeHelper_RuntimeHelpers_GetTailCallArgBuffer },
+    { "RuntimeHelpers_GetTailCallInfo", (void*)&RuntimeHelper_RuntimeHelpers_GetTailCallInfo },
+    { "RuntimeHelpers_TryEnsureSufficientExecutionStack", (void*)&RuntimeHelper_RuntimeHelpers_TryEnsureSufficientExecutionStack },
+    { "RuntimeHelpers_TryGetHashCode", (void*)&RuntimeHelper_RuntimeHelpers_TryGetHashCode },
+    { "RuntimeMethodHandle_ConstructInstantiation", (void*)&RuntimeHelper_RuntimeMethodHandle_ConstructInstantiation },
+    { "RuntimeMethodHandle_Destroy", (void*)&RuntimeHelper_RuntimeMethodHandle_Destroy },
+    { "RuntimeMethodHandle_GetAttributes", (void*)&RuntimeHelper_RuntimeMethodHandle_GetAttributes },
+    { "RuntimeMethodHandle_GetDiagnosticCodeStart", (void*)&RuntimeHelper_RuntimeMethodHandle_GetDiagnosticCodeStart },
+    { "RuntimeMethodHandle_GetFunctionPointer", (void*)&RuntimeHelper_RuntimeMethodHandle_GetFunctionPointer },
+    { "RuntimeMethodHandle_GetGenericParameterCount", (void*)&RuntimeHelper_RuntimeMethodHandle_GetGenericParameterCount },
+    { "RuntimeMethodHandle_GetImplAttributes", (void*)&RuntimeHelper_RuntimeMethodHandle_GetImplAttributes },
+    { "RuntimeMethodHandle_GetLoaderAllocatorInternal", (void*)&RuntimeHelper_RuntimeMethodHandle_GetLoaderAllocatorInternal },
+    { "RuntimeMethodHandle_GetMethodBody", (void*)&RuntimeHelper_RuntimeMethodHandle_GetMethodBody },
+    { "RuntimeMethodHandle_GetMethodDef", (void*)&RuntimeHelper_RuntimeMethodHandle_GetMethodDef },
+    { "RuntimeMethodHandle_GetMethodFromCanonical", (void*)&RuntimeHelper_RuntimeMethodHandle_GetMethodFromCanonical },
+    { "RuntimeMethodHandle_GetMethodInstantiation", (void*)&RuntimeHelper_RuntimeMethodHandle_GetMethodInstantiation },
+    { "RuntimeMethodHandle_GetMethodTable", (void*)&RuntimeHelper_RuntimeMethodHandle_GetMethodTable },
+    { "RuntimeMethodHandle_GetResolver", (void*)&RuntimeHelper_RuntimeMethodHandle_GetResolver },
+    { "RuntimeMethodHandle_GetSlot", (void*)&RuntimeHelper_RuntimeMethodHandle_GetSlot },
+    { "RuntimeMethodHandle_GetStubIfNeededInternal", (void*)&RuntimeHelper_RuntimeMethodHandle_GetStubIfNeededInternal },
+    { "RuntimeMethodHandle_GetStubIfNeededSlow", (void*)&RuntimeHelper_RuntimeMethodHandle_GetStubIfNeededSlow },
+    { "RuntimeMethodHandle_GetTypicalMethodDefinition", (void*)&RuntimeHelper_RuntimeMethodHandle_GetTypicalMethodDefinition },
+    { "RuntimeMethodHandle_GetUtf8NameInternal", (void*)&RuntimeHelper_RuntimeMethodHandle_GetUtf8NameInternal },
+    { "RuntimeMethodHandle_GetVirtualFunctionPointer", (void*)&RuntimeHelper_RuntimeMethodHandle_GetVirtualFunctionPointer },
+    { "RuntimeMethodHandle_HasMethodInstantiation", (void*)&RuntimeHelper_RuntimeMethodHandle_HasMethodInstantiation },
+    { "RuntimeMethodHandle_IsAsyncMethod", (void*)&RuntimeHelper_RuntimeMethodHandle_IsAsyncMethod },
+    { "RuntimeMethodHandle_IsCAVisibleFromDecoratedType", (void*)&RuntimeHelper_RuntimeMethodHandle_IsCAVisibleFromDecoratedType },
+    { "RuntimeMethodHandle_IsCollectible", (void*)&RuntimeHelper_RuntimeMethodHandle_IsCollectible },
+    { "RuntimeMethodHandle_IsConstructor", (void*)&RuntimeHelper_RuntimeMethodHandle_IsConstructor },
+    { "RuntimeMethodHandle_IsDynamicMethod", (void*)&RuntimeHelper_RuntimeMethodHandle_IsDynamicMethod },
+    { "RuntimeMethodHandle_IsGenericMethodDefinition", (void*)&RuntimeHelper_RuntimeMethodHandle_IsGenericMethodDefinition },
+    { "RuntimeMethodHandle_IsTypicalMethodDefinition", (void*)&RuntimeHelper_RuntimeMethodHandle_IsTypicalMethodDefinition },
+    { "RuntimeMethodHandle_StripMethodInstantiation", (void*)&RuntimeHelper_RuntimeMethodHandle_StripMethodInstantiation },
+    { "RuntimeModule_GetFullyQualifiedName", (void*)&RuntimeHelper_RuntimeModule_GetFullyQualifiedName },
+    { "RuntimeModule_GetScopeName", (void*)&RuntimeHelper_RuntimeModule_GetScopeName },
+    { "RuntimeModule_GetTypes", (void*)&RuntimeHelper_RuntimeModule_GetTypes },
+    { "RuntimeTypeHandle_AllocateTypeAssociatedMemory", (void*)&RuntimeHelper_RuntimeTypeHandle_AllocateTypeAssociatedMemory },
+    { "RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned", (void*)&RuntimeHelper_RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned },
+    { "RuntimeTypeHandle_CompareCanonicalHandles", (void*)&RuntimeHelper_RuntimeTypeHandle_CompareCanonicalHandles },
+    { "RuntimeTypeHandle_ConstructName", (void*)&RuntimeHelper_RuntimeTypeHandle_ConstructName },
+    { "RuntimeTypeHandle_ContainsGenericVariables", (void*)&RuntimeHelper_RuntimeTypeHandle_ContainsGenericVariables },
+    { "RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter", (void*)&RuntimeHelper_RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter },
+    { "RuntimeTypeHandle_GetActivationInfo", (void*)&RuntimeHelper_RuntimeTypeHandle_GetActivationInfo },
+    { "RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer", (void*)&RuntimeHelper_RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer },
+    { "RuntimeTypeHandle_GetArrayRank", (void*)&RuntimeHelper_RuntimeTypeHandle_GetArrayRank },
+    { "RuntimeTypeHandle_GetAssemblyIfExists", (void*)&RuntimeHelper_RuntimeTypeHandle_GetAssemblyIfExists },
+    { "RuntimeTypeHandle_GetAssemblySlow", (void*)&RuntimeHelper_RuntimeTypeHandle_GetAssemblySlow },
+    { "RuntimeTypeHandle_GetAttributes", (void*)&RuntimeHelper_RuntimeTypeHandle_GetAttributes },
+    { "RuntimeTypeHandle_GetConstraints", (void*)&RuntimeHelper_RuntimeTypeHandle_GetConstraints },
+    { "RuntimeTypeHandle_GetDeclaringMethodForGenericParameter", (void*)&RuntimeHelper_RuntimeTypeHandle_GetDeclaringMethodForGenericParameter },
+    { "RuntimeTypeHandle_GetDeclaringTypeHandle", (void*)&RuntimeHelper_RuntimeTypeHandle_GetDeclaringTypeHandle },
+    { "RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable", (void*)&RuntimeHelper_RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable },
+    { "RuntimeTypeHandle_GetElementTypeHandle", (void*)&RuntimeHelper_RuntimeTypeHandle_GetElementTypeHandle },
+    { "RuntimeTypeHandle_GetFields", (void*)&RuntimeHelper_RuntimeTypeHandle_GetFields },
+    { "RuntimeTypeHandle_GetFirstIntroducedMethod", (void*)&RuntimeHelper_RuntimeTypeHandle_GetFirstIntroducedMethod },
+    { "RuntimeTypeHandle_GetGenericTypeDefinition", (void*)&RuntimeHelper_RuntimeTypeHandle_GetGenericTypeDefinition },
+    { "RuntimeTypeHandle_GetGenericVariableIndex", (void*)&RuntimeHelper_RuntimeTypeHandle_GetGenericVariableIndex },
+    { "RuntimeTypeHandle_GetInstantiation", (void*)&RuntimeHelper_RuntimeTypeHandle_GetInstantiation },
+    { "RuntimeTypeHandle_GetInterfaceMethodImplementation", (void*)&RuntimeHelper_RuntimeTypeHandle_GetInterfaceMethodImplementation },
+    { "RuntimeTypeHandle_GetInterfaces", (void*)&RuntimeHelper_RuntimeTypeHandle_GetInterfaces },
+    { "RuntimeTypeHandle_GetMethodAt", (void*)&RuntimeHelper_RuntimeTypeHandle_GetMethodAt },
+    { "RuntimeTypeHandle_GetModuleIfExists", (void*)&RuntimeHelper_RuntimeTypeHandle_GetModuleIfExists },
+    { "RuntimeTypeHandle_GetModuleSlow", (void*)&RuntimeHelper_RuntimeTypeHandle_GetModuleSlow },
+    { "RuntimeTypeHandle_GetNextIntroducedMethod", (void*)&RuntimeHelper_RuntimeTypeHandle_GetNextIntroducedMethod },
+    { "RuntimeTypeHandle_GetNumVirtuals", (void*)&RuntimeHelper_RuntimeTypeHandle_GetNumVirtuals },
+    { "RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals", (void*)&RuntimeHelper_RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals },
+    { "RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow", (void*)&RuntimeHelper_RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow },
+    { "RuntimeTypeHandle_GetToken", (void*)&RuntimeHelper_RuntimeTypeHandle_GetToken },
+    { "RuntimeTypeHandle_GetUtf8NameInternal", (void*)&RuntimeHelper_RuntimeTypeHandle_GetUtf8NameInternal },
+    { "RuntimeTypeHandle_Instantiate", (void*)&RuntimeHelper_RuntimeTypeHandle_Instantiate },
+    { "RuntimeTypeHandle_InternalAlloc", (void*)&RuntimeHelper_RuntimeTypeHandle_InternalAlloc },
+    { "RuntimeTypeHandle_InternalAllocNoChecks", (void*)&RuntimeHelper_RuntimeTypeHandle_InternalAllocNoChecks },
+    { "RuntimeTypeHandle_InternalAllocNoChecks_FastPath", (void*)&RuntimeHelper_RuntimeTypeHandle_InternalAllocNoChecks_FastPath },
+    { "RuntimeTypeHandle_IsGenericVariable", (void*)&RuntimeHelper_RuntimeTypeHandle_IsGenericVariable },
+    { "RuntimeTypeHandle_IsUnmanagedFunctionPointer", (void*)&RuntimeHelper_RuntimeTypeHandle_IsUnmanagedFunctionPointer },
+    { "RuntimeTypeHandle_IsVisible", (void*)&RuntimeHelper_RuntimeTypeHandle_IsVisible },
+    { "RuntimeTypeHandle_MakeArray", (void*)&RuntimeHelper_RuntimeTypeHandle_MakeArray },
+    { "RuntimeTypeHandle_MakeByRef", (void*)&RuntimeHelper_RuntimeTypeHandle_MakeByRef },
+    { "RuntimeTypeHandle_MakeFunctionPointer", (void*)&RuntimeHelper_RuntimeTypeHandle_MakeFunctionPointer },
+    { "RuntimeTypeHandle_MakePointer", (void*)&RuntimeHelper_RuntimeTypeHandle_MakePointer },
+    { "RuntimeTypeHandle_MakeSZArray", (void*)&RuntimeHelper_RuntimeTypeHandle_MakeSZArray },
+    { "RuntimeTypeHandle_RegisterCollectibleTypeDependency", (void*)&RuntimeHelper_RuntimeTypeHandle_RegisterCollectibleTypeDependency },
+    { "RuntimeTypeHandle_SatisfiesConstraints", (void*)&RuntimeHelper_RuntimeTypeHandle_SatisfiesConstraints },
+    { "RuntimeTypeHandle_VerifyInterfaceIsImplemented", (void*)&RuntimeHelper_RuntimeTypeHandle_VerifyInterfaceIsImplemented },
+    { "SetEnvironmentVariableW", (void*)&RuntimeHelper_SetEnvironmentVariableW },
+    { "SfiInit", (void*)&RuntimeHelper_SfiInit },
+    { "SfiNext", (void*)&RuntimeHelper_SfiNext },
+    { "Signature_AreEqual", (void*)&RuntimeHelper_Signature_AreEqual },
+    { "Signature_GetCallingConventionFromFunctionPointerAtOffsetInternal", (void*)&RuntimeHelper_Signature_GetCallingConventionFromFunctionPointerAtOffsetInternal },
+    { "Signature_GetCustomModifiersAtOffset", (void*)&RuntimeHelper_Signature_GetCustomModifiersAtOffset },
+    { "Signature_GetParameterOffsetInternal", (void*)&RuntimeHelper_Signature_GetParameterOffsetInternal },
+    { "Signature_GetTypeParameterOffsetInternal", (void*)&RuntimeHelper_Signature_GetTypeParameterOffsetInternal },
+    { "Signature_Init", (void*)&RuntimeHelper_Signature_Init },
+    { "StackFrame_GetMethodDescFromNativeIP", (void*)&RuntimeHelper_StackFrame_GetMethodDescFromNativeIP },
+    { "StackTrace_GetStackFramesInternal", (void*)&RuntimeHelper_StackTrace_GetStackFramesInternal },
+    { "Stream_HasOverriddenSlow", (void*)&RuntimeHelper_Stream_HasOverriddenSlow },
+    { "String_Intern", (void*)&RuntimeHelper_String_Intern },
+    { "String_IsInterned", (void*)&RuntimeHelper_String_IsInterned },
+    { "StubHelpers_ClearLastError", (void*)&RuntimeHelper_StubHelpers_ClearLastError },
+    { "StubHelpers_CreateCustomMarshaler", (void*)&RuntimeHelper_StubHelpers_CreateCustomMarshaler },
+    { "StubHelpers_CreateLayoutClassMarshalStubs", (void*)&RuntimeHelper_StubHelpers_CreateLayoutClassMarshalStubs },
+    { "StubHelpers_LogPinnedArgument", (void*)&RuntimeHelper_StubHelpers_LogPinnedArgument },
+    { "StubHelpers_MulticastDebuggerTraceHelper", (void*)&RuntimeHelper_StubHelpers_MulticastDebuggerTraceHelper },
+    { "StubHelpers_SetLastError", (void*)&RuntimeHelper_StubHelpers_SetLastError },
+    { "StubHelpers_ThrowInteropException", (void*)&RuntimeHelper_StubHelpers_ThrowInteropException },
+    { "StubHelpers_ThrowInteropParamException", (void*)&RuntimeHelper_StubHelpers_ThrowInteropParamException },
+    { "StubHelpers_ValidateByref", (void*)&RuntimeHelper_StubHelpers_ValidateByref },
+    { "StubHelpers_ValidateObject", (void*)&RuntimeHelper_StubHelpers_ValidateObject },
+    { "TailCallHelp_AllocTailCallArgBufferInternal", (void*)&RuntimeHelper_TailCallHelp_AllocTailCallArgBufferInternal },
+    { "ThreadNative_Abort", (void*)&RuntimeHelper_ThreadNative_Abort },
+    { "ThreadNative_GetQCallSpecialException", (void*)&RuntimeHelper_ThreadNative_GetQCallSpecialException },
+    { "ThreadNative_GetThreadState", (void*)&RuntimeHelper_ThreadNative_GetThreadState },
+    { "ThreadNative_ResetAbort", (void*)&RuntimeHelper_ThreadNative_ResetAbort },
+    { "ThrowInvalidCastException", (void*)&RuntimeHelper_ThrowInvalidCastException },
+    { "TypeBuilder_AddInterfaceImpl", (void*)&RuntimeHelper_TypeBuilder_AddInterfaceImpl },
+    { "TypeBuilder_DefineCustomAttribute", (void*)&RuntimeHelper_TypeBuilder_DefineCustomAttribute },
+    { "TypeBuilder_DefineEvent", (void*)&RuntimeHelper_TypeBuilder_DefineEvent },
+    { "TypeBuilder_DefineField", (void*)&RuntimeHelper_TypeBuilder_DefineField },
+    { "TypeBuilder_DefineGenericParam", (void*)&RuntimeHelper_TypeBuilder_DefineGenericParam },
+    { "TypeBuilder_DefineMethod", (void*)&RuntimeHelper_TypeBuilder_DefineMethod },
+    { "TypeBuilder_DefineMethodImpl", (void*)&RuntimeHelper_TypeBuilder_DefineMethodImpl },
+    { "TypeBuilder_DefineMethodSemantics", (void*)&RuntimeHelper_TypeBuilder_DefineMethodSemantics },
+    { "TypeBuilder_DefineMethodSpec", (void*)&RuntimeHelper_TypeBuilder_DefineMethodSpec },
+    { "TypeBuilder_DefineProperty", (void*)&RuntimeHelper_TypeBuilder_DefineProperty },
+    { "TypeBuilder_DefineType", (void*)&RuntimeHelper_TypeBuilder_DefineType },
+    { "TypeBuilder_GetTokenFromSig", (void*)&RuntimeHelper_TypeBuilder_GetTokenFromSig },
+    { "TypeBuilder_SetClassLayout", (void*)&RuntimeHelper_TypeBuilder_SetClassLayout },
+    { "TypeBuilder_SetConstantValue", (void*)&RuntimeHelper_TypeBuilder_SetConstantValue },
+    { "TypeBuilder_SetFieldLayoutOffset", (void*)&RuntimeHelper_TypeBuilder_SetFieldLayoutOffset },
+    { "TypeBuilder_SetMethodIL", (void*)&RuntimeHelper_TypeBuilder_SetMethodIL },
+    { "TypeBuilder_SetMethodImpl", (void*)&RuntimeHelper_TypeBuilder_SetMethodImpl },
+    { "TypeBuilder_SetPInvokeData", (void*)&RuntimeHelper_TypeBuilder_SetPInvokeData },
+    { "TypeBuilder_SetParamInfo", (void*)&RuntimeHelper_TypeBuilder_SetParamInfo },
+    { "TypeBuilder_SetParentType", (void*)&RuntimeHelper_TypeBuilder_SetParentType },
+    { "TypeBuilder_TermCreateClass", (void*)&RuntimeHelper_TypeBuilder_TermCreateClass },
+    { "TypeHandle_CanCastTo_NoCacheLookup", (void*)&RuntimeHelper_TypeHandle_CanCastTo_NoCacheLookup },
+    { "TypeHandle_GetCorElementType", (void*)&RuntimeHelper_TypeHandle_GetCorElementType },
+    { "TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry", (void*)&RuntimeHelper_TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry },
+    { "TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry", (void*)&RuntimeHelper_TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry },
+    { "TypeMapLazyDictionary_ProcessAttributes", (void*)&RuntimeHelper_TypeMapLazyDictionary_ProcessAttributes },
+    { "UnsafeAccessors_ResolveGenericParamToTypeHandle", (void*)&RuntimeHelper_UnsafeAccessors_ResolveGenericParamToTypeHandle },
+    { "ValueType_GetHashCodeStrategy", (void*)&RuntimeHelper_ValueType_GetHashCodeStrategy },
+    { "VersionResilientHashCode_TypeHashCode", (void*)&RuntimeHelper_VersionResilientHashCode_TypeHashCode },
+    { "WasiFinalizer_RunWorker", (void*)&RuntimeHelper_WasiFinalizer_RunWorker },
+    { "WasiFinalizer_TryClearPending", (void*)&RuntimeHelper_WasiFinalizer_TryClearPending },
     DllImportEntry(memmove)
     DllImportEntry(memset)
 };
 
-const void* QCallResolveDllImport(const char* name)
+const void* ResolveRuntimeHelperEntrypoint(const char* name)
 {
-    return minipal_resolve_dllimport(s_QCall, sizeof(s_QCall) / sizeof(s_QCall[0]), name);
+    return minipal_resolve_dllimport(s_RuntimeHelpers, sizeof(s_RuntimeHelpers) / sizeof(s_RuntimeHelpers[0]), name);
 }
