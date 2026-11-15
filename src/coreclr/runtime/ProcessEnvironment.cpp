@@ -5,25 +5,9 @@
 #include "MiscNativeHelpers.h"
 #include "ProcessEnvironment.h"
 
-#include <minipal/environ.h>
-
 #ifdef TARGET_WINDOWS
 
 #include <windows.h>
-
-bool ProcessEnvironment_TryGetVariable(const CHAR16_T* name, CHAR16_T* buffer, uint32_t bufferSize, uint32_t* length)
-{
-    // A variable with an empty value also returns 0, without setting the last error.
-    SetLastError(ERROR_SUCCESS);
-    DWORD result = GetEnvironmentVariableW((LPCWSTR)name, (LPWSTR)buffer, bufferSize);
-    if (result == 0 && GetLastError() != ERROR_SUCCESS)
-    {
-        return false;
-    }
-
-    *length = (uint32_t)result;
-    return true;
-}
 
 uint32_t ProcessEnvironment_GetVariable(const CHAR16_T* name, CHAR16_T* buffer, uint32_t bufferSize)
 {
@@ -35,18 +19,9 @@ uint32_t ProcessEnvironment_SetVariable(const CHAR16_T* name, const CHAR16_T* va
     return SetEnvironmentVariableW((LPCWSTR)name, (LPCWSTR)value) ? 0 : (uint32_t)GetLastError();
 }
 
-CHAR16_T* ProcessEnvironment_GetStrings()
-{
-    return minipal_environ_get_strings_u16();
-}
-
-void ProcessEnvironment_FreeStrings(CHAR16_T* strings)
-{
-    minipal_environ_free_strings_u16(strings);
-}
-
 #else // TARGET_WINDOWS
 
+#include <minipal/environ.h>
 #include <minipal/strings.h>
 #include <minipal/utf8.h>
 
@@ -125,10 +100,11 @@ static size_t FindVariableLocked(const char* name)
 }
 
 // Returns the value, or null if the variable is not set. Until the environment is modified, the value
-// points into the process environment. After that, it is a copy and *copied is set to true; free it with free().
-static const char* GetValue(const char* name, bool* copied)
+// points into the process environment. After that, s_envLock is acquired and *locked is set to true;
+// the value is only valid until the caller releases the lock.
+static const char* FindValueAndLock(const char* name, bool* locked)
 {
-    *copied = false;
+    *locked = false;
     if (name[0] == '\0' || strchr(name, '=') != nullptr)
     {
         return nullptr;
@@ -139,16 +115,10 @@ static const char* GetValue(const char* name, bool* copied)
         return getenv(name);
     }
 
-    char* result = nullptr;
     pthread_mutex_lock(&s_envLock);
+    *locked = true;
     size_t index = FindVariableLocked(name);
-    if (index < s_envCount)
-    {
-        result = strdup(s_env[index] + strlen(name) + 1);
-        *copied = result != nullptr;
-    }
-    pthread_mutex_unlock(&s_envLock);
-    return result;
+    return index < s_envCount ? s_env[index] + strlen(name) + 1 : nullptr;
 }
 
 static uint32_t SetVariableUtf8(const char* name, const char* value)
@@ -156,6 +126,12 @@ static uint32_t SetVariableUtf8(const char* name, const char* value)
     if (name[0] == '\0' || strchr(name, '=') != nullptr)
     {
         return PROCESSENVIRONMENT_ERROR_INVALID_PARAMETER;
+    }
+
+    // Unsetting a variable that is not set does not change the environment, so it does not need a copy.
+    if (value == nullptr && !IsEnvironmentModified() && getenv(name) == nullptr)
+    {
+        return PROCESSENVIRONMENT_ERROR_ENVVAR_NOT_FOUND;
     }
 
     char* entry = nullptr;
@@ -243,56 +219,48 @@ static char* Utf16ToUtf8(const CHAR16_T* source)
     return result;
 }
 
-bool ProcessEnvironment_TryGetVariable(const CHAR16_T* name, CHAR16_T* buffer, uint32_t bufferSize, uint32_t* length)
+uint32_t ProcessEnvironment_GetVariable(const CHAR16_T* name, CHAR16_T* buffer, uint32_t bufferSize)
 {
     if (name == nullptr || name[0] == 0)
     {
-        return false;
+        return 0;
     }
 
     char* nameUtf8 = Utf16ToUtf8(name);
     if (nameUtf8 == nullptr)
     {
-        return false;
+        return 0;
     }
 
-    bool copied;
-    const char* value = GetValue(nameUtf8, &copied);
+    bool locked;
+    const char* value = FindValueAndLock(nameUtf8, &locked);
     free(nameUtf8);
-    if (value == nullptr)
+
+    uint32_t result = 0;
+    if (value != nullptr)
     {
-        return false;
+        size_t valueLength = strlen(value);
+        size_t needed = minipal_get_length_utf8_to_utf16(value, valueLength, 0);
+        if (needed <= UINT32_MAX - 1)
+        {
+            if (buffer != nullptr && needed < bufferSize)
+            {
+                size_t written = minipal_convert_utf8_to_utf16(value, valueLength, buffer, bufferSize, 0);
+                buffer[written] = 0;
+                result = (uint32_t)written;
+            }
+            else
+            {
+                result = (uint32_t)(needed + 1);
+            }
+        }
     }
 
-    size_t valueLength = strlen(value);
-    size_t needed = minipal_get_length_utf8_to_utf16(value, valueLength, 0);
-    bool found = true;
-    if (needed > UINT32_MAX - 1)
+    if (locked)
     {
-        found = false;
+        pthread_mutex_unlock(&s_envLock);
     }
-    else if (buffer != nullptr && needed < bufferSize)
-    {
-        size_t written = minipal_convert_utf8_to_utf16(value, valueLength, buffer, bufferSize, 0);
-        buffer[written] = 0;
-        *length = (uint32_t)written;
-    }
-    else
-    {
-        *length = (uint32_t)(needed + 1);
-    }
-
-    if (copied)
-    {
-        free((void*)value);
-    }
-    return found;
-}
-
-uint32_t ProcessEnvironment_GetVariable(const CHAR16_T* name, CHAR16_T* buffer, uint32_t bufferSize)
-{
-    uint32_t length;
-    return ProcessEnvironment_TryGetVariable(name, buffer, bufferSize, &length) ? length : 0;
+    return result;
 }
 
 uint32_t ProcessEnvironment_SetVariable(const CHAR16_T* name, const CHAR16_T* value)
@@ -325,101 +293,81 @@ uint32_t ProcessEnvironment_SetVariable(const CHAR16_T* name, const CHAR16_T* va
     return result;
 }
 
-CHAR16_T* ProcessEnvironment_GetStrings()
-{
-    if (!IsEnvironmentModified())
-    {
-        return minipal_environ_get_strings_u16();
-    }
-
-    CHAR16_T* block = nullptr;
-    pthread_mutex_lock(&s_envLock);
-    size_t totalLength = 1; // final extra null
-    for (size_t i = 0; i < s_envCount; i++)
-    {
-        totalLength += minipal_get_length_utf8_to_utf16(s_env[i], strlen(s_env[i]), 0) + 1;
-    }
-
-    block = (CHAR16_T*)malloc(totalLength * sizeof(CHAR16_T));
-    if (block != nullptr)
-    {
-        CHAR16_T* dest = block;
-        size_t remaining = totalLength;
-        for (size_t i = 0; i < s_envCount; i++)
-        {
-            // An empty entry would terminate the block early.
-            if (s_env[i][0] == '\0')
-            {
-                continue;
-            }
-
-            size_t written = minipal_convert_utf8_to_utf16(s_env[i], strlen(s_env[i]), dest, remaining, 0);
-            dest[written] = 0;
-            dest += written + 1;
-            remaining -= written + 1;
-        }
-
-        *dest = 0;
-    }
-    pthread_mutex_unlock(&s_envLock);
-    return block;
-}
-
-void ProcessEnvironment_FreeStrings(CHAR16_T* strings)
-{
-    minipal_environ_free_strings_u16(strings);
-}
-
 uint32_t ProcessEnvironment_GetVariableUtf8(const char* name, char* buffer, uint32_t bufferSize)
 {
-    bool copied;
-    const char* value = GetValue(name, &copied);
-    if (value == nullptr)
+    bool locked;
+    const char* value = FindValueAndLock(name, &locked);
+
+    uint32_t result = 0;
+    if (value != nullptr)
     {
-        return 0;
+        size_t valueLength = strlen(value);
+        if (valueLength <= UINT32_MAX - 1)
+        {
+            if (buffer != nullptr && valueLength < bufferSize)
+            {
+                memcpy(buffer, value, valueLength + 1);
+                result = (uint32_t)valueLength;
+            }
+            else
+            {
+                result = (uint32_t)(valueLength + 1);
+            }
+        }
     }
 
-    size_t valueLength = strlen(value);
-    uint32_t result;
-    if (valueLength > UINT32_MAX - 1)
+    if (locked)
     {
-        result = 0;
-    }
-    else if (buffer != nullptr && valueLength < bufferSize)
-    {
-        memcpy(buffer, value, valueLength + 1);
-        result = (uint32_t)valueLength;
-    }
-    else
-    {
-        result = (uint32_t)(valueLength + 1);
-    }
-
-    if (copied)
-    {
-        free((void*)value);
+        pthread_mutex_unlock(&s_envLock);
     }
     return result;
 }
 
-char* ProcessEnvironment_GetVariableCopyUtf8(const char* name)
+void ProcessEnvironment_EnumerateVariablesUtf8(ProcessEnvironmentEntryCallback callback, void* context)
 {
-    bool copied;
-    const char* value = GetValue(name, &copied);
-    return (copied || value == nullptr) ? (char*)value : strdup(value);
+    if (!IsEnvironmentModified())
+    {
+        for (char** entry = minipal_environ_get(); entry != nullptr && *entry != nullptr; entry++)
+        {
+            callback(*entry, context);
+        }
+        return;
+    }
+
+    pthread_mutex_lock(&s_envLock);
+    for (size_t i = 0; i < s_envCount; i++)
+    {
+        callback(s_env[i], context);
+    }
+    pthread_mutex_unlock(&s_envLock);
 }
 
 //
 // QCalls for System.Environment. Names and values are UTF-8.
 //
 
-// Returns the value, or null if the variable is not set. If *needsFree is set, free the value with free().
+// Returns the value, or null if the variable is not set. If *needsFree is set, the value is a copy; free it
+// with free(). Null with *needsFree set means out of memory.
 extern "C" const char* QCALLTYPE Environment_GetEnvironmentVariable(const char* name, int32_t* needsFree)
 {
-    bool copied;
-    const char* value = GetValue(name, &copied);
-    *needsFree = copied ? 1 : 0;
-    return value;
+    *needsFree = 0;
+
+    bool locked;
+    const char* value = FindValueAndLock(name, &locked);
+    if (!locked)
+    {
+        return value;
+    }
+
+    // The value is only valid while the lock is held.
+    char* copy = nullptr;
+    if (value != nullptr)
+    {
+        copy = strdup(value);
+        *needsFree = 1;
+    }
+    pthread_mutex_unlock(&s_envLock);
+    return copy;
 }
 
 // Returns 0 on success, or a PROCESSENVIRONMENT_ERROR_* code.

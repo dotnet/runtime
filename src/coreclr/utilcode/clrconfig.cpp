@@ -10,7 +10,6 @@
 #include "ex.h"
 
 #include "clrconfignocache.h"
-#include <minipal/environ.h>
 
 using ConfigDWORDInfo = CLRConfig::ConfigDWORDInfo;
 using ConfigStringInfo = CLRConfig::ConfigStringInfo;
@@ -101,8 +100,7 @@ namespace
     ProbabilisticNameSet s_EnvNames; // set of environment value names seen
 
     CLRConfig::GetEnvironmentVariableCallback s_getEnvironmentVariable = nullptr;
-    CLRConfig::GetEnvironmentStringsCallback s_getEnvironmentStrings = nullptr;
-    CLRConfig::FreeEnvironmentStringsCallback s_freeEnvironmentStrings = nullptr;
+    CLRConfig::EnumerateEnvironmentCallback s_enumerateEnvironment = nullptr;
 
     bool EnvCacheValueNameSeenPerhaps(LPCWSTR name)
     {
@@ -111,6 +109,40 @@ namespace
         return !s_fUseEnvCache
             || s_EnvNames.MayContain(name);
     }
+
+#ifndef TARGET_WINDOWS
+    // Adds the name of a UTF-8 "name=value" environment entry to the cache if it has one of the prefixes.
+    // Configuration names are ASCII and shorter than the buffer used to look them up, so other names are skipped.
+    void AddEnvironmentEntryToCache(const char* entry, void* /* context */)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        size_t prefixLength;
+        if (SString::_strnicmp(entry, DOTNET_PREFIX_A, LEN_OF_DOTNET_PREFIX) == 0)
+            prefixLength = LEN_OF_DOTNET_PREFIX;
+        else if (SString::_strnicmp(entry, COMPLUS_PREFIX_A, LEN_OF_COMPLUS_PREFIX) == 0)
+            prefixLength = LEN_OF_COMPLUS_PREFIX;
+        else if (SString::_strnicmp(entry, CORECLR_PREFIX_A, LEN_OF_CORECLR_PREFIX) == 0)
+            prefixLength = LEN_OF_CORECLR_PREFIX;
+        else
+            return;
+
+        const char* source = entry + prefixLength;
+        WCHAR name[64];
+        DWORD count = 0;
+        while (source[count] != '=')
+        {
+            if (source[count] == '\0' || (unsigned char)source[count] >= 0x80 || count == ARRAY_SIZE(name))
+                return;
+
+            name[count] = (WCHAR)source[count];
+            count++;
+        }
+
+        if (count != 0)
+            s_EnvNames.Add(name, count);
+    }
+#endif // !TARGET_WINDOWS
 
     DWORD GetEnvironmentVariableForConfig(LPCWSTR name, SString& value)
     {
@@ -229,19 +261,16 @@ namespace
             {
                 ret = temp.GetCopyOfUnicodeString();
 
-#if defined(DEBUG) && !defined(SELF_NO_HOST)
-                // Validate the cache and no-cache logic result in the same answer. The no-cache
-                // logic reads the libc environment, so it can only be compared when no callback is set.
-                if (s_getEnvironmentVariable == nullptr)
-                {
-                    SString nameToConvert(name);
+#if defined(DEBUG) && !defined(SELF_NO_HOST) && defined(TARGET_WINDOWS)
+                // Validate the cache and no-cache logic result in the same answer. On Unix, the runtime
+                // reads its own copy of the environment, which the no-cache logic does not see.
+                SString nameToConvert(name);
 
-                    CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix, nullptr, coreclrFallbackPrefix);
-                    LPCSTR valueNoCache = nonCache.AsString();
+                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix, nullptr, coreclrFallbackPrefix);
+                LPCSTR valueNoCache = nonCache.AsString();
 
-                    _ASSERTE(SString::_stricmp(valueNoCache, temp.GetUTF8()) == 0);
-                }
-#endif // defined(DEBUG) && !defined(SELF_NO_HOST)
+                _ASSERTE(SString::_stricmp(valueNoCache, temp.GetUTF8()) == 0);
+#endif // defined(DEBUG) && !defined(SELF_NO_HOST) && defined(TARGET_WINDOWS)
             }
         }
         EX_CATCH_HRESULT(hr);
@@ -655,11 +684,12 @@ void CLRConfig::Initialize()
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableConfigCache) != 0)
         return;
 
+#ifdef TARGET_WINDOWS
     const WCHAR prefixC = (WCHAR)towlower(COMPLUS_PREFIX[0]);
     const WCHAR prefixD = (WCHAR)towlower(DOTNET_PREFIX[0]);
 
     // Create a cache of environment variables
-    WCHAR* wszStrings = reinterpret_cast<WCHAR*>(s_getEnvironmentStrings != nullptr ? s_getEnvironmentStrings() : minipal_environ_get_strings_u16());
+    WCHAR* wszStrings = GetEnvironmentStringsW();
     if (wszStrings != NULL)
     {
         // Returns pointer to a null terminated block containing null terminated strings
@@ -708,23 +738,22 @@ void CLRConfig::Initialize()
                 wszCurr++;
         }
 
-        if (s_freeEnvironmentStrings != nullptr)
-            s_freeEnvironmentStrings(reinterpret_cast<CHAR16_T*>(wszStrings));
-        else
-            minipal_environ_free_strings_u16(wszStrings);
+        FreeEnvironmentStringsW(wszStrings);
         s_fUseEnvCache = true;
     }
+#else // TARGET_WINDOWS
+    // This is called during runtime startup, after the runtime has provided its environment callbacks.
+    _ASSERTE(s_enumerateEnvironment != nullptr);
+    s_enumerateEnvironment(AddEnvironmentEntryToCache, nullptr);
+    s_fUseEnvCache = true;
+#endif // TARGET_WINDOWS
 }
 
 // static
-void CLRConfig::SetEnvironmentCallbacks(
-    GetEnvironmentVariableCallback getVariable,
-    GetEnvironmentStringsCallback getStrings,
-    FreeEnvironmentStringsCallback freeStrings)
+void CLRConfig::SetEnvironmentCallbacks(GetEnvironmentVariableCallback getVariable, EnumerateEnvironmentCallback enumerate)
 {
     LIMITED_METHOD_CONTRACT;
 
     s_getEnvironmentVariable = getVariable;
-    s_getEnvironmentStrings = getStrings;
-    s_freeEnvironmentStrings = freeStrings;
+    s_enumerateEnvironment = enumerate;
 }

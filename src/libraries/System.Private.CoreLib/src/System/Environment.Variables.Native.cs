@@ -16,6 +16,16 @@ namespace System
         private static unsafe string? GetEnvironmentVariableCore(string variable)
         {
             byte* value = GetEnvironmentVariableNative(variable, out Interop.BOOL needsFree);
+            if (value == null)
+            {
+                if (needsFree != Interop.BOOL.FALSE)
+                {
+                    throw new OutOfMemoryException();
+                }
+
+                return null;
+            }
+
             try
             {
                 return Utf8StringMarshaller.ConvertToManaged(value);

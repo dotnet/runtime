@@ -330,7 +330,7 @@ int coreclr_initialize(
         return hr;
     }
 
-    CLRConfig::SetEnvironmentCallbacks(ProcessEnvironment_GetVariable, ProcessEnvironment_GetStrings, ProcessEnvironment_FreeStrings);
+    CLRConfig::SetEnvironmentCallbacks(ProcessEnvironment_GetVariable, ProcessEnvironment_EnumerateVariablesUtf8);
 #endif
 
     if (hostContract != nullptr)

@@ -64,13 +64,33 @@ void PerfMap::Initialize()
 
 char * PerfMap::InternalConstructPath()
 {
+    STANDARD_VM_CONTRACT;
+
     // Read the runtime's copy of the environment so that a path set through the diagnostic server is used.
-    char* path = ProcessEnvironment_GetVariableCopyUtf8(DOTNET_PREFIX_A "PerfMapJitDumpPath");
-    if (path == nullptr)
+    const char* names[] = { DOTNET_PREFIX_A "PerfMapJitDumpPath", COMPLUS_PREFIX_A "PerfMapJitDumpPath" };
+    for (const char* name : names)
     {
-        path = ProcessEnvironment_GetVariableCopyUtf8(COMPLUS_PREFIX_A "PerfMapJitDumpPath");
+        // The value may change between calls, so retry until it fits. An empty value uses the default.
+        uint32_t length = ProcessEnvironment_GetVariableUtf8(name, nullptr, 0);
+        while (length > 1)
+        {
+            NewArrayHolder<char> path{ new char[length] };
+            uint32_t written = ProcessEnvironment_GetVariableUtf8(name, path, length);
+            if (written == 0)
+            {
+                break;
+            }
+
+            if (written < length)
+            {
+                return path.Detach();
+            }
+
+            length = written;
+        }
     }
-    return path;
+
+    return nullptr;
 }
 
 void PerfMap::InitializeConfiguration()
@@ -98,8 +118,8 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
     {
         CrstHolder ch(&(s_csPerfMap));
 
-        char* configuredPath = InternalConstructPath();
-        const char* basePath = configuredPath != nullptr ? configuredPath : TEMP_DIRECTORY_PATH;
+        NewArrayHolder<char> configuredPath{ InternalConstructPath() };
+        const char* basePath = configuredPath != nullptr ? (const char*)configuredPath : TEMP_DIRECTORY_PATH;
 
         if (s_Current == nullptr && (type == PerfMapType::ALL || type == PerfMapType::PERFMAP))
         {
@@ -126,8 +146,6 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
             s_enabled = true;
         }
-
-        free(configuredPath);
     }
 
     if (sendExisting)

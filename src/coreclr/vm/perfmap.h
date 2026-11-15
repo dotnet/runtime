@@ -103,7 +103,7 @@ private:
     // Write a line to the map file.
     void WriteLine(SString & line);
 
-    // Returns DOTNET_PerfMapJitDumpPath if set, or null to use the default. Free it with free().
+    // Returns DOTNET_PerfMapJitDumpPath if set, or null to use the default. Free it with delete[].
     static char* InternalConstructPath();
 
     static void InitializeConfiguration();

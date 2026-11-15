@@ -243,7 +243,8 @@ ep_on_error:
 uint32_t
 ds_rt_aot_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-    return ProcessEnvironment_SetVariable((const CHAR16_T*)name, (const CHAR16_T*)value) == 0 ? S_OK : E_FAIL;
+    uint32_t error = ProcessEnvironment_SetVariable((const CHAR16_T*)name, (const CHAR16_T*)value);
+    return HRESULT_FROM_WIN32(error);
 }
 
 #endif /* ENABLE_PERFTRACING */
