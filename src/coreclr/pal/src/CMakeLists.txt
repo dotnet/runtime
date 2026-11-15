@@ -157,6 +157,8 @@ set(SOURCES
   misc/dbgmsg.cpp
   misc/environ.cpp
   misc/error.cpp
+  misc/errorstrings.cpp
+  misc/fmtmessage.cpp
   misc/sysinfo.cpp
   misc/utils.cpp
   objmgr/palobjbase.cpp

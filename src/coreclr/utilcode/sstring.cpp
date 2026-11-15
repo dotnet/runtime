@@ -1793,72 +1793,6 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
                            arg5.GetUnicode(), arg6.GetUnicode(), arg7.GetUnicode(), arg8.GetUnicode(),
                            arg9.GetUnicode(), arg10.GetUnicode()};
 
-#ifdef TARGET_UNIX
-    SString result;
-
-    if (dwFlags & FORMAT_MESSAGE_FROM_SYSTEM)
-    {
-        WCHAR message[256];
-        if (!GetSystemErrorMessage(dwMessageId, message, ARRAY_SIZE(message)))
-            return FALSE;
-
-        result.Set(message);
-    }
-    else
-    {
-        _ASSERTE((dwFlags & FORMAT_MESSAGE_FROM_STRING) && lpSource != NULL);
-
-        for (const WCHAR *p = (const WCHAR *)lpSource; *p != W('\0'); p++)
-        {
-            if (*p != W('%'))
-            {
-                result.Append(*p);
-                continue;
-            }
-
-            p++;
-            if (*p >= W('1') && *p <= W('9'))
-            {
-                COUNT_T index = *p - W('0');
-                if (p[1] >= W('0') && p[1] <= W('9'))
-                {
-                    p++;
-                    index = index * 10 + (*p - W('0'));
-                }
-
-                // Embedded printf formatting ('%1!d!') is not supported.
-                if (index > ARRAY_SIZE(args) || p[1] == W('!'))
-                    return FALSE;
-
-                result.Append(args[index - 1]);
-            }
-            else if (*p == W('n'))
-            {
-                result.Append(W('\n'));
-            }
-            else if (*p == W('0'))
-            {
-                break;
-            }
-            else if (*p == W('\0'))
-            {
-                return FALSE;
-            }
-            else
-            {
-                // '%%', '%.', '%!' and any other character are taken literally.
-                result.Append(*p);
-            }
-        }
-    }
-
-    COUNT_T count = result.GetCount();
-    if (count > 0 && result.GetUnicode()[count - 1] == W(' '))
-        result.Truncate(result.End() - 1);
-
-    Set(result);
-    return TRUE;
-#else // TARGET_UNIX
     if (GetRawCount() > 0)
     {
         // First, try to use our existing buffer to hold the result.
@@ -1899,7 +1833,6 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
 
     Set(stringRaw);
     return TRUE;
-#endif // TARGET_UNIX
 }
 
 #if 1

@@ -47,6 +47,7 @@ nativeStringResourceTable_mscorrc
 #DebugBreak
 #DuplicateHandle
 #FlushInstructionCache
+#FormatMessageW
 #FreeEnvironmentStringsW
 #FreeLibrary
 #GetCurrentProcess

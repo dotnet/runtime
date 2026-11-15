@@ -1,15 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//*****************************************************************************
-// errorstrings.cpp
-//
-// Messages for Win32 error codes on Unix.
-//*****************************************************************************
+/*++
 
-#include "stdafx.h"
 
-#ifdef TARGET_UNIX
+
+Module Name:
+
+    errorstrings.cpp
+
+Abstract:
+
+    Conversion of PAL error code to string
+
+Revision History:
+
+
+
+--*/
+
+#include "pal/palinternal.h"
+#include "errorstrings.h"
 
 struct ErrorString
 {
@@ -17,7 +28,7 @@ struct ErrorString
     LPCWSTR const string;
 };
 
-static const ErrorString s_errorStrings[] =
+ErrorString palErrorStrings[] =
 {
     { ERROR_SUCCESS, W("The operation completed successfully.\n") },
     { ERROR_INVALID_FUNCTION, W("Incorrect function.\n") },
@@ -123,7 +134,7 @@ static const ErrorString s_errorStrings[] =
     { ERROR_TAG_NOT_PRESENT, W("A required tag is not present.\n") }
 };
 
-static int CompareErrorStrings(const void *a, const void *b)
+int CompareErrorStrings(const void *a, const void *b)
 {
     DWORD codeA = ((ErrorString *)a)->code;
     DWORD codeB = ((ErrorString *)b)->code;
@@ -142,42 +153,16 @@ static int CompareErrorStrings(const void *a, const void *b)
     }
 }
 
-bool GetSystemErrorMessage(DWORD code, WCHAR *buffer, size_t cchBuffer)
+LPCWSTR GetPalErrorString(DWORD code)
 {
-    if ((code & 0xFFFF0000) == 0x80070000)
-    {
-        // This message has been produced by HRESULT_FROM_WIN32.  Undo its work.
-        code &= 0xFFFF;
-    }
-
     // Search the sorted set of resources for the ID we're interested in.
     ErrorString searchEntry = {code, NULL};
-    const ErrorString *stringEntry = (const ErrorString *)bsearch(
+    ErrorString *stringEntry = (ErrorString *)bsearch(
         &searchEntry,
-        s_errorStrings,
-        ARRAY_SIZE(s_errorStrings),
+        palErrorStrings,
+        sizeof(palErrorStrings) / sizeof(palErrorStrings[0]),
         sizeof(ErrorString),
         CompareErrorStrings);
 
-    if (stringEntry != NULL)
-    {
-        return wcscpy_s(buffer, cchBuffer, stringEntry->string) == 0;
-    }
-
-    char errorString[sizeof("Error 4294967295")];
-    int count = sprintf_s(errorString, sizeof(errorString), "Error %u", code);
-    if (count < 0 || (size_t)count >= cchBuffer)
-    {
-        return false;
-    }
-
-    // Widening is fine since the string is ASCII.
-    for (int i = 0; i <= count; i++)
-    {
-        buffer[i] = (WCHAR)errorString[i];
-    }
-
-    return true;
+    return (stringEntry != NULL) ? stringEntry->string : NULL;
 }
-
-#endif // TARGET_UNIX
