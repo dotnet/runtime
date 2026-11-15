@@ -25,6 +25,8 @@ using System.Runtime.InteropServices;
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapTypeLoaderKeys.Universe>("ExternalGeneric", typeof(DeadCodeElimination.TestInteropMapTypeLoaderKeys.ExternalFromGeneric), typeof(DeadCodeElimination.TestInteropMapTypeLoaderKeys.ExternalKeyOfGeneric<DeadCodeElimination.TestInteropMapTypeLoaderKeys.Wrapper<DeadCodeElimination.TestInteropMapTypeLoaderKeys.Atom>>))]
 [assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTypeLoaderKeys.Universe>(typeof(DeadCodeElimination.TestInteropMapTypeLoaderKeys.KeyOfValueArray<DeadCodeElimination.TestInteropMapTypeLoaderKeys.Struct[]>), typeof(DeadCodeElimination.TestInteropMapTypeLoaderKeys.ProxyFromValueArray))]
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapTypeLoaderKeys.Universe>("ExternalValueArray", typeof(DeadCodeElimination.TestInteropMapTypeLoaderKeys.ExternalFromValueArray), typeof(DeadCodeElimination.TestInteropMapTypeLoaderKeys.ExternalKeyOfValueArray<DeadCodeElimination.TestInteropMapTypeLoaderKeys.Struct[]>))]
+[assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTypeLoaderKeys.Universe>(typeof(DeadCodeElimination.TestInteropMapTypeLoaderKeys.KeyOfUsedValueArray<DeadCodeElimination.TestInteropMapTypeLoaderKeys.UsedStruct[]>), typeof(DeadCodeElimination.TestInteropMapTypeLoaderKeys.ProxyFromUsedValueArray))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapTypeLoaderKeys.Universe>("ExternalUsedValueArray", typeof(DeadCodeElimination.TestInteropMapTypeLoaderKeys.ExternalFromUsedValueArray), typeof(DeadCodeElimination.TestInteropMapTypeLoaderKeys.ExternalKeyOfUsedValueArray<DeadCodeElimination.TestInteropMapTypeLoaderKeys.UsedStruct[]>))]
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapTypeLoaderKeys.Universe>("ExternalArray", typeof(DeadCodeElimination.TestInteropMapTypeLoaderKeys.ExternalFromArray), typeof(DeadCodeElimination.TestInteropMapTypeLoaderKeys.ExternalKeyOfArray<DeadCodeElimination.TestInteropMapTypeLoaderKeys.Atom[]>))]
 
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("A", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target1), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget1<DeadCodeElimination.TestInteropMapArrayTrimming.Atom>[]))]
@@ -1400,28 +1402,33 @@ class DeadCodeElimination
         internal class Missing;
         internal class Wrapper<T> where T : class;
         internal struct Struct;
+        internal struct UsedStruct;
 
         internal class KeyOfPresent<T> where T : class;
         internal class KeyOfMissing<T> where T : class;
         internal class KeyOfGeneric<T> where T : class;
         internal class KeyOfArray<T> where T : class;
         internal class KeyOfValueArray<T> where T : class;
+        internal class KeyOfUsedValueArray<T> where T : class;
         internal class ProxyFromPresent;
         internal class ProxyFromMissing;
         internal class ProxyFromGeneric;
         internal class ProxyFromArray;
         internal class ProxyFromValueArray;
+        internal class ProxyFromUsedValueArray;
 
         internal class ExternalKeyOfPresent<T> where T : class;
         internal class ExternalKeyOfMissing<T> where T : class;
         internal class ExternalKeyOfGeneric<T> where T : class;
         internal class ExternalKeyOfArray<T> where T : class;
         internal class ExternalKeyOfValueArray<T> where T : class;
+        internal class ExternalKeyOfUsedValueArray<T> where T : class;
         internal class ExternalFromPresent;
         internal class ExternalFromMissing;
         internal class ExternalFromGeneric;
         internal class ExternalFromArray;
         internal class ExternalFromValueArray;
+        internal class ExternalFromUsedValueArray;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static Type Hide(Type t) => t;
@@ -1435,8 +1442,8 @@ class DeadCodeElimination
         public static object[] MakeTemplates<T>() where T : class
         {
             return [
-                new KeyOfPresent<T>(), new KeyOfMissing<T>(), new KeyOfGeneric<T>(), new KeyOfArray<T>(), new KeyOfValueArray<T>(),
-                new ExternalKeyOfPresent<T>(), new ExternalKeyOfMissing<T>(), new ExternalKeyOfGeneric<T>(), new ExternalKeyOfArray<T>(), new ExternalKeyOfValueArray<T>(),
+                new KeyOfPresent<T>(), new KeyOfMissing<T>(), new KeyOfGeneric<T>(), new KeyOfArray<T>(), new KeyOfValueArray<T>(), new KeyOfUsedValueArray<T>(),
+                new ExternalKeyOfPresent<T>(), new ExternalKeyOfMissing<T>(), new ExternalKeyOfGeneric<T>(), new ExternalKeyOfArray<T>(), new ExternalKeyOfValueArray<T>(), new ExternalKeyOfUsedValueArray<T>(),
                 new Wrapper<T>(),
             ];
         }
@@ -1454,6 +1461,9 @@ class DeadCodeElimination
             // is no shared template for arrays of a non-generic struct, so the type loader can't create the array.
             _ = Hide(typeof(Struct));
 
+            // The array of this struct is present, so the type loader can create the key.
+            Type arrayOfUsedStruct = Hide(typeof(UsedStruct[]));
+
             // The generic argument is a type that doesn't exist in the compilation, but the type loader can create it.
             Type wrapperOfAtom = MakeGeneric(typeof(Wrapper<>), atom);
             Type arrayOfAtom = atom.MakeArrayType();
@@ -1463,6 +1473,9 @@ class DeadCodeElimination
             // The argument is present for another reason, the entries are expected.
             CheckProxy(failures, proxyMap, MakeGeneric(typeof(KeyOfPresent<>), atom), nameof(ProxyFromPresent));
             CheckExternal(failures, externalMap, "ExternalPresent", nameof(ExternalFromPresent));
+
+            CheckProxy(failures, proxyMap, MakeGeneric(typeof(KeyOfUsedValueArray<>), arrayOfUsedStruct), nameof(ProxyFromUsedValueArray));
+            CheckExternal(failures, externalMap, "ExternalUsedValueArray", nameof(ExternalFromUsedValueArray));
 
             // The type loader can create the key at runtime out of types it can itself create, the entries are expected.
             CheckProxy(failures, proxyMap, MakeGeneric(typeof(KeyOfGeneric<>), wrapperOfAtom), nameof(ProxyFromGeneric));
