@@ -1846,21 +1846,6 @@ PVOID
 PALAPI
 PAL_GetStackLimit();
 
-PALIMPORT
-DWORD
-PALAPI
-PAL_GetLogicalCpuCountFromOS();
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_GetTotalCpuCount();
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetCpuLimit(UINT* val);
-
 PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context);
 
 #define PAGE_NOACCESS                   0x01

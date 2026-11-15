@@ -5,8 +5,12 @@
 #ifndef __CGROUP_H__
 #define __CGROUP_H__
 
+#include <stdint.h>
+
 void InitializeCGroup();
 void CleanupCGroup();
 
-#endif // __CGROUP_H__
+// Can be called before InitializeCGroup.
+bool GetCGroupCpuLimit(uint32_t* val);
 
+#endif // __CGROUP_H__

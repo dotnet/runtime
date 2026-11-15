@@ -8,7 +8,7 @@ Module Name:
     cgroup.cpp
 
 Abstract:
-    Read the memory limit for the current process
+    Read the memory and cpu limits for the current process
 --*/
 #include "cgroup.h"
 #include <cstddef>
@@ -46,6 +46,9 @@ Abstract:
 #define CGROUP1_MEMORY_STAT_HIERARCHICAL_MEMORY_LIMIT_FIELD "hierarchical_memory_limit "
 #define CGROUP1_MEMORY_STAT_INACTIVE_FIELD "total_inactive_file "
 #define CGROUP2_MEMORY_STAT_INACTIVE_FIELD "inactive_file "
+#define CGROUP1_CFS_QUOTA_FILENAME "/cpu.cfs_quota_us"
+#define CGROUP1_CFS_PERIOD_FILENAME "/cpu.cfs_period_us"
+#define CGROUP2_CPU_MAX_FILENAME "/cpu.max"
 
 extern bool ReadMemoryValueFromFile(const char* filename, uint64_t* val);
 
@@ -58,20 +61,49 @@ class CGroup
 
     static char *s_memory_cgroup_path;
     static char *s_memory_cgroup_hierarchy_mount;
+
+    static char *s_cpu_cgroup_path;
+
+    static bool s_initialized;
 public:
     static void Initialize()
     {
+        if (s_initialized)
+            return;
+
+        s_initialized = true;
         s_cgroup_version = FindCGroupVersion();
         if (s_cgroup_version != 0)
         {
             FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1MemorySubsystem : nullptr, &s_memory_cgroup_path, &s_memory_cgroup_hierarchy_mount);
+            FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1CpuSubsystem : nullptr, &s_cpu_cgroup_path);
         }
     }
 
     static void Cleanup()
     {
         free(s_memory_cgroup_path);
+        s_memory_cgroup_path = nullptr;
         free(s_memory_cgroup_hierarchy_mount);
+        s_memory_cgroup_hierarchy_mount = nullptr;
+        free(s_cpu_cgroup_path);
+        s_cpu_cgroup_path = nullptr;
+        s_initialized = false;
+    }
+
+    static bool GetCpuLimit(uint32_t *val)
+    {
+        if (s_cgroup_version == 0)
+            return false;
+        else if (s_cgroup_version == 1)
+            return GetCGroup1CpuLimit(val);
+        else if (s_cgroup_version == 2)
+            return GetCGroup2CpuLimit(val);
+        else
+        {
+            assert(!"Unknown cgroup version.");
+            return false;
+        }
     }
 
     static bool GetPhysicalMemoryLimit(uint64_t *val)
@@ -136,6 +168,10 @@ private:
 
     static bool IsCGroup1MemorySubsystem(const char *strTok){
         return strcmp("memory", strTok) == 0;
+    }
+
+    static bool IsCGroup1CpuSubsystem(const char *strTok){
+        return strcmp("cpu", strTok) == 0;
     }
 
         static void FindCGroupPath(bool (*is_subsystem)(const char *), char** pcgroup_path, char ** pcgroup_hierarchy_mount = nullptr){
@@ -546,12 +582,166 @@ private:
 
         return false;
     }
+
+    static bool GetCGroup1CpuLimit(uint32_t *val)
+    {
+        long long quota;
+        long long period;
+
+        quota = ReadCpuCGroupValue(CGROUP1_CFS_QUOTA_FILENAME);
+        if (quota <= 0)
+            return false;
+
+        period = ReadCpuCGroupValue(CGROUP1_CFS_PERIOD_FILENAME);
+        if (period <= 0)
+            return false;
+
+        ComputeCpuLimit(period, quota, val);
+
+        return true;
+    }
+
+    static bool GetCGroup2CpuLimit(uint32_t *val)
+    {
+        char *filename = nullptr;
+        FILE *file = nullptr;
+        char *endptr = nullptr;
+        char *max_quota_string = nullptr;
+        char *period_string = nullptr;
+        char *context = nullptr;
+        char *line = nullptr;
+        size_t lineLen = 0;
+
+        long long quota = 0;
+        long long period = 0;
+
+        bool result = false;
+
+        if (s_cpu_cgroup_path == nullptr)
+            return false;
+
+        if (asprintf(&filename, "%s%s", s_cpu_cgroup_path, CGROUP2_CPU_MAX_FILENAME) < 0)
+            return false;
+
+        file = fopen(filename, "r");
+        if (file == nullptr)
+            goto done;
+
+        if (getline(&line, &lineLen, file) == -1)
+            goto done;
+
+        // The expected format is:
+        //     $MAX $PERIOD
+        // Where "$MAX" may be the string literal "max"
+
+        max_quota_string = strtok_r(line, " ", &context);
+        if (max_quota_string == nullptr)
+        {
+            assert(!"Unable to parse " CGROUP2_CPU_MAX_FILENAME " file contents.");
+            goto done;
+        }
+        period_string = strtok_r(nullptr, " ", &context);
+        if (period_string == nullptr)
+        {
+            assert(!"Unable to parse " CGROUP2_CPU_MAX_FILENAME " file contents.");
+            goto done;
+        }
+
+        // "max" means no cpu limit
+        if (strcmp("max", max_quota_string) == 0)
+            goto done;
+
+        errno = 0;
+        quota = strtoll(max_quota_string, &endptr, 10);
+        if (max_quota_string == endptr || errno != 0)
+            goto done;
+
+        period = strtoll(period_string, &endptr, 10);
+        if (period_string == endptr || errno != 0)
+            goto done;
+
+        ComputeCpuLimit(period, quota, val);
+        result = true;
+
+    done:
+        if (file)
+            fclose(file);
+        free(filename);
+        free(line);
+
+        return result;
+    }
+
+    static void ComputeCpuLimit(long long period, long long quota, uint32_t *val)
+    {
+        // Cannot have less than 1 CPU
+        if (quota <= period)
+        {
+            *val = 1;
+            return;
+        }
+
+        // Calculate cpu count based on quota and round it up
+        double cpu_count = (double) quota / period  + 0.999999999;
+        *val = (cpu_count < UINT32_MAX) ? (uint32_t)cpu_count : UINT32_MAX;
+    }
+
+    static long long ReadCpuCGroupValue(const char* subsystemFilename){
+        char *filename = nullptr;
+        bool result = false;
+        long long val;
+
+        if (s_cpu_cgroup_path == nullptr)
+            return -1;
+
+        if (asprintf(&filename, "%s%s", s_cpu_cgroup_path, subsystemFilename) < 0)
+            return -1;
+
+        result = ReadLongLongValueFromFile(filename, &val);
+        free(filename);
+        if (!result)
+            return -1;
+
+        return val;
+    }
+
+    static bool ReadLongLongValueFromFile(const char* filename, long long* val)
+    {
+        bool result = false;
+        char *line = nullptr;
+        size_t lineLen = 0;
+        char *endptr = nullptr;
+
+        if (val == nullptr)
+            return false;
+
+        FILE* file = fopen(filename, "r");
+        if (file == nullptr)
+            goto done;
+
+        if (getline(&line, &lineLen, file) == -1)
+            goto done;
+
+        errno = 0;
+        *val = strtoll(line, &endptr, 10);
+        if (line == endptr || errno != 0)
+            goto done;
+
+        result = true;
+    done:
+        if (file)
+            fclose(file);
+        free(line);
+        return result;
+    }
 };
 }
 
 int CGroup::s_cgroup_version = 0;
 char *CGroup::s_memory_cgroup_path = nullptr;
 char *CGroup::s_memory_cgroup_hierarchy_mount = nullptr;
+char *CGroup::s_cpu_cgroup_path = nullptr;
+bool CGroup::s_initialized = false;
 
 void InitializeCGroup()
 {
@@ -561,6 +751,15 @@ void InitializeCGroup()
 void CleanupCGroup()
 {
     CGroup::Cleanup();
+}
+
+bool GetCGroupCpuLimit(uint32_t* val)
+{
+    if (val == nullptr)
+        return false;
+
+    CGroup::Initialize();
+    return CGroup::GetCpuLimit(val);
 }
 
 size_t GetRestrictedPhysicalMemoryLimit()
@@ -660,6 +859,11 @@ void InitializeCGroup()
 
 void CleanupCGroup()
 {
+}
+
+bool GetCGroupCpuLimit(uint32_t* val)
+{
+    return false;
 }
 
 size_t GetRestrictedPhysicalMemoryLimit()
