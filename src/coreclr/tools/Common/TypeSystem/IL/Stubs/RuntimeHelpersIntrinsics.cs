@@ -47,15 +47,16 @@ namespace Internal.IL.Stubs
 
             TypeDesc elementType = method.Instantiation[0];
 
-            // Fallback to non-intrinsic implementation for universal generics
-            if (elementType.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                return false;
-
             // Callers that analyze uninstantiated IL (for example, dataflow running on top of
             // SubstitutedILProvider in ILC) can ask about signature variables or generic parameters.
             // No single answer is valid for all instantiations, so don't answer. Code generation
             // (RyuJIT, the IL scanner) only asks about exact or canonical instantiations.
-            if (elementType.IsRuntimeDeterminedSubtype || elementType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
+            // This must come first: asking indefinite types about canonical or runtime-determined forms asserts.
+            if (elementType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true) || elementType.IsRuntimeDeterminedSubtype)
+                return false;
+
+            // Fallback to non-intrinsic implementation for universal generics
+            if (elementType.IsCanonicalSubtype(CanonicalFormKind.Universal))
                 return false;
 
             if (method.Name == "IsBitwiseEquatable"u8)
