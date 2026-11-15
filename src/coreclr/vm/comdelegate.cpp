@@ -188,15 +188,6 @@ public:
         // over a register we later need to shuffle down as well).
         if (m_currentGenRegIndex < m_argLocDesc->m_cGenReg)
         {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            if (7 < (m_currentGenRegIndex + m_argLocDesc->m_idxGenReg))
-            {
-                m_currentGenRegIndex++;
-                index = m_currentByteStackIndex;
-                m_currentByteStackIndex += TARGET_POINTER_SIZE;
-                return index;
-            }
-#endif
             index = m_argLocDesc->m_idxGenReg + m_currentGenRegIndex;
             m_currentGenRegIndex++;
 
