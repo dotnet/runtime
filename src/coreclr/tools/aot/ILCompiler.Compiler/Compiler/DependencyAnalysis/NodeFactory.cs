@@ -651,9 +651,14 @@ namespace ILCompiler.DependencyAnalysis
                 return new ProxyTypeMapRequestNode(type);
             });
 
-            _typeLoaderArgumentGates = new NodeCache<(TypeDesc, int, IEETypeNode), TypeLoaderArgumentGateNode>(key =>
+            _typeLoaderArgumentGates = new NodeCache<(TypeDesc, int), TypeLoaderArgumentGateNode>(key =>
             {
-                return new TypeLoaderArgumentGateNode(key.Item1, key.Item2, key.Item3);
+                return new TypeLoaderArgumentGateNode(key.Item1, key.Item2);
+            });
+
+            _typeLoaderLoadableTypes = new NodeCache<TypeDesc, TypeLoaderLoadableTypeNode>(type =>
+            {
+                return new TypeLoaderLoadableTypeNode(type);
             });
 
             _analysisCharacteristics = new NodeCache<string, AnalysisCharacteristicNode>(c =>
@@ -1649,11 +1654,18 @@ namespace ILCompiler.DependencyAnalysis
             return _externalTypeMapRequests.GetOrAdd(type);
         }
 
-        private NodeCache<(TypeDesc, int, IEETypeNode), TypeLoaderArgumentGateNode> _typeLoaderArgumentGates;
+        private NodeCache<(TypeDesc, int), TypeLoaderArgumentGateNode> _typeLoaderArgumentGates;
 
-        public TypeLoaderArgumentGateNode TypeLoaderArgumentGate(TypeDesc type, int nextArgument, IEETypeNode typeToMark)
+        public TypeLoaderArgumentGateNode TypeLoaderArgumentGate(TypeDesc type, int argumentIndex)
         {
-            return _typeLoaderArgumentGates.GetOrAdd((type, nextArgument, typeToMark));
+            return _typeLoaderArgumentGates.GetOrAdd((type, argumentIndex));
+        }
+
+        private NodeCache<TypeDesc, TypeLoaderLoadableTypeNode> _typeLoaderLoadableTypes;
+
+        public TypeLoaderLoadableTypeNode TypeLoaderLoadableType(TypeDesc type)
+        {
+            return _typeLoaderLoadableTypes.GetOrAdd(type);
         }
 
         private NodeCache<TypeDesc, ProxyTypeMapRequestNode> _proxyTypeMapRequests;

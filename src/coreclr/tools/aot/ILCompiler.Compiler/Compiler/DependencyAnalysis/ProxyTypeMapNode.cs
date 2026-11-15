@@ -49,14 +49,11 @@ namespace ILCompiler.DependencyAnalysis
 
                 // If the key type has a canonical form, it could be created at runtime by the type loader.
                 // If there is a type loader template for it, create the generic type instantiation eagerly.
-                TypeDesc canonKey = key.ConvertToCanonForm(CanonicalFormKind.Specific);
-                if (canonKey != key && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonKey))
-                {
-                    sink.Add(new CombinedDependencyListEntry(
-                        context.TypeLoaderArgumentGate(key, 0, context.MaximallyConstructableType(key)),
-                        context.NativeLayout.TemplateTypeLayout(canonKey),
-                        "Proxy map entry that could be loaded at runtime"));
-                }
+                RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(
+                    sink,
+                    context,
+                    context.MaximallyConstructableType(key),
+                    "Proxy map entry that could be loaded at runtime");
             }
         }
 
