@@ -5700,6 +5700,7 @@ public:
     bool impMatchAsyncVersionTailCall(const BYTE* codeAddr, const BYTE* codeEndp, int*        prefixFlags, int*        numBytesMatched);
     bool impMatchStlocLdloca(const BYTE** codeAddr, const BYTE* codeEndp, unsigned* lclNum);
 
+    bool impIsCovariantAwait(CorInfoType asyncVariantRetType, IL_OFFSET awaitOffset);
     bool impCheckOptimizeAwait(IL_OFFSET awaitOffset);
 
     GenTree* impCastClassOrIsInstToTree(
@@ -5922,6 +5923,7 @@ private:
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
+    void impDiscardTopOfStack();
     bool impWrapTopOfStackInAwait();
     bool impFoldAwaitedTopOfStack();
     void impPoisonImplicitByrefsBeforeReturn();

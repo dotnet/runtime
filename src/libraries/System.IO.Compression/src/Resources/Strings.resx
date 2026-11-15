@@ -201,6 +201,9 @@
   <data name="DeleteOpenEntry" xml:space="preserve">
     <value>Cannot delete an entry currently open for writing.</value>
   </data>
+  <data name="EmptyArchiveStream" xml:space="preserve">
+    <value>The stream is empty.</value>
+  </data>
   <data name="EntriesInCreateMode" xml:space="preserve">
     <value>Cannot access entries in Create mode.</value>
   </data>
@@ -217,7 +220,7 @@
     <value>Entries with uncompressed data larger than 2GB are not supported in Update mode.</value>
   </data>
   <data name="EOCDNotFound" xml:space="preserve">
-    <value>End of Central Directory record could not be found.</value>
+    <value>The stream does not contain a valid ZIP archive: the End of Central Directory record could not be found.</value>
   </data>
   <data name="FieldTooBigCompressedSize" xml:space="preserve">
     <value>Compressed Size cannot be held in an Int64.</value>
