@@ -9,6 +9,7 @@ using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Parsing;
 using System.IO;
+using System.Numerics;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -122,7 +123,11 @@ namespace ILCompiler
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
             var simdVectorLength = instructionSetSupport.GetVectorTSimdVector();
-            var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, simdVectorLength);
+            int? functionAlignment = Get(_command.FunctionAlignment);
+            if (functionAlignment.HasValue && !BitOperations.IsPow2(functionAlignment.Value))
+                throw new CommandLineException("Function alignment must be a power of two");
+
+            var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, simdVectorLength, functionAlignment);
             CompilerTypeSystemContext typeSystemContext =
                 new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0,
                     genericCycleDepthCutoff: Get(_command.MaxGenericCycleDepth),
