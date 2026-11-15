@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using Xunit;
@@ -55,5 +56,33 @@ namespace System.Collections.Tests
                 j++;
             }
         }
+
+        #region Clear
+
+        [Fact]
+        public static void Clear_AfterRemoval_DoesNotExposeOldItems()
+        {
+            var comparer = EqualityComparer<int>.Create((x, y) => x == y, x => x % 2);
+            var set = new HashSet<int>(comparer) { 1, 2, 3 };
+            Assert.True(set.Remove(2));
+
+            set.Clear();
+            Assert.Empty(set);
+
+            Assert.True(set.Add(4));
+            Assert.True(set.Add(5));
+            Assert.Equal(new[] { 4, 5 }, set.OrderBy(item => item));
+            foreach (int item in new[] { 4, 5 })
+            {
+                Assert.True(set.TryGetValue(item, out int actual));
+                Assert.Equal(item, actual);
+            }
+            foreach (int item in new[] { 1, 2, 3 })
+            {
+                Assert.False(set.Contains(item));
+            }
+        }
+
+        #endregion
     }
 }
