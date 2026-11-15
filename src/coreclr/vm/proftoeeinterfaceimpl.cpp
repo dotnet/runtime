@@ -6915,11 +6915,9 @@ HRESULT ProfToEEInterfaceImpl::GetEnvironmentVariable(
     if ((pcchValue != nullptr) || (szValue != nullptr))
     {
         uint32_t trueLen = ProcessEnvironment_GetVariable((const CHAR16_T*)szName, (CHAR16_T*)szValue, cchValue);
-
-        // 0 is also returned for a variable with an empty value, whose required size is 1.
-        if (trueLen == 0 && ProcessEnvironment_GetVariable((const CHAR16_T*)szName, nullptr, 0) == 0)
+        if (trueLen == 0)
         {
-            hr = HRESULT_FROM_WIN32(ERROR_ENVVAR_NOT_FOUND);
+            hr = HRESULT_FROM_WIN32(GetLastError());
         }
         else if ((trueLen > cchValue) && (szValue != nullptr))
         {

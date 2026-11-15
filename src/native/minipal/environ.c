@@ -53,15 +53,19 @@ uint32_t minipal_environ_get_variable_u16(const CHAR16_T* name, CHAR16_T* buffer
     return (uint32_t)GetEnvironmentVariableW((LPCWSTR)name, (LPWSTR)buffer, buffer_size);
 #else
     char name_buffer[256];
-    char* name_utf8 = name_buffer;
     size_t name_len = minipal_u16_strlen(name);
-    size_t name_utf8_len = minipal_get_length_utf16_to_utf8(name, name_len, 0);
-    if (name_utf8_len >= sizeof(name_buffer))
+    char* name_utf8 = name_buffer;
+    size_t name_utf8_len = sizeof(name_buffer) - 1;
+    if (name_len >= (sizeof(name_buffer) - 1) / 3)
     {
-        name_utf8 = (char*)malloc(name_utf8_len + 1);
-        if (name_utf8 == NULL)
+        name_utf8_len = minipal_get_length_utf16_to_utf8(name, name_len, 0);
+        if (name_utf8_len >= sizeof(name_buffer))
         {
-            return 0;
+            name_utf8 = (char*)malloc(name_utf8_len + 1);
+            if (name_utf8 == NULL)
+            {
+                return 0;
+            }
         }
     }
 

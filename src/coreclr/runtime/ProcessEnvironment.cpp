@@ -24,6 +24,7 @@ uint32_t ProcessEnvironment_SetVariable(const CHAR16_T* name, const CHAR16_T* va
 #include <minipal/strings.h>
 #include <minipal/utf8.h>
 
+#include <errno.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -218,16 +219,27 @@ static char* Utf16ToUtf8(const CHAR16_T* source)
     return result;
 }
 
+static void SetLastEnvironmentError(uint32_t error)
+{
+#ifdef FEATURE_NATIVEAOT
+    errno = (int)error;
+#else
+    SetLastError(error);
+#endif
+}
+
 uint32_t ProcessEnvironment_GetVariable(const CHAR16_T* name, CHAR16_T* buffer, uint32_t bufferSize)
 {
     if (name == nullptr || name[0] == 0)
     {
+        SetLastEnvironmentError(PROCESSENVIRONMENT_ERROR_ENVVAR_NOT_FOUND);
         return 0;
     }
 
     char* nameUtf8 = Utf16ToUtf8(name);
     if (nameUtf8 == nullptr)
     {
+        SetLastEnvironmentError(PROCESSENVIRONMENT_ERROR_NOT_ENOUGH_MEMORY);
         return 0;
     }
 
@@ -236,12 +248,15 @@ uint32_t ProcessEnvironment_GetVariable(const CHAR16_T* name, CHAR16_T* buffer, 
     free(nameUtf8);
 
     uint32_t result = 0;
+    uint32_t error = PROCESSENVIRONMENT_ERROR_ENVVAR_NOT_FOUND;
     if (value != nullptr)
     {
         size_t valueLength = strlen(value);
         size_t needed = minipal_get_length_utf8_to_utf16(value, valueLength, 0);
+        error = PROCESSENVIRONMENT_ERROR_NOT_ENOUGH_MEMORY;
         if (needed <= UINT32_MAX - 1)
         {
+            error = 0;
             if (buffer != nullptr && needed < bufferSize)
             {
                 size_t written = minipal_convert_utf8_to_utf16(value, valueLength, buffer, bufferSize, 0);
@@ -259,6 +274,8 @@ uint32_t ProcessEnvironment_GetVariable(const CHAR16_T* name, CHAR16_T* buffer, 
     {
         pthread_mutex_unlock(&s_envLock);
     }
+
+    SetLastEnvironmentError(error);
     return result;
 }
 
@@ -298,11 +315,14 @@ uint32_t ProcessEnvironment_GetVariableUtf8(const char* name, char* buffer, uint
     const char* value = FindValueAndLock(name, &locked);
 
     uint32_t result = 0;
+    uint32_t error = PROCESSENVIRONMENT_ERROR_ENVVAR_NOT_FOUND;
     if (value != nullptr)
     {
         size_t valueLength = strlen(value);
+        error = PROCESSENVIRONMENT_ERROR_NOT_ENOUGH_MEMORY;
         if (valueLength <= UINT32_MAX - 1)
         {
+            error = 0;
             if (buffer != nullptr && valueLength < bufferSize)
             {
                 memcpy(buffer, value, valueLength + 1);
@@ -319,6 +339,8 @@ uint32_t ProcessEnvironment_GetVariableUtf8(const char* name, char* buffer, uint
     {
         pthread_mutex_unlock(&s_envLock);
     }
+
+    SetLastEnvironmentError(error);
     return result;
 }
 
