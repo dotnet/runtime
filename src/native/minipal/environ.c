@@ -45,23 +45,6 @@ uint32_t minipal_environ_get_variable(const char* name, char* buffer, uint32_t b
 #endif
 }
 
-#ifndef HOST_WINDOWS
-static char* utf16_to_utf8_alloc(const CHAR16_T* source)
-{
-    size_t source_len = minipal_u16_strlen(source);
-    size_t dest_len = minipal_get_length_utf16_to_utf8(source, source_len, 0);
-    char* dest = (char*)malloc(dest_len + 1);
-    if (dest == NULL)
-    {
-        return NULL;
-    }
-
-    size_t written = minipal_convert_utf16_to_utf8(source, source_len, dest, dest_len + 1, 0);
-    dest[written] = '\0';
-    return dest;
-}
-#endif
-
 uint32_t minipal_environ_get_variable_u16(const CHAR16_T* name, CHAR16_T* buffer, uint32_t buffer_size)
 {
     assert(name != NULL && name[0] != 0);
@@ -69,15 +52,28 @@ uint32_t minipal_environ_get_variable_u16(const CHAR16_T* name, CHAR16_T* buffer
 #ifdef HOST_WINDOWS
     return (uint32_t)GetEnvironmentVariableW((LPCWSTR)name, (LPWSTR)buffer, buffer_size);
 #else
-    char* name_utf8 = utf16_to_utf8_alloc(name);
-    if (name_utf8 == NULL)
+    char name_buffer[256];
+    char* name_utf8 = name_buffer;
+    size_t name_len = minipal_u16_strlen(name);
+    size_t name_utf8_len = minipal_get_length_utf16_to_utf8(name, name_len, 0);
+    if (name_utf8_len >= sizeof(name_buffer))
     {
-        return 0;
+        name_utf8 = (char*)malloc(name_utf8_len + 1);
+        if (name_utf8 == NULL)
+        {
+            return 0;
+        }
     }
+
+    size_t name_written = minipal_convert_utf16_to_utf8(name, name_len, name_utf8, name_utf8_len + 1, 0);
+    name_utf8[name_written] = '\0';
 
     assert(strchr(name_utf8, '=') == NULL);
     const char* value = getenv(name_utf8);
-    free(name_utf8);
+    if (name_utf8 != name_buffer)
+    {
+        free(name_utf8);
+    }
     if (value == NULL)
     {
         return 0;

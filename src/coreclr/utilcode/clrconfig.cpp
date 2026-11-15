@@ -10,6 +10,7 @@
 #include "ex.h"
 
 #include "clrconfignocache.h"
+#include <minipal/environ.h>
 
 using ConfigDWORDInfo = CLRConfig::ConfigDWORDInfo;
 using ConfigStringInfo = CLRConfig::ConfigStringInfo;
@@ -99,7 +100,7 @@ namespace
     bool s_fUseEnvCache = false;
     ProbabilisticNameSet s_EnvNames; // set of environment value names seen
 
-    CLRConfig::GetEnvironmentVariableCallback s_getEnvironmentVariable = nullptr;
+    CLRConfig::GetEnvironmentVariableCallback s_getEnvironmentVariable = &minipal_environ_get_variable_u16;
     CLRConfig::EnumerateEnvironmentCallback s_enumerateEnvironment = nullptr;
 
     bool EnvCacheValueNameSeenPerhaps(LPCWSTR name)
@@ -118,11 +119,11 @@ namespace
         LIMITED_METHOD_CONTRACT;
 
         size_t prefixLength;
-        if (SString::_strnicmp(entry, DOTNET_PREFIX_A, LEN_OF_DOTNET_PREFIX) == 0)
+        if (strncmp(entry, DOTNET_PREFIX_A, LEN_OF_DOTNET_PREFIX) == 0)
             prefixLength = LEN_OF_DOTNET_PREFIX;
-        else if (SString::_strnicmp(entry, COMPLUS_PREFIX_A, LEN_OF_COMPLUS_PREFIX) == 0)
+        else if (strncmp(entry, COMPLUS_PREFIX_A, LEN_OF_COMPLUS_PREFIX) == 0)
             prefixLength = LEN_OF_COMPLUS_PREFIX;
-        else if (SString::_strnicmp(entry, CORECLR_PREFIX_A, LEN_OF_CORECLR_PREFIX) == 0)
+        else if (strncmp(entry, CORECLR_PREFIX_A, LEN_OF_CORECLR_PREFIX) == 0)
             prefixLength = LEN_OF_CORECLR_PREFIX;
         else
             return;
@@ -152,9 +153,6 @@ namespace
             GC_NOTRIGGER;
         }
         CONTRACTL_END;
-
-        if (s_getEnvironmentVariable == nullptr)
-            return WszGetEnvironmentVariable(name, value);
 
         COUNT_T size = value.GetUnicodeAllocation() + 1;
         DWORD len = s_getEnvironmentVariable((const CHAR16_T*)name, (CHAR16_T*)value.OpenUnicodeBuffer(size - 1), size);
@@ -692,7 +690,7 @@ void CLRConfig::Initialize()
     WCHAR* wszStrings = GetEnvironmentStringsW();
     if (wszStrings != NULL)
     {
-        // Returns pointer to a null terminated block containing null terminated strings
+        // GetEnvironmentStringsW returns pointer to a null terminated block containing null terminated strings
         for(WCHAR *wszCurr = wszStrings; *wszCurr; wszCurr++)
         {
             WCHAR wch = (WCHAR)towlower(*wszCurr);

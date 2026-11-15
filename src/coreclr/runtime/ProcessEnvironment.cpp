@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-#include "MiscNativeHelpers.h"
 #include "ProcessEnvironment.h"
 
 #ifdef TARGET_WINDOWS

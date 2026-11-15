@@ -91,6 +91,7 @@
 #endif // FEATURE_INTERPRETER
 
 #include "MiscNativeHelpers.h"
+#include "ProcessEnvironment.h"
 
 #if !defined(TARGET_WASM) || !GEN_PINVOKE
 // Keep entries sorted by name using strcmp ordering for binary search.
