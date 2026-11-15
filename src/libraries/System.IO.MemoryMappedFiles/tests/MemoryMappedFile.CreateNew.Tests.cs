@@ -108,11 +108,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FailedViewCommit_DoesNotCreateAccessor()
         {
-            if (IntPtr.Size != 8)
-            {
-                return;
-            }
-
             RemoteExecutor.Invoke(new Action(FailedViewCommit_OtherProcess)).Dispose();
         }
 
@@ -124,27 +119,30 @@ namespace System.IO.MemoryMappedFiles.Tests
                 throw new Win32Exception(Marshal.GetLastPInvokeError());
             }
 
+            using Process process = Process.GetCurrentProcess();
+            const long viewSize = 128L * 1024 * 1024;
+            const long commitHeadroom = 32L * 1024 * 1024;
+
             JobObjectExtendedLimitInformation limits = default;
             limits.BasicLimitInformation.LimitFlags = 0x100; // JOB_OBJECT_LIMIT_PROCESS_MEMORY
-            limits.ProcessMemoryLimit = 512 * 1024 * 1024;
+            limits.ProcessMemoryLimit = checked((nuint)(process.PrivateMemorySize64 + commitHeadroom));
             if (!SetInformationJobObject(job, 9, ref limits, (uint)Marshal.SizeOf<JobObjectExtendedLimitInformation>()))
             {
                 throw new Win32Exception(Marshal.GetLastPInvokeError());
             }
 
-            using Process process = Process.GetCurrentProcess();
             if (!AssignProcessToJobObject(job, process.Handle))
             {
                 throw new Win32Exception(Marshal.GetLastPInvokeError());
             }
 
             // The mapping reserves address space; committing the view exceeds this process's job limit.
-            using MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 1L << 30,
+            using MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, viewSize,
                 MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.DelayAllocatePages, HandleInheritability.None);
 
             AssertExtensions.ThrowsAny<IOException, OutOfMemoryException>(() =>
             {
-                using MemoryMappedViewAccessor accessor = mmf.CreateViewAccessor(0, 1L << 30);
+                using MemoryMappedViewAccessor accessor = mmf.CreateViewAccessor(0, viewSize);
             });
         }
 
