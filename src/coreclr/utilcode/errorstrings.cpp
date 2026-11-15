@@ -9,7 +9,7 @@
 
 #include "stdafx.h"
 
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
 
 struct ErrorString
 {
@@ -180,4 +180,4 @@ bool GetSystemErrorMessage(DWORD code, WCHAR *buffer, size_t cchBuffer)
     return true;
 }
 
-#endif // TARGET_UNIX
+#endif // HOST_UNIX

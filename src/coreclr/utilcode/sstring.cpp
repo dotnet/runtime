@@ -1793,7 +1793,7 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
                            arg5.GetUnicode(), arg6.GetUnicode(), arg7.GetUnicode(), arg8.GetUnicode(),
                            arg9.GetUnicode(), arg10.GetUnicode()};
 
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
     SString result;
 
     if (dwFlags & FORMAT_MESSAGE_FROM_SYSTEM)
@@ -1858,7 +1858,7 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
 
     Set(result);
     return TRUE;
-#else // TARGET_UNIX
+#else // HOST_UNIX
     if (GetRawCount() > 0)
     {
         // First, try to use our existing buffer to hold the result.
@@ -1899,7 +1899,7 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
 
     Set(stringRaw);
     return TRUE;
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 }
 
 #if 1
