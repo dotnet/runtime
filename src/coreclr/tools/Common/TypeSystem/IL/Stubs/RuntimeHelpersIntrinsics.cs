@@ -51,7 +51,10 @@ namespace Internal.IL.Stubs
             if (elementType.IsCanonicalSubtype(CanonicalFormKind.Universal))
                 return false;
 
-            // We can only answer for fully instantiated types (this is not reachable from RyuJIT).
+            // Callers that analyze uninstantiated IL (for example, dataflow running on top of
+            // SubstitutedILProvider in ILC) can ask about signature variables or generic parameters.
+            // No single answer is valid for all instantiations, so don't answer. Code generation
+            // (RyuJIT, the IL scanner) only asks about exact or canonical instantiations.
             if (elementType.IsRuntimeDeterminedSubtype || elementType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
                 return false;
 
