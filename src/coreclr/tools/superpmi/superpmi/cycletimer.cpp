@@ -4,6 +4,10 @@
 #include "standardpch.h"
 #include "cycletimer.h"
 
+#ifdef HOST_UNIX
+#include <time.h>
+#endif
+
 static BOOL GetThreadCycles(uint64_t* cycles)
 {
 #ifdef HOST_UNIX

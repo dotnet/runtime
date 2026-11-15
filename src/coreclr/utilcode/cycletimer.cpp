@@ -10,6 +10,10 @@
 #include "utilcode.h"
 #include "minipal/time.h"
 
+#ifdef HOST_UNIX
+#include <time.h>
+#endif
+
 bool CycleTimer::GetThreadCyclesS(uint64_t* cycles)
 {
 #ifdef HOST_UNIX
