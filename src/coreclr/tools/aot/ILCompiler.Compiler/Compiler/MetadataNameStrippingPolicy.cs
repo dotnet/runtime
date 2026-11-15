@@ -9,7 +9,7 @@ using Internal.TypeSystem;
 namespace ILCompiler
 {
     /// <summary>
-    /// Represents a policy that decides which assemblies have the names of their types and members stripped
+    /// Represents a policy that decides which assemblies have the names of their types stripped
     /// from the reflection metadata and the stack trace data emitted into the executable.
     /// </summary>
     public sealed class MetadataNameStrippingPolicy
@@ -28,7 +28,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Returns true if the names of the types and members defined in <paramref name="module"/> are stripped.
+        /// Returns true if the names of the types defined in <paramref name="module"/> are stripped.
         /// </summary>
         public bool IsStripped(ModuleDesc module)
         {

@@ -116,7 +116,7 @@ namespace ILCompiler
         public bool IsDataDehydrated => (_options & MetadataManagerOptions.DehydrateData) != 0;
 
         /// <summary>
-        /// Returns true if the names of the types and members defined in <paramref name="module"/>
+        /// Returns true if the names of the types defined in <paramref name="module"/>
         /// are emitted into the metadata.
         /// </summary>
         internal bool GeneratesNames(ModuleDesc module) => !_nameStrippingPolicy.IsStripped(module);

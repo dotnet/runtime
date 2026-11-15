@@ -34,7 +34,7 @@ namespace ILCompiler.Metadata
                 Ecma.GenericParameter genParamDef = reader.GetGenericParameter(ecmaGenParam.Handle);
 
                 result.Flags = genParamDef.Attributes;
-                result.Name = HandleName(reader.GetString(genParamDef.Name), !_policy.GeneratesNames(ecmaGenParam.Module));
+                result.Name = HandleString(reader.GetString(genParamDef.Name));
 
                 Ecma.CustomAttributeHandleCollection customAttributes = genParamDef.GetCustomAttributes();
                 if (customAttributes.Count > 0)

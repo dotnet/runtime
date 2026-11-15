@@ -108,8 +108,8 @@ namespace Internal.StackTraceMetadata
                     }
                 }
 
-                // Methods with a name that was stripped by the compiler have no information to report.
-                if (IsNameStripped(reader, typeHandle, methodHandle))
+                // Methods of types with a name that was stripped by the compiler have no information to report.
+                if (IsTypeNameStripped(reader, typeHandle))
                 {
                     owningTypeName = null;
                     genericArgs = null;
@@ -214,7 +214,7 @@ namespace Internal.StackTraceMetadata
                 out MetadataReader reader,
                 out TypeDefinitionHandle typeHandle,
                 out MethodHandle methodHandle)
-                && !IsNameStripped(reader, typeHandle, methodHandle))
+                && !IsTypeNameStripped(reader, typeHandle))
             {
                 return CreateDiagnosticMethodInfo(reader, typeHandle, reader.GetMethod(methodHandle).Name);
             }
@@ -235,7 +235,7 @@ namespace Internal.StackTraceMetadata
                 out MetadataReader reader,
                 out TypeDefinitionHandle typeHandle,
                 out MethodHandle methodHandle)
-                && !IsNameStripped(reader, typeHandle, methodHandle))
+                && !IsTypeNameStripped(reader, typeHandle))
             {
                 return CreateDiagnosticMethodInfo(reader, typeHandle, reader.GetMethod(methodHandle).Name);
             }
@@ -258,11 +258,10 @@ namespace Internal.StackTraceMetadata
                 FormatAssemblyName(reader, owningType));
         }
 
-        private static bool IsNameStripped(MetadataReader reader, TypeDefinitionHandle typeHandle, MethodHandle methodHandle)
+        private static bool IsTypeNameStripped(MetadataReader reader, TypeDefinitionHandle typeHandle)
         {
-            // Constructors and a few other methods keep their names, but are still declared on a type that doesn't have one.
-            return reader.ReadStringAsBytes(reader.GetMethod(methodHandle).Name).IsEmpty
-                || reader.ReadStringAsBytes(reader.GetTypeDefinition(typeHandle).Name).IsEmpty;
+            // The methods of a type that has its name stripped by the compiler have no information to report.
+            return reader.ReadStringAsBytes(reader.GetTypeDefinition(typeHandle).Name).IsEmpty;
         }
 
         private static string FormatAssemblyName(MetadataReader reader, Handle handle)

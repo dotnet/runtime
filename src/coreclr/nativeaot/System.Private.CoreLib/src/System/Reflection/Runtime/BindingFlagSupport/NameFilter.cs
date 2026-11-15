@@ -15,7 +15,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public abstract bool Matches(string name);
         protected string ExpectedName { get; }
 
-        // Members with a name that was stripped by the compiler have an empty name. They can't be found by name.
+        // Nested types with a name that was stripped by the compiler have an empty name. They can't be found by name.
         protected bool CanMatch => ExpectedName.Length != 0;
     }
 

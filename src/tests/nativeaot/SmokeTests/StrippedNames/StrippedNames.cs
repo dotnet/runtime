@@ -13,15 +13,16 @@ using System.Text;
 using StrippedNamesLibrary;
 
 // The StrippedNamesLibrary assembly is listed in IlcStripNamesAssembly (see StrippedNames.csproj), so the reflection
-// metadata for its types and members has no names. Types and members from this assembly keep their names.
+// metadata for its types has no names. Types from this assembly keep their names, and members keep their names everywhere.
 internal static class Program
 {
     private static int Main()
     {
         TestNamesOfStrippedTypes.Run();
-        TestNamesOfStrippedMembers.Run();
+        TestMembersOfStrippedTypes.Run();
         TestNamesOfRetainedTypes.Run();
-        TestRetainedMemberNames.Run();
+        TestMemberNames.Run();
+        TestOverrides.Run();
         TestTypeIdentity.Run();
         TestGenericVirtualMethods.Run();
         TestLookupByName.Run();
@@ -83,55 +84,55 @@ internal static class Program
         }
     }
 
-    private static class TestNamesOfStrippedMembers
+    private static class TestMembersOfStrippedTypes
     {
         public static void Run()
         {
             Type widget = Keep(typeof(Widget));
             const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
-            // Methods that have the same shape must stay distinct without their names
+            // Members keep their names, even though the type that declares them has none
             MethodInfo[] methods = widget.GetMethods(flags);
-            Assert(methods.Length == 7);
-            Assert(methods.All(m => m.Name == string.Empty));
+            Assert(methods.Length == 8);
             Assert(methods.All(m => m.DeclaringType == widget));
+            Assert(methods.Select(m => m.Name).OrderBy(n => n, StringComparer.Ordinal).SequenceEqual(
+                new[] { "Echo", "FirstMethod", "RaiseChanged", "SecondMethod", "add_Changed", "get_Count", "remove_Changed", "set_Count" }));
 
             Widget instance = new Widget();
-            List<string> results = new();
-            foreach (MethodInfo method in methods)
-            {
-                if (method.GetParameters().Length == 0 && method.ReturnType == typeof(string))
-                    results.Add((string)method.Invoke(instance, null));
-            }
-            results.Sort(StringComparer.Ordinal);
-            Assert(results.Count == 2);
-            Assert(results[0] == "first");
-            Assert(results[1] == "second");
+            Assert((string)widget.GetMethod("FirstMethod").Invoke(instance, null) == "first");
+            Assert((string)widget.GetMethod("SecondMethod").Invoke(instance, null) == "second");
 
-            FieldInfo[] fields = widget.GetFields(flags);
-            Assert(fields.Length == 1);
-            Assert(fields[0].Name == string.Empty);
-            fields[0].SetValue(instance, 42);
+            MethodInfo echo = widget.GetMethod("Echo");
+            Assert(echo.GetParameters().Single().Name == "text");
+            Assert((string)echo.Invoke(instance, new object[] { "hello" }) == "hello");
+
+            FieldInfo field = widget.GetField("Field");
+            Assert(field is not null);
+            field.SetValue(instance, 42);
             Assert(instance.Field == 42);
 
-            PropertyInfo[] properties = widget.GetProperties(flags);
-            Assert(properties.Length == 1);
-            Assert(properties[0].Name == string.Empty);
-            properties[0].SetValue(instance, 7);
-            Assert((int)properties[0].GetValue(instance) == 7);
+            PropertyInfo property = widget.GetProperty("Count");
+            Assert(property is not null);
+            property.SetValue(instance, 7);
+            Assert((int)property.GetValue(instance) == 7);
 
-            EventInfo[] events = widget.GetEvents(flags);
-            Assert(events.Length == 1);
-            Assert(events[0].Name == string.Empty);
+            Assert(widget.GetEvent("Changed") is not null);
 
-            // Members are matched by their metadata definition, which doesn't depend on their name
-            FieldInfo definitionField = Keep(typeof(GenericHolder<>)).GetFields(flags | BindingFlags.Static).Single();
+            // Members are matched by their metadata definition, even when the type has no name
+            FieldInfo definitionField = Keep(typeof(GenericHolder<>)).GetField("Value");
             Type constructed = Keep(typeof(GenericHolder<Marked>));
             MemberInfo projected = constructed.GetMemberWithSameMetadataDefinitionAs(definitionField);
-            Assert(projected is FieldInfo { Name: "" } projectedField && projectedField.DeclaringType == constructed);
-            Assert(widget.GetMemberWithSameMetadataDefinitionAs(fields[0]) == fields[0]);
+            Assert(projected is FieldInfo { Name: "Value" } projectedField && projectedField.DeclaringType == constructed);
+            Assert(widget.GetMemberWithSameMetadataDefinitionAs(field) == field);
 
-            Assert(widget.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic).Length == 1);
+            // Nested types have no name, so they can't be filtered by it, but they are still found by their definition
+            Type nested = Keep(typeof(Widget.Nested));
+            Assert(widget.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic).Single() == nested);
+            Assert(widget.GetMemberWithSameMetadataDefinitionAs(nested) == nested);
+            Assert(widget.GetNestedType(string.Empty) is null);
+            Assert(widget.GetNestedType(string.Empty, BindingFlags.Public | BindingFlags.IgnoreCase) is null);
+            Assert(widget.GetMember(string.Empty, MemberTypes.NestedType, BindingFlags.Public | BindingFlags.NonPublic).Length == 0);
+            Assert(widget.GetMember(string.Empty).Length == 0);
         }
     }
 
@@ -158,7 +159,7 @@ internal static class Program
         }
     }
 
-    private static class TestRetainedMemberNames
+    private static class TestMemberNames
     {
         public static void Run()
         {
@@ -170,17 +171,37 @@ internal static class Program
             Assert(ctor.Invoke(null) is Widget);
             Assert(Activator.CreateInstance(widget) is Widget);
 
-            // Enum members are retained
+            // Enum members work as usual
             Assert(Color.Green.ToString() == "Green");
             Assert(Enum.Parse<Color>("Red") == Color.Red);
             Assert(string.Join(",", Enum.GetNames<Color>()) == "Red,Green");
             Assert(Color.Red.ToString("G") == "Red");
 
-            // The Invoke method of delegates is retained
+            // The Invoke method of delegates works as usual
             Callback callback = x => x * 2;
             Assert(callback(2) == 4);
             Assert((int)callback.DynamicInvoke(3) == 6);
             Assert(Keep(typeof(Callback)).GetMethod("Invoke") is not null);
+        }
+    }
+
+    private static class TestOverrides
+    {
+        public static void Run()
+        {
+            // Overrides are matched with the members they override by name, so this needs to work across stripped and not stripped types
+            MethodInfo baseMethod = Keep(typeof(Base)).GetMethod("Hello");
+            Assert(baseMethod.DeclaringType == typeof(Base));
+
+            MethodInfo derivedMethod = Keep(typeof(Derived)).GetMethod("Hello", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            Assert(derivedMethod.DeclaringType == typeof(Derived));
+            Assert(derivedMethod.GetBaseDefinition() == baseMethod);
+            Assert(Keep(typeof(Derived)).GetMethods(BindingFlags.Public | BindingFlags.Instance).Count(m => m.Name == "Hello") == 1);
+
+            MethodInfo mainMethod = Keep(typeof(MainDerived)).GetMethod("Hello", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            Assert(mainMethod.GetBaseDefinition() == baseMethod);
+            Assert(Keep(typeof(MainDerived)).GetMethods(BindingFlags.Public | BindingFlags.Instance).Count(m => m.Name == "Hello") == 1);
+            Assert(new MainDerived().Hello() == "MainDerived");
         }
     }
 
@@ -219,7 +240,7 @@ internal static class Program
     {
         public static void Run()
         {
-            // Generic virtual methods are matched by name and signature, so they keep their names
+            // Generic virtual methods are matched by name and signature
             GvmBase gvm = new GvmDerived();
             Assert(gvm.Describe<object>() == "GvmDerived");
             Assert(gvm.Other<object>() == "GvmDerived.Other");
@@ -236,7 +257,7 @@ internal static class Program
             Assert(converter.Convert<int>(1) == 2);
             Assert(converter.Convert<object>(1).Equals(2));
 
-            // Generic methods that are not virtual are looked up by name at runtime too
+            // Generic methods are looked up by name at runtime too
             Assert(GenericHelpers.Describe<Marked>(null) == "helper:ref");
             Assert(GenericHelpers.Describe<Point>(default) == "helper:value");
             MethodInfo helper = Keep(typeof(GenericHelpers)).GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly).Single().MakeGenericMethod(typeof(Marked));
@@ -267,11 +288,11 @@ internal static class Program
             Assert(typeof(Base).Assembly.GetType(Join(ns, "Base"), throwOnError: false, ignoreCase: true) is null);
 
             Type widget = Keep(typeof(Widget));
-            Assert(widget.GetMethod(Join("First", "Method")) is null);
-            Assert(widget.GetMethod(Join("first", "method"), BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase) is null);
-            Assert(widget.GetField(Join("Fie", "ld")) is null);
-            Assert(widget.GetProperty(Join("Co", "unt")) is null);
-            Assert(widget.GetEvent(Join("Chan", "ged")) is null);
+            Assert(widget.GetMethod(Join("First", "Method")) is not null);
+            Assert(widget.GetMethod(Join("first", "method"), BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase) is not null);
+            Assert(widget.GetField(Join("Fie", "ld")) is not null);
+            Assert(widget.GetProperty(Join("Co", "unt")) is not null);
+            Assert(widget.GetEvent(Join("Chan", "ged")) is not null);
             Assert(widget.GetNestedType(Join("Nes", "ted")) is null);
 
             // Interfaces are looked up by name without going through the member filters
@@ -286,7 +307,7 @@ internal static class Program
     {
         public static void Run()
         {
-            // Named arguments are resolved by name, so the members of attribute types are retained
+            // Named arguments are resolved by name
             MarkerAttribute attribute = typeof(Marked).GetCustomAttribute<MarkerAttribute>();
             Assert(attribute is not null);
             Assert(attribute.Label == "label");
@@ -298,7 +319,7 @@ internal static class Program
 
             Assert(new Marked() is not null);
 
-            // The accessors of properties of attribute types are used to match overrides
+            // Properties of attribute types are matched with the ones they override by name
             DerivedMarkerAttribute derived = typeof(MarkedWithOverride).GetCustomAttribute<DerivedMarkerAttribute>();
             Assert(derived is not null);
             Assert(derived.Value == "overridden");
@@ -327,7 +348,7 @@ internal static class Program
             Assert(stackTrace.Contains("+0x"));
             Assert(!stackTrace.Contains(Join("Unique", "Stripped")));
 
-            // Methods that are reflectable have no stack trace data, but [StackTraceHidden] still applies
+            // Methods of stripped types have no stack trace data, even if they are reflectable, but [StackTraceHidden] still applies
             Keep(typeof(HiddenFrameHolder));
             string hiddenStackTrace = null;
             try
@@ -358,12 +379,10 @@ internal static class Program
             // Check that the same lookup finds the names that are expected to be there
             Assert(Contains(image, Join("ControlType")));
             Assert(Contains(image, Join("Control", "Method")));
+            Assert(Contains(image, Join("First", "Method")));
 
             Assert(!Contains(image, Join("Unique", "StrippedTypeNameMarker")));
             Assert(!Contains(image, Join("Unique", "StrippedThrowingMethodMarker")));
-            Assert(!Contains(image, Join("First", "Method")));
-            Assert(!Contains(image, Join("Second", "Method")));
-            Assert(!Contains(image, Join("Rai", "seChanged")));
             Assert(!Contains(image, Join("Gvm", "Derived")));
             Assert(!Contains(image, Join("Int", "Converter")));
         }
@@ -374,6 +393,11 @@ internal static class Program
 
 namespace ControlNamespace
 {
+    public class MainDerived : Base
+    {
+        public override string Hello() => "MainDerived";
+    }
+
     public class ControlType
     {
         public int ControlField;

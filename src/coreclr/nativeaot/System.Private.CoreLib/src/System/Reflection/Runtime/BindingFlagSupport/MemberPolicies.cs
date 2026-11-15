@@ -72,8 +72,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         //
         protected static bool AreNamesAndSignaturesEqual(MethodInfo method1, MethodInfo method2)
         {
-            // Methods with a name that was stripped by the compiler can't be matched by name.
-            if (method1.Name.Length == 0 || method1.Name != method2.Name)
+            if (method1.Name != method2.Name)
                 return false;
 
             ReadOnlySpan<ParameterInfo> p1 = method1.GetParametersAsSpan();

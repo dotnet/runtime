@@ -10,27 +10,28 @@ The rest of the document talks about options that exist, but their names and pur
 
 ## Options related to reflection metadata size
 
-### Stripping the names of types and members from specific assemblies
+### Stripping the names of types from specific assemblies
 
-* `<IlcStripNamesAssembly Include="MyAssembly" />`: Strips the names of all types and members of the assembly with the given simple name from the reflection metadata in the final binary. The item can be specified multiple times. It is passed to the compiler as `--stripnames:MyAssembly`. This is meant for assemblies that contain a large amount of generated code, such as interop assemblies with long generated type names, where the names are never used at runtime. The default behavior of the compiler is not affected unless the item is specified.
+* `<IlcStripNamesAssembly Include="MyAssembly" />`: Strips the names of all types of the assembly with the given simple name from the reflection metadata in the final binary. The item can be specified multiple times. It is passed to the compiler as `--stripnames:MyAssembly`. This is meant for assemblies that contain a large amount of generated code, such as interop assemblies with long generated type names, where the names are never used at runtime. The default behavior of the compiler is not affected unless the item is specified.
 
-The option is opt-in per assembly, because it changes the observable behavior of reflection for the types and members of that assembly. Names are replaced with the empty string in the metadata, so the cost of a name is no longer paid in the binary. Names remain available in the compiler map file (`<IlcGenerateMapFile>`), in the mstat file, and in the symbol files (`.pdb`, `.dwp`, `.dSYM`) because these are produced from the compiler's own type system and not from the reflection metadata. Note that on platforms where the debug information is part of the image, the names will be there as well.
+The option is opt-in per assembly, because it changes the observable behavior of reflection for the types of that assembly. Names are replaced with the empty string in the metadata, so the cost of a name is no longer paid in the binary. Names remain available in the compiler map file (`<IlcGenerateMapFile>`), in the mstat file, and in the symbol files (`.pdb`, `.dwp`, `.dSYM`) because these are produced from the compiler's own type system and not from the reflection metadata. Note that on platforms where the debug information is part of the image, the names will be there as well.
 
-Behavior for types and members of an assembly that strips names:
+Only the names of types are stripped. The compiler only emits metadata for a member if it is a reflection target (e.g. it is kept by a `DynamicallyAccessedMembers` annotation, a `DynamicDependency` attribute or a root descriptor), so the names of members are kept to keep lookups by name working.
+
+Behavior for types of an assembly that strips names:
 
 | API | Result |
 | --- | --- |
-| `Type.Name`, `MemberInfo.Name`, `ParameterInfo.Name`, names of generic parameters | `""` (empty string, the properties are not nullable) |
+| `Type.Name` | `""` (empty string, the property is not nullable) |
 | `Type.Namespace`, `Type.FullName`, `Type.AssemblyQualifiedName` | `null` |
 | `Type.ToString()` | `""`, matching `Type.Name` (the method is not nullable). Also for generic type definitions |
 | `FullName` and `AssemblyQualifiedName` of arrays, pointers, by-refs, nested types and constructed generic types that involve such a type (including as a type argument) | `null`, like for a generic parameter |
-| `Type.GetType(string)`, `Assembly.GetType(string)`, `GetMethod(string)`, `GetField(string)`, `GetProperty(string)`, `GetEvent(string)`, `GetNestedType(string)`, `GetInterface(string)`, `GetMember(string)` | Don't find the type or member, since nothing can match an empty name |
-| Enum members, e.g. `Enum.ToString()`, `Enum.Parse` | Unchanged, the names of enum literals are kept |
-| Constructors (`.ctor`, `.cctor`), `Invoke` of delegates, generic methods (the runtime looks up instantiations and implementations of generic virtual methods by name), methods and properties of attribute types, and instance fields of attribute types | Unchanged, the names are kept |
-| Named arguments of custom attributes | Unchanged |
+| `Type.GetType(string)`, `Assembly.GetType(string)`, `GetNestedType(string)`, `GetInterface(string)`, `GetMember(string)` for nested types | Don't find the type, since nothing can match an empty name |
+| Names of members (methods, fields, properties, events, parameters and generic parameters), `GetMethod(string)` and the other lookups of members by name | Unchanged, including for members of a stripped type |
+| Named arguments of custom attributes, enum members, overrides and generic virtual methods | Unchanged |
+| `MethodInfo.ToString()` and the like | The types in the signature are printed with an empty name, so `Void Foo()` can stand for `Foo(Widget)`. The output of `ToString()` can't be used as a key |
 | Exception messages and `Exception.ToString()` | Use the empty name for the type |
-| Stack traces | The frames of methods of the assembly don't have names. They show up as an offset in the module, which can be symbolicated with the symbol files, e.g. on a crash report server. `DiagnosticMethodInfo.Create` returns `null` for methods of the assembly (with the exception of the `Invoke` method of a stripped delegate type, which has no declaring type name). Frames of methods from other assemblies that have a type of the assembly in their signature show that type with an empty name |
-| `MethodInfo.GetBaseDefinition()`, `GetCustomAttributes(inherit: true)` on overridden methods, properties and events, `GetMethods()` and `GetProperties()` on derived types | Members are matched with the ones they override by name, so an override is not associated with the member of the base type. `GetBaseDefinition()` returns the method itself, inherited attributes of overridden members are not found, and both the override and the base member are listed. This also applies to a type from another assembly that overrides a member of a type that strips names |
+| Stack traces | The frames of methods of the assembly don't have names. They show up as an offset in the module, which can be symbolicated with the symbol files, e.g. on a crash report server. This also applies to methods that are reflectable. `DiagnosticMethodInfo.Create` returns `null` for methods of the assembly. Frames of methods from other assemblies that have a type of the assembly in their signature show that type with an empty name |
 | Compiler generated attribute types in the assembly, e.g. `NullableAttribute` | The types lose their names, so consumers that identify them by name, e.g. `NullabilityInfoContext`, don't recognize them |
 
 Everything else is unchanged. In particular, type identity, `typeof`, `GetType()`, `Activator.CreateInstance`, `MethodInfo.Invoke`, `MakeGenericType`, `MakeGenericMethod`, custom attribute instantiation, and virtual and interface dispatch don't depend on the names.
@@ -38,7 +39,7 @@ Everything else is unchanged. In particular, type identity, `typeof`, `GetType()
 Limitations:
 
 * The names are removed from the reflection metadata only. Other places in the binary that contain names are not affected, e.g. the field names that are part of struct marshalling metadata, the keys of external type maps (`TypeMapping`), embedded resource names, and strings that code explicitly contains (e.g. the string passed to `[UnsafeAccessorType]`, `Type.GetType`, or the arguments of custom attributes).
-* Code that looks up types or members of such an assembly by name, e.g. `Type.GetType("Namespace.Type, Assembly")`, will not find them, even if the compiler has seen the string. A reference that goes through metadata directly (e.g. a type referenced by a custom attribute argument) is not affected.
-* Serializers, `EventSource`, `DataContract`, data binding, and anything else that derives behavior from type or member names don't work for these types.
+* Code that looks up types of such an assembly by name, e.g. `Type.GetType("Namespace.Type, Assembly")`, will not find them, even if the compiler has seen the string. A reference that goes through metadata directly (e.g. a type referenced by a custom attribute argument) is not affected.
+* Serializers, `EventSource`, `DataContract`, data binding, and anything else that derives behavior from type names don't work for these types.
 * Code that assumes a named type has a non-null `FullName` (e.g. `type.FullName!`) can throw for these types. For example, `ILogger<T>` and `ILoggerFactory.CreateLogger(typeof(T))` throw a `NullReferenceException` when `T` is a stripped type, because the category name is derived from `FullName`. The default `Object.ToString()` and `ValueType.ToString()` return an empty string for these types.
 * The setting is not supported for the system module or for multi-file compilation (the compiler reports an error). Assemblies that are not part of the compilation are ignored.

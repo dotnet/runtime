@@ -342,14 +342,14 @@ namespace ILCompiler.Metadata
 
                 foreach (var e in ecmaRecord.GetEvents())
                 {
-                    Event evt = HandleEvent(ecmaEntity, e);
+                    Event evt = HandleEvent(ecmaEntity.Module, e);
                     if (evt != null)
                         record.Events.Add(evt);
                 }
 
                 foreach (var property in ecmaRecord.GetProperties())
                 {
-                    Property prop = HandleProperty(ecmaEntity, property);
+                    Property prop = HandleProperty(ecmaEntity.Module, property);
                     if (prop != null)
                         record.Properties.Add(prop);
                 }

@@ -18,6 +18,7 @@ namespace StrippedNamesLibrary
 
         public string FirstMethod() => "first";
         public string SecondMethod() => "second";
+        public string Echo(string text) => text;
 
         public void RaiseChanged() => Changed?.Invoke(this, EventArgs.Empty);
 
@@ -34,7 +35,6 @@ namespace StrippedNamesLibrary
         public override string Hello() => "Derived";
     }
 
-    // Generic virtual methods are matched by name and signature at runtime, so they keep their names.
     public class GvmBase
     {
         public virtual string Describe<T>() => "GvmBase";

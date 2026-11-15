@@ -161,7 +161,7 @@ namespace ILCompiler
         public Option<string[]> TrimmedAssemblies { get; } =
             new("--trim") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Trim the specified assembly" };
         public Option<string[]> StrippedNamesAssemblies { get; } =
-            new("--stripnames") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Don't emit the names of types and members of the specified assembly into the reflection metadata" };
+            new("--stripnames") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Don't emit the names of types of the specified assembly into the reflection metadata" };
         public Option<bool> RootDefaultAssemblies { get; } =
             new("--defaultrooting") { Description = "Root assemblies that are not marked [IsTrimmable]" };
         public Option<string> TargetArchitecture { get; } =

@@ -429,7 +429,7 @@ namespace ILCompiler
 
             foreach (string strippedNamesAssembly in Get(_command.StrippedNamesAssemblies))
             {
-                // The reflection stack in the system module relies on the names of its own types and members.
+                // The reflection stack in the system module relies on the names of its own types.
                 if (string.Equals(strippedNamesAssembly, Get(_command.SystemModuleName), StringComparison.OrdinalIgnoreCase))
                     throw new CommandLineException($"Stripping names of the system module '{strippedNamesAssembly}' is not supported");
             }

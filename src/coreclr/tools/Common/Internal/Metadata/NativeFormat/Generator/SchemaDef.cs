@@ -463,7 +463,6 @@ internal sealed class SchemaDef
         ),
         new RecordDef(
             name: "Method",
-            flags: RecordDefFlags.Discriminated,
             members: new MemberDef[] {
                 new MemberDef("Flags", "MethodAttributes"),
                 new MemberDef("ImplFlags", "MethodImplAttributes"),
@@ -491,7 +490,6 @@ internal sealed class SchemaDef
         ),
         new RecordDef(
             name: "MemberReference",
-            flags: RecordDefFlags.Discriminated,
             members: new MemberDef[] {
                 new MemberDef("Parent", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
@@ -501,7 +499,6 @@ internal sealed class SchemaDef
         ),
         new RecordDef(
             name: "Field",
-            flags: RecordDefFlags.Discriminated,
             members: new MemberDef[] {
                 new MemberDef("Flags", "FieldAttributes"),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
@@ -520,7 +517,6 @@ internal sealed class SchemaDef
         ),
         new RecordDef(
             name: "Property",
-            flags: RecordDefFlags.Discriminated,
             members: new MemberDef[] {
                 new MemberDef("Flags", "PropertyAttributes"),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
@@ -532,7 +528,6 @@ internal sealed class SchemaDef
         ),
         new RecordDef(
             name: "Event",
-            flags: RecordDefFlags.Discriminated,
             members: new MemberDef[] {
                 new MemberDef("Flags", "EventAttributes"),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),

@@ -12,9 +12,8 @@ namespace ILCompiler.Metadata
 {
     internal partial class Transform<TPolicy>
     {
-        private Event HandleEvent(Cts.Ecma.EcmaType owningType, Ecma.EventDefinitionHandle eventHandle)
+        private Event HandleEvent(Cts.Ecma.EcmaModule module, Ecma.EventDefinitionHandle eventHandle)
         {
-            Cts.Ecma.EcmaModule module = owningType.Module;
             Ecma.MetadataReader reader = module.MetadataReader;
 
             Ecma.EventDefinition eventDef = reader.GetEventDefinition(eventHandle);
@@ -32,11 +31,9 @@ namespace ILCompiler.Metadata
             if (!adderHasMetadata && !raiserHasMetadata && !removerHasMetadata)
                 return null;
 
-            bool stripName = !_policy.GeneratesNames(module);
             Event result = new Event
             {
-                Name = HandleName(reader.GetString(eventDef.Name), stripName),
-                Discriminator = stripName ? GetDiscriminator(owningType, eventHandle) : 0,
+                Name = HandleString(reader.GetString(eventDef.Name)),
                 Flags = eventDef.Attributes,
                 Type = HandleType(module.GetType(eventDef.Type)),
             };

@@ -69,11 +69,9 @@ namespace ILCompiler.Metadata
         bool IsBlocked(Cts.MethodDesc methodDef);
 
         /// <summary>
-        /// Returns true if the names of the types and members defined in the module should be emitted
-        /// into the metadata. If false, the names of the entities defined in the module are replaced with an
-        /// empty string, and the types are placed in the root namespace. Names that the runtime needs
-        /// for correctness (e.g. the names of constructors and enum members) and the names of type forwarders
-        /// are always emitted.
+        /// Returns true if the names of the types defined in the module should be emitted into the metadata.
+        /// If false, the names of the types defined in the module are replaced with an empty string, and the
+        /// types are placed in the root namespace. The names of members and type forwarders are always emitted.
         /// </summary>
         bool GeneratesNames(Cts.ModuleDesc module);
     }

@@ -53,8 +53,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             for (int i = startIndex; i < endIndex; i++)
             {
-                // Members with a name that was stripped by the compiler never hide other members.
-                if (member.Name.Length != 0 && priorMembers[i].Name == member.Name)
+                if (priorMembers[i].Name == member.Name)
                     return true;
             }
             return false;
