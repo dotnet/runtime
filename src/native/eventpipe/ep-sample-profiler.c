@@ -99,12 +99,8 @@ EP_RT_DEFINE_THREAD_FUNC (sampling_thread)
 			while (sample_profiler_load_profiling_enabled ()) {
 				// Sample all threads.
 				ep_rt_sample_profiler_write_sampling_event_for_threads (thread_params->thread, _thread_time_event);
-				// Wait until it's time to sample again. minipal_microdelay busy-waits for up to a
-				// millisecond on some platforms, so only use it for sub-millisecond rates.
-				if (_sampling_rate_in_ns < NUM_NANOSECONDS_IN_1_MS)
-					minipal_microdelay ((uint32_t)(_sampling_rate_in_ns / 1000), NULL);
-				else
-					ep_rt_thread_sleep (_sampling_rate_in_ns);
+				// Wait until it's time to sample again.
+				minipal_microdelay ((uint32_t)(_sampling_rate_in_ns / 1000), NULL);
 			}
 		EP_GCX_PREEMP_EXIT
 	}

@@ -213,7 +213,7 @@ bool minipal_switch_to_thread(uint32_t switchCount)
 void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
 {
 #if HOST_WINDOWS
-    if (usecs > 1000)
+    if (usecs >= 1000)
     {
         Sleep(usecs / 1000);
         if (usecsSinceYield)
