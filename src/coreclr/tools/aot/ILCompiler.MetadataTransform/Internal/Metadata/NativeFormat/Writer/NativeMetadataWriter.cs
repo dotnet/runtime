@@ -671,6 +671,11 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         internal int GetLookupHashCode()
         {
+            // The name of the type was stripped, so it can't be looked up by name. Spread such types out
+            // instead of piling all of them into a single bucket of the hashtable.
+            if (Name.Value.Length == 0)
+                return VersionResilientHashCode.MetadataHandleHashCode(Discriminator);
+
             Debug.Assert(NamespaceOrEnclosingType is NamespaceDefinition);
             NamespaceDefinition namespaceDefinition = (NamespaceDefinition)NamespaceOrEnclosingType;
             return VersionResilientHashCode.NameHashCode(
