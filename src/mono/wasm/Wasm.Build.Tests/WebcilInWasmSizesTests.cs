@@ -79,6 +79,126 @@ public class WebcilInWasmSizesTests
         Assert.Equal(4, payloadSize);
     }
 
+    [Fact]
+    public void WasiR2RComposition_RenamesBaseImportsAndPatchExport()
+    {
+        using var directory = new TempDirectory();
+        string inputPath = Path.Combine(directory.Path, "image.wasm");
+        string outputPath = Path.Combine(directory.Path, "renamed.wasm");
+        byte[] input = BuildSelfInstallingImage();
+        File.WriteAllBytes(inputPath, input);
+
+        WasiR2RComposition.RenameImportsAndExports(
+            inputPath,
+            outputPath,
+            new Dictionary<(string Module, string Field), (string Module, string Field)>
+            {
+                [("webcil", "__memory_base")] = ("bases1", "memory_base_1"),
+                [("webcil", "__table_base")] = ("bases1", "table_base_1"),
+            },
+            new Dictionary<string, string> { ["patchWebcilHeader"] = "patchWebcilHeader_1" });
+
+        byte[] output = File.ReadAllBytes(outputPath);
+        (List<(string Module, string Field, byte Kind)> imports, List<(string Name, byte Kind, uint Index)> exports) = ReadImportsAndExports(output);
+        Assert.Equal(
+            [("bases1", "memory_base_1", (byte)3), ("bases1", "table_base_1", (byte)3), ("webcil", "memory", (byte)2)],
+            imports);
+        Assert.Equal([("getWebcilSize", (byte)0, 0u), ("patchWebcilHeader_1", (byte)0, 1u)], exports);
+
+        // Only the import and export names change; every other section is copied byte for byte.
+        Assert.True(StripSections(input, 2, 7).SequenceEqual(StripSections(output, 2, 7)));
+    }
+
+    [Theory]
+    [InlineData("webcil", "__missing", null)]
+    [InlineData(null, null, "missingExport")]
+    public void WasiR2RComposition_RenameRejectsMissingNames(string? importModule, string? importField, string? exportName)
+    {
+        using var directory = new TempDirectory();
+        string inputPath = Path.Combine(directory.Path, "image.wasm");
+        File.WriteAllBytes(inputPath, BuildSelfInstallingImage());
+
+        var importRenames = new Dictionary<(string Module, string Field), (string Module, string Field)>();
+        if (importModule is not null)
+            importRenames[(importModule, importField!)] = ("renamed", "renamed");
+        var exportRenames = new Dictionary<string, string>();
+        if (exportName is not null)
+            exportRenames[exportName] = "renamed";
+
+        Assert.Throws<BadImageFormatException>(() => WasiR2RComposition.RenameImportsAndExports(
+            inputPath, Path.Combine(directory.Path, "renamed.wasm"), importRenames, exportRenames));
+    }
+
+    [Fact]
+    public void WasiR2RComposition_LaysOutImagesBackToBack()
+    {
+        WasiR2RHostReservations host = new(
+            imageBase: 0x1000, imageCapacity: 0x100, tableBase: 1, reservedTableStart: 101, registryCapacity: 4, registryEntrySize: 40);
+
+        IReadOnlyList<WasiR2RImagePlacement> placements = WasiR2RComposition.LayOutImages(host,
+        [
+            new WasiR2RImage("composite.r2r.wasm", tableSlots: 10, payloadSize: 33),
+            new WasiR2RImage("System.Private.CoreLib.dll", tableSlots: 80, payloadSize: 0x40),
+            new WasiR2RImage("Other.dll", tableSlots: 10, payloadSize: 1),
+        ]);
+
+        Assert.Equal([0x1000, 0x1030, 0x1070], placements.Select(p => p.MemoryBase));
+        Assert.Equal([1, 11, 91], placements.Select(p => p.TableBase));
+    }
+
+    [Theory]
+    [InlineData(0x40, 100, 2, 32, "staging buffer")]      // payloads 0x30 + 0x11 exceed 0x40 once aligned
+    [InlineData(0x100, 98, 2, 32, "table slots")]         // 50 + 49 slots from base 1 reach slot 99
+    [InlineData(0x100, 100, 1, 32, "registry holds")]     // two images, one registry entry
+    [InlineData(0x100, 100, 2, 12, "UTF-8 bytes")]        // "first.wasm" needs 11 bytes with its NUL
+    public void WasiR2RComposition_LayoutRejectsImagesThatDoNotFit(
+        int imageCapacity, int reservedTableStart, int registryCapacity, int registryEntrySize, string expectedMessage)
+    {
+        WasiR2RHostReservations host = new(0x1000, imageCapacity, 1, reservedTableStart, registryCapacity, registryEntrySize);
+
+        WasiR2RLayoutException ex = Assert.Throws<WasiR2RLayoutException>(() => WasiR2RComposition.LayOutImages(host,
+        [
+            new WasiR2RImage("first.wasm", tableSlots: 50, payloadSize: 0x21),
+            new WasiR2RImage("second.dll", tableSlots: 49, payloadSize: 0x11),
+        ]));
+        Assert.Contains(expectedMessage, ex.Message);
+    }
+
+    [Theory]
+    [InlineData("same.dll", "same.dll", "More than one")]
+    [InlineData("", "other.dll", "cannot be recorded")]
+    [InlineData("bad\0name.dll", "other.dll", "cannot be recorded")]
+    public void WasiR2RComposition_LayoutRequiresUniqueRecordableNames(string firstName, string secondName, string expectedMessage)
+    {
+        WasiR2RHostReservations host = new(0x1000, 0x1000, 1, 1000, 8, 264);
+
+        WasiR2RLayoutException ex = Assert.Throws<WasiR2RLayoutException>(() => WasiR2RComposition.LayOutImages(host,
+        [
+            new WasiR2RImage(firstName, tableSlots: 1, payloadSize: 16),
+            new WasiR2RImage(secondName, tableSlots: 1, payloadSize: 16),
+        ]));
+        Assert.Contains(expectedMessage, ex.Message);
+    }
+
+    [Fact]
+    public void WasiR2RComposition_EncodesRegistryEntries()
+    {
+        WasiR2RHostReservations host = new(0x1000, 0x1000, 1, 1000, 8, registryEntrySize: 16);
+        IReadOnlyList<WasiR2RImagePlacement> placements = WasiR2RComposition.LayOutImages(host,
+        [
+            new WasiR2RImage("a.wasm", tableSlots: 1, payloadSize: 0x21),
+            new WasiR2RImage("b.dll", tableSlots: 1, payloadSize: 0x10),
+        ]);
+
+        byte[] registry = WasiR2RComposition.CreateRegistry(host, placements);
+
+        Assert.Equal(
+        [
+            (byte)'a', (byte)'.', (byte)'w', (byte)'a', (byte)'s', (byte)'m', 0, 0, 0x00, 0x10, 0, 0, 0x21, 0, 0, 0,
+            (byte)'b', (byte)'.', (byte)'d', (byte)'l', (byte)'l', 0, 0, 0, 0x30, 0x10, 0, 0, 0x10, 0, 0, 0,
+        ], registry);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData(0)]
@@ -363,6 +483,7 @@ public class WebcilInWasmSizesTests
 
     private const byte SectionCustom = 0x00;
     private const byte SectionType = 0x01;
+    private const byte SectionImport = 0x02;
     private const byte SectionFunction = 0x03;
     private const byte SectionExport = 0x07;
     private const byte SectionElement = 0x09;
@@ -464,6 +585,90 @@ public class WebcilInWasmSizesTests
         AddSection(module, SectionData, data);
 
         return module.ToArray();
+    }
+
+    // A minimal self-installing image: imports its bases and memory from "webcil" and exports the two
+    // functions every self-installing image defines.
+    private static byte[] BuildSelfInstallingImage()
+    {
+        var module = new List<byte> { 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00 };
+        AddSection(module, SectionType, [0x01, 0x60, 0x00, 0x00]);
+
+        var imports = new List<byte>();
+        WriteULEB(imports, 3);
+        foreach (string field in new[] { "__memory_base", "__table_base" })
+        {
+            WriteName(imports, "webcil");
+            WriteName(imports, field);
+            imports.AddRange([0x03, 0x7f, 0x00]); // immutable i32 global
+        }
+        WriteName(imports, "webcil");
+        WriteName(imports, "memory");
+        imports.AddRange([0x02, 0x00, 0x01]); // memory, min 1
+        AddSection(module, SectionImport, imports);
+
+        AddSection(module, SectionFunction, [0x02, 0x00, 0x00]);
+
+        var exports = new List<byte>();
+        WriteULEB(exports, 2);
+        WriteName(exports, "getWebcilSize");
+        exports.AddRange([0x00, 0x00]);
+        WriteName(exports, "patchWebcilHeader");
+        exports.AddRange([0x00, 0x01]);
+        AddSection(module, SectionExport, exports);
+
+        AddSection(module, SectionCode, [0x02, 0x02, 0x00, 0x0b, 0x02, 0x00, 0x0b]);
+        return module.ToArray();
+    }
+
+    private static (List<(string Module, string Field, byte Kind)> Imports, List<(string Name, byte Kind, uint Index)> Exports) ReadImportsAndExports(byte[] wasm)
+    {
+        var imports = new List<(string, string, byte)>();
+        var exports = new List<(string, byte, uint)>();
+        int offset = 8;
+        while (offset < wasm.Length)
+        {
+            byte sectionId = wasm[offset++];
+            int sectionEnd = checked((int)ReadULEB(wasm, ref offset) + offset);
+            if (sectionId == SectionImport)
+            {
+                for (uint i = ReadULEB(wasm, ref offset); i > 0; i--)
+                {
+                    string module = ReadName(wasm, ref offset);
+                    string field = ReadName(wasm, ref offset);
+                    byte kind = wasm[offset++];
+                    offset += 2; // global: valtype + mutability; memory: flags + min
+                    imports.Add((module, field, kind));
+                }
+            }
+            else if (sectionId == SectionExport)
+            {
+                for (uint i = ReadULEB(wasm, ref offset); i > 0; i--)
+                {
+                    string name = ReadName(wasm, ref offset);
+                    byte kind = wasm[offset++];
+                    exports.Add((name, kind, ReadULEB(wasm, ref offset)));
+                }
+            }
+            offset = sectionEnd;
+        }
+        return (imports, exports);
+    }
+
+    private static byte[] StripSections(byte[] wasm, params byte[] sectionIds)
+    {
+        var result = new List<byte>(wasm.Take(8));
+        int offset = 8;
+        while (offset < wasm.Length)
+        {
+            int start = offset;
+            byte sectionId = wasm[offset++];
+            int sectionEnd = checked((int)ReadULEB(wasm, ref offset) + offset);
+            if (Array.IndexOf(sectionIds, sectionId) < 0)
+                result.AddRange(wasm.Skip(start).Take(sectionEnd - start));
+            offset = sectionEnd;
+        }
+        return result.ToArray();
     }
 
     private static void AddSection(List<byte> module, byte sectionCode, List<byte> sectionBody)
