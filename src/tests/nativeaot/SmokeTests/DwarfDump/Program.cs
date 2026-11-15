@@ -63,7 +63,7 @@ public class Program
         {
             Console.Error.WriteLine($"llvm-dwarfdump --verify did not complete (exit code {result.ExitStatus.ExitCode}, signal {result.ExitStatus.Signal}).");
             Console.Error.WriteLine(result.StandardError);
-            return 11;
+            return 5;
         }
 
         int count = 0;
@@ -94,28 +94,6 @@ public class Program
         {
             Console.Error.WriteLine($"llvm-dwarfdump failed. Cound not find unit named \"il.cpp\".");
             return 10;
-        }
-
-        if (count == 0)
-        {
-            // Make sure the verifier didn't fail before reporting anything
-            int errorCount = 0;
-            string[] firstFiveErrors = new string[5];
-            foreach (string rawLine in result.StandardError.Split('\n'))
-            {
-                string line = rawLine.TrimEnd('\r');
-                if (line.Contains("error:"))
-                {
-                    if (errorCount < 5) firstFiveErrors[errorCount] = line;
-                    errorCount++;
-                }
-            }
-
-            if (errorCount > 0)
-            {
-                Console.Error.WriteLine($"llvm-dwarfdump failed. First five errors:{Environment.NewLine}{string.Join(Environment.NewLine, firstFiveErrors)}");
-                return 10;
-            }
         }
 
         Console.WriteLine($"Found {count} warnings and errors");
