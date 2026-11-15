@@ -486,8 +486,8 @@ namespace ILCompiler.ObjectWriter
             var regions = new List<EHRegion>(_debugEHClauseInfos.Length * 2);
             foreach (DebugEHClauseInfo clause in _debugEHClauseInfos)
             {
-                AddRegion(regions, new EHRegion(clause.TryOffset, clause.TryOffset + clause.TryLength, IsTry: true));
-                AddRegion(regions, new EHRegion(clause.HandlerOffset, clause.HandlerOffset + clause.HandlerLength, IsTry: false));
+                AddRegion(regions, new EHRegion(clause.TryOffset, clause.TryOffset + clause.TryLength, isTry: true));
+                AddRegion(regions, new EHRegion(clause.HandlerOffset, clause.HandlerOffset + clause.HandlerLength, isTry: false));
             }
 
             // Outer regions come first when several regions start at the same offset
@@ -544,7 +544,23 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private readonly record struct EHRegion(uint Start, uint End, bool IsTry);
+        private readonly struct EHRegion : IEquatable<EHRegion>
+        {
+            public readonly uint Start;
+            public readonly uint End;
+            public readonly bool IsTry;
+
+            public EHRegion(uint start, uint end, bool isTry)
+            {
+                Start = start;
+                End = end;
+                IsTry = isTry;
+            }
+
+            public bool Equals(EHRegion other) => Start == other.Start && End == other.End && IsTry == other.IsTry;
+            public override bool Equals(object obj) => obj is EHRegion other && Equals(other);
+            public override int GetHashCode() => HashCode.Combine(Start, End, IsTry);
+        }
 
         private void DumpVar(DwarfInfoWriter writer, DebugVarInfoMetadata metadataInfo, uint typeIndex, bool isThis)
         {
