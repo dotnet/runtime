@@ -499,12 +499,27 @@ Copyright (c) .NET Foundation. All rights reserved.
                                         _CreateR2RImages
 
     Compiles assemblies in the _ReadyToRunCompileList list into ReadyToRun images
+
+    The compiler arguments are not files, so every batch also outputs a state file named after a hash of
+    them. When the arguments change, that file does not exist yet and every image is recompiled.
+    Outputs is expanded after the targets that run before this one, so the hash includes arguments
+    that they add. The body repeats the hash for _WriteReadyToRunCompilerArgumentsState; keep both in sync.
     ============================================================
     -->
   <UsingTask Condition="'$(Crossgen2TasksOverriden)' != 'true'" TaskName="RunReadyToRunCompiler" AssemblyFile="$(MicrosoftNETBuildTasksAssembly)" />
   <Target Name="_CreateR2RImages"
           Inputs="$(MSBuildAllProjects);@(CrossgenTool);@(Crossgen2Tool);@(_ReadyToRunCompilerInputs);@(_ReadyToRunCompileList);@(_ReadyToRunCompositeBuildInput);@(_ReadyToRunPgoFiles)"
-          Outputs="%(_ReadyToRunCompileList.OutputR2RImage);%(_ReadyToRunCompileList.OutputPDBImage)">
+          Outputs="%(_ReadyToRunCompileList.OutputR2RImage);%(_ReadyToRunCompileList.OutputPDBImage);$(_ReadyToRunOutputPath)/crossgen-args-$([MSBuild]::StableStringHash('$(PublishReadyToRunCrossgen2ExtraArgs);$(_PublishReadyToRunCrossgen2ExtraArgs)|$(PublishReadyToRunComposite)|$(PublishReadyToRunContainerFormat)|$(PublishReadyToRunUseCrossgen2)|$(PublishReadyToRunPerfmapFormatVersion)', 'Sha256').Substring(0, 16)).stamp">
+
+    <PropertyGroup>
+      <_ReadyToRunCompilerArgumentsStateFile>$(_ReadyToRunOutputPath)/crossgen-args-$([MSBuild]::StableStringHash('$(PublishReadyToRunCrossgen2ExtraArgs);$(_PublishReadyToRunCrossgen2ExtraArgs)|$(PublishReadyToRunComposite)|$(PublishReadyToRunContainerFormat)|$(PublishReadyToRunUseCrossgen2)|$(PublishReadyToRunPerfmapFormatVersion)', 'Sha256').Substring(0, 16)).stamp</_ReadyToRunCompilerArgumentsStateFile>
+    </PropertyGroup>
+    <!-- Images that this compilation replaces no longer match the arguments recorded by other state files. -->
+    <ItemGroup>
+      <_StaleReadyToRunCompilerArgumentsStateFile Include="$(_ReadyToRunOutputPath)/crossgen-args-*.stamp"
+                                                  Exclude="$(_ReadyToRunCompilerArgumentsStateFile)" />
+    </ItemGroup>
+    <Delete Files="@(_StaleReadyToRunCompilerArgumentsStateFile)" />
 
     <RunReadyToRunCompiler CrossgenTool="@(CrossgenTool)"
                            Crossgen2Tool="@(Crossgen2Tool)"
@@ -531,6 +546,17 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <_ReadyToRunCompilationFailures Condition="'$(_ReadyToRunCompilerExitCode)' != '' And $(_ReadyToRunCompilerExitCode) != 0"
                                       Include="@(_ReadyToRunCompileList)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Write the state file only after every batch has compiled. A batch that ran earlier would otherwise make
+       the remaining batches look up to date. -->
+  <Target Name="_WriteReadyToRunCompilerArgumentsState"
+          AfterTargets="_CreateR2RImages"
+          Condition="'$(_ReadyToRunCompilerArgumentsStateFile)' != '' and '@(_ReadyToRunCompilationFailures)' == ''">
+    <Touch Files="$(_ReadyToRunCompilerArgumentsStateFile)" AlwaysCreate="true" />
+    <ItemGroup>
+      <FileWrites Include="$(_ReadyToRunCompilerArgumentsStateFile)" />
     </ItemGroup>
   </Target>
 
