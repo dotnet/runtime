@@ -4,9 +4,7 @@
 #include "standardpch.h"
 #include "cycletimer.h"
 
-#ifdef HOST_UNIX
-#include <time.h>
-#endif
+#include <time.h> // For CLOCK_THREAD_CPUTIME_ID
 
 static BOOL GetThreadCycles(uint64_t* cycles)
 {

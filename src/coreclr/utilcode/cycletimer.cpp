@@ -10,9 +10,7 @@
 #include "utilcode.h"
 #include "minipal/time.h"
 
-#ifdef HOST_UNIX
-#include <time.h>
-#endif
+#include <time.h> // For CLOCK_THREAD_CPUTIME_ID
 
 bool CycleTimer::GetThreadCyclesS(uint64_t* cycles)
 {

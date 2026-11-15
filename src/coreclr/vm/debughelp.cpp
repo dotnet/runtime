@@ -110,12 +110,6 @@ bool isRetAddr(TADDR retAddr, TADDR* whereCalled)
     }
     CONTRACTL_END;
 
-    // don't waste time values clearly out of range
-    if (retAddr < (TADDR)BOT_MEMORY || retAddr > (TADDR)TOP_MEMORY)
-    {
-        return false;
-    }
-
     PTR_BYTE spot = PTR_BYTE(retAddr);
     if (!isMemoryReadable(dac_cast<TADDR>(spot) - 7, 7))
     {

@@ -1151,15 +1151,7 @@ ep_rt_thread_sleep (uint64_t ns)
 {
 #ifndef PERFTRACING_DISABLE_THREADS
 	STATIC_CONTRACT_NOTHROW;
-
-#ifdef TARGET_UNIX
-	struct timespec remaining = { static_cast<time_t>(ns / 1000000000), static_cast<long>(ns % 1000000000) };
-	while (nanosleep (&remaining, &remaining) == -1 && errno == EINTR)
-		;
-#else  //TARGET_UNIX
-	const uint32_t NUM_NANOSECONDS_IN_1_MS = 1000000;
-	minipal_sleep(static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS));
-#endif //TARGET_UNIX
+	minipal_sleep (static_cast<uint32_t>(ns / 1000000));
 #endif // PERFTRACING_DISABLE_THREADS
 }
 
