@@ -83,6 +83,16 @@
     <WasiR2ROptimizeComposite Condition="'$(WasiR2ROptimizeComposite)' == ''">false</WasiR2ROptimizeComposite>
   </PropertyGroup>
 
+  <!-- The SDK's crossgen2 targets don't map PublishReadyToRunInstructionSet yet, so pass it here unless
+       crossgen2 already gets an instruction set. -->
+  <Target Name="_WasiCoreClrApplyReadyToRunInstructionSet"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunInstructionSet)' != '' and !$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--instruction-set'))"
+          BeforeTargets="_PrepareForReadyToRunCompilation">
+    <PropertyGroup>
+      <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--instruction-set:$(PublishReadyToRunInstructionSet)</PublishReadyToRunCrossgen2ExtraArgs>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="_WasiCoreCLRValidateReadyToRun"
           BeforeTargets="_WasiGenerateAppBundle"
           Condition="'$(PublishReadyToRun)' == 'true'">
