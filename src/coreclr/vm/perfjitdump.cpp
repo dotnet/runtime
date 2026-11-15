@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // ===========================================================================
 
-#include "pal/palinternal.h"
-#include "pal/dbgmsg.h"
+#include "common.h"
+
+#if defined(FEATURE_PERFMAP) && !defined(DACCESS_COMPILE)
+
+#include "perfjitdump.h"
 
 #include <cstddef>
 
@@ -28,14 +31,13 @@
 #include <unistd.h>
 #include <limits.h>
 #include "minipal/time.h"
+#include "minipal/thread.h"
 
 #include "../inc/llvm/ELF.h"
 
 #if defined(HOST_AMD64)
 #include <x86intrin.h>
 #endif
-
-SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
 namespace
 {
@@ -128,7 +130,7 @@ namespace
     {
         JitCodeLoadRecord() :
             pid(getpid()),
-            tid((uint32_t)THREADSilentGetCurrentThreadId())
+            tid((uint32_t)minipal_get_current_thread_id())
         {
             header.id = JIT_CODE_LOAD;
             header.timestamp = GetTimeStampNS();
@@ -184,12 +186,12 @@ struct PerfJitDumpState
         int result = 0;
 
         // On platforms where JITDUMP is used, minipal_hires_tick_frequency()
-        // returns tccSecondsToNanoSeconds. If this isn't true,
+        // returns nanoseconds. If this isn't true,
         // then some other method will need to be used to implement GetTimeStampNS.
         // Validate this is true once in Start here.
-        if (minipal_hires_tick_frequency() != tccSecondsToNanoSeconds)
+        if (minipal_hires_tick_frequency() != 1000000000)
         {
-            _ASSERTE(!"minipal_hires_tick_frequency() does not return tccSecondsToNanoSeconds. Implement JITDUMP GetTimeStampNS directly for this platform.\n");
+            _ASSERTE(!"minipal_hires_tick_frequency() does not return nanoseconds. Implement JITDUMP GetTimeStampNS directly for this platform.\n");
             FatalError();
         }
 
@@ -372,29 +374,25 @@ PerfJitDumpState& GetState()
 }
 
 int
-PALAPI
-PAL_PerfJitDump_Start(const char* path)
+PerfJitDump_Start(const char* path)
 {
     return GetState().Start(path);
 }
 
 bool
-PALAPI
-PAL_PerfJitDump_IsStarted()
+PerfJitDump_IsStarted()
 {
     return GetState().enabled;
 }
 
 int
-PALAPI
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock)
+PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock)
 {
     return GetState().LogMethod(pCode, codeSize, symbol, debugInfo, unwindInfo, reportCodeBlock);
 }
 
 int
-PALAPI
-PAL_PerfJitDump_Finish()
+PerfJitDump_Finish()
 {
     return GetState().Finish();
 }
@@ -402,31 +400,29 @@ PAL_PerfJitDump_Finish()
 #else // JITDUMP_SUPPORTED
 
 int
-PALAPI
-PAL_PerfJitDump_Start(const char* path)
+PerfJitDump_Start(const char* path)
 {
     return 0;
 }
 
 bool
-PALAPI
-PAL_PerfJitDump_IsStarted()
+PerfJitDump_IsStarted()
 {
     return false;
 }
 
 int
-PALAPI
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock)
+PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock)
 {
     return 0;
 }
 
 int
-PALAPI
-PAL_PerfJitDump_Finish()
+PerfJitDump_Finish()
 {
     return 0;
 }
 
 #endif // JITDUMP_SUPPORTED
+
+#endif // FEATURE_PERFMAP && !DACCESS_COMPILE

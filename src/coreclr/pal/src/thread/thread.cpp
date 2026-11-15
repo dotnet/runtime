@@ -31,18 +31,6 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include <minipal/cpucount.h>
 #include <minipal/ospagesize.h>
 
-#if defined(__NetBSD__) && !HAVE_PTHREAD_GETCPUCLOCKID
-#include <sys/cdefs.h>
-#include <sys/param.h>
-#include <sys/sysctl.h>
-#include <kvm.h>
-#endif
-
-#if defined(__sun)
-#include <procfs.h>
-#include <fcntl.h>
-#endif
-
 #if defined(TARGET_BROWSER)
 #include <emscripten/stack.h>
 #endif
@@ -436,7 +424,6 @@ CorUnix::InternalCreateThread(
 #else // !FEATURE_MULTITHREADING
     PAL_ERROR palError;
     CPalThread *pNewThread = NULL;
-    CObjectAttributes oa;
     bool fAttributesInitialized = FALSE;
     HANDLE hNewThread = NULL;
 
@@ -1019,277 +1006,6 @@ InternalSetThreadPriorityExit:
     return palError;
 }
 
-#define SECS_TO_NS 1000000000 /* 10^9 */
-#define USECS_TO_NS 1000 /* 10^3 */
-
-BOOL
-CorUnix::GetThreadTimesInternal(
-    IN HANDLE hThread,
-    OUT LPFILETIME lpKernelTime,
-    OUT LPFILETIME lpUserTime)
-{
-    int64_t calcTime;
-    BOOL retval = FALSE;
-
-#if HAVE_MACH_THREADS
-    thread_basic_info resUsage;
-    PAL_ERROR palError = NO_ERROR;
-    CPalThread *pthrCurrent = NULL;
-    CPalThread *pthrTarget = NULL;
-    IPalObject *pobjThread = NULL;
-    mach_msg_type_number_t resUsage_count = THREAD_BASIC_INFO_COUNT;
-
-    pthrCurrent = InternalGetCurrentThread();
-    palError = InternalGetThreadDataFromHandle(
-        pthrCurrent,
-        hThread,
-        &pthrTarget,
-        &pobjThread
-        );
-
-    if (palError != NO_ERROR)
-    {
-        ASSERT("Unable to get thread data from handle %p"
-              "thread\n", hThread);
-        SetLastError(ERROR_INTERNAL_ERROR);
-        goto SetTimesToZero;
-    }
-
-    pthrTarget->Lock(pthrCurrent);
-
-    mach_port_t mhThread;
-    mhThread = pthread_mach_thread_np(pthrTarget->GetPThreadSelf());
-
-    kern_return_t status;
-    status = thread_info(
-        mhThread,
-        THREAD_BASIC_INFO,
-        (thread_info_t)&resUsage,
-        &resUsage_count);
-
-    pthrTarget->Unlock(pthrCurrent);
-
-    if (status != KERN_SUCCESS)
-    {
-        ASSERT("Unable to get resource usage information for the current "
-              "thread\n");
-        SetLastError(ERROR_INTERNAL_ERROR);
-        goto SetTimesToZero;
-    }
-
-    /* Get the time of user mode execution, in nanoseconds */
-    calcTime = (int64_t)resUsage.user_time.seconds * SECS_TO_NS;
-    calcTime += (int64_t)resUsage.user_time.microseconds * USECS_TO_NS;
-    /* Assign the time into lpUserTime */
-    lpUserTime->dwLowDateTime = (DWORD)calcTime;
-    lpUserTime->dwHighDateTime = (DWORD)(calcTime >> 32);
-
-    /* Get the time of kernel mode execution, in nanoseconds */
-    calcTime = (int64_t)resUsage.system_time.seconds * SECS_TO_NS;
-    calcTime += (int64_t)resUsage.system_time.microseconds * USECS_TO_NS;
-    /* Assign the time into lpKernelTime */
-    lpKernelTime->dwLowDateTime = (DWORD)calcTime;
-    lpKernelTime->dwHighDateTime = (DWORD)(calcTime >> 32);
-
-    retval = TRUE;
-
-    goto GetThreadTimesInternalExit;
-
-#elif defined(__NetBSD__) && !HAVE_PTHREAD_GETCPUCLOCKID /* Currently unimplemented */
-
-    PAL_ERROR palError;
-    CPalThread *pThread;
-    CPalThread *pTargetThread;
-    IPalObject *pobjThread = NULL;
-    kvm_t *kd;
-    int cnt, nlwps;
-    struct kinfo_lwp *klwp;
-    int i;
-    bool found = false;
-
-    pThread = InternalGetCurrentThread();
-
-    palError = InternalGetThreadDataFromHandle(
-        pThread,
-        hThread,
-        &pTargetThread,
-        &pobjThread
-        );
-    if (palError != NO_ERROR)
-    {
-        ASSERT("Unable to get thread data from handle %p"
-              "thread\n", hThread);
-        SetLastError(ERROR_INTERNAL_ERROR);
-        goto SetTimesToZero;
-    }
-
-    kd = kvm_open(NULL, NULL, NULL, KVM_NO_FILES, "kvm_open");
-    if (kd == NULL)
-    {
-        ASSERT("kvm_open(3) error");
-        SetLastError(ERROR_INTERNAL_ERROR);
-        goto SetTimesToZero;
-    }
-
-    pTargetThread->Lock(pThread);
-
-    klwp = kvm_getlwps(kd, getpid(), 0, sizeof(struct kinfo_lwp), &nlwps);
-    if (klwp == NULL || nlwps < 1)
-    {
-        kvm_close(kd);
-        ASSERT("Unable to get clock from %p thread\n", hThread);
-        SetLastError(ERROR_INTERNAL_ERROR);
-        pTargetThread->Unlock(pThread);
-        goto SetTimesToZero;
-    }
-
-    for (i = 0; i < nlwps; i++)
-    {
-        if (klwp[i].l_lid == THREADSilentGetCurrentThreadId())
-        {
-            found = true;
-            break;
-        }
-    }
-
-    if (!found)
-    {
-        kvm_close(kd);
-        ASSERT("Unable to get clock from %p thread\n", hThread);
-        SetLastError(ERROR_INTERNAL_ERROR);
-        pTargetThread->Unlock(pThread);
-        goto SetTimesToZero;
-    }
-
-    pTargetThread->Unlock(pThread);
-
-    kvm_close(kd);
-
-    calcTime = (int64_t) klwp[i].l_rtime_sec * SECS_TO_NS;
-    calcTime += (int64_t) klwp[i].l_rtime_usec * USECS_TO_NS;
-    lpUserTime->dwLowDateTime = (DWORD)calcTime;
-    lpUserTime->dwHighDateTime = (DWORD)(calcTime >> 32);
-
-    /* NetBSD as of (7.0) doesn't differentiate used time in user/kernel for lwp */
-    lpKernelTime->dwLowDateTime = 0;
-    lpKernelTime->dwHighDateTime = 0;
-
-    retval = TRUE;
-    goto GetThreadTimesInternalExit;
-
-#else //HAVE_MACH_THREADS
-
-    PAL_ERROR palError;
-    CPalThread *pThread;
-    CPalThread *pTargetThread;
-    IPalObject *pobjThread = NULL;
-    clockid_t cid;
-#ifdef __sun
-    int fd;
-#endif // __sun
-
-    pThread = InternalGetCurrentThread();
-
-    palError = InternalGetThreadDataFromHandle(
-        pThread,
-        hThread,
-        &pTargetThread,
-        &pobjThread
-        );
-    if (palError != NO_ERROR)
-    {
-        ASSERT("Unable to get thread data from handle %p"
-              "thread\n", hThread);
-        SetLastError(ERROR_INTERNAL_ERROR);
-        goto SetTimesToZero;
-    }
-
-    pTargetThread->Lock(pThread);
-
-#if HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
-#if HAVE_PTHREAD_GETCPUCLOCKID
-    if (pthread_getcpuclockid(pTargetThread->GetPThreadSelf(), &cid) != 0)
-    {
-        ASSERT("Unable to get clock from thread\n", hThread);
-        SetLastError(ERROR_INTERNAL_ERROR);
-        pTargetThread->Unlock(pThread);
-        goto SetTimesToZero;
-    }
-#else // HAVE_PTHREAD_GETCPUCLOCKID
-    cid = CLOCK_THREAD_CPUTIME_ID;
-#endif // HAVE_PTHREAD_GETCPUCLOCKID
-
-    struct timespec ts;
-    if (clock_gettime(cid, &ts) != 0)
-    {
-        ASSERT("clock_gettime() failed; errno is %d (%s)\n", errno, strerror(errno));
-        SetLastError(ERROR_INTERNAL_ERROR);
-        pTargetThread->Unlock(pThread);
-        goto SetTimesToZero;
-    }
-#elif defined(__sun)
-    timestruc_t ts;
-    int readResult;
-    char statusFilename[64];
-    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/lwp/%d/lwpstatus", getpid(), pTargetThread->GetLwpId());
-    fd = open(statusFilename, O_RDONLY);
-    if (fd == -1)
-    {
-       ASSERT("open(%s) failed; errno is %d (%s)\n", statusFilename, errno, strerror(errno));
-       SetLastError(ERROR_INTERNAL_ERROR);
-       pTargetThread->Unlock(pThread);
-       goto SetTimesToZero;
-    }
-
-    lwpstatus_t status;
-    do
-    {
-        readResult = read(fd, &status, sizeof(status));
-    }
-    while ((readResult == -1) && (errno == EINTR));
-
-    close(fd);
-
-    ts = status.pr_utime;
-#elif defined(TARGET_WASI)
-    // WASI 0.2.8 has no per-thread CPU time clock. Report zero rather than
-    // fail the build.
-    struct timespec ts;
-    ts.tv_sec = 0;
-    ts.tv_nsec = 0;
-#else // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
-#error "Don't know how to obtain user cpu time on this platform."
-#endif // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
-
-    pTargetThread->Unlock(pThread);
-
-    /* Calculate time in nanoseconds and assign to user time */
-    calcTime = (int64_t) ts.tv_sec * SECS_TO_NS;
-    calcTime += (int64_t) ts.tv_nsec;
-    lpUserTime->dwLowDateTime = (DWORD)calcTime;
-    lpUserTime->dwHighDateTime = (DWORD)(calcTime >> 32);
-
-    /* Set kernel time to zero, for now */
-    lpKernelTime->dwLowDateTime = 0;
-    lpKernelTime->dwHighDateTime = 0;
-
-    retval = TRUE;
-    goto GetThreadTimesInternalExit;
-
-#endif //HAVE_MACH_THREADS
-
-SetTimesToZero:
-
-    lpUserTime->dwLowDateTime = 0;
-    lpUserTime->dwHighDateTime = 0;
-    lpKernelTime->dwLowDateTime = 0;
-    lpKernelTime->dwHighDateTime = 0;
-    goto GetThreadTimesInternalExit;
-
-GetThreadTimesInternalExit:
-    return retval;
-}
-
 HRESULT
 PALAPI
 SetThreadDescription(
@@ -1626,7 +1342,6 @@ CorUnix::CreateThreadObject(
     IDataLock *pDataLock;
     HANDLE hThread = NULL;
     CThreadProcessLocalData *pLocalData = NULL;
-    CObjectAttributes oa;
     BOOL fThreadDataStoredInObject = FALSE;
     IPalObject *pobjRegisteredThread = NULL;
 
@@ -1637,7 +1352,6 @@ CorUnix::CreateThreadObject(
     palError = g_pObjectManager->AllocateObject(
         pThread,
         &otThread,
-        &oa,
         &pobjThread
         );
 

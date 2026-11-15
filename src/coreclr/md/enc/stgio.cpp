@@ -203,11 +203,14 @@ StgIO::StgIO(
     // If the system page size has not been queried, do so now.
     if (m_iPageSize == 0)
     {
-        SYSTEM_INFO sInfo;              // Some O/S information.
-
         // Query the system page size.
+#ifdef HOST_UNIX
+        m_iPageSize = (ULONG)minipal_getpagesize();
+#else
+        SYSTEM_INFO sInfo;              // Some O/S information.
         GetSystemInfo(&sInfo);
         m_iPageSize = sInfo.dwPageSize;
+#endif
         m_iCacheSize = ((MIN_WRITE_CACHE_BYTES - 1) & ~(m_iPageSize - 1)) + m_iPageSize;
     }
 }

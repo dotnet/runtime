@@ -1153,7 +1153,9 @@ ep_rt_thread_sleep (uint64_t ns)
 	STATIC_CONTRACT_NOTHROW;
 
 #ifdef TARGET_UNIX
-	PAL_nanosleep (ns);
+	struct timespec remaining = { static_cast<time_t>(ns / 1000000000), static_cast<long>(ns % 1000000000) };
+	while (nanosleep (&remaining, &remaining) == -1 && errno == EINTR)
+		;
 #else  //TARGET_UNIX
 	const uint32_t NUM_NANOSECONDS_IN_1_MS = 1000000;
 	minipal_sleep(static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS));
@@ -1195,9 +1197,13 @@ ep_rt_processors_get_count (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
+#ifdef TARGET_UNIX
+	return static_cast<uint32_t>(PAL_GetLogicalCpuCountFromOS ());
+#else
 	SYSTEM_INFO sys_info = {};
 	GetSystemInfo (&sys_info);
 	return static_cast<uint32_t>(sys_info.dwNumberOfProcessors);
+#endif
 }
 
 static

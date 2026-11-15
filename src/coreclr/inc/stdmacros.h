@@ -169,6 +169,7 @@
 #endif
 
 
+#ifndef HOST_UNIX
 inline void *GetTopMemoryAddress(void)
 {
     WRAPPER_NO_CONTRACT;
@@ -198,6 +199,7 @@ inline void *GetBotMemoryAddress(void)
 
 #define TOP_MEMORY (GetTopMemoryAddress())
 #define BOT_MEMORY (GetBotMemoryAddress())
+#endif // !HOST_UNIX
 
 
 //

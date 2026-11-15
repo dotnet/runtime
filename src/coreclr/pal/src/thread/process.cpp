@@ -616,7 +616,9 @@ OpenPipe(const char* name, int mode)
         {
             if (mode == O_WRONLY && errno == ENXIO)
             {
-                PAL_nanosleep(PIPE_OPEN_RETRY_DELAY_NS);
+                struct timespec remaining = { 0, PIPE_OPEN_RETRY_DELAY_NS };
+                while (nanosleep(&remaining, &remaining) == -1 && errno == EINTR)
+                    ;
                 continue;
             }
             else if (errno == EINTR)
@@ -2094,7 +2096,6 @@ CorUnix::CreateInitialProcessAndThreadObjects(
 {
     PAL_ERROR palError = NO_ERROR;
     HANDLE hThread;
-    CObjectAttributes oa;
 
     //
     // Create initial thread object

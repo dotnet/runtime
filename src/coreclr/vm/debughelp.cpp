@@ -95,6 +95,7 @@ BOOL isMemoryReadable(const TADDR start, unsigned len)
 }
 
 
+#ifdef TARGET_X86
 /*******************************************************************/
 /* check to see if 'retAddr' is a valid return address (it points to
    someplace that has a 'call' right before it), If possible it is
@@ -177,6 +178,7 @@ bool isRetAddr(TADDR retAddr, TADDR* whereCalled)
     // There are other cases, but I don't believe they are used.
     return(false);
 }
+#endif // TARGET_X86
 
 /*
  * The remaining methods are included in debug builds only

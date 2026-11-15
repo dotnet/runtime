@@ -639,7 +639,12 @@ void EEStartupHelper()
 
 
         // We cache the SystemInfo for anyone to use throughout the life of the EE.
+#ifdef TARGET_UNIX
+        g_SystemInfo.dwNumberOfProcessors = PAL_GetLogicalCpuCountFromOS();
+        g_SystemInfo.dwAllocationGranularity = (DWORD)minipal_getpagesize();
+#else
         GetSystemInfo(&g_SystemInfo);
+#endif
         CDacPlatformMetadata::Init();
 
 #ifndef TARGET_UNIX

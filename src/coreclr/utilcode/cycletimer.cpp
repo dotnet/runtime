@@ -12,9 +12,16 @@
 
 bool CycleTimer::GetThreadCyclesS(uint64_t* cycles)
 {
-    BOOL res = FALSE;
-    res = QueryThreadCycleTime(GetCurrentThread(), cycles);
-    return res != FALSE;
+#ifdef HOST_UNIX
+    struct timespec ts;
+    if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) != 0)
+        return false;
+
+    *cycles = (uint64_t)ts.tv_sec * 1000000000 + (uint64_t)ts.tv_nsec;
+    return true;
+#else // HOST_UNIX
+    return QueryThreadCycleTime(GetCurrentThread(), cycles) != FALSE;
+#endif // HOST_UNIX
 }
 
 static const int SampleLoopSize = 1000000;
