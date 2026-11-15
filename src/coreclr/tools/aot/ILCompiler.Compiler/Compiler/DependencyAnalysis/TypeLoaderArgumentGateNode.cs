@@ -19,8 +19,8 @@ namespace ILCompiler.DependencyAnalysis
     /// <remarks>
     /// A generic type that could be created by the type loader at runtime can only be created if all of its
     /// arguments exist at runtime. If some argument is not needed for any other reason, there is no
-    /// need to eagerly create the type. Arguments that are arrays, or generic types that the type loader
-    /// can create themselves, do not need to be in the compilation.
+    /// need to eagerly create the type. Arguments that the type loader can create themselves, such as generic
+    /// types and arrays that have a template, do not need to be in the compilation.
     ///
     /// A conditional dependency can only be conditioned on a single other node, so "all arguments are present" is
     /// expressed as a chain with one node per argument. The node for argument i is marked once the node for
@@ -51,10 +51,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddConditionalDependencies(DependencySink sink, NodeFactory context)
         {
-            // Arrays can be created by the type loader out of their element type.
-            TypeDesc argument = _type.Instantiation[_argumentIndex];
-            while (argument.IsParameterizedType)
-                argument = ((ParameterizedType)argument).ParameterType;
+            // The type loader can create a parameterized type out of its parameter type, except for single-dimensional
+            // arrays that also need a template (which is assumed to be present for arrays of reference types).
+            // This is the type that has to be present or loadable for the argument to exist at runtime.
+            TypeDesc argument = RuntimeConstructableTypeDependencies.GetEffectiveTrimTargetType(
+                context, _type.Instantiation[_argumentIndex], conditionConstructed: false).Type;
 
             DependencyNodeCore<NodeFactory> next = _argumentIndex + 1 < _type.Instantiation.Length
                 ? context.TypeLoaderArgumentGate(_type, _argumentIndex + 1)
@@ -65,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis
                 context.NecessaryTypeSymbol(argument),
                 "Generic argument of a type loader candidate is present"));
 
-            // The argument is a generic type that could be created by the type loader too.
+            // The argument is a generic type or an array that could be created by the type loader too.
             RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(
                 sink,
                 context,
