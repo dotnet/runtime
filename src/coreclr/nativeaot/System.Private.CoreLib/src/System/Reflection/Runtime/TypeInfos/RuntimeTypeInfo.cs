@@ -741,8 +741,12 @@ namespace System.Reflection.Runtime.TypeInfos
                 }
                 catch (NotSupportedException)
                 {
-                    // The name of the type was stripped
-                    _debugName = "";
+                    // The name of the type was stripped (see IlcStripNamesAssembly). Use the address of the MethodTable
+                    // relative to the base of its module, which can be looked up in the symbol files. This code is only in debug builds.
+                    RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
+                    _debugName = typeHandle.IsNull
+                        ? "<name stripped>"
+                        : "EETypeRva:0x" + ((nint)typeHandle.Value - RuntimeAugments.GetModuleFromTypeHandle(typeHandle).OsModuleBase).ToString("x");
                 }
             }
 #endif
