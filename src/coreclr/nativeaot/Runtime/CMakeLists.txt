@@ -210,7 +210,6 @@ else()
     ${RUNTIME_DIR}/unix/CLREventBase.cpp
     unix/PalUnix.cpp
     unix/PalCreateDump.cpp
-    unix/cgroupcpu.cpp
     ${GC_DIR}/unix/events.cpp
   )
 

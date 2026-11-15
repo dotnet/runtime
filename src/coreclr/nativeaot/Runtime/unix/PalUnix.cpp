@@ -20,7 +20,9 @@
 #include "NativeContext.h"
 #include "HardwareExceptions.h"
 #include "PalCreateDump.h"
-#include "cgroupcpu.h"
+#ifdef TARGET_LINUX
+#include "../../../gc/unix/cgroup.h"
+#endif
 #include "threadstore.h"
 #include "thread.h"
 #include "threadstore.inl"
@@ -239,9 +241,11 @@ void InitializeCurrentProcessCpuCount()
     {
         count = cpuPresentCount;
 
+#ifdef TARGET_LINUX
         uint32_t cpuLimit;
-        if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
+        if (GetCGroupCpuLimit(&cpuLimit) && cpuLimit < count)
             count = cpuLimit;
+#endif
     }
 #endif
     else
@@ -288,9 +292,11 @@ void InitializeCurrentProcessCpuCount()
         count = GCToOSInterface::GetTotalProcessorCount();
 #endif // HAVE_SCHED_GETAFFINITY
 
+#ifdef TARGET_LINUX
         uint32_t cpuLimit;
-        if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
+        if (GetCGroupCpuLimit(&cpuLimit) && cpuLimit < count)
             count = cpuLimit;
+#endif
     }
 
     _ASSERTE(count > 0);
@@ -329,8 +335,6 @@ bool PalInit()
     {
         return false;
     }
-
-    InitializeCpuCGroup();
 
     InitializeCurrentProcessCpuCount();
 
