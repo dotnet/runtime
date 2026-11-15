@@ -519,6 +519,21 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        public void Clear_AfterRemoval_DoesNotExposeOldItems()
+        {
+            var builder = new ReadOnlyCollectionBuilder<int>(new[] { 1, 2, 3 });
+            builder.RemoveAt(1);
+
+            builder.Clear();
+            Assert.Empty(builder);
+
+            builder.Add(4);
+            builder.Insert(0, 5);
+            Assert.Equal(new[] { 5, 4 }, builder);
+            Assert.Equal(new[] { 5, 4 }, builder.ToReadOnlyCollection());
+        }
+
+        [Fact]
         public void ReadOnlyCollectionBuilder_Contains1()
         {
             var rocb = new ReadOnlyCollectionBuilder<int>(new[] { 1, 2, 2, 3 });

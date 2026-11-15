@@ -153,7 +153,10 @@ namespace System.Runtime.CompilerServices
             {
                 Array.Copy(_items, index + 1, _items, index, _size - index);
             }
-            _items[_size] = default(T)!;
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                _items[_size] = default(T)!;
+            }
             _version++;
         }
 
@@ -204,7 +207,10 @@ namespace System.Runtime.CompilerServices
         {
             if (_size > 0)
             {
-                Array.Clear(_items, 0, _size);
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                {
+                    Array.Clear(_items, 0, _size);
+                }
                 _size = 0;
             }
             _version++;
