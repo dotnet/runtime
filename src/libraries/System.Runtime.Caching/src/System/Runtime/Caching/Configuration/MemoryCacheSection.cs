@@ -23,6 +23,7 @@ namespace System.Runtime.Caching.Configuration
 
 #if NET
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
 #endif
     internal sealed class MemoryCacheSection : ConfigurationSection
     {
