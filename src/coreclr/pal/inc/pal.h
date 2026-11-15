@@ -2604,28 +2604,9 @@ YieldProcessor()
 #endif
 }
 
-#define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
-#define FORMAT_MESSAGE_IGNORE_INSERTS  0x00000200
 #define FORMAT_MESSAGE_FROM_STRING     0x00000400
 #define FORMAT_MESSAGE_FROM_SYSTEM     0x00001000
-#define FORMAT_MESSAGE_ARGUMENT_ARRAY  0x00002000
 #define FORMAT_MESSAGE_MAX_WIDTH_MASK  0x000000FF
-
-PALIMPORT
-DWORD
-PALAPI
-FormatMessageW(
-           IN DWORD dwFlags,
-           IN LPCVOID lpSource,
-           IN DWORD dwMessageId,
-           IN DWORD dwLanguageId,
-           OUT LPWSTR lpBffer,
-           IN DWORD nSize,
-           IN va_list *Arguments);
-
-#ifdef UNICODE
-#define FormatMessage FormatMessageW
-#endif
 
 
 PALIMPORT

@@ -498,6 +498,12 @@ public:
 
 int GetTotalProcessorCount();
 
+#ifdef TARGET_UNIX
+// Copies the message for a Win32 error code or HRESULT_FROM_WIN32 value into buffer.
+// Returns false if the buffer is too small.
+bool GetSystemErrorMessage(DWORD code, WCHAR *buffer, size_t cchBuffer);
+#endif // TARGET_UNIX
+
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on
 //******************************************************************************

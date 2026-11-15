@@ -116,12 +116,6 @@ add_executable_clr(paltests
   loader/LoadLibraryW/test5/loadlibraryw.cpp
   miscellaneous/CloseHandle/test2/test.cpp
   miscellaneous/FlushInstructionCache/test1/test1.cpp
-  miscellaneous/FormatMessageW/test1/test.cpp
-  miscellaneous/FormatMessageW/test2/test.cpp
-  miscellaneous/FormatMessageW/test3/test.cpp
-  miscellaneous/FormatMessageW/test4/test.cpp
-  miscellaneous/FormatMessageW/test5/test.cpp
-  miscellaneous/FormatMessageW/test6/test.cpp
   miscellaneous/FreeEnvironmentStringsW/test1/test.cpp
   miscellaneous/FreeEnvironmentStringsW/test2/test.cpp
   miscellaneous/GetEnvironmentStringsW/test1/test.cpp
