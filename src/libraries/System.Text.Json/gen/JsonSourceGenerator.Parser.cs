@@ -19,6 +19,40 @@ namespace System.Text.Json.SourceGeneration
 {
     public sealed partial class JsonSourceGenerator
     {
+        private static bool IsContextWithoutTypesCandidate(SyntaxNode node)
+        {
+            if (node is not ClassDeclarationSyntax { BaseList.Types.Count: > 0 } declaration)
+            {
+                return false;
+            }
+
+            foreach (BaseTypeSyntax baseType in declaration.BaseList.Types)
+            {
+                if (baseType.Type.GetLastToken().ValueText == "JsonSerializerContext")
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static Diagnostic? GetContextWithoutTypesDiagnostic(
+            ClassDeclarationSyntax declaration, SemanticModel semanticModel, KnownTypeSymbols symbols, CancellationToken cancellationToken)
+        {
+            if (symbols.JsonSerializerContextType is null || symbols.JsonSerializableAttributeType is null ||
+                semanticModel.GetDeclaredSymbol(declaration, cancellationToken) is not INamedTypeSymbol contextType ||
+                contextType.IsAbstract ||
+                !SymbolEqualityComparer.Default.Equals(contextType.BaseType, symbols.JsonSerializerContextType) ||
+                contextType.GetAttributes().Any(attribute => SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, symbols.JsonSerializableAttributeType)) ||
+                contextType.GetMembers("GetTypeInfo").OfType<IMethodSymbol>().Any(method => method.IsOverride))
+            {
+                return null;
+            }
+
+            return Diagnostic.Create(DiagnosticDescriptors.ContextHasNoSerializableTypes, declaration.Identifier.GetLocation(), contextType.ToDisplayString());
+        }
+
         // The source generator requires NRT and init-only property support.
         private const LanguageVersion MinimumSupportedLanguageVersion = LanguageVersion.CSharp9;
 
