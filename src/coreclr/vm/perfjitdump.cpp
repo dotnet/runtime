@@ -8,8 +8,6 @@
 
 #include "perfjitdump.h"
 
-#include <cstddef>
-
 #if defined(__linux__) || defined(__APPLE__)
 #define JITDUMP_SUPPORTED
 #endif
