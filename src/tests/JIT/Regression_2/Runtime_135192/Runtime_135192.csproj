@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestPriority>1</CLRTestPriority>
+    <InterpreterIncompatible>true</InterpreterIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'linux' or '$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <SuperPMICollectIncompatible>true</SuperPMICollectIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <CLRTestEnvironmentVariable Include="DOTNET_AltJit" Value="" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitName" Value="libclrjit.so" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitDisasmSummary" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitStdOutFile" Value="jit-stdout.txt" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitTimeLogCsv" Value="jit-time.csv" />
+  </ItemGroup>
+</Project>

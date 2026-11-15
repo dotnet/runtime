@@ -1295,33 +1295,21 @@ void Compiler::compStartup()
 
 /*****************************************************************************
  *
- *  One time finalization code
+ *  Process shutdown reporting
  */
 
 /* static */
-void Compiler::compShutdown()
+void Compiler::ProcessShutdownWork(ICorStaticInfo* statInfo)
 {
-    if (s_pAltJitExcludeAssembliesList != nullptr)
+    static LONG shutdownWorkDone = 0;
+    if (InterlockedExchange(&shutdownWorkDone, 1) != 0)
     {
-        s_pAltJitExcludeAssembliesList->~AssemblyNamesList2(); // call the destructor
-        s_pAltJitExcludeAssembliesList = nullptr;
+        return;
     }
-
-#ifdef DEBUG
-    if (s_pJitDisasmIncludeAssembliesList != nullptr)
-    {
-        s_pJitDisasmIncludeAssembliesList->~AssemblyNamesList2(); // call the destructor
-        s_pJitDisasmIncludeAssembliesList = nullptr;
-    }
-#endif // DEBUG
 
 #if MEASURE_NOWAY
     DisplayNowayAssertMap();
 #endif // MEASURE_NOWAY
-
-    /* Shut down the emitter */
-
-    emitter::emitDone();
 
 #if defined(DEBUG)
     // Finish reading and/or writing inline xml
@@ -1362,7 +1350,6 @@ void Compiler::compShutdown()
         }
     }
 
-    JitTimer::Shutdown();
 #endif // FEATURE_JIT_METHOD_PERF
 
 #if COUNT_AST_OPERS
@@ -5885,8 +5872,27 @@ void Compiler::RecomputeFlowGraphAnnotations()
 }
 
 /*****************************************************************************/
-void Compiler::ProcessShutdownWork(ICorStaticInfo* statInfo)
+void Compiler::compShutdown()
 {
+    if (s_pAltJitExcludeAssembliesList != nullptr)
+    {
+        s_pAltJitExcludeAssembliesList->~AssemblyNamesList2();
+        s_pAltJitExcludeAssembliesList = nullptr;
+    }
+
+#ifdef DEBUG
+    if (s_pJitDisasmIncludeAssembliesList != nullptr)
+    {
+        s_pJitDisasmIncludeAssembliesList->~AssemblyNamesList2();
+        s_pJitDisasmIncludeAssembliesList = nullptr;
+    }
+#endif // DEBUG
+
+    emitter::emitDone();
+
+#ifdef FEATURE_JIT_METHOD_PERF
+    JitTimer::Shutdown();
+#endif // FEATURE_JIT_METHOD_PERF
 }
 
 /*****************************************************************************/
@@ -8966,6 +8972,7 @@ void JitTimer::Shutdown()
     if (s_csvFile != nullptr)
     {
         fclose(s_csvFile);
+        s_csvFile = nullptr;
     }
 }
 
