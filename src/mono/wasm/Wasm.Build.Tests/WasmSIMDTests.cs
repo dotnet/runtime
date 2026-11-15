@@ -66,11 +66,16 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, m => m.Contains("Hello, World!"));
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
+        [Fact]
         [TestCategory("coreclr"), TestCategory("wasm-opt")]
-        public async Task PublishRelaxedSimdCoreClr(bool relaxedSimd)
+        public Task PublishRelaxedSimdCoreClr() => PublishRelaxedSimdCoreClrCore(relaxedSimd: false);
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/137571")]
+        [TestCategory("coreclr"), TestCategory("wasm-opt")]
+        public Task PublishRelaxedSimdEnabledCoreClr() => PublishRelaxedSimdCoreClrCore(relaxedSimd: true);
+
+        private async Task PublishRelaxedSimdCoreClrCore(bool relaxedSimd)
         {
             Configuration config = Configuration.Debug;
             string relaxedSimdValue = relaxedSimd.ToString().ToLowerInvariant();
