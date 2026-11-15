@@ -4,13 +4,10 @@
 using System;
 using System.ComponentModel;
 using System.Configuration;
-using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching.Configuration
 {
 #if NET
-    [UnsupportedOSPlatform("browser")]
-    [UnsupportedOSPlatform("wasi")]
 #endif
     internal sealed class MemoryCacheElement : ConfigurationElement
     {

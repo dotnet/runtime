@@ -11,7 +11,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Caching.Configuration;
 using System.Runtime.Caching.Resources;
-using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
 
@@ -39,8 +38,6 @@ namespace System.Runtime.Caching
         private bool _useMemoryCacheManager = true;
         private bool _throwOnDisposed;
 #if NET
-        [UnsupportedOSPlatformGuard("wasi")]
-        [UnsupportedOSPlatformGuard("browser")]
         private static bool _countersSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
         private static bool _countersSupported => true;

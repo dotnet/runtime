@@ -5,7 +5,6 @@ using System;
 using System.Collections.Specialized;
 using System.Configuration;
 using System.Runtime.Caching.Resources;
-using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching.Configuration
 {
@@ -22,8 +21,6 @@ namespace System.Runtime.Caching.Configuration
     */
 
 #if NET
-    [UnsupportedOSPlatform("browser")]
-    [UnsupportedOSPlatform("wasi")]
 #endif
     internal sealed class MemoryCacheSection : ConfigurationSection
     {

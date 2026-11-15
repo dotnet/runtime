@@ -7,14 +7,11 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System.Runtime.Caching
 {
 #if NET
-    [UnsupportedOSPlatform("browser")]
-    [UnsupportedOSPlatform("wasi")]
 #endif
     internal sealed class Counters : EventSource
     {
