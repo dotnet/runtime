@@ -154,7 +154,6 @@ set(SOURCES
   init/sxs.cpp
   loader/module.cpp
   misc/dbgmsg.cpp
-  misc/environ.cpp
   misc/error.cpp
   misc/errorstrings.cpp
   misc/fmtmessage.cpp

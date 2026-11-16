@@ -20,7 +20,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/process.h"
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
-#include "pal/environ.h"
 #include <minipal/utf8.h>
 #include "pal/utils.h"
 #include "pal/debug.h"
@@ -337,13 +336,6 @@ Initialize(
         }
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
-        // Initialize the environment.
-        if (FALSE == EnvironInitialize())
-        {
-            palError = ERROR_PALINIT_ENV;
-            goto CLEANUP0a;
-        }
-
         if (!minipal_increase_descriptor_limit())
         {
             ERROR("Unable to increase the file descriptor limit!\n");
@@ -358,7 +350,7 @@ Initialize(
         {
             ERROR("SEHInitializeMachExceptions failed!\n");
             palError = ERROR_PALINIT_INITIALIZE_MACH_EXCEPTION;
-            goto CLEANUP0a;
+            goto CLEANUP1a;
         }
 #endif // HAVE_MACH_EXCEPTIONS
 

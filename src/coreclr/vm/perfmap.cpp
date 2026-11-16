@@ -9,9 +9,9 @@
 #if defined(FEATURE_PERFMAP) && !defined(DACCESS_COMPILE)
 #include <clrconfignocache.h>
 #include "perfmap.h"
+#include "ProcessEnvironment.h"
 #include "pal.h"
 #include <dn-stdio.h>
-
 
 // The code addresses are actually native image offsets during crossgen. Print
 // them as 32-bit numbers for consistent output when cross-targeting and to
@@ -62,18 +62,35 @@ void PerfMap::Initialize()
     PerfMap::Enable(perfMapType, false);
 }
 
-const char * PerfMap::InternalConstructPath()
+char * PerfMap::InternalConstructPath()
 {
-#ifdef HOST_WINDOWS
-    CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
-#else
-    CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath", /* noPrefix */ false, &PAL_getenv);
-#endif
-    if (value.IsSet())
+    STANDARD_VM_CONTRACT;
+
+    // Read the runtime's copy of the environment so that a path set through the diagnostic server is used.
+    const char* names[] = { DOTNET_PREFIX_A "PerfMapJitDumpPath", COMPLUS_PREFIX_A "PerfMapJitDumpPath" };
+    for (const char* name : names)
     {
-        return value.AsString();
+        // The value may change between calls, so retry until it fits. An empty value uses the default.
+        uint32_t length = ProcessEnvironment_GetVariableUtf8(name, nullptr, 0);
+        while (length > 1)
+        {
+            NewArrayHolder<char> path{ new char[length] };
+            uint32_t written = ProcessEnvironment_GetVariableUtf8(name, path, length);
+            if (written == 0)
+            {
+                break;
+            }
+
+            if (written < length)
+            {
+                return path.Detach();
+            }
+
+            length = written;
+        }
     }
-    return TEMP_DIRECTORY_PATH;
+
+    return nullptr;
 }
 
 void PerfMap::InitializeConfiguration()
@@ -101,7 +118,8 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
     {
         CrstHolder ch(&(s_csPerfMap));
 
-        const char* basePath = InternalConstructPath();
+        NewArrayHolder<char> configuredPath{ InternalConstructPath() };
+        const char* basePath = configuredPath != nullptr ? (const char*)configuredPath : TEMP_DIRECTORY_PATH;
 
         if (s_Current == nullptr && (type == PerfMapType::ALL || type == PerfMapType::PERFMAP))
         {
