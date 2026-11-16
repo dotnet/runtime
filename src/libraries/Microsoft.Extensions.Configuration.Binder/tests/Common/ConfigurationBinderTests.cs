@@ -235,7 +235,6 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("Default", options.IgnoredProperty);
         }
 
-#if !BUILDING_SOURCE_GENERATOR_TESTS
         [Theory]
         [InlineData(false, false)]
         [InlineData(false, true)]
@@ -297,7 +296,6 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.False(ignored);
             Assert.Equal(0, allocated);
         }
-#endif
 #endif
 
         [Fact]
