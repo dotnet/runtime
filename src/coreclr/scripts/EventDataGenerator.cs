@@ -6,6 +6,7 @@
 
 #:package System.CommandLine@$(SystemCommandLineVersion)
 #:property PublishAot=false
+#:property TargetFramework=$(NetCoreAppToolCurrent)
 
 using System.CommandLine;
 using System.Diagnostics;
