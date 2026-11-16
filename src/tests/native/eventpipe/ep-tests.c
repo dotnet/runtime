@@ -1006,7 +1006,7 @@ stop_capture_state_wait_for_blocked_writer (
 	ep_timestamp_t deadline = ep_perf_timestamp_get () + ep_perf_frequency_query () * (STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS / 1000);
 	uint32_t yields = 0;
 	while (ep_perf_timestamp_get () < deadline) {
-		// ep_write_event clears WRITE_BUFFER_IN_USE, retaining the session index, only when parking.
+		// Reaching the capacity-wait path clears WRITE_BUFFER_IN_USE, retaining the session index.
 		if (ep_thread_get_session_use_in_progress (data->writer_thread) == session_index)
 			return true;
 		if (ep_rt_wait_event_wait (&data->writer_done, 0, false) == 0)
@@ -1090,9 +1090,27 @@ test_stop_capture_state_with_other_session_blocked (bool wait_for_writer_lock)
 	ep_rt_volatile_store_uint32_t (&data.pause_reader, 1);
 	writer_created = ep_rt_thread_create ((void *)stop_capture_state_blocked_writer, &data, EP_THREAD_TYPE_SESSION, &thread_id);
 	ep_raise_error_if_nok (writer_created);
-	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.writer_started, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) == 0);
-	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.reader_paused, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) == 0);
-	ep_raise_error_if_nok (stop_capture_state_wait_for_blocked_writer (&data, sessions [1]));
+	if (ep_rt_wait_event_wait (&data.writer_started, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) != 0) {
+		result = FAILED ("Other session's writer did not signal startup");
+		ep_raise_error ();
+	}
+	if (ep_rt_wait_event_wait (&data.reader_paused, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) != 0) {
+		result = FAILED ("Other session's reader did not reach its gate");
+		ep_raise_error ();
+	}
+	if (!stop_capture_state_wait_for_blocked_writer (&data, sessions [1])) {
+		result = FAILED ("Other session's writer did not reach the capacity-wait path; session-use=0x%x",
+			ep_thread_get_session_use_in_progress (data.writer_thread));
+		ep_raise_error ();
+	}
+	if (ep_rt_wait_event_wait (&data.writer_done, 0, false) != EP_RT_TEST_WAIT_TIMEOUT) {
+		result = FAILED ("Other session's writer finished before session stop started");
+		ep_raise_error ();
+	}
+	if (ep_buffer_manager_is_aborting (buffer_manager)) {
+		result = FAILED ("Other session was aborting before session stop started");
+		ep_raise_error ();
+	}
 
 	test_location = 3;
 	data.stopping_session = sessions [0];
@@ -1102,28 +1120,52 @@ test_stop_capture_state_with_other_session_blocked (bool wait_for_writer_lock)
 		result = FAILED ("Session stop did not enter the capture callback while the other session's writer was blocked");
 		ep_raise_error ();
 	}
-	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.writer_done, 0, false) == EP_RT_TEST_WAIT_TIMEOUT);
+	if (ep_rt_wait_event_wait (&data.writer_done, 0, false) != EP_RT_TEST_WAIT_TIMEOUT) {
+		result = FAILED ("Other session's writer finished before checking the capture callback");
+		ep_raise_error ();
+	}
 	if (wait_for_writer_lock) {
-		ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.capture_done, 0, false) == EP_RT_TEST_WAIT_TIMEOUT);
-		ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.stop_done, 0, false) == EP_RT_TEST_WAIT_TIMEOUT);
+		if (ep_rt_wait_event_wait (&data.capture_done, 0, false) != EP_RT_TEST_WAIT_TIMEOUT) {
+			result = FAILED ("Capture-state callback finished while the other session's writer still held the capture lock");
+			ep_raise_error ();
+		}
+		if (ep_rt_wait_event_wait (&data.stop_done, 0, false) != EP_RT_TEST_WAIT_TIMEOUT) {
+			result = FAILED ("Session stop finished while its capture-state callback was waiting for the capture lock");
+			ep_raise_error ();
+		}
 	} else {
-		// Keep B's reader gated: capture must bypass its parked writer rather than join the wait queue.
+		// Keep B's reader gated: capture must not wait for its unfinished writer.
 		// Teardown's subsequent ProcessInfo write can block on B after the capture scope has ended.
 		if (ep_rt_wait_event_wait (&data.capture_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) != 0) {
 			result = FAILED ("Capture-state callback did not finish while the other session's reader remained gated");
 			ep_raise_error ();
 		}
-		ep_raise_error_if_nok (data.captures == 1 && data.event_before_stop);
-		ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.writer_done, 0, false) == EP_RT_TEST_WAIT_TIMEOUT);
-		ep_raise_error_if_nok (ep_thread_get_session_use_in_progress (data.writer_thread) ==
-			ep_session_get_index ((EventPipeSession *)(uintptr_t)sessions [1]));
+		if (data.captures != 1 || !data.event_before_stop) {
+			result = FAILED ("Expected one capture and a pre-stop marker while the other session's reader remained gated; observed %u captures, marker=%u",
+				data.captures, (uint32_t)data.event_before_stop);
+			ep_raise_error ();
+		}
+		// A pending capacity signal can wake the writer and change its session-use marker without releasing the reader.
+		if (ep_rt_wait_event_wait (&data.writer_done, 0, false) != EP_RT_TEST_WAIT_TIMEOUT) {
+			result = FAILED ("Other session's writer finished before its reader was released");
+			ep_raise_error ();
+		}
 	}
-	ep_raise_error_if_nok (!ep_buffer_manager_is_aborting (buffer_manager));
+	if (ep_buffer_manager_is_aborting (buffer_manager)) {
+		result = FAILED ("Other session was aborted during capture-state stop");
+		ep_raise_error ();
+	}
 
 	test_location = 4;
 	ep_raise_error_if_nok (ep_rt_wait_event_set (&data.allow_reader));
-	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.capture_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) == 0);
-	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.writer_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) == 0);
+	if (ep_rt_wait_event_wait (&data.capture_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) != 0) {
+		result = FAILED ("Capture-state callback did not finish after releasing the other session's reader");
+		ep_raise_error ();
+	}
+	if (ep_rt_wait_event_wait (&data.writer_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) != 0) {
+		result = FAILED ("Other session's writer did not finish after releasing its reader");
+		ep_raise_error ();
+	}
 	if (ep_rt_wait_event_wait (&data.stop_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) != 0) {
 		result = FAILED ("Session teardown did not finish after releasing the other session's reader");
 		ep_raise_error ();
@@ -1133,7 +1175,10 @@ test_stop_capture_state_with_other_session_blocked (bool wait_for_writer_lock)
 			STOP_CAPTURE_STATE_WRITE_COUNT, data.writes, data.captures, (uint32_t)data.event_before_stop);
 		ep_raise_error ();
 	}
-	ep_raise_error_if_nok (!ep_buffer_manager_is_aborting (buffer_manager));
+	if (ep_buffer_manager_is_aborting (buffer_manager)) {
+		result = FAILED ("Other session was aborted instead of draining to completion");
+		ep_raise_error ();
+	}
 
 ep_on_exit:
 	if (ep_rt_wait_event_is_valid (&data.allow_reader) && !ep_rt_wait_event_set (&data.allow_reader))
