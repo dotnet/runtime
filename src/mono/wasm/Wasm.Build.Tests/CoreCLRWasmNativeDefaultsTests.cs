@@ -191,6 +191,40 @@ namespace Wasm.Build.Tests
             Assert.Equal(readyToRun is not "false", restoresCrossgen2);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [TestCategory("no-workload")]
+        public void PublishPreloadSkipsNativeNestedPublish(bool nestedPublish)
+        {
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_publish_preload",
+                extraProperties: $"""
+                    <WasmBuildingForNestedPublish>{nestedPublish.ToString().ToLowerInvariant()}</WasmBuildingForNestedPublish>
+                    <_WasmPreloadAssets>true</_WasmPreloadAssets>
+                    """,
+                insertAtEnd: """
+                    <Target Name="CheckPublishPreload" DependsOnTargets="_AddWasmPreloadPublishProperties">
+                        <Error Text="Publish boot configuration was skipped" />
+                    </Target>
+                    <Target Name="DetectPublishBootConfiguration" BeforeTargets="_ResolvePublishWasmBootJsonInputs">
+                        <Error Text="Publish boot configuration was requested" />
+                    </Target>
+                    """);
+
+            (string _, string output) = BuildProject(
+                info,
+                Configuration.Debug,
+                new BuildOptions(ExpectSuccess: false, ExtraMSBuildArgs: "-t:CheckPublishPreload"));
+
+            Assert.Contains(
+                nestedPublish ? "Publish boot configuration was skipped" : "Publish boot configuration was requested",
+                output);
+        }
+
         [Fact]
         public void PublishReadyToRunDirectoryMatchesSdkOutputCasing()
         {
