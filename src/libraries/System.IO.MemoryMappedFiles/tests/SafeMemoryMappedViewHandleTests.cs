@@ -67,7 +67,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
         public void EmptyViewHandleRetainsZeroLength()
         {
             using MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 4096);

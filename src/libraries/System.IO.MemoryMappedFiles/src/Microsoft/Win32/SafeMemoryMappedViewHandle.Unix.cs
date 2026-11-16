@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO.MemoryMappedFiles;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -18,7 +19,7 @@ namespace Microsoft.Win32.SafeHandles
             IntPtr addr = handle;
             handle = new IntPtr(-1);
             // An empty view maps one byte, but its reported length remains zero.
-            return Interop.Sys.MUnmap(addr, Math.Max(1UL, base.ByteLength)) == 0;
+            return Interop.Sys.MUnmap(addr, Math.Max(MemoryMappedView.EmptyViewNativeLength, base.ByteLength)) == 0;
         }
     }
 }

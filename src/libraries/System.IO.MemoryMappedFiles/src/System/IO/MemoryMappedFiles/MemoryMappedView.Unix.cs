@@ -8,6 +8,8 @@ namespace System.IO.MemoryMappedFiles
 {
     internal sealed partial class MemoryMappedView
     {
+        internal const ulong EmptyViewNativeLength = 1;
+
         public static MemoryMappedView CreateView(
             SafeMemoryMappedFileHandle memMappedFileHandle, MemoryMappedFileAccess access,
             long requestedOffset, long requestedSize)
@@ -97,7 +99,7 @@ namespace System.IO.MemoryMappedFiles
                 // what backs the view, so we just create an anonymous mapping.
                 addr = Interop.Sys.MMap(
                     IntPtr.Zero,
-                    1,         // any length that's greater than zero will suffice
+                    EmptyViewNativeLength, // mmap requires a nonzero length for an empty view
                     viewProtForCreation,
                     flags | Interop.Sys.MemoryMappedFlags.MAP_ANONYMOUS,
                     new SafeFileHandle(new IntPtr(-1), false),        // ignore the actual fd even if there was one
