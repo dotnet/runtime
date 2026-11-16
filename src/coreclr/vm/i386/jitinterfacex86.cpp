@@ -28,8 +28,6 @@
 #define WRITE_BARRIER_CHECK 1
 #endif
 
-extern "C" LONG g_global_alloc_lock;
-
 extern "C" void STDCALL JIT_WriteBarrierReg_PreGrow();// JIThelp.asm/JIThelp.s
 extern "C" void STDCALL JIT_WriteBarrierReg_PostGrow();// JIThelp.asm/JIThelp.s
 

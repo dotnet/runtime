@@ -98,10 +98,8 @@ namespace System.Net.Security
         }
 
         //
-        // Returns null or previously cached cred handle.
-        //
-        // ATTN: The returned handle can be invalid, the callers of InitializeSecurityContext and AcceptSecurityContext
-        // must be prepared to execute a back-out code if the call fails.
+        // Returns null or a previously cached credential with an acquired reference.
+        // The caller must release the reference after the security context has retained the credential.
         //
         internal static SafeFreeCredentials? TryCachedCredential(
             byte[]? thumbPrint,
@@ -126,6 +124,18 @@ namespace System.Net.Security
             if (credentials == null || credentials.IsClosed || credentials.IsInvalid || credentials.Expiry < DateTime.UtcNow)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Not found or invalid, Current Cache Count = {s_cachedCreds.Count}");
+                return null;
+            }
+
+            bool addedRef = false;
+            try
+            {
+                credentials.DangerousAddRef(ref addedRef);
+            }
+            catch (ObjectDisposedException)
+            {
+                // Cache scavenging may release the last reference between lookup and DangerousAddRef.
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Cached credential was closed before it could be referenced.");
                 return null;
             }
 

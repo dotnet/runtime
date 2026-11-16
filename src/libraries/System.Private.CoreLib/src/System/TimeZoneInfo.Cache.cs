@@ -496,6 +496,65 @@ namespace System
         }
 
         /// <summary>
+        /// Gets the standard (non-daylight) UTC offset ticks that apply to the specified local time.
+        /// This is the zone's base UTC offset combined with the applicable rule's <see cref="AdjustmentRule.BaseUtcOffsetDelta"/>,
+        /// and is used to convert an invalid (DST gap) local time to UTC so that zones which changed their
+        /// standard offset over time (a non-zero BaseUtcOffsetDelta) are handled correctly.
+        /// </summary>
+        /// <param name="localDateTime">The local time that falls within a daylight saving gap.</param>
+        /// <returns>The standard UTC offset ticks to subtract from the local time.</returns>
+        private long GetStandardUtcOffsetTicks(DateTime localDateTime)
+        {
+            int ruleIndex = FindRuleIndexForLocalTime(localDateTime);
+            return ruleIndex < 0
+                ? _baseUtcOffset.Ticks
+                : GetTransitionUtcOffsetTicks(_adjustmentRules![ruleIndex], includeDaylightDelta: false);
+        }
+
+        /// <summary>
+        /// Finds the index of the adjustment rule that applies to the specified local time, resolving the rule
+        /// adjacent to the exact timestamp rather than by calendar year. This matters for zones whose standard
+        /// offset changed between two rules within the same year (for example southern-hemisphere zones that
+        /// begin a year in daylight saving time), where a year-based lookup could return the wrong rule.
+        /// </summary>
+        /// <param name="localDateTime">The local time to resolve.</param>
+        /// <returns>The index of the applicable adjustment rule, or -1 if none applies.</returns>
+        private int FindRuleIndexForLocalTime(DateTime localDateTime)
+        {
+            AdjustmentRule[]? rules = _adjustmentRules;
+            if (rules is null || rules.Length == 0)
+            {
+                return -1;
+            }
+
+            DateTime date = localDateTime.Date;
+            int low = 0;
+            int high = rules.Length - 1;
+            while (low <= high)
+            {
+                int median = low + (high - low) / 2;
+                AdjustmentRule rule = rules[median];
+                AdjustmentRule previousRule = median > 0 ? rules[median - 1] : rule;
+                int compareResult = CompareAdjustmentRuleToDateTime(rule, previousRule, localDateTime, date, dateTimeIsUtc: false);
+                if (compareResult == 0)
+                {
+                    return median;
+                }
+
+                if (compareResult < 0)
+                {
+                    low = median + 1;
+                }
+                else
+                {
+                    high = median - 1;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>
         /// Grows the given pool array to accommodate the required capacity.
         /// </summary>
         /// <typeparam name="T">The type of elements in the array.</typeparam>

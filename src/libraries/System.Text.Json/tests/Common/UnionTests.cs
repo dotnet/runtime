@@ -163,6 +163,134 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("hello", GetUnionValue(fromString!));
         }
 
+        [Theory]
+        [InlineData(null, "42")]
+        [InlineData(typeof(bool), "true")]
+        [InlineData(typeof(int?), "42")]
+        [InlineData(typeof(OtherCase), "{}")]
+        [InlineData(typeof(List<>), "[]")]
+        [InlineData(typeof(void), "{}")]
+        public async Task CustomTypeClassifier_UnsupportedType_ThrowsBeforeResolvingMetadata(Type? caseType, string json)
+        {
+            bool caseMetadataResolved = false;
+            bool constructorInvoked = false;
+
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(UnionWithCustomClassifier))
+                {
+                    typeInfo.TypeClassifier = (ref Utf8JsonReader _) => caseType;
+                    typeInfo.UnionConstructor = (_, _) =>
+                    {
+                        constructorInvoked = true;
+                        return new UnionWithCustomClassifier(42);
+                    };
+                }
+                else if (typeInfo.Type == caseType)
+                {
+                    caseMetadataResolved = true;
+                }
+            });
+            options.DefaultBufferSize = 1;
+
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<UnionWithCustomClassifier>(json, options));
+
+            Assert.Contains(nameof(UnionWithCustomClassifier), ex.Message);
+            if (caseType is not null)
+            {
+                Assert.Contains(caseType.ToString(), ex.Message);
+            }
+
+            Assert.False(caseMetadataResolved);
+            Assert.False(constructorInvoked);
+        }
+
+        [Fact]
+        public async Task CustomTypeClassifier_UndeclaredSubtype_Throws()
+        {
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(HierarchyUnion))
+                {
+                    typeInfo.TypeClassifier = static (ref Utf8JsonReader _) => typeof(Lab);
+                }
+            });
+
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<HierarchyUnion>("{}", options));
+
+            Assert.Contains(nameof(HierarchyUnion), ex.Message);
+            Assert.Contains(nameof(Lab), ex.Message);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CustomTypeClassifier_UsesModifiedUnionCases(bool addCase)
+        {
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(UnionWithCustomClassifier))
+                {
+                    if (addCase)
+                    {
+                        typeInfo.UnionCases.Add(new JsonUnionCaseInfo(typeof(OtherCase)));
+                    }
+
+                    typeInfo.TypeClassifier = static (ref Utf8JsonReader _) => typeof(OtherCase);
+                    typeInfo.UnionConstructor = static (_, _) => new UnionWithCustomClassifier("custom");
+                }
+            });
+            options.DefaultBufferSize = 1;
+
+            if (addCase)
+            {
+                UnionWithCustomClassifier? result =
+                    await Serializer.DeserializeWrapper<UnionWithCustomClassifier>("{}", options);
+
+                Assert.Equal("custom", GetUnionValue(result!));
+            }
+            else
+            {
+                await Assert.ThrowsAsync<JsonException>(
+                    () => Serializer.DeserializeWrapper<UnionWithCustomClassifier>("{}", options));
+            }
+        }
+
+        [Fact]
+        public async Task CustomTypeClassifier_RemovedCase_Throws()
+        {
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(UnionWithCustomClassifier))
+                {
+                    typeInfo.UnionCases.Remove(typeInfo.UnionCases.Single(c => c.CaseType == typeof(int)));
+                    typeInfo.TypeClassifier = static (ref Utf8JsonReader _) => typeof(int);
+                }
+            });
+
+            await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<UnionWithCustomClassifier>("42", options));
+        }
+
+        [Fact]
+        public async Task CustomTypeClassifier_DeclaredNullableCase_Deserializes()
+        {
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(SingleNullableValueTypeUnion))
+                {
+                    typeInfo.TypeClassifier = static (ref Utf8JsonReader _) => typeof(int?);
+                }
+            });
+
+            SingleNullableValueTypeUnion? result =
+                await Serializer.DeserializeWrapper<SingleNullableValueTypeUnion>("42", options);
+
+            Assert.Equal(42, GetUnionValue(result!));
+        }
+
         // The factory-resolved JsonTypeClassifier delegate must be visible on
         // JsonTypeInfo.TypeClassifier by the time any modifier runs, otherwise modifiers
         // cannot inspect, wrap, or replace the resolved classifier — which is the whole
@@ -188,17 +316,19 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(observedAtModifierTime);
         }
 
-        // Case type with a user-defined JsonConverter; runtime cannot classify it
-        // without a custom classifier.
         [JsonConverter(typeof(CustomConverter))]
         public class CustomCase
         {
+            public string? Value { get; init; }
         }
 
         public sealed class CustomConverter : JsonConverter<CustomCase>
         {
-            public override CustomCase? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => null;
-            public override void Write(Utf8JsonWriter writer, CustomCase value, JsonSerializerOptions options) { }
+            public override CustomCase? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                new() { Value = reader.GetString() };
+
+            public override void Write(Utf8JsonWriter writer, CustomCase value, JsonSerializerOptions options) =>
+                writer.WriteStringValue(value.Value);
         }
 
         public class OtherCase
@@ -261,13 +391,21 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task UnionWithCustomConverterCase_NoClassifier_DeserializeThrows()
         {
-            // Configure-time succeeds (serialization is allowed). Deserialization throws
-            // because a custom converter case can serialize as any JSON value type.
             JsonException ex = await Assert.ThrowsAsync<JsonException>(
                 () => Serializer.DeserializeWrapper<UnionWithCustomConverterCase>("{}"));
 
             Assert.Contains(nameof(UnionWithCustomConverterCase), ex.Message);
-            Assert.Contains("custom JsonConverter", ex.Message);
+            Assert.Contains("Object", ex.Message);
+        }
+
+        [Fact]
+        public async Task UnionWithCustomConverterCase_NoClassifier_UnambiguousShapeDispatches()
+        {
+            UnionWithCustomConverterCase? result =
+                await Serializer.DeserializeWrapper<UnionWithCustomConverterCase>("\"value\"");
+
+            CustomCase customCase = Assert.IsType<CustomCase>(GetUnionValue(result!));
+            Assert.Equal("value", customCase.Value);
         }
 
         [Fact]
@@ -401,6 +539,126 @@ namespace System.Text.Json.Serialization.Tests
             // The Configure path must not throw even though the union has an ambiguous token.
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo<UnionWithMixedAmbiguity>();
             Assert.NotNull(typeInfo);
+        }
+
+        [JsonNumberHandling(JsonNumberHandling.Strict)]
+        public union IntOrString(int, string);
+
+        [Theory]
+        [InlineData("42", 42)]
+        [InlineData("\"hello\"", "hello")]
+        [InlineData("\"42\"", "42")]
+        public async Task UnionNumberHandling_StrictTypeAttributeOverridesWebDefaults(string json, object expectedValue)
+        {
+            JsonSerializerOptions options = new(JsonSerializerDefaults.Web)
+            {
+                TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver,
+            };
+
+            IntOrString? value = await Serializer.DeserializeWrapper<IntOrString>(json, options);
+
+            Assert.Equal(expectedValue, GetUnionValue(value!));
+        }
+
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+        public union NumberHandlingUnion(int, int[], bool);
+
+        [Theory]
+        [InlineData("42", "\"42\"")]
+        [InlineData("\"42\"", "\"42\"")]
+        [InlineData("[1,2,3,4,5,6,7,8]", "[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\"]")]
+        [InlineData("[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\"]", "[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\"]")]
+        [InlineData("true", "true")]
+        public async Task UnionNumberHandling_TypeAttributeAppliesToCaseConverter(string json, string expectedJson)
+        {
+            JsonSerializerOptions options = Serializer.CreateOptions(configure: options =>
+            {
+                options.NumberHandling = JsonNumberHandling.Strict;
+                options.DefaultBufferSize = 1;
+            });
+
+            NumberHandlingUnion value = await Serializer.DeserializeWrapper<NumberHandlingUnion>(json, options);
+            Assert.Equal(expectedJson, await Serializer.SerializeWrapper(value, options));
+        }
+
+        [Fact]
+        public async Task UnionNumberHandling_StrictTypeAttributeOverridesGlobalWriteAsString()
+        {
+            JsonSerializerOptions options = Serializer.CreateOptions(
+                configure: options => options.NumberHandling = JsonNumberHandling.WriteAsString);
+
+            Assert.Equal("42", await Serializer.SerializeWrapper(new IntOrString(42), options));
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonTestHelper.GetUnionCaseNumberHandlingPrecedenceTestData), MemberType = typeof(JsonTestHelper))]
+        public async Task UnionNumberHandling_CaseConvertersHonorPrecedence(
+            JsonNumberHandling globalHandling, JsonNumberHandling? unionHandling, JsonNumberHandling? caseHandling, JsonNumberHandling expectedHandling)
+        {
+            foreach ((Type unionType, Type numberType) in new[] { (typeof(IntOrBool), typeof(int)), (typeof(SingleNullableValueTypeUnion), typeof(int?)) })
+            {
+                JsonSerializerOptions options = Serializer.CreateOptions(
+                    configure: options => options.NumberHandling = globalHandling,
+                    modifier: typeInfo =>
+                    {
+                        if (typeInfo.Type == unionType)
+                        {
+                            typeInfo.NumberHandling = unionHandling;
+                        }
+                        else if (typeInfo.Type == numberType)
+                        {
+                            typeInfo.NumberHandling = caseHandling;
+                        }
+                    });
+
+                object value = await Serializer.DeserializeWrapper("42", unionType, options);
+                Assert.Equal(42, ((IUnion)value).Value);
+
+                string expectedJson = (expectedHandling & JsonNumberHandling.WriteAsString) != 0 ? "\"42\"" : "42";
+                Assert.Equal(expectedJson, await Serializer.SerializeWrapper(value, unionType, options));
+
+                if ((expectedHandling & JsonNumberHandling.AllowReadingFromString) != 0)
+                {
+                    value = await Serializer.DeserializeWrapper("\"42\"", unionType, options);
+                    Assert.Equal(42, ((IUnion)value).Value);
+                }
+                else
+                {
+                    await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper("\"42\"", unionType, options));
+                }
+
+                if (numberType == typeof(int?))
+                {
+                    value = await Serializer.DeserializeWrapper("null", unionType, options);
+                    Assert.Null(((IUnion)value).Value);
+                    Assert.Equal("null", await Serializer.SerializeWrapper(value, unionType, options));
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(JsonNumberHandling.Strict, JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString, """{"Name":"item","Values":["42"]}""")]
+        [InlineData(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString, JsonNumberHandling.Strict, """{"Name":"item","Values":[42]}""")]
+        public async Task UnionNumberHandling_DoesNotOverridePocoMembers(
+            JsonNumberHandling unionHandling, JsonNumberHandling pocoHandling, string expectedJson)
+        {
+            JsonSerializerOptions options = Serializer.CreateOptions(
+                modifier: typeInfo =>
+                {
+                    if (typeInfo.Type == typeof(MixedUnion))
+                    {
+                        typeInfo.NumberHandling = unionHandling;
+                    }
+                    else if (typeInfo.Type == typeof(Payload))
+                    {
+                        typeInfo.NumberHandling = pocoHandling;
+                    }
+                });
+
+            MixedUnion value = new(new Payload { Name = "item", Values = [42] });
+            JsonTestHelper.AssertJsonEqual(expectedJson, await Serializer.SerializeWrapper(value, options));
+            MixedUnion? result = await Serializer.DeserializeWrapper<MixedUnion>(expectedJson, options);
+            Assert.Equal(new[] { 42 }, Assert.IsType<Payload>(GetUnionValue(result!)).Values);
         }
 
         public class Animal { }
@@ -1781,10 +2039,10 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(leaf, GetUnionValue(deserialized!));
         }
 
+#if false // ActiveIssue https://github.com/dotnet/roslyn/issues/85762
         // The self-referential case is nullable, which makes it the union's null case as well:
-        // the generated null arm reports typeof(NullableNat?) while the payload arm still has
-        // to dispatch off Value. Covers the interaction between Nullable<T> case unwrapping
-        // and union-instance matching, since both apply to the same case here.
+        // the generated null arm reports typeof(NullableNat?) while the non-null arm matches
+        // the unwrapped NullableNat payload.
         public union NullableNat(bool, NullableNat?);
 
         [Theory]
@@ -1820,14 +2078,15 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(deserialized);
             Assert.Null(GetUnionValue(deserialized!));
         }
+#endif
 
         #endregion
 
         #region Class unions with subtype cases
 
         // A [Union] class is not sealed, so a case type can derive from the union itself.
-        // The union instance is then pattern compatible with the case type, exactly as it is
-        // for a self-referential case, but by the opposite subtyping direction.
+        // Root-level union type patterns still target the payload, even when an ordinary type
+        // pattern could match the union instance through that inheritance.
         //
         // Value is [JsonIgnore]d because CircleShape inherits it, and would otherwise carry it
         // into its own JSON object. That has no bearing on union recognition: ShapeUnion is
@@ -1904,18 +2163,14 @@ namespace System.Text.Json.Serialization.Tests
 
         #endregion
 
-        #region Class unions matched by their own case types
+        #region Class unions overlapping their own case types
 
         // ShapeUnion above covers a case type deriving from the union. This region covers the
         // opposite subtyping direction: the union derives from, or implements, one of its own
         // case types.
         //
-        // Both directions make the union instance pattern compatible with the case type, but the
-        // language treats them very differently. An explicit reference conversion (case derives
-        // from union) puts the compiler into Try-Both mode, which it reports. An implicit one
-        // (union derives from case) suppresses union matching altogether, so a bare type pattern
-        // binds the union instance rather than the payload, silently and with no diagnostic.
-        // These tests pin the payload as the observable result in that silent direction.
+        // In both directions, an ordinary type pattern could match the union instance. Union type
+        // patterns instead target the payload; these tests pin the payload as the observable result.
 
         [JsonConverter(typeof(JsonWritableConverter))]
         public interface IJsonWritable
@@ -1940,8 +2195,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         // The union implements the same interface it declares as a case. Because the converter is
-        // attached to the interface, a deconstructor that bound the union instance instead of the
-        // payload would still serialize successfully — through the union's own WriteTo — and
+        // attached to the interface, a root-level pattern that bound the union instance instead of
+        // the payload would still serialize successfully — through the union's own WriteTo — and
         // produce "union" instead of the payload's label. The union itself is unaffected by the
         // converter and continues to use built-in union serialization.
 #pragma warning disable SYSLIB1227
@@ -2004,8 +2259,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Union_ImplementingOwnCaseInterface_WithClassifier_RoundTrips()
         {
-            // The interface case carries a custom converter, so the union cannot be classified by
-            // value shape; supply a classifier explicitly, as UnionWithCustomConverterCase does.
+            // The custom converter case overlaps the numeric case, so supply a classifier.
             JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
                 if (typeInfo.Type == typeof(WritableUnion))
@@ -2025,8 +2279,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("payload", poco.Label);
         }
 
-        // The [Union] class equivalent: the union derives from one of its own case types, so the
-        // conversion from the union to the case is an implicit reference conversion.
+        // The [Union] class equivalent: the union derives from one of its own case types, so an
+        // ordinary type pattern could match the union instance through an implicit conversion.
         public class NodeCase
         {
             public string? Label { get; set; }

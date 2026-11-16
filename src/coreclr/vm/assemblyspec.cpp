@@ -34,7 +34,6 @@ BOOL UnsafeVerifyLookupAssembly(AssemblySpecBindingCache *pCache, AssemblySpec *
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     BOOL result = FALSE;
 
@@ -64,7 +63,6 @@ BOOL UnsafeVerifyLookupFile(AssemblySpecBindingCache *pCache, AssemblySpec *pSpe
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     BOOL result = FALSE;
 
@@ -96,7 +94,6 @@ BOOL UnsafeContains(AssemblySpecBindingCache *pCache, AssemblySpec *pSpec)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     BOOL result = FALSE;
 
@@ -165,7 +162,6 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(pFile));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     IMDInternalImport* pImport = pFile->GetMDImport();
@@ -310,7 +306,6 @@ Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel,
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -350,7 +345,6 @@ Assembly *AssemblySpec::LoadAssembly(LPCSTR pSimpleName,
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pSimpleName));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -369,7 +363,6 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pFilePath));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -407,7 +400,7 @@ HRESULT AssemblySpec::CheckFriendAssemblyName()
 }
 
 HRESULT AssemblySpec::EmitToken(
-    IMetaDataAssemblyEmit *pEmit,
+    IMDInternalEmit *pEmit,
     mdAssemblyRef *pToken)
 {
     CONTRACTL
@@ -416,7 +409,6 @@ HRESULT AssemblySpec::EmitToken(
         MODE_ANY;
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END;
 
@@ -435,12 +427,12 @@ HRESULT AssemblySpec::EmitToken(
         AMD.usRevisionNumber = m_context.usRevisionNumber;
 
         if (m_context.szLocale) {
-            AMD.cbLocale = MultiByteToWideChar(CP_UTF8, 0, m_context.szLocale, -1, NULL, 0);
-            if(AMD.cbLocale==0)
-                IfFailGo(HRESULT_FROM_GetLastError());
-            AMD.szLocale = (LPWSTR) alloca(AMD.cbLocale * sizeof(WCHAR) );
-            if(MultiByteToWideChar(CP_UTF8, 0, m_context.szLocale, -1, AMD.szLocale, AMD.cbLocale)==0)
-                IfFailGo(HRESULT_FROM_GetLastError());
+            size_t cchLocale = strlen(m_context.szLocale) + 1;
+            size_t cchWideLocale = minipal_get_length_utf8_to_utf16(m_context.szLocale, cchLocale, 0);
+            AMD.cbLocale = (ULONG)cchWideLocale;
+            AMD.szLocale = (LPWSTR) alloca(cchWideLocale * sizeof(WCHAR) );
+            if(minipal_convert_utf8_to_utf16(m_context.szLocale, cchLocale, (CHAR16_T*)AMD.szLocale, cchWideLocale, 0)==0)
+                IfFailGo(HRESULT_FROM_WIN32(errno));
         }
         else {
             AMD.cbLocale = 0;
@@ -546,13 +538,11 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
         {
             THROWS;
             GC_TRIGGERS;
-            INJECT_FAULT(COMPlusThrowOM(););
         }
         else
         {
             GC_NOTRIGGER;
             NOTHROW;
-            FORBID_FAULT;
         }
         MODE_ANY;
         PRECONDITION(pSpec != NULL);
@@ -611,12 +601,10 @@ Assembly *AssemblySpecBindingCache::LookupAssembly(AssemblySpec *pSpec,
         if (fThrow) {
             GC_TRIGGERS;
             THROWS;
-            INJECT_FAULT(COMPlusThrowOM(););
         }
         else {
             GC_NOTRIGGER;
             NOTHROW;
-            FORBID_FAULT;
         }
         MODE_ANY;
     }
@@ -648,12 +636,10 @@ PEAssembly *AssemblySpecBindingCache::LookupFile(AssemblySpec *pSpec, BOOL fThro
         if (fThrow) {
             GC_TRIGGERS;
             THROWS;
-            INJECT_FAULT(COMPlusThrowOM(););
         }
         else {
             GC_NOTRIGGER;
             NOTHROW;
-            FORBID_FAULT;
         }
         MODE_ANY;
     }
@@ -725,7 +711,6 @@ public:
         {
             THROWS;
             GC_TRIGGERS;
-            INJECT_FAULT(COMPlusThrowOM(););
         }
         CONTRACTL_END
 
@@ -747,7 +732,6 @@ public:
         {
             NOTHROW;
             GC_TRIGGERS;
-            FORBID_FAULT;
         }
         CONTRACTL_END
 
@@ -809,7 +793,6 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, Assembly *pAss
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -889,7 +872,6 @@ BOOL AssemblySpecBindingCache::StorePEAssembly(AssemblySpec *pSpec, PEAssembly *
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -968,7 +950,6 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 

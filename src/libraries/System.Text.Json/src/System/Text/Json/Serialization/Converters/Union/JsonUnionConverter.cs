@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -74,6 +75,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 caseTypeInfo = options.GetTypeInfoInternal(caseType);
                 state.Current.JsonPropertyInfo = caseTypeInfo.PropertyInfoForTypeInfo;
+                state.Current.NumberHandling = typeInfo.NumberHandling ?? caseTypeInfo.PropertyInfoForTypeInfo.EffectiveNumberHandling;
             }
 
             JsonConverter caseConverter = caseTypeInfo.Converter;
@@ -108,6 +110,12 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     ThrowHelper.ThrowJsonException_UnionTypeClassifierReturnedNull(typeToConvert, reader.TokenType);
                 }
+
+                Debug.Assert(typeInfo.UnionCaseTypes is not null);
+                if (!typeInfo.UnionCaseTypes.Contains(caseType))
+                {
+                    ThrowHelper.ThrowJsonException_UnionRuntimeTypeNotMatchedToCase(typeToConvert, caseType);
+                }
             }
             else
             {
@@ -120,11 +128,6 @@ namespace System.Text.Json.Serialization.Converters
                 if ((typeInfo.UnionAmbiguousValueTypes & valueType) != 0)
                 {
                     ThrowHelper.ThrowJsonException_UnionAmbiguousJsonValueType(typeToConvert, valueType);
-                }
-
-                if (typeInfo.UnionHasCustomConverterCase)
-                {
-                    ThrowHelper.ThrowJsonException_UnionCaseWithCustomConverterRequiresClassifier(typeToConvert);
                 }
 
                 Type? resolvedCaseType = null;
@@ -190,6 +193,7 @@ namespace System.Text.Json.Serialization.Converters
 
             JsonTypeInfo caseTypeInfo = options.GetTypeInfoInternal(caseType);
             state.Current.JsonPropertyInfo = caseTypeInfo.PropertyInfoForTypeInfo;
+            state.Current.NumberHandling = typeInfo.NumberHandling ?? caseTypeInfo.PropertyInfoForTypeInfo.EffectiveNumberHandling;
             return caseTypeInfo.Converter.TryWriteAsObject(writer, caseValue, options, ref state);
         }
     }

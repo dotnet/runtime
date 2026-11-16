@@ -666,6 +666,31 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task Receive_BoundUdpSocket_Success()
+        {
+            using (Socket receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            using (Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                receiver.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                byte[] buffer = new byte[10];
+
+                for (int i = 0; i < 3; i++)
+                {
+                    // Receive issued before the datagram arrives.
+                    Task<int> receive = ReceiveAsync(receiver, buffer);
+                    await SendToAsync(sender, new byte[] { 42 }, receiver.LocalEndPoint!);
+                    Assert.Equal(1, await receive.WaitAsync(TestSettings.PassingTestTimeout));
+                    Assert.Equal(42, buffer[0]);
+
+                    // Receive issued after the datagram arrives.
+                    await SendToAsync(sender, new byte[] { 43 }, receiver.LocalEndPoint!);
+                    Assert.Equal(1, await ReceiveAsync(receiver, buffer).WaitAsync(TestSettings.PassingTestTimeout));
+                    Assert.Equal(43, buffer[0]);
+                }
+            }
+        }
+
+        [Fact]
         public async Task Send_0ByteSendTo_Success()
         {
             using (Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
@@ -730,6 +755,35 @@ namespace System.Net.Sockets.Tests
                     Assert.Equal(0, await receive);
                 }
             }
+        }
+
+        [Fact]
+        public async Task Receive0Byte_NotConnected_Throws()
+        {
+            using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            SocketException ex = await Assert.ThrowsAsync<SocketException>(() => ReceiveAsync(socket, new ArraySegment<byte>(Array.Empty<byte>())))
+                .WaitAsync(TestSettings.PassingTestTimeout);
+            Assert.Equal(SocketError.NotConnected, ex.SocketErrorCode);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows consumes the datagram on a zero-byte receive.
+        public async Task Receive0Byte_Udp_CompletesWhenDatagramArrives()
+        {
+            using Socket receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            receiver.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+
+            Task<int> receive = ReceiveAsync(receiver, new ArraySegment<byte>(Array.Empty<byte>()));
+            Assert.False(receive.IsCompleted, $"Task should not have been completed, was {receive.Status}");
+
+            await SendToAsync(sender, new byte[] { 42 }, receiver.LocalEndPoint!);
+            Assert.Equal(0, await receive.WaitAsync(TestSettings.PassingTestTimeout));
+
+            byte[] buffer = new byte[1];
+            Assert.Equal(1, await ReceiveAsync(receiver, buffer).WaitAsync(TestSettings.PassingTestTimeout));
+            Assert.Equal(42, buffer[0]);
         }
 
         [Theory]
@@ -1059,6 +1113,7 @@ namespace System.Net.Sockets.Tests
                 (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair(ipv6Server, dualModeClient);
                 using SafeSocketHandle? owner = ReplaceWithNonOwning(ref socket1, owning);
 
+                using (socket1)
                 using (socket2)
                 {
                     Task socketOperation;
@@ -1137,6 +1192,15 @@ namespace System.Net.Sockets.Tests
                             {
                                 peerSocketError = se.SocketErrorCode;
                                 break;
+                            }
+                            catch (TimeoutException ex) when (!receiveOrSend && (PlatformDetection.IsApplePlatform || PlatformDetection.IsFreeBSD))
+                            {
+                                // BSD TCP stacks may reject a valid reset when sent data has not yet
+                                // been acknowledged. Retry with fresh sockets, not another receive.
+                                const string Message = "Timed out waiting for the peer to observe the connection reset, retry.";
+                                _output?.WriteLine(Message);
+                                _output?.WriteLine(ex.ToString());
+                                Assert.Fail(Message);
                             }
                         }
 

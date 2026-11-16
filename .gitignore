@@ -301,6 +301,7 @@ config.ps1
 
 # VS debug support files
 launchSettings.json
+!src/mono/wasm/templates/**/launchSettings.json
 
 # Snapcraft files
 .snapcraft
@@ -338,8 +339,6 @@ CMakeUserPresets.json
 # Cross compilation
 cross/rootfs/*
 cross/android-rootfs/*
-# add x86 as it is ignored in 'Build results'
-!cross/x86
 
 #python import files
 *.pyc

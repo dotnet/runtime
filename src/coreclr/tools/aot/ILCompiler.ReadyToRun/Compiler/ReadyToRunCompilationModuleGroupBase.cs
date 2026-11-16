@@ -32,6 +32,7 @@ namespace ILCompiler
         public bool CompileGenericDependenciesFromVersionBubbleModuleSet;
         public bool CompileAllPossibleCrossModuleCode;
         public InstructionSetSupport InstructionSetSupport;
+        public IEnumerable<string> DirectPInvokeModules = Array.Empty<string>();
     }
 
     public abstract class ReadyToRunCompilationModuleGroupBase : CompilationModuleGroup
@@ -67,6 +68,7 @@ namespace ILCompiler
         private readonly Func<EcmaMethod, bool> _tokenTranslationFreeNonVersionableUncached;
         private bool CompileAllPossibleCrossModuleCode = false;
         private InstructionSetSupport _instructionSetSupport;
+        private readonly HashSet<string> _directPInvokeModules;
 
         public ReadyToRunCompilationModuleGroupBase(ReadyToRunCompilationModuleGroupConfig config)
         {
@@ -87,6 +89,7 @@ namespace ILCompiler
             _crossModuleInlineableModuleSet.UnionWith(_versionBubbleModuleSet);
 
             _compileGenericDependenciesFromVersionBubbleModuleSet = config.CompileGenericDependenciesFromVersionBubbleModuleSet;
+            _directPInvokeModules = new HashSet<string>(config.DirectPInvokeModules, StringComparer.Ordinal);
 
             _tokenResolver = new ModuleTokenResolver(this, config.Context);
 
@@ -101,6 +104,52 @@ namespace ILCompiler
         }
 
         public ModuleTokenResolver Resolver => _tokenResolver;
+
+        public bool IsDirectPInvoke(MethodDesc method)
+        {
+            Debug.Assert(method.IsPInvoke);
+
+            if (method.HasCustomAttribute("System.Runtime.InteropServices", "WasmImportLinkageAttribute"))
+            {
+                return true;
+            }
+
+            string module = method.GetPInvokeMethodMetadata().Module;
+            if (module is "*" or "QCall")
+            {
+                return true;
+            }
+
+            foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(method.Context.Target, module))
+            {
+                if (_directPInvokeModules.Contains(variation))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
+        {
+            if (!ContainsMethodBodyCore(method, unboxingStub))
+                return false;
+
+            // Methods that fail validation can be omitted from the R2R image and left for runtime
+            // handling, where the underlying type-system error is reported only if the method is used.
+            try
+            {
+                ReadyToRunLibraryRootProvider.CheckCanGenerateMethod(method);
+                return true;
+            }
+            catch (TypeSystemException)
+            {
+                return false;
+            }
+        }
+
+        protected abstract bool ContainsMethodBodyCore(MethodDesc method, bool unboxingStub);
 
         public void AssociateTokenResolver(ModuleTokenResolver tokenResolver)
         {
@@ -897,6 +946,15 @@ namespace ILCompiler
                         {
                             if (genericParam.HasReferenceTypeConstraint)
                                 return false;
+
+                            // C# encodes the 'struct' and 'unmanaged' constraints as a System.ValueType type constraint.
+                            // Every primitive satisfies it, and it exposes nothing beyond what an unconstrained
+                            // type parameter already can, so only other (interface or class) constraints disqualify.
+                            foreach (TypeDesc constraint in genericParam.TypeConstraints)
+                            {
+                                if (!constraint.IsWellKnownType(WellKnownType.ValueType))
+                                    return false;
+                            }
                         }
                         else
                         {
@@ -906,11 +964,11 @@ namespace ILCompiler
 
                             if (instType.IsString && genericParam.HasDefaultConstructorConstraint)
                                 return false;
-                        }
 
-                        // This checks to see if the type constraints list is empty
-                        if (genericParam.TypeConstraints.GetEnumerator().MoveNext())
-                            return false;
+                            // This checks to see if the type constraints list is empty
+                            if (genericParam.TypeConstraints.GetEnumerator().MoveNext())
+                                return false;
+                        }
                     }
                     else
                     {

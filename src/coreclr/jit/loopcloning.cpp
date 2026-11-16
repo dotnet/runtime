@@ -169,7 +169,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
             GenTree* node = comp->gtNewLclvNode(lclNum, comp->lvaTable[lclNum].lvType);
             if (offset != 0)
             {
-                node = comp->gtNewOperNode(GT_ADD, node->TypeGet(), node, comp->gtNewIconNode(offset));
+                node = comp->gtNewOperNode(GT_ADD, genActualType(node), node, comp->gtNewIconNode(offset));
             }
             return node;
         }
@@ -1520,10 +1520,12 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                                               iterInfo->LimitOffset);
         }
 
-        // arr.Length is non-negative, but arr.Length + offset can be < 0 when
-        // offset < 0 and the array is short. Guard the fast clone against
-        // out-of-bounds access on the low side.
-        if (iterInfo->LimitOffset < 0)
+        // arr.Length is non-negative, but arr.Length + offset can be < 0 when a negative offset exceeds the array
+        // length or a positive offset overflows. Array lengths are at most CORINFO_Array_MaxLength, so small positive
+        // offsets cannot overflow.
+        const bool positiveOffsetCanOverflow =
+            iterInfo->LimitOffset > (INT32_MAX - static_cast<int>(CORINFO_Array_MaxLength));
+        if ((iterInfo->LimitOffset < 0) || positiveOffsetCanOverflow)
         {
             LC_Ident arrLenIdent =
                 LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen),
@@ -2323,7 +2325,9 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     unsigned const enclosingRegion = ehGetMostNestedRegionIndex(preheader, &inTry);
     if (!BasicBlock::sameEHRegion(beforeSlowPreheader, preheader))
     {
-        beforeSlowPreheader = fgFindInsertPoint(enclosingRegion, inTry, bottom, /* endBlk */ nullptr,
+        // The lexical bottom may be in a nested region, so start searching from the fast preheader,
+        // which is guaranteed to be in the target region.
+        beforeSlowPreheader = fgFindInsertPoint(enclosingRegion, inTry, fastPreheader, /* endBlk */ nullptr,
                                                 /* nearBlk */ bottom, /* jumpBlk */ nullptr, /* runRarely */ false);
     }
 
@@ -3184,11 +3188,28 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
     return true;
 }
 
-/* static */
-Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloningVisitor(GenTree** pTree, Compiler::fgWalkData* data)
+class LoopCloneVisitor final : public GenTreeVisitor<LoopCloneVisitor>
 {
-    return data->m_compiler->optCanOptimizeByLoopCloning(*pTree, (LoopCloneVisitorInfo*)data->pCallbackData);
-}
+    Compiler::LoopCloneVisitorInfo* m_info;
+
+public:
+    enum
+    {
+        DoPreOrder        = true,
+        UseExecutionOrder = true,
+    };
+
+    LoopCloneVisitor(Compiler* compiler, Compiler::LoopCloneVisitorInfo* info)
+        : GenTreeVisitor<LoopCloneVisitor>(compiler)
+        , m_info(info)
+    {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        return m_compiler->optCanOptimizeByLoopCloning(*use, m_info);
+    }
+};
 
 //------------------------------------------------------------------------
 // optIdentifyLoopOptInfo: Identify loop optimization candidates.
@@ -3231,16 +3252,14 @@ bool Compiler::optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneConte
             shouldCloneForArrayBounds ? " (array bounds)" : "", shouldCloneForGdvTests ? " (GDV tests)" : "");
 
     LoopCloneVisitorInfo info(context, loop, nullptr, shouldCloneForArrayBounds, shouldCloneForGdvTests);
+    LoopCloneVisitor     visitor(this, &info);
 
-    loop->VisitLoopBlocksReversePostOrder([=, &info](BasicBlock* block) {
+    loop->VisitLoopBlocksReversePostOrder([=, &info, &visitor](BasicBlock* block) {
         compCurBB = block;
         for (Statement* const stmt : block->Statements())
         {
-            info.stmt               = stmt;
-            const bool lclVarsOnly  = false;
-            const bool computeStack = false;
-            fgWalkTreePre(stmt->GetRootNodePointer(), optCanOptimizeByLoopCloningVisitor, &info, lclVarsOnly,
-                          computeStack);
+            info.stmt = stmt;
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
 
         return BasicBlockVisit::Continue;

@@ -22,6 +22,7 @@ public sealed class ExecutionManager_1 : IExecutionManager
     public TargetPointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetFuncletStartAddress(codeInfoHandle);
     public void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize) => _executionManagerCore.GetMethodRegionInfo(codeInfoHandle, out hotSize, out coldStart, out coldSize);
     public TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint) => _executionManagerCore.NonVirtualEntry2MethodDesc(entrypoint);
+    public TargetCodePointer GetDiagnosticCodeStartFromEntryPoint(TargetCodePointer entryPoint) => _executionManagerCore.GetDiagnosticCodeStartFromEntryPoint(entryPoint);
     public bool IsFunclet(CodeBlockHandle codeInfoHandle) => _executionManagerCore.IsFunclet(codeInfoHandle);
     public bool IsFilterFunclet(CodeBlockHandle codeInfoHandle) => _executionManagerCore.IsFilterFunclet(codeInfoHandle);
     public TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetUnwindInfo(codeInfoHandle);
@@ -32,8 +33,8 @@ public sealed class ExecutionManager_1 : IExecutionManager
     public bool IsGcSafe(TargetCodePointer instructionPointer) => _executionManagerCore.IsGcSafe(instructionPointer);
     public uint GetStackParameterSize(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetStackParameterSize(codeInfoHandle);
     public List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetExceptionClauses(codeInfoHandle);
-    public JitManagerInfo GetEEJitManagerInfo() => _executionManagerCore.GetEEJitManagerInfo();
-    public IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => _executionManagerCore.GetCodeHeapInfos();
+    public JitManagerInfo? GetJitManagerInfo(JitManagerKind kind) => _executionManagerCore.GetJitManagerInfo(kind);
+    public IEnumerable<ICodeHeapInfo> GetCodeHeapInfos(JitManagerKind kind) => _executionManagerCore.GetCodeHeapInfos(kind);
     public IReadOnlyList<TargetPointer> GetDynamicFunctionTableEntries(TargetPointer tableAddress) => _executionManagerCore.GetDynamicFunctionTableEntries(tableAddress);
     public CodeKind GetCodeKind(TargetCodePointer codeAddress) => _executionManagerCore.GetCodeKind(codeAddress);
     public TargetPointer FindReadyToRunModule(TargetPointer address) => _executionManagerCore.FindReadyToRunModule(address);

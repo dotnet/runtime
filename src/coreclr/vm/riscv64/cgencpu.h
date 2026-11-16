@@ -70,8 +70,7 @@ extern PCODE GetPreStubEntryPoint();
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 16  // bytes (two int registers: a0 and a1)
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          16  // bytes (max value type size that can be passed by value)
 
-#define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
+#define HAS_FLOAT_ARGUMENT_REGISTERS            1   // Calling convention has separate floating-point argument registers
 
 #define FLOAT_REGISTER_SIZE 8 // each register in FloatArgumentRegisters is 8 bytes.
 
@@ -88,14 +87,6 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
     const unsigned stackSlotSize = 8;
     return ALIGN_UP(parmSize, stackSlotSize);
 }
-
-//
-// JIT HELPERS.
-//
-// Create alias for optimized implementations of helpers provided on this platform
-//
-#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
-#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 //**********************************************************************
 // Frames

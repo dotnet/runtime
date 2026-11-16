@@ -18,7 +18,8 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Configuration
 
         public MetricsConfigureOptions(IConfiguration configuration)
         {
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            ArgumentNullException.ThrowIfNull(configuration);
+            _configuration = configuration;
         }
 
         public void Configure(MetricsOptions options) => LoadConfig(options);

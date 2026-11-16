@@ -1,0 +1,42 @@
+parameters:
+  archType: 'x64'
+  osGroup: 'linux'
+  nameSuffix: ''
+  osSubgroup: ''
+
+steps:
+  - ${{ if or(eq(parameters.osGroup, 'windows'), and(in(parameters.osGroup, 'linux', 'freebsd', 'openbsd', 'osx'), in(parameters.archType, 'x64', 'arm64'))) }}:
+    # Use the same branch-scoped restore policy as the compiler caches. Each job
+    # works on its own restored copy, so post-build purge cannot affect another job.
+    # Keep Debug and Release snapshots separate in rolling builds.
+    - task: Cache@2
+      displayName: ILLink task cache
+      continueOnError: true
+      inputs:
+        key: illink | v1 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)" | "$(Build.BuildId)"
+        path: $(Pipeline.Workspace)/.illink-cache
+        restoreKeys: |
+          illink | v1 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)"
+
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: |
+          set -euo pipefail
+          mkdir -p "$(Pipeline.Workspace)/.illink-cache"
+          buildStart="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "##vso[task.setvariable variable=ILLINK_EXPERIMENTAL_CACHE_PATH]$(Pipeline.Workspace)/.illink-cache"
+          echo "##vso[task.setvariable variable=ILLINK_CACHE_BUILD_START]$buildStart"
+          echo "##vso[task.setvariable variable=ILLINK_EXPERIMENTAL_CACHE]true"
+        displayName: Configure experimental ILLink task cache
+        continueOnError: true
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - pwsh: |
+          $cachePath = Join-Path "$(Pipeline.Workspace)" ".illink-cache"
+          New-Item -ItemType Directory -Path $cachePath -Force | Out-Null
+          $buildStart = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+
+          Write-Host "##vso[task.setvariable variable=ILLINK_EXPERIMENTAL_CACHE_PATH]$cachePath"
+          Write-Host "##vso[task.setvariable variable=ILLINK_CACHE_BUILD_START]$buildStart"
+          Write-Host "##vso[task.setvariable variable=ILLINK_EXPERIMENTAL_CACHE]true"
+        displayName: Configure experimental ILLink task cache
+        continueOnError: true

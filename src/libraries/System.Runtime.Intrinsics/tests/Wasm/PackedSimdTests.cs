@@ -13,10 +13,13 @@ using Xunit;
 
 namespace System.Runtime.Intrinsics.Wasm.Tests
 {
-    [PlatformSpecific(TestPlatforms.Browser)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+    [PlatformSpecific(TestPlatforms.Browser | TestPlatforms.Wasi)]
+    [ConditionalClass(typeof(PackedSimdTests), nameof(IsSupported))]
     public sealed class PackedSimdTests
     {
+        // The CoreCLR interpreter does not implement PackedSimd; ReadyToRun code does.
+        public static bool IsSupported => PlatformDetection.IsMonoRuntime || PlatformDetection.IsReadyToRunCompiled;
+
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(PackedSimd))]
         public unsafe void PackedSimdIsSupported()

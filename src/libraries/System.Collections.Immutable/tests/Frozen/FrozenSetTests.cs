@@ -379,7 +379,7 @@ namespace System.Collections.Frozen.Tests
 
         [Fact]
         [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129973", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129973", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm), nameof(PlatformDetection.IsCoreCLR))]
         public void ToFrozenSet_WithExtremelyLargeStrings()
         {
             // Test case with extremely large strings that exceed length bucket boundaries.

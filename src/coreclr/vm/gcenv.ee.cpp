@@ -14,6 +14,7 @@
 #include "threadsuspend.h"
 #include "interoplibinterface.h"
 #include "exinfo.h"
+#include "externalmemoryhandle.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -190,9 +191,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     else
 #endif
     {
-        unsigned flagsStackWalk = ALLOW_ASYNC_STACK_WALK | ALLOW_INVALID_OBJECTS;
-
-        flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
+        unsigned flagsStackWalk = ALLOW_ASYNC_STACK_WALK | ALLOW_INVALID_OBJECTS | GC_FUNCLET_REFERENCE_REPORTING | GC_ROOT_SCAN;
 
         gcctx.pScannedSlots = NULL;
         pThread->StackWalkFrames( GcStackCrawlCallBack, &gcctx, flagsStackWalk);
@@ -312,7 +311,9 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
             ScanStackRoots(pThread, fn, sc);
             ScanTailCallArgBufferRoots(pThread, fn, sc);
+#ifdef FEATURE_MULTITHREADING
             ScanThreadStaticRoots(pThread, fn, sc);
+#endif // FEATURE_MULTITHREADING
 #ifdef FEATURE_EVENT_TRACE
             sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -333,6 +334,18 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
         {
             SystemDomain::EnumAllStaticGCRefs(fn, sc);
         }
+    }
+
+    // In server GC, we can be scanning GC roots from multiple GC threads concurrently.
+    // It's unsafe for us to scan unpinned roots from multiple threads concurrently
+    // as this could lead to invalid relocations during compaction.
+    // As a result, we will only scan these roots on one context to ensure they are scanned exactly once.
+    if (GCHeapUtilities::ShouldScanUnpinnedRoots(sc))
+    {
+        // We are going to scan over possible byref values located not on any given thread's stack.
+        // Ensure that we don't try to check the stack limits of any particular thread while scanning these roots.
+        sc->thread_under_crawl = nullptr;
+        ExternalMemoryHandle::GCScanRoots(fn, sc);
     }
 }
 
@@ -495,33 +508,22 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
     }
     CONTRACTL_END;
 
-    if (GCHeapUtilities::UseThreadAllocationContexts())
+    Thread * pThread = NULL;
+    while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
     {
-        Thread * pThread = NULL;
-        while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
+        ee_alloc_context* palloc_context = pThread->GetEEAllocContext();
+        if (palloc_context != nullptr)
         {
-            ee_alloc_context* palloc_context = pThread->GetEEAllocContext();
-            if (palloc_context != nullptr)
+            gc_alloc_context* ac = &palloc_context->m_GCAllocContext;
+            fn(ac, param);
+            // The GC may zero the alloc_ptr and alloc_limit fields of AC during enumeration and we need to keep
+            // m_CombinedLimit up-to-date. Note that the GC has multiple threads running this enumeration concurrently
+            // with no synchronization. If you need to change this code think carefully about how that concurrency
+            // may affect the results.
+            if (ac->alloc_limit == 0 && palloc_context->m_CombinedLimit != 0)
             {
-                gc_alloc_context* ac = &palloc_context->m_GCAllocContext;
-                fn(ac, param);
-                // The GC may zero the alloc_ptr and alloc_limit fields of AC during enumeration and we need to keep
-                // m_CombinedLimit up-to-date. Note that the GC has multiple threads running this enumeration concurrently
-                // with no synchronization. If you need to change this code think carefully about how that concurrency
-                // may affect the results.
-                if (ac->alloc_limit == 0 && palloc_context->m_CombinedLimit != 0)
-                {
-                    palloc_context->m_CombinedLimit = 0;
-                }
+                palloc_context->m_CombinedLimit = 0;
             }
-        }
-    }
-    else
-    {
-        fn(&g_global_alloc_context.m_GCAllocContext, param);
-        if (g_global_alloc_context.m_GCAllocContext.alloc_limit == 0 && g_global_alloc_context.m_CombinedLimit != 0)
-        {
-            g_global_alloc_context.m_CombinedLimit = 0;
         }
     }
 }
@@ -679,7 +681,9 @@ void GcScanRootsForProfilerAndETW(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
         ScanStackRoots(pThread, fn, sc);
         ScanTailCallArgBufferRoots(pThread, fn, sc);
+#ifdef FEATURE_MULTITHREADING
         ScanThreadStaticRoots(pThread, fn, sc);
+#endif // FEATURE_MULTITHREADING
 #ifdef FEATURE_EVENT_TRACE
         sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -1279,7 +1283,7 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
     }
 
     WCHAR configKey[MaxConfigKeyLength];
-    if (MultiByteToWideChar(CP_ACP, 0, privateKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+    if (minipal_convert_utf8_to_utf16(privateKey, strlen(privateKey) + 1, (CHAR16_T*)configKey, MaxConfigKeyLength, 0) == 0)
     {
         // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
         return false;
@@ -1294,7 +1298,7 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
     }
     else if (publicKey != NULL)
     {
-        if (MultiByteToWideChar(CP_ACP, 0, publicKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+        if (minipal_convert_utf8_to_utf16(publicKey, strlen(publicKey) + 1, (CHAR16_T*)configKey, MaxConfigKeyLength, 0) == 0)
         {
             // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
             return false;
@@ -1329,7 +1333,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     }
 
     WCHAR configKey[MaxConfigKeyLength];
-    if (MultiByteToWideChar(CP_ACP, 0, privateKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+    if (minipal_convert_utf8_to_utf16(privateKey, strlen(privateKey) + 1, (CHAR16_T*)configKey, MaxConfigKeyLength, 0) == 0)
     {
         // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
         return false;
@@ -1366,7 +1370,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     }
     else if (publicKey != NULL)
     {
-        if (MultiByteToWideChar(CP_ACP, 0, publicKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+        if (minipal_convert_utf8_to_utf16(publicKey, strlen(publicKey) + 1, (CHAR16_T*)configKey, MaxConfigKeyLength, 0) == 0)
         {
             // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
             return false;
@@ -1389,7 +1393,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
     } CONTRACTL_END;
 
     WCHAR configKey[MaxConfigKeyLength];
-    if (MultiByteToWideChar(CP_ACP, 0, privateKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+    if (minipal_convert_utf8_to_utf16(privateKey, strlen(privateKey) + 1, (CHAR16_T*)configKey, MaxConfigKeyLength, 0) == 0)
     {
         // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
         return false;
@@ -1402,20 +1406,22 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
     {
         if (publicKey != NULL)
         {
-            if (MultiByteToWideChar(CP_ACP, 0, publicKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+            if (minipal_convert_utf8_to_utf16(publicKey, strlen(publicKey) + 1, (CHAR16_T*)configKey, MaxConfigKeyLength, 0) == 0)
             {
                 // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
                 return false;
             }
             out =  Configuration::GetKnobStringValue(configKey);
-            if (out == NULL)
-            {
-                return false;
-            }
         }
     }
 
-    int charCount = WideCharToMultiByte(CP_ACP, 0, out, -1 /* out is null-terminated */, NULL, 0, nullptr, nullptr);
+    if (out == NULL)
+    {
+        return false;
+    }
+
+    size_t cchOut = u16_strlen(out) + 1;
+    size_t charCount = minipal_get_length_utf16_to_utf8((const CHAR16_T*)out, cchOut, 0);
     if (charCount == 0)
     {
         // this should only happen if the config subsystem gives us a string that's not valid
@@ -1428,7 +1434,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
     }
 
     // not allocated on the stack since it escapes this function
-    AStringHolder configResult = new (nothrow) char[charCount];
+    AStringHolder configResult(new (nothrow) char[charCount]);
     if (!configResult)
     {
         if (fromClrConfig)
@@ -1438,10 +1444,9 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
         return false;
     }
 
-    if (WideCharToMultiByte(CP_ACP, 0, out, -1 /* out is null-terminated */,
-          configResult.GetValue(), charCount, nullptr, nullptr) == 0)
+    if (minipal_convert_utf16_to_utf8((const CHAR16_T*)out, cchOut, configResult, charCount, 0) == 0)
     {
-        // this should never happen, the previous call to WideCharToMultiByte that computed the charCount should
+        // this should never happen, the previous call that computed the charCount should
         // have caught all issues.
         assert(false);
         if (fromClrConfig)
@@ -1451,7 +1456,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
         return false;
     }
 
-    *value = configResult.Extract();
+    *value = configResult.Detach();
     if (fromClrConfig)
     {
         CLRConfig::FreeConfigString(fromClrConfig);
@@ -1474,6 +1479,7 @@ bool GCToEEInterface::WasCurrentThreadCreatedByGC()
     return !!::IsGCSpecialThread();
 }
 
+#ifdef FEATURE_MULTITHREADING
 struct SuspendableThreadStubArguments
 {
     void* Argument;
@@ -1578,7 +1584,7 @@ namespace
         args.Thread->StartThread();
 
         // Wait for the thread to be in its main loop
-        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE);
+        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE, false);
         args.ThreadStartedEvent.CloseEvent();
         _ASSERTE(res == WAIT_OBJECT_0);
 
@@ -1642,7 +1648,7 @@ namespace
         }
 
         // Wait for the thread to be in its main loop
-        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE);
+        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE, false);
         args.ThreadStartedEvent.CloseEvent();
         _ASSERTE(res == WAIT_OBJECT_0);
 
@@ -1650,9 +1656,11 @@ namespace
         return true;
     }
 } // anonymous namespace
+#endif // FEATURE_MULTITHREADING
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
+#ifdef FEATURE_MULTITHREADING
     InlineSString<MaxThreadNameSize> wideName;
     const WCHAR* namePtr = nullptr;
     EX_TRY
@@ -1679,6 +1687,11 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
     {
         return CreateNonSuspendableThread(threadStart, arg, namePtr);
     }
+#else
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();
+    return false;
+#endif // FEATURE_MULTITHREADING
 }
 
 void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)

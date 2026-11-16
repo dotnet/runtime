@@ -372,7 +372,7 @@ public:
     void AddType(Module* pModule,
                  mdTypeDef cl);
     void AddExportedType(mdExportedType cl);
-    mdAssemblyRef AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter);
+    mdAssemblyRef AddAssemblyRef(Assembly *refedAssembly, IMDInternalEmit *pAssemEmitter);
 
     //****************************************************************************************
 
@@ -584,6 +584,7 @@ public:
         {
             THROWS;
             GC_TRIGGERS;
+            MODE_ANY;
             PRECONDITION(CheckPointer(pAccessingAssembly));
         }
         CONTRACTL_END;

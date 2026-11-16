@@ -50,5 +50,13 @@ namespace System.Text.Json.SourceGeneration
         /// The ref kind of the parameter (None, Ref, Out, In, or RefReadOnlyParameter).
         /// </summary>
         public required RefKind RefKind { get; init; }
+
+        /// <summary>
+        /// The FQN of the parameter type using the open type parameters described by
+        /// <see cref="TypeGenerationSpec.DeclaringTypeParameterNames"/>
+        /// (e.g., "global::System.Collections.Generic.List&lt;T[]&gt;").
+        /// Null when the parameter type does not contain generic parameters.
+        /// </summary>
+        public string? OpenParameterTypeFQN { get; init; }
     }
 }

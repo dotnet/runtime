@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -20,6 +21,9 @@ internal sealed class RefWalk : IEnum<DacGcReference>
 
     public IEnumerator<DacGcReference> Enumerator { get; }
     public nuint LegacyHandle { get; set; } = 0;
+#if DEBUG
+    internal RefWalkHandlePrefixValidator HandlePrefixValidator { get; } = new();
+#endif
 
     public RefWalk(Target target, bool walkStacks, CorGCReferenceType handleWalkMask)
     {
@@ -36,6 +40,13 @@ internal sealed class RefWalk : IEnum<DacGcReference>
         if (_handleWalkMask != 0)
         {
             foreach (DacGcReference reference in WalkHandles())
+                yield return reference;
+        }
+
+        // External memory handles are strong roots, but are stored independently of the GC handle table.
+        if (_handleWalkMask.HasFlag(CorGCReferenceType.CorHandleStrong))
+        {
+            foreach (DacGcReference reference in WalkExternalMemoryHandles())
                 yield return reference;
         }
 
@@ -68,8 +79,7 @@ internal sealed class RefWalk : IEnum<DacGcReference>
 
     private HandleType[] GetRequestedHandleTypes()
     {
-        // Mirror native DacRefWalker::GetHandleWalkerMask: translate the CorGCReferenceType bits
-        // in the mask into the handle types consumed by IGC.GetHandles.
+        // Translate the CorGCReferenceType bits into the handle types consumed by IGC.GetHandles.
         List<HandleType> types = new();
         if (_handleWalkMask.HasFlag(CorGCReferenceType.CorHandleStrong))
             types.Add(HandleType.Strong);
@@ -126,6 +136,30 @@ internal sealed class RefWalk : IEnum<DacGcReference>
         }
     }
 
+    // Walks the external memory handles registered with the current AppDomain.
+    private IEnumerable<DacGcReference> WalkExternalMemoryHandles()
+    {
+        if (!_target.Contracts.TryGetContract(out IExternalMemoryHandles externalMemoryHandles))
+            yield break;
+
+        foreach (ExternalMemoryHandleRootData root in externalMemoryHandles.GetRoots(resolveInteriorPointers: true))
+        {
+            DacGcReference reference = new()
+            {
+                vmDomain = _appDomain.Value,
+                dwType = CorGCReferenceType.CorHandleStrong,
+                i64ExtraData = 0,
+            };
+
+            if (root.IsInteriorPointer || root.Address == TargetPointer.Null)
+                reference.pObject = root.Object.Value | 1;
+            else
+                reference.objHnd = root.Address.Value;
+
+            yield return reference;
+        }
+    }
+
     private IEnumerable<DacGcReference> WalkStacks()
     {
         IThread threadContract = _target.Contracts.Thread;
@@ -162,5 +196,51 @@ internal sealed class RefWalk : IEnum<DacGcReference>
 
             threadAddr = threadData.NextThread;
         }
+    }
+}
+
+internal sealed class RefWalkHandlePrefixValidator
+{
+    private readonly HashSet<(CorGCReferenceType Type, ulong Domain, ulong Object, ulong ExtraData)> _cdac = [];
+    private readonly HashSet<(CorGCReferenceType Type, ulong Domain, ulong Object, ulong ExtraData)> _legacy = [];
+    private bool _cdacComplete;
+    private bool _legacyComplete;
+    private bool _validated;
+
+    internal bool NeedsLegacyBatch => _cdacComplete && !_legacyComplete;
+
+    internal void AddBatch(ReadOnlySpan<DacGcReference> references, bool legacy, bool endOfWalk)
+    {
+        ref bool complete = ref (legacy ? ref _legacyComplete : ref _cdacComplete);
+        if (complete)
+            return;
+
+        HashSet<(CorGCReferenceType Type, ulong Domain, ulong Object, ulong ExtraData)> roots =
+            legacy ? _legacy : _cdac;
+        foreach (DacGcReference reference in references)
+        {
+            if (reference.dwType == CorGCReferenceType.CorReferenceStack)
+            {
+                complete = true;
+                break;
+            }
+
+            roots.Add((reference.dwType, reference.vmDomain, reference.objHnd, reference.i64ExtraData));
+        }
+
+        complete |= endOfWalk;
+    }
+
+    internal bool TryCompare(out bool matches)
+    {
+        matches = false;
+        if (_validated || !_cdacComplete || !_legacyComplete)
+            return false;
+
+        _validated = true;
+        matches = _cdac.SetEquals(_legacy);
+        _cdac.Clear();
+        _legacy.Clear();
+        return true;
     }
 }

@@ -155,7 +155,13 @@
     <value>The specified port is invalid. The port must be greater than 0.</value>
   </data>
   <data name="MailHeaderInvalidCID" xml:space="preserve">
-    <value>The ContentID cannot contain a '&lt;' or '&gt;' character.</value>
+    <value>The ContentID cannot contain a '&lt;', '&gt;', CR, or LF character.</value>
+  </data>
+  <data name="MailHeaderInvalid" xml:space="preserve">
+    <value>The value cannot contain a CR or LF character.</value>
+  </data>
+  <data name="DispositionTypeInvalid" xml:space="preserve">
+    <value>The value cannot contain disallowed characters.</value>
   </data>
   <data name="MailServerResponse" xml:space="preserve">
     <value>The server response was: {0}</value>

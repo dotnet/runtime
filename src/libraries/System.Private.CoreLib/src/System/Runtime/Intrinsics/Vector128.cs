@@ -31,6 +31,7 @@ namespace System.Runtime.Intrinsics
     // the internal inlining limits of the JIT.
 
     /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on 128-bit vectors.</summary>
+    [SuppressReadyToRunCanonicalRooting]
     public static partial class Vector128
     {
         internal const int Size = 16;
@@ -1736,7 +1737,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.DegreesToRadians<Vector128<double>, double>(degrees);
+                return VectorMath.DegreesToRadiansDouble<Vector128<double>, Vector128<ulong>>(degrees);
             }
             else
             {
@@ -1754,7 +1755,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.DegreesToRadians<Vector128<float>, float>(degrees);
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.DegreesToRadiansSingle<Vector128<float>, Vector256<double>>(degrees);
+                }
+                else
+                {
+                    return VectorMath.DegreesToRadiansSingle<Vector128<float>, Vector128<double>>(degrees);
+                }
             }
             else
             {
@@ -2149,11 +2157,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return VectorMath.IsEvenIntegerSingle<Vector128<float>, Vector128<uint>>(vector.AsSingle()).As<float, T>();
+                return VectorMath.IsEvenInteger<Vector128<float>, float>(vector.AsSingle()).As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return VectorMath.IsEvenIntegerDouble<Vector128<double>, Vector128<ulong>>(vector.AsDouble()).As<double, T>();
+                return VectorMath.IsEvenInteger<Vector128<double>, double>(vector.AsDouble()).As<double, T>();
             }
             return IsZero(vector & Vector128<T>.One);
         }
@@ -2193,7 +2201,7 @@ namespace System.Runtime.Intrinsics
         {
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
-                return IsFinite(vector) & Equals(vector, Truncate(vector));
+                return IsZero(vector - Truncate(vector));
             }
             return Vector128<T>.AllBitsSet;
         }
@@ -2272,11 +2280,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return VectorMath.IsOddIntegerSingle<Vector128<float>, Vector128<uint>>(vector.AsSingle()).As<float, T>();
+                return VectorMath.IsOddInteger<Vector128<float>, float>(vector.AsSingle()).As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return VectorMath.IsOddIntegerDouble<Vector128<double>, Vector128<ulong>>(vector.AsDouble()).As<double, T>();
+                return VectorMath.IsOddInteger<Vector128<double>, double>(vector.AsDouble()).As<double, T>();
             }
             return ~IsZero(vector & Vector128<T>.One);
         }
@@ -2698,6 +2706,16 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
+#if !MONO
+                if (typeof(T) == typeof(float))
+                {
+                    return MaxNative(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                if (typeof(T) == typeof(double))
+                {
+                    return MaxNative(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+#endif
                 return ConditionalSelect(GreaterThan(left, right), left, right);
             }
             else
@@ -2788,6 +2806,16 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
+#if !MONO
+                if (typeof(T) == typeof(float))
+                {
+                    return MinNative(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                if (typeof(T) == typeof(double))
+                {
+                    return MinNative(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+#endif
                 return ConditionalSelect(LessThan(left, right), left, right);
             }
             else
@@ -3110,7 +3138,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.RadiansToDegrees<Vector128<double>, double>(radians);
+                return VectorMath.RadiansToDegreesDouble<Vector128<double>, Vector128<ulong>>(radians);
             }
             else
             {
@@ -3128,7 +3156,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.RadiansToDegrees<Vector128<float>, float>(radians);
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.RadiansToDegreesSingle<Vector128<float>, Vector256<double>>(radians);
+                }
+                else
+                {
+                    return VectorMath.RadiansToDegreesSingle<Vector128<float>, Vector128<double>>(radians);
+                }
             }
             else
             {

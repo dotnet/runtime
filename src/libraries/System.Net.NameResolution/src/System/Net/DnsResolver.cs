@@ -388,10 +388,8 @@ namespace System.Net
                 Task<DnsResult<AddressRecord>> aTask = DoResolve(async, name, AddressFamily.InterNetwork, cancellationToken);
                 Task<DnsResult<AddressRecord>> aaaaTask = DoResolve(async, name, AddressFamily.InterNetworkV6, cancellationToken);
 
-                await Task.WhenAll(aTask, aaaaTask).ConfigureAwait(false);
-                DnsResult<AddressRecord> aRes = await aTask.ConfigureAwait(false);
-                DnsResult<AddressRecord> aaaaRes = await aaaaTask.ConfigureAwait(false);
-                return MergeAddressResults(aRes, aaaaRes);
+                DnsResult<AddressRecord>[] results = await Task.WhenAll(aTask, aaaaTask).ConfigureAwait(false);
+                return MergeAddressResults(results[0], results[1]);
             }
 
             return await DoResolve(async, name, addressFamily, cancellationToken).ConfigureAwait(false);
@@ -518,6 +516,13 @@ namespace System.Net
         private static void ValidateName(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
+            // Every underlying resolver (Windows DnsQueryEx, macOS DNSServiceQueryRecord,
+            // and the managed stub resolver on Linux) passes the name to native code as a
+            // null-terminated string, so an embedded NUL would silently truncate the query.
+            if (name.Contains('\0'))
+            {
+                throw new ArgumentException(SR.net_hostname_invalid_character, nameof(name));
+            }
         }
 
         /// <summary>

@@ -466,6 +466,8 @@ namespace System.Net.Http
                     return _data;
                 }
                 _controller.ThrowIfDisposed();
+                // nothing to orphan if we never create the promise
+                CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
                 promise = BrowserHttpInterop.GetResponseLength(_controller._jsController!);
             } //lock
             _length = await BrowserHttpInterop.CancellationHelper(promise, cancellationToken, _controller._jsController).ConfigureAwait(false);
@@ -527,6 +529,8 @@ namespace System.Net.Http
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             _controller.ThrowIfDisposed();
+            // bail out before pinning, so the buffer can't be unpinned while JS still writes to it
+            CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
             MemoryHandle pinBuffer = buffer.Pin();
             int bytesCount;

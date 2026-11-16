@@ -11,7 +11,16 @@
 #ifndef __RWUtil__h__
 #define __RWUtil__h__
 
-class UTSemReadWrite;
+#include <minipal/rwlock.h>
+
+class CMiniMdRW;
+
+HRESULT CreateMDReadWriteLock(minipal_rwlock **ppLock);
+void DestroyMDReadWriteLock(minipal_rwlock *pLock);
+HRESULT AcquireMDReadLock(minipal_rwlock *pLock);
+HRESULT AcquireMDWriteLock(minipal_rwlock *pLock COMMA_INDEBUG(CMiniMdRW *pMiniMd));
+void ReleaseMDReadLock(minipal_rwlock *pLock);
+void ReleaseMDWriteLock(minipal_rwlock *pLock COMMA_INDEBUG(CMiniMdRW *pMiniMd));
 
 #define UTF8STR(wszInput, szOutput)                         \
     do {                                                    \
@@ -37,171 +46,58 @@ Unicode2UTF(
     LPUTF8  szDst,  // Buffer for the output UTF8 string.
     int     cbDst); // Size of the buffer for UTF8 string.
 
-//*********************************************************************
-// The token remap record.
-//*********************************************************************
+#ifdef FEATURE_METADATA_PERSISTENCE
 struct TOKENREC
 {
-    mdToken     m_tkFrom;                   // The imported token
-    bool        m_isDuplicate;              // Is record duplicate? This information is recorded during merge
-    bool        m_isDeleted;                // This information is recorded during RegMeta::ProcessFilter when we might have deleted a record
-    bool        m_isFoundInImport;          // This information is also recorded during RegMeta::ProcessFilter
-    mdToken     m_tkTo;                     // The new token in the merged scope
-
-    void SetEmpty() {m_tkFrom = m_tkTo = (mdToken) -1;}
-    BOOL IsEmpty() {return m_tkFrom == (mdToken) -1;}
+    mdToken m_tkFrom;
+    mdToken m_tkTo;
 };
 
-
-//*********************************************************************
-//
-// This structure keeps track on token remap for an imported scope. This map is initially sorted by from
-// tokens. It can then become sorted by To tokens. This usually happen during PreSave remap lookup. Thus
-// we assert if we try to look up or sort by From token.
-//
-//*********************************************************************
 class MDTOKENMAP : public CDynArray<TOKENREC>
 {
 public:
-
-    enum SortKind{
-        Unsorted = 0,
-        SortByFromToken = 1,
-        SortByToToken = 2,
-        Indexed = 3,                    // Indexed by table/rid.  Implies that strings are sorted by "From".
-    };
-
     MDTOKENMAP()
-     :  m_pNextMap(NULL),
-        m_pMap(NULL),
-        m_iCountTotal(0),
-        m_iCountSorted(0),
-        m_sortKind(SortByFromToken),
-        m_iCountIndexed(0)
-#if defined(_DEBUG)
-       ,m_pImport(0)
-#endif
-    { }
-    ~MDTOKENMAP();
-
-    HRESULT Init(IUnknown *pImport);
-
-    // find a token in the tokenmap.
-    bool Find(mdToken tkFrom, TOKENREC **ppRec);
-
-    // remap a token. We assert if we don't find the tkFind in the table
-    HRESULT Remap(mdToken tkFrom, mdToken *ptkTo);
-
-    // Insert a record. This function will keep the inserted record in a sorted sequence
-    HRESULT InsertNotFound(mdToken tkFrom, bool fDuplicate, mdToken tkTo, TOKENREC **ppRec);
-
-    // This function will just append the record to the end of the list
-    HRESULT AppendRecord(
-        mdToken     tkFrom,
-        bool        fDuplicate,
-        mdToken     tkTo,
-        TOKENREC    **ppRec);
-
-    // This is a safe remap. *tpkTo will be tkFind if we cannot find tkFind in the lookup table.
-    mdToken SafeRemap(mdToken tkFrom);      // [IN] the token value to find
-
-    bool FindWithToToken(
-        mdToken     tkFind,                 // [IN] the token value to find
-        int         *piPosition);           // [OUT] return the first from-token that has the matching to-token
-
-    FORCEINLINE void SortTokensByFromToken()
+        : m_iCountSorted(0)
     {
-        _ASSERTE(m_sortKind == SortByFromToken || m_sortKind == Indexed);
-        // Only sort if there are unsorted records.
-        if (m_iCountSorted < m_iCountTotal)
-        {
-            SortRangeFromToken(m_iCountIndexed, m_iCountIndexed+m_iCountTotal - 1);
-            m_iCountSorted = m_iCountTotal;
-        }
-    } // void MDTOKENMAP::SortTokensByFromToken()
+    }
 
+    HRESULT AppendRecord(mdToken tkFrom, mdToken tkTo);
+    mdToken SafeRemap(mdToken tkFrom);
     HRESULT EmptyMap();
 
-    void SortTokensByToToken();
-
-    MDTOKENMAP  *m_pNextMap;
-    IMapToken   *m_pMap;
-
 private:
-    FORCEINLINE int CompareFromToken(       // -1, 0, or 1
-        int         iLeft,                  // First item to compare.
-        int         iRight)                 // Second item to compare.
+    bool Find(mdToken tkFrom, TOKENREC **ppRec);
+
+    int CompareFromToken(
+        int iLeft,
+        int iRight)
     {
-        if ( Get(iLeft)->m_tkFrom < Get(iRight)->m_tkFrom )
+        if (Get(iLeft)->m_tkFrom < Get(iRight)->m_tkFrom)
             return -1;
-        if ( Get(iLeft)->m_tkFrom == Get(iRight)->m_tkFrom )
+        if (Get(iLeft)->m_tkFrom == Get(iRight)->m_tkFrom)
             return 0;
         return 1;
     }
 
-    FORCEINLINE int CompareToToken(         // -1, 0, or 1
-        int         iLeft,                  // First item to compare.
-        int         iRight)                 // Second item to compare.
-    {
-        if ( Get(iLeft)->m_tkTo < Get(iRight)->m_tkTo )
-            return -1;
-        if ( Get(iLeft)->m_tkTo == Get(iRight)->m_tkTo )
-            return 0;
-        return 1;
-    }
-
-    FORCEINLINE void Swap(
-        int         iFirst,
+    void Swap(
+        int iFirst,
         int         iSecond)
     {
-        if ( iFirst == iSecond ) return;
-        memcpy( &m_buf, Get(iFirst), sizeof(TOKENREC) );
-        memcpy( Get(iFirst), Get(iSecond),sizeof(TOKENREC) );
-        memcpy( Get(iSecond), &m_buf, sizeof(TOKENREC) );
+        if (iFirst == iSecond)
+            return;
+
+        memcpy(&m_buf, Get(iFirst), sizeof(TOKENREC));
+        memcpy(Get(iFirst), Get(iSecond), sizeof(TOKENREC));
+        memcpy(Get(iSecond), &m_buf, sizeof(TOKENREC));
     }
 
     void SortRangeFromToken(int iLeft, int iRight);
-    void SortRangeToToken(int iLeft, int iRight);
+    void SortTokensByFromToken();
 
-    TOKENREC    m_buf;
-    ULONG       m_iCountTotal;              // total entry in the map
-    ULONG       m_iCountSorted;             // number of entries that are sorted
-
-    SortKind    m_sortKind;
-
-    ULONG       m_TableOffset[TBL_COUNT+1]; // Start of each table in map.
-    ULONG       m_iCountIndexed;            // number of entries that are indexed.
-#if defined(_DEBUG)
-    IMetaDataImport *m_pImport;             // For data validation.
+    TOKENREC m_buf;
+    ULONG m_iCountSorted;
+};
 #endif
-};
-
-
-
-//*********************************************************************
-//
-// This CMapToken class implemented the IMapToken. It is used in RegMeta for
-// filter process. This class can track all of the tokens are mapped. It also
-// supplies a Find function.
-//
-//*********************************************************************
-class CMapToken : public IMapToken
-{
-    friend class RegMeta;
-
-public:
-    STDMETHODIMP QueryInterface(REFIID riid, PVOID *pp);
-    STDMETHODIMP_(ULONG) AddRef();
-    STDMETHODIMP_(ULONG) Release();
-    STDMETHODIMP Map(mdToken tkImp, mdToken tkEmit);
-    bool Find(mdToken tkFrom, TOKENREC **pRecTo);
-    CMapToken();
-    virtual ~CMapToken();
-    MDTOKENMAP  *m_pTKMap;
-private:
-    LONG        m_cRef;
-    bool        m_isSorted;
-};
 
 typedef CDynArray<mdToken> TOKENMAP;
 
@@ -246,35 +142,22 @@ public:
         m_MemberRefToMemberDefMap[RidFromToken(tkFrom)] = tkTo;
     }   // RecordMemberRefToMemberDefOptimization
 
-    //*********************************************************************
-    //
-    // This function is called when the token kind does not change but token
-    // is moved. For example, when we sort CustomAttribute table or when we optimize
-    // away MethodPtr table. These operation will not change the token type.
-    //
-    //*********************************************************************
-    FORCEINLINE HRESULT RecordTokenMovement(
-        mdToken tkFrom,
-        mdToken tkTo)
-    {
-        TOKENREC    *pTokenRec;
-
-        _ASSERTE( TypeFromToken(tkFrom) == TypeFromToken(tkTo) );
-        return m_TKMap.AppendRecord( tkFrom, false, tkTo, &pTokenRec );
-    }   // RecordTokenMovement
-
     bool ResolveRefToDef(
         mdToken tkRef,                      // [IN] ref token
         mdToken *ptkDef);                   // [OUT] def token that it resolves to. If it does not resolve to a def
 
     FORCEINLINE TOKENMAP *GetTypeRefToTypeDefMap() { return &m_TypeRefToTypeDefMap; }
     FORCEINLINE TOKENMAP *GetMemberRefToMemberDefMap() { return &m_MemberRefToMemberDefMap; }
+#ifdef FEATURE_METADATA_PERSISTENCE
     FORCEINLINE MDTOKENMAP *GetTokenMovementMap() { return &m_TKMap; }
+#endif
 
     ~TokenRemapManager();
     HRESULT ClearAndEnsureCapacity(ULONG cTypeRef, ULONG cMemberRef);
 private:
+#ifdef FEATURE_METADATA_PERSISTENCE
     MDTOKENMAP  m_TKMap;
+#endif
     TOKENMAP    m_TypeRefToTypeDefMap;
     TOKENMAP    m_MemberRefToMemberDefMap;
 };  // class TokenRemapManager
@@ -300,45 +183,49 @@ struct OptionValue
 
 //*********************************************************************
 //
-// Helper class to ensure calling UTSemReadWrite correctly.
-// The destructor will call the correct UnlockRead or UnlockWrite depends what lock it is holding.
+// Helper class to ensure the metadata read-write lock is released correctly.
+// The destructor releases whichever lock mode it holds.
 // User should use macro defined in below instead of calling functions on this class directly.
 // They are LOCKREAD(), LOCKWRITE(), and CONVERT_READ_TO_WRITE_LOCK.
 //
 //*********************************************************************
-class CMDSemReadWrite
+class CMDReadWriteLock
 {
 public:
-    CMDSemReadWrite(UTSemReadWrite *pSem);
-    ~CMDSemReadWrite();
+    CMDReadWriteLock(minipal_rwlock *pLock COMMA_INDEBUG(CMiniMdRW *pMiniMd));
+    ~CMDReadWriteLock();
     HRESULT LockRead();
     HRESULT LockWrite();
     void UnlockWrite();
     HRESULT ConvertReadLockToWriteLock();
+#ifdef _DEBUG
+    void Debug_DetachMiniMd();
+#endif // _DEBUG
 private:
     bool            m_fLockedForRead;
     bool            m_fLockedForWrite;
-    UTSemReadWrite  *m_pSem;
+    minipal_rwlock  *m_pLock;
+    INDEBUG(CMiniMdRW *m_pMiniMd;)
 };
 
 
-#define LOCKREADIFFAILRET()         CMDSemReadWrite cSem(m_pSemReadWrite);\
-                                    IfFailRet(cSem.LockRead());
-#define LOCKWRITEIFFAILRET()        CMDSemReadWrite cSem(m_pSemReadWrite);\
-                                    IfFailRet(cSem.LockWrite());
+#define LOCKREADIFFAILRET()         CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
+                                    IfFailRet(lockHolder.LockRead());
+#define LOCKWRITEIFFAILRET()        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
+                                    IfFailRet(lockHolder.LockWrite());
 
-#define LOCKREADNORET()             CMDSemReadWrite cSem(m_pSemReadWrite);\
-                                    hr = cSem.LockRead();
-#define LOCKWRITENORET()            CMDSemReadWrite cSem(m_pSemReadWrite);\
-                                    hr = cSem.LockWrite();
+#define LOCKREADNORET()             CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
+                                    hr = lockHolder.LockRead();
+#define LOCKWRITENORET()            CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
+                                    hr = lockHolder.LockWrite();
 
-#define LOCKREAD()                  CMDSemReadWrite cSem(m_pSemReadWrite);\
-                                    IfFailGo(cSem.LockRead());
-#define LOCKWRITE()                 CMDSemReadWrite cSem(m_pSemReadWrite);\
-                                    IfFailGo(cSem.LockWrite());
+#define LOCKREAD()                  CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
+                                    IfFailGo(lockHolder.LockRead());
+#define LOCKWRITE()                 CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
+                                    IfFailGo(lockHolder.LockWrite());
 
-#define UNLOCKWRITE()               cSem.UnlockWrite();
-#define CONVERT_READ_TO_WRITE_LOCK() IfFailGo(cSem.ConvertReadLockToWriteLock());
+#define UNLOCKWRITE()               lockHolder.UnlockWrite();
+#define CONVERT_READ_TO_WRITE_LOCK() IfFailGo(lockHolder.ConvertReadLockToWriteLock());
 
 
 #endif // __RWUtil__h__

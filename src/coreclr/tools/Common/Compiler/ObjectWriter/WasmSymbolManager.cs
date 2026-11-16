@@ -27,7 +27,8 @@ internal readonly record struct WasmSymbol(
     Utf8String Name,
     WasmIndexSpace IndexSpace,
     int Index,
-    bool IsImport);
+    bool IsImport,
+    bool HasExplicitName);
 
 internal sealed class WasmSymbolManager
 {
@@ -35,7 +36,8 @@ internal sealed class WasmSymbolManager
         Utf8String Name,
         WasmIndexSpace IndexSpace,
         int Ordinal,
-        bool IsImport);
+        bool IsImport,
+        bool HasExplicitName = false);
 
     private struct IndexSpaceArray<T>
     {
@@ -56,16 +58,17 @@ internal sealed class WasmSymbolManager
     }
 
     private readonly Dictionary<Utf8String, Entry> _entries = new();
+    private readonly Dictionary<Utf8String, Entry> _aliases = new();
     private IndexSpaceArray<int> _importCounts = new IndexSpaceArray<int>();
     private IndexSpaceArray<int> _definitionCounts = new IndexSpaceArray<int>();
     private IndexSpaceArray<bool> _importsFrozen = new IndexSpaceArray<bool>();
 
-    public void AddImport(Utf8String name, WasmIndexSpace indexSpace, int? expectedIndex = null)
+    public void AddImport(Utf8String name, WasmIndexSpace indexSpace, int? expectedIndex = null, bool hasExplicitName = false)
     {
         Debug.Assert(!_importsFrozen[indexSpace]);
         int ordinal = _importCounts[indexSpace];
         Debug.Assert(!expectedIndex.HasValue || expectedIndex.Value == ordinal);
-        _entries.Add(name, new Entry(name, indexSpace, ordinal, IsImport: true));
+        _entries.Add(name, new Entry(name, indexSpace, ordinal, IsImport: true, HasExplicitName: hasExplicitName));
         _importCounts[indexSpace]++;
     }
 
@@ -76,14 +79,23 @@ internal sealed class WasmSymbolManager
         _definitionCounts[indexSpace]++;
     }
 
+    public void AddAlias(Utf8String alias, Utf8String target)
+    {
+        Debug.Assert(!_entries.ContainsKey(alias), "Alias symbol name must not already exist.");
+        Debug.Assert(_entries.ContainsKey(target), "Target symbol name must exist before adding an alias.");
+        Entry entry = _entries[target];
+        _aliases.Add(alias, entry with { Name = alias });
+    }
+
     public WasmSymbol GetSymbol(Utf8String name)
     {
-        return ResolveAndFreeze(_entries[name]);
+        return ResolveAndFreeze(GetEntry(name));
     }
 
     public bool TryGetSymbol(Utf8String name, out WasmSymbol symbol)
     {
-        if (!_entries.TryGetValue(name, out Entry entry))
+        if (!_entries.TryGetValue(name, out Entry entry) &&
+            !_aliases.TryGetValue(name, out entry))
         {
             symbol = default;
             return false;
@@ -92,6 +104,9 @@ internal sealed class WasmSymbolManager
         symbol = ResolveAndFreeze(entry);
         return true;
     }
+
+    private Entry GetEntry(Utf8String name) =>
+        _entries.TryGetValue(name, out Entry entry) ? entry : _aliases[name];
 
     public int GetImportCount() => _importCounts.Values.Sum();
 
@@ -129,7 +144,7 @@ internal sealed class WasmSymbolManager
             ? entry.Ordinal
             : _importCounts[entry.IndexSpace] + entry.Ordinal;
 
-        return new WasmSymbol(entry.Name, entry.IndexSpace, index, entry.IsImport);
+        return new WasmSymbol(entry.Name, entry.IndexSpace, index, entry.IsImport, entry.HasExplicitName);
     }
 
     private static int GetSpaceIndex(WasmIndexSpace indexSpace)

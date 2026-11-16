@@ -120,6 +120,16 @@
     ret
   }
 
+  .method public hidebysig static char CallUnmanagedTailCharChar(void* p, char b) cil managed
+  {
+    .maxstack 2
+    ldarg.1
+    ldarg.0
+    tail.
+    calli unmanaged char(char)
+    ret
+  }
+
   .method public hidebysig static char CallUnmanagedCdeclCharChar(void* p, char b) cil managed
   {
     .maxstack 2

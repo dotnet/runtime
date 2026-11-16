@@ -184,13 +184,14 @@ bool GCToOSInterface::Initialize()
 
     {
         // Use a dynamically allocated cpu_set_t to support systems with more than CPU_SETSIZE (typically 1024) CPUs.
-        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        int cpusToAllocate = std::max(configuredCpuCount, CPU_SETSIZE);
+        cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
         if (pCpuSet == nullptr)
         {
             return false;
         }
 
-        size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+        size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
         CPU_ZERO_S(cpuSetSize, pCpuSet);
 
         int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
@@ -210,6 +211,11 @@ bool GCToOSInterface::Initialize()
             // We should not get any of the errors that the sched_getaffinity can return since none
             // of them applies for the current thread, so this is an unexpected kind of failure.
             assert(false);
+            // Fallback: if sched_getaffinity fails, assume all CPUs are available.
+            for (int i = 0; i < configuredCpuCount; i++)
+            {
+                g_processAffinitySet.Add(i);
+            }
         }
 
         CPU_FREE(pCpuSet);
@@ -318,6 +324,12 @@ uint32_t GCToOSInterface::GetCurrentProcessorNumber()
     int processorNumber = sched_getcpu();
     assert(processorNumber != -1);
     return processorNumber;
+#elif HAVE_PTHREAD_CPU_NUMBER_NP
+    size_t processorNumber;
+    int error = pthread_cpu_number_np(&processorNumber);
+    assert(error == 0);
+    (void)error;
+    return (uint32_t)processorNumber;
 #else
     assert(false); // This method is expected to be called only if CanGetCurrentProcessorNumber is true
     return 0;
@@ -327,7 +339,7 @@ uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 // Check if the OS supports getting current processor number
 bool GCToOSInterface::CanGetCurrentProcessorNumber()
 {
-    return HAVE_SCHED_GETCPU;
+    return HAVE_SCHED_GETCPU || HAVE_PTHREAD_CPU_NUMBER_NP;
 }
 
 // Break into a debugger. Uses a compiler intrinsic if one is available,
@@ -695,7 +707,7 @@ static void GetLogicalProcessorCacheSizeFromSysFs(size_t* cacheLevel, size_t* ca
     assert (cacheLevel != nullptr);
     assert (cacheSize != nullptr);
 
-#if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
+#if defined(TARGET_LINUX) && !defined(HOST_ARM)
     //
     // Retrieve cachesize via sysfs by reading the file /sys/devices/system/cpu/cpu0/cache/index{LastLevelCache}/size
     // for the platform. Currently musl and arm64 should be only cases to use
@@ -891,6 +903,12 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
     return trueSize ? maxTrueSize : maxSize;
 }
 
+// Check if the OS supports setting thread affinity
+bool GCToOSInterface::CanSetThreadAffinity()
+{
+    return HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP;
+}
+
 // Sets the calling thread's affinity to only run on the processor specified
 // Parameters:
 //  procNo - The requested processor for the calling thread.
@@ -900,8 +918,9 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
 #if HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
 
-    size_t cpuSetSize = CPU_ALLOC_SIZE(g_configuredCpuCount);
-    cpu_set_t* pCpuSet = CPU_ALLOC(g_configuredCpuCount);
+    uint32_t cpusToAllocate = std::max(g_configuredCpuCount, (uint32_t)CPU_SETSIZE);
+    size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
+    cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
     if (pCpuSet == nullptr)
     {
         return false;
@@ -970,7 +989,7 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
     return &g_processAffinitySet;
 }
 
-#if HAVE_PROCFS_STATM
+#ifdef RLIMIT_AS
 // Return the size of the user-mode portion of the virtual address space of this process.
 static size_t GetCurrentVirtualMemorySize()
 {
@@ -1009,7 +1028,7 @@ static size_t GetCurrentVirtualMemorySize()
 
     return result;
 }
-#endif // HAVE_PROCFS_STATM
+#endif // RLIMIT_AS
 
 // Return the size of the available user-mode portion of the virtual address space of this process.
 // Return:
@@ -1028,24 +1047,91 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
     return GetVirtualMemoryMaxAddress();
 }
 
-// Return the maximum address of the of the virtual address space of this process.
+#if defined(TARGET_LINUX) && (defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64))
+#ifndef MAP_FIXED_NOREPLACE
+#define MAP_FIXED_NOREPLACE 0x100000
+#endif
+
+// Check whether the user virtual address space of this process extends up to (1 << vaBits)
+// by trying to map the last page below that boundary at a fixed address.
+// Parameters:
+//  vaBits - number of bits of the user virtual address space to probe for
+// Return:
+//  true if the boundary is within the user virtual address space, false otherwise
+static bool IsUserVirtualAddressSpaceAtLeast(int vaBits)
+{
+    size_t pageSize = OS_PAGE_SIZE;
+    void* probe = (void*)((((size_t)1) << vaBits) - pageSize);
+    void* result = mmap(probe, pageSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
+    if (result == MAP_FAILED)
+    {
+        // EEXIST means the page is already mapped, so the address is valid.
+        // Anything else (typically ENOMEM) means the address is outside of the user address space.
+        return errno == EEXIST;
+    }
+
+    munmap(result, pageSize);
+
+    // Kernels older than 4.17 ignore MAP_FIXED_NOREPLACE and treat the address as a hint,
+    // so the mapping may have been placed elsewhere. Trust only an exact match.
+    return result == probe;
+}
+#endif // TARGET_LINUX && (TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64)
+
+// Return the maximum address of the virtual address space of this process.
 // Return:
 //  non zero if it has succeeded, 0 if it has failed
 size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
 {
 #ifdef HOST_64BIT
-#ifndef TARGET_RISCV64
-    // There is no API to get the total virtual address space size on
-    // Unix, so we use a constant value representing 128TB, which is
-    // the approximate size of total user virtual address space on
-    // the currently supported Unix systems.
+#if defined(TARGET_LINUX) && (defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64))
+    // The size of the user virtual address space is a kernel configuration choice on these
+    // architectures, so discover it at run time by probing the candidates from the largest to
+    // the smallest one.
+    static volatile size_t s_maxAddress = 0;
+    if (s_maxAddress == 0)
+    {
+#if defined(TARGET_ARM64)
+        static const int candidates[] = { 52, 48, 47, 42, 39, 36 };
+#elif defined(TARGET_RISCV64)
+        static const int candidates[] = { 56, 47, 38 };
+#else // TARGET_LOONGARCH64
+        static const int candidates[] = { 47, 39, 36 };
+#endif
+
+        size_t maxAddress = 0;
+        for (size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); i++)
+        {
+            if (IsUserVirtualAddressSpaceAtLeast(candidates[i]))
+            {
+                maxAddress = ((size_t)1) << candidates[i];
+                break;
+            }
+        }
+
+        assert(maxAddress != 0);
+
+        if (maxAddress == 0)
+        {
+            // Not even the smallest candidate could be probed, so the probing itself does not work
+            // in this environment (e.g. mmap is blocked). Fall back to the platform constants.
+#if defined(TARGET_RISCV64)
+            maxAddress = (1ull << 38); // 256GB
+#else
+            maxAddress = (1ull << 47); // 128TB (ARM64 / LOONGARCH64 approximation)
+#endif
+        }
+
+        s_maxAddress = maxAddress;
+    }
+    return s_maxAddress;
+#else // TARGET_LINUX && (TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64)
+    // The remaining platforms do not provide an API to get the size of the user virtual
+    // address space either, so use a constant representing 128TB (47 bits), which is
+    // the size on x64 and a close enough approximation on the other supported systems.
     static const uint64_t _128TB = (1ull << 47);
     return _128TB;
-#else // TARGET_RISCV64
-    // For RISC-V Linux Kernel SV39 virtual memory limit is 256gb.
-    static const uint64_t _256GB = (1ull << 38);
-    return _256GB;
-#endif // TARGET_RISCV64
+#endif // TARGET_LINUX && (TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64)
 #else
     return (size_t)-1;
 #endif
@@ -1247,7 +1333,7 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
                 load = (uint32_t)(((float)used * 100) / (float)total);
             }
 
-#if HAVE_PROCFS_STATM
+#ifdef RLIMIT_AS
             rlimit addressSpaceLimit;
             if ((getrlimit(RLIMIT_AS, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
             {
@@ -1263,7 +1349,7 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
                     }
                 }
             }
-#endif // HAVE_PROCFS_STATM
+#endif // RLIMIT_AS
         }
     }
 

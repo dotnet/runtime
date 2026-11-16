@@ -21,26 +21,26 @@ namespace ILCompiler.DependencyAnalysis
             foreach ((string key, TypeDesc type) in entries)
             {
                 Vertex keyVertex = writer.GetStringConstant(key);
-                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, type);
+                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, type, null);
                 Vertex entry = writer.GetTuple(keyVertex, valueVertex);
                 typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(key), section.Place(entry));
             }
 
             Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
-            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup);
+            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup, null);
             Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
             return section.Place(tuple);
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => [];
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             foreach (TypeDesc targetType in entries.Values)
             {
-                yield return new DependencyListEntry(context.MetadataTypeSymbol(targetType), "Analyzed external type map entry target type");
+                sink.Add(context.MetadataTypeSymbol(targetType), "Analyzed external type map entry target type");
             }
         }
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context) => $"Analyzed External Type Map: {TypeMapGroup}";
         public IExternalTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => this;
 

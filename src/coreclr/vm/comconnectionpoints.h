@@ -58,7 +58,6 @@ public:
             THROWS;
             GC_NOTRIGGER;
             MODE_ANY;
-            INJECT_FAULT(COMPlusThrowOM());
             PRECONDITION(NULL != hndEventProvObj);
         }
         CONTRACTL_END;

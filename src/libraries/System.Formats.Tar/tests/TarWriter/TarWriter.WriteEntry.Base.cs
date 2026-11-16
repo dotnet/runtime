@@ -8,23 +8,190 @@ using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public class TarWriter_WriteEntry_Base : TarTestsBase
+    public abstract class TarWriter_WriteEntry_Base : TarTestsBase
     {
-        protected void WriteEntry_Null_Throws_Internal(TarEntryFormat format)
+        protected virtual TarEntryFormat TestFormat => TarEntryFormat.Pax;
+
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task WriteEntry_Null_Throws(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using TarWriter writer = new TarWriter(archiveStream, format, leaveOpen: false);
-            Assert.Throws<ArgumentNullException>(() => writer.WriteEntry(null));
+            await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TestFormat, leaveOpen: false);
+            TarWriter writer = writerHolder;
+
+            await Assert.ThrowsAsync<ArgumentNullException>(() => WriteEntry(writer, null, async));
         }
 
-        protected async Task WriteEntry_Null_Throws_Async_Internal(TarEntryFormat format)
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public Task WriteRegularFile(bool async) => WriteAndVerifyEntry(GetRegularFileEntryTypeForFormat(TestFormat), async);
+
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public Task WriteHardLink(bool async) => WriteAndVerifyEntry(TarEntryType.HardLink, async);
+
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public Task WriteSymbolicLink(bool async) => WriteAndVerifyEntry(TarEntryType.SymbolicLink, async);
+
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public Task WriteDirectory(bool async) => WriteAndVerifyEntry(TarEntryType.Directory, async);
+
+        [Theory]
+        [InlineData(TarEntryType.HardLink, false)]
+        [InlineData(TarEntryType.HardLink, true)]
+        [InlineData(TarEntryType.SymbolicLink, false)]
+        [InlineData(TarEntryType.SymbolicLink, true)]
+        public async Task Write_LinkEntry_EmptyLinkName_Throws(TarEntryType entryType, bool async)
         {
-            await using (MemoryStream archiveStream = new MemoryStream())
+            using MemoryStream archiveStream = new MemoryStream();
+            await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, leaveOpen: false);
+            TarWriter writer = writerHolder;
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(TestFormat, entryType, "link");
+            await Assert.ThrowsAsync<ArgumentException>("entry", () => WriteEntry(writer, entry, async));
+        }
+
+        // Writes an entry of the given type using this class' TestFormat, verifying its properties
+        // both before writing and after reading it back from the archive.
+        protected async Task WriteAndVerifyEntry(TarEntryType entryType, bool async)
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+            await using (TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TestFormat, leaveOpen: true))
             {
-                await using (TarWriter writer = new TarWriter(archiveStream, format, leaveOpen: false))
-                {
-                    await Assert.ThrowsAsync<ArgumentNullException>(() => writer.WriteEntryAsync(null));
-                }
+                TarWriter writer = writerHolder;
+
+                TarEntry entryToWrite = InvokeTarEntryCreationConstructor(TestFormat, entryType, InitialEntryName);
+                SetEntryProperties(entryToWrite, entryType);
+                VerifyEntryProperties(entryToWrite, entryType, isWritable: true);
+                await WriteEntry(writer, entryToWrite, async);
+            }
+
+            archiveStream.Position = 0;
+            await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = readerHolder;
+
+            TarEntry entry = await GetNextEntry(reader, async: async);
+            VerifyEntryProperties(entry, entryType, isWritable: false);
+        }
+
+        // Dispatches to the Set* overload matching both the entry's concrete format type and its TarEntryType.
+        private void SetEntryProperties(TarEntry entry, TarEntryType entryType)
+        {
+            switch (entry)
+            {
+                case V7TarEntry v7:
+                    switch (entryType)
+                    {
+                        case TarEntryType.V7RegularFile: SetRegularFile(v7); break;
+                        case TarEntryType.Directory: SetDirectory(v7); break;
+                        case TarEntryType.HardLink: SetHardLink(v7); break;
+                        case TarEntryType.SymbolicLink: SetSymbolicLink(v7); break;
+                        default: throw new InvalidOperationException($"Unexpected entry type for V7: {entryType}");
+                    }
+                    break;
+                case GnuTarEntry gnu:
+                    switch (entryType)
+                    {
+                        case TarEntryType.RegularFile: SetRegularFile(gnu); break;
+                        case TarEntryType.Directory: SetDirectory(gnu); break;
+                        case TarEntryType.HardLink: SetHardLink(gnu); break;
+                        case TarEntryType.SymbolicLink: SetSymbolicLink(gnu); break;
+                        case TarEntryType.CharacterDevice: SetCharacterDevice(gnu); break;
+                        case TarEntryType.BlockDevice: SetBlockDevice(gnu); break;
+                        case TarEntryType.Fifo: SetFifo(gnu); break;
+                        default: throw new InvalidOperationException($"Unexpected entry type for Gnu: {entryType}");
+                    }
+                    break;
+                case PaxTarEntry pax:
+                    switch (entryType)
+                    {
+                        case TarEntryType.RegularFile: SetRegularFile(pax); break;
+                        case TarEntryType.Directory: SetDirectory(pax); break;
+                        case TarEntryType.HardLink: SetHardLink(pax); break;
+                        case TarEntryType.SymbolicLink: SetSymbolicLink(pax); break;
+                        case TarEntryType.CharacterDevice: SetCharacterDevice(pax); break;
+                        case TarEntryType.BlockDevice: SetBlockDevice(pax); break;
+                        case TarEntryType.Fifo: SetFifo(pax); break;
+                        default: throw new InvalidOperationException($"Unexpected entry type for Pax: {entryType}");
+                    }
+                    break;
+                case UstarTarEntry ustar:
+                    switch (entryType)
+                    {
+                        case TarEntryType.RegularFile: SetRegularFile(ustar); break;
+                        case TarEntryType.Directory: SetDirectory(ustar); break;
+                        case TarEntryType.HardLink: SetHardLink(ustar); break;
+                        case TarEntryType.SymbolicLink: SetSymbolicLink(ustar); break;
+                        case TarEntryType.CharacterDevice: SetCharacterDevice(ustar); break;
+                        case TarEntryType.BlockDevice: SetBlockDevice(ustar); break;
+                        case TarEntryType.Fifo: SetFifo(ustar); break;
+                        default: throw new InvalidOperationException($"Unexpected entry type for Ustar: {entryType}");
+                    }
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unexpected entry format: {entry.GetType()}");
+            }
+        }
+
+        // Dispatches to the Verify* overload matching both the entry's concrete format type and its TarEntryType.
+        private void VerifyEntryProperties(TarEntry entry, TarEntryType entryType, bool isWritable)
+        {
+            switch (entry)
+            {
+                case V7TarEntry v7:
+                    switch (entryType)
+                    {
+                        case TarEntryType.V7RegularFile: VerifyRegularFile(v7, isWritable); break;
+                        case TarEntryType.Directory: VerifyDirectory(v7); break;
+                        case TarEntryType.HardLink: VerifyHardLink(v7); break;
+                        case TarEntryType.SymbolicLink: VerifySymbolicLink(v7); break;
+                        default: throw new InvalidOperationException($"Unexpected entry type for V7: {entryType}");
+                    }
+                    break;
+                case GnuTarEntry gnu:
+                    switch (entryType)
+                    {
+                        case TarEntryType.RegularFile: VerifyRegularFile(gnu, isWritable); break;
+                        case TarEntryType.Directory: VerifyDirectory(gnu); break;
+                        case TarEntryType.HardLink: VerifyHardLink(gnu); break;
+                        case TarEntryType.SymbolicLink: VerifySymbolicLink(gnu); break;
+                        case TarEntryType.CharacterDevice: VerifyCharacterDevice(gnu); break;
+                        case TarEntryType.BlockDevice: VerifyBlockDevice(gnu); break;
+                        case TarEntryType.Fifo: VerifyFifo(gnu); break;
+                        default: throw new InvalidOperationException($"Unexpected entry type for Gnu: {entryType}");
+                    }
+                    break;
+                case PaxTarEntry pax:
+                    switch (entryType)
+                    {
+                        case TarEntryType.RegularFile: VerifyRegularFile(pax, isWritable); break;
+                        case TarEntryType.Directory: VerifyDirectory(pax); break;
+                        case TarEntryType.HardLink: VerifyHardLink(pax); break;
+                        case TarEntryType.SymbolicLink: VerifySymbolicLink(pax); break;
+                        case TarEntryType.CharacterDevice: VerifyCharacterDevice(pax); break;
+                        case TarEntryType.BlockDevice: VerifyBlockDevice(pax); break;
+                        case TarEntryType.Fifo: VerifyFifo(pax); break;
+                        default: throw new InvalidOperationException($"Unexpected entry type for Pax: {entryType}");
+                    }
+                    break;
+                case UstarTarEntry ustar:
+                    switch (entryType)
+                    {
+                        case TarEntryType.RegularFile: VerifyRegularFile(ustar, isWritable); break;
+                        case TarEntryType.Directory: VerifyDirectory(ustar); break;
+                        case TarEntryType.HardLink: VerifyHardLink(ustar); break;
+                        case TarEntryType.SymbolicLink: VerifySymbolicLink(ustar); break;
+                        case TarEntryType.CharacterDevice: VerifyCharacterDevice(ustar); break;
+                        case TarEntryType.BlockDevice: VerifyBlockDevice(ustar); break;
+                        case TarEntryType.Fifo: VerifyFifo(ustar); break;
+                        default: throw new InvalidOperationException($"Unexpected entry type for Ustar: {entryType}");
+                    }
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unexpected entry format: {entry.GetType()}");
             }
         }
 

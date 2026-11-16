@@ -49,7 +49,6 @@ NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, ReadyToRunLoadedImage 
     {
         THROWS;
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -299,7 +298,7 @@ NativeImage *NativeImage::Open(
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
 
-    NewHolder<NativeImage> image = new NativeImage(pAssemblyBinder, loadedImageHolder.Extract(), nativeImageFileName);
+    NewHolder<NativeImage> image(new NativeImage(pAssemblyBinder, loadedImageHolder.Detach(), nativeImageFileName));
     AllocMemTracker amTracker;
     image->Initialize(pHeader, pLoaderAllocator, &amTracker);
     pExistingImage = AppDomain::GetCurrentDomain()->SetNativeImage(nativeImageFileName, image);
@@ -307,7 +306,7 @@ NativeImage *NativeImage::Open(
     {
         // No pre-existing image, new image has been stored in the map
         amTracker.SuppressRelease();
-        return image.Extract();
+        return image.Detach();
     }
     // Return pre-existing image if it was loaded into the same ALC, null otherwise
     if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)

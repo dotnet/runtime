@@ -666,7 +666,7 @@ namespace System.Text.Json
 
                     if (localSequence.IsSingleSegment)
                     {
-                        result = JsonReaderHelper.UnescapeAndCompare(localSequence.First.Span, other);
+                        result = JsonReaderHelper.UnescapeAndCompare(localSequence.FirstSpan, other);
                     }
                     else
                     {
@@ -1384,8 +1384,7 @@ namespace System.Text.Json
                 }
                 else if (nextCharEscaped)
                 {
-                    int index = JsonConstants.EscapableChars.IndexOf(currentByte);
-                    if (index == -1)
+                    if (!JsonConstants.EscapableChars.Contains(currentByte))
                     {
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterAfterEscapeWithinString, currentByte);
                     }

@@ -44,7 +44,7 @@ namespace BINDER_SPACE
         HRESULT Init(const AssemblyNameData &data);
 
         ULONG AddRef();
-        ULONG Release();
+        ULONG Release() noexcept;
 
         // Getters/Setters
         inline const SString &GetSimpleName();

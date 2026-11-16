@@ -105,36 +105,17 @@ namespace Internal.Cryptography.Pal.AnyOS
             }
         }
 
-        private KeyTransRecipientInfoAsn MakeKtri(
+        private static KeyTransRecipientInfoAsn MakeKtri(
             byte[] cek,
             CmsRecipient recipient,
             out bool v0Recipient)
         {
             KeyTransRecipientInfoAsn ktri = default;
+            ktri.Rid = PkcsHelpers.MakeRecipientIdentifier(recipient);
 
             if (recipient.RecipientIdentifierType == SubjectIdentifierType.SubjectKeyIdentifier)
             {
                 ktri.Version = 2;
-                ktri.Rid.SubjectKeyIdentifier = GetSubjectKeyIdentifier(recipient.Certificate);
-            }
-            else if (recipient.RecipientIdentifierType == SubjectIdentifierType.IssuerAndSerialNumber)
-            {
-                byte[] serial = recipient.Certificate.GetSerialNumber();
-                Array.Reverse(serial);
-
-                IssuerAndSerialNumberAsn iasn = new IssuerAndSerialNumberAsn
-                {
-                    Issuer = recipient.Certificate.IssuerName.RawData,
-                    SerialNumber = serial,
-                };
-
-                ktri.Rid.IssuerAndSerialNumber = iasn;
-            }
-            else
-            {
-                throw new CryptographicException(
-                    SR.Cryptography_Cms_Invalid_Subject_Identifier_Type,
-                    recipient.RecipientIdentifierType.ToString());
             }
 
             RSAEncryptionPadding padding = recipient.RSAEncryptionPadding ?? RSAEncryptionPadding.Pkcs1;

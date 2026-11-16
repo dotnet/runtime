@@ -364,6 +364,7 @@ namespace System.IO.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134955", TestPlatforms.Wasi)]
     public class FileStream_BeginEndWrite_AsyncWrites : FileStream_AsyncWrites
     {
         protected override Task WriteAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>

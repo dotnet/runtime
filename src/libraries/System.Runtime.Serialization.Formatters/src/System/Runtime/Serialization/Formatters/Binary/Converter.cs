@@ -10,27 +10,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
 {
     internal static class Converter
     {
-        internal static readonly Type s_typeofISerializable = typeof(ISerializable);
-        internal static readonly Type s_typeofString = typeof(string);
-        internal static readonly Type s_typeofConverter = typeof(Converter);
-        internal static readonly Type s_typeofBoolean = typeof(bool);
-        internal static readonly Type s_typeofByte = typeof(byte);
-        internal static readonly Type s_typeofChar = typeof(char);
-        internal static readonly Type s_typeofDecimal = typeof(decimal);
-        internal static readonly Type s_typeofDouble = typeof(double);
-        internal static readonly Type s_typeofInt16 = typeof(short);
-        internal static readonly Type s_typeofInt32 = typeof(int);
-        internal static readonly Type s_typeofInt64 = typeof(long);
-        internal static readonly Type s_typeofSByte = typeof(sbyte);
-        internal static readonly Type s_typeofSingle = typeof(float);
-        internal static readonly Type s_typeofTimeSpan = typeof(TimeSpan);
-        internal static readonly Type s_typeofDateTime = typeof(DateTime);
-        internal static readonly Type s_typeofUInt16 = typeof(ushort);
-        internal static readonly Type s_typeofUInt32 = typeof(uint);
-        internal static readonly Type s_typeofUInt64 = typeof(ulong);
-        internal static readonly Type s_typeofObject = typeof(object);
-        internal static readonly Type s_typeofSystemVoid = typeof(void);
-
         // In .NET Framework the default assembly is mscorlib.dll --> typeof(string).Assembly.
         // In Core type string lives in System.Private.Corelib.dll which doesn't
         // contain all the types which are living in mscorlib in .NET Framework. Therefore we
@@ -38,30 +17,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal static readonly Assembly s_urtAssembly = Assembly.Load("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
         internal static readonly string s_urtAssemblyString = s_urtAssembly.FullName!;
 
-        internal static readonly Assembly s_urtAlternativeAssembly = s_typeofString.Assembly;
+        internal static readonly Assembly s_urtAlternativeAssembly = typeof(string).Assembly;
         internal static readonly string s_urtAlternativeAssemblyString = s_urtAlternativeAssembly.FullName!;
 
         // Arrays
-        internal static readonly Type s_typeofTypeArray = typeof(Type[]);
-        internal static readonly Type s_typeofObjectArray = typeof(object[]);
-        internal static readonly Type s_typeofStringArray = typeof(string[]);
-        internal static readonly Type s_typeofBooleanArray = typeof(bool[]);
-        internal static readonly Type s_typeofByteArray = typeof(byte[]);
-        internal static readonly Type s_typeofCharArray = typeof(char[]);
-        internal static readonly Type s_typeofDecimalArray = typeof(decimal[]);
-        internal static readonly Type s_typeofDoubleArray = typeof(double[]);
-        internal static readonly Type s_typeofInt16Array = typeof(short[]);
-        internal static readonly Type s_typeofInt32Array = typeof(int[]);
-        internal static readonly Type s_typeofInt64Array = typeof(long[]);
-        internal static readonly Type s_typeofSByteArray = typeof(sbyte[]);
-        internal static readonly Type s_typeofSingleArray = typeof(float[]);
-        internal static readonly Type s_typeofTimeSpanArray = typeof(TimeSpan[]);
-        internal static readonly Type s_typeofDateTimeArray = typeof(DateTime[]);
-        internal static readonly Type s_typeofUInt16Array = typeof(ushort[]);
-        internal static readonly Type s_typeofUInt32Array = typeof(uint[]);
-        internal static readonly Type s_typeofUInt64Array = typeof(ulong[]);
-        internal static readonly Type s_typeofMarshalByRefObject = typeof(MarshalByRefObject);
-
         private const int PrimitiveTypeEnumLength = 17; //Number of PrimitiveTypeEnums
 
         private static Type?[]? s_typeA;
@@ -73,9 +32,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal static InternalPrimitiveTypeE ToCode(Type? type) =>
                 type == null ? ToPrimitiveTypeEnum(TypeCode.Empty) :
                 type.IsPrimitive ? ToPrimitiveTypeEnum(Type.GetTypeCode(type)) :
-                ReferenceEquals(type, s_typeofDateTime) ? InternalPrimitiveTypeE.DateTime :
-                ReferenceEquals(type, s_typeofTimeSpan) ? InternalPrimitiveTypeE.TimeSpan :
-                ReferenceEquals(type, s_typeofDecimal) ? InternalPrimitiveTypeE.Decimal :
+                ReferenceEquals(type, typeof(DateTime)) ? InternalPrimitiveTypeE.DateTime :
+                ReferenceEquals(type, typeof(TimeSpan)) ? InternalPrimitiveTypeE.TimeSpan :
+                ReferenceEquals(type, typeof(decimal)) ? InternalPrimitiveTypeE.Decimal :
                 InternalPrimitiveTypeE.Invalid;
 
         internal static bool IsWriteAsByteArray(InternalPrimitiveTypeE code)
@@ -131,21 +90,21 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             var typeATemp = new Type?[PrimitiveTypeEnumLength];
             typeATemp[(int)InternalPrimitiveTypeE.Invalid] = null;
-            typeATemp[(int)InternalPrimitiveTypeE.Boolean] = s_typeofBoolean;
-            typeATemp[(int)InternalPrimitiveTypeE.Byte] = s_typeofByte;
-            typeATemp[(int)InternalPrimitiveTypeE.Char] = s_typeofChar;
-            typeATemp[(int)InternalPrimitiveTypeE.Decimal] = s_typeofDecimal;
-            typeATemp[(int)InternalPrimitiveTypeE.Double] = s_typeofDouble;
-            typeATemp[(int)InternalPrimitiveTypeE.Int16] = s_typeofInt16;
-            typeATemp[(int)InternalPrimitiveTypeE.Int32] = s_typeofInt32;
-            typeATemp[(int)InternalPrimitiveTypeE.Int64] = s_typeofInt64;
-            typeATemp[(int)InternalPrimitiveTypeE.SByte] = s_typeofSByte;
-            typeATemp[(int)InternalPrimitiveTypeE.Single] = s_typeofSingle;
-            typeATemp[(int)InternalPrimitiveTypeE.TimeSpan] = s_typeofTimeSpan;
-            typeATemp[(int)InternalPrimitiveTypeE.DateTime] = s_typeofDateTime;
-            typeATemp[(int)InternalPrimitiveTypeE.UInt16] = s_typeofUInt16;
-            typeATemp[(int)InternalPrimitiveTypeE.UInt32] = s_typeofUInt32;
-            typeATemp[(int)InternalPrimitiveTypeE.UInt64] = s_typeofUInt64;
+            typeATemp[(int)InternalPrimitiveTypeE.Boolean] = typeof(bool);
+            typeATemp[(int)InternalPrimitiveTypeE.Byte] = typeof(byte);
+            typeATemp[(int)InternalPrimitiveTypeE.Char] = typeof(char);
+            typeATemp[(int)InternalPrimitiveTypeE.Decimal] = typeof(decimal);
+            typeATemp[(int)InternalPrimitiveTypeE.Double] = typeof(double);
+            typeATemp[(int)InternalPrimitiveTypeE.Int16] = typeof(short);
+            typeATemp[(int)InternalPrimitiveTypeE.Int32] = typeof(int);
+            typeATemp[(int)InternalPrimitiveTypeE.Int64] = typeof(long);
+            typeATemp[(int)InternalPrimitiveTypeE.SByte] = typeof(sbyte);
+            typeATemp[(int)InternalPrimitiveTypeE.Single] = typeof(float);
+            typeATemp[(int)InternalPrimitiveTypeE.TimeSpan] = typeof(TimeSpan);
+            typeATemp[(int)InternalPrimitiveTypeE.DateTime] = typeof(DateTime);
+            typeATemp[(int)InternalPrimitiveTypeE.UInt16] = typeof(ushort);
+            typeATemp[(int)InternalPrimitiveTypeE.UInt32] = typeof(uint);
+            typeATemp[(int)InternalPrimitiveTypeE.UInt64] = typeof(ulong);
             s_typeA = typeATemp;
         }
 
@@ -153,21 +112,21 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             var arrayTypeATemp = new Type?[PrimitiveTypeEnumLength];
             arrayTypeATemp[(int)InternalPrimitiveTypeE.Invalid] = null;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.Boolean] = s_typeofBooleanArray;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.Byte] = s_typeofByteArray;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.Char] = s_typeofCharArray;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.Decimal] = s_typeofDecimalArray;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.Double] = s_typeofDoubleArray;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.Int16] = s_typeofInt16Array;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.Int32] = s_typeofInt32Array;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.Int64] = s_typeofInt64Array;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.SByte] = s_typeofSByteArray;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.Single] = s_typeofSingleArray;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.TimeSpan] = s_typeofTimeSpanArray;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.DateTime] = s_typeofDateTimeArray;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.UInt16] = s_typeofUInt16Array;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.UInt32] = s_typeofUInt32Array;
-            arrayTypeATemp[(int)InternalPrimitiveTypeE.UInt64] = s_typeofUInt64Array;
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.Boolean] = typeof(bool[]);
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.Byte] = typeof(byte[]);
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.Char] = typeof(char[]);
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.Decimal] = typeof(decimal[]);
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.Double] = typeof(double[]);
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.Int16] = typeof(short[]);
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.Int32] = typeof(int[]);
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.Int64] = typeof(long[]);
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.SByte] = typeof(sbyte[]);
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.Single] = typeof(float[]);
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.TimeSpan] = typeof(TimeSpan[]);
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.DateTime] = typeof(DateTime[]);
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.UInt16] = typeof(ushort[]);
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.UInt32] = typeof(uint[]);
+            arrayTypeATemp[(int)InternalPrimitiveTypeE.UInt64] = typeof(ulong[]);
             s_arrayTypeA = arrayTypeATemp;
         }
 
@@ -203,18 +162,18 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal static bool IsPrimitiveArray(Type? type, [NotNullWhen(true)] out object? typeInformation)
         {
-            if (ReferenceEquals(type, s_typeofBooleanArray)) typeInformation = InternalPrimitiveTypeE.Boolean;
-            else if (ReferenceEquals(type, s_typeofByteArray)) typeInformation = InternalPrimitiveTypeE.Byte;
-            else if (ReferenceEquals(type, s_typeofCharArray)) typeInformation = InternalPrimitiveTypeE.Char;
-            else if (ReferenceEquals(type, s_typeofDoubleArray)) typeInformation = InternalPrimitiveTypeE.Double;
-            else if (ReferenceEquals(type, s_typeofInt16Array)) typeInformation = InternalPrimitiveTypeE.Int16;
-            else if (ReferenceEquals(type, s_typeofInt32Array)) typeInformation = InternalPrimitiveTypeE.Int32;
-            else if (ReferenceEquals(type, s_typeofInt64Array)) typeInformation = InternalPrimitiveTypeE.Int64;
-            else if (ReferenceEquals(type, s_typeofSByteArray)) typeInformation = InternalPrimitiveTypeE.SByte;
-            else if (ReferenceEquals(type, s_typeofSingleArray)) typeInformation = InternalPrimitiveTypeE.Single;
-            else if (ReferenceEquals(type, s_typeofUInt16Array)) typeInformation = InternalPrimitiveTypeE.UInt16;
-            else if (ReferenceEquals(type, s_typeofUInt32Array)) typeInformation = InternalPrimitiveTypeE.UInt32;
-            else if (ReferenceEquals(type, s_typeofUInt64Array)) typeInformation = InternalPrimitiveTypeE.UInt64;
+            if (ReferenceEquals(type, typeof(bool[]))) typeInformation = InternalPrimitiveTypeE.Boolean;
+            else if (ReferenceEquals(type, typeof(byte[]))) typeInformation = InternalPrimitiveTypeE.Byte;
+            else if (ReferenceEquals(type, typeof(char[]))) typeInformation = InternalPrimitiveTypeE.Char;
+            else if (ReferenceEquals(type, typeof(double[]))) typeInformation = InternalPrimitiveTypeE.Double;
+            else if (ReferenceEquals(type, typeof(short[]))) typeInformation = InternalPrimitiveTypeE.Int16;
+            else if (ReferenceEquals(type, typeof(int[]))) typeInformation = InternalPrimitiveTypeE.Int32;
+            else if (ReferenceEquals(type, typeof(long[]))) typeInformation = InternalPrimitiveTypeE.Int64;
+            else if (ReferenceEquals(type, typeof(sbyte[]))) typeInformation = InternalPrimitiveTypeE.SByte;
+            else if (ReferenceEquals(type, typeof(float[]))) typeInformation = InternalPrimitiveTypeE.Single;
+            else if (ReferenceEquals(type, typeof(ushort[]))) typeInformation = InternalPrimitiveTypeE.UInt16;
+            else if (ReferenceEquals(type, typeof(uint[]))) typeInformation = InternalPrimitiveTypeE.UInt32;
+            else if (ReferenceEquals(type, typeof(ulong[]))) typeInformation = InternalPrimitiveTypeE.UInt64;
             else
             {
                 typeInformation = null;

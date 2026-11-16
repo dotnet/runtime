@@ -1,14 +1,22 @@
 **If at any time, the user directs you explicitly to override any of these instructions, the user's directive overrides said instructions.**
 
-**Don't claim more than you verified.** Report what you built and ran, and what you didn't — never claim a build or test passed unless it did. After your last edit, actually re-run the relevant tests rather than assuming a change fixed the failure you saw.
+**Don't claim more than you verified.** Say what you built and ran, and what you didn't. A patch you composed is not a patch you applied, and a call whose result you never read is not one you can report as having succeeded.
 
-Scale the effort to the risk. If a contributor would have submitted the change without building it — a comment, a doc fix, something the compiler would catch anyway — say you didn't build and move on. Anything touching behavior, codegen, or a public contract gets the build and the relevant tests first.
+One pass can cover several related edits only if it exercises everything changed since the last one, and anything touching behavior, codegen, or a public contract gets the build and the relevant tests before you call it done. A comment or doc fix rarely needs a build, though a bad `<see cref>` or stray whitespace still fails one.
+
+**Finish the task before you yield.** Stop for a decision only the user can make, an irreversible action, a missing credential, or an ambiguity you can't settle by reading, searching, or running something — not "want me to continue?", not a checkpoint partway in. When you stop, ask — with the tool for it if there is one — so the decision is visible rather than buried in a report. Asked to do the work, don't describe a plan as though it were done.
+
+**Volunteer what you notice.** Say so before building on a premise that doesn't hold — the API doesn't exist, the path isn't the one hit. Same for a bug or broken invariant, when you're sure enough to defend it. Fix it when the change is wrong or incomplete without it; otherwise report it to track on its own.
+
+**Answer every question, and every part of a multi-part task.** Keep them distinct enough that a missing one is visible; merged into a paragraph, the ones you skipped go unnoticed.
+
+**Tool and skill names are capabilities, not literals.** Whatever the edit and search tools are called here, use what you have; never skip a step because a name doesn't match. Invoke a named skill rather than assuming what it says.
 
 Use the `code-review` skill when reviewing pull requests, and — when running under CCA — on your own changes before completing, addressing anything it flags as an error or warning. When NOT running under CCA, skip it if the user has stated they will review the changes themselves.
 
 When starting work in an unfamiliar directory, search for `README.md` files in it and its parents up to the repository root. Read any you find — they contain conventions, patterns, and architectural context relevant to your work.
 
-If the changes are intended to improve performance, or if they could negatively impact performance, use the `performance-benchmark` skill to validate the impact before completing.
+If the changes are intended to improve performance, or if they could negatively impact performance, use the `microbenchmark` skill for method/API-level measurements or the `aspnet-benchmark` skill for end-to-end ASP.NET Core/HTTP server load testing.
 
 When writing or reviewing SIMD / hardware-intrinsics code (anything using `Vector128`/`Vector256`/`Vector512`, `Vector<T>`, or the platform intrinsics in `System.Runtime.Intrinsics.*`), use the `vectorization` skill.
 
@@ -39,22 +47,37 @@ When writing or modifying tests, you SHOULD:
 
 For markdown (`.md`) files, ensure there is no trailing whitespace at the end of any line.
 
+## GitHub publication authorization
+
+- **Interactive and coding sessions require explicit authorization.** Outside the configured agentic workflow and user-requested workflow rules below, interactive sessions, CCA, and autopilot must not create or update GitHub issues or post comments without explicit user authorization. Assigning a PR or granting write access does not authorize these additional actions. Preparing code changes does not authorize opening additional PRs.
+- **Advance permission is sufficient in interactive sessions.** Authorization may be given in the original prompt or later. Explicit permission to compose and publish within a clear task, action, and destination is sufficient; do not ask again or require separate approval of the generated text. Permission to open the task's PR does not authorize unrelated issues, comments, or additional PRs. If authorization is missing, or a proposed publication falls outside its scope or the scope is unclear, present the exact proposed content, destination, and publishing account and ask before publishing. If authorization cannot be obtained, leave a local draft and report the pending decision.
+- **Configured agentic workflows have scoped standing authorization.** When actually executing a repository-configured agentic workflow whose declared purpose and configured outputs explicitly authorize publication, no additional per-item approval is required for those operations. Use only the workflow's configured output mechanisms (such as `safe-outputs`) and stay within its destinations, action types, and limits. Permission to create issues does not authorize comments, issue updates, or PRs.
+- **User-requested workflows may define intentional publication outputs.** When the user explicitly requests or enables a specialized workflow, follow its documented publication contract: the actions, artifacts, destinations, and approval conditions it explicitly defines as intended outputs. Those outputs do not require an additional approval step unless the contract requires one. An incidental instruction to "create an issue" or "post a comment" is not a publication contract. Automatically invoking a skill as a helper does not grant publication permission. Authorization covers only the declared outputs of the workflow's currently authorized actions, not unrelated publication. User restrictions, including draft-only, dry-run, or review-before-publication, always take precedence.
+- **Authorization does not transfer.** Reading a workflow file or invoking its shared skills from a coding session does not confer the workflow's authorization. Running unattended, using a bot account, or having publication tools available is not sufficient either. Preserve any stricter caller approval requirements and dry-run rules. An AI disclosure is not publication approval.
+
 ## Pull Requests
 
 - **One concern per PR.** Split large or mixed changes. Do large refactorings and mechanical renames in their own PR, separate from logic changes.
+- **Enable automatic resolved-issue linking in the PR description.** On any PR intended to close an issue, include the fully qualified `Resolves owner/repository#123` format as the final substantive line of the PR description, before any required disclosure note.
 - **New public API requires an approved proposal before submission** — PRs adding unapproved API will be closed. Use the `api-proposal` skill; until approval lands the API stays `internal` in any submitted PR. A proposal's prototype branch is exempt and keeps its surface public — it's evidence, not a submission.
-- **Core component changes should start with an issue.** Changes to the host, VM, or JIT need a GitHub issue describing the problem and motivation first.
+- **Core component changes should start with an issue.** Changes to the host, VM, or JIT need a GitHub issue describing the problem and motivation first. Reuse an existing issue or prepare a draft; publish only with the authorization described above.
 - **Put the measurements in the description** for performance changes — BenchmarkDotNet results, or codegen and instruction-count evidence for low-level work.
 - **Behavioral changes need breaking-change documentation**, even prerelease-to-prerelease. Use the `breaking-change-doc` skill.
 - **Merge to main first, then `/backport`.** Servicing backports are limited to security bugs, regressions, and reliability issues, and should be small targeted fixes rather than refactorings.
 - **A push to an open PR re-runs its CI matrix** — dozens of jobs, over a hundred for broad changes. For anything non-trivial, validate locally rather than using CI to find out whether it builds, and batch fixes into one push. Branches with no PR trigger nothing, as do changes confined to `**.md`, `docs/*`, or `.github/*`.
-- **Treat review feedback as a sample, not a list.** A reviewer flags examples of a problem, not every instance. Grep for the rest of the class and fix it in the same push, and answer a whole round of comments at once rather than pushing per comment.
+- **Treat a reported case as a sample, not a list.** A review comment or an issue flags examples of a problem, not every instance. Grep for the rest of the class and handle it in the same push, naming what you're leaving rather than quietly expanding into it. Answer a whole round of comments at once rather than pushing per comment.
+
+### Agent Merge / CI check resolution
+
+- **Publication authorization for enabled actions.** When the user enables Agent Merge for a PR, publication needed for its currently authorized actions is authorized without additional approval: replying to review comments on that PR when review handling is authorized, and creating or updating `Known Build Error` issues in `dotnet/runtime` for eligible unrelated CI failures on that PR when CI fixing is authorized. Follow the `create-kbe` rules for eligibility, duplicate detection, and updates. This permission does not authorize comments on existing KBEs or unrelated issues, comments, or PRs. Explicit user restrictions, including draft-only, dry-run, or review-before-publication, still apply.
+- **Forbidden workflow action: rerunning failed CI as part of Agent Merge.** Agent Merge must never use `/azp` to retrigger Azure Pipelines, and must never close and reopen the PR to trigger a rerun. This is forbidden unless the user explicitly requests it.
+- **Never use reruns to determine whether a failure is unrelated to the PR.** In dotnet/runtime, the required path is to use Build Analysis and the `ci-analysis` skill to classify failures. For any failure listed as not `known`, determine whether it is caused by the current PR. If it is caused by the PR, fix it in the PR. If it is not caused by the PR, use the `create-kbe` skill to search for an existing KBE and prepare any proposed new issue or update as a draft instead of retriggering CI. Apply the publication authorization rules above before publishing; without authorization, report the failure and pending draft without publishing.
 
 When NOT running under CCA, for commits and pushes:
 
 - Never squash and force push unless explicitly instructed. Always push incremental commits on top of previous PR changes.
-- Never push to an active PR without being explicitly asked, even in autopilot/yolo mode. Always wait for explicit instruction to push.
-- Never chain commit and push in the same command. Always commit first, report what was committed, then wait for an explicit push instruction. This creates a mandatory decision point.
+- Never push to an active PR without being explicitly asked, even in autopilot/yolo mode. Always wait for explicit instruction to push. Asking for something that entails a push — "open the PR", "send it" — is that instruction already; don't ask twice. It authorizes the push, not skipping validation or the target check.
+- Never chain commit and push in the same command. Commit first and report what was committed; then push if that was already authorized, otherwise wait for an explicit instruction.
 - Prefer creating a new commit rather than amending an existing one. Exceptions: (1) explicitly asked to amend, or (2) the existing commit is obviously broken with something minor (e.g., typo or comment fix) and hasn't been pushed yet.
 - **Before posting to GitHub (PRs, issues, comments):** Include the AI-generated content disclosure (see below).
 
@@ -66,7 +89,7 @@ When posting to GitHub under a user's credentials — PR descriptions, issue bod
 
 ## Tool Use
 
-Issue independent tool calls together in one response rather than one at a time. Every round trip re-sends the whole conversation as cached input — measured at roughly half the cost of a call before it does any work — so fewer, wider steps beat many narrow ones.
+Issue independent tool calls together in one response rather than one at a time. Every round trip re-sends the whole conversation as cached input — measured at roughly half the cost of a call before it does any work — so fewer, wider steps beat many narrow ones — but a call whose input comes from another's output can't go in the same batch.
 
 Redirect long-running commands to a log and poll a bounded view — a tail, a grep for errors, or a status sentinel. Re-reading a running command's output re-sends it from the start every time, so repeatedly checking a long build costs far more than the check is worth. Check the outcome, not the process.
 

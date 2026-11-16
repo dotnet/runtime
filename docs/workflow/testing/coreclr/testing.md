@@ -18,6 +18,7 @@
     * [Building PAL Tests](#building-pal-tests)
     * [Running PAL Tests](#running-pal-tests)
 * [Modifying Tests](#modifying-tests)
+  * [Asynchronous Tests](#asynchronous-tests)
 * [Investigating Test Failures](#investigating-test-failures)
 
 This guide will walk you through building and running the CoreCLR tests. These are located within the `src/tests` subtree of the runtime repo.
@@ -327,6 +328,20 @@ To disable tests in the CI, edit `src/coreclr/pal/tests/palsuite/issues.targets`
 ## Modifying Tests
 
 If you need to edit any given test's source code, simply make your changes and rebuild the test project. Then, you can re-run it as needed following the instructions detailed in the sections above.
+
+### Asynchronous Tests
+
+The generated standalone and merged runners await tests returning `Task` or
+`ValueTask`, including facts, theories, and instance tests. Instance disposal and
+result reporting happen after completion. Static facts may also return
+`Task<int>` or `ValueTask<int>` using the legacy exit-code convention (100 means
+success).
+
+Return the task directly, or make the test `async` and use `await`, rather than
+blocking with `.Wait()`, `.Result`, or `.GetAwaiter().GetResult()`. Blocking on
+incomplete tasks is not supported on single-threaded WebAssembly. Tests that
+actually require parallel threads must still use the multithreading capability
+condition; asynchronous suspension alone does not require it.
 
 ## Investigating Test Failures
 

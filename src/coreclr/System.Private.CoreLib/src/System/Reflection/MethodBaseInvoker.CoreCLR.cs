@@ -1,39 +1,63 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 using System.Reflection.Emit;
+using System.Threading;
 
 namespace System.Reflection
 {
     internal partial class MethodBaseInvoker
     {
-        private readonly Signature? _signature;
+        private IntrinsicInvokeHelper.InvokeState _invokeState;
+        private InvokerEmitUtil.InvokeFunc_Debugger? _invokeFunc_Debugger;
 
         internal unsafe MethodBaseInvoker(RuntimeMethodInfo method) : this(method, method.Signature.Arguments)
         {
-            _signature = method.Signature;
             _invocationFlags = method.ComputeAndUpdateInvocationFlags();
-            _invokeFunc_RefArgs = InterpretedInvoke_Method;
+            _invokeFunc_RefArgs = InvokeWithSharedThunk;
         }
 
         internal unsafe MethodBaseInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.Signature.Arguments)
         {
-            _signature = constructor.Signature;
             _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
-            _invokeFunc_RefArgs = InterpretedInvoke_Constructor;
+            _invokeFunc_RefArgs = InvokeWithSharedThunk;
         }
 
         internal unsafe MethodBaseInvoker(DynamicMethod method, Signature signature) : this(method, signature.Arguments)
         {
-            _signature = signature;
-            _invokeFunc_RefArgs = InterpretedInvoke_Method;
+            _invokeFunc_RefArgs = InvokeWithSharedThunk;
         }
 
-        private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr* args) =>
-            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: obj is null);
+        private unsafe object? InvokeWithSharedThunk(object? obj, IntPtr* args) =>
+            IntrinsicInvokeHelper.Invoke(ref _invokeState, ref _strategy, ref _invokeFunc_RefArgs,
+                _method, _argTypes, obj, args, backwardsCompat: true);
 
-        private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr* args) =>
-            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: false);
+        internal unsafe object? InvokeDirectByRef(object? obj, IntPtr* args)
+        {
+            if ((_strategy & MethodBase.InvokerStrategy.StrategyDetermined_RefArgs) == 0)
+            {
+                MethodInvokerCommon.DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: true);
+            }
+
+            return _invokeFunc_RefArgs!(obj, args);
+        }
+
+        [StackTraceHidden]
+        [DebuggerHidden]
+        internal InvokerEmitUtil.InvokeFunc_Debugger GetDebuggerInvokeDelegate()
+        {
+            InvokerEmitUtil.InvokeFunc_Debugger? invoke = Volatile.Read(ref _invokeFunc_Debugger);
+            if (invoke is null)
+            {
+                using (AssemblyBuilder.ForceAllowDynamicCode())
+                {
+                    invoke = InvokerEmitUtil.CreateInvokeDelegate_Debugger(_method);
+                }
+                invoke = Interlocked.CompareExchange(ref _invokeFunc_Debugger, invoke, null) ?? invoke;
+            }
+
+            return invoke;
+        }
     }
 }

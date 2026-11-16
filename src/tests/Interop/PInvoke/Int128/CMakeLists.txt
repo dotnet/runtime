@@ -4,5 +4,5 @@ set(SOURCES
   Int128Native.cpp
   UInt128Native.cpp
 )
-add_library (Int128Native SHARED ${SOURCES})
+add_library (Int128Native ${TEST_LIB_TYPE} ${SOURCES})
 install (TARGETS Int128Native DESTINATION bin)

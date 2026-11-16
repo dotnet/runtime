@@ -13,6 +13,41 @@ namespace IntelHardwareIntrinsicTest._Avx512F
 {
     public partial class Program
     {
+        [ConditionalTheory(typeof(Avx512F), nameof(Avx512F.IsSupported))]
+        [InlineData(0x3F800001u)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void NegateEmbeddedRounding_Single(uint bits)
+        {
+            Vector512<float> value = Vector512.Create(BitConverter.UInt32BitsToSingle(bits));
+
+            Assert.Equal(Vector512.Create(0xBFC00002u), (-Avx512F.Multiply(value, Vector512.Create(1.5f), FloatRoundingMode.ToPositiveInfinity)).AsUInt32());
+            Assert.Equal(Vector512.Create(0xBE124926u), (-Avx512F.Divide(value, Vector512.Create(7.0f), FloatRoundingMode.ToPositiveInfinity)).AsUInt32());
+        }
+
+        [ConditionalTheory(typeof(Avx512F), nameof(Avx512F.IsSupported))]
+        [InlineData(float.MaxValue)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void MultiplyConstantEmbeddedRounding_Single(float scalar)
+        {
+            // Reusing the vector keeps the multiply's input local, enabling the multiply-to-add rewrite.
+            Vector512<float> value = Vector512.Create(scalar);
+            Vector512<float> doubled = Avx512F.Multiply(value, Vector512.Create(2.0f), FloatRoundingMode.ToZero);
+            Assert.Equal(Vector512<float>.Zero, doubled - value);
+        }
+
+        [ConditionalTheory(typeof(Avx512F), nameof(Avx512F.IsSupported))]
+        [InlineData(1.25f)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ToEvenEmbeddedRounding_Single(float scalar)
+        {
+            Vector512<float> left = Vector512.Create(scalar);
+            Vector512<float> right = Vector512.Create(1.5f);
+            Vector512<float> addend = Vector512.Create(1.0f);
+
+            Assert.Equal(Vector512.Create(2.75f), Avx512F.Add(left, right, FloatRoundingMode.ToEven));
+            Assert.Equal(Vector512.Create(2.875f), Avx512F.FusedMultiplyAdd(left, right, addend, FloatRoundingMode.ToEven));
+        }
+
         [Fact]
         public static unsafe void ConvertToInt32EmbeddedRounding_Single()
         {

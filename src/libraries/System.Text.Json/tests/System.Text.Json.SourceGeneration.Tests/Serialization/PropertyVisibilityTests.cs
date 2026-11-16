@@ -99,6 +99,47 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Contains(@"""MyInt"":42", json);
         }
 
+        [Theory]
+        [InlineData(JsonSourceGenerationMode.Metadata, false)]
+        [InlineData(JsonSourceGenerationMode.Metadata, true)]
+        [InlineData(JsonSourceGenerationMode.Default, false)]
+        [InlineData(JsonSourceGenerationMode.Default, true)]
+        public static void GenericContexts_InaccessibleGenericMembers_CanRoundtrip(JsonSourceGenerationMode mode, bool nested)
+        {
+            JsonSerializerContext context = (mode, nested) switch
+            {
+                (JsonSourceGenerationMode.Metadata, false) => GenericAccessorContext_Metadata<string>.Default,
+                (JsonSourceGenerationMode.Metadata, true) => GenericAccessorContextContainer<string>.NestedGenericAccessorContext_Metadata.Default,
+                (JsonSourceGenerationMode.Default, false) => GenericAccessorContext_Default<string>.Default,
+                _ => GenericAccessorContextContainer<string>.NestedGenericAccessorContext_Default.Default,
+            };
+
+            const string Json = """{"Value":42,"Label":"test"}""";
+            var result = (GenericClassWithPrivateJsonIncludeProperties<int>)JsonSerializer.Deserialize(
+                Json, typeof(GenericClassWithPrivateJsonIncludeProperties<int>), context);
+            Assert.Equal(42, result.GetValue());
+            Assert.Equal("test", result.GetLabel());
+            JsonTestHelper.AssertJsonEqual(Json, JsonSerializer.Serialize(
+                result, typeof(GenericClassWithPrivateJsonIncludeProperties<int>), context));
+        }
+
+        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
+        [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
+        private partial class GenericAccessorContext_Metadata<TContext> : JsonSerializerContext { }
+
+        [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
+        private partial class GenericAccessorContext_Default<TContext> : JsonSerializerContext { }
+
+        private partial class GenericAccessorContextContainer<TContext>
+        {
+            [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
+            [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
+            public partial class NestedGenericAccessorContext_Metadata : JsonSerializerContext { }
+
+            [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
+            public partial class NestedGenericAccessorContext_Default : JsonSerializerContext { }
+        }
+
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
         [JsonSerializable(typeof(ClassWithNewSlotField))]
         [JsonSerializable(typeof(int))]
@@ -263,7 +304,28 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithJsonIncludePrivateGetterProperties))]
         [JsonSerializable(typeof(StructWithJsonIncludePrivateProperties))]
         [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeProperties<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeProperties<string>))]
+        [JsonSerializable(typeof(GenericClassWithReadOnlyJsonIncludeMembers<int>))]
+        [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeFields<int>))]
+        [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeFields<string>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeFields<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeFields<string>))]
+        [JsonSerializable(typeof(StructWithPrivateConstructorAndMembers))]
+        [JsonSerializable(typeof(GenericStructWithPrivateInitOnlyMembers<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateInitOnlyMembers<string>))]
+        [JsonSerializable(typeof(GenericMemberOuter<int>.Nested<string>))]
+        [JsonSerializable(typeof(GenericMemberOuter<int>.Nested))]
+        [JsonSerializable(typeof(GenericAccessorDerived<int>))]
+        [JsonSerializable(typeof(NonGenericAccessorDerived))]
+        [JsonSerializable(typeof(NonGenericAccessorLeaf))]
+        [JsonSerializable(typeof(GenericAccessorDerivedWithPublicProperty<int>))]
+        [JsonSerializable(typeof(GenericAccessorDerivedWithIgnoredProperty<int>))]
+        [JsonSerializable(typeof(GenericAccessorDerived<int, string>))]
+        [JsonSerializable(typeof(GenericMembersWithKeywordParameter<int>))]
+        [JsonSerializable(typeof(ConstrainedGenericAccessor<int, List<int>>))]
         [JsonSerializable(typeof(ConstrainedGenericClassWithInitOnlyProperties<ConstraintDerived>))]
+        [JsonSerializable(typeof(ConstrainedGenericClassWithOptionalInitOnlyProperties<ConstraintDerived>))]
         [JsonSerializable(typeof(ClassWithInitOnlyPropertyDefaults))]
         [JsonSerializable(typeof(StructWithInitOnlyPropertyDefaults))]
         [JsonSerializable(typeof(ClassUsingIgnoreWhenWritingDefaultAttribute))]
@@ -286,6 +348,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Class2))]
         [JsonSerializable(typeof(NamespaceBase.Class1), TypeInfoPropertyName = "Class1FromNamespaceBase")]
         [JsonSerializable(typeof(NamespaceBase.Class2), TypeInfoPropertyName = "Class2FromNamespaceBase")]
+#if NET
+        [JsonSerializable(typeof(System.Numerics.Colors.Argb<float>))]
+#endif
         internal sealed partial class PropertyVisibilityTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -558,7 +623,28 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithJsonIncludePrivateGetterProperties))]
         [JsonSerializable(typeof(StructWithJsonIncludePrivateProperties))]
         [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeProperties<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeProperties<string>))]
+        [JsonSerializable(typeof(GenericClassWithReadOnlyJsonIncludeMembers<int>))]
+        [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeFields<int>))]
+        [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeFields<string>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeFields<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeFields<string>))]
+        [JsonSerializable(typeof(StructWithPrivateConstructorAndMembers))]
+        [JsonSerializable(typeof(GenericStructWithPrivateInitOnlyMembers<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateInitOnlyMembers<string>))]
+        [JsonSerializable(typeof(GenericMemberOuter<int>.Nested<string>))]
+        [JsonSerializable(typeof(GenericMemberOuter<int>.Nested))]
+        [JsonSerializable(typeof(GenericAccessorDerived<int>))]
+        [JsonSerializable(typeof(NonGenericAccessorDerived))]
+        [JsonSerializable(typeof(NonGenericAccessorLeaf))]
+        [JsonSerializable(typeof(GenericAccessorDerivedWithPublicProperty<int>))]
+        [JsonSerializable(typeof(GenericAccessorDerivedWithIgnoredProperty<int>))]
+        [JsonSerializable(typeof(GenericAccessorDerived<int, string>))]
+        [JsonSerializable(typeof(GenericMembersWithKeywordParameter<int>))]
+        [JsonSerializable(typeof(ConstrainedGenericAccessor<int, List<int>>))]
         [JsonSerializable(typeof(ConstrainedGenericClassWithInitOnlyProperties<ConstraintDerived>))]
+        [JsonSerializable(typeof(ConstrainedGenericClassWithOptionalInitOnlyProperties<ConstraintDerived>))]
         [JsonSerializable(typeof(ClassWithInitOnlyPropertyDefaults))]
         [JsonSerializable(typeof(StructWithInitOnlyPropertyDefaults))]
         [JsonSerializable(typeof(ClassUsingIgnoreWhenWritingDefaultAttribute))]
@@ -581,6 +667,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Class2))]
         [JsonSerializable(typeof(NamespaceBase.Class1), TypeInfoPropertyName = "Class1FromNamespaceBase")]
         [JsonSerializable(typeof(NamespaceBase.Class2), TypeInfoPropertyName = "Class2FromNamespaceBase")]
+#if NET
+        [JsonSerializable(typeof(System.Numerics.Colors.Argb<float>))]
+#endif
         internal sealed partial class PropertyVisibilityTestsContext_Default : JsonSerializerContext
         {
         }

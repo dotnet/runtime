@@ -19,6 +19,7 @@ namespace System.Security.Cryptography.Tests
         public abstract X25519DiffieHellman ImportPrivateKey(ReadOnlySpan<byte> source);
         public abstract X25519DiffieHellman ImportPublicKey(ReadOnlySpan<byte> source);
         public virtual bool CanRoundTripKeys => true;
+        protected virtual bool CanRoundTripReducedZeroPublicKeys => true;
 
         // SymCrypt, thus SCOSSL, is stricter about keys it is willing to import. These keys fall in to
         // two buckets.
@@ -259,13 +260,29 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(vector.SharedSecret, secretBuffer);
         }
 
-        [ConditionalFact(nameof(IsNotStrictKeyValidatingPlatform))]
-        public void DeriveRawSecretAgreement_ZeroSharedSecret_Throws()
+        public static IEnumerable<object[]> ZeroSharedSecretPublicKeys()
         {
             // Wycheproof tcId 64: peer public key is a low-order point on Curve25519.
-            // This low-order point produces a shared secret that is all zeros.
+            yield return ["5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157", false];
+            // Wycheproof tcId 32: peer public key is zero.
+            yield return ["0000000000000000000000000000000000000000000000000000000000000000", true];
+            // Wycheproof tcId 83: peer public key is p, which reduces to zero.
+            yield return ["edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f", true];
+        }
+
+        [ConditionalTheory(nameof(IsNotStrictKeyValidatingPlatform))]
+        [MemberData(nameof(ZeroSharedSecretPublicKeys))]
+        public void DeriveRawSecretAgreement_ZeroSharedSecret_Throws(
+            string peerPublicKeyHex,
+            bool requiresReducedZeroRoundtrip)
+        {
+            if (requiresReducedZeroRoundtrip && !CanRoundTripReducedZeroPublicKeys)
+            {
+                return;
+            }
+
             byte[] privateKey = "387355d995616090503aafad49da01fb3dc3eda962704eaee6b86f9e20c92579".HexToByteArray();
-            byte[] peerPublicKey = "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157".HexToByteArray();
+            byte[] peerPublicKey = peerPublicKeyHex.HexToByteArray();
 
             using X25519DiffieHellman key = ImportPrivateKey(privateKey);
             using X25519DiffieHellman peer = ImportPublicKey(peerPublicKey);
@@ -273,13 +290,19 @@ namespace System.Security.Cryptography.Tests
             Assert.ThrowsAny<CryptographicException>(() => key.DeriveRawSecretAgreement(peer));
         }
 
-        [ConditionalFact(nameof(IsNotStrictKeyValidatingPlatform))]
-        public void DeriveRawSecretAgreement_ExactBuffers_ZeroSharedSecret_Throws()
+        [ConditionalTheory(nameof(IsNotStrictKeyValidatingPlatform))]
+        [MemberData(nameof(ZeroSharedSecretPublicKeys))]
+        public void DeriveRawSecretAgreement_ExactBuffers_ZeroSharedSecret_Throws(
+            string peerPublicKeyHex,
+            bool requiresReducedZeroRoundtrip)
         {
-            // Wycheproof tcId 64: peer public key is a low-order point on Curve25519.
-            // This low-order point produces a shared secret that is all zeros.
+            if (requiresReducedZeroRoundtrip && !CanRoundTripReducedZeroPublicKeys)
+            {
+                return;
+            }
+
             byte[] privateKey = "387355d995616090503aafad49da01fb3dc3eda962704eaee6b86f9e20c92579".HexToByteArray();
-            byte[] peerPublicKey = "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157".HexToByteArray();
+            byte[] peerPublicKey = peerPublicKeyHex.HexToByteArray();
 
             using X25519DiffieHellman key = ImportPrivateKey(privateKey);
             using X25519DiffieHellman peer = ImportPublicKey(peerPublicKey);
@@ -288,13 +311,15 @@ namespace System.Security.Cryptography.Tests
                 () => key.DeriveRawSecretAgreement(peer, new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
         }
 
-        [ConditionalFact(nameof(IsNotStrictKeyValidatingPlatform))]
-        public void DeriveRawSecretAgreement_Bytes_ZeroSharedSecret_Throws()
+        [ConditionalTheory(nameof(IsNotStrictKeyValidatingPlatform))]
+        [MemberData(nameof(ZeroSharedSecretPublicKeys))]
+        public void DeriveRawSecretAgreement_Bytes_ZeroSharedSecret_Throws(
+            string peerPublicKeyHex,
+            bool requiresReducedZeroRoundtrip)
         {
-            // Wycheproof tcId 64: peer public key is a low-order point on Curve25519.
-            // This low-order point produces a shared secret that is all zeros.
+            _ = requiresReducedZeroRoundtrip;
             byte[] privateKey = "387355d995616090503aafad49da01fb3dc3eda962704eaee6b86f9e20c92579".HexToByteArray();
-            byte[] peerPublicKey = "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157".HexToByteArray();
+            byte[] peerPublicKey = peerPublicKeyHex.HexToByteArray();
 
             using X25519DiffieHellman key = ImportPrivateKey(privateKey);
 
@@ -304,13 +329,15 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(privateKey, key.ExportPrivateKey());
         }
 
-        [ConditionalFact(nameof(IsNotStrictKeyValidatingPlatform))]
-        public void DeriveRawSecretAgreement_Bytes_ExactBuffers_ZeroSharedSecret_Throws()
+        [ConditionalTheory(nameof(IsNotStrictKeyValidatingPlatform))]
+        [MemberData(nameof(ZeroSharedSecretPublicKeys))]
+        public void DeriveRawSecretAgreement_Bytes_ExactBuffers_ZeroSharedSecret_Throws(
+            string peerPublicKeyHex,
+            bool requiresReducedZeroRoundtrip)
         {
-            // Wycheproof tcId 64: peer public key is a low-order point on Curve25519.
-            // This low-order point produces a shared secret that is all zeros.
+            _ = requiresReducedZeroRoundtrip;
             byte[] privateKey = "387355d995616090503aafad49da01fb3dc3eda962704eaee6b86f9e20c92579".HexToByteArray();
-            byte[] peerPublicKey = "5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157".HexToByteArray();
+            byte[] peerPublicKey = peerPublicKeyHex.HexToByteArray();
 
             using X25519DiffieHellman key = ImportPrivateKey(privateKey);
 

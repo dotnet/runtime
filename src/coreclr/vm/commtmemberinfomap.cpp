@@ -102,7 +102,6 @@ EEHashEntry_t * EEModuleTokenHashTableHelper::AllocateEntry(EEModuleTokenPair *p
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return NULL);
         PRECONDITION(CheckPointer(pKey));
     }
     CONTRACTL_END;
@@ -745,9 +744,10 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
         if (i < 0)
         {
             // Save the name.  Have to convert from UTF8.
-            int iLen = MultiByteToWideChar(CP_UTF8, 0, pPropName, -1, 0, 0);
+            size_t cchPropName = strlen(pPropName) + 1;
+            size_t iLen = minipal_get_length_utf8_to_utf16(pPropName, cchPropName, 0);
             rProps[ix].pName = reinterpret_cast<WCHAR*>(sNames.Alloc(iLen*sizeof(WCHAR)));
-            MultiByteToWideChar(CP_UTF8, 0, pPropName, -1, rProps[ix].pName, iLen);
+            minipal_convert_utf8_to_utf16(pPropName, cchPropName, (CHAR16_T*)rProps[ix].pName, iLen, 0);
 
             // Check whether the property has a dispid attribute.
             hr = pMeth->GetMDImport()->GetDispIdOfMemberDef(pd, &dispid);
@@ -1585,7 +1585,6 @@ void ComMTMemberInfoMap::PopulateMemberHashtable()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 

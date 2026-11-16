@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <pthread.h>
-#include <errno.h>
 #include "config.gc.h"
 #include "common.h"
 
@@ -10,6 +8,10 @@
 #include "gcenv.base.h"
 #include "gcenv.os.h"
 #include "globals.h"
+
+#ifdef FEATURE_MULTITHREADING
+#include <pthread.h>
+#include <errno.h>
 
 namespace
 {
@@ -226,6 +228,66 @@ public:
     }
 };
 
+#else // FEATURE_MULTITHREADING
+
+class GCEvent::Impl
+{
+    bool m_manualReset;
+    bool m_state;
+
+public:
+
+    Impl(bool manualReset, bool initialState)
+    : m_manualReset(manualReset),
+      m_state(initialState)
+    {
+    }
+
+    bool Initialize()
+    {
+        return true;
+    }
+
+    void CloseEvent()
+    {
+    }
+
+    uint32_t Wait(uint32_t milliseconds, bool alertable)
+    {
+        UNREFERENCED_PARAMETER(alertable);
+
+        if (!m_state)
+        {
+            if (milliseconds != 0)
+            {
+                assert(!"Cannot block on an event wait in single-threaded mode");
+                return WAIT_FAILED;
+            }
+
+            return WAIT_TIMEOUT;
+        }
+
+        if (!m_manualReset)
+        {
+            m_state = false;
+        }
+
+        return WAIT_OBJECT_0;
+    }
+
+    void Set()
+    {
+        m_state = true;
+    }
+
+    void Reset()
+    {
+        m_state = false;
+    }
+};
+
+#endif // FEATURE_MULTITHREADING
+
 GCEvent::GCEvent()
   : m_impl(nullptr)
 {
@@ -257,20 +319,6 @@ uint32_t GCEvent::Wait(uint32_t timeout, bool alertable)
 
 bool GCEvent::CreateAutoEventNoThrow(bool initialState)
 {
-    // This implementation of GCEvent makes no distinction between
-    // host-aware and non-host-aware events (since there will be no host).
-    return CreateOSAutoEventNoThrow(initialState);
-}
-
-bool GCEvent::CreateManualEventNoThrow(bool initialState)
-{
-    // This implementation of GCEvent makes no distinction between
-    // host-aware and non-host-aware events (since there will be no host).
-    return CreateOSManualEventNoThrow(initialState);
-}
-
-bool GCEvent::CreateOSAutoEventNoThrow(bool initialState)
-{
     assert(m_impl == nullptr);
     GCEvent::Impl* event(new (nothrow) GCEvent::Impl(false, initialState));
     if (!event)
@@ -288,7 +336,7 @@ bool GCEvent::CreateOSAutoEventNoThrow(bool initialState)
     return true;
 }
 
-bool GCEvent::CreateOSManualEventNoThrow(bool initialState)
+bool GCEvent::CreateManualEventNoThrow(bool initialState)
 {
     assert(m_impl == nullptr);
     GCEvent::Impl* event(new (nothrow) GCEvent::Impl(true, initialState));

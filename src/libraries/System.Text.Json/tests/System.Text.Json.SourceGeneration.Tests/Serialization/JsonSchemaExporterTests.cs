@@ -91,6 +91,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(IntEnum?))]
         [JsonSerializable(typeof(StringEnum?))]
         [JsonSerializable(typeof(SimpleRecordStruct?))]
+        // Union types
+        [JsonSerializable(typeof(StrictIntOrStringUnion))]
+        [JsonSerializable(typeof(List<StrictIntOrStringUnion>))]
+        [JsonSerializable(typeof(IntOrBoolUnion))]
+        [JsonSerializable(typeof(NullableIntUnion))]
         // User-defined POCOs
         [JsonSerializable(typeof(SimplePoco))]
         [JsonSerializable(typeof(SimpleRecord))]
@@ -118,6 +123,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PocoWithNullableAnnotationAttributesOnConstructorParams))]
         [JsonSerializable(typeof(PocoWithNullableConstructorParameter))]
         [JsonSerializable(typeof(PocoWithOptionalConstructorParams))]
+        [JsonSerializable(typeof(PocoWithGetOnlyProperties))]
         [JsonSerializable(typeof(GenericPocoWithNullableConstructorParameter<string>))]
         [JsonSerializable(typeof(PocoWithPolymorphism))]
         [JsonSerializable(typeof(DiscriminatedUnion))]

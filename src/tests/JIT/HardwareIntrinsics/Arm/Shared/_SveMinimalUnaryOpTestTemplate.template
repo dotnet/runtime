@@ -89,13 +89,13 @@ namespace {Namespace}
             {
                 int sizeOfinArray1 = inArray1.Length * sizeof({Op1BaseType});
                 int sizeOfoutArray = outArray.Length * sizeof({RetBaseType});
-                if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
+                if (!int.IsPow2(alignment))
                 {
                     throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfinArray1: {sizeOfinArray1}, sizeOfoutArray: {sizeOfoutArray}");
                 }
 
-                this.inArray1 = new byte[alignment * 2];
-                this.outArray = new byte[alignment * 2];
+                this.inArray1 = new byte[sizeOfinArray1 + alignment - 1];
+                this.outArray = new byte[sizeOfoutArray + alignment - 1];
 
                 this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
                 this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
@@ -143,7 +143,7 @@ namespace {Namespace}
             }
         }
 
-        private static readonly int LargestVectorSize = {LargestVectorSize};
+        private static readonly int VectorAlignment = (int)BitOperations.RoundUpToPowerOf2((uint)Vector<byte>.Count);
 
         private static readonly int Op1ElementCount = sizeof({Op1VectorType}<{Op1BaseType}>) / sizeof({Op1BaseType});
         private static readonly int RetElementCount = sizeof({RetVectorType}<{RetBaseType}>) / sizeof({RetBaseType});
@@ -169,7 +169,14 @@ namespace {Namespace}
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref _falseFld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)sizeof({RetVectorType}<{RetBaseType}>));
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-            _dataTable = new DataTable(_data1, new {RetBaseType}[RetElementCount], LargestVectorSize);
+
+            if (VectorAlignment < sizeof({Op1VectorType}<{Op1BaseType}>) ||
+                 VectorAlignment < sizeof({RetVectorType}<{RetBaseType}>))
+            {
+                throw new ArgumentException("Invalid value of VectorAlignment");
+            }
+
+            _dataTable = new DataTable(_data1, new {RetBaseType}[RetElementCount], VectorAlignment);
         }
 
         public bool IsSupported => {Isa}.IsSupported;

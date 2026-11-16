@@ -4,7 +4,9 @@
 namespace Dynamic
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
+    using System.Runtime.InteropServices;
     using Xunit;
 
     internal class CollectionTest
@@ -81,6 +83,8 @@ namespace Dynamic
             Assert.Equal(array[2], obj.Item(2));
             Assert.Equal(array.Length, obj.Count);
 
+            CustomEnumerator(array);
+
             Console.WriteLine("  + Enumerate collection");
             List<string> list = new List<string>();
 
@@ -135,6 +139,58 @@ namespace Dynamic
             Console.WriteLine("  + Clear collection");
             obj.Clear();
             Assert.Equal(0, obj.Count);
+            CustomEnumerator(System.Array.Empty<string>());
+        }
+
+        private void CustomEnumerator(string[] expected)
+        {
+            Console.WriteLine("  + Cast fresh COM enumerators to IEnumerator");
+            foreach (string firstMember in new[] { nameof(IEnumerator.MoveNext), nameof(IEnumerator.Reset), nameof(IEnumerator.Current) })
+            {
+                Console.WriteLine($"    First member: {firstMember}, items: {expected.Length}");
+                object previous = null;
+                for (int pass = 0; pass < 3; pass++)
+                {
+                    object enumVariant = obj._NewEnum;
+                    Assert.True(Marshal.IsComObject(enumVariant));
+                    Assert.NotSame(previous, enumVariant);
+                    previous = enumVariant;
+                    IEnumerator enumerator = (IEnumerator)enumVariant;
+                    List<string> actual = new List<string>();
+
+                    switch (firstMember)
+                    {
+                        case nameof(IEnumerator.MoveNext):
+                            Assert.Equal(expected.Length != 0, enumerator.MoveNext());
+                            if (expected.Length != 0)
+                            {
+                                actual.Add((string)enumerator.Current);
+                            }
+                            break;
+                        case nameof(IEnumerator.Reset):
+                            enumerator.Reset();
+                            break;
+                        case nameof(IEnumerator.Current):
+                            Assert.Null(enumerator.Current);
+                            break;
+                    }
+
+                    while (enumerator.MoveNext())
+                    {
+                        actual.Add((string)enumerator.Current);
+                    }
+                    AssertExtensions.CollectionEqual(expected, actual);
+                    Assert.False(enumerator.MoveNext());
+
+                    actual.Clear();
+                    enumerator.Reset();
+                    while (enumerator.MoveNext())
+                    {
+                        actual.Add((string)enumerator.Current);
+                    }
+                    AssertExtensions.CollectionEqual(expected, actual);
+                }
+            }
         }
 
         private void IndexChain()

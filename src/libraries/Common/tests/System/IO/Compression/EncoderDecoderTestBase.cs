@@ -776,7 +776,6 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/127563", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst | TestPlatforms.Android)]
         public void RoundTrip_AllWindowLogs()
         {
             byte[] input = CreateTestData();

@@ -7,9 +7,9 @@ using Xunit;
 public class Runtime_125615
 {
     [Fact]
-    public static void TestEntryPoint()
+    public static async Task TestEntryPoint()
     {
-        long result = MutateImplicitByRef(default).GetAwaiter().GetResult();
+        long result = await MutateImplicitByRef(default);
         Assert.Equal(1, result);
     }
 

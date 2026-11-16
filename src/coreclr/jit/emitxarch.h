@@ -167,6 +167,7 @@ bool        IsRedundantMov(
 bool EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src);
 
 bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs);
+bool TryEmitLclAddrAsMov(emitAttr attr, regNumber ireg, int varx, int offs);
 
 static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
@@ -721,7 +722,7 @@ bool        IsThreeOperandAVXInstruction(instruction ins) const;
 bool        IsAvxCommutative(instruction ins) const;
 static bool HasRegularWideForm(instruction ins);
 static bool HasRegularWideImmediateForm(instruction ins);
-static bool DoesWriteZeroFlag(instruction ins);
+static bool DoesWriteZeroFlagForResult(instruction ins);
 static bool DoesWriteParityFlag(instruction ins);
 static bool DoesWriteSignFlag(instruction ins);
 static bool DoesResetOverflowAndCarryFlags(instruction ins);

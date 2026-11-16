@@ -1,9 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// siginfo.hpp
-//
-
 
 #ifndef _H_SIGINFO
 #define _H_SIGINFO
@@ -17,7 +13,7 @@
 #include "threads.h"
 #include "corinfo.h"
 
-#include "eecontract.h"
+#include <contract.h>
 #include "typectxt.h"
 
 //---------------------------------------------------------------------------------------
@@ -809,7 +805,6 @@ class MetaSig
             {
                 if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
                 if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-                if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
                 MODE_ANY;
                 SUPPORTS_DAC;
             }
@@ -834,10 +829,6 @@ class MetaSig
             }
         } // NextArgNormalized
 
-        // Tests if the return type is an object ref.  Loads types
-        // if needed (though it shouldn't really need to)
-        BOOL IsObjectRefReturnType();
-
         //------------------------------------------------------------------------
         // Compute element size from CorElementType and optional valuetype.
         //------------------------------------------------------------------------
@@ -857,16 +848,6 @@ class MetaSig
         //------------------------------------------------------------------
         VOID GcScanRoots(ArgDestination *pValue, promote_func *fn,
                          ScanContext* sc, promote_carefully_func *fnc = NULL);
-
-        //------------------------------------------------------------------
-        // Is the return type 64 bit?
-        //------------------------------------------------------------------
-        BOOL Is64BitReturn() const
-        {
-            WRAPPER_NO_CONTRACT;
-            CorElementType rt = GetReturnTypeNormalized();
-            return (rt == ELEMENT_TYPE_I8 || rt == ELEMENT_TYPE_U8 || rt == ELEMENT_TYPE_R8);
-        }
 
         //------------------------------------------------------------------
         // Is the return type floating point?

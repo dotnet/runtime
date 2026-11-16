@@ -14,14 +14,14 @@
 extern "C" void* PacStripPtr(void* ptr);
 #endif // TARGET_ARM64
 
-FCIMPL0(void*, TailCallHelp::GetTailCallArgBuffer)
+FCIMPL0(void*, RuntimeHelpers_GetTailCallArgBuffer)
 {
     FCALL_CONTRACT;
     return GetThread()->GetTailCallTls()->GetArgBuffer();
 }
 FCIMPLEND
 
-extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size)
+extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -36,7 +36,7 @@ extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size)
     return retVal;
 }
 
-FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr)
+FCIMPL2(void*, RuntimeHelpers_GetTailCallInfo, void** retAddrSlot, void** retAddr)
 {
     FCALL_CONTRACT;
 
@@ -118,7 +118,7 @@ MethodDesc* TailCallHelp::GetOrLoadTailCallDispatcherMD()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -293,7 +293,8 @@ bool TailCallHelp::GenerateGCDescriptor(
         TypeHandle tyHnd = val.TyHnd;
         if (tyHnd.IsValueType())
         {
-            if (!tyHnd.GetMethodTable()->ContainsGCPointers())
+            // Byref-like structs (e.g. Span<T>) have no GC series but can contain byref fields.
+            if (!tyHnd.GetMethodTable()->ContainsGCPointers() && !tyHnd.GetMethodTable()->IsByRefLike())
             {
 #ifndef TARGET_X86
                 // The generic instantiation arg is right after this pointer

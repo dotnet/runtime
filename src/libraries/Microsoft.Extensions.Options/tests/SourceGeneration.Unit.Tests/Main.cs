@@ -13,6 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
+#if NET
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -24,6 +27,100 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test;
 
 public class EmitterTests
 {
+    public static IEnumerable<object[]> ConditionalEnclosingDeclarationData()
+    {
+        string[] declarations =
+        [
+            """
+            public partial class Outer<
+            #if TRIVIA_BRANCH
+                T>
+            #else
+                T>
+            #endif
+            """,
+            """
+            public partial struct Outer<T>
+                where T :
+            #if TRIVIA_BRANCH
+                class, new()
+            #else
+                struct
+            #endif
+            """,
+            """
+            public partial record class @class<
+            #if TRIVIA_BRANCH
+                [Parameter] @event, T>
+                where T : class, new()
+            #else
+                [Parameter] @return, U>
+                where U : struct
+            #endif
+            """,
+            """
+            public partial record struct Outer<
+            #if TRIVIA_BRANCH
+                [Parameter] T>
+            #else
+                [Parameter] U>
+            #endif
+            """
+        ];
+
+        foreach (string declaration in declarations)
+        {
+            yield return new object[] { declaration, true };
+            yield return new object[] { declaration, false };
+        }
+    }
+
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [MemberData(nameof(ConditionalEnclosingDeclarationData))]
+    public async Task ConditionalEnclosingDeclaration_Compiles(string declaration, bool branchDefined)
+    {
+        string source = (branchDefined ? "#define TRIVIA_BRANCH\n" : "") + $$"""
+            using System;
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.Extensions.Options;
+
+            namespace Test
+            {
+                public class Model
+                {
+                    [Range(0, 10)]
+                    public int Value { get; set; }
+                }
+
+                [AttributeUsage(AttributeTargets.GenericParameter)]
+                public sealed class ParameterAttribute : Attribute { }
+
+                {{declaration}}
+                {
+                    public partial class @struct<[Parameter] @int /* parameter trivia */>
+                        where @int : class, new()
+                    {
+                        [OptionsValidator]
+                        public sealed partial class Validator : IValidateOptions<Model>
+                        {
+                        }
+                    }
+                }
+            }
+            """;
+
+        CSharpCompilation compilation = CreateCompilationForOptionsSource(Path.GetRandomFileName(), source);
+        Assert.All(compilation.SyntaxTrees, tree => Assert.Empty(tree.GetDiagnostics()));
+
+        var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source);
+        Assert.Empty(diagnostics);
+        compilation = compilation.AddSyntaxTrees(Assert.Single(generatedSources).SyntaxTree);
+
+        using MemoryStream output = new();
+        EmitResult emitResult = compilation.Emit(output);
+        Assert.True(emitResult.Success, string.Join(Environment.NewLine, emitResult.Diagnostics));
+    }
+
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task TestEmitterWithCustomValidator()
     {
@@ -2362,11 +2459,75 @@ string lengthAttribute = "";
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), emittedSource.Replace("\r\n", "\n"));
 
         CSharpCompilation compilation = CreateCompilationForOptionsSource(Path.GetRandomFileName(), source + emittedSource, refAssemblyPath: null, languageVersion);
-        var emitResult = compilation.Emit(new MemoryStream());
+        using MemoryStream assemblyStream = new();
+        var emitResult = compilation.Emit(assemblyStream);
 
         Assert.True(emitResult.Success);
+#if NET
+        Assembly generatedAssembly = Assembly.Load(assemblyStream.ToArray());
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "CompareAttribute",
+            new object[] { "P5" },
+            "external {0}:{1}",
+            "external name:P5");
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "LengthAttribute",
+            new object[] { 1, 3 },
+            "external {0}:{1:D2}:{2:D2}",
+            "external name:01:03");
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "MaxLengthAttribute",
+            new object[] { 5 },
+            "external {0}:{1:D2}",
+            "external name:05");
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "MinLengthAttribute",
+            new object[] { 5 },
+            "external {0}:{1:D2}",
+            "external name:05");
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "RangeAttribute",
+            new object[] { typeof(int), "1", "3" },
+            "external {0}:{1:D2}:{2:D2}",
+            "external name:01:03");
+#endif
         // Console.WriteLine(emittedSource);
     }
+
+#if NET
+    private static void AssertGeneratedFormatMessage(
+        Assembly generatedAssembly,
+        string attributeName,
+        object[] constructorArguments,
+        string format,
+        string expected)
+    {
+        Type generatedType = Assert.Single(
+            generatedAssembly.GetTypes(),
+            type => type.Name.EndsWith($"_{attributeName}", StringComparison.Ordinal));
+        ValidationAttribute attribute = Assert.IsAssignableFrom<ValidationAttribute>(
+            Activator.CreateInstance(generatedType, constructorArguments));
+
+        Assert.Equal(expected, attribute.FormatMessage(format, "name"));
+        ArgumentNullException nullException = Assert.Throws<ArgumentNullException>(
+            () => attribute.FormatMessage(null!, "name"));
+        Assert.Equal("format", nullException.ParamName);
+        Assert.Throws<FormatException>(() => attribute.FormatMessage("{3}", "name"));
+
+        MethodInfo? formatMessage = generatedType.GetMethod(nameof(ValidationAttribute.FormatMessage));
+        Assert.NotNull(formatMessage);
+        Assert.Equal(generatedType, formatMessage.DeclaringType);
+
+        StringSyntaxAttribute syntax = Assert.Single(
+            formatMessage.GetParameters()[0].GetCustomAttributes<StringSyntaxAttribute>());
+        Assert.Equal(StringSyntaxAttribute.CompositeFormat, syntax.Syntax);
+    }
+#endif
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task UsingInterfaceAsPropertyTypeForLengthAttributesTests()

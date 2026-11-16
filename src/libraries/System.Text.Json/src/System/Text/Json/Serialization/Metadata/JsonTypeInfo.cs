@@ -414,6 +414,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <para>
         /// For <strong>union types</strong>: determines which case type matches the JSON payload.
         /// When set by the user, replaces the default token-based matching.
+        /// The returned type must match a <see cref="JsonUnionCaseInfo.CaseType"/> in <see cref="UnionCases"/>;
+        /// otherwise deserialization throws a <see cref="JsonException"/>.
         /// </para>
         /// </remarks>
         public JsonTypeClassifier? TypeClassifier
@@ -547,6 +549,11 @@ namespace System.Text.Json.Serialization.Metadata
         internal Dictionary<JsonValueType, Type>? UnionValueTypeMap { get; set; }
 
         /// <summary>
+        /// Declared union case types allowed as custom classifier results, cached at configuration time.
+        /// </summary>
+        internal HashSet<Type>? UnionCaseTypes { get; private set; }
+
+        /// <summary>
         /// Bitmask of <see cref="JsonValueType"/> shapes that two or more declared case types both
         /// serialize as. Populated alongside <see cref="UnionValueTypeMap"/>; used at deserialize
         /// time to surface a precise "ambiguous case" error when one of these value shapes appears.
@@ -558,14 +565,6 @@ namespace System.Text.Json.Serialization.Metadata
         /// First nullable union case type, if any. Populated at configuration time from <see cref="UnionCases"/>.
         /// </summary>
         internal Type? UnionNullableCaseType { get; set; }
-
-        /// <summary>
-        /// <see langword="true"/> when at least one declared union case carries a user-defined
-        /// <see cref="JsonConverter"/>. A custom converter can serialize as any JSON value type,
-        /// so deserialization without a custom classifier is unsafe and must fail with a clear
-        /// message.
-        /// </summary>
-        internal bool UnionHasCustomConverterCase { get; set; }
 
         /// <summary>
         /// Optional per-type factory captured during metadata creation (resolver phase)
@@ -1031,15 +1030,21 @@ namespace System.Text.Json.Serialization.Metadata
                 ValidateUnionContract();
                 CacheUnionNullableCaseType();
                 ConfigureTypeClassifier();
-            }
 
-            // Build the union dispatch map after modifiers have had a chance to install
-            // a custom TypeClassifier. The classifier path bypasses the value-shape map entirely.
-            if (Kind is JsonTypeInfoKind.Union &&
-                _typeClassifier is null &&
-                UnionCases.Count > 0)
-            {
-                BuildUnionValueTypeMap(UnionCases, Options, this);
+                if (_typeClassifier is null)
+                {
+                    BuildUnionValueTypeMap(UnionCases, Options, this);
+                }
+                else
+                {
+                    HashSet<Type> caseTypes = new();
+                    foreach (JsonUnionCaseInfo unionCase in UnionCases)
+                    {
+                        caseTypes.Add(unionCase.CaseType);
+                    }
+
+                    UnionCaseTypes = caseTypes;
+                }
             }
         }
 
@@ -1104,7 +1109,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(UnionCases.Count > 0);
                 ctx = new JsonTypeClassifierContext(
                     JsonTypeClassifierKind.Union,
-                    Type,
+                    this,
                     new List<JsonUnionCaseInfo>(UnionCases),
                     Array.Empty<JsonDerivedType>(),
                     typeDiscriminatorPropertyName: null);
@@ -1116,7 +1121,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 ctx = new JsonTypeClassifierContext(
                     JsonTypeClassifierKind.PolymorphicType,
-                    Type,
+                    this,
                     Array.Empty<JsonUnionCaseInfo>(),
                     new List<JsonDerivedType>(polymorphismOptions.DerivedTypes),
                     polymorphismOptions.TypeDiscriminatorPropertyName);
@@ -1158,12 +1163,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// </para>
         /// <para>
         /// Each case is categorized by its supported JSON value shapes via
-        /// <see cref="JsonConverter.GetSupportedJsonValueTypes"/>; built-in object/enumerable
-        /// converters that decline to advertise fall back to a <see cref="ConverterStrategy"/>-derived
-        /// default. Custom (user-defined) converters return <see cref="JsonValueType.None"/> from
-        /// <c>GetSupportedJsonValueTypes</c>; cases that use such converters are excluded from
-        /// the map and tracked via <see cref="UnionHasCustomConverterCase"/> because a custom
-        /// converter can produce any JSON value shape.
+        /// <see cref="JsonConverter.GetSupportedJsonValueTypes"/>. User-defined converters
+        /// are conservatively classified as potentially representing every JSON value shape.
         /// </para>
         /// <para>
         /// This helper operates purely on already-resolved <see cref="JsonTypeInfo"/> /
@@ -1175,42 +1176,26 @@ namespace System.Text.Json.Serialization.Metadata
         {
             var map = new Dictionary<JsonValueType, Type>();
             JsonValueType ambiguousValueTypes = JsonValueType.None;
-            bool hasCustomConverterCase = false;
 
             foreach (JsonUnionCaseInfo info in unionCases)
             {
                 Type caseType = info.CaseType;
                 JsonTypeInfo caseTypeInfo = options.GetTypeInfoInternal(caseType);
+                JsonConverter converter = caseTypeInfo.Converter;
+                if (converter.ConverterStrategy is ConverterStrategy.Union)
+                {
+                    continue;
+                }
 
                 JsonNumberHandling effectiveNumberHandling =
-                    caseTypeInfo.NumberHandling ?? options.NumberHandling;
-                JsonConverter converter = caseTypeInfo.Converter;
+                    target.NumberHandling ?? caseTypeInfo.NumberHandling ?? options.NumberHandling;
                 JsonValueType valueTypes = converter.GetSupportedJsonValueTypes(effectiveNumberHandling);
-
-                if (valueTypes is JsonValueType.None)
-                {
-                    if (!converter.IsInternalConverter)
-                    {
-                        // User-defined converter: any JSON value shape could be valid for this case.
-                        // We can't safely include it in the dispatch map. Record the fact so
-                        // that deserialization without a classifier fails with a precise error.
-                        hasCustomConverterCase = true;
-                        continue;
-                    }
-
-                    valueTypes = converter.ConverterStrategy switch
-                    {
-                        ConverterStrategy.Enumerable => JsonValueType.Array,
-                        _ => JsonValueType.Object,
-                    };
-                }
 
                 AddUnionValueTypes(valueTypes, caseType, map, ref ambiguousValueTypes);
             }
 
             target.UnionValueTypeMap = map;
             target.UnionAmbiguousValueTypes = ambiguousValueTypes;
-            target.UnionHasCustomConverterCase = hasCustomConverterCase;
 
             static void AddUnionValueTypes(
                 JsonValueType valueTypes,
@@ -1225,7 +1210,6 @@ namespace System.Text.Json.Serialization.Metadata
                     JsonValueType.String,
                     JsonValueType.Number,
                     JsonValueType.Boolean,
-                    JsonValueType.Null,
                 ];
 
                 foreach (JsonValueType valueType in allValueTypes)
@@ -1503,7 +1487,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         // Untyped, root-level serialization methods
         internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue);
-        internal abstract Task SerializeAsObjectAsync(PipeWriter pipeWriter, object? rootValue, int flushThreshold, CancellationToken cancellationToken);
+        internal abstract Task<FlushResult> SerializeAsObjectAsync(PipeWriter pipeWriter, object? rootValue, int flushThreshold, CancellationToken cancellationToken, Utf8JsonWriter? jsonLineWriter = null);
         internal abstract Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken);
         internal abstract Task SerializeAsObjectAsync(PipeWriter utf8Json, object? rootValue, CancellationToken cancellationToken);
         internal abstract void SerializeAsObject(Stream utf8Json, object? rootValue);
@@ -1695,7 +1679,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal static bool IsInvalidForSerialization(Type type)
         {
-            return type == typeof(void) || type.IsPointer || type.IsByRef || IsByRefLike(type) || type.ContainsGenericParameters;
+            return type == typeof(void) || type.IsPointer || type.IsByRef || type.IsByRefLike || type.ContainsGenericParameters;
         }
 
         internal void MapInterfaceTypesToCallbacks()
@@ -1736,30 +1720,6 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 SetCreateObject(createObject);
             }
-        }
-
-        private static bool IsByRefLike(Type type)
-        {
-#if NET
-            return type.IsByRefLike;
-#else
-            if (!type.IsValueType)
-            {
-                return false;
-            }
-
-            object[] attributes = type.GetCustomAttributes(inherit: false);
-
-            for (int i = 0; i < attributes.Length; i++)
-            {
-                if (attributes[i].GetType().FullName == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
-                {
-                    return true;
-                }
-            }
-
-            return false;
-#endif
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

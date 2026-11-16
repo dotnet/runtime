@@ -12,9 +12,11 @@ using System.Threading.Tasks;
 
 namespace System.Net.NetworkInformation
 {
-    // Linux implementation of NetworkChange
+    // Linux, FreeBSD and OpenBSD implementation of NetworkChange
     public partial class NetworkChange
     {
+        public static partial bool IsSupported => OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD() || OperatingSystem.IsOpenBSD();
+
         private static Socket? s_socket;
 
         private static Socket? Socket
@@ -51,6 +53,11 @@ namespace System.Net.NetworkInformation
         {
             add
             {
+                if (!IsSupported)
+                {
+                    throw new PlatformNotSupportedException();
+                }
+
                 if (value != null)
                 {
                     lock (s_gate)
@@ -66,6 +73,11 @@ namespace System.Net.NetworkInformation
             }
             remove
             {
+                if (!IsSupported)
+                {
+                    throw new PlatformNotSupportedException();
+                }
+
                 if (value != null)
                 {
                     lock (s_gate)
@@ -94,6 +106,11 @@ namespace System.Net.NetworkInformation
         {
             add
             {
+                if (!IsSupported)
+                {
+                    throw new PlatformNotSupportedException();
+                }
+
                 if (value != null)
                 {
                     lock (s_gate)
@@ -118,6 +135,11 @@ namespace System.Net.NetworkInformation
             }
             remove
             {
+                if (!IsSupported)
+                {
+                    throw new PlatformNotSupportedException();
+                }
+
                 if (value != null)
                 {
                     lock (s_gate)

@@ -246,62 +246,6 @@ bool try_get_runtime_id_from_env(pal::string_t& out_rid)
     return pal::getenv(_X("DOTNET_RUNTIME_ID"), &out_rid);
 }
 
-/**
-* Multilevel Lookup is enabled by default
-*  It can be disabled by setting DOTNET_MULTILEVEL_LOOKUP env var to a value that is not 1
-*/
-bool multilevel_lookup_enabled()
-{
-    pal::string_t env_lookup;
-    bool multilevel_lookup = true;
-
-    if (pal::getenv(_X("DOTNET_MULTILEVEL_LOOKUP"), &env_lookup))
-    {
-        auto env_val = pal::xtoi(env_lookup.c_str());
-        multilevel_lookup = (env_val == 1);
-        trace::verbose(_X("DOTNET_MULTILEVEL_LOOKUP is set to %s"), env_lookup.c_str());
-    }
-    trace::info(_X("Multilevel lookup is %s"), multilevel_lookup ? _X("true") : _X("false"));
-    return multilevel_lookup;
-}
-
-void get_framework_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations)
-{
-    bool multilevel_lookup = disable_multilevel_lookup ? false : multilevel_lookup_enabled();
-
-    // Multi-level lookup will look for the most appropriate version in several locations
-    // by following the priority rank below:
-    //  .exe directory
-    //  Global .NET directories
-    // If it is not activated, then only .exe directory will be considered
-
-    pal::string_t dotnet_dir_temp;
-    if (!dotnet_dir.empty())
-    {
-        // own_dir contains DIR_SEPARATOR appended that we need to remove.
-        dotnet_dir_temp = dotnet_dir;
-        remove_trailing_dir_separator(&dotnet_dir_temp);
-
-        locations->push_back(dotnet_dir_temp);
-    }
-
-    if (!multilevel_lookup)
-        return;
-
-    std::vector<pal::string_t> global_dirs;
-    if (pal::get_global_dotnet_dirs(&global_dirs))
-    {
-        for (pal::string_t dir : global_dirs)
-        {
-            // avoid duplicate paths
-            if (!pal::are_paths_equal_with_normalized_casing(dir, dotnet_dir_temp))
-            {
-                locations->push_back(dir);
-            }
-        }
-    }
-}
-
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
 {
     recv->clear();

@@ -445,7 +445,6 @@ void *EEMarshalingData::operator new(size_t size, LoaderHeap *pHeap)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pHeap));
     }
     CONTRACTL_END;
@@ -468,13 +467,12 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pAssembly));
     }
     CONTRACTL_END;
 
     CustomMarshalerInfo *pCMInfo = NULL;
-    NewHolder<CustomMarshalerInfo> pNewCMInfo(NULL);
+    NewHolder<CustomMarshalerInfo> pNewCMInfo;
 
     TypeHandle hndCustomMarshalerType;
 
@@ -521,13 +519,10 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
         // Add the custom marshaler helper to the hash table.
         m_CMInfoHashTable.InsertValue(&Key, pNewCMInfo);
 
-        // If we create the CM info, then add it to the linked list.
-        pNewCMInfo.SuppressRelease();
-
         // Release the lock and return the custom marshaler info.
     }
 
-    return pNewCMInfo;
+    return pNewCMInfo.Detach();
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -536,7 +531,6 @@ CustomMarshalerInfo *EEMarshalingData::GetIEnumeratorMarshalerInfo()
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1758,6 +1752,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
                 m_type = MARSHAL_TYPE_HANDLEREF;
             }
+#ifdef FEATURE_VARARGS
             else if (sig.IsClassThrowing(pModule, "System.ArgIterator", pTypeContext))
             {
                 if (m_ms == MARSHAL_SCENARIO_FIELD)
@@ -1770,6 +1765,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
                 m_type = MARSHAL_TYPE_ARGITERATOR;
             }
+#endif // FEATURE_VARARGS
 #ifdef FEATURE_COMINTEROP
             else if (sig.IsClassThrowing(pModule, g_ColorClassName, pTypeContext))
             {
@@ -2084,6 +2080,14 @@ VOID MarshalInfo::EmitOrThrowInteropParamException(PInvokeStubLinker* psl, BOOL 
     }
 #endif // FEATURE_COMINTEROP
 
+    // An unmanaged CALLI stub is created while the calli's caller is being jitted, so its failures
+    // have to be reported when the stub is called rather than failing that compilation.
+    if (SF_IsCALLIStub(psl->GetStubFlags()))
+    {
+        psl->SetInteropParamExceptionInfo(resID, paramIdx);
+        return;
+    }
+
     ThrowInteropParamException(resID, paramIdx);
 }
 
@@ -2107,7 +2111,6 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pParamInfo));
     }
     CONTRACTL_END;
@@ -2351,7 +2354,7 @@ void MarshalInfo::GenerateArgumentIL(PInvokeStubLinker* psl,
 
     CONSISTENCY_CHECK(amostat == HANDLEASNORMAL);
 
-    NewHolder<ILMarshaler> pMarshaler = CreateILMarshaler(m_type, psl);
+    NewHolder<ILMarshaler> pMarshaler{ CreateILMarshaler(m_type, psl) };
     DWORD dwMarshalFlags = CalculateArgumentMarshalFlags(m_byref, m_in, m_out, fMngToNative);
 
     if (!pMarshaler->SupportsArgumentMarshal(dwMarshalFlags, &resID))
@@ -2443,7 +2446,7 @@ void MarshalInfo::GenerateReturnIL(PInvokeStubLinker* psl,
             return;
         }
 
-        NewHolder<ILMarshaler> pMarshaler = CreateILMarshaler(m_type, psl);
+        NewHolder<ILMarshaler> pMarshaler{ CreateILMarshaler(m_type, psl) };
         DWORD dwMarshalFlags = CalculateReturnMarshalFlags(retval, fMngToNative);
 
         if (!pMarshaler->SupportsReturnMarshal(dwMarshalFlags, &resID))
@@ -2498,7 +2501,7 @@ void MarshalInfo::GenerateFieldIL(PInvokeStubLinker* psl,
     }
 
     UINT resID = IDS_EE_BADMARSHAL_RESTRICTION;
-    NewHolder<ILMarshaler> pMarshaler = CreateILMarshaler(m_type, psl);
+    NewHolder<ILMarshaler> pMarshaler{ CreateILMarshaler(m_type, psl) };
 
     if (!pMarshaler->SupportsFieldMarshal(&resID))
     {
@@ -3074,16 +3077,9 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
 #if defined(FEATURE_COMINTEROP)
 DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
-    NewHolder<DispParamMarshaler> pDispParamMarshaler = NULL;
+    NewHolder<DispParamMarshaler> pDispParamMarshaler;
 
     switch (m_type)
     {
@@ -3135,8 +3131,7 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
             break;
     }
 
-    pDispParamMarshaler.SuppressRelease();
-    return pDispParamMarshaler;
+    return pDispParamMarshaler.Detach();
 }
 
 DispatchWrapperType MarshalInfo::GetDispWrapperType()
@@ -3288,7 +3283,6 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!thElement.IsNull());
     }
     CONTRACTL_END;
@@ -3307,13 +3301,22 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
 
     m_thElement = thElement;
 
-    if (m_thElement.IsPointer())
+    if ((arrayNativeType == NATIVE_TYPE_ARRAY || arrayNativeType == NATIVE_TYPE_FIXEDARRAY)
+        && (m_thElement.IsPointer() || m_thElement.IsFnPtrType()))
     {
-        m_flags = (ArrayMarshalInfoFlags)(m_flags | amiIsPtr);
-        m_thElement = ((ParamTypeDesc*)m_thElement.AsTypeDesc())->GetModifiedType();
+        // Marshal pointer-sized values without losing the declared element type.
+        etElement = ELEMENT_TYPE_I;
     }
+    else
+    {
+        if (m_thElement.IsPointer())
+        {
+            m_flags = (ArrayMarshalInfoFlags)(m_flags | amiIsPtr);
+            m_thElement = ((ParamTypeDesc*)m_thElement.AsTypeDesc())->GetModifiedType();
+        }
 
-    etElement = m_thElement.GetSignatureCorElementType();
+        etElement = m_thElement.GetSignatureCorElementType();
+    }
 
     if (IsAMIPtr(m_flags) && (etElement > ELEMENT_TYPE_R8))
     {
@@ -3585,7 +3588,7 @@ bool IsUnsupportedTypedrefReturn(MetaSig& msig)
 
 #include "stubhelpers.h"
 
-extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject)
+extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

@@ -26,7 +26,6 @@ public class WasmTemplateTestsBase : BuildTestBase
     private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false -p:WasmEnableHotReload=false";
     protected readonly PublishOptions _defaultPublishOptions;
     protected readonly BuildOptions _defaultBuildOptions;
-    protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
 
     private static bool s_wasmTemplatesInstalled;
     private static readonly object s_wasmTemplatesLock = new();
@@ -104,6 +103,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             .EnsureSuccessful();
 
         AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+        AddWasmOptProjectProperties(ref extraProperties);
 
         string projectFilePath = Path.Combine(_projectDir, $"{projectName}.csproj");
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
@@ -141,12 +141,13 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
 
         AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+        AddWasmOptProjectProperties(ref extraProperties);
 
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
     }
 
-    private void UpdateProjectFile(string projectFilePath, bool runAnalyzers, string extraProperties, string extraItems, string insertAtEnd)
+    protected void UpdateProjectFile(string projectFilePath, bool runAnalyzers, string extraProperties, string extraItems, string insertAtEnd)
     {
         extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
         if (runAnalyzers)
@@ -154,37 +155,49 @@ public class WasmTemplateTestsBase : BuildTestBase
         AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
     }
 
-    private static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
+    protected static void AddWasmOptProjectProperties(ref string extraProperties)
+    {
+        if (EnvironmentVariables.UseWasmOpt)
+            extraProperties += "<WasmRunWasmOpt>true</WasmRunWasmOpt>";
+    }
+
+    protected static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
     {
         if (!s_buildEnv.IsCoreClrRuntime)
             return;
 
-        string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
+        string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
 
         extraProperties +=
         """
             <UseMonoRuntime>false</UseMonoRuntime>
-            <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
         """;
-        extraItems +=
-        $$"""
-            <KnownFrameworkReference Update="Microsoft.NETCore.App">
-              <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
-              <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
-              <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
-              <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
-            </KnownFrameworkReference>
-        """;
-        insertAtEnd +=
-        $$"""
-            <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences">
-                <ItemGroup>
-                <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
-                    <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
-                </KnownWebAssemblySdkPack>
-                </ItemGroup>
-            </Target>
-        """;
+        foreach (string targetFramework in new[] { DefaultTargetFramework, DefaultTargetFrameworkForBlazorTemplate }.Distinct())
+        {
+            extraItems +=
+            $$"""
+                <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                                         Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+                  <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</TargetingPackVersion>
+                  <LatestRuntimeFrameworkVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</LatestRuntimeFrameworkVersion>
+                  <RuntimePackRuntimeIdentifiers Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{targetFramework}}'">browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
+                </KnownFrameworkReference>
+            """;
+            insertAtEnd +=
+            $$"""
+                <Target Name="_UpdateKnownCoreClrWebAssemblyPacks_{{targetFramework.Replace('.', '_')}}" BeforeTargets="ProcessFrameworkReferences"
+                        Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+                    <ItemGroup>
+                    <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
+                        <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</WebAssemblySdkPackVersion>
+                    </KnownWebAssemblySdkPack>
+                    <KnownCrossgen2Pack Update="@(KnownCrossgen2Pack)">
+                        <Crossgen2PackVersion Condition="'%(KnownCrossgen2Pack.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</Crossgen2PackVersion>
+                    </KnownCrossgen2Pack>
+                    </ItemGroup>
+                </Target>
+            """;
+        }
     }
 
     /// <summary>
@@ -437,7 +450,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "minimal_main.js"), mainJsPath, overwrite: true);
     }
 
-    protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath, bool forwardConsole = false)
+    protected void UpdateBrowserMainJs(string? targetFramework = null, bool forwardConsole = false)
     {
         targetFramework ??= DefaultTargetFramework;
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
@@ -462,9 +475,6 @@ public class WasmTemplateTestsBase : BuildTestBase
             // dotnet.run() is used instead of runMain() in net9.0+
             updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "dotnet.run()");
         }
-
-        updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
-
 
         File.WriteAllText(mainJsPath, updatedMainJsContent);
     }

@@ -20,28 +20,28 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach ((TypeDesc key, TypeDesc type) in entries)
             {
-                Vertex keyVertex = externalReferences.EncodeReferenceToType(writer, key);
-                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, type);
+                Vertex keyVertex = externalReferences.EncodeReferenceToType(writer, key, null);
+                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, type, null);
                 Vertex entry = writer.GetTuple(keyVertex, valueVertex);
                 typeMapHashTable.Append((uint)key.GetHashCode(), section.Place(entry));
             }
 
             Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
-            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup);
+            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup, null);
             Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
             return section.Place(tuple);
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => [];
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             foreach (var (sourceType, proxyType) in entries)
             {
-                yield return new DependencyListEntry(context.MaximallyConstructableType(sourceType), "Analyzed proxy type map entry source type");
-                yield return new DependencyListEntry(context.MetadataTypeSymbol(proxyType), "Analyzed proxy type map entry proxy type");
+                sink.Add(context.MaximallyConstructableType(sourceType), "Analyzed proxy type map entry source type");
+                sink.Add(context.MetadataTypeSymbol(proxyType), "Analyzed proxy type map entry proxy type");
             }
         }
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context) => $"Analyzed Proxy Type Map: {typeMapGroup}";
         public IProxyTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => this;
         public override bool InterestingForDynamicDependencyAnalysis => false;

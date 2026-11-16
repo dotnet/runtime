@@ -66,6 +66,7 @@ These methods are only legal to call inside async methods. The `...AwaitAwaiter`
 
 Local variables used across suspension points are considered "hoisted." That is, only "hoisted" local variables will have their state preserved after returning from a suspension. By-ref variables may not be hoisted across suspension points, and any read of a by-ref variable after a suspension point will produce null. Byref-like structs will also not be hoisted across suspension points and will have their default value after a suspension point.
 In the same way, pinning locals may not be "hoisted" across suspension points and will have `null` value after a suspension point.
+A suspension point is any call that may suspend, regardless of whether it actually suspends at runtime. The behavior described above applies at every suspension point even when no suspension occurs (for example because the awaited task has already completed). In particular, by-ref variables, byref-like structs and pinning locals are cleared after such a call returns even if the method continued executing synchronously.
 
 Async methods have some temporary restrictions with may be lifted later:
 * The `tail` prefix is forbidden
@@ -73,7 +74,8 @@ Async methods have some temporary restrictions with may be lifted later:
 
 Other restrictions are likely to be permanent, including
 * By-ref locals cannot be hoisted across suspension points
-* Suspension points may not appear in exception handling blocks.
+* Suspension points may not appear in a handler block (`catch`, `filter`,
+  `finally`, or `fault`). They are permitted in the protected `try` block.
 * Only four types will be supported as the return type for "runtime-async" methods: `System.Threading.Task`, `System.Threading.ValueTask`, `System.Threading.Task<T>`, and `System.Threading.ValueTask<T>`
 
 

@@ -36,6 +36,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
 
     // initialize all members up front to NULL so that short-circuit failure won't cause invalid values
     m_InitialReservedMemForLoaderHeaps = NULL;
+    m_InitialReservedMemForLoaderHeapsSize = 0;
     m_pLowFrequencyHeap = NULL;
     m_pHighFrequencyHeap = NULL;
     m_pExecutableHeap = NULL;
@@ -70,7 +71,6 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
 
     m_asyncContinuationsManager = NULL;
 
-    m_fGCPressure = false;
     m_fTerminated = false;
     m_fUnloaded = false;
     m_fMarked = false;
@@ -78,6 +78,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pCodeHeapInitialAlloc = NULL;
     m_pVSDHeapInitialAlloc = NULL;
     m_pLastUsedCodeHeap = NULL;
+    m_pLastUsedOptimizedCodeHeap = NULL;
     m_pLastUsedDynamicCodeHeap = NULL;
 #ifdef FEATURE_INTERPRETER
     m_pLastUsedInterpreterCodeHeap = NULL;
@@ -195,7 +196,7 @@ BOOL LoaderAllocator::AddReferenceIfAlive()
 
 //---------------------------------------------------------------------------------------
 //
-BOOL LoaderAllocator::Release()
+BOOL LoaderAllocator::Release() noexcept
 {
     CONTRACTL
     {
@@ -376,13 +377,7 @@ void LoaderAllocator::Mark()
 //static
 LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain * pAppDomain)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
     // List of LoaderAllocators being deleted
     LoaderAllocator * pFirstDestroyedLoaderAllocator = NULL;
 
@@ -392,7 +387,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
         CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
 
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        CollectibleAssemblyHolder pAssembly;
 
 #ifdef ENABLE_LOG_LOADER_ALLOCATOR_CLEANUP
         // Debug logic for debugging the loader allocator gc.
@@ -400,7 +395,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
 
-        while (i.Next_Unlocked(pAssembly.This()))
+        while (i.Next_Unlocked(&pAssembly))
         {
             if (pAssembly != NULL)
             {
@@ -423,7 +418,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
 
-        while (i.Next_Unlocked(pAssembly.This()))
+        while (i.Next_Unlocked(&pAssembly))
         {
             if (pAssembly != NULL)
             {
@@ -446,7 +441,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
 
-        while (i.Next_Unlocked(pAssembly.This()))
+        while (i.Next_Unlocked(&pAssembly))
         {
             if (pAssembly != NULL)
             {
@@ -757,7 +752,7 @@ BOOL LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
     return FALSE;
 } // LoaderAllocator::Destroy
 
-extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
+extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1049,9 +1044,6 @@ void LoaderAllocator::SetupManagedTracking(LOADERALLOCATORREF * pKeepLoaderAlloc
 {
     STANDARD_VM_CONTRACT;
 
-    GCInterface::AddMemoryPressure(30000);
-    m_fGCPressure = true;
-
     GCX_COOP();
 
     //
@@ -1072,7 +1064,6 @@ void LoaderAllocator::ActivateManagedTracking()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
         MODE_ANY;
     }
     CONTRACTL_END
@@ -1165,6 +1156,7 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     BYTE * initReservedMem = (BYTE*)ExecutableAllocator::Instance()->Reserve(dwTotalReserveMemSize);
 
     m_InitialReservedMemForLoaderHeaps = initReservedMem;
+    m_InitialReservedMemForLoaderHeapsSize = dwTotalReserveMemSize;
 
     if (initReservedMem == NULL)
         COMPlusThrowOM();
@@ -1354,7 +1346,6 @@ BYTE *LoaderAllocator::GetCodeHeapInitialBlock(const BYTE * loAddr, const BYTE *
     return buffer;
 }
 
-// in retail should be called from AppDomain::Terminate
 void LoaderAllocator::Terminate()
 {
     CONTRACTL {
@@ -1372,12 +1363,8 @@ void LoaderAllocator::Terminate()
 
     DeleteMarshalingData();
 
-    if (m_fGCPressure)
-    {
-        GCX_PREEMP();
-        GCInterface::RemoveMemoryPressure(30000);
-        m_fGCPressure = false;
-    }
+    // Must run before the heaps are destroyed.
+    m_ILStubCache.FreeCollectibleStubsCompileTimeState();
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     delete m_pUMEntryThunkCache;
@@ -1478,7 +1465,7 @@ void LoaderAllocator::Terminate()
 
     if (m_InitialReservedMemForLoaderHeaps)
     {
-        ExecutableAllocator::Instance()->Release(m_InitialReservedMemForLoaderHeaps);
+        ExecutableAllocator::Instance()->Release(m_InitialReservedMemForLoaderHeaps, m_InitialReservedMemForLoaderHeapsSize);
         m_InitialReservedMemForLoaderHeaps=NULL;
     }
 
@@ -1581,7 +1568,6 @@ DispatchToken LoaderAllocator::GetDispatchToken(
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
 #ifdef FAT_DISPATCH_TOKENS
@@ -1593,21 +1579,20 @@ DispatchToken LoaderAllocator::GetDispatchToken(
         //
         if (m_pFatTokenSetLock == NULL)
         {
-            NewHolder<SimpleRWLock> pFatTokenSetLock = new SimpleRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT);
+            NewHolder<SimpleRWLock> pFatTokenSetLock{ new SimpleRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT) };
             SimpleWriteLockHolder lock(pFatTokenSetLock);
-            NewHolder<FatTokenSet> pFatTokenSet = new FatTokenSet;
+            NewHolder<FatTokenSet> pFatTokenSet{ new FatTokenSet };
 
             if (InterlockedCompareExchangeT(
-                    &m_pFatTokenSetLock, pFatTokenSetLock.GetValue(), NULL) != NULL)
+                    &m_pFatTokenSetLock, static_cast<SimpleRWLock*>(pFatTokenSetLock), NULL) != NULL)
             {   // Someone beat us to it
                 lock.Release();
-                // NewHolder will delete lock.
+                // The holder will delete the lock.
             }
             else
-            {   // Make sure second allocation succeeds before suppressing holder of first.
-                pFatTokenSetLock.SuppressRelease();
-                m_pFatTokenSet = pFatTokenSet;
-                pFatTokenSet.SuppressRelease();
+            {   // Make sure the second allocation succeeds before transferring ownership.
+                pFatTokenSetLock.Detach();
+                m_pFatTokenSet = pFatTokenSet.Detach();
             }
         }
 
@@ -1653,15 +1638,13 @@ void LoaderAllocator::InitVirtualCallStubManager()
 {
     STANDARD_VM_CONTRACT;
 
-    NewHolder<VirtualCallStubManager> pMgr(new VirtualCallStubManager());
+    NewHolder<VirtualCallStubManager> pMgr{ new VirtualCallStubManager() };
 
     // Init the manager, including all heaps and such.
     pMgr->Init(this);
 
-    m_pVirtualCallStubManager = pMgr;
-
     // Successfully created the manager.
-    pMgr.SuppressRelease();
+    m_pVirtualCallStubManager = pMgr.Detach();
 }
 
 void LoaderAllocator::UninitVirtualCallStubManager()
@@ -1684,7 +1667,6 @@ EEMarshalingData *LoaderAllocator::GetMarshalingData()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1802,7 +1784,6 @@ STRINGREF *LoaderAllocator::GetStringObjRefPtrFromUnicodeString(EEStringData *pS
         THROWS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pStringData));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     if (m_pStringLiteralMap == NULL)
@@ -1821,17 +1802,16 @@ void LoaderAllocator::LazyInitStringLiteralMap()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
-    NewHolder<StringLiteralMap> pStringLiteralMap(new StringLiteralMap());
+    NewHolder<StringLiteralMap> pStringLiteralMap{ new StringLiteralMap() };
 
     pStringLiteralMap->Init();
 
     if (InterlockedCompareExchangeT<StringLiteralMap *>(&m_pStringLiteralMap, pStringLiteralMap, NULL) == NULL)
     {
-        pStringLiteralMap.SuppressRelease();
+        pStringLiteralMap.Detach();
     }
 }
 
@@ -1860,7 +1840,6 @@ STRINGREF *LoaderAllocator::IsStringInterned(STRINGREF *pString)
         THROWS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pString));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     if (m_pStringLiteralMap == NULL)
@@ -1879,7 +1858,6 @@ STRINGREF *LoaderAllocator::GetOrInternString(STRINGREF *pString)
         THROWS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pString));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     if (m_pStringLiteralMap == NULL)
@@ -1899,7 +1877,6 @@ void AssemblyLoaderAllocator::RegisterHandleForCleanup(OBJECTHANDLE objHandle)
         MODE_COOPERATIVE;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(objHandle));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1919,7 +1896,6 @@ void AssemblyLoaderAllocator::RegisterHandleForCleanupLocked(OBJECTHANDLE objHan
         MODE_COOPERATIVE;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(objHandle));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1968,11 +1944,13 @@ void AssemblyLoaderAllocator::CleanupHandles()
     CONTRACTL_END;
 
 
+#ifdef FEATURE_MULTITHREADING
     if (m_hLoaderAllocatorObjectHandle != NULL)
     {
         GCX_COOP();
         FreeTLSIndicesForLoaderAllocator(this);
     }
+#endif // FEATURE_MULTITHREADING
 
     // This method doesn't take a lock around RemoveHead because it's supposed to
     // be called only from Terminate
@@ -2032,7 +2010,9 @@ void AssemblyLoaderAllocator::CleanupDependentHandlesToNativeObjects()
     // Locks under which dependent handles may be used must all be taken here to ensure that a thread using a dependent handle
     // would either observe it cleared, or that the dependent object remains valid under those locks. In particular, any locks
     // used to synchronize uses of CrossLoaderAllocatorHash instances must also be taken here.
+#ifdef FEATURE_INLINE_TRACKING
     CrstHolder jitInlineTrackingMapLockHolder(JITInlineTrackingMap::GetMapCrst());
+#endif // FEATURE_INLINE_TRACKING
     MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
 
     CrstHolder setLockHolder(&m_dependentHandleToNativeObjectSetCrst);
@@ -2056,7 +2036,6 @@ void LoaderAllocator::RegisterFailedTypeInitForCleanup(ListLockEntry *pListLockE
         MODE_ANY;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(pListLockEntry));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2099,7 +2078,7 @@ void LoaderAllocator::CleanupFailedTypeInit()
     {
         FailedTypeInitCleanupListItem * pItem = m_failedTypeInitCleanupList.RemoveHead();
 
-        ListLockHolder pInitLock(pLock);
+        ListLockHolder pInitLock = pLock->TakeLock();
         pLock->Unlink(pItem->m_pListLockEntry);
     }
 }
@@ -2129,7 +2108,6 @@ ComCallWrapperCache * LoaderAllocator::GetComCallWrapperCache()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2154,7 +2132,6 @@ UMEntryThunkCache *LoaderAllocator::GetUMEntryThunkCache()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2267,7 +2244,6 @@ PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2295,7 +2271,6 @@ PTR_AsyncContinuationsManager LoaderAllocator::GetAsyncContinuationsManager()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2319,7 +2294,7 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -2350,9 +2325,9 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
                 // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
                 // 4. Registration for cleanup cannot trigger a GC
                 // 5. We then unconditionally set the statics pointer.
-                WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pNonGCStatics);
-                RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
-                weakHandleHolder.SuppressRelease();
+                WeakInteriorHandleHolder weakHandleHolder(GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pNonGCStatics));
+                RegisterHandleForCleanupLocked(static_cast<OBJECTHANDLE>(weakHandleHolder));
+                weakHandleHolder.Detach();
                 bool didUpdateStaticsPointer = pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)ptrArray->GetDataPtr(), isClassInitedByUpdatingStaticPointer);
                 _ASSERTE(didUpdateStaticsPointer);
             }
@@ -2393,7 +2368,7 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInf
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -2430,9 +2405,9 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInf
                 // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
                 // 4. Registration for cleanup cannot trigger a GC
                 // 5. We then unconditionally set the statics pointer.
-                WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pGCStatics);
-                RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
-                weakHandleHolder.SuppressRelease();
+                WeakInteriorHandleHolder weakHandleHolder(GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pGCStatics));
+                RegisterHandleForCleanupLocked(static_cast<OBJECTHANDLE>(weakHandleHolder));
+                weakHandleHolder.Detach();
                 bool didUpdateStaticsPointer = pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */true, (TADDR)ptrArray->GetDataPtr(), isClassInitedByUpdatingStaticPointer);
                 _ASSERTE(didUpdateStaticsPointer);
             }
@@ -2455,7 +2430,6 @@ bool LoaderAllocator::InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAlloca
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         //REENTRANT
     }
     CONTRACTL_END;
@@ -2464,7 +2438,7 @@ bool LoaderAllocator::InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAlloca
     bool result = false;
 
     GCPROTECT_BEGIN(value);
-    LOADERHANDLEHolder keepAliveForCollectibleLifetime(AllocateHandle(value), this);
+    LOADERHANDLEHolder keepAliveForCollectibleLifetime({AllocateHandle(value), this});
 
     // At this point we are no longer allowed to trigger a GC.
     GCX_FORBID();
@@ -2483,14 +2457,14 @@ bool LoaderAllocator::InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAlloca
             // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
             // 4. Registration for cleanup cannot trigger a GC
             // 5. We then unconditionally set the statics pointer.
-            WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(value, pField);
-            RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
+            WeakInteriorHandleHolder weakHandleHolder(GetAppDomain()->CreateWeakInteriorHandle(value, pField));
+            RegisterHandleForCleanupLocked(static_cast<OBJECTHANDLE>(weakHandleHolder));
 
             // Cannot fail after here
             VolatileStore(pField, OBJECTREFToObject(value));
 
-            weakHandleHolder.SuppressRelease();
-            keepAliveForCollectibleLifetime.SuppressRelease();
+            weakHandleHolder.Detach();
+            keepAliveForCollectibleLifetime.Detach();
             result = true;
         }
     }
@@ -2511,6 +2485,19 @@ void LoaderAllocator::AddPendingPortableEntryPointThunk(MethodDesc* pMD)
     CONTRACTL_END;
 
     AddPendingPortableEntryPointThunkUnderLock(this, pMD);
+}
+
+void LoaderAllocator::AddPendingClosedStaticRetBufThunk(ClosedStaticRetBufPortableEntryPoint* pEntryPoint)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    AddPendingClosedStaticRetBufThunkUnderLock(this, pEntryPoint);
 }
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS

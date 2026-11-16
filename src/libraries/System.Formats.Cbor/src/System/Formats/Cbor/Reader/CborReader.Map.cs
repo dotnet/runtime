@@ -48,9 +48,13 @@ namespace System.Formats.Cbor
             {
                 ReadOnlySpan<byte> buffer = GetRemainingBytes();
 
-                int mapSize = DecodeDefiniteLength(header, buffer, out int bytesRead);
+                int mapSize = DecodeCollectionLength(header, buffer, out int bytesRead);
 
-                if (2 * (ulong)mapSize > (ulong)(buffer.Length - bytesRead))
+                // conservative check: each key-value pair is encoded in at least two bytes.
+                // When the current data is not the final block the contents may be supplied later,
+                // but the item count 2 * mapSize must remain representable.
+                if (mapSize > int.MaxValue / 2 ||
+                    (_isFinalBlock && 2 * (ulong)mapSize > (ulong)(buffer.Length - bytesRead)))
                 {
                     throw new CborContentException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
                 }

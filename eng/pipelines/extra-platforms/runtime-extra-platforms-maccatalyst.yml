@@ -6,7 +6,7 @@
 parameters:
   isExtraPlatformsBuild: false
   isMacCatalystOnlyBuild: false
-  isRollingBuild: false
+  useHelixMonitor: false
 
 jobs:
 
@@ -42,7 +42,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
@@ -76,7 +76,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
@@ -113,7 +113,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
@@ -157,7 +157,7 @@ jobs:
             creator: dotnet-bot
             testBuildArgs: /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false /p:BuildTestsOnHelix=true
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
@@ -194,7 +194,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
@@ -230,5 +230,5 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true

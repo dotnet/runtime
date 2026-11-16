@@ -33,6 +33,26 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public void Find_Success_EmptyPreebPrefixed()
+        {
+            string content = "-----BEGIN -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
+            AssertPemFound(content,
+                expectedLocation: 11..55,
+                expectedBase64: 32..36,
+                expectedLabel: 22..26);
+        }
+
+        [Fact]
+        public void Find_Success_EmptyPreebPrefixedMismatchedPosteb()
+        {
+            string content = "-----BEGIN -----BEGIN A-----END A-----END A-----";
+            AssertPemFound(content,
+                expectedLocation: 11..48,
+                expectedBase64: 28..33,
+                expectedLabel: 22..23);
+        }
+
+        [Fact]
         public void Find_Success_CompletePreebPrefixedDifferentLabel()
         {
             string content = "-----BEGIN FAIL----- -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
@@ -67,6 +87,16 @@ namespace System.Security.Cryptography.Tests
 
             Assert.Equal("TEST", content[fields.Label]);
             Assert.Equal(3, fields.DecodedDataLength);
+        }
+
+        [Fact]
+        public void Find_Success_PostebEndingOverlap()
+        {
+            string content = "-----BEGIN FOO-----\nSTUF HERE\n-----END -----BEGIN BAR-----\nmore stuf\n-----END BAR-----";
+            AssertPemFound(content,
+                expectedLocation: 39..86,
+                expectedBase64: 59..68,
+                expectedLabel: 50..53);
         }
 
         [Fact]
@@ -422,6 +452,74 @@ MII
             PemFields fields = FindPem(content);
             Assert.Equal(expectedSize, fields.DecodedDataLength);
             AssertExtensions.SequenceEqual(Create(base64), content[fields.Base64Data]);
+        }
+
+        [Fact]
+        public void Find_ManyBegins_OneEnd()
+        {
+            const int ContentLength = 4 * 1024 * 1024;
+            const string GoodPrefix = "-----BEGIN Y-----\n";
+            const string MinPayload = "base64AAAA==\n";
+
+            int div4 = 0;
+            int mod4 = 0;
+            int goodStart = 0;
+
+            // Build a string that looks like
+            // -----BEGIN X-----
+            // -----BEGIN X-----
+            // ...
+            // -----BEGIN X-----
+            // -----BEGIN Y-----
+            // [mod4 whitespace][content]
+            // -----END Y-----
+            string content = string.Create(
+                ContentLength,
+                0,
+                (span, _) =>
+                {
+                    string suffix = "-----END Y-----\n";
+                    ReadOnlySpan<char> badPrefix = "-----BEGIN X-----\n";
+                    ReadOnlySpan<char> goodPrefix = GoodPrefix;
+                    ReadOnlySpan<char> minPayload = MinPayload;
+
+                    int tailLength = suffix.Length + minPayload.Length;
+                    int reserved = goodPrefix.Length + tailLength;
+                    int badPrefixCount = (span.Length - reserved) / badPrefix.Length;
+
+                    for (int i = 0; i < badPrefixCount; i++)
+                    {
+                        badPrefix.CopyTo(span);
+                        span = span.Slice(badPrefix.Length);
+                    }
+
+                    goodStart = ContentLength - span.Length;
+                    goodPrefix.CopyTo(span);
+                    span = span.Slice(goodPrefix.Length);
+
+                    int remain = span.Length - tailLength;
+                    (div4, mod4) = int.DivRem(remain, 4);
+
+                    span.Slice(0, mod4).Fill('\n');
+                    span = span.Slice(mod4);
+
+                    span.Slice(0, 4 * div4).Fill('A');
+                    span = span.Slice(4 * div4);
+
+                    minPayload.CopyTo(span);
+                    span = span.Slice(minPayload.Length);
+
+                    suffix.CopyTo(span);
+                });
+
+            int expectedBase64Start = goodStart + GoodPrefix.Length + mod4;
+            int expectedBase64Len = 4 * div4 + MinPayload.Length - 1;
+
+            AssertPemFound(
+                content,
+                expectedLocation: goodStart .. (ContentLength - 1),
+                expectedBase64: expectedBase64Start .. (expectedBase64Start + expectedBase64Len),
+                expectedLabel: (goodStart + 11) .. (goodStart + 12));
         }
 
         private PemFields AssertPemFound(

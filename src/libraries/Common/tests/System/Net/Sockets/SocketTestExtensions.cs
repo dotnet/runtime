@@ -94,8 +94,8 @@ namespace System.Net.Sockets.Tests
     }
 
     /// <summary>
-    /// A utility to create and bind a socket while blocking it's port for both IPv4 and IPv6
-    /// by also creating and binding a "shadow" socket of the opposite address family.
+    /// A utility to create and bind a socket while blocking its port for both IPv4 and IPv6
+    /// by also creating and binding a "shadow" socket.
     /// </summary>
     internal class PortBlocker : IDisposable
     {
@@ -106,7 +106,7 @@ namespace System.Net.Sockets.Tests
 
         public int Port;
 
-        public PortBlocker(Func<Socket> socketFactory)
+        public PortBlocker(Func<Socket> socketFactory, IPAddress? shadowAddress = null)
         {
             bool success = false;
             for (int i = 0; i < MaxAttempts; i++)
@@ -118,15 +118,14 @@ namespace System.Net.Sockets.Tests
                     throw new Exception($"{nameof(socketFactory)} is expected create and bind the socket.");
                 }
 
-                IPAddress shadowAddress = MainSocket.AddressFamily == AddressFamily.InterNetwork ?
-                        IPAddress.IPv6Loopback :
-                        IPAddress.Loopback;
+                IPAddress address = shadowAddress ??
+                    (MainSocket.AddressFamily == AddressFamily.InterNetwork ? IPAddress.IPv6Loopback : IPAddress.Loopback);
                 int port = ((IPEndPoint)MainSocket.LocalEndPoint).Port;
-                IPEndPoint shadowEndPoint = new IPEndPoint(shadowAddress, port);
+                IPEndPoint shadowEndPoint = new IPEndPoint(address, port);
 
                 try
                 {
-                    _shadowSocket = new Socket(shadowAddress.AddressFamily, MainSocket.SocketType, MainSocket.ProtocolType);
+                    _shadowSocket = new Socket(address.AddressFamily, MainSocket.SocketType, MainSocket.ProtocolType);
                     success = TryBindWithoutReuseAddress(_shadowSocket, shadowEndPoint, out _);
 
                     if (success)

@@ -17,6 +17,7 @@
 #include "daccess.h"
 #include "binder.h"
 #include "runtimeinfo.h"
+#include "externalmemoryhandle.h"
 
 #ifdef FEATURE_COMWRAPPERS
 #include <interoplibinterface.h>
@@ -1829,7 +1830,7 @@ HRESULT ClrDataAccess::EnumMemWriteDataSegment()
 {
     SUPPORTS_DAC;
 
-    NewHolder<PEDecoder> pedecoder(NULL);
+    NewHolder<PEDecoder> pedecoder;
 
     EX_TRY
     {

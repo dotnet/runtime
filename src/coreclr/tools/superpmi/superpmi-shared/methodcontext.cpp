@@ -144,13 +144,13 @@ unsigned int MethodContext::calculateRawFileSize()
            2 /* end canary '4', '2' */;
 }
 
-unsigned int MethodContext::saveToFile(HANDLE hFile)
+unsigned int MethodContext::saveToFile(FILE* hFile)
 {
     unsigned int totalLen = calculateFileSize();
     unsigned int totalFileSize =
         2 /* leading magic cookie 'm', 'c' */ + 4 /* 4-byte data length */ + totalLen + 2 /* end canary '4', '2' */;
 
-    DWORD          bytesWritten = 0;
+    unsigned int   bytesWritten = 0;
     unsigned int   buffIndex    = 0;
     unsigned char* buff2        = new unsigned char[totalFileSize];
     buff2[buffIndex++]          = 'm';
@@ -171,7 +171,7 @@ unsigned int MethodContext::saveToFile(HANDLE hFile)
 
     Assert(buffIndex == totalFileSize);
 
-    WriteFile(hFile, buff2, totalFileSize, &bytesWritten, NULL);
+    bytesWritten = (unsigned int)fwrite(buff2, 1, totalFileSize, hFile);
     delete[] buff2;
     return bytesWritten;
 }
@@ -189,7 +189,7 @@ bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size, boo
 }
 
 // static
-bool MethodContext::Initialize(int mcIndex, HANDLE hFile, bool readCompileResults, /* OUT */ MethodContext** ppmc)
+bool MethodContext::Initialize(int mcIndex, FILE* hFile, bool readCompileResults, /* OUT */ MethodContext** ppmc)
 {
     MethodContext* mc = new MethodContext();
     mc->index         = mcIndex;
@@ -226,13 +226,13 @@ bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size, boo
     return result;
 }
 
-bool MethodContext::Initialize(int mcIndex, HANDLE hFile, bool readCompileResults)
+bool MethodContext::Initialize(int mcIndex, FILE* hFile, bool readCompileResults)
 {
     bool result = true;
 
     struct Param
     {
-        HANDLE         hFile;
+        FILE*          hFile;
         MethodContext* pThis;
         bool           readCompileResults;
     } param;
@@ -254,18 +254,17 @@ bool MethodContext::Initialize(int mcIndex, HANDLE hFile, bool readCompileResult
     return result;
 }
 
-void MethodContext::MethodInitHelperFile(HANDLE hFile, bool readCompileResults)
+void MethodContext::MethodInitHelperFile(FILE* hFile, bool readCompileResults)
 {
-    DWORD        bytesRead;
     char         buff[512];
     unsigned int totalLen = 0;
 
-    AssertCode(ReadFile(hFile, buff, 2 + sizeof(unsigned int), &bytesRead, NULL) == TRUE,
+    AssertCode(fread(buff, 1, 2 + sizeof(unsigned int), hFile) == 2 + sizeof(unsigned int),
                EXCEPTIONCODE_MC); // Read Magic number and totalLen
     AssertCodeMsg((buff[0] == 'm') && (buff[1] == 'c'), EXCEPTIONCODE_MC, "Didn't find magic number");
     memcpy(&totalLen, &buff[2], sizeof(unsigned int));
     unsigned char* buff2 = new unsigned char[totalLen + 2]; // total + End Canary
-    AssertCode(ReadFile(hFile, buff2, totalLen + 2, &bytesRead, NULL) == TRUE, EXCEPTIONCODE_MC);
+    AssertCode(fread(buff2, 1, totalLen + 2, hFile) == totalLen + 2, EXCEPTIONCODE_MC);
     AssertCodeMsg((buff2[totalLen] == '4') && (buff2[totalLen + 1] == '2'), EXCEPTIONCODE_MC, "Didn't find end canary");
     MethodInitHelper(buff2, totalLen, readCompileResults);
 }
@@ -792,26 +791,27 @@ bool MethodContext::repNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
     return value != 0;
 }
 
-void MethodContext::recNotifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported, bool result)
+void MethodContext::recNotifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported, bool preserveNegativeDependency, bool result)
 {
     if (NotifyInstructionSetUsage == nullptr)
         NotifyInstructionSetUsage = new LightWeightMap<DD, DWORD>();
 
     DD key{};
     key.A = (DWORD)isa;
-    key.B = supported ? 1 : 0;
+    key.B = (supported ? 1 : 0) | (preserveNegativeDependency ? 2 : 0);
     NotifyInstructionSetUsage->Add(key, result ? 1 : 0);
     DEBUG_REC(dmpNotifyInstructionSetUsage(key, result ? 1 : 0));
 }
 void MethodContext::dmpNotifyInstructionSetUsage(DD key, DWORD value)
 {
-    printf("NotifyInstructionSetUsage key isa-%u, supported-%u, res-%u", key.A, key.B, value);
+    printf("NotifyInstructionSetUsage key isa-%u, supported-%u, preserve-negative-dependency-%u, res-%u",
+           key.A, key.B & 1, (key.B >> 1) & 1, value);
 }
-bool MethodContext::repNotifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported)
+bool MethodContext::repNotifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported, bool preserveNegativeDependency)
 {
     DD key{};
     key.A = (DWORD)isa;
-    key.B = supported ? 1 : 0;
+    key.B = (supported ? 1 : 0) | (preserveNegativeDependency ? 2 : 0);
 
     if (NotifyInstructionSetUsage != nullptr)
     {
@@ -1219,8 +1219,6 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_BBOPT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FRAMED:
         return "CORJIT_FLAG_FRAMED";
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PUBLISH_SECRET_PARAM:
-        return "CORJIT_FLAG_PUBLISH_SECRET_PARAM";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_PINVOKE_HELPERS:
         return "CORJIT_FLAG_USE_PINVOKE_HELPERS";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_REVERSE_PINVOKE:
@@ -1245,6 +1243,8 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_ASYNC";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_DISPATCH_HELPERS:
         return "CORJIT_FLAG_USE_DISPATCH_HELPERS";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_WASM_MANAGED_HELPER:
+        return "CORJIT_FLAG_WASM_MANAGED_HELPER";
 
     default:
         return "<unknown>";
@@ -1755,6 +1755,50 @@ bool MethodContext::repIsValueClass(CORINFO_CLASS_HANDLE cls)
     DWORDLONG key = CastHandle(cls);
     DWORD value = LookupByKeyOrMiss(IsValueClass, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpIsValueClass(key, value));
+    return value != 0;
+}
+
+void MethodContext::recIsByRefLike(CORINFO_CLASS_HANDLE cls, bool result)
+{
+    if (IsByRefLike == nullptr)
+        IsByRefLike = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = result ? 1 : 0;
+    IsByRefLike->Add(key, value);
+    DEBUG_REC(dmpIsByRefLike(key, value));
+}
+void MethodContext::dmpIsByRefLike(DWORDLONG key, DWORD value)
+{
+    printf("IsByRefLike key cls-%016" PRIX64 ", value res-%u", key, value);
+}
+bool MethodContext::repIsByRefLike(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(IsByRefLike, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpIsByRefLike(key, value));
+    return value != 0;
+}
+
+void MethodContext::recIsSharedInst(CORINFO_CLASS_HANDLE cls, bool result)
+{
+    if (IsSharedInst == nullptr)
+        IsSharedInst = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = result ? 1 : 0;
+    IsSharedInst->Add(key, value);
+    DEBUG_REC(dmpIsSharedInst(key, value));
+}
+void MethodContext::dmpIsSharedInst(DWORDLONG key, DWORD value)
+{
+    printf("IsSharedInst key cls-%016" PRIX64 ", value res-%u", key, value);
+}
+bool MethodContext::repIsSharedInst(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(IsSharedInst, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpIsSharedInst(key, value));
     return value != 0;
 }
 
@@ -2603,21 +2647,24 @@ InfoAccessType MethodContext::repConstructStringLiteral(CORINFO_MODULE_HANDLE mo
 void MethodContext::recConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert, bool result)
 {
     if (ConvertPInvokeCalliToCall == nullptr)
-        ConvertPInvokeCalliToCall = new LightWeightMap<DLD, DWORDLONG>();
+        ConvertPInvokeCalliToCall = new LightWeightMap<DLD, DLDL>();
 
     DLD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(pResolvedToken->tokenScope);
     key.B = (DWORD)pResolvedToken->token;
 
-    DWORDLONG value = CastHandle(result ? pResolvedToken->hMethod : 0);
+    DLDL value;
+    value.A = CastHandle(result ? pResolvedToken->hClass : 0);
+    value.B = CastHandle(result ? pResolvedToken->hMethod : 0);
 
     ConvertPInvokeCalliToCall->Add(key, value);
     DEBUG_REC(dmpConvertPInvokeCalliToCall(key, value));
 }
-void MethodContext::dmpConvertPInvokeCalliToCall(DLD key, DWORDLONG value)
+void MethodContext::dmpConvertPInvokeCalliToCall(DLD key, DLDL value)
 {
-    printf("ConvertPInvokeCalliToCall key mod-%016" PRIX64 " tok-%08X, value %016" PRIX64 "", key.A, key.B, value);
+    printf("ConvertPInvokeCalliToCall key mod-%016" PRIX64 " tok-%08X, value cls-%016" PRIX64 " meth-%016" PRIX64 "",
+           key.A, key.B, value.A, value.B);
 }
 bool MethodContext::repConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)
 {
@@ -2628,11 +2675,12 @@ bool MethodContext::repConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolv
     key.A = CastHandle(pResolvedToken->tokenScope);
     key.B = (DWORD)pResolvedToken->token;
 
-    DWORDLONG value = LookupByKeyOrMissNoMessage(ConvertPInvokeCalliToCall, key);
+    DLDL value = LookupByKeyOrMissNoMessage(ConvertPInvokeCalliToCall, key);
     DEBUG_REP(dmpConvertPInvokeCalliToCall(key, value));
 
-    pResolvedToken->hMethod = (CORINFO_METHOD_HANDLE)value;
-    return value != 0;
+    pResolvedToken->hClass = (CORINFO_CLASS_HANDLE)value.A;
+    pResolvedToken->hMethod = (CORINFO_METHOD_HANDLE)value.B;
+    return value.B != 0;
 }
 
 void MethodContext::recEmptyStringLiteral(void** pValue, InfoAccessType result)
@@ -5939,7 +5987,7 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                 case ICorJitInfo::PgoInstrumentationKind::ValueHistogram:
                     for (unsigned int j = 0; j < pBuf[i].Count; j++)
                     {
-                        printf("[%u] %016" PRIX64 " ", j, CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t))));
+                        printf("[%u] %08X ", j, *(uint32_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uint32_t)));
                     }
                     break;
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
@@ -6121,52 +6169,6 @@ TypeCompareState MethodContext::repIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLAS
     if (underlyingType != nullptr)
         *underlyingType = (CORINFO_CLASS_HANDLE)value.A;
     return (TypeCompareState)value.B;
-}
-
-void MethodContext::recGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection, LPVOID result)
-{
-    if (GetCookieForPInvokeCalliSig == nullptr)
-        GetCookieForPInvokeCalliSig = new LightWeightMap<GetCookieForPInvokeCalliSigValue, DLDL>();
-
-    GetCookieForPInvokeCalliSigValue key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.cbSig      = (DWORD)szMetaSig->cbSig;
-    key.pSig_Index = (DWORD)GetCookieForPInvokeCalliSig->AddBuffer((unsigned char*)szMetaSig->pSig, szMetaSig->cbSig);
-    key.scope      = CastHandle(szMetaSig->scope);
-    key.token      = (DWORD)szMetaSig->token;
-
-    DLDL value;
-    if (ppIndirection != nullptr)
-        value.A = CastPointer(*ppIndirection);
-    else
-        value.A = 0;
-    value.B     = CastPointer(result);
-
-    GetCookieForPInvokeCalliSig->Add(key, value);
-    DEBUG_REC(dmpGetCookieForPInvokeCalliSig(key, value));
-}
-void MethodContext::dmpGetCookieForPInvokeCalliSig(const GetCookieForPInvokeCalliSigValue& key, DLDL value)
-{
-    printf("GetCookieForPInvokeCalliSig NYI");
-}
-LPVOID MethodContext::repGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
-{
-    AssertMapExistsNoMessage(GetCookieForPInvokeCalliSig);
-
-    GetCookieForPInvokeCalliSigValue key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.cbSig      = (DWORD)szMetaSig->cbSig;
-    key.pSig_Index = (DWORD)GetCookieForPInvokeCalliSig->Contains((unsigned char*)szMetaSig->pSig, szMetaSig->cbSig);
-    key.scope      = CastHandle(szMetaSig->scope);
-    key.token      = (DWORD)szMetaSig->token;
-
-    DLDL value = LookupByKeyOrMissNoMessage(GetCookieForPInvokeCalliSig, key);
-
-    DEBUG_REP(dmpGetCookieForPInvokeCalliSig(key, value));
-
-    if (ppIndirection != nullptr)
-        *ppIndirection = (void*)value.A;
-    return (CORINFO_VARARGS_HANDLE)value.B;
 }
 
 void MethodContext::recGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig, LPVOID result)

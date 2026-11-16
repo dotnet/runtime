@@ -82,7 +82,6 @@ class X86NearJump : public InstructionFormat
         {
             STATIC_CONTRACT_NOTHROW;
             STATIC_CONTRACT_GC_NOTRIGGER;
-            STATIC_CONTRACT_FORBID_FAULT;
 
 
             if (fExternal)
@@ -133,7 +132,6 @@ static BYTE gX86NearJump[sizeof(X86NearJump)];
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -893,10 +891,6 @@ bool StubLinkerCPU::EmitInstantiatingMethodStub(MethodDesc* pMD, void* extra)
     }
     CONTRACTL_END;
 
-#ifdef UNIX_X86_ABI
-    // Unix x86 ABI requires stack alignment
-    return false;
-#else // UNIX_X86_ABI
     MetaSig msig(pMD);
     ArgIterator argit(&msig);
 
@@ -948,7 +942,6 @@ bool StubLinkerCPU::EmitInstantiatingMethodStub(MethodDesc* pMD, void* extra)
     SetTargetMethod(pMD);
 
     return true;
-#endif // UNIX_X86_ABI
 }
 #endif // TARGET_X86
 
@@ -1278,10 +1271,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
     if (haveMemMemMove)
         X86EmitPopReg(SCRATCH_REGISTER_X86REG);
-
-#ifdef UNIX_X86_ABI
-    _ASSERTE(pWalk->stacksizedelta == 0);
-#endif
 
     if (pWalk->stacksizedelta)
         X86EmitAddEsp(pWalk->stacksizedelta);

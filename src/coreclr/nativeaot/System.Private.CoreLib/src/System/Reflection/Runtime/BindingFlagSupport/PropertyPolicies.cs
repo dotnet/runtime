@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -16,13 +15,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public static readonly PropertyPolicies Instance = new PropertyPolicies();
 
         public PropertyPolicies() : base(MemberTypeIndex.Property) { }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "Reflection implementation")]
-        public sealed override IEnumerable<PropertyInfo> GetDeclaredMembers(Type type)
-        {
-            return type.GetProperties(DeclaredOnlyLookup);
-        }
 
         public sealed override IEnumerable<PropertyInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
@@ -52,13 +44,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             isStatic = (0 != (methodAttributes & MethodAttributes.Static));
             isVirtual = (0 != (methodAttributes & MethodAttributes.Virtual));
             isNewSlot = (0 != (methodAttributes & MethodAttributes.NewSlot));
-        }
-
-        public sealed override bool ImplicitlyOverrides(PropertyInfo? baseMember, PropertyInfo? derivedMember)
-        {
-            MethodInfo? baseAccessor = GetAccessorMethod(baseMember!);
-            MethodInfo? derivedAccessor = GetAccessorMethod(derivedMember!);
-            return MethodPolicies.Instance.ImplicitlyOverrides(baseAccessor, derivedAccessor);
         }
 
         //

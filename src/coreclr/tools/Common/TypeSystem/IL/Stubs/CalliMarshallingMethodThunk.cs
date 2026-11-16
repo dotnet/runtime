@@ -59,14 +59,7 @@ namespace Internal.IL.Stubs
             {
                 if (_signature == null)
                 {
-                    // Prepend fnptr argument to the signature
-                    TypeDesc[] parameterTypes = new TypeDesc[_targetSignature.Length + 1];
-
-                    for (int i = 0; i < _targetSignature.Length; i++)
-                        parameterTypes[i] = _targetSignature[i];
-                    parameterTypes[parameterTypes.Length - 1] = Context.GetWellKnownType(WellKnownType.IntPtr);
-
-                    _signature = new MethodSignature(MethodSignatureFlags.Static, 0, _targetSignature.ReturnType, parameterTypes);
+                    _signature = CreateSignatureWithSecretStubArgument(_targetSignature, MethodSignatureFlags.Static);
                 }
                 return _signature;
             }

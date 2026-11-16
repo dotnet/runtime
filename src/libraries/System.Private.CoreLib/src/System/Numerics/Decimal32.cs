@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -63,6 +64,15 @@ namespace System.Numerics
         private const uint MaxSignificand = 9_999_999;
         private const uint MaxInternalValue = 0x77F8_967F; // +9.999_999 * 10^96; aka +9_999_999 * 10^90
         private const uint MinInternalValue = 0xF7F8_967F; // -9.999_999 * 10^96; aka -9_999_999 * 10^90
+
+        // See `Decimal128` for how these are laid out and why they carry the digits they do.
+        private const uint DegreesToRadiansHead = 174_532_925;
+        private const uint DegreesToRadiansTail = 1_994_330;
+        private const int DegreesToRadiansExponent = -17;
+
+        private const uint RadiansToDegreesHead = 572_957_795;
+        private const uint RadiansToDegreesTail = 1_308_232;
+        private const int RadiansToDegreesExponent = -14;
 
         /// <summary>Gets a value that represents positive <c>infinity</c>.</summary>
         public static Decimal32 PositiveInfinity => new Decimal32(PositiveInfinityValue);
@@ -819,10 +829,12 @@ namespace System.Numerics
         public static Decimal32 Ceiling(Decimal32 x) => new Decimal32(Number.RoundDecimalIeee754<Decimal32, uint>(x._value, 0, MidpointRounding.ToPositiveInfinity));
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        [SuppressReadyToRunCanonicalRooting]
         public static TInteger ConvertToInteger<TInteger>(Decimal32 value)
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        [SuppressReadyToRunCanonicalRooting]
         public static TInteger ConvertToIntegerNative<TInteger>(Decimal32 value)
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
@@ -975,6 +987,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
         public static Decimal32 Cosh(Decimal32 x) => new Decimal32(Number.CoshDecimalIeee754<Decimal32, uint>(x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static Decimal32 DegreesToRadians(Decimal32 degrees) => new Decimal32(Number.MultiplyByWideConstantDecimalIeee754<Decimal32, uint>(degrees._value, DegreesToRadiansHead, DegreesToRadiansTail, DegreesToRadiansExponent));
+
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal32 Exp(Decimal32 x) => new Decimal32(Number.ExpDecimalIeee754<Decimal32, uint>(x._value));
 
@@ -1031,6 +1046,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
         public static Decimal32 Pow(Decimal32 x, Decimal32 y) => new Decimal32(Number.PowDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
+        public static Decimal32 RadiansToDegrees(Decimal32 radians) => new Decimal32(Number.MultiplyByWideConstantDecimalIeee754<Decimal32, uint>(radians._value, RadiansToDegreesHead, RadiansToDegreesTail, RadiansToDegreesExponent));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static Decimal32 ReciprocalEstimate(Decimal32 x) => One / x;
@@ -1298,6 +1316,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static Decimal32 CreateChecked<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1317,6 +1336,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static Decimal32 CreateSaturating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1336,6 +1356,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static Decimal32 CreateTruncating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1355,17 +1376,21 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal32>.TryConvertFromChecked<TOther>(TOther value, out Decimal32 result) => TryConvertFrom(value, out result);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal32>.TryConvertFromSaturating<TOther>(TOther value, out Decimal32 result) => TryConvertFrom(value, out result);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal32>.TryConvertFromTruncating<TOther>(TOther value, out Decimal32 result) => TryConvertFrom(value, out result);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertFrom<TOther>(TOther value, out Decimal32 result)
             where TOther : INumberBase<TOther>
         {
@@ -1477,6 +1502,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal32>.TryConvertToChecked<TOther>(Decimal32 value, [MaybeNullWhen(false)] out TOther result)
         {
             // Conversions to an integer target throw on overflow, NaN, or infinity. Conversions to a
@@ -1600,13 +1626,16 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal32>.TryConvertToSaturating<TOther>(Decimal32 value, [MaybeNullWhen(false)] out TOther result) => TryConvertTo(value, out result);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal32>.TryConvertToTruncating<TOther>(Decimal32 value, [MaybeNullWhen(false)] out TOther result) => TryConvertTo(value, out result);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertTo<TOther>(Decimal32 value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
@@ -1735,9 +1764,9 @@ namespace System.Numerics
             return Number.UInt32ToDecStr(significand);
         }
 
-        static unsafe uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
+        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
         {
-            return Number.DigitsToUInt32(number.DigitsPtr, digits);
+            return Number.DigitsToUInt32(number.Digits.Slice(0, digits));
         }
 
         static Decimal32 IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.Construct(uint value) => new Decimal32(value);

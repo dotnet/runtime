@@ -62,14 +62,7 @@ namespace System.Formats.Tar
 
             FileSystemInfo info = entryType is TarEntryType.Directory ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
 
-            TarEntry entry = Format switch
-            {
-                TarEntryFormat.V7 => new V7TarEntry(entryType, entryName),
-                TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
-                TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
-                TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
-            };
+            TarEntry entry = CreateEntryForFormat(entryType, entryName);
 
             if (entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice)
             {
@@ -128,7 +121,7 @@ namespace System.Formats.Tar
             if (entry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
                 Debug.Assert(entry._header._dataStream == null);
-                entry._header._dataStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, fileOptions);
+                entry._header._dataStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 0, fileOptions);
             }
 
             return entry;

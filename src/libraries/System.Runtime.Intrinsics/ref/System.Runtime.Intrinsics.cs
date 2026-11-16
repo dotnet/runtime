@@ -7325,6 +7325,36 @@ namespace System.Runtime.Intrinsics.Arm
     }
     [System.CLSCompliantAttribute(false)]
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public abstract partial class SveAes : System.Runtime.Intrinsics.Arm.ArmBase
+    {
+        internal SveAes() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Numerics.Vector<byte> Decrypt(System.Numerics.Vector<byte> value, System.Numerics.Vector<byte> roundKey) { throw null; }
+        public static System.Numerics.Vector<byte> Encrypt(System.Numerics.Vector<byte> value, System.Numerics.Vector<byte> roundKey) { throw null; }
+        public static System.Numerics.Vector<byte> InverseMixColumns(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<byte> MixColumns(System.Numerics.Vector<byte> value) { throw null; }
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public abstract partial class SvePmull128 : System.Runtime.Intrinsics.Arm.ArmBase
+    {
+        internal SvePmull128() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningEven(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public abstract partial class SveSm4 : System.Runtime.Intrinsics.Arm.ArmBase
     {
         internal SveSm4() { }
@@ -11983,5 +12013,36 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<uint> ZeroExtendWideningUpper(Vector128<ushort> value) { throw null; }
         public static Vector128<long> ZeroExtendWideningUpper(Vector128<int> value) { throw null; }
         public static Vector128<ulong> ZeroExtendWideningUpper(Vector128<uint> value) { throw null; }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class RelaxedSimd
+    {
+        protected RelaxedSimd() { }
+        public static bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector128<int> ConvertToInt32Native(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> ConvertToInt32Native(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> ConvertToUInt32Native(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> ConvertToUInt32Native(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> DotProductAddNative(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<byte> right, System.Runtime.Intrinsics.Vector128<int> accumulator) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> DotProductNative(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> LaneSelectNative(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right, System.Runtime.Intrinsics.Vector128<byte> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> LaneSelectNative(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right, System.Runtime.Intrinsics.Vector128<short> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> LaneSelectNative(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right, System.Runtime.Intrinsics.Vector128<int> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<long> LaneSelectNative(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right, System.Runtime.Intrinsics.Vector128<long> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> LaneSelectNative(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right, System.Runtime.Intrinsics.Vector128<sbyte> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> LaneSelectNative(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right, System.Runtime.Intrinsics.Vector128<ushort> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> LaneSelectNative(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right, System.Runtime.Intrinsics.Vector128<uint> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> LaneSelectNative(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right, System.Runtime.Intrinsics.Vector128<ulong> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> MaxNative(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> MaxNative(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> MinNative(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> MinNative(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> MultiplyAddEstimate(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right, System.Runtime.Intrinsics.Vector128<double> addend) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> MultiplyAddEstimate(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right, System.Runtime.Intrinsics.Vector128<float> addend) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> MultiplyAddNegatedEstimate(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right, System.Runtime.Intrinsics.Vector128<double> addend) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> MultiplyAddNegatedEstimate(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right, System.Runtime.Intrinsics.Vector128<float> addend) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> MultiplyRoundedQ15Native(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> SwizzleNative(System.Runtime.Intrinsics.Vector128<byte> vector, System.Runtime.Intrinsics.Vector128<byte> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> SwizzleNative(System.Runtime.Intrinsics.Vector128<sbyte> vector, System.Runtime.Intrinsics.Vector128<sbyte> indices) { throw null; }
     }
 }

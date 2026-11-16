@@ -290,7 +290,12 @@ namespace System.Collections.Generic
                 _count = 0;
                 _freeList = -1;
                 _freeCount = 0;
-                Array.Clear(_entries, 0, count);
+                // Resetting the buckets and counts hides old entries. Insertion initializes
+                // every field before an entry is reused.
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<Entry>())
+                {
+                    Array.Clear(_entries, 0, count);
+                }
             }
         }
 
@@ -348,7 +353,7 @@ namespace System.Collections.Generic
 
             if ((uint)index > (uint)array.Length)
             {
-                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             if (array.Length - index < Count)
@@ -1250,6 +1255,7 @@ namespace System.Collections.Generic
             // Value types never rehash
             Debug.Assert(!forceNewHashCodes || !typeof(TKey).IsValueType);
             Debug.Assert(_entries != null, "_entries should be non-null");
+            Debug.Assert(HashHelpers.IsPrime(newSize));
             Debug.Assert(newSize >= _entries.Length);
 
             Entry[] entries = new Entry[newSize];
@@ -1696,21 +1702,30 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
             }
 
-            int newSize = HashHelpers.GetPrime(capacity);
+            int newSize = HashHelpers.GetPrimeAtLeast(capacity);
             Entry[]? oldEntries = _entries;
-            int currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
-            if (newSize >= currentCapacity)
+            if (oldEntries is null || newSize >= oldEntries.Length)
             {
                 return;
             }
 
-            int oldCount = _count;
             _version++;
-            Initialize(newSize);
 
-            Debug.Assert(oldEntries is not null);
+            Debug.Assert(HashHelpers.IsPrime(newSize));
+            Debug.Assert(newSize >= Count);
 
-            CopyEntries(oldEntries, oldCount);
+            int[] buckets = new int[newSize];
+            Entry[] entries = new Entry[newSize];
+
+            // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
+            _freeList = -1;
+#if TARGET_64BIT
+            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newSize);
+#endif
+            _buckets = buckets;
+            _entries = entries;
+
+            CopyEntries(oldEntries, _count);
         }
 
         private void CopyEntries(Entry[] entries, int count)

@@ -17,118 +17,110 @@ extends:
 
     containers:
       linux_arm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-arm@sha256:91f43da94ba122f0efb30dec0867c4e94dfc71fe739b0ca99db345bf7a47347b
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-arm@sha256:e481894f268e716e6e2624f44932ba25b26a2ea023f5cd669dcb8833780d3c35
         env:
           ROOTFS_DIR: /crossrootfs/arm
 
       linux_arm64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-arm64@sha256:3a37282ababd05805d2927807e42f1582e7812b43d85058ad7e6270334a231ee
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-arm64@sha256:927d68ad0713a7b819569137d05e23b32e05130c923269cfeb8e51f14a674572
         env:
           ROOTFS_DIR: /crossrootfs/arm64
 
       linux_musl_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-amd64-musl@sha256:e605ffdc97dab3a45c748fd79b4b84d37dd5dbe3d74f47e601b85ee8f19f01d2
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-amd64-musl@sha256:a6c2035cf5158c26d38abf37e178bfeebd9f55ede2a824078c709d4eae7f3caa
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
       linux_musl_arm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-arm-musl@sha256:2f681f6e4ec0ff55214726d900018536c92f37f1b6c2cd70f98276be42f3d7cc
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-arm-musl@sha256:1885d30cdf3ba8b5617b1abc5c6d259bdc29ca2da92bbec920226cd09017f159
         env:
           ROOTFS_DIR: /crossrootfs/arm
 
       linux_musl_arm64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-arm64-musl@sha256:b903935fcc8a3ec32aae033c692893901a1f96e2e5c8fa6d9f38a0d9d1878e60
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-arm64-musl@sha256:482bb0d54eaeb0b3495a6904ba7d6840ad0e6688a29d708f1f5f647b7a74f271
         env:
           ROOTFS_DIR: /crossrootfs/arm64
 
       # This container contains all required toolsets to build for Android and for Linux with bionic libc.
       android:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-android-amd64@sha256:f9838946da1aa1ec43e31296c7d5d83370094dedec0dca1b1b1a835237fd4512
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-android-amd64@sha256:60dc16e08b02eab73e5808236d2ed97af8c41a9e7742501d399037f150cbdd87
 
       # This container contains all required toolsets to build for Android and for Linux with bionic libc and a special layout of OpenSSL.
       linux_bionic:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-android-openssl-amd64@sha256:30b0629332604cfe45ed4b866a663e2afa3c38a61e0b8e314aba4c57b27c7ee0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-android-openssl-amd64@sha256:3f664aff9a0d04aa088d4ba9a6814d479d292db55a199ec5c4a8390c6c9ad49f
 
       # This container contains all required toolsets to build for Android as well as tooling to build docker images.
       android_docker:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-android-docker-amd64@sha256:06a55614f0c142c1f8b0f1f6579d7701919820c5e834d445a848b1a9c305ca3e
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-android-docker-amd64@sha256:61ff3fde75bb9f8a597bf43b3c393abc28f4bfc62a9452cb4798d76a77676bab
 
       linux_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-amd64@sha256:ca817af24ff68c801a3e31f16a0fbf6bb7ba57764b0aeae5be260dbc70ae25cb
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-amd64@sha256:c6360762fa24a5e8524eef6e6639130eb0fb5cfe6e9c4612af95995f9e7ab0e1
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
-      linux_x86:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-x86@sha256:4eeeb11280af64feec018a8fe0b0384a530dfc58fe850321afda944161351460
-        env:
-          ROOTFS_DIR: /crossrootfs/x86
-
       linux_x64_dev_innerloop:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04@sha256:9fe9680b9861bc0e59dbb885185d42e230f071b7081bdd3cafb180a70f4271c5
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-amd64@sha256:39706256c8707e1cba8e8a7b3d77188630369d54b88bd1b77e408c49da9ff348
 
       linux_musl_x64_dev_innerloop:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-amd64@sha256:133fdc3a94857f8d87c25f0bc4cf0a3c2fbff11d8ecdcf5e9e22c5fc0c495e67
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-amd64@sha256:4b6fadfdd6ef3465924e3d032c20d1d196c717f7acdda5c778931f7d686f0796
 
       linux_x64_sanitizer:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-amd64-sanitizer@sha256:5cca2ad5a8ca736ceb80143bb510178aa45f09f583cb7da8bd22d9bdea88ea2b
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-amd64-sanitizer@sha256:8e397e3ad1de6113754a3cee439a9be59f39dbd01c7b923f6adf6199d0c3b2d6
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
       # Used to test RHEL compatibility: CentOS Stream is upstream of RHEL
       SourceBuild_centos_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64@sha256:22acc70e4a797f4a898fd7a994fd6845e26026953d1ff043aa74d3047520ca96
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64@sha256:32f317fa373693cec8e5cab62a0bc8d86766ecdf91d3a9320c24d58402e8430d
 
       # Used to test RHEL compatibility: Alma Linux is downstream of RHEL
       SourceBuild_linux_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:almalinux-9-source-build-amd64@sha256:bfa2dd9c21bbac51874240fd7f508cd683a03142c02b927ca1ace19d4ef78272
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:almalinux-9-source-build-amd64@sha256:c41ea64beeeadc40ad08c7b38a461ede51e58fe43e1a065fd187f4a73251583b
 
       linux_s390x:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-s390x@sha256:18ea7a15a0a9c0a26e88e00d08048cadd11b2488c4eb0380198ce5a763d1d2f7
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-s390x@sha256:93b5cb53f6d4ef3e47368ad3ea060bc8d3ae68de70fb98a89e609ebf5d131d93
         env:
           ROOTFS_DIR: /crossrootfs/s390x
 
       linux_ppc64le:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-ppc64le@sha256:73ca1754cc6b688440e9e32bfe48804ab89c1b219d6acebc294cdf15fde38359
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-ppc64le@sha256:aee829cca3e6a6ce61ea892e228a2229ad0be84734e2c282ca4863b9c248382c
         env:
           ROOTFS_DIR: /crossrootfs/ppc64le
 
       linux_riscv64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-riscv64@sha256:e64f6c20bacbd56f46ff86f5c23079f93df6099acb50a08b2583bafeea41af74
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-riscv64@sha256:f3450998839bdf58d619345896f7ba174b70a2f99fc3cd2d28bd88b3306b4b85
         env:
           ROOTFS_DIR: /crossrootfs/riscv64
 
       linux_loongarch64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-loongarch64@sha256:f141d28dd6078110c4e92ee342a1a6e0433c999efae1017c86a0919afb6e8c5f
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-loongarch64@sha256:d30af3213aee9eedcea3bc92283db8a8c3863e0e2d29975ec6ff6d0d48b34a0f
         env:
           ROOTFS_DIR: /crossrootfs/loongarch64
 
       debian-13-gcc16-amd64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-gcc16-amd64@sha256:718da2e8b69fc7aa05f29f13259a7a337b49eaee87e9b8ddd456781e59b5b0fd
-
-      linux_x64_llvmaot:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64@sha256:22acc70e4a797f4a898fd7a994fd6845e26026953d1ff043aa74d3047520ca96
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-gcc16-amd64@sha256:5eaa8340536f459f23fafebe9ce872d06e4b164139ffc097567fc4ba9ed3a352
 
       browser_wasm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-webassembly-amd64@sha256:3af9ca14a4ad4982dfb88b0c380da37fb556ded2a2d5974e25822f3e36e65fa1
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-webassembly-amd64@sha256:3bf64909c31e1f05e00545239103185dfccc85e041313e5d422af06bb7d96635
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
       wasi_wasm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-webassembly-amd64@sha256:3af9ca14a4ad4982dfb88b0c380da37fb556ded2a2d5974e25822f3e36e65fa1
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-webassembly-amd64@sha256:3bf64909c31e1f05e00545239103185dfccc85e041313e5d422af06bb7d96635
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
       freebsd_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-freebsd-14-amd64@sha256:a52c0bddcfce2ed6c3f3c0bf603ec9a22283e5e487d787eef7caade5e76580e9
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-freebsd-14-amd64@sha256:0a241e38501b546631274d4857e9ef10961d806845cc645a01096a6799635279
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
       openbsd_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-openbsd-amd64@sha256:301907b4bd7ea374ab32fb4be5200e6daefaefaf034aded50a0a0f8ac2465638
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-openbsd-7.9-amd64@sha256:18ed84f4396c4b14b2c27216f46faf59710719338df3b0edd4b13d52b8190cb5
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
       tizen_armel:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen@sha256:db1a34bd80d6d894b538aa71e5e5c01e80fa419354e70b343493895abbef007d
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen@sha256:49897f1719f015bc21bc291ebcb8505dc8dc318793ad589d63926e4e46a7848f
         env:
           ROOTFS_DIR: /crossrootfs/armel

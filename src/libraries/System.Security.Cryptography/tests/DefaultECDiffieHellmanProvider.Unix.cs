@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        public override bool CanDeriveNewPublicKey => !PlatformDetection.IsiOS && !PlatformDetection.IstvOS && !PlatformDetection.IsMacCatalyst;
+        public override bool CanDeriveNewPublicKey => true;
         public override bool SupportsRawDerivation => true;
         public override bool SupportsSha3 => PlatformDetection.SupportsSha3;
 

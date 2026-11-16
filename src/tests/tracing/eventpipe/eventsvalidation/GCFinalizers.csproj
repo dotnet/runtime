@@ -2,6 +2,11 @@
   <PropertyGroup>
     <!-- Needed for UnloadabilityIncompatible, GC.WaitForPendingFinalizers -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Browser does not support Process.GetCurrentProcess or the Process/PID-based managed
+         self-process DiagnosticsClient used by this test; browser diagnostics use JS/WebSocket
+         clients instead. See https://github.com/dotnet/runtime/issues/131898 and
+         https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
