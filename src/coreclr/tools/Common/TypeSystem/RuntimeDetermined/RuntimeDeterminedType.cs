@@ -104,7 +104,8 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return _rawCanonType.Namespace;
+                return new Utf8Span(System.Text.Encoding.UTF8.GetBytes(_runtimeDeterminedDetailsType.Name))
+                    .Append("_"u8, _rawCanonType.Namespace);
             }
         }
 
