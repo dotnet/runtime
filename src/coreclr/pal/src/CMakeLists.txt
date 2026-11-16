@@ -155,7 +155,6 @@ set(SOURCES
   loader/module.cpp
   misc/cgroup.cpp
   misc/dbgmsg.cpp
-  misc/environ.cpp
   misc/error.cpp
   misc/perfjitdump.cpp
   misc/strutil.cpp
