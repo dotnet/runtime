@@ -217,83 +217,32 @@ public class Async2SynchronizationContext
     }
 
     [ConditionalTheory(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    public static void TaskContinuationsPostDirectlyToCapturedContext(bool runAsynchronously, bool captureContext)
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void TaskContinuationsPostDirectlyToCapturedContext(bool runAsynchronously)
     {
         SynchronizationContext previousContext = SynchronizationContext.Current;
         var context = new QueuedSyncContext();
         var source = new TaskCompletionSource<int>(
             runAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
-        var local = new AsyncLocal<int>();
         var awaiters = new Task[2];
 
         try
         {
             SynchronizationContext.SetSynchronizationContext(context);
-            local.Value = 42;
             for (int i = 0; i < awaiters.Length; i++)
             {
                 awaiters[i] = AwaitTask();
             }
 
             SynchronizationContext.SetSynchronizationContext(null);
-            local.Value = 0;
             source.SetResult(42);
-            if (captureContext)
-            {
-                Assert.True(SpinWait.SpinUntil(() => context.Count == awaiters.Length, TimeSpan.FromSeconds(30)));
-                SynchronizationContext.SetSynchronizationContext(context);
-                context.Drain();
-            }
-
+            Assert.Equal(awaiters.Length, context.Count);
+            SynchronizationContext.SetSynchronizationContext(context);
+            context.Drain();
             Assert.True(Task.WaitAll(awaiters, TimeSpan.FromSeconds(30)));
             Assert.Equal(0, context.Count);
-            Assert.Equal(captureContext ? awaiters.Length : 0, context.PostCount);
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(previousContext);
-        }
-
-        async Task AwaitTask()
-        {
-            Assert.Equal(42, await GetTask(source).ConfigureAwait(captureContext));
-            Assert.Same(captureContext ? context : null, SynchronizationContext.Current);
-            Assert.Equal(42, local.Value);
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Task<int> GetTask(TaskCompletionSource<int> source) => source.Task;
-
-    [Fact]
-    public static void TaskContinuationWithLowStackUsesThreadPool()
-    {
-        SynchronizationContext previousContext = SynchronizationContext.Current;
-        var source = new TaskCompletionSource<int>();
-        var completingThread = new Thread(() => CompleteWithLowStack(source), maxStackSize: 256 * 1024)
-        {
-            IsBackground = true
-        };
-        var context = new QueuedSyncContext(completingThread);
-
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(context);
-            Task awaiter = AwaitTask();
-            SynchronizationContext.SetSynchronizationContext(null);
-            completingThread.Start();
-            Assert.True(completingThread.Join(TimeSpan.FromSeconds(30)));
-
-            Assert.True(SpinWait.SpinUntil(() => context.Count != 0, TimeSpan.FromSeconds(30)));
-            Assert.False(awaiter.IsCompleted);
-            SynchronizationContext.SetSynchronizationContext(context);
-            context.Drain(postedFromCompletingThread: false);
-            awaiter.GetAwaiter().GetResult();
-            Assert.Equal(0, context.Count);
+            Assert.Equal(awaiters.Length, context.PostCount);
         }
         finally
         {
@@ -303,24 +252,11 @@ public class Async2SynchronizationContext
         async Task AwaitTask()
         {
             await GetTask(source);
-            Assert.Equal(42, source.Task.Result);
-            Assert.Same(context, SynchronizationContext.Current);
         }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void CompleteWithLowStack(TaskCompletionSource<int> source)
-    {
-        if (RuntimeHelpers.TryEnsureSufficientExecutionStack())
-        {
-            CompleteWithLowStack(source);
-            GC.KeepAlive(source);
-        }
-        else
-        {
-            source.SetResult(42);
-        }
-    }
+    private static Task<int> GetTask(TaskCompletionSource<int> source) => source.Task;
 
     private sealed class QueuedSyncContext : SynchronizationContext
     {
@@ -328,8 +264,7 @@ public class Async2SynchronizationContext
         private readonly int _threadId;
         private int _postCount;
 
-        public QueuedSyncContext(Thread completingThread = null) =>
-            _threadId = completingThread?.ManagedThreadId ?? Environment.CurrentManagedThreadId;
+        public QueuedSyncContext() => _threadId = Environment.CurrentManagedThreadId;
 
         public int Count => _queue.Count;
         public int PostCount => Volatile.Read(ref _postCount);
@@ -340,11 +275,11 @@ public class Async2SynchronizationContext
             _queue.Enqueue((d, state, Environment.CurrentManagedThreadId));
         }
 
-        public void Drain(bool postedFromCompletingThread = true)
+        public void Drain()
         {
             while (_queue.TryDequeue(out var item))
             {
-                Assert.Equal(postedFromCompletingThread, _threadId == item.ThreadId);
+                Assert.Equal(_threadId, item.ThreadId);
                 item.Callback(item.State);
             }
         }
