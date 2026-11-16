@@ -68,7 +68,7 @@ public:
     void             SetControlPC(PTR_VOID controlPC);
     PTR_VOID         GetControlPC() { return m_ControlPC; }
 
-    static bool     IsValidReturnAddress(PTR_VOID pvAddress);
+    static bool     IsValidReturnAddress(PTR_VOID pvAddress, bool isCanonicalPC);
 
     // Support for conservatively reporting GC references in a stack range. This is used when managed methods
     // with an unknown signature potentially including GC references call into the runtime and we need to let

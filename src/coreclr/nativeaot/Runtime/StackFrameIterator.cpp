@@ -658,7 +658,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
 
     // This codepath is used by the hijack stackwalk. The IP must be in managed code
     // or in a conservatively reported assembly thunk.
-    ASSERT(IsValidReturnAddress((void*)pCtx->GetIp()));
+    ASSERT(IsValidReturnAddress((void*)pCtx->GetIp(), true));
 
     //
     // control state
@@ -2352,8 +2352,11 @@ bool StackFrameIterator::IsNonEHThunk(ReturnAddressCategory category)
     }
 }
 
-bool StackFrameIterator::IsValidReturnAddress(PTR_VOID pvAddress)
+bool StackFrameIterator::IsValidReturnAddress(PTR_VOID pvAddress, bool isCanonicalPC)
 {
+    if (!isCanonicalPC)
+        pvAddress = dac_cast<PTR_VOID>(ReturnAddressToCanonicalPC(dac_cast<TADDR>(pvAddress)));
+
     // These are return addresses into functions that call into managed (non-funclet) code, so we might see
     // them as hijacked return addresses.
     ReturnAddressCategory category = CategorizeUnadjustedReturnAddress(pvAddress);

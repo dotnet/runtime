@@ -21,7 +21,6 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "thread.inl"
-#include "CommonMacros.inl"
 #include "RuntimeInstance.h"
 #include "shash.h"
 #include "rhbinder.h"
@@ -680,13 +679,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
 
         ASSERT(pvRetAddr != NULL);
 
-#if defined(TARGET_ARM64)
-        ASSERT(StackFrameIterator::IsValidReturnAddress(PacStripPtr(pvRetAddr)));
-#elif defined(TARGET_ARM)
-        ASSERT(StackFrameIterator::IsValidReturnAddress((void*)PCODEToPINSTR((PCODE)pvRetAddr)));
-#else
-        ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
-#endif
+        ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr, false));
 
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;
