@@ -410,30 +410,44 @@ namespace ILCompiler.ObjectWriter
 
             if (_frameInfos.Length <= 1)
             {
-                DumpSubprogram(writer, 0, (uint)_methodSize, regions);
+                DumpSubprogram(writer, 0, (uint)_methodSize, regions, funcletIndex: 0);
                 return;
             }
 
             // Funclets have their own unwind info. Debuggers such as lldb pick the unwind info by the start
             // of the enclosing function, and merge adjacent DW_AT_ranges entries, so each funclet is described
             // by its own subprogram.
-            foreach (FrameInfo frameInfo in _frameInfos)
+            for (int i = 0; i < _frameInfos.Length; i++)
             {
-                DumpSubprogram(writer, (uint)frameInfo.StartOffset, (uint)frameInfo.EndOffset, regions);
+                DumpSubprogram(writer, (uint)_frameInfos[i].StartOffset, (uint)_frameInfos[i].EndOffset, regions, funcletIndex: i);
             }
         }
 
-        private void DumpSubprogram(DwarfInfoWriter writer, uint start, uint end, List<EHRegion> allRegions)
+        private void DumpSubprogram(DwarfInfoWriter writer, uint start, uint end, List<EHRegion> allRegions, int funcletIndex)
         {
             List<EHRegion> regions = allRegions.FindAll(r => r.Start >= start && r.End <= end);
             bool hasChildren = _debugVars.Length > 0 || regions.Count > 0;
 
-            writer.WriteStartDIE(
-                _thisVariableIndex >= 0 ? DwarfAbbrev.Subprogram :
-                hasChildren ? DwarfAbbrev.SubprogramStatic : DwarfAbbrev.SubprogramStaticNoChildren);
+            if (funcletIndex == 0)
+            {
+                writer.WriteStartDIE(
+                    _thisVariableIndex >= 0 ? DwarfAbbrev.Subprogram :
+                    hasChildren ? DwarfAbbrev.SubprogramStatic : DwarfAbbrev.SubprogramStaticNoChildren);
 
-            // DW_AT_specification
-            writer.WriteInfoAbsReference(_memberFunction.InfoOffset);
+                // DW_AT_specification
+                writer.WriteInfoAbsReference(_memberFunction.InfoOffset);
+            }
+            else
+            {
+                // Funclets get their own artificial name, like outlined cold code in native compilers, so that
+                // breakpoints on the method name don't resolve to every funclet.
+                writer.WriteStartDIE(hasChildren ? DwarfAbbrev.SubprogramFunclet : DwarfAbbrev.SubprogramFuncletNoChildren);
+
+                // DW_AT_name
+                writer.WriteStringReference($"{_memberFunction.Name}$funclet{funcletIndex}");
+                // DW_AT_linkage_name
+                writer.WriteStringReference($"{_memberFunction.LinkageName}$funclet{funcletIndex}");
+            }
 
             // DW_AT_low_pc
             writer.WriteCodeReference(_sectionSymbolName, _methodAddress + start);
@@ -452,7 +466,7 @@ namespace ILCompiler.ObjectWriter
                 writer.Write([(byte)(DW_OP_reg0 + writer.FrameRegister)]);
             }
 
-            if (_thisVariableIndex >= 0)
+            if (_thisVariableIndex >= 0 && funcletIndex == 0)
             {
                 // DW_AT_object_pointer
                 writer.WriteInfoAbsReference(writer.Position + sizeof(uint));
@@ -483,11 +497,12 @@ namespace ILCompiler.ObjectWriter
 
         private List<EHRegion> GetEHRegions()
         {
-            var regions = new List<EHRegion>(_debugEHClauseInfos.Length * 2);
+            // Only try regions: handlers are funclets with their own subprograms, so a DW_TAG_catch_block
+            // could not be the sibling following its try block as DWARF requires.
+            var regions = new List<EHRegion>(_debugEHClauseInfos.Length);
             foreach (DebugEHClauseInfo clause in _debugEHClauseInfos)
             {
-                AddRegion(regions, new EHRegion(clause.TryOffset, clause.TryOffset + clause.TryLength, isTry: true));
-                AddRegion(regions, new EHRegion(clause.HandlerOffset, clause.HandlerOffset + clause.HandlerLength, isTry: false));
+                AddRegion(regions, new EHRegion(clause.TryOffset, clause.TryOffset + clause.TryLength));
             }
 
             // Outer regions come first when several regions start at the same offset
@@ -503,8 +518,8 @@ namespace ILCompiler.ObjectWriter
 
         private void DumpEHRegions(DwarfInfoWriter writer, List<EHRegion> regions)
         {
-            // Sibling DIEs must not have overlapping address ranges, so try and handler regions
-            // nested inside another region are emitted as children of the innermost one.
+            // Sibling DIEs must not have overlapping address ranges, so try regions nested inside
+            // another one are emitted as children of the innermost one.
             var openRegions = new Stack<EHRegion>();
             for (int i = 0; i < regions.Count; i++)
             {
@@ -523,9 +538,7 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 bool hasChildren = i + 1 < regions.Count && regions[i + 1].End <= region.End;
-                writer.WriteStartDIE(region.IsTry ?
-                    (hasChildren ? DwarfAbbrev.TryBlockWithChildren : DwarfAbbrev.TryBlock) :
-                    (hasChildren ? DwarfAbbrev.CatchBlockWithChildren : DwarfAbbrev.CatchBlock));
+                writer.WriteStartDIE(hasChildren ? DwarfAbbrev.TryBlockWithChildren : DwarfAbbrev.TryBlock);
                 // DW_AT_low_pc
                 writer.WriteCodeReference(_sectionSymbolName, _methodAddress + region.Start);
                 // DW_AT_high_pc
@@ -548,18 +561,16 @@ namespace ILCompiler.ObjectWriter
         {
             public readonly uint Start;
             public readonly uint End;
-            public readonly bool IsTry;
 
-            public EHRegion(uint start, uint end, bool isTry)
+            public EHRegion(uint start, uint end)
             {
                 Start = start;
                 End = end;
-                IsTry = isTry;
             }
 
-            public bool Equals(EHRegion other) => Start == other.Start && End == other.End && IsTry == other.IsTry;
+            public bool Equals(EHRegion other) => Start == other.Start && End == other.End;
             public override bool Equals(object obj) => obj is EHRegion other && Equals(other);
-            public override int GetHashCode() => HashCode.Combine(Start, End, IsTry);
+            public override int GetHashCode() => HashCode.Combine(Start, End);
         }
 
         private void DumpVar(DwarfInfoWriter writer, DebugVarInfoMetadata metadataInfo, uint typeIndex, bool isThis)
