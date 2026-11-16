@@ -507,6 +507,22 @@ emit_xcompare (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum etype, MonoInst 
 	return ins;
 }
 
+/*
+ * emit_xcompare_as_return_type:
+ *
+ *   A comparison is typed by its operands. The comparisons of Vector for float and double vectors
+ * return integer masks (Vector<int>, Vector<long>): cast the comparison to the type of the result,
+ * so that the operations on the mask are integer operations.
+ */
+static MonoInst*
+emit_xcompare_as_return_type (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst *ins)
+{
+	MonoClass *ret_klass = mono_class_from_mono_type_internal (fsig->ret);
+	if (ret_klass == ins->klass)
+		return ins;
+	return emit_simd_ins (cfg, ret_klass, OP_XCAST, ins->dreg, -1);
+}
+
 static MonoInst*
 emit_xcompare_for_intrinsic (MonoCompile *cfg, MonoClass *klass, int intrinsic_id, MonoTypeEnum etype, MonoInst *arg1, MonoInst *arg2)
 {
@@ -2502,7 +2518,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 #endif
 		if (id == SN_Equals)
-			return emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
+			return emit_xcompare_as_return_type (cfg, fsig, emit_xcompare (cfg, klass, arg0_type, args [0], args [1]));
 
 		if (COMPILE_LLVM (cfg)) {
 			switch (id) {
@@ -2766,7 +2782,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
 			return NULL;
 #endif
-		return emit_xcompare_for_intrinsic (cfg, klass, id, arg0_type, args [0], args [1]);
+		return emit_xcompare_as_return_type (cfg, fsig, emit_xcompare_for_intrinsic (cfg, klass, id, arg0_type, args [0], args [1]));
 	}
 	case SN_GreaterThanAll:
 	case SN_GreaterThanAny:
