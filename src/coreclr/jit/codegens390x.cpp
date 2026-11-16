@@ -1590,7 +1590,22 @@ void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 
     noway_assert((targetType == TYP_BYREF) || (targetType == TYP_I_IMPL));
 
-    GetEmitter()->emitIns_R_S(INS_lay, size, targetReg, lclAddrNode->GetLclNum(), lclAddrNode->GetLclOffs());
+    unsigned lclNum = lclAddrNode->GetLclNum();
+    unsigned offs   = lclAddrNode->GetLclOffs();
+
+    // &smallLocal must address the low half of its stack home (sth/stc vs 4-byte load).
+    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+    if (varTypeIsSmall(varDsc->TypeGet()) && !varDsc->lvIsStructField)
+    {
+        unsigned homeSize = genTypeSize(varDsc->GetStackSlotHomeType());
+        unsigned typeSize = genTypeSize(varDsc->TypeGet());
+        if (homeSize > typeSize)
+        {
+            offs += homeSize - typeSize;
+        }
+    }
+
+    GetEmitter()->emitIns_R_S(INS_lay, size, targetReg, lclNum, offs);
 
     genProduceReg(lclAddrNode);
 }
