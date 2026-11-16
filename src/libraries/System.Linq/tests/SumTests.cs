@@ -468,6 +468,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void SumOfNullableIntegers_ThrowsOnIntermediateOverflow()
+        {
+            foreach (IEnumerable<int?> source in CreateSources<int?>([int.MaxValue, null, 1, -1]))
+            {
+                Assert.Throws<OverflowException>(() => source.Sum());
+            }
+
+            foreach (IEnumerable<long?> source in CreateSources<long?>([long.MaxValue, null, 1L, -1L]))
+            {
+                Assert.Throws<OverflowException>(() => source.Sum());
+            }
+        }
+
+        [Fact]
         public void SumOfFloat_SourceSumsToOverflow_InfinityReturned()
         {
             IEnumerable<float> sourceFloat = [float.MaxValue, float.MaxValue];

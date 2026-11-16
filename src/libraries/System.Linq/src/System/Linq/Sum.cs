@@ -192,11 +192,23 @@ namespace System.Linq
             }
 
             TAccumulator sum = TAccumulator.Zero;
-            foreach (TSource? value in source)
+            if ((typeof(TSource) == typeof(int) || typeof(TSource) == typeof(long)) &&
+                source.TryGetSpan(out ReadOnlySpan<TSource?> span))
             {
-                if (value is not null)
+                // Adding zero for a null integer preserves the result and checked overflow order.
+                foreach (TSource? value in span)
                 {
                     checked { sum += TAccumulator.CreateChecked(value.GetValueOrDefault()); }
+                }
+            }
+            else
+            {
+                foreach (TSource? value in source)
+                {
+                    if (value is not null)
+                    {
+                        checked { sum += TAccumulator.CreateChecked(value.GetValueOrDefault()); }
+                    }
                 }
             }
 
