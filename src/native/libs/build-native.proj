@@ -129,8 +129,7 @@
       <NativeAsset Include="$(NativeBinDir)*.jar" />
       <NativeAsset Include="$(NativeBinDir)*.dat" />
       <FileWrites Include="@(NativeAsset)" />
-      <!-- wasi:http component type for CoreCLR/NativeAOT app links (a source file, so not a FileWrite);
-           Mono stages it from wasi.proj. -->
+      <!-- wasi:http component type for app links; a source file, so not a FileWrite. -->
       <NativeAsset Include="$(LibrariesProjectRoot)System.Net.Http\src\System\Net\Http\WasiHttpHandler\WasiHttpWorld_component_type.wit"
                    Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' != 'Mono'" />
     </ItemGroup>

@@ -385,8 +385,7 @@
                              IsNative="true" />
     </ItemGroup>
 
-    <!-- wasi:http component type for app links that keep System.Net.Http's WasiHttpHandler imports
-         (CoreCLR relink and NativeAOT). Mono packs pick up the copy staged by wasi.proj. -->
+    <!-- wasi:http component type for app links that keep System.Net.Http's WasiHttpHandler imports. -->
     <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' != 'Mono'">
       <LibrariesRuntimeFiles Include="$(LibrariesProjectRoot)System.Net.Http\src\System\Net\Http\WasiHttpHandler\WasiHttpWorld_component_type.wit"
                              IsNative="true" />
