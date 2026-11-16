@@ -69,6 +69,11 @@ namespace System.Buffers.Text
                     }
 
                     end = srcMax - 45;
+                    // Avoid the final AVX2 store when a remainder-1 source has only decodedLength - 2 destination bytes.
+                    if ((srcLength & 0x3) == 1 && destLength == decodedLength - 2)
+                    {
+                        end--;
+                    }
                     if (Avx2.IsSupported && (end >= src))
                     {
                         Avx2Decode(decoder, ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);

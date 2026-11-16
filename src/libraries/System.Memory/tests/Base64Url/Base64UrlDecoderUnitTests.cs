@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using Xunit;
 
@@ -273,6 +274,48 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(expectedConsumed, consumed);
             Assert.Equal(decodedBytes.Length, decodedByteCount);
             Assert.True(Base64TestHelper.VerifyUrlDecodingCorrectness(expectedConsumed, decodedBytes.Length, source, decodedBytes));
+        }
+
+        [Theory]
+        [InlineData(false, OperationStatus.DestinationTooSmall, 40)]
+        [InlineData(true, OperationStatus.Done, 45)]
+        public void DecodingDoesNotWritePastDestination(bool trailingWhitespace, OperationStatus expectedStatus, int expectedConsumed)
+        {
+            if (!Avx2.IsSupported)
+            {
+                return;
+            }
+
+            string input = new string('A', trailingWhitespace ? 40 : 45) + (trailingWhitespace ? "     " : "");
+            byte[] utf8Source = Encoding.ASCII.GetBytes(input);
+            char[] charSource = input.ToCharArray();
+            byte[] destination = new byte[32];
+
+            OperationStatus status = default;
+            int consumed = 0;
+            int written = 0;
+
+            for (int iteration = 0; iteration < 10_000; iteration++)
+            {
+                destination[31] = 1;
+                status = Base64Url.DecodeFromUtf8(utf8Source, destination.AsSpan(0, 31), out consumed, out written);
+            }
+
+            Assert.Equal(expectedStatus, status);
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(30, written);
+            Assert.Equal(1, destination[31]);
+
+            for (int iteration = 0; iteration < 10_000; iteration++)
+            {
+                destination[31] = 1;
+                status = Base64Url.DecodeFromChars(charSource, destination.AsSpan(0, 31), out consumed, out written);
+            }
+
+            Assert.Equal(expectedStatus, status);
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(30, written);
+            Assert.Equal(1, destination[31]);
         }
 
         [Theory]
