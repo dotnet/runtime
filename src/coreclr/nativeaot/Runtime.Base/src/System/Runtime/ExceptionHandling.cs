@@ -323,15 +323,15 @@ namespace System.Runtime
                 ExceptionIDs.ArrayTypeMismatch => new ArrayTypeMismatchException(),
 #if !TARGET_WASM
                 ExceptionIDs.DataMisaligned => new DataMisalignedException(),
-#endif
                 ExceptionIDs.DivideByZero => new DivideByZeroException(),
+#endif
                 ExceptionIDs.EntrypointNotFound => new EntryPointNotFoundException(),
                 ExceptionIDs.IndexOutOfRange => new IndexOutOfRangeException(),
                 ExceptionIDs.InvalidCast => new InvalidCastException(),
                 ExceptionIDs.NullReference => new NullReferenceException(),
                 ExceptionIDs.OutOfMemory => new OutOfMemoryException(),
-                ExceptionIDs.Overflow => new OverflowException(),
 #if !TARGET_WASM
+                ExceptionIDs.Overflow => new OverflowException(),
 #pragma warning disable CS0618 // ExecutionEngineException is obsolete
                 ExceptionIDs.IllegalInstruction => new ExecutionEngineException("Illegal instruction: Attempted to execute an instruction code not defined by the processor."),
                 ExceptionIDs.PrivilegedInstruction => new ExecutionEngineException("Privileged instruction: Attempted to execute an instruction code that cannot be executed in user mode."),
@@ -386,28 +386,6 @@ namespace System.Runtime
         // RhExceptionHandling_ functions are used to throw exceptions out of our asm helpers. We tail-call from
         // the asm helpers to these functions, which performs the throw. The tail-call is important: it ensures that
         // the stack is crawlable from within these functions.
-        [StackTraceHidden]
-        [DebuggerHidden]
-        [RuntimeExport("RhExceptionHandling_ThrowClasslibOverflowException")]
-        public static void ThrowClasslibOverflowException(IntPtr address)
-        {
-            // Throw the overflow exception defined by the classlib, using the return address of the asm helper
-            // to find the correct classlib.
-
-            throw GetClasslibException(ExceptionIDs.Overflow, address);
-        }
-
-        [StackTraceHidden]
-        [DebuggerHidden]
-        [RuntimeExport("RhExceptionHandling_ThrowClasslibDivideByZeroException")]
-        public static void ThrowClasslibDivideByZeroException(IntPtr address)
-        {
-            // Throw the divide by zero exception defined by the classlib, using the return address of the asm helper
-            // to find the correct classlib.
-
-            throw GetClasslibException(ExceptionIDs.DivideByZero, address);
-        }
-
         [StackTraceHidden]
         [DebuggerHidden]
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
