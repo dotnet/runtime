@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
 
 using Internal;
@@ -266,7 +267,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             foreach (MethodDesc method in methods)
             {
                 pgoEmitter.Clear();
-                PgoProcessor.EncodePgoData(CorInfoImpl.ConvertTypeHandleHistogramsToCompactTypeHistogramFormat(_profileDataManager[method].SchemaData, factory.CompilationModuleGroup), pgoEmitter, false);
+                PgoProcessor.EncodePgoData(CompactValueHistograms(CorInfoImpl.ConvertTypeHandleHistogramsToCompactTypeHistogramFormat(_profileDataManager[method].SchemaData, factory.CompilationModuleGroup)), pgoEmitter, false);
 
                 byte[] signature = InstanceEntryPointTableNode.BuildSignatureForMethodDefinedInModule(method, factory);
                 BlobVertex signatureBlob = new BlobVertex(signature);
@@ -292,6 +293,105 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 relocs: null,
                 alignment: 8,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
+        }
+
+        // Merging MIBC data concatenates the value histograms of all training runs (32 samples per run), so they
+        // grow with every run. The runtime decodes the embedded data on every JIT compilation that uses it (including
+        // for each inlinee), so cap value histograms at the size of the runtime's own ones (HandleHistogram32::SIZE).
+        private const int MaxEmbeddedValueHistogramSize = 32;
+
+        private static IEnumerable<PgoSchemaElem> CompactValueHistograms(IEnumerable<PgoSchemaElem> pgoData)
+        {
+            foreach (PgoSchemaElem elem in pgoData)
+            {
+                // Match both the current (32-bit) and the legacy (64-bit) value histogram kinds.
+                bool isValueHistogram = (elem.InstrumentationKind & PgoInstrumentationKind.DescriptorMask) ==
+                    (PgoInstrumentationKind.ValueHistogram & PgoInstrumentationKind.DescriptorMask);
+
+                if (!isValueHistogram || (elem.Count <= MaxEmbeddedValueHistogramSize))
+                {
+                    yield return elem;
+                    continue;
+                }
+
+                yield return elem with
+                {
+                    Count = MaxEmbeddedValueHistogramSize,
+                    DataObject = elem.DataObject switch
+                    {
+                        int[] values => DownsampleValueHistogram(values),
+                        long[] values => DownsampleValueHistogram(values),
+                        _ => throw new UnreachableException(),
+                    },
+                };
+            }
+        }
+
+        // Downsamples a value histogram to MaxEmbeddedValueHistogramSize samples. The JIT only uses each value's share
+        // of the samples (see getLikelyValues), which is preserved up to rounding (less than 1/32 per value).
+        private static T[] DownsampleValueHistogram<T>(T[] values) where T : struct, INumber<T>
+        {
+            // Count the samples of each value. Zero entries are unused slots that the JIT ignores.
+            // OrderedDictionary keeps values in first-seen order, which makes the output deterministic.
+            OrderedDictionary<T, int> counts = new();
+            int total = 0;
+            foreach (T value in values)
+            {
+                if (!T.IsZero(value))
+                {
+                    counts[value] = counts.GetValueOrDefault(value) + 1;
+                    total++;
+                }
+            }
+
+            T[] result = new T[MaxEmbeddedValueHistogramSize];
+            Span<T> remaining = result;
+
+            if (total <= MaxEmbeddedValueHistogramSize)
+            {
+                // Few enough samples to keep them all; the remaining entries stay zero (unused).
+                foreach ((T value, int count) in counts)
+                {
+                    remaining[..count].Fill(value);
+                    remaining = remaining[count..];
+                }
+                return result;
+            }
+
+            // Largest remainder method: each value first gets floor(count * size / total) slots...
+            var shares = new (T Value, int Slots, long Remainder)[counts.Count];
+            int assigned = 0;
+            int index = 0;
+            foreach ((T value, int count) in counts)
+            {
+                (long slots, long remainder) = Math.DivRem((long)count * MaxEmbeddedValueHistogramSize, total);
+                shares[index++] = (value, (int)slots, remainder);
+                assigned += (int)slots;
+            }
+
+            // ...then the few slots lost to rounding down go to the values with the largest remainders
+            // (the value seen first wins ties).
+            for (; assigned < MaxEmbeddedValueHistogramSize; assigned++)
+            {
+                int best = 0;
+                for (int i = 1; i < shares.Length; i++)
+                {
+                    if (shares[i].Remainder > shares[best].Remainder)
+                    {
+                        best = i;
+                    }
+                }
+                shares[best].Slots++;
+                shares[best].Remainder = -1;
+            }
+
+            foreach ((T value, int slots, _) in shares)
+            {
+                remaining[..slots].Fill(value);
+                remaining = remaining[slots..];
+            }
+            Debug.Assert(remaining.IsEmpty);
+            return result;
         }
 
         public override int ClassCode => 1887299452;
