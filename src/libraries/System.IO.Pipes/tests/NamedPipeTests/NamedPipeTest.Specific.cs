@@ -806,5 +806,22 @@ namespace System.IO.Pipes.Tests
                 return (new(server.SafePipeHandle, trackResurrection: true), new(client.SafePipeHandle, trackResurrection: true));
             }
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // the returned ValueTask is backed by a reusable PipeValueTaskSource only on Windows
+        public async Task GettingResultOfTheSameValueTaskTwiceThrowsInvalidOperationException()
+        {
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+            using NamedPipeServerStream server = new(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            using NamedPipeClientStream client = new(".", pipeName, PipeDirection.Out, PipeOptions.Asynchronous);
+
+            await Task.WhenAll(server.WaitForConnectionAsync(), client.ConnectAsync());
+
+            ValueTask<int> readTask = server.ReadAsync(new byte[1]);
+            await client.WriteAsync(new byte[1]);
+            Assert.Equal(1, await readTask);
+
+            Assert.Throws<InvalidOperationException>(() => readTask.Result);
+        }
     }
 }
