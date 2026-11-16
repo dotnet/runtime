@@ -247,6 +247,22 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public void PowerOfTwoResultsRespectMaximumLength()
+        {
+            Assert.Throws<OverflowException>(() => BigInteger.One << int.MaxValue);
+            Assert.Throws<OverflowException>(() => BigInteger.Pow(2, int.MaxValue));
+
+            BigInteger arrayBacked = (BigInteger.One << (nint.Size * 8)) + 1;
+            Assert.Throws<OverflowException>(() => arrayBacked << int.MaxValue);
+            Assert.Throws<OverflowException>(() => arrayBacked >> int.MinValue);
+
+            int maxLength = Array.MaxLength / (nint.Size * 8);
+            BigInteger allOnes = nint.Size == 8 ? ulong.MaxValue : uint.MaxValue;
+            int shift = checked(((maxLength - 1) * nint.Size * 8) + 1);
+            Assert.Throws<OverflowException>(() => allOnes << shift);
+        }
+
+        [Fact]
         public void NuintMaxValueEdgeCases()
         {
             // Test values at nuint boundaries

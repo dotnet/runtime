@@ -8,7 +8,7 @@ import cwraps, { threads_c_functions as twraps } from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
 import { JavaScriptMarshalerArgSize, alloc_stack_frame, get_arg, get_arg_gc_handle, is_args_exception, set_arg_i32, set_arg_intptr, set_arg_type, set_gc_handle, set_receiver_should_free } from "./marshal";
 import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_bool_to_cs, marshal_exception_to_cs, marshal_intptr_to_cs, marshal_string_to_cs } from "./marshal-to-cs";
-import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js, marshal_exception_to_js } from "./marshal-to-js";
+import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js, marshal_exception_to_js, release_eager_task_holder } from "./marshal-to-js";
 import { do_not_force_dispose, is_gcv_handle } from "./gc-handles";
 import { assert_c_interop, assert_js_interop } from "./invoke-js";
 import { monoThreadInfo, mono_wasm_main_thread_ptr } from "./pthreads";
@@ -62,7 +62,13 @@ export function call_entry_point (main_assembly_name: string, program_args: stri
         // because this is async, we could pre-allocate the promise
         let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated, marshal_int32_to_js);
 
-        invoke_async_jsexport(runtimeHelpers.managedThreadTID, managedExports.CallEntrypoint, args, size);
+        try {
+            invoke_async_jsexport(runtimeHelpers.managedThreadTID, managedExports.CallEntrypoint, args, size);
+        } catch (ex) {
+            // the throw unwinds past end_marshal_task_to_js, which would otherwise adopt the promise
+            release_eager_task_holder(promise);
+            throw ex;
+        }
 
         // in case the C# side returned synchronously
         promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
@@ -343,7 +349,13 @@ export function bind_assembly_exports (assemblyName: string): Promise<void> {
         // because this is async, we could pre-allocate the promise
         let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated);
 
-        invoke_async_jsexport(runtimeHelpers.managedThreadTID, managedExports.BindAssemblyExports, args, size);
+        try {
+            invoke_async_jsexport(runtimeHelpers.managedThreadTID, managedExports.BindAssemblyExports, args, size);
+        } catch (ex) {
+            // the throw unwinds past end_marshal_task_to_js, which would otherwise adopt the promise
+            release_eager_task_holder(promise);
+            throw ex;
+        }
 
         // in case the C# side returned synchronously
         promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
