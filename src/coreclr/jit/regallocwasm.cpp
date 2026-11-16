@@ -9,6 +9,7 @@
 #include "regallocwasm.h"
 
 #include "lower.h" // for LowerRange()
+#include "fgwasm.h"
 
 RegAllocInterface* GetRegisterAllocator(Compiler* compiler)
 {
@@ -33,6 +34,7 @@ PhaseStatus WasmRegAlloc::doRegisterAllocation()
 
     IdentifyCandidates();
     CollectReferences();
+    BuildIntervals();
     ResolveReferences();
     PublishAllocationResults();
 
@@ -1007,6 +1009,131 @@ regNumber WasmRegAlloc::RequestInternalRegister(GenTree* node, var_types type)
     m_codeGen->internalRegisters.Add(node, reg);
     CollectReference(node);
     return reg;
+}
+
+//------------------------------------------------------------------------
+// SetBlockSequence: set the block sequence partitioned by funclet.
+//
+// The result will be stored in each funclet's m_blockOrder. Each funclet's block order
+// follows a (relative) loop-aware reverse postorder.
+//
+void WasmRegAlloc::SetBlockSequence()
+{
+    FgWasm fgWasm(m_compiler);
+
+    bool              hasBlocksOnlyReachableViaEH;
+    FlowGraphDfsTree* dfsTree = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
+    assert(!hasBlocksOnlyReachableViaEH); // fgWasmEHFlow should have handled blocks only reachable via EH
+
+    BitVecTraits visitedTraits(m_compiler->fgBBNumMax + 1, m_compiler);
+    BitVec       visited    = BitVecOps::MakeEmpty(&visitedTraits);
+    auto         visitBlock = [&](BasicBlock* block) {
+        if (BitVecOps::IsMember(&visitedTraits, visited, block->bbNum))
+        {
+            return;
+        }
+
+        int                   funcletIdx  = m_compiler->bbFuncletRegionOf(block);
+        PerFuncletData* const funcletData = m_perFuncletData[funcletIdx];
+        funcletData->m_blockOrder.push_back(block);
+
+        BitVecOps::AddElemD(&visitedTraits, visited, block->bbNum);
+    };
+
+    FlowGraphNaturalLoops* loops = FlowGraphNaturalLoops::Find(dfsTree);
+    m_compiler->fgVisitBlocksInLoopAwareRPO(dfsTree, loops, visitBlock);
+
+    // Ensure we visit any blocks not reached by the loop-aware RPO traversal.
+    for (BasicBlock* block : m_compiler->Blocks())
+    {
+        visitBlock(block);
+    }
+
+    JITDUMP("Block order:\n");
+    for (const FuncInfoDsc* const funcInfo : m_compiler->Funcs())
+    {
+        JITDUMP("Funclet %u:\n", funcInfo->GetFuncletIdx(m_compiler));
+        unsigned count = 0;
+        for (BasicBlock* block : funcInfo->Blocks(m_compiler))
+        {
+            count++;
+        }
+        const auto& blockOrder = m_perFuncletData[funcInfo->GetFuncletIdx(m_compiler)]->m_blockOrder;
+        assert(count == blockOrder.size());
+
+        BitVecTraits traits(m_compiler->fgBBNumMax + 1, m_compiler);
+        BitVec       funcBlocks = BitVecOps::MakeEmpty(&traits);
+        for (BasicBlock* block : funcInfo->Blocks(m_compiler))
+        {
+            BitVecOps::AddElemD(&traits, funcBlocks, block->bbNum);
+        }
+
+        for (unsigned i = 0; i < count; i++)
+        {
+            assert(BitVecOps::IsMember(&traits, funcBlocks, blockOrder[i]->bbNum));
+            JITDUMP("  BB%02u\n", blockOrder[i]->bbNum);
+        }
+    }
+}
+
+void WasmRegAlloc::BuildIntervals()
+{
+    SetBlockSequence();
+    for (FuncInfoDsc* const funcInfo : m_compiler->Funcs())
+    {
+        m_currentFunclet                  = funcInfo->GetFuncletIdx(m_compiler);
+        PerFuncletData* const funcletData = m_perFuncletData[m_currentFunclet];
+        assert(m_compiler->lvaTrackedCount == funcletData->m_intervals.size());
+        BuildFuncIntervals(funcInfo, funcletData);
+    }
+}
+
+void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* funcletData)
+{
+    struct PendingLclUse
+    {
+        GenTree*     UseNode;
+        unsigned int trackedLcl;
+    };
+
+    auto isIntervalCandidate = [&](LclVarDsc* varDsc) {
+        if (varDsc->lvIsRegCandidate())
+        {
+            // Don't permit params or SP/FP locals to be tracked interval candidates;
+            regNumber reg = varDsc->GetRegNum();
+            assert(genIsValidReg(reg));
+            return !varDsc->lvIsParam && reg != funcletData->m_fpReg && reg != funcletData->m_spReg;
+        }
+        return false;
+    };
+
+    for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
+    {
+        LclVarDsc* varDsc = m_compiler->lvaGetDescByTrackedIndex(i);
+
+        Interval* interval = nullptr;
+        if (isIntervalCandidate(varDsc))
+        {
+            regNumber virtReg = varDsc->GetRegNum();
+            interval          = new (m_compiler->getAllocator(CMK_LSRA)) Interval();
+            interval->start   = INT_MAX;
+            interval->end     = INT_MIN;
+            interval->virtReg = virtReg;
+        }
+        funcletData->m_intervals[i] = interval;
+    }
+
+    unsigned pos = 0;
+    for (BasicBlock* const block : funcletData->m_blockOrder)
+    {
+        JITDUMP("Processing block [%06u]\n", block->bbNum);
+        for (GenTree* tree : LIR::AsRange(block))
+        {
+            JITDUMP("%d: ", pos);
+            DISPNODE(tree);
+            pos++;
+        }
+    }
 }
 
 //------------------------------------------------------------------------
