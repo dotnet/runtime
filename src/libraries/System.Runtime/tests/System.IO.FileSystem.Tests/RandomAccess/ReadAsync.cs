@@ -99,5 +99,29 @@ namespace System.IO.Tests
                 Assert.Equal(expected, actual.Take(total).ToArray());
             }
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // the returned ValueTask is backed by a reusable OverlappedValueTaskSource only on Windows
+        public async Task GettingResultOfPendingOrConsumedValueTaskThrowsInvalidOperationException()
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: true, asyncWrite: true);
+
+            using (readHandle)
+            using (writeHandle)
+            {
+                ValueTask<int> firstRead = RandomAccess.ReadAsync(readHandle, new byte[1], fileOffset: 0);
+                Assert.Throws<InvalidOperationException>(() => firstRead.Result); // the operation is still in progress
+
+                await RandomAccess.WriteAsync(writeHandle, new byte[1], fileOffset: 0);
+                Assert.Equal(1, await firstRead);
+
+                // The second read reuses the source of the first one.
+                ValueTask<int> secondRead = RandomAccess.ReadAsync(readHandle, new byte[1], fileOffset: 0);
+                Assert.Throws<InvalidOperationException>(() => firstRead.Result); // the result was already consumed
+
+                await RandomAccess.WriteAsync(writeHandle, new byte[1], fileOffset: 0);
+                Assert.Equal(1, await secondRead);
+            }
+        }
     }
 }
