@@ -1334,7 +1334,7 @@ bool Compiler::optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loo
         return true;
     }
 
-    if (varDsc->lvDoNotEnregister)
+    if (varDsc->lvDoNotEnregister || (varDsc->lvTracked && varDsc->lvLiveInOutOfHndlr))
     {
         // This filters out locals that may be live into exceptional exits.
         return true;
