@@ -19,10 +19,10 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include "pal/process.h"
 #include "pal/context.h"
 #include "pal/debug.h"
-#include "pal/environ.h"
 #include "pal/module.h"
 #include "pal/stackstring.hpp"
 #include "pal/utils.h"
+#include <minipal/environ.h>
 #include <minipal/ospagesize.h>
 #include <minipal/utf8.h>
 
@@ -146,11 +146,9 @@ OutputDebugStringA(
           lpOutputString ? lpOutputString : "NULL");
 
     // As we don't support debug events, we are going to output the debug string
-    // to stderr instead of generating OUT_DEBUG_STRING_EVENT. It's safe to tell
-    // EnvironGetenv not to make a copy of the value here since we only want to
-    // check whether it exists, not actually use it.
+    // to stderr instead of generating OUT_DEBUG_STRING_EVENT.
     if ((lpOutputString != NULL) &&
-        (NULL != EnvironGetenv(PAL_OUTPUTDEBUGSTRING, /* copyValue */ FALSE)))
+        (getenv(PAL_OUTPUTDEBUGSTRING) != NULL))
     {
         fprintf(stderr, "%s", lpOutputString);
     }
@@ -249,9 +247,12 @@ EXIT:
        'set -x; ddd $PAL_EXE_NAME $PAL_EXE_PID'
 */
 
+#define PID_TEXT "PAL_EXE_PID="
+#define EXE_TEXT "PAL_EXE_NAME="
+
 static
 int
-run_debug_command (const char *command)
+run_debug_command (const char *command, char *pid_entry, char *exe_entry)
 {
     int pid;
     Volatile<int> spin = 1;
@@ -260,17 +261,46 @@ run_debug_command (const char *command)
         return 1;
     }
 
+    char **environment = minipal_environ_get();
+    size_t count = 0;
+    while (environment[count] != NULL)
+    {
+        count++;
+    }
+
+    char **child_environment = (char **)malloc((count + 3) * sizeof(char *));
+    if (child_environment == NULL)
+    {
+        return -1;
+    }
+
+    size_t child_count = 0;
+    child_environment[child_count++] = pid_entry;
+    child_environment[child_count++] = exe_entry;
+    for (size_t i = 0; i < count; i++)
+    {
+        if (strncmp(environment[i], PID_TEXT, strlen(PID_TEXT)) != 0 &&
+            strncmp(environment[i], EXE_TEXT, strlen(EXE_TEXT)) != 0)
+        {
+            child_environment[child_count++] = environment[i];
+        }
+    }
+    child_environment[child_count] = NULL;
+
     printf("Spawning command: %s\n", command);
 
     pid = fork();
     if (pid == -1) {
+        free(child_environment);
         return -1;
     }
     if (pid == 0) {
         const char *argv[4] = { "sh", "-c", command, 0 };
-        execv("/bin/sh", (char **)argv);
+        execve("/bin/sh", (char **)argv, child_environment);
         exit(127);
     }
+
+    free(child_environment);
 
     /* We continue either when the spawned process has stopped, or when
        an attached debugger sets spin to 0 */
@@ -302,9 +332,6 @@ run_debug_command (const char *command)
 }
 #endif // ENABLE_RUN_ON_DEBUG_BREAK
 
-#define PID_TEXT "PAL_EXE_PID="
-#define EXE_TEXT "PAL_EXE_NAME="
-
 static
 int
 DebugBreakCommand()
@@ -312,7 +339,7 @@ DebugBreakCommand()
 #ifdef ENABLE_RUN_ON_DEBUG_BREAK
     extern MODSTRUCT exe_module;
 
-    char *command_string = EnvironGetenv(PAL_RUN_ON_DEBUG_BREAK);
+    const char *command_string = getenv(PAL_RUN_ON_DEBUG_BREAK);
     if (command_string)
     {
         char pid_buf[sizeof (PID_TEXT) + 32];
@@ -343,21 +370,12 @@ DebugBreakCommand()
         }
 
         exe_bufString.CloseBuffer(dwexe_buf);
-        /* strictly speaking, we might want to only set these environment
-           variables in the child process, but if we do that we can't check
-           for errors. putenv/setenv can fail when out of memory */
 
-        if (!EnvironPutenv (pid_buf) || !EnvironPutenv (exe_buf))
+        if (run_debug_command (command_string, pid_buf, exe_buf))
         {
             goto FAILED;
         }
 
-        if (run_debug_command (command_string))
-        {
-            goto FAILED;
-        }
-
-        free(command_string);
         return 1;
     }
 
@@ -367,7 +385,6 @@ FAILED:
     if (command_string)
     {
         fprintf (stderr, "Failed to execute command: '%s'\n", command_string);
-        free(command_string);
     }
 
     return -1;

@@ -22,7 +22,6 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "procprivate.hpp"
 #include "pal/process.h"
 #include "pal/module.h"
-#include "pal/environ.h"
 #include "pal/init.h"
 #include <minipal/utf8.h>
 #include "pal/utils.h"
