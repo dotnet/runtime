@@ -139,9 +139,9 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>13b701d371826c168b26d581351422c031089faa</Sha>
     </Dependency>
-    <Dependency Name="System.IO.Compression.TestData" Version="11.0.0-beta.26426.1">
+    <Dependency Name="System.IO.Compression.TestData" Version="12.0.0-beta.26556.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>13b701d371826c168b26d581351422c031089faa</Sha>
+      <Sha>bd2c603b5beaebc895bfe3c65c11e2ccac7eacad</Sha>
     </Dependency>
     <Dependency Name="System.IO.Packaging.TestData" Version="11.0.0-beta.26426.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>

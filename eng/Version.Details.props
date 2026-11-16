@@ -106,7 +106,7 @@ This file should be imported by eng/Versions.props
     <SystemDataCommonTestDataPackageVersion>11.0.0-beta.26426.1</SystemDataCommonTestDataPackageVersion>
     <SystemDrawingCommonTestDataPackageVersion>11.0.0-beta.26426.1</SystemDrawingCommonTestDataPackageVersion>
     <SystemFormatsTarTestDataPackageVersion>11.0.0-beta.26426.1</SystemFormatsTarTestDataPackageVersion>
-    <SystemIOCompressionTestDataPackageVersion>11.0.0-beta.26426.1</SystemIOCompressionTestDataPackageVersion>
+    <SystemIOCompressionTestDataPackageVersion>12.0.0-beta.26556.1</SystemIOCompressionTestDataPackageVersion>
     <SystemIOPackagingTestDataPackageVersion>11.0.0-beta.26426.1</SystemIOPackagingTestDataPackageVersion>
     <SystemNetTestDataPackageVersion>11.0.0-beta.26426.1</SystemNetTestDataPackageVersion>
     <SystemPrivateRuntimeUnicodeDataPackageVersion>12.0.0-beta.26531.1</SystemPrivateRuntimeUnicodeDataPackageVersion>
