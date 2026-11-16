@@ -12,6 +12,16 @@
         <target state="translated">Pochodne typy "JsonSerializerContext" i wszystkich zawierające typy muszą być częściowe.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ContextHasNoSerializableTypesMessageFormat">
+        <source>JsonSerializerContext type '{0}' has no JsonSerializableAttribute annotations. Add at least one type to generate serialization metadata.</source>
+        <target state="new">JsonSerializerContext type '{0}' has no JsonSerializableAttribute annotations. Add at least one type to generate serialization metadata.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ContextHasNoSerializableTypesTitle">
+        <source>JsonSerializerContext has no serializable types.</source>
+        <target state="new">JsonSerializerContext has no serializable types.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DataExtensionPropertyInvalidFormat">
         <source>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</source>
         <target state="translated">Właściwość rozszerzenia danych "{0}.{1}" jest nieprawidłowa. Musi ona zaimplementować ciąg "IDictionary&lt;string, JsonElement&gt;" lub "IDictionary&lt;string, object&gt;" albo być obiektem "JsonObject".</target>

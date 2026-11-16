@@ -12,6 +12,16 @@
         <target state="translated">派生的 “JsonSerializerContext” 类型以及所有包含类型必须是部分。</target>
         <note />
       </trans-unit>
+      <trans-unit id="ContextHasNoSerializableTypesMessageFormat">
+        <source>JsonSerializerContext type '{0}' has no JsonSerializableAttribute annotations. Add at least one type to generate serialization metadata.</source>
+        <target state="new">JsonSerializerContext type '{0}' has no JsonSerializableAttribute annotations. Add at least one type to generate serialization metadata.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ContextHasNoSerializableTypesTitle">
+        <source>JsonSerializerContext has no serializable types.</source>
+        <target state="new">JsonSerializerContext has no serializable types.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DataExtensionPropertyInvalidFormat">
         <source>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</source>
         <target state="translated">数据扩展属性“{0}.{1}”无效。它必须实现“IDictionary&lt;string, JsonElement&gt;”或“IDictionary&lt;string, object&gt;”，或为 “JsonObject”。</target>
