@@ -262,7 +262,12 @@ LOCAL_LABEL(NotHijacked):
 
     LEAF_ENTRY RhpResumeAfterCatch, _TEXT
 
+#ifdef FEATURE_EMULATED_TLS
+        GETTHREAD_ETLS_2
+        mov         x3, x2                                      // x3 <- Thread*
+#else
         INLINE_GETTHREAD x3                                     // x3 <- Thread*
+#endif
 
         // Clear the DoNotTriggerGc state before resuming in the managed code after the catch.
         add         x12, x3, #OFFSETOF__Thread__m_ThreadStateFlags
