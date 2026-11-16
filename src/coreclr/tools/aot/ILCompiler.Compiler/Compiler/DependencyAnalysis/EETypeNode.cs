@@ -128,6 +128,23 @@ namespace ILCompiler.DependencyAnalysis
                     return result;
             }
 
+            // A GVM can also override a GVM on a parent type through a MethodImpl while being newslot itself
+            // (e.g. a C# covariant return override). Such a method is its own slot defining method, so the check above
+            // does not catch it. Non-interface MethodImpls are the only way to do that.
+            if ((result & VirtualMethodAnalysisFlags.NeedsGvmEntries) != 0
+                && (result & VirtualMethodAnalysisFlags.InterestingForDynamicDependencies) == 0
+                && defType.GetTypeDefinition() is MetadataType typeDefinition)
+            {
+                foreach (MethodImplRecord methodImpl in typeDefinition.VirtualMethodImplsForType)
+                {
+                    if (methodImpl.Body.HasInstantiation)
+                    {
+                        result |= VirtualMethodAnalysisFlags.InterestingForDynamicDependencies;
+                        break;
+                    }
+                }
+            }
+
             //
             // Check if the type implements any interface, where the method implementations could be on
             // base types.

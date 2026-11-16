@@ -495,6 +495,40 @@ namespace TypeSystemTests
             }
         }
 
+        [Theory]
+        [InlineData("Base", "BaseCovariant")]
+        [InlineData("Impl", "ImplCovariant")]
+        [InlineData("SubImpl", "SubImplCovariant")]
+        [InlineData("SubImpl_OverrideViaNameSig", "SubImplCovariant2")]
+        [InlineData("SubImpl_OverrideViaNameSig_OverriddenViaMethodImpl", "SubSubImplCovariant")]
+        public void TestSubImplCovariantGenericMethod(string exactScenarioName, string typeToConstruct)
+        {
+            this._logger.WriteLine(exactScenarioName);
+
+            MetadataType derivedClass = _testModule.GetType("VirtualFunctionOverride"u8, Encoding.UTF8.GetBytes(typeToConstruct));
+            MetadataType baseClass = derivedClass;
+
+            while (baseClass != baseClass.Context.GetWellKnownType(WellKnownType.Object))
+            {
+                MethodDesc callMethod = baseClass.GetMethod("FromTypeGeneric"u8, null);
+                Assert.NotNull(callMethod);
+
+                foreach (MethodDesc methodToResolve in new[] { callMethod, callMethod.MakeInstantiatedMethod(_stringType) })
+                {
+                    this._logger.WriteLine(methodToResolve.ToString());
+
+                    MethodDesc resolvedMethod = derivedClass.FindVirtualFunctionTargetMethodOnObjectType(methodToResolve);
+                    this._logger.WriteLine(resolvedMethod.ToString());
+
+                    Assert.Equal(typeToConstruct, ((EcmaType)resolvedMethod.OwningType).GetName());
+                    if (!methodToResolve.IsMethodDefinition)
+                        Assert.Equal(methodToResolve.Instantiation, resolvedMethod.Instantiation);
+                }
+
+                baseClass = (MetadataType)baseClass.BaseType;
+            }
+        }
+
         private static (string _namespace, string type) SplitIntoNameAndNamespace(string typeName)
         {
             int namespaceIndextypeName = typeName.LastIndexOf('.');
