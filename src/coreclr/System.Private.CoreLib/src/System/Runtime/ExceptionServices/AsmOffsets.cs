@@ -50,6 +50,10 @@ class AsmOffsets
     public const int SIZEOF__REGDISPLAY = 0xc60;
     public const int OFFSETOF__REGDISPLAY__SP = 0xba8;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0xbb0;
+#elif TARGET_WASM64
+    public const int SIZEOF__REGDISPLAY = 0xa0;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x90;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x98;
 #elif TARGET_WASM
     public const int SIZEOF__REGDISPLAY = 0x54;
     public const int OFFSETOF__REGDISPLAY__SP = 0x4c;
@@ -111,6 +115,10 @@ class AsmOffsets
     public const int SIZEOF__REGDISPLAY = 0xc50;
     public const int OFFSETOF__REGDISPLAY__SP = 0xba0;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0xba8;
+#elif TARGET_WASM64
+    public const int SIZEOF__REGDISPLAY = 0x98;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x88;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x90;
 #elif TARGET_WASM
     public const int SIZEOF__REGDISPLAY = 0x50;
     public const int OFFSETOF__REGDISPLAY__SP = 0x48;
@@ -156,6 +164,8 @@ class AsmOffsets
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x220;
 #elif TARGET_LOONGARCH64
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x520;
+#elif TARGET_WASM64
+    public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x28;
 #elif TARGET_WASM
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x14;
 #endif
@@ -178,6 +188,9 @@ class AsmOffsets
 #elif TARGET_LOONGARCH64
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x108;
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0xb8;
+#elif TARGET_WASM64
+    public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x20;
+    public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0x18;
 #elif TARGET_WASM
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x10;
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0x0c;

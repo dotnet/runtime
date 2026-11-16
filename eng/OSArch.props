@@ -10,7 +10,7 @@
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('HAIKU'))">haiku</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">windows</_hostOS>
     <HostOS>$(_hostOS)</HostOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm'">browser</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'browser-wasm64')">browser</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(_hostOS)</TargetOS>
     <TargetsMobile Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</TargetsMobile>
     <TargetsAppleMobile Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'">true</TargetsAppleMobile>
@@ -20,6 +20,7 @@
   <PropertyGroup Label="CalculateArch">
     <_hostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</_hostArch>
     <BuildArchitecture Condition="'$(BuildArchitecture)' == ''">$(_hostArch)</BuildArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm64'">wasm64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and ('$(TargetOS)' == 'browser' or '$(RuntimeIdentifier)' == 'browser-wasm')">wasm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and ('$(TargetOS)' == 'wasi' or '$(RuntimeIdentifier)' == 'wasi-wasm')">wasm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'arm'">arm</TargetArchitecture>
@@ -35,7 +36,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetsWasm Condition="'$(TargetArchitecture)' == 'wasm'">true</TargetsWasm>
+    <TargetsWasm Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetArchitecture)' == 'wasm64'">true</TargetsWasm>
+    <TargetsWasm64 Condition="'$(TargetArchitecture)' == 'wasm64'">true</TargetsWasm64>
   </PropertyGroup>
 
   <PropertyGroup>
