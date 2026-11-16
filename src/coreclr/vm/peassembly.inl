@@ -261,7 +261,7 @@ inline IMDInternalEmit* PEAssembly::GetMDInternalEmit()
     return m_pMDInternalEmit;
 }
 
-#ifdef PROFILING_SUPPORTED
+#if !defined(DACCESS_COMPILE) && (defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER))
 
 inline IMetaDataImport2 *PEAssembly::GetRWImporter()
 {
@@ -298,7 +298,7 @@ inline IMetaDataEmit *PEAssembly::GetEmitter()
 }
 
 
-#endif // PROFILING_SUPPORTED
+#endif // !DACCESS_COMPILE && (PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER)
 
 // Same as the managed Module.ScopeName property, this unconditionally looks in the
 // metadata Module table to get the name.  Useful for profilers and others who don't

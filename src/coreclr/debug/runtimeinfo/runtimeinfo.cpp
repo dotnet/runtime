@@ -25,10 +25,14 @@ RuntimeInfo DotNetRuntimeInfo = {
         #include <runtimemoduleindex.h>
     },
     {
+#ifndef OMIT_DAC_DBI_INDEX
         #include <dacmoduleindex.h>
+#endif
     },
     {
+#ifndef OMIT_DAC_DBI_INDEX
         #include <dbimoduleindex.h>
+#endif
     },
     {
         RuntimeFileMajorVersion, RuntimeFileMinorVersion, RuntimeFileBuildVersion, RuntimeFileRevisionVersion

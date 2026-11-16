@@ -139,6 +139,17 @@ be removed when the collection is finished. It is recommended to set the TEMP va
 to a location with adequate space, and preferably on a fast SSD to improve performance,
 before running `collect` to avoid running out of disk space.
 
+Linux ARM64 CI collections use the Azure Linux 4 ARM64 Helix container selected
+by `superpmi_collect_setup.py` for both public and internal queues. The underlying
+Helix host queues remain Ubuntu 22.04; changing the container does not migrate
+the host OS. ARM32 collections continue to use the Debian 12 container.
+
+The Aspire collection uses `superpmi_nativeaot_app.py --public_sign` to build its
+collection inputs without generating RSA/SHA-1 strong-name signatures or relaxing
+the OS crypto policy. Public signing preserves assembly identity; these builds are
+collection inputs, not production release artifacts. Other applications retain
+their existing signing settings unless `--public_sign` is specified.
+
 ### Azure Storage collections
 
 As stated above, you can use the `list-collections` command to see which collections

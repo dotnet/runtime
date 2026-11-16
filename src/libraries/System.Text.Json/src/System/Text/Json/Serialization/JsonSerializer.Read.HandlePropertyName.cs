@@ -94,7 +94,7 @@ namespace System.Text.Json
                     }
                     else
                     {
-                        ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                        ThrowHelper.ThrowJsonException_MetadataUnexpectedProperty(propertyName, ref state);
                     }
                 }
             }
@@ -111,8 +111,8 @@ namespace System.Text.Json
 
             object? extensionData = jsonPropertyInfo.GetValueAsObject(obj);
 
-            // For IReadOnlyDictionary, if there's an existing non-null instance, we need to create a new mutable
-            // Dictionary seeded with the existing contents so we can add the deserialized extension data to it.
+            // For IReadOnlyDictionary, reuse an existing Dictionary or create a mutable copy
+            // seeded with the existing contents so we can add the deserialized extension data to it.
             bool isReadOnlyDictionary = jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, object>) ||
                                         jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, JsonElement>);
 
@@ -148,6 +148,11 @@ namespace System.Text.Json
                     // create a Dictionary<TKey, TValue> instance seeded with any existing contents.
                     else if (jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, object>))
                     {
+                        if (extensionData is Dictionary<string, object>)
+                        {
+                            return;
+                        }
+
                         if (extensionData is not null)
                         {
                             var existing = (IReadOnlyDictionary<string, object>)extensionData;
@@ -168,6 +173,11 @@ namespace System.Text.Json
                     }
                     else if (jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, JsonElement>))
                     {
+                        if (extensionData is Dictionary<string, JsonElement>)
+                        {
+                            return;
+                        }
+
                         if (extensionData is not null)
                         {
                             var existing = (IReadOnlyDictionary<string, JsonElement>)extensionData;

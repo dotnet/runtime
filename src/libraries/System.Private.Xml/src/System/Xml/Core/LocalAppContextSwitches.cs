@@ -119,5 +119,17 @@ namespace System.Xml
                 return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.Serialization.UseLegacyXmlListSeparation", ref s_useLegacyXmlListSeparation);
             }
         }
+
+        private static int s_disableOptimizedXmlTextReaderAttributeBufferInvalidation;
+        public static bool DisableOptimizedXmlTextReaderAttributeBufferInvalidation
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue(
+                    "Switch.System.Xml.DisableOptimizedXmlTextReaderAttributeBufferInvalidation",
+                    ref s_disableOptimizedXmlTextReaderAttributeBufferInvalidation);
+            }
+        }
     }
 }

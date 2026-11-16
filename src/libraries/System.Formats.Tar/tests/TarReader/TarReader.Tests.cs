@@ -180,6 +180,111 @@ namespace System.Formats.Tar.Tests
             }
         }
 
+        public static IEnumerable<object[]> GnuBase256FieldOutOfRangeTestData()
+        {
+            const int ModeOffset = 100, MTimeOffset = 136, DevMajorOffset = 329, DevMinorOffset = 337, ATimeOffset = 345, CTimeOffset = 357;
+            const char DirectoryTypeFlag = '5', CharacterDeviceTypeFlag = '3';
+
+            // A positive base-256 value that is wider than the type the field is parsed as.
+            byte[] tooLargeForInt32 = new byte[] { 0x80, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+            byte[] tooLargeForInt64 = new byte[] { 0x80, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+
+            yield return new object[] { ModeOffset, tooLargeForInt32, DirectoryTypeFlag };
+            // DevMajor and DevMinor are only read for character device and block device entries.
+            yield return new object[] { DevMajorOffset, tooLargeForInt32, CharacterDeviceTypeFlag };
+            yield return new object[] { DevMinorOffset, tooLargeForInt32, CharacterDeviceTypeFlag };
+            yield return new object[] { MTimeOffset, tooLargeForInt64, DirectoryTypeFlag };
+            yield return new object[] { ATimeOffset, tooLargeForInt64, DirectoryTypeFlag };
+            yield return new object[] { CTimeOffset, tooLargeForInt64, DirectoryTypeFlag };
+
+            // A timestamp that fits Int64 but is not a date DateTimeOffset can represent: 2^48 seconds.
+            byte[] secondsOutOfDateTimeRange = new byte[] { 0x80, 0, 0, 0, 0, 0x01, 0, 0, 0, 0, 0, 0 };
+
+            yield return new object[] { MTimeOffset, secondsOutOfDateTimeRange, DirectoryTypeFlag };
+            yield return new object[] { ATimeOffset, secondsOutOfDateTimeRange, DirectoryTypeFlag };
+            yield return new object[] { CTimeOffset, secondsOutOfDateTimeRange, DirectoryTypeFlag };
+        }
+
+        [Theory]
+        [MemberData(nameof(GnuBase256FieldOutOfRangeTestData))]
+        public void GnuBase256Field_OutOfRange_Throws(int offset, byte[] fieldBytes, char typeFlag)
+        {
+            byte[] tarData = CreateEntryWithRawFields((offset, fieldBytes), (TypeFlagOffset, new byte[] { (byte)typeFlag }));
+
+            using TarReader reader = new TarReader(new MemoryStream(tarData));
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
+        }
+
+        [Theory]
+        [MemberData(nameof(GnuBase256FieldOutOfRangeTestData))]
+        public async Task GnuBase256Field_OutOfRange_Throws_Async(int offset, byte[] fieldBytes, char typeFlag)
+        {
+            byte[] tarData = CreateEntryWithRawFields((offset, fieldBytes), (TypeFlagOffset, new byte[] { (byte)typeFlag }));
+
+            await using TarReader reader = new TarReader(new MemoryStream(tarData));
+            await Assert.ThrowsAsync<InvalidDataException>(async () => await reader.GetNextEntryAsync());
+        }
+
+        public static IEnumerable<object[]> PaxNumericExtendedAttributeOutOfRangeTestData()
+        {
+            foreach (string field in new[] { "size", "mode", "devmajor", "devminor", "uid", "gid" })
+            {
+                yield return new object[] { field, "not-a-number" };
+                yield return new object[] { field, "99999999999999999999" }; // Larger than Int64.MaxValue.
+            }
+
+            // Larger than Int32.MaxValue, which is what these fields are parsed as.
+            yield return new object[] { "mode", "4294967296" };
+            yield return new object[] { "devmajor", "4294967296" };
+            yield return new object[] { "devminor", "4294967296" };
+
+            // Larger than Int64.MaxValue.
+            yield return new object[] { "size", "777777777777777777773" };
+
+            // Timestamps that parse as a number but are not a date DateTimeOffset can represent.
+            yield return new object[] { "mtime", "17930586772622498093" };
+            yield return new object[] { "mtime", "253402300800" };  // One second past DateTime.MaxValue.
+            yield return new object[] { "mtime", "-62135596801" };  // One second before DateTime.MinValue.
+        }
+
+        [Theory]
+        [MemberData(nameof(PaxNumericExtendedAttributeOutOfRangeTestData))]
+        public void PaxNumericExtendedAttribute_OutOfRange_Throws(string field, string value)
+        {
+            byte[] tarData = BuildRawPaxArchive("file.bin", "file.bin",
+                extraEAs: new Dictionary<string, string> { [field] = value });
+
+            using TarReader reader = new TarReader(new MemoryStream(tarData));
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
+        }
+
+        [Theory]
+        [MemberData(nameof(PaxNumericExtendedAttributeOutOfRangeTestData))]
+        public async Task PaxNumericExtendedAttribute_OutOfRange_Throws_Async(string field, string value)
+        {
+            byte[] tarData = BuildRawPaxArchive("file.bin", "file.bin",
+                extraEAs: new Dictionary<string, string> { [field] = value });
+
+            await using TarReader reader = new TarReader(new MemoryStream(tarData));
+            await Assert.ThrowsAsync<InvalidDataException>(async () => await reader.GetNextEntryAsync());
+        }
+
+        [Theory]
+        [InlineData("mtime", "253402300799")]  // DateTime.MaxValue, truncated to whole seconds.
+        [InlineData("mtime", "-62135596800")]  // DateTime.MinValue.
+        [InlineData("mtime", "1700000000.123456")]
+        [InlineData("mode", "511")]
+        [InlineData("devmajor", "2147483647")]
+        [InlineData("size", "0")]
+        public void PaxNumericExtendedAttribute_InRange_DoesNotThrow(string field, string value)
+        {
+            byte[] tarData = BuildRawPaxArchive("file.bin", "file.bin",
+                extraEAs: new Dictionary<string, string> { [field] = value });
+
+            using TarReader reader = new TarReader(new MemoryStream(tarData));
+            Assert.NotNull(reader.GetNextEntry());
+        }
+
         public static IEnumerable<object[]> GnuBase256UidGidTestData()
         {
             // Leading 0x80 byte: the remaining bytes are a positive big-endian value.
@@ -272,10 +377,19 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(value, entry.ExtendedAttributes["gid"]);
         }
 
+        private const int TypeFlagOffset = 156;
+
         // Writes a GNU entry, then overwrites its uid and gid fields with the given raw bytes and fixes up the checksum.
         private static byte[] CreateEntryWithRawUidGid(byte[] uid, byte[] gid)
         {
-            const int UidOffset = 108, GidOffset = 116, ChecksumOffset = 148, FieldLength = 8;
+            const int UidOffset = 108, GidOffset = 116;
+            return CreateEntryWithRawFields((UidOffset, uid), (GidOffset, gid));
+        }
+
+        // Writes a GNU entry, then overwrites the specified header fields with the given raw bytes and fixes up the checksum.
+        private static byte[] CreateEntryWithRawFields(params (int Offset, byte[] Value)[] fields)
+        {
+            const int ChecksumOffset = 148, ChecksumLength = 8;
 
             MemoryStream ms = new MemoryStream();
             using (TarWriter writer = new TarWriter(ms, TarEntryFormat.Gnu, leaveOpen: true))
@@ -284,11 +398,13 @@ namespace System.Formats.Tar.Tests
             }
 
             byte[] tarData = ms.ToArray();
-            uid.CopyTo(tarData, UidOffset);
-            gid.CopyTo(tarData, GidOffset);
+            foreach ((int offset, byte[] value) in fields)
+            {
+                value.CopyTo(tarData, offset);
+            }
 
             // The checksum is computed with the checksum field itself filled with spaces.
-            tarData.AsSpan(ChecksumOffset, FieldLength).Fill((byte)' ');
+            tarData.AsSpan(ChecksumOffset, ChecksumLength).Fill((byte)' ');
             int checksum = 0;
             for (int i = 0; i < 512; i++)
             {

@@ -178,7 +178,7 @@ namespace System.Net
                     {
                         header = header.ToLowerInvariant();
                         _keepAlive =
-                            header.IndexOf("close", StringComparison.OrdinalIgnoreCase) < 0 ||
+                            !header.Contains("close", StringComparison.OrdinalIgnoreCase) ||
                             header.Contains("keep-alive", StringComparison.OrdinalIgnoreCase);
                     }
                 }

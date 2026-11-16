@@ -5,7 +5,7 @@ using System;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed class StringCharStream : ICharStream
 {

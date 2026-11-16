@@ -419,8 +419,15 @@ namespace ILCompiler.ObjectWriter
             writer.WriteAddressSize((ulong)_methodSize);
 
             // DW_AT_frame_base
-            writer.WriteULEB128(1);
-            writer.Write([(byte)(DW_OP_reg0 + writer.FrameRegister)]);
+            if (writer.TargetArchitecture == TargetArchitecture.Wasm32)
+            {
+                writer.WriteULEB128(0);
+            }
+            else
+            {
+                writer.WriteULEB128(1);
+                writer.Write([(byte)(DW_OP_reg0 + writer.FrameRegister)]);
+            }
 
             if (_thisVariableIndex >= 0)
             {

@@ -87,14 +87,29 @@ void emitter::emitIns_BlockTy(instruction ins, WasmValueType valType)
 //   ins      - instruction to emit
 //   attr     - emit attributes
 //   imm      - immediate value
+//   isLastUse - whether this local.get is the last use of the stored value
 //
-void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
+void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool isLastUse)
 {
-    // Rewrite `local.set N; local.get N` as `local.tee N`.
+    assert(!isLastUse || (ins == INS_local_get));
+
+    // Keep the local assignment unless this get is known to be its last use.
     //
     if ((ins == INS_local_get) && m_compiler->opts.OptimizationEnabled() && emitCanPeepholeLastIns() &&
         (emitLastIns->idIns() == INS_local_set) && (emitGetInsSC(emitLastIns) == imm))
     {
+        if (isLastUse && (emitLastInsIG == emitCurIG))
+        {
+            JITDUMP("\n -- removing 'local.set %d; local.get %d' for a last use.\n", (int)imm, (int)imm);
+            unsigned size = emitLastIns->idCodeSize();
+            // Preserve instruction positions already captured for debug and GC information.
+            emitLastIns->idIns(INS_nop);
+            emitLastIns->idInsFmt(IF_NONE);
+            emitCurIGsize -= size;
+            emitCurIG->igFlags |= IGF_UPD_ISZ;
+            return;
+        }
+
         JITDUMP("\n -- rewriting 'local.set %d' as 'local.tee %d' since it is followed by a get of the same local.\n",
                 (int)imm, (int)imm);
         emitLastIns->idIns(INS_local_tee);
@@ -122,6 +137,37 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 //
 void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* targetBlock)
 {
+    // Double eqz normalizes an i32 to 0/1, which br_if does not need.
+    if ((ins == INS_br_if) && m_compiler->opts.OptimizationEnabled() && emitCanPeepholeLastIns() &&
+        (emitLastIns->idIns() == INS_i32_eqz))
+    {
+        insGroup*  prevIG = emitLastInsIG;
+        instrDesc* prev   = emitLastIns;
+        if (emitPrevID(prevIG, prev) && isInsIGSafeForPeepholeOptimization(prevIG, emitLastInsIG) &&
+            (prev->idIns() == INS_i32_eqz))
+        {
+            // Keep descriptors so captured instruction positions remain valid.
+            auto elide = [this](insGroup* ig, instrDesc* id) {
+                unsigned short size = static_cast<unsigned short>(id->idCodeSize());
+                if (ig == emitCurIG)
+                {
+                    emitCurIGsize -= size;
+                }
+                else
+                {
+                    ig->igSize -= size;
+                }
+                ig->igFlags |= IGF_UPD_ISZ;
+                id->idIns(INS_nop);
+                id->idInsFmt(IF_NONE);
+            };
+
+            JITDUMP("\n -- eliding 'i32.eqz; i32.eqz' before 'br_if'.\n");
+            elide(prevIG, prev);
+            elide(emitLastInsIG, emitLastIns);
+        }
+    }
+
     instrDesc* id  = emitNewInstrSC(attr, imm);
     insFormat  fmt = emitInsFormat(ins);
 
@@ -198,19 +244,25 @@ bool emitter::emitInsIsStore(instruction ins)
 //
 void emitter::emitImageBase()
 {
+    assert(!m_compiler->IsNativeAot());
     emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
               (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->imageBase);
 }
 
 //------------------------------------------------------------------------
 // emitAddressConstant: Emit a memory address constant, like an indirection cell.
-// This will automatically make use of relocations and the module base (imageBase).
+// NativeAOT uses linker-relocated absolute addresses; R2R adds the module base.
 void emitter::emitAddressConstant(void* address)
 {
-    // Load our module base from the image base global, then load our address constant, then sum them.
-    emitImageBase();
+    if (!m_compiler->IsNativeAot())
+    {
+        emitImageBase();
+    }
     emitIns_I(INS_i32_const_address, EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
-    emitIns(INS_i32_add);
+    if (!m_compiler->IsNativeAot())
+    {
+        emitIns(INS_i32_add);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -219,12 +271,13 @@ void emitter::emitAddressConstant(void* address)
 // Arguments:
 //   ins     - the load or store instruction
 //   attr    - emit attributes
-//   address - the address constant, relocated relative to the module base
+//   address - the relocatable address constant
 //
 // Notes:
-//   The module base must already be on the stack; see emitImageBase. This folds the addition that
-//   emitAddressConstant would otherwise emit into the memarg offset. The memarg offset is always a
-//   relocation, never a raw address, so the caller must only reach here when relocating.
+//   The memory-address base (zero for NativeAOT, image base for R2R) must already be on the stack.
+//   This folds the addition that emitAddressConstant would otherwise emit into the memarg offset.
+//   The memarg offset is always a relocation, never a raw address, so the caller must only reach here
+//   when relocating.
 //
 void emitter::emitIns_MemargAddress(instruction ins, emitAttr attr, void* address)
 {
@@ -235,20 +288,24 @@ void emitter::emitIns_MemargAddress(instruction ins, emitAttr attr, void* addres
 
 void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
 {
-    // Load our table base, then load our funclet pointer offset, then sum them.
-    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
-              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->tableBase);
+    // NativeAOT uses absolute table indices; R2R adds the module's table base.
+    if (!m_compiler->IsNativeAot())
+    {
+        emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+                  (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->tableBase);
+    }
     emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, (cnsval_ssize_t)funcletId);
-    emitIns(INS_i32_add);
+    if (!m_compiler->IsNativeAot())
+    {
+        emitIns(INS_i32_add);
+    }
 }
 
 //------------------------------------------------------------------------
 // emitDataOffsetConstant: Emit a constant whose value is the linear-memory
 // address of an entry in this method's JIT-emitted data (constants) section.
 //
-// The encoding mirrors emitAddressConstant: we load the image base global
-// (the module image base), emit a relocated i32.const for the entry's offset,
-// then add them. At output time the reloc target is resolved to the host
+// The encoding mirrors emitAddressConstant. At output time the reloc target is resolved to the host
 // pointer of the data section entry, which crossgen2 maps to the per-method
 // read-only data symbol + offset.
 //
@@ -258,8 +315,10 @@ void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
 //
 void emitter::emitDataOffsetConstant(UNATIVE_OFFSET dataOffs)
 {
-    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
-              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->imageBase);
+    if (!m_compiler->IsNativeAot())
+    {
+        emitImageBase();
+    }
 
     instrDesc* id = emitNewInstrSC(EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)dataOffs);
     id->idIns(INS_i32_const_dataoffs);
@@ -267,7 +326,10 @@ void emitter::emitDataOffsetConstant(UNATIVE_OFFSET dataOffs)
     dispIns(id);
     appendToCurIG(id);
 
-    emitIns(INS_i32_add);
+    if (!m_compiler->IsNativeAot())
+    {
+        emitIns(INS_i32_add);
+    }
 }
 
 /*****************************************************************************
@@ -299,6 +361,15 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     switch (params.callType)
     {
         case EC_FUNC_TOKEN:
+            if (m_compiler->eeGetRelocTypeHint(params.addr) == CorInfoReloc::WASM_DEFERRED_CALL)
+            {
+                ins = params.isJump ? INS_deferred_return_call : INS_deferred_call;
+                id  = emitNewInstrCns(EA_HANDLE_CNS_RELOC, reinterpret_cast<cnsval_ssize_t>(params.addr));
+                id->idIns(ins);
+                id->idInsFmt(IF_DEFERRED_CALL);
+                id->idAddr()->iiaWasmSignature = params.wasmSignature;
+                break;
+            }
             ins = params.isJump ? INS_return_call : INS_call;
             id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)params.addr);
             id->idIns(ins);
@@ -711,11 +782,19 @@ static const unsigned PADDED_RELOC_SIZE = 5;
 
 unsigned emitter::instrDesc::idCodeSize() const
 {
+    if (idInsFmt() == IF_NONE)
+    {
+        return 0;
+    }
+
     unsigned int opcode = GetInsOpcode(idIns());
 
     unsigned size = HasOpcodePrefix(idIns()) ? 1 + SizeOfULEB128(opcode) : 1;
     switch (idInsFmt())
     {
+        case IF_DEFERRED_CALL:
+            size += 1 + 2 * PADDED_RELOC_SIZE;
+            break;
         case IF_OPCODE:
             break;
         case IF_BLOCK:
@@ -748,7 +827,8 @@ unsigned emitter::instrDesc::idCodeSize() const
             break;
         case IF_FUNCLETPTR:
         case IF_FUNCLETIDX:
-            size += PADDED_RELOC_SIZE; // funclet indices and pointers are always emitted as relocations
+        case IF_FRAMEIDENTITY:
+            size += PADDED_RELOC_SIZE; // These operands are always emitted as relocations.
             break;
         case IF_DATAOFFS:
             size += PADDED_RELOC_SIZE; // data-section offsets are always emitted as relocations
@@ -924,9 +1004,10 @@ size_t emitter::emitOutputPaddedReloc(uint8_t* destination)
 
 size_t emitter::emitOutputConstantFunclet(uint8_t* destination, const instrDesc* id, CorInfoReloc relocType)
 {
+    assert((emitGetInsSC(id) >= 0) && FitsIn<int32_t>(emitGetInsSC(id)));
+    // Keep a valid funclet index even when the EE only records relocations.
+    emitOutputULEB128Padded(destination, static_cast<uint32_t>(emitGetInsSC(id)));
     emitRecordRelocationWithAddlDelta(destination, emitCodeBlock, relocType, (int32_t)emitGetInsSC(id));
-    // emitRecordRelocationWithAddlDelta writes the relocation addend and padding,
-    // so we don't need to write anything else here.
     return PADDED_RELOC_SIZE;
 }
 
@@ -972,6 +1053,31 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     switch (insFmt)
     {
+        case IF_NONE:
+            break;
+
+        case IF_DEFERRED_CALL:
+        {
+            // #DeferredWasmCallRelocationProtocol
+            // Lowering omits the final frame-identity/PEP argument from the call IR. Codegen
+            // includes it in the exact Wasm signature, and this fixed-width bundle supplies it.
+            // The managed CorInfoImpl consumes relocation callbacks in emission order: first
+            // the frame identity, then metadata-only WASM_DEFERRED_CALL with the signature,
+            // immediately followed by WASM_FUNCTION_INDEX_LEB for the target at the same offset.
+            // The metadata callback writes no bytes and produces no object relocation. Its
+            // signature occupies one pending slot until the function-index callback consumes it,
+            // so another deferred call must not interleave these callbacks.
+            // See #DeferredWasmCallRewriting for direct-call selection and indirect expansion.
+            dst += emitOutputOpcode(dst, INS_i32_const);
+            emitRecordRelocation(dst, reinterpret_cast<void*>(emitGetInsSC(id)),
+                                 CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
+            dst += emitOutputPaddedReloc(dst);
+            dst += emitOutputOpcode(dst, ins);
+            emitRecordRelocation(dst, reinterpret_cast<void*>(id->idAddr()->iiaWasmSignature),
+                                 CorInfoReloc::WASM_DEFERRED_CALL);
+            dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_FUNCTION_INDEX_LEB);
+            break;
+        }
         case IF_OPCODE:
         {
             dst += emitOutputOpcode(dst, ins);
@@ -1000,9 +1106,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MEMADDR:
         {
             dst += emitOutputOpcode(dst, ins);
-            // TODO-WASM: The below reloc we're emitting here is specific to R2R and assumes the address we want
-            // is an offset from __image_base
-            dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc::WASM_MEMORY_ADDR_REL_SLEB);
+            CorInfoReloc reloc = m_compiler->IsNativeAot() ? CorInfoReloc::WASM_MEMORY_ADDR_SLEB
+                                                           : CorInfoReloc::WASM_MEMORY_ADDR_REL_SLEB;
+            dst += emitOutputConstant(dst, id, SIGNED, reloc);
             break;
         }
         case IF_FUNCLETIDX:
@@ -1017,6 +1123,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputConstantFunclet(dst, id, CorInfoReloc::WASM_TABLE_INDEX_SLEB);
             break;
         }
+        case IF_FRAMEIDENTITY:
+        {
+            assert(m_compiler->IsNativeAot() || id->idIsCnsReloc());
+            dst += emitOutputOpcode(dst, ins);
+            void* target = m_compiler->IsNativeAot() ? static_cast<void*>(emitCodeBlock)
+                                                     : reinterpret_cast<void*>(emitGetInsSC(id));
+            emitRecordRelocation(dst, target, CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
+            dst += emitOutputPaddedReloc(dst);
+            break;
+        }
         case IF_DATAOFFS:
         {
             // Resolve the JIT data-section offset to a host pointer and record a
@@ -1024,7 +1140,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputOpcode(dst, ins);
             UNATIVE_OFFSET dataOffs = (UNATIVE_OFFSET)emitGetInsSC(id);
             BYTE*          target   = emitDataOffsetToPtr(dataOffs);
-            emitRecordRelocation(dst, target, CorInfoReloc::WASM_MEMORY_ADDR_REL_SLEB);
+            CorInfoReloc   reloc    = m_compiler->IsNativeAot() ? CorInfoReloc::WASM_MEMORY_ADDR_SLEB
+                                                                : CorInfoReloc::WASM_MEMORY_ADDR_REL_SLEB;
+            emitRecordRelocation(dst, target, reloc);
             dst += emitOutputPaddedReloc(dst);
             break;
         }
@@ -1088,9 +1206,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(align <= UINT32_MAX); // spec says memarg alignment is u32
             assert(align < 64);          // spec says align > 2^6 produces a memidx for multiple memories.
             dst += emitOutputULEB128(dst, align);
-            // TODO-WASM: as with IF_MEMADDR, this reloc is specific to R2R and assumes the address we want is an
-            // offset from __image_base.
-            dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_MEMORY_ADDR_REL_LEB);
+            CorInfoReloc reloc =
+                m_compiler->IsNativeAot() ? CorInfoReloc::WASM_MEMORY_ADDR_LEB : CorInfoReloc::WASM_MEMORY_ADDR_REL_LEB;
+            dst += emitOutputConstant(dst, id, UNSIGNED, reloc);
             break;
         }
         case IF_LOCAL_DECL:
@@ -1314,6 +1432,10 @@ void emitter::emitDispIns(
     //
     switch (fmt)
     {
+        case IF_NONE:
+            printf(" (elided)");
+            break;
+
         case IF_OPCODE:
             break;
 
@@ -1330,6 +1452,7 @@ void emitter::emitDispIns(
         case IF_RAW_ULEB128:
         case IF_ULEB128:
         case IF_FUNCIDX:
+        case IF_DEFERRED_CALL:
         case IF_GLOBALIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
@@ -1392,6 +1515,7 @@ void emitter::emitDispIns(
 
         case IF_FUNCLETPTR:
         case IF_FUNCLETIDX:
+        case IF_FRAMEIDENTITY:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf("funclet %lli", static_cast<long long>(imm));

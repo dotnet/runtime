@@ -37,9 +37,6 @@ namespace System.Net.Test.Common
             public static string TLSv11RemoteServer => GetValue("DOTNET_TEST_HTTPHOST_TLS11", "https://www.ssllabs.com:10302/");
             public static string TLSv12RemoteServer => GetValue("DOTNET_TEST_HTTPHOST_TLS12", "https://www.ssllabs.com:10303/");
 
-            public static string ExpiredCertRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_EXPIREDCERT", "https://expired.badssl.com/");
-            public static string WrongHostNameCertRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_WRONGHOSTNAME", "https://wrong.host.badssl.com/");
-            public static string SelfSignedCertRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_SELFSIGNEDCERT", "https://self-signed.badssl.com/");
             public static string RevokedCertRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_REVOKEDCERT", "https://revoked.badssl.com/");
 
             public static string EchoClientCertificateRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_ECHOCLIENTCERT", "https://corefx-net-tls.azurewebsites.net/EchoClientCertificate.ashx");
@@ -64,6 +61,10 @@ namespace System.Net.Test.Common
                 if (PlatformDetection.IsFirefox)
                 {
                     // https://github.com/dotnet/runtime/issues/101115
+                    return [RemoteEchoServer];
+                }
+                if (!SecureLocalEchoServerIsTrusted)
+                {
                     return [RemoteEchoServer];
                 }
                 return [RemoteEchoServer, SecureRemoteEchoServer, Http2RemoteEchoServer];
@@ -100,8 +101,15 @@ namespace System.Net.Test.Common
                     // https://github.com/dotnet/runtime/issues/101115
                     return new RemoteServer[] { RemoteHttp11Server };
                 }
+                if (!SecureLocalEchoServerIsTrusted)
+                {
+                    return new RemoteServer[] { RemoteHttp11Server };
+                }
                 return new RemoteServer[] { RemoteHttp11Server, RemoteSecureHttp11Server, RemoteHttp2Server };
             }
+
+            // The HTTPS endpoints of the local echo server use a development certificate that WASI doesn't trust.
+            public static bool SecureLocalEchoServerIsTrusted => !PlatformDetection.IsWasi;
 
             public static readonly IEnumerable<object[]> RemoteServersMemberData = GetRemoteServers().Select(s => new object[] { s });
 

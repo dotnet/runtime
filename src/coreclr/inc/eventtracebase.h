@@ -279,18 +279,7 @@ public:
     XplatEventLoggerConfiguration() = default;
 
     XplatEventLoggerConfiguration(XplatEventLoggerConfiguration const & other) = delete;
-    XplatEventLoggerConfiguration(XplatEventLoggerConfiguration && other)
-    {
-        _provider = std::move(other._provider);
-        _isValid = other._isValid;
-        _enabledKeywords = other._enabledKeywords;
-        _level = other._level;
-    }
-
-    ~XplatEventLoggerConfiguration()
-    {
-        _provider = nullptr;
-    }
+    XplatEventLoggerConfiguration(XplatEventLoggerConfiguration && other) = default;
 
     void Parse(LPWSTR configString)
     {
@@ -364,9 +353,9 @@ private:
         return ComponentSpan(start, end);
     }
 
-    NewArrayHolder<WCHAR> ParseProviderName(ComponentSpan const & component) const
+    WStringHolder ParseProviderName(ComponentSpan const & component) const
     {
-        NewArrayHolder<WCHAR> providerName = nullptr;
+        WStringHolder providerName;
         if ((component.End - component.Start) != 0)
         {
             auto const length = component.End - component.Start;
@@ -389,17 +378,17 @@ private:
 
     uint32_t ParseLevel(ComponentSpan const & component) const
     {
-        int level = TRACE_LEVEL_VERBOSE; // Verbose
+        uint32_t level = TRACE_LEVEL_VERBOSE; // Verbose
         if ((component.End - component.Start) != 0)
         {
-            level = _wtoi(component.Start);
+            level = u16_strtoul(component.Start, nullptr, 10);
         }
         return level;
     }
 
-    NewArrayHolder<WCHAR> ParseArgument(ComponentSpan const & component) const
+    WStringHolder ParseArgument(ComponentSpan const & component) const
     {
-        NewArrayHolder<WCHAR> argument = nullptr;
+        WStringHolder argument;
         if ((component.End - component.Start) != 0)
         {
             auto const length = component.End - component.Start;
@@ -410,10 +399,10 @@ private:
         return argument;
     }
 
-    NewArrayHolder<WCHAR> _provider;
+    WStringHolder _provider;
     uint64_t _enabledKeywords;
     uint32_t _level;
-    NewArrayHolder<WCHAR> _argument;
+    WStringHolder _argument;
     bool _isValid;
 };
 #endif // defined(FEATURE_PERFTRACING) || defined(FEATURE_EVENTSOURCE_XPLAT)
@@ -434,7 +423,7 @@ public:
         auto providerName = config.GetProviderName();
         auto enabledKeywordsMask = config.GetEnabledKeywordsMask();
         auto level = config.GetLevel();
-        if (_wcsicmp(providerName, W("*")) == 0 && enabledKeywordsMask == (ULONGLONG)(-1) && level == TRACE_LEVEL_VERBOSE)
+        if (u16_stricmp(providerName, W("*")) == 0 && enabledKeywordsMask == (ULONGLONG)(-1) && level == TRACE_LEVEL_VERBOSE)
         {
             ActivateAllKeywordsOfAllProviders();
         }
@@ -472,7 +461,7 @@ private:
         auto length = u16_strlen(providerName);
         for (auto provider : ALL_LTTNG_PROVIDERS_CONTEXT)
         {
-            if (_wcsicmp(provider->Name, providerName) == 0)
+            if (u16_stricmp(provider->Name, providerName) == 0)
             {
                 return provider;
             }
@@ -605,7 +594,7 @@ VOID EventPipeEtwCallbackDotNETRuntimePrivate(
 
 #ifndef  HOST_UNIX
 // Callback and stack support
-#if !defined(DONOT_DEFINE_ETW_CALLBACK) && !defined(DACCESS_COMPILE)
+#if !defined(DISABLE_ETW_CALLBACK_HOOKS) && !defined(DACCESS_COMPILE)
 extern "C" {
     /* ETW control callback
          * Desc:        This function handles the ETW control
@@ -651,7 +640,7 @@ extern "C" {
 //
 #define MCGEN_CALLOUT(RegHandle, Descriptor, NumberOfArguments, EventData) \
         EtwCallout(RegHandle, Descriptor, NumberOfArguments, EventData)
-#endif //!DONOT_DEFINE_ETW_CALLBACK && !DACCESS_COMPILE
+#endif // !DISABLE_ETW_CALLBACK_HOOKS && !DACCESS_COMPILE
 
 #endif //!HOST_UNIX
 #include "clretwallmain.h"

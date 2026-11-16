@@ -244,6 +244,18 @@ namespace System.Net.Security
                 }
                 while (token.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
 
+                if (token.Failed)
+                {
+                    Exception? exception = token.GetException();
+                    if (exception is not AuthenticationException)
+                    {
+                        exception = new AuthenticationException(SR.net_auth_SSPI, exception);
+                    }
+
+                    // Any alert in the failed token has already been sent to the peer.
+                    SendAuthResetSignal(default, ExceptionDispatchInfo.Capture(exception));
+                }
+
                 CompleteHandshake(_sslAuthenticationOptions);
             }
             finally

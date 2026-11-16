@@ -36,6 +36,10 @@ namespace System.Reflection
 
             switch (handle.HandleType)
             {
+                case HandleType.TypeVariableSignature:
+                case HandleType.MethodTypeVariableSignature:
+                    // Substitution does not provide a signature for nested types.
+                    return Create(unmodifiedType);
                 case HandleType.SZArraySignature:
                     Debug.Assert(index == 0);
                     return Create(unmodifiedType, new TypeSignature(reader, reader.GetSZArraySignature(handle.ToSZArraySignatureHandle(reader)).ElementType));
@@ -94,7 +98,7 @@ namespace System.Reflection
                 & Internal.Metadata.NativeFormat.SignatureCallingConvention.UnmanagedCallingConventionMask);
         }
 
-        private Type[] GetCustomModifiers(bool required)
+        private Type[] GetCustomModifiers(bool isOptional)
         {
             ArrayBuilder<Type> builder = default;
 
@@ -110,7 +114,7 @@ namespace System.Reflection
 
                 handle = modifiedType.Type;
 
-                if (modifiedType.IsOptional == required)
+                if (modifiedType.IsOptional != isOptional)
                     continue;
 
                 builder.Add(modifiedType.ModifierType.Resolve(reader, new TypeContext(null, null)).ToType());

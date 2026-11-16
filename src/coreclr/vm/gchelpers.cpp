@@ -206,10 +206,13 @@ EXTERN_C void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool
 // being too large.
 inline void CheckObjectSize(size_t alloc_size)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     size_t max_object_size;
 #ifdef HOST_64BIT
@@ -657,9 +660,13 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 
 void ThrowOutOfMemoryDimensionsExceeded()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
-    } CONTRACTL_END;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
 #ifdef HOST_64BIT
     EX_THROW(EEMessageException, (kOutOfMemoryException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
@@ -1228,17 +1235,17 @@ static void SetCardBundleByte(BYTE* addr)
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
 
 // implemented in assembly
-// extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *refUNSAFE)
-// extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *refUNSAFE)
+// extern "C" FCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *refUNSAFE)
+// extern "C" FCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *refUNSAFE)
 
 #else // FEATURE_USE_ASM_GC_WRITE_BARRIERS
 
 // NOTE: non-ASM write barriers only work with Workstation GC.
 
-// This function is a JIT helper, but it must NOT use HCIMPL2 because it
+// This function is a JIT helper, but it must NOT use FCIMPL2 because it
 // modifies Thread state that will not be restored if an exception occurs
 // inside of memset.  A normal EH unwind will not occur.
-extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
+extern "C" FCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
 {
     // Must use static contract here, because if an AV occurs, a normal EH
     // unwind will not occur, and destructors will not run.
@@ -1279,12 +1286,12 @@ extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
         }
     }
 }
-HCIMPLEND_RAW
+FCIMPLEND
 
-// This function is a JIT helper, but it must NOT use HCIMPL2 because it
+// This function is a JIT helper, but it must NOT use FCIMPL2 because it
 // modifies Thread state that will not be restored if an exception occurs
 // inside of memset.  A normal EH unwind will not occur.
-extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
+extern "C" FCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
 {
     // Must use static contract here, because if an AV occurs, a normal EH
     // unwind will not occur, and destructors will not run.
@@ -1323,7 +1330,7 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
         }
     }
 }
-HCIMPLEND_RAW
+FCIMPLEND
 
 #endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS
 
