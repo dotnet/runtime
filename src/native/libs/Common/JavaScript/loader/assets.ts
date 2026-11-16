@@ -587,7 +587,7 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
         // `disableIntegrityCheck` is to give developers an easy opt-out from the integrity check
         if (!loaderConfig.disableIntegrityCheck && asset.hash) {
             // Any other resource than configuration should provide integrity check
-            fetchOptions.integrity = asset.hash;
+            // fetchOptions.integrity = asset.hash;
         }
     }
 
@@ -790,7 +790,7 @@ async function prefetchUrl(url: string, hash?: string | null | "", name?: string
         fetchOptions.cache = "no-cache";
     }
     if (!loaderConfig.disableIntegrityCheck && hash) {
-        fetchOptions.integrity = hash;
+        // fetchOptions.integrity = hash;
     }
     const response = await fetchLike(url, fetchOptions);
     if (response.ok) {
