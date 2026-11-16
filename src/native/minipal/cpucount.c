@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if defined(__linux__) && !defined(_GNU_SOURCE)
-// glibc declares CPU_ALLOC and friends only when _GNU_SOURCE is defined before <sched.h>.
+#include <minipalconfig.h>
+
+#if HAVE_SCHED_GETAFFINITY && defined(__linux__) && !defined(_GNU_SOURCE)
+// glibc declares CPU_ALLOC and friends only when _GNU_SOURCE is defined before any system header.
 #define _GNU_SOURCE
 #endif
 
 #include "cpucount.h"
-#include <minipalconfig.h>
 
 #include <stdio.h>
 #include <unistd.h>
