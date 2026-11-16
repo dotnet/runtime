@@ -215,16 +215,16 @@ instrDesc* emitNewInstrCallDir(int              argCnt,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
-                               emitAttr         retSize,
-                               emitAttr         secondRetSize);
+                               emitAttr         retSize
+                                   MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
-                               emitAttr         retSize,
-                               emitAttr         secondRetSize);
+                               emitAttr         retSize
+                                   MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
 
 /************************************************************************/
 /*   enum to allow instruction optimisation to specify register order   */
@@ -1848,8 +1848,8 @@ void emitIns_Call(EmitCallType          callType,
                   INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
                   void*            addr,
                   ssize_t          argSize,
-                  emitAttr         retSize,
-                  emitAttr         secondRetSize,
+                  emitAttr         retSize
+                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                   VARSET_VALARG_TP ptrVars,
                   regMaskTP        gcrefRegs,
                   regMaskTP        byrefRegs,

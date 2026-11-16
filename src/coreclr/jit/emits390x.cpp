@@ -97,9 +97,8 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
     assert((unsigned)id->idInsFmt() < emitFmtCount);
 
     ID_OPS idOp      = (ID_OPS)emitFmtToOps[id->idInsFmt()];
-    bool   isCallIns = false ; //(id->idIns() == INS_bl) || (id->idIns() == INS_blr) || (id->idIns() == INS_b_tail) ||
-                     //(id->idIns() == INS_br_tail);
-    bool maybeCallIns = false ;//(id->idIns() == INS_b) || (id->idIns() == INS_br);
+    bool   isCallIns = (id->idIns() == INS_brasl) || (id->idIns() == INS_basr) || (id->idIns() == INS_bras);
+    bool maybeCallIns = (id->idIns() == INS_j) || (id->idIns() == INS_br);
 
     switch (idOp)
     {
@@ -1430,6 +1429,17 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) con
             rn = bRegNames[reg - REG_V0];
         }
     }
+#if defined(TARGET_S390X)
+    else if (size == EA_1BYTE || size == EA_2BYTE)
+    {
+        // s390x GPRs (r0-r15) have no byte/halfword sub-register name variants.
+        // The sub-word operand width is encoded in instruction mnemonic
+        // (e.g. llgcr=zero-extend byte, llghr=zero-extend halfword)
+        // dispIns passes id->idOpSize() which records the source operand width
+        // For Display Helper the register name is always the full 64-bit form.
+        rn = xRegNames[reg];
+    }
+#endif // TARGET_S390X
 
     assert(rn != nullptr);
 
@@ -3119,7 +3129,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
         case INS_br:
         case INS_ret:
             assert(isGeneralRegister(reg));
-            fmt = IF_BR_1A;
+            fmt = IF_RR;
             break;
 
 #if 0
@@ -3303,7 +3313,7 @@ void emitter::emitIns_R_I(instruction ins,
             assert(isValidGeneralDatasize(size));
             assert(insOptsNone(opt)); // No explicit LSL here
             // We will automatically determine the shift based upon the imm
-		fmt = IF_DI_1B;
+            fmt = IF_RIL_A;
 #if 0
             // First try the standard 'halfword immediate' imm(i16,hw)
             hwi.immHWVal = 0;
@@ -3494,6 +3504,7 @@ void emitter::emitIns_R_I(instruction ins,
         {
             // Validate immediate fits in 16-bit signed range
             assert(imm >= -32768 && imm <= 32767);
+            fmt = IF_RI_A;
 
             code_t code = emitInsCode(ins, fmt);
             code |= (code_t)reg << 20;
@@ -3739,14 +3750,35 @@ void emitter::emitIns_R_R(instruction     ins,
         case INS_ogr:
         case INS_msr:
         case INS_msgr:
-            fmt = IF_DR_2E;
+            // Distinguish 2-byte RR from 4-byte RRE by encoding width.
+            switch (ins)
+            {
+                case INS_lr:
+                case INS_ar:
+                case INS_sr:
+                case INS_nr:
+                case INS_xr:
+                case INS_or:
+                case INS_cr:
+                case INS_clr:
+                    fmt = IF_RR;
+                    break;
+                default:
+                    fmt = IF_RRE;
+                    break;
+            }
             break;
 
         case INS_dr:
+            assert((reg1 & 1) == 0 && "R1 must be even");
+            fmt = IF_RR;
+            break;
+
         case INS_dsgr:
         case INS_dlr:
         case INS_dlgr:
             assert((reg1 & 1) == 0 && "R1 must be even");
+            fmt = IF_RRE;
             break;
 #if 0
         case INS_dup:
@@ -3820,7 +3852,7 @@ void emitter::emitIns_R_R(instruction     ins,
             assert(insOptsNone(opt));
             assert(isGeneralRegister(reg1));
             assert(isGeneralRegisterOrZR(reg2));
-            fmt = IF_DR_2E;
+            fmt = IF_RRE;
             break;
 
         case INS_sxtl:
@@ -5249,6 +5281,68 @@ void emitter::emitIns_R_R_I(instruction     ins,
     }
 #endif
 
+    /* Assign s390x encoding-family format labels for instructions whose
+       format-selection switch is inside the #if 0 block above. */
+    if (fmt == IF_NONE)
+    {
+        switch (ins)
+        {
+            // RXY-a (6 bytes): R1, D2(X2,B2) with 20-bit signed displacement
+            case INS_lg:
+            case INS_stg:
+            case INS_lay:
+            case INS_sty:
+            case INS_stcy:
+            case INS_ley:
+            case INS_ldy:
+            case INS_stey:
+            case INS_stdy:
+            case INS_llgf:
+            case INS_llgc:
+            case INS_llgh:
+            case INS_lgb:
+            case INS_lgh:
+            case INS_lgf:
+                fmt = IF_RXY_A;
+                break;
+
+            // RX-a (4 bytes): R1, D2(X2,B2) with 12-bit unsigned displacement
+            case INS_l:
+            case INS_ldr:
+            case INS_st:
+            case INS_stc:
+            case INS_sth:
+                fmt = IF_RX_A;
+                break;
+
+            // RSY-a (6 bytes): R1, R3, D2(B2) — shifts and rotates
+            case INS_srak:
+            case INS_srag:
+            case INS_sllk:
+            case INS_sllg:
+            case INS_srlk:
+            case INS_srlg:
+            case INS_rll:
+            case INS_rllg:
+                fmt = IF_RSY_A;
+                break;
+
+            // RIL-a (6 bytes): R1, I2(32-bit signed)
+            case INS_afi:
+            case INS_agfi:
+            case INS_msfi:
+            case INS_msgfi:
+            case INS_nihf:
+            case INS_xihf:
+            case INS_oill:
+                fmt = IF_RIL_A;
+                break;
+
+            default:
+                break;
+        }
+    }
+
     if (isHighVectorRegister(reg1))
     {
         switch (ins)
@@ -6347,6 +6441,12 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
             setFlags = false;
             isAddSub = true;
             break;
+
+        case INS_stmg:
+        case INS_lmg:
+            fmt = IF_RSY_A;
+            break;
+
 #if 0
         case INS_adds:
         case INS_subs:
@@ -6630,14 +6730,13 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
         if (insOptsAnyExtend(opt))
         {
             assert((imm >= 0) && (imm <= 4));
-
-            fmt = IF_DR_3C;
+            fmt = IF_RRF_A;
         }
         else if (insOptsAluShift(opt))
         {
             // imm should be non-zero and in [1..63]
             assert(isValidImmShift(imm, size) && (imm != 0));
-            fmt = IF_DR_3B;
+            fmt = IF_RRF_A;
         }
         else if (imm == 0)
         {
@@ -6648,11 +6747,11 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
                 // To encode the SP register as reg2 we must use the IF_DR_3C encoding
                 // and also specify a LSL of zero (imm == 0)
                 opt = INS_OPTS_LSL;
-                fmt = IF_DR_3C;
+                fmt = IF_RRF_A;
             }
             else
             {
-                fmt = IF_DR_3A;
+                fmt = IF_RRF_A;
             }
         }
         else
@@ -7534,7 +7633,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     instrDesc* id = emitNewInstrCns(attr, imm);
 
     id->idIns(ins);
-    id->idInsFmt(fmt);
+    id->idInsFmt(IF_RXY_A);
     id->idInsOpt(INS_OPTS_NONE);
 
     id->idReg1(reg1);
@@ -7815,7 +7914,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     instrDesc* id = emitNewInstrCns(attr, imm);
 
     id->idIns(ins);
-    id->idInsFmt(fmt);
+    id->idInsFmt(IF_RXY_A);
     id->idInsOpt(INS_OPTS_NONE);
 
     id->idReg1(reg1);
@@ -8416,7 +8515,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 {
     instrDescJmp* id = emitNewInstrJmp();
     id->idIns(ins);
-    id->idInsFmt(IF_BI_0A);
+    id->idInsFmt(IF_RIL_C);
     id->idOpSize(EA_PTRSIZE);
     if (dst != nullptr)
     {
@@ -8475,8 +8574,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
                            void*                 addr,
                            ssize_t               argSize,
-                           emitAttr              retSize,
-                           emitAttr              secondRetSize,
+                           emitAttr              retSize
+                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                            VARSET_VALARG_TP      ptrVars,
                            regMaskTP             gcrefRegs,
                            regMaskTP             byrefRegs,
@@ -8492,7 +8591,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     // Create instruction descriptor for call
     instrDesc* id = emitNewInstrCallDir(argSize, ptrVars, gcrefRegs,
-		                        byrefRegs, retSize, secondRetSize);
+                                        byrefRegs, retSize
+                                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize));
 
     // Set instruction based on call type
     instruction ins;
@@ -8508,6 +8608,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             // Set target address
             id->idAddr()->iiaAddr = (BYTE*)addr;
             id->idSetIsDspReloc();
+            id->idInsFmt(IF_RIL_B_CALL);
             break;
 
         case EC_INDIR_R:
@@ -8515,6 +8616,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             id->idIns(ins);
             id->idReg1(REG_R14);  // Link register
             id->idReg2(ireg);      // Target address in register
+            id->idInsFmt(IF_RR);
             break;
 #if 0
         case CT_HELPER:
@@ -9951,7 +10053,8 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         byrefRegs |= RBM_INTRET;
     }
 
-    // If is a multi-register return method is called, mark INTRET_1 (X1) appropriately
+#if MULTIREG_HAS_SECOND_GC_RET
+    // If a multi-register return method is called, mark INTRET_1 appropriately
     if (id->idIsLargeCall())
     {
         instrDescCGCA* idCall = (instrDescCGCA*)id;
@@ -9964,6 +10067,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
             byrefRegs |= RBM_INTRET_1;
         }
     }
+#endif // MULTIREG_HAS_SECOND_GC_RET
 
     // If the GC register set has changed, report the new set.
     if (gcrefRegs != emitThisGCrefRegs)
@@ -11963,7 +12067,7 @@ void emitter::emitDispInsHelp(
     /* Get the instruction and format */
 
     instruction ins = id->idIns();
-    //insFormat   fmt = id->idInsFmt();
+    insFormat   fmt = id->idInsFmt();
 
     emitDispInst(ins);
 
@@ -11979,7 +12083,7 @@ void emitter::emitDispInsHelp(
     else if (id->idGCref() == GCT_BYREF)
         attr = EA_BYREF;
 
-    switch (ins)
+    switch (fmt)
     {
         ssize_t      imm;
         int          doffs;
@@ -13129,6 +13233,147 @@ void emitter::emitDispInsHelp(
             }
             break;
 #endif
+
+        // ==============================================================
+        // s390x encoding-family display cases.
+        // ==============================================================
+
+        // --------------------------------------------------------------
+        // RR (2 bytes)  R1, R2
+        //   e.g.  lr r1, r2 / ar r1, r2 / basr r14, r1 / bcr mask, r2
+        // --------------------------------------------------------------
+        case IF_RR:
+            emitDispReg(id->idReg1(), size, true);
+            emitDispReg(id->idReg2(), EA_8BYTE, false);
+            break;
+
+        // --------------------------------------------------------------
+        // RRE (4 bytes)  R1, R2
+        //   e.g.  lgr r1, r2 / agr r1, r2 / sgr r1, r2 / lcgr r1, r2
+        //         llgcr r1, r2 (size=EA_1BYTE: source width hint, not a sub-reg)
+        //         llghr r1, r2 (size=EA_2BYTE: source width hint, not a sub-reg)
+        // --------------------------------------------------------------
+        case IF_RRE:
+            // GPRs on s390x have no byte/halfword sub-register names
+            // display the 64-bit register name regardless of source operand width.
+            emitDispReg(id->idReg1(), EA_8BYTE, true);
+            emitDispReg(id->idReg2(), EA_8BYTE, false);
+            break;
+
+        // --------------------------------------------------------------
+        // RRF-a (4 bytes)  R1, R2, R3   (distinct operands)
+        //   e.g.  ark r1, r2, r3 / agrk r1, r2, r3 / sgrk r1, r2, r3
+        // --------------------------------------------------------------
+        case IF_RRF_A:
+            emitDispReg(id->idReg1(), size, true);
+            emitDispReg(id->idReg2(), size, true);
+            emitDispReg(id->idReg3(), size, false);
+            break;
+
+        // --------------------------------------------------------------
+        // RI-a (4 bytes)  R1, I2(16-bit signed)
+        //   e.g.  ahi r1, #imm16 / aghi r15, #-160 / lghi r0, #0
+        // --------------------------------------------------------------
+        case IF_RI_A:
+            emitDispReg(id->idReg1(), size, true);
+            emitDispImm(emitGetInsSC(id), false);
+            break;
+
+        // --------------------------------------------------------------
+        // RIL-a (6 bytes)  R1, I2(32-bit signed)
+        //   e.g.  lgfi r1, #imm32 / agfi r1, #imm32 / iilf r1, #imm32
+        // --------------------------------------------------------------
+        case IF_RIL_A:
+            emitDispReg(id->idReg1(), size, true);
+            emitDispImm(emitGetInsSC(id), false);
+            break;
+
+        // --------------------------------------------------------------
+        // RIL-b (6 bytes)  R1, RI2   (PC-relative call)
+        //   e.g.  brasl r14, <reloc-or-label>
+        // --------------------------------------------------------------
+        case IF_RIL_B:
+	case IF_RIL_B_CALL:
+            emitDispReg(id->idReg1(), EA_8BYTE, true);
+            if (id->idIsDspReloc())
+            {
+                printf("reloc(0x%llx)", (unsigned long long)(size_t)id->idAddr()->iiaAddr);
+            }
+            else if (id->idIsBound())
+            {
+                emitPrintLabel(id->idAddr()->iiaIGlabel);
+            }
+            else
+            {
+                printf("L_M%03u_" FMT_BB,
+                       emitComp->compMethodID,
+                       id->idAddr()->iiaBBlabel->bbNum);
+            }
+            break;
+
+        // --------------------------------------------------------------
+        // RI-c  (4 bytes)  M1, RI2   (16-bit PC-rel branch)
+        // RIL-c (6 bytes)  M1, RI2   (32-bit PC-rel branch)
+        //   e.g.  brc 0xf, label / brcl 0xf, label
+        // --------------------------------------------------------------
+        case IF_RI_C:
+        case IF_RIL_C:
+            if (id->idAddr()->iiaHasInstrCount())
+            {
+                int instrCount = id->idAddr()->iiaGetInstrCount();
+                printf("pc%s%d instructions",
+                       (instrCount >= 0) ? "+" : "", instrCount);
+            }
+            else if (id->idIsBound())
+            {
+                emitPrintLabel(id->idAddr()->iiaIGlabel);
+            }
+            else
+            {
+                printf("L_M%03u_" FMT_BB,
+                       emitComp->compMethodID,
+                       id->idAddr()->iiaBBlabel->bbNum);
+            }
+            break;
+
+        // --------------------------------------------------------------
+        // RX-a (4 bytes)  R1, D2(X2,B2)   (12-bit unsigned displacement)
+        //   e.g.  l r1, 0(r2) / st r1, 4(r2) / stc r1, 0(r15)
+        // --------------------------------------------------------------
+        case IF_RX_A:
+            imm = emitGetInsSC(id);
+            emitDispReg(id->idReg1(), size, true);
+            printf("%d(", (int)imm);
+            emitDispReg(id->idReg2(), EA_8BYTE, false);
+            printf(")");
+            break;
+
+        // --------------------------------------------------------------
+        // RXY-a (6 bytes)  R1, D2(X2,B2)   (20-bit displacement)
+        //   Used for lclVar stack accesses and explicit pointer ld/st.
+        //   e.g.  stg r6, -160(r15) / lg r1, 8(r2) / lay r1, 0(r2)
+        // --------------------------------------------------------------
+        case IF_RXY_A:
+            imm = emitGetInsSC(id);
+            emitDispReg(id->idReg1(), size, true);
+            printf("%d(", (int)imm);
+            emitDispReg(id->idReg2(), EA_8BYTE, false);
+            printf(")");
+            break;
+
+        // --------------------------------------------------------------
+        // RSY-a (6 bytes)  R1, R3, D2(B2)   (register-range + disp)
+        //   e.g.  stmg r6, r15, 48(r15) / lmg r6, r15, 160(r15)
+        // --------------------------------------------------------------
+        case IF_RSY_A:
+            imm = emitGetInsSC(id);
+            emitDispReg(id->idReg1(), EA_8BYTE, true);   // first register in range
+            emitDispReg(id->idReg2(), EA_8BYTE, true);   // last  register in range
+            printf("%d(", (int)imm);
+            emitDispReg(id->idReg3(), EA_8BYTE, false);  // base register
+            printf(")");
+            break;
+
         default:
             // fallback to display SVE instructions.
       //      emitDispInsSveHelp(id);
