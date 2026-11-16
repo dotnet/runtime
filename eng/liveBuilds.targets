@@ -259,6 +259,7 @@
         $(LibrariesNativeArtifactsPath)*.so;
         $(LibrariesNativeArtifactsPath)*.dbg;
         $(LibrariesNativeArtifactsPath)*.dwarf;
+        $(LibrariesNativeArtifactsPath)*.wit;
         $(LibrariesNativeArtifactsPath)*.pdb"
         IsNative="true"
         Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
@@ -360,7 +361,6 @@
       <LibrariesRuntimeFiles
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
-        $(LibrariesNativeArtifactsPath)*.wit;
         $(LibrariesNativeArtifactsPath)*.dat;"
         IsNative="true" />
 
@@ -382,12 +382,6 @@
          build (which omits the host subset), mirroring the browser libBrowserHost.a handling. -->
     <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'">
       <LibrariesRuntimeFiles Include="$(HostSharedFrameworkDir)libWasiHost.a"
-                             IsNative="true" />
-    </ItemGroup>
-
-    <!-- wasi:http component type for app links that keep System.Net.Http's WasiHttpHandler imports. -->
-    <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' != 'Mono'">
-      <LibrariesRuntimeFiles Include="$(LibrariesProjectRoot)System.Net.Http\src\System\Net\Http\WasiHttpHandler\WasiHttpWorld_component_type.wit"
                              IsNative="true" />
     </ItemGroup>
 

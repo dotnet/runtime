@@ -108,6 +108,12 @@
   </Target>
 
   <Target Name="CopyNativeFiles" DependsOnTargets="BuildNativeUnix;BuildNativeWindows" AfterTargets="Build">
+    <!-- wasi:http component type that app links pass to wasm-component-ld. -->
+    <Copy Condition="'$(TargetsWasi)' == 'true'"
+          SourceFiles="$(LibrariesProjectRoot)System.Net.Http\src\System\Net\Http\WasiHttpHandler\WasiHttpWorld_component_type.wit"
+          DestinationFolder="$(NativeBinDir)"
+          SkipUnchangedFiles="true" />
+
     <ItemGroup>
       <ExcludeNativeLibrariesRuntimeFiles Include="
           $(NativeBinDir)System.Globalization.Native.dll;
@@ -128,10 +134,8 @@
       <NativeAsset Include="$(NativeBinDir)*.dex" />
       <NativeAsset Include="$(NativeBinDir)*.jar" />
       <NativeAsset Include="$(NativeBinDir)*.dat" />
+      <NativeAsset Include="$(NativeBinDir)*.wit" />
       <FileWrites Include="@(NativeAsset)" />
-      <!-- wasi:http component type for app links; a source file, so not a FileWrite. -->
-      <NativeAsset Include="$(LibrariesProjectRoot)System.Net.Http\src\System\Net\Http\WasiHttpHandler\WasiHttpWorld_component_type.wit"
-                   Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' != 'Mono'" />
     </ItemGroup>
 
     <ItemGroup>

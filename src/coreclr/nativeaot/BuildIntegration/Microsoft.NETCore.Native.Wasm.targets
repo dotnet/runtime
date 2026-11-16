@@ -22,6 +22,7 @@
 
     <Error Condition="!Exists('$(CppLinker)')" Text="The WASI compiler was not found at '$(CppLinker)'." />
     <Error Condition="!Exists('$(CppLibCreator)')" Text="The WASI archive tool was not found at '$(CppLibCreator)'." />
+    <Error Condition="!Exists('$(_WasiHttpWorldComponentType)')" Text="The wasi:http component type was not found at '$(_WasiHttpWorldComponentType)'." />
 
     <ItemGroup>
       <NetCoreAppNativeLibrary Include="System.Native" />
@@ -54,7 +55,7 @@
       <LinkerArg Include="--sysroot=&quot;$(WASI_SDK_PATH)/share/wasi-sysroot&quot;" />
       <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
       <LinkerArg Include="-Wl,-z,stack-size=$(IlcDefaultStackSize)" />
-      <LinkerArg Include="-Wl,--component-type,&quot;$(_WasiHttpWorldComponentType.Replace('\','/'))&quot;" Condition="Exists('$(_WasiHttpWorldComponentType)')" />
+      <LinkerArg Include="-Wl,--component-type,&quot;$(_WasiHttpWorldComponentType.Replace('\','/'))&quot;" />
       <LinkerArg Include="-lwasi-emulated-process-clocks;-lwasi-emulated-signal;-lwasi-emulated-mman;-lwasi-emulated-getpid" />
       <LinkerArg Include="-lstdc++" Condition="'$(LinkStandardCPlusPlusLibrary)' == 'true'" />
       <LinkerArg Include="-g" Condition="'$(NativeDebugSymbols)' == 'true'" />
