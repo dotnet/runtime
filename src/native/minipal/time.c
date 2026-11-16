@@ -227,11 +227,11 @@ void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
     if (usecs > 10)
     {
         struct timespec requested;
-        requested.tv_sec = usecs / 1000;
-        requested.tv_nsec = (usecs - requested.tv_sec * 1000) * 1000;
+        requested.tv_sec = usecs / 1000000;
+        requested.tv_nsec = (usecs % 1000000) * 1000;
 
         struct timespec remaining;
-        while (nanosleep(&requested, &remaining) == EINTR)
+        while (nanosleep(&requested, &remaining) == -1 && errno == EINTR)
         {
             requested = remaining;
         }
