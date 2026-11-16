@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -348,19 +349,38 @@ internal sealed class WasmModuleInfoReader : WasmModuleReader
 
 internal static class WasmComponentFile
 {
+    private const byte CoreModuleSectionId = 1;
+    private const byte CustomSectionId = 0;
+    private const byte FunctionNamesSubsectionId = 1;
+
     public static void ReplaceFirstCoreModule(string componentPath, string modulePath, string outputPath)
     {
         byte[] component = File.ReadAllBytes(componentPath);
         byte[] module = File.ReadAllBytes(modulePath);
+        (int sectionStart, _, int sectionEnd) = FindFirstCoreModule(component, componentPath);
+        WriteWithCoreModule(component, sectionStart, sectionEnd, module, outputPath);
+    }
+
+    // Drops the name and DWARF custom sections from the component's first core module and returns the
+    // function names the name section carried, keyed by function index (imports included).
+    public static SortedDictionary<uint, string> StripFirstCoreModuleSymbols(string componentPath, string outputPath)
+    {
+        byte[] component = File.ReadAllBytes(componentPath);
+        (int sectionStart, int payloadStart, int sectionEnd) = FindFirstCoreModule(component, componentPath);
+        SortedDictionary<uint, string> functionNames = new();
+        byte[] module = StripModuleSymbols(component, payloadStart, sectionEnd, functionNames);
+        WriteWithCoreModule(component, sectionStart, sectionEnd, module, outputPath);
+        return functionNames;
+    }
+
+    private static (int SectionStart, int PayloadStart, int SectionEnd) FindFirstCoreModule(byte[] component, string componentPath)
+    {
         if (component.Length < 8 ||
             component[0] != 0 || component[1] != 0x61 || component[2] != 0x73 || component[3] != 0x6d ||
             component[4] != 0x0d || component[5] != 0 || component[6] != 1 || component[7] != 0)
             throw new BadImageFormatException($"{componentPath} is not a WebAssembly component.");
 
-        using FileStream output = File.Create(outputPath);
-        output.Write(component, 0, 8);
         int position = 8;
-        bool replaced = false;
         while (position < component.Length)
         {
             int sectionStart = position;
@@ -370,23 +390,97 @@ internal static class WasmComponentFile
             int sectionEnd = checked(payloadStart + (int)sectionSize);
             if (sectionEnd > component.Length)
                 throw new BadImageFormatException("WebAssembly component section extends past the end of the file.");
-
-            if (sectionId == 1 && !replaced)
-            {
-                output.WriteByte(sectionId);
-                WriteULEB128(output, checked((uint)module.Length));
-                output.Write(module, 0, module.Length);
-                replaced = true;
-            }
-            else
-            {
-                output.Write(component, sectionStart, sectionEnd - sectionStart);
-            }
+            if (sectionId == CoreModuleSectionId)
+                return (sectionStart, payloadStart, sectionEnd);
             position = sectionEnd;
         }
 
-        if (!replaced)
-            throw new BadImageFormatException($"{componentPath} has no core-module section.");
+        throw new BadImageFormatException($"{componentPath} has no core-module section.");
+    }
+
+    private static void WriteWithCoreModule(byte[] component, int sectionStart, int sectionEnd, byte[] module, string outputPath)
+    {
+        using FileStream output = File.Create(outputPath);
+        output.Write(component, 0, sectionStart);
+        output.WriteByte(CoreModuleSectionId);
+        WriteULEB128(output, checked((uint)module.Length));
+        output.Write(module, 0, module.Length);
+        output.Write(component, sectionEnd, component.Length - sectionEnd);
+    }
+
+    private static byte[] StripModuleSymbols(byte[] data, int moduleStart, int moduleEnd, SortedDictionary<uint, string> functionNames)
+    {
+        if (moduleEnd - moduleStart < 8 ||
+            data[moduleStart] != 0 || data[moduleStart + 1] != 0x61 || data[moduleStart + 2] != 0x73 || data[moduleStart + 3] != 0x6d ||
+            data[moduleStart + 4] != 1 || data[moduleStart + 5] != 0 || data[moduleStart + 6] != 0 || data[moduleStart + 7] != 0)
+            throw new BadImageFormatException("The component's first core module is not a WebAssembly module.");
+
+        using MemoryStream output = new(moduleEnd - moduleStart);
+        output.Write(data, moduleStart, 8);
+        int position = moduleStart + 8;
+        while (position < moduleEnd)
+        {
+            int sectionStart = position;
+            byte sectionId = data[position++];
+            uint sectionSize = ReadULEB128(data, ref position);
+            int payloadStart = position;
+            int sectionEnd = checked(payloadStart + (int)sectionSize);
+            if (sectionEnd > moduleEnd)
+                throw new BadImageFormatException("WebAssembly module section extends past the end of the module.");
+
+            bool keep = true;
+            if (sectionId == CustomSectionId)
+            {
+                string name = ReadName(data, ref position, sectionEnd);
+                if (name == "name")
+                {
+                    ReadFunctionNames(data, position, sectionEnd, functionNames);
+                    keep = false;
+                }
+                else if (name.StartsWith(".debug_", StringComparison.Ordinal))
+                {
+                    keep = false;
+                }
+            }
+
+            if (keep)
+                output.Write(data, sectionStart, sectionEnd - sectionStart);
+            position = sectionEnd;
+        }
+
+        return output.ToArray();
+    }
+
+    private static void ReadFunctionNames(byte[] data, int position, int end, SortedDictionary<uint, string> functionNames)
+    {
+        while (position < end)
+        {
+            byte subsectionId = data[position++];
+            uint subsectionSize = ReadULEB128(data, ref position);
+            int subsectionEnd = checked(position + (int)subsectionSize);
+            if (subsectionEnd > end)
+                throw new BadImageFormatException("WebAssembly name subsection extends past the end of the name section.");
+            if (subsectionId == FunctionNamesSubsectionId)
+            {
+                uint count = ReadULEB128(data, ref position);
+                for (uint i = 0; i < count; i++)
+                {
+                    uint index = ReadULEB128(data, ref position);
+                    functionNames[index] = ReadName(data, ref position, subsectionEnd);
+                }
+            }
+            position = subsectionEnd;
+        }
+    }
+
+    private static string ReadName(byte[] data, ref int position, int end)
+    {
+        uint length = ReadULEB128(data, ref position);
+        if (length > end - position)
+            throw new BadImageFormatException("WebAssembly name extends past the end of its section.");
+        string name = Encoding.UTF8.GetString(data, position, (int)length);
+        position += (int)length;
+        return name;
     }
 
     private static uint ReadULEB128(byte[] data, ref int offset)
@@ -790,6 +884,32 @@ internal static class WasmConstantGlobalFolder
                 current |= 0x80;
             stream.WriteByte(current);
         }
+    }
+}
+
+public static class WasmComponentSymbols
+{
+    /// <summary>
+    /// Copies a component, dropping the name and DWARF custom sections from its first core module. When
+    /// <paramref name="symbolMapPath"/> is set, the dropped function names are written there as
+    /// <c>index:name</c> lines (the emscripten symbol map format), so traps reported by function index can
+    /// still be symbolized. Returns the number of function names found.
+    /// </summary>
+    public static int StripFirstCoreModule(string componentPath, string outputPath, string? symbolMapPath)
+    {
+        SortedDictionary<uint, string> functionNames = WasmComponentFile.StripFirstCoreModuleSymbols(componentPath, outputPath);
+        if (symbolMapPath is not null)
+        {
+            using StreamWriter writer = new(symbolMapPath, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            writer.NewLine = "\n";
+            foreach (KeyValuePair<uint, string> function in functionNames)
+            {
+                writer.Write(function.Key.ToString(CultureInfo.InvariantCulture));
+                writer.Write(':');
+                writer.WriteLine(function.Value);
+            }
+        }
+        return functionNames.Count;
     }
 }
 
