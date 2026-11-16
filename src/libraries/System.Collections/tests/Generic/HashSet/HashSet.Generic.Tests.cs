@@ -333,6 +333,43 @@ namespace System.Collections.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        public void HashSet_Generic_TrimExcess_NoRemovedElements_DoesNotInvalidateEnumeration(int setLength)
+        {
+            HashSet<T> set = (HashSet<T>)GenericISetFactory(setLength);
+            int capacity = set.EnsureCapacity(setLength * 4);
+            List<T> expected = set.ToList();
+
+            HashSet<T>.Enumerator enumerator = set.GetEnumerator();
+            Assert.True(enumerator.MoveNext());
+            List<T> actual = new List<T> { enumerator.Current };
+
+            set.TrimExcess(); // Without removed elements, trimming keeps the entries at the same indices
+            Assert.InRange(set.Capacity, setLength, capacity - 1);
+
+            while (enumerator.MoveNext())
+            {
+                actual.Add(enumerator.Current);
+            }
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        public void HashSet_Generic_TrimExcess_RemovedElements_DoesInvalidateEnumeration(int setLength)
+        {
+            HashSet<T> set = (HashSet<T>)GenericISetFactory(setLength);
+            int capacity = set.EnsureCapacity(setLength * 4);
+            Assert.True(set.Remove(set.ElementAt(0)));
+            HashSet<T>.Enumerator enumerator = set.GetEnumerator();
+
+            set.TrimExcess(); // Compacting the removed entry moves the entries after it
+            Assert.InRange(set.Capacity, set.Count, capacity - 1);
+
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+        }
+
         #endregion
 
         #region CopyTo

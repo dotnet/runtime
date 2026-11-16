@@ -648,12 +648,74 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public void TrimExcess_Generic_DoesInvalidateEnumeration()
+        public void TrimExcess_Generic_EmptyDictionary_DoesNotInvalidateEnumeration()
         {
             var dictionary = new Dictionary<TKey, TValue>(20);
             var enumerator = dictionary.GetEnumerator();
 
-            dictionary.TrimExcess(7); // Verify TrimExcess does invalidate enumeration
+            dictionary.TrimExcess(7);
+            Assert.Equal(7, dictionary.Capacity);
+
+            Assert.False(enumerator.MoveNext());
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        public void TrimExcess_Generic_NoRemovedEntries_DoesNotInvalidateEnumeration(int count)
+        {
+            var dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+            int capacity = dictionary.EnsureCapacity(count * 4);
+            var expected = new List<KeyValuePair<TKey, TValue>>(dictionary);
+
+            var enumerator = dictionary.GetEnumerator();
+            Assert.True(enumerator.MoveNext());
+            var actual = new List<KeyValuePair<TKey, TValue>> { enumerator.Current };
+
+            dictionary.TrimExcess(); // Without removed entries, trimming keeps the entries at the same indices
+            Assert.InRange(dictionary.Capacity, count, capacity - 1);
+
+            while (enumerator.MoveNext())
+            {
+                actual.Add(enumerator.Current);
+            }
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        public void TrimExcess_Generic_RemovedEntryReused_DoesNotInvalidateEnumeration(int count)
+        {
+            var dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+            int capacity = dictionary.EnsureCapacity(count * 4);
+            Assert.True(dictionary.Remove(dictionary.Keys.First()));
+            dictionary.Add(GetNewKey(dictionary), CreateTValue(count)); // Takes the removed entry's slot
+            var expected = new List<KeyValuePair<TKey, TValue>>(dictionary);
+
+            var enumerator = dictionary.GetEnumerator();
+            Assert.True(enumerator.MoveNext());
+            var actual = new List<KeyValuePair<TKey, TValue>> { enumerator.Current };
+
+            dictionary.TrimExcess();
+            Assert.InRange(dictionary.Capacity, count, capacity - 1);
+
+            while (enumerator.MoveNext())
+            {
+                actual.Add(enumerator.Current);
+            }
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        public void TrimExcess_Generic_RemovedEntries_DoesInvalidateEnumeration(int count)
+        {
+            var dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+            int capacity = dictionary.EnsureCapacity(count * 4);
+            Assert.True(dictionary.Remove(dictionary.Keys.First()));
+            var enumerator = dictionary.GetEnumerator();
+
+            dictionary.TrimExcess(); // Compacting the removed entry moves the entries after it
+            Assert.InRange(dictionary.Capacity, dictionary.Count, capacity - 1);
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }

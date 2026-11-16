@@ -1702,7 +1702,11 @@ namespace System.Collections.Generic
                 return;
             }
 
-            _version++;
+            // CopyEntries only moves entries when it compacts removed ones
+            if (_freeCount > 0)
+            {
+                _version++;
+            }
 
             Debug.Assert(HashHelpers.IsPrime(newSize));
             Debug.Assert(newSize >= Count);
