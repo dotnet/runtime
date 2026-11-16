@@ -20,7 +20,7 @@ class TypeNamesList
 {
     class TypeName
     {
-        LPUTF8      typeName;
+        AStringHolder typeName;
         TypeName *next;           // Next name
 
         friend class TypeNamesList;

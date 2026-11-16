@@ -17,6 +17,106 @@ namespace TestStructFields
 {
     public class Program
     {
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        public static void WritesToPromotedPadding(int kind)
+        {
+            byte[] expected = new byte[12];
+            expected[0] = 1;
+            BitConverter.GetBytes(2).CopyTo(expected, 4);
+            expected[8] = 3;
+            switch (kind)
+            {
+                case 0:
+                case 5:
+                    expected[1] = 42;
+                    break;
+                case 1:
+                    BitConverter.GetBytes((ushort)0x4242).CopyTo(expected, 3);
+                    break;
+                case 2:
+                    BitConverter.GetBytes(0x4242424242424242UL).CopyTo(expected, 2);
+                    break;
+                case 3:
+                    expected[11] = 42;
+                    break;
+                case 4:
+                    BitConverter.GetBytes(0x42424242U).CopyTo(expected, 8);
+                    break;
+                case 6:
+                    Array.Clear(expected);
+                    expected[1] = 42;
+                    break;
+            }
+
+            WritePromotedPadding(1, 2, 3, kind, expected);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void WritePromotedPadding(byte a, int b, byte c, int kind, byte[] expected)
+        {
+            Padded s = default;
+            s.A = a;
+            s.B = b;
+            s.C = c;
+            switch (kind)
+            {
+                case 0:
+                    Unsafe.Add(ref Unsafe.As<Padded, byte>(ref s), 1) = 42;
+                    break;
+                case 1:
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref Unsafe.As<Padded, byte>(ref s), 3), (ushort)0x4242);
+                    break;
+                case 2:
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref Unsafe.As<Padded, byte>(ref s), 2), 0x4242424242424242UL);
+                    break;
+                case 3:
+                    Unsafe.Add(ref Unsafe.As<Padded, byte>(ref s), 11) = 42;
+                    break;
+                case 4:
+                    Unsafe.Add(ref Unsafe.As<Padded, uint>(ref s), 2) = 0x42424242U;
+                    break;
+                case 5:
+                    s = ReturnPromotedPadding(a, b, c);
+                    break;
+                case 6:
+                    s = default;
+                    Unsafe.Add(ref Unsafe.As<Padded, byte>(ref s), 1) = 42;
+                    break;
+            }
+
+            Assert.Equal(expected[0], s.A);
+            Assert.Equal(BitConverter.ToInt32(expected, 4), s.B);
+            Assert.Equal(expected[8], s.C);
+            Assert.Equal(BitConverter.ToUInt32(expected, 0), Unsafe.As<Padded, uint>(ref s));
+            Assert.Equal(BitConverter.ToUInt32(expected, 4), Unsafe.Add(ref Unsafe.As<Padded, uint>(ref s), 1));
+            Assert.Equal(BitConverter.ToUInt32(expected, 8), Unsafe.Add(ref Unsafe.As<Padded, uint>(ref s), 2));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Padded ReturnPromotedPadding(byte a, int b, byte c)
+        {
+            Padded s = default;
+            s.A = a;
+            s.B = b;
+            s.C = c;
+            Unsafe.Add(ref Unsafe.As<Padded, byte>(ref s), 1) = 42;
+            return s;
+        }
+
+        private struct Padded
+        {
+            public byte A;
+            public int B;
+            public byte C;
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void blockPromotion<T>(ref T s)
         {

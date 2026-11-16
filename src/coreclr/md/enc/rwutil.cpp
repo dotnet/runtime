@@ -164,18 +164,10 @@ Unicode2UTF(
     LPUTF8  szDst,  // Buffer for the output UTF8 string.
     int     cbDst)  // Size of the buffer for UTF8 string.
 {
-    int cchSrc = (int)u16_strlen(wszSrc);
-    int cchRet;
+    size_t cchSrc = u16_strlen(wszSrc);
+    size_t cchRet;
 
-    cchRet = WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        wszSrc,
-        cchSrc + 1,
-        szDst,
-        cbDst,
-        NULL,
-        NULL);
+    cchRet = minipal_convert_utf16_to_utf8((const CHAR16_T*)wszSrc, cchSrc + 1, szDst, cbDst, 0);
 
     if (cchRet == 0)
     {

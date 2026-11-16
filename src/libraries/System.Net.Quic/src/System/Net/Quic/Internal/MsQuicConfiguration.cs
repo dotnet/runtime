@@ -231,6 +231,11 @@ internal static partial class MsQuicConfiguration
 
         try
         {
+            // The copy retains the underlying certificate handle while MsQuic loads the credentials.
+            using X509Certificate2? certificateCopy = MsQuicApi.UsesSChannelBackend && certificate is not null
+                ? new X509Certificate2(certificate)
+                : null;
+
             if (certificate is X509Certificate2 cert && intermediates is null)
             {
                 // Build the local chain after the configuration cache check. Avoid OCSP fetches
@@ -254,7 +259,7 @@ internal static partial class MsQuicConfiguration
             else if (MsQuicApi.UsesSChannelBackend)
             {
                 config.Type = QUIC_CREDENTIAL_TYPE.CERTIFICATE_CONTEXT;
-                config.CertificateContext = (void*)certificate.Handle;
+                config.CertificateContext = (void*)certificateCopy!.Handle;
                 status = MsQuicApi.Api.ConfigurationLoadCredential(configurationHandle, &config);
             }
             else
@@ -302,9 +307,9 @@ internal static partial class MsQuicConfiguration
             // server certificates and SEC_E_UNKNOWN_CREDENTIALS for client certificates when the
             // private key is ephemeral, which is not supported on Windows.
             if ((status == MsQuic.QUIC_STATUS_CERT_NO_CERT || (Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.UnknownCredentials) &&
-                certificate is not null && certificate.HasPrivateKey())
+                certificateCopy is not null && certificateCopy.HasPrivateKey)
             {
-                using Microsoft.Win32.SafeHandles.SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificate.Handle);
+                using Microsoft.Win32.SafeHandles.SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificateCopy.Handle);
                 if (safeCertContextHandle.HasEphemeralPrivateKey)
                 {
                     throw new AuthenticationException(SR.net_auth_ephemeral);

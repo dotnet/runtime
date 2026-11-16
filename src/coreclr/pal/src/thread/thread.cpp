@@ -24,6 +24,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/module.h"
 #include "pal/environ.h"
 #include "pal/init.h"
+#include <minipal/utf8.h>
 #include "pal/utils.h"
 
 #include <minipal/thread.h>
@@ -1302,7 +1303,7 @@ SetThreadDescription(
 
     CPalThread *pTargetThread = NULL;
     IPalObject *pobjThread = NULL;
-    int nameSize;
+    size_t nameSize;
     char *nameBuf = NULL;
 
     PAL_ERROR palError = InternalGetThreadDataFromHandle(pThread, hThread, &pTargetThread, &pobjThread);
@@ -1312,11 +1313,11 @@ SetThreadDescription(
         // it causes the value returned by Process.ProcessName to change.
         if ((pid_t)pTargetThread->GetThreadId() != getpid())
         {
-            nameSize = WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, NULL, 0, NULL, NULL);
+            nameSize = lpThreadDescription != NULL ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpThreadDescription, minipal_u16_strlen((const CHAR16_T*)lpThreadDescription) + 1, 0) : 0;
             if (nameSize > 0)
             {
                 nameBuf = (char *)malloc(nameSize);
-                if (nameBuf == NULL || WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, nameBuf, nameSize, NULL, NULL) != nameSize)
+                if (nameBuf == NULL || minipal_convert_utf16_to_utf8((const CHAR16_T*)lpThreadDescription, minipal_u16_strlen((const CHAR16_T*)lpThreadDescription) + 1, nameBuf, nameSize, 0) != nameSize)
                 {
                     pThread->SetLastError(ERROR_INSUFFICIENT_BUFFER);
                 }
@@ -2078,6 +2079,7 @@ CPalThread::EnsureSignalAlternateStack()
                 if (st == 0)
                 {
                     m_alternateStack = altStack;
+                    m_alternateStackSize = altStackSize;
                 }
                 else
                 {
@@ -2109,27 +2111,25 @@ CPalThread::FreeSignalAlternateStack()
 {
 #ifndef TARGET_WASM // WebAssembly does not support alternate signal stacks.
     void *altstack = m_alternateStack;
+    size_t altStackSize = m_alternateStackSize;
     m_alternateStack = nullptr;
+    m_alternateStackSize = 0;
 
     if (altstack != nullptr)
     {
-        stack_t ss, oss;
-        // The man page for sigaltstack says that when the ss.ss_flags is set to SS_DISABLE,
-        // all other ss fields are ignored. However, MUSL implementation checks that the
-        // ss_size is >= MINSIGSTKSZ even in this case.
-        ss.ss_size = MINSIGSTKSZ;
-        ss.ss_flags = SS_DISABLE;
-        ss.ss_sp = NULL;
-        int st = sigaltstack(&ss, &oss);
-        if ((st == 0) && (oss.ss_flags != SS_DISABLE))
+        stack_t ss;
+        if (sigaltstack(nullptr, &ss) == 0 && (ss.ss_flags & SS_DISABLE) == 0 && ss.ss_sp == altstack)
         {
-            // Make sure this altstack is this PAL's before freeing.
-            if (oss.ss_sp == altstack)
-            {
-                int st = munmap(oss.ss_sp, oss.ss_size);
-                _ASSERTE(st == 0);
-            }
+            // The man page for sigaltstack says that when the ss.ss_flags is set to SS_DISABLE,
+            // all other ss fields are ignored. However, MUSL implementation checks that the
+            // ss_size is >= MINSIGSTKSZ even in this case.
+            ss.ss_size = MINSIGSTKSZ;
+            ss.ss_flags = SS_DISABLE;
+            ss.ss_sp = nullptr;
+            sigaltstack(&ss, nullptr);
         }
+        int st = munmap(altstack, altStackSize);
+        _ASSERTE(st == 0);
     }
 #endif // !TARGET_WASM
 }

@@ -74,9 +74,9 @@ extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandle
         //  loaded into this appdomain, on another thread.
         AppDomain::AssemblyIterator i = pApp->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        CollectibleAssemblyHolder pAssembly;
 
-        while (i.Next(pAssembly.This()) && (numAssemblies < nArrayElems))
+        while (i.Next(&pAssembly) && (numAssemblies < nArrayElems))
         {
             // Do not change this code.  This is done this way to
             //  prevent a GC hole in the SetObjectReference() call.  The compiler

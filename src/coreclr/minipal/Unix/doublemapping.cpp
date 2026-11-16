@@ -505,8 +505,6 @@ void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize,
 {
 #if defined(TARGET_APPLE)
     return pImageTemplate;
-#elif defined(TARGET_X86)
-    return NULL; // X86 doesn't support high performance relative addressing, which makes the template system not work
 #else
     if (pImageTemplate == NULL)
         return NULL;

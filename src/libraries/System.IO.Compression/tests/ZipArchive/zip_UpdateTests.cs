@@ -1596,7 +1596,7 @@ namespace System.IO.Compression.Tests
             }
 
             // Validate structural integrity — original entries must retain bit 3 and
-            // have CRC/sizes zeroed in the local header (values live in the data descriptor).
+            // have Zip64 placeholders in the local header (values live in the data descriptor).
             const uint LocalFileHeaderSignature = 0x04034b50;
             const uint DataDescriptorSignature = 0x08074b50;
             const ushort DataDescriptorBitFlag = 0x0008;
@@ -1616,17 +1616,28 @@ namespace System.IO.Compression.Tests
 
                 if (i < originalEntryCount)
                 {
-                    // Original entries must preserve bit 3 and have zeroed CRC/sizes in the local header.
+                    // Preserve bit 3 and the Zip64 declaration for the retained descriptor.
                     Assert.True((flags & DataDescriptorBitFlag) != 0, $"Entry {i}: bit 3 should be preserved.");
                     Assert.True(localCrc == 0, $"Entry {i}: local header CRC should be 0 when bit 3 is set.");
-                    Assert.True(localCompSize == 0, $"Entry {i}: local header compressed size should be 0 when bit 3 is set.");
-                    Assert.True(localUncompSize == 0, $"Entry {i}: local header uncompressed size should be 0 when bit 3 is set.");
+                    Assert.Equal(uint.MaxValue, localCompSize);
+                    Assert.Equal(uint.MaxValue, localUncompSize);
+                    Assert.Equal(45, BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(localHeaderOffset + 4)));
 
                     // Verify the data descriptor is present with the correct signature.
                     ushort fileNameLength = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(localHeaderOffset + 26));
                     ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(localHeaderOffset + 28));
+                    Assert.Equal(20, extraFieldLength);
+                    ReadOnlySpan<byte> extra = span.Slice(localHeaderOffset + 30 + fileNameLength, extraFieldLength);
+                    Assert.Equal(1, BinaryPrimitives.ReadUInt16LittleEndian(extra));
+                    Assert.Equal(16, BinaryPrimitives.ReadUInt16LittleEndian(extra.Slice(2)));
+                    Assert.Equal(0, BinaryPrimitives.ReadInt64LittleEndian(extra.Slice(4)));
+                    Assert.Equal(0, BinaryPrimitives.ReadInt64LittleEndian(extra.Slice(12)));
+
                     int descriptorOffset = localHeaderOffset + 30 + fileNameLength + extraFieldLength + (int)compressedSize;
                     Assert.Equal(DataDescriptorSignature, BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(descriptorOffset)));
+                    Assert.Equal((long)compressedSize, BinaryPrimitives.ReadInt64LittleEndian(span.Slice(descriptorOffset + 8)));
+                    Assert.Equal(entryData.Length + 1, BinaryPrimitives.ReadInt64LittleEndian(span.Slice(descriptorOffset + 16)));
+                    Assert.Equal(LocalFileHeaderSignature, BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(descriptorOffset + 24)));
                 }
                 else
                 {

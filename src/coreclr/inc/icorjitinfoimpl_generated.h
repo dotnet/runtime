@@ -754,6 +754,9 @@ void recordCallSite(
 void recordWasmManagedCallSig(
           CORINFO_SIG_INFO* callSig) override;
 
+void recordWasmVirtualFunctionPointerLookup(
+          CORINFO_METHOD_HANDLE method) override;
+
 void recordRelocation(
           void* location,
           void* locationRW,

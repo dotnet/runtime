@@ -47,6 +47,7 @@ namespace System.IO.Compression
         private List<ZipGenericExtraField>? _cdUnknownExtraFields;
         private byte[]? _cdTrailingExtraFieldData;
         private List<ZipGenericExtraField>? _lhUnknownExtraFields;
+        private bool _lhUsesZip64;
         private byte[]? _lhTrailingExtraFieldData;
         private byte[] _fileComment;
         private ZipEncryptionMethod _encryptionMethod;
@@ -942,7 +943,7 @@ namespace System.IO.Compression
             if (_originallyInArchive)
             {
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-                _lhUnknownExtraFields = ZipLocalFileHeader.GetExtraFields(_archive.ArchiveStream, out _lhTrailingExtraFieldData);
+                _lhUnknownExtraFields = ZipLocalFileHeader.GetExtraFields(_archive.ArchiveStream, out _lhTrailingExtraFieldData, out _lhUsesZip64);
             }
         }
 
@@ -1692,6 +1693,18 @@ namespace System.IO.Compression
                 }
             }
 
+            if ((!isEmptyFile && !_archive.ArchiveStream.CanSeek) || (preserveDataDescriptor && _lhUsesZip64))
+            {
+                // The final sizes are unknown and the header cannot be updated later.
+                // ZIP APPNOTE 4.3.9.2 allows Zip64 for any size and requires 64-bit
+                // descriptor sizes when a Zip64 extra field is present.
+                // Retained Zip64 descriptors also need to keep this declaration.
+                compressedSizeTruncated = ZipHelper.Mask32Bit;
+                uncompressedSizeTruncated = ZipHelper.Mask32Bit;
+                zip64ExtraField = new() { CompressedSize = 0, UncompressedSize = 0 };
+                VersionToExtractAtLeast(ZipVersionNeededValues.Zip64);
+            }
+
             // save offset
             _offsetOfLocalHeader = _archive.ArchiveStream.Position;
 
@@ -1733,14 +1746,10 @@ namespace System.IO.Compression
             {
                 if (preserveDataDescriptor)
                 {
-                    if (zip64ExtraField is null)
-                    {
-                        compressedSizeTruncated = 0;
-                        uncompressedSizeTruncated = 0;
-                    }
+                    compressedSizeTruncated = zip64ExtraField is null ? 0 : ZipHelper.Mask32Bit;
+                    uncompressedSizeTruncated = compressedSizeTruncated;
 
-                    // The descriptor carries the final CRC and sizes. Retain the size selectors
-                    // when Zip64 extra fields are present (APPNOTE 4.5.3).
+                    // The actual CRC and sizes are stored in the retained data descriptor.
                     crc32ToWrite = 0;
 
                     if (zip64ExtraField is not null)
@@ -2156,7 +2165,7 @@ namespace System.IO.Compression
 
         }
 
-        // data descriptor can be 32-bit or 64-bit sizes. 32-bit is more compatible, so use that if possible
+        // Data descriptor sizes must match the format declared in the local header.
         // signature is optional but recommended by the spec
         private const int MaxSizeOfDataDescriptor = 24;
 
@@ -2177,7 +2186,7 @@ namespace System.IO.Compression
             ZipLocalFileHeader.DataDescriptorSignatureConstantBytes.CopyTo(dataDescriptor[ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.Signature..]);
             BinaryPrimitives.WriteUInt32LittleEndian(dataDescriptor[ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.Crc32..], Crc32ToWrite);
 
-            if (AreSizesTooLarge)
+            if (AreSizesTooLarge || !_archive.ArchiveStream.CanSeek)
             {
                 BinaryPrimitives.WriteInt64LittleEndian(dataDescriptor[ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.CompressedSize..], _compressedSize);
                 BinaryPrimitives.WriteInt64LittleEndian(dataDescriptor[ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.UncompressedSize..], _uncompressedSize);

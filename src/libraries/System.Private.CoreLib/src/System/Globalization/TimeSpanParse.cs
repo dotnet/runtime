@@ -133,7 +133,7 @@ namespace System.Globalization
                     // .000001  normalize to 10 ticks
                     // .1       normalize to 1,000,000 ticks
 
-                    _num *= Pow10UpToMaxFractionDigits(MaxFractionDigits - totalDigitsCount);
+                    _num *= (int)uint.PowersOf10[MaxFractionDigits - totalDigitsCount];
                     return true;
                 }
 
@@ -152,8 +152,7 @@ namespace System.Globalization
                     return true;
                 }
 
-                Debug.Assert(totalDigitsCount - MaxFractionDigits <= MaxFractionDigits);
-                uint power = (uint)Pow10UpToMaxFractionDigits(totalDigitsCount - MaxFractionDigits);
+                uint power = uint.PowersOf10[totalDigitsCount - MaxFractionDigits];
                 // Unsigned integer division, rounding away from zero
                 _num = (int)(((uint)_num + power / 2) / power);
                 Debug.Assert(_num < MaxFraction);
@@ -573,23 +572,6 @@ namespace System.Globalization
 
                 throw new FormatException(SR.Format(SR.Format_BadFormatSpecifier, formatSpecifierCharacter));
             }
-        }
-
-        internal static int Pow10UpToMaxFractionDigits(int pow)
-        {
-            ReadOnlySpan<int> powersOfTen =
-            [
-                1,
-                10,
-                100,
-                1000,
-                10000,
-                100000,
-                1000000,
-                10000000,
-            ];
-            Debug.Assert(powersOfTen.Length == MaxFractionDigits + 1);
-            return powersOfTen[pow];
         }
 
         private static bool TryTimeToTicks(bool positive, TimeSpanToken days, TimeSpanToken hours, TimeSpanToken minutes, TimeSpanToken seconds, TimeSpanToken fraction, out long result)

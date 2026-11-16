@@ -25,7 +25,7 @@ namespace System.Runtime.Caching
         private ManualResetEvent _insertBlock;
         private volatile bool _useInsertBlock;
         private readonly MemoryCache _cache;
-        private readonly Counters _perfCounters;
+        private readonly Counters? _perfCounters;
 #if NET
         [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
@@ -34,7 +34,7 @@ namespace System.Runtime.Caching
         private static bool _countersSupported => true;
 #endif
 
-        internal MemoryCacheStore(MemoryCache cache, Counters perfCounters)
+        internal MemoryCacheStore(MemoryCache cache, Counters? perfCounters)
         {
             _cache = cache;
             _perfCounters = perfCounters;
@@ -88,6 +88,7 @@ namespace System.Runtime.Caching
             }
         }
 
+        [MemberNotNull(nameof(_insertBlock))]
         private void InitDisposableMembers()
         {
             _insertBlock = new ManualResetEvent(true);
@@ -128,7 +129,7 @@ namespace System.Runtime.Caching
         // to update both the performance counters and the sliding expiration. Callers that perform
         // nested sliding expiration updates (like a MemoryCacheEntry touching its update sentinel)
         // can pass false to prevent these from unintentionally showing up in the perf counters.
-        internal void UpdateExpAndUsage(MemoryCacheEntry entry, bool updatePerfCounters = true)
+        internal void UpdateExpAndUsage(MemoryCacheEntry? entry, bool updatePerfCounters = true)
         {
             if (entry != null)
             {
@@ -167,14 +168,14 @@ namespace System.Runtime.Caching
 
         internal CacheUsage Usage { get { return _usage; } }
 
-        internal MemoryCacheEntry AddOrGetExisting(MemoryCacheKey key, MemoryCacheEntry entry)
+        internal MemoryCacheEntry? AddOrGetExisting(MemoryCacheKey key, MemoryCacheEntry entry)
         {
             if (_useInsertBlock && entry.HasUsage())
             {
                 WaitInsertBlock();
             }
-            MemoryCacheEntry existingEntry = null;
-            MemoryCacheEntry toBeReleasedEntry = null;
+            MemoryCacheEntry? existingEntry = null;
+            MemoryCacheEntry? toBeReleasedEntry = null;
             bool added = false;
             lock (_entriesLock)
             {
@@ -198,7 +199,7 @@ namespace System.Runtime.Caching
                 }
             }
             // release outside of lock
-            RemoveFromCache(toBeReleasedEntry, CacheEntryRemovedReason.Expired, delayRelease: true);
+            if (toBeReleasedEntry != null) { RemoveFromCache(toBeReleasedEntry, CacheEntryRemovedReason.Expired, delayRelease: true); }
             if (added)
             {
                 // add outside of lock
@@ -227,9 +228,7 @@ namespace System.Runtime.Caching
                 {
                     foreach (DictionaryEntry e in _entries)
                     {
-                        MemoryCacheKey key = e.Key as MemoryCacheKey;
-                        MemoryCacheEntry entry = e.Value as MemoryCacheEntry;
-                        if (entry.UtcAbsExp > DateTime.UtcNow)
+                        if (e.Key is MemoryCacheKey key && e.Value is MemoryCacheEntry entry && entry.UtcAbsExp > DateTime.UtcNow)
                         {
                             h[key.Key] = entry.Value;
                         }
@@ -258,8 +257,10 @@ namespace System.Runtime.Caching
                 {
                     foreach (DictionaryEntry e in _entries)
                     {
-                        MemoryCacheEntry entry = e.Value as MemoryCacheEntry;
-                        entries.Add(entry);
+                        if (e.Value is MemoryCacheEntry entry)
+                        {
+                            entries.Add(entry);
+                        }
                     }
                     foreach (MemoryCacheEntry entry in entries)
                     {
@@ -283,9 +284,9 @@ namespace System.Runtime.Caching
             }
         }
 
-        internal MemoryCacheEntry Get(MemoryCacheKey key)
+        internal MemoryCacheEntry? Get(MemoryCacheKey key)
         {
-            MemoryCacheEntry entry = _entries[key] as MemoryCacheEntry;
+            MemoryCacheEntry? entry = _entries[key] as MemoryCacheEntry;
             // has it expired?
             if (entry != null && entry.UtcAbsExp <= DateTime.UtcNow)
             {
@@ -297,9 +298,9 @@ namespace System.Runtime.Caching
             return entry;
         }
 
-        internal MemoryCacheEntry Remove(MemoryCacheKey key, MemoryCacheEntry entryToRemove, CacheEntryRemovedReason reason)
+        internal MemoryCacheEntry? Remove(MemoryCacheKey key, MemoryCacheEntry? entryToRemove, CacheEntryRemovedReason reason)
         {
-            MemoryCacheEntry entry = null;
+            MemoryCacheEntry? entry = null;
             lock (_entriesLock)
             {
                 if (_disposed == 0)
@@ -322,7 +323,7 @@ namespace System.Runtime.Caching
                 }
             }
             // release outside of lock
-            RemoveFromCache(entry, reason);
+            if (entry != null) { RemoveFromCache(entry, reason); }
             return entry;
         }
 
@@ -332,7 +333,7 @@ namespace System.Runtime.Caching
             {
                 WaitInsertBlock();
             }
-            MemoryCacheEntry existingEntry = null;
+            MemoryCacheEntry? existingEntry = null;
             bool added = false;
             lock (_entriesLock)
             {

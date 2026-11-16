@@ -18,6 +18,7 @@
 #define BUF_SIZE 128
 
 #include <palsuite.h>
+#include <dn-u16.h>
 
 /* Depends on GetEnvironmentVariable */
 
@@ -63,7 +64,7 @@ PALTEST(miscellaneous_SetEnvironmentVariableW_test1_paltest_setenvironmentvariab
        variable we set. 
     */
  
-    if(memcmp(NewValue,ValueBuffer,wcslen(ValueBuffer)*sizeof(WCHAR)+2) != 0) 
+    if(memcmp(NewValue,ValueBuffer,u16_strlen(ValueBuffer)*sizeof(WCHAR)+2) != 0) 
     {
         Fail("ERROR:  When retrieving the variable that was just set, a "
              "difference was found. Instead of the value being '%s' it "
@@ -99,7 +100,7 @@ PALTEST(miscellaneous_SetEnvironmentVariableW_test1_paltest_setenvironmentvariab
     */
     
     if(memcmp(NewValue,SecondValueBuffer,
-              wcslen(SecondValueBuffer)*sizeof(WCHAR)+2) != 0) 
+              u16_strlen(SecondValueBuffer)*sizeof(WCHAR)+2) != 0) 
     {
         Fail("ERROR:  When retrieving the variable that was just set, a "
              "difference was found. Instead of the value being '%s' it "

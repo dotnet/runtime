@@ -106,6 +106,7 @@ namespace ILCompiler.ObjectWriter
 
         public TargetArchitecture TargetArchitecture => _architecture;
         public byte TargetPointerSize => _targetPointerSize;
+        public bool UseDwarf5 => _useDwarf5;
         public int FrameRegister => _frameRegister;
 
         public uint ResolveOffset(uint typeIndex) => typeIndex == 0 ? 0u : _dwarfTypeOffsets[typeIndex - 1];
@@ -139,6 +140,9 @@ namespace ILCompiler.ObjectWriter
             SectionWriter rangeSectionWriter,
             ResolveStaticVariable resolveStaticVariable)
         {
+            byte[] locListSizeBuffer = _useDwarf5 ? WriteListTableHeader(locSectionWriter) : null;
+            byte[] rangeListSizeBuffer = _useDwarf5 ? WriteListTableHeader(rangeSectionWriter) : null;
+
             // Length
             byte[] sizeBuffer = new byte[sizeof(uint)];
             infoSectionWriter.EmitData(sizeBuffer);
@@ -168,7 +172,7 @@ namespace ILCompiler.ObjectWriter
                 this,
                 _codeRelocType))
             {
-                dwarfInfoWriter.WriteStartDIE(DwarfAbbrev.CompileUnit);
+                dwarfInfoWriter.WriteStartDIE(_useDwarf5 ? DwarfAbbrev.CompileUnitDwarf5 : DwarfAbbrev.CompileUnit);
 
                 // DW_AT_producer
                 dwarfInfoWriter.WriteStringReference("NetRuntime");
@@ -189,6 +193,11 @@ namespace ILCompiler.ObjectWriter
                 dwarfInfoWriter.WriteEndRangeList();
                 // DW_AT_stmt_list
                 dwarfInfoWriter.WriteLineReference(0);
+                if (_useDwarf5)
+                {
+                    // DW_AT_addr_base
+                    dwarfInfoWriter.WriteAddressTableReference(AddressTableHeaderSize);
+                }
 
                 _dwarfTypeOffsets = new uint[_dwarfTypes.Count];
 
@@ -222,6 +231,43 @@ namespace ILCompiler.ObjectWriter
 
             // Update the size
             BinaryPrimitives.WriteUInt32LittleEndian(sizeBuffer, (uint)(infoSectionWriter.Position - sizeof(uint)));
+
+            if (_useDwarf5)
+            {
+                BinaryPrimitives.WriteUInt32LittleEndian(locListSizeBuffer, (uint)(locSectionWriter.Position - sizeof(uint)));
+                BinaryPrimitives.WriteUInt32LittleEndian(rangeListSizeBuffer, (uint)(rangeSectionWriter.Position - sizeof(uint)));
+            }
+        }
+
+        // unit_length, version, address_size, segment_selector_size
+        private const int AddressTableHeaderSize = sizeof(uint) + sizeof(ushort) + sizeof(byte) + sizeof(byte);
+
+        /// <summary>
+        /// Writes an empty DWARF 5 .debug_addr table so that DW_AT_addr_base can reference it.
+        /// </summary>
+        /// <remarks>
+        /// Nothing in this unit uses DW_FORM_addrx, but tools that rewrite the debug info
+        /// (such as dsymutil) may emit indexed address forms and rely on DW_AT_addr_base.
+        /// </remarks>
+        public void WriteAddressTable(SectionWriter addrSectionWriter)
+        {
+            Debug.Assert(_useDwarf5);
+            Debug.Assert(addrSectionWriter.Position == 0);
+            addrSectionWriter.WriteLittleEndian<uint>(AddressTableHeaderSize - sizeof(uint));
+            addrSectionWriter.WriteLittleEndian<ushort>(5);
+            addrSectionWriter.Write([_targetPointerSize, 0]);
+        }
+
+        private byte[] WriteListTableHeader(SectionWriter writer)
+        {
+            // DWARF 5 list tables have a common header: https://dwarfstd.org/doc/DWARF5.pdf.
+            Debug.Assert(writer.Position == 0);
+            byte[] sizeBuffer = new byte[sizeof(uint)];
+            writer.EmitData(sizeBuffer);
+            writer.WriteLittleEndian<ushort>(5);
+            writer.Write([_targetPointerSize, 0]);
+            writer.WriteLittleEndian<uint>(0); // No offset table; lists use DW_FORM_sec_offset.
+            return sizeBuffer;
         }
 
         private void WriteLineInfoTable(SectionWriter lineSectionWriter)

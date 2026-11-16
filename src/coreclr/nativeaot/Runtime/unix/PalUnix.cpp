@@ -898,7 +898,7 @@ HANDLE PalCreateLowMemoryResourceNotification()
 extern "C" void _mm_pause()
 // Defined for implementing PalYieldProcessor in Pal.h
 {
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
   __asm__ volatile ("pause");
 #endif
 }

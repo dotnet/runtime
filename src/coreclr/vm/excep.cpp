@@ -4002,7 +4002,7 @@ static bool s_useEntryPointFilterCorhostProperty = false;
 void ParseUseEntryPointFilter(LPCWSTR value)
 {
     // set s_useEntryPointFilter true if value != "0"
-    if (value && (_wcsicmp(value, W("0")) != 0))
+    if (value && (u16_stricmp(value, W("0")) != 0))
     {
         s_useEntryPointFilterCorhostProperty = true;
     }

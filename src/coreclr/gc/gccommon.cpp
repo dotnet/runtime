@@ -12,6 +12,7 @@
 
 #include "gcenv.h"
 #include "gc.h"
+#include <minipal/utf8.h>
 
 IGCHeapInternal* g_theGCHeap;
 IGCHandleManager* g_theGCHandleManager;
@@ -131,7 +132,16 @@ FILE* CreateLogFile(const GCConfigStringHolder& temp_logfile_name, bool is_confi
     const char* suffix = is_config ? ".config.log" : ".log";
     //_snprintf_s(logfile_name, MAX_LONGPATH+1, _TRUNCATE, "%s.%d%s", temp_logfile_name.Get(), pid, suffix);
     _snprintf_s(logfile_name, MAX_LONGPATH+1, _TRUNCATE, "%s%s", temp_logfile_name.Get(), suffix);
+#ifdef TARGET_WINDOWS
+    // Config strings are UTF-8; fopen would interpret them as the ANSI code page.
+    size_t nameLen = strlen(logfile_name) + 1;
+    size_t wlen = minipal_get_length_utf8_to_utf16(logfile_name, nameLen, 0);
+    WCHAR* wpath = (WCHAR*)_alloca(wlen * sizeof(WCHAR));
+    minipal_convert_utf8_to_utf16(logfile_name, nameLen, (CHAR16_T*)wpath, wlen, 0);
+    logFile = _wfopen(wpath, L"wb");
+#else
     logFile = fopen(logfile_name, "wb");
+#endif
 
     if (logFile == NULL)
     {
