@@ -71,6 +71,8 @@ namespace System.Diagnostics
         private bool _disposed;
 
         private bool _standardInputAccessed;
+        private bool _standardOutputAccessed;
+        private bool _standardErrorAccessed;
 
         private StreamReadMode _outputStreamReadMode;
         private StreamReadMode _errorStreamReadMode;
@@ -698,6 +700,7 @@ namespace System.Diagnostics
                     throw new InvalidOperationException(SR.CantMixSyncAsyncOperation);
                 }
 
+                _standardOutputAccessed = true;
                 return _standardOutput;
             }
         }
@@ -724,6 +727,7 @@ namespace System.Diagnostics
                     throw new InvalidOperationException(SR.CantMixSyncAsyncOperation);
                 }
 
+                _standardErrorAccessed = true;
                 return _standardError;
             }
         }
@@ -867,9 +871,10 @@ namespace System.Diagnostics
 
                 // Only call close on the streams if the user cannot have a reference on them.
                 // If they are referenced it is the user's responsibility to dispose of them.
+                // The streams used only by the ReadAll* methods are never exposed to the user.
                 try
                 {
-                    if (_standardOutput != null && (_outputStreamReadMode == StreamReadMode.AsyncMode || _outputStreamReadMode == StreamReadMode.Undefined))
+                    if (_standardOutput != null && !_standardOutputAccessed)
                     {
                         if (_outputStreamReadMode == StreamReadMode.AsyncMode)
                         {
@@ -879,7 +884,7 @@ namespace System.Diagnostics
                         _standardOutput.Close();
                     }
 
-                    if (_standardError != null && (_errorStreamReadMode == StreamReadMode.AsyncMode || _errorStreamReadMode == StreamReadMode.Undefined))
+                    if (_standardError != null && !_standardErrorAccessed)
                     {
                         if (_errorStreamReadMode == StreamReadMode.AsyncMode)
                         {
