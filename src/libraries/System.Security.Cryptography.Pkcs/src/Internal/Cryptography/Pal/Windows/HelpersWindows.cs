@@ -496,7 +496,7 @@ namespace Internal.Cryptography.Pal.Windows
                 attributeCollection.Add(attributeObject);
             }
 
-            collection.Add(new CryptographicAttributeObject(oid, attributeCollection));
+            collection.AddWithoutMerge(new CryptographicAttributeObject(oid, attributeCollection));
         }
     }
 }

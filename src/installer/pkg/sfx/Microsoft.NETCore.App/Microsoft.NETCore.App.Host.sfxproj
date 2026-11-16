@@ -88,4 +88,38 @@
     <HeatOutputFileElementToStabilize Include="native\singlefilehost.exe" ReplacementId="staticapphosttemplateapphostexe" />
     <HeatOutputFileElementToStabilize Include="native\comhost.dll" ReplacementId="comhosttemplatecomhostdll" />
   </ItemGroup>
+
+  <!--
+    Generate a catalog (.cat) file covering the unsigned apphost template files. These templates
+    are intentionally unsigned because the .NET SDK modifies them at build time via
+    HostWriter.CreateAppHost(); the signed catalog provides integrity verification for Visual
+    Studio signing compliance without breaking the SDK workflow.
+    See https://github.com/dotnet/runtime/issues/3694 -->
+  <Target Name="GenerateAppHostTemplateCatalog"
+          BeforeTargets="GetFilesToPackage"
+          Condition="'$(TargetOS)' == 'windows'">
+    <PropertyGroup>
+      <_AppHostCatalogOutputPath>$(IntermediateOutputPath)apphost-templates.cat</_AppHostCatalogOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_AppHostTemplateFile Include="$(DotNetHostBinDir)apphost.exe" Condition="Exists('$(DotNetHostBinDir)apphost.exe')" />
+      <_AppHostTemplateFile Include="$(DotNetHostBinDir)singlefilehost.exe" Condition="Exists('$(DotNetHostBinDir)singlefilehost.exe')" />
+      <_AppHostTemplateFile Include="$(DotNetHostBinDir)comhost.dll" Condition="Exists('$(DotNetHostBinDir)comhost.dll')" />
+    </ItemGroup>
+
+    <!-- Remove a stale catalog from a previous build so a pack without templates can't ship one. -->
+    <Delete Condition="'@(_AppHostTemplateFile)' == '' and Exists('$(_AppHostCatalogOutputPath)')"
+            Files="$(_AppHostCatalogOutputPath)" />
+
+    <GenerateFileCatalog Condition="'@(_AppHostTemplateFile)' != ''"
+                         Files="@(_AppHostTemplateFile)"
+                         OutputPath="$(_AppHostCatalogOutputPath)" />
+
+    <ItemGroup Condition="'@(_AppHostTemplateFile)' != '' and Exists('$(_AppHostCatalogOutputPath)')">
+      <FilesToPackage Include="$(_AppHostCatalogOutputPath)"
+                      TargetPath="data/apphost-templates.cat" />
+    </ItemGroup>
+    <Message Condition="'@(_AppHostTemplateFile)' != '' and Exists('$(_AppHostCatalogOutputPath)')" Importance="High" Text="Generated apphost template catalog file: $(_AppHostCatalogOutputPath)" />
+  </Target>
 </Project>

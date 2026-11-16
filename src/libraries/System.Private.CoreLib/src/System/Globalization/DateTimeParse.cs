@@ -624,7 +624,7 @@ namespace System
             {
                 case TokenType.NumberToken:
                 case TokenType.YearNumberToken:
-                    if (raw.numCount == 3 || tokenValue == -1)
+                    if (raw.numCount == DateTimeRawInfo.MaxBufferLength || tokenValue == -1)
                     {
                         result.SetBadDateTimeFailure();
                         LexTraceExit("0010", dps);
@@ -920,6 +920,13 @@ namespace System
                     }
                     else
                     {
+                        if (raw.numCount == DateTimeRawInfo.MaxBufferLength)
+                        {
+                            result.SetBadDateTimeFailure();
+                            LexTraceExit("0105 (Not enough space in the raw info buffer when parsing Hebrew numbers)", dps);
+                            return false;
+                        }
+
                         // This is a day number
                         dtok.num = tokenValue;
                         raw.AddNumber(dtok.num);
@@ -2512,7 +2519,7 @@ namespace System
             DateTimeRawInfo raw = default;    // The buffer to store temporary parsing information.
             unsafe
             {
-                int* numberPointer = stackalloc int[3];
+                int* numberPointer = stackalloc int[DateTimeRawInfo.MaxBufferLength];
                 raw.Init(numberPointer);
             }
             raw.hasSameDateAndTimeSeparators = dtfi.DateSeparator.Equals(dtfi.TimeSeparator, StringComparison.Ordinal);
@@ -6002,6 +6009,7 @@ namespace System
     //
     internal unsafe struct DateTimeRawInfo
     {
+        internal const int MaxBufferLength = 3;
         private int* num;
         internal int numCount;
         internal int month;
@@ -6025,7 +6033,17 @@ namespace System
 
         internal void AddNumber(int value)
         {
+            if (numCount >= MaxBufferLength)
+            {
+                // defense in depth. we shouldn't come here though.
+                ThrowNumberBufferOverflow();
+
+            }
+
             num[numCount++] = value;
+
+            [DoesNotReturn]
+            static void ThrowNumberBufferOverflow() => throw new InvalidOperationException(SR.InvalidOperation_DateTimeParsing);
         }
 
         internal int GetNumber(int index)
