@@ -314,7 +314,6 @@ set(VM_SOURCES_WKS
     baseassemblyspec.cpp
     bundle.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
-    CachedInterfaceDispatch_Coreclr.cpp
     ${RUNTIME_DIR}/MathHelpers.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     cachelinealloc.cpp

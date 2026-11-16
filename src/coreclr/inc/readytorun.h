@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 34
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0001
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 34
 
@@ -89,6 +89,9 @@
 // R2R Version 34 changes the ABI for funclets on other architectures to match AMD64: funclets save
 //                only the return address, and the runtime preserves the callee-saved registers around the
 //                funclets that it calls
+// R2R Version 34.1 adds READYTORUN_HELPER_InterfaceDispatch. Images compiled with cached interface dispatch support
+//                  call it with the dispatch cell instead of calling through the cell, and lay out their dispatch
+//                  cells as { MethodTable, Code, Token }.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -537,6 +540,9 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_InitInstClass             = 0x117,
     READYTORUN_HELPER_R2RToInterpreter          = 0x118,
     READYTORUN_HELPER_WasmProfSamplepoint       = 0x119,
+
+    // Interface dispatch through a cached interface dispatch cell passed in the VSD parameter register
+    READYTORUN_HELPER_InterfaceDispatch         = 0x11A,
 };
 
 #include "readytoruninstructionset.h"

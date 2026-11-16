@@ -386,6 +386,9 @@ namespace Internal.ReadyToRunConstants
         R2RToInterpreter            = 0x118,
         WasmProfSamplepoint         = 0x119,
 
+        // Interface dispatch through a cached interface dispatch cell passed in the VSD parameter register
+        InterfaceDispatch           = 0x11A,
+
         // **********************************************************************************************
         //
         // These are not actually part of the R2R file format. We have them here because it's convenient.
@@ -426,7 +429,6 @@ namespace Internal.ReadyToRunConstants
         NewArrayFast,
 
         // NativeAOT interface dispatch helpers
-        InterfaceDispatch,
         InterfaceDispatchGuarded,
         ResolveInterfaceMethodFast,
         ResolveInterfaceMethod,

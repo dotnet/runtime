@@ -1472,6 +1472,11 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.ThrowNotImplemented;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT:
+                    Debug.Assert(_compilation.NodeFactory.UseInterfaceDispatchHelper);
+                    id = ReadyToRunHelper.InterfaceDispatch;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:

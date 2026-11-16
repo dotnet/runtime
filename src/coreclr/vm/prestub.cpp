@@ -2893,6 +2893,105 @@ static void PatchExternalMethodWithVirtualDispatchPortableEntryPoint(MethodDesc 
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+bool DecodeReadyToRunDispatchCell(TADDR pCell, DispatchToken * pToken, MethodDesc ** ppNonVirtualMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    Module * pModule = ExecutionManager::FindReadyToRunModule(pCell);
+    _ASSERTE(pModule != NULL);
+
+    GCX_PREEMP();
+
+    ReadyToRunLoadedImage *pNativeImage = pModule->GetReadyToRunImage();
+
+    RVA rva = pNativeImage->GetDataRva(pCell);
+
+    PTR_READYTORUN_IMPORT_SECTION pImportSection = pModule->GetImportSectionForRVA(rva);
+    _ASSERTE(pImportSection != NULL);
+    _ASSERTE(pImportSection->EntrySize == sizeof(InterfaceDispatchCell));
+
+    COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / pImportSection->EntrySize;
+
+    PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
+
+    PTR_BYTE pGCRefMap = dac_cast<PTR_BYTE>(pNativeImage->GetRvaData(pSignatures[index]));
+    PCCOR_SIGNATURE pBlob = pGCRefMap;
+    if ((pImportSection->Flags & ReadyToRunImportSectionFlags::GCRefMap) != ReadyToRunImportSectionFlags::None)
+    {
+        pBlob = GCRefMapDecoder::Skip(pBlob);
+    }
+    else
+    {
+        pGCRefMap = nullptr;
+    }
+
+    BYTE kind = *pBlob++;
+
+    ModuleBase * pInfoModule = pModule;
+    if (kind & READYTORUN_FIXUP_ModuleOverride)
+    {
+        DWORD moduleIndex = CorSigUncompressData(pBlob);
+        pInfoModule = pModule->GetModuleFromIndex(moduleIndex);
+        kind &= ~READYTORUN_FIXUP_ModuleOverride;
+    }
+
+    MethodDesc * pMD = NULL;
+    TypeHandle th;
+    switch (kind)
+    {
+    case READYTORUN_FIXUP_VirtualEntry:
+        pMD = ZapSig::DecodeMethod(pModule, pInfoModule, pBlob, &th);
+        break;
+
+    case READYTORUN_FIXUP_VirtualEntry_DefToken:
+        {
+            mdToken MethodDef = TokenFromRid(CorSigUncompressData(pBlob), mdtMethodDef);
+            _ASSERTE(pInfoModule->IsFullModule());
+            pMD = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pInfoModule), MethodDef, FALSE);
+            break;
+        }
+
+    case READYTORUN_FIXUP_VirtualEntry_RefToken:
+        {
+            mdToken MemberRef = TokenFromRid(CorSigUncompressData(pBlob), mdtMemberRef);
+
+            FieldDesc * pFD = NULL;
+
+            SigTypeContext typeContext;
+            MemberLoader::GetDescFromMemberRef(pInfoModule, MemberRef, &pMD, &pFD, &typeContext, FALSE /* strict metadata checks */, &th, TRUE /* actual type required */);
+            _ASSERTE(pMD != NULL);
+            break;
+        }
+
+    default:
+        _ASSERTE(!"Unexpected ReadyToRunFixupKind");
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    pMD->PrepareForUseAsAVirtualCallTargetOfANativeImage(pGCRefMap);
+
+    // Activate the target explicitly.
+    pMD->EnsureActive();
+
+    if (!pMD->IsVtableMethod())
+    {
+        *ppNonVirtualMD = pMD;
+        return false;
+    }
+
+    MethodTable * pMT = th.IsNull() ? pMD->GetMethodTable() : th.GetMethodTable();
+    *pToken = VirtualCallStubManager::GetTokenFromOwnerAndSlot(pMT, pMD->GetSlot());
+    return true;
+}
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+
 //==========================================================================================
 // In NGen images calls to external methods start out pointing to jump thunks.
 // These jump thunks initially point to the assembly code _ExternalMethodFixupStub
@@ -3136,39 +3235,9 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 #endif
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH)
             {
-#ifndef TARGET_WASM
-                if (ALIGN_UP(rva, sizeof(TADDR) * 2) == rva && pImportSection->EntrySize == sizeof(TADDR) * 2)
-                {
-                    // The entry is aligned and the size is correct, so we can use the cached interface dispatch mechanism
-                    // to speed up further uses of this interface dispatch slot
-                    DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(pMT, slot);
-
-                    uintptr_t addr = (uintptr_t)RhpInitialInterfaceDispatch;
-                    uintptr_t pCache = (uintptr_t)DispatchToken::ToCachedInterfaceDispatchToken(token);
-#ifdef TARGET_64BIT
-                    int64_t rgComparand[2] = { *(volatile int64_t*)pIndirection , *(((volatile int64_t*)pIndirection) + 1) };
-                    // We need to only update if the indirection cell is still pointing to the initial R2R stub
-                    // But we don't have the address of the initial R2R stub, as that is part of the R2R image
-                    // However, we can rely on the detail that the cache value will never be 0 once it is updated
-                    // So we read the indirection cell data, and if the cache portion is 0, we attempt to update the complete cell
-                    if (rgComparand[1] == 0 && PalInterlockedCompareExchange128((int64_t*)pIndirection, rgComparand[1], rgComparand[0], rgComparand) && rgComparand[1] == 0)
-                    {
-                        PalInterlockedCompareExchange128((int64_t*)pIndirection, pCache, addr, rgComparand);
-                    }
-#else
-                    // Stuff the two pointers into a 64-bit value as the proposed new value for the CompareExchange64 below.
-                    uint64_t oldValue = *(volatile uint64_t*)pIndirection;
-                    if ((oldValue >> 32) == 0)
-                    {
-                        // The cache portion is 0, so we attempt to update the complete cell
-                        int64_t iNewValue = (int64_t)((uint64_t)(uintptr_t)addr | ((uint64_t)(uintptr_t)pCache << 32));
-                        PalInterlockedCompareExchange64((int64_t*)pIndirection, iNewValue, oldValue);
-                    }
-#endif
-                }
-#endif // !TARGET_WASM
-
-                // We lost the race or the R2R image was generated without cached interface dispatch support, simply do the resolution in pure C++
+                // Images compiled with cached interface dispatch support call RhpInterfaceDispatch instead of
+                // calling through the cell, so this is a cell of an image compiled without it. The cell is left
+                // pointing to the delay load thunk, simply do the resolution in pure C++.
                 MethodTable* objectType;
                 {
                     GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);

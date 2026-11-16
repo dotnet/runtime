@@ -6,104 +6,114 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-#if defined(__APPLE__)
-    // Currently the build is failing without this due to an issue if the first method in the assembly file has an alternate entry at the start of the file.
-    // Fix, but adding an empty, unused method
-    LEAF_ENTRY RhpStubDispatchDoNotFailToBuild, _TEXT
-       ret
-    LEAF_END RhpStubDispatchDoNotFailToBuild, _TEXT
-#endif
-
-
-// trick to avoid PLT relocation at runtime which corrupts registers
-#define REL_C_FUNC(name) C_FUNC(name)@gotpcrel
-
-
-// Macro that generates a stub consuming a cache with the given number of entries.
-.macro DEFINE_INTERFACE_DISPATCH_STUB entries
-
-LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
-
-        // r11 currently contains the indirection cell address.
-        // load r10 to point to the cache block.
-        mov     r10, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
-
-        // Validate r10 is a cache pointer matching the expected cache size.
-        // This compensates for a race where the stub was updated to expect a larger cache
-        // but we loaded a stale (smaller or non-cache) m_pCache value.
-        // On detection, re-dispatch through the indirection cell to retry with the current
-        // stub and cache pair.
-        test    r10, IDC_CACHE_POINTER_MASK
-        jnz     LOCAL_LABEL(RaceRetry_\entries)
-        cmp     dword ptr [r10 + OFFSETOF__InterfaceDispatchCache__m_cEntries], \entries
-        jne     LOCAL_LABEL(RaceRetry_\entries)
+// On Input:
+//    rdi                    contains the this pointer
+//    r11                    contains the address of the interface dispatch cell
+LEAF_ENTRY RhpInterfaceDispatch, _TEXT
 
         // Load the MethodTable from the object instance in rdi.
-#ifdef TARGET_APPLE
-// Apple's linker has issues which break unwind info if
-// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
-.cfi_endproc
-#endif
-        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
-#ifdef TARGET_APPLE
-.cfi_startproc
-#endif
-        mov     rax, [rdi]
-
-        CurrentOffset = OFFSETOF__InterfaceDispatchCache__m_rgEntries
-
-        // For each entry in the cache, see if its MethodTable type matches the MethodTable in rax.
-        // If so, call the second cache entry.  If not, skip the InterfaceDispatchCacheEntry.
-        .rept \entries
-            cmp     rax, [r10 + CurrentOffset]
-            jne     0f
-            jmp     [r10 + CurrentOffset + 8]
-        0:
-            CurrentOffset = CurrentOffset + 16
-        .endr
-
-        // r11 still contains the indirection cell address.
-
-        jmp     C_FUNC(RhpInterfaceDispatchSlow)
-
-LOCAL_LABEL(RaceRetry_\entries):
-        jmp     [r11]
-
-LEAF_END RhpInterfaceDispatch\entries, _TEXT
-
-.endm // DEFINE_INTERFACE_DISPATCH_STUB
-
-
-
-// Define all the stub routines we currently need.
-//
-// The mrt100dbi requires these be exported to identify mrt100 code that dispatches back into managed.
-// If you change or add any new dispatch stubs, please also change slr.def and dbi\process.cpp CordbProcess::GetExportStepInfo
-//
-// If you change or add any new dispatch stubs, exception handling might need to be aware because it refers to the
-// *AVLocation symbols defined by the dispatch stubs to be able to unwind and blame user code if a NullRef happens
-// during the interface dispatch.
-//
-DEFINE_INTERFACE_DISPATCH_STUB 1
-DEFINE_INTERFACE_DISPATCH_STUB 2
-DEFINE_INTERFACE_DISPATCH_STUB 4
-DEFINE_INTERFACE_DISPATCH_STUB 8
-DEFINE_INTERFACE_DISPATCH_STUB 16
-DEFINE_INTERFACE_DISPATCH_STUB 32
-DEFINE_INTERFACE_DISPATCH_STUB 64
-
-// Initial dispatch on an interface when we don't have a cache yet.
-LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
         // Trigger an AV if we're dispatching on a null this.
         // The exception handling infrastructure is aware of the fact that this is the first
-        // instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
+        // instruction of RhpInterfaceDispatch and uses it to translate an AV here
         // to a NullReferenceException at the callsite.
-        cmp     byte ptr [rdi], 0
+        mov     r10, [rdi]
 
-        // Just tail call to the cache miss helper.
+        // r11 currently contains the indirection cell address.
+        cmp     qword ptr [r11], r10 // is this the monomorphic MethodTable?
+        jne     LOCAL_LABEL(Hashtable)
+
+        mov     rax, [r11 + 8] // load the cached monomorphic resolved code address into rax
+        jmp     rax
+
+LOCAL_LABEL(Hashtable):
+
+        // r10 = MethodTable, r11 = indirection cell address
+        // Look up the target in the dispatch cache hashtable (see CachedInterfaceDispatch.cpp).
+        // Spill argument registers to the red zone below rsp
+        // so we don't modify rsp (this is a LEAF_ENTRY with no unwind info).
+        mov     [rsp - 8],  rcx
+        mov     [rsp - 16], rdx
+        mov     [rsp - 24], r8
+        mov     [rsp - 32], r9
+
+        // Load the current table.
+        PREPARE_EXTERNAL_VAR g_pDispatchCache, r8
+        mov     r8, qword ptr [r8]
+        mov     r8, qword ptr [r8]
+
+        // Compute 32-bit hash:
+        // hash = IntPtr.GetHashCode(RotateLeft(dispatchCell, 16) ^ objectType)
+        mov     rcx, r11
+        rol     rcx, 0x10
+        xor     rcx, r10
+        mov     r9, rcx
+        sar     r9, 0x20
+        xor     r9d, ecx
+        movsxd  r9, r9d
+
+        // HashToBucket: bucket = (hash * 0x9E3779B97F4A7C15) >> hashShift
+        mov     rax, 0x9E3779B97F4A7C15
+        imul    r9, rax
+        movzx   ecx, byte ptr [r8 + 0x10]
+        shr     r9, cl
+        xor     ecx, ecx
+
+LOCAL_LABEL(ProbeLoop):
+        // Compute entry address: Element(table, index) = table + 0x10 + (index + 1) * 0x20
+        lea     eax, [r9 + 1]
+        movsxd  rax, eax
+        shl     rax, 5
+        lea     rax, [r8 + rax + 0x10]
+
+        // Read version snapshot before key comparison (seqlock protocol).
+        mov     edx, dword ptr [rax]
+        test    edx, 1
+        jne     LOCAL_LABEL(ProbeMiss)
+
+        // Compare key (dispatchCell, objectType)
+        cmp     r11, qword ptr [rax + 8]
+        jne     LOCAL_LABEL(ProbeMiss)
+        cmp     r10, qword ptr [rax + 0x10]
+        jne     LOCAL_LABEL(ProbeMiss)
+
+        // Read the cached code pointer, then re-verify the version has not changed.
+        mov     r10, qword ptr [rax + 0x18]
+        cmp     edx, dword ptr [rax]
+        jne     LOCAL_LABEL(CacheMiss)
+
+        // Dispatch to cached target.
+        mov     rax, r10
+
+        mov     r9,  [rsp - 32]
+        mov     r8,  [rsp - 24]
+        mov     rdx, [rsp - 16]
+        mov     rcx, [rsp - 8]
+
+        jmp     rax
+
+LOCAL_LABEL(ProbeMiss):
+        // If version is zero the rest of the bucket is unclaimed - stop probing.
+        test    edx, edx
+        je      LOCAL_LABEL(CacheMiss)
+
+        // Quadratic reprobe: i++; index = (index + i) & tableMask
+        inc     ecx
+        add     r9d, ecx
+        mov     eax, dword ptr [r8 + 8]
+        add     eax, 0xFFFFFFFE
+        and     r9d, eax
+        cmp     ecx, 8
+        jl      LOCAL_LABEL(ProbeLoop)
+
+LOCAL_LABEL(CacheMiss):
+        mov     r9,  [rsp - 32]
+        mov     r8,  [rsp - 24]
+        mov     rdx, [rsp - 16]
+        mov     rcx, [rsp - 8]
+
+        // r11 still contains the indirection cell address.
         jmp     C_FUNC(RhpInterfaceDispatchSlow)
 
-LEAF_END RhpInitialInterfaceDispatch, _TEXT
-
+LEAF_END RhpInterfaceDispatch, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

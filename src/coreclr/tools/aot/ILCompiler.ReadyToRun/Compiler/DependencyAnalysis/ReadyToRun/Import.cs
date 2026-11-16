@@ -74,10 +74,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public virtual bool EmitPrecode => Table.EmitPrecode;
 
-        // Import cells live in a pointer-aligned import section whose entries are 'EntrySize' bytes
-        // each, so every cell is guaranteed to be aligned to 'EntrySize' (the pointer size). Keep
-        // this in sync with the alignment applied by the containing ImportSectionNode.
-        public int GetAlignment(NodeFactory factory) => Table.EntrySize;
+        // Import cells live in an import section whose entries are 'EntrySize' bytes each, so every
+        // cell is guaranteed to be aligned to the alignment applied by the containing ImportSectionNode.
+        public int GetAlignment(NodeFactory factory) => Table.EntryAlignment;
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {

@@ -162,10 +162,6 @@ extern "C" ResolveCacheElem* __fastcall VSD_PromoteChainEntry(ResolveCacheElem *
 
 typedef VPTR(class VirtualCallStubManager) PTR_VirtualCallStubManager;
 
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-struct CachedIndirectionCellBlockListNode;
-#endif // FEATURE_CACHED_INTERFACE_DISPATCH
-
 // VirtualCallStubManager is the heart of the stub dispatch logic. See the book of the runtime entry
 //
 // file:../../doc/BookOfTheRuntime/ClassLoader/VirtualStubDispatchDesign.doc
@@ -305,9 +301,6 @@ public:
           m_cur_counter_block_for_reclaim(NULL),
           m_cur_counter_block_for_reclaim_index(0),
           m_pNext(NULL)
-#if defined FEATURE_CACHED_INTERFACE_DISPATCH
-          , m_indirectionBlocks (0)
-#endif
     {
         LIMITED_METHOD_CONTRACT;
         ZeroMemory(&stats, sizeof(stats));
@@ -318,6 +311,11 @@ public:
 
     static bool isCachedInterfaceDispatchStub(PCODE addr);
     static bool isCachedInterfaceDispatchStubAVLocation(PCODE addr);
+
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && !defined(DACCESS_COMPILE)
+    // Returns the LoaderAllocator that owns the memory of an interface dispatch cell.
+    static LoaderAllocator* FindLoaderAllocatorForDispatchCell(TADDR pCell);
+#endif
 
     static BOOL isStubStatic(PCODE addr)
     {
@@ -685,10 +683,6 @@ private:
 
     // Used to keep track of all the VCSManager objects in the system.
     PTR_VirtualCallStubManager m_pNext;            // Linked list pointer
-
-#if defined FEATURE_CACHED_INTERFACE_DISPATCH
-    CachedIndirectionCellBlockListNode *m_indirectionBlocks;
-#endif
 
 public:
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH

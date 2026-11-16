@@ -168,7 +168,3 @@ endif()
 # but that would be more expensive.
 set(FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS 1)
 
-if (CLR_CMAKE_HOST_UNIX AND CLR_CMAKE_HOST_ARCH_AMD64)
-  # Allow 16 byte compare-exchange (cmpxchg16b)
-  add_compile_options($<${FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH}:-mcx16>)
-endif()
