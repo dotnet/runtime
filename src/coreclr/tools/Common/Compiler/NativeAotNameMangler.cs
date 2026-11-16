@@ -403,6 +403,10 @@ namespace ILCompiler
                     {
                         mangledName = GetPrefixMangledTypeName(prefixMangledType);
                     }
+                    else if (type is RuntimeDeterminedType runtimeDeterminedType)
+                    {
+                        mangledName = GetRuntimeDeterminedTypeMangledName(runtimeDeterminedType);
+                    }
                     else
                     {
                         var typeDefinition = type.GetTypeDefinition();
@@ -487,6 +491,28 @@ namespace ILCompiler
 
                 return ComputeUnqualifiedMangledMethodName(method);
             }
+        }
+
+        private Utf8String GetRuntimeDeterminedTypeMangledName(RuntimeDeterminedType runtimeDeterminedType)
+        {
+            // Generic parameters are only unique within their owning type or method, so qualify
+            // them with the owner's mangled name (e.g. List<>.T vs. Dictionary<,>.TKey).
+            GenericParameterDesc genericParameter = runtimeDeterminedType.RuntimeDeterminedDetailsType;
+            Utf8String ownerName = genericParameter.AssociatedTypeOrMethod switch
+            {
+                MethodDesc method => GetMangledMethodName(method),
+                TypeDesc type => GetMangledTypeName(type),
+                _ => throw new UnreachableException(),
+            };
+
+            Utf8StringBuilder sb = new Utf8StringBuilder();
+            sb.Append(EnterNameScopeSequence)
+                .Append(ownerName)
+                .Append(genericParameter.Kind == GenericParameterKind.Type ? "_T"u8 : "_M"u8)
+                .Append(genericParameter.Index.ToStringInvariant())
+                .Append(ExitNameScopeSequence);
+            sb.Append(GetMangledTypeName(runtimeDeterminedType.CanonicalType));
+            return sb.ToUtf8String();
         }
 
         private Utf8String GetPrefixMangledTypeName(IPrefixMangledType prefixMangledType)
