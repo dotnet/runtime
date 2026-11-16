@@ -12,8 +12,7 @@ unsafe internal class CheckGCMode
     internal static bool Enabled = false;
     internal static void Initialize(delegate* <delegate* unmanaged<int>, void> setIsInCooperativeModeFunction)
     {
-        // GetIsInCooperativeGCModeFunctionPointer is conditionally included based on the runtime build configuration,
-        // so we check for its existence and only do the explicit mode validation if it is available.
+        // GetIsInCooperativeGCModeFunctionPointer is CoreCLR-specific, so only validate runtimes that provide it.
         MethodInfo getFunctionPtr = typeof(Marshal).GetMethod("GetIsInCooperativeGCModeFunctionPointer", BindingFlags.NonPublic | BindingFlags.Static);
         if (getFunctionPtr != null)
         {

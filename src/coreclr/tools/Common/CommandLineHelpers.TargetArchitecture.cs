@@ -43,6 +43,7 @@ internal static partial class Helpers
         "arm" or "armel" or "arm32" => TargetArchitecture.ARM,
         "arm64" => TargetArchitecture.ARM64,
         "wasm" or "wasm32" => TargetArchitecture.Wasm32,
+        "wasm64" => TargetArchitecture.Wasm64,
         "loongarch64" => TargetArchitecture.LoongArch64,
         "riscv64" => TargetArchitecture.RiscV64,
         _ => null

@@ -656,6 +656,87 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public static async Task ZipArchive_EmptyStream_ReportsEmptyStream(bool async, bool canSeek)
+        {
+            using var memoryStream = new MemoryStream();
+            using var stream = new WrappedStream(memoryStream, canRead: true, canWrite: false, canSeek);
+
+            InvalidDataException exception = await Assert.ThrowsAsync<InvalidDataException>(
+                () => CreateZipArchive(async, stream, ZipArchiveMode.Read));
+
+            Assert.Equal(SR.EmptyArchiveStream, exception.Message);
+        }
+
+        public static IEnumerable<object[]> InvalidStreamDiagnostics_Data()
+        {
+            foreach (bool async in _bools)
+            foreach (ZipArchiveMode mode in new[] { ZipArchiveMode.Read, ZipArchiveMode.Update })
+            foreach (bool canSeek in _bools)
+            foreach (int length in new[] { 1, 17, 18, 21, 22, 64 })
+            {
+                if (mode == ZipArchiveMode.Update && !canSeek)
+                {
+                    continue;
+                }
+
+                yield return new object[] { async, mode, canSeek, length };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidStreamDiagnostics_Data))]
+        public static async Task ZipArchive_InvalidStream_ReportsMissingEOCD(bool async, ZipArchiveMode mode, bool canSeek, int length)
+        {
+            using var memoryStream = new MemoryStream(new byte[length]);
+            using var stream = new WrappedStream(memoryStream, canRead: true, canWrite: true, canSeek);
+
+            InvalidDataException exception = await Assert.ThrowsAsync<InvalidDataException>(
+                () => CreateZipArchive(async, stream, mode));
+
+            Assert.Equal(SR.EOCDNotFound, exception.Message);
+        }
+
+        [Theory]
+        [InlineData(false, ZipArchiveMode.Create)]
+        [InlineData(true, ZipArchiveMode.Create)]
+        [InlineData(false, ZipArchiveMode.Update)]
+        [InlineData(true, ZipArchiveMode.Update)]
+        public static async Task ZipArchive_EmptyStream_CanCreateArchive(bool async, ZipArchiveMode mode)
+        {
+            using var stream = new MemoryStream();
+            ZipArchive archive = await CreateZipArchive(async, stream, mode, leaveOpen: true);
+            await DisposeZipArchive(async, archive);
+
+            stream.Position = 0;
+            archive = await CreateZipArchive(async, stream, ZipArchiveMode.Read);
+            Assert.Empty(archive.Entries);
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [InlineData(false, ZipArchiveMode.Read)]
+        [InlineData(true, ZipArchiveMode.Read)]
+        [InlineData(false, ZipArchiveMode.Update)]
+        [InlineData(true, ZipArchiveMode.Update)]
+        public static async Task ZipArchive_PrefixedArchive_CanRead(bool async, ZipArchiveMode mode)
+        {
+            using var stream = new MemoryStream();
+            stream.Write("This is a prefix."u8);
+            ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Create, leaveOpen: true);
+            archive.CreateEntry("test.txt");
+            await DisposeZipArchive(async, archive);
+
+            stream.Position = 0;
+            archive = await CreateZipArchive(async, stream, mode);
+            Assert.Equal("test.txt", Assert.Single(archive.Entries).FullName);
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
         [InlineData("CDoffsetOutOfBounds.zip", false)]
         [InlineData("CDoffsetOutOfBounds.zip", true)]
         [InlineData("EOCDmissing.zip", false)]

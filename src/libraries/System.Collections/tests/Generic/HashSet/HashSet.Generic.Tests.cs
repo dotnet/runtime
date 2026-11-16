@@ -201,6 +201,46 @@ namespace System.Collections.Tests
 
         #endregion
 
+        #region Clear
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(17)]
+        [InlineData(100)]
+        public void HashSet_Generic_Clear_AfterRemovingItems_CanRefill(int count)
+        {
+            HashSet<T> set = (HashSet<T>)GenericISetFactory(count);
+            T[] items = set.ToArray();
+            int capacity = set.Capacity;
+
+            for (int cycle = 0; cycle < 3; cycle++)
+            {
+                for (int i = 0; i < items.Length; i += 2)
+                {
+                    Assert.True(set.Remove(items[i]));
+                }
+
+                HashSet<T>.Enumerator enumerator = set.GetEnumerator();
+                set.Clear();
+
+                Assert.Empty(set);
+                Assert.Equal(capacity, set.Capacity);
+                Assert.False(enumerator.MoveNext());
+
+                foreach (T item in items)
+                {
+                    Assert.False(set.Contains(item));
+                    Assert.False(set.TryGetValue(item, out _));
+                    Assert.True(set.Add(item));
+                }
+
+                CollectionAsserts.EqualUnordered<T>(items, set);
+            }
+        }
+
+        #endregion
+
         #region TrimExcess
 
         [Theory]

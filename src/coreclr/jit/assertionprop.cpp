@@ -3926,6 +3926,10 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
     }
 
     tree->SetLclNum(copyLclNum);
+    if (copyVarDsc->RequiresGlobRefFlag())
+    {
+        tree->gtFlags |= GTF_GLOB_REF;
+    }
 
     // The copied var also needs multi-reg, if set
     if (lclVarDsc->lvIsMultiRegRet)
