@@ -39,9 +39,14 @@ namespace System.Diagnostics
             nint outputOverlappedNint = 0, errorOverlappedNint = 0;
             EventWaitHandle? outputEvent = null, errorEvent = null;
             bool outputDone = true, errorDone = true;
+            bool outputRefAdded = false, errorRefAdded = false;
 
             try
             {
+                // The handles are used across yields, so they must stay open even if the Process is disposed in the meantime.
+                outputHandle.DangerousAddRef(ref outputRefAdded);
+                errorHandle.DangerousAddRef(ref errorRefAdded);
+
                 outputPin = new PinnedGCHandle<byte[]>(outputByteBuffer);
                 errorPin = new PinnedGCHandle<byte[]>(errorByteBuffer);
 
@@ -192,6 +197,16 @@ namespace System.Diagnostics
                         CancelPendingIOIfNeeded(errorHandle, errorDone, (NativeOverlapped*)errorOverlappedNint);
                         NativeMemory.Free((void*)errorOverlappedNint);
                     }
+                }
+
+                if (outputRefAdded)
+                {
+                    outputHandle.DangerousRelease();
+                }
+
+                if (errorRefAdded)
+                {
+                    errorHandle.DangerousRelease();
                 }
 
                 outputEvent?.Dispose();
