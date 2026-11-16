@@ -80,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private static void EmitPair(ref ObjectDataBuilder objData, NodeFactory factory, UnboxingStubNode stub)
         {
-            var target = factory.MethodEntrypoint(stub.Method);
+            IMethodNode target = factory.AddressTakenMethodEntrypoint(stub.Method);
             Debug.Assert(stub.Marked && target.Marked);
             objData.EmitReloc(stub, RelocType.WASM_TABLE_INDEX_I32);
             objData.EmitReloc(target, RelocType.WASM_TABLE_INDEX_I32);
