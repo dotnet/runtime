@@ -38,18 +38,29 @@ namespace Microsoft.Extensions.Hosting
             _remoteInvokeHandle.Process = null;
 
             var statusEx = QueryServiceStatusEx();
+
+            Process p;
             try
             {
-                Process p = Process.GetProcessById(statusEx.dwProcessId);
-                // fetch the process handle so that we can get the exit code later.
-                var _ = p.SafeHandle;
-
-                _remoteInvokeHandle.Process = p;
+                p = Process.GetProcessById(statusEx.dwProcessId);
             }
             catch (ArgumentException)
-            { }
+            {
+                return;
+            }
+
+            try
+            {
+                // fetch the process handle so that we can get the exit code later.
+                var _ = p.SafeHandle;
+            }
             catch (InvalidOperationException)
-            { }
+            {
+                p.Dispose();
+                return;
+            }
+
+            _remoteInvokeHandle.Process = p;
         }
 
         public static TimeSpan WaitForStatusTimeout { get; set; } = TimeSpan.FromMinutes(3);
@@ -66,11 +77,11 @@ namespace Microsoft.Extensions.Hosting
 
         // the following overloads are necessary to ensure the compiler will produce the correct signature from a lambda.
         public static WindowsServiceTester Create(Func<Task> serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, CreateRemoteInvokeOptions()), serviceName);
-        
+
         public static WindowsServiceTester Create(Func<Task<int>> serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, CreateRemoteInvokeOptions()), serviceName);
 
         public static WindowsServiceTester Create(Func<int> serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, CreateRemoteInvokeOptions()), serviceName);
-        
+
         public static WindowsServiceTester Create(Action serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, CreateRemoteInvokeOptions()), serviceName);
 
         private static RemoteInvokeOptions CreateRemoteInvokeOptions() => new RemoteInvokeOptions() { Start = false };
@@ -148,7 +159,7 @@ namespace Microsoft.Extensions.Hosting
         {
             if (_remoteInvokeHandle != null)
             {
-                _remoteInvokeHandle.Dispose();               
+                _remoteInvokeHandle.Dispose();
             }
 
             if (!_serviceHandle.IsInvalid)
