@@ -261,6 +261,7 @@
     <Compile Include="Compiler\DeferredWasmCallFinalizationPlan.cs" />
     <Compile Include="Compiler\DeferredWasmCallProcessor.cs" />
     <Compile Include="Compiler\DeferredWasmCallRewriter.cs" />
+    <Compile Include="Compiler\DirectPInvokeSet.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AllMethodsOnTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayInterfaceMethodsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InheritedVirtualMethodsNode.cs" />

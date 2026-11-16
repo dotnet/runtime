@@ -18,6 +18,10 @@ namespace ILCompiler.PortableCallHelpers
     public sealed class PortableCallHelpersGeneratorOptions
     {
         public string OutputDirectory { get; init; }
+        /// <summary>
+        /// The statically linked P/Invoke targets: module names, or <c>module!entrypoint</c> for a
+        /// single entry point. See <see cref="DirectPInvokeSet"/>.
+        /// </summary>
         public IReadOnlyList<string> PInvokeModules { get; init; } = [];
         public string TargetOS { get; init; }
     }
@@ -35,7 +39,7 @@ namespace ILCompiler.PortableCallHelpers
     ///
     /// Usage:
     ///   crossgen2 --generate-portable-callhelpers &lt;dir&gt; --targetos &lt;browser|wasi&gt; --targetarch wasm \
-    ///             --directpinvoke &lt;name&gt;... &lt;assembly&gt;...
+    ///             --directpinvoke &lt;module[!entrypoint]&gt;... &lt;assembly&gt;...
     /// </remarks>
     public static class PortableCallHelpersGenerator
     {

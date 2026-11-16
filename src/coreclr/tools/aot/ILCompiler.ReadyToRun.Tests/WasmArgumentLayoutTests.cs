@@ -1411,6 +1411,73 @@ public class WasmArgumentLayoutTests
     [Theory]
     [InlineData("browser")]
     [InlineData("wasi")]
+    public void PortableCallHelpersGeneratorLinksListedEntryPoints(string targetOS)
+    {
+        string source = """
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+
+            [assembly: DisableRuntimeMarshalling]
+
+            public static class Imports
+            {
+                [DllImport("libc", EntryPoint = "link")]
+                public static extern int Link(nint oldPath, nint newPath);
+                [DllImport("libc", EntryPoint = "statx")]
+                public static extern int Statx(int dirfd);
+                [DllImport("Native", EntryPoint = "Native_Test")]
+                public static extern int Native();
+            }
+            """;
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Imports.dll"));
+            ReadyToRunCompilerContext context = WasmTestHelpers.CreateContextWithCoreLib(
+                targetOS == "browser" ? TargetOS.Browser : TargetOS.Wasi, TestPaths.SystemPrivateCoreLibPath, inputAssembly);
+            context.InputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Imports", inputAssembly },
+            };
+            context.ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { CoreLibSimpleName, TestPaths.SystemPrivateCoreLibPath },
+            };
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = Path.Combine(workingDirectory, "generated"),
+                TargetOS = targetOS,
+                PInvokeModules = new[] { "# comment", "c!link", "Native!Missing", "Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false));
+            Assert.True(exitCode == 0, log.ToString());
+
+            string table = File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp"));
+            Assert.Contains("DllImportEntry(link)", table);
+            Assert.Contains("{\"libc\", s_libc, 1}", table);
+            Assert.DoesNotContain("statx", table);
+            Assert.Contains("DllImportEntry(Native_Test)", table);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("browser")]
+    [InlineData("wasi")]
     public void PortableCallHelpersGeneratorIgnoresNonCoreLibQCalls(string targetOS)
     {
         string source = """

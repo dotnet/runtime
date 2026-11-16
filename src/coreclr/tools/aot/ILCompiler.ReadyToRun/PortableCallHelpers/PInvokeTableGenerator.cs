@@ -29,18 +29,11 @@ namespace ILCompiler.PortableCallHelpers
             var skippedModules = new HashSet<string>(StringComparer.Ordinal);
             var modules = new SortedSet<string>(StringComparer.Ordinal);
             var qcallImports = new List<PInvokeInfo>();
+            var linkedEntryPoints = new HashSet<PInvokeInfo>();
 
-            // Normalize what gets linked separately from the exact managed module names emitted into
-            // the table. Runtime lookup uses the latter, while availability accepts the same prefix
-            // and suffix variations as direct P/Invoke compilation.
-            var linkedModules = new HashSet<string>(StringComparer.Ordinal);
-            foreach (string module in pinvokeModules)
-            {
-                foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(target, module))
-                {
-                    linkedModules.Add(variation);
-                }
-            }
+            // Linkage is matched with the same module name variations as direct P/Invoke compilation,
+            // while the table records the exact managed module names that runtime lookup uses.
+            var linked = new DirectPInvokeSet(pinvokeModules);
 
             foreach (PInvokeInfo pinvoke in pinvokes)
             {
@@ -54,17 +47,7 @@ namespace ILCompiler.PortableCallHelpers
                 if (modules.Contains(pinvoke.Module))
                     continue;
 
-                bool isLinked = false;
-                foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(target, pinvoke.Module))
-                {
-                    if (linkedModules.Contains(variation))
-                    {
-                        isLinked = true;
-                        break;
-                    }
-                }
-
-                if (isLinked)
+                if (linked.ContainsModule(target, pinvoke.Module))
                 {
                     modules.Add(pinvoke.Module);
                     continue;
@@ -84,6 +67,12 @@ namespace ILCompiler.PortableCallHelpers
                     modules.Add(pinvoke.Module);
                     log.Verbose($"Adding module {pinvoke.Module} for static linking");
                 }
+                else if (linked.Contains(target, pinvoke.Module, pinvoke.EntryPoint))
+                {
+                    // Only the listed entry points of this module are linked, as with a library the
+                    // native link provides implicitly (libc), which would not resolve the rest.
+                    linkedEntryPoints.Add(pinvoke);
+                }
                 else
                 {
                     // Unresolved module: not statically linked, [WasmImportLinkage], "*" or QCall.
@@ -93,9 +82,15 @@ namespace ILCompiler.PortableCallHelpers
                     // those are never reached on wasm. P/Invoke resolution failure is a runtime condition,
                     // so reporting it at build time produces false positives that have to be suppressed.
                     if (skippedModules.Add(pinvoke.Module))
-                        log.Verbose($"Skipping unresolved PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.OwningType}::{pinvoke.Method.Name.ToString()}' (not statically linked on wasm; will throw if called).");
+                        log.Verbose($"Skipping unresolved PInvoke '{pinvoke.Module}!{pinvoke.EntryPoint}' for method '{pinvoke.Method.OwningType}::{pinvoke.Method.Name.ToString()}' (not statically linked on wasm; will throw if called).");
                 }
             }
+
+            // A module that a later P/Invoke linked as a whole takes all of its entry points.
+            List<PInvokeInfo> emitted = pinvokes
+                .Where(l => modules.Contains(l.Module) || linkedEntryPoints.Contains(l))
+                .ToList();
+            modules.UnionWith(linkedEntryPoints.Select(l => l.Module));
 
             w.WriteLine(
                 """
@@ -110,8 +105,7 @@ namespace ILCompiler.PortableCallHelpers
                 extern "C" {
                 """);
 
-            var pinvokesGroupedByEntryPoint = pinvokes
-                                                .Where(l => modules.Contains(l.Module))
+            var pinvokesGroupedByEntryPoint = emitted
                                                 .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
                                                 .GroupBy(CEntryPoint, StringComparer.Ordinal);
 
@@ -153,7 +147,7 @@ namespace ILCompiler.PortableCallHelpers
             foreach (string module in modules)
             {
                 // the order here is not important, because we use hash tables, we want it to be stable though
-                List<string> imports = pinvokes
+                List<string> imports = emitted
                     .Where(l => l.Module == module && !l.Skip)
                     .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
                     .GroupBy(d => d.EntryPoint, StringComparer.Ordinal)

@@ -13,6 +13,12 @@ namespace Microsoft.WebAssembly.Build.Tasks;
 /// <summary>
 /// Computes the native modules available to WebAssembly P/Invoke resolution.
 /// </summary>
+/// <remarks>
+/// The outputs are <c>--directpinvoke</c> entries: a module name, or <c>module!entrypoint</c> for a
+/// single entry point. With <see cref="IncludeCustomModules"/>, <see cref="DirectPInvokes"/> and
+/// <see cref="DirectPInvokeLists"/> supply app entries with the same meaning as the NativeAOT
+/// <c>DirectPInvoke</c> and <c>DirectPInvokeList</c> items.
+/// </remarks>
 public sealed class ComputeWasmPInvokeModules : Task
 {
     [Required, NotNull]
@@ -27,6 +33,10 @@ public sealed class ComputeWasmPInvokeModules : Task
     public ITaskItem[] NativeFileReferences { get; set; } = Array.Empty<ITaskItem>();
 
     public ITaskItem[] NativeLibraries { get; set; } = Array.Empty<ITaskItem>();
+
+    public ITaskItem[] DirectPInvokes { get; set; } = Array.Empty<ITaskItem>();
+
+    public ITaskItem[] DirectPInvokeLists { get; set; } = Array.Empty<ITaskItem>();
 
     [Output]
     public ITaskItem[] Modules { get; private set; } = Array.Empty<ITaskItem>();
@@ -53,6 +63,22 @@ public sealed class ComputeWasmPInvokeModules : Task
         {
             AddNativeModules(NativeFileReferences, requireExisting: false);
             AddNativeModules(NativeLibraries, requireExisting: true);
+
+            foreach (ITaskItem directPInvoke in DirectPInvokes)
+                AddDirectPInvoke(directPInvoke.ItemSpec);
+
+            foreach (ITaskItem list in DirectPInvokeLists)
+            {
+                string path = list.GetMetadata("FullPath");
+                if (!File.Exists(path))
+                {
+                    Log.LogError($"DirectPInvokeList file '{path}' does not exist.");
+                    return false;
+                }
+
+                foreach (string line in File.ReadLines(path))
+                    AddDirectPInvoke(line);
+            }
         }
 
         foreach (ITaskItem module in FrameworkModules)
@@ -69,6 +95,13 @@ public sealed class ComputeWasmPInvokeModules : Task
 
         Modules = modules.ToArray();
         return true;
+
+        void AddDirectPInvoke(string entry)
+        {
+            entry = entry.Trim();
+            if (entry.Length != 0 && !entry.StartsWith("#", StringComparison.Ordinal))
+                AddModule(entry);
+        }
 
         void AddNativeModules(ITaskItem[] nativeItems, bool requireExisting)
         {

@@ -16,8 +16,11 @@
       <_WasiReadyToRunPInvokeModule Remove="@(_WasiReadyToRunPInvokeModule)" />
     </ItemGroup>
     <ComputeWasmPInvokeModules TargetOS="wasi"
+                               IncludeCustomModules="true"
                                InvariantGlobalization="$(InvariantGlobalization)"
-                               FrameworkModules="@(WasmCoreClrFrameworkPInvokeModule)">
+                               FrameworkModules="@(WasmCoreClrFrameworkPInvokeModule)"
+                               DirectPInvokes="@(DirectPInvoke)"
+                               DirectPInvokeLists="@(DirectPInvokeList)">
       <Output TaskParameter="Modules" ItemName="_WasiReadyToRunPInvokeModule" />
     </ComputeWasmPInvokeModules>
     <PropertyGroup>
@@ -272,8 +275,11 @@
       <_WasiBundledFile Include="@(_WasiBundledFileR2RRemap->'$(IntermediateLinkDir)%(FileName)%(Extension)')" />
     </ItemGroup>
     <ComputeWasmPInvokeModules TargetOS="wasi"
+                               IncludeCustomModules="true"
                                InvariantGlobalization="$(InvariantGlobalization)"
-                               FrameworkModules="@(WasmCoreClrFrameworkPInvokeModule)">
+                               FrameworkModules="@(WasmCoreClrFrameworkPInvokeModule)"
+                               DirectPInvokes="@(DirectPInvoke)"
+                               DirectPInvokeLists="@(DirectPInvokeList)">
       <Output TaskParameter="Modules" ItemName="_WasiPInvokeModules" />
     </ComputeWasmPInvokeModules>
 
