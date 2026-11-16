@@ -141,24 +141,6 @@ namespace ILCompiler.ObjectWriter
             DW_AT_high_pc, DW_FORM_size,
             DW_AT_frame_base, DW_FORM_exprloc]);
 
-        public static readonly DwarfAbbrev SubprogramFunclet = new([
-            DW_TAG_subprogram, DW_CHILDREN_yes,
-            DW_AT_name, DW_FORM_strp,
-            DW_AT_linkage_name, DW_FORM_strp,
-            DW_AT_artificial, DW_FORM_flag_present,
-            DW_AT_low_pc, DW_FORM_addr,
-            DW_AT_high_pc, DW_FORM_size,
-            DW_AT_frame_base, DW_FORM_exprloc]);
-
-        public static readonly DwarfAbbrev SubprogramFuncletNoChildren = new([
-            DW_TAG_subprogram, DW_CHILDREN_no,
-            DW_AT_name, DW_FORM_strp,
-            DW_AT_linkage_name, DW_FORM_strp,
-            DW_AT_artificial, DW_FORM_flag_present,
-            DW_AT_low_pc, DW_FORM_addr,
-            DW_AT_high_pc, DW_FORM_size,
-            DW_AT_frame_base, DW_FORM_exprloc]);
-
         public static readonly DwarfAbbrev SubprogramSpec = new([
             DW_TAG_subprogram, DW_CHILDREN_yes,
             DW_AT_name, DW_FORM_strp,

@@ -201,6 +201,7 @@ namespace ILCompiler.ObjectWriter
         public uint[] ArgumentTypes { get; private set; }
         public bool IsStatic { get; private set; }
         public long InfoOffset { get; set; }
+        public long[] FuncletInfoOffsets { get; set; } = [];
 
         public DwarfMemberFunction(
             Utf8String name,
@@ -319,40 +320,55 @@ namespace ILCompiler.ObjectWriter
                     foreach (DwarfMemberFunction method in _methods)
                     {
                         method.InfoOffset = writer.Position;
-                        writer.WriteStartDIE(
-                            !method.IsStatic ? DwarfAbbrev.SubprogramSpec :
-                            method.ArgumentTypes.Length > 0 ? DwarfAbbrev.SubprogramStaticSpec : DwarfAbbrev.SubprogramStaticNoChildrenSpec);
-                        // DW_AT_name
-                        writer.WriteStringReference(method.Name);
-                        // DW_AT_linkage_name
-                        writer.WriteStringReference(method.LinkageName);
-                        // DW_AT_decl_file, DW_AT_decl_line
-                        writer.Write([1, 1]);
-                        // DW_AT_type
-                        writer.WriteInfoReference(method.Descriptor.ReturnType);
+                        DumpMethodDeclaration(writer, method, method.Name, method.LinkageName);
 
-                        if (!method.IsStatic)
+                        // Funclets are described by their own subprograms. Declaring them as members of the class
+                        // keeps `this` and implicit member access working in debuggers while stopped in a funclet.
+                        for (int i = 0; i < method.FuncletInfoOffsets.Length; i++)
                         {
-                            // DW_AT_object_pointer
-                            writer.WriteInfoAbsReference(writer.Position + sizeof(uint));
-
-                            writer.WriteStartDIE(DwarfAbbrev.FormalParameterThisSpec);
-                            // DW_AT_type
-                            writer.WriteInfoReference(method.Descriptor.TypeIndexOfThisPointer);
-                            writer.WriteEndDIE();
+                            method.FuncletInfoOffsets[i] = writer.Position;
+                            DumpMethodDeclaration(writer, method,
+                                new Utf8String($"{method.Name}$funclet{i + 1}"),
+                                new Utf8String($"{method.LinkageName}$funclet{i + 1}"));
                         }
-
-                        foreach (uint argumentType in method.ArgumentTypes)
-                        {
-                            writer.WriteStartDIE(DwarfAbbrev.FormalParameterSpec);
-                            // DW_AT_type
-                            writer.WriteInfoReference(argumentType);
-                            writer.WriteEndDIE();
-                        }
-
-                        writer.WriteEndDIE();
                     }
                 }
+            }
+
+            writer.WriteEndDIE();
+        }
+
+        private static void DumpMethodDeclaration(DwarfInfoWriter writer, DwarfMemberFunction method, Utf8String name, Utf8String linkageName)
+        {
+            writer.WriteStartDIE(
+                !method.IsStatic ? DwarfAbbrev.SubprogramSpec :
+                method.ArgumentTypes.Length > 0 ? DwarfAbbrev.SubprogramStaticSpec : DwarfAbbrev.SubprogramStaticNoChildrenSpec);
+            // DW_AT_name
+            writer.WriteStringReference(name);
+            // DW_AT_linkage_name
+            writer.WriteStringReference(linkageName);
+            // DW_AT_decl_file, DW_AT_decl_line
+            writer.Write([1, 1]);
+            // DW_AT_type
+            writer.WriteInfoReference(method.Descriptor.ReturnType);
+
+            if (!method.IsStatic)
+            {
+                // DW_AT_object_pointer
+                writer.WriteInfoAbsReference(writer.Position + sizeof(uint));
+
+                writer.WriteStartDIE(DwarfAbbrev.FormalParameterThisSpec);
+                // DW_AT_type
+                writer.WriteInfoReference(method.Descriptor.TypeIndexOfThisPointer);
+                writer.WriteEndDIE();
+            }
+
+            foreach (uint argumentType in method.ArgumentTypes)
+            {
+                writer.WriteStartDIE(DwarfAbbrev.FormalParameterSpec);
+                // DW_AT_type
+                writer.WriteInfoReference(argumentType);
+                writer.WriteEndDIE();
             }
 
             writer.WriteEndDIE();
@@ -428,26 +444,14 @@ namespace ILCompiler.ObjectWriter
             List<EHRegion> regions = allRegions.FindAll(r => r.Start >= start && r.End <= end);
             bool hasChildren = _debugVars.Length > 0 || regions.Count > 0;
 
-            if (funcletIndex == 0)
-            {
-                writer.WriteStartDIE(
-                    _thisVariableIndex >= 0 ? DwarfAbbrev.Subprogram :
-                    hasChildren ? DwarfAbbrev.SubprogramStatic : DwarfAbbrev.SubprogramStaticNoChildren);
+            writer.WriteStartDIE(
+                _thisVariableIndex >= 0 ? DwarfAbbrev.Subprogram :
+                hasChildren ? DwarfAbbrev.SubprogramStatic : DwarfAbbrev.SubprogramStaticNoChildren);
 
-                // DW_AT_specification
-                writer.WriteInfoAbsReference(_memberFunction.InfoOffset);
-            }
-            else
-            {
-                // Funclets get their own artificial name, like outlined cold code in native compilers, so that
-                // breakpoints on the method name don't resolve to every funclet.
-                writer.WriteStartDIE(hasChildren ? DwarfAbbrev.SubprogramFunclet : DwarfAbbrev.SubprogramFuncletNoChildren);
-
-                // DW_AT_name
-                writer.WriteStringReference($"{_memberFunction.Name}$funclet{funcletIndex}");
-                // DW_AT_linkage_name
-                writer.WriteStringReference($"{_memberFunction.LinkageName}$funclet{funcletIndex}");
-            }
+            // DW_AT_specification
+            // Funclets get their own name, like outlined cold code in native compilers, so that
+            // breakpoints on the method name don't resolve to every funclet.
+            writer.WriteInfoAbsReference(funcletIndex == 0 ? _memberFunction.InfoOffset : _memberFunction.FuncletInfoOffsets[funcletIndex - 1]);
 
             // DW_AT_low_pc
             writer.WriteCodeReference(_sectionSymbolName, _methodAddress + start);
@@ -466,7 +470,7 @@ namespace ILCompiler.ObjectWriter
                 writer.Write([(byte)(DW_OP_reg0 + writer.FrameRegister)]);
             }
 
-            if (_thisVariableIndex >= 0 && funcletIndex == 0)
+            if (_thisVariableIndex >= 0)
             {
                 // DW_AT_object_pointer
                 writer.WriteInfoAbsReference(writer.Position + sizeof(uint));

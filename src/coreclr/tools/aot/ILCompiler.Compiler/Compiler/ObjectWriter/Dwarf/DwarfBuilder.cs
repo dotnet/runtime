@@ -497,6 +497,10 @@ namespace ILCompiler.ObjectWriter
 
             DwarfMemberFunction memberFunction = _memberFunctions[(int)methodTypeIndex - 1];
             memberFunction.LinkageName = methodName;
+            if (frameInfos.Length > 1)
+            {
+                memberFunction.FuncletInfoOffsets = new long[frameInfos.Length - 1];
+            }
 
             _dwarfSubprograms.Add(new DwarfSubprogramInfo(
                 sectionSymbolName,
