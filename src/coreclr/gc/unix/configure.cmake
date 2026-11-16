@@ -72,6 +72,17 @@ check_cxx_source_runs("
     }
     " HAVE_SCHED_GETCPU)
 
+check_cxx_source_compiles("
+    #include <pthread.h>
+    #include <stddef.h>
+
+    int main()
+    {
+        size_t cpu;
+        return pthread_cpu_number_np(&cpu);
+    }
+    " HAVE_PTHREAD_CPU_NUMBER_NP)
+
 check_symbol_exists(
     clock_gettime_nsec_np
     time.h

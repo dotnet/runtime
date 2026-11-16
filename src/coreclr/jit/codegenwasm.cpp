@@ -192,7 +192,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
         if (m_compiler->IsNativeAot() || m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
         {
-            GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_PTRSIZE, 0);
+            GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC,
+                                    reinterpret_cast<cnsval_ssize_t>(m_compiler->info.compMethodHnd));
         }
         else if (m_compiler->lvaWasmPortableEntryPointArg != BAD_VAR_NUM)
         {
@@ -263,7 +264,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 }
 
 //------------------------------------------------------------------------
-// genWasmZeroInit: zero memory using a scalar store or memory.fill.
+// genWasmZeroInit: zero memory using a scalar or v128 store, or memory.fill.
 //
 // Arguments:
 //    size - Number of bytes to zero.
@@ -288,6 +289,11 @@ void CodeGen::genWasmZeroInit(size_t size)
         case 8:
             store = INS_i64_store;
             break;
+#ifdef FEATURE_SIMD
+        case 16:
+            store = INS_v128_store;
+            break;
+#endif // FEATURE_SIMD
         default:
             break;
     }
@@ -295,6 +301,15 @@ void CodeGen::genWasmZeroInit(size_t size)
     emitter* emit = GetEmitter();
     emitAttr attr = (size == 8) ? EA_8BYTE : EA_4BYTE;
     emit->emitIns_I((size == 8) ? INS_i64_const : INS_i32_const, attr, 0);
+
+#ifdef FEATURE_SIMD
+    if (size == 16)
+    {
+        // i8x16.splat is 14 bytes smaller than a zero v128.const.
+        emit->emitIns(INS_i8x16_splat);
+        attr = EA_16BYTE;
+    }
+#endif // FEATURE_SIMD
 
     if (store != INS_invalid)
     {
@@ -2210,6 +2225,13 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         icon = treeNode->AsIntConCommon();
         if (icon->IsIconHandle())
         {
+            if (icon->IsIconHandle(GTF_ICON_WASM_FRAME_IDENTITY))
+            {
+                GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC, icon->IntegralValue());
+                WasmProduceReg(treeNode);
+                return;
+            }
+
             // Handles need linker relocations for NativeAOT or image-relative relocations for R2R.
             // A handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.
             assert(icon->ImmedValNeedsReloc(m_compiler) || m_compiler->RunningSuperPmiReplay());
@@ -3371,6 +3393,16 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 
+    if ((call->gtDirectCallAddress != nullptr) &&
+        (m_compiler->eeGetRelocTypeHint(call->gtDirectCallAddress) == CorInfoReloc::WASM_DEFERRED_CALL))
+    {
+        // The emitter supplies this operand outside the argument IR; its exact call signature
+        // must still include it. See #DeferredWasmCallRelocationProtocol.
+        assert(!call->IsHelperCall() && !call->IsUnmanaged());
+        assert(call->gtArgs.FindWellKnownArg(WellKnownArg::WasmPortableEntryPoint) == nullptr);
+        typeStack.Push(CORINFO_WASM_TYPE_I32);
+    }
+
     // Report managed call signatures to the R2R compiler for thunk generation.
     if (!call->IsHelperCall() && !call->IsUnmanaged())
     {
@@ -3578,6 +3610,19 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(types, typeCount);
 
+    auto emitHelperCellLoad = [this, &helperFunction]() {
+        if (m_compiler->opts.compReloc && !m_compiler->IsNativeAot())
+        {
+            GetEmitter()->emitImageBase();
+            GetEmitter()->emitIns_MemargAddress(INS_I_load, EA_PTRSIZE, helperFunction.addr);
+        }
+        else
+        {
+            GetEmitter()->emitAddressConstant(helperFunction.addr);
+            GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        }
+    };
+
     if (helperUsesPep)
     {
         if (helperFunction.accessType == IAT_VALUE)
@@ -3590,8 +3635,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
             // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
             // The helper function address is the address of an indirection cell, so load the PEP address from the cell.
             assert(helperFunction.accessType == IAT_PVALUE);
-            GetEmitter()->emitAddressConstant(helperFunction.addr);
-            GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+            emitHelperCellLoad();
         }
     }
 
@@ -3600,8 +3644,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // Push the call target onto the wasm evaluation stack by dereferencing the indirection cell
         // and then the PEP pointed to by the indirection cell.
         assert(helperFunction.accessType == IAT_PVALUE);
-        GetEmitter()->emitAddressConstant(helperFunction.addr);
-        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        emitHelperCellLoad();
         GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
     }
 

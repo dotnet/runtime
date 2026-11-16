@@ -15,12 +15,12 @@
 
 .macro FUNCLET_SAVE_FP_REG reg, ofs
         fst.d   $f\reg, $sp, \ofs
-        .cfi_rel_offset $f\reg, \ofs
+        .cfi_rel_offset \reg+32, \ofs
 .endm
 
 .macro FUNCLET_RESTORE_FP_REG reg, ofs
         fld.d   $f\reg, $sp, \ofs
-        .cfi_restore $f\reg
+        .cfi_restore \reg+32
 .endm
 
 .macro FUNCLET_CALL_PROLOGUE
@@ -165,7 +165,7 @@ NESTED_END CallEHFunclet, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// UINT_PTR CallEHFilterFunclet(Object* pThrowable, void* pRegs, PCODE pFilter, UINT_PTR* pFuncletCallerSP)
+// int CallEHFilterFunclet(Object* pThrowable, void* pRegs, PCODE pFilter, UINT_PTR* pFuncletCallerSP)
 //
 // Calls a filter funclet with the frame pointer of the parent frame loaded from pRegs (the CONTEXT on CoreCLR,
 // the REGDISPLAY on NativeAOT) by LOAD_FUNCLET_REGISTER.

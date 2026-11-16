@@ -8,6 +8,7 @@
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
 #include "comdelegate.h"
+#include "gcrefmap.h"
 #include <dn-stdio.h>
 
 #include "perfmap.h"
@@ -1850,6 +1851,29 @@ ResolveCacheElem* __fastcall VSD_PromoteChainEntry(ResolveCacheElem *pElem)
 #endif
 #endif
 
+#ifdef TARGET_X86
+static size_t GetDispatchStackArgumentsSize(DispatchToken token, MethodTable* objectType)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
+
+    MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, objectType);
+    PTR_BYTE pGCRefMap = pMD->FindGCRefMap(objectType, true /* isDispatch */);
+    if (pGCRefMap != nullptr)
+    {
+        GCRefMapDecoder decoder(pGCRefMap);
+        return decoder.ReadStackPop() * sizeof(TADDR);
+    }
+
+    return pMD->SizeOfArgStack();
+}
+#endif // TARGET_X86
+
 PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                                             OBJECTREF *protectedObj,
                                             DispatchToken token,
@@ -2061,20 +2085,27 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                     pResolverFcn = (PCODE) GetEEFuncEntryPoint(ResolveWorkerAsmStub);
 #endif
 
-                    // First see if we've already created a resolve stub for this token
-                    if (resolvers->SetUpProber(token.To_SIZE_T(), 0, &probeR))
+                    size_t resolverKey = 0;
+#ifdef TARGET_X86
+                    size_t stackArgumentsSize = 0;
+                    if (!token.IsTypedToken())
+                    {
+                        // Unrelated class methods can share a slot but require different null-fault stack adjustments.
+                        stackArgumentsSize = GetDispatchStackArgumentsSize(token, objectType);
+                        resolverKey = stackArgumentsSize;
+                    }
+#endif // TARGET_X86
+
+                    // First see if we've already created a resolve stub for this token and stack size.
+                    if (resolvers->SetUpProber(token.To_SIZE_T(), resolverKey, &probeR))
                     {
                         // Find the right resolver, make it if necessary
                         PCODE addrOfResolver = (PCODE)(resolvers->Find(&probeR));
                         if (addrOfResolver == CALL_STUB_EMPTY_ENTRY)
                         {
 #ifdef TARGET_X86
-                            MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, objectType);
-                            size_t stackArgumentsSize;
-                            {
-                                ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-                                stackArgumentsSize = pMD->SizeOfArgStack();
-                            }
+                            if (token.IsTypedToken())
+                                stackArgumentsSize = GetDispatchStackArgumentsSize(token, objectType);
 #endif // TARGET_X86
 
                             bool reenteredCooperativeGCMode = PerfMap::IsEnabled();
@@ -2092,7 +2123,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                             if (reenteredCooperativeGCMode)
                             {
                                 // The prober may have been invalidated by reentering cooperative GC mode, reset it
-                                BOOL success = resolvers->SetUpProber(token.To_SIZE_T(), 0, &probeR);
+                                BOOL success = resolvers->SetUpProber(token.To_SIZE_T(), resolverKey, &probeR);
                                 _ASSERTE(success);
                             }
                             // Add the resolve entrypoint into the cache.
