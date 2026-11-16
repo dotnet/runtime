@@ -1819,51 +1819,28 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
                 continue;
             }
 
+            // Runtime messages only use inserts (%1 to %10).
             p++;
-            if (*p >= W('1') && *p <= W('9'))
+            if (*p < W('1') || *p > W('9'))
             {
-                COUNT_T index = *p - W('0');
-                if (p[1] >= W('0') && p[1] <= W('9'))
-                {
-                    p++;
-                    index = index * 10 + (*p - W('0'));
-                }
-
-                // Embedded printf formatting ('%1!d!') is not supported.
-                if (index > ARRAY_SIZE(args) || p[1] == W('!'))
-                    return FALSE;
-
-                result.Append(args[index - 1]);
-            }
-            else if (*p == W('n'))
-            {
-                result.Append(W('\n'));
-            }
-            else if (*p == W('r'))
-            {
-                result.Append(W('\r'));
-            }
-            else if (*p == W('t'))
-            {
-                result.Append(W('\t'));
-            }
-            else if (*p == W('b'))
-            {
-                result.Append(W(' '));
-            }
-            else if (*p == W('0'))
-            {
-                break;
-            }
-            else if (*p == W('\0'))
-            {
+                _ASSERTE(!"Unsupported escape sequence in message");
                 return FALSE;
             }
-            else
+
+            COUNT_T index = *p - W('0');
+            if (p[1] >= W('0') && p[1] <= W('9'))
             {
-                // '%%', '%.', '%!' and any other character are taken literally.
-                result.Append(*p);
+                p++;
+                index = index * 10 + (*p - W('0'));
             }
+
+            if (index > ARRAY_SIZE(args) || p[1] == W('!'))
+            {
+                _ASSERTE(!"Unsupported insert in message");
+                return FALSE;
+            }
+
+            result.Append(args[index - 1]);
         }
     }
 
