@@ -2568,14 +2568,15 @@ namespace System.Diagnostics.Tests
             };
             using (Process px = Process.Start(psi))
             {
-                // Reading of long process names is flaky during process startup and shutdown.
-                // Wait a bit to skip over the period where the ProcessName is not reliable.
-                Thread.Sleep(100);
-
-                Process[] runningProcesses = Process.GetProcesses();
                 try
                 {
-                    Assert.Contains(runningProcesses, p => p.ProcessName == LongProcessName);
+                    // ProcessName may transiently reflect the parent's thread name immediately
+                    // after Process.Start if execve() hasn't finished updating it yet, so retry briefly.
+                    RetryHelper.Execute(() =>
+                    {
+                        Process[] runningProcesses = Process.GetProcesses();
+                        Assert.Contains(runningProcesses, p => p.ProcessName == LongProcessName);
+                    });
                 }
                 finally
                 {

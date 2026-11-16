@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <pthread.h>
-#include <errno.h>
 #include "config.gc.h"
 #include "common.h"
 
@@ -10,6 +8,10 @@
 #include "gcenv.base.h"
 #include "gcenv.os.h"
 #include "globals.h"
+
+#ifdef FEATURE_MULTITHREADING
+#include <pthread.h>
+#include <errno.h>
 
 namespace
 {
@@ -225,6 +227,66 @@ public:
         pthread_mutex_unlock(&m_mutex);
     }
 };
+
+#else // FEATURE_MULTITHREADING
+
+class GCEvent::Impl
+{
+    bool m_manualReset;
+    bool m_state;
+
+public:
+
+    Impl(bool manualReset, bool initialState)
+    : m_manualReset(manualReset),
+      m_state(initialState)
+    {
+    }
+
+    bool Initialize()
+    {
+        return true;
+    }
+
+    void CloseEvent()
+    {
+    }
+
+    uint32_t Wait(uint32_t milliseconds, bool alertable)
+    {
+        UNREFERENCED_PARAMETER(alertable);
+
+        if (!m_state)
+        {
+            if (milliseconds != 0)
+            {
+                assert(!"Cannot block on an event wait in single-threaded mode");
+                return WAIT_FAILED;
+            }
+
+            return WAIT_TIMEOUT;
+        }
+
+        if (!m_manualReset)
+        {
+            m_state = false;
+        }
+
+        return WAIT_OBJECT_0;
+    }
+
+    void Set()
+    {
+        m_state = true;
+    }
+
+    void Reset()
+    {
+        m_state = false;
+    }
+};
+
+#endif // FEATURE_MULTITHREADING
 
 GCEvent::GCEvent()
   : m_impl(nullptr)
