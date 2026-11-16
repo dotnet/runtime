@@ -768,9 +768,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genPutArgStk(treeNode->AsPutArgStk());
             break;
 
-//        case GT_PUTARG_REG:
-//            genPutArgReg(treeNode->AsOp());
-//            break;
+        case GT_PUTARG_REG:
+            genPutArgReg(treeNode->AsOp());
+            break;
 //
 //        case GT_PUTARG_SPLIT:
 //            genPutArgSplit(treeNode->AsPutArgSplit());
@@ -1115,8 +1115,6 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 //
 void CodeGen::genPutArgReg(GenTreeOp* tree)
 {
-    _ASSERTE(!"NYI");
-#if 0
     assert(tree->OperIs(GT_PUTARG_REG));
 
     var_types targetType = tree->TypeGet();
@@ -1131,7 +1129,6 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
     inst_Mov(targetType, targetReg, op1->GetRegNum(), /* canSkip */ true);
 
     genProduceReg(tree);
-#endif
 }
 
 //---------------------------------------------------------------------
@@ -2996,21 +2993,7 @@ void CodeGen::genCall(GenTreeCall* call)
             genConsumeReg(argNode);
             regNumber sourceReg = argNode->GetRegNum();
 
-            if (sourceReg != argReg)
-            {
-                var_types argType = argNode->TypeGet();
-
-                if (varTypeIsFloating(argType))
-                {
-                    instruction moveIns = (argType == TYP_FLOAT) ? INS_ler : INS_ldr;
-                    GetEmitter()->emitIns_R_R(moveIns, emitTypeSize(argType),
-                                             argReg, sourceReg);
-                }
-                else
-                {
-                    GetEmitter()->emitIns_R_R(INS_lgr, EA_8BYTE, argReg, sourceReg);
-                }
-            }
+            inst_Mov(genActualType(argNode), argReg, sourceReg, /* canSkip */ true);
 
             argRegsUsed |= genRegMask(argReg);
         }
@@ -3144,24 +3127,7 @@ void CodeGen::genCall(GenTreeCall* call)
         if (targetReg != REG_NA)
         {
             // move to target register if different
-            if (targetReg != returnReg)
-            {
-                instruction moveIns;
-                emitAttr    size;
-
-                if (varTypeIsFloating(returnType))
-                {
-                    moveIns = (returnType == TYP_FLOAT) ? INS_ler : INS_ldr;
-                    size = emitTypeSize(returnType);
-                }
-                else
-                {
-                    moveIns = INS_lgr;
-                    size = EA_8BYTE;
-                }
-
-                GetEmitter()->emitIns_R_R(moveIns, size, targetReg, returnReg);
-            }
+            inst_Mov(returnType, targetReg, returnReg, /* canSkip */ true);
 
             // Update GC tracking for return value
             if (varTypeIsGC(returnType))

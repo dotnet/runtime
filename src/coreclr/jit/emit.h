@@ -1200,6 +1200,9 @@ protected:
                 case INS_or:
                 case INS_xr:
                 case INS_break:
+                case INS_ler:
+                case INS_ldr:
+                case INS_lr:
                     size = 2;
                     break;
                 case INS_lgfi:

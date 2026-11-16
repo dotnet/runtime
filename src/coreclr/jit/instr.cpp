@@ -1796,7 +1796,7 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
     assert(!varTypeIsSIMD(srcType));
     return INS_vmov;
 #elif defined(TARGET_S390X)
-    return ins_Load(srcType);
+    return srcInReg ? ins_Copy(srcType) : ins_Load(srcType);
 #else
     NYI("ins_Move_Extend");
     return INS_invalid;
@@ -2081,10 +2081,12 @@ instruction CodeGen::ins_Copy(var_types dstType)
         return INS_fsgnj_s;
     }
 #elif defined(TARGET_S390X)
+    assert(!varTypeIsSIMD(dstType));
+
     if (dstType == TYP_DOUBLE)
-        return INS_ldy;
+        return INS_ldr;
     else
-        return INS_ley;
+        return INS_ler;
 #else
     NYI("ins_Copy");
 #endif

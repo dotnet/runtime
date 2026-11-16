@@ -3637,203 +3637,49 @@ void emitter::emitIns_R_F(
 void emitter::emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt /* = INS_OPTS_NONE */)
 {
-    //s390xmarker: use in prolog :- unimplemented
-	return;
-#if 0
     assert(IsMovInstruction(ins));
+    assert(insOptsNone(opt));
 
     emitAttr  size     = EA_SIZE(attr);
-    emitAttr  elemsize = EA_UNKNOWN;
-    insFormat fmt      = IF_NONE;
 
+    if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+    {
+        // These instructions have no side effect and can be skipped
+        return;
+    }
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
-        case INS_mov:
-        {
-            assert(insOptsNone(opt));
+        case INS_lgr:
+             assert(isGeneralRegister(dstReg));
+             assert(isGeneralRegister(srcReg));
+             break;
 
-            if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
-            {
-                // These instructions have no side effect and can be skipped
-                return;
-            }
-
-            // Check for the 'mov' aliases for the vector registers
-            if (isVectorRegister(dstReg))
-            {
-                if (isVectorRegister(srcReg) && isValidVectorDatasize(size))
-                {
-                    return emitIns_R_R_R(INS_mov, size, dstReg, srcReg, srcReg);
-                }
-                else
-                {
-                    return emitIns_R_R_I(INS_mov, size, dstReg, srcReg, 0);
-                }
-            }
-            else
-            {
-                if (isVectorRegister(srcReg))
-                {
-                    assert(isGeneralRegister(dstReg));
-                    return emitIns_R_R_I(INS_mov, size, dstReg, srcReg, 0);
-                }
-            }
-
-            // Is this a MOV to/from SP instruction?
-            if ((dstReg == REG_SP) || (srcReg == REG_SP))
-            {
-                assert(isGeneralRegisterOrSP(dstReg));
-                assert(isGeneralRegisterOrSP(srcReg));
-                dstReg = encodingSPtoZR(dstReg);
-                srcReg = encodingSPtoZR(srcReg);
-                fmt    = IF_DR_2G;
-            }
-            else
-            {
-                assert(insOptsNone(opt));
-                assert(isGeneralRegister(dstReg));
-                assert(isGeneralRegisterOrZR(srcReg));
-                fmt = IF_DR_2E;
-            }
-            break;
-        }
-
-        case INS_sxtw:
-        {
-            assert((size == EA_8BYTE) || (size == EA_4BYTE));
-            FALLTHROUGH;
-        }
-
-        case INS_sxtb:
-        case INS_sxth:
-        case INS_uxtb:
-        case INS_uxth:
-        {
-            if (canSkip && (dstReg == srcReg))
-            {
-                // There are scenarios such as in genCallInstruction where the sign/zero extension should be elided
-                return;
-            }
-
-            assert(insOptsNone(opt));
-            assert(isValidGeneralDatasize(size));
-            assert(isGeneralRegister(dstReg));
+        case INS_ldgr:
+            assert(isVectorRegister(dstReg));
             assert(isGeneralRegister(srcReg));
-            fmt = IF_DR_2H;
+            assert(EA_SIZE(attr) == EA_8BYTE);
             break;
-        }
 
-        case INS_fmov:
-        {
-            assert(isValidVectorElemsizeFloat(size));
-
-            if (canSkip && (dstReg == srcReg))
-            {
-                // These instructions have no side effect and can be skipped
-                return;
-            }
-
-            if (isVectorRegister(dstReg))
-            {
-                if (isVectorRegister(srcReg))
-                {
-                    assert(insOptsNone(opt));
-                    fmt = IF_DV_2G;
-                }
-                else
-                {
-                    assert(isGeneralRegister(srcReg));
-
-                    // if the optional conversion specifier is not present we calculate it
-                    if (opt == INS_OPTS_NONE)
-                    {
-                        opt = (size == EA_4BYTE) ? INS_OPTS_4BYTE_TO_S : INS_OPTS_8BYTE_TO_D;
-                    }
-                    assert(insOptsConvertIntToFloat(opt));
-
-                    fmt = IF_DV_2I;
-                }
-            }
-            else
-            {
-                assert(isGeneralRegister(dstReg));
-                assert(isVectorRegister(srcReg));
-
-                // if the optional conversion specifier is not present we calculate it
-                if (opt == INS_OPTS_NONE)
-                {
-                    opt = (size == EA_4BYTE) ? INS_OPTS_S_TO_4BYTE : INS_OPTS_D_TO_8BYTE;
-                }
-                assert(insOptsConvertFloatToInt(opt));
-
-                fmt = IF_DV_2H;
-            }
+        case INS_lgdr:
+            assert(isGeneralRegister(dstReg));
+            assert(isVectorRegister(srcReg));
+            assert(EA_SIZE(attr) == EA_8BYTE);
             break;
-        }
-#if 0
-        case INS_sve_mov:
-        {
-            if (isPredicateRegister(dstReg) && isPredicateRegister(srcReg))
-            {
-                assert((opt == INS_OPTS_SCALABLE_B) || insOptsNone(opt));
-                opt  = INS_OPTS_SCALABLE_B;
-                attr = EA_SCALABLE;
 
-                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
-                {
-                    return;
-                }
-                fmt = IF_SVE_CZ_4A_L;
-            }
-            else if (isVectorRegister(dstReg) && isVectorRegister(srcReg))
-            {
-                assert(insOptsScalable(opt));
-
-                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
-                {
-                    return;
-                }
-                fmt = IF_SVE_AU_3A;
-            }
-            else if (isVectorRegister(dstReg) && isGeneralRegisterOrSP(srcReg))
-            {
-                assert(insOptsScalable(opt));
-                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
-                {
-                    return;
-                }
-                srcReg = encodingSPtoZR(srcReg);
-                fmt    = IF_SVE_CB_2A;
-            }
-            else
-            {
-                unreached();
-            }
-
+        case INS_ler:
+        case INS_ldr:
+            assert(isVectorRegister(dstReg));
+            assert(isVectorRegister(srcReg));
             break;
-        }
-#endif
+
         default:
         {
             unreached();
         }
     }
 
-    assert(fmt != IF_NONE);
-
-    instrDesc* id = emitNewInstrSmall(attr);
-
-    id->idIns(ins);
-    id->idInsFmt(fmt);
-    id->idInsOpt(opt);
-
-    id->idReg1(dstReg);
-    id->idReg2(srcReg);
-
-    dispIns(id);
-    appendToCurIG(id);
-#endif
+    emitIns_R_R(ins, attr, dstReg, srcReg, opt);
 }
 
 /*****************************************************************************
@@ -3878,6 +3724,8 @@ void emitter::emitIns_R_R(instruction     ins,
         case INS_lghr:
         case INS_lgr:
         case INS_lr:
+        case INS_ler:
+        case INS_ldr:
         case INS_vlr:
         case INS_agr:
         case INS_ar:
@@ -4557,6 +4405,8 @@ void emitter::emitIns_R_R(instruction     ins,
             case INS_sqebr: ins = INS_wfsqsb; break;
             case INS_sqdbr: ins = INS_wfsqdb; break;
             case INS_lgdr:  ins = INS_vlgvg;  break;
+            case INS_ler:   ins = INS_vlr;    break;
+            case INS_ldr:   ins = INS_vlr;    break;
             default: break;
         }
     }
@@ -10309,6 +10159,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             S390_RRE(dst, op, id->idReg1(), id->idReg2());
             break;
 
+        case INS_ler:
+        case INS_ldr:
+            op = emitInsCode(ins, fmt);
+            S390_RR(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
+            break;
+
         case INS_vlr:
         {
             op = emitInsCode(INS_vlr, fmt);
@@ -15548,18 +15404,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 //
 bool emitter::IsMovInstruction(instruction ins)
 {
-    _ASSERTE(!"NYI");
-#if 0
     switch (ins)
     {
-        case INS_fmov:
-        case INS_mov:
-        case INS_sxtb:
-        case INS_sxth:
-        case INS_sxtw:
-        case INS_uxtb:
-        case INS_uxth:
-        case INS_sve_mov:
+        case INS_lgr:
+        case INS_ldgr:
+        case INS_lgdr:
+        case INS_ler:
+        case INS_ldr:
         {
             return true;
         }
@@ -15569,34 +15420,15 @@ bool emitter::IsMovInstruction(instruction ins)
             return false;
         }
     }
-#endif
 }
 
 //----------------------------------------------------------------------------------------
 // IsRedundantMov:
-//    Check if the current `mov` instruction is redundant and can be omitted.
-//    A `mov` is redundant in following 3 cases:
+//    Check if the current copy  is redundant and can be omitted.
 //
 //    1. Move to same register
-//       (Except 4-byte movement like "mov w1, w1" which zeros out upper bits of x1 register)
-//
-//         mov Rx, Rx
-//
-//    2. Move that is identical to last instruction emitted.
-//
-//         mov Rx, Ry  # <-- last instruction
-//         mov Rx, Ry  # <-- current instruction can be omitted.
-//
-//    3. Opposite Move as that of last instruction emitted.
-//
-//         mov Rx, Ry  # <-- last instruction
-//         mov Ry, Rx  # <-- current instruction can be omitted.
-//
-//    4. Move that does zero extension while previous instruction already did it
-//
-//         ldr Wx, [Ry] # <-- ldr will clear upper 4 byte of Wx
-//         mov Wx, Wx   # <-- clears upper 4 byte in Wx
-//
+//       copy is redundant when it moves a register to itself
+//       lgr Rx Rx
 // Arguments:
 //    ins  - The current instruction
 //    size - Operand size of current instruction
@@ -15605,107 +15437,17 @@ bool emitter::IsMovInstruction(instruction ins)
 // canSkip - The move can be skipped as it doesn't represent special semantics
 //
 // Return Value:
-//    true if previous instruction moved from current dst to src.
+//    true if current copy can be omitted.
 
 bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip)
 {
-    _ASSERTE(!"NYI");
-#if 0
-    assert((ins == INS_mov) || (ins == INS_sve_mov));
-
-    if (canSkip && (dst == src))
+    assert(IsMovInstruction(ins));
+    if (dst != src)
     {
-        // These elisions used to be explicit even when optimizations were disabled
-        return true;
-    }
-
-    if (!emitComp->opts.OptimizationEnabled())
-    {
-        // The remaining move elisions should only happen if optimizations are enabled
         return false;
     }
 
-    const bool canOptimize = emitCanPeepholeLastIns();
-
-    if (dst == src)
-    {
-        // A mov with a EA_4BYTE has the side-effect of clearing the upper bits
-        // So only eliminate mov instructions that are not clearing the upper bits
-        //
-        if (isGeneralRegisterOrSP(dst) && (size == EA_8BYTE))
-        {
-            JITDUMP("\n -- suppressing mov because src and dst is same 8-byte register.\n");
-            return true;
-        }
-        else if (isVectorRegister(dst) && (size == EA_16BYTE))
-        {
-            JITDUMP("\n -- suppressing mov because src and dst is same 16-byte register.\n");
-            return true;
-        }
-        else if (isGeneralRegisterOrSP(dst) && (size == EA_4BYTE))
-        {
-            // See if the previous instruction already cleared upper 4 bytes for us unintentionally
-            if (canOptimize && (emitLastIns->idReg1() == dst) && (emitLastIns->idOpSize() == size) &&
-                emitLastIns->idInsIs(INS_ldr, INS_ldrh, INS_ldrb))
-            {
-                JITDUMP("\n -- suppressing mov because ldr already cleared upper 4 bytes\n");
-                return true;
-            }
-        }
-    }
-
-    if (canOptimize &&                       // Don't optimize if unsafe.
-        (emitLastIns->idIns() == INS_mov) && // Don't optimize if last instruction was not 'mov'.
-        (emitLastIns->idOpSize() == size))   // Don't optimize if operand size is different than previous
-                                             // instruction.
-    {
-        // Check if we did same move in prev instruction except dst/src were switched.
-        regNumber prevDst    = emitLastIns->idReg1();
-        regNumber prevSrc    = emitLastIns->idReg2();
-        insFormat lastInsfmt = emitLastIns->idInsFmt();
-
-        // Sometimes emitLastIns can be a mov with single register e.g. "mov reg, #imm". So ensure to
-        // optimize formats that does vector-to-vector or scalar-to-scalar register movs.
-        //
-        const bool isValidLastInsFormats = ((lastInsfmt == IF_DV_3C) || (lastInsfmt == IF_DR_2E));
-
-        if (isValidLastInsFormats && (prevDst == dst) && (prevSrc == src))
-        {
-            assert(emitLastIns->idOpSize() == size);
-            JITDUMP("\n -- suppressing mov because previous instruction already moved from src to dst register.\n");
-            return true;
-        }
-
-        if ((prevDst == src) && (prevSrc == dst) && isValidLastInsFormats)
-        {
-            // For mov with EA_8BYTE, ensure src/dst are both scalar or both vector.
-            if (size == EA_8BYTE)
-            {
-                if (isVectorRegister(src) == isVectorRegister(dst))
-                {
-                    JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst "
-                            "to src register.\n");
-                    return true;
-                }
-            }
-
-            // For mov with EA_16BYTE, both src/dst will be vector.
-            else if (size == EA_16BYTE)
-            {
-                assert(isVectorRegister(src) && isVectorRegister(dst));
-                assert(lastInsfmt == IF_DV_3C);
-
-                JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst to "
-                        "src register.\n");
-                return true;
-            }
-
-            // For mov of other sizes, don't optimize because it has side-effect of clearing the upper bits.
-        }
-    }
-
-    return false;
-#endif
+    return canSkip || emitComp->opts.OptimizationEnabled();
 }
 
 //----------------------------------------------------------------------------------------

@@ -12981,6 +12981,7 @@ static bool isJitted(MethodDesc* ftnDesc, const char* ftnName)
         "GetByteCountCommon",
         "AllCharsInUInt64AreAscii",
         "NonPackedIndexOfValueType",
+        "AsBytes",
         "ReverseEndianness",
         "DecodeByte",
         "Memmove",
