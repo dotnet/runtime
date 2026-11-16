@@ -37,23 +37,26 @@ namespace System.Transactions.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
+                // Keep distinct worker timeouts from being clamped to the same maximum.
+                TransactionManager.MaximumTimeout = TimeSpan.Zero;
                 int threads = Math.Max(Environment.ProcessorCount * 2, 8);
                 for (int attempt = 0; attempt < 10; attempt++)
                 {
                     using var tx = new CommittableTransaction(TimeSpan.FromSeconds(1));
                     var clock = Stopwatch.StartNew();
 
-                    // Every round, all threads start a transaction at the same moment with a new timeout value.
+                    // Every round, workers concurrently request distinct timeout values.
                     using var nextRound = new Barrier(threads);
                     var workers = new Thread[threads];
                     for (int i = 0; i < threads; i++)
                     {
+                        int workerIndex = i;
                         workers[i] = new Thread(() =>
                         {
                             for (int round = 0; clock.ElapsedMilliseconds < 500; round++)
                             {
                                 nextRound.SignalAndWait();
-                                using var other = new CommittableTransaction(TimeSpan.FromMilliseconds(10_000 + round * 512));
+                                using var other = new CommittableTransaction(TimeSpan.FromMilliseconds(10_000L + ((long)round * threads + workerIndex) * 512));
                             }
                             nextRound.RemoveParticipant();
                         });
