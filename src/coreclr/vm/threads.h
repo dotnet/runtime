@@ -2207,6 +2207,8 @@ public:
 
     #define UNWIND_FLOATS 0x20000
 
+    #define GC_ROOT_SCAN 0x40000
+
     StackWalkAction StackWalkFramesEx(
                         PREGDISPLAY pRD,        // virtual register set at crawl start
                         PSTACKWALKFRAMESCALLBACK pCallback,
@@ -2969,6 +2971,7 @@ public:
 #endif // PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA
     }
 
+private:
     //-------------------------------------------------------------------------
     // The hijack lock enforces that a thread on which a profiler is currently
     // performing a stack walk cannot be hijacked.
@@ -2993,7 +2996,32 @@ public:
         pThread->m_hijackLock = FALSE;
     }
 
-    typedef ConditionalStateHolder<Thread *, Thread::EnterHijackLock, Thread::LeaveHijackLock> HijackLockHolder;
+    struct HijackLockHolderTraits final
+    {
+        using Type = Thread*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            LIMITED_METHOD_CONTRACT;
+            if (value != NULL)
+                Thread::LeaveHijackLock(value);
+        }
+    };
+
+public:
+    using HijackLockHolder = LifetimeHolder<HijackLockHolderTraits>;
+
+    bool TryAcquireHijackLock(HijackLockHolder& holder)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(!holder);
+        if (!EnterHijackLock(this))
+            return false;
+
+        holder = this;
+        return true;
+    }
     //-------------------------------------------------------------------------
 
     void PrepareForEERestart(BOOL SuspendSucceeded)
@@ -3478,26 +3506,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return m_debuggerActivePatchSkipper.Load() != NULL;
     }
-
-private:
-
-    static BOOL EnterWorkingOnThreadContext(Thread *pThread)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if(pThread->m_debuggerActivePatchSkipper.Load() != NULL)
-        {
-            return FALSE;
-        }
-        return TRUE;
-    }
-
-    static void LeaveWorkingOnThreadContext(Thread *pThread)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    typedef ConditionalStateHolder<Thread *, Thread::EnterWorkingOnThreadContext, Thread::LeaveWorkingOnThreadContext> WorkingOnThreadContextHolder;
 
 private:
     BOOL m_fAllowProfilerCallbacks;

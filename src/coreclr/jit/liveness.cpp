@@ -2696,7 +2696,8 @@ bool Liveness<TLiveness>::TryRemoveNonLocalLIR(GenTree* node, LIR::Range* blockR
         // (as opposed to side effects of their children).
         // This default case should never include calls or stores.
         assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));
-        if (!node->gtSetFlags() && !node->OperMayThrow(m_compiler) && CanUncontainOrRemoveOperands(node))
+        if (!node->gtSetFlags() && !m_compiler->gtNodeHasSideEffects(node, GTF_OBS_EFFECT) &&
+            CanUncontainOrRemoveOperands(node))
         {
             JITDUMP("Removing dead node:\n");
             DISPNODE(node);

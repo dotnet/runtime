@@ -728,11 +728,18 @@ class TestDelegate
 
     static Func<int> s_lambda = () => 2020;
 
+    static Func<string> s_objectTypeName = GetTypeName<object>;
+    static Func<string> s_stringTypeName = GetTypeName<string>;
+
+    static string GetTypeName<T>() => typeof(T).Name;
+
     public static void Run()
     {
         Assert.IsPreinitialized(typeof(TestDelegate));
         Assert.AreEqual(42, s_delegate());
         Assert.AreEqual(2020, s_lambda());
+        Assert.AreEqual(nameof(Object), s_objectTypeName());
+        Assert.AreEqual(nameof(String), s_stringTypeName());
     }
 }
 

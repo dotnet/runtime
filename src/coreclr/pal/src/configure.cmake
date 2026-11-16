@@ -177,25 +177,6 @@ check_cxx_symbol_exists(_DEBUG sys/user.h USER_H_DEFINES_DEBUG)
 check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
 check_cxx_symbol_exists(_SC_AVPHYS_PAGES unistd.h HAVE__SC_AVPHYS_PAGES)
 
-check_cxx_source_runs("
-#include <sys/param.h>
-#include <stdlib.h>
-
-int main(void) {
-  char *path;
-#ifdef PATH_MAX
-  char resolvedPath[PATH_MAX];
-#elif defined(MAXPATHLEN)
-  char resolvedPath[MAXPATHLEN];
-#else
-  char resolvedPath[1024];
-#endif
-  path = realpath(\"a_nonexistent_file\", resolvedPath);
-  if (path == NULL) {
-    exit(1);
-  }
-  exit(0);
-}" REALPATH_SUPPORTS_NONEXISTENT_FILES)
 set(CMAKE_REQUIRED_LIBRARIES pthread)
 check_cxx_source_runs("
 #include <stdio.h>
@@ -243,62 +224,6 @@ int main()
   exit(ret);
 }" HAVE_CLOCK_THREAD_CPUTIME)
 set(CMAKE_REQUIRED_LIBRARIES)
-
-check_cxx_source_runs("
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <algorithm>
-
-#define MEM_SIZE 1024
-#define TEMP_FILE_TEMPLATE \"${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/multiplemaptestXXXXXX\"
-int main(void)
-{
-  char * fname;
-  int fd;
-  int ret;
-  void * pAddr0, * pAddr1;
-
-  fname = (char *)malloc(std::max((size_t)MEM_SIZE, sizeof(TEMP_FILE_TEMPLATE)));
-  if (!fname)
-    exit(1);
-  strcpy(fname, TEMP_FILE_TEMPLATE);
-
-  fd = mkstemp(fname);
-  if (fd < 0)
-    exit(1);
-
-  ret = write (fd, (void *)fname, MEM_SIZE);
-  if (ret < 0)
-    exit(1);
-
-  pAddr0 = mmap(0, MEM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-  pAddr1 = mmap(0, MEM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
-  /* In theory we should look for (pAddr1 == MAP_FAILED) && (pAddr1 != MAP_FAILED)
-   but in case the first test also failed, i.e. we failed to run the test,
-   let's assume that the system might not allow multiple shared mapping of the
-   same file region in the same process. The code enabled in this case is
-   only a fall-back code path. In case the double mmap actually works, virtually
-   nothing will change and the normal code path will be executed */
-  if (pAddr1 == MAP_FAILED)
-    ret = 1;
-  else
-    ret = 0;
-
-  if (pAddr0)
-    munmap (pAddr0, MEM_SIZE);
-  if (pAddr1)
-    munmap (pAddr1, MEM_SIZE);
-  close(fd);
-  unlink(fname);
-  free(fname);
-
-  exit(ret != 1);
-}" ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS)
 
 check_cxx_source_runs("
 #include <fcntl.h>
@@ -363,9 +288,6 @@ int main(int argc, char **argv)
         libUnwindContext = uContext;
         return 0;
 }" UNWIND_CONTEXT_IS_UCONTEXT_T)
-
-check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
-check_symbol_exists(unw_get_proc_info_in_range libunwind.h HAVE_GET_PROC_INFO_IN_RANGE)
 
 check_cxx_source_compiles("
 #include <libunwind.h>

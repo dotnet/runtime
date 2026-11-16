@@ -66,7 +66,7 @@ namespace System.Threading
         }
 #endif
 
-        // sched_getcpu doesn't exist on all platforms. On those it doesn't exist on, the shim returns -1
+        // sched_getcpu / pthread_cpu_number_np don't exist on all platforms. On those where neither exists, the shim returns -1
         internal static int GetCurrentProcessorNumber() => Interop.Sys.SchedGetCpu();
     }
 }

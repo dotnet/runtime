@@ -4930,6 +4930,8 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
                     pCodeStart = iter->GetNativeCode();
                     if (pCodeStart != (PCODE)NULL)
                     {
+                        // Interpreted code is identified by its byte code, not by its precode entry point.
+                        pCodeStart = (PCODE)GetDiagnosticCodeStartFromEntryPoint(pMD, (TADDR)pCodeStart);
                         break;
                     }
                 }
@@ -6447,7 +6449,8 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
 
                 if (codeStart != (PCODE)NULL)
                 {
-                    addresses.Append(codeStart);
+                    // Interpreted code is identified by its byte code, not by its precode entry point.
+                    addresses.Append((PCODE)GetDiagnosticCodeStartFromEntryPoint(pMD, (TADDR)codeStart));
                     ++trueLen;
                 }
             }
@@ -7517,7 +7520,7 @@ HRESULT ProfToEEInterfaceImpl::EnumerateNonGCObjects(ICorProfilerObjectEnum** pp
         return E_OUTOFMEMORY;
     }
 
-    *ppEnum = (ICorProfilerObjectEnum*)pEnum.Extract();
+    *ppEnum = (ICorProfilerObjectEnum*)pEnum.Detach();
 
     return hr;
 }
@@ -8602,8 +8605,8 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
 
     // We must make sure no other thread tries to hijack the thread we're about to walk
     // Hijacking means Thread::HijackThread, i.e. bashing return addresses which would break the stack walk
-    Thread::HijackLockHolder hijackLockHolder(pThreadToSnapshot);
-    if (!hijackLockHolder.Acquired())
+    Thread::HijackLockHolder hijackLockHolder;
+    if (!pThreadToSnapshot->TryAcquireHijackLock(hijackLockHolder))
     {
         // Returning directly as there is nothing to cleanup yet, and can't skip gcholder ctor
         return CORPROF_E_STACKSNAPSHOT_UNSAFE;
@@ -9451,7 +9454,7 @@ HRESULT ProfToEEInterfaceImpl::EnumJITedFunctions(ICorProfilerFunctionEnum ** pp
     }
 
     // Ownership transferred to [out] param.  Caller must Release() when done with this.
-    *ppEnum = (ICorProfilerFunctionEnum *)pJitEnum.Extract();
+    *ppEnum = (ICorProfilerFunctionEnum *)pJitEnum.Detach();
 
     return S_OK;
 }
@@ -9507,7 +9510,7 @@ HRESULT ProfToEEInterfaceImpl::EnumJITedFunctions2(ICorProfilerFunctionEnum ** p
     }
 
     // Ownership transferred to [out] param.  Caller must Release() when done with this.
-    *ppEnum = (ICorProfilerFunctionEnum *)pJitEnum.Extract();
+    *ppEnum = (ICorProfilerFunctionEnum *)pJitEnum.Detach();
 
     return S_OK;
 }
@@ -9573,7 +9576,7 @@ HRESULT ProfToEEInterfaceImpl::EnumModules(ICorProfilerModuleEnum ** ppEnum)
     }
 
     // Ownership transferred to [out] param.  Caller must Release() when done with this.
-    *ppEnum = (ICorProfilerModuleEnum *) pModuleEnum.Extract();
+    *ppEnum = (ICorProfilerModuleEnum *) pModuleEnum.Detach();
 
     return S_OK;
 }
@@ -10270,7 +10273,7 @@ HRESULT ProfToEEInterfaceImpl::EnumThreads(
     }
 
     // Ownership transferred to [out] param.  Caller must Release() when done with this.
-    *ppEnum = (ICorProfilerThreadEnum *) pThreadEnum.Extract();
+    *ppEnum = (ICorProfilerThreadEnum *) pThreadEnum.Detach();
 
     return S_OK;
 }

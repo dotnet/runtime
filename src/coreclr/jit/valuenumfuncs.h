@@ -41,6 +41,7 @@ ValueNumFuncDef(TypeHandleToRuntimeTypeHandle, 1, false, false)      // Args: 0:
 ValueNumFuncDef(LdElemA, 3, false, true)             // Args: 0: array value; 1: index value; 2: type handle of element.
 
 ValueNumFuncDef(ByrefExposedLoad, 3, false, false)      // Args: 0: type handle/id, 1: pointer value; 2: ByrefExposed heap value
+ValueNumFuncDef(ByrefExposedStore, 4, false, false)     // int/long/float/double store. Args: 0: liberal pointer, 1: conservative pointer, 2: stored value, 3: opaque memory value
 ValueNumFuncDef(ByrefExposedLocalLoad, 4, false, false) // Args: 0: type handle/id, 1: local's number, 2: offset; 3: ByrefExposed heap value
 
 ValueNumFuncDef(GetRefanyVal, 2, false, false)       // Args: 0: type handle; 1: typedref value.  Returns the value (asserting that the type is right).

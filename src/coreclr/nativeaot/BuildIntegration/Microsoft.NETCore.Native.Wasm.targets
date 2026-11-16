@@ -5,7 +5,6 @@
     <Error Condition="'$(_targetOS)' != 'wasi'" Text="NativeAOT WebAssembly linking is not supported for '$(_targetOS)'." />
     <Error Condition="'$(NativeLib)' == 'Shared'" Text="NativeAOT WebAssembly shared libraries are not supported." />
     <Error Condition="'$(IlcMultiModule)' == 'true'" Text="NativeAOT WebAssembly multi-module compilation is not supported." />
-    <Error Condition="'$(IlcDehydrate)' == 'true'" Text="NativeAOT WebAssembly data dehydration is not supported." />
     <Error Condition="'$(WASI_SDK_PATH)' == ''" Text="Set WASI_SDK_PATH to the WASI SDK root to link NativeAOT WASI applications." />
 
     <PropertyGroup>
@@ -36,7 +35,7 @@
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'$(IlcFrameworkNativePath)lib%(Identity).a')" />
       <NativeLibrary Include="$(IlcSdkPath)libbootstrapper.o" Condition="'$(NativeLib)' == '' and '$(CustomNativeMain)' != 'true'" />
       <NativeLibrary Include="$(IlcSdkPath)libbootstrapperdll.o" Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'" />
-      <NativeLibrary Include="$(IlcSdkPath)libPortableRuntime.a" />
+      <NativeLibrary Include="$(IlcSdkPath)libRuntime.WorkstationGC.a" />
       <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName).a" />
       <NativeLibrary Include="$(IlcSdkPath)libstandalonegc-disabled.a" />
       <NativeLibrary Include="$(IlcSdkPath)libaotminipal.a" />
@@ -56,6 +55,8 @@
       <LinkerArg Include="-lwasi-emulated-process-clocks;-lwasi-emulated-signal;-lwasi-emulated-mman;-lwasi-emulated-getpid" />
       <LinkerArg Include="-lstdc++" Condition="'$(LinkStandardCPlusPlusLibrary)' == 'true'" />
       <LinkerArg Include="-g" Condition="'$(NativeDebugSymbols)' == 'true'" />
+      <LinkerArg Include="-Wl,-s" Condition="'$(WasmNativeStrip)' == 'true'" />
+      <LinkerArg Include="-Wl,--compress-relocations" Condition="'$(WasmNativeStrip)' == 'true'" />
     </ItemGroup>
   </Target>
 

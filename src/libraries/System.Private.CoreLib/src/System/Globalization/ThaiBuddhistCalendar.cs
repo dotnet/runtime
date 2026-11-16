@@ -5,7 +5,7 @@ namespace System.Globalization
 {
     /// <summary>
     /// ThaiBuddhistCalendar is based on Gregorian calendar.
-    /// Its year value has an offset to the Gregorain calendar.
+    /// Its year value has an offset to the Gregorian calendar.
     /// </summary>
     /// <remarks>
     /// Calendar support range:

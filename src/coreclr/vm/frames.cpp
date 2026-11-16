@@ -608,6 +608,9 @@ void Frame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targe
 
 void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
 {
+#ifdef CONTEXT_FLOATING_POINT
+    _ASSERTE((pRD->pCurrentContext->ContextFlags & (CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK)) != 0);
+#endif
     switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->UpdateFloatingPointRegisters_Impl(pRD, targetSP); }
@@ -1141,7 +1144,7 @@ GCFrame::~GCFrame()
 
     // Normally the destructor performs the pop for a GCPROTECT_BEGIN/END scope, so the frame is
     // still linked when we get here. If it was already popped explicitly - by PopExplicitFrames
-    // during EH unwind, or by the interpreter's GCReporting::Unregister - then m_pCurThread is
+    // during EH unwind, or by the interpreter's GCFrameRegistration_UnregisterForGCReporting - then m_pCurThread is
     // NULL and there is nothing left to do.
     if (m_pCurThread != NULL)
     {

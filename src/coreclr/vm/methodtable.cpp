@@ -3637,7 +3637,7 @@ void MethodTable::DoRunClassInitThrowing()
 
     ListLock *_pLock = pDomain->GetClassInitLock();
 
-    ListLockHolder pInitLock(_pLock);
+    ListLockHolder pInitLock = _pLock->TakeLock();
 
     // Check again
     if (IsClassInited())
@@ -3679,7 +3679,7 @@ void MethodTable::DoRunClassInitThrowing()
 
         // We need to release this lock because CreateTypeInitializationExceptionObject and fetching the TypeLoad exception can cause
         // managed code to re-enter into this codepath, causing a locking order violation.
-        pInitLock.Release();
+        pInitLock.Free();
 
         if (CoreLibBinder::GetException(kTypeInitializationException) != gc.pInitException->GetMethodTable())
         {
@@ -3743,12 +3743,11 @@ void MethodTable::DoRunClassInitThrowing()
         //nontrivial holder, might take a lock in destructor
         ListLockEntryHolder pEntry(ListLockEntry::Find(pInitLock, this, description));
 
-        ListLockEntryLockHolder pLock(pEntry, FALSE);
-
         // We have a list entry, we can release the global lock now
-        pInitLock.Release();
+        pInitLock.Free();
 
-        if (pLock.DeadlockAwareAcquire())
+        ListLockEntryLockHolder pLock;
+        if (pLock.DeadlockAwareAcquire(pEntry))
         {
             if (pEntry->m_hrResultCode == S_FALSE)
             {
@@ -7166,9 +7165,9 @@ void MethodTable::InitMethodDataCache()
     _ASSERTE(s_pMethodDataCache == NULL);
 
     UINT32 cb = MethodDataCache::GetObjectSize(8);
-    NewArrayHolder<BYTE> hb(new BYTE[cb]);
-    s_pMethodDataCache = new (hb.GetValue()) MethodDataCache(8);
-    hb.SuppressRelease();
+    NewArrayHolder<BYTE> hb{ new BYTE[cb] };
+    s_pMethodDataCache = new (static_cast<BYTE*>(hb)) MethodDataCache(8);
+    hb.Detach();
 }
 
 //==========================================================================================
@@ -7259,8 +7258,8 @@ MethodTable::GetMethodDataHelper(
 #endif //_DEBUG
 
     // Can't cache, since this is a custom method used in BuildMethodTable
-    MethodDataWrapper hDecl(GetMethodData(pMTDecl, computeOptions));
-    MethodDataWrapper hImpl(GetMethodData(pMTImpl, computeOptions));
+    MethodDataHolder hDecl(GetMethodData(pMTDecl, computeOptions));
+    MethodDataHolder hImpl(GetMethodData(pMTImpl, computeOptions));
 
     MethodDataInterfaceImpl * pData = new ({ pMTDecl}) MethodDataInterfaceImpl(rgDeclTypeIDs, cDeclTypeIDs, hDecl, hImpl);
 
@@ -7304,7 +7303,7 @@ MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
         }
         else {
             MethodDataHolder h(FindParentMethodDataHelper(pMTDecl));
-            pData = new ({pMTDecl}, computeOptions) MethodDataObject(pMTDecl, h.GetValue(), computeOptions);
+            pData = new ({pMTDecl}, computeOptions) MethodDataObject(pMTDecl, h, computeOptions);
         }
     }
     else {

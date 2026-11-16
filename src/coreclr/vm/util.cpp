@@ -135,6 +135,7 @@ void PrintToStdErrW(const WCHAR *pwzString)
     }
     CONTRACTL_END
 
+#ifdef TARGET_WINDOWS
     UINT codePage = GetConsoleOutputCP();
     // Console output allows best-fit mapping and default-character substitution.
     int byteCount = WideCharToMultiByte(codePage, 0, pwzString, -1, nullptr, 0, nullptr, nullptr);
@@ -149,6 +150,14 @@ void PrintToStdErrW(const WCHAR *pwzString)
     {
         ThrowWin32(ERROR_NO_UNICODE_TRANSLATION);
     }
+#else
+    size_t cchString = u16_strlen(pwzString) + 1;
+    size_t byteCount = minipal_get_length_utf16_to_utf8((const CHAR16_T*)pwzString, cchString, 0);
+
+    CQuickBytes buffer;
+    char* pStr = static_cast<char*>(buffer.AllocThrows(byteCount));
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)pwzString, cchString, pStr, byteCount, 0);
+#endif
 
     PrintToStdErrA(pStr);
 }

@@ -36,11 +36,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 
 #define CONTEXT_AREA_MASK 0xffff
-#ifdef HOST_X86
-#define CONTEXT_ALL_FLOATING (CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS)
-#else
 #define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
-#endif
 
 #if defined(XSTATE_SUPPORTED) && defined(HOST_ARM64) && !defined(TARGET_FREEBSD) && !defined(__APPLE__)
 static inline bool IsValidSveVectorLengthInBytes(DWORD vectorLengthInBytes)
@@ -107,23 +103,6 @@ typedef int __ptrace_request;
     ASSIGN_REG(R13)     \
     ASSIGN_REG(R14)     \
     ASSIGN_REG(R15)     \
-
-#elif defined(HOST_X86)
-#define ASSIGN_CONTROL_REGS \
-    ASSIGN_REG(Ebp)     \
-    ASSIGN_REG(Eip)     \
-    ASSIGN_REG(SegCs)   \
-    ASSIGN_REG(EFlags)  \
-    ASSIGN_REG(Esp)     \
-    ASSIGN_REG(SegSs)   \
-
-#define ASSIGN_INTEGER_REGS \
-    ASSIGN_REG(Edi)     \
-    ASSIGN_REG(Esi)     \
-    ASSIGN_REG(Ebx)     \
-    ASSIGN_REG(Edx)     \
-    ASSIGN_REG(Ecx)     \
-    ASSIGN_REG(Eax)     \
 
 #elif defined(HOST_ARM)
 #define ASSIGN_CONTROL_REGS \
@@ -1363,8 +1342,6 @@ LPVOID GetNativeContextPC(const native_context_t *context)
 {
 #ifdef HOST_AMD64
     return (LPVOID)MCREG_Rip(MCONTEXT_FROM_NATIVE(context));
-#elif defined(HOST_X86)
-    return (LPVOID) MCREG_Eip(context->uc_mcontext);
 #elif defined(HOST_S390X)
     return (LPVOID) MCREG_PSWAddr(context->uc_mcontext);
 #elif defined(HOST_POWERPC64)
@@ -1391,8 +1368,6 @@ LPVOID GetNativeContextSP(const native_context_t *context)
 {
 #ifdef HOST_AMD64
     return (LPVOID)MCREG_Rsp(MCONTEXT_FROM_NATIVE(context));
-#elif defined(HOST_X86)
-    return (LPVOID) MCREG_Esp(context->uc_mcontext);
 #elif defined(HOST_S390X)
     return (LPVOID) MCREG_R15(context->uc_mcontext);
 #elif defined(HOST_POWERPC64)

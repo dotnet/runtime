@@ -87,6 +87,9 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__S1 == offsetof(T_CONTEXT, S1));
 #define OFFSETOF__CONTEXT__S2         0x98
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__S2 == offsetof(T_CONTEXT, S2));
 
+#define OFFSETOF__CONTEXT__F          0x110
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__F == offsetof(T_CONTEXT, F));
+
 //=========================================
 #define               OFFSETOF__MethodTable__m_dwFlags    0x0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));

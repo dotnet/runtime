@@ -26,7 +26,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/utils.h"
 #include "pal/context.h"
 #include "pal/process.h"
-#include "pal/map.hpp"
 #include "pal/environ.h"
 
 #include <minipal/debugger.h>

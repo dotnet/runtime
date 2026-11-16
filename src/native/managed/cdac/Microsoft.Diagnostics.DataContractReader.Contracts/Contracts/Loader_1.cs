@@ -374,7 +374,7 @@ internal readonly struct Loader_1 : ILoader
         return true;
     }
 
-    IEnumerable<TargetPointer> ILoader.GetAvailableTypeParams(ModuleHandle handle)
+    IEnumerable<TargetPointer> ILoader.GetAvailableTypeParams(ModuleHandle handle, uint? hash)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
 
@@ -382,7 +382,10 @@ internal readonly struct Loader_1 : ILoader
             return [];
 
         EETypeHashTable typeHashTable = _target.ProcessedData.GetOrAdd<EETypeHashTable>(module.AvailableTypeParams);
-        return typeHashTable.Entries.Select(entry => entry.TypeHandle);
+        IEnumerable<EETypeHashTable.Entry> entries = hash is uint hashValue
+            ? typeHashTable.Lookup(hashValue)
+            : typeHashTable.Entries;
+        return entries.Select(entry => entry.TypeHandle);
     }
 
     IEnumerable<TargetPointer> ILoader.GetInstantiatedMethods(ModuleHandle handle)

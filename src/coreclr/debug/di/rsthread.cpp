@@ -140,8 +140,8 @@ void CordbThread::Neuter()
     }
 
     // Free the RS context cache buffer now (Neuter), so the destructor's
-    // m_pContext == NULL invariant holds. Clear() releases and resets to NULL.
-    m_pContext.Clear();
+    // m_pContext == NULL invariant holds. Free() releases and resets to NULL.
+    m_pContext.Free();
 
     ClearStackFrameCache();
 
@@ -328,7 +328,7 @@ void CordbThread::CreateCordbRegisterSet(ContextBuffer           contextBuffer,
                                                             (fLeaf == TRUE),
                                                             (reason == CHAIN_ENTER_MANAGED),
                                                             true));
-    pContextBuffer.SuppressRelease();
+    pContextBuffer.Detach();
 
     pRS.TransferOwnershipExternal(ppRegSet);
 }
@@ -1160,7 +1160,7 @@ HRESULT CordbThread::GetRegisterSet(ICorDebugRegisterSet ** ppRegisters)
                                                                         true,   // active
                                                                         false,  // !fQuickUnwind
                                                                         true)); // own context buffer
-                pContextBuffer.SuppressRelease();
+                pContextBuffer.Detach();
 
                 pRS.TransferOwnershipExternal(ppRegisters);
             }
@@ -1541,7 +1541,7 @@ HRESULT CordbThread::GetManagedContext(ContextBuffer * pContextBuffer)
 
             // The thread we're examining IS handling an exception, So grab the CONTEXT of the exception, NOT the
             // currently executing thread's CONTEXT (which would be the context of the exception handler.)
-            ContextBuffer managedContext = { m_pContext.GetValue(), GetProcess()->GetTargetContextSize() };
+            ContextBuffer managedContext = { m_pContext, GetProcess()->GetTargetContextSize() };
             hr = GetProcess()->SafeReadThreadContext(m_vmLeftSideContext, managedContext);
             IfFailThrow(hr);
         }
@@ -5824,7 +5824,7 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
         // Provide the register info as we create the value. CreateValueByType will transfer ownership of this to
         // the new instance of CordbValue.
         EnregisteredValueHomeHolder pRemoteReg(new RegValueHome(this, reg));
-        EnregisteredValueHomeHolder * pRegHolder = pRemoteReg.GetAddr();
+        EnregisteredValueHomeHolder * pRegHolder = std::addressof(pRemoteReg);
 
         ICorDebugValue *pValue;
         CordbValue::CreateValueByType(GetCurrentAppDomain(),
@@ -5859,7 +5859,7 @@ HRESULT CordbNativeFrame::GetLocalDoubleRegisterValue(
         // Provide the register info as we create the value. CreateValueByType will transfer ownership of this to
         // the new instance of CordbValue.
         EnregisteredValueHomeHolder pRemoteReg(new RegRegValueHome(this, highWordReg, lowWordReg));
-        EnregisteredValueHomeHolder * pRegHolder = pRemoteReg.GetAddr();
+        EnregisteredValueHomeHolder * pRegHolder = std::addressof(pRemoteReg);
 
         CordbValue::CreateValueByType(GetCurrentAppDomain(),
                                       pType,
@@ -5965,7 +5965,7 @@ CordbNativeFrame::GetLocalRegisterMemoryValue(CorDebugRegister highWordReg,
         EnregisteredValueHomeHolder pRemoteReg(new RegMemValueHome(this,
                                                                    highWordReg,
                                                                    lowWordAddress));
-        EnregisteredValueHomeHolder * pRegHolder = pRemoteReg.GetAddr();
+        EnregisteredValueHomeHolder * pRegHolder = std::addressof(pRemoteReg);
 
         CordbValue::CreateValueByType(GetCurrentAppDomain(),
                                       pType,
@@ -6013,7 +6013,7 @@ CordbNativeFrame::GetLocalMemoryRegisterValue(CORDB_ADDRESS highWordAddress,
         EnregisteredValueHomeHolder pRemoteReg(new MemRegValueHome(this,
                                                                    lowWordRegister,
                                                                    highWordAddress));
-        EnregisteredValueHomeHolder * pRegHolder = pRemoteReg.GetAddr();
+        EnregisteredValueHomeHolder * pRegHolder = std::addressof(pRemoteReg);
 
         CordbValue::CreateValueByType(GetCurrentAppDomain(),
                                       pType,
@@ -6111,7 +6111,7 @@ HRESULT CordbNativeFrame::GetLocalFloatingPointValue(DWORD index,
         // Provide the register info as we create the value. CreateValueByType will transfer ownership of this to
         // the new instance of CordbValue.
         EnregisteredValueHomeHolder pRemoteReg(new FloatRegValueHome(this, index, regNum));
-        EnregisteredValueHomeHolder * pRegHolder = pRemoteReg.GetAddr();
+        EnregisteredValueHomeHolder * pRegHolder = std::addressof(pRemoteReg);
 
         CordbValue::CreateValueByType(GetCurrentAppDomain(),
                                       pType,
@@ -6196,7 +6196,7 @@ HRESULT CordbNativeFrame::GetLocalTwoRegisterValue(DWORD            lowReg,
         // 16-byte snapshot so the value's object copy can be populated and so the home can
         // be cloned for read-only field access (writing back is not supported).
         EnregisteredValueHomeHolder pRemoteReg(new TwoRegisterValueHome(this, valueBuffer, sizeof(valueBuffer)));
-        EnregisteredValueHomeHolder * pRegHolder = pRemoteReg.GetAddr();
+        EnregisteredValueHomeHolder * pRegHolder = std::addressof(pRemoteReg);
 
         CordbValue::CreateValueByType(GetCurrentAppDomain(),
                                       pType,
@@ -6728,10 +6728,8 @@ void CordbJITILFrame::LoadGenericArgs()
     }
 
     // initialize the generics information
-    m_genericArgs = Instantiation(cTotalGenericTypeParams, ppGenericArgs, cGenericClassTypeParams);
+    m_genericArgs = Instantiation(cTotalGenericTypeParams, ppGenericArgs.Detach(), cGenericClassTypeParams);
     m_genericArgsLoaded = true;
-
-    ppGenericArgs.SuppressRelease();
 }
 
 
@@ -10678,8 +10676,6 @@ void CordbAsyncFrame::LoadGenericArgs()
     }
 
     // initialize the generics information
-    m_genericArgs = Instantiation(cTotalGenericTypeParams, ppGenericArgs, cGenericClassTypeParams);
+    m_genericArgs = Instantiation(cTotalGenericTypeParams, ppGenericArgs.Detach(), cGenericClassTypeParams);
     m_genericArgsLoaded = true;
-
-    ppGenericArgs.SuppressRelease();
 }

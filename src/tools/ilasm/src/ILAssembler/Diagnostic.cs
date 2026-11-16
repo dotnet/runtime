@@ -82,6 +82,7 @@ public static class DiagnosticIds
     public const string InvalidSequencePoint = "ILA0061";
     public const string DuplicateEntryPoint = "ILA0063";
     public const string InstanceEntryPoint = "ILA0064";
+    public const string DuplicateExportedType = "ILA0065";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -154,4 +155,5 @@ internal static class DiagnosticMessageTemplates
     public const string DuplicateEntryPoint = "Multiple entry points declared";
     public const string InstanceEntryPoint = "Entry point method must be static";
     public const string DuplicateField = "Duplicate field definition '{0}'";
+    public const string DuplicateExportedType = "Duplicate exported type '{0}'";
 }

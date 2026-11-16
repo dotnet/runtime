@@ -859,13 +859,6 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
             useType           = TYP_UNKNOWN;
         }
     }
-#elif UNIX_X86_ABI
-    if (callConv != CorInfoCallConvExtension::Managed && !isNativePrimitiveStructType(clsHnd))
-    {
-        canReturnInRegister = false;
-        howToReturnStruct   = SPK_ByReference;
-        useType             = TYP_UNKNOWN;
-    }
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
