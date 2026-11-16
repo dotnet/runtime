@@ -17,7 +17,7 @@ namespace Internal.TypeSystem
             {
                 int alignment = optimumFunctionAlignment.Value;
                 if (!BitOperations.IsPow2(alignment) || alignment < MinimumFunctionAlignment)
-                    throw new ArgumentOutOfRangeException(nameof(optimumFunctionAlignment), alignment, $"Function alignment must be a power of two no less than {MinimumFunctionAlignment}");
+                    throw new ArgumentOutOfRangeException(nameof(optimumFunctionAlignment));
                 OptimumFunctionAlignment = alignment;
             }
         }
