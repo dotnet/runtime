@@ -18,7 +18,7 @@ internal sealed partial class CountingAssemblyProvider : JSExportProvider
 {
     private int _asyncBindAttempts;
 
-    public CountingAssemblyProvider() => Console.WriteLine("TestOutput -> lazy:constructor");
+    public CountingAssemblyProvider() => TestOutput.WriteLine("lazy:constructor");
 
     [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(CountingAssemblyProvider))]
     public override ReadOnlySpan<string> GetExportNames()
@@ -26,6 +26,7 @@ internal sealed partial class CountingAssemblyProvider : JSExportProvider
         RegisterSignature(this, [JSMarshalerType.Int32, JSMarshalerType.Int32, JSMarshalerType.Int32]);
         RegisterSignature(this, [JSMarshalerType.Int32]);
         RegisterSignature(this, [JSMarshalerType.Task(JSMarshalerType.Int32), JSMarshalerType.Int32]);
+        // This handwritten provider uses synthetic hashes that only need to match Bind.
         return new string[]
         {
             "[CountingLibrary]AssemblyProviderTest.CountingExports:Add#1",
@@ -42,7 +43,7 @@ internal sealed partial class CountingAssemblyProvider : JSExportProvider
         switch (methodId)
         {
             case "0":
-                Console.WriteLine("TestOutput -> lazy:bind");
+                TestOutput.WriteLine("lazy:bind");
                 ProbeBindingReentry();
                 JSFunctionBinding.BindManagedFunction(
                     "[CountingLibrary]AssemblyProviderTest.CountingExports:Add", 1,

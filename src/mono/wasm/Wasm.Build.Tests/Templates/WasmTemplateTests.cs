@@ -6,11 +6,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using SL = Microsoft.Build.Logging.StructuredLogger;
 
 #nullable enable
 
@@ -369,18 +371,7 @@ namespace Wasm.Build.Tests
         public async Task LibraryMode(bool useWasmSdk, bool isPublish)
         {
             var config = Configuration.Release;
-            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode",
-                insertAtEnd: """
-                    <Target Name="VerifyLibraryTypeMapEntryAssembly" AfterTargets="PrepareForILLink">
-                      <PropertyGroup>
-                        <_TypeMapEntryAssemblyArgumentCount>$([System.Text.RegularExpressions.Regex]::Matches('$(_ExtraTrimmerArgs)', '--typemap-entry-assembly\b').Count)</_TypeMapEntryAssemblyArgumentCount>
-                      </PropertyGroup>
-                      <Error Condition="'$(_TypeMapEntryAssemblyArgumentCount)' != '1'"
-                             Text="Library publishing must forward exactly one type-map entry assembly to ILLink." />
-                      <Error Condition="!$([System.String]::Copy('$(_ExtraTrimmerArgs)').Contains('--typemap-entry-assembly &quot;$(AssemblyName)&quot;'))"
-                             Text="Library publishing must use the library assembly as its type-map entry assembly." />
-                    </Target>
-                    """);
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode");
             if (!useWasmSdk)
             {
                 UpdateFile($"{info.ProjectName}.csproj", new Dictionary<string, string>() {
@@ -394,6 +385,25 @@ namespace Wasm.Build.Tests
                 PublishProject(info, config, new PublishOptions(AssertAppBundle: useWasmSdk));
             else
                 BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk));
+
+            if (useWasmSdk && isPublish)
+            {
+                SL.Build build = SL.BinaryLog.ReadBuild(Path.Combine(_logPath, $"{info.ProjectName}-publish.binlog"));
+                List<string> linkerArgs = [];
+                build.VisitAllChildren<SL.Task>(task =>
+                {
+                    if (task.Name != "ILLink")
+                        return;
+                    task.VisitAllChildren<SL.Property>(parameter =>
+                    {
+                        if (parameter.Name == "ExtraArgs")
+                            linkerArgs.Add(parameter.Value);
+                    });
+                });
+                string args = Assert.Single(linkerArgs);
+                Match entryAssembly = Assert.Single(Regex.Matches(args, """--typemap-entry-assembly\s+(?:"([^"]+)"|(\S+))""").Cast<Match>());
+                Assert.Equal(info.ProjectName, entryAssembly.Groups[1].Success ? entryAssembly.Groups[1].Value : entryAssembly.Groups[2].Value);
+            }
 
             if (useWasmSdk)
             {

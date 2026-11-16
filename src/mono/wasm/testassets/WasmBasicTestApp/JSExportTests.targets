@@ -1,0 +1,25 @@
+<Project>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'WasmBasicTestApp' and '$(TestJSExportProviders)' == 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Library\Library.csproj" AdditionalProperties="TestJSExportProviders=true" />
+    <!-- The provider links TestOutput, which the app also compiles. Keep that duplicate type out of its global namespace. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)CountingLibrary\CountingLibrary.csproj" Aliases="CountingLibrary" />
+    <BlazorWebAssemblyLazyLoad Include="Library$(WasmAssemblyExtension)" />
+    <BlazorWebAssemblyLazyLoad Include="CountingLibrary$(WasmAssemblyExtension)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'WasmBasicTestApp' and '$(TestLegacyExports)' == 'true'">
+    <Reference Include="LegacyExports">
+      <HintPath>$(MSBuildThisFileDirectory)LegacyExports\staging\LegacyExports.dll</HintPath>
+    </Reference>
+    <TrimmerRootAssembly Include="LegacyExports" />
+  </ItemGroup>
+
+  <!-- Child libraries have no browser RID, so the harness's browser runtime overrides do not select their generator. -->
+  <Target Name="UseCurrentJSExportTargetingPack" BeforeTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <KnownFrameworkReference Update="@(KnownFrameworkReference)"
+                               Condition="'%(KnownFrameworkReference.Identity)' == 'Microsoft.NETCore.App' and '%(KnownFrameworkReference.TargetFramework)' == 'net12.0'">
+        <TargetingPackVersion>$(RUNTIME_PACK_VER12)</TargetingPackVersion>
+      </KnownFrameworkReference>
+    </ItemGroup>
+  </Target>
+</Project>

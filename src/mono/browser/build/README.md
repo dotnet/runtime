@@ -10,6 +10,11 @@ ILLink forwards this root at target execution time so late WebAssembly imports
 also work for library-mode applications without a managed entry point. Until that
 ILLink fix flows through supported SDKs, a shared compatibility target supplies
 the argument for in-tree, local-build, and packaged SDK paths without duplicating it.
+The shared JSExport trimming configuration is imported by the Browser SDK and by
+in-tree/local-build adapters, independently of native relinking or workloads.
+Production targets use packaged sibling files; checkout paths stay in those adapters.
+`WASM-TODO` issue [#137651](https://github.com/dotnet/runtime/issues/137651) tracks
+removing the compatibility forwarding after SDK flow, not the functional trimming roots.
 
 Runtime discovery reads only the requested assembly's local type map, including
 its ReadyToRun map when available. It does not follow assembly-target edges or

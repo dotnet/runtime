@@ -119,8 +119,8 @@ Managed JSON parsing remains the consumer's responsibility.
 
 `WasmTemplateTests.LibraryMode` verifies build and publish for libraries with and
 without the WebAssembly SDK. Trimmed publishing checks that exactly one
-`--typemap-entry-assembly` argument names the library, then invokes its JSExport
-without relying on a managed entry point.
+`--typemap-entry-assembly` argument names the library in the publish binlog's
+`ILLink` task `ExtraArgs`, then invokes its JSExport without a managed entry point.
 
 Blazor specific tests should be located in `Blazor` directory. New test classes are picked up automatically - the per-class Helix work item list is generated from the built test assembly, so there is no list to update. Annotate classes and test methods that only apply to one runtime with `[TestCategory("mono")]` or `[TestCategory("coreclr")]`, and they will be left out of the other flavor's runs. If you are adding a new test to an existing class, make sure it does not prolong the execution time significantly. Tests run on parallel on CI and having one class running much longer than the average prolongs the total execution time.
 
@@ -131,9 +131,13 @@ Native relinking tests can run on both runtimes. For theories that also cover Mo
 targeting pack, without the in-tree pack overrides, then references its DLL from a trimmed
 current-framework browser app. The targeting pack (including its generator) is restored as needed;
 no legacy SDK or browser workload is required. It also tests `net11.0` with the pinned
-`11.0.0-rc.1.26425.128` targeting pack and generator. Both legacy libraries are built
+`11.0.0` targeting pack and generator. Both legacy libraries are built
 separately and referenced unchanged by the current app. The test runs in the `no-workload` CI lane for
 both runtime flavors.
+`WasmBasicTestApp/JSExportTests.targets` opts into the binary reference and trimming
+root. Legacy compilation remains isolated from parent build imports and stages
+the unchanged DLL under `LegacyExports/staging`. Its build binlog is written to
+the test log directory and uploaded as a Helix artifact.
 
 `LibraryInitializerTests.JSExportFromAssemblyProvider` checks a library reached only from
 JavaScript through one generated type-map provider per assembly. Both provider libraries
@@ -151,6 +155,14 @@ assembly-local lookup required by JSExports. Signature metadata is
 published during discovery, while marshalers and managed callbacks remain lazy.
 Private and protected nested exports exercise generated unsafe accessors on both
 runtimes, including trimmed publication.
+The existing `WasmBasicTestApp` hosts these scenarios through an opt-in targets
+file and a separate `js-export-tests.js` module. Its existing HTML, runtime
+bootstrap, and TestOutput helper are reused. The counting project and provider
+references are enabled only by `TestJSExportProviders`; legacy references use
+`TestLegacyExports`, leaving unrelated scenarios unchanged.
+Child libraries explicitly select the current targeting pack because they have no
+browser RID. Detailed generated-source assertions live in the generator unit tests;
+WBT verifies behavior, not generated implementation spelling.
 
 `Blazor.AssetCachingTests` exercises the browser HTTP cache using the hosted
 `BlazorWebWasm` test asset. Its recovery cases seed cacheable invalid boot
