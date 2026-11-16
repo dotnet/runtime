@@ -2354,8 +2354,6 @@ bool StackFrameIterator::IsNonEHThunk(ReturnAddressCategory category)
 
 bool StackFrameIterator::IsValidReturnAddress(PTR_VOID pvAddress)
 {
-    pvAddress = dac_cast<PTR_VOID>(ReturnAddressToCanonicalPC(dac_cast<TADDR>(pvAddress)));
-
     // These are return addresses into functions that call into managed (non-funclet) code, so we might see
     // them as hijacked return addresses.
     ReturnAddressCategory category = CategorizeUnadjustedReturnAddress(pvAddress);
