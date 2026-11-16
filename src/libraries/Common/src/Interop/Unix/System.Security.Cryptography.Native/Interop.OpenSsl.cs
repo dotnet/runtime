@@ -693,7 +693,13 @@ internal static partial class Interop
             {
                 Exception? ex = GetSslError(ret, errorCode);
 
-                SecurityStatusPalErrorCode palErrorCode = (ex?.HResult & 0X7FFFFF) switch
+                // OpenSSL errors surface as CryptographicException with the packed error code as the HResult;
+                // one raised with an empty error queue keeps the default HResult, which decodes to -1.
+                int reason = ex is CryptographicException ?
+                    GetSslLibraryReason((uint)ex.HResult, isOpenSsl3: OpenSslVersionNumber() >= 0x3_00_00_00_0) :
+                    -1;
+
+                SecurityStatusPalErrorCode palErrorCode = reason switch
                 {
                     279 /*SSL_R_EXTENSION_NOT_RECEIVED*/ or
                     339 /*SSL_R_NO_RENEGOTIATION*/ => SecurityStatusPalErrorCode.NoRenegotiation,
@@ -1394,6 +1400,19 @@ internal static partial class Interop
             }
 
             return innerError;
+        }
+
+        // Returns the reason code of an OpenSSL error raised by the SSL library, or -1 for an error from
+        // any other library. The packing depends on the loaded OpenSSL, not on the headers the shim was
+        // built with: 1.x uses lib << 24 | func << 12 | reason, 3.0 and later use lib << 23 | reason.
+        // A 3.0 system (errno) error has the top bit set, so it never matches the library check.
+        internal static int GetSslLibraryReason(uint error, bool isOpenSsl3)
+        {
+            const uint ERR_LIB_SSL = 20;
+
+            return isOpenSsl3 ?
+                ((error >> 23) == ERR_LIB_SSL ? (int)(error & 0x7F_FFFF) : -1) :
+                ((error >> 24) == ERR_LIB_SSL ? (int)(error & 0xFFF) : -1);
         }
 
         private static void SetSslCertificate(SafeSslContextHandle contextPtr, SafeX509Handle certPtr, SafeEvpPKeyHandle keyPtr)

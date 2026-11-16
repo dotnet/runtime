@@ -39,6 +39,11 @@ namespace System.Diagnostics
             nint outputOverlappedNint = 0, errorOverlappedNint = 0;
             EventWaitHandle? outputEvent = null, errorEvent = null;
             bool outputDone = true, errorDone = true;
+            // Tracks whether a ReadFile is actually outstanding on each overlapped, independent of
+            // outputDone/errorDone (which track end-of-stream). A stream can be "not done" while
+            // nothing is pending, e.g. if QueueRead throws right after the overlapped was reset.
+            // CancelPendingIOIfNeeded in the finally block must only act when this is true.
+            bool outputPending = false, errorPending = false;
 
             try
             {
@@ -66,11 +71,13 @@ namespace System.Diagnostics
 
                 unsafe
                 {
-                    outputDone = !QueueRead(outputHandle, outputPin.GetAddressOfArrayData(),
+                    outputPending = QueueRead(outputHandle, outputPin.GetAddressOfArrayData(),
                         outputByteBuffer.Length, (NativeOverlapped*)outputOverlappedNint, outputEvent);
-                    errorDone = !QueueRead(errorHandle, errorPin.GetAddressOfArrayData(),
+                    errorPending = QueueRead(errorHandle, errorPin.GetAddressOfArrayData(),
                         errorByteBuffer.Length, (NativeOverlapped*)errorOverlappedNint, errorEvent);
                 }
+                outputDone = !outputPending;
+                errorDone = !errorPending;
 
                 long deadline = timeoutMs >= 0 ? Environment.TickCount64 + timeoutMs : long.MaxValue;
                 List<ProcessOutputLine> lines = new();
@@ -95,6 +102,18 @@ namespace System.Diagnostics
                     unsafe
                     {
                         bytesRead = GetOverlappedResultForPipe(currentHandle, (NativeOverlapped*)currentOverlappedNint);
+                    }
+
+                    // The in-flight read has completed and been observed; nothing is pending on this
+                    // overlapped until the QueueRead call below (if any) succeeds. Use explicit
+                    // branching rather than a ref local since ref locals can't span a yield point.
+                    if (isError)
+                    {
+                        errorPending = false;
+                    }
+                    else
+                    {
+                        outputPending = false;
                     }
 
                     if (bytesRead > 0)
@@ -143,9 +162,20 @@ namespace System.Diagnostics
                                 ? errorByteBuffer.Length - unconsumedErrorBytesCount
                                 : outputByteBuffer.Length - unconsumedOutputBytesCount;
 
-                            if (!QueueRead(currentHandle, pinPointer,
+                            if (QueueRead(currentHandle, pinPointer,
                                 currentByteLength,
                                 (NativeOverlapped*)currentOverlappedNint, currentEvent))
+                            {
+                                if (isError)
+                                {
+                                    errorPending = true;
+                                }
+                                else
+                                {
+                                    outputPending = true;
+                                }
+                            }
+                            else
                             {
                                 bytesRead = 0; // EOF during QueueRead
                             }
@@ -183,13 +213,13 @@ namespace System.Diagnostics
                 {
                     if (outputOverlappedNint != 0)
                     {
-                        CancelPendingIOIfNeeded(outputHandle, outputDone, (NativeOverlapped*)outputOverlappedNint);
+                        CancelPendingIOIfNeeded(outputHandle, outputPending, (NativeOverlapped*)outputOverlappedNint);
                         NativeMemory.Free((void*)outputOverlappedNint);
                     }
 
                     if (errorOverlappedNint != 0)
                     {
-                        CancelPendingIOIfNeeded(errorHandle, errorDone, (NativeOverlapped*)errorOverlappedNint);
+                        CancelPendingIOIfNeeded(errorHandle, errorPending, (NativeOverlapped*)errorOverlappedNint);
                         NativeMemory.Free((void*)errorOverlappedNint);
                     }
                 }
@@ -222,6 +252,12 @@ namespace System.Diagnostics
             PinnedGCHandle<byte[]> outputPin = default, errorPin = default;
             NativeOverlapped* outputOverlapped = null, errorOverlapped = null;
             EventWaitHandle? outputEvent = null, errorEvent = null;
+            bool outputDone = true, errorDone = true;
+            // Tracks whether a ReadFile is actually outstanding on each overlapped, independent of
+            // outputDone/errorDone (which track end-of-stream). A stream can be "not done" while
+            // nothing is pending, e.g. if QueueRead throws right after the overlapped was reset.
+            // CancelPendingIOIfNeeded in the finally block must only act when this is true.
+            bool outputPending = false, errorPending = false;
 
             try
             {
@@ -238,8 +274,10 @@ namespace System.Diagnostics
                 WaitHandle[] waitHandles = [errorEvent, outputEvent];
 
                 // Issue initial reads.
-                bool outputDone = !QueueRead(outputHandle, outputPin.GetAddressOfArrayData(), outputBuffer.Length, outputOverlapped, outputEvent);
-                bool errorDone = !QueueRead(errorHandle, errorPin.GetAddressOfArrayData(), errorBuffer.Length, errorOverlapped, errorEvent);
+                outputPending = QueueRead(outputHandle, outputPin.GetAddressOfArrayData(), outputBuffer.Length, outputOverlapped, outputEvent);
+                errorPending = QueueRead(errorHandle, errorPin.GetAddressOfArrayData(), errorBuffer.Length, errorOverlapped, errorEvent);
+                outputDone = !outputPending;
+                errorDone = !errorPending;
 
                 long deadline = timeoutMs >= 0
                     ? Environment.TickCount64 + timeoutMs
@@ -254,9 +292,6 @@ namespace System.Diagnostics
 
                     if (waitResult == WaitHandle.WaitTimeout)
                     {
-                        CancelPendingIOIfNeeded(outputHandle, outputDone, outputOverlapped);
-                        CancelPendingIOIfNeeded(errorHandle, errorDone, errorOverlapped);
-
                         throw new TimeoutException();
                     }
 
@@ -266,8 +301,13 @@ namespace System.Diagnostics
                     ref int totalBytesRead = ref (isError ? ref errorBytesRead : ref outputBytesRead);
                     ref byte[] currentBuffer = ref (isError ? ref errorBuffer : ref outputBuffer);
                     EventWaitHandle currentEvent = isError ? errorEvent : outputEvent;
+                    ref bool currentPending = ref (isError ? ref errorPending : ref outputPending);
 
                     int bytesRead = GetOverlappedResultForPipe(currentHandle, currentOverlapped);
+
+                    // The in-flight read has completed and been observed; nothing is pending on this
+                    // overlapped until the QueueRead call below (if any) succeeds.
+                    currentPending = false;
 
                     if (bytesRead > 0)
                     {
@@ -286,8 +326,12 @@ namespace System.Diagnostics
                         ResetOverlapped(currentEvent, currentOverlapped);
 
                         byte* pinPointer = isError ? errorPin.GetAddressOfArrayData() : outputPin.GetAddressOfArrayData();
-                        if (!QueueRead(currentHandle, pinPointer + totalBytesRead,
+                        if (QueueRead(currentHandle, pinPointer + totalBytesRead,
                             currentBuffer.Length - totalBytesRead, currentOverlapped, currentEvent))
+                        {
+                            currentPending = true;
+                        }
+                        else
                         {
                             if (isError)
                             {
@@ -323,11 +367,13 @@ namespace System.Diagnostics
             {
                 if (outputOverlapped is not null)
                 {
+                    CancelPendingIOIfNeeded(outputHandle, outputPending, outputOverlapped);
                     NativeMemory.Free(outputOverlapped);
                 }
 
                 if (errorOverlapped is not null)
                 {
+                    CancelPendingIOIfNeeded(errorHandle, errorPending, errorOverlapped);
                     NativeMemory.Free(errorOverlapped);
                 }
 
@@ -379,10 +425,13 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Cancels a pending overlapped I/O and waits for completion before returning.
+        /// <paramref name="pending"/> must reflect whether a ReadFile is actually outstanding on
+        /// <paramref name="overlapped"/> (i.e. QueueRead was called and hasn't been observed via
+        /// GetOverlappedResult yet), not merely whether the stream has reached EOF.
         /// </summary>
-        private static unsafe void CancelPendingIOIfNeeded(SafeFileHandle handle, bool done, NativeOverlapped* overlapped)
+        private static unsafe void CancelPendingIOIfNeeded(SafeFileHandle handle, bool pending, NativeOverlapped* overlapped)
         {
-            if (done)
+            if (!pending)
             {
                 return;
             }

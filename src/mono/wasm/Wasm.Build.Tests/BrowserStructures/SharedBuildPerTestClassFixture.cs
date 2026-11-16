@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Threading;
 
 #nullable enable
 
@@ -52,14 +53,27 @@ namespace Wasm.Build.Tests
             if (EnvironmentVariables.SkipProjectCleanup == "1")
                 return;
 
-            try
+            // On Windows, a recently killed process (e.g. a web server whose working directory
+            // is inside the build output) can keep handles open briefly, so retry transient failures.
+            const int maxAttempts = 10;
+            for (int attempt = 1; ; attempt++)
             {
-                Directory.Delete(path, recursive: true);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Failed to delete '{path}' during test cleanup: {ex}");
-                throw;
+                try
+                {
+                    if (Directory.Exists(path))
+                        Directory.Delete(path, recursive: true);
+                    return;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException && attempt < maxAttempts)
+                {
+                    Console.WriteLine($"Attempt {attempt} to delete '{path}' failed, retrying: {ex.Message}");
+                    Thread.Sleep(TimeSpan.FromSeconds(1));
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Failed to delete '{path}' during test cleanup: {ex}");
+                    throw;
+                }
             }
         }
 
