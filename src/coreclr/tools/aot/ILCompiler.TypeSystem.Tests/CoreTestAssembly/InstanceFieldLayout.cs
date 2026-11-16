@@ -8,41 +8,6 @@ using System.Runtime.Intrinsics;
 
 #pragma warning disable 169
 
-namespace WasmLayout
-{
-    public unsafe struct NativeFields
-    {
-        public byte prefix;
-        public IntPtr signed;
-        public UIntPtr unsigned;
-        public int* pointer;
-        public delegate*<int, int> callback;
-        public int token;
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct PackedNativeFields
-    {
-        public byte prefix;
-        public IntPtr pointer;
-        public int token;
-    }
-
-    public struct ReferenceFields
-    {
-        public object first;
-        public int token;
-        public int[] array;
-    }
-
-    public struct GenericFields<T>
-    {
-        public byte prefix;
-        public T value;
-        public int token;
-    }
-}
-
 namespace ContainsGCPointers
 {
     public struct NoPointers
