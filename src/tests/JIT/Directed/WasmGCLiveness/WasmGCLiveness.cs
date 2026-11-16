@@ -125,9 +125,7 @@ public class WasmGCLiveness
     {
         Box x = MakeTracked(101, out WeakReference<Box> weak);
         CollectAndVerifyAlive(weak);
-        int result = x.Value;
-        GC.KeepAlive(x);
-        return result;
+        return x.Value;
     }
 
     // The interior byref survives collection even though the source local need not.
@@ -300,9 +298,7 @@ public class WasmGCLiveness
     private static int ReadReferenceParameter(Box value, WeakReference<Box> weak)
     {
         CollectAndVerifyAlive(weak);
-        int result = value.Value;
-        GC.KeepAlive(value);
-        return result;
+        return value.Value;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -327,10 +323,7 @@ public class WasmGCLiveness
         pair.Second = MakeTracked(2102, out WeakReference<Box> second);
         CollectAndVerifyAlive(first);
         CollectAndVerifyAlive(second);
-        int result = pair.First.Value + pair.Second.Value;
-        GC.KeepAlive(pair.First);
-        GC.KeepAlive(pair.Second);
-        return result;
+        return pair.First.Value + pair.Second.Value;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -370,7 +363,6 @@ public class WasmGCLiveness
 
         CollectAndVerifyAlive(weak);
         Assert.Equal(1804, x.Value);
-        GC.KeepAlive(x);
     }
 
     [Theory]

@@ -817,7 +817,18 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     if (m_compiler->lvaGetDesc(lclNode)->lvWasmGCWriteThru)
     {
         assert(lclNode->OperIs(GT_STORE_LCL_VAR) && varTypeIsGC(storeType));
-        // The adjacent local.set/get folds to local.tee, preserving both homes.
+        // Before:                         After:
+        //
+        //                                 addr = LCL_ADDR dst
+        // ... RHS evaluation ...          ... RHS evaluation ...
+        // rhs = ...                       rhs = ...
+        // STORE_LCL_VAR dst(rhs)           STORE_LCL_VAR dst(rhs)
+        //                                 cached = LCL_VAR dst
+        //                                 STOREIND(addr, cached)
+        //
+        // The address precedes the first RHS node so it sits below the value on the Wasm stack.
+        // The retained local definition updates the cache; the final store updates its pinned home.
+        // The adjacent local.set/get folds to local.tee.
         addr  = m_compiler->gtNewLclAddrNode(lclNode->GetLclNum(), 0);
         value = m_compiler->gtNewLclVarNode(lclNode->GetLclNum(), storeType);
         CurrentRange().InsertAfter(lclNode, value);
