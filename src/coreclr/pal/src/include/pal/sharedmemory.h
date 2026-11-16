@@ -11,24 +11,16 @@
 #define static_assert_no_msg( cond ) static_assert( cond, #cond )
 #endif // !static_assert_no_msg
 
-// The folder used for storing shared memory files and their lock files is defined in
-// the gSharedFilesPath global variable. The value of the variable depends on which
-// OS is being used, and if the application is running in a sandbox in Mac.
-// gSharedFilesPath ends with '/'
-// - Global shared memory files go in:
-//     {gSharedFilesPath}/.dotnet/shm/global/<fileName>
-// - Session-scoped shared memory files go in:
-//     {gSharedFilesPath}/.dotnet/shm/session<sessionId>/<fileName>
-// - Lock files associated with global shared memory files go in:
-//     {gSharedFilesPath}/.dotnet/lockfiles/global/<fileName>
-// - Lock files associated with session-scoped shared memory files go in:
-//     {gSharedFilesPath}/.dotnet/lockfiles/session<sessionId>/<fileName>
+// Global shared memory files and lock files are stored under gSharedFilesPath:
+//     {gSharedFilesPath}/.dotnet/{shm|lockfiles}/{global|session<sessionId>}/<fileName>
+// User-scoped files use the same layout under a user-specific system directory selected by SharedMemoryHelpers.
+// In an Apple application-group container, user-scoped files use .dotnet-uid to keep the scopes separate.
 
 #define SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT (_MAX_FNAME - 1)
 #define SHARED_MEMORY_MAX_NAME_CHAR_COUNT (STRING_LENGTH("Global\\") + SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT)
 
-#define SHARED_MEMORY_USER_UNSCOPED_RUNTIME_TEMP_DIRECTORY_NAME ".dotnet"
-#define SHARED_MEMORY_USER_SCOPED_RUNTIME_TEMP_DIRECTORY_NAME_PREFIX ".dotnet-uid"
+#define SHARED_MEMORY_RUNTIME_TEMP_DIRECTORY_NAME ".dotnet"
+#define SHARED_MEMORY_USER_RUNTIME_TEMP_DIRECTORY_NAME ".dotnet-uid"
 #define SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_NAME "shm"
 #define SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME "lockfiles"
 static_assert_no_msg(STRING_LENGTH(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) >= STRING_LENGTH(SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_NAME));
@@ -38,11 +30,11 @@ static_assert_no_msg(STRING_LENGTH(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) >= S
 
 #define SHARED_MEMORY_UNIQUE_TEMP_NAME_TEMPLATE ".dotnet.XXXXXX"
 
-// Note that this Max size does not include the prefix folder path size which is unknown (in the case of sandbox) until runtime
+// This maximum does not include the system directory path, which is determined at runtime.
 #define SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT \
     ( \
-        STRING_LENGTH(SHARED_MEMORY_USER_SCOPED_RUNTIME_TEMP_DIRECTORY_NAME_PREFIX) + \
-        11 /* user ID, path separator */ + \
+        STRING_LENGTH(SHARED_MEMORY_USER_RUNTIME_TEMP_DIRECTORY_NAME) + \
+        1 /* path separator */ + \
         STRING_LENGTH(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) + \
         1 /* path separator */ + \
         STRING_LENGTH(SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX) + \
@@ -102,12 +94,19 @@ class SharedMemoryId;
 class SharedMemoryHelpers
 {
 private:
+    static PathCharString *s_userSpecificSharedFilesPath;
+
     static const mode_t PermissionsMask_OwnerUser_ReadWrite;
     static const mode_t PermissionsMask_OwnerUser_ReadWriteExecute;
     static const mode_t PermissionsMask_NonOwnerUsers_Write;
     static const mode_t PermissionsMask_AllUsers_ReadWrite;
     static const mode_t PermissionsMask_AllUsers_ReadWriteExecute;
     static const mode_t PermissionsMask_Sticky;
+
+    static bool AppendPathComponent(PathCharString& path, LPCSTR component);
+    static void CreateDirectory(LPCSTR path, mode_t permissionsMask);
+    static bool GetHomeDirectory(PathCharString& path);
+    static bool InitializeUserSpecificSharedFilesPath();
 public:
     static const UINT32 InvalidProcessId;
     static const SIZE_T InvalidThreadId;
@@ -120,15 +119,23 @@ public:
     static void *Alloc(SIZE_T byteCount);
     static bool AppendUInt32String(PathCharString& destination, UINT32 value);
 
-    static bool EnsureDirectoryExists(SharedMemorySystemCallErrors *errors, const char *path, const SharedMemoryId *id, bool isGlobalLockAcquired, bool createIfNotExist = true, bool isSystemDirectory = false);
+    static bool BuildSharedFilesSystemPath(PathCharString& path, const SharedMemoryId *id);
+    static bool BuildSharedFilesRootPath(PathCharString& path, const SharedMemoryId *id);
+    static bool BuildSharedMemoryDirectoryPath(PathCharString& path, const SharedMemoryId *id);
+    static bool BuildSharedMemorySessionDirectoryName(PathCharString& name, const SharedMemoryId *id);
+    static bool BuildSharedMemorySessionDirectoryPath(PathCharString& path, const SharedMemoryId *id);
+    static bool BuildSharedMemoryLockFilesDirectoryPath(PathCharString& path, const SharedMemoryId *id);
+    static bool BuildSharedMemoryLockFilesSessionDirectoryPath(PathCharString& path, const SharedMemoryId *id);
+
+    static bool EnsureDirectoryExists(SharedMemorySystemCallErrors *errors, const char *path, const SharedMemoryId *id, bool isGlobalLockAcquired, bool createIfNotExist = true);
 private:
     static int Open(SharedMemorySystemCallErrors *errors, LPCSTR path, int flags, mode_t mode = static_cast<mode_t>(0));
+    static int OpenAt(SharedMemorySystemCallErrors *errors, int directoryFileDescriptor, LPCSTR name, LPCSTR path, int flags, mode_t mode = static_cast<mode_t>(0));
 public:
     static int OpenDirectory(SharedMemorySystemCallErrors *errors, LPCSTR path);
-    static int CreateOrOpenFile(SharedMemorySystemCallErrors *errors, LPCSTR path, const SharedMemoryId *id, bool createIfNotExist = true, bool *createdRef = nullptr);
+    static int EnsureDirectoryExistsAt(SharedMemorySystemCallErrors *errors, int parentDirectoryFileDescriptor, LPCSTR name, LPCSTR path, const SharedMemoryId *id, bool createIfNotExist = true);
+    static int CreateOrOpenFileAt(SharedMemorySystemCallErrors *errors, int directoryFileDescriptor, LPCSTR name, LPCSTR path, const SharedMemoryId *id, bool createIfNotExist = true, bool *createdRef = nullptr);
     static void CloseFile(int fileDescriptor);
-
-    static int ChangeMode(LPCSTR path, mode_t mode);
 
     static SIZE_T GetFileSize(SharedMemorySystemCallErrors *errors, LPCSTR filePath, int fileDescriptor);
     static void SetFileSize(SharedMemorySystemCallErrors *errors, LPCSTR filePath, int fileDescriptor, SIZE_T byteCount);
@@ -166,10 +173,6 @@ public:
     bool IsUserScope() const;
     uid_t GetUserScopeUid() const;
     bool Equals(const SharedMemoryId *other) const;
-
-public:
-    bool AppendRuntimeTempDirectoryName(PathCharString& path) const;
-    bool AppendSessionDirectoryName(PathCharString& path) const;
 };
 
 enum class SharedMemoryType : UINT8
@@ -260,19 +263,29 @@ class SharedMemoryManager
 {
 private:
     static minipal_mutex s_creationDeletionProcessLock;
+    static int s_runtimeDirectoryFileDescriptor;
     static int s_creationDeletionLockFileDescriptor;
 
     struct UserScopeUidAndFileDescriptor
     {
         uid_t userScopeUid;
+        int runtimeDirectoryFileDescriptor;
         int fileDescriptor;
 
-        UserScopeUidAndFileDescriptor() : userScopeUid((uid_t)0), fileDescriptor(-1)
+        UserScopeUidAndFileDescriptor()
+            : userScopeUid((uid_t)0),
+            runtimeDirectoryFileDescriptor(-1),
+            fileDescriptor(-1)
         {
         }
 
-        UserScopeUidAndFileDescriptor(uid_t userScopeUid, int fileDescriptor)
-            : userScopeUid(userScopeUid), fileDescriptor(fileDescriptor)
+        UserScopeUidAndFileDescriptor(
+            uid_t userScopeUid,
+            int runtimeDirectoryFileDescriptor,
+            int fileDescriptor)
+            : userScopeUid(userScopeUid),
+            runtimeDirectoryFileDescriptor(runtimeDirectoryFileDescriptor),
+            fileDescriptor(fileDescriptor)
         {
         }
     };
@@ -299,7 +312,13 @@ public:
     static void ReleaseCreationDeletionProcessLock();
     static void AcquireCreationDeletionFileLock(SharedMemorySystemCallErrors *errors, const SharedMemoryId *id);
     static void ReleaseCreationDeletionFileLock(const SharedMemoryId *id);
-    static void AddUserScopeUidCreationDeletionLockFD(uid_t userScopeUid, int creationDeletionLockFD);
+    static int GetRuntimeDirectoryFileDescriptor(const SharedMemoryId *id);
+    static int GetCreationDeletionLockFileDescriptor(const SharedMemoryId *id);
+    static void AddUserScopeUidCreationDeletionLockFD(
+        uid_t userScopeUid,
+        int runtimeDirectoryFileDescriptor,
+        int creationDeletionLockFD);
+    static int FindUserScopeRuntimeDirectoryFD(uid_t userScopeUid);
     static int FindUserScopeCreationDeletionLockFD(uid_t userScopeUid);
 
 #ifdef _DEBUG

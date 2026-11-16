@@ -6,6 +6,7 @@
 // exclusion, abandon detection, etc.
 
 #include <palsuite.h>
+#include <pwd.h>
 
 const char CurrentSessionOnlyPrefix[] = "Local\\";
 const char AllSessionsPrefix[] = "Global\\";
@@ -21,7 +22,7 @@ const char ChildEventNamePrefix0[] = "paltest_namedmutex_test1_ce0_";
 const char ChildEventNamePrefix1[] = "paltest_namedmutex_test1_ce1_";
 const char ChildRunningEventNamePrefix[] = "paltest_namedmutex_test1_cr_";
 
-#define MaxPathSize 200
+#define MaxPathSize 4096
 const DWORD PollLoopSleepMilliseconds = 100;
 const DWORD FailTimeoutMilliseconds = 30000;
 DWORD g_expectedTimeoutMilliseconds = 500;
@@ -107,7 +108,66 @@ char *BuildShmFilePath(const char *testName, char *buffer, const char *namePrefi
     size_t pathLength = 0;
     if (g_currentUserOnly)
     {
-        pathLength += test_snprintf(&buffer[pathLength], MaxPathSize - pathLength, "/tmp/.dotnet-uid%u/shm/", test_geteuid());
+#if defined(__APPLE__)
+        const char *applicationGroupId = getenv("DOTNET_SANDBOX_APPLICATION_GROUP_ID");
+        if (applicationGroupId != nullptr && applicationGroupId[0] != '\0')
+        {
+            const char *homeDirectory = getenv("HOME");
+            if (homeDirectory == nullptr || homeDirectory[0] == '\0')
+            {
+                struct passwd *passwdResult = getpwuid(test_geteuid());
+                homeDirectory = passwdResult == nullptr ? nullptr : passwdResult->pw_dir;
+            }
+            if (homeDirectory == nullptr || homeDirectory[0] == '\0')
+            {
+                return nullptr;
+            }
+            pathLength += test_snprintf(
+                &buffer[pathLength],
+                MaxPathSize - pathLength,
+                "%s/Library/Group Containers/%s/.dotnet/shm/",
+                homeDirectory,
+                applicationGroupId);
+        }
+        else if (const char *tmpDirectory = getenv("TMPDIR");
+                 tmpDirectory != nullptr && tmpDirectory[0] != '\0')
+        {
+            pathLength += test_snprintf(
+                &buffer[pathLength],
+                MaxPathSize - pathLength,
+                "%s/.dotnet/shm/",
+                tmpDirectory);
+        }
+        else
+#elif defined(__linux__)
+        const char *xdgRuntimeDirectory = getenv("XDG_RUNTIME_DIR");
+        if (xdgRuntimeDirectory != nullptr && xdgRuntimeDirectory[0] != '\0')
+        {
+            pathLength += test_snprintf(
+                &buffer[pathLength],
+                MaxPathSize - pathLength,
+                "%s/.dotnet/shm/",
+                xdgRuntimeDirectory);
+        }
+        else
+#endif
+        {
+            const char *homeDirectory = getenv("HOME");
+            if (homeDirectory == nullptr || homeDirectory[0] == '\0')
+            {
+                struct passwd *passwdResult = getpwuid(test_geteuid());
+                homeDirectory = passwdResult == nullptr ? nullptr : passwdResult->pw_dir;
+            }
+            if (homeDirectory == nullptr || homeDirectory[0] == '\0')
+            {
+                return nullptr;
+            }
+            pathLength += test_snprintf(
+                &buffer[pathLength],
+                MaxPathSize - pathLength,
+                "%s/.dotnet/corefx/Runtime/SharedMemory/.dotnet/shm/",
+                homeDirectory);
+        }
     }
     else
     {
