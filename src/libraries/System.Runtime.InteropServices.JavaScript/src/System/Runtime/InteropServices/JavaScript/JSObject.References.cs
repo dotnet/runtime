@@ -55,17 +55,17 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        internal void DisposeImpl(bool skipJsCleanup = false)
+        internal void DisposeImpl(bool skipJsCleanup = false, bool isFinalizing = false)
         {
             if (!_isDisposed)
             {
-                JSProxyContext.ReleaseCSOwnedObject(this, skipJsCleanup);
+                JSProxyContext.ReleaseCSOwnedObject(this, skipJsCleanup, isFinalizing);
             }
         }
 
         ~JSObject()
         {
-            DisposeImpl();
+            DisposeImpl(isFinalizing: true);
         }
 
         /// <summary>
