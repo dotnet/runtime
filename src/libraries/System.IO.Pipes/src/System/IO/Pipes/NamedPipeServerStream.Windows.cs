@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -105,7 +105,11 @@ namespace System.IO.Pipes
 
                 using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
                 {
-                    SecurityIdentifier identifier = currentIdentity.User ?? currentIdentity.Owner!;
+                    // For LocalSystem, use the user SID (SYSTEM, S-1-5-18) because SYSTEM processes
+                    // may have either SYSTEM or Administrators as their token default owner (issue #123903).
+                    // For interactive user accounts, use Owner so that elevated and unelevated
+                    // processes under the same account remain isolated across UAC boundaries.
+                    SecurityIdentifier identifier = currentIdentity.IsSystem ? currentIdentity.User! : currentIdentity.Owner!;
 
                     // Grant full control to the owner so multiple servers can be opened.
                     // Full control is the default per MSDN docs for CreateNamedPipe.

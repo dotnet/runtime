@@ -172,22 +172,22 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public static void ServerCreatedWithCurrentUserOnly_HasUserSidAsOwner_Windows()
+        public static void ServerCreatedWithCurrentUserOnly_HasExpectedOwner_Windows()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
             using var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly);
             using var currentIdentity = System.Security.Principal.WindowsIdentity.GetCurrent();
 
-            var expectedUserSid = currentIdentity.User ?? currentIdentity.Owner;
+            var expectedOwnerSid = currentIdentity.IsSystem ? currentIdentity.User : currentIdentity.Owner;
             PipeSecurity accessControl = server.GetAccessControl();
             var ownerSid = accessControl.GetOwner(typeof(System.Security.Principal.SecurityIdentifier));
 
-            Assert.Equal(expectedUserSid, ownerSid);
+            Assert.Equal(expectedOwnerSid, ownerSid);
         }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public static void ClientConnectingWithCurrentUserOnly_AcceptsServerOwnedByUserSid_Windows()
+        public static void ClientConnectingWithCurrentUserOnly_AcceptsServerOwnedByCurrentUser_Windows()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
             using var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly);
