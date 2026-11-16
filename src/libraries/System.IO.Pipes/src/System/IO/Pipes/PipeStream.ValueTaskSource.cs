@@ -31,7 +31,7 @@ namespace System.IO.Pipes
             {
                 _pipeStream = pipeStream;
                 _source.RunContinuationsAsynchronously = true;
-                _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, null);
+                _preallocatedOverlapped = PreAllocatedOverlapped.UnsafeCreate(s_ioCallback, this, null);
             }
 
             internal void Dispose()

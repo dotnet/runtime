@@ -836,5 +836,38 @@ namespace System.IO.Pipes.Tests
 
             Assert.Throws<InvalidOperationException>(() => readTask.Result);
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation is based on sockets
+        public async Task AsyncOperationsDoNotRetainExecutionContext()
+        {
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+            using NamedPipeServerStream server = new(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            using NamedPipeClientStream client = new(".", pipeName, PipeDirection.Out, PipeOptions.Asynchronous);
+
+            await Task.WhenAll(server.WaitForConnectionAsync(), client.ConnectAsync());
+
+            WeakReference<object> asyncLocalValue = await ReadAndWriteAsync(server, client);
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(asyncLocalValue.TryGetTarget(out _));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static async Task<WeakReference<object>> ReadAndWriteAsync(NamedPipeServerStream server, NamedPipeClientStream client)
+            {
+                // The value is part of the ExecutionContext that flows into the first read and write operations.
+                object value = new();
+                AsyncLocal<object> asyncLocal = new() { Value = value };
+
+                ValueTask<int> readTask = server.ReadAsync(new byte[1]);
+                await client.WriteAsync(new byte[1]);
+                Assert.Equal(1, await readTask);
+
+                return new WeakReference<object>(value);
+            }
+        }
     }
 }
