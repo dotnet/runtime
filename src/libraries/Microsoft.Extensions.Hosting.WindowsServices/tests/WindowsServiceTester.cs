@@ -48,6 +48,8 @@ namespace Microsoft.Extensions.Hosting
             }
             catch (ArgumentException)
             { }
+            catch (InvalidOperationException)
+            { }
         }
 
         public static TimeSpan WaitForStatusTimeout { get; set; } = TimeSpan.FromMinutes(3);
