@@ -47,17 +47,17 @@ namespace System.IO.Compression
 
         public bool Inflate(out byte b)
         {
-            fixed (byte* bufPtr = &b)
+            int bytesRead;
+            // SAFETY: To be audited
+            unsafe
             {
-                int bytesRead;
-                // SAFETY: To be audited
-                unsafe
+                fixed (byte* bufPtr = &b)
                 {
                     bytesRead = InflateVerified(bufPtr, 1);
                 }
-                Debug.Assert(bytesRead == 0 || bytesRead == 1);
-                return bytesRead != 0;
             }
+            Debug.Assert(bytesRead == 0 || bytesRead == 1);
+            return bytesRead != 0;
         }
 
         public int Inflate(byte[] bytes, int offset, int length)
