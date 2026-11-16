@@ -58,7 +58,6 @@
     <!-- Keep in sync with $(PropertiesThatTriggerRelinking) -->
     <_WasmNativeWorkloadNeeded Condition="
         '$(WasmEnableSIMD)' == 'false' or
-        '$(WasmEnableRelaxedSimd)' == 'true' or
         '$(WasmEnableExceptionHandling)' == 'false' or
         '$(InvariantTimezone)' == 'true' or
         '$(WasmNativeStrip)' == 'false' or
@@ -231,6 +230,9 @@
       <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '${NetVersion}.0'">$(_MonoWorkloadRuntimePackPackageVersion)</TargetingPackVersion>
       <LatestRuntimeFrameworkVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '${NetVersion}.0' and '$(UseMonoRuntime)' == 'false'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>
     </KnownFrameworkReference>
+    <KnownCrossgen2Pack Update="@(KnownCrossgen2Pack)">
+      <Crossgen2PackVersion Condition="'%(KnownCrossgen2Pack.TargetFramework)' == '${NetVersion}.0' and '$(UseMonoRuntime)' == 'false'">$(_MonoWorkloadRuntimePackPackageVersion)</Crossgen2PackVersion>
+    </KnownCrossgen2Pack>
     <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
       <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '${NetVersion}.0'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
     </KnownWebAssemblySdkPack>
