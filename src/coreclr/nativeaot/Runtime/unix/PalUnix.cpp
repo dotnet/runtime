@@ -20,9 +20,6 @@
 #include "NativeContext.h"
 #include "HardwareExceptions.h"
 #include "PalCreateDump.h"
-#ifdef TARGET_LINUX
-#include "../../../gc/unix/cgroup.h"
-#endif
 #include "threadstore.h"
 #include "thread.h"
 #include "threadstore.inl"
@@ -31,6 +28,7 @@
 #include "RhConfig.h"
 
 #include <unistd.h>
+#include <minipal/cgroup.h>
 #include <minipal/cpucount.h>
 #include <sched.h>
 #include <sys/mman.h>
@@ -237,11 +235,9 @@ void InitializeCurrentProcessCpuCount()
     {
         count = minipal_get_cpu_affinity_count();
 
-#ifdef TARGET_LINUX
         uint32_t cpuLimit;
-        if (GetCGroupCpuLimit(&cpuLimit) && cpuLimit < count)
+        if (minipal_cgroup_get_cpu_limit(&cpuLimit) && cpuLimit < count)
             count = cpuLimit;
-#endif
     }
 
     _ASSERTE(count > 0);

@@ -227,7 +227,6 @@ else()
     list(APPEND COMMON_RUNTIME_SOURCES
       ${GC_DIR}/unix/gcenv.unix.cpp
       ${GC_DIR}/unix/numasupport.cpp
-      ${GC_DIR}/unix/cgroup.cpp
     )
   endif()
 

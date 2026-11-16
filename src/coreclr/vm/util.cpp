@@ -10,11 +10,8 @@
 #include "dlwrap.h"
 
 #ifdef TARGET_UNIX
+#include <minipal/cgroup.h>
 #include <minipal/cpucount.h>
-#endif
-
-#ifdef TARGET_LINUX
-#include "../gc/unix/cgroup.h"
 #endif
 
 #ifndef DACCESS_COMPILE
@@ -325,11 +322,9 @@ int GetCurrentProcessCpuCount()
 #else // HOST_WINDOWS
         count = minipal_get_cpu_affinity_count();
 
-#ifdef TARGET_LINUX
         uint32_t cpuLimit;
-        if (GetCGroupCpuLimit(&cpuLimit) && cpuLimit < count)
+        if (minipal_cgroup_get_cpu_limit(&cpuLimit) && cpuLimit < count)
             count = cpuLimit;
-#endif // TARGET_LINUX
 #endif // HOST_WINDOWS
     }
 
