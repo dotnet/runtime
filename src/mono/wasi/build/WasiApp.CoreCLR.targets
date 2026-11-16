@@ -2,6 +2,9 @@
   <PropertyGroup>
     <WasmPInvokeModulesPropsPath Condition="'$(WasmPInvokeModulesPropsPath)' == ''">$(MSBuildThisFileDirectory)WasmPInvokeModules.props</WasmPInvokeModulesPropsPath>
     <WasmAppRuntimeFlavor>CoreCLR</WasmAppRuntimeFlavor>
+    <!-- Set before WasiApp.targets is imported, which otherwise defaults it to false. When the host's
+         function names are stripped, they are written to managed/corerun.symbols instead. -->
+    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">true</WasmEmitSymbolMap>
   </PropertyGroup>
   <Import Project="$(WasmPInvokeModulesPropsPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ComputeWasmPInvokeModules"
@@ -66,6 +69,9 @@
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ComposeWasiReadyToRun"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.StripWasiComponentSymbols"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
     <WasmAppRuntimeFlavor>CoreCLR</WasmAppRuntimeFlavor>
@@ -75,6 +81,11 @@
          wasihost corehost (libWasiHost.a) per-app through its own targets below. -->
     <WasmBuildNative>false</WasmBuildNative>
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
+    <!-- The host is always relinked per app, so apply the relink defaults that WasmApp.Common only
+         applies when WasmBuildNative is set: keep native debug info in Debug, strip it otherwise. -->
+    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(Configuration)' == 'Debug'">false</WasmNativeStrip>
+    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
+    <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
@@ -324,6 +335,7 @@
       <_WasiRelinkCompileFlags Include="--target=wasm32-unknown-wasip2" />
       <_WasiRelinkCompileFlags Include="--sysroot=&quot;$(_WasiSysroot.Replace('\','/'))&quot;" />
       <_WasiRelinkCompileFlags Include="$(_WasiRelinkOptFlag)" />
+      <_WasiRelinkCompileFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true' and '$(WasmNativeStrip)' != 'true'" />
       <_WasiRelinkCompileFlags Include="-DNDEBUG" Condition="'$(Configuration)' != 'Debug'" />
       <_WasiRelinkCompileFlags Include="-std=gnu++17" />
       <_WasiRelinkCompileFlags Include="-fwasm-exceptions" />
@@ -434,7 +446,11 @@
 
     <PropertyGroup>
       <_WasiRelinkOutput>$(_WasiRelinkObjDir)corerun</_WasiRelinkOutput>
+      <!-- The host before symbol stripping: the relinked host, or the composed host for ReadyToRun. -->
+      <_WasiUnstrippedHost>$(_WasiRelinkOutput)</_WasiUnstrippedHost>
+      <_WasiUnstrippedHost Condition="'$(PublishReadyToRun)' == 'true'">$([MSBuild]::NormalizePath('$(_WasmIntermediateOutputPath)', 'r2r-compose', 'corerun'))</_WasiUnstrippedHost>
       <_WasiPublishedHost>$(WasmAppDir)managed\corerun</_WasiPublishedHost>
+      <_WasiPublishedHostSymbolMap>$(_WasiPublishedHost).symbols</_WasiPublishedHostSymbolMap>
       <!-- Table slots 1..N-1 are reserved for the composite's ACTIVE element segment, which the engine
            installs at instantiation - so the table must already be large enough. Reserve by the
            element segment's slot count, independently of how many function definitions those slots reference. -->
@@ -446,6 +462,9 @@
       <_WasiRelinkLinkFlags Include="$(_WasiRelinkOptFlag)" />
       <_WasiRelinkLinkFlags Include="-DNDEBUG" Condition="'$(Configuration)' != 'Debug'" />
       <_WasiRelinkLinkFlags Include="-Wl,--gc-sections" />
+      <!-- Drop the runtime pack's DWARF at link time. Function names stay in the linked host so the
+           ReadyToRun composition and _WasiCoreCLRFinalizeHost can still use them. -->
+      <_WasiRelinkLinkFlags Include="-Wl,--strip-debug" Condition="'$(WasmNativeStrip)' == 'true' or '$(WasmNativeDebugSymbols)' != 'true'" />
       <!-- Keep the runtime-owned continuation global available so an R2R composite can import
            webcil.asyncContinuation from the per-app-linked host. -->
       <_WasiRelinkLinkFlags Include="-Wl,--export=__async_continuation" />
@@ -482,9 +501,6 @@
     <Message Text="Linking CoreCLR-WASI wasihost host with per-app callhelper thunks ..." Importance="High" />
     <Exec Command="&quot;$(_WasiClangxx)&quot; &quot;@$(_WasiRelinkLinkRsp)&quot;"
           WorkingDirectory="$(_WasiRelinkObjDir)" />
-    <Copy Condition="'$(PublishReadyToRun)' != 'true'"
-          SourceFiles="$(_WasiRelinkOutput)"
-          DestinationFiles="$(_WasiPublishedHost)" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasiRelinkCompileRsp);$(_WasiRelinkLinkRsp)" />
@@ -496,7 +512,7 @@
           AfterTargets="_WasiCoreCLRRelinkCoreRun"
           DependsOnTargets="_WasiCoreCLRInspectReadyToRunComposite"
           Inputs="$(_WasiRelinkOutput);$(_WasiR2RCompositePath);$(WasmAppBuilderTasksAssemblyPath)"
-          Outputs="$(_WasiPublishedHost)"
+          Outputs="$(_WasiUnstrippedHost)"
           Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">
     <PropertyGroup>
       <_WasiR2RComposeOutputDir>$([MSBuild]::NormalizeDirectory('$(_WasmIntermediateOutputPath)', 'r2r-compose'))</_WasiR2RComposeOutputDir>
@@ -511,7 +527,7 @@
     <ComposeWasiReadyToRun CompositePath="$(_WasiR2RCompositePath)"
                            ComponentPath="$(_WasiRelinkOutput)"
                            OutputDirectory="$(_WasiR2RComposeOutputDir)"
-                           OutputPath="$(_WasiPublishedHost)"
+                           OutputPath="$(_WasiUnstrippedHost)"
                            WasmToolsPath="$(WasmToolsCacheDir)wasm-tools$(_ExeExt)"
                            WasmMergePath="$(BinaryenCacheDir)bin/wasm-merge$(_ExeExt)"
                            WasmOptPath="$(BinaryenCacheDir)bin/wasm-opt$(_ExeExt)"
@@ -522,6 +538,31 @@
     </ComposeWasiReadyToRun>
     <ItemGroup>
       <FileWrites Include="@(_WasiR2RCompositionWrites)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Publish the host into the bundle. With WasmNativeStrip, its function names are removed after
+       the ReadyToRun composition (which renumbers functions) and, unless WasmEmitSymbolMap is false,
+       written to corerun.symbols as 'index:name' lines so traps reported by function index can be
+       symbolized. Runs after _WasiCoreCLRComposeReadyToRun even when that is skipped. -->
+  <Target Name="_WasiCoreCLRFinalizeHost"
+          AfterTargets="_WasiCoreCLRComposeReadyToRun"
+          Condition="'$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">
+    <PropertyGroup>
+      <_WasiHostSymbolMapToWrite Condition="'$(WasmEmitSymbolMap)' != 'false'">$(_WasiPublishedHostSymbolMap)</_WasiHostSymbolMapToWrite>
+    </PropertyGroup>
+    <Delete Files="$(_WasiPublishedHostSymbolMap)" />
+    <Copy Condition="'$(WasmNativeStrip)' != 'true'"
+          SourceFiles="$(_WasiUnstrippedHost)"
+          DestinationFiles="$(_WasiPublishedHost)" />
+    <StripWasiComponentSymbols Condition="'$(WasmNativeStrip)' == 'true'"
+                               InputPath="$(_WasiUnstrippedHost)"
+                               OutputPath="$(_WasiPublishedHost)"
+                               SymbolMapPath="$(_WasiHostSymbolMapToWrite)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </StripWasiComponentSymbols>
+    <ItemGroup>
+      <FileWrites Include="$(_WasiPublishedHost)" />
     </ItemGroup>
   </Target>
 
