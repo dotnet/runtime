@@ -4,12 +4,20 @@
 //*****************************************************************************
 // errorstrings.cpp
 //
-// Messages for Win32 error codes on Unix.
+// Messages for Win32 error codes.
 //*****************************************************************************
 
 #include "stdafx.h"
 
-#ifdef HOST_UNIX
+#ifdef HOST_WINDOWS
+
+bool GetSystemErrorMessage(DWORD code, WCHAR *buffer, size_t cchBuffer)
+{
+    return FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, code, 0, buffer, (DWORD)cchBuffer, NULL) != 0;
+}
+
+#else // HOST_WINDOWS
 
 struct ErrorString
 {
@@ -180,4 +188,4 @@ bool GetSystemErrorMessage(DWORD code, WCHAR *buffer, size_t cchBuffer)
     return true;
 }
 
-#endif // HOST_UNIX
+#endif // HOST_WINDOWS

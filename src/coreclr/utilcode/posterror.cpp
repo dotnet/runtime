@@ -71,17 +71,7 @@ static HRESULT FormatRuntimeErrorVA(
     // find the text for it.
     else
     {
-#ifdef HOST_UNIX
         if (GetSystemErrorMessage(hrRpt, rcMsg, cchMsg))
-        {
-            hr = S_OK;
-        }
-        else
-            hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-#else // HOST_UNIX
-        if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,
-                0, hrRpt, 0,
-                rcMsg, cchMsg, 0/*<TODO>@todo: marker</TODO>*/))
         {
             hr = S_OK;
 
@@ -92,7 +82,6 @@ static HRESULT FormatRuntimeErrorVA(
         }
         else
             hr = HRESULT_FROM_GetLastError();
-#endif // HOST_UNIX
     }
 
     _ASSERTE(SUCCEEDED(hr));

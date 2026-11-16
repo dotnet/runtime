@@ -1800,7 +1800,10 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
     {
         WCHAR message[256];
         if (!GetSystemErrorMessage(dwMessageId, message, ARRAY_SIZE(message)))
+        {
+            _ASSERTE(!"System error message does not fit in the buffer");
             return FALSE;
+        }
 
         result.Set(message);
     }
@@ -1835,6 +1838,18 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
             else if (*p == W('n'))
             {
                 result.Append(W('\n'));
+            }
+            else if (*p == W('r'))
+            {
+                result.Append(W('\r'));
+            }
+            else if (*p == W('t'))
+            {
+                result.Append(W('\t'));
+            }
+            else if (*p == W('b'))
+            {
+                result.Append(W(' '));
             }
             else if (*p == W('0'))
             {
