@@ -66,6 +66,11 @@ if [%WASM_BUNDLER_FRIENDLY_BOOT_CONFIG%] == [true] (
 ) else (
    set USE_JAVASCRIPT_BUNDLER_FOR_TESTS=false
 )
+if [%WASM_RUN_WASM_OPT%] == [true] (
+   set USE_WASM_OPT_FOR_TESTS=true
+) else (
+   set USE_WASM_OPT_FOR_TESTS=false
+)
 if [%RUNTIME_FLAVOR%] NEQ [] (
    set RUNTIME_FLAVOR_FOR_TESTS=%RUNTIME_FLAVOR%
 )

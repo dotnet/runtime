@@ -685,7 +685,7 @@ namespace System.Reflection.PortableExecutable
         /// The provider shall throw <see cref="IOException"/> if it fails to open the file due to an unexpected IO error.
         /// </param>
         /// <param name="pdbReaderProvider">
-        /// If successful, a new instance of <see cref="MetadataReaderProvider"/> to be used to read the Portable PDB,.
+        /// If successful, a new instance of <see cref="MetadataReaderProvider"/> to be used to read the Portable PDB.
         /// </param>
         /// <param name="pdbPath">
         /// If successful and the PDB is found in a file, the path to the file. Returns <c>null</c> if the PDB is embedded in the PE image itself.

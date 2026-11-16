@@ -19,7 +19,7 @@
 // Ambiguous reference in cref attribute
 #pragma warning disable 419
 
-namespace ILAssembler {
+namespace Microsoft.DotNet.ILAssembler {
 
 #nullable enable annotations
 
@@ -1272,6 +1272,8 @@ public partial class CILParser : Parser {
 			State = 533;
 			Match(T__25);
 			}
+			Context.Stop = TokenStream.LT(-1);
+			Actions.ProcessCoreLibraryDirective();
 		}
 		catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -19735,4 +19737,4 @@ public partial class CILParser : Parser {
 
 
 }
-} // namespace ILAssembler
+} // namespace Microsoft.DotNet.ILAssembler

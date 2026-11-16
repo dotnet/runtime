@@ -696,7 +696,7 @@ ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(Method
         }
     }
 
-    NewHolder<ReadyToRunStandaloneMethodMetadata> newMethodBlock = new ReadyToRunStandaloneMethodMetadata();
+    NewHolder<ReadyToRunStandaloneMethodMetadata> newMethodBlock(new ReadyToRunStandaloneMethodMetadata());
     GenerateReadyToRunStandaloneMethodMetadata(pMD, newMethodBlock);
 
     {
@@ -707,7 +707,7 @@ ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(Method
         }
 
         s_methodMetadata->Add(pMD, newMethodBlock);
-        retVal = newMethodBlock.Extract();
+        retVal = newMethodBlock.Detach();
     }
     return retVal;
 }

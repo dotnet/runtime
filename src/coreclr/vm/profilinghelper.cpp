@@ -627,8 +627,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
 
     fProfEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_ENABLE_PROFILING);
 
-    NewArrayHolder<WCHAR> wszClsid(NULL);
-    NewArrayHolder<WCHAR> wszProfilerDLL(NULL);
+    WStringHolder wszClsid;
+    WStringHolder wszProfilerDLL;
     CLSID clsid;
 
     if (fProfEnabled == 0)
@@ -934,7 +934,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
     _ASSERTE(s_csStatus != NULL);
 
     ProfilerCompatibilityFlag profilerCompatibilityFlag = kDisableV2Profiler;
-    NewArrayHolder<WCHAR> wszProfilerCompatibilitySetting(NULL);
+    WStringHolder wszProfilerCompatibilitySetting;
 
     if (loadType == kStartupLoad)
     {
@@ -957,7 +957,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
                  "Profiler will not be loaded.\n"));
 
             MAKE_UTF8PTR_FROMWIDE(szEnvVarName, CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting.name);
-            MAKE_UTF8PTR_FROMWIDE(szEnvVarValue, wszProfilerCompatibilitySetting.GetValue());
+            MAKE_UTF8PTR_FROMWIDE(szEnvVarValue, static_cast<WCHAR*>(wszProfilerCompatibilitySetting));
             LogProfInfo(IDS_PROF_PROFILER_DISABLED,
                         szEnvVarName,
                         szEnvVarValue,
@@ -1016,12 +1016,8 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
         return hr;
     }
 
-    // EEToProfInterfaceImpl::Init takes over the ownership of pProfEE when Init succeeds, and
-    // EEToProfInterfaceImpl::~EEToProfInterfaceImpl is responsible for releasing the resource pointed
-    // by pProfEE.  Calling SuppressRelease here is necessary to avoid double release that
-    // the resource pointed by pProfEE are released by both pProfEE and pEEProf's destructor.
-    pProfEE.SuppressRelease();
-    pProfEE = NULL;
+    // EEToProfInterfaceImpl owns pProfEE after successful initialization.
+    pProfEE.Detach();
 
     if (loadType == kAttachLoad)  // V4 profiler from attach
     {
@@ -1049,7 +1045,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
              "The configured V2 profiler is going to be initialized.\n"));
 
         MAKE_UTF8PTR_FROMWIDE(szEnvVarName, CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting.name);
-        MAKE_UTF8PTR_FROMWIDE(szEnvVarValue, wszProfilerCompatibilitySetting.GetValue());
+        MAKE_UTF8PTR_FROMWIDE(szEnvVarValue, static_cast<WCHAR*>(wszProfilerCompatibilitySetting));
         LogProfInfo(IDS_PROF_V2PROFILER_ENABLED,
                     szEnvVarName,
                     szEnvVarValue,
@@ -1173,9 +1169,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
         // callback (which we do immediately below), and have it successfully call
         // back into us via the Info interface (ProfToEEInterfaceImpl) to perform its
         // initialization.
-        profilerInfo.pProfInterface = pEEProf.GetValue();
-        pEEProf.SuppressRelease();
-        pEEProf = NULL;
+        profilerInfo.pProfInterface = pEEProf.Detach();
 
         // Set global status to reflect the proper type of Init we're doing (attach vs
         // startup)

@@ -35,6 +35,7 @@
 #include "appdomain.hpp"
 #include "eedbginterface.h"
 #include "dbginterface.h"
+#include "debugdebugger.h"
 #include "corhost.h"
 #include "debugwait.h"
 
@@ -91,6 +92,7 @@ class DebuggerControllerQueue;
 class DebuggerController;
 class Crst;
 class ExternalMemoryHandle;
+class DebuggerFuncEvalResult;
 
 typedef CUnorderedArray<DebuggerControllerPatch *, 17> PATCH_UNORDERED_ARRAY;
 template<class T> void DeleteInteropSafe(T *p);
@@ -368,8 +370,6 @@ inline bool ThisMaybeHelperThread() { return true; }
 
 extern void CopyREGDISPLAY(REGDISPLAY* pDst, REGDISPLAY* pSrc);
 bool HandleIPCEventWrapper(Debugger* pDebugger, DebuggerIPCEvent *e);
-
-HRESULT ValidateObject(Object *objPtr);
 
 //-----------------------------------------------------------------------------
 // Execution control needs several ways to get at the context of a thread
@@ -2332,14 +2332,19 @@ private:
         c->DoNotCallDirectlyPrivateUnlock();
     }
 #else // DACCESS_COMPILE
-    static void AcquireDebuggerLock(Debugger *c);
-    static void ReleaseDebuggerLock(Debugger *c);
+    static void AcquireDebuggerLock(Debugger *c) { SUPPORTS_DAC; }
+    static void ReleaseDebuggerLock(Debugger *c) { SUPPORTS_DAC; }
 #endif // DACCESS_COMPILE
 
 
 public:
     // define type for DebuggerLockHolder
-    typedef DacHolder<Debugger *, Debugger::AcquireDebuggerLock, Debugger::ReleaseDebuggerLock> DebuggerLockHolder;
+#ifndef DACCESS_COMPILE
+    typedef Holder<Debugger *, Debugger::AcquireDebuggerLock, Debugger::ReleaseDebuggerLock> DebuggerLockHolder;
+#else // DACCESS_COMPILE
+    // DAC acquisition may validate target state, but cleanup must not touch the target.
+    typedef Holder<Debugger *, Debugger::AcquireDebuggerLock, DoNothing<Debugger *>> DebuggerLockHolder;
+#endif // !DACCESS_COMPILE
 
     void LockForEventSending(DebuggerLockHolder *dbgLockHolder);
     void UnlockFromEventSending(DebuggerLockHolder *dbgLockHolder);
@@ -2535,6 +2540,19 @@ public:
     HRESULT FuncEvalRudeAbort(DebuggerEval *debuggerEvalKey);
     HRESULT FuncEvalCleanup(DebuggerEval *debuggerEvalKey);
 
+#ifndef DACCESS_COMPILE
+    virtual bool ReadFuncEvalTypeHandles(
+        DebuggerEval* pDE, TypeHandle* pTypes, uint32_t count);
+    virtual void* AllocateFuncEvalExternalResult(DebuggerEval* pDE, TypeHandle resultType);
+    virtual void ProtectFuncEvalByRefResult(DebuggerEval* pDE, TypeHandle resultType);
+    virtual TypeHandle GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index);
+    virtual BOOL ReadFuncEvalPrimitiveRegister(
+        DebuggerEval* pDE, UINT32 index, UINT64* pValue);
+    virtual void WriteFuncEvalRegister(
+        DebuggerEval* pDE, UINT32 index, const void* pValue, UINT32 size);
+    virtual void SetFuncEvalResultType(DebuggerEval* pDE, TypeHandle resultType);
+#endif // !DACCESS_COMPILE
+
     HRESULT SetReference(void *objectRefAddress, VMPTR_OBJECTHANDLE vmObjectHandle, void *newReference);
     HRESULT SetValueClass(void *oldData, void *newData, DebuggerIPCE_BasicTypeData *type);
 
@@ -2574,7 +2592,12 @@ public:
 #endif // DACCESS_COMPILE
 
     // define type for DebuggerDataLockHolder
-    typedef DacHolder<Debugger *, Debugger::AcquireDebuggerDataLock, Debugger::ReleaseDebuggerDataLock> DebuggerDataLockHolder;
+#ifndef DACCESS_COMPILE
+    typedef Holder<Debugger *, Debugger::AcquireDebuggerDataLock, Debugger::ReleaseDebuggerDataLock> DebuggerDataLockHolder;
+#else // DACCESS_COMPILE
+    // DAC acquisition may validate target state, but cleanup must not touch the target.
+    typedef Holder<Debugger *, Debugger::AcquireDebuggerDataLock, DoNothing<Debugger *>> DebuggerDataLockHolder;
+#endif // !DACCESS_COMPILE
 
 #ifdef _DEBUG
     // Use for asserts
@@ -3257,13 +3280,18 @@ public:
  * type arguments <string,List<int>> you get string followed by List followed by int.
  * ------------------------------------------------------------------------ */
 
-// Owns an interop-safe buffer and the ExternalMemoryHandle registration that keeps references in
-// the buffer visible to the GC.
+void ReleaseDebuggerExternalMemoryHandle(ExternalMemoryHandle* pHandle);
+
+// Owns an interop-safe buffer and external registrations for its references and collectible layout.
 class DebuggerExternalMemoryOwner
 {
 public:
+    static DebuggerExternalMemoryOwner *Create(MethodTable *pMT, SIZE_T size);
     DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE *pMemory);
     ~DebuggerExternalMemoryOwner();
+
+    DebuggerExternalMemoryOwner(const DebuggerExternalMemoryOwner&) = delete;
+    DebuggerExternalMemoryOwner& operator=(const DebuggerExternalMemoryOwner&) = delete;
 
     BYTE *GetMemory() const
     {
@@ -3274,6 +3302,38 @@ private:
     ExternalMemoryHandle *m_pHandle;
     BYTE                 *m_pMemory;
 };
+
+
+template<class T>
+struct DebuggerInteropSafeDeleteTraits final
+{
+    using Type = T*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value) noexcept
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (value != NULL)
+            DeleteInteropSafe(value);
+    }
+};
+
+using DebuggerExternalMemoryOwnerHolder = LifetimeHolder<DebuggerInteropSafeDeleteTraits<DebuggerExternalMemoryOwner>>;
+
+// Persistent roots for a raw byref result, owned by DebuggerEval through cleanup.
+class DebuggerFuncEvalResult
+{
+public:
+    DebuggerFuncEvalResult(DebuggerEval* pDE, TypeHandle resultType);
+    ~DebuggerFuncEvalResult();
+
+    DebuggerFuncEvalResult(const DebuggerFuncEvalResult&) = delete;
+    DebuggerFuncEvalResult& operator=(const DebuggerFuncEvalResult&) = delete;
+
+private:
+    ExternalMemoryHandle* m_resultHandle;
+};
+
+using DebuggerFuncEvalResultHolder = LifetimeHolder<DebuggerInteropSafeDeleteTraits<DebuggerFuncEvalResult>>;
 
 class DebuggerEval
 {
@@ -3305,18 +3365,16 @@ public:
     unsigned int                       m_genericArgsNodeCount;
     SIZE_T                             m_stringSize;
     BYTE                              *m_argData;
-    MethodDesc                        *m_md;
-    PCODE                              m_targetCodeAddr;
     ARG_SLOT                           m_result[NUMBER_RETURNVALUE_SLOTS];
     TypeHandle                         m_resultType;
-    DebuggerExternalMemoryOwner       *m_externalMemoryOwner;
+    DebuggerExternalMemoryOwnerHolder m_externalMemoryOwner;
+    DebuggerFuncEvalResultHolder       m_funcEvalResult;
     SIZE_T                             m_arrayRank;
     FUNC_EVAL_ABORT_TYPE               m_aborting;          // Has an abort been requested, and what type.
     bool                               m_aborted;           // Was this eval aborted
     bool                               m_completed;          // Is the eval complete - successfully or by aborting
     bool                               m_evalUsesHijack;
     VMPTR_OBJECTHANDLE                 m_vmObjectHandle;
-    TypeHandle                         m_ownerTypeHandle;
     DebuggerEvalBreakpointInfoSegment* m_bpInfoSegment;
 
     DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX);
@@ -3357,11 +3415,6 @@ public:
     ~DebuggerEval()
     {
         WRAPPER_NO_CONTRACT;
-
-        if (m_externalMemoryOwner != NULL)
-        {
-            DeleteInteropSafe(m_externalMemoryOwner);
-        }
 
         if (m_argData)
         {

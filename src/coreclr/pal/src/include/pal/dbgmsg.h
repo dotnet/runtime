@@ -51,7 +51,6 @@ Available channels :
     THREAD  : Threading mechanism
     EXCEPT  : Structured Exception Handling functions
     CRT     : PAL implementation of the C Runtime Library functions
-    UNICODE : Unicode support API
     ARCH    : platform-dependent stuff
     SYNC    : Management of synchronization objects
     FILE    : File I/O API
@@ -166,7 +165,6 @@ typedef enum
     DCI_THREAD,
     DCI_EXCEPT,
     DCI_CRT,
-    DCI_UNICODE,
     DCI_ARCH,
     DCI_SYNC,
     DCI_FILE,

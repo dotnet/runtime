@@ -2526,5 +2526,11 @@ namespace Internal.JitInterface
 #pragma warning restore CA1822 // Mark members as static
         {
         }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_STRUCT_* method)
+#pragma warning restore CA1822 // Mark members as static
+        {
+        }
     }
 }

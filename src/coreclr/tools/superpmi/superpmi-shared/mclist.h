@@ -16,7 +16,7 @@ public:
     MCList()
     {
         // Initialize the static file handle
-        hMCLFile = INVALID_HANDLE_VALUE;
+        hMCLFile = nullptr;
     }
 
     // Methods to create an MCL file
@@ -28,6 +28,6 @@ private:
     static bool getLineData(const char* nameOfInput, /* OUT */ int* pIndexCount, /* OUT */ int** pIndexes);
 
     // File handle for MCL file
-    HANDLE hMCLFile;
+    FILE* hMCLFile;
 };
 #endif

@@ -22,6 +22,7 @@ Revision History:
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/module.h"
+#include <minipal/utf8.h>
 
 #include "errorstrings.h"
 
@@ -52,7 +53,7 @@ static LPWSTR FMTMSG_GetMessageString( DWORD dwErrCode )
 
     if (lpErrorString != NULL)
     {
-        allocChars = PAL_wcslen(lpErrorString) + 1;
+        allocChars = minipal_u16_strlen((const CHAR16_T*)lpErrorString) + 1;
     }
     else
     {
@@ -65,7 +66,7 @@ static LPWSTR FMTMSG_GetMessageString( DWORD dwErrCode )
     {
         if (lpErrorString != NULL)
         {
-            PAL_wcscpy(lpRetVal, lpErrorString);
+            memcpy(lpRetVal, lpErrorString, allocChars * sizeof(WCHAR));
         }
         else
         {
@@ -104,12 +105,9 @@ static INT FMTMSG__watoi( LPWSTR str )
 {
     CONST UINT MAX_NUMBER_LENGTH = 3;
     CHAR buf[ MAX_NUMBER_LENGTH ];
-    INT nRetVal = 0;
+    size_t converted = minipal_convert_utf16_to_utf8((const CHAR16_T*)str, minipal_u16_strlen((const CHAR16_T*)str) + 1, buf, MAX_NUMBER_LENGTH, 0);
 
-    nRetVal = WideCharToMultiByte( CP_ACP, 0, str, -1, buf,
-                                   MAX_NUMBER_LENGTH, NULL, 0 );
-
-    if ( nRetVal != 0 )
+    if ( converted != 0 )
     {
         return atoi( buf );
     }
@@ -151,7 +149,7 @@ static INT FMTMSG__watoi( LPWSTR str )
         } \
         \
         *lpWorkingString = '\0';\
-        PAL_wcscpy( lpTemp, lpReturnString );\
+        memcpy( lpTemp, lpReturnString, ( nCount + 1 ) * sizeof( WCHAR ) );\
         free( lpReturnString ); \
         lpWorkingString = lpReturnString = lpTemp; \
         lpWorkingString += nCount; \
@@ -295,7 +293,7 @@ FormatMessageW(
             goto exit;
         }
 
-        nCount = PAL_wcslen( lpWorkingString );
+        nCount = minipal_u16_strlen((const CHAR16_T*)lpWorkingString );
 
         if ( !bIsLocalAlloced && nCount > nSize )
         {
@@ -454,11 +452,9 @@ FormatMessageW(
             if ( bIgnoreInserts && *lpSourceString == '!' &&
                  *( lpSourceString + 1 ) == 's' )
             {
-                LPWSTR lpLastBang = PAL_wcschr( lpSourceString + 1, '!' );
-
-                if ( lpLastBang && ( 2 == lpLastBang - lpSourceString ) )
+                if ( *( lpSourceString + 2 ) == '!' )
                 {
-                    lpSourceString = lpLastBang + 1;
+                    lpSourceString += 3;
                 }
                 else
                 {
@@ -501,7 +497,7 @@ exit: /* Function clean-up and exit. */
         else /* Only delete lpReturnString if the caller has their own buffer.*/
         {
             TRACE( "Copying the string into the buffer.\n" );
-            PAL_wcsncpy( lpBuffer, lpReturnString, nCount + 1 );
+            memcpy( lpBuffer, lpReturnString, ( nCount + 1 ) * sizeof( WCHAR ) );
             free( lpReturnString );
         }
     }

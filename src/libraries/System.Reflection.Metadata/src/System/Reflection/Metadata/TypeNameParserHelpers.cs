@@ -431,6 +431,31 @@ namespace System.Reflection.Metadata
         }
 
 #if SYSTEM_REFLECTION_METADATA
+        internal static string Escape(string name)
+        {
+            int indexOfCharToEscape = name.AsSpan().IndexOfAny(s_endOfFullTypeNameDelimiterChars);
+            if (indexOfCharToEscape < 0)
+            {
+                return name;
+            }
+
+            var sb = new ValueStringBuilder(stackalloc char[64]);
+            sb.EnsureCapacity(name.Length + 1);
+            sb.Append(name.AsSpan(0, indexOfCharToEscape));
+
+            for (int i = indexOfCharToEscape; i < name.Length; i++)
+            {
+                char c = name[i];
+                if (s_endOfFullTypeNameDelimiterChars.Contains(c))
+                {
+                    sb.Append(EscapeCharacter);
+                }
+                sb.Append(c);
+            }
+
+            return sb.ToString();
+        }
+
         [DoesNotReturn]
         internal static void ThrowInvalidOperation_NotSimpleName(string fullName)
         {

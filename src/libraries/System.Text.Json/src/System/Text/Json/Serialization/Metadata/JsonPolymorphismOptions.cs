@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// Gets or sets a custom type discriminator property name for the polymorhic type.
+        /// Gets or sets a custom type discriminator property name for the polymorphic type.
         /// Uses the default '$type' property name if left unset.
         /// </summary>
         /// <exception cref="InvalidOperationException">

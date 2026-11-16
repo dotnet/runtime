@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 /// <summary>
 /// The source documents of a compilation's Portable PDB, in the order they were first defined.
