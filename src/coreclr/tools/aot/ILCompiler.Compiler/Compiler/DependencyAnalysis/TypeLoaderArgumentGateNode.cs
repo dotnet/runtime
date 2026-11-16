@@ -13,8 +13,8 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents the condition "the type loader template for <see cref="Type"/> is present, and the generic arguments
     /// of <see cref="Type"/> before <see cref="ArgumentIndex"/> are present in the compilation or could be created
-    /// by the type loader at runtime". Once the last argument is checked too, <see cref="TypeLoaderLoadableTypeNode"/>
-    /// is marked.
+    /// by the type loader at runtime". The node for the index past the last argument, see <see cref="GetLast"/>,
+    /// means that <see cref="Type"/> can be created by the type loader at runtime.
     /// </summary>
     /// <remarks>
     /// A generic type that could be created by the type loader at runtime can only be created if all of its
@@ -23,8 +23,8 @@ namespace ILCompiler.DependencyAnalysis
     /// types and arrays that have a template, do not need to be in the compilation.
     ///
     /// A conditional dependency can only be conditioned on a single other node, so "all arguments are present" is
-    /// expressed as a chain with one node per argument. The node for argument i is marked once the node for
-    /// argument i - 1 is marked and argument i is present. Arguments become present at arbitrary points of
+    /// expressed as a chain with one node per argument, plus the final node returned by <see cref="GetLast"/>. The node
+    /// for argument i is marked once the node for argument i - 1 is marked and argument i is present. Arguments become present at arbitrary points of
     /// the analysis, so this can't be checked at once by looking at all of them.
     /// </remarks>
     public sealed class TypeLoaderArgumentGateNode : DependencyNodeCore<NodeFactory>
@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public TypeLoaderArgumentGateNode(TypeDesc type, int argumentIndex)
         {
-            Debug.Assert(argumentIndex >= 0 && argumentIndex < type.Instantiation.Length);
+            Debug.Assert(argumentIndex >= 0 && argumentIndex <= type.Instantiation.Length);
             _type = type;
             _argumentIndex = argumentIndex;
         }
@@ -42,9 +42,14 @@ namespace ILCompiler.DependencyAnalysis
         public TypeDesc Type => _type;
         public int ArgumentIndex => _argumentIndex;
 
+        /// <summary>
+        /// Gets the last node of the chain, which is marked once all arguments have been checked.
+        /// </summary>
+        public TypeLoaderArgumentGateNode GetLast(NodeFactory factory) => factory.TypeLoaderArgumentGate(_type, _type.Instantiation.Length);
+
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
-        public override bool HasConditionalStaticDependencies => true;
+        public override bool HasConditionalStaticDependencies => _argumentIndex < _type.Instantiation.Length;
         public override bool StaticDependenciesAreComputed => true;
 
         public override void AddStaticDependencies(DependencySink sink, NodeFactory context) { }
@@ -57,9 +62,7 @@ namespace ILCompiler.DependencyAnalysis
             TypeDesc argument = RuntimeConstructableTypeDependencies.GetEffectiveTrimTargetType(
                 context, _type.Instantiation[_argumentIndex], conditionConstructed: false).Type;
 
-            DependencyNodeCore<NodeFactory> next = _argumentIndex + 1 < _type.Instantiation.Length
-                ? context.TypeLoaderArgumentGate(_type, _argumentIndex + 1)
-                : context.TypeLoaderLoadableType(_type);
+            TypeLoaderArgumentGateNode next = context.TypeLoaderArgumentGate(_type, _argumentIndex + 1);
 
             sink.Add(new CombinedDependencyListEntry(
                 next,
@@ -78,33 +81,8 @@ namespace ILCompiler.DependencyAnalysis
         public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
 
         protected override string GetName(NodeFactory context)
-            => $"Type loader candidate gate: {_type} (argument {_argumentIndex})";
-    }
-
-    /// <summary>
-    /// Represents the condition "<see cref="Type"/> can be created by the type loader at runtime": its type loader
-    /// template is present and all of its generic arguments are present or can be created by the type loader too.
-    /// </summary>
-    public sealed class TypeLoaderLoadableTypeNode : DependencyNodeCore<NodeFactory>
-    {
-        private readonly TypeDesc _type;
-
-        public TypeLoaderLoadableTypeNode(TypeDesc type)
-        {
-            _type = type;
-        }
-
-        public TypeDesc Type => _type;
-
-        public override bool InterestingForDynamicDependencyAnalysis => false;
-        public override bool HasDynamicDependencies => false;
-        public override bool HasConditionalStaticDependencies => false;
-        public override bool StaticDependenciesAreComputed => true;
-
-        public override void AddStaticDependencies(DependencySink sink, NodeFactory context) { }
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
-
-        protected override string GetName(NodeFactory context)
-            => $"Type loader can load: {_type}";
+            => _argumentIndex < _type.Instantiation.Length
+                ? $"Type loader candidate gate: {_type} (argument {_argumentIndex})"
+                : $"Type loader candidate gate: {_type} (loadable)";
     }
 }

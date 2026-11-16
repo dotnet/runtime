@@ -656,11 +656,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeLoaderArgumentGateNode(key.Item1, key.Item2);
             });
 
-            _typeLoaderLoadableTypes = new NodeCache<TypeDesc, TypeLoaderLoadableTypeNode>(type =>
-            {
-                return new TypeLoaderLoadableTypeNode(type);
-            });
-
             _analysisCharacteristics = new NodeCache<string, AnalysisCharacteristicNode>(c =>
             {
                 return new AnalysisCharacteristicNode(c);
@@ -1659,13 +1654,6 @@ namespace ILCompiler.DependencyAnalysis
         public TypeLoaderArgumentGateNode TypeLoaderArgumentGate(TypeDesc type, int argumentIndex)
         {
             return _typeLoaderArgumentGates.GetOrAdd((type, argumentIndex));
-        }
-
-        private NodeCache<TypeDesc, TypeLoaderLoadableTypeNode> _typeLoaderLoadableTypes;
-
-        public TypeLoaderLoadableTypeNode TypeLoaderLoadableType(TypeDesc type)
-        {
-            return _typeLoaderLoadableTypes.GetOrAdd(type);
         }
 
         private NodeCache<TypeDesc, ProxyTypeMapRequestNode> _proxyTypeMapRequests;

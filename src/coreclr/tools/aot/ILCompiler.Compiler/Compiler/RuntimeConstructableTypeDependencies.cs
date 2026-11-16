@@ -76,18 +76,10 @@ namespace ILCompiler
             if (canonType == type || !GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonType))
                 return;
 
-            DependencyNodeCore<NodeFactory> template = factory.NativeLayout.TemplateTypeLayout(canonType);
+            TypeLoaderArgumentGateNode firstGate = factory.TypeLoaderArgumentGate(type, 0);
 
-            if (type.Instantiation.Length == 0)
-            {
-                // Arrays have no generic arguments to check.
-                dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(dependency, template, reason));
-            }
-            else
-            {
-                dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(factory.TypeLoaderArgumentGate(type, 0), template, reason));
-                dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(dependency, factory.TypeLoaderLoadableType(type), reason));
-            }
+            dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(firstGate, factory.NativeLayout.TemplateTypeLayout(canonType), reason));
+            dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(dependency, firstGate.GetLast(factory), reason));
         }
     }
 }
