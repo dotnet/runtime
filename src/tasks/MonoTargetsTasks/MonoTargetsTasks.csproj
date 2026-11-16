@@ -18,7 +18,8 @@
     <Compile Include="ILStrip\ILStrip.cs" />
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="RuntimeConfigParser\RuntimeConfigParser.cs" />
-    <Compile Include="JsonToItemsTaskFactory\JsonToItemsTaskFactory.cs" />
+    <Compile Include="JsonToItems\JsonToItemsReader.cs" />
+    <Compile Include="JsonToItems\JsonToItemsTasks.cs" />
     <Compile Include="NetTraceToMibcConverterTask\NetTraceToMibcConverter.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />
     <Compile Include="MarshalingPInvokeScanner\MinimalMarshalingTypeCompatibilityProvider.cs" />

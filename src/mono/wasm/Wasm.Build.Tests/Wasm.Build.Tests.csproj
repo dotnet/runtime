@@ -50,6 +50,7 @@
     <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.10" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
+    <ProjectReference Include="$(RepoTasksDir)MonoTargetsTasks\MonoTargetsTasks.csproj" />
 
     <None Include="$(BrowserProjectRoot)\test-main.js" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
