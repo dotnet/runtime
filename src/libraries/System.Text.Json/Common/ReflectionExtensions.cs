@@ -100,9 +100,6 @@ namespace System.Text.Json.Reflection
             }
 
 #if NET12_0_OR_GREATER
-            // GetInterfacesWithSameMetadataDefinitionAs searches GetInterfaces() for all constructed
-            // interfaces with the same generic type definition as 'interfaceType'. Its built-in
-            // IL2085 suppression complements the IL2070 suppression on this method.
             foreach (Type typeToCheck in type.GetInterfacesWithSameMetadataDefinitionAs(interfaceType))
             {
                 return typeToCheck;
