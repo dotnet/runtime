@@ -23,6 +23,22 @@ namespace Mono.Linker.Tests.Cases.LinkXml.PreserveNamespace2
     {
         [Kept]
         public int UnusedField;
+
+        [Kept]
+        [KeptMember(".ctor()")]
+        class Nested
+        {
+            [Kept]
+            public void Method() { }
+
+            [Kept]
+            [KeptMember(".ctor()")]
+            class NestedAgain
+            {
+                [Kept]
+                public int Field;
+            }
+        }
     }
 
     [Kept]
@@ -33,6 +49,11 @@ namespace Mono.Linker.Tests.Cases.LinkXml.PreserveNamespace2
         public void Method()
         {
         }
+    }
+
+    [Kept]
+    static class Empty
+    {
     }
 }
 

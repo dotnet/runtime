@@ -35,6 +35,19 @@ public class Program
             return 3;
         }
 
+        ProcessTextOutput listsResult = Process.RunAndCaptureText(new ProcessStartInfo(llvmDwarfDumpPath, ["--debug-info", "--recurse-depth=0", "--debug-loc", "--debug-ranges", "--debug-loclists", "--debug-rnglists", Environment.ProcessPath])
+        {
+            InheritedHandles = [],
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        });
+
+        if (listsResult.ExitStatus.ExitCode != 0)
+        {
+            Console.Error.WriteLine(listsResult.StandardError);
+            return 4;
+        }
+
         ProcessTextOutput result = Process.RunAndCaptureText(new ProcessStartInfo(llvmDwarfDumpPath, ["--verify", Environment.ProcessPath])
         {
             InheritedHandles = [],

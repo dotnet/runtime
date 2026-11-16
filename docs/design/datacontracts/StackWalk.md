@@ -56,8 +56,8 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(
     byte[] contextBuffer,
     bool isFirst = true);
 
-// Gets the thread context at the given stack dataframe.
-byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
+// Gets a read-only view of the context snapshot retained by the given stack dataframe.
+ReadOnlySpan<byte> GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
@@ -217,6 +217,7 @@ On ARM64, the `pac` unwind opcode strips pointer authentication bits from `Lr` u
 | `ResumableFrame` | `TargetContextPtr` | `pointer` | Pointer to the Frame's Target Context |
 | `RuntimeFunction` | *(type size)* | `uint32` | Size of a runtime function entry in bytes |
 | `RuntimeFunction` | `BeginAddress` | `uint32` | Begin address of the function. On ARM32, bit 0 is the Thumb bit; on WebAssembly, bit 31 marks a funclet and is excluded from address arithmetic. |
+| `RuntimeFunction` | `UnwindData` | `uint32` | Pointer to the unwind info for the function |
 | `SoftwareExceptionFrame` | `ReturnAddress` | `CodePointer` | Return address saved in Frame |
 | `SoftwareExceptionFrame` | `TargetContext` | `pointer` | Context object saved in Frame |
 | `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
@@ -510,7 +511,7 @@ Root-method frame identities have three forms:
 
 A funclet instead stores its establishing-frame pointer plus two, giving the identity low bits `10`. These tags are followed until the root-method frame is reached. The physical funclet frame supplies the function-local virtual IP, while the root frame supplies the identity used to find the controlling method's base virtual IP. cDAC requires each establishing-frame link to move toward the caller and bounds the traversal so corrupt target memory cannot create an unbounded walk.
 
-**WASM R2R unwinding.** The virtual IP is the identity-derived method base plus twice the physical frame's stored function-local value. `WasmContext.Unwind` resolves its current virtual IP through `IExecutionManager.GetCodeBlockHandle`, then uses `GetUnwindInfo` and `GetUnwindInfoBaseAddress` to locate the unwind data. It reads the fixed frame size as a uint32 ULEB128 value from `unwindInfoBaseAddress + RuntimeFunction.UnwindData` and adds that size to the physical frame base. A zero frame size terminates the R2R walk because it would make no progress; malformed uint32 ULEB128 data is invalid.
+**WASM R2R unwinding.** The controlling method's unwind blob contains its fixed frame size followed by its virtual IP extent, both uint32 ULEB128 values. When the extent is 2, the only observable function-local IP is 1: the virtual IP is the identity-derived method base plus 2, without reading the physical frame's IP slot, which may be uninitialized. Otherwise the virtual IP is the method base plus twice the physical frame's stored function-local value. `WasmContext.Unwind` resolves its current virtual IP through `IExecutionManager.GetCodeBlockHandle`, then uses `GetUnwindInfo` and `GetUnwindInfoBaseAddress` to locate the unwind data. It reads the fixed frame size as a uint32 ULEB128 value from `unwindInfoBaseAddress + RuntimeFunction.UnwindData` and adds that size to the physical frame base. A zero frame size terminates the R2R walk because it would make no progress; malformed uint32 ULEB128 data is invalid.
 
 For a managed caller, the resulting stack pointer identifies the caller's R2R frame record; its virtual IP and logical frame pointer are resolved as above. When the current frame has a positive odd reverse-P/Invoke identity, unwinding still preserves the advanced caller SP for the explicit `Frame` chain, but leaves IP and FP null because the caller is native. When the resulting stack pointer has no R2R frame record (a terminator, an interpreter transition or the stack top), the caller is not R2R code: the advanced SP is kept, IP and FP are null, and walking continues through the explicit `Frame` or interpreter frame chain. The R2R walk is cleared (SP, IP and FP all null) only when the current frame cannot be unwound at all: no R2R frame at SP, no unwind data, or a zero frame size.
 
@@ -599,14 +600,15 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData);
 
 The rest of the APIs convey state about the stack walk at a given point which fall out of the stack walking algorithm relatively simply.
 
-`GetRawContext` Retrieves the raw Windows style thread context of the current frame as a byte array. The size and shape of the context is platform dependent.
+`GetRawContext` retrieves the raw Windows style thread context of the current frame as a read-only span.
+The size and shape of the context is platform dependent.
 
 * On Windows the context is defined directly in Windows header `winnt.h`. See [CONTEXT structure](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-context) for more info.
 * On non-Windows platform the context's are defined in `src/coreclr/pal/inc/pal.h` and should mimic the Windows structure.
 
 This context is not guaranteed to be complete. Not all capital "F" Frames store the entire context, some only store the IP/SP/FP. Therefore, at points where the context is based on these Frames it will be incomplete.
 ```csharp
-byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
+ReadOnlySpan<byte> GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
 `GetFrameAddress` gets the address of the current capital "F" Frame. This is only valid if the `IStackDataFrameHandle` is at a point where the context is based on a capital "F" Frame. For example, it is not valid when when the current context was created by using the stack frame unwinder.

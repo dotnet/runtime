@@ -156,6 +156,7 @@ function_name() to call the system's implementation
 #endif
 
 #include <minipal/mutex.h>
+#include <minipal/strings.h>
 
 #include "pal.h"
 #include "palprivate.h"

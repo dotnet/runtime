@@ -368,13 +368,22 @@ public:
 
     // Note that the holders for CRSTs are used in extremely low stack conditions. Because of this, they
     // aren't allowed to use more than HOLDER_CODE_MINIMUM_STACK_LIMIT pages of stack.
-    typedef DacHolder<CrstBase *, CrstBase::AcquireLock, CrstBase::ReleaseLock, 0, CompareDefault> CrstHolderWithState;
+#ifndef DACCESS_COMPILE
+    typedef Holder<CrstBase *, CrstBase::AcquireLock, CrstBase::ReleaseLock, 0, CompareDefault> CrstHolderWithState;
+#else // DACCESS_COMPILE
+    // DAC acquisition may validate target state, but cleanup must not touch the target.
+    typedef Holder<CrstBase *, CrstBase::AcquireLock, DoNothing<CrstBase *>, 0, CompareDefault> CrstHolderWithState;
+#endif // !DACCESS_COMPILE
 
     // We have some situations where we're already holding a lock, and we need to release and reacquire the lock across a window.
     // This is a dangerous construct because the backout code can block.
     // Generally, it's better to use a regular CrstHolder, and then use the Release() / Acquire() methods on it.
     // This just exists to convert legacy OS Critical Section patterns over to holders.
-    typedef DacHolder<CrstBase *, CrstBase::ReleaseLock, CrstBase::AcquireLock, 0, CompareDefault> UnsafeCrstInverseHolder;
+#ifndef DACCESS_COMPILE
+    typedef Holder<CrstBase *, CrstBase::ReleaseLock, CrstBase::AcquireLock, 0, CompareDefault> UnsafeCrstInverseHolder;
+#else // DACCESS_COMPILE
+    typedef Holder<CrstBase *, DoNothing<CrstBase *>, DoNothing<CrstBase *>, 0, CompareDefault> UnsafeCrstInverseHolder;
+#endif // !DACCESS_COMPILE
 
     class CrstAndForbidSuspendForDebuggerHolder
     {

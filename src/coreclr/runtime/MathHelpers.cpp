@@ -35,69 +35,69 @@ FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
 }
 FCIMPLEND
 
-FCIMPL2_DD(double, Rhp_fmod, double x, double y)
+FCIMPL2_DD(double, Math_FMod, double x, double y)
 {
     return fmod(x, y);
 }
 FCIMPLEND
 
-FCIMPL2_FF(float, Rhp_fmodf, float x, float y)
+FCIMPL2_FF(float, MathF_FMod, float x, float y)
 {
     return fmodf(x, y);
 }
 FCIMPLEND
 
 #ifdef TARGET_32BIT
-FCIMPL2_LL(int64_t, DivInt64Internal, int64_t i, int64_t j)
+FCIMPL2_LL(int64_t, Math_DivInt64Internal, int64_t i, int64_t j)
 {
     _ASSERTE(j && "Divide by zero!");
     return i / j;
 }
 FCIMPLEND
 
-FCIMPL2_LL(uint64_t, DivUInt64Internal, uint64_t i, uint64_t j)
+FCIMPL2_LL(uint64_t, Math_DivUInt64Internal, uint64_t i, uint64_t j)
 {
     _ASSERTE(j && "Divide by zero!");
     return i / j;
 }
 FCIMPLEND
 
-FCIMPL2_LL(int64_t, ModInt64Internal, int64_t i, int64_t j)
+FCIMPL2_LL(int64_t, Math_ModInt64Internal, int64_t i, int64_t j)
 {
     _ASSERTE(j && "Divide by zero!");
     return i % j;
 }
 FCIMPLEND
 
-FCIMPL2_LL(uint64_t, ModUInt64Internal, uint64_t i, uint64_t j)
+FCIMPL2_LL(uint64_t, Math_ModUInt64Internal, uint64_t i, uint64_t j)
 {
     _ASSERTE(j && "Divide by zero!");
     return i % j;
 }
 FCIMPLEND
 
-FCIMPL2(int32_t, DivInt32Internal, int32_t i, int32_t j)
+FCIMPL2(int32_t, Math_DivInt32Internal, int32_t i, int32_t j)
 {
     _ASSERTE(j && "Divide by zero!");
     return i / j;
 }
 FCIMPLEND
 
-FCIMPL2(uint32_t, DivUInt32Internal, uint32_t i, uint32_t j)
+FCIMPL2(uint32_t, Math_DivUInt32Internal, uint32_t i, uint32_t j)
 {
     _ASSERTE(j && "Divide by zero!");
     return i / j;
 }
 FCIMPLEND
 
-FCIMPL2(int32_t, ModInt32Internal, int32_t i, int32_t j)
+FCIMPL2(int32_t, Math_ModInt32Internal, int32_t i, int32_t j)
 {
     _ASSERTE(j && "Divide by zero!");
     return i % j;
 }
 FCIMPLEND
 
-FCIMPL2(uint32_t, ModUInt32Internal, uint32_t i, uint32_t j)
+FCIMPL2(uint32_t, Math_ModUInt32Internal, uint32_t i, uint32_t j)
 {
     _ASSERTE(j && "Divide by zero!");
     return i % j;
@@ -175,67 +175,67 @@ FCIMPLEND
 #pragma float_control(precise, off)
 #endif
 
-FCIMPL1_D(double, Rhp_acos, double x)
+FCIMPL1_D(double, Math_Acos, double x)
     return acos(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_acosf, float x)
+FCIMPL1_F(float, MathF_Acos, float x)
     return acosf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_acosh, double x)
+FCIMPL1_D(double, Math_Acosh, double x)
     return acosh(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_acoshf, float x)
+FCIMPL1_F(float, MathF_Acosh, float x)
     return acoshf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_asin, double x)
+FCIMPL1_D(double, Math_Asin, double x)
     return asin(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_asinf, float x)
+FCIMPL1_F(float, MathF_Asin, float x)
     return asinf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_asinh, double x)
+FCIMPL1_D(double, Math_Asinh, double x)
     return asinh(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_asinhf, float x)
+FCIMPL1_F(float, MathF_Asinh, float x)
     return asinhf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_atan, double x)
+FCIMPL1_D(double, Math_Atan, double x)
     return atan(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_atanf, float x)
+FCIMPL1_F(float, MathF_Atan, float x)
     return atanf(x);
 FCIMPLEND
 
-FCIMPL2_DD(double, Rhp_atan2, double y, double x)
+FCIMPL2_DD(double, Math_Atan2, double y, double x)
     return atan2(y, x);
 FCIMPLEND
 
-FCIMPL2_FF(float, Rhp_atan2f, float y, float x)
+FCIMPL2_FF(float, MathF_Atan2, float y, float x)
     return atan2f(y, x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_atanh, double x)
+FCIMPL1_D(double, Math_Atanh, double x)
     return atanh(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_atanhf, float x)
+FCIMPL1_F(float, MathF_Atanh, float x)
     return atanhf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_cbrt, double x)
+FCIMPL1_D(double, Math_Cbrt, double x)
     return cbrt(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_cbrtf, float x)
+FCIMPL1_F(float, MathF_Cbrt, float x)
     return cbrtf(x);
 FCIMPLEND
 
@@ -246,11 +246,11 @@ FCIMPLEND
 #pragma float_control(precise, on)
 #endif
 
-FCIMPL1_D(double, Rhp_ceil, double x)
+FCIMPL1_D(double, Math_Ceiling, double x)
     return ceil(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_ceilf, float x)
+FCIMPL1_F(float, MathF_Ceiling, float x)
     return ceilf(x);
 FCIMPLEND
 
@@ -258,27 +258,27 @@ FCIMPLEND
 #pragma float_control(pop)
 #endif
 
-FCIMPL1_D(double, Rhp_cos, double x)
+FCIMPL1_D(double, Math_Cos, double x)
     return cos(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_cosf, float x)
+FCIMPL1_F(float, MathF_Cos, float x)
     return cosf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_cosh, double x)
+FCIMPL1_D(double, Math_Cosh, double x)
     return cosh(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_coshf, float x)
+FCIMPL1_F(float, MathF_Cosh, float x)
     return coshf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_exp, double x)
+FCIMPL1_D(double, Math_Exp, double x)
     return exp(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_expf, float x)
+FCIMPL1_F(float, MathF_Exp, float x)
     return expf(x);
 FCIMPLEND
 
@@ -289,7 +289,7 @@ FCIMPLEND
 #pragma float_control(precise, on)
 #endif
 
-FCIMPL1_D(double, Rhp_floor, double x)
+FCIMPL1_D(double, Math_Floor, double x)
     return floor(x);
 FCIMPLEND
 
@@ -297,35 +297,35 @@ FCIMPLEND
 #pragma float_control(pop)
 #endif
 
-FCIMPL1_F(float, Rhp_floorf, float x)
+FCIMPL1_F(float, MathF_Floor, float x)
     return floorf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_log, double x)
+FCIMPL1_D(double, Math_Log, double x)
     return log(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_logf, float x)
+FCIMPL1_F(float, MathF_Log, float x)
     return logf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_log2, double x)
+FCIMPL1_D(double, Math_Log2, double x)
     return log2(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_log2f, float x)
+FCIMPL1_F(float, MathF_Log2, float x)
     return log2f(x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_log10, double x)
+FCIMPL1_D(double, Math_Log10, double x)
     return log10(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_log10f, float x)
+FCIMPL1_F(float, MathF_Log10, float x)
     return log10f(x);
 FCIMPLEND
 
-FCIMPL2_DD(double, Rhp_pow, double x, double y)
+FCIMPL2_DD(double, Math_Pow, double x, double y)
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
     // The ARM/ARM64 CRT implementation of `pow` returns `0` rather than `x` for
     // subnormal `x` when `y` is exactly `1`; `pow(x, 1)` is `x` for all `x`
@@ -339,7 +339,7 @@ FCIMPL2_DD(double, Rhp_pow, double x, double y)
     return pow(x, y);
 FCIMPLEND
 
-FCIMPL2_FF(float, Rhp_powf, float x, float y)
+FCIMPL2_FF(float, MathF_Pow, float x, float y)
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
     // The ARM/ARM64 CRT implementation of `powf` returns `0` rather than `x` for
     // subnormal `x` when `y` is exactly `1`; `powf(x, 1)` is `x` for all `x`
@@ -353,59 +353,59 @@ FCIMPL2_FF(float, Rhp_powf, float x, float y)
     return powf(x, y);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_sin, double x)
+FCIMPL1_D(double, Math_Sin, double x)
     return sin(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_sinf, float x)
+FCIMPL1_F(float, MathF_Sin, float x)
     return sinf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_sinh, double x)
+FCIMPL1_D(double, Math_Sinh, double x)
     return sinh(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_sinhf, float x)
+FCIMPL1_F(float, MathF_Sinh, float x)
     return sinhf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_sqrt, double x)
+FCIMPL1_D(double, Math_Sqrt, double x)
     return sqrt(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_sqrtf, float x)
+FCIMPL1_F(float, MathF_Sqrt, float x)
     return sqrtf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_tan, double x)
+FCIMPL1_D(double, Math_Tan, double x)
     return tan(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_tanf, float x)
+FCIMPL1_F(float, MathF_Tan, float x)
     return tanf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, Rhp_tanh, double x)
+FCIMPL1_D(double, Math_Tanh, double x)
     return tanh(x);
 FCIMPLEND
 
-FCIMPL1_F(float, Rhp_tanhf, float x)
+FCIMPL1_F(float, MathF_Tanh, float x)
     return tanhf(x);
 FCIMPLEND
 
-FCIMPL3_DDD(double, Rhp_fma, double x, double y, double z)
+FCIMPL3_DDD(double, Math_FusedMultiplyAdd, double x, double y, double z)
     return fma(x, y, z);
 FCIMPLEND
 
-FCIMPL3_FFF(float, Rhp_fmaf, float x, float y, float z)
+FCIMPL3_FFF(float, MathF_FusedMultiplyAdd, float x, float y, float z)
     return fmaf(x, y, z);
 FCIMPLEND
 
-FCIMPL2_DI(double, Rhp_modf, double x, double* intptr)
+FCIMPL2_DI(double, Math_ModF, double x, double* intptr)
     return modf(x, intptr);
 FCIMPLEND
 
-FCIMPL2_FI(float, Rhp_modff, float x, float* intptr)
+FCIMPL2_FI(float, MathF_ModF, float x, float* intptr)
     return modff(x, intptr);
 FCIMPLEND
 
@@ -416,7 +416,7 @@ FCIMPLEND
 #pragma float_control(precise, on)
 #endif
 
-FCIMPL3_DII(void, Rhp_sincos, double x, double* pSin, double* pCos)
+FCIMPL3_DII(void, Math_SinCos, double x, double* pSin, double* pCos)
 #ifdef _MSC_VER
     *pSin = sin(x);
     *pCos = cos(x);
@@ -427,7 +427,7 @@ FCIMPL3_DII(void, Rhp_sincos, double x, double* pSin, double* pCos)
 #endif
 FCIMPLEND
 
-FCIMPL3_FII(void, Rhp_sincosf, float x, float* pSin, float* pCos)
+FCIMPL3_FII(void, MathF_SinCos, float x, float* pSin, float* pCos)
 #ifdef _MSC_VER
     *pSin = sinf(x);
     *pCos = cosf(x);

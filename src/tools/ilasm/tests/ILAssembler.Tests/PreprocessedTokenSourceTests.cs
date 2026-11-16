@@ -307,6 +307,123 @@ namespace Microsoft.DotNet.ILAssembler.Tests
                 token => Assert.Equal(CILLexer.Eof, token.Type));
         }
 
+        [Theory]
+        [InlineData("ARM64", "int64", CILLexer.INT64_)]
+        [InlineData("X64", "int64", CILLexer.INT64_)]
+        [InlineData("X86", "int32", CILLexer.INT32_)]
+        public void NestedConditionals_ExpandSelectedMacro(string architecture, string expectedText, int expectedType)
+        {
+            string source = $$"""
+                #define {{architecture}}
+                #ifdef ARM64
+                #define SLOT "int64"
+                #else
+                #ifdef X64
+                #define SLOT "int64"
+                #else
+                #define SLOT "int32"
+                #endif
+                #endif
+                SLOT
+                """;
+
+            PreprocessedTokenSource preprocessor = new(CreateLexerForSource(source), NoIncludeDirectivesCallback, CreateDefaultLexer());
+            preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
+            BufferedTokenStream stream = new(preprocessor);
+            stream.Fill();
+
+            Assert.Collection(stream.GetTokens(),
+                token =>
+                {
+                    Assert.Equal(expectedType, token.Type);
+                    Assert.Equal(expectedText, token.Text);
+                },
+                token => Assert.Equal(CILLexer.Eof, token.Type));
+            Assert.Equal(expectedText, preprocessor.DefinedVariables["SLOT"]);
+        }
+
+        [Theory]
+        [InlineData("ifdef", "ifdef", false)]
+        [InlineData("ifdef", "ifndef", false)]
+        [InlineData("ifndef", "ifdef", false)]
+        [InlineData("ifndef", "ifndef", false)]
+        [InlineData("ifdef", "ifdef", true)]
+        [InlineData("ifdef", "ifndef", true)]
+        [InlineData("ifndef", "ifdef", true)]
+        [InlineData("ifndef", "ifndef", true)]
+        public void DisabledNestedConditionals_DoNotAffectActiveBranch(string firstDirective, string secondDirective, bool skipElse)
+        {
+            string disabledBlock = $$"""
+                #{{firstDirective}} UNDEFINED
+                #{{secondDirective}} UNDEFINED
+                #define UNEXPECTED
+                Wrong
+                #endif
+                #else
+                AlsoWrong
+                #endif
+                """;
+            string source = $$"""
+                #define DEFINED
+                #{{(skipElse ? "ifdef" : "ifndef")}} DEFINED
+                {{(skipElse ? "Selected" : disabledBlock)}}
+                #else
+                {{(skipElse ? disabledBlock : "Selected")}}
+                #endif
+                After
+                """;
+
+            PreprocessedTokenSource preprocessor = new(CreateLexerForSource(source), NoIncludeDirectivesCallback, CreateDefaultLexer());
+            preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
+            BufferedTokenStream stream = new(preprocessor);
+            stream.Fill();
+
+            Assert.Equal(new[] { "Selected", "After", "<EOF>" }, stream.GetTokens().Select(token => token.Text));
+            Assert.False(preprocessor.DefinedVariables.ContainsKey("UNEXPECTED"));
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public void EndIf_RestoresOuterConditionalAndProcessesNextDirective(bool outerDefined, bool innerDefined)
+        {
+            string source = """
+                #ifdef OUTER
+                #ifdef INNER
+                Inner
+                #endif
+                #else
+                OuterElse
+                #endif
+                #define AFTER "Expanded"
+                AFTER
+                """;
+            Dictionary<string, string?> definitions = new();
+            if (outerDefined)
+            {
+                definitions.Add("OUTER", null);
+            }
+            if (innerDefined)
+            {
+                definitions.Add("INNER", null);
+            }
+
+            PreprocessedTokenSource preprocessor = new(CreateLexerForSource(source), NoIncludeDirectivesCallback, CreateDefaultLexer(), definitions);
+            preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
+            BufferedTokenStream stream = new(preprocessor);
+            stream.Fill();
+
+            string[] expected = (outerDefined, innerDefined) switch
+            {
+                (true, true) => new[] { "Inner", "Expanded", "<EOF>" },
+                (true, false) => new[] { "Expanded", "<EOF>" },
+                _ => new[] { "OuterElse", "Expanded", "<EOF>" },
+            };
+            Assert.Equal(expected, stream.GetTokens().Select(token => token.Text));
+        }
+
         [Fact]
         public void Include_Includes_Tokens_With_Original_Source()
         {

@@ -22,6 +22,16 @@ EXTERN G_CARD_TABLE : DWORD
 EXTERN G_TRAP_THREADS : DWORD
 EXTERN G_POLL_GC : DWORD
 
+;; CallEHFunclet and CallEHFilterFunclet are called with __fastcall, which passes the third argument at the
+;; lower stack address.
+FUNCLET_CALL_ARG3 equ 4
+FUNCLET_CALL_ARG4 equ 8
+
+;; CallEHFunclet loads the preserved registers of the parent frame from the CONTEXT
+LOAD_FUNCLET_REGISTER macro base, reg
+        mov     reg, [base + CONTEXT_&reg]
+        endm
+
 TAILCALL_GC_POLL_RARE macro
         mov     eax, G_POLL_GC
         jmp     eax

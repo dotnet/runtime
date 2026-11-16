@@ -323,6 +323,12 @@ if(NOT FEATURE_PORTABLE_HELPERS)
   endif()
 endif()
 
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  list(APPEND RUNTIME_SOURCES_ARCH_ASM
+    ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.${ASM_SUFFIX}
+  )
+endif (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+
 # Add architecture specific folder for looking up headers.
 convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
 include_directories(${ARCH_SOURCES_DIR})

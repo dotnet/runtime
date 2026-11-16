@@ -120,11 +120,7 @@ To enable the interpreter, add `/p:RunAOTCompilation=true /p:MonoEnableInterpret
 
 To build for AOT only mode, add `/p:RunAOTCompilation=true /p:MonoEnableInterpreter=false` to a build command.
 
-3. AOT-LLVM
-
-To build for AOT-LLVM mode, add `/p:RunAOTCompilation=true /p:MonoEnableInterpreter=false /p:MonoEnableLLVM=true` to a build command.
-
-4. App Sandbox
+3. App Sandbox
 
 To build the test app bundle with the App Sandbox entitlement, add `/p:EnableAppSandbox=true` to a build command.
 

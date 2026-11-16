@@ -310,16 +310,25 @@ namespace System.Net.Http.Functional.Tests
                 Uri url2 = new Uri(url, path2);
                 Uri unusedUrl = new Uri(url, unusedPath);
 
-                HttpClientHandler handler = CreateHttpClientHandler();
-                handler.CookieContainer = new CookieContainer();
-                handler.CookieContainer.Add(url1, new Cookie("cookie1", "value1", path1));
-                handler.CookieContainer.Add(url2, new Cookie("cookie2", "value2", path2));
-                handler.CookieContainer.Add(unusedUrl, new Cookie("cookie3", "value3", unusedPath));
+                CookieContainer cookieContainer = new CookieContainer();
+                cookieContainer.Add(url1, new Cookie("cookie1", "value1", path1));
+                cookieContainer.Add(url2, new Cookie("cookie2", "value2", path2));
+                cookieContainer.Add(unusedUrl, new Cookie("cookie3", "value3", unusedPath));
 
-                using (HttpClient client = CreateHttpClient(handler))
+                using (HttpClientHandler handler = CreateHttpClientHandler())
                 {
-                    client.DefaultRequestHeaders.ConnectionClose = true; // to avoid issues with connection pooling
-                    await client.GetAsync(url1);
+                    handler.CookieContainer = cookieContainer;
+                    handler.AllowAutoRedirect = false;
+                    using HttpClient client = CreateHttpClient(handler);
+                    using HttpResponseMessage response = await client.GetAsync(url1);
+                    Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+                }
+
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                {
+                    handler.CookieContainer = cookieContainer;
+                    using HttpClient client = CreateHttpClient(handler);
+                    using HttpResponseMessage response = await client.GetAsync(url2);
                 }
             },
             async server =>
@@ -622,15 +631,25 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
             {
                 Uri url1 = new Uri(url, path1);
+                Uri url2 = new Uri(url, path2);
+                CookieContainer cookieContainer = new CookieContainer();
 
-                HttpClientHandler handler = CreateHttpClientHandler();
-
-                using (HttpClient client = CreateHttpClient(handler))
+                using (HttpClientHandler handler = CreateHttpClientHandler())
                 {
-                    client.DefaultRequestHeaders.ConnectionClose = true; // to avoid issues with connection pooling
-                    await client.GetAsync(url1);
+                    handler.CookieContainer = cookieContainer;
+                    handler.AllowAutoRedirect = false;
+                    using HttpClient client = CreateHttpClient(handler);
+                    using HttpResponseMessage response = await client.GetAsync(url1);
+                    Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+                }
 
-                    CookieCollection collection = handler.CookieContainer.GetCookies(url);
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                {
+                    handler.CookieContainer = cookieContainer;
+                    using HttpClient client = CreateHttpClient(handler);
+                    using HttpResponseMessage response = await client.GetAsync(url2);
+
+                    CookieCollection collection = cookieContainer.GetCookies(url);
 
                     Assert.Equal(2, collection.Count);
 

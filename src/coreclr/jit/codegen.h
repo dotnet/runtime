@@ -503,61 +503,21 @@ protected:
     bool genUsedPopToReturn; // True if we use the pop into PC to return,
                              // False if we didn't and must branch to LR to return.
 
-    // A set of information that is used by funclet prolog and epilog generation. It is collected once, before
-    // funclet prologs and epilogs are generated, and used by all funclet prologs and epilogs, which must all be the
-    // same.
-    struct FuncletFrameInfoDsc
-    {
-        regMaskTP fiSaveRegs; // Set of registers saved in the funclet prolog (includes LR)
-        unsigned  fiSpDelta;  // Stack pointer delta
-    };
+#endif // TARGET_ARM
 
-    FuncletFrameInfoDsc genFuncletInfo;
-
-#elif defined(TARGET_ARM64)
+#if !defined(TARGET_X86) && !defined(TARGET_WASM)
 
     // A set of information that is used by funclet prolog and epilog generation. It is collected once, before
     // funclet prologs and epilogs are generated, and used by all funclet prologs and epilogs, which must all be the
     // same.
     struct FuncletFrameInfoDsc
     {
-        regMaskTP fiSaveRegs;               // Set of callee-saved registers saved in the funclet prolog (includes LR)
-        int       fiSP_to_FPLR_save_delta;  // FP/LR register save offset from SP (positive)
-        int       fiSP_to_CalleeSave_delta; // First callee-saved register slot offset from SP (positive)
-        int       fiFrameType;              // Funclet frame types are numbered. See genFuncletProlog() for details.
-        int       fiSpDelta1;               // Stack pointer delta 1 (negative)
-        int       fiSpDelta2;               // Stack pointer delta 2 (negative)
+        unsigned fiSpDelta; // Stack allocated for the outgoing argument space below the saved return address
     };
 
     FuncletFrameInfoDsc genFuncletInfo;
 
-#elif defined(TARGET_AMD64)
-
-    // A set of information that is used by funclet prolog and epilog generation. It is collected once, before
-    // funclet prologs and epilogs are generated, and used by all funclet prologs and epilogs, which must all be the
-    // same.
-    struct FuncletFrameInfoDsc
-    {
-        unsigned fiSpDelta; // Stack pointer delta
-    };
-
-    FuncletFrameInfoDsc genFuncletInfo;
-
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-    // A set of information that is used by funclet prolog and epilog generation.
-    // It is collected once, before funclet prologs and epilogs are generated,
-    // and used by all funclet prologs and epilogs, which must all be the same.
-    struct FuncletFrameInfoDsc
-    {
-        regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
-        int       fiSP_to_CalleeSaved_delta; // CalleeSaved register save offset from SP (positive)
-        int       fiSpDelta;                 // Stack pointer delta (negative)
-    };
-
-    FuncletFrameInfoDsc genFuncletInfo;
-
-#endif // TARGET_ARM, TARGET_ARM64, TARGET_AMD64, TARGET_LOONGARCH64, TARGET_RISCV64
+#endif // !TARGET_X86, !TARGET_WASM
 
 #if defined(TARGET_XARCH)
 
@@ -666,7 +626,6 @@ protected:
     virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value);
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const;
     bool         genSaveFpLrWithAllCalleeSavedRegisters;
-    bool         genForceFuncletFrameType5;
     bool         genReverseAndPairCalleeSavedRegisters;
 #endif // TARGET_ARM64
 
@@ -1212,6 +1171,7 @@ protected:
 #ifdef TARGET_WASM
     void           genCodeForFrameSize(GenTree* tree);
     cnsval_ssize_t genWasmMemargOffset(GenTree* addr);
+    void           genWasmZeroInit(size_t size);
 #endif // TARGET_WASM
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);

@@ -103,6 +103,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             .EnsureSuccessful();
 
         AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+        AddWasmOptProjectProperties(ref extraProperties);
 
         string projectFilePath = Path.Combine(_projectDir, $"{projectName}.csproj");
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
@@ -140,6 +141,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
 
         AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+        AddWasmOptProjectProperties(ref extraProperties);
 
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
@@ -151,6 +153,12 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (runAnalyzers)
             extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
         AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
+    }
+
+    protected static void AddWasmOptProjectProperties(ref string extraProperties)
+    {
+        if (EnvironmentVariables.UseWasmOpt)
+            extraProperties += "<WasmRunWasmOpt>true</WasmRunWasmOpt>";
     }
 
     protected static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)

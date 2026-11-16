@@ -433,11 +433,11 @@ HRESULT EEConfig::sync()
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, &wszModifiableAssemblies));
         if (wszModifiableAssemblies)
         {
-            if (_wcsicmp(wszModifiableAssemblies, W("debug")) == 0)
+            if (u16_stricmp(wszModifiableAssemblies, W("debug")) == 0)
             {
                 modifiableAssemblies = MODIFIABLE_ASSM_DEBUG;
             }
-            else if (_wcsicmp(wszModifiableAssemblies, W("none")) == 0)
+            else if (u16_stricmp(wszModifiableAssemblies, W("none")) == 0)
             {
                 modifiableAssemblies = MODIFIABLE_ASSM_NONE;
             }

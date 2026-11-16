@@ -2228,7 +2228,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     private byte[] GetCurrentContextBytes(IStackDataFrameHandle handle)
     {
         IStackWalk sw = _target.Contracts.StackWalk;
-        byte[] context = sw.GetRawContext(handle);
+        byte[] context = sw.GetRawContext(handle).ToArray();
 
         // See https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L184
         RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
@@ -2237,7 +2237,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             IPlatformAgnosticContext stripped = IPlatformAgnosticContext.GetContextForPlatform(_target);
             stripped.FillFromBuffer(context);
             stripped.RawContextFlags &= ~0x40u;
-            context = stripped.GetBytes();
+            context = stripped.GetBytes().ToArray();
         }
         return context;
     }
@@ -6794,7 +6794,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             dstCtx.CopyContext(srcCtx);
             int destinationSize = (int)Math.Min(destinationContext.contextSize, dstCtx.Size);
-            dstCtx.GetBytes().AsSpan(0, destinationSize).CopyTo(new Span<byte>(destinationContext.pContextBytes, destinationSize));
+            dstCtx.GetBytes()[..destinationSize].CopyTo(new Span<byte>(destinationContext.pContextBytes, destinationSize));
         }
         catch (System.Exception ex)
         {
@@ -6848,7 +6848,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     ctx.TrySetRegister(name, new TargetNUInt(values[i]));
             }
 
-            ctx.GetBytes().AsSpan(0, (int)ctx.Size).CopyTo(bufSpan);
+            ctx.GetBytes()[..(int)ctx.Size].CopyTo(bufSpan);
         }
         catch (System.Exception ex)
         {
@@ -7089,7 +7089,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 throw new ArgumentException($"Register {reg} is not a float register", nameof(reg));
             }
-            ctx.GetBytes().AsSpan().CopyTo(buf);
+            ctx.GetBytes().CopyTo(buf);
         }
         catch (System.Exception ex)
         {

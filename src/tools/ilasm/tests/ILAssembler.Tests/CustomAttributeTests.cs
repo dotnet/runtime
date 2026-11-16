@@ -20,6 +20,8 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class CustomAttributeTests
     {
+        // TypeAttributes.ExtendedLayout is not defined in .NET 10.
+        private const TypeAttributes ExtendedLayout = (TypeAttributes)0x00000018;
 
         [Fact]
         public void CustomAttribute_HexByteBlob_ParsedCorrectly()
@@ -1217,7 +1219,7 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
         [Theory]
         [InlineData("( 01 00 00 00 00 00 00 00 )", TypeAttributes.SequentialLayout)]
-        [InlineData("( 01 00 01 00 00 00 00 00 )", TypeAttributes.ExtendedLayout)]
+        [InlineData("( 01 00 01 00 00 00 00 00 )", ExtendedLayout)]
         [InlineData("( 01 00 02 00 00 00 00 00 )", TypeAttributes.ExplicitLayout)]
         [InlineData("( 01 00 03 00 00 00 00 00 )", TypeAttributes.AutoLayout)]
         public void PseudoCustomAttribute_StructLayout_SetsLayoutMask(string value, TypeAttributes expected)

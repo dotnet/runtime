@@ -191,9 +191,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     else
 #endif
     {
-        unsigned flagsStackWalk = ALLOW_ASYNC_STACK_WALK | ALLOW_INVALID_OBJECTS;
-
-        flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
+        unsigned flagsStackWalk = ALLOW_ASYNC_STACK_WALK | ALLOW_INVALID_OBJECTS | GC_FUNCLET_REFERENCE_REPORTING | GC_ROOT_SCAN;
 
         gcctx.pScannedSlots = NULL;
         pThread->StackWalkFrames( GcStackCrawlCallBack, &gcctx, flagsStackWalk);

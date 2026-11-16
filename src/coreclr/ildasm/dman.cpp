@@ -627,7 +627,7 @@ static BOOL ConvertToLegalFileNameInPlace(__inout LPWSTR wzName)
     for (size_t i = 0; i < (sizeof(rwzReserved) / sizeof(WCHAR *)); i++)
     {
         _ASSERTE(u16_strlen(rwzReserved[i]) == 3);
-        if (_wcsnicmp(wzName, rwzReserved[i], 3) == 0)
+        if (u16_strnicmp(wzName, rwzReserved[i], 3) == 0)
         {
             LPWSTR pwc = wzName + 3;
 
@@ -856,7 +856,7 @@ void DumpManifestResources(void* GUICookie)
                             for (ULONG i = 0; i < (ix + 2); i++)
                             {
                                 WCHAR *wzPreviousName = (WCHAR *)qbNameArray[i].Ptr();
-                                if (wzPreviousName && _wcsicmp(wzName, wzPreviousName) == 0)
+                                if (wzPreviousName && u16_stricmp(wzName, wzPreviousName) == 0)
                                 {
                                     // resource with the same name as another resource
                                     // or with the same name as the output IL/RES file

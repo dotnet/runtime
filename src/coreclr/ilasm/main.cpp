@@ -271,9 +271,9 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                               WCHAR wzSubOpt[8];
                               wcsncpy_s(wzSubOpt,8,pStr,3);
                               wzSubOpt[3] = 0;
-                              if(0 == _wcsicmp(wzSubOpt,W("OPT")))
+                              if(0 == u16_stricmp(wzSubOpt,W("OPT")))
                                 pAsm->m_dwIncludeDebugInfo = 0x3;
-                              else if(0 == _wcsicmp(wzSubOpt,W("IMP")))
+                              else if(0 == u16_stricmp(wzSubOpt,W("IMP")))
                                 pAsm->m_dwIncludeDebugInfo = 0x103;
                               else
                               {

@@ -1457,15 +1457,6 @@ extern "C" DWORD64 __stdcall GetDataCacheZeroIDReg();
 extern "C" uint64_t GetSveLengthFromOS();
 #endif
 
-#ifdef TARGET_WASM
-static bool s_wasmRelaxedSimdSupported;
-
-extern "C" void coreclr_wasm_set_relaxed_simd_supported()
-{
-    s_wasmRelaxedSimdSupported = true;
-}
-#endif
-
 void EEJitManager::SetCpuInfo()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1510,10 +1501,6 @@ void EEJitManager::SetCpuInfo()
 #if defined(TARGET_WASM)
     CPUCompileFlags.Set(InstructionSet_WasmBase);
     CPUCompileFlags.Set(InstructionSet_PackedSimd);
-    if (s_wasmRelaxedSimdSupported)
-    {
-        CPUCompileFlags.Set(InstructionSet_RelaxedSimd);
-    }
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -2297,15 +2284,15 @@ BOOL EEJitManager::LoadJIT()
         if (altJitOsConfig != NULL)
         {
             // We have some inconsistency all over the place with osx vs macos, let's handle both here
-            if ((_wcsicmp(altJitOsConfig, W("macos")) == 0) || (_wcsicmp(altJitOsConfig, W("osx")) == 0))
+            if ((u16_stricmp(altJitOsConfig, W("macos")) == 0) || (u16_stricmp(altJitOsConfig, W("osx")) == 0))
             {
                 targetOs = CORINFO_APPLE;
             }
-            else if ((_wcsicmp(altJitOsConfig, W("linux")) == 0) || (_wcsicmp(altJitOsConfig, W("unix")) == 0))
+            else if ((u16_stricmp(altJitOsConfig, W("linux")) == 0) || (u16_stricmp(altJitOsConfig, W("unix")) == 0))
             {
                 targetOs = CORINFO_UNIX;
             }
-            else if (_wcsicmp(altJitOsConfig, W("windows")) == 0)
+            else if (u16_stricmp(altJitOsConfig, W("windows")) == 0)
             {
                 targetOs = CORINFO_WINNT;
             }
@@ -3625,44 +3612,43 @@ TypeHandle InterpreterJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClau
     {
         _ASSERTE(!HasCachedTypeHandle(pEHClause));
 
-        GenericParamContextType paramContextType = pCf->GetCodeManager()->GetParamContextType(pCf->GetRegisterSet(), pCf->GetCodeInfo());
-        _ASSERTE(SafeToReportGenericParamContext(pCf));
-        if (SafeToReportGenericParamContext(pCf))
+        PTR_VOID genericsToken = NULL;
+        GenericParamContextType paramContextType = pCf->GetCodeManager()->GetParamContextType(
+            pCf->GetRegisterSet(),
+            pCf->GetCodeInfo(),
+            &genericsToken);
+        MethodDesc *pMD = pCf->GetFunction();
+        TypeHandle declaringType = (TypeHandle)pMD->GetMethodTable();
+
+        // Shared generic code needs the frame's exact generic context to resolve the exception type.
+        if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
         {
-            MethodDesc *pMD = pCf->GetFunction();
-            TypeHandle declaringType = (TypeHandle)pMD->GetMethodTable();
-
-            // Handle the case where the method is a static shared generic method and we need to keep the type
-            // of the generic parameters alive
-            if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
-            {
-                pMD = dac_cast<PTR_MethodDesc>(pCf->GetParamTypeArg());
-                declaringType = (TypeHandle)pMD->GetMethodTable();
-            }
-            else if (paramContextType == GENERIC_PARAM_CONTEXT_METHODTABLE)
-            {
-                declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(pCf->GetParamTypeArg());
-            }
-            else
-            {
-                _ASSERTE(paramContextType == GENERIC_PARAM_CONTEXT_THIS);
-                GCX_COOP();
-                declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(pCf->GetExactGenericArgsToken());
-                if (declaringType.IsNull())
-                {
-                    COMPlusThrow(kNullReferenceException, W("NullReference_This"));
-                }
-            }
-
-            _ASSERTE(!declaringType.IsNull());
-
-            SigTypeContext typeContext(pMD, declaringType);
-
-            Module* pModule = pMD->GetModule();
-
-            thResolved = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, pEHClause->ClassToken, &typeContext,
-                                                       ClassLoader::ReturnNullIfNotFound);
+            pMD = dac_cast<PTR_MethodDesc>(genericsToken);
+            declaringType = (TypeHandle)pMD->GetMethodTable();
         }
+        else if (paramContextType == GENERIC_PARAM_CONTEXT_METHODTABLE)
+        {
+            declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(genericsToken);
+        }
+        else
+        {
+            _ASSERTE(paramContextType == GENERIC_PARAM_CONTEXT_THIS);
+            GCX_COOP();
+            declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(pCf->GetExactGenericArgsToken());
+            if (declaringType.IsNull())
+            {
+                COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+            }
+        }
+
+        _ASSERTE(!declaringType.IsNull());
+
+        SigTypeContext typeContext(pMD, declaringType);
+
+        Module* pModule = pMD->GetModule();
+
+        thResolved = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, pEHClause->ClassToken, &typeContext,
+                                                   ClassLoader::ReturnNullIfNotFound);
     }
 
     return thResolved;
@@ -4688,6 +4674,7 @@ BOOL EECodeGenManager::JitCodeToMethodInfoWorker(
     if (pCodeInfo)
     {
         pCodeInfo->m_methodToken = METHODTOKEN(pRangeSection, dac_cast<TADDR>(pCHdr));
+        pCodeInfo->m_gcInfoToken = { NULL, 0 };
 
         // This can be counted on for Jitted code. For NGEN code in the case
         // where we have hot/cold splitting this isn't valid and we need to
@@ -5964,9 +5951,26 @@ FunctionTableIndexRangeSection* ExecutionManager::FindFunctionTableIndexRangeSec
     return nullptr;
 }
 
-TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex)
+static TADDR GetWasmVirtualIPFromRuntimeFunction(ReadyToRunInfo* pR2RInfo, PTR_RUNTIME_FUNCTION pRuntimeFunction, bool* pHasSingleVirtualIP)
 {
     LIMITED_METHOD_CONTRACT;
+
+    if (pHasSingleVirtualIP != nullptr)
+    {
+        TADDR imageBase = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase());
+        // Two logical IP units cover the prolog and the sole observable IP (1).
+        *pHasSingleVirtualIP = RUNTIME_FUNCTION__EndAddress(pRuntimeFunction, imageBase) -
+                              RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction) == 4;
+    }
+    return pR2RInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction);
+}
+
+TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex, bool* pHasSingleVirtualIP)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (pHasSingleVirtualIP != nullptr)
+        *pHasSingleVirtualIP = false;
 
     FunctionTableIndexRangeSection* pSection = FindFunctionTableIndexRangeSection(functionIndex);
     if (pSection == nullptr)
@@ -5996,11 +6000,11 @@ TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionInd
             localIndex--;
             continue;
         }
-        return pR2RInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction);
+        return GetWasmVirtualIPFromRuntimeFunction(pR2RInfo, pRuntimeFunction, pHasSingleVirtualIP);
     } while (true);
 }
 
-TADDR ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(DWORD functionIndex)
+TADDR ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(DWORD functionIndex, bool* pHasSingleVirtualIP)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -6011,7 +6015,7 @@ TADDR ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(DWORD fu
     _ASSERTE(functionIndex < pR2RInfo->GetRuntimeFunctionCount());
     PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + functionIndex;
     _ASSERTE(!RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction));
-    return WasmInitialVirtualIP + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction);
+    return GetWasmVirtualIPFromRuntimeFunction(pR2RInfo, pRuntimeFunction, pHasSingleVirtualIP);
 }
 
 TADDR ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP)
@@ -7242,7 +7246,8 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 
 #ifdef FEATURE_COLD_R2R_CODE
     const int lookupIndex = HotColdMappingLookupTable::LookupMappingForMethod(pInfo, (ULONG)MethodIndex);
-    if ((lookupIndex != -1) && ((lookupIndex & 1) == 1))
+    const bool isColdCode = (lookupIndex != -1) && ((lookupIndex & 1) == 1);
+    if (isColdCode)
     {
         // If the MethodIndex happens to be the cold code block, turn it into the associated hot code block
         MethodIndex = pInfo->m_pHotColdMap[lookupIndex];
@@ -7251,7 +7256,12 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 
     MethodDesc *pMethodDesc;
     while ((pMethodDesc = pInfo->GetMethodDescForEntryPoint(ImageBase + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctions + MethodIndex))) == NULL)
-        MethodIndex--;
+    {
+        // No preceding entry has been registered yet (for example, GC stress is inspecting
+        // a call to a method whose entry point has not been published).
+        if (--MethodIndex < 0)
+            return FALSE;
+    }
 
     PTR_RUNTIME_FUNCTION FunctionEntry = pRuntimeFunctions + MethodIndex;
 
@@ -7265,20 +7275,33 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
     {
         // We are using RUNTIME_FUNCTION as METHODTOKEN
         pCodeInfo->m_methodToken = METHODTOKEN(pRangeSection, dac_cast<TADDR>(FunctionEntry));
+        pCodeInfo->m_gcInfoToken = { NULL, 0 };
 
         AMD64_ONLY(_ASSERTE((RawFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0));
         pCodeInfo->m_pFunctionEntry = RawFunctionEntry;
-        MethodRegionInfo methodRegionInfo;
-        JitTokenToMethodRegionInfo(pCodeInfo->m_methodToken, &methodRegionInfo);
-        if ((methodRegionInfo.coldSize > 0) && (currentInstr >= methodRegionInfo.coldStartAddress))
+#ifdef FEATURE_COLD_R2R_CODE
+        if (isColdCode)
         {
+            MethodRegionInfo methodRegionInfo;
+            JitTokenToMethodRegionInfo(pCodeInfo->m_methodToken, &methodRegionInfo);
+            _ASSERTE((methodRegionInfo.coldSize > 0) && (currentInstr >= methodRegionInfo.coldStartAddress));
             pCodeInfo->m_relOffset = (DWORD)
                 (methodRegionInfo.hotSize + (currentInstr - methodRegionInfo.coldStartAddress));
         }
         else
+#endif // FEATURE_COLD_R2R_CODE
         {
-            pCodeInfo->m_relOffset = (DWORD)(currentInstr - methodRegionInfo.hotStartAddress);
+            pCodeInfo->m_relOffset = (DWORD)(currentInstr - JitTokenToStartAddress(pCodeInfo->m_methodToken));
         }
+
+#ifdef _DEBUG
+        MethodRegionInfo debugMethodRegionInfo;
+        JitTokenToMethodRegionInfo(pCodeInfo->m_methodToken, &debugMethodRegionInfo);
+        DWORD expectedRelOffset = ((debugMethodRegionInfo.coldSize > 0) && (currentInstr >= debugMethodRegionInfo.coldStartAddress))
+            ? (DWORD)(debugMethodRegionInfo.hotSize + (currentInstr - debugMethodRegionInfo.coldStartAddress))
+            : (DWORD)(currentInstr - debugMethodRegionInfo.hotStartAddress);
+        _ASSERTE(pCodeInfo->m_relOffset == expectedRelOffset);
+#endif // _DEBUG
     }
 
     return TRUE;
