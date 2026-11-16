@@ -7,6 +7,7 @@
 #include "sstring.h"
 #include "ex.h"
 #include <dn-stdio.h>
+#include <minipal/environ.h>
 
 #ifdef HOST_WINDOWS
 class LongFile
@@ -31,7 +32,6 @@ public:
         static BOOL IsDevice(const SString & path);
         static void NormalizeDirectorySeparators(SString& path);
 };
-#endif // HOST_WINDOWS
 
 DWORD
 SearchPathWrapper(
@@ -56,7 +56,6 @@ SearchPathWrapper(
 
     EX_TRY
     {
-#ifdef HOST_WINDOWS
         LongPathString Existingpath(LongPathString::Literal, lpPath);
         if (lpPath != NULL)
         {
@@ -69,7 +68,6 @@ SearchPathWrapper(
                 lpPath = Existingpath.GetUnicode();
             }
         }
-#endif // HOST_WINDOWS
 
         if (!getPath)
         {
@@ -128,6 +126,7 @@ SearchPathWrapper(
     return ret;
 
 }
+#endif // HOST_WINDOWS
 
 DWORD
 GetModuleFileNameWrapper(
@@ -208,29 +207,28 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
 
         COUNT_T size = lpBuffer.GetUnicodeAllocation() + 1;
 
-        ret = GetEnvironmentVariableW(
-            lpName,
-            lpBuffer.OpenUnicodeBuffer(size - 1),
+        ret = minipal_environ_get_variable_u16(
+            (const CHAR16_T*)lpName,
+            (CHAR16_T*)lpBuffer.OpenUnicodeBuffer(size - 1),
             size
             );
 
         // We loop round getting the length of the env var and then trying to copy
         // the value into a the allocated buffer. Usually we'll go through this loop
         // precisely once, but the caution is necessary in case the variable mutates
-        // beneath us, as the environment variable can be modified by another thread
-        //between two calls to GetEnvironmentVariableW
+        // beneath us.
 
         while (ret > size)
         {
             size = ret;
             lpBuffer.CloseBuffer();
-            ret = GetEnvironmentVariableW(
-                lpName,
-                lpBuffer.OpenUnicodeBuffer(size - 1),
+            ret = minipal_environ_get_variable_u16(
+                (const CHAR16_T*)lpName,
+                (CHAR16_T*)lpBuffer.OpenUnicodeBuffer(size - 1),
                 size);
         }
 
-        lastError = GetLastError();
+        lastError = (ret == 0) ? ERROR_ENVVAR_NOT_FOUND : ERROR_SUCCESS;
         lpBuffer.CloseBuffer(ret);
     }
     EX_CATCH_HRESULT(hr);

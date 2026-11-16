@@ -19,6 +19,8 @@ namespace System.Threading
         private static bool s_checkScheduled;
         private static Pollable? s_resolvedPollable;
         private static Task? s_mainTask;
+        private static int s_consecutiveNonBlockingPolls;
+        private const int NonBlockingPollsBeforeFreshPollable = 64;
 
         internal static Task RegisterWasiPollableHandle(int handle, bool ownsPollable, CancellationToken cancellationToken)
         {
@@ -155,16 +157,33 @@ namespace System.Threading
                 // if there is CPU-bound work to do, we should not block on PollInterop.Poll below
                 // so we will append pollable resolved in 0ms
                 // in effect, the PollInterop.Poll would not block us
+                Pollable? freshPollable = null;
                 if (ThreadPool.PendingWorkItemCount > 0 || (s_mainTask != null && s_mainTask.IsCompleted))
                 {
-                    s_resolvedPollable ??= MonotonicClockInterop.SubscribeDuration(0);
                     resolvedPollableIndex = pending.Count;
-                    pending.Add(s_resolvedPollable);
+                    // wasmtime only processes host I/O readiness when a poll can't complete immediately, so an
+                    // already-resolved pollable in every poll can keep socket readiness from ever being reported.
+                    // Periodically use a new zero-duration pollable instead, which isn't ready on its first check.
+                    if (++s_consecutiveNonBlockingPolls % NonBlockingPollsBeforeFreshPollable == 0)
+                    {
+                        freshPollable = MonotonicClockInterop.SubscribeDuration(0);
+                        pending.Add(freshPollable);
+                    }
+                    else
+                    {
+                        s_resolvedPollable ??= MonotonicClockInterop.SubscribeDuration(0);
+                        pending.Add(s_resolvedPollable);
+                    }
+                }
+                else
+                {
+                    s_consecutiveNonBlockingPolls = 0;
                 }
 
                 // this could block, this is blocking WASI API call
                 // FIXME: this will also block soft-debugger ability to pause the execution. Solutions: A) upgrade to WASIp3 B) register debugger connection's pollable
                 var readyIndexes = IPollImports.Poll(pending);
+                freshPollable?.Dispose();
 
                 var holdersCount = holders.Count;
                 for (int i = 0; i < readyIndexes.Length; i++)

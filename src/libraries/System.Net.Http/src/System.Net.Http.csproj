@@ -18,6 +18,8 @@
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'tvos'">$(DefineConstants);TARGET_TVOS</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(DefineConstants);TARGET_WASI</DefineConstants>
+    <!-- System.Net.Security is unsupported on WASI; SocketsHttpHandler's TLS paths throw PlatformNotSupportedException there. -->
+    <NoWarn Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(NoWarn);CA1416</NoWarn>
     <EmitCompilerGeneratedFiles Condition="'$(Configuration)' == 'Debug' and '$(TargetPlatformIdentifier)' == 'browser'">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
@@ -42,11 +44,13 @@
     <Compile Include="System\Net\Http\Headers\KnownHeaders.cs" />
     <Compile Include="System\Net\Http\HttpBaseStream.cs" />
     <Compile Include="System\Net\Http\HttpClient.cs" />
-    <Compile Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos'"
+    <Compile Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(TargetPlatformIdentifier)' == 'wasi'"
              Include="System\Net\Http\HttpClientHandler.AnyMobile.cs" />
     <Compile Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos'"
              Include="System\Net\Http\HttpClientHandler.AnyMobile.InvokeNativeHandler.cs" />
-    <Compile Condition="'$(TargetPlatformIdentifier)' != 'android' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'maccatalyst' and '$(TargetPlatformIdentifier)' != 'tvos'"
+    <Compile Condition="'$(TargetPlatformIdentifier)' == 'wasi'"
+             Include="System\Net\Http\HttpClientHandler.Wasi.InvokeNativeHandler.cs" />
+    <Compile Condition="'$(TargetPlatformIdentifier)' != 'android' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'maccatalyst' and '$(TargetPlatformIdentifier)' != 'tvos' and '$(TargetPlatformIdentifier)' != 'wasi'"
              Include="System\Net\Http\HttpClientHandler.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />
     <Compile Include="System\Net\Http\HttpContent.cs" />
@@ -170,7 +174,7 @@
   </ItemGroup>
 
   <!-- SocketsHttpHandler implementation -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="System\Net\Http\HttpMethod.SocketsHttpHandler.cs" />
     <Compile Include="System\Net\Http\Headers\AltSvcHeaderParser.cs" />
@@ -329,13 +333,13 @@
   </ItemGroup>
 
   <!-- SocketsHttpHandler platform parts -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\CurrentUserIdentityProvider.Unix.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi' and '$(TargetPlatformIdentifier)' != 'osx' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'tvos' and '$(TargetPlatformIdentifier)' != 'maccatalyst'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'osx' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'tvos' and '$(TargetPlatformIdentifier)' != 'maccatalyst'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" />
   </ItemGroup>
@@ -407,7 +411,7 @@
              Link="Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="$(CommonPath)System\StrongToWeakReference.cs"
              Link="Common\Interop\Unix\StrongToWeakReference.cs" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
@@ -452,14 +456,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
-    <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs"
-             Link="Common\System\Net\HttpStatusDescription.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionEvictionContext.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionContext.cs" />
-    <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
-    <Compile Include="System\Net\Http\WasiHttpHandler\SystemProxyInfo.Wasi.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpHandler.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpInterop.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiOutputStream.cs" />
@@ -520,6 +516,9 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" Condition="'$(TargetPlatformIdentifier)' == 'wasi'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" Condition="'$(TargetPlatformIdentifier)' == 'wasi'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" Condition="'$(TargetPlatformIdentifier)' == 'wasi'" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Uri\src\System.Private.Uri.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true" />

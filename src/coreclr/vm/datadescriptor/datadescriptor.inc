@@ -490,9 +490,8 @@ CDAC_TYPE_END(AppDomain)
 CDAC_TYPE_BEGIN(ExternalMemoryHandle)
 CDAC_TYPE_INDETERMINATE(ExternalMemoryHandle)
 CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, Next, cdac_data<ExternalMemoryHandle>::Next)
-CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, MethodTable, cdac_data<ExternalMemoryHandle>::MethodTable)
+CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, TypeHandle, cdac_data<ExternalMemoryHandle>::TypeHandle)
 CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, Memory, cdac_data<ExternalMemoryHandle>::Memory)
-CDAC_TYPE_FIELD(ExternalMemoryHandle, T_UINT32, GCFlags, cdac_data<ExternalMemoryHandle>::GCFlags)
 CDAC_TYPE_END(ExternalMemoryHandle)
 
 CDAC_TYPE_BEGIN(SystemDomain)
@@ -944,6 +943,7 @@ CDAC_TYPE_INDETERMINATE(PlatformMetadata)
 CDAC_TYPE_FIELD(PlatformMetadata, TYPE(PrecodeMachineDescriptor), PrecodeMachineDescriptor, offsetof(CDacPlatformMetadata, precode))
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_FIELD(PlatformMetadata, T_UINT8, CodePointerFlags, offsetof(CDacPlatformMetadata, codePointerFlags))
+CDAC_TYPE_FIELD(PlatformMetadata, T_UINT64, PointerAuthenticationMask, offsetof(CDacPlatformMetadata, pointerAuthenticationMask))
 CDAC_TYPE_END(PlatformMetadata)
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
@@ -1477,13 +1477,13 @@ CDAC_TYPE_SIZE(sizeof(FaultingExceptionFrame))
 CDAC_TYPE_FIELD(FaultingExceptionFrame, EXTERN_TYPE(Context), TargetContext, cdac_data<FaultingExceptionFrame>::TargetContext)
 CDAC_TYPE_END(FaultingExceptionFrame)
 
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
 CDAC_TYPE_BEGIN(TailCallFrame)
 CDAC_TYPE_SIZE(sizeof(TailCallFrame))
 CDAC_TYPE_FIELD(TailCallFrame, TYPE(CalleeSavedRegisters), CalleeSavedRegisters, cdac_data<TailCallFrame>::CalleeSavedRegisters)
 CDAC_TYPE_FIELD(TailCallFrame, TYPE(CodePointer), ReturnAddress, cdac_data<TailCallFrame>::ReturnAddress)
 CDAC_TYPE_END(TailCallFrame)
-#endif // TARGET_X86 && !UNIX_X86_ABI
+#endif // TARGET_X86
 
 // ArgumentRegisters struct is different on each platform
 CDAC_TYPE_BEGIN(ArgumentRegisters)

@@ -409,9 +409,9 @@ namespace System.IO.Compression
             return zip64Field;
         }
 
-        public static void RemoveZip64Blocks(List<ZipGenericExtraField> extraFields)
+        public static bool RemoveZip64Blocks(List<ZipGenericExtraField> extraFields)
         {
-            extraFields.RemoveAll(field => field.Tag == TagConstant);
+            return extraFields.RemoveAll(field => field.Tag == TagConstant) != 0;
         }
 
         public void WriteBlockCore(Span<byte> extraFieldData)
@@ -650,15 +650,15 @@ namespace System.IO.Compression
             extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(fixedHeaderBuffer[relativeExtraFieldLengthLocation..]);
         }
 
-        private static List<ZipGenericExtraField> GetExtraFieldPostReadWork(Span<byte> extraFieldBuffer, out byte[] trailingData)
+        private static List<ZipGenericExtraField> GetExtraFieldPostReadWork(Span<byte> extraFieldBuffer, out byte[] trailingData, out bool usesZip64)
         {
             List<ZipGenericExtraField> list = ZipGenericExtraField.ParseExtraField(extraFieldBuffer, out ReadOnlySpan<byte> trailingDataSpan);
-            Zip64ExtraField.RemoveZip64Blocks(list);
+            usesZip64 = Zip64ExtraField.RemoveZip64Blocks(list);
             trailingData = trailingDataSpan.ToArray();
             return list;
         }
 
-        public static List<ZipGenericExtraField> GetExtraFields(Stream stream, out byte[] trailingData)
+        public static List<ZipGenericExtraField> GetExtraFields(Stream stream, out byte[] trailingData, out bool usesZip64)
         {
             // assumes that TrySkipBlock has already been called, so we don't have to validate twice
 
@@ -687,7 +687,7 @@ namespace System.IO.Compression
                 stream.Seek(filenameLength, SeekOrigin.Current);
                 stream.ReadExactly(extraFieldBuffer);
 
-                return GetExtraFieldPostReadWork(extraFieldBuffer, out trailingData);
+                return GetExtraFieldPostReadWork(extraFieldBuffer, out trailingData, out usesZip64);
             }
             finally
             {

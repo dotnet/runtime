@@ -160,6 +160,17 @@ namespace System
             return RuntimeImports.modf(x, intptr);
         }
 
-        public static (double Sin, double Cos) SinCos(double x) => (Sin(x), Cos(x));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe (double Sin, double Cos) SinCos(double x)
+        {
+            if (RuntimeHelpers.IsKnownConstant(x))
+            {
+                return (Sin(x), Cos(x));
+            }
+
+            double sin, cos;
+            RuntimeImports.sincos(x, &sin, &cos);
+            return (sin, cos);
+        }
     }
 }

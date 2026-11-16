@@ -465,54 +465,6 @@ if(CLR_CMAKE_HOST_UNIX)
           ${libunwind_elf_la_SOURCES}
         )
     endif(CLR_CMAKE_HOST_APPLE)
-
-else(CLR_CMAKE_HOST_UNIX)
-    if(CLR_CMAKE_TARGET_ARCH_ARM64)
-        set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_aarch64})
-        set(libunwind_remote_la_SOURCES             ${libunwind_aarch64_la_SOURCES_aarch64})
-        set(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
-        list(APPEND libunwind_setjmp_la_SOURCES     aarch64/siglongjmp.S)
-    elseif(CLR_CMAKE_TARGET_ARCH_ARM)
-        set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_arm})
-        set(libunwind_remote_la_SOURCES             ${libunwind_arm_la_SOURCES_arm})
-        set(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
-        list(APPEND libunwind_setjmp_la_SOURCES     arm/siglongjmp.S)
-    elseif(CLR_CMAKE_TARGET_ARCH_ARMV6)
-        set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_arm})
-        set(libunwind_remote_la_SOURCES             ${libunwind_arm_la_SOURCES_arm})
-        set(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
-        list(APPEND libunwind_setjmp_la_SOURCES     arm/siglongjmp.S)
-    elseif(CLR_CMAKE_TARGET_ARCH_I386)
-        set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86} ${libunwind_x86_la_SOURCES_os})
-        set(libunwind_remote_la_SOURCES             ${libunwind_x86_la_SOURCES_x86})
-        set(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
-        list(APPEND libunwind_setjmp_la_SOURCES     x86/longjmp.S x86/siglongjmp.S)
-    elseif(CLR_CMAKE_TARGET_ARCH_AMD64)
-        set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86_64})
-        set(libunwind_remote_la_SOURCES             ${libunwind_x86_64_la_SOURCES_x86_64})
-        set(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
-        list(APPEND libunwind_setjmp_la_SOURCES     x86_64/longjmp.S x86_64/siglongjmp.SA)
-    elseif(CLR_CMAKE_TARGET_ARCH_S390X)
-        set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_s390x})
-        set(libunwind_remote_la_SOURCES             ${libunwind_s390x_la_SOURCES_s390x})
-        set(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
-    elseif(CLR_CMAKE_TARGET_ARCH_POWERPC64)
-        set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_ppc64le})
-        set(libunwind_remote_la_SOURCES             ${libunwind_ppc64le_la_SOURCES_ppc64le})
-        set(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
-    endif()
-
-    set(LIBUNWIND_SOURCES_BASE
-      remote/win/missing-functions.c
-      # ${libunwind_la_SOURCES}  Local...
-      ${libunwind_remote_la_SOURCES}
-      # Commented out above for LOCAL + REMOTE runtime build
-      mi/Gget_accessors.c
-      # ${libunwind_dwarf_local_la_SOURCES}
-      ${libunwind_dwarf_common_la_SOURCES}
-      ${libunwind_dwarf_generic_la_SOURCES}
-      ${libunwind_elf_la_SOURCES}
-    )
 endif(CLR_CMAKE_HOST_UNIX)
 
 addprefix(LIBUNWIND_SOURCES "${CMAKE_CURRENT_LIST_DIR}/libunwind/src" "${LIBUNWIND_SOURCES_BASE}")

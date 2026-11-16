@@ -3,7 +3,7 @@
 
 using System.CommandLine;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed class IlasmRootCommand : RootCommand
 {

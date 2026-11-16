@@ -11,7 +11,7 @@
 class ASMDumper
 {
 public:
-    static void DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr);
+    static void DumpToFile(FILE* hFile, MethodContext* mc, CompileResult* cr);
 };
 
 #endif

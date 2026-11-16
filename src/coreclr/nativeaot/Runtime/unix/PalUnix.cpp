@@ -30,6 +30,7 @@
 
 #include <unistd.h>
 #include <minipal/cpucount.h>
+#include "ProcessEnvironment.h"
 #include <sched.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -45,6 +46,11 @@
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/ospagesize.h>
 #include <minipal/thread.h>
+
+#ifdef TARGET_WASI
+extern "C" char __stack_low;
+extern "C" char __stack_high;
+#endif
 
 #ifdef TARGET_LINUX
 #include <sys/syscall.h>
@@ -723,21 +729,7 @@ uint32_t PalGetCurrentProcessId()
 
 uint32_t PalGetEnvironmentVariable(const char * name, char * buffer, uint32_t size)
 {
-    const char* value = getenv(name);
-    if (value == NULL)
-    {
-        return 0;
-    }
-
-    size_t valueLen = strlen(value);
-    if (valueLen < size)
-    {
-        strcpy(buffer, value);
-        return valueLen;
-    }
-
-    // return required size including the null character or 0 if the size doesn't fit into uint32_t
-    return (valueLen < UINT32_MAX) ? (valueLen + 1) : 0;
+    return ProcessEnvironment_GetVariableUtf8(name, buffer, size);
 }
 
 uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4)
@@ -868,12 +860,17 @@ void PalHijack(Thread* pThreadToHijack)
 
     if (status != 0)
     {
+        // Failure to send the signal is fatal. Sending the signal can fail if the signal ID
+        // is invalid, if the thread doesn't exist anymore, or if the environment denies
+        // sending signals to threads of this process (e.g. a restrictive AppArmor/seccomp
+        // policy returning EACCES or EPERM). Report the reason, since the resulting abort
+        // is otherwise very hard to diagnose.
+        fprintf(stderr, "Failed to inject activation signal %d into thread: %s (%d)\n",
+            INJECT_ACTIVATION_SIGNAL, strerror(status), status);
+
         // Causes creation of a crash dump if enabled
         PalCreateCrashDumpIfEnabled();
 
-        // Failure to send the signal is fatal. There are only two cases when sending
-        // the signal can fail. First, if the signal ID is invalid and second,
-        // if the thread doesn't exist anymore.
         abort();
     }
 }
@@ -888,7 +885,7 @@ HANDLE PalCreateLowMemoryResourceNotification()
 extern "C" void _mm_pause()
 // Defined for implementing PalYieldProcessor in Pal.h
 {
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
   __asm__ volatile ("pause");
 #endif
 }
@@ -915,7 +912,10 @@ bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHi
     void* pStackHighOut = NULL;
     void* pStackLowOut = NULL;
 
-#ifdef __APPLE__
+#ifdef TARGET_WASI
+    pStackLowOut = &__stack_low;
+    pStackHighOut = &__stack_high;
+#elif defined(__APPLE__)
     // This is a Mac specific method
     pStackHighOut = pthread_get_stackaddr_np(pthread_self());
     pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));

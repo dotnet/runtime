@@ -658,8 +658,7 @@ public:
         TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechanism during
                                                       // thread startup so can be skipped.
 
-        TSNC_CallingManagedCodeDisabled = 0x20000000, // Use by multicore JIT feature to asert on calling managed code/loading module in background thread
-                                                      // Exception, system module is allowed, security demand is allowed
+        // unused                       = 0x20000000,
 
         TSNC_LoadsTypeViolation         = 0x40000000, // Use by type loader to break deadlocks caused by type load level ordering violations
 
@@ -2208,6 +2207,8 @@ public:
 
     #define UNWIND_FLOATS 0x20000
 
+    #define GC_ROOT_SCAN 0x40000
+
     StackWalkAction StackWalkFramesEx(
                         PREGDISPLAY pRD,        // virtual register set at crawl start
                         PSTACKWALKFRAMESCALLBACK pCallback,
@@ -2970,6 +2971,7 @@ public:
 #endif // PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA
     }
 
+private:
     //-------------------------------------------------------------------------
     // The hijack lock enforces that a thread on which a profiler is currently
     // performing a stack walk cannot be hijacked.
@@ -2994,7 +2996,32 @@ public:
         pThread->m_hijackLock = FALSE;
     }
 
-    typedef ConditionalStateHolder<Thread *, Thread::EnterHijackLock, Thread::LeaveHijackLock> HijackLockHolder;
+    struct HijackLockHolderTraits final
+    {
+        using Type = Thread*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            LIMITED_METHOD_CONTRACT;
+            if (value != NULL)
+                Thread::LeaveHijackLock(value);
+        }
+    };
+
+public:
+    using HijackLockHolder = LifetimeHolder<HijackLockHolderTraits>;
+
+    bool TryAcquireHijackLock(HijackLockHolder& holder)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(!holder);
+        if (!EnterHijackLock(this))
+            return false;
+
+        holder = this;
+        return true;
+    }
     //-------------------------------------------------------------------------
 
     void PrepareForEERestart(BOOL SuspendSucceeded)
@@ -3479,26 +3506,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return m_debuggerActivePatchSkipper.Load() != NULL;
     }
-
-private:
-
-    static BOOL EnterWorkingOnThreadContext(Thread *pThread)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if(pThread->m_debuggerActivePatchSkipper.Load() != NULL)
-        {
-            return FALSE;
-        }
-        return TRUE;
-    }
-
-    static void LeaveWorkingOnThreadContext(Thread *pThread)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    typedef ConditionalStateHolder<Thread *, Thread::EnterWorkingOnThreadContext, Thread::LeaveWorkingOnThreadContext> WorkingOnThreadContextHolder;
 
 private:
     BOOL m_fAllowProfilerCallbacks;
@@ -5400,78 +5407,6 @@ public:
 private:
     BOOL m_fNeed;
     DWORD m_state;
-};
-
-// Sets an NC threadstate if not already set, and restores the old state
-// of that bit upon destruction
-
-// fNeed > 0,   make sure state is set, restored in destructor
-// fNeed = 0,   no change
-// fNeed < 0,   make sure state is reset, restored in destructor
-
-class ThreadStateNCStackHolder
-{
-    public:
-    ThreadStateNCStackHolder (BOOL fNeed, Thread::ThreadStateNoConcurrency state)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE (GetThreadNULLOk());
-        m_fNeed = fNeed;
-        m_state = state;
-
-        if (fNeed)
-        {
-            Thread *pThread = GetThread();
-            if (fNeed < 0)
-            {
-                // if the state is set, reset it
-                if (pThread->HasThreadStateNC(state))
-                {
-                    pThread->ResetThreadStateNC(m_state);
-                }
-                else
-                {
-                    m_fNeed = FALSE;
-                }
-            }
-            else
-            {
-                // if the state is already set then no change is
-                // necessary during the back out
-                if(pThread->HasThreadStateNC(state))
-                {
-                    m_fNeed = FALSE;
-                }
-                else
-                {
-                    pThread->SetThreadStateNC(state);
-                }
-            }
-        }
-    }
-
-    ~ThreadStateNCStackHolder()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (m_fNeed)
-        {
-            Thread *pThread = GetThread();
-            if (m_fNeed < 0)
-            {
-                pThread->SetThreadStateNC(m_state); // set it
-            }
-            else
-            {
-                pThread->ResetThreadStateNC(m_state);
-            }
-        }
-    }
-
-private:
-    BOOL m_fNeed;
-    Thread::ThreadStateNoConcurrency m_state;
 };
 
 BOOL Debug_IsLockedViaThreadSuspension();
