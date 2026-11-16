@@ -445,6 +445,9 @@
     <Compile Include="..\..\Common\JitInterface\CorInfoInstructionSet.cs">
       <Link>JitInterface\CorInfoInstructionSet.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\JitInterface\CorInfoInstructionSetParser.cs">
+      <Link>JitInterface\CorInfoInstructionSetParser.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\JitInterface\IJitHashableOnly.cs">
       <Link>JitInterface\IJitHashableOnly.cs</Link>
     </Compile>

@@ -800,6 +800,9 @@
     <Compile Include="..\..\Common\JitInterface\CorInfoInstructionSet.cs">
       <Link>JitInterface\CorInfoInstructionSet.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\JitInterface\CorInfoInstructionSetParser.cs">
+      <Link>JitInterface\CorInfoInstructionSetParser.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\JitInterface\CorInfoHelpFunc.cs">
       <Link>JitInterface\CorInfoHelpFunc.cs</Link>
     </Compile>

@@ -1,0 +1,26 @@
+<Project>
+  <!-- The SuperPMI shims: NativeAOT shared libraries that the runtime loads as its JIT. -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <NativeLib>Shared</NativeLib>
+    <PublishAot>true</PublishAot>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>$(PortableOS)-$(TargetArchitecture)</RuntimeIdentifier>
+    <PublishDir>$(RuntimeBinDir)</PublishDir>
+    <!-- The native side uses C++ exceptions. -->
+    <LinkStandardCPlusPlusLibrary>true</LinkStandardCPlusPlusLibrary>
+    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\shim\OriginalJitInfo_generated.cs" Link="Shim\OriginalJitInfo_generated.cs" />
+    <Compile Include="..\shim\ShimEnvironment.cs" Link="Shim\ShimEnvironment.cs" />
+    <Compile Include="..\shim\ShimInterop.cs" Link="Shim\ShimInterop.cs" />
+    <ProjectReference Include="..\SuperPmi.Shared\SuperPmi.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <DirectPInvoke Include="superpmi-shim-jitinterface" />
+    <NativeLibrary Include="$(RuntimeBinDir)superpmi-lib\$(LibPrefix)superpmi-shim-jitinterface$(StaticLibSuffix)" />
+  </ItemGroup>
+</Project>
