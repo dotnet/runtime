@@ -774,13 +774,17 @@ namespace System.IO.Pipes.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation is based on sockets
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public async Task PipeHandlesAreFinalizedWhenNotDisposed(bool asyncRead, bool asyncWrite)
+        [InlineData(false, false, false)]
+        [InlineData(false, true, false)]
+        [InlineData(true, false, false)]
+        [InlineData(true, true, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, true)]
+        public async Task PipeHandlesAreFinalizedWhenNotDisposed(bool asyncRead, bool asyncWrite, bool cancellable)
         {
-            (WeakReference<SafePipeHandle> serverHandle, WeakReference<SafePipeHandle> clientHandle) = await ConnectReadAndWriteAsync(asyncRead, asyncWrite);
+            (WeakReference<SafePipeHandle> serverHandle, WeakReference<SafePipeHandle> clientHandle) = await ConnectReadAndWriteAsync(asyncRead, asyncWrite, cancellable);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -790,7 +794,7 @@ namespace System.IO.Pipes.Tests
             Assert.False(clientHandle.TryGetTarget(out _));
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static async Task<(WeakReference<SafePipeHandle>, WeakReference<SafePipeHandle>)> ConnectReadAndWriteAsync(bool asyncRead, bool asyncWrite)
+            static async Task<(WeakReference<SafePipeHandle>, WeakReference<SafePipeHandle>)> ConnectReadAndWriteAsync(bool asyncRead, bool asyncWrite, bool cancellable)
             {
                 string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
                 NamedPipeServerStream server = new(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, asyncRead ? PipeOptions.Asynchronous : PipeOptions.None);
@@ -798,8 +802,17 @@ namespace System.IO.Pipes.Tests
 
                 await Task.WhenAll(server.WaitForConnectionAsync(), client.ConnectAsync());
 
+                CancellationToken cancellationToken = default;
+                if (cancellable)
+                {
+                    // The registration makes the server reachable from the cancellation token source.
+                    CancellationTokenSource cts = new();
+                    cts.Token.Register(() => server.Dispose());
+                    cancellationToken = cts.Token;
+                }
+
                 byte[] buffer = new byte[1];
-                ValueTask<int> readTask = server.ReadAsync(buffer);
+                ValueTask<int> readTask = server.ReadAsync(buffer, cancellationToken);
                 await client.WriteAsync(new byte[] { 42 });
                 Assert.Equal(1, await readTask);
 

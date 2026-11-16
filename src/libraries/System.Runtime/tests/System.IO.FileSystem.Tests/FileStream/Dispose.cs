@@ -6,6 +6,7 @@ using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.IO.Tests
@@ -515,13 +516,17 @@ namespace System.IO.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public async Task PipeHandlesAreFinalizedWhenNotDisposed(bool asyncRead, bool asyncWrite)
+        [InlineData(false, false, false)]
+        [InlineData(false, true, false)]
+        [InlineData(true, false, false)]
+        [InlineData(true, true, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, true)]
+        public async Task PipeHandlesAreFinalizedWhenNotDisposed(bool asyncRead, bool asyncWrite, bool cancellable)
         {
-            (WeakReference<SafeFileHandle> readHandle, WeakReference<SafeFileHandle> writeHandle) = await ReadAndWriteAsync(asyncRead, asyncWrite);
+            (WeakReference<SafeFileHandle> readHandle, WeakReference<SafeFileHandle> writeHandle) = await ReadAndWriteAsync(asyncRead, asyncWrite, cancellable);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -531,14 +536,23 @@ namespace System.IO.Tests
             Assert.False(writeHandle.TryGetTarget(out _));
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static async Task<(WeakReference<SafeFileHandle>, WeakReference<SafeFileHandle>)> ReadAndWriteAsync(bool asyncRead, bool asyncWrite)
+            static async Task<(WeakReference<SafeFileHandle>, WeakReference<SafeFileHandle>)> ReadAndWriteAsync(bool asyncRead, bool asyncWrite, bool cancellable)
             {
                 SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead, asyncWrite);
                 FileStream reader = new(readHandle, FileAccess.Read, bufferSize: 0, isAsync: asyncRead);
                 FileStream writer = new(writeHandle, FileAccess.Write, bufferSize: 0, isAsync: asyncWrite);
 
+                CancellationToken cancellationToken = default;
+                if (cancellable)
+                {
+                    // The registration makes the reader reachable from the cancellation token source.
+                    CancellationTokenSource cts = new();
+                    cts.Token.Register(() => reader.Dispose());
+                    cancellationToken = cts.Token;
+                }
+
                 byte[] buffer = new byte[1];
-                ValueTask<int> readTask = reader.ReadAsync(buffer);
+                ValueTask<int> readTask = reader.ReadAsync(buffer, cancellationToken);
                 await writer.WriteAsync(new byte[] { 42 });
                 Assert.Equal(1, await readTask);
 

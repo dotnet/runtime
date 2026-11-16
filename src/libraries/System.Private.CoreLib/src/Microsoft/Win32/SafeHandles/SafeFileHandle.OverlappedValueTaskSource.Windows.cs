@@ -156,6 +156,10 @@ namespace Microsoft.Win32.SafeHandles
                     // of an operation that is still in progress must not affect the instance.
                     if (token == _source.Version && _source.GetStatus(token) != ValueTaskSourceStatus.Pending)
                     {
+                        // The cached instance is rooted by its PreAllocatedOverlapped, so it must not reference the
+                        // cancellation token source the operation was registered with.
+                        _cancellationRegistration = default;
+
                         Debug.Assert(_fileHandle is not null);
                         _fileHandle.TryToReuse(this);
                     }

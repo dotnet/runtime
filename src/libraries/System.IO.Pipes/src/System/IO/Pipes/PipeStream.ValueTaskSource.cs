@@ -64,8 +64,10 @@ namespace System.IO.Pipes
                     // of an operation that is still in progress must not affect the instance.
                     if (token == _source.Version && _source.GetStatus(token) != ValueTaskSourceStatus.Pending)
                     {
-                        // The cached instance is rooted by its PreAllocatedOverlapped, so it must not reference the stream.
+                        // The cached instance is rooted by its PreAllocatedOverlapped, so it must not reference the stream
+                        // or the cancellation token source the operation was registered with.
                         // Otherwise, the stream and its handle could never be collected.
+                        _cancellationRegistration = default;
                         PipeStream? pipeStream = _pipeStream;
                         Debug.Assert(pipeStream is not null);
                         _pipeStream = null;
