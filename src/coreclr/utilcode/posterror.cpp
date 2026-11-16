@@ -81,7 +81,7 @@ static HRESULT FormatRuntimeErrorVA(
                 rcMsg[iLen - 2] = '\0';
         }
         else
-            hr = HRESULT_FROM_GetLastError();
+            hr = E_FAIL;
     }
 
     _ASSERTE(SUCCEEDED(hr));
