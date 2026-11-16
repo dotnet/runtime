@@ -185,7 +185,7 @@ namespace System.IO.Tests
             var expectedEvents = dirs.Select(dir => new FiredEvent(WatcherChangeTypes.Deleted, dir.DirectoryInWatchedDir));
 
             // Remove Created events as there is racecondition when create dir and then observe parent folder. It receives Create event altought Watcher is not registered yet.
-            Assert.Equal(expectedEvents, events.Where(x => x.EventType != WatcherChangeTypes.Created));
+            AssertEventsEqual(expectedEvents, events.Where(x => x.EventType != WatcherChangeTypes.Created));
 
 
         }
@@ -213,7 +213,7 @@ namespace System.IO.Tests
             List<FiredEvent> events = ExpectEvents(watcher, filesCount, action);
             var expectedEvents = dirs.Select(dir => new FiredEvent(WatcherChangeTypes.Created, dir.DirectoryInWatchedDir));
 
-            Assert.Equal(expectedEvents, events);
+            AssertEventsEqual(expectedEvents, events);
         }
 
         private void DirectoryMove_FromWatchedToUnwatched(WatcherChangeTypes eventType)
