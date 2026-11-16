@@ -14,7 +14,13 @@ namespace System.DirectoryServices.Protocols
         {
             get => true;
             [UnsupportedOSPlatform("windows")]
-            set => throw new PlatformNotSupportedException();
+            set
+            {
+                if (!value)
+                {
+                    throw new PlatformNotSupportedException();
+                }
+            }
         }
 
         [UnsupportedOSPlatform("windows")]

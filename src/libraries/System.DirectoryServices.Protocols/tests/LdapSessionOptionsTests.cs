@@ -788,11 +788,13 @@ namespace System.DirectoryServices.Protocols.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void CanonicalizeHostName_GetReturnsTrue_SetThrowsPlatformNotSupportedException()
+        public void CanonicalizeHostName_Windows_GetReturnsTrue_SetFalseThrowsPlatformNotSupportedException()
         {
             using (var connection = new LdapConnection("server"))
             {
                 LdapSessionOptions options = connection.SessionOptions;
+                Assert.True(options.CanonicalizeHostName);
+                options.CanonicalizeHostName = true;
                 Assert.True(options.CanonicalizeHostName);
                 Assert.Throws<PlatformNotSupportedException>(() => options.CanonicalizeHostName = false);
             }
