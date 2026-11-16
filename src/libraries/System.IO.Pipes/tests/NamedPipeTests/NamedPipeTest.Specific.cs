@@ -822,7 +822,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // the returned ValueTask is backed by a reusable PipeValueTaskSource only on Windows
-        public async Task GettingResultOfTheSameValueTaskTwiceThrowsInvalidOperationException()
+        public async Task GettingResultOfPendingOrConsumedValueTaskThrowsInvalidOperationException()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
             using NamedPipeServerStream server = new(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
@@ -830,11 +830,18 @@ namespace System.IO.Pipes.Tests
 
             await Task.WhenAll(server.WaitForConnectionAsync(), client.ConnectAsync());
 
-            ValueTask<int> readTask = server.ReadAsync(new byte[1]);
-            await client.WriteAsync(new byte[1]);
-            Assert.Equal(1, await readTask);
+            ValueTask<int> firstRead = server.ReadAsync(new byte[1]);
+            Assert.Throws<InvalidOperationException>(() => firstRead.Result); // the operation is still in progress
 
-            Assert.Throws<InvalidOperationException>(() => readTask.Result);
+            await client.WriteAsync(new byte[1]);
+            Assert.Equal(1, await firstRead);
+
+            // The second read reuses the source of the first one.
+            ValueTask<int> secondRead = server.ReadAsync(new byte[1]);
+            Assert.Throws<InvalidOperationException>(() => firstRead.Result); // the result was already consumed
+
+            await client.WriteAsync(new byte[1]);
+            Assert.Equal(1, await secondRead);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]

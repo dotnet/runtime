@@ -100,24 +100,27 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public async Task GettingResultOfTheSameValueTaskTwiceThrowsInvalidOperationException(bool asyncRead, bool asyncWrite)
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // the returned ValueTask is backed by a reusable OverlappedValueTaskSource only on Windows
+        public async Task GettingResultOfPendingOrConsumedValueTaskThrowsInvalidOperationException()
         {
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead, asyncWrite);
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: true, asyncWrite: true);
 
             using (readHandle)
             using (writeHandle)
             {
+                ValueTask<int> firstRead = RandomAccess.ReadAsync(readHandle, new byte[1], fileOffset: 0);
+                Assert.Throws<InvalidOperationException>(() => firstRead.Result); // the operation is still in progress
+
                 await RandomAccess.WriteAsync(writeHandle, new byte[1], fileOffset: 0);
+                Assert.Equal(1, await firstRead);
 
-                ValueTask<int> readTask = RandomAccess.ReadAsync(readHandle, new byte[1], fileOffset: 0);
-                Assert.Equal(1, await readTask);
+                // The second read reuses the source of the first one.
+                ValueTask<int> secondRead = RandomAccess.ReadAsync(readHandle, new byte[1], fileOffset: 0);
+                Assert.Throws<InvalidOperationException>(() => firstRead.Result); // the result was already consumed
 
-                Assert.Throws<InvalidOperationException>(() => readTask.Result);
+                await RandomAccess.WriteAsync(writeHandle, new byte[1], fileOffset: 0);
+                Assert.Equal(1, await secondRead);
             }
         }
     }
