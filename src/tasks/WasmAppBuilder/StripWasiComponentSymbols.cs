@@ -48,7 +48,7 @@ public sealed class StripWasiComponentSymbols : Task
             File.Delete(outputPath);
             if (symbolMapPath is not null)
                 File.Delete(symbolMapPath);
-            Log.LogError($"Failed to strip symbols from '{InputPath}': {ex.Message}");
+            Log.LogErrorFromException(ex, showStackTrace: true);
             return false;
         }
     }
