@@ -151,9 +151,14 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 finally
                 {
-                    // The instance is ready to be reused. _fileHandle is null when the instance has already been
-                    // returned to the cache (the same ValueTask awaited twice).
-                    _fileHandle?.TryToReuse(this);
+                    // Return the instance for reuse only when this call consumed the result of a completed operation.
+                    // Getting a stale result (the instance may already be used by another operation) or the result
+                    // of an operation that is still in progress must not affect the instance.
+                    if (token == _source.Version && _source.GetStatus(token) != ValueTaskSourceStatus.Pending)
+                    {
+                        Debug.Assert(_fileHandle is not null);
+                        _fileHandle.TryToReuse(this);
+                    }
                 }
             }
 

@@ -59,13 +59,18 @@ namespace System.IO.Pipes
                 }
                 finally
                 {
-                    // The instance is ready to be reused. The cached instance is rooted by its PreAllocatedOverlapped,
-                    // so it must not reference the stream. Otherwise, the stream and its handle could never be collected.
-                    // _pipeStream is null when the instance has already been returned to the cache (the result was
-                    // obtained twice), in which case _source.GetResult throws.
-                    PipeStream? pipeStream = _pipeStream;
-                    _pipeStream = null;
-                    pipeStream?.TryToReuse(this);
+                    // Return the instance for reuse only when this call consumed the result of a completed operation.
+                    // Getting a stale result (the instance may already be used by another operation) or the result
+                    // of an operation that is still in progress must not affect the instance.
+                    if (token == _source.Version && _source.GetStatus(token) != ValueTaskSourceStatus.Pending)
+                    {
+                        // The cached instance is rooted by its PreAllocatedOverlapped, so it must not reference the stream.
+                        // Otherwise, the stream and its handle could never be collected.
+                        PipeStream? pipeStream = _pipeStream;
+                        Debug.Assert(pipeStream is not null);
+                        _pipeStream = null;
+                        pipeStream.TryToReuse(this);
+                    }
                 }
             }
 
