@@ -513,10 +513,15 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
-        public async Task AsyncPipeHandlesAreFinalizedWhenNotDisposed()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task PipeHandlesAreFinalizedWhenNotDisposed(bool asyncRead, bool asyncWrite)
         {
-            (WeakReference<SafeFileHandle> readHandle, WeakReference<SafeFileHandle> writeHandle) = await ReadAndWriteAsync();
+            (WeakReference<SafeFileHandle> readHandle, WeakReference<SafeFileHandle> writeHandle) = await ReadAndWriteAsync(asyncRead, asyncWrite);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -526,11 +531,11 @@ namespace System.IO.Tests
             Assert.False(writeHandle.TryGetTarget(out _));
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static async Task<(WeakReference<SafeFileHandle>, WeakReference<SafeFileHandle>)> ReadAndWriteAsync()
+            static async Task<(WeakReference<SafeFileHandle>, WeakReference<SafeFileHandle>)> ReadAndWriteAsync(bool asyncRead, bool asyncWrite)
             {
-                SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: true, asyncWrite: true);
-                FileStream reader = new(readHandle, FileAccess.Read, bufferSize: 0, isAsync: true);
-                FileStream writer = new(writeHandle, FileAccess.Write, bufferSize: 0, isAsync: true);
+                SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead, asyncWrite);
+                FileStream reader = new(readHandle, FileAccess.Read, bufferSize: 0, isAsync: asyncRead);
+                FileStream writer = new(writeHandle, FileAccess.Write, bufferSize: 0, isAsync: asyncWrite);
 
                 byte[] buffer = new byte[1];
                 ValueTask<int> readTask = reader.ReadAsync(buffer);

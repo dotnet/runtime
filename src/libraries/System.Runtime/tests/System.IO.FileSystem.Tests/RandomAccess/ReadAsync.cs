@@ -100,10 +100,14 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        public async Task GettingResultOfTheSameValueTaskTwiceThrowsInvalidOperationException()
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task GettingResultOfTheSameValueTaskTwiceThrowsInvalidOperationException(bool asyncRead, bool asyncWrite)
         {
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: true, asyncWrite: true);
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead, asyncWrite);
 
             using (readHandle)
             using (writeHandle)

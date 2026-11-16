@@ -772,11 +772,15 @@ namespace System.IO.Pipes.Tests
                 new object[] { new CancellationTokenSource().Token },
             };
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation is based on sockets
-        public async Task AsyncPipeHandlesAreFinalizedWhenNotDisposed()
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task PipeHandlesAreFinalizedWhenNotDisposed(bool asyncRead, bool asyncWrite)
         {
-            (WeakReference<SafePipeHandle> serverHandle, WeakReference<SafePipeHandle> clientHandle) = await ConnectReadAndWriteAsync();
+            (WeakReference<SafePipeHandle> serverHandle, WeakReference<SafePipeHandle> clientHandle) = await ConnectReadAndWriteAsync(asyncRead, asyncWrite);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -786,11 +790,11 @@ namespace System.IO.Pipes.Tests
             Assert.False(clientHandle.TryGetTarget(out _));
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static async Task<(WeakReference<SafePipeHandle>, WeakReference<SafePipeHandle>)> ConnectReadAndWriteAsync()
+            static async Task<(WeakReference<SafePipeHandle>, WeakReference<SafePipeHandle>)> ConnectReadAndWriteAsync(bool asyncRead, bool asyncWrite)
             {
                 string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
-                NamedPipeServerStream server = new(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-                NamedPipeClientStream client = new(".", pipeName, PipeDirection.Out, PipeOptions.Asynchronous);
+                NamedPipeServerStream server = new(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, asyncRead ? PipeOptions.Asynchronous : PipeOptions.None);
+                NamedPipeClientStream client = new(".", pipeName, PipeDirection.Out, asyncWrite ? PipeOptions.Asynchronous : PipeOptions.None);
 
                 await Task.WhenAll(server.WaitForConnectionAsync(), client.ConnectAsync());
 
