@@ -223,74 +223,19 @@ void InitializeCurrentProcessCpuCount()
     uint32_t count = 0;
 
     // If the configuration value has been set, it takes precedence. Otherwise, take into account
-    // process affinity and CPU quota limit, except for Android (explained below).
+    // process affinity and CPU quota limit.
 
     const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
     uint64_t configValue;
-    int cpuPresentCount;
 
     if (g_pRhConfig->ReadConfigValue("PROCESSOR_COUNT", &configValue, true /* decimal */) &&
         0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
         count = configValue;
     }
-#ifdef HOST_ANDROID
-    // Android tries really hard to save power by powering off CPUs on SMP phones which
-    // means the normal way to query cpu count can underestimate the number of available CPUs.
-    else if ((cpuPresentCount = minipal_get_cpu_present_count()) > 0)
-    {
-        count = cpuPresentCount;
-
-#ifdef TARGET_LINUX
-        uint32_t cpuLimit;
-        if (GetCGroupCpuLimit(&cpuLimit) && cpuLimit < count)
-            count = cpuLimit;
-#endif
-    }
-#endif
     else
     {
-#if HAVE_SCHED_GETAFFINITY
-
-        int configuredCpuCount = minipal_get_cpu_max_possible_count();
-        if (configuredCpuCount == -1)
-        {
-            // In the unlikely event that minipal_get_cpu_max_possible_count() fails, just assume a reasonable default maximum number of CPUs to avoid failing.
-            configuredCpuCount = CPU_SETSIZE;
-        }
-
-        int cpusToAllocate = std::max(configuredCpuCount, CPU_SETSIZE);
-        cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
-        if (pCpuSet != nullptr)
-        {
-            size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
-            CPU_ZERO_S(cpuSetSize, pCpuSet);
-
-            int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
-            if (st == 0)
-            {
-                count = (uint32_t)CPU_COUNT_S(cpuSetSize, pCpuSet);
-            }
-            else
-            {
-                _ASSERTE(!"sched_getaffinity failed");
-            }
-
-            CPU_FREE(pCpuSet);
-        }
-        else
-        {
-            ASSERT("CPU_ALLOC failed!\n");
-        }
-
-        if (count == 0)
-        {
-            // If we failed to get the number of CPUs from sched_getaffinity, fall back to getting the total number of CPUs in the system.
-            count = GCToOSInterface::GetTotalProcessorCount();
-        }
-#else // HAVE_SCHED_GETAFFINITY
-        count = GCToOSInterface::GetTotalProcessorCount();
-#endif // HAVE_SCHED_GETAFFINITY
+        count = minipal_get_cpu_affinity_count();
 
 #ifdef TARGET_LINUX
         uint32_t cpuLimit;
