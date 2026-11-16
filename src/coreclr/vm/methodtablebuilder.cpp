@@ -1812,11 +1812,11 @@ MethodTableBuilder::BuildMethodTableThrowing(
         // full size, so it catches gaps at this level) and (2) every nested value-type field to itself
         // be tightly packed, else the compare reads padding inside it. Propagating (2) makes the flag
         // transitive, so callers need not recurse. SIMD types are exempt (size treated as fully covered).
-        bool fIsNotTightlyPacked = (bmtFP->NumInstanceFieldBytes != totalDeclaredFieldSize) || HasOverlaidField();
+        bool fIsNotTightlyPacked = (bmtFP.NumInstanceFieldBytes != totalDeclaredFieldSize) || HasOverlaidField();
 
         if (!fIsNotTightlyPacked && !fIsSIMDType && pByValueClassCache != NULL)
         {
-            for (DWORD i = 0; i < bmtEnumFields->dwNumInstanceFields; i++)
+            for (DWORD i = 0; i < bmtEnumFields.dwNumInstanceFields; i++)
             {
                 MethodTable* pFieldMT = pByValueClassCache[i];
                 if (pFieldMT != NULL && !pFieldMT->IsTightlyPacked())
