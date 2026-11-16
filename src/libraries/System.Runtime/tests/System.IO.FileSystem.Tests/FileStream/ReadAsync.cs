@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO.Pipes;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
@@ -191,6 +192,30 @@ namespace System.IO.Tests
     {
         protected override Task<int> ReadAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             stream.ReadAsync(buffer, offset, count, cancellationToken);
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // the returned ValueTask is backed by a reusable OverlappedValueTaskSource only on Windows
+        public async Task GettingResultOfPendingOrConsumedValueTaskThrowsInvalidOperationException()
+        {
+            string pipeName = GetNamedPipeServerStreamName();
+            using NamedPipeServerStream server = new(pipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            Task connectTask = server.WaitForConnectionAsync();
+            using FileStream reader = new(File.OpenHandle($@"\\.\pipe\{pipeName}", FileMode.Open, FileAccess.Read, FileShare.None, FileOptions.Asynchronous), FileAccess.Read, bufferSize: 0, isAsync: true);
+            await connectTask;
+
+            ValueTask<int> firstRead = reader.ReadAsync(new byte[1]);
+            Assert.Throws<InvalidOperationException>(() => firstRead.Result); // the operation is still in progress
+
+            await server.WriteAsync(new byte[1]);
+            Assert.Equal(1, await firstRead);
+
+            // The second read reuses the source of the first one.
+            ValueTask<int> secondRead = reader.ReadAsync(new byte[1]);
+            Assert.Throws<InvalidOperationException>(() => firstRead.Result); // the result was already consumed
+
+            await server.WriteAsync(new byte[1]);
+            Assert.Equal(1, await secondRead);
+        }
     }
 
     public class FileStream_BeginEndRead_AsyncReads : FileStream_AsyncReads

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
@@ -97,6 +98,44 @@ namespace System.IO.Tests
 
                 Assert.Equal(fileSize, total);
                 Assert.Equal(expected, actual.Take(total).ToArray());
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public async Task HandlesAreFinalizedWhenNotDisposed(bool asyncHandle, bool cancellable)
+        {
+            string path = GetTestFilePath();
+            File.WriteAllBytes(path, new byte[] { 42 });
+
+            (ValueTask<int> readTask, WeakReference<SafeFileHandle> handle) = StartRead(path, asyncHandle, cancellable);
+            Assert.Equal(1, await readTask);
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(handle.TryGetTarget(out _));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static (ValueTask<int>, WeakReference<SafeFileHandle>) StartRead(string path, bool asyncHandle, bool cancellable)
+            {
+                SafeFileHandle handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read, options: asyncHandle ? FileOptions.Asynchronous : FileOptions.None);
+
+                CancellationToken cancellationToken = default;
+                if (cancellable)
+                {
+                    // The registration makes the handle reachable from the cancellation token source.
+                    CancellationTokenSource cts = new();
+                    cts.Token.Register(() => handle.Dispose());
+                    cancellationToken = cts.Token;
+                }
+
+                return (RandomAccess.ReadAsync(handle, new byte[1], fileOffset: 0, cancellationToken), new(handle, trackResurrection: true));
             }
         }
     }
