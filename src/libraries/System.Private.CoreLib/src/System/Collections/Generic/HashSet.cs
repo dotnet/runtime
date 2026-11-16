@@ -1400,11 +1400,7 @@ namespace System.Collections.Generic
                 return;
             }
 
-            // CopyEntries only moves entries when it compacts removed ones
-            if (_freeCount > 0)
-            {
-                _version++;
-            }
+            _version++;
 
             Debug.Assert(HashHelpers.IsPrime(newSize));
             Debug.Assert(newSize >= Count);
