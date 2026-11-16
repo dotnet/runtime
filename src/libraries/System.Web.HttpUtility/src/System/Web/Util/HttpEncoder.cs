@@ -16,6 +16,7 @@ namespace System.Web.Util
     {
         private const int MaxStackAllocUrlLength = 256;
         private const int StackallocThreshold = 512;
+        private const string HtmlAttributeEncodingChars = "<\"'&";
 
         // Set of safe chars, from RFC 1738.4 minus '+'
         private static readonly SearchValues<byte> s_urlSafeBytes = SearchValues.Create(
@@ -70,38 +71,34 @@ namespace System.Web.Util
 
         private static void HtmlAttributeEncodeInternal(string s, int index, TextWriter output)
         {
-            output.Write(s.AsSpan(0, index));
-
-            ReadOnlySpan<char> remaining = s.AsSpan(index);
-            for (int i = 0; i < remaining.Length; i++)
+            ReadOnlySpan<char> remaining = s;
+            do
             {
-                char ch = remaining[i];
-                if (ch <= '<')
+                output.Write(remaining.Slice(0, index));
+                switch (remaining[index])
                 {
-                    switch (ch)
-                    {
-                        case '<':
-                            output.Write("&lt;");
-                            break;
-                        case '"':
-                            output.Write("&quot;");
-                            break;
-                        case '\'':
-                            output.Write("&#39;");
-                            break;
-                        case '&':
-                            output.Write("&amp;");
-                            break;
-                        default:
-                            output.Write(ch);
-                            break;
-                    }
+                    case '<':
+                        output.Write("&lt;");
+                        break;
+                    case '"':
+                        output.Write("&quot;");
+                        break;
+                    case '\'':
+                        output.Write("&#39;");
+                        break;
+                    default:
+                        output.Write("&amp;");
+                        break;
                 }
-                else
-                {
-                    output.Write(ch);
-                }
+
+                remaining = remaining.Slice(index + 1);
+
+                // Avoid repeated vectorized searches when characters needing encoding are adjacent.
+                index = !remaining.IsEmpty && remaining[0] is '<' or '"' or '\'' or '&' ? 0 : remaining.IndexOfAny(HtmlAttributeEncodingChars);
             }
+            while (index >= 0);
+
+            output.Write(remaining);
         }
 
         [return: NotNullIfNotNull(nameof(value))]
@@ -125,7 +122,7 @@ namespace System.Web.Util
         }
 
         private static int IndexOfHtmlAttributeEncodingChars(string s) =>
-            s.AsSpan().IndexOfAny("<\"'&");
+            s.AsSpan().IndexOfAny(HtmlAttributeEncodingChars);
 
         internal static string JavaScriptStringEncode(string? value, bool addDoubleQuotes)
         {
