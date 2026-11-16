@@ -24,6 +24,10 @@ export function createData(name) {
     return new JSData(name);
 }
 
+export function getJSHandle(value) {
+    return value[Symbol.for("wasm cs_owned_js_handle")];
+}
+
 export function createException(name) {
     //console.log(`createException(name:"${name ? name : '<null>'}")`)
     return new JSTestError(name);
@@ -250,8 +254,13 @@ export function returnResolvedPromise() {
     return Promise.resolve();
 }
 
-export async function invokeReturnCompletedTask() {
-    await dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper.ReturnCompletedTask();
+export async function invokeReturnCompletedTask(count = 1, awaitResult = true) {
+    for (let i = 0; i < count; i++) {
+        const promise = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper.ReturnCompletedTask();
+        if (awaitResult) {
+            await promise;
+        }
+    }
     return "resolved";
 }
 
