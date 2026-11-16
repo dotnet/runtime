@@ -19783,7 +19783,7 @@ bool Compiler::gtSplitTree(BasicBlock* block,
             if (!IsValue(useInf))
             {
                 GenTree* sideEffects = nullptr;
-                m_compiler->gtExtractSideEffList(*use, &sideEffects);
+                m_compiler->gtExtractSideEffList(*use, &sideEffects, GTF_OBS_EFFECT);
                 if (sideEffects != nullptr)
                 {
                     stmt = m_compiler->fgNewStmtFromTree(sideEffects, m_splitStmt->GetDebugInfo());

@@ -14278,8 +14278,9 @@ bool Compiler::gtRemoveTreesAfterNoReturnCall(BasicBlock* block, Statement* stmt
                 {
                     JITDUMP("Extracting side effects of (ancestor) sibling [%06u]:", Compiler::dspTreeID(*useInf.Use));
 
+                    // These trees are executed before the call, so volatile loads must be preserved as well.
                     GenTree* sideEffects = nullptr;
-                    m_compiler->gtExtractSideEffList(*useInf.Use, &sideEffects);
+                    m_compiler->gtExtractSideEffList(*useInf.Use, &sideEffects, GTF_OBS_EFFECT);
                     if (sideEffects != nullptr)
                     {
                         Statement* newStmt = m_compiler->fgNewStmtFromTree(sideEffects);
