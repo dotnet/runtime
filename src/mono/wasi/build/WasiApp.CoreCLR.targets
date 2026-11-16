@@ -92,6 +92,20 @@
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
+    <!-- Mirror browser: keep the R2R debug and inlining info only for Debug or DebuggerSupport. This target
+         file is imported after Microsoft.NET.CrossGen.targets, so add the arguments here when the SDK hasn't. -->
+    <PublishReadyToRunStripInliningInfo Condition="'$(PublishReadyToRunStripInliningInfo)' == '' and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">false</PublishReadyToRunStripInliningInfo>
+    <PublishReadyToRunStripDebugInfo Condition="'$(PublishReadyToRunStripDebugInfo)' == '' and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">false</PublishReadyToRunStripDebugInfo>
+    <PublishReadyToRunStripInliningInfo Condition="'$(PublishReadyToRunStripInliningInfo)' == ''">true</PublishReadyToRunStripInliningInfo>
+    <PublishReadyToRunStripDebugInfo Condition="'$(PublishReadyToRunStripDebugInfo)' == ''">true</PublishReadyToRunStripDebugInfo>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripInliningInfo)' == 'true' and !$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--strip-inlining-info'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-inlining-info</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripDebugInfo)' == 'true' and !$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--strip-debug-info'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
+    <!-- The composition merges the composite's name section into the host, so its function names follow the
+         host's: kept in the host, moved to corerun.symbols, or dropped. crossgen2's own symbol-map sidecar
+         numbers functions within the composite, which doesn't match the merged host, so it isn't used. -->
+    <_WasiR2RWasmDebugInfo Condition="'$(WasmNativeStrip)' != 'true' or '$(WasmEmitSymbolMap)' != 'false'">name</_WasiR2RWasmDebugInfo>
+    <_WasiR2RWasmDebugInfo Condition="'$(_WasiR2RWasmDebugInfo)' == ''">none</_WasiR2RWasmDebugInfo>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="!$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--wasm-debug-info'))">$(PublishReadyToRunCrossgen2ExtraArgs);--wasm-debug-info=$(_WasiR2RWasmDebugInfo)</PublishReadyToRunCrossgen2ExtraArgs>
     <!-- Run wasm-opt over the composed module. Off by default so codegen problems surface in crossgen2's
          output instead of being optimized away. -->
     <WasiR2ROptimizeComposite Condition="'$(WasiR2ROptimizeComposite)' == ''">false</WasiR2ROptimizeComposite>
