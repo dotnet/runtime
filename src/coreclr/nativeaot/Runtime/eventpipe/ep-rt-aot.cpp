@@ -536,21 +536,30 @@ ep_rt_file_handle_t
 ep_rt_aot_file_open_write (const ep_char8_t *path)
 {
     if (!path)
-        return INVALID_HANDLE_VALUE;
+        return NULL;
 
 #ifdef TARGET_WINDOWS
     ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path);
     if (!path_utf16)
-        return INVALID_HANDLE_VALUE;
+        return NULL;
 
     HANDLE res = ::CreateFileW (reinterpret_cast<LPCWSTR>(path_utf16), GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     ep_rt_utf16_string_free (path_utf16);
-    return static_cast<ep_rt_file_handle_t>(res);
+    return (res != INVALID_HANDLE_VALUE) ? static_cast<ep_rt_file_handle_t>(res) : NULL;
 #else
-    mode_t perms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-    int fd = creat (path, perms);
+    const mode_t perms = S_IRUSR | S_IWUSR;
+    int fd = open (path, O_WRONLY | O_CREAT, perms);
     if (fd == -1)
-        return INVALID_HANDLE_VALUE;
+        return NULL;
+
+    struct stat file_status;
+    if (fstat (fd, &file_status) == -1 ||
+        file_status.st_uid != geteuid () ||
+        (file_status.st_mode & (S_IRWXG | S_IRWXO)) != 0 ||
+        ftruncate (fd, 0) == -1) {
+        close (fd);
+        return NULL;
+    }
 
     return (ep_rt_file_handle_t)(ptrdiff_t)fd;
 #endif
@@ -559,6 +568,9 @@ ep_rt_aot_file_open_write (const ep_char8_t *path)
 bool
 ep_rt_aot_file_close (ep_rt_file_handle_t file_handle)
 {
+    if (!file_handle)
+        return false;
+
 #ifdef TARGET_WINDOWS
     return ::CloseHandle (file_handle) != FALSE;
 #else
