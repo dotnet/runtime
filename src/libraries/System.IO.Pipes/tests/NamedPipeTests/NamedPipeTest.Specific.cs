@@ -854,7 +854,9 @@ namespace System.IO.Pipes.Tests
 
             await Task.WhenAll(server.WaitForConnectionAsync(), client.ConnectAsync());
 
-            WeakReference<object> asyncLocalValue = await ReadAndWriteAsync(server, client);
+            (ValueTask<int> readTask, ValueTask writeTask, WeakReference<object> asyncLocalValue) = StartReadAndWrite(server, client);
+            await writeTask;
+            Assert.Equal(1, await readTask);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -863,17 +865,17 @@ namespace System.IO.Pipes.Tests
             Assert.False(asyncLocalValue.TryGetTarget(out _));
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static async Task<WeakReference<object>> ReadAndWriteAsync(NamedPipeServerStream server, NamedPipeClientStream client)
+            static (ValueTask<int>, ValueTask, WeakReference<object>) StartReadAndWrite(NamedPipeServerStream server, NamedPipeClientStream client)
             {
                 // The value is part of the ExecutionContext that flows into the first read and write operations.
                 object value = new();
                 AsyncLocal<object> asyncLocal = new() { Value = value };
 
                 ValueTask<int> readTask = server.ReadAsync(new byte[1]);
-                await client.WriteAsync(new byte[1]);
-                Assert.Equal(1, await readTask);
+                ValueTask writeTask = client.WriteAsync(new byte[1]);
 
-                return new WeakReference<object>(value);
+                asyncLocal.Value = null;
+                return (readTask, writeTask, new WeakReference<object>(value));
             }
         }
     }
