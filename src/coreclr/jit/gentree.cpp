@@ -23141,7 +23141,10 @@ bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
         switch (intrinsicId)
         {
             case NI_AES_CarrylessMultiply:
+            case NI_AES_V256_CarrylessMultiply:
             {
+                // pclmulqdq can only be EVEX encoded when AES_V512 is supported,
+                // see emitter::IsEvexEncodableInstruction
                 return comp->compOpportunisticallyDependsOn(InstructionSet_AES_V512);
             }
 
