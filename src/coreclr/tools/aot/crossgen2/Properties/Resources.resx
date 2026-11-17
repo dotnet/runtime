@@ -295,10 +295,10 @@
     <value>Generate the portable entry point call helper sources into the given directory instead of compiling</value>
   </data>
   <data name="DirectPInvokeOption" xml:space="preserve">
-    <value>A statically linked native module P/Invokes may resolve against, or module!entrypoint for a single entry point</value>
+    <value>PInvoke to call directly</value>
   </data>
   <data name="DirectPInvokeListOption" xml:space="preserve">
-    <value>File with a list of direct P/Invoke entries, one per line</value>
+    <value>File with list of PInvokes to call directly</value>
   </data>
   <data name="GeneratePortableCallHelpersRequiresWasmTarget" xml:space="preserve">
     <value>--generate-portable-callhelpers requires --targetarch wasm together with --targetos browser or --targetos wasi</value>
