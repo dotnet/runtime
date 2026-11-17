@@ -4814,7 +4814,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                         if (!treeIsHoistable)
                         {
                             // Does this helper call throw?
-                            if (!s_helperCallProperties.NoThrow(helpFunc))
+                            if (!s_helperCallProperties.NoThrow(helpFunc, m_compiler->IsNativeAot()))
                             {
                                 m_canHoistSideEffects = false;
                             }
@@ -5006,6 +5006,11 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
                 assert(otherLoop != nullptr);
                 res = !loop->ContainsLoop(otherLoop);
             }
+        }
+        else if (funcApp.FuncIs(VNF_ByrefExposedStore))
+        {
+            // The opaque memory value identifies the loop where the store happens.
+            res = optVNIsLoopInvariant(funcApp.GetArg(3), loop, loopVnInvariantCache);
         }
         else
         {

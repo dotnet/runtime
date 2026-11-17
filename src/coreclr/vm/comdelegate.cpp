@@ -188,15 +188,6 @@ public:
         // over a register we later need to shuffle down as well).
         if (m_currentGenRegIndex < m_argLocDesc->m_cGenReg)
         {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            if (7 < (m_currentGenRegIndex + m_argLocDesc->m_idxGenReg))
-            {
-                m_currentGenRegIndex++;
-                index = m_currentByteStackIndex;
-                m_currentByteStackIndex += TARGET_POINTER_SIZE;
-                return index;
-            }
-#endif
             index = m_argLocDesc->m_idxGenReg + m_currentGenRegIndex;
             m_currentGenRegIndex++;
 
@@ -1985,7 +1976,7 @@ extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnSta
     return pMD;
 }
 
-FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, MethodTable* pDelegateMT)
+FCIMPL1(MethodDesc*, Delegate_GetInvokeMethod, MethodTable* pDelegateMT)
 {
     FCALL_CONTRACT;
     _ASSERTE(pDelegateMT != NULL);
@@ -1996,7 +1987,7 @@ FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, MethodTable* pDelegateMT)
 }
 FCIMPLEND
 
-FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, MethodTable* pDelegateMT)
+FCIMPL1(PCODE, Delegate_GetMulticastInvoke, MethodTable* pDelegateMT)
 {
     FCALL_CONTRACT;
     _ASSERTE(pDelegateMT != NULL);

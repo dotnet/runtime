@@ -2346,7 +2346,7 @@ ws2_32!WSCWriteNameSpaceOrder
 ws2_32!WSCWriteProviderOrder
 
 #
-# Synchronization.lib
+# synchronization.lib
 #
 api-ms-win-core-synch-l1-2-0!WaitOnAddress
 api-ms-win-core-synch-l1-2-0!WakeByAddressSingle

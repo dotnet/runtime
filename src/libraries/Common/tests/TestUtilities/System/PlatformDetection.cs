@@ -383,6 +383,8 @@ namespace System
         public static bool SupportsAlpn => s_supportsAlpn.Value;
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsMacCatalyst || IsiOS || IstvOS;
         public static bool SupportsHardLinkCreation => !IsAndroid && !IsLinuxBionic;
+        // macOS FSEvents and OpenBSD libinotify don't preserve the order of FileSystemWatcher events for different paths.
+        public static bool IsFileSystemWatcherEventOrderPreserved => !IsOSX && !IsMacCatalyst && !IsOpenBSD;
 
         private static readonly Lazy<bool> s_supportsTls10 = new Lazy<bool>(GetTls10Support);
         private static readonly Lazy<bool> s_supportsTls11 = new Lazy<bool>(GetTls11Support);

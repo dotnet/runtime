@@ -1340,6 +1340,62 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         }
     }
 
+    // Decreasing loops with unsigned control variables can wrap around to a huge
+    // value instead of exiting, if the final decrement steps past 0. For example,
+    // "for (uint i = 7; i >= 2; i -= 3)" visits i = 7, 4, then exits (4 - 3 = 1,
+    // and 1 >= 2 is false). But "for (uint i = 7; i >= 1; i -= 3)" visits
+    // i = 7, 4, 1, then wraps: 1 - 3 underflows to UINT_MAX, and UINT_MAX >= 1
+    // is true, so the loop keeps running with i far out of range. This applies
+    // even for unit stride: "i >= 0" is never false for unsigned i.
+    if (!isIncreasingLoop && iterInfo->TestTree->IsUnsigned())
+    {
+        bool provenSafe = false;
+        if (iterInfo->HasConstInit && iterInfo->HasConstLimit)
+        {
+            const int constInit  = iterInfo->ConstInitValue;
+            const int constLimit = iterInfo->ConstLimit();
+            if ((constInit >= 0) && (constLimit >= 0) && (constInit >= constLimit))
+            {
+                // All the values being cast here are non-negative; by
+                // casting, we can add two of them without risking overflow.
+                const unsigned uInit   = (unsigned)constInit;
+                const unsigned uLimit  = (unsigned)constLimit;
+                const unsigned uStride = (unsigned)stride;
+
+                // "remainder" is the difference between the value the IV
+                // would land on -- if the test were inclusive -- and
+                // constLimit, e.g. decrementing from 7 to a limit of 2 by 3
+                // stops at 4 (remainder 4 - 2 == 2); decrementing to a limit
+                // of 1 stops exactly at 1 (remainder 0).
+                const unsigned remainder = (uInit - uLimit) % uStride;
+
+                // "lastValue" is the lowest value of the IV before the loop
+                // exits. For an inclusive ">=" test this is uLimit + remainder
+                // (which may be uLimit itself). For an exclusive ">" test, if
+                // remainder is 0 then uLimit fails the test, so the lowest
+                // value actually visited is uLimit + uStride instead. "!=" is
+                // also exclusive in this sense (and only occurs with unit
+                // stride, so remainder is always 0 there).
+                const bool     testIsExclusive = (iterInfo->TestOper() == GT_GT) || (iterInfo->TestOper() == GT_NE);
+                const unsigned lastValue =
+                    (testIsExclusive && (remainder == 0)) ? (uLimit + uStride) : (uLimit + remainder);
+
+                // Safe (won't underflow past 0 on the loop's final decrement)
+                // iff the lowest value visited is itself >= stride.
+                if (lastValue >= uStride)
+                {
+                    provenSafe = true;
+                }
+            }
+        }
+
+        if (!provenSafe)
+        {
+            JITDUMP("> Unsigned decreasing loop with stride %d: IV might wrap around 0\n", stride);
+            return false;
+        }
+    }
+
     // If AnalyzeIteration could not prove the loop condition holds on entry,
     // emit an explicit runtime entry guard as one of the cloning conditions.
     // The fast path is then only entered when "init TestOper limit" holds.

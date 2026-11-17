@@ -66,6 +66,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
         public async Task UseDefaultCredentials_SetToFalseAndServerNeedsAuth_StatusCodeUnauthorized(bool useProxy)
         {
+            if (!SupportsProxy)
+            {
+                // The handler doesn't support UseProxy.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.UseProxy = useProxy;
             handler.UseDefaultCredentials = false;
@@ -134,6 +140,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task GetAsync_ServerNeedsBasicAuthAndSetDefaultCredentials_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't support Credentials.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Credentials = CredentialCache.DefaultCredentials;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
@@ -151,6 +163,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task GetAsync_ServerNeedsAuthAndSetCredential_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't support Credentials.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Credentials = _credential;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
@@ -281,6 +299,13 @@ namespace System.Net.Http.Functional.Tests
             foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.GetRemoteServers())
             {
                 yield return (remoteServer, remoteServer.EchoUri);
+
+                if (IsWasiHttpHandler)
+                {
+                    // WasiHttpHandler doesn't follow redirects.
+                    continue;
+                }
+
                 yield return (remoteServer, remoteServer.RedirectUriForDestinationUri(
                     statusCode: 302,
                     destinationUri: remoteServer.EchoUri,
@@ -350,7 +375,7 @@ namespace System.Net.Http.Functional.Tests
                 string data = "Test String";
                 var content = new StringContent(data, Encoding.UTF8);
 
-                if (PlatformDetection.IsBrowser)
+                if (PlatformDetection.IsBrowser || !PlatformDetection.IsMD5Supported)
                 {
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                     content.Headers.Add("Content-MD5-Skip", "browser");
@@ -368,7 +393,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Repeat call.
                 content = new StringContent(data, Encoding.UTF8);
-                if (PlatformDetection.IsBrowser)
+                if (PlatformDetection.IsBrowser || !PlatformDetection.IsMD5Supported)
                 {
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                     content.Headers.Add("Content-MD5-Skip", "browser");
@@ -393,7 +418,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 string data = "\ub4f1\uffc7\u4e82\u67ab4\uc6d4\ud1a0\uc694\uc77c\uffda3\u3155\uc218\uffdb";
                 var content = new StringContent(data, Encoding.UTF8);
-                if (PlatformDetection.IsBrowser)
+                if (PlatformDetection.IsBrowser || !PlatformDetection.IsMD5Supported)
                 {
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                     content.Headers.Add("Content-MD5-Skip", "browser");
@@ -416,7 +441,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
-                if (PlatformDetection.IsBrowser)
+                if (PlatformDetection.IsBrowser || !PlatformDetection.IsMD5Supported)
                 {
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                     content.Headers.Add("Content-MD5-Skip", "browser");
@@ -468,7 +493,9 @@ namespace System.Net.Http.Functional.Tests
             get
             {
                 foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.GetRemoteServers()) // target server
-                    foreach (bool syncCopy in BoolValues) // force the content copy to happen via Read/Write or ReadAsync/WriteAsync
+                    // force the content copy to happen via Read/Write or ReadAsync/WriteAsync;
+                    // WasiHttpHandler's request stream doesn't support synchronous writes.
+                    foreach (bool syncCopy in IsWasiHttpHandler ? new[] { false } : BoolValues)
                     {
                         byte[] data = new byte[1234];
                         new Random(42).NextBytes(data);
@@ -614,6 +641,17 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task PostAsync_ExpectContinue_Success(bool? expectContinue, Version version)
         {
+            if (version.Major == 2 && !Configuration.Http.SecureLocalEchoServerIsTrusted)
+            {
+                return;
+            }
+
+            if (IsWasiHttpHandler && version == HttpVersion.Version10)
+            {
+                // wasi:http doesn't let the client choose the HTTP version.
+                return;
+            }
+
             // Sync API supported only up to HTTP/1.1
             if (!TestAsync && version.Major >= 2)
             {
@@ -653,6 +691,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_Redirect_ResultingGetFormattedCorrectly(Configuration.Http.RemoteServer remoteServer)
         {
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't follow redirects.
+                return;
+            }
+
             const string ContentString = "This is the content string.";
             var content = new StringContent(ContentString);
             Uri redirectUri = remoteServer.RedirectUriForDestinationUri(
@@ -674,6 +718,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_RedirectWith307_LargePayload(Configuration.Http.RemoteServer remoteServer)
         {
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't follow redirects.
+                return;
+            }
+
             await PostAsync_Redirect_LargePayload_Helper(remoteServer, 307, true);
         }
 
@@ -681,6 +731,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_RedirectWith302_LargePayload(Configuration.Http.RemoteServer remoteServer)
         {
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't follow redirects.
+                return;
+            }
+
             await PostAsync_Redirect_LargePayload_Helper(remoteServer, 302, false);
         }
 
@@ -707,7 +763,7 @@ namespace System.Net.Http.Functional.Tests
                 var content = new StreamContent(fs);
 
                 // Compute MD5 of request body data. This will be verified by the server when it receives the request.
-                if (PlatformDetection.IsBrowser)
+                if (PlatformDetection.IsBrowser || !PlatformDetection.IsMD5Supported)
                 {
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                     content.Headers.Add("Content-MD5-Skip", "browser");
@@ -833,6 +889,11 @@ namespace System.Net.Http.Functional.Tests
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/53592", TestPlatforms.Browser)]
                 return;
             }
+            if (method == "TRACE" && IsWasiHttpHandler)
+            {
+                // The wasi:http host doesn't send content with TRACE requests.
+                return;
+            }
             if (method == "HEAD" && PlatformDetection.IsBrowser)
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/53591", TestPlatforms.Browser)]
@@ -928,6 +989,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
         public async Task GetAsync_AllowAutoRedirectFalse_RedirectFromHttpToHttp_StatusCodeRedirect(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
+            if (!SupportsRedirectConfiguration)
+            {
+                // The handler doesn't support configuring redirects.
+                return;
+            }
+
             if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
             {
                 // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
@@ -956,6 +1023,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttp_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
+            if (!SupportsRedirectConfiguration)
+            {
+                // The handler doesn't support configuring redirects.
+                return;
+            }
+
             if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
             {
                 // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
@@ -984,6 +1057,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttps_StatusCodeOK()
         {
+            if (!SupportsRedirectConfiguration)
+            {
+                // The handler doesn't support configuring redirects.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = true;
             using (HttpClient client = CreateHttpClient(handler))
@@ -1006,6 +1085,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpsToHttp_StatusCodeRedirect()
         {
+            if (!SupportsRedirectConfiguration)
+            {
+                // The handler doesn't support configuring redirects.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = true;
             using (HttpClient client = CreateHttpClient(handler))
@@ -1029,6 +1114,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectToUriWithParams_RequestMsgUriSet(Configuration.Http.RemoteServer remoteServer)
         {
+            if (!SupportsRedirectConfiguration)
+            {
+                // The handler doesn't support configuring redirects.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = true;
             Uri targetUri = remoteServer.BasicAuthUriForCreds(Username, Password);
@@ -1055,6 +1146,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer not supported on Browser")]
         public async Task GetAsync_MaxAutomaticRedirectionsNServerHops_ThrowsIfTooMany(int maxHops, int hops)
         {
+            if (!SupportsRedirectConfiguration)
+            {
+                // The handler doesn't support configuring redirects.
+                return;
+            }
+
             if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1703OrGreater)
             {
                 // Skip this test if using WinHttpHandler but on a release prior to Windows 10 Creators Update.
@@ -1101,6 +1198,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectWithRelativeLocation(Configuration.Http.RemoteServer remoteServer)
         {
+            if (!SupportsRedirectConfiguration)
+            {
+                // The handler doesn't support configuring redirects.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = true;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
@@ -1125,6 +1228,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task GetAsync_CredentialIsNetworkCredentialUriRedirect_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't support Credentials.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Credentials = _credential;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
@@ -1145,6 +1254,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task HttpClientHandler_CredentialIsNotCredentialCacheAfterRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't support Credentials.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Credentials = _credential;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
@@ -1172,6 +1287,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't support Credentials.
+                return;
+            }
+
             if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
             {
                 // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
@@ -1246,6 +1367,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersAndCompressionUris))]
         public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed_GZip(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
+            if (!SupportsAutomaticDecompression)
+            {
+                // The handler doesn't support AutomaticDecompression.
+                return;
+            }
+
             // Sync API supported only up to HTTP/1.1
             if (!TestAsync && remoteServer.HttpVersion.Major >= 2)
             {
@@ -1277,6 +1404,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
         public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed_Deflate(string uri, string expectedContent)
         {
+            if (!SupportsAutomaticDecompression)
+            {
+                // The handler doesn't support AutomaticDecompression.
+                return;
+            }
+
             if (IsWinHttpHandler)
             {
                 // WinHttpHandler targets netstandard2.0 and still erroneously uses DeflateStream rather than ZlibStream for deflate.
@@ -1311,6 +1444,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
         public async Task GetAsync_SetAutomaticDecompression_HeadersRemoved(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
+            if (!SupportsAutomaticDecompression)
+            {
+                // The handler doesn't support AutomaticDecompression.
+                return;
+            }
+
             // Sync API supported only up to HTTP/1.1
             if (!TestAsync && remoteServer.HttpVersion.Major >= 2)
             {
@@ -1335,6 +1474,11 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20IfHttp2Supported(Uri server)
         {
+            if (!Configuration.Http.SecureLocalEchoServerIsTrusted)
+            {
+                return;
+            }
+
             // Sync API supported only up to HTTP/1.1
             if (!TestAsync)
             {

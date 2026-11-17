@@ -312,6 +312,11 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                 SkipTestException.ThrowUnless(ECDiffieHellmanFactory.ExplicitCurvesSupported);
             }
 
+            if (PlatformDetection.IsWindows)
+            {
+                SkipTestException.ThrowUnless(PlatformDetection.IsWindows10Version22000OrGreater);
+            }
+
             ECParameters parameters = explicitCurve ?
                 EccTestData.GetNistP256ReferenceKeyExplicit() :
                 EccTestData.GetNistP256ReferenceKey();
