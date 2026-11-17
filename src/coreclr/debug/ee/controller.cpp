@@ -68,8 +68,8 @@ bool DebuggerControllerPatch::IsSafeForStackTrace()
 }
 
 // Determines whether a breakpoint patch should be bound to a given MethodDesc.
-// When pMethodDescFilter is NULL, the default filtering policy is applied which
-// excludes async thunk methods (they should not have user breakpoints bound to them).
+// When pMethodDescFilter is NULL, the default filtering policy excludes synthetic
+// async thunks, but permits async variants compiled from the original method's IL.
 // When pMethodDescFilter is non-NULL, the patch is explicitly targeting that specific
 // MethodDesc and no default filtering is applied.
 bool ShouldBindPatchToMethodDesc(MethodDesc* pMD, MethodDesc* pMethodDescFilter)
@@ -82,9 +82,8 @@ bool ShouldBindPatchToMethodDesc(MethodDesc* pMD, MethodDesc* pMethodDescFilter)
         return pMD == pMethodDescFilter;
     }
 
-    // Default filtering policy: exclude async thunk methods
-    // User breakpoints should bind to the actual async implementation, not the thunk
-    if (pMD->IsAsyncThunkMethod())
+    // Exclude synthetic thunks, but bind to async versions of user methods.
+    if (pMD->IsAsyncThunkMethod() && !pMD->SupportsAsyncVersionCodegen())
     {
         return false;
     }
@@ -7012,9 +7011,10 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                  "DS::TSO: CallTailCallTarget frame.\n"));
             continue;
         }
-        else if (info->m_activeFrame.md != nullptr && info->m_activeFrame.md->IsAsyncThunkMethod())
+        else if (info->m_activeFrame.md != nullptr && info->m_activeFrame.md->IsAsyncThunkMethod() &&
+                 !info->m_activeFrame.md->SupportsAsyncVersionCodegen())
         {
-            // Async thunks are not interesting frames to step out into.
+            // Synthetic async thunks are not interesting frames to step out into.
             LOG((LF_CORDB, LL_INFO10000,
                  "DS::TSO: skipping async thunk method frame.\n"));
             continue;
