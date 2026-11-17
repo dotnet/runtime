@@ -634,7 +634,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     </DefineStaticWebAssets>
 
     <ItemGroup Condition="'@(_WasmNestedPublishCompositeBundle)' != ''">
-      <_WasmCompositeBundleBuildCandidate Include="@(_WasmNestedPublishCompositeBundle)" />
+      <!-- Drop the MSBuild task output metadata; its OriginalItemSpec names the project file. -->
+      <_WasmCompositeBundleBuildCandidate Include="@(_WasmNestedPublishCompositeBundle->'%(FullPath)')" KeepMetadata="__none" />
       <_WasmCompositeBundleBuildCandidate Update="@(_WasmCompositeBundleBuildCandidate)"
                                           ContentRoot="%(RootDir)%(Directory)"
                                           RelativePath="_framework/%(FileName)%(Extension)" />
@@ -1001,7 +1002,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <StaticWebAssetEndpoint Include="@(_UpdatedWasmPreloadBuildAssetEndpoint)" />
     </ItemGroup>
   </Target>
-  <Target Name="_AddWasmPreloadPublishProperties" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
+  <!-- A nested publish must not generate the publish boot config: it lacks the outer publish's assets but
+       shares its output and completion stamp, so the outer publish would then skip regenerating it. -->
+  <Target Name="_AddWasmPreloadPublishProperties" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'">
 
     <FilterStaticWebAssetEndpoints
       Endpoints="@(StaticWebAssetEndpoint)"

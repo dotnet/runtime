@@ -408,7 +408,7 @@ namespace Wasm.Build.Tests
                 extraItems: """<PublishReadyToRunPgoFiles Include="$(WasmBuildTestReadyToRunProfile)" Condition="'$(WasmBuildTestReadyToRunProfile)' != ''" />""");
 
             string frameworkDir = PublishR2RClosure(info, config, extraArgs: "", label: "full");
-            AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);
+            AssertCompositeReadyToRun(frameworkDir);
             string r2rDir = GetObjSubDir(config, "R2R");
             long fullBytes = SumR2RTableBytes(r2rDir);
             Assert.True(fullBytes > 0, "Full-closure publish produced no R2R tables.");
@@ -427,7 +427,7 @@ namespace Wasm.Build.Tests
                 config,
                 extraArgs: $"-p:WasmBuildTestReadyToRunProfile=\"{profile}\"",
                 label: "profiled");
-            AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);
+            AssertCompositeReadyToRun(frameworkDir);
             AssertPerAppCrossgenRan(config, expected: true);
 
             long profiledBytes = SumR2RTableBytes(r2rDir);

@@ -177,7 +177,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo --targetarch:$(TargetArchitecture) >> "$__ResponseFile"
         echo --targetos:$(TargetOS) >> "$__ResponseFile"
         if [ -n "$__WebcilComponentBundle" ]; then
-            echo "--webcil-component-bundle:\"$__WebcilComponentBundle\"" >> "$__ResponseFile"
+            echo --webcil-component-bundle:"$__WebcilComponentBundle" >> "$__ResponseFile"
         fi
         # Layout verification loads types early, which hides missing signature preparation under GC stress.
         if [ -z "$DOTNET_GCStress" ] || [ "$DOTNET_GCStress" == "0" ]; then
