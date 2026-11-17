@@ -108,6 +108,31 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, line => line.Contains("CoreLib entrypoint trimming sample passed", StringComparison.Ordinal));
         }
 
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true })]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        public async Task DirectPInvokeBindsListedEntryPoints(Configuration config, bool aot, bool readyToRun)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"directpinvoke_{readyToRun}",
+                extraProperties: $"<PublishReadyToRun>{readyToRun}</PublishReadyToRun>",
+                extraItems: "<DirectPInvoke Include=\"libc!strlen\" />");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DirectPInvoke.cs"));
+            ReplaceMainJsWithMinimalRunMain();
+
+            PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false,
+                ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)), isNativeBuild: true);
+
+            string nativeBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-publish");
+            string table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
+            Assert.Contains("{ \"strlen\", (void*)&PInvoke_strlen },", table);
+            Assert.Contains("{\"libc\", s_libc, 1}", table);
+            Assert.DoesNotContain("definitely_not_in_libc", table);
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains(result.TestOutput, line => line.Contains("DirectPInvoke sample passed", StringComparison.Ordinal));
+        }
+
         // Only Mono's generator rejects a non-blittable callback signature; crossgen2 leaves the
         // check to Roslyn and the runtime.
         [Theory, TestCategory("mono")]

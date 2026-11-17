@@ -1425,6 +1425,8 @@ public class WasmArgumentLayoutTests
                 public static extern int Link(nint oldPath, nint newPath);
                 [DllImport("libc", EntryPoint = "statx")]
                 public static extern int Statx(int dirfd);
+                [DllImport("libc", EntryPoint = "strlen")]
+                public static extern nuint StrLen(nint value);
                 [DllImport("Native", EntryPoint = "Native_Test")]
                 public static extern int Native();
             }
@@ -1450,7 +1452,7 @@ public class WasmArgumentLayoutTests
             {
                 OutputDirectory = Path.Combine(workingDirectory, "generated"),
                 TargetOS = targetOS,
-                PInvokeModules = new[] { "# comment", "c!link", "Native!Missing", "Native" },
+                PInvokeModules = new[] { "# comment", "c!link", "libc!strlen", "Native!Missing", "Native" },
             };
 
             var log = new StringWriter();
@@ -1458,8 +1460,10 @@ public class WasmArgumentLayoutTests
             Assert.True(exitCode == 0, log.ToString());
 
             string table = File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp"));
-            Assert.Contains("DllImportEntry(link)", table);
-            Assert.Contains("{\"libc\", s_libc, 1}", table);
+            Assert.Contains("PInvoke_link (void *, void *) __asm__(\"link\");", table);
+            Assert.Contains("{ \"link\", (void*)&PInvoke_link },", table);
+            Assert.Contains("PInvoke_strlen (void *) __asm__(\"strlen\");", table);
+            Assert.Contains("{\"libc\", s_libc, 2}", table);
             Assert.DoesNotContain("statx", table);
             Assert.Contains("DllImportEntry(Native_Test)", table);
         }
