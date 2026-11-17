@@ -115,7 +115,7 @@ namespace ILCompiler
             }
 
             PInvokeMetadata metadata = method.GetPInvokeMethodMetadata();
-            if (metadata.Module is "*" or "QCall")
+            if (metadata.Module == "QCall")
             {
                 return true;
             }

@@ -13,7 +13,7 @@ namespace ILCompiler
     /// <summary>
     /// The P/Invokes to call directly, given as <c>--directpinvoke</c> entries and
     /// <c>--directpinvokelist</c> files. An entry names a whole module, or a single entry point as
-    /// <c>module!entrypoint</c>.
+    /// <c>module!entrypoint</c>. Module <c>*</c> is always direct.
     /// </summary>
     public sealed class DirectPInvokeSet
     {
@@ -25,7 +25,10 @@ namespace ILCompiler
         public DirectPInvokeSet(TargetDetails target, IEnumerable<string> directPInvokes, IEnumerable<string> directPInvokeLists)
         {
             _target = target;
-            _entries = new Dictionary<string, HashSet<string>>(target.IsWindows ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+            _entries = new Dictionary<string, HashSet<string>>(target.IsWindows ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal)
+            {
+                { "*", null },
+            };
 
             foreach (string file in directPInvokeLists)
             {
@@ -37,7 +40,7 @@ namespace ILCompiler
                 Add(entry);
         }
 
-        public void Add(string entry)
+        private void Add(string entry)
         {
             if (entry.StartsWith('#'))
                 return;

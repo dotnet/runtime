@@ -21,10 +21,6 @@ namespace ILCompiler
         public ConfigurablePInvokePolicy(TargetDetails target, IReadOnlyList<string> directPInvokes, IReadOnlyList<string> directPInvokeLists)
         {
             _directPInvokes = new DirectPInvokeSet(target, directPInvokes, directPInvokeLists);
-
-            // * is always a direct call
-            _directPInvokes.Add("*");
-
             _target = target;
         }
 
