@@ -989,10 +989,18 @@ namespace ILCompiler
                 return false;
             }
 
+            // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
+            // Unfortunately this means dataflow will still see code that the rest of the system
+            // might have optimized away. It should not be a problem in practice.
+            foreach (TypeDesc instantiationArgument in method.Instantiation)
+            {
+                if (instantiationArgument.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
+                    return false;
+            }
+
             // The body of these intrinsics is whatever RuntimeHelpersIntrinsics.EmitIL says it is, same as
             // what RyuJIT sees. If this returns true, the call is a constant for the method instantiation
             // we're looking at, whether it is an exact instantiation or a canonical one.
-            // Dataflow runs on top of uninstantiated IL; TryGetConstantValue doesn't answer for signature variables.
             if (!RuntimeHelpersIntrinsics.TryGetConstantValue(method, out bool result))
                 return false;
 

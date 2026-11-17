@@ -36,6 +36,7 @@ namespace Internal.IL.Stubs
         /// The result for a canonical instantiation must be the same as for every exact instantiation that shares it.
         /// Code compiled for the canonical form is shared by all of them and callers rely on that.
         /// Intrinsics that are not constant per instantiation cannot be added here, they need their own <see cref="EmitIL"/> case.
+        /// The method must not be instantiated over signature variables, callers that analyze uninstantiated IL need to filter those out.
         /// </remarks>
         public static bool TryGetConstantValue(MethodDesc method, out bool result)
         {
@@ -46,14 +47,6 @@ namespace Internal.IL.Stubs
                 return false;
 
             TypeDesc elementType = method.Instantiation[0];
-
-            // Callers that analyze uninstantiated IL (for example, dataflow running on top of
-            // SubstitutedILProvider in ILC) can ask about signature variables or generic parameters.
-            // No single answer is valid for all instantiations, so don't answer. Code generation
-            // (RyuJIT, the IL scanner) only asks about exact or canonical instantiations.
-            // This must come first: asking indefinite types about canonical or runtime-determined forms asserts.
-            if (elementType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true) || elementType.IsRuntimeDeterminedSubtype)
-                return false;
 
             // Fallback to non-intrinsic implementation for universal generics
             if (elementType.IsCanonicalSubtype(CanonicalFormKind.Universal))
