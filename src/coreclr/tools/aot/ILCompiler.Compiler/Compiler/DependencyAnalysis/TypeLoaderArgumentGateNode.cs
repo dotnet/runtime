@@ -11,10 +11,10 @@ using Internal.TypeSystem;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents the condition "the type loader template for <see cref="Type"/> is present, and the generic arguments
-    /// of <see cref="Type"/> before <see cref="ArgumentIndex"/> are present in the compilation or could be created
+    /// Represents the condition "the type loader template for the type is present, and the generic arguments
+    /// of the type before the argument at the given index are present in the compilation or could be created
     /// by the type loader at runtime". The node for the index past the last argument, see <see cref="GetLast"/>,
-    /// means that <see cref="Type"/> can be created by the type loader at runtime.
+    /// means that the type can be created by the type loader at runtime.
     /// </summary>
     /// <remarks>
     /// A generic type that could be created by the type loader at runtime can only be created if all of its
@@ -38,9 +38,6 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
             _argumentIndex = argumentIndex;
         }
-
-        public TypeDesc Type => _type;
-        public int ArgumentIndex => _argumentIndex;
 
         /// <summary>
         /// Gets the last node of the chain, which is marked once all arguments have been checked.
