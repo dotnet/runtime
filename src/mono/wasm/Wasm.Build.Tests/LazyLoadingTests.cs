@@ -2,11 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ILCompiler.Reflection.ReadyToRun;
+using Internal.ReadyToRunConstants;
+using Microsoft.NET.Sdk.WebAssembly;
+using Microsoft.NET.WebAssembly.Webcil;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -93,6 +98,99 @@ public class LazyLoadingTests : WasmTemplateTestsBase
         ));
 
         Assert.True(result.TestOutput.Any(m => m.Contains("FirstName")), "The lazy loading test didn't emit expected message with JSON");
+    }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(false, false, true)]
+    [InlineData(false, true, true)]
+    [InlineData(true, true, true)]
+    [InlineData(false, true, false)]
+    [TestCategory("no-workload")]
+    public async Task PublishLoadsLazyAssemblies(bool trimmed, bool readyToRun, bool bundle)
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"r2r_lazy_{trimmed}_{readyToRun}_{bundle}");
+        File.WriteAllText(Path.Combine(_projectDir, "LazyLoadingTest.cs"), """
+            using System;
+            using System.Diagnostics.CodeAnalysis;
+            using System.Reflection;
+            using System.Runtime.InteropServices.JavaScript;
+
+            public partial class LazyLoadingTest
+            {
+                [JSExport]
+                [DynamicDependency(DynamicallyAccessedMemberTypes.All, "Library.Person", "Json")]
+                [DynamicDependency(DynamicallyAccessedMemberTypes.All, "LazyLibrary.Foo", "LazyLibrary")]
+                [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The reflected types are preserved by DynamicDependency.")]
+                public static void Run()
+                {
+                    Type person = Assembly.Load("Json").GetType("Library.Person", throwOnError: true)!;
+                    TestOutput.WriteLine("FirstName=" + person.Name);
+                }
+            }
+            """);
+        UpdateFile("wwwroot/main.js", new Dictionary<string, string>
+        {
+            {
+                "const firstJsonLoad = await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);",
+                """
+                testOutput(`jsonAlreadyLoaded=${INTERNAL.getLoadedAssemblyBytes("Json.dll") !== undefined}`);
+                const firstJsonLoad = await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
+                testOutput(`jsonLoadedAfterLazy=${INTERNAL.getLoadedAssemblyBytes("Json.dll") !== undefined}`);
+                """
+            }
+        });
+
+        string args = $"{GetR2RBuildArgs(config, composite: true)} -p:TestLazyLoading=true -p:PublishReadyToRun={readyToRun.ToString().ToLowerInvariant()} -p:PublishReadyToRunComposite=true -p:PublishTrimmed={trimmed.ToString().ToLowerInvariant()} -p:WasmBundleCompositeComponents={bundle.ToString().ToLowerInvariant()} -p:WasmBuildNative=false";
+        PublishProject(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: args));
+
+        string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
+        WasmSdkBasedProjectProvider provider = GetProvider<WasmSdkBasedProjectProvider>();
+        AssetsData assets = (AssetsData)provider.GetBootJson(provider.GetBootConfigPath(frameworkDir)).resources;
+        if (readyToRun && bundle)
+            Assert.Single(assets.coreAssembly, asset => asset.isWebcilBundle == true);
+        else
+            Assert.DoesNotContain(assets.coreAssembly, asset => asset.isWebcilBundle == true);
+        WebcilAsset json = Assert.Single(assets.lazyAssembly, asset => asset.virtualPath == "Json.wasm");
+        string jsonPath = Path.Combine(frameworkDir, json.name);
+        using (FileStream stream = File.OpenRead(jsonPath))
+        {
+            Assert.True(WebcilReader.TryReadWebcilInWasmSizes(stream, out _, out int tableSize, out string? reason), reason);
+            if (readyToRun)
+                Assert.True(tableSize > 0, "The lazy assembly must use a separate ReadyToRun image.");
+            else
+                Assert.Equal(0, tableSize);
+        }
+
+        if (readyToRun)
+        {
+            byte[] image = File.ReadAllBytes(jsonPath);
+            var imageReader = new WebcilImageReader(image);
+            Assert.True(imageReader.TryGetReadyToRunHeader(out int headerRva, out bool isCompositeOwner));
+            Assert.False(isCompositeOwner);
+            int headerOffset = imageReader.GetOffset(headerRva);
+            Assert.Equal(ReadyToRunHeader.READYTORUN_SIGNATURE, BinaryPrimitives.ReadUInt32LittleEndian(image.AsSpan(headerOffset)));
+            const int FlagsOffset = sizeof(uint) + 2 * sizeof(ushort);
+            var flags = (ReadyToRunFlags)BinaryPrimitives.ReadUInt32LittleEndian(image.AsSpan(headerOffset + FlagsOffset));
+            Assert.Equal((ReadyToRunFlags)0, flags & ReadyToRunFlags.READYTORUN_FLAG_Component);
+        }
+
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "LazyLoadingTest"));
+        Assert.Contains(result.TestOutput, output => output.Contains("jsonAlreadyLoaded=false"));
+        Assert.Contains(result.TestOutput, output => output.Contains("firstJsonLoad=true"));
+        Assert.Contains(result.TestOutput, output => output.Contains("jsonLoadedAfterLazy=true"));
+        Assert.Contains(result.TestOutput, output => output.Contains("FirstName=Person"));
+    }
+
+    [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [TestCategory("no-workload")]
+    public void CompositeReadyToRunRejectsDirectLazyReference()
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "r2r_lazy_reference");
+        string args = $"{GetR2RBuildArgs(config, composite: true)} -p:TestLazyLoading=true -p:PublishReadyToRun=true -p:PublishReadyToRunComposite=true -p:PublishTrimmed=false -p:WasmBuildNative=false";
+        (_, string output) = PublishProject(info, config, new PublishOptions(ExpectSuccess: false, ExtraMSBuildArgs: args));
+        Assert.Contains("directly references lazy-loaded assembly 'Json'", output);
     }
 
     [Fact]

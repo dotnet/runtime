@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.NET.Sdk.WebAssembly;
 using Microsoft.Playwright;
 using Xunit.Abstractions;
 using Xunit;
@@ -58,6 +59,36 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
             result.TestOutput,
             expectedOutput.ToArray()
         );
+    }
+
+    [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [TestCategory("no-workload")]
+    public async Task LoadSatelliteAssemblyWithCompositeBundle()
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "SatelliteLoadingComposite",
+            extraProperties: """
+                <PublishReadyToRun>true</PublishReadyToRun>
+                <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
+                <PublishTrimmed>true</PublishTrimmed>
+                <WasmBuildNative>false</WasmBuildNative>
+                """);
+        PublishProject(info, config,
+            new PublishOptions(UseCache: false, ExtraMSBuildArgs: GetR2RBuildArgs(config, composite: true)));
+
+        string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
+        WasmSdkBasedProjectProvider provider = GetProvider<WasmSdkBasedProjectProvider>();
+        AssetsData assets = (AssetsData)provider.GetBootJson(provider.GetBootConfigPath(frameworkDir)).resources;
+        Assert.Single(assets.coreAssembly, asset => asset.isWebcilBundle == true);
+
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "SatelliteAssembliesTest"));
+        Assert.Collection(result.TestOutput,
+            line => Assert.Equal("default: hello", line),
+            line => Assert.Equal("es-ES without satellite: hello", line),
+            line => Assert.Equal("fr-FR without satellite: hello", line),
+            line => Assert.Equal("default: hello", line),
+            line => Assert.Equal("es-ES with satellite: hola", line),
+            line => Assert.Equal("fr-FR with satellite: bonjour", line));
     }
 
     [Fact, TestCategory("bundler-friendly")]

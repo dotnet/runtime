@@ -512,6 +512,7 @@ Copyright (c) .NET Foundation. All rights reserved.
                            Crossgen2PgoFiles="@(_ReadyToRunPgoFiles)"
                            Crossgen2ContainerFormat="$(PublishReadyToRunContainerFormat)"
                            Crossgen2ExtraCommandLineArgs="$(PublishReadyToRunCrossgen2ExtraArgs);$(_PublishReadyToRunCrossgen2ExtraArgs)"
+                           Crossgen2CompositeExtraCommandLineArgs="$(PublishReadyToRunCrossgen2CompositeExtraArgs)"
                            ImplementationAssemblyReferences="@(_ReadyToRunAssembliesToReference)"
                            ShowCompilerWarnings="$(PublishReadyToRunShowWarnings)"
                            CompilationEntry="@(_ReadyToRunCompileList)"

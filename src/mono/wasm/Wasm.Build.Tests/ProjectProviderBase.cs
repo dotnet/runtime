@@ -669,8 +669,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
 
         string? spcActualFilename = assets.coreAssembly.SingleOrDefault(a => a.virtualPath == spcExpectedFilename)?.name;
-        if (spcActualFilename is null)
+        WebcilAsset? bundle = assets.coreAssembly.SingleOrDefault(a => a.isWebcilBundle == true);
+        if (spcActualFilename is null && bundle is null)
             throw new XunitException($"Could not find an assembly named System.Private.CoreLib.* in {bootJsonPath}");
+        if (bundle is not null)
+            Assert.True(File.Exists(Path.Combine(options.BinFrameworkDir, bundle.name)), $"Could not find the Webcil component bundle '{bundle.name}'.");
 
         var bootJsonEntries = assets.jsModuleNative.Select(a => a.name)
             .Union(assets.wasmNative.Select(a => a.name))

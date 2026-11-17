@@ -461,6 +461,41 @@ namespace ILCompiler
                         throw new Exception(string.Format(SR.ErrorContainerFormatRequiresComposite, format));
                     }
 
+                    string webcilComponentBundle = Get(_command.WebcilComponentBundle);
+                    if (webcilComponentBundle is not null)
+                    {
+                        if (!composite || format != ReadyToRunContainerFormat.Wasm || _singleFileCompilation ||
+                            typeSystemContext.Target.Architecture != TargetArchitecture.Wasm32)
+                        {
+                            throw new CommandLineException(SR.ErrorWebcilComponentBundleRequiresWasmComposite);
+                        }
+                        if (string.IsNullOrWhiteSpace(webcilComponentBundle))
+                        {
+                            throw new CommandLineException(SR.ErrorWebcilComponentBundlePathEmpty);
+                        }
+
+                        string bundlePath = Path.GetFullPath(webcilComponentBundle);
+                        StringComparison pathComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+                        if (string.Equals(bundlePath, Path.GetFullPath(outFile), pathComparison))
+                        {
+                            throw new CommandLineException(SR.ErrorWebcilComponentBundlePathCollision);
+                        }
+
+                        foreach (string inputFile in _allInputFilePaths.Values)
+                        {
+                            string relativePath = Path.GetRelativePath(compositeRootPath, inputFile);
+                            if (relativePath == inputFile || relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+                            {
+                                relativePath = Path.GetFileName(inputFile);
+                            }
+                            string componentPath = Path.ChangeExtension(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(outFile)), relativePath), ".wasm");
+                            if (string.Equals(bundlePath, Path.GetFullPath(inputFile), pathComparison) ||
+                                string.Equals(bundlePath, componentPath, pathComparison))
+                            {
+                                throw new CommandLineException(SR.ErrorWebcilComponentBundlePathCollision);
+                            }
+                        }
+                    }
                     if (rtrHeaderSymbolName is not null)
                     {
                         if (!composite)
@@ -709,6 +744,7 @@ namespace ILCompiler
                         .UseNodeFactoryOptimizationFlags(nodeFactoryFlags)
                         .FileLayoutAlgorithms(Get(_command.MethodLayout), Get(_command.FileLayout))
                         .UseCompositeImageSettings(compositeImageSettings)
+                        .UseWebcilComponentBundle(webcilComponentBundle)
                         .UseJitPath(Get(_command.JitPath))
                         .UseInstructionSetSupport(instructionSetSupport)
                         .UseCustomPESectionAlignment(Get(_command.CustomPESectionAlignment))

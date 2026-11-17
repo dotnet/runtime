@@ -35,6 +35,9 @@ public class ConvertDllsToWebcil : Task
     /// </summary>
     public string? PrebuiltR2RDirectory { get; set; }
 
+    public string? CompositeBundlePath { get; set; }
+    public ITaskItem[]? CompositeLazyAssemblies { get; set; }
+
     public int WebcilVersion { get; set; }
 
     [Output]
@@ -66,6 +69,25 @@ public class ConvertDllsToWebcil : Task
     {
         var webcilCandidates = new List<ITaskItem>();
         var passThroughCandidates = new List<ITaskItem>();
+        WebcilBundleReader? bundle = null;
+        var lazyAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (ITaskItem lazy in CompositeLazyAssemblies ?? Array.Empty<ITaskItem>())
+        {
+            lazyAssemblies.Add(CompositeLazyAssemblyNames.GetSimpleName(lazy.ItemSpec));
+        }
+
+        if (!string.IsNullOrEmpty(CompositeBundlePath))
+        {
+            try
+            {
+                bundle = new WebcilBundleReader(CompositeBundlePath);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or BadImageFormatException or ArgumentException or OverflowException)
+            {
+                Log.LogError($"Cannot read Webcil component bundle '{CompositeBundlePath}': {ex.Message}");
+                return false;
+            }
+        }
 
         if (!IsEnabled)
         {
@@ -120,7 +142,13 @@ public class ConvertDllsToWebcil : Task
 
             try
             {
-                TaskItem webcilItem = ConvertDll(tmpDir, candidate);
+                bool isCulture = candidate.GetMetadata("AssetTraitName") == "Culture";
+                if (!isCulture && bundle is not null && bundle.ContainsMatchingAssembly(candidate.ItemSpec))
+                {
+                    continue;
+                }
+
+                TaskItem webcilItem = ConvertDll(tmpDir, candidate, !isCulture && lazyAssemblies.Contains(Path.GetFileNameWithoutExtension(candidate.ItemSpec)));
                 webcilCandidates.Add(webcilItem);
             }
             catch (Exception ex)
@@ -137,7 +165,7 @@ public class ConvertDllsToWebcil : Task
         return true;
     }
 
-    private TaskItem ConvertDll(string tmpDir, ITaskItem candidate)
+    private TaskItem ConvertDll(string tmpDir, ITaskItem candidate, bool requireSeparateR2R)
     {
         var dllFilePath = candidate.ItemSpec;
         var webcilFileName = Path.GetFileNameWithoutExtension(dllFilePath) + Utils.WebcilInWasmExtension;
@@ -183,6 +211,13 @@ public class ConvertDllsToWebcil : Task
                     forceWebcilConversion = true;
                 }
             }
+
+        }
+        if (requireSeparateR2R &&
+            (string.IsNullOrEmpty(r2rWebcilPath) || !IsR2RWebcil(r2rWebcilPath) ||
+             TryReadMvid(dllFilePath) is not Guid expectedMvid || TryReadMvid(r2rWebcilPath) != expectedMvid))
+        {
+            throw new BadImageFormatException($"Lazy-loaded assembly '{dllFilePath}' does not have a matching separate ReadyToRun image in '{PrebuiltR2RDirectory}'.");
         }
         bool outputHasExpectedFlavor = OutputHasExpectedWebcilFlavor(finalWebcil, useR2R: !string.IsNullOrEmpty(r2rWebcilPath));
         if (!string.IsNullOrEmpty(r2rWebcilPath))
@@ -307,7 +342,7 @@ public class ConvertDllsToWebcil : Task
         return false;
     }
 
-    private static Guid? TryReadMvid(string path)
+    internal static Guid? TryReadMvid(string path)
     {
         try
         {

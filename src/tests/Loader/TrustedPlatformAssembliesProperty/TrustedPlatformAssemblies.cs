@@ -8,6 +8,8 @@ using Xunit;
 public class TrustedPlatformAssemblies
 {
     public static bool HasSystemCoreLibFile => !string.IsNullOrEmpty(typeof(object).Assembly.Location);
+    public static bool IsBrowserReadyToRun =>
+        OperatingSystem.IsBrowser() && Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
 
     [ConditionalFact(typeof(TrustedPlatformAssemblies), nameof(HasSystemCoreLibFile))]
     public static void IsAvailable()
@@ -22,5 +24,11 @@ public class TrustedPlatformAssemblies
         }
 
         Assert.Contains(coreLibLocation, tpa.Split(Path.PathSeparator), StringComparer.OrdinalIgnoreCase);
+    }
+
+    [ConditionalFact(nameof(IsBrowserReadyToRun))]
+    public static void BrowserReadyToRunAssemblyUsesExternalProbe()
+    {
+        Assert.Empty(typeof(TrustedPlatformAssemblies).Assembly.Location);
     }
 }

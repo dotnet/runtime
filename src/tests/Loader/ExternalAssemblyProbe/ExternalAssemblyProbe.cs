@@ -6,6 +6,9 @@ using Xunit;
 
 public unsafe class ExternalAssemblyProbe
 {
+    public static bool IsBrowserReadyToRun =>
+        TestLibrary.PlatformDetection.IsBrowser && TestLibrary.PlatformDetection.IsReadyToRunCompiled;
+
     [ActiveIssue("https://github.com/dotnet/runtime/issues/134949", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasi), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
     [Fact]
     public static void ExternalAppAssemblies()
@@ -14,5 +17,11 @@ public unsafe class ExternalAssemblyProbe
         // Check that the TPA is indeed empty - that is, the runtime is not relying on that property.
         string tpa = AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string;
         Assert.True(string.IsNullOrEmpty(tpa), "TRUSTED_PLATFORM_ASSEMBLIES should be empty");
+    }
+
+    [ConditionalFact(nameof(IsBrowserReadyToRun))]
+    public static void BrowserReadyToRunAssemblyUsesExternalProbe()
+    {
+        Assert.Empty(typeof(ExternalAssemblyProbe).Assembly.Location);
     }
 }

@@ -153,6 +153,157 @@ public class WebcilInWasmSizesTests
         }
     }
 
+    [Theory]
+    [InlineData(115)]
+    [InlineData(116)]
+    [InlineData(16370)]
+    [InlineData(16371)]
+    public void SelfInstallingWrapper_AlignsPayloadAcrossSectionLengthBoundaries(int payloadLength)
+    {
+        using var payload = new MemoryStream(new byte[payloadLength]);
+        using var output = new MemoryStream();
+        new WebcilWasmWrapper(payload, selfInstalling: true).WriteWasmWrappedWebcil(output);
+
+        WrapperShape shape = ReadWrapperShape(output.ToArray());
+        Assert.Equal(payloadLength, shape.PayloadLength);
+        Assert.Equal(0, shape.PayloadFileOffset % 4);
+    }
+
+    [Theory]
+    [InlineData("Havit.Components", "Havit.Components.dll")]
+    [InlineData("Havit.Components.dll", "Havit.Components.dll")]
+    [InlineData("Havit.Components.wasm", "Havit.Components.dll")]
+    public void CompositeLazyExclusions_NormalizeNames(string name, string expected)
+    {
+        var task = new GetCompositeLazyExclusions
+        {
+            BuildEngine = new TestBuildEngine(),
+            LazyAssemblies = [new TaskItem(name)],
+        };
+
+        Assert.True(task.Execute());
+        Assert.Equal(expected, Assert.Single(task.Exclusions).ItemSpec);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CompositeLazyValidation_RejectsDirectReferences(bool directReference)
+    {
+        string buildFramework = typeof(ITaskItem).Assembly.Location;
+        string packTasks = typeof(GetCompositeLazyExclusions).Assembly.Location;
+        string lazy = directReference ? buildFramework : packTasks;
+        string composite = directReference ? packTasks : buildFramework;
+        var separate = new TaskItem(lazy);
+        separate.SetMetadata("OutputR2RImage", "separate.wasm");
+        var engine = new TestBuildEngine(failOnError: false);
+        var task = new ValidateCompositeLazyReferences
+        {
+            BuildEngine = engine,
+            LazyAssemblies = [new TaskItem(Path.GetFileName(lazy))],
+            CompileList = [separate],
+            CompositeInputs = [new TaskItem(composite)],
+        };
+
+        Assert.Equal(!directReference, task.Execute());
+        if (directReference)
+        {
+            Assert.Contains(engine.Errors, error => error.Contains("directly references lazy-loaded assembly"));
+        }
+        else
+        {
+            Assert.Empty(engine.Errors);
+        }
+    }
+
+    [Fact]
+    public void BundleFilter_ChecksMvidAndRejectsMalformedEntries()
+    {
+        using var directory = new TempDirectory();
+        string rawPath = Path.Combine(directory.Path, "corelib.webcil");
+        WebcilConverter converter = WebcilConverter.FromPortableExecutable(typeof(object).Assembly.Location, rawPath, webcilVersion: 1);
+        converter.WrapInWebAssembly = false;
+        converter.ConvertToWebcil();
+        byte[] image = File.ReadAllBytes(rawPath);
+        Array.Clear(image, 28, 4);
+
+        string bundlePath = Path.Combine(directory.Path, "bundle.wasm");
+        File.WriteAllBytes(bundlePath, BuildComponentBundle(
+            ("System.Private.CoreLib.dll", image),
+            ("System.Console.dll", image)));
+        var engine = new TestBuildEngine(failOnError: false);
+        var task = new FilterWebcilBundleComponents
+        {
+            BuildEngine = engine,
+            BundlePath = bundlePath,
+            Candidates = [new TaskItem(typeof(object).Assembly.Location)],
+        };
+        Assert.True(task.Execute());
+        Assert.Empty(task.UnbundledCandidates);
+
+        task = new FilterWebcilBundleComponents
+        {
+            BuildEngine = engine,
+            BundlePath = bundlePath,
+            Candidates = [new TaskItem(typeof(Console).Assembly.Location)],
+        };
+        Assert.False(task.Execute());
+        Assert.Contains(engine.Errors, error => error.Contains("does not match"));
+
+        byte[] malformed = File.ReadAllBytes(bundlePath);
+        int payloadOffset = ReadWrapperShape(malformed).PayloadFileOffset;
+        Array.Fill(malformed, (byte)0xff, payloadOffset + 28, 4);
+        File.WriteAllBytes(bundlePath, malformed);
+        engine = new TestBuildEngine(failOnError: false);
+        task = new FilterWebcilBundleComponents
+        {
+            BuildEngine = engine,
+            BundlePath = bundlePath,
+            Candidates = [new TaskItem(typeof(object).Assembly.Location)],
+        };
+        Assert.False(task.Execute());
+        Assert.Contains(engine.Errors, error => error.Contains("Invalid Webcil bundle entry"));
+    }
+
+    private static byte[] BuildComponentBundle(params (string Name, byte[] Image)[] entries)
+    {
+        byte[][] names = entries.Select(entry => System.Text.Encoding.UTF8.GetBytes(entry.Name)).ToArray();
+        int stringsOffset = 20 + entries.Length * 16;
+        int imageOffset = (stringsOffset + names.Sum(name => name.Length) + 15) & ~15;
+        int nameOffset = 0;
+        using var payload = new MemoryStream();
+        using (var writer = new BinaryWriter(payload, System.Text.Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write(0x42496257u);
+            writer.Write((ushort)1);
+            writer.Write((ushort)0);
+            writer.Write((uint)entries.Length);
+            writer.Write((uint)stringsOffset);
+            writer.Write((uint)names.Sum(name => name.Length));
+            for (int i = 0; i < entries.Length; i++)
+            {
+                writer.Write((uint)nameOffset);
+                writer.Write((uint)names[i].Length);
+                writer.Write((uint)imageOffset);
+                writer.Write((uint)entries[i].Image.Length);
+                nameOffset += names[i].Length;
+                imageOffset = (imageOffset + entries[i].Image.Length + 15) & ~15;
+            }
+            foreach (byte[] name in names)
+                writer.Write(name);
+            foreach ((string _, byte[] image) in entries)
+            {
+                while (payload.Position % 16 != 0)
+                    writer.Write((byte)0);
+                writer.Write(image);
+            }
+        }
+        payload.Position = 0;
+        using var output = new MemoryStream();
+        new WebcilWasmWrapper(payload, selfInstalling: true).WriteWasmWrappedWebcil(output);
+        return output.ToArray();
+    }
+
     [Fact]
     public void NotAWasmModule_Fails()
     {
@@ -485,6 +636,7 @@ public class WebcilInWasmSizesTests
         byte PayloadSegmentMode,
         byte[] PayloadOffsetExpr,
         int PayloadLength,
+        int PayloadFileOffset,
         string[] FunctionExports,
         string[] GlobalImports);
 
@@ -495,6 +647,7 @@ public class WebcilInWasmSizesTests
         byte payloadSegmentMode = 0xff;
         byte[] payloadOffsetExpr = Array.Empty<byte>();
         int payloadLength = -1;
+        int payloadFileOffset = -1;
         var functionExports = new List<string>();
         var globalImports = new List<string>();
         var exportedGlobals = new Dictionary<uint, string>();
@@ -564,6 +717,7 @@ public class WebcilInWasmSizesTests
                         payloadOffsetExpr = wasm.AsSpan(exprStart, offset - exprStart).ToArray();
                     }
                     payloadLength = (int)ReadULEB(wasm, ref offset);
+                    payloadFileOffset = offset;
                     Assert.Equal(sectionEnd, offset + payloadLength);
                     break;
             }
@@ -577,7 +731,7 @@ public class WebcilInWasmSizesTests
         }
 
         functionExports.Sort(StringComparer.Ordinal);
-        return new WrapperShape(wrapperVersion, payloadSegmentMode, payloadOffsetExpr, payloadLength, functionExports.ToArray(), globalImports.ToArray());
+        return new WrapperShape(wrapperVersion, payloadSegmentMode, payloadOffsetExpr, payloadLength, payloadFileOffset, functionExports.ToArray(), globalImports.ToArray());
     }
 
     private static string ReadName(byte[] wasm, ref int offset)
@@ -640,8 +794,9 @@ public class WebcilInWasmSizesTests
         public void Dispose() => Directory.Delete(Path, recursive: true);
     }
 
-    private sealed class TestBuildEngine : IBuildEngine
+    private sealed class TestBuildEngine(bool failOnError = true) : IBuildEngine
     {
+        public List<string> Errors { get; } = [];
         public bool ContinueOnError => false;
         public int LineNumberOfTaskNode => 0;
         public int ColumnNumberOfTaskNode => 0;
@@ -654,7 +809,12 @@ public class WebcilInWasmSizesTests
         {
         }
 
-        public void LogErrorEvent(BuildErrorEventArgs e) => Assert.Fail(e.Message ?? "Build error");
+        public void LogErrorEvent(BuildErrorEventArgs e)
+        {
+            Errors.Add(e.Message ?? "Build error");
+            if (failOnError)
+                Assert.Fail(e.Message ?? "Build error");
+        }
 
         public void LogMessageEvent(BuildMessageEventArgs e)
         {

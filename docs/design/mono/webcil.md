@@ -239,6 +239,47 @@ Publishing sizes the host reservations from the generated app/framework composit
 instead use the shared corerun's fixed reservations and compose only their test assemblies.
 See [the WASI R2R workflow](../../workflow/building/coreclr/wasi-r2r.md) for usage and diagnostics.
 
+### Composite component bundle
+
+A browser composite ReadyToRun build may package its component images together in one version 2
+self-installing wrapper with `tableSize` zero. Its payload is not itself a Webcil image. It starts with
+the following little-endian header and directory:
+
+```c
+struct WebcilBundleHeader {
+    uint8_t id[4];            // "WbIB"
+    uint16_t versionMajor;    // 1
+    uint16_t versionMinor;    // 0
+    uint32_t entryCount;
+    uint32_t stringTableOffset;
+    uint32_t stringTableSize;
+};
+
+struct WebcilBundleEntry {
+    uint32_t nameOffset;      // relative to the string table
+    uint32_t nameLength;      // UTF-8 bytes
+    uint32_t imageOffset;     // relative to the bundle payload
+    uint32_t imageSize;
+};
+```
+
+The directory immediately follows the header. Each name is a relative, slash-separated assembly path
+ending in `.dll`; empty, `.` and `..` path components, backslashes, control characters, and duplicate
+assembly file names are invalid. Each image starts at a 16-byte-aligned offset after the string table,
+and images must not overlap. Images are independent version 1 Webcil component payloads with their
+own RVA spaces and no function-table relocations.
+
+The host allocates a 16-byte-aligned range for the whole payload, instantiates the wrapper once, and
+validates the directory before exposing each image as a separate `(address, size)` assembly view. It
+keeps that memory alive for the lifetime of those views. Composite code remains in a separate
+ReadyToRun module. Bundling is enabled by default for browser composite publishing; set
+`WasmBundleCompositeComponents=false` to emit separate component wrappers instead. Lazy-loaded
+assemblies are excluded from the composite and are compiled separately. Publishing rejects direct
+references from a composite component to a lazy-loaded assembly.
+The CoreCLR browser host exposes `getDotnetRuntime(id).INTERNAL.getLoadedAssemblyBytes(path)` for
+consumers that need the individual image bytes. It returns a copy of the registered assembly or PDB
+view, or `undefined` if the asset has not been loaded; it does not fetch lazy assets.
+
 ### Webcil payload
 
 The webcil payload contains the ECMA-335 metadata, IL and resources comprising a .NET assembly.
