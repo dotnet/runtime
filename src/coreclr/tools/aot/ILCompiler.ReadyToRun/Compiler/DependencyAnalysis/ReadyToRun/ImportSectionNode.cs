@@ -88,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (EmitGCRefMap)
             {
-                ((MethodFixupSignature)import.Signature).EmitGCRefMap = true;
+                ((GCRefMapSignature)import.Signature).EmitGCRefMap = true;
             }
         }
 

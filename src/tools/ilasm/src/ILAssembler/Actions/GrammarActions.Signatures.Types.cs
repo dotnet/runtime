@@ -233,22 +233,27 @@ internal sealed partial class GrammarActions
     {
         suffix.WriteCompressedInteger(bounds.Length);
 
+        // ECMA-335 II.23.2.13: Array shapes encode sizes and lower bounds as prefixes.
+        // Include all dimensions through the last explicitly specified bound, filling gaps with zeros.
         int sizeCount = 0;
-        while (sizeCount < bounds.Length && bounds[sizeCount].Upper is not null)
+        int lowerBoundCount = 0;
+        for (int i = 0; i < bounds.Length; i++)
         {
-            sizeCount++;
+            if (bounds[i].Upper is not null)
+            {
+                sizeCount = i + 1;
+            }
+
+            if (bounds[i].Lower is not null)
+            {
+                lowerBoundCount = i + 1;
+            }
         }
 
         suffix.WriteCompressedInteger(sizeCount);
         for (int i = 0; i < sizeCount; i++)
         {
             suffix.WriteCompressedInteger(bounds[i].Upper.GetValueOrDefault());
-        }
-
-        int lowerBoundCount = 0;
-        while (lowerBoundCount < bounds.Length && bounds[lowerBoundCount].Lower is not null)
-        {
-            lowerBoundCount++;
         }
 
         suffix.WriteCompressedInteger(lowerBoundCount);

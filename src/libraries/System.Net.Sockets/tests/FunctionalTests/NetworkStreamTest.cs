@@ -282,6 +282,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop("Spins waiting for DataAvailable")]
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "FIONREAD (Socket.Available) isn't supported on WASI")]
         public async Task DataAvailable_ReturnsFalseOrTrueAppropriately()
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
@@ -337,8 +338,8 @@ namespace System.Net.Sockets.Tests
                 if (!OperatingSystem.IsWasi()) ExpectIOException(() => server.Read((Span<byte>)new byte[1]));
                 if (!OperatingSystem.IsWasi()) ExpectIOException(() => server.Write((ReadOnlySpan<byte>)new byte[1]));
 
-                if (!OperatingSystem.IsWasi()) ExpectIOException(() => server.BeginRead(new byte[1], 0, 1, null, null));
-                if (!OperatingSystem.IsWasi()) ExpectIOException(() => server.BeginWrite(new byte[1], 0, 1, null, null));
+                ExpectIOException(() => server.BeginRead(new byte[1], 0, 1, null, null));
+                ExpectIOException(() => server.BeginWrite(new byte[1], 0, 1, null, null));
 
                 ExpectIOException(() => { _ = server.ReadAsync(new byte[1], 0, 1); });
                 ExpectIOException(() => { _ = server.WriteAsync(new byte[1], 0, 1); });
