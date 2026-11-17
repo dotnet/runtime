@@ -88,6 +88,107 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         }
 
         [Fact]
+        public void ExportDirective_WithoutVTableFixup_ReservesExplicitSlotsBeforeImplicitSlots()
+        {
+            string source = """
+                .assembly test { }
+                .method public static void Explicit() cil managed
+                {
+                    .vtentry 1 : 2
+                    .export [1] as Explicit
+                    ret
+                }
+                .method public static void Implicit() cil managed
+                {
+                    .export [2] as Implicit
+                    ret
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            DirectoryEntry fixups = pe.PEHeaders.CorHeader!.VtableFixupsDirectory;
+            int slotsRva = ReadInt32(pe, fixups.RelativeVirtualAddress);
+            Assert.Equal(2, ReadUInt16(pe, fixups.RelativeVirtualAddress + sizeof(int)));
+
+            MetadataReader reader = pe.GetMetadataReader();
+            int explicitToken = MetadataTokens.GetToken(FindMethod(reader, "Explicit"));
+            int implicitToken = MetadataTokens.GetToken(FindMethod(reader, "Implicit"));
+            Assert.Equal(implicitToken, ReadInt32(pe, slotsRva));
+            Assert.Equal(explicitToken, ReadInt32(pe, slotsRva + sizeof(int)));
+
+            DirectoryEntry exports = pe.PEHeaders.PEHeader!.ExportTableDirectory;
+            int addressTableRva = ReadInt32(pe, exports.RelativeVirtualAddress + 28);
+            int explicitStubRva = ReadInt32(pe, addressTableRva);
+            int implicitStubRva = ReadInt32(pe, addressTableRva + sizeof(int));
+            uint imageBase = (uint)pe.PEHeaders.PEHeader.ImageBase;
+            Assert.Equal(
+                imageBase + (uint)slotsRva + (uint)sizeof(int),
+                ReadUInt32(pe, explicitStubRva + 2));
+            Assert.Equal(
+                imageBase + (uint)slotsRva,
+                ReadUInt32(pe, implicitStubRva + 2));
+        }
+
+        [Fact]
+        public void ExportDirective_WithoutVTableFixup_SharedExplicitSlotsDoNotCreateEmptySlots()
+        {
+            string source = """
+                .assembly test { }
+                .method public static void First() cil managed
+                {
+                    .vtentry 1 : 1
+                    .export [1] as First
+                    ret
+                }
+                .method public static void Second() cil managed
+                {
+                    .vtentry 1 : 1
+                    .export [2] as Second
+                    ret
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            DirectoryEntry fixups = pe.PEHeaders.CorHeader!.VtableFixupsDirectory;
+            int slotsRva = ReadInt32(pe, fixups.RelativeVirtualAddress);
+
+            Assert.Equal(1, ReadUInt16(pe, fixups.RelativeVirtualAddress + sizeof(int)));
+            Assert.NotEqual(0, ReadInt32(pe, slotsRva));
+
+            DirectoryEntry exports = pe.PEHeaders.PEHeader!.ExportTableDirectory;
+            int addressTableRva = ReadInt32(pe, exports.RelativeVirtualAddress + 28);
+            int firstStubRva = ReadInt32(pe, addressTableRva);
+            int secondStubRva = ReadInt32(pe, addressTableRva + sizeof(int));
+            Assert.Equal(
+                ReadUInt32(pe, firstStubRva + 2),
+                ReadUInt32(pe, secondStubRva + 2));
+        }
+
+        [Fact]
+        public void ExportDirective_WithoutVTableFixup_SparseExplicitSlotsReportDiagnosticAndOmitFixup()
+        {
+            string source = """
+                .assembly test { }
+                .method public static void Exported() cil managed
+                {
+                    .vtentry 1 : 2
+                    .export [1] as Exported
+                    ret
+                }
+                """;
+
+            (ImmutableArray<Diagnostic> diagnostics, PEReader pe) = CompileErrorTolerant(source);
+            using (pe)
+            {
+                Assert.Contains(
+                    diagnostics,
+                    diagnostic => diagnostic.Id == DiagnosticIds.UnassignedVTableSlot);
+                Assert.Equal(0, pe.PEHeaders.CorHeader!.VtableFixupsDirectory.RelativeVirtualAddress);
+                Assert.Equal(0, pe.PEHeaders.PEHeader!.ExportTableDirectory.RelativeVirtualAddress);
+            }
+        }
+
+        [Fact]
         public void VTableFixupAndExport_UseDeclaredWritableDataAndExecutableStubs()
         {
             string source = """
@@ -858,6 +959,10 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
         private static int ReadInt32(PEReader pe, int rva) =>
             BinaryPrimitives.ReadInt32LittleEndian(pe.GetSectionData(rva).GetContent().AsSpan(0, sizeof(int)));
+
+        private static MethodDefinitionHandle FindMethod(MetadataReader reader, string name) =>
+            reader.MethodDefinitions
+                .First(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == name);
 
         private static uint ReadUInt32(PEReader pe, int rva) =>
             BinaryPrimitives.ReadUInt32LittleEndian(pe.GetSectionData(rva).GetContent().AsSpan(0, sizeof(uint)));

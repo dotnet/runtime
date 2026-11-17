@@ -326,15 +326,79 @@ namespace Microsoft.DotNet.ILAssembler
                 return ImmutableArray<ValidatedVTableFixup>.Empty;
             }
 
-            if (methods.Length > ushort.MaxValue)
+            EntityRegistry.MethodDefinitionEntity[] methodsWithVTableEntry = GetParsedMethods()
+                .Where(method => _vtableEntryDirectiveContexts.ContainsKey(method))
+                .ToArray();
+            var slots = new HashSet<int>();
+            foreach (EntityRegistry.MethodDefinitionEntity method in methodsWithVTableEntry)
             {
+                if (method.VTableEntry != 1 || method.VTableSlot <= 0)
+                {
+                    continue;
+                }
+
+                if (method.VTableSlot > ushort.MaxValue)
+                {
+                    ReportError(
+                        DiagnosticIds.InvalidVTableSlotCount,
+                        string.Format(
+                            DiagnosticMessageTemplates.InvalidVTableSlotCount,
+                            method.VTableSlot,
+                            ushort.MaxValue),
+                        _vtableEntryDirectiveContexts[method]);
+                    return ImmutableArray<ValidatedVTableFixup>.Empty;
+                }
+
+                slots.Add(method.VTableSlot);
+            }
+
+            foreach (EntityRegistry.MethodDefinitionEntity method in methods)
+            {
+                if (!_vtableEntryDirectiveContexts.ContainsKey(method))
+                {
+                    int slot = 1;
+                    while (slots.Contains(slot))
+                    {
+                        slot++;
+                    }
+
+                    if (slot > ushort.MaxValue)
+                    {
+                        ReportError(
+                            DiagnosticIds.InvalidVTableSlotCount,
+                            string.Format(
+                                DiagnosticMessageTemplates.InvalidVTableSlotCount,
+                                slot,
+                                ushort.MaxValue),
+                            _exportDirectiveContexts[method]);
+                        return ImmutableArray<ValidatedVTableFixup>.Empty;
+                    }
+
+                    slots.Add(slot);
+                    method.VTableEntry = 1;
+                    method.VTableSlot = slot;
+                }
+            }
+
+            int slotCount = slots.Count;
+            if (slotCount == 0)
+            {
+                return ImmutableArray<ValidatedVTableFixup>.Empty;
+            }
+
+            for (int slot = 1; slot <= slotCount; slot++)
+            {
+                if (slots.Contains(slot))
+                {
+                    continue;
+                }
+
+                EntityRegistry.MethodDefinitionEntity method = methodsWithVTableEntry
+                    .First(method => method.VTableEntry == 1 && method.VTableSlot > slot);
                 ReportError(
-                    DiagnosticIds.InvalidVTableSlotCount,
-                    string.Format(
-                        DiagnosticMessageTemplates.InvalidVTableSlotCount,
-                        methods.Length,
-                        ushort.MaxValue),
-                    _exportDirectiveContexts[methods[ushort.MaxValue]]);
+                    DiagnosticIds.UnassignedVTableSlot,
+                    string.Format(DiagnosticMessageTemplates.UnassignedVTableSlot, slot),
+                    _vtableEntryDirectiveContexts[method]);
                 return ImmutableArray<ValidatedVTableFixup>.Empty;
             }
 
@@ -343,20 +407,11 @@ namespace Microsoft.DotNet.ILAssembler
                 (slotSize == sizeof(long) ? VTableFixupSupport.COR_VTABLE_64BIT : VTableFixupSupport.COR_VTABLE_32BIT));
             _mappedFieldData.Align(slotSize);
             var dataLocation = new DataLocation(DataSection.Data, _mappedFieldData.Count);
-            _mappedFieldData.WriteBytes(0, methods.Length * slotSize);
-            for (int i = 0; i < methods.Length; i++)
-            {
-                EntityRegistry.MethodDefinitionEntity method = methods[i];
-                if (!_vtableEntryDirectiveContexts.ContainsKey(method))
-                {
-                    method.VTableEntry = 1;
-                    method.VTableSlot = i + 1;
-                }
-            }
+            _mappedFieldData.WriteBytes(0, checked(slotCount * slotSize));
 
             return [new ValidatedVTableFixup(
                 1,
-                new VTableFixupSupport.VTableFixupEntry(methods.Length, flags, string.Empty),
+                new VTableFixupSupport.VTableFixupEntry(slotCount, flags, string.Empty),
                 dataLocation)];
         }
 
