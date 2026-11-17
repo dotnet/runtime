@@ -60,41 +60,37 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        private async Task WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(isClosed, this);
-            var flushing = false;
+            bool flushing = false;
             while (true)
             {
-                var count = (int)stream.CheckWrite();
+                int count = (int)stream.CheckWrite();
                 if (count == 0)
                 {
                     await WaitAsync(stream.Subscribe(), cancellationToken).ConfigureAwait(false);
-                    ObjectDisposedException.ThrowIf(isClosed, this);
                 }
-                else if (buffer.IsEmpty)
+                else if (!buffer.IsEmpty)
                 {
-                    if (flushing)
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        stream.Flush();
-                        flushing = true;
-                    }
-                }
-                else
-                {
-                    var chunk = buffer.Slice(0, Math.Min(count, buffer.Length));
+                    ReadOnlyMemory<byte> chunk = buffer.Slice(0, Math.Min(count, buffer.Length));
                     // TODO: is there a more efficient option than copying here?
                     // Do we need to change the binding generator to accept
                     // e.g. `Span`s?
-                    var bytes = MemoryMarshal.TryGetArray(chunk, out ArraySegment<byte> segment) && segment.Offset == 0 && segment.Count == segment.Array!.Length
+                    byte[] bytes = MemoryMarshal.TryGetArray(chunk, out ArraySegment<byte> segment) && segment.Offset == 0 && segment.Count == segment.Array!.Length
                         ? segment.Array
                         : chunk.ToArray();
                     stream.Write(bytes);
                     buffer = buffer.Slice(chunk.Length);
+                }
+                else if (!flushing)
+                {
+                    stream.Flush();
+                    flushing = true;
+                }
+                else
+                {
+                    return;
                 }
             }
         }
@@ -113,12 +109,6 @@ namespace System.Net.Http
             }
             ObjectDisposedException.ThrowIf(isClosed, this);
         }
-
-        public override ValueTask WriteAsync(
-            ReadOnlyMemory<byte> buffer,
-            CancellationToken cancellationToken = default
-        ) =>
-            new ValueTask(WriteAsyncCore(buffer, cancellationToken));
 
         public override void Write(byte[] buffer, int offset, int count)
         {

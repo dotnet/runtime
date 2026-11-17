@@ -19,8 +19,8 @@ namespace System.Net.Http
         private IncomingBody body; // owned by this instance
         private InputStream stream; // owned by this instance
 
-        private int offset;
-        private byte[]? buffer;
+        private byte[]? pending; // data read from the stream but not yet returned to the caller
+        private int pendingOffset;
         private bool otherSideClosed;
         internal bool isClosed;
 
@@ -74,65 +74,55 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        private async Task<int> ReadAsyncCore(Memory<byte> destination, CancellationToken cancellationToken)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(isClosed, this);
             cancellationToken.ThrowIfCancellationRequested();
-            while (true)
+            while (pending is null)
             {
                 if (otherSideClosed)
                 {
                     return 0;
                 }
-                else if (this.buffer == null)
+
+                try
                 {
-                    try
+                    // TODO: should we add a special case to the bindings generator
+                    // to allow passing a buffer to InputStream.Read and
+                    // avoid the extra copy?
+                    byte[] result = stream.Read(16 * 1024);
+                    if (result.Length == 0)
                     {
-                        // TODO: should we add a special case to the bindings generator
-                        // to allow passing a buffer to InputStream.Read and
-                        // avoid the extra copy?
-                        var result = stream.Read(16 * 1024);
-                        var buffer = result;
-                        if (buffer.Length == 0)
-                        {
-                            cancellationToken.ThrowIfCancellationRequested();
-                            await WaitAsync(stream.Subscribe(), cancellationToken).ConfigureAwait(false);
-                            ObjectDisposedException.ThrowIf(isClosed, this);
-                        }
-                        else
-                        {
-                            this.buffer = buffer;
-                            this.offset = 0;
-                        }
-                    }
-                    catch (WitException e)
-                    {
-                        if (((StreamError)e.Value).Tag == StreamError.Tags.Closed)
-                        {
-                            otherSideClosed = true;
-                            return 0;
-                        }
-                        else
-                        {
-                            throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_premature_eof, e);
-                        }
-                    }
-                }
-                else
-                {
-                    var min = Math.Min(this.buffer.Length - this.offset, destination.Length);
-                    new ReadOnlySpan<byte>(this.buffer, this.offset, min).CopyTo(destination.Span);
-                    if (min < buffer.Length - this.offset)
-                    {
-                        this.offset += min;
+                        await WaitAsync(stream.Subscribe(), cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        this.buffer = null;
+                        pending = result;
+                        pendingOffset = 0;
                     }
-                    return min;
+                }
+                catch (WitException e)
+                {
+                    if (((StreamError)e.Value).Tag == StreamError.Tags.Closed)
+                    {
+                        otherSideClosed = true;
+                        return 0;
+                    }
+
+                    throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_premature_eof, e);
                 }
             }
+
+            ReadOnlySpan<byte> available = pending.AsSpan(pendingOffset);
+            int count = Math.Min(available.Length, buffer.Length);
+            available.Slice(0, count).CopyTo(buffer.Span);
+            pendingOffset += count;
+            if (pendingOffset == pending.Length)
+            {
+                pending = null;
+            }
+
+            return count;
         }
 
         private async Task WaitAsync(IPollImports.Pollable pollable, CancellationToken cancellationToken)
@@ -149,12 +139,6 @@ namespace System.Net.Http
             }
             ObjectDisposedException.ThrowIf(isClosed, this);
         }
-
-        public override ValueTask<int> ReadAsync(
-            Memory<byte> buffer,
-            CancellationToken cancellationToken = default
-        ) =>
-            new ValueTask<int>(ReadAsyncCore(buffer, cancellationToken));
 
         // A synchronous read would block, which isn't possible on single-threaded WASI.
         public override int Read(Span<byte> buffer) => throw new PlatformNotSupportedException();
