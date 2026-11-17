@@ -8,6 +8,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Heap sizes](#heap-sizes)
 - [Metadata merging](#metadata-merging)
 - [Metadata logical format](#metadata-logical-format)
+- [DeclSecurity permission-set encoding](#declsecurity-permission-set-encoding)
 - [Module Initializer](#module-initializer)
 - [Default Interface Methods](#default-interface-methods)
 - [Static Interface Methods](#static-interface-methods)
@@ -367,6 +368,38 @@ In addition to the TypeDef table having a special ordering constraint, the Expor
 This line should be changed.
 
 > Finally, this TypeDef _and ExportedType_ ~~table has~~ _tables have_ a special ordering constraint: the definition of an enclosing class shall precede the definition of all classes it encloses.
+
+## DeclSecurity permission-set encoding
+
+The _PermissionSet_ is a 'blob' having the following format:
+
+```mermaid
+flowchart LR
+  subgraph PermissionSet["PermissionSet blob"]
+    direction LR
+    Marker["Byte: '.'"]
+    AttributeCount["Compressed unsigned integer: attribute count"]
+    AttributeSequence["Attribute[attribute count]"]
+    Marker --> AttributeCount --> AttributeSequence
+  end
+
+  subgraph Attribute["Each security attribute"]
+    direction LR
+    TypeName["SerString: type name"]
+    ArgumentsLength["Compressed unsigned integer: argument byte length"]
+    subgraph Arguments["Encoded arguments (argument byte length)"]
+      direction LR
+      NamedArgumentCount["Compressed unsigned integer: named-argument count"]
+      NamedArguments["NamedArg[named-argument count] (§II.23.3)"]
+      NamedArgumentCount --> NamedArguments
+    end
+    TypeName --> ArgumentsLength --> NamedArgumentCount
+  end
+
+  AttributeSequence -. "repeats once per attribute" .-> TypeName
+```
+
+Unlike the custom attribute format in §II.23.3, this permission-set format prefixes each attribute's named-argument block with its compressed byte length and encodes the named-argument count as a compressed integer rather than an unsigned 16-bit integer.
 
 ## Module Initializer
 
