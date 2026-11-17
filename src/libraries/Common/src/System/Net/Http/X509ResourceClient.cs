@@ -13,10 +13,11 @@ namespace System.Net.Http
 {
     internal static partial class X509ResourceClient
     {
-        private const long DefaultAiaDownloadLimit = 100 * 1024 * 1024;
+        private const long DefaultAiaDownloadLimit = 100 * 1024;
+        private const long LargeDownloadLimit = 100 * 1024 * 1024;
         private static long AiaDownloadLimit { get; } = GetValue("System.Security.Cryptography.AiaDownloadLimit", DefaultAiaDownloadLimit);
 
-        private static readonly Func<string, CancellationToken, bool, Task<byte[]?>>? s_downloadBytes = CreateDownloadBytesFunc();
+        private static readonly Func<string, CancellationToken, bool, bool, Task<byte[]?>>? s_downloadBytes = CreateDownloadBytesFunc();
 
         static partial void ReportNoClient();
         static partial void ReportNegativeTimeout();
@@ -28,17 +29,22 @@ namespace System.Net.Http
 
         internal static byte[]? DownloadAsset(string uri, TimeSpan downloadTimeout)
         {
-            Task<byte[]?> task = DownloadAssetCore(uri, downloadTimeout, async: false);
+            Task<byte[]?> task = DownloadAssetCore(uri, downloadTimeout, async: false, large: false);
             Debug.Assert(task.IsCompletedSuccessfully);
             return task.Result;
         }
 
         internal static Task<byte[]?> DownloadAssetAsync(string uri, TimeSpan downloadTimeout)
         {
-            return DownloadAssetCore(uri, downloadTimeout, async: true);
+            return DownloadAssetCore(uri, downloadTimeout, async: true, large: false);
         }
 
-        private static async Task<byte[]?> DownloadAssetCore(string uri, TimeSpan downloadTimeout, bool async)
+        internal static Task<byte[]?> DownloadLargeAssetAsync(string uri, TimeSpan downloadTimeout)
+        {
+            return DownloadAssetCore(uri, downloadTimeout, async: true, large: true);
+        }
+
+        private static async Task<byte[]?> DownloadAssetCore(string uri, TimeSpan downloadTimeout, bool async, bool large)
         {
             if (s_downloadBytes is null)
             {
@@ -63,7 +69,7 @@ namespace System.Net.Http
 
             try
             {
-                Task<byte[]?> task = s_downloadBytes(uri, cts?.Token ?? default, async);
+                Task<byte[]?> task = s_downloadBytes(uri, cts?.Token ?? default, async, large);
                 await ((Task)task).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
                 if (task.IsCompletedSuccessfully)
                 {
@@ -148,7 +154,7 @@ namespace System.Net.Http
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ReadAsStream")]
         private static extern Stream ReadAsStream([UnsafeAccessorType(HttpContentTypeName)] object content);
 
-        private static Func<string, CancellationToken, bool, Task<byte[]?>>? CreateDownloadBytesFunc()
+        private static Func<string, CancellationToken, bool, bool, Task<byte[]?>>? CreateDownloadBytesFunc()
         {
             try
             {
@@ -179,8 +185,17 @@ namespace System.Net.Http
                 object httpClient = CreateHttpClient(socketsHttpHandler);
                 SetMaxResponseContentBufferSize(httpClient, AiaDownloadLimit);
 
-                return async (string uriString, CancellationToken cancellationToken, bool async) =>
+                object largeHttpClient = httpClient;
+
+                if (AiaDownloadLimit < LargeDownloadLimit)
                 {
+                    largeHttpClient = CreateHttpClient(socketsHttpHandler);
+                    SetMaxResponseContentBufferSize(largeHttpClient, LargeDownloadLimit);
+                }
+
+                return async (string uriString, CancellationToken cancellationToken, bool async, bool large) =>
+                {
+                    object client = large ? largeHttpClient : httpClient;
                     Uri uri = new Uri(uriString);
 
                     if (!IsAllowedScheme(uri.Scheme))
@@ -194,13 +209,13 @@ namespace System.Net.Http
 
                     if (async)
                     {
-                        Task sendTask = (Task)SendAsync(httpClient, requestMessage, cancellationToken);
+                        Task sendTask = (Task)SendAsync(client, requestMessage, cancellationToken);
                         await sendTask.ConfigureAwait(false);
                         responseMessage = taskResultProperty.GetValue(sendTask)!;
                     }
                     else
                     {
-                        responseMessage = Send(httpClient, requestMessage, cancellationToken);
+                        responseMessage = Send(client, requestMessage, cancellationToken);
                     }
 
                     int redirections = 0;
@@ -233,13 +248,13 @@ namespace System.Net.Http
 
                         if (async)
                         {
-                            Task sendTask = (Task)SendAsync(httpClient, requestMessage, cancellationToken);
+                            Task sendTask = (Task)SendAsync(client, requestMessage, cancellationToken);
                             await sendTask.ConfigureAwait(false);
                             responseMessage = taskResultProperty.GetValue(sendTask)!;
                         }
                         else
                         {
-                            responseMessage = Send(httpClient, requestMessage, cancellationToken);
+                            responseMessage = Send(client, requestMessage, cancellationToken);
                         }
                     }
 
