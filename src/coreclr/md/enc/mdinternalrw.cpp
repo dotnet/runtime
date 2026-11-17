@@ -946,7 +946,7 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
                 FieldRec *pFieldRec;
                 RID fieldRid;
                 IfFailGo(m_pStgdb->m_MiniMd.GetFieldRid(index, &fieldRid));
-                IfFailGo(m_pStgdb->m_MiniMd.GetFieldRecord(index, &pFieldRec));
+                IfFailGo(m_pStgdb->m_MiniMd.GetFieldRecord(fieldRid, &pFieldRec));
                 LPCSTR szFieldName;
                 IfFailGo(m_pStgdb->m_MiniMd.getNameOfField(pFieldRec, &szFieldName));
                 if (IsFdRTSpecialName(pFieldRec->GetFlags()) && IsDeletedName(szFieldName) )

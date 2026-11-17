@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Exercises CoreCLR's native read/write metadata importer via Assembly.Load(byte[]) -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DeletedFieldEnumeration.cs" />
+  </ItemGroup>
+</Project>
