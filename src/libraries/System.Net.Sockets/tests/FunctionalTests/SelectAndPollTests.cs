@@ -385,7 +385,7 @@ namespace System.Net.Sockets.Tests
                 return socket.Poll(0, mode);
             }
 
-            var list = new List<Socket> { socket };
+            List<Socket> list = [socket];
             Socket.Select(
                 mode == SelectMode.SelectRead ? list : null,
                 mode == SelectMode.SelectWrite ? list : null,
