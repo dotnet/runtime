@@ -175,7 +175,6 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 
-    NI_System_String_Contains,
     NI_System_String_Equals,
     NI_System_String_FastAllocateString,
     NI_System_String_get_Chars,
@@ -192,6 +191,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_ReadOnlySpan_get_Length,
 
     NI_System_MemoryExtensions_AsSpan,
+    NI_System_MemoryExtensions_Contains,
     NI_System_MemoryExtensions_Equals,
     NI_System_MemoryExtensions_SequenceEqual,
     NI_System_MemoryExtensions_StartsWith,

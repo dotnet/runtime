@@ -21,6 +21,16 @@ public static class StringContainsChar
     public static void ContainsMask(char c)
         => Assert.Equal(ContainsHexNoInline(c), ContainsHexInline(c));
 
+    [Theory]
+    [MemberData(nameof(ASCII))]
+    public static void ContainsSpanRange(char c)
+        => Assert.Equal(ContainsABCDEFNoInline(c), ContainsSpanABCDEF(c));
+
+    [Theory]
+    [MemberData(nameof(ASCII))]
+    public static void ContainsSpanMask(char c)
+        => Assert.Equal(ContainsHexNoInline(c), ContainsSpanHex(c));
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool ContainsABCDEFNoInline(char c) => "ABCDEF".Contains(c);
 
@@ -32,4 +42,10 @@ public static class StringContainsChar
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool ContainsHexInline(char c) => "0123456789ABCDEF".Contains(c);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool ContainsSpanABCDEF(char c) => "ABCDEF".AsSpan().Contains(c);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool ContainsSpanHex(char c) => "0123456789ABCDEF".AsSpan().Contains(c);
 }

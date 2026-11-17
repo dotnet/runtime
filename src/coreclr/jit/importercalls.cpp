@@ -3800,9 +3800,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 retNode = impArrayAccessIntrinsic(clsHnd, sig, memberRef, readonlyCall, ni);
                 break;
 
-            case NI_System_String_Contains:
+            case NI_System_MemoryExtensions_Contains:
             {
-                retNode = impStringLiteralContainsChar(sig, methodFlags);
+                retNode = impUtf16SpanContainsChar(sig, methodFlags);
                 break;
             }
 
@@ -11904,6 +11904,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_MemoryExtensions_AsSpan;
                         }
+                        else if (strcmp(methodName, "Contains") == 0)
+                        {
+                            result = NI_System_MemoryExtensions_Contains;
+                        }
                         else if (strcmp(methodName, "Equals") == 0)
                         {
                             result = NI_System_MemoryExtensions_Equals;
@@ -12012,11 +12016,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     }
                     else if (strcmp(className, "String") == 0)
                     {
-                        if (strcmp(methodName, "Contains") == 0)
-                        {
-                            result = NI_System_String_Contains;
-                        }
-                        else if (strcmp(methodName, "Equals") == 0)
+                        if (strcmp(methodName, "Equals") == 0)
                         {
                             result = NI_System_String_Equals;
                         }

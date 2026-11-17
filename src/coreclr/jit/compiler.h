@@ -5484,7 +5484,8 @@ protected:
         EndsWith
     };
     GenTree* impUtf16StringComparison(StringComparisonKind kind, CORINFO_SIG_INFO* sig, unsigned methodFlags);
-    GenTree* impStringLiteralContainsChar(CORINFO_SIG_INFO* sig, unsigned methodFlags);
+    GenTree* impUtf16SpanContainsChar(CORINFO_SIG_INFO* sig, unsigned methodFlags);
+    GenTree* impConstCharSetContains(GenTreeStrCon* cnsStr, GenTree* value);
     GenTree* impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG_INFO* sig, unsigned methodFlags);
     GenTree* impExpandHalfConstEquals(GenTreeLclVarCommon*   data,
                                       GenTree*         lengthFld,
