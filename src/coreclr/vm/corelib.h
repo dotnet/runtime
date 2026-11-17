@@ -996,6 +996,7 @@ DEFINE_METHOD(DEBUGGER,             INVOKE_FUNCTION,        InvokeFunction,     
 DEFINE_METHOD(DEBUGGER,             USERBREAKPOINT,         UserBreakpoint,     SM_RetVoid)
 
 #if defined(DEBUGGING_SUPPORTED)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Diagnostics.Debugger.IsSupported, true, true)
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+Context, DebuggerFuncEvalContext)
 DEFINE_FIELD_U(Evaluation,        DebuggerFuncEvalContext, pEval)
 DEFINE_FIELD_U(Arguments,         DebuggerFuncEvalContext, pArguments)
@@ -1055,10 +1056,12 @@ DEFINE_FIELD_U(ArrayRank,       decltype(DebuggerIPCE_ExpandedTypeData::ArrayTyp
 
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeNaryTypeData, decltype(DebuggerIPCE_ExpandedTypeData::NaryTypeData))
 DEFINE_FIELD_U(TypeHandle,      decltype(DebuggerIPCE_ExpandedTypeData::NaryTypeData), typeHandle)
+END_ILLINK_FEATURE_SWITCH()
 #endif // DEBUGGING_SUPPORTED
 
 #ifdef FOR_ILLINK
 // Preserve all wire-layout fields, including ignored slots, for parsing and native binder checks.
+BEGIN_ILLINK_FEATURE_SWITCH(System.Diagnostics.Debugger.IsSupported, true, true)
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeTypeArgument, DebuggerIPCE_TypeArgData)
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeExpandedTypeData, DebuggerIPCE_ExpandedTypeData)
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeTypeDataUnion, NoClass)
@@ -1067,6 +1070,7 @@ DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeClassTypeData, dec
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeUnaryTypeData, decltype(DebuggerIPCE_ExpandedTypeData::UnaryTypeData))
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeArrayTypeData, decltype(DebuggerIPCE_ExpandedTypeData::ArrayTypeData))
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeNaryTypeData, decltype(DebuggerIPCE_ExpandedTypeData::NaryTypeData))
+END_ILLINK_FEATURE_SWITCH()
 #endif // FOR_ILLINK
 
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
@@ -1429,7 +1433,9 @@ DEFINE_FIELD_U(dictionaryIndexAndSlot, GenericHandleArgs, dictionaryIndexAndSlot
 
 DEFINE_CLASS(EH, Runtime, EH)
 DEFINE_METHOD(EH, RH_THROW_EX, RhThrowEx, SM_PtrObj_PtrExInfo_RetVoid)
+#ifndef TARGET_WASM
 DEFINE_METHOD(EH, RH_THROWHW_EX, RhThrowHwEx, SM_UInt_PtrExInfo_RetVoid)
+#endif // !TARGET_WASM
 DEFINE_METHOD(EH, RH_RETHROW, RhRethrow, SM_PtrExInfo_PtrExInfo_RetVoid)
 DEFINE_CLASS(EXCEPTIONSERVICES_INTERNALCALLS, ExceptionServices, InternalCalls)
 DEFINE_CLASS(STACKFRAMEITERATOR, Runtime, StackFrameIterator)

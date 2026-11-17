@@ -942,20 +942,6 @@ extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip,
     return pResult;
 }
 
-struct StrongHandleHolderTraits final
-{
-    using Type = OBJECTHANDLE;
-    static constexpr Type Default() { return NULL; }
-    static void Free(Type handle) noexcept
-    {
-        WRAPPER_NO_CONTRACT;
-        if (handle != NULL)
-            DestroyStrongHandle(handle);
-    }
-};
-
-using StrongHandleHolder = LifetimeHolder<StrongHandleHolderTraits>;
-
 // receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
 // Argument: dataUNSAFE - a pointer the custom notification object being sent

@@ -5167,8 +5167,8 @@ EnumMethodInstances::Next(ClrDataAccess* dac,
  NextMethod:
     {
         // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-        if (!m_methodIter.Next(pAssembly.This()))
+        CollectibleAssemblyHolder pAssembly;
+        if (!m_methodIter.Next(&pAssembly))
         {
             return S_FALSE;
         }

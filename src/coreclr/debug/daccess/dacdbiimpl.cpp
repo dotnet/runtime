@@ -4485,9 +4485,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(VM
 
         // Pass the magical flags to the loader enumerator to get all Execution-only assemblies.
         iterator = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        CollectibleAssemblyHolder pAssembly;
 
-        while (iterator.Next(pAssembly.This()))
+        while (iterator.Next(&pAssembly))
         {
             VMPTR_Assembly vmAssembly = VMPTR_Assembly::NullPtr();
             vmAssembly.SetHostPtr(pAssembly);
