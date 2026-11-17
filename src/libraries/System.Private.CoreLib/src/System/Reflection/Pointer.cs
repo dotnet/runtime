@@ -41,6 +41,15 @@ namespace System.Reflection
             throw new ArgumentException(SR.Arg_MustBePointer, nameof(ptr));
         }
 
+        /// <summary>Gets the type of the pointer stored in this instance.</summary>
+        /// <value>A pointer type, for example <c>int*</c>.</value>
+        public Type PointerType => _ptrType;
+
+        /// <summary>Gets the pointer stored in this instance.</summary>
+        /// <value>The address stored in this instance.</value>
+        /// <safety>Returns the pointer value stored in this instance; it reads only a managed field and performs no dereference of the pointer.</safety>
+        public void* Value => _ptr;
+
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is Pointer pointer)
