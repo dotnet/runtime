@@ -548,18 +548,20 @@ ep_rt_aot_file_open_write (const ep_char8_t *path)
     return (res != INVALID_HANDLE_VALUE) ? static_cast<ep_rt_file_handle_t>(res) : NULL;
 #else
     const mode_t perms = S_IRUSR | S_IWUSR;
-    int fd = open (path, O_WRONLY | O_CREAT, perms);
-    if (fd == -1)
-        return NULL;
-
     struct stat file_status;
-    if (fstat (fd, &file_status) == -1 ||
-        file_status.st_uid != geteuid () ||
-        (file_status.st_mode & (S_IRWXG | S_IRWXO)) != 0 ||
-        ftruncate (fd, 0) == -1) {
-        close (fd);
+    if (lstat (path, &file_status) == 0) {
+        if (!S_ISREG (file_status.st_mode))
+            return NULL;
+
+        if (unlink (path) == -1)
+            return NULL;
+    } else if (errno != ENOENT) {
         return NULL;
     }
+
+    int fd = open (path, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, perms);
+    if (fd == -1)
+        return NULL;
 
     return (ep_rt_file_handle_t)(ptrdiff_t)fd;
 #endif
