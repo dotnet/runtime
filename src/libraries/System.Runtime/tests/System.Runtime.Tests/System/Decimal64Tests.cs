@@ -54,39 +54,39 @@ namespace System.Tests
             var customFormat2 = new NumberFormatInfo();
             customFormat2.NumberDecimalSeparator = ".";
 
-            yield return new object[] { "-123", defaultStyle, null, Decimal64.Parse("-123") };
+            yield return new object[] { "-123", defaultStyle, null, Decimal64.Parse("-123", CultureInfo.InvariantCulture) };
             yield return new object[] { "0", defaultStyle, null, Decimal64.Zero };
-            yield return new object[] { "123", defaultStyle, null, Decimal64.Parse("123") };
-            yield return new object[] { "  123  ", defaultStyle, null, Decimal64.Parse("123") };
-            yield return new object[] { (567.89).ToString(), defaultStyle, null, Decimal64.Parse("56789e-2") };
-            yield return new object[] { (-567.89).ToString(), defaultStyle, null, Decimal64.Parse("-56789e-2") };
-            yield return new object[] { "0.6666666666666666500000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, Decimal64.Parse("0.66666666666666665") };
-            yield return new object[] { new string('9', 17), defaultStyle, invariantFormat, Decimal64.Parse(new string('9', 17)) };
+            yield return new object[] { "123", defaultStyle, null, Decimal64.Parse("123", CultureInfo.InvariantCulture) };
+            yield return new object[] { "  123  ", defaultStyle, null, Decimal64.Parse("123", CultureInfo.InvariantCulture) };
+            yield return new object[] { (567.89).ToString(), defaultStyle, null, Decimal64.Parse("56789e-2", CultureInfo.InvariantCulture) };
+            yield return new object[] { (-567.89).ToString(), defaultStyle, null, Decimal64.Parse("-56789e-2", CultureInfo.InvariantCulture) };
+            yield return new object[] { "0.6666666666666666500000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, Decimal64.Parse("0.66666666666666665", CultureInfo.InvariantCulture) };
+            yield return new object[] { new string('9', 17), defaultStyle, invariantFormat, Decimal64.Parse(new string('9', 17), CultureInfo.InvariantCulture) };
 
             yield return new object[] { "0." + new string('0', 398) + "1", defaultStyle, invariantFormat, Decimal64.Zero };
             yield return new object[] { "-0." + new string('0', 398) + "1", defaultStyle, invariantFormat, Decimal64.NegativeZero };
-            yield return new object[] { "0." + new string('0', 397) + "1", defaultStyle, invariantFormat, Decimal64.Parse("1e-398") };
-            yield return new object[] { "-0." + new string('0', 397) + "1", defaultStyle, invariantFormat, Decimal64.Parse("-1e-398") };
+            yield return new object[] { "0." + new string('0', 397) + "1", defaultStyle, invariantFormat, Decimal64.Parse("1e-398", CultureInfo.InvariantCulture) };
+            yield return new object[] { "-0." + new string('0', 397) + "1", defaultStyle, invariantFormat, Decimal64.Parse("-1e-398", CultureInfo.InvariantCulture) };
 
-            yield return new object[] { "0." + new string('0', 396) + "12345", defaultStyle, invariantFormat, Decimal64.Parse("1.2345e-397") };
-            yield return new object[] { "-0." + new string('0', 396) + "12345", defaultStyle, invariantFormat, Decimal64.Parse("-1.2345e-397") };
-            yield return new object[] { "0." + new string('0', 396) + "12662", defaultStyle, invariantFormat, Decimal64.Parse("1.2662e-397") };
-            yield return new object[] { "-0." + new string('0', 396) + "12662", defaultStyle, invariantFormat, Decimal64.Parse("-1.2662e-397") };
+            yield return new object[] { "0." + new string('0', 396) + "12345", defaultStyle, invariantFormat, Decimal64.Parse("1.2345e-397", CultureInfo.InvariantCulture) };
+            yield return new object[] { "-0." + new string('0', 396) + "12345", defaultStyle, invariantFormat, Decimal64.Parse("-1.2345e-397", CultureInfo.InvariantCulture) };
+            yield return new object[] { "0." + new string('0', 396) + "12662", defaultStyle, invariantFormat, Decimal64.Parse("1.2662e-397", CultureInfo.InvariantCulture) };
+            yield return new object[] { "-0." + new string('0', 396) + "12662", defaultStyle, invariantFormat, Decimal64.Parse("-1.2662e-397", CultureInfo.InvariantCulture) };
 
-            yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, Decimal64.Parse("0.234") };
-            yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, Decimal64.Parse("234") };
-            yield return new object[] { "7" + new string('0', 384) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, Decimal64.Parse("7e384") };
-            yield return new object[] { "07" + new string('0', 384) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, Decimal64.Parse("7e384") };
+            yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, Decimal64.Parse("0.234", CultureInfo.InvariantCulture) };
+            yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, Decimal64.Parse("234", CultureInfo.InvariantCulture) };
+            yield return new object[] { "7" + new string('0', 384) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, Decimal64.Parse("7e384", CultureInfo.InvariantCulture) };
+            yield return new object[] { "07" + new string('0', 384) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, Decimal64.Parse("7e384", CultureInfo.InvariantCulture) };
 
-            yield return new object[] { (123.1).ToString(), NumberStyles.AllowDecimalPoint, null, Decimal64.Parse("123.1") };
-            yield return new object[] { 1000.ToString("N0"), NumberStyles.AllowThousands, null, Decimal64.Parse("1000") };
+            yield return new object[] { (123.1).ToString(), NumberStyles.AllowDecimalPoint, null, Decimal64.Parse("123.1", CultureInfo.InvariantCulture) };
+            yield return new object[] { 1000.ToString("N0"), NumberStyles.AllowThousands, null, Decimal64.Parse("1000", CultureInfo.InvariantCulture) };
 
-            yield return new object[] { "123", NumberStyles.Any, emptyFormat, Decimal64.Parse("123") };
-            yield return new object[] { (123.567).ToString(), NumberStyles.Any, emptyFormat, Decimal64.Parse("123567e-3") };
-            yield return new object[] { "123", NumberStyles.Float, emptyFormat, Decimal64.Parse("123") };
-            yield return new object[] { "$1000", NumberStyles.Currency, customFormat1, Decimal64.Parse("1000") };
-            yield return new object[] { "123.123", NumberStyles.Float, customFormat2, Decimal64.Parse("123123e-3") };
-            yield return new object[] { "(123)", NumberStyles.AllowParentheses, customFormat2, Decimal64.Parse("-123") };
+            yield return new object[] { "123", NumberStyles.Any, emptyFormat, Decimal64.Parse("123", CultureInfo.InvariantCulture) };
+            yield return new object[] { (123.567).ToString(), NumberStyles.Any, emptyFormat, Decimal64.Parse("123567e-3", CultureInfo.InvariantCulture) };
+            yield return new object[] { "123", NumberStyles.Float, emptyFormat, Decimal64.Parse("123", CultureInfo.InvariantCulture) };
+            yield return new object[] { "$1000", NumberStyles.Currency, customFormat1, Decimal64.Parse("1000", CultureInfo.InvariantCulture) };
+            yield return new object[] { "123.123", NumberStyles.Float, customFormat2, Decimal64.Parse("123123e-3", CultureInfo.InvariantCulture) };
+            yield return new object[] { "(123)", NumberStyles.AllowParentheses, customFormat2, Decimal64.Parse("-123", CultureInfo.InvariantCulture) };
 
             yield return new object[] { "NaN", NumberStyles.Any, invariantFormat, Decimal64.NaN };
             yield return new object[] { "+NaN", NumberStyles.Any, invariantFormat, Decimal64.NaN };
@@ -139,7 +139,7 @@ namespace System.Tests
         [MemberData(nameof(Parse_Preserve_TrailingZero_TestData))]
         public static void Parse_Preserve_TrailingZero(string value, string expected)
         {
-            Assert.Equal(expected, Decimal64.Parse(value).ToString(CultureInfo.InvariantCulture));
+            Assert.Equal(expected, Decimal64.Parse(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture));
         }
 
         public static IEnumerable<object[]> Parse_Preserve_TrailingZero_TestData()
@@ -223,12 +223,12 @@ namespace System.Tests
                 yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
             }
 
-            yield return new object[] { "-123", 1, 3, NumberStyles.Number, null, Decimal64.Parse("123") };
-            yield return new object[] { "-123", 0, 3, NumberStyles.Number, null, Decimal64.Parse("-12") };
-            yield return new object[] { 1000.ToString("N0"), 0, 4, NumberStyles.AllowThousands, null, Decimal64.Parse("100") };
-            yield return new object[] { 1000.ToString("N0"), 2, 3, NumberStyles.AllowThousands, null, Decimal64.Parse("0") };
-            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, new NumberFormatInfo() { NumberDecimalSeparator = "." }, Decimal64.Parse("123") };
-            yield return new object[] { "1234567890123456789012345.678456", 1, 4, NumberStyles.Number, new NumberFormatInfo() { NumberDecimalSeparator = "." }, Decimal64.Parse("2345") };
+            yield return new object[] { "-123", 1, 3, NumberStyles.Number, null, Decimal64.Parse("123", CultureInfo.InvariantCulture) };
+            yield return new object[] { "-123", 0, 3, NumberStyles.Number, null, Decimal64.Parse("-12", CultureInfo.InvariantCulture) };
+            yield return new object[] { 1000.ToString("N0"), 0, 4, NumberStyles.AllowThousands, null, Decimal64.Parse("100", CultureInfo.InvariantCulture) };
+            yield return new object[] { 1000.ToString("N0"), 2, 3, NumberStyles.AllowThousands, null, Decimal64.Parse("0", CultureInfo.InvariantCulture) };
+            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, new NumberFormatInfo() { NumberDecimalSeparator = "." }, Decimal64.Parse("123", CultureInfo.InvariantCulture) };
+            yield return new object[] { "1234567890123456789012345.678456", 1, 4, NumberStyles.Number, new NumberFormatInfo() { NumberDecimalSeparator = "." }, Decimal64.Parse("2345", CultureInfo.InvariantCulture) };
         }
 
         [Theory]
@@ -275,7 +275,7 @@ namespace System.Tests
         [MemberData(nameof(Rounding_TestData))]
         public static void Rounding(string s1, string s2)
         {
-            Assert.Equal(Decimal64.Parse(s1), Decimal64.Parse(s2));
+            Assert.Equal(Decimal64.Parse(s1, CultureInfo.InvariantCulture), Decimal64.Parse(s2, CultureInfo.InvariantCulture));
         }
 
         public static IEnumerable<object[]> Rounding_TestData()
@@ -295,7 +295,7 @@ namespace System.Tests
         [MemberData(nameof(MaxValue_Rounding_TestData))]
         public static void MaxValue_Rounding(string value, Decimal64 expected)
         {
-            Assert.Equal(expected, Decimal64.Parse(value));
+            Assert.Equal(expected, Decimal64.Parse(value, CultureInfo.InvariantCulture));
         }
 
         public static IEnumerable<object[]> MaxValue_Rounding_TestData()
@@ -340,46 +340,46 @@ namespace System.Tests
 
         public static IEnumerable<object[]> CompareTo_Other_ReturnsExpected_TestData()
         {
-            yield return new object[] { Decimal64.Parse("0e5"), Decimal64.Parse("1e1"), -1 };
-            yield return new object[] { Decimal64.Parse("0e5"), Decimal64.Parse("-1e1"), 1 };
-            yield return new object[] { Decimal64.Parse("0e-5"), Decimal64.Parse("1e1"), -1 };
-            yield return new object[] { Decimal64.Parse("0e-5"), Decimal64.Parse("-1e1"), 1 };
-            yield return new object[] { Decimal64.Parse("-1e1"), Decimal64.Parse("-10"), 0 };
-            yield return new object[] { Decimal64.Parse("-2"), Decimal64.Parse("-3"), 1 };
-            yield return new object[] { Decimal64.Parse("3"), Decimal64.Parse("2"), 1 };
-            yield return new object[] { Decimal64.Parse("1e384"), Decimal64.Parse("1e384"), 0 };
-            yield return new object[] { Decimal64.Parse("9.999999999999999e369"), Decimal64.Parse("9.999999999999999e369"), 0 };
-            yield return new object[] { Decimal64.Parse("999e10"), Decimal64.Parse("997e70"), -1 };
-            yield return new object[] { Decimal64.Parse("997e70"), Decimal64.Parse("999e10"), 1 };
-            yield return new object[] { Decimal64.Parse("1"), Decimal64.Parse("-1"), 1 };
-            yield return new object[] { Decimal64.Parse("10"), Decimal64.Parse("-1"), 1 };
-            yield return new object[] { Decimal64.Parse("10"), Decimal64.NaN, 1 };
-            yield return new object[] { Decimal64.Parse("10"), Decimal64.NegativeInfinity, 1 };
-            yield return new object[] { Decimal64.Parse("10"), Decimal64.NegativeZero, 1 };
-            yield return new object[] { Decimal64.PositiveInfinity, Decimal64.Parse("1e20"), 1 };
-            yield return new object[] { Decimal64.PositiveInfinity, Decimal64.Parse("1e1500"), 0 };
+            yield return new object[] { Decimal64.Parse("0e5", CultureInfo.InvariantCulture), Decimal64.Parse("1e1", CultureInfo.InvariantCulture), -1 };
+            yield return new object[] { Decimal64.Parse("0e5", CultureInfo.InvariantCulture), Decimal64.Parse("-1e1", CultureInfo.InvariantCulture), 1 };
+            yield return new object[] { Decimal64.Parse("0e-5", CultureInfo.InvariantCulture), Decimal64.Parse("1e1", CultureInfo.InvariantCulture), -1 };
+            yield return new object[] { Decimal64.Parse("0e-5", CultureInfo.InvariantCulture), Decimal64.Parse("-1e1", CultureInfo.InvariantCulture), 1 };
+            yield return new object[] { Decimal64.Parse("-1e1", CultureInfo.InvariantCulture), Decimal64.Parse("-10", CultureInfo.InvariantCulture), 0 };
+            yield return new object[] { Decimal64.Parse("-2", CultureInfo.InvariantCulture), Decimal64.Parse("-3", CultureInfo.InvariantCulture), 1 };
+            yield return new object[] { Decimal64.Parse("3", CultureInfo.InvariantCulture), Decimal64.Parse("2", CultureInfo.InvariantCulture), 1 };
+            yield return new object[] { Decimal64.Parse("1e384", CultureInfo.InvariantCulture), Decimal64.Parse("1e384", CultureInfo.InvariantCulture), 0 };
+            yield return new object[] { Decimal64.Parse("9.999999999999999e369", CultureInfo.InvariantCulture), Decimal64.Parse("9.999999999999999e369", CultureInfo.InvariantCulture), 0 };
+            yield return new object[] { Decimal64.Parse("999e10", CultureInfo.InvariantCulture), Decimal64.Parse("997e70", CultureInfo.InvariantCulture), -1 };
+            yield return new object[] { Decimal64.Parse("997e70", CultureInfo.InvariantCulture), Decimal64.Parse("999e10", CultureInfo.InvariantCulture), 1 };
+            yield return new object[] { Decimal64.Parse("1", CultureInfo.InvariantCulture), Decimal64.Parse("-1", CultureInfo.InvariantCulture), 1 };
+            yield return new object[] { Decimal64.Parse("10", CultureInfo.InvariantCulture), Decimal64.Parse("-1", CultureInfo.InvariantCulture), 1 };
+            yield return new object[] { Decimal64.Parse("10", CultureInfo.InvariantCulture), Decimal64.NaN, 1 };
+            yield return new object[] { Decimal64.Parse("10", CultureInfo.InvariantCulture), Decimal64.NegativeInfinity, 1 };
+            yield return new object[] { Decimal64.Parse("10", CultureInfo.InvariantCulture), Decimal64.NegativeZero, 1 };
+            yield return new object[] { Decimal64.PositiveInfinity, Decimal64.Parse("1e20", CultureInfo.InvariantCulture), 1 };
+            yield return new object[] { Decimal64.PositiveInfinity, Decimal64.Parse("1e1500", CultureInfo.InvariantCulture), 0 };
             yield return new object[] { Decimal64.PositiveInfinity, Decimal64.NegativeInfinity, 1 };
             yield return new object[] { Decimal64.PositiveInfinity, Decimal64.PositiveInfinity, 0 };
             yield return new object[] { Decimal64.PositiveInfinity, Decimal64.NegativeZero, 1 };
             yield return new object[] { Decimal64.NegativeInfinity, Decimal64.NegativeInfinity, 0 };
             yield return new object[] { Decimal64.NaN, Decimal64.NaN, 0 };
             yield return new object[] { Decimal64.NegativeZero, Decimal64.NegativeInfinity, 1 };
-            yield return new object[] { Decimal64.NegativeZero, Decimal64.Parse("0e20"), 0 };
+            yield return new object[] { Decimal64.NegativeZero, Decimal64.Parse("0e20", CultureInfo.InvariantCulture), 0 };
             yield return new object[] { Decimal64.NegativeZero, Decimal64.NaN, 1 };
-            yield return new object[] { Decimal64.Epsilon, Decimal64.Parse("1e-398"), 0 };
-            yield return new object[] { Decimal64.Parse("4e-399"), Decimal64.Zero, 0 };
-            yield return new object[] { Decimal64.Parse("5e-399"), Decimal64.Zero, 0 };
-            yield return new object[] { Decimal64.Parse("5.00001e-399"), Decimal64.Epsilon, 0 };
-            yield return new object[] { Decimal64.Parse("0.5" + new string('0', 200) + "1e-398"), Decimal64.Epsilon, 0 };
-            yield return new object[] { Decimal64.Parse("0.5" + new string('0', 200) + "1e-399 "), Decimal64.Epsilon, -1 };
-            yield return new object[] { Decimal64.Parse("5." + new string('0', 300) + "1e-399"), Decimal64.Epsilon, 0 };
-            yield return new object[] { Decimal64.Parse("6e-399"), Decimal64.Parse("1e-398"), 0 };
-            yield return new object[] { Decimal64.Parse("1" + new string('0', 21) + "1e-420"), Decimal64.Epsilon, 0 };
-            yield return new object[] { Decimal64.Parse("-1" + new string('0', 21) + "1e-420"), Decimal64.Parse("-1e-398"), 0 };
+            yield return new object[] { Decimal64.Epsilon, Decimal64.Parse("1e-398", CultureInfo.InvariantCulture), 0 };
+            yield return new object[] { Decimal64.Parse("4e-399", CultureInfo.InvariantCulture), Decimal64.Zero, 0 };
+            yield return new object[] { Decimal64.Parse("5e-399", CultureInfo.InvariantCulture), Decimal64.Zero, 0 };
+            yield return new object[] { Decimal64.Parse("5.00001e-399", CultureInfo.InvariantCulture), Decimal64.Epsilon, 0 };
+            yield return new object[] { Decimal64.Parse("0.5" + new string('0', 200) + "1e-398", CultureInfo.InvariantCulture), Decimal64.Epsilon, 0 };
+            yield return new object[] { Decimal64.Parse("0.5" + new string('0', 200) + "1e-399 ", CultureInfo.InvariantCulture), Decimal64.Epsilon, -1 };
+            yield return new object[] { Decimal64.Parse("5." + new string('0', 300) + "1e-399", CultureInfo.InvariantCulture), Decimal64.Epsilon, 0 };
+            yield return new object[] { Decimal64.Parse("6e-399", CultureInfo.InvariantCulture), Decimal64.Parse("1e-398", CultureInfo.InvariantCulture), 0 };
+            yield return new object[] { Decimal64.Parse("1" + new string('0', 21) + "1e-420", CultureInfo.InvariantCulture), Decimal64.Epsilon, 0 };
+            yield return new object[] { Decimal64.Parse("-1" + new string('0', 21) + "1e-420", CultureInfo.InvariantCulture), Decimal64.Parse("-1e-398", CultureInfo.InvariantCulture), 0 };
             for (int i = 1; i < 16; i++)
             {
-                var d1 = Decimal64.Parse("1e" + i);
-                var d2 = Decimal64.Parse("1" + new string('0', i));
+                var d1 = Decimal64.Parse("1e" + i, CultureInfo.InvariantCulture);
+                var d2 = Decimal64.Parse("1" + new string('0', i), CultureInfo.InvariantCulture);
                 yield return new object[] { d1, d2, 0 };
             }
         }
@@ -396,9 +396,9 @@ namespace System.Tests
             yield return new object[] { Decimal64.Zero, Decimal64.NegativeZero };
             yield return new object[] { Decimal64.Zero, Decimal64.Zero };
             yield return new object[] { Decimal64.NaN, Decimal64.NaN };
-            yield return new object[] { Decimal64.Parse("0e20"), Decimal64.Parse("0e18") };
-            yield return new object[] { Decimal64.Parse("1e7"), Decimal64.Parse("1e7") };
-            yield return new object[] { Decimal64.Parse("1e7"), Decimal64.Parse("1e7") };
+            yield return new object[] { Decimal64.Parse("0e20", CultureInfo.InvariantCulture), Decimal64.Parse("0e18", CultureInfo.InvariantCulture) };
+            yield return new object[] { Decimal64.Parse("1e7", CultureInfo.InvariantCulture), Decimal64.Parse("1e7", CultureInfo.InvariantCulture) };
+            yield return new object[] { Decimal64.Parse("1e7", CultureInfo.InvariantCulture), Decimal64.Parse("1e7", CultureInfo.InvariantCulture) };
             yield return new object[] { Decimal64.PositiveInfinity, Decimal64.PositiveInfinity };
             yield return new object[] { Decimal64.NegativeInfinity, Decimal64.NegativeInfinity };
         }
@@ -406,12 +406,12 @@ namespace System.Tests
         [Fact]
         public static void CompareToZero()
         {
-            var zero = Decimal64.Parse("0e1");
-            Assert.Equal(zero, Decimal64.Parse("0e20"));
-            Assert.Equal(zero, Decimal64.Parse("1e-399"));
-            Assert.Equal(zero, Decimal64.Parse("234e-1000"));
-            Assert.Equal(zero, Decimal64.Parse("-1e-399"));
-            Assert.Equal(zero, Decimal64.Parse("-234e-1000"));
+            var zero = Decimal64.Parse("0e1", CultureInfo.InvariantCulture);
+            Assert.Equal(zero, Decimal64.Parse("0e20", CultureInfo.InvariantCulture));
+            Assert.Equal(zero, Decimal64.Parse("1e-399", CultureInfo.InvariantCulture));
+            Assert.Equal(zero, Decimal64.Parse("234e-1000", CultureInfo.InvariantCulture));
+            Assert.Equal(zero, Decimal64.Parse("-1e-399", CultureInfo.InvariantCulture));
+            Assert.Equal(zero, Decimal64.Parse("-234e-1000", CultureInfo.InvariantCulture));
             Assert.Equal(zero, Decimal64.Zero);
             Assert.Equal(zero, Decimal64.NegativeZero);
             Assert.Equal(Decimal64.Zero, Decimal64.NegativeZero);
