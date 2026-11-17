@@ -12004,9 +12004,9 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
 
     // Now deoptimize anything that has inlined it in a R2R method
     AppDomain::AssemblyIterator assemblyIterator = SystemDomain::System()->DefaultDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
+    CollectibleAssemblyHolder pAssembly;
     NativeImageInliningIterator inlinerIter;
-    while (assemblyIterator.Next(pAssembly.This()))
+    while (assemblyIterator.Next(&pAssembly))
     {
         Module *pCandidateModule = pAssembly->GetModule();
         if (pCandidateModule->HasReadyToRunInlineTrackingMap())

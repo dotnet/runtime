@@ -51,7 +51,8 @@ public class WasmR2RInfoTests
     private static TestPlaceholderTarget CreateTarget(
         bool emptyList = false,
         ulong minVirtualIP = MinVirtualIP,
-        MockWasmRuntimeFunctions.Entry[]? functions = null)
+        MockWasmRuntimeFunctions.Entry[]? functions = null,
+        byte virtualIPLength = 3)
     {
         TargetTestHelpers helpers = new(WasmArch);
         var targetBuilder = new TestPlaceholderTarget.Builder(WasmArch);
@@ -110,6 +111,12 @@ public class WasmR2RInfoTests
             Data = portableEntryPointData,
             Name = "PortableEntryPoint",
         });
+        builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = GCInfoBase + FunctionUnwindData,
+            Data = [16, virtualIPLength],
+            Name = "UnwindData",
+        });
 
         var types = new Dictionary<DataType, Target.TypeInfo>
         {
@@ -154,6 +161,21 @@ public class WasmR2RInfoTests
         Assert.True(info.TryGetVirtualIPBase(CoreLibFrameIdentity(0), out ulong baseVirtualIP));
         Assert.Equal(SyntheticMinVirtualIP + FunctionBeginAddress, baseVirtualIP);
         Assert.False(info.TryGetVirtualIPBase(CoreLibFrameIdentity(1), out _));
+    }
+
+    [Theory]
+    [InlineData((uint)PortableEntryPointAddress, MinVirtualIP)]
+    [InlineData(FunctionTableIndex * 2 + 1, MinVirtualIP)]
+    [InlineData(uint.MaxValue, 0x8000_0001ul)]
+    public void SingleVirtualIP_FrameIdentitySuppliesUnwindExtent(uint frameIdentity, ulong minVirtualIP)
+    {
+        TestPlaceholderTarget target = CreateTarget(minVirtualIP: minVirtualIP, virtualIPLength: 2);
+
+        Assert.True(new WasmR2RInfo(target, new FakeExecutionManager()).TryGetVirtualIPBase(
+            frameIdentity, out ulong baseVirtualIP, out TargetPointer unwindData));
+        Assert.Equal(minVirtualIP + FunctionBeginAddress, baseVirtualIP);
+        Assert.Equal(GCInfoBase + FunctionUnwindData, unwindData.Value);
+        Assert.Equal(2, target.Read<byte>(unwindData + 1));
     }
 
     [Fact]
@@ -307,6 +329,13 @@ public class WasmR2RInfoTests
         r2rInfo.LoadedImageBase = LoadedImageBase;
         r2rInfo.GCInfoBase = GCInfoBase;
         r2rInfo.MinVirtualIP = SyntheticMinVirtualIP;
+
+        builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = GCInfoBase,
+            Data = [16, 2],
+            Name = "SyntheticSingleIPUnwindData",
+        });
 
         MockLoaderModule module = moduleLayout.Create(allocator.Allocate((ulong)moduleLayout.Size, "Module"));
         module.ReadyToRunInfo = r2rInfo.Address;

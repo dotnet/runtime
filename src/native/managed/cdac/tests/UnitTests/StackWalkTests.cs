@@ -2186,7 +2186,7 @@ public unsafe class StackWalkTests
             frameBuilder => icf = frameBuilder.AddInlinedCallFrame(callerReturnAddress: 1, datum: 0, callSiteSP: 0, calleeSavedFP: 0xBAD0),
             configureTarget: targetBuilder =>
             {
-                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0010_0000, 0x0010_4000);
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_4000);
                 AddWasmR2RFunction(targetBuilder, allocator, FunctionTableIndex, MinVirtualIP, FunctionBeginAddress);
                 uint frameIdentity = AddWasmPortableEntryPoint(targetBuilder, allocator, FunctionTableIndex);
 
@@ -2231,7 +2231,7 @@ public unsafe class StackWalkTests
             runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
             configureTarget: targetBuilder =>
             {
-                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0010_0000, 0x0010_4000);
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_4000);
                 AddWasmR2RFunction(targetBuilder, allocator, functionTableIndex: 5, minVirtualIP: 0x0005_0000, functionBeginAddress: 0x100);
                 AddWasmNullDebugger(targetBuilder, allocator);
             });
@@ -2795,8 +2795,7 @@ public unsafe class StackWalkTests
         => AddWasmR2RFunctions(targetBuilder, allocator, functionTableIndex, minVirtualIP, [(functionBeginAddress, frameSize)]);
 
     // Registers one R2R module whose RUNTIME_FUNCTIONs occupy consecutive function-table indices
-    // starting at minFunctionTableIndex. BeginAddress bit 31 marks a funclet in the fixture input;
-    // a frame size of 0 leaves the unwind data unset.
+    // starting at minFunctionTableIndex. BeginAddress bit 31 marks a funclet in the fixture input.
     private static TargetPointer AddWasmR2RFunctions(
         TestPlaceholderTarget.Builder targetBuilder,
         MockMemorySpace.BumpAllocator allocator,
@@ -2820,17 +2819,13 @@ public unsafe class StackWalkTests
         MockWasmRuntimeFunctions.Entry[] entries = new MockWasmRuntimeFunctions.Entry[functions.Length];
         for (int i = 0; i < functions.Length; i++)
         {
-            uint unwindOffset = 0;
-            if (functions[i].FrameSize != 0)
-            {
-                Assert.True(functions[i].FrameSize < 0x80);
-                MockMemorySpace.HeapFragment unwindData = allocator.Allocate(1, "UnwindData");
-                unwindData.Data[0] = functions[i].FrameSize;
-                unwindOffset = checked((uint)(unwindData.Address - WasmGCInfoBase));
-            }
+            Assert.True(functions[i].FrameSize < 0x80);
+            MockMemorySpace.HeapFragment unwindData = allocator.Allocate(2, "UnwindData");
+            unwindData.Data[0] = functions[i].FrameSize;
+            unwindData.Data[1] = 3;
             entries[i] = new(
                 functions[i].BeginAddress & ~MockWasmRuntimeFunctions.FuncletFlag,
-                unwindOffset,
+                checked((uint)(unwindData.Address - WasmGCInfoBase)),
                 IsFunclet: (functions[i].BeginAddress & MockWasmRuntimeFunctions.FuncletFlag) != 0);
         }
         (ulong runtimeFunctions, uint runtimeFunctionCount) =

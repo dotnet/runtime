@@ -1287,6 +1287,10 @@ NamedIntrinsic HWIntrinsicInfo::resolveId(Compiler*              comp,
         if (isIsaSupported && comp->compSupportsHWIntrinsic(isa) &&
             (vectorByteLength <= comp->getPreferredVectorByteLength()))
         {
+#ifdef TARGET_WASM
+            // Wasm has no runtime ISA detection, so the compile-time ISA support is exact.
+            return NI_IsSupported_True;
+#else
             if (!comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) || comp->compExactlyDependsOn(isa))
             {
                 return NI_IsSupported_True;
@@ -1296,6 +1300,7 @@ NamedIntrinsic HWIntrinsicInfo::resolveId(Compiler*              comp,
                 assert(comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
                 return NI_IsSupported_Dynamic;
             }
+#endif
         }
 
         return NI_IsSupported_False;
