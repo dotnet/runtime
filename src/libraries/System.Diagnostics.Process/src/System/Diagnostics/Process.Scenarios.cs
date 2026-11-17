@@ -186,7 +186,9 @@ namespace System.Diagnostics
         /// <exception cref="InvalidOperationException">
         /// <see cref="ProcessStartInfo.UseShellExecute"/> is set to <see langword="true"/>.
         /// </exception>
-        /// <remarks><inheritdoc cref="Run(ProcessStartInfo, TimeSpan?)" path="/remarks/node()"/></remarks>
+        /// <remarks>
+        /// Set <see cref="ProcessStartInfo.KillTreeOnRunCancellation"/> to <see langword="true"/> to also kill the descendants of the process.
+        /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -256,7 +258,9 @@ namespace System.Diagnostics
         /// <para>-or-</para>
         /// <para><see cref="ProcessStartInfo.RedirectStandardOutput"/> or <see cref="ProcessStartInfo.RedirectStandardError"/> is not set to <see langword="true"/>.</para>
         /// </exception>
-        /// <remarks><inheritdoc cref="Run(ProcessStartInfo, TimeSpan?)" path="/remarks/node()"/></remarks>
+        /// <remarks>
+        /// Set <see cref="ProcessStartInfo.KillTreeOnRunCancellation"/> to <see langword="true"/> to also kill the descendants of the process.
+        /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -359,7 +363,9 @@ namespace System.Diagnostics
         /// <para>-or-</para>
         /// <para><see cref="ProcessStartInfo.RedirectStandardOutput"/> or <see cref="ProcessStartInfo.RedirectStandardError"/> is not set to <see langword="true"/>.</para>
         /// </exception>
-        /// <remarks><inheritdoc cref="Run(ProcessStartInfo, TimeSpan?)" path="/remarks/node()"/></remarks>
+        /// <remarks>
+        /// Set <see cref="ProcessStartInfo.KillTreeOnRunCancellation"/> to <see langword="true"/> to also kill the descendants of the process.
+        /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
