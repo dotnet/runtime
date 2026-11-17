@@ -187,27 +187,7 @@ extern "C" void QCALLTYPE Array_Ctor(MethodTable* pArrayMT, UINT32 dwNumArgs, IN
     _ASSERTE(pArrayMT->IsFullyLoaded());
     _ASSERTE(pArrayMT->IsArray());
 
-    DWORD rank = pArrayMT->GetRank();
-    _ASSERTE(dwNumArgs == rank || dwNumArgs == 2 * rank);
-
-    if (dwNumArgs == 2 * rank)
-    {
-        // Array ctor uses args in <lowerbound1> <count1> <lowerbound2> <count2> ... order.
-        // Split the bounds and lengths.
-        INT32* pLowerBounds = (INT32*)_alloca(rank * sizeof(INT32));
-        INT32* pLengths = (INT32*)_alloca(rank * sizeof(INT32));
-        for (DWORD i = 0; i < rank; i++)
-        {
-            pLowerBounds[i] = pArgList[i * 2];
-            pLengths[i] = pArgList[i * 2 + 1];
-        }
-        
-        retArray.Set(AllocateArrayEx(pArrayMT, pLengths, pLowerBounds, dwNumArgs));
-    }
-    else
-    {
-        retArray.Set(AllocateArrayEx(pArrayMT, pArgList, NULL, dwNumArgs));
-    }
+    retArray.Set(AllocateArrayCtorArgs(pArrayMT, pArgList, dwNumArgs));
 
     END_QCALL;
 }

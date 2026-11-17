@@ -875,6 +875,41 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pLengths, INT32 *pLowerB
     return ObjectToOBJECTREF((Object *) orArray);
 }
 
+//
+// Handles arrays of arbitrary dimensions
+//
+// This is wrapper overload to handle args in array ctor format: <lower bound 1>, <count 1>, <lower bound 2>, ...
+//
+OBJECTREF AllocateArrayCtorArgs(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags)
+{
+    CONTRACTL
+    {
+        WRAPPER_NO_CONTRACT;
+    } CONTRACTL_END;
+
+    DWORD rank = pArrayMT->GetRank();
+    _ASSERTE(dwNumArgs == rank || dwNumArgs == 2 * rank);
+
+    if (dwNumArgs == 2 * rank)
+    {
+        // Array ctor uses args in <lowerbound1> <count1> <lowerbound2> <count2> ... order.
+        // Split the bounds and lengths.
+        INT32* pLowerBounds = (INT32*)_alloca(rank * sizeof(INT32));
+        INT32* pLengths = (INT32*)_alloca(rank * sizeof(INT32));
+        for (DWORD i = 0; i < rank; i++)
+        {
+            pLowerBounds[i] = pArgs[i * 2];
+            pLengths[i] = pArgs[i * 2 + 1];
+        }
+        
+        return AllocateArrayEx(pArrayMT, pLengths, pLowerBounds, dwNumArgs);
+    }
+    else
+    {
+        return AllocateArrayEx(pArrayMT, pArgs, NULL, dwNumArgs);
+    }
+}
+
 /*
  * Allocates a single dimensional array of primitive types.
  */
