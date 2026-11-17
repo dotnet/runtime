@@ -161,8 +161,12 @@ namespace System
                 if (lengths[i] < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-            fixed (int* pLengths = &lengths[0])
-                return InternalCreate(t, lengths.Length, pLengths, null);
+            // Create a local copy of the lengths that cannot be modified by the caller
+            int* pImmutableLengths = stackalloc int[lengths.Length];
+            for (int i = 0; i < lengths.Length; i++)
+                pImmutableLengths[i] = lengths[i];
+
+            return InternalCreate(t, lengths.Length, pImmutableLengths, null);
         }
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
@@ -189,9 +193,16 @@ namespace System
                 if (lengths[i] < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-            fixed (int* pLengths = &lengths[0])
-            fixed (int* pLowerBounds = &lowerBounds[0])
-                return InternalCreate(t, lengths.Length, pLengths, pLowerBounds);
+            // Create a local copy of the lengths that cannot be modified by the caller
+            int* pImmutableLengths = stackalloc int[lengths.Length];
+            for (int i = 0; i < lengths.Length; i++)
+                pImmutableLengths[i] = lengths[i];
+
+            int* pImmutableLowerBounds = stackalloc int[lowerBounds.Length];
+            for (int i = 0; i < lowerBounds.Length; i++)
+                pImmutableLengths[i] = lowerBounds[i];
+
+            return InternalCreate(t, lengths.Length, pImmutableLengths, pImmutableLowerBounds);
         }
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
