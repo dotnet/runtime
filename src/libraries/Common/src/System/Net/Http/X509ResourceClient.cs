@@ -13,9 +13,9 @@ namespace System.Net.Http
 {
     internal static partial class X509ResourceClient
     {
-        private const long DefaultAiaDownloadLimit = 100 * 1024;
+        private const long DefaultSmallDownloadLimit = 100 * 1024;
         private const long LargeDownloadLimit = 100 * 1024 * 1024;
-        private static long AiaDownloadLimit { get; } = GetValue("System.Security.Cryptography.AiaDownloadLimit", DefaultAiaDownloadLimit);
+        private static long SmallDownloadLimit { get; } = GetValue("System.Security.Cryptography.AiaDownloadLimit", DefaultSmallDownloadLimit);
 
         private static readonly Func<string, CancellationToken, bool, bool, Task<byte[]?>>? s_downloadBytes = CreateDownloadBytesFunc();
 
@@ -183,11 +183,11 @@ namespace System.Net.Http
                 SetPooledConnectionIdleTimeout(socketsHttpHandler, TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds));
 
                 object httpClient = CreateHttpClient(socketsHttpHandler);
-                SetMaxResponseContentBufferSize(httpClient, AiaDownloadLimit);
+                SetMaxResponseContentBufferSize(httpClient, SmallDownloadLimit);
 
                 object largeHttpClient = httpClient;
 
-                if (AiaDownloadLimit < LargeDownloadLimit)
+                if (SmallDownloadLimit < LargeDownloadLimit)
                 {
                     largeHttpClient = CreateHttpClient(socketsHttpHandler);
                     SetMaxResponseContentBufferSize(largeHttpClient, LargeDownloadLimit);
