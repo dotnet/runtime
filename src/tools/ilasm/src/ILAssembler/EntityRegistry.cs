@@ -24,6 +24,7 @@ namespace Microsoft.DotNet.ILAssembler
         private readonly Dictionary<string, FileEntity> _seenFiles = new();
         private readonly List<ManifestResourceEntity> _manifestResourceEntities = new();
         private readonly Dictionary<(ExportedTypeEntity? ContainingType, string Namespace, string Name), ExportedTypeEntity> _seenExportedTypes = new();
+        private readonly Dictionary<(TableIndex Table, int RowNumber), List<FakeTypeEntity>> _pendingEntityReferences = new();
         private readonly List<TypeReferenceEntity> _typeReferences = new();
         private readonly List<MemberReferenceEntity> _memberReferences = new();
 
@@ -782,7 +783,15 @@ namespace Microsoft.DotNet.ILAssembler
                 _seenEntities[table] = entities = new List<EntityBase>();
             }
             entities.Add(entity);
-            ((IHasHandle)entity).SetHandle(MetadataTokens.EntityHandle(table, entities.Count));
+            int rowNumber = entities.Count;
+            ((IHasHandle)entity).SetHandle(MetadataTokens.EntityHandle(table, rowNumber));
+            if (_pendingEntityReferences.Remove((table, rowNumber), out List<FakeTypeEntity>? pendingReferences))
+            {
+                foreach (FakeTypeEntity reference in pendingReferences)
+                {
+                    entity.AddHandleAlias(reference);
+                }
+            }
         }
 
         private TEntity GetOrCreateEntity<TKey, TEntity>(TKey key, TableIndex table, Dictionary<TKey, TEntity> cache, Func<TKey, TEntity> constructor, Action<TEntity> onCreate)
@@ -889,17 +898,38 @@ namespace Microsoft.DotNet.ILAssembler
 
         public EntityBase ResolveHandleToEntity(EntityHandle entityHandle)
         {
-            _ = MetadataTokens.TryGetTableIndex(entityHandle.Kind, out var tableIndex);
-            if (_seenEntities.TryGetValue(tableIndex, out var entity))
+            bool hasTableIndex = MetadataTokens.TryGetTableIndex(entityHandle.Kind, out var tableIndex);
+            if (hasTableIndex && _seenEntities.TryGetValue(tableIndex, out var entity))
             {
                 int rowNumber = MetadataTokens.GetRowNumber(entityHandle);
                 if (rowNumber >= 1 && rowNumber <= entity.Count)
                 {
                     return entity[rowNumber - 1];
                 }
+
+                if (rowNumber > entity.Count)
+                {
+                    return CreatePendingEntityReference(tableIndex, rowNumber, entityHandle);
+                }
             }
+            else if (hasTableIndex && MetadataTokens.GetRowNumber(entityHandle) >= 1)
+            {
+                return CreatePendingEntityReference(tableIndex, MetadataTokens.GetRowNumber(entityHandle), entityHandle);
+            }
+
             // Row entry does not exist. Use our FakeTypeEntity type to record the invalid handle.
             return new FakeTypeEntity(entityHandle);
+        }
+
+        private FakeTypeEntity CreatePendingEntityReference(TableIndex table, int rowNumber, EntityHandle entityHandle)
+        {
+            FakeTypeEntity reference = new(entityHandle);
+            if (!_pendingEntityReferences.TryGetValue((table, rowNumber), out List<FakeTypeEntity>? pendingReferences))
+            {
+                _pendingEntityReferences.Add((table, rowNumber), pendingReferences = new List<FakeTypeEntity>());
+            }
+            pendingReferences.Add(reference);
+            return reference;
         }
 
         public TypeReferenceEntity GetOrCreateTypeReference(EntityBase resolutionContext, TypeName name)
@@ -1459,14 +1489,30 @@ namespace Microsoft.DotNet.ILAssembler
                 fixed (byte* ptr = bytes)
                 {
                     var reader = new BlobReader(ptr, bytes.Length);
-                    var localTypes = decoder.DecodeLocalSignature(ref reader);
-
                     var newBlob = new BlobBuilder();
-                    var encoder = new BlobEncoder(newBlob);
-                    var localsEncoder = encoder.LocalVariableSignature(localTypes.Length);
-                    foreach (var localType in localTypes)
+                    newBlob.WriteByte(reader.ReadByte());
+                    int localCount = reader.ReadCompressedInteger();
+                    newBlob.WriteCompressedInteger(localCount);
+                    for (int i = 0; i < localCount; i++)
                     {
-                        localType.WriteBlobTo(localsEncoder.AddVariable().Builder);
+                        if (reader.RemainingBytes > 0)
+                        {
+                            byte firstByte = reader.ReadByte();
+                            if (firstByte == (byte)SignatureTypeCode.Sentinel)
+                            {
+                                newBlob.WriteByte(firstByte);
+                            }
+                            else
+                            {
+                                reader.Offset--;
+                            }
+                        }
+                        decoder.DecodeType(ref reader).WriteBlobTo(newBlob);
+                    }
+
+                    if (reader.RemainingBytes != 0)
+                    {
+                        throw new BadImageFormatException();
                     }
                     return newBlob;
                 }
@@ -1865,6 +1911,7 @@ namespace Microsoft.DotNet.ILAssembler
         public abstract class EntityBase : IHasHandle
         {
             private List<Blob>? _placesToWriteResolvedToken;
+            private List<EntityBase>? _handleAliases;
 
             public virtual EntityHandle Handle { get; private set; }
 
@@ -1886,6 +1933,19 @@ namespace Microsoft.DotNet.ILAssembler
                         writer.WriteInt32(MetadataTokens.GetToken(token));
                     }
                 }
+                if (_handleAliases is not null)
+                {
+                    foreach (EntityBase alias in _handleAliases)
+                    {
+                        alias.SetHandle(token);
+                    }
+                }
+            }
+
+            internal void AddHandleAlias(EntityBase alias)
+            {
+                (_handleAliases ??= new()).Add(alias);
+                alias.SetHandle(Handle);
             }
 
             void IHasHandle.SetHandle(EntityHandle token) => SetHandle(token);

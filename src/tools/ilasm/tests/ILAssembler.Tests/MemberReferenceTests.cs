@@ -145,6 +145,11 @@ namespace Microsoft.DotNet.ILAssembler.Tests
                         call void int32[]::N()
                         ret
                     }
+                    .method public static void LocalSignature() cil managed
+                    {
+                        .locals init ([0] ... int32 modopt(int32[]) a)
+                        ret
+                    }
                     .field public int32 modopt(int32[]) F
                 }
                 """;
@@ -163,6 +168,52 @@ namespace Microsoft.DotNet.ILAssembler.Tests
                 reader.GetBlobBytes(reader.GetTypeSpecification(MetadataTokens.TypeSpecificationHandle(2)).Signature));
             Assert.Equal(new byte[] { 0x06, 0x20, 0x0A, 0x08 },
                 reader.GetBlobBytes(reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions)).Signature));
+            MethodBodyBlock body = DocumentCompilerTestHelpers.GetMethodBody(pe, "LocalSignature");
+            Assert.Equal(new byte[] { 0x07, 0x01, 0x41, 0x20, 0x0A, 0x08 },
+                reader.GetBlobBytes(reader.GetStandaloneSignature(body.LocalSignature).Signature));
+        }
+
+        [Fact]
+        public void ForwardNumericTokens_AreRemappedWhenReferencesAreCompacted()
+        {
+            string source = """
+                .assembly extern External { }
+                .assembly test { }
+                .class Payload { }
+                .class Test
+                {
+                    .method public static void Caller() cil managed
+                    {
+                        ldtoken mdtoken(0x1B000003)
+                        pop
+                        ldtoken mdtoken(0x2B000003)
+                        pop
+                        ldtoken class [test]Payload[]
+                        pop
+                        ldtoken class Payload[]
+                        pop
+                        ldtoken int32[]
+                        pop
+                        ldtoken method void [External]Owner::M<int32>()
+                        pop
+                        ldtoken method void [External]Owner::M<int32>()
+                        pop
+                        ldtoken method void [External]Owner::M<int64>()
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            ImmutableArray<int> tokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.ldtoken);
+
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.TypeSpec));
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.MethodSpec));
+            Assert.Equal(MetadataTokens.GetToken(MetadataTokens.TypeSpecificationHandle(2)), tokens[0]);
+            Assert.Equal(MetadataTokens.GetToken(MetadataTokens.MethodSpecificationHandle(2)), tokens[1]);
         }
 
         [Fact]
