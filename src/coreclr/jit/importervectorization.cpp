@@ -592,16 +592,16 @@ GenTree* Compiler::impStringLiteralContainsChar(CORINFO_SIG_INFO* sig, unsigned 
     }
 
     // Find the smallest and the largest chars
-    unsigned mn = 0xFFFF;
-    unsigned mx = 0;
-    for (int i = 0; i < cnsLength; i++)
+    unsigned mn = str[0];
+    unsigned mx = mn;
+    for (int i = 1; i < cnsLength; i++)
     {
         unsigned ch = str[i];
         if (ch < mn)
         {
             mn = ch;
         }
-        if (ch > mx)
+        else if (ch > mx)
         {
             mx = ch;
         }
