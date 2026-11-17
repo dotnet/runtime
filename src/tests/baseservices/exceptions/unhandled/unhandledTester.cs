@@ -214,6 +214,31 @@ namespace TestUnhandledExceptionTester
             }
         }
 
+        // A trap instruction in native code (such as __builtin_trap(), which is 'brk #1' on arm64) must crash the process instead of hanging it.
+        [ActiveIssue("System.Diagnostics.Process is not supported", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("Test expects being run with corerun", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact]
+        public static void NativeTrap_CrashesProcess()
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo(
+                Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun"),
+                [Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "unhandled.dll"), "nativetrap"])
+            {
+                InheritedHandles = [],
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+            startInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
+            startInfo.Environment.Remove("DOTNET_EnableCrashReport");
+
+            // If the process hangs instead of crashing, this throws a TimeoutException (and kills the process).
+            ProcessTextOutput result = Process.RunAndCaptureText(startInfo, TimeSpan.FromMinutes(1));
+            Console.WriteLine($"Test process exited with exit code {result.ExitStatus.ExitCode}, signal {result.ExitStatus.Signal}");
+
+            Assert.NotEqual(0, result.ExitStatus.ExitCode);
+        }
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/80356", typeof(PlatformDetection), nameof(PlatformDetection.IsOSX), nameof(PlatformDetection.IsX64Process))]
         [ActiveIssue("System.Diagnostics.Process is not supported", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [ActiveIssue("Test expects being run with corerun", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
