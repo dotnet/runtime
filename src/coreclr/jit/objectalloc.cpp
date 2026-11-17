@@ -1613,8 +1613,8 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
     bool                 isExact   = false;
     bool                 isNonNull = false;
     CORINFO_CLASS_HANDLE clsHnd    = m_compiler->gtGetHelperCallClassHandle(data->AsCall(), &isExact, &isNonNull);
-    unsigned const       lengthArg = candidate.m_allocType == OAT_NEWARR_R2R ? 0 : 1;
-    GenTree* const       len       = data->AsCall()->gtArgs.GetUserArgByIndex(lengthArg)->GetNode();
+    GenTreeCall* const   call      = data->AsCall();
+    GenTree* const       len       = call->gtArgs.GetUserArgByIndex(call->gtArgs.CountUserArgs() - 1)->GetNode();
 
     assert(len != nullptr);
 
@@ -1642,7 +1642,7 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
 
     JITDUMP("Allocating V%02u on the stack\n", candidate.m_lclNum);
     const unsigned int stackLclNum =
-        MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd, (unsigned int)len->AsIntCon()->IconValue(), blockSize,
+        MorphNewArrNodeIntoStackAlloc(call, clsHnd, (unsigned int)len->AsIntCon()->IconValue(), blockSize,
                                       candidate.m_block, candidate.m_statement);
 
     // Keep track of this new local for later type updates.
@@ -1812,7 +1812,7 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     {
         CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
         var_types elemType = JITtype2varType(m_compiler->info.compCompHnd->getChildType(clsHnd, &elemClsHnd));
-        alignTo8           = (elemType == TYP_LONG) || (elemType == TYP_ULONG) || (elemType == TYP_DOUBLE);
+        alignTo8           = (elemType == TYP_LONG) || (elemType == TYP_DOUBLE);
         if (elemType == TYP_STRUCT)
         {
             assert(elemClsHnd != NO_CLASS_HANDLE);
