@@ -1183,18 +1183,7 @@ namespace System.Tests
             yield return new object[] { 79228162514264337567774146561m, 10m, 1m };
             yield return new object[] { 79228162514264337567774146560m, 10m, 0m };
             yield return new object[] { 79228162514264337567774146559m, 10m, 9m };
-        }
 
-        [Theory]
-        [MemberData(nameof(Remainder_Valid_TestData))]
-        public static void Remainder(decimal d1, decimal d2, decimal expected)
-        {
-            Assert.Equal(expected, d1 % d2);
-            Assert.Equal(expected, decimal.Remainder(d1, d2));
-        }
-
-        public static IEnumerable<object[]> Remainder_Valid_TestDataV2()
-        {
             yield return new object[] { decimal.MaxValue, 0.1m, 0.0m };
             yield return new object[] { decimal.MaxValue, 7.081881059m, 3.702941036m };
             yield return new object[] { decimal.MaxValue, 2004094637636.6280382536104438m, 1980741879937.1051521151154118m };
@@ -1209,8 +1198,8 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Remainder_Valid_TestDataV2))]
-        public static void RemainderV2(decimal d1, decimal d2, decimal expected)
+        [MemberData(nameof(Remainder_Valid_TestData))]
+        public static void Remainder(decimal d1, decimal d2, decimal expected)
         {
             Assert.Equal(expected, d1 % d2);
             Assert.Equal(expected, decimal.Remainder(d1, d2));
