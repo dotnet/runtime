@@ -1,10 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include <minipalconfig.h>
+
+#if HAVE_SCHED_GETAFFINITY && defined(__linux__) && !defined(_GNU_SOURCE)
+// glibc declares CPU_ALLOC and friends only when _GNU_SOURCE is defined before any system header.
+#define _GNU_SOURCE
+#endif
+
 #include "cpucount.h"
 
 #include <stdio.h>
 #include <unistd.h>
+
+#if HAVE_SCHED_GETAFFINITY
+#include <sched.h>
+#endif
 
 #if defined(__linux__)
 // Parses a kernel cpulist file (comma-separated ranges like "0-3,5-7").
@@ -99,4 +110,48 @@ int minipal_get_cpu_present_count(void)
     }
 #endif
     return -1;
+}
+
+int minipal_get_cpu_total_count(void)
+{
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
+    int count = (int)sysconf(_SC_NPROCESSORS_CONF);
+#else
+    int count = (int)sysconf(_SC_NPROCESSORS_ONLN);
+#endif
+    return count < 1 ? 1 : count;
+}
+
+int minipal_get_cpu_affinity_count(void)
+{
+    int count = 0;
+
+#if defined(__ANDROID__)
+    count = minipal_get_cpu_present_count();
+    if (count > 0)
+    {
+        return count;
+    }
+#endif
+
+#if HAVE_SCHED_GETAFFINITY
+    int configuredCount = minipal_get_cpu_max_possible_count();
+    int cpusToAllocate = configuredCount > CPU_SETSIZE ? configuredCount : CPU_SETSIZE;
+
+    cpu_set_t* cpuSet = CPU_ALLOC(cpusToAllocate);
+    if (cpuSet != NULL)
+    {
+        size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
+        CPU_ZERO_S(cpuSetSize, cpuSet);
+
+        if (sched_getaffinity(getpid(), cpuSetSize, cpuSet) == 0)
+        {
+            count = CPU_COUNT_S(cpuSetSize, cpuSet);
+        }
+
+        CPU_FREE(cpuSet);
+    }
+#endif
+
+    return count < 1 ? minipal_get_cpu_total_count() : count;
 }

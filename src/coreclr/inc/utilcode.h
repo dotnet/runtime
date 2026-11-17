@@ -503,11 +503,6 @@ int GetTotalProcessorCount();
 // Returns false on failure, for example if the buffer is too small.
 bool GetSystemErrorMessage(DWORD code, WCHAR *buffer, size_t cchBuffer);
 
-//******************************************************************************
-// Returns the number of processors that a process has been configured to run on
-//******************************************************************************
-int GetCurrentProcessCpuCount();
-
 
 //*****************************************************************************
 // Return != 0 if the bit at the specified index in the array is on and 0 if
