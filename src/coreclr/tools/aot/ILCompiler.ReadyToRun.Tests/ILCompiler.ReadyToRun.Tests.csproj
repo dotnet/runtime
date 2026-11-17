@@ -31,6 +31,10 @@
     <ProjectReference Include="../crossgen2/crossgen2_inbuild.csproj" ReferenceOutputAssembly="false" OutputItemType="Crossgen2InbuildOutputItems" Private="false">
       <SetConfiguration>Configuration=$(CoreCLRConfiguration);CopyAllJitLibrariesToAotCompilerOutput=true;TargetArchitecture=$(TargetArchitecture);TargetOS=$(TargetOS)</SetConfiguration>
     </ProjectReference>
+    <!-- dotnet-pgo generates MIBC profiles for test cases that pass profile data to crossgen2. -->
+    <ProjectReference Include="../../dotnet-pgo/dotnet-pgo.csproj" ReferenceOutputAssembly="false" OutputItemType="DotnetPgoOutputItems" Private="false">
+      <SetConfiguration>Configuration=$(CoreCLRConfiguration)</SetConfiguration>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -46,6 +50,8 @@
           Condition="'$(DesignTimeBuild)' != 'true'">
     <Error Condition="'@(Crossgen2InbuildOutputItems)' == ''"
            Text="crossgen2_inbuild published no files. This is a build authoring error; the ProjectReference should have built it." />
+    <Error Condition="'@(DotnetPgoOutputItems)' == ''"
+           Text="dotnet-pgo produced no output. This is a build authoring error; the ProjectReference should have built it." />
     <Error Condition="!Exists('$(LibrariesSharedFrameworkBinArtifactsPath)')"
            Text="The 'libs' subset must be built for $(TargetOS)-$(TargetArchitecture) before building this project. Missing artifacts: $(LibrariesSharedFrameworkBinArtifactsPath). Configuration: '$(LibrariesConfiguration)'." />
     <Error Condition="!Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll')"
@@ -65,6 +71,8 @@
       <Content Include="@(_SharedFrameworkAssembly)"
                CopyToOutputDirectory="PreserveNewest"
                TargetPath="libraries/%(Filename)%(Extension)" />
+
+      <RuntimeHostConfigurationOption Include="R2RTest.DotnetPgoPath" Value="@(DotnetPgoOutputItems->'%(FullPath)')" />
     </ItemGroup>
   </Target>
 

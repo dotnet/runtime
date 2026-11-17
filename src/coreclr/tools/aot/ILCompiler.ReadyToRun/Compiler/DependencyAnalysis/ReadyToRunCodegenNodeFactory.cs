@@ -120,11 +120,37 @@ namespace ILCompiler.DependencyAnalysis
 
         public bool MarkingComplete => _markingComplete;
 
+        private readonly HashSet<MethodDesc> _profileHotMethods;
+
+        public bool UsesAuxiliaryModules => OptimizationFlags.AuxiliaryModules;
+
         /// <summary>
         /// Returns whether the code for <paramref name="method"/> is placed in an auxiliary module rather than the primary module.
-        /// The answer must be stable for the whole compilation, since table layout and emission all depend on it.
+        /// The answer is frozen before the compiled methods are first sorted, since table layout and emission all depend on it.
         /// </summary>
-        public bool IsAuxiliaryMethod(MethodWithGCInfo method) => false;
+        public bool IsAuxiliaryMethod(MethodWithGCInfo method) => method.IsAuxiliary;
+
+        /// <summary>
+        /// Returns whether <paramref name="method"/> is placed in an auxiliary module. Methods that are cold according to
+        /// the input profile are candidates; without profile data every method stays in the primary module.
+        /// </summary>
+        public bool IsAuxiliaryCandidate(MethodDesc method, bool isJitHelper)
+        {
+            if (_profileHotMethods is null || isJitHelper || OptimizationFlags.IsComponentModule)
+                return false;
+
+            if (method.GetTypicalMethodDefinition() is not EcmaMethod ecmaMethod ||
+                method.IsAsyncVariant() ||
+                method.IsAsyncCall() ||
+                method.IsUnmanagedCallersOnly ||
+                method.IsPInvoke ||
+                ecmaMethod.MetadataReader.GetMethodDefinition(ecmaMethod.Handle).RelativeVirtualAddress == 0)
+            {
+                return false;
+            }
+
+            return !_profileHotMethods.Contains(method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+        }
 
         public void GenerateHotColdMap(DependencyAnalyzerBase<NodeFactory> dependencyGraph)
         {
@@ -364,13 +390,26 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunContainerFormat format,
             ulong imageBase,
             EcmaModule associatedModule,
-            int genericCycleDepthCutoff, int genericCycleBreadthCutoff)
+            int genericCycleDepthCutoff, int genericCycleBreadthCutoff,
+            string outputFile = null)
         {
             OptimizationFlags = nodeFactoryOptimizationFlags;
+            _outputFile = outputFile;
             TypeSystemContext = context;
             CompilationModuleGroup = compilationModuleGroup;
             ProfileDataManager = profileDataManager;
             Target = context.Target;
+            Debug.Assert(!UsesAuxiliaryModules ||
+                (Target.Architecture == TargetArchitecture.Wasm32 && Target.OperatingSystem == TargetOS.Browser));
+            if (UsesAuxiliaryModules && profileDataManager is { HasInputProfileData: true })
+            {
+                _profileHotMethods = new HashSet<MethodDesc>();
+                foreach (MethodDesc method in profileDataManager.GetInputProfileMethods())
+                {
+                    // Reference-type instantiations share one canonical body.
+                    _profileHotMethods.Add(method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+                }
+            }
             NameMangler = nameMangler;
             MetadataManager = new ReadyToRunTableManager(context);
             CopiedCorHeaderNode = corHeaderNode;
@@ -608,6 +647,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public RuntimeFunctionsTableNode RuntimeFunctionsTable;
 
+        internal AuxiliaryModuleMetadataNode AuxiliaryModuleMetadata;
+
+        private readonly string _outputFile;
+
         internal WasmAsyncResumeInfoFixupsNode WasmAsyncResumeInfoFixups;
 
         public HotColdMapNode HotColdMap;
@@ -774,10 +817,20 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(MarkingComplete);
 
             var set = new HashSet<MethodDesc>();
+            var auxiliaryDefs = new HashSet<MethodDesc>();
             foreach (MethodWithGCInfo compiled in EnumerateCompiledMethods())
             {
-                set.Add(compiled.Method.GetTypicalMethodDefinition());
+                MethodDesc typicalDef = compiled.Method.GetTypicalMethodDefinition();
+                set.Add(typicalDef);
+                if (compiled.IsAuxiliary)
+                {
+                    auxiliaryDefs.Add(typicalDef);
+                }
             }
+
+            // Auxiliary bodies are unavailable until their module is activated; the
+            // interpreter runs these methods until then, so their IL must be kept.
+            set.ExceptWith(auxiliaryDefs);
 
             return set;
         }
@@ -1116,12 +1169,10 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsTable = new RuntimeFunctionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions, RuntimeFunctionsTable);
 
-            if (OptimizationFlags.AuxiliaryModules &&
-                Target.Architecture == TargetArchitecture.Wasm32 &&
-                Target.OperatingSystem == TargetOS.Browser)
+            if (UsesAuxiliaryModules)
             {
-                AuxiliaryModuleMetadataNode auxiliaryModuleMetadata = new AuxiliaryModuleMetadataNode();
-                Header.Add(Internal.Runtime.ReadyToRunSectionType.AuxiliaryModuleMetadata, auxiliaryModuleMetadata);
+                AuxiliaryModuleMetadata = new AuxiliaryModuleMetadataNode(_outputFile);
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.AuxiliaryModuleMetadata, AuxiliaryModuleMetadata);
             }
 
             if (Target.IsWasm)

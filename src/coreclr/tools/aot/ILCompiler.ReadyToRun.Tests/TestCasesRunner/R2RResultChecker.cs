@@ -1323,9 +1323,10 @@ internal static class R2RAssert
     }
 
     /// <summary>
-    /// Reads the raw IL byte stream of a method definition from a component MSIL file.
+    /// Reads the raw IL byte stream of a method definition from a component MSIL file
+    /// (a PE image, or a Webcil image for Wasm targets).
     /// </summary>
-    private static bool TryGetMethodIL(string msilFilePath, string declaringType, string methodName, out byte[] il, out string diagnostic)
+    private static unsafe bool TryGetMethodIL(string msilFilePath, string declaringType, string methodName, out byte[] il, out string diagnostic)
     {
         il = Array.Empty<byte>();
 
@@ -1335,9 +1336,36 @@ internal static class R2RAssert
             return false;
         }
 
-        using var fileStream = new FileStream(msilFilePath, FileMode.Open, FileAccess.Read);
-        using var peReader = new PEReader(fileStream);
-        MetadataReader mr = peReader.GetMetadataReader();
+        byte[] image = File.ReadAllBytes(msilFilePath);
+        if (WebcilImageReader.IsWebcilImage(image))
+        {
+            var webcilReader = new WebcilImageReader(image);
+            MetadataReader webcilMetadata = webcilReader.GetStandaloneAssemblyMetadata().MetadataReader;
+            return TryGetMethodIL(webcilMetadata, msilFilePath, declaringType, methodName, rva =>
+            {
+                int offset = webcilReader.GetOffset(rva);
+                fixed (byte* body = &image[offset])
+                {
+                    return MethodBodyBlock.Create(new BlobReader(body, image.Length - offset)).GetILBytes();
+                }
+            }, out il, out diagnostic);
+        }
+
+        using var peReader = new PEReader(new MemoryStream(image));
+        return TryGetMethodIL(peReader.GetMetadataReader(), msilFilePath, declaringType, methodName,
+            rva => peReader.GetMethodBody(rva).GetILBytes(), out il, out diagnostic);
+    }
+
+    private static bool TryGetMethodIL(
+        MetadataReader mr,
+        string msilFilePath,
+        string declaringType,
+        string methodName,
+        Func<int, byte[]?> getILBytes,
+        out byte[] il,
+        out string diagnostic)
+    {
+        il = Array.Empty<byte>();
         foreach (TypeDefinitionHandle typeHandle in mr.TypeDefinitions)
         {
             TypeDefinition type = mr.GetTypeDefinition(typeHandle);
@@ -1357,7 +1385,7 @@ internal static class R2RAssert
                     return false;
                 }
 
-                il = peReader.GetMethodBody(rva).GetILBytes() ?? Array.Empty<byte>();
+                il = getILBytes(rva) ?? Array.Empty<byte>();
                 diagnostic = string.Empty;
                 return true;
             }

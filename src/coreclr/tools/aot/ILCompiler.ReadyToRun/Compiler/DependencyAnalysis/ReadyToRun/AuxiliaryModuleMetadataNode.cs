@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.IO;
+using System.Text;
 
 using Internal.Text;
 
@@ -9,6 +11,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     internal sealed class AuxiliaryModuleMetadataNode : HeaderTableNode
     {
+        public const int HeaderSize = 6 * sizeof(int);
+        public const int EntrySize = 4 * sizeof(int);
+        public const int EntryActivationStatusOffset = 3 * sizeof(int);
+
+        private readonly string _primaryModuleFileName;
+
+        /// <param name="primaryModuleFileName">The primary output file name, from which auxiliary module file names are derived.</param>
+        public AuxiliaryModuleMetadataNode(string primaryModuleFileName)
+        {
+            Debug.Assert(primaryModuleFileName is not null);
+            _primaryModuleFileName = primaryModuleFileName;
+        }
+
+        /// <summary>
+        /// Gets the file name of the auxiliary module with the given index, relative to the primary module's directory.
+        /// </summary>
+        public static string GetAuxiliaryModuleFileName(string primaryModuleFileName, int auxiliaryModuleIndex) =>
+            $"{Path.GetFileNameWithoutExtension(primaryModuleFileName)}.{auxiliaryModuleIndex + 1}.wasm";
+
+        public static int GetActivationStatusOffset(int auxiliaryModuleIndex) =>
+            HeaderSize + (auxiliaryModuleIndex * EntrySize) + EntryActivationStatusOffset;
+
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder builder)
         {
             builder.Append(nameMangler.CompilationUnitPrefix);
@@ -30,18 +54,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.EmitInt(0); // EntryPoints filename RVA
             builder.EmitInt(0); // InstanceMethodEntryPointsRVA
             builder.EmitInt(0); // MethodDefEntryPointsInfoRVA
-            builder.EmitInt(1); // EntryPointsModuleActivationStatus
+            builder.EmitInt(0); // EntryPointsModuleActivationStatus
             builder.EmitInt(primaryMethodCount); // PrimaryModuleMethodCount
             builder.EmitInt(auxiliaryMethodCounts.Length); // AuxiliaryModuleCount
 
+            byte[][] fileNames = new byte[auxiliaryMethodCounts.Length][];
+            int fileNameOffset = HeaderSize + (auxiliaryMethodCounts.Length * EntrySize);
             int relativeTableBase = primaryMethodCount;
-            foreach (int methodCount in auxiliaryMethodCounts)
+            for (int i = 0; i < auxiliaryMethodCounts.Length; i++)
             {
-                builder.EmitInt(0); // FilenameRVA
+                fileNames[i] = Encoding.UTF8.GetBytes(GetAuxiliaryModuleFileName(_primaryModuleFileName, i));
+                builder.EmitReloc(this, RelocType.IMAGE_REL_BASED_ADDR32NB, fileNameOffset); // FilenameRVA
                 builder.EmitInt(relativeTableBase); // RelativeTableBase
-                builder.EmitInt(methodCount); // MethodCount
+                builder.EmitInt(auxiliaryMethodCounts[i]); // MethodCount
                 builder.EmitInt(0); // ActivationStatus
-                relativeTableBase += methodCount;
+                relativeTableBase += auxiliaryMethodCounts[i];
+                fileNameOffset += fileNames[i].Length + 1;
+            }
+
+            foreach (byte[] fileName in fileNames)
+            {
+                builder.EmitBytes(fileName);
+                builder.EmitByte(0);
             }
 
             return builder.ToObjectData();

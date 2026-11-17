@@ -325,13 +325,17 @@ namespace ILCompiler
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
 
-        internal bool IsDirectManagedHelperEligible(MethodDesc method)
+        internal bool IsDirectManagedHelperEligible(MethodWithGCInfo caller, MethodDesc helper)
         {
             if (NodeFactory.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.ARM64)
                 return false;
 
+            // Managed helpers always live in the primary module, so auxiliary callers must use helper cells.
+            if (caller is { IsAuxiliary: true })
+                return false;
+
             HashSet<MethodDesc> directManagedHelpers = Volatile.Read(ref _directManagedHelpers);
-            return directManagedHelpers is not null && directManagedHelpers.Contains(method);
+            return directManagedHelpers is not null && directManagedHelpers.Contains(helper);
         }
 
         private readonly int _customPESectionAlignment;
@@ -529,7 +533,7 @@ namespace ILCompiler
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
 
-            NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with { IsComponentModule = true, CompiledMethodDefs = compiledMethodDefs };
+            NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with { IsComponentModule = true, CompiledMethodDefs = compiledMethodDefs, AuxiliaryModules = false };
 
             if (optimizationFlags.StripILBodies)
             {
@@ -776,6 +780,11 @@ namespace ILCompiler
                     if (dependency is MethodWithGCInfo methodCodeNodeNeedingCode)
                     {
                         var method = methodCodeNodeNeedingCode.Method;
+                        if (_nodeFactory.UsesAuxiliaryModules)
+                        {
+                            methodCodeNodeNeedingCode.IsAuxiliary =
+                                _nodeFactory.IsAuxiliaryCandidate(method, methodCodeNodeNeedingCode.IsJitHelper);
+                        }
                         var typicalDef = method.GetTypicalMethodDefinition();
                         if (typicalDef is EcmaMethod or AsyncMethodVariant or AsyncResumptionStub)
                         {

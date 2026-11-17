@@ -25,7 +25,7 @@ namespace ILCompiler.ObjectWriter
     /// <summary>
     /// WebCIL object file format writer.
     /// </summary>
-    internal sealed class WebCilObjectWriter : WasmObjectWriter
+    internal sealed partial class WebCilObjectWriter : WasmObjectWriter
     {
         public const int WebcilSectionAlignment = 16;
 
@@ -87,7 +87,6 @@ namespace ILCompiler.ObjectWriter
             section.UpdateAlignment(alignment);
         }
 
-#if READYTORUN
         WasmInstructionGroup GetImageFunctionPointerBaseOffset(int offset)
         {
             return new WasmInstructionGroup([
@@ -229,8 +228,6 @@ namespace ILCompiler.ObjectWriter
 
             return header;
         }
-#endif
-
         private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
         {
             if (section == ObjectNodeSection.TextSection || section == ObjectNodeSection.ManagedCodeUnixContentSection)
@@ -257,7 +254,6 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSectionsAndLayout()
         {
-#if READYTORUN
             int expectedTableSlot = -1;
             foreach (ILCompiler.DependencyAnalysis.ReadyToRun.MethodWithGCInfo method in _nodeFactory.EnumerateCompiledMethods())
             {
@@ -273,8 +269,6 @@ namespace ILCompiler.ObjectWriter
                     $"R2R method {method.Method} has wasm table slot {tableSlot}, expected {expectedTableSlot}");
                 expectedTableSlot += method.FrameInfos.Length;
             }
-#endif
-
             // Every image - composite, single-assembly, or component forwarding stub - installs its payload
             // and function table via active segments, so the only stub the host calls beyond
             // getWebcilSize is patchWebcilHeader: the header's tableBase field is read from linear memory
@@ -501,6 +495,12 @@ namespace ILCompiler.ObjectWriter
             WriteMemoryImport((ulong)webcilPayloadSegment.ContentSize);
             FinalizeSectionEntryCounts();
 
+            if (PrepareAuxiliaryPartition())
+            {
+                EmitPartitionedObjectFile(outputFileStream, webcilPayloadSegment, webcilSections);
+                return;
+            }
+
            /*********************************************************************
            * Write Wasm Sections, Excluding Data
            *********************************************************************/
@@ -535,25 +535,7 @@ namespace ILCompiler.ObjectWriter
                 section.EmitToStream(outputFileStream);
             }
 
-#if READYTORUN
-            /*****************************************************************
-             * Emit Webcil segment at end of file to support ReadyToRun
-             ****************************************************************/
-
-            // Passive data segment for the payload size; this is metadata for the host loader, which
-            // reads it straight out of the module bytes before instantiation in order to size its
-            // allocation, so it must stay passive in both image shapes.
-            byte[] lengthBuffer = new byte[sizeof(uint) * 2];
-            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)webcilPayloadSegment.ContentSize);
-            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)MethodCount);
-            WasmByteArrayDataSegment webcilSizeSegment = new WasmByteArrayDataSegment(lengthBuffer, new Utf8String("webcilCount"), fileAlignment: 1);
-
-            // Create combined data section and emit
-            WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilPayloadSegment], new Utf8String("data"));
-            PaddingWasmSection paddingSection = new PaddingWasmSection(dataSection.FileAlignment, outputFileStream.Position);
-            paddingSection.EmitToStream(outputFileStream);
-            dataSection.EmitToStream(outputFileStream);
-#endif
+            EmitWebcilDataSection(outputFileStream, webcilPayloadSegment);
 
             if (_emitNameSection)
             {
@@ -584,6 +566,25 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        /// <summary>
+        /// Emits the Webcil payload at the end of the file to support ReadyToRun.
+        /// </summary>
+        private void EmitWebcilDataSection(Stream outputFileStream, WebcilPayloadDataSegment webcilPayloadSegment)
+        {
+            // Passive data segment for the payload size; this is metadata for the host loader, which
+            // reads it straight out of the module bytes before instantiation in order to size its
+            // allocation, so it must stay passive in both image shapes.
+            byte[] lengthBuffer = new byte[sizeof(uint) * 2];
+            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)webcilPayloadSegment.ContentSize);
+            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)MethodCount);
+            WasmByteArrayDataSegment webcilSizeSegment = new WasmByteArrayDataSegment(lengthBuffer, new Utf8String("webcilCount"), fileAlignment: 1);
+
+            // Create combined data section and emit
+            WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilPayloadSegment], new Utf8String("data"));
+            PaddingWasmSection paddingSection = new PaddingWasmSection(dataSection.FileAlignment, outputFileStream.Position);
+            paddingSection.EmitToStream(outputFileStream);
+            dataSection.EmitToStream(outputFileStream);
+        }
         public void EmitSymbolMap(string path)
         {
             Console.WriteLine($"Emitting WebAssembly symbol map: {path}");
@@ -904,13 +905,16 @@ namespace ILCompiler.ObjectWriter
                             throw new InvalidOperationException($"Symbol '{reloc.SymbolName}' was not registered. Relocation type {reloc.Type}.");
                         }
 
+                        long index = reloc.Type == RelocType.WASM_FUNCTION_INDEX_LEB
+                            ? GetPartitionedFunctionIndex(symbol.Index)
+                            : symbol.Index;
                         if (shrink && Relocation.IsVariableLength(reloc.Type))
                         {
-                            actualLength = Relocation.WriteVariableLengthValue(reloc.Type, pData, symbol.Index + addend);
+                            actualLength = Relocation.WriteVariableLengthValue(reloc.Type, pData, index + addend);
                         }
                         else
                         {
-                            Relocation.WriteValue(reloc.Type, pData, symbol.Index + addend);
+                            Relocation.WriteValue(reloc.Type, pData, index + addend);
                         }
                         break;
                     }

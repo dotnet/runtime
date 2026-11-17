@@ -3,8 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
 using ILCompiler.Reflection.ReadyToRun;
 using Xunit;
 using Xunit.Abstractions;
@@ -90,6 +93,12 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     public List<string> AdditionalArgs { get; init; } = new();
 
     /// <summary>
+    /// Methods recorded in a MIBC profile that is generated with dotnet-pgo after Roslyn compilation
+    /// and passed to crossgen2 with --mibc. No profile is passed when the list is empty.
+    /// </summary>
+    public List<MibcMethod> MibcMethods { get; init; } = new();
+
+    /// <summary>
     /// Optional validator for this compilation's R2R output image.
     /// </summary>
     public Action<ReadyToRunReader>? Validate { get; init; }
@@ -122,6 +131,14 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
         }
     }
 }
+
+/// <summary>
+/// A method to record in a generated MIBC profile.
+/// </summary>
+/// <param name="AssemblyName">Simple name of the assembly that defines the method's owning type.</param>
+/// <param name="TypeName">Namespace-qualified name of the owning type.</param>
+/// <param name="MethodName">Name of a non-overloaded, non-generic method.</param>
+internal sealed record MibcMethod(string AssemblyName, string TypeName, string MethodName);
 
 /// <summary>
 /// Describes a test case: assemblies compiled with Roslyn, then crossgen2'd in one or more
@@ -315,6 +332,12 @@ internal sealed class R2RTestRunner
         // Caller-supplied raw args (for options that take values, e.g. --determinism-stress=N)
         args.AddRange(compilation.AdditionalArgs);
 
+        if (compilation.MibcMethods.Count != 0)
+        {
+            args.Add("--mibc");
+            args.Add(CreateMibcProfile(testName, compilation, outputFile, assemblyPaths));
+        }
+
         // Global refs (shared framework + System.Private.CoreLib)
         AddRefArgs(args);
 
@@ -329,6 +352,64 @@ internal sealed class R2RTestRunner
             $"crossgen2 failed for '{testName}':\n{result.StandardError}\n{result.StandardOutput}");
 
         return outputFile;
+    }
+
+    /// <summary>
+    /// Writes the compilation's MIBC methods to a dotnet-pgo method list and converts it into a MIBC profile.
+    /// </summary>
+    private static string CreateMibcProfile(
+        string testName,
+        CrossgenCompilation compilation,
+        string outputFile,
+        Dictionary<string, string> assemblyPaths)
+    {
+        string mibcDir = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(outputFile))!, "MIBC");
+        EnsureDirectoryExists(mibcDir);
+        string methodListPath = Path.Combine(mibcDir, compilation.Name + ".json");
+        string mibcPath = Path.Combine(mibcDir, compilation.Name + ".mibc");
+
+        var methodList = new
+        {
+            runtime = "CoreCLR",
+            os = TestPaths.TargetOS,
+            architecture = TestPaths.TargetArchitecture,
+            methods = compilation.MibcMethods.Select(method => new
+            {
+                type = $"{method.TypeName}, {method.AssemblyName}",
+                name = method.MethodName,
+            }),
+        };
+        File.WriteAllText(methodListPath, JsonSerializer.Serialize(methodList));
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = Environment.ProcessPath!,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+        };
+        startInfo.ArgumentList.Add(TestPaths.DotnetPgoPath);
+        startInfo.ArgumentList.Add("create-mibc-from-method-list");
+        startInfo.ArgumentList.Add("--method-list");
+        startInfo.ArgumentList.Add(methodListPath);
+        startInfo.ArgumentList.Add("--output");
+        startInfo.ArgumentList.Add(mibcPath);
+        foreach (string assemblyPath in assemblyPaths.Values)
+        {
+            startInfo.ArgumentList.Add("-r");
+            startInfo.ArgumentList.Add(assemblyPath);
+        }
+        startInfo.ArgumentList.Add("-r");
+        startInfo.ArgumentList.Add(Path.Combine(TestPaths.LibrariesDir, "*.dll"));
+
+        using Process process = Process.Start(startInfo)!;
+        Task<string> standardError = process.StandardError.ReadToEndAsync();
+        string standardOutput = process.StandardOutput.ReadToEnd();
+        process.WaitForExit();
+        Assert.True(process.ExitCode == 0,
+            $"dotnet-pgo failed for '{testName}':\n{standardError.Result}\n{standardOutput}");
+
+        return mibcPath;
     }
 
     /// <summary>

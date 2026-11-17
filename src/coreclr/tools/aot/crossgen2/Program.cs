@@ -87,6 +87,12 @@ namespace ILCompiler
             {
                 throw new CommandLineException(SR.GeneratePortableCallHelpersRequiresWasmTarget);
             }
+
+            if (Get(_command.AuxiliaryModules)
+                && (targetArchitecture != TargetArchitecture.Wasm32 || targetOS != TargetOS.Browser))
+            {
+                throw new CommandLineException(SR.AuxiliaryModulesRequiresBrowserWasmTarget);
+            }
             bool targetAllowsRuntimeCodeGeneration = Get(_command.TargetAllowsRuntimeCodeGeneration)
                 ?? GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
             bool targetIsSingleThreaded = Get(_command.TargetSingleThreaded)

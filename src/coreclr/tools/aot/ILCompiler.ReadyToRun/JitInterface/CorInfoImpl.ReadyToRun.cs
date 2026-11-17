@@ -1131,7 +1131,7 @@ namespace Internal.JitInterface
                 ftnNum);
 
             if (managedHelper is not null &&
-                _compilation.IsDirectManagedHelperEligible(managedHelper))
+                _compilation.IsDirectManagedHelperEligible(_methodCodeNode, managedHelper))
             {
                 Debug.Assert(_compilation.CompilationModuleGroup.ContainsMethodBody(managedHelper, unboxingStub: false));
                 helperMethod = managedHelper;

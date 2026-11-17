@@ -141,6 +141,13 @@ namespace ILCompiler
             var calleeIndices = new HashSet<int>();
             for (int i = 0; i < methods.Length; i++)
             {
+                // Calls involving auxiliary bodies stay indirect and do not require eager body activation.
+                if (methodNodes[i].IsAuxiliary)
+                {
+                    adjacency[i] = Array.Empty<int>();
+                    continue;
+                }
+
                 calleeIndices.Clear();
                 foreach (Relocation relocation in methodNodes[i].GetData(factory, relocsOnly: false).Relocs.AsSpan())
                 {
@@ -155,7 +162,7 @@ namespace ILCompiler
                         MethodWithGCInfo method => method,
                         _ => null,
                     };
-                    if (target is not null && methodIndices.TryGetValue(target.Method, out int calleeIndex))
+                    if (target is { IsAuxiliary: false } && methodIndices.TryGetValue(target.Method, out int calleeIndex))
                     {
                         calleeIndices.Add(calleeIndex);
                     }

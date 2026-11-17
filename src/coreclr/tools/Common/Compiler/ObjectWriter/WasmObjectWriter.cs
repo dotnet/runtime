@@ -80,6 +80,8 @@ namespace ILCompiler.ObjectWriter
 
         private protected virtual bool ShouldDeduplicateFunctionBodies => false;
 
+        private protected virtual bool AreFunctionBodiesEquivalent(ObjectNode left, ObjectNode right) => true;
+
         private readonly struct FoldedFunctionAlias
         {
             public FoldedFunctionAlias(
@@ -129,7 +131,7 @@ namespace ILCompiler.ObjectWriter
         {
             if (ShouldDeduplicateFunctionBodies)
             {
-                _functionBodyDeduplicator.Prepare(nodes, _nodeFactory, ShouldSkip);
+                _functionBodyDeduplicator.Prepare(nodes, _nodeFactory, ShouldSkip, AreFunctionBodiesEquivalent);
             }
             base.EmitObject(outputFileStream, nodes, dumper, logger);
 

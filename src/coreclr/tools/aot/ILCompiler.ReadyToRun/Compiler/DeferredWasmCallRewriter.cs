@@ -125,7 +125,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         foreach (Relocation relocation in original.Relocs.AsSpan())
         {
             if (relocation.Target is DeferredWasmCallNode call &&
-                !compilation.DeferredWasmCalls.CanUseDirectCall(call.Method, out _))
+                !compilation.DeferredWasmCalls.CanUseDirectCall(method, call.Method, out _))
             {
                 RewriteWithIndirectCalls(method, original, locations, variables, activationImports);
                 return;
@@ -138,7 +138,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
             {
                 Debug.Assert(relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB);
                 AssertDeferredCall(original.Data, relocation.Offset);
-                bool direct = compilation.DeferredWasmCalls.CanUseDirectCall(call.Method, out DeferredWasmMethodFinalizationInfo info);
+                bool direct = compilation.DeferredWasmCalls.CanUseDirectCall(method, call.Method, out DeferredWasmMethodFinalizationInfo info);
                 Debug.Assert(direct);
                 SelectCall(method, call, useDirectCall: true, info.IsEager, activationImports);
                 relocation = new Relocation(relocation.RelocType, relocation.Offset, call.Target);
@@ -166,7 +166,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
             {
                 Debug.Assert(relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB);
                 AssertDeferredCall(original.Data, relocation.Offset);
-                bool direct = compilation.DeferredWasmCalls.CanUseDirectCall(call.Method, out DeferredWasmMethodFinalizationInfo info);
+                bool direct = compilation.DeferredWasmCalls.CanUseDirectCall(method, call.Method, out DeferredWasmMethodFinalizationInfo info);
                 SelectCall(method, call, direct, info.IsEager, activationImports);
                 if (direct)
                 {

@@ -84,6 +84,11 @@ internal static class TestPaths
         }
     }
 
+    /// <summary>
+    /// Path to the dotnet-pgo assembly used to create MIBC profiles for test cases.
+    /// </summary>
+    public static string DotnetPgoPath => GetRequiredConfig("R2RTest.DotnetPgoPath");
+
     public static string CoreCLRConfiguration => GetRequiredConfig("R2RTest.CoreCLRConfiguration");
     public static bool IsReleaseCoreCLR => string.Equals(CoreCLRConfiguration, "Release", StringComparison.OrdinalIgnoreCase);
     public static bool IsNotReleaseCoreCLR => !IsReleaseCoreCLR;

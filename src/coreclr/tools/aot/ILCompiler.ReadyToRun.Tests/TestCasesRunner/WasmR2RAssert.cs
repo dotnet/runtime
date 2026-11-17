@@ -37,7 +37,7 @@ internal static class WasmR2RAssert
         Assert.Equal(0, metadata.EntryPointsFilenameRva);
         Assert.Equal(0, metadata.InstanceMethodEntryPointsRva);
         Assert.Equal(0, metadata.MethodDefEntryPointsInfoRva);
-        Assert.Equal(1u, metadata.EntryPointsModuleActivationStatus);
+        Assert.Equal(0u, metadata.EntryPointsModuleActivationStatus);
         Assert.Empty(metadata.Entries);
 
         Assert.True(reader.ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSectionType.RuntimeFunctions));
@@ -45,6 +45,115 @@ internal static class WasmR2RAssert
             reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
         Assert.Equal(0, runtimeFunctionsSection.Size % RuntimeFunctionEntrySize);
         Assert.Equal(runtimeFunctionsSection.Size / RuntimeFunctionEntrySize, metadata.PrimaryModuleMethodCount);
+    }
+
+    /// <summary>
+    /// Validates a composite image whose profile-cold method bodies were moved into a single auxiliary
+    /// WebAssembly module, and the auxiliary module's ActivateModule export.
+    /// </summary>
+    public static void AssertAuxiliaryModule(ReadyToRunReader reader)
+    {
+        const int RuntimeFunctionEntrySize = sizeof(uint) * 2;
+        const int EntryActivationStatusOffset = 3 * sizeof(uint);
+        const byte GlobalGetOpcode = 0x23;
+        const byte I32ConstOpcode = 0x41;
+        const byte I32AddOpcode = 0x6A;
+        const byte EndOpcode = 0x0B;
+
+        ReadyToRunSection metadataSection =
+            reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.AuxiliaryModuleMetadata];
+        int metadataOffset = reader.GetOffset(metadataSection.RelativeVirtualAddress);
+        AuxiliaryModuleMetadataSection metadata =
+            new AuxiliaryModuleMetadataSection(reader, metadataOffset, metadataOffset + metadataSection.Size);
+        AuxiliaryModuleEntry entry = Assert.Single(metadata.Entries);
+
+        ReadyToRunSection runtimeFunctionsSection =
+            reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
+        int primaryMethodCount = metadata.PrimaryModuleMethodCount;
+        Assert.True(primaryMethodCount > 0, "The profiled method should remain in the primary module.");
+        Assert.True(entry.MethodCount > 0, "Profile-cold methods should be moved to the auxiliary module.");
+        Assert.Equal(primaryMethodCount, entry.RelativeTableBase);
+        Assert.Equal(runtimeFunctionsSection.Size / RuntimeFunctionEntrySize, primaryMethodCount + entry.MethodCount);
+        Assert.Equal(0u, entry.ActivationStatus);
+
+        ReadOnlySpan<byte> r2rImage = reader.Image;
+        ReadOnlySpan<byte> fileNameBytes = r2rImage[reader.GetOffset(entry.FilenameRva)..];
+        string auxiliaryFileName = Encoding.UTF8.GetString(fileNameBytes[..fileNameBytes.IndexOf((byte)0)]);
+        Assert.Equal(Path.GetFileNameWithoutExtension(reader.Filename) + ".1.wasm", auxiliaryFileName);
+
+        string auxiliaryPath = Path.Combine(Path.GetDirectoryName(reader.Filename)!, auxiliaryFileName);
+        Assert.True(File.Exists(auxiliaryPath), $"Auxiliary module not found: {auxiliaryPath}");
+
+        // The primary module's active segments must leave the auxiliary slot range unpopulated.
+        ReadOnlySpan<byte> primary = File.ReadAllBytes(reader.Filename);
+        Assert.True(TryGetWasmSectionBounds(primary, WasmSectionKind.Element, out int offset, out int end));
+        Assert.Equal(2u, ReadWasmUleb32(primary, ref offset, end));
+        var activeSegments = new List<(long Start, uint Count)>();
+        for (int i = 0; i < 2; i++)
+        {
+            Assert.Equal(0u, ReadWasmUleb32(primary, ref offset, end));
+            Assert.Equal(GlobalGetOpcode, ReadWasmByte(primary, ref offset, end));
+            Assert.Equal((uint)WebCilObjectWriter.TableBaseGlobalIndex, ReadWasmUleb32(primary, ref offset, end));
+            Assert.Equal(I32ConstOpcode, ReadWasmByte(primary, ref offset, end));
+            long start = ReadWasmSleb33(primary, ref offset, end);
+            Assert.Equal(I32AddOpcode, ReadWasmByte(primary, ref offset, end));
+            Assert.Equal(EndOpcode, ReadWasmByte(primary, ref offset, end));
+            uint count = ReadWasmUleb32(primary, ref offset, end);
+            for (uint element = 0; element < count; element++)
+                ReadWasmUleb32(primary, ref offset, end);
+            activeSegments.Add((start, count));
+        }
+        Assert.Equal(end, offset);
+        Assert.Equal((0L, (uint)primaryMethodCount), (activeSegments[0].Start, activeSegments[0].Count));
+        Assert.Equal((long)primaryMethodCount + entry.MethodCount, activeSegments[1].Start);
+
+        ReadOnlySpan<byte> auxiliary = File.ReadAllBytes(auxiliaryPath);
+        Dictionary<string, WasmExportIndex> exports = ReadWasmExports(auxiliary);
+        WasmExportIndex activateModule = Assert.Single(exports, export => export.Key == "ActivateModule").Value;
+        Assert.Single(exports);
+        Assert.Equal(WasmImportKind.Function, activateModule.Kind);
+
+        // A single passive segment holds the auxiliary slots until ActivateModule copies them into the table.
+        Assert.True(TryGetWasmSectionBounds(auxiliary, WasmSectionKind.Element, out offset, out end));
+        Assert.Equal(1u, ReadWasmUleb32(auxiliary, ref offset, end));
+        Assert.Equal(1u, ReadWasmUleb32(auxiliary, ref offset, end));
+        Assert.Equal(0, ReadWasmByte(auxiliary, ref offset, end));
+        Assert.Equal((uint)entry.MethodCount, ReadWasmUleb32(auxiliary, ref offset, end));
+
+        Assert.True(TryGetWasmSectionBounds(auxiliary, WasmSectionKind.Code, out offset, out end));
+        uint functionCount = ReadWasmUleb32(auxiliary, ref offset, end);
+        Assert.Equal(functionCount - 1, activateModule.Index);
+        for (uint i = 0; i < activateModule.Index; i++)
+        {
+            uint size = ReadWasmUleb32(auxiliary, ref offset, end);
+            offset += checked((int)size);
+        }
+        uint activateSize = ReadWasmUleb32(auxiliary, ref offset, end);
+        ReadOnlySpan<byte> activateBody = auxiliary.Slice(offset, checked((int)activateSize));
+
+        int statusRva = metadataSection.RelativeVirtualAddress + AuxiliaryModuleMetadataSection.HeaderSize + EntryActivationStatusOffset;
+        Assert.True(ContainsMemoryAccess(activateBody, opcode: 0x28, statusRva), "ActivateModule must check the activation status.");
+        Assert.True(ContainsMemoryAccess(activateBody, opcode: 0x36, statusRva), "ActivateModule must set the activation status.");
+        Assert.True(activateBody.IndexOf([(byte)0xFC, (byte)0x0C, (byte)0x00, (byte)0x00]) >= 0,
+            "ActivateModule must initialize the table from element segment 0.");
+
+        static bool ContainsMemoryAccess(ReadOnlySpan<byte> body, byte opcode, int address)
+        {
+            Span<byte> pattern = stackalloc byte[8];
+            pattern[0] = opcode;
+            pattern[1] = 2;
+            int length = 2;
+            uint value = (uint)address;
+            do
+            {
+                byte b = (byte)(value & 0x7F);
+                value >>= 7;
+                pattern[length++] = value != 0 ? (byte)(b | 0x80) : b;
+            }
+            while (value != 0);
+
+            return body.IndexOf(pattern[..length]) >= 0;
+        }
     }
 
     public static void AssertFrameIdentityPrologs(WebcilImageReader reader)
@@ -848,9 +957,11 @@ internal static class WasmR2RAssert
         return thunkSlots;
     }
 
-    private static Dictionary<string, WasmExportIndex> ReadWasmExports(WebcilImageReader reader)
+    private static Dictionary<string, WasmExportIndex> ReadWasmExports(WebcilImageReader reader) =>
+        ReadWasmExports(reader.GetEntireImage().AsSpan());
+
+    private static Dictionary<string, WasmExportIndex> ReadWasmExports(ReadOnlySpan<byte> image)
     {
-        ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
         if (!TryGetWasmSectionBounds(image, WasmSectionKind.Export, out int offset, out int sectionEnd))
             throw new BadImageFormatException("WASM image does not contain an export section.");
 

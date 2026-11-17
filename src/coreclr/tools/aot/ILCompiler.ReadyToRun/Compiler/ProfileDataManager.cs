@@ -109,6 +109,10 @@ namespace ILCompiler
             return _inputProfileData.Contains(method);
         }
 
+        public bool HasInputProfileData => !_inputProfileData.IsEmpty;
+
+        public IEnumerable<MethodDesc> GetInputProfileMethods() => _inputProfileData.Methods;
+
         public MethodProfileData this[MethodDesc method]
         {
             get
@@ -348,6 +352,10 @@ namespace ILCompiler
             }
 
             public bool Contains(MethodDesc md) => _profileData.ContainsKey(md);
+
+            public bool IsEmpty => _profileData.Count == 0;
+
+            public IEnumerable<MethodDesc> Methods => _profileData.Keys;
  
             private void AssociateMethodProfileDataWithModule(MethodDesc method, MethodProfileData profileData)
             {
