@@ -71,6 +71,23 @@ namespace System
         public static bool IsSymCryptOpenSsl => s_isSymCryptOpenSsl.Value;
         public static bool IsNotSymCryptOpenSsl => !IsSymCryptOpenSsl;
 
+        // Whether the kernel runs in FIPS mode (fips=1) or OPENSSL_FORCE_FIPS_MODE is set to any value: some
+        // distributions' OpenSSL enters FIPS mode for either.
+        private static readonly Lazy<bool> s_isOpenSslFipsModeRequested = new(() =>
+        {
+            if (!IsLinux)
+            {
+                return false;
+            }
+
+            const string FipsEnabledPath = "/proc/sys/crypto/fips_enabled";
+            return Environment.GetEnvironmentVariable("OPENSSL_FORCE_FIPS_MODE") != null ||
+                (File.Exists(FipsEnabledPath) && File.ReadAllText(FipsEnabledPath).Trim() == "1");
+        });
+
+        public static bool IsOpenSslFipsModeRequested => s_isOpenSslFipsModeRequested.Value;
+        public static bool IsNotOpenSslFipsModeRequested => !IsOpenSslFipsModeRequested;
+
         /// <summary>
         /// If gnulibc is available, returns the release, such as "stable".
         /// Otherwise returns "glibc_not_found".

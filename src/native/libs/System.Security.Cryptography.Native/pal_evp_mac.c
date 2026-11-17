@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "openssl.h"
+#include "pal_err.h"
 #include "pal_evp_mac.h"
 #include "pal_utilities.h"
 
@@ -29,7 +30,7 @@ EVP_MAC* CryptoNative_EvpMacFetch(const char* algorithm, int32_t* haveFeature)
             // If the fetch failed because the algorithm is unsupported, then set
             // haveFeature to 0. Otherwise, assume the algorithm exists and the
             // fetch failed for another reason, and set haveFeature to 1.
-            *haveFeature = ERR_GET_REASON(error) == ERR_R_UNSUPPORTED ? 0 : 1;
+            *haveFeature = ErrIsUnsupported(error) ? 0 : 1;
             return NULL;
         }
     }

@@ -92,7 +92,7 @@ void local_ERR_put_error(int32_t lib, int32_t func, int32_t reason, const char* 
     assert(API_EXISTS(ERR_new) && API_EXISTS(ERR_set_debug) && API_EXISTS(ERR_set_error));
     ERR_new();
 
-    // ERR_set_debug saves only the pointer, not the value, as it expects constants.
+    // ERR_set_debug takes a function name, not the legacy numeric code.
     // So just ignore the legacy numeric code, and use the 3.0 "Uh, I don't know"
     // function name.
     (void)func;

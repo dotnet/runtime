@@ -19,7 +19,8 @@ namespace System.Security.Cryptography.Tests
 
     public static class X25519DiffieHellmanImplementationSupportedTests
     {
-        [Fact]
+        // A FIPS provider need not offer X25519 (RHEL's does not), so neither result can be expected there.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOpenSslFipsModeRequested))]
         public static void IsSupported_AgreesWithPlatform()
         {
 #if NET

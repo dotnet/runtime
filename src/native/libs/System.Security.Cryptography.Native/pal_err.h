@@ -13,6 +13,32 @@ extern int volatile g_err_unloaded;
 #endif
 
 /*
+The error functions below decode and encode with the error layout of the OpenSSL loaded at run time. ERR_GET_LIB,
+ERR_GET_REASON and the ERR_R_* reasons use the layout of the headers the shim is compiled against, which OpenSSL 3.0
+changed, so they are wrong for one of the two when the shim is portable.
+*/
+
+/*
+Returns the library of the error, like ERR_GET_LIB.
+*/
+int32_t ErrGetLib(unsigned long error);
+
+/*
+Returns the reason to put on the error queue for an allocation failure, like ERR_R_MALLOC_FAILURE.
+*/
+int32_t ErrGetMallocFailureReason(void);
+
+/*
+Returns 1 if the error is an allocation failure (ERR_R_MALLOC_FAILURE), otherwise 0.
+*/
+int32_t ErrIsMallocFailure(unsigned long error);
+
+/*
+Returns 1 if the error is ERR_R_UNSUPPORTED, otherwise 0. The reason exists from OpenSSL 3.0 on.
+*/
+int32_t ErrIsUnsupported(unsigned long error);
+
+/*
 Shims the ERR_clear_error method.
 */
 PALEXPORT void CryptoNative_ErrClearError(void);

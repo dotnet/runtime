@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "pal_err.h"
 #include "pal_x509.h"
 
 #include "../Common/pal_safecrt.h"
@@ -729,7 +730,7 @@ int32_t CryptoNative_X509StoreCtxCommitToChain(X509_STORE_CTX* storeCtx)
             // risk of being wrong about promoting trust or losing the chain at this point.
             if (!sk_X509_push(untrusted, cur))
             {
-                X509err(X509_F_X509_VERIFY_CERT, ERR_R_MALLOC_FAILURE);
+                X509err(X509_F_X509_VERIFY_CERT, ErrGetMallocFailureReason());
                 X509_free(cur);
                 sk_X509_pop_free(chain, X509_free);
                 return 0;
@@ -835,7 +836,7 @@ int32_t CryptoNative_X509StoreCtxResetForSignatureError(X509_STORE_CTX* storeCtx
 
             if (!sk_X509_push(untrusted, duplicate))
             {
-                X509err(X509_F_X509_VERIFY_CERT, ERR_R_MALLOC_FAILURE);
+                X509err(X509_F_X509_VERIFY_CERT, ErrGetMallocFailureReason());
                 X509_free(duplicate);
                 return 0;
             }
@@ -848,7 +849,7 @@ int32_t CryptoNative_X509StoreCtxResetForSignatureError(X509_STORE_CTX* storeCtx
             }
             else
             {
-                X509err(X509_F_X509_VERIFY_CERT, ERR_R_MALLOC_FAILURE);
+                X509err(X509_F_X509_VERIFY_CERT, ErrGetMallocFailureReason());
                 return 0;
             }
         }

@@ -449,7 +449,6 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(ERR_get_error) \
     LIGHTUP_FUNCTION(ERR_new) \
     REQUIRED_FUNCTION(ERR_peek_error) \
-    REQUIRED_FUNCTION(ERR_peek_error_line) \
     REQUIRED_FUNCTION(ERR_peek_last_error) \
     REQUIRED_FUNCTION(ERR_pop_to_mark) \
     FALLBACK_FUNCTION(ERR_put_error) \
@@ -1054,7 +1053,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define ERR_get_error ERR_get_error_ptr
 #define ERR_new ERR_new_ptr
 #define ERR_peek_error ERR_peek_error_ptr
-#define ERR_peek_error_line ERR_peek_error_line_ptr
 #define ERR_peek_last_error ERR_peek_last_error_ptr
 #define ERR_put_error ERR_put_error_ptr
 #define ERR_pop_to_mark ERR_pop_to_mark_ptr

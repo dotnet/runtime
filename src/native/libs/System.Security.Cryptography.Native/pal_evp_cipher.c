@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "pal_err.h"
 #include "pal_evp_cipher.h"
 
 #include <assert.h>
@@ -22,7 +23,7 @@ CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyL
         // Allocation failed
         // This is one of the few places that don't report the error to the queue, so
         // we'll do it here.
-        ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
+        ERR_put_error(ERR_LIB_EVP, 0, ErrGetMallocFailureReason(), __FILE__, __LINE__);
         return NULL;
     }
 
@@ -95,7 +96,7 @@ CryptoNative_EvpCipherCreatePartial(const EVP_CIPHER* type)
         // Allocation failed
         // This is one of the few places that don't report the error to the queue, so
         // we'll do it here.
-        ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
+        ERR_put_error(ERR_LIB_EVP, 0, ErrGetMallocFailureReason(), __FILE__, __LINE__);
         return NULL;
     }
 
