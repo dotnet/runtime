@@ -453,18 +453,16 @@ Div1Word:
 
             /// <summary>
             /// Do partial divide, yielding 32-bit result and 96-bit remainder.
-            /// Top divisor uint must be larger than top dividend uint. This is
-            /// assured in the initial call because the divisor is normalized
-            /// and the dividend can't be. In subsequent calls, the remainder
-            /// is multiplied by 10^9 (max), so it can be no more than 1/4 of
-            /// the divisor which is effectively multiplied by 2^32 (4 * 10^9).
+            /// Divisor must be normalized and larger than the upper 96 bits of
+            /// the dividend. The top divisor uint may equal the top dividend uint
+            /// when processing successive 32-bit limbs for remainder calculation.
             /// </summary>
             /// <param name="bufNum">128-bit dividend as array of uints, least-sig first</param>
             /// <param name="bufDen">96-bit divisor</param>
             /// <returns>Returns quotient. Remainder overwrites lower 96-bits of dividend.</returns>
             private static uint Div128By96(ref Buf16 bufNum, ref Buf12 bufDen)
             {
-                Debug.Assert(bufDen.U2 > bufNum.U3);
+                Debug.Assert(bufDen.U2 >= bufNum.U3);
                 ulong dividend = bufNum.High64;
                 uint den = bufDen.U2;
                 if (dividend < den)
@@ -472,13 +470,33 @@ Div1Word:
                     //
                     return 0;
 
-                (uint quo, uint remainder) = Div64By32(dividend, den);
+                uint quo, remainder;
+                ulong prod1, num;
+
+                if (bufNum.U3 == den)
+                {
+                    // Divide would overflow. Assume a quotient of 2^32, stored as zero,
+                    // and compute the low 96 bits of dividend - (divisor << 32).
+                    // The remainder is negative; the add-back loop corrects the quotient.
+                    //
+                    quo = 0;
+                    prod1 = bufDen.Low64 << 32;
+                    num = bufNum.Low64 - prod1;
+                    remainder = bufNum.U2 - bufDen.U1;
+                    if (num > ~prod1)
+                    {
+                        remainder--;
+                    }
+
+                    goto NegRem;
+                }
+
+                (quo, remainder) = Div64By32(dividend, den);
 
                 // Compute full remainder, rem = dividend - (quo * divisor).
                 //
-                ulong prod1;
                 uint prod2 = (uint)Math.BigMul(bufDen.Low64, quo, out prod1);
-                ulong num = bufNum.Low64 - prod1;
+                num = bufNum.Low64 - prod1;
                 remainder -= (uint)prod2;
 
                 // Propagate carries
@@ -492,6 +510,8 @@ Div1Word:
                 }
                 else if (remainder <= ~(uint)prod2)
                     goto PosRem;
+
+NegRem:
                 {
                     // Remainder went negative.  Add divisor back in until it's positive,
                     // a max of 2 times.
