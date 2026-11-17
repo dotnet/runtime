@@ -94,7 +94,7 @@ internal sealed partial class GrammarActions
 
     private void MaterializeAssemblyDefinition(AssemblyDefinitionValue definition)
     {
-        _isCoreLibrary |= EntityRegistry.IsCoreLibAssemblyName(definition.Name);
+        _entityRegistry.IsCoreLibrary |= EntityRegistry.IsCoreLibAssemblyName(definition.Name);
         string assemblyName = _options.AssemblyName ?? definition.Name;
         _entityRegistry.Assembly ??= new EntityRegistry.AssemblyEntity(assemblyName);
         EntityRegistry.AssemblyEntity assembly = _entityRegistry.Assembly;

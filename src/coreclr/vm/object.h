@@ -76,7 +76,6 @@ class Thread;
 class Assembly;
 class AssemblyNative;
 class WaitHandleNative;
-class ArgDestination;
 
 struct RCW;
 
@@ -405,7 +404,6 @@ inline void ClearObjectReference(OBJECTREF* dst)
 // CopyValueClass sets a value class field
 
 void CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT);
-void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset);
 
 inline void InitValueClass(void *dest, MethodTable *pMT)
 {
@@ -415,7 +413,6 @@ inline void InitValueClass(void *dest, MethodTable *pMT)
 
 #define SetObjectReference(_d,_r)        SetObjectReferenceUnchecked(_d, _r)
 #define CopyValueClass(_d,_s,_m)         CopyValueClassUnchecked(_d,_s,_m)
-#define CopyValueClassArg(_d,_s,_m,_o)   CopyValueClassArgUnchecked(_d,_s,_m,_o)
 
 #include <pshpack4.h>
 
@@ -1414,22 +1411,6 @@ inline OBJECTREF ArgSlotToObj(ARG_SLOT i)
     return ObjectToOBJECTREF ((Object*)v);
 }
 
-inline ARG_SLOT StringToArgSlot(STRINGREF sr)
-{
-    LIMITED_METHOD_CONTRACT;
-    LPVOID v;
-    v = OBJECTREFToObject(sr);
-    return (ARG_SLOT)(SIZE_T)v;
-}
-
-inline STRINGREF ArgSlotToString(ARG_SLOT s)
-{
-    LIMITED_METHOD_CONTRACT;
-    LPVOID v;
-    v = (LPVOID)(SIZE_T)s;
-    return ObjectToSTRINGREF ((StringObject*)v);
-}
-
 #else // USE_CHECKED_OBJECTREFS
 
 typedef PTR_ReflectModuleBaseObject REFLECTMODULEBASEREF;
@@ -1446,16 +1427,7 @@ typedef PTR_ContinuationObject CONTINUATIONREF;
 #define ObjToArgSlot(objref) ((ARG_SLOT)(SIZE_T)(objref))
 #define ArgSlotToObj(s) ((OBJECTREF)(SIZE_T)(s))
 
-#define StringToArgSlot(objref) ((ARG_SLOT)(SIZE_T)(objref))
-#define ArgSlotToString(s)    ((STRINGREF)(SIZE_T)(s))
-
 #endif //USE_CHECKED_OBJECTREFS
-
-#define PtrToArgSlot(ptr) ((ARG_SLOT)(SIZE_T)(ptr))
-#define ArgSlotToPtr(s)   ((LPVOID)(SIZE_T)(s))
-
-#define BoolToArgSlot(b)  ((ARG_SLOT)(CLR_BOOL)(!!(b)))
-#define ArgSlotToBool(s)  ((BOOL)(s))
 
 STRINGREF AllocateString(SString sstr);
 

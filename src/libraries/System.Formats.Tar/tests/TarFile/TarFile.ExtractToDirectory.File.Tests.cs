@@ -1067,5 +1067,89 @@ namespace System.Formats.Tar.Tests
             Assert.False(File.Exists(Path.Combine(root.Path, "d")), "File should not have been created outside destination.");
             Assert.False(File.Exists(Path.Combine(destDir, "d")), "File should not have been created through the hardlink.");
         }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks), nameof(MountHelper.CanCreateHardLinks))]
+        [InlineData(false, false, TarHardLinkMode.PreserveLink)]
+        [InlineData(false, true, TarHardLinkMode.PreserveLink)]
+        [InlineData(true, false, TarHardLinkMode.PreserveLink)]
+        [InlineData(true, true, TarHardLinkMode.PreserveLink)]
+        [InlineData(false, false, TarHardLinkMode.CopyContents)]
+        [InlineData(false, true, TarHardLinkMode.CopyContents)]
+        [InlineData(true, false, TarHardLinkMode.CopyContents)]
+        [InlineData(true, true, TarHardLinkMode.CopyContents)]
+        public async Task HardLinkExtraction_ThroughLinkedDestination(bool ancestorLink, bool async, TarHardLinkMode linkMode)
+        {
+            using TempDirectory root = new TempDirectory();
+            string physicalParent = Path.Join(root.Path, "physical");
+            string physicalDestination = Path.Join(physicalParent, "destination");
+            string linkTarget = ancestorLink ? physicalParent : physicalDestination;
+            Directory.CreateDirectory(linkTarget);
+            string rootLink = Path.Join(root.Path, "root-link");
+            Directory.CreateSymbolicLink(rootLink, linkTarget);
+            string destination = ancestorLink ? Path.Join(rootLink, "destination") : rootLink;
+
+            string archivePath = Path.Join(root.Path, "archive.tar");
+            using (FileStream archive = File.Create(archivePath))
+            using (TarWriter writer = new TarWriter(archive))
+            {
+                using MemoryStream data = new MemoryStream([1, 2, 3]);
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "directory/target.txt") { DataStream = data });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.HardLink, "first.txt") { LinkName = "directory/target.txt" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.HardLink, "second.txt") { LinkName = "directory/target.txt" });
+            }
+            await ExtractToDirectory(archivePath, destination, new TarExtractOptions { HardLinkMode = linkMode }, async);
+
+            string target = Path.Join(physicalDestination, "directory", "target.txt");
+            Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(target));
+            foreach (string name in new[] { "first.txt", "second.txt" })
+            {
+                string path = Path.Join(physicalDestination, name);
+                Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(path));
+                if (linkMode == TarHardLinkMode.PreserveLink)
+                {
+                    AssertPathsAreHardLinked(target, path);
+                }
+                else
+                {
+                    AssertPathsAreNotHardLinked(target, path);
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks), nameof(MountHelper.CanCreateHardLinks))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task ExtractToDirectory_CannotOverwriteLinkedRootThroughExistingAlias(bool ancestorLink, bool async)
+        {
+            using TempDirectory root = new TempDirectory();
+            string physicalParent = Path.Join(root.Path, "physical");
+            string physicalDestination = Path.Join(physicalParent, "destination");
+            Directory.CreateDirectory(physicalDestination);
+            string linkTarget = ancestorLink ? physicalParent : physicalDestination;
+            string rootLink = Path.Join(root.Path, "root-link");
+            Directory.CreateSymbolicLink(rootLink, linkTarget);
+            Directory.CreateSymbolicLink(Path.Join(physicalDestination, "back"), root.Path);
+            string destination = ancestorLink ? Path.Join(rootLink, "destination") : rootLink;
+
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                using MemoryStream data = new MemoryStream([1, 2, 3]);
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "target.txt") { DataStream = data });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.HardLink, "first.txt") { LinkName = "target.txt" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "back/root-link"));
+            }
+            archive.Position = 0;
+
+            await Assert.ThrowsAsync<IOException>(() => ExtractToDirectory(archive, destination, overwriteFiles: true, async));
+
+            Assert.Equal(linkTarget, new DirectoryInfo(rootLink).LinkTarget);
+            string target = Path.Join(physicalDestination, "target.txt");
+            string first = Path.Join(physicalDestination, "first.txt");
+            Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(target));
+            AssertPathsAreHardLinked(target, first);
+        }
     }
 }

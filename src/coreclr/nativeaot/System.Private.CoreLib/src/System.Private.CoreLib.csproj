@@ -216,7 +216,9 @@
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
-    <Compile Include="System\Runtime\ExceptionIDs.cs" />
+    <Compile Include="$(RuntimeBasePath)System\Runtime\ExceptionIDs.cs">
+      <Link>System\Runtime\ExceptionIDs.cs</Link>
+    </Compile>
     <Compile Include="System\Runtime\ExceptionServices\ExceptionHandling.NativeAot.cs" />
     <Compile Include="System\Runtime\GCSettings.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeMapLazyDictionary.NativeAot.cs" />
@@ -314,6 +316,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Exit.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasm)' == 'true'">
+    <Compile Include="Internal\Runtime\UnboxingStubMap.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CompilerCommonPath)\System\Collections\Generic\ArrayBuilder.cs">
@@ -505,7 +510,7 @@
     <Compile Include="$(RuntimeBasePath)System\Runtime\DispatchResolve.cs">
       <Link>Runtime.Base\src\System\Runtime\DispatchResolve.cs</Link>
     </Compile>
-    <Compile Include="$(RuntimeBasePath)System\Runtime\__Finalizer.cs" Condition="'$(TargetsWasm)' != 'true'">
+    <Compile Include="$(RuntimeBasePath)System\Runtime\__Finalizer.cs">
       <Link>Runtime.Base\src\System\Runtime\__Finalizer.cs</Link>
     </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\MethodTable.Runtime.cs">
@@ -530,11 +535,8 @@
       <Link>Common\TransitionBlock.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true' and '$(TargetsWasm)' != 'true'">
-    <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Full\AsmOffsets.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true' and '$(TargetsWasm)' == 'true'">
-    <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Portable\AsmOffsetsPortable.cs" />
+  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
+    <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\AsmOffsets.cs" />
   </ItemGroup>
 
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />

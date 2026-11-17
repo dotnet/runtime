@@ -2425,7 +2425,7 @@ namespace Internal.JitInterface
             {
                 // Only support reading the string data
                 int strDataOffset = _compilation.TypeSystemContext.Target.PointerSize + sizeof(int); // 12 on 64bit
-                if (valueOffset >= strDataOffset && (long)frozenStr.Data.Length * 2 >= (valueOffset - strDataOffset) + bufferSize)
+                if (valueOffset >= strDataOffset && (long)frozenStr.Data.Length * 2 >= (long)(valueOffset - strDataOffset) + bufferSize)
                 {
                     int offset = valueOffset - strDataOffset;
                     fixed (char* pStr = frozenStr.Data)
@@ -2523,6 +2523,12 @@ namespace Internal.JitInterface
 
 #pragma warning disable CA1822 // Mark members as static
         private void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig)
+#pragma warning restore CA1822 // Mark members as static
+        {
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_STRUCT_* method)
 #pragma warning restore CA1822 // Mark members as static
         {
         }

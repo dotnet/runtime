@@ -145,7 +145,7 @@ RhpWaitForGC2                               equ @RhpWaitForGC2@4
 RhpTrapThreads                              equ _RhpTrapThreads
 RhpGcPoll2                                  equ @RhpGcPoll2@4
 RhHandleGet                                 equ @RhHandleGet@4
-DivInt64Internal                            equ @DivInt64Internal_FCall@16
+Math_DivInt64Internal                       equ @Math_DivInt64Internal_FCall@16
 RhpGcSafeZeroMemory                         equ @RhpGcSafeZeroMemory@8
 RhpGetNumThunkBlocksPerMapping              equ @RhpGetNumThunkBlocksPerMapping@0
 
@@ -170,7 +170,7 @@ EXTERN RhpGcPoll2                               : PROC
 EXTERN RhHandleGet                              : PROC
 EXTERN RhpGcSafeZeroMemory                      : PROC
 EXTERN RhpGetNumThunkBlocksPerMapping           : PROC
-EXTERN DivInt64Internal                         : PROC
+EXTERN Math_DivInt64Internal                    : PROC
 
 EXTERN G_LOWEST_ADDRESS : DWORD
 EXTERN G_HIGHEST_ADDRESS : DWORD

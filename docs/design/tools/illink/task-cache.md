@@ -19,10 +19,24 @@ platform cache location; a path alone never enables caching. See
 [task usage](../../../tools/illink/illink-tasks.md#experimental-task-cache) for configuration and
 maintenance commands.
 
-`ExecuteTool` calls `InvocationCache.ExecuteCached` with parameterless callbacks for the task's
-`DescribeInvocation` and `ExecuteNormally` methods. The description supplies input paths, effective
+`ILLink` derives from the shared `CachedToolTask`, supplying `CacheConfiguration`, `DescribeInvocation`,
+and `ExecuteToolCore`. The description supplies input paths, effective
 arguments/context, and one `InvocationOutputs.FromDirectory` declaration. Eligibility and metadata
 inspection stay in ILLink; content hashing and cache operations stay in the shared layer.
+The base class calls `InvocationCache.TryCreateFromEnvironment` before describing the invocation.
+If a cache is available and the description is supported, it calls the cache's instance
+`TryExecuteCached` method with that description and an execution callback. The cache owns output
+validation, timestamping, hashing, restoration, and storage.
+On a miss, the cache invokes the callback. The base class allocates stdout/stderr capture buffers,
+runs the tool, and returns an `InvocationResult` containing its exit code and those same buffers.
+The cache reads the returned buffers and declared output files to store successful execution.
+On a hit, the cache returns a result only after restoration succeeds.
+`CachedToolTask` replays the returned output on both hits and misses through its inherited `ToolTask`
+logging methods and current stream policy; the cache has no stream logging-policy settings.
+If the cache declines an invocation, it returns false without invoking the callback;
+the base class calls `ExecuteToolCore` directly without capture.
+Replay receives only the stdout/stderr sequences. The base class determines the final task exit code
+from the execution result and logged errors, without modifying the cache result.
 
 ## Input discovery and eligibility
 
@@ -68,7 +82,7 @@ throughout discovery, hashing, and linking.
 
 ## Output preparation and diagnostics
 
-The task owns a dedicated `OutputDirectory`, including when caching is disabled. `ExecuteNormally`
+The task owns a dedicated `OutputDirectory`, including when caching is disabled. `ExecuteToolCore`
 deletes and recreates it exactly once using ordinary filesystem operations, then executes ILLink.
 Cleanup errors fail the task. Do not add cache-aware preparation callbacks or make normal execution
 depend on cache eligibility. The linker CLI retains its existing nonempty-directory behavior.
@@ -86,10 +100,25 @@ Copy the complete output tree without filename exceptions. The MSBuild target ow
 skip decision when the directory is missing. Old in-directory `Link.semaphore` files receive no
 special migration or exclusion. Assume outputs are not symbolic links.
 
-Hits do not replay linker warnings or other diagnostics. This can omit console/binlog warnings and
-affect external warning-as-error policies. Callers needing those diagnostics or execution side effects
-must disable caching. Normal tool execution retains `ToolTask` subprocess cancellation behavior;
-shared cache operations do not observe cancellation.
+`CachedToolTask` captures original stdout/stderr lines on eligible misses at `ToolTask.StartToolProcess`
+instead of logging them live. Both hits and misses replay them through the ordinary task logging path,
+preserving warning codes, text, locations, and subcategories. Current stream importance, stderr-as-error,
+and MSBuild warning promotion, exceptions, and warning-as-message policy apply without changing the
+key. Compiler-owned warning settings remain part of the arguments and key. A warning promoted by
+MSBuild fails the task, but successful tool execution is still stored. Subsequent hits reapply current
+logging policy to the captured output.
+
+The base class allocates and fills capture lists only on eligible misses.
+It exposes those lists to its process handlers while calling `ExecuteToolCore` and clears its references
+afterward, including on exceptions. The base class replaces the ordinary process-output handlers during
+capture, forwarding end-of-stream notifications to `ToolTask` so it can finish draining the readers. The cache stores
+successful tool results before replay applies logging policy; no logging-based exit-code override is
+needed during execution. Partial output is replayed even if execution throws. Storage and replay use
+separate stdout and stderr sequences in that order, so callback scheduling does not affect the cached
+transcript. Bypassed invocations retain `ToolTask`'s ordinary live logging and interleaving.
+Task reuse, misses, and restore failures start with fresh capture state.
+Normal tool execution retains `ToolTask` subprocess cancellation behavior; shared cache operations
+do not observe cancellation.
 
 ## Maintenance and CI integration
 
@@ -108,5 +137,5 @@ a missing maintenance tool. Preserve tool diagnostics without failing the build 
 errors. Incremental skips and unreached work do not refresh usage. See the
 [CI recipe and wiring](../../../tools/illink/illink-tasks.md#ci-purge-ordering).
 
-ILLink-specific follow-ups are resolved child-runtime identity and diagnostic replay. Shared
+The ILLink-specific follow-up is resolved child-runtime identity. Shared
 maintenance coordination and restoration limitations belong in the shared README.

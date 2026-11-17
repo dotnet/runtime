@@ -974,11 +974,11 @@ namespace Microsoft.DotNet.ILAssembler
             };
 
             // Get reference to core library
-            var coreAsmRef = _entityRegistry.GetCoreLibAssemblyReference();
+            EntityRegistry.EntityBase coreScope = _entityRegistry.GetCoreLibraryResolutionScope();
 
             // Create reference to System.Diagnostics.DebuggableAttribute
             var debuggableAttrType = _entityRegistry.GetOrCreateTypeReference(
-                coreAsmRef,
+                coreScope,
                 new TypeName(null, "System.Diagnostics.DebuggableAttribute"));
 
             var debuggingModesType = _entityRegistry.GetOrCreateTypeReference(
@@ -1004,7 +1004,7 @@ namespace Microsoft.DotNet.ILAssembler
             // Netmodules carry assembly attributes on this TypeRef for the assembly linker.
             customAttr.Owner = (EntityRegistry.EntityBase?)_entityRegistry.Assembly
                 ?? _entityRegistry.GetOrCreateTypeReference(
-                    coreAsmRef,
+                    coreScope,
                     new TypeName(null, "System.Runtime.CompilerServices.AssemblyAttributesGoHere"));
         }
 

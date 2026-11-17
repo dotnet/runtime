@@ -13,6 +13,7 @@ public enum RegisterType : byte
     Segments = 0x03,
     FloatingPoint = 0x04,
     Debug = 0x05,
+    Extended = 0x06,
     TypeMask = 0x0f,
 
     ProgramCounter = 0x10,

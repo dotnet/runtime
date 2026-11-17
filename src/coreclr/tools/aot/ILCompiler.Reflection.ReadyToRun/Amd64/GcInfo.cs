@@ -159,6 +159,10 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             if (_hasSizeOfEditAndContinuePreservedArea)
             {
                 SizeOfEditAndContinuePreservedArea = imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE, ref bitOffset);
+                if (_machine == Machine.Arm64)
+                {
+                    imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE, ref bitOffset);
+                }
             }
 
             if (_hasReversePInvokeFrame)
@@ -408,6 +412,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             }
 
             uint offsetTablePos = (uint)bitOffset;
+            int maxBitOffset = bitOffset;
 
             for (uint safePointIndex = 0; safePointIndex < NumSafePoints; safePointIndex++)
             {
@@ -458,6 +463,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                             report = !report;
                         }
                         Debug.Assert(readSlots == numSlots);
+                        maxBitOffset = Math.Max(maxBitOffset, bitOffset);
                         result.Add(liveSlots);
                         continue;
                     }
@@ -489,9 +495,11 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                     }
                 }
 
+                maxBitOffset = Math.Max(maxBitOffset, bitOffset);
                 result.Add(liveSlots);
             }
 
+            bitOffset = maxBitOffset;
             return result;
         }
 
@@ -666,31 +674,33 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         {
             Dictionary<int, List<BaseGcTransition>> updatedTransitions = new Dictionary<int, List<BaseGcTransition>>();
             int cumInterruptibleLength = 0; // the sum of the lengths of all preceding interruptible ranges
-            using (IEnumerator<InterruptibleRange> interruptibleRangesIter = InterruptibleRanges.GetEnumerator())
+            int rangeIndex = 0;
+            foreach (GcTransition transition in transitions)
             {
-                interruptibleRangesIter.MoveNext();
-                InterruptibleRange currentRange = interruptibleRangesIter.Current;
-                int currentRangeLength = (int)(currentRange.StopOffset - currentRange.StartOffset);
-                foreach (GcTransition transition in transitions)
+                int codeOffset = (int)_gcInfoTypes.DenormalizeCodeOffset((uint)transition.CodeOffset);
+                if (InterruptibleRanges.Count != 0)
                 {
-                    int codeOffset = transition.CodeOffset + (int)currentRange.StartOffset - cumInterruptibleLength;
-                    if (codeOffset > currentRange.StopOffset)
+                    InterruptibleRange currentRange = InterruptibleRanges[rangeIndex];
+                    int currentRangeLength = (int)(currentRange.StopOffset - currentRange.StartOffset);
+                    while (codeOffset >= cumInterruptibleLength + currentRangeLength)
                     {
                         cumInterruptibleLength += currentRangeLength;
-                        interruptibleRangesIter.MoveNext();
-                        currentRange = interruptibleRangesIter.Current;
+                        if (++rangeIndex >= InterruptibleRanges.Count)
+                            throw new BadImageFormatException("GC transition lies outside the interruptible ranges.");
+                        currentRange = InterruptibleRanges[rangeIndex];
                         currentRangeLength = (int)(currentRange.StopOffset - currentRange.StartOffset);
-                        codeOffset = transition.CodeOffset + (int)currentRange.StartOffset - cumInterruptibleLength;
                     }
-
-                    transition.CodeOffset = codeOffset;
-                    if (!updatedTransitions.ContainsKey(codeOffset))
-                    {
-                        updatedTransitions[codeOffset] = new List<BaseGcTransition>();
-                    }
-                    updatedTransitions[codeOffset].Add(transition);
+                    codeOffset += (int)currentRange.StartOffset - cumInterruptibleLength;
                 }
+
+                transition.CodeOffset = codeOffset;
+                if (!updatedTransitions.ContainsKey(codeOffset))
+                {
+                    updatedTransitions[codeOffset] = new List<BaseGcTransition>();
+                }
+                updatedTransitions[codeOffset].Add(transition);
             }
+
             return updatedTransitions;
         }
     }

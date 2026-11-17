@@ -10,7 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// <summary>
 /// RISC-V 64-bit specific thread context.
 /// </summary>
-[StructLayout(LayoutKind.Explicit, Pack = 1)]
+[StructLayout(LayoutKind.Explicit, Pack = 1, Size = 0x220)]
 internal struct RISCV64Context : IPlatformContext
 {
     [Flags]
@@ -228,6 +228,51 @@ internal struct RISCV64Context : IPlatformContext
         }
     }
 
+    // F0-F31 are the 64-bit floating-point registers, an 8-byte stride within the context.
+    private const int FRegisterCount = 32;
+    private const int FRegisterStride = 8;
+
+    public readonly bool TryReadFloatingPointRegister(int index, out double value)
+        => SimdRegisterAccess.TryReadRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in this, 1)),
+            (int)Marshal.OffsetOf<RISCV64Context>(nameof(F)), FRegisterStride, FRegisterCount, index, out value);
+
+    public bool TryWriteFloatingPointRegister(int index, double value)
+        => SimdRegisterAccess.TryWriteRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1)),
+            (int)Marshal.OffsetOf<RISCV64Context>(nameof(F)), FRegisterStride, FRegisterCount, index, value);
+
+    public void CopyContext(ReadOnlySpan<byte> source)
+    {
+        uint flags = RawContextFlags & MemoryMarshal.Read<RISCV64Context>(source).RawContextFlags;
+        Span<byte> destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1));
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_CONTROL) == (uint)ContextFlagsValues.CONTEXT_CONTROL)
+        {
+            int start = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Ra));
+            int end = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Gp));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Fp));
+            end = (int)Marshal.OffsetOf<RISCV64Context>(nameof(S1));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Pc));
+            end = start + sizeof(ulong);
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_INTEGER) == (uint)ContextFlagsValues.CONTEXT_INTEGER)
+        {
+            int start = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Gp));
+            int end = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Fp));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<RISCV64Context>(nameof(S1));
+            end = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Pc));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT) == (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT)
+        {
+            int start = (int)Marshal.OffsetOf<RISCV64Context>(nameof(F));
+            int end = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Fcsr)) + sizeof(uint);
+            source[start..end].CopyTo(destination[start..end]);
+        }
+    }
+
     // Control flags
 
     [FieldOffset(0x0)]
@@ -235,11 +280,11 @@ internal struct RISCV64Context : IPlatformContext
 
     #region General registers
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x8)]
     public ulong Ra;
 
-    [Register(RegisterType.General | RegisterType.StackPointer)]
+    [Register(RegisterType.Control | RegisterType.StackPointer)]
     [FieldOffset(0x10)]
     public ulong Sp;
 
@@ -263,7 +308,7 @@ internal struct RISCV64Context : IPlatformContext
     [FieldOffset(0x38)]
     public ulong T2;
 
-    [Register(RegisterType.General | RegisterType.FramePointer)]
+    [Register(RegisterType.Control | RegisterType.FramePointer)]
     [FieldOffset(0x40)]
     public ulong Fp;
 
