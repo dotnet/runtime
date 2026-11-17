@@ -12,11 +12,11 @@
 #ifdef HOST_WINDOWS
 #include <windows.h>
 #else
-#include <fcntl.h>
-#include <sys/stat.h>
+#include <errno.h>
 #include <unistd.h>
 #endif
 
+#include <minipal/fileio.h>
 #include <minipal/random.h>
 #include <minipal/time.h>
 
@@ -547,19 +547,7 @@ ep_rt_aot_file_open_write (const ep_char8_t *path)
     ep_rt_utf16_string_free (path_utf16);
     return (res != INVALID_HANDLE_VALUE) ? static_cast<ep_rt_file_handle_t>(res) : NULL;
 #else
-    const mode_t perms = S_IRUSR | S_IWUSR;
-    struct stat file_status;
-    if (lstat (path, &file_status) == 0) {
-        if (!S_ISREG (file_status.st_mode))
-            return NULL;
-
-        if (unlink (path) == -1)
-            return NULL;
-    } else if (errno != ENOENT) {
-        return NULL;
-    }
-
-    int fd = open (path, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, perms);
+    int fd = minipal_create_owner_only_file_for_overwrite (path);
     if (fd == -1)
         return NULL;
 

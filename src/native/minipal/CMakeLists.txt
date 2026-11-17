@@ -23,6 +23,12 @@ set(SOURCES
     log.c
 )
 
+if(NOT WIN32)
+    list(APPEND SOURCES
+        fileio.c
+    )
+endif()
+
 if(CLR_CMAKE_HOST_UNIX)
     list(APPEND SOURCES
         cpucount.c
