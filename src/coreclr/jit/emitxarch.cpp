@@ -699,6 +699,32 @@ bool emitter::IsSimdVexOrEvexEncodableInstruction(instruction ins) const
     return IsVexEncodableInstruction(ins) || IsEvexEncodableInstruction(ins);
 }
 
+//------------------------------------------------------------------------
+// IsLegacyOnlySimdInstruction: Answer the question: Is this a SIMD instruction that must use the
+// legacy encoding even though the VEX or EVEX encoding is available.
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if VEX or EVEX encoding is in use and ins is a SIMD instruction that has neither a VEX nor
+//    an EVEX form, such as the SHA instructions; otherwise, `false`.
+//
+// Notes:
+//    Such instructions only have the destructive two-operand form, so they must be emitted the same
+//    way as on hardware without VEX support. They also can only encode xmm0-xmm15, and Intel documents
+//    that they fault on an unaligned 16-byte memory operand, though not every processor checks its
+//    alignment.
+//
+//    The SSE4.1 blendv* instructions are not included since the emitter replaces them with their
+//    separately defined VEX forms (vblendv*) when VEX encoding is available.
+//
+bool emitter::IsLegacyOnlySimdInstruction(instruction ins) const
+{
+    return UseSimdEncoding() && IsSimdInstruction(ins) && !IsSimdVexOrEvexEncodableInstruction(ins) &&
+           !isSse41Blendv(ins);
+}
+
 // Returns true if the AVX instruction is a binary operator that requires 3 operands.
 // When we emit an instruction with only two operands, we will duplicate the destination
 // as a source.
@@ -1563,6 +1589,54 @@ bool emitter::IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
         }
 
         if (emitIsInstrWritingToReg(id, reg1) || emitIsInstrWritingToReg(id, reg2))
+        {
+            return PEEPHOLE_ABORT;
+        }
+
+        return PEEPHOLE_CONTINUE;
+    });
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// IsRedundantVzeroupper: check if a previously emitted vzeroupper
+//     still keeps the upper bits of the YMM and ZMM registers clean.
+//
+// Return Value:
+//    true if no instruction after the previous vzeroupper can have dirtied the upper bits.
+//    false if one can, or if we can't safely determine, such as when the previous vzeroupper is more than
+//    EMIT_MAX_PEEPHOLE_INS_COUNT instructions back or before a label, like the head of a loop.
+//
+// Notes:
+//    Any instruction with an operand size over 16 bytes ends the search, even one that only reads a YMM or
+//    ZMM register, such as a store. That's more conservative than the method-level tracking
+//    (Contains256bitOrMoreAVX), which only counts the instructions that produce 256-bit or 512-bit register
+//    values, and at worst keeps a vzeroupper that isn't needed. The emitter selects the vector length from the
+//    operand size. Calls also end the search, since the callee may dirty the upper bits, and so do the K
+//    instructions that always set VEX.L.
+//
+bool emitter::IsRedundantVzeroupper()
+{
+    // Only consider if safe
+    //
+    if (!emitCanPeepholeLastIns())
+    {
+        return false;
+    }
+
+    bool result = false;
+
+    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
+        instruction ins = id->idIns();
+
+        if (ins == INS_vzeroupper)
+        {
+            result = true;
+            return PEEPHOLE_ABORT;
+        }
+
+        if ((ins == INS_call) || (EA_SIZE_IN_BYTES(id->idOpSize()) > XMM_REGSIZE_BYTES) || IsKInstructionWithLBit(ins))
         {
             return PEEPHOLE_ABORT;
         }
@@ -9609,7 +9683,7 @@ void emitter::emitIns_SIMD_R_R_I(
 void emitter::emitIns_SIMD_R_R_A(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTreeIndir* indir, insOpts instOptions)
 {
-    if (UseSimdEncoding())
+    if (UseSimdEncoding() && !IsLegacyOnlySimdInstruction(ins))
     {
         emitIns_R_R_A(ins, attr, targetReg, op1Reg, indir, instOptions);
     }
@@ -9642,7 +9716,7 @@ void emitter::emitIns_SIMD_R_R_C(instruction          ins,
                                  int                  offs,
                                  insOpts              instOptions)
 {
-    if (UseSimdEncoding())
+    if (UseSimdEncoding() && !IsLegacyOnlySimdInstruction(ins))
     {
         emitIns_R_R_C(ins, attr, targetReg, op1Reg, fldHnd, offs, instOptions);
     }
@@ -9669,7 +9743,7 @@ void emitter::emitIns_SIMD_R_R_C(instruction          ins,
 void emitter::emitIns_SIMD_R_R_R(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, insOpts instOptions)
 {
-    if (UseSimdEncoding())
+    if (UseSimdEncoding() && !IsLegacyOnlySimdInstruction(ins))
     {
         if (IsAvxCommutative(ins) && (instOptions == INS_OPTS_NONE))
         {
@@ -9719,7 +9793,7 @@ void emitter::emitIns_SIMD_R_R_R(
 void emitter::emitIns_SIMD_R_R_S(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int varx, int offs, insOpts instOptions)
 {
-    if (UseSimdEncoding())
+    if (UseSimdEncoding() && !IsLegacyOnlySimdInstruction(ins))
     {
         emitIns_R_R_S(ins, attr, targetReg, op1Reg, varx, offs, instOptions);
     }
@@ -9752,7 +9826,7 @@ void emitter::emitIns_SIMD_R_R_A_I(instruction   ins,
                                    int           ival,
                                    insOpts       instOptions)
 {
-    if (UseSimdEncoding())
+    if (UseSimdEncoding() && !IsLegacyOnlySimdInstruction(ins))
     {
         emitIns_R_R_A_I(ins, attr, targetReg, op1Reg, indir, ival, IF_RWR_RRD_ARD_CNS, instOptions);
     }
@@ -9787,7 +9861,7 @@ void emitter::emitIns_SIMD_R_R_C_I(instruction          ins,
                                    int                  ival,
                                    insOpts              instOptions)
 {
-    if (UseSimdEncoding())
+    if (UseSimdEncoding() && !IsLegacyOnlySimdInstruction(ins))
     {
         emitIns_R_R_C_I(ins, attr, targetReg, op1Reg, fldHnd, offs, ival, instOptions);
     }
@@ -9820,7 +9894,7 @@ void emitter::emitIns_SIMD_R_R_R_I(instruction ins,
                                    int         ival,
                                    insOpts     instOptions)
 {
-    if (UseSimdEncoding())
+    if (UseSimdEncoding() && !IsLegacyOnlySimdInstruction(ins))
     {
         emitIns_R_R_R_I(ins, attr, targetReg, op1Reg, op2Reg, ival, instOptions);
     }
@@ -9859,7 +9933,7 @@ void emitter::emitIns_SIMD_R_R_S_I(instruction ins,
                                    int         ival,
                                    insOpts     instOptions)
 {
-    if (UseSimdEncoding())
+    if (UseSimdEncoding() && !IsLegacyOnlySimdInstruction(ins))
     {
         emitIns_R_R_S_I(ins, attr, targetReg, op1Reg, varx, offs, ival, instOptions);
     }
@@ -9974,7 +10048,7 @@ void emitter::emitIns_SIMD_R_R_R_R(instruction ins,
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_R_R(ins, attr, targetReg, op2Reg, op3Reg, instOptions);
     }
-    else if (UseSimdEncoding())
+    else if (UseSimdEncoding() && !IsLegacyOnlySimdInstruction(ins))
     {
         assert(isSse41Blendv(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
 
@@ -9997,14 +10071,14 @@ void emitter::emitIns_SIMD_R_R_R_R(instruction ins,
     }
     else
     {
-        assert(isSse41Blendv(ins));
+        assert(isSse41Blendv(ins) || (ins == INS_sha256rnds2));
         assert(instOptions == INS_OPTS_NONE);
 
         // Ensure we aren't overwriting op1 or op2
         assert((op1Reg != REG_XMM0) || (op3Reg == REG_XMM0));
         assert((op2Reg != REG_XMM0) || (op3Reg == REG_XMM0));
 
-        // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
+        // SSE4.1 blendv* and SHA256RNDS2 hardcode op3 (the mask vector or the round constants) in XMM0
         emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
         // Ensure we aren't overwriting op2 or op3 (which should be REG_XMM0)
@@ -10075,7 +10149,7 @@ void emitter::emitIns_SIMD_R_R_A_R(instruction   ins,
                                    GenTreeIndir* indir,
                                    insOpts       instOptions)
 {
-    if (UseSimdEncoding())
+    if (UseSimdEncoding() && !IsLegacyOnlySimdInstruction(ins))
     {
         assert(isSse41Blendv(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
 
@@ -10110,13 +10184,13 @@ void emitter::emitIns_SIMD_R_R_A_R(instruction   ins,
     }
     else
     {
-        assert(isSse41Blendv(ins));
+        assert(isSse41Blendv(ins) || (ins == INS_sha256rnds2));
         assert(instOptions == INS_OPTS_NONE);
 
         // Ensure we aren't overwriting op1
-        assert(op1Reg != REG_XMM0);
+        assert((op1Reg != REG_XMM0) || (op3Reg == REG_XMM0));
 
-        // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
+        // SSE4.1 blendv* and SHA256RNDS2 hardcode op3 (the mask vector or the round constants) in XMM0
         emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
         // If targetReg == REG_XMM0, it means that op3 was last use and we decided to
@@ -10153,7 +10227,7 @@ void emitter::emitIns_SIMD_R_R_C_R(instruction          ins,
                                    int                  offs,
                                    insOpts              instOptions)
 {
-    if (UseSimdEncoding())
+    if (UseSimdEncoding() && !IsLegacyOnlySimdInstruction(ins))
     {
         assert(isSse41Blendv(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
 
@@ -10188,13 +10262,13 @@ void emitter::emitIns_SIMD_R_R_C_R(instruction          ins,
     }
     else
     {
-        assert(isSse41Blendv(ins));
+        assert(isSse41Blendv(ins) || (ins == INS_sha256rnds2));
         assert(instOptions == INS_OPTS_NONE);
 
         // Ensure we aren't overwriting op1
-        assert(op1Reg != REG_XMM0);
+        assert((op1Reg != REG_XMM0) || (op3Reg == REG_XMM0));
 
-        // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
+        // SSE4.1 blendv* and SHA256RNDS2 hardcode op3 (the mask vector or the round constants) in XMM0
         emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
         // If targetReg == REG_XMM0, it means that op3 was last use and we decided to
@@ -10231,7 +10305,7 @@ void emitter::emitIns_SIMD_R_R_S_R(instruction ins,
                                    int         offs,
                                    insOpts     instOptions)
 {
-    if (UseSimdEncoding())
+    if (UseSimdEncoding() && !IsLegacyOnlySimdInstruction(ins))
     {
         assert(isSse41Blendv(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
 
@@ -10266,13 +10340,13 @@ void emitter::emitIns_SIMD_R_R_S_R(instruction ins,
     }
     else
     {
-        assert(isSse41Blendv(ins));
+        assert(isSse41Blendv(ins) || (ins == INS_sha256rnds2));
         assert(instOptions == INS_OPTS_NONE);
 
         // Ensure we aren't overwriting op1
-        assert(op1Reg != REG_XMM0);
+        assert((op1Reg != REG_XMM0) || (op3Reg == REG_XMM0));
 
-        // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
+        // SSE4.1 blendv* and SHA256RNDS2 hardcode op3 (the mask vector or the round constants) in XMM0
         emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
         // If targetReg == REG_XMM0, it means that op3 was last use and we decided to

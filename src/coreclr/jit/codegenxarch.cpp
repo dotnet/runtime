@@ -11387,7 +11387,8 @@ void CodeGen::genRestoreCalleeSavedFltRegs()
 //
 void CodeGen::genClearAvxStateInProlog()
 {
-    if (GetEmitter()->ContainsCallNeedingVzeroupper() && !GetEmitter()->Contains256bitOrMoreAVX())
+    if ((GetEmitter()->ContainsCallNeedingVzeroupper() || GetEmitter()->ContainsLegacyOnlySimd()) &&
+        !GetEmitter()->Contains256bitOrMoreAVX())
     {
         // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
         //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
@@ -11395,10 +11396,11 @@ void CodeGen::genClearAvxStateInProlog()
         //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
         //   register) and before any call to an unknown function.
 
-        // This method contains a call that needs vzeroupper but also doesn't use 256-bit or higher
-        // AVX itself. Thus we can optimize to only emitting a single vzeroupper in the function prologue
-        // This reduces the overall amount of codegen, particularly for more common paths not using any
-        // SIMD or floating-point.
+        // This method contains a call that needs vzeroupper or a SIMD instruction that only has the legacy
+        // encoding, such as SHA, but also doesn't use 256-bit or higher AVX itself. Thus we can optimize to
+        // only emitting a single vzeroupper in the function prologue, since the upper state can then only be
+        // dirty on entry, when the caller left it so. This reduces the overall amount of codegen, particularly
+        // for more common paths not using any SIMD or floating-point.
 
         instGen(INS_vzeroupper);
     }

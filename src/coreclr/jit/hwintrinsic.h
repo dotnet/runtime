@@ -186,7 +186,8 @@ enum HWIntrinsicFlag : uint64_t
     // The intrinsic is a PermuteVar2x intrinsic
     HW_Flag_PermuteVar2x = 0x400000,
 
-    // UNUSED = 0x800000,
+    // The intrinsic only has the legacy encoding, even when VEX or EVEX encoding is available
+    HW_Flag_LegacyEncodingOnly = 0x800000,
 
     // The intrinsic is an embedded rounding compatible intrinsic
     HW_Flag_EmbRoundingCompatible = 0x1000000,
@@ -1236,6 +1237,31 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_PermuteVar2x) != 0;
+    }
+
+    //------------------------------------------------------------------------
+    // HasLegacyEncodingOnly: Checks whether the intrinsic is always emitted with the
+    //    legacy encoding, even when VEX or EVEX encoding is available.
+    //
+    // Arguments:
+    //    id -- The intrinsic to check
+    //
+    // Return Value:
+    //    true if the intrinsic is marked HW_Flag_LegacyEncodingOnly; otherwise, false.
+    //
+    // Notes:
+    //    Such intrinsics, like the SHA ones, have neither a VEX nor an EVEX form. They only have
+    //    the destructive two-operand form and can only use xmm0-xmm15. Intel documents that they
+    //    fault on an unaligned 16-byte memory operand, but not every processor checks its
+    //    alignment. Their table entries must also be marked HW_Flag_RmwIntrinsic and
+    //    HW_Flag_NoEvexSemantics.
+    //
+    static bool HasLegacyEncodingOnly(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags        = lookupFlags(id);
+        bool            isLegacyOnly = (flags & HW_Flag_LegacyEncodingOnly) != 0;
+        assert(!isLegacyOnly || (IsRmwIntrinsic(id) && !HasEvexSemantics(id)));
+        return isLegacyOnly;
     }
 #endif // TARGET_XARCH
 

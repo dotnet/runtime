@@ -1949,6 +1949,7 @@ void Compiler::compSetProcessor()
             codeGen->GetEmitter()->SetContainsAVX(false);
             codeGen->GetEmitter()->SetContains256bitOrMoreAVX(false);
             codeGen->GetEmitter()->SetContainsCallNeedingVzeroupper(false);
+            codeGen->GetEmitter()->SetContainsLegacyOnlySimd(false);
         }
         if (canUseEvexEncoding())
         {

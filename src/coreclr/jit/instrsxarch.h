@@ -200,7 +200,6 @@ INSTMUL(imul_31,        "imul",             IUM_RD, BAD_CODE,     0xD54400003868
 #define SSEDBL(c) PACK3(0xf2, 0x0f, c)
 #define PCKDBL(c) PACK3(0x66, 0x0f, c)
 #define PCKFLT(c) PACK2(0x0f, c)
-#define PCKMVB(c) PACK3(0x0F, 0x38, c)
 #define PCKDBLMAP(m, c) PACK3(0x66, m, c)
 #define PCKFLTMAP(m, c) PACK2(m, c)
 #define SSEDBLMAP(m, c) PACK3(0xf2, m, c)
@@ -215,6 +214,12 @@ INSTMUL(imul_31,        "imul",             IUM_RD, BAD_CODE,     0xD54400003868
 #define SSE38(c)         PSSE38(0x66, c)
 #define SSE3A(c)         PSSE3A(0x66, c)
 #define AVX3A(c)         PSSE3A(0xf3, c)
+
+// These macros encode 0F 38 and 0F 3A opcodes that have no mandatory prefix (NP), such as MOVBE and the SHA
+// instructions. They are plain 3-byte opcodes because the legacy encoding of PSSE38 and PSSE3A always emits
+// the mandatory prefix byte in front of the escape bytes.
+#define NPSSE38(c)       PACK3(0x0f, 0x38, c)
+#define NPSSE3A(c)       PACK3(0x0f, 0x3A, c)
 
 // VEX* encodes the implied leading opcode bytes in c1:
 // 1: implied 0f, 2: implied 0f 38, 3: implied 0f 3a
@@ -483,13 +488,13 @@ INST3(aeskeygenassist,  "vaeskeygenassist", IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(pclmulqdq,        "vpclmulqdq",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x44),                             7C,                1C,         INS_TT_FULL_MEM,                                      KMask_Base1     | REX_WIG      | Encoding_VEX                   | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_HasPseudoName)                                                                 // Perform a carry-less multiplication of two quadwords
 
 // Instructions for SHA
-INST3(sha1msg1,         "sha1msg1",         IUM_RW, BAD_CODE,     BAD_CODE,     SSE38(0xC9),                             2C,                1C,         INS_TT_FULL_MEM,                                                        REX_WIG)                                                                                                                                                                       // Perform an Intermediate Calculation for the Next Four SHA1 Message Dwords
-INST3(sha1msg2,         "sha1msg2",         IUM_RW, BAD_CODE,     BAD_CODE,     SSE38(0xCA),                             6C,                2C,         INS_TT_FULL_MEM,                                                        REX_WIG)                                                                                                                                                                       // Perform a Final Calculation for the Next Four SHA1 Message Dwords
-INST3(sha1nexte,        "sha1nexte",        IUM_RW, BAD_CODE,     BAD_CODE,     SSE38(0xC8),                             3C,                1C,         INS_TT_FULL_MEM,                                                        REX_WIG)                                                                                                                                                                       // Calculate SHA1 State Variable E After Four Rounds
-INST3(sha1rnds4,        "sha1rnds4",        IUM_RW, BAD_CODE,     BAD_CODE,     SSE3A(0xCC),                             4C,                1C,         INS_TT_FULL_MEM,                                                        REX_WIG)                                                                                                                                                                       // Perform Four Rounds of SHA1 Operation
-INST3(sha256msg1,       "sha256msg1",       IUM_RW, BAD_CODE,     BAD_CODE,     SSE38(0xCC),                             5C,                2C,         INS_TT_FULL_MEM,                                                        REX_WIG)                                                                                                                                                                       // Perform an Intermediate Calculation for the Next Four SHA256 Message Dwords
-INST3(sha256msg2,       "sha256msg2",       IUM_RW, BAD_CODE,     BAD_CODE,     SSE38(0xCD),                             6C,                2C,         INS_TT_FULL_MEM,                                                        REX_WIG)                                                                                                                                                                       // Perform a Final Calculation for the Next Four SHA256 Message Dwords
-INST3(sha256rnds2,      "sha256rnds2",      IUM_RW, BAD_CODE,     BAD_CODE,     SSE38(0xCB),                             6C,                1C,         INS_TT_FULL_MEM,                                                        REX_WIG)                                                                                                                                                                       // Perform Two Rounds of SHA256 Operation
+INST3(sha1msg1,         "sha1msg1",         IUM_RW, BAD_CODE,     BAD_CODE,     NPSSE38(0xC9),                           2C,                1C,         INS_TT_FULL_MEM,                                                        REX_WIG)                                                                                                                                                                       // Perform an Intermediate Calculation for the Next Four SHA1 Message Dwords
+INST3(sha1msg2,         "sha1msg2",         IUM_RW, BAD_CODE,     BAD_CODE,     NPSSE38(0xCA),                           6C,                2C,         INS_TT_FULL_MEM,                                                        REX_WIG)                                                                                                                                                                       // Perform a Final Calculation for the Next Four SHA1 Message Dwords
+INST3(sha1nexte,        "sha1nexte",        IUM_RW, BAD_CODE,     BAD_CODE,     NPSSE38(0xC8),                           3C,                1C,         INS_TT_FULL_MEM,                                                        REX_WIG)                                                                                                                                                                       // Calculate SHA1 State Variable E After Four Rounds
+INST3(sha1rnds4,        "sha1rnds4",        IUM_RW, BAD_CODE,     BAD_CODE,     NPSSE3A(0xCC),                           4C,                1C,         INS_TT_FULL_MEM,                                                        REX_WIG)                                                                                                                                                                       // Perform Four Rounds of SHA1 Operation
+INST3(sha256msg1,       "sha256msg1",       IUM_RW, BAD_CODE,     BAD_CODE,     NPSSE38(0xCC),                           5C,                2C,         INS_TT_FULL_MEM,                                                        REX_WIG)                                                                                                                                                                       // Perform an Intermediate Calculation for the Next Four SHA256 Message Dwords
+INST3(sha256msg2,       "sha256msg2",       IUM_RW, BAD_CODE,     BAD_CODE,     NPSSE38(0xCD),                           6C,                2C,         INS_TT_FULL_MEM,                                                        REX_WIG)                                                                                                                                                                       // Perform a Final Calculation for the Next Four SHA256 Message Dwords
+INST3(sha256rnds2,      "sha256rnds2",      IUM_RW, BAD_CODE,     BAD_CODE,     NPSSE38(0xCB),                           6C,                1C,         INS_TT_FULL_MEM,                                                        REX_WIG)                                                                                                                                                                       // Perform Two Rounds of SHA256 Operation
 
 // Instructions for GFNI
 INST3(gf2p8affineinvqb, "vgf2p8affineinvqb",IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0xCF),                             5C,                2X,         INS_TT_FULL,                         Input_64Bit    | KMask_Base16    | REX_WX       | Encoding_VEX  | Encoding_EVEX  | INS_FLAGS_IsDstDstSrcAVXInstruction)                                                                                           // Galois Field Affine Transformation Inverse
@@ -1245,7 +1250,7 @@ INST3(lzcnt_apx,        "lzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     
 #endif
 
 // MOVBE
-INST3(movbe,            "movbe",            IUM_WR, PCKMVB(0xF1), BAD_CODE,     PCKMVB(0xF0),                            1C,                2X,         INS_TT_NONE,    INS_FLAGS_None)
+INST3(movbe,            "movbe",            IUM_WR, NPSSE38(0xF1), BAD_CODE,    NPSSE38(0xF0),                           1C,                2X,         INS_TT_NONE,    INS_FLAGS_None)
 
 // POPCNT
 INST3(popcnt,           "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xB8),                            3C,                1C,         INS_TT_NONE,    Resets_OF      | Resets_SF     | Writes_ZF     | Resets_AF     | Resets_PF     | Resets_CF | Encoding_REX2)
