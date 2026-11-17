@@ -44,9 +44,14 @@ namespace System.Diagnostics
             // nothing is pending, e.g. if QueueRead throws right after the overlapped was reset.
             // CancelPendingIOIfNeeded in the finally block must only act when this is true.
             bool outputPending = false, errorPending = false;
+            bool outputRefAdded = false, errorRefAdded = false;
 
             try
             {
+                // The handles are used across yields, so they must stay open even if the Process is disposed in the meantime.
+                outputHandle.DangerousAddRef(ref outputRefAdded);
+                errorHandle.DangerousAddRef(ref errorRefAdded);
+
                 outputPin = new PinnedGCHandle<byte[]>(outputByteBuffer);
                 errorPin = new PinnedGCHandle<byte[]>(errorByteBuffer);
 
@@ -222,6 +227,16 @@ namespace System.Diagnostics
                         CancelPendingIOIfNeeded(errorHandle, errorPending, (NativeOverlapped*)errorOverlappedNint);
                         NativeMemory.Free((void*)errorOverlappedNint);
                     }
+                }
+
+                if (outputRefAdded)
+                {
+                    outputHandle.DangerousRelease();
+                }
+
+                if (errorRefAdded)
+                {
+                    errorHandle.DangerousRelease();
                 }
 
                 outputEvent?.Dispose();
