@@ -517,6 +517,9 @@ if [ ! -z ${RunCrossGen2+x} ] && [ "$(CrossGenTest)" != "false" ]; then
   # Keep the probe's stubs private to this host, so a subsequent interpreter run
   # cannot discover a composite that is not spliced into its own corerun.
   __WasiR2RArgs="--env TEST_READY_TO_RUN_MODE=1 --env APP_ASSEMBLIES=EXTERNAL --env CORE_LIBRARIES=/$__WasiCrossgen2OutputDirectory/wasi-r2r"
+  if [ ! -z ${WholeProgramCompositeBuildMode+x} ]; then
+    __WasiR2RArgs="$__WasiR2RArgs --env WholeProgramCompositeBuildMode"
+  fi
 fi
       ]]>
       </CLRTestBashPreCommands>

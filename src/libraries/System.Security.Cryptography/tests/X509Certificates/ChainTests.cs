@@ -725,13 +725,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(typeof(ChainTests), nameof(TrustsMicrosoftDotComRoot))]
+        [Fact]
         public static void BuildChain_FailOnlyApplicationPolicy()
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
+            using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
             using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
             using (ChainHolder holder = new ChainHolder())
             {
+                // The issuing CA has also been issued by another trusted root, and machine-level
+                // certificate caches can make the system pick that path instead, so pin the chain.
+                holder.Chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                holder.Chain.ChainPolicy.CustomTrustStore.Add(microsoftDotComRoot);
+                holder.Chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
+                holder.Chain.ChainPolicy.DisableCertificateDownloads = true;
                 holder.Chain.ChainPolicy.ApplicationPolicy.Add(new Oid("0.1.2.3.4", null));
                 holder.Chain.ChainPolicy.VerificationTime = microsoftDotCom.NotBefore.AddDays(1);
                 holder.Chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
@@ -747,6 +754,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(3, holder.Chain.ChainElements.Count);
 
                 Assert.Equal(microsoftDotCom.RawData, holder.Chain.ChainElements[0].Certificate.RawData);
+                Assert.Equal(microsoftDotComIssuer.RawData, holder.Chain.ChainElements[1].Certificate.RawData);
                 Assert.Equal(microsoftDotComRoot.RawData, holder.Chain.ChainElements[2].Certificate.RawData);
 
                 Assert.Equal(

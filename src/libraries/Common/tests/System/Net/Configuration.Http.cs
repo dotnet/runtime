@@ -63,6 +63,10 @@ namespace System.Net.Test.Common
                     // https://github.com/dotnet/runtime/issues/101115
                     return [RemoteEchoServer];
                 }
+                if (!SecureLocalEchoServerIsTrusted)
+                {
+                    return [RemoteEchoServer];
+                }
                 return [RemoteEchoServer, SecureRemoteEchoServer, Http2RemoteEchoServer];
             }
 
@@ -97,8 +101,15 @@ namespace System.Net.Test.Common
                     // https://github.com/dotnet/runtime/issues/101115
                     return new RemoteServer[] { RemoteHttp11Server };
                 }
+                if (!SecureLocalEchoServerIsTrusted)
+                {
+                    return new RemoteServer[] { RemoteHttp11Server };
+                }
                 return new RemoteServer[] { RemoteHttp11Server, RemoteSecureHttp11Server, RemoteHttp2Server };
             }
+
+            // The HTTPS endpoints of the local echo server use a development certificate that WASI doesn't trust.
+            public static bool SecureLocalEchoServerIsTrusted => !PlatformDetection.IsWasi;
 
             public static readonly IEnumerable<object[]> RemoteServersMemberData = GetRemoteServers().Select(s => new object[] { s });
 

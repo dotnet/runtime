@@ -584,6 +584,10 @@ public:
                                           // in earlier phase and the information might not be appropriate
                                           // in LSRA.
 
+#ifdef TARGET_WASM
+    unsigned char lvWasmGCWriteThru : 1; // GC register candidate with an up-to-date pinned shadow-stack home.
+#endif                                   // TARGET_WASM
+
     unsigned char lvHasExceptionalUsesHint : 1; // hint for CopyProp
 
 #ifndef TARGET_64BIT
@@ -1243,10 +1247,16 @@ public:
     //-----------------------------------------------------------------------------
     //  IsAlwaysAliveInMemory: Determines if this variable's value is always
     //     up-to-date on stack. This is possible if this is an EH-var or
-    //     we decided to spill after single-def.
+    //     we decided to spill after single-def, or it is a Wasm GC write-through local.
     //
     bool IsAlwaysAliveInMemory() const
     {
+#ifdef TARGET_WASM
+        if (lvWasmGCWriteThru)
+        {
+            return true;
+        }
+#endif // TARGET_WASM
         return IsLiveInOutOfHandler() || lvSpillAtSingleDef;
     }
 
@@ -5700,6 +5710,7 @@ public:
     bool impMatchAsyncVersionTailCall(const BYTE* codeAddr, const BYTE* codeEndp, int*        prefixFlags, int*        numBytesMatched);
     bool impMatchStlocLdloca(const BYTE** codeAddr, const BYTE* codeEndp, unsigned* lclNum);
 
+    bool impIsCovariantAwait(CorInfoType asyncVariantRetType, IL_OFFSET awaitOffset);
     bool impCheckOptimizeAwait(IL_OFFSET awaitOffset);
 
     GenTree* impCastClassOrIsInstToTree(
@@ -5922,6 +5933,7 @@ private:
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
+    void impDiscardTopOfStack();
     bool impWrapTopOfStackInAwait();
     bool impFoldAwaitedTopOfStack();
     void impPoisonImplicitByrefsBeforeReturn();
