@@ -140,7 +140,7 @@ namespace System.Net.Http
             ObjectDisposedException.ThrowIf(isClosed, this);
         }
 
-        // A synchronous read would block, which isn't possible on single-threaded WASI.
+        // WASI HTTP streams currently support only non-blocking (asynchronous) I/O. TODO https://github.com/dotnet/runtime/issues/137564
         public override int Read(Span<byte> buffer) => throw new PlatformNotSupportedException();
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken) =>

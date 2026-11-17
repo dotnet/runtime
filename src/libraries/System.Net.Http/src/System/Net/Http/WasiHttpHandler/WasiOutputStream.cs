@@ -114,7 +114,7 @@ namespace System.Net.Http
         {
             ValidateBufferArguments(buffer, offset, count);
 
-            // A synchronous write would block, which isn't possible on single-threaded WASI.
+            // WASI HTTP streams currently support only non-blocking (asynchronous) I/O. TODO https://github.com/dotnet/runtime/issues/137564
             throw new PlatformNotSupportedException();
         }
 
