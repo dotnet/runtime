@@ -467,7 +467,7 @@ def main(main_args):
             elif arch == "arm64": # public linux_arm64
                 helix_queue = "(Ubuntu.2404.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-arm64v8"
             else: # public linux_x64
-                helix_queue = "azurelinux.3.amd64.open"
+                helix_queue = "azurelinux.4.amd64.open"
         elif platform_name == "osx":
             if arch == "arm64": # public osx_arm64
                 helix_queue = "osx.26.arm64.open"
@@ -485,7 +485,7 @@ def main(main_args):
             elif arch == "arm64": # internal linux_arm64
                 helix_queue = "(Ubuntu.2404.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-arm64v8"
             else: # internal linux_x64
-                helix_queue = "azurelinux.3.amd64"
+                helix_queue = "azurelinux.4.amd64"
         elif platform_name == "osx":
             if arch == "arm64": # internal osx_arm64
                 helix_queue = "OSX.26.ARM64"
