@@ -7,8 +7,6 @@ using System.Configuration;
 
 namespace System.Runtime.Caching.Configuration
 {
-#if NET
-#endif
     internal sealed class MemoryCacheElement : ConfigurationElement
     {
         private static readonly ConfigurationProperty s_propName =

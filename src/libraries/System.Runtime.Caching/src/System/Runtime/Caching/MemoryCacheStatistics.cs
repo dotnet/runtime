@@ -37,9 +37,9 @@ namespace System.Runtime.Caching
         private readonly MemoryCache _memoryCache;
         private readonly PhysicalMemoryMonitor _physicalMemoryMonitor;
 #if NET
-        private static bool _configSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
+        private static bool ConfigSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
-        private static bool _configSupported => true;
+        private static bool ConfigSupported => true;
 #endif
 
         // private
@@ -117,7 +117,7 @@ namespace System.Runtime.Caching
         private void InitializeConfiguration(NameValueCollection? config)
         {
             MemoryCacheElement? element = null;
-            if (!_memoryCache.ConfigLess && _configSupported)
+            if (!_memoryCache.ConfigLess && ConfigSupported)
             {
                 MemoryCacheSection? section = ConfigurationManager.GetSection("system.runtime.caching/memoryCache") as MemoryCacheSection;
                 if (section != null)
@@ -126,7 +126,7 @@ namespace System.Runtime.Caching
                 }
             }
 
-            if (element != null && _configSupported)
+            if (element != null && ConfigSupported)
             {
                 _configCacheMemoryLimitMegabytes = element.CacheMemoryLimitMegabytes;
                 _configPhysicalMemoryLimitPercentage = element.PhysicalMemoryLimitPercentage;

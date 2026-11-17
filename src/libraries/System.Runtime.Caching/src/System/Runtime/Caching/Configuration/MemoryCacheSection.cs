@@ -20,8 +20,6 @@ namespace System.Runtime.Caching.Configuration
        </system.caching>
     */
 
-#if NET
-#endif
     internal sealed class MemoryCacheSection : ConfigurationSection
     {
         private static readonly ConfigurationProperty s_propNamedCaches = new ConfigurationProperty("namedCaches",

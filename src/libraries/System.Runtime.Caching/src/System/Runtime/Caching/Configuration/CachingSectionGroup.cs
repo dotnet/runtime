@@ -6,8 +6,6 @@ using System.Configuration;
 
 namespace System.Runtime.Caching.Configuration
 {
-#if NET
-#endif
     internal sealed class CachingSectionGroup : ConfigurationSectionGroup
     {
         public CachingSectionGroup()

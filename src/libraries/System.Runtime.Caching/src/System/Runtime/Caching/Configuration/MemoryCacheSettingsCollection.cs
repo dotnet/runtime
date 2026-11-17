@@ -6,8 +6,6 @@ using System.Configuration;
 
 namespace System.Runtime.Caching.Configuration
 {
-#if NET
-#endif
     [ConfigurationCollection(typeof(MemoryCacheElement),
     CollectionType = ConfigurationElementCollectionType.AddRemoveClearMap)]
     internal sealed class MemoryCacheSettingsCollection : ConfigurationElementCollection

@@ -38,9 +38,9 @@ namespace System.Runtime.Caching
         private bool _useMemoryCacheManager = true;
         private bool _throwOnDisposed;
 #if NET
-        private static bool _countersSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
+        private static bool CountersSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
-        private static bool _countersSupported => true;
+        private static bool CountersSupported => true;
 #endif
 
         private bool IsDisposed { get { return (_disposed == 1); } }
@@ -191,7 +191,7 @@ namespace System.Runtime.Caching
             {
                 try
                 {
-                    if (_countersSupported)
+                    if (CountersSupported)
                     {
                         _perfCounters = new Counters(_name);
                     }
@@ -440,7 +440,7 @@ namespace System.Runtime.Caching
                 }
                 if (_perfCounters != null)
                 {
-                    if (_countersSupported)
+                    if (CountersSupported)
                     {
                         _perfCounters.Dispose();
                     }

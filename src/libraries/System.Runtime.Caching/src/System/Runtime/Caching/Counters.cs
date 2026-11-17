@@ -11,8 +11,6 @@ using System.Threading;
 
 namespace System.Runtime.Caching
 {
-#if NET
-#endif
     internal sealed class Counters : EventSource
     {
 #if NET
