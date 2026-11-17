@@ -53,18 +53,27 @@ namespace System.Threading
             }
         }
 
-        private bool Register(Operation node)
+        private AsyncResult Register(Operation node)
         {
-            if (TryRegisterWithPollThread(out Interop.Error error))
+            Interop.Error error;
+            try
             {
-                // Registration was a success. Operation will be triggered by poll thread.
-                return true;
+                if (TryRegisterWithPollThread(out error))
+                {
+                    // Registration was a success. Operation will be triggered by poll thread.
+                    return AsyncResult.Pending;
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // The handle was closed before this instance was disposed.
+                return AsyncResult.Aborted;
             }
 
             // macOS: kevent returns EPIPE when adding pipe fd for which the other end is closed.
             if (error == Interop.Error.EPIPE && node.TryCompleteOperation(Handle))
             {
-                return false;
+                return AsyncResult.Completed;
             }
 
             if (error == Interop.Error.ENOMEM || error == Interop.Error.ENOSPC)

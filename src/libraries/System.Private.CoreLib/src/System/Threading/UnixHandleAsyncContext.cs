@@ -129,9 +129,13 @@ namespace System.Threading
 
             public AsyncResult StartOperation(UnixHandleAsyncContext asyncContext, Operation node, bool isReadOperation, int observedSequenceNumber, CancellationToken cancellationToken)
             {
-                if (!asyncContext.IsRegistered && !asyncContext.Register(node))
+                if (!asyncContext.IsRegistered)
                 {
-                    return AsyncResult.Completed;
+                    AsyncResult registerResult = asyncContext.Register(node);
+                    if (registerResult != AsyncResult.Pending)
+                    {
+                        return registerResult;
+                    }
                 }
 
                 while (true)
