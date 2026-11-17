@@ -86,7 +86,7 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
 TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva);
 TargetPointer GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
-IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle);
+IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle, uint? hash = null);
 IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
 
 bool IsProbeExtensionResultValid(ModuleHandle handle);
@@ -612,7 +612,7 @@ bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint 
     return true;
 }
 
-IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle)
+IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle, uint? hash = null)
 {
     TargetPointer availableTypeParams = target.ReadPointer(handle.Address + /* Module::AvailableTypeParams offset */);
 
@@ -621,7 +621,10 @@ IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle)
     // EETypeHashTable is read as a DacEnumerableHash table.
     // For more information on how this is read, see section below.
     EETypeHashTable typeHashTable = // read EETypeHashTable at availableTypeParams
-    return typeHashTable.Entries.Select(entry => entry.TypeHandle);
+    IEnumerable<EETypeHashTable.Entry> entries = hash is uint hashValue
+        ? typeHashTable.Lookup(hashValue)
+        : typeHashTable.Entries;
+    return entries.Select(entry => entry.TypeHandle);
 }
 
 IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle)
@@ -988,10 +991,31 @@ The hash table is laid out as an array of `VolatileEntry` pointers's (buckets), 
 | Reserved Bucket offset | Purpose |
 | --- | --- |
 | `0` | Length of the Bucket array, this value does not include the first 3 slots which are special |
-| `1` | Pointer to the next bucket array, not currently used in the cDAC |
+| `1` | Pointer to the next bucket array during a resize |
 | `2` | End sentinel for the current bucket array, not currently used in the cDAC |
 
-The current cDAC implementation does not use the 'hash' part of the table at all. Instead it iterates all elements in the table. Following the existing iteration logic in the runtime (and DAC), resizing the table while iterating is not supported. Given this constraint, the pointer to the next bucket array (resized data table) and the current end sentinel are not required to iterate all entries.
+Full enumeration follows the existing runtime iterator and walks all buckets of the
+current array. Resizing the table while iterating is not supported. The next-array
+pointer and the current array's end-sentinel value are not required for enumeration.
+
+Supplying a non-null hash to `GetAvailableTypeParams` is an optional performance
+optimization, not a requirement for finding a constructed type. A null hash enumerates
+all candidates. Implementations may ignore the hash and return additional candidates;
+callers must always compare the full type key.
+
+The bucket-based implementation reads only the table header initially. If `Count` is zero it returns
+no candidates. Otherwise, for each bucket array starting at `Buckets`:
+
+1. Read the array length from slot `0`.
+2. If the length is nonzero, select slot `3 + hash % length` and walk its chain until
+   an entry pointer has its low bit set (an end sentinel).
+3. Yield each entry's value address for the derived table to decode.
+4. Follow slot `1` to the next bucket array, stopping at null.
+
+Searching resize-linked arrays accounts for a target stopped during table growth.
+The stored per-entry hash is not exposed by these descriptors, so bucket lookup
+returns all candidates in the selected chains, including entries with different
+hashes. Full type-key comparison remains the caller's responsibility.
 
 To read all entries in the hash table:
 1. Read the length bucket to find the number of chains `n`.

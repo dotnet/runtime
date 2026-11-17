@@ -336,26 +336,22 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
     call in interesting ways, manipulate/parse the "secret" arguments, or do
     other not quite compilable to standardized C concepts.
 
-    1.  `CallDescrWorkerInternal` – Needed to support VM to managed function
-        calls. Necessary for all applications as this is how the main method is
-        called.
-
-    2.  `PInvokeImportThunk` – Needed to support saving off a set of arguments to
+    1.  `PInvokeImportThunk` – Needed to support saving off a set of arguments to
         a p/invoke so that the runtime can find the actual target. Also uses one
         of the secret arguments (Used by all p/invoke methods)
 
-    3.  `PrecodeFixupThunk` – Needed to convert the secret argument from a
+    2.  `PrecodeFixupThunk` – Needed to convert the secret argument from a
         FixupPrecode\* to a MethodDesc\*. This function exists to reduce the
         code size of FixupPrecodes as there are (Used by many managed methods)
 
-    4.  `ThePreStub` - Needed to support saving off a set of arguments to the
+    3.  `ThePreStub` - Needed to support saving off a set of arguments to the
         stack so that the runtime can find or jit the right target method.
         (Needed for any jitted method to execute Used by all managed methods)
 
-    5.  `ThePreStubPatch` – Exists to provide a reliable spot for the managed
+    4.  `ThePreStubPatch` – Exists to provide a reliable spot for the managed
         debugger to put a breakpoint.
 
-    6.  GC Write Barriers – These are used to provide the GC with information
+    5.  GC Write Barriers – These are used to provide the GC with information
         about what memory is being updated. The existing implementations of
         these are all complex, and there are a number of controls where the
         runtime can adjust to tweak the behavior of the barrier in various ways.
@@ -368,39 +364,39 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
         FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP can be implemented as
         performance needs require.
 
-    7.  `ComCallPreStub` - not necessary for non-Windows platforms at this time
+    6.  `ComCallPreStub` - not necessary for non-Windows platforms at this time
 
-    8.  `TheUMEntryPrestub`/ `UMThunkStub` - used to enter the runtime from
+    7.  `TheUMEntryPrestub`/ `UMThunkStub` - used to enter the runtime from
         non-managed code through entrypoints generated from the
         Marshal.GetFunctionPointerForDelegate api.
 
-    9. `OnHijackTripThread` - needed for thread suspension to support GC + other
+    8. `OnHijackTripThread` - needed for thread suspension to support GC + other
         suspension requiring events. This is typically not needed for very early
         stage bringup of the product, but will be needed for any decent size
         application
 
-    10. `CallEHFunclet` – Used to call catch, finally and fault funclets. Behavior
+    9. `CallEHFunclet` – Used to call catch, finally and fault funclets. Behavior
         is specific to exactly how funclets are implemented.
 
-    11. `CallEHFilterFunclet` – Used to call filter funclets. Behavior is specific
+    10. `CallEHFilterFunclet` – Used to call filter funclets. Behavior is specific
         to exactly how funclets are implemented.
 
-    12. `ResolveWorkerChainLookupAsmStub`/ `ResolveWorkerAsmStub` Used for virtual
+    11. `ResolveWorkerChainLookupAsmStub`/ `ResolveWorkerAsmStub` Used for virtual
         stub dispatch (virtual call support for interface, and some virtual
         methods). These work in tandem with the logic in virtualcallstubcpu.h to
         implement the logic described in [Virtual Stub Dispatch](virtual-stub-dispatch.md)
 
-    13. `ProfileEnter`/ `ProfileLeave`/ `ProfileTailcall` – Used to call function
+    12. `ProfileEnter`/ `ProfileLeave`/ `ProfileTailcall` – Used to call function
         entry/exit profile functions acquired through the ICorProfiler
         interface. Used in VERY rare circumstances. It is reasonable to wait to
         implement these until the final stages of productization. Most profilers
         do not use this functionality.
 
-    14. `JIT_PInvokeBegin`/`JIT_PInvokeEnd` – Leave/enter the managed runtime state. Necessary
+    13. `JIT_PInvokeBegin`/`JIT_PInvokeEnd` – Leave/enter the managed runtime state. Necessary
         for ReadyToRun pre-compiled pinvoke calls, so that they do not cause GC
         starvation
 
-    15. `VarargPInvokeStub` – Used to support vararg pinvokes, which are commonly
+    14. `VarargPInvokeStub` – Used to support vararg pinvokes, which are commonly
         used by C++/CLI. Not necessary for non-Windows platforms at this time.
 
 #### cgencpu.h

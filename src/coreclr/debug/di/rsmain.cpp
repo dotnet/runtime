@@ -1081,13 +1081,10 @@ HRESULT Cordb::Terminate()
     //
     // Stop the event handling threads.
     //
-    if (m_rcEventThread != NULL)
-    {
-        // Stop may do significant work b/c if it drains the worker queue.
-        m_rcEventThread->Stop();
-        delete m_rcEventThread;
-        m_rcEventThread = NULL;
-    }
+    // Stop may do significant work b/c if it drains the worker queue.
+    m_rcEventThread->Stop();
+    delete m_rcEventThread;
+    m_rcEventThread = NULL;
 
 
 #ifdef _DEBUG
@@ -1876,11 +1873,8 @@ HRESULT Cordb::CreateObject(CorDebugInterfaceVersion iDebuggerVersion, DWORD pid
     if (lpApplicationGroupId != NULL)
     {
         // Get length of target string
-        int cbMultiByte = WideCharToMultiByte(CP_ACP, 0, lpApplicationGroupId, -1, NULL, 0, NULL, NULL);
-        if (cbMultiByte == 0)
-        {
-            return E_FAIL;
-        }
+        size_t cchApplicationGroupId = u16_strlen(lpApplicationGroupId) + 1;
+        size_t cbMultiByte = minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpApplicationGroupId, cchApplicationGroupId, 0);
 
         applicationGroupId = new (nothrow) CHAR[cbMultiByte];
         if (applicationGroupId == NULL)
@@ -1888,8 +1882,7 @@ HRESULT Cordb::CreateObject(CorDebugInterfaceVersion iDebuggerVersion, DWORD pid
             return (E_OUTOFMEMORY);
         }
 
-        /* Convert to ASCII */
-        cbMultiByte = WideCharToMultiByte(CP_ACP, 0, lpApplicationGroupId, -1, applicationGroupId, cbMultiByte, NULL, NULL);
+        cbMultiByte = minipal_convert_utf16_to_utf8((const CHAR16_T*)lpApplicationGroupId, cchApplicationGroupId, applicationGroupId, cbMultiByte, 0);
         if (cbMultiByte == 0)
         {
             delete [] applicationGroupId;

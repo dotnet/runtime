@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     internal static class StackExtensions
     {

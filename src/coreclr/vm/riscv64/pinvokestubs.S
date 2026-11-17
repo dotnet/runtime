@@ -29,20 +29,25 @@
     ld  t4, 0(sp)
     sd  t4, (InlinedCallFrame__m_pCalleeSavedFP)(s1)
 
-    // v0 = GetThread()
+    // a1 = GetThread()
+#ifdef FEATURE_EMULATED_TLS
     call  GetThreadHelper
+    mv  a1, a0
+#else
+    INLINE_GETTHREAD a1
+#endif
 
-    sd  a0, (InlinedCallFrame__m_pThread)(s1)
+    sd  a1, (InlinedCallFrame__m_pThread)(s1)
 
     // pFrame->m_Next = pThread->m_pFrame;
-    ld  t4, Thread_m_pFrame(a0)
+    ld  t4, Thread_m_pFrame(a1)
     sd  t4, Frame__m_Next(s1)
 
     // pThread->m_pFrame = pFrame;
-    sd  s1, (Thread_m_pFrame)(a0)
+    sd  s1, (Thread_m_pFrame)(a1)
 
     // pThread->m_fPreemptiveGCDisabled = 0
-    sw  zero, (Thread_m_fPreemptiveGCDisabled)(a0)
+    sw  zero, (Thread_m_fPreemptiveGCDisabled)(a1)
 
     EPILOG_RESTORE_REG      s1, 16    //the stack slot at sp+24 is empty for 16 byte alignment
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32

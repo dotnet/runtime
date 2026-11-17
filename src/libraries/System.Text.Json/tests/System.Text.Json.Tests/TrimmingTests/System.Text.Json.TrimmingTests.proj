@@ -73,6 +73,9 @@
     <TestConsoleAppSourceFiles Include="IsReflectionEnabledByDefaultFalse.cs">
       <DisabledProperties>JsonSerializerIsReflectionEnabledByDefault</DisabledProperties>
     </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="ReflectionOnlyConverterHooks.cs">
+      <DisabledProperties>JsonSerializerIsReflectionEnabledByDefault;SuppressTrimAnalysisWarnings;SuppressAotAnalysisWarnings</DisabledProperties>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

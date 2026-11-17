@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
-    internal static class InvokerEmitUtil
+    internal static partial class InvokerEmitUtil
     {
         // If changed, update native stack walking code that also uses this prefix to ignore reflection frames.
         private const string InvokeStubPrefix = "InvokeStub_";
@@ -212,18 +212,25 @@ namespace System.Reflection
         private static bool CanCallConstructorOnExistingInstance(Type declaringType) =>
             declaringType != typeof(string) && !declaringType.IsArray;
 
-        private static void EmitLoadRefArguments(ILGenerator il, ReadOnlySpan<ParameterInfo> parameters)
+        private static void EmitLoadRefArgument(ILGenerator il, int argumentIndex, int argumentArrayIndex)
+        {
+            Debug.Assert(argumentArrayIndex is 1 or 2);
+            il.Emit(argumentArrayIndex == 1 ? OpCodes.Ldarg_1 : OpCodes.Ldarg_2);
+            if (argumentIndex != 0)
+            {
+                il.Emit(OpCodes.Ldc_I4, checked(argumentIndex * IntPtr.Size));
+                il.Emit(OpCodes.Add);
+            }
+
+            il.Emit(OpCodes.Ldfld, Methods.ByReferenceOfByte_Value());
+        }
+
+        private static void EmitLoadRefArguments(
+            ILGenerator il, ReadOnlySpan<ParameterInfo> parameters, int argumentArrayIndex = 2, int argumentOffset = 0)
         {
             for (int i = 0; i < parameters.Length; i++)
             {
-                il.Emit(OpCodes.Ldarg_2);
-                if (i != 0)
-                {
-                    il.Emit(OpCodes.Ldc_I4, i * IntPtr.Size);
-                    il.Emit(OpCodes.Add);
-                }
-
-                il.Emit(OpCodes.Ldfld, Methods.ByReferenceOfByte_Value());
+                EmitLoadRefArgument(il, i + argumentOffset, argumentArrayIndex);
 
                 RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
                 if (!parameterType.IsByRef)
@@ -242,7 +249,7 @@ namespace System.Reflection
             il.Emit(OpCodes.Ldobj, parameterType);
         }
 
-        private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew, bool backwardsCompat)
+        private static void EmitCall(ILGenerator il, MethodBase method, bool emitNew, bool backwardsCompat)
         {
             // For CallStack reasons, don't inline target method.
             // Mono interpreter does not support\need this.
@@ -273,6 +280,11 @@ namespace System.Reflection
             {
                 il.Emit(OpCodes.Callvirt, (MethodInfo)method);
             }
+        }
+
+        private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew, bool backwardsCompat)
+        {
+            EmitCall(il, method, emitNew, backwardsCompat);
 
             // Handle the return.
             if (emitNew)

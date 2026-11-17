@@ -97,7 +97,9 @@ export class HostBuilder implements DotnetHostBuilder {
         return this;
     }
     withConfigLoaded(callback?: (config: LoaderConfig) => void | Promise<void>): DotnetHostBuilder {
-        loaderCallbacks.configLoaded = callback;
+        if (callback) {
+            loaderCallbacks.configLoaded.push(callback);
+        }
         return this;
     }
     withDotnetReady(callback?: () => void | Promise<void>): DotnetHostBuilder {

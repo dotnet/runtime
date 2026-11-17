@@ -90,66 +90,10 @@ if(CLR_CMAKE_HOST_UNIX)
 
 endif(CLR_CMAKE_HOST_UNIX)
 
-if(CLR_CMAKE_HOST_WIN32)
-    if (CLR_CMAKE_TARGET_ARCH_AMD64)
-      set(arch x86_64)
-      add_definitions(-D__x86_64__)
-      add_definitions(-D__amd64__)
-    elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
-      set(arch aarch64)
-      add_definitions(-D__aarch64__)
-    elseif(CLR_CMAKE_TARGET_ARCH_ARM)
-      set(arch arm)
-      add_definitions(-D__arm__)
-    elseif(CLR_CMAKE_TARGET_ARCH_ARMV6)
-      set(arch arm)
-      add_definitions(-D__arm__)
-    elseif(CLR_CMAKE_TARGET_ARCH_S390X)
-      set(arch s390x)
-      add_definitions(-D__s390x__)
-    else ()
-      message(FATAL_ERROR "Unrecognized TARGET")
-    endif ()
-
-    # Windows builds will only support remote unwind
-    add_definitions(-DUNW_REMOTE_ONLY)
-
-    add_definitions(-DHAVE_UNW_GET_ACCESSORS)
-
-    # Disable security warnings
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-
-    if(CLR_CMAKE_TARGET_LINUX)
-      add_definitions(-D__linux__)
-    endif ()
-
-    # Assume we are using default MSVC compiler
-    add_compile_options(/permissive-)
-
-    # include paths
-    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep)
-    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include)
-    include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep)
-    include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include)
-
-    # files for cross os compilation
-    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote)
-    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/win)
-
-    add_definitions(-D_CRT_DECLARE_NONSTDC_NAMES)
-
-    # Warnings in release builds
-    add_compile_options(-wd4068) # ignore unknown pragma warnings (gcc pragmas)
-    add_compile_options(-wd4334) # 32-bit shift implicitly converted to 64 bits
-
-    # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
-    add_compile_options(-wd4311) # pointer truncation from 'unw_word_t *' to 'long'
-    add_compile_options(-wd4475) # 'fprintf' : length modifier 'L' cannot be used
-    add_compile_options(-wd4477) # fprintf argument type
-elseif(CLR_CMAKE_HOST_APPLE)
+if(CLR_CMAKE_HOST_APPLE)
     include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote)
     include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/mac)
-endif (CLR_CMAKE_HOST_WIN32)
+endif(CLR_CMAKE_HOST_APPLE)
 
 if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6)
     # The arm sources include ex_tables.h from include/tdep-arm without going through a redirection
@@ -161,25 +105,13 @@ endif()
 include(configure.cmake)
 include(${CLR_SRC_NATIVE_DIR}/external/libunwind.cmake)
 
-if(CLR_CMAKE_HOST_WIN32)
-    set_source_files_properties(${LIBUNWIND_SOURCES} PROPERTIES COMPILE_FLAGS /TC) # compile all files as C
-endif(CLR_CMAKE_HOST_WIN32)
-
 # TODO: https://github.com/dotnet/runtime/issues/111527
 if(CLR_CMAKE_TARGET_ANDROID)
     add_compile_options(-Wno-error)
 endif()
 
-if(CLR_CMAKE_HOST_UNIX)
-    if(CLR_CMAKE_HOST_APPLE)
-        add_library(libunwind_dac OBJECT ${LIBUNWIND_SOURCES})
-    else()
-        add_library(libunwind OBJECT ${LIBUNWIND_SOURCES})
-    endif(CLR_CMAKE_HOST_APPLE)
-else(CLR_CMAKE_HOST_UNIX)
-    set_source_files_properties(${CLR_DIR}/pal/src/exception/remote-unwind.cpp PROPERTIES COMPILE_FLAGS /TP INCLUDE_DIRECTORIES ${CLR_DIR}/inc)
-
-    add_library(libunwind_xdac OBJECT
-      ${CLR_DIR}/pal/src/exception/remote-unwind.cpp
-      ${LIBUNWIND_SOURCES})
-endif(CLR_CMAKE_HOST_UNIX)
+if(CLR_CMAKE_HOST_APPLE)
+    add_library(libunwind_dac OBJECT ${LIBUNWIND_SOURCES})
+else()
+    add_library(libunwind OBJECT ${LIBUNWIND_SOURCES})
+endif(CLR_CMAKE_HOST_APPLE)

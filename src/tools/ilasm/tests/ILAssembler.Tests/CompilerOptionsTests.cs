@@ -13,7 +13,7 @@ using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class CompilerOptionsTests
     {

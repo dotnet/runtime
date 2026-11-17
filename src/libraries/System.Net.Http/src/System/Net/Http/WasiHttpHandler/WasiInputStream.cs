@@ -13,20 +13,22 @@ using static WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.IStreamsImports;
 namespace System.Net.Http
 {
     // on top of https://github.com/WebAssembly/wasi-io/blob/main/wit/streams.wit
-    internal sealed class WasiInputStream : Stream
+    internal sealed class WasiInputStream : HttpBaseStream
     {
         private WasiRequestWrapper wrapper; // owned by this instance
         private IncomingBody body; // owned by this instance
         private InputStream stream; // owned by this instance
 
-        private int offset;
-        private byte[]? buffer;
+        private byte[]? pending; // data read from the stream but not yet returned to the caller
+        private int pendingOffset;
         private bool otherSideClosed;
         internal bool isClosed;
 
-        public override bool CanRead => true;
+        // Canceled before the stream is dropped, so that a pending read's pollable (a child of the stream) is released first.
+        private readonly CancellationTokenSource closeCts = new CancellationTokenSource();
+
+        public override bool CanRead => !isClosed;
         public override bool CanWrite => false;
-        public override bool CanSeek => false;
 
         public WasiInputStream(WasiRequestWrapper wrapper, IncomingBody body)
         {
@@ -45,6 +47,7 @@ namespace System.Net.Http
             if (!isClosed)
             {
                 isClosed = true;
+                closeCts.Cancel();
                 stream.Dispose();
                 var futureTrailers = IncomingBody.Finish(body); // we just passed body ownership to Finish
                 futureTrailers.Dispose();
@@ -57,6 +60,7 @@ namespace System.Net.Http
             if (!isClosed)
             {
                 isClosed = true;
+                closeCts.Cancel();
                 stream.Dispose();
                 body.Dispose();
             }
@@ -70,128 +74,76 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        public override async Task<int> ReadAsync(
-            byte[] bytes,
-            int offset,
-            int length,
-            CancellationToken cancellationToken
-        )
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(isClosed, this);
             cancellationToken.ThrowIfCancellationRequested();
-            while (true)
+            while (pending is null)
             {
                 if (otherSideClosed)
                 {
                     return 0;
                 }
-                else if (this.buffer == null)
+
+                try
                 {
-                    try
+                    // TODO: should we add a special case to the bindings generator
+                    // to allow passing a buffer to InputStream.Read and
+                    // avoid the extra copy?
+                    byte[] result = stream.Read(16 * 1024);
+                    if (result.Length == 0)
                     {
-                        // TODO: should we add a special case to the bindings generator
-                        // to allow passing a buffer to InputStream.Read and
-                        // avoid the extra copy?
-                        var result = stream.Read(16 * 1024);
-                        var buffer = result;
-                        if (buffer.Length == 0)
-                        {
-                            cancellationToken.ThrowIfCancellationRequested();
-                            await WasiHttpInterop.RegisterWasiPollable(stream.Subscribe(), cancellationToken).ConfigureAwait(false);
-                            ObjectDisposedException.ThrowIf(isClosed, this);
-                        }
-                        else
-                        {
-                            this.buffer = buffer;
-                            this.offset = 0;
-                        }
-                    }
-                    catch (WitException e)
-                    {
-                        if (((StreamError)e.Value).Tag == StreamError.Tags.Closed)
-                        {
-                            otherSideClosed = true;
-                            return 0;
-                        }
-                        else
-                        {
-                            // TODO translate error ?
-                            throw;
-                        }
-                    }
-                }
-                else
-                {
-                    var min = Math.Min(this.buffer.Length - this.offset, length);
-                    Array.Copy(this.buffer, this.offset, bytes, offset, min);
-                    if (min < buffer.Length - this.offset)
-                    {
-                        this.offset += min;
+                        await WaitAsync(stream.Subscribe(), cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        this.buffer = null;
+                        pending = result;
+                        pendingOffset = 0;
                     }
-                    return min;
+                }
+                catch (WitException e)
+                {
+                    if (((StreamError)e.Value).Tag == StreamError.Tags.Closed)
+                    {
+                        otherSideClosed = true;
+                        return 0;
+                    }
+
+                    throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_premature_eof, e);
                 }
             }
+
+            ReadOnlySpan<byte> available = pending.AsSpan(pendingOffset);
+            int count = Math.Min(available.Length, buffer.Length);
+            available.Slice(0, count).CopyTo(buffer.Span);
+            pendingOffset += count;
+            if (pendingOffset == pending.Length)
+            {
+                pending = null;
+            }
+
+            return count;
         }
 
-        public override async ValueTask<int> ReadAsync(
-            Memory<byte> buffer,
-            CancellationToken cancellationToken = default
-        )
+        private async Task WaitAsync(IPollImports.Pollable pollable, CancellationToken cancellationToken)
         {
-            // TODO: avoid copy when possible and use ArrayPool when not
-            var dst = new byte[buffer.Length];
-            // We disable "CA1835: Prefer the memory-based overloads of
-            // ReadAsync/WriteAsync methods in stream-based classes" for
-            // now, since `ReadyAsync(byte[], int, int, CancellationToken)`
-            // is where the implementation currently resides, but we should
-            // revisit this if/when `wit-bindgen` learns to generate
-            // memory-based bindings.
-#pragma warning disable CA1835
-            var result = await ReadAsync(dst, 0, buffer.Length, cancellationToken)
-                .ConfigureAwait(false);
-#pragma warning restore CA1835
-            new ReadOnlySpan<byte>(dst, 0, result).CopyTo(buffer.Span);
-            return result;
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, closeCts.Token);
+            try
+            {
+                await WasiHttpInterop.RegisterWasiPollable(pollable, linkedCts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                ObjectDisposedException.ThrowIf(isClosed, this);
+                throw;
+            }
+            ObjectDisposedException.ThrowIf(isClosed, this);
         }
 
-        #region PlatformNotSupported
+        // WASI HTTP streams currently support only non-blocking (asynchronous) I/O. TODO https://github.com/dotnet/runtime/issues/137564
+        public override int Read(Span<byte> buffer) => throw new PlatformNotSupportedException();
 
-        public override void Flush()
-        {
-            // ignore
-        }
-
-        public override void SetLength(long length)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public override int Read(byte[] buffer, int offset, int length)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public override void Write(byte[] buffer, int offset, int length)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public override long Length => throw new PlatformNotSupportedException();
-        public override long Position
-        {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
-        }
-
-        #endregion
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken) =>
+            ValueTask.FromException(new NotSupportedException());
     }
 }

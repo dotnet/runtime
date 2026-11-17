@@ -343,166 +343,6 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
     return hr;
 }
 
-// Reserves free memory within the range [pMinAddr..pMaxAddr] using
-// ClrVirtualQuery to find free memory and ClrVirtualAlloc to reserve it.
-//
-// This method only supports the flAllocationType of MEM_RESERVE, and expects that the memory
-// is being reserved for the purpose of eventually storing executable code.
-//
-// Callers also should set dwSize to a multiple of sysInfo.dwAllocationGranularity (64k).
-// That way they can reserve a large region and commit smaller sized pages
-// from that region until it fills up.
-//
-// This functions returns the reserved memory block upon success
-//
-// It returns NULL when it fails to find any memory that satisfies
-// the range.
-//
-
-BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
-                                  const BYTE *pMaxAddr,
-                                  SIZE_T dwSize,
-                                  DWORD flAllocationType,
-                                  DWORD flProtect)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        PRECONDITION(dwSize != 0);
-
-#ifdef HOST_UNIX
-        PRECONDITION(flAllocationType == (MEM_RESERVE | MEM_RESERVE_EXECUTABLE));
-#else
-        PRECONDITION(flAllocationType == MEM_RESERVE);
-#endif
-    }
-    CONTRACTL_END;
-
-    BYTE *pResult = nullptr;  // our return value;
-
-    static unsigned countOfCalls = 0;  // We log the number of tims we call this method
-    countOfCalls++;                    // increment the call counter
-
-    if (dwSize == 0)
-    {
-        return nullptr;
-    }
-
-    //
-    // First lets normalize the pMinAddr and pMaxAddr values
-    //
-    // If pMinAddr is NULL then set it to BOT_MEMORY
-    if ((pMinAddr == 0) || (pMinAddr < (BYTE *) BOT_MEMORY))
-    {
-        pMinAddr = (BYTE *) BOT_MEMORY;
-    }
-
-    // If pMaxAddr is NULL then set it to TOP_MEMORY
-    if ((pMaxAddr == 0) || (pMaxAddr > (BYTE *) TOP_MEMORY))
-    {
-        pMaxAddr = (BYTE *) TOP_MEMORY;
-    }
-
-    // If pMaxAddr is not greater than pMinAddr we can not make an allocation
-    if (pMaxAddr <= pMinAddr)
-    {
-        return nullptr;
-    }
-
-    // If pMinAddr is BOT_MEMORY and pMaxAddr is TOP_MEMORY
-    // then we can call ClrVirtualAlloc instead
-    if ((pMinAddr == (BYTE *) BOT_MEMORY) && (pMaxAddr == (BYTE *) TOP_MEMORY))
-    {
-        return (BYTE*) ClrVirtualAlloc(nullptr, dwSize, flAllocationType, flProtect);
-    }
-
-#ifdef HOST_UNIX
-    pResult = (BYTE *)PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(pMinAddr, pMaxAddr, dwSize, TRUE /* fStoreAllocationInfo */);
-    if (pResult != nullptr)
-    {
-        return pResult;
-    }
-#endif // HOST_UNIX
-
-    // We will do one scan from [pMinAddr .. pMaxAddr]
-    // First align the tryAddr up to next 64k base address.
-    // See docs for VirtualAllocEx and lpAddress and 64k alignment for reasons.
-    //
-    BYTE *   tryAddr            = (BYTE *)ALIGN_UP((BYTE *)pMinAddr, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
-    bool     virtualQueryFailed = false;
-    unsigned virtualQueryCount  = 0;
-
-    // Now scan memory and try to find a free block of the size requested.
-    while ((tryAddr + dwSize) <= (BYTE *) pMaxAddr)
-    {
-        MEMORY_BASIC_INFORMATION mbInfo;
-
-        // Use VirtualQuery to find out if this address is MEM_FREE
-        //
-        virtualQueryCount++;
-        if (!ClrVirtualQuery((LPCVOID)tryAddr, &mbInfo, sizeof(mbInfo)))
-        {
-            // Exit and return nullptr if the VirtualQuery call fails.
-            virtualQueryFailed = true;
-            break;
-        }
-
-        // Is there enough memory free from this start location?
-        // Note that for most versions of UNIX the mbInfo.RegionSize returned will always be 0
-        if ((mbInfo.State == MEM_FREE) &&
-            (mbInfo.RegionSize >= (SIZE_T) dwSize || mbInfo.RegionSize == 0))
-        {
-            // Try reserving the memory using VirtualAlloc now
-            pResult = (BYTE*)ClrVirtualAlloc(tryAddr, dwSize, flAllocationType, flProtect);
-
-            // Normally this will be successful
-            //
-            if (pResult != nullptr)
-            {
-                // return pResult
-                break;
-            }
-
-            // On UNIX we can also fail if our request size 'dwSize' is larger than 64K and
-            // and our tryAddr is pointing at a small MEM_FREE region (smaller than 'dwSize')
-            // However we can't distinguish between this and the race case.
-
-            // We might fail in a race.  So just move on to next region and continue trying
-            tryAddr = tryAddr + VIRTUAL_ALLOC_RESERVE_GRANULARITY;
-        }
-        else
-        {
-            // Try another section of memory
-            tryAddr = max(tryAddr + VIRTUAL_ALLOC_RESERVE_GRANULARITY,
-                          (BYTE*) mbInfo.BaseAddress + mbInfo.RegionSize);
-        }
-    }
-
-    STRESS_LOG7(LF_JIT, LL_INFO100,
-                "ClrVirtualAllocWithinRange request #%u for %08x bytes in [ %p .. %p ], query count was %u - returned %s: %p\n",
-                countOfCalls, (DWORD)dwSize, pMinAddr, pMaxAddr,
-                virtualQueryCount, (pResult != nullptr) ? "success" : "failure", pResult);
-
-    // If we failed this call the process will typically be terminated
-    // so we log any additional reason for failing this call.
-    //
-    if (pResult == nullptr)
-    {
-        if ((tryAddr + dwSize) > (BYTE *)pMaxAddr)
-        {
-            // Our tryAddr reached pMaxAddr
-            STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: Address space exhausted.\n");
-        }
-
-        if (virtualQueryFailed)
-        {
-            STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: VirtualQuery operation failed.\n");
-        }
-    }
-
-    return pResult;
-}
-
 #ifdef HOST_WINDOWS
 //******************************************************************************
 // CPUGroupInfo
@@ -1068,6 +908,7 @@ AssemblyNamesList::AssemblyNamesList(_In_ LPWSTR list)
 {
     CONTRACTL {
         THROWS;
+        GC_NOTRIGGER;
     } CONTRACTL_END;
 
     WCHAR prevChar = '?'; // dummy
@@ -1121,6 +962,7 @@ AssemblyNamesList::~AssemblyNamesList()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -1780,9 +1622,9 @@ HRESULT Utf2Quick(
     CONTRACTL_END;
 
     HRESULT     hr = S_OK;              // A result.
-    int         iReqLen;                // Required additional length.
-    int         iActLen;
-    int         bAlloc = 0;             // If non-zero, allocation was required.
+    size_t      cchReq;                 // Required additional length.
+    size_t      cchAct;
+    bool        bAlloc = false;         // If true, allocation was required.
 
     if (iCurLen < 0 )
     {
@@ -1792,7 +1634,7 @@ HRESULT Utf2Quick(
 
     // Calculate the space available
     S_SIZE_T cchAvail = S_SIZE_T(rStr.MaxSize()) - S_SIZE_T(iCurLen);
-    if (cchAvail.IsOverflow() || cchAvail.Value() > INT_MAX)
+    if (cchAvail.IsOverflow())
     {
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
@@ -1805,21 +1647,31 @@ HRESULT Utf2Quick(
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
     }
-    iReqLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, rNewStr, (int)(cchAvail.Value()));
+    size_t cchSrc = strlen(pStr) + 1;
+    cchReq = minipal_convert_utf8_to_utf16(pStr, cchSrc, (CHAR16_T*)rNewStr, cchAvail.Value(), 0);
 
     // If the buffer was too small, determine what is required.
-    if (iReqLen == 0)
-        bAlloc = iReqLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, 0, 0);
+    if (cchReq == 0)
+    {
+        cchReq = minipal_get_length_utf8_to_utf16(pStr, cchSrc, 0);
+        bAlloc = true;
+    }
     // Resize the buffer.  If the buffer was large enough, this just sets the internal
     //  counter, but if it was too small, this will attempt a reallocation.  Note that
     //  the length includes the terminating W('/0').
-    IfFailGo(rStr.ReSizeNoThrow(iCurLen+iReqLen));
+    S_SIZE_T newSize = S_SIZE_T(iCurLen) + S_SIZE_T(cchReq);
+    if (newSize.IsOverflow())
+    {
+        _ASSERTE_MSG(false, "Integer overflow/underflow");
+        return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
+    }
+    IfFailGo(rStr.ReSizeNoThrow(newSize.Value()));
     // If we had to realloc, then do the conversion again, now that the buffer is
     //  large enough.
     if (bAlloc) {
         //recalculating cchAvail since MaxSize could have been changed.
         cchAvail = S_SIZE_T(rStr.MaxSize()) - S_SIZE_T(iCurLen);
-        if (cchAvail.IsOverflow() || cchAvail.Value() > INT_MAX)
+        if (cchAvail.IsOverflow())
         {
             _ASSERTE_MSG(false, "Integer overflow/underflow");
             return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
@@ -1832,8 +1684,8 @@ HRESULT Utf2Quick(
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
         }
-        iActLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, rNewStr, (int)(cchAvail.Value()));
-        _ASSERTE(iReqLen == iActLen);
+        cchAct = minipal_convert_utf8_to_utf16(pStr, cchSrc, (CHAR16_T*)rNewStr, cchAvail.Value(), 0);
+        _ASSERTE(cchReq == cchAct);
     }
 ErrExit:
     return hr;
@@ -2382,7 +2234,7 @@ namespace Util
         if (err != ERROR_INSUFFICIENT_BUFFER || dwSize == 0)
             return s_Result.RecordAndReturnError((err == ERROR_SUCCESS) ? E_FAIL : HRESULT_FROM_WIN32(err));
 
-        NewArrayHolder<BYTE> pLabel = new (nothrow) BYTE[dwSize];
+        NewArrayHolder<BYTE> pLabel{ new (nothrow) BYTE[dwSize] };
         if (pLabel == NULL)
             return s_Result.RecordAndReturnError(E_OUTOFMEMORY);
 

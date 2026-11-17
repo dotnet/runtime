@@ -37,7 +37,7 @@ namespace System.Net.Sockets.Tests
             await Assert.ThrowsAsync<NotSupportedException>(() => SendFileAsync(s, null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void SendFile_NonBlockingSocket_ThrowsInvalidOperationException()
         {
             (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair();
@@ -55,7 +55,7 @@ namespace System.Net.Sockets.Tests
         public async Task FileDoesNotExist_ThrowsFileNotFoundException(bool useOverloadWithBuffers)
         {
             string doesNotExist = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair();
+            (Socket client, Socket server) = await SocketTestExtensions.CreateConnectedSocketPairAsync();
 
             using (client)
             using (server)
@@ -113,11 +113,11 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop("Creates a file of ~12MB, execution takes long.")]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(Loopbacks))]
         public Task IncludeFile_Success_LargeFile(IPAddress listenAt) => IncludeFile_Success(listenAt, true, 12_345_678);
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(SendFile_MemberData))]
         public async Task IncludeFile_Success(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend)
         {
@@ -246,7 +246,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73536", TestPlatforms.iOS | TestPlatforms.tvOS)]
@@ -399,13 +399,11 @@ namespace System.Net.Sockets.Tests
         public SendFile_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
     public sealed class SendFile_Task : SendFile<SocketHelperTask>
     {
         public SendFile_Task(ITestOutputHelper output) : base(output) { }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
     public sealed class SendFile_CancellableTask : SendFile<SocketHelperCancellableTask>
     {
         public SendFile_CancellableTask(ITestOutputHelper output) : base(output) { }
@@ -433,13 +431,14 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/137519", TestPlatforms.Wasi)]
         public async Task SendFileAsync_CanceledDuringOperation_Throws(bool ipv6)
         {
             const int CancelAfter = 200; // ms
             const int NumOfSends = 100;
             const int SendBufferSize = 1024;
 
-            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair(ipv6);
+            (Socket client, Socket server) = await SocketTestExtensions.CreateConnectedSocketPairAsync(ipv6);
             byte[] buffer = new byte[1024 * 64];
             using (client)
             using (server)
@@ -465,7 +464,6 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendFile_Apm : SendFile<SocketHelperApm>
     {
         public SendFile_Apm(ITestOutputHelper output) : base(output) { }
@@ -513,25 +511,31 @@ namespace System.Net.Sockets.Tests
             listener.BindToAnonymousPort(IPAddress.Loopback);
             listener.Listen(1);
 
-            client.Connect(listener.LocalEndPoint);
-            using Socket server = listener.Accept();
+            Task<Socket> acceptTask = listener.AcceptAsync();
+            await client.ConnectAsync(listener.LocalEndPoint);
+            using Socket server = await acceptTask;
 
             await new Task[]
             {
                 SendFileAsync(server, tmpFile.Path),
-                Task.Run(() =>
-                {
-                    byte[] buffer = new byte[100_000];
-                    long count = 0;
-                    while (count < FileLength)
-                    {
-                        int received = client.Receive(buffer);
-                        Assert.NotEqual(0, received);
-                        count += received;
-                    }
-                    Assert.Equal(0, client.Available);
-                })
+                ReceiveAllAsync()
             }.WhenAllOrAnyFailed();
+
+            async Task ReceiveAllAsync()
+            {
+                byte[] buffer = new byte[100_000];
+                long count = 0;
+                while (count < FileLength)
+                {
+                    int received = await client.ReceiveAsync(buffer, SocketFlags.None);
+                    Assert.NotEqual(0, received);
+                    count += received;
+                }
+                if (!OperatingSystem.IsWasi()) // FIONREAD is not supported on WASI
+                {
+                    Assert.Equal(0, client.Available);
+                }
+            }
         }
     }
 
@@ -553,13 +557,11 @@ namespace System.Net.Sockets.Tests
         public SendFile_NonParallel_ArraySync(ITestOutputHelper output) : base(output) { }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
     public sealed class SendFile_NonParallel_Task : SendFile_NonParallel<SocketHelperTask>
     {
         public SendFile_NonParallel_Task(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendFile_NonParallel_Apm : SendFile_NonParallel<SocketHelperApm>
     {
         public SendFile_NonParallel_Apm(ITestOutputHelper output) : base(output) { }

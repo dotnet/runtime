@@ -1882,7 +1882,7 @@ HRESULT MDInternalRO::GetPropertyInfoForMethodDef(  // Result.
     // Lazy initialization of m_pMethodSemanticsMap
     if ((ridMax > 10) && (m_pMethodSemanticsMap == NULL))
     {
-        NewArrayHolder<CMethodSemanticsMap> pMethodSemanticsMap = new (nothrow) CMethodSemanticsMap[ridMax];
+        NewArrayHolder<CMethodSemanticsMap> pMethodSemanticsMap(new (nothrow) CMethodSemanticsMap[ridMax]);
         if (pMethodSemanticsMap != NULL)
         {
             // Fill the table in MethodSemantics order.
@@ -1900,7 +1900,7 @@ HRESULT MDInternalRO::GetPropertyInfoForMethodDef(  // Result.
             if (InterlockedCompareExchangeT<CMethodSemanticsMap *>(
                 &m_pMethodSemanticsMap, pMethodSemanticsMap, NULL) == NULL)
             {   // The exchange did happen, suppress of the allocated map
-                pMethodSemanticsMap.SuppressRelease();
+                pMethodSemanticsMap.Detach();
             }
         }
     }

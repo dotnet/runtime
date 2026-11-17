@@ -5,6 +5,8 @@ using Microsoft.Win32.SafeHandles;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.IO.Tests
@@ -486,7 +488,9 @@ namespace System.IO.Tests
             GC.Collect();
             Assert.False(weakReference.IsAlive);
 
-            // separate method to avoid JIT lifetime-extension issues
+            // Must not be inlined: the JIT can keep the FileStream and its strategy reachable (for example in GC spill
+            // temps, which are reported as live for the whole method) until the frame that inlined this method returns.
+            [MethodImpl(MethodImplOptions.NoInlining)]
             static async Task<WeakReference> EnsureFileStreamIsNotRooted(Func<FileStream> factory, bool useAsync)
             {
                 FileStream fs = factory();
@@ -507,6 +511,52 @@ namespace System.IO.Tests
                 }
 
                 return weakReference;
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(false, false, false)]
+        [InlineData(false, true, false)]
+        [InlineData(true, false, false)]
+        [InlineData(true, true, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, true)]
+        public async Task PipeHandlesAreFinalizedWhenNotDisposed(bool asyncRead, bool asyncWrite, bool cancellable)
+        {
+            (WeakReference<SafeFileHandle> readHandle, WeakReference<SafeFileHandle> writeHandle) = await ReadAndWriteAsync(asyncRead, asyncWrite, cancellable);
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(readHandle.TryGetTarget(out _));
+            Assert.False(writeHandle.TryGetTarget(out _));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static async Task<(WeakReference<SafeFileHandle>, WeakReference<SafeFileHandle>)> ReadAndWriteAsync(bool asyncRead, bool asyncWrite, bool cancellable)
+            {
+                SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead, asyncWrite);
+                FileStream reader = new(readHandle, FileAccess.Read, bufferSize: 0, isAsync: asyncRead);
+                FileStream writer = new(writeHandle, FileAccess.Write, bufferSize: 0, isAsync: asyncWrite);
+
+                CancellationToken cancellationToken = default;
+                if (cancellable)
+                {
+                    // The registration makes the reader reachable from the cancellation token source.
+                    CancellationTokenSource cts = new();
+                    cts.Token.Register(() => reader.Dispose());
+                    cancellationToken = cts.Token;
+                }
+
+                byte[] buffer = new byte[1];
+                ValueTask<int> readTask = reader.ReadAsync(buffer, cancellationToken);
+                await writer.WriteAsync(new byte[] { 42 });
+                Assert.Equal(1, await readTask);
+
+                return (new(readHandle, trackResurrection: true), new(writeHandle, trackResurrection: true));
             }
         }
     }

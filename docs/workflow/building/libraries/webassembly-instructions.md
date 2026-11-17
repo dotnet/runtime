@@ -113,6 +113,10 @@ The libraries build contains some native code. This includes shims over libc, op
 ./build.sh libs.native -os browser -c Debug|Release
 ```
 
+For multithreaded Browser builds, pass `/p:WasmEnableThreads=true` to both runtime and
+library builds. This enables `-pthread` for native library compilation and linking,
+including minipal. Do not mix these binaries with a single-threaded build.
+
 ## Building individual libraries
 
 Individual projects and libraries can be build by specifying the build configuration.

@@ -75,6 +75,10 @@ enum class AsyncMethodFlags
     Thunk                      = 16,
     // A special thunk to drop return value in covariant return scenario
     ReturnDroppingThunk        = 32,
+    // A special thunk for an override that covariantly returns a type derived from Task/Task<T>.
+    // The thunk gives only such covariant overrides an Async variant; other overrides of the
+    // same slot remain ordinary, non-task-returning methods.
+    CovariantForwardingThunk   = 64,
     // Note: If adding more flags make sure to modify RequiresAsyncContextSaveAndRestore
 
     // The rest of the methods that are not in any of the above groups.
@@ -426,7 +430,8 @@ public:
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         return FALSE;
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
-        return (m_wFlags3AndTokenRemainder & enum_flag3_HasPrecode) != 0;
+        // Ensure the HasPrecode flag is read before the entry point slot is read
+        return (VolatileLoad(&m_wFlags3AndTokenRemainder) & enum_flag3_HasPrecode) != 0;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
@@ -778,6 +783,7 @@ public:
     inline bool IsLCGMethod();
 
     inline bool IsDiagnosticsHidden();
+    inline bool IsDiagnosticsHiddenLCGMethod();
 
     inline DWORD IsPInvoke()
     {
@@ -2138,10 +2144,20 @@ public:
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnDroppingThunk);
     }
 
+    inline bool IsCovariantForwardingThunk() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+
+        AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+        return hasAsyncFlags(asyncFlags, AsyncMethodFlags::CovariantForwardingThunk);
+    }
+
     inline bool SupportsAsyncVersionCodegen() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return IsAsyncThunkMethod() && IsAsyncVariantMethod() && !IsReturnDroppingThunk();
+        return IsAsyncThunkMethod() && IsAsyncVariantMethod() && !IsReturnDroppingThunk() && !IsCovariantForwardingThunk();
     }
 
     inline bool MatchesAsyncVariantLookup(AsyncVariantLookup lookup) const
@@ -2386,8 +2402,10 @@ private:
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     void EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
     void EmitReturnDroppingThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
+    void EmitCovariantForwardingThunk(MethodDesc* pOrdinaryVariant, MetaSig& msig, ILStubLinker* pSL);
     int GetTokenForThunkTarget(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
+    int GetTokenForGenericMethodCall(ILCodeStream* pCode, MethodDesc* md, SigPointer typeArgSig);
 public:
     SigPointer GetAsyncThunkResultTypeSig();
     static void CreateDerivedTargetSig(MetaSig& msig, SigBuilder* stubSigBuilder);
@@ -2401,6 +2419,9 @@ private:
 
 public:
     static void Init();
+#ifdef FEATURE_READYTORUN
+    static void SetupGcCoverageForPrecompiledCode(PCODE pCode);
+#endif // FEATURE_READYTORUN
 #endif
 
     friend struct ::cdac_data<MethodDesc>;
@@ -2937,22 +2958,39 @@ struct cdac_data<StoredSigMethodDesc>
 
 class FCallMethodDesc : public MethodDesc
 {
-
-    DWORD   m_dwECallID;
-#ifdef TARGET_64BIT
-    DWORD   m_padding;
-#endif
+    // String FCalls cache a dynamic implementation ID instead of an address.
+    union
+    {
+        PCODE m_pFCallImpl;
+        DWORD m_dwECallID;
+    };
 
 public:
+    void SetCachedFCallImpl(PCODE implementation)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(GetMethodTable() != g_pStringClass);
+        VolatileStore(&m_pFCallImpl, implementation);
+    }
+
+    PCODE GetCachedFCallImpl()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(GetMethodTable() != g_pStringClass);
+        return VolatileLoad(&m_pFCallImpl);
+    }
+
     void SetECallID(DWORD dwID)
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(GetMethodTable() == g_pStringClass);
         m_dwECallID = dwID;
     }
 
     DWORD GetECallID()
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(GetMethodTable() == g_pStringClass);
         return m_dwECallID;
     }
 };
@@ -3019,7 +3057,8 @@ public:
     {
         // Flags for DynamicMethodDesc
         // Define new flags in descending order. This allows the IL type enumeration to increase naturally.
-        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of FlagIsLCGMethod, FlagIsILStub, and ILStubTypeMask.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of FlagIsLCGMethod, FlagIsILStub,
+        // FlagIsDiagnosticsHidden, and ILStubTypeMask.
         FlagNone                = 0x00000000,
         FlagPublic              = 0x00000800,
         FlagStatic              = 0x00001000,
@@ -3027,7 +3066,7 @@ public:
         FlagIsLCGMethod         = 0x00004000,
         FlagIsILStub            = 0x00008000,
         // unused               = 0x00010000,
-        // unused               = 0x00020000,
+        FlagIsDiagnosticsHidden = 0x00020000,
         FlagMask                = 0x0003f800,
         StackArgSizeMask        = 0xfffc0000, // native stack arg size for IL stubs
         ILStubTypeMask          = ~(FlagMask | StackArgSizeMask)

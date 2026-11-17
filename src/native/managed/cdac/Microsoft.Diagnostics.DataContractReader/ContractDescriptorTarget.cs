@@ -56,7 +56,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     private Dictionary<string, TypeInfo> _types = [];
 
     public override ContractRegistry Contracts { get; }
-    public override DataCache ProcessedData { get; }
+    public override IDataCache ProcessedData { get; }
 
     // A named sub-descriptor is resolved once its slot has been parsed (dropped from the pending
     // list) - or was never advertised at all. A slot that is still pending (the subordinate module

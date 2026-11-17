@@ -13,6 +13,7 @@
 
 #define UNICODE
 #include <palsuite.h>
+#include <dn-u16.h>
 
 
 PALTEST(miscellaneous_FormatMessageW_test6_paltest_formatmessagew_test6, "miscellaneous/FormatMessageW/test6/paltest_formatmessagew_test6")
@@ -61,7 +62,7 @@ PALTEST(miscellaneous_FormatMessageW_test6_paltest_formatmessagew_test6, "miscel
              "function failed when trying to Format a FROM_SYSTEM message.");
     }
 
-    if(wcslen(OutBuffer) <= 0)
+    if(u16_strlen(OutBuffer) <= 0)
     {
         Fail("ERROR: There are no characters in the buffer, and when the "
              "FORMAT_MESSAGE_FROM_SYSTEM flag is used with ERROR_FILE_NOT_FOUND error, "
