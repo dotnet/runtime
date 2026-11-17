@@ -19,6 +19,16 @@ namespace System.Linq.Expressions.Interpreter
         [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
         private static bool CanCreateArbitraryDelegates => RuntimeFeature.IsDynamicCodeSupported;
 
+#if FEATURE_FAST_CREATE
+        /// <summary>
+        /// Gets a value indicating whether call instructions for methods with few arguments are created through
+        /// statically referenced generic instantiations. Disabling this avoids precompiling thousands of generic
+        /// instantiations in trimmed and ahead-of-time compiled apps at the cost of using reflection to create them.
+        /// </summary>
+        [FeatureSwitchDefinition("System.Linq.Expressions.Interpreter.IsPrecompiledCallSupported")]
+        private static bool IsPrecompiledCallSupported { get; } = AppContext.TryGetSwitch("System.Linq.Expressions.Interpreter.IsPrecompiledCallSupported", out bool isEnabled) ? isEnabled : true;
+#endif
+
         #region Construction
 
         public override string InstructionName => "Call";
@@ -82,7 +92,7 @@ namespace System.Linq.Expressions.Interpreter
             try
             {
 #if FEATURE_FAST_CREATE
-                if (argumentCount < MaxArgs)
+                if (IsPrecompiledCallSupported && argumentCount < MaxArgs)
                 {
                     res = FastCreate(info, parameters);
                 }

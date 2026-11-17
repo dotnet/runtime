@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -491,6 +492,35 @@ namespace System.Linq.Expressions.Tests
         private static int Add4(int a, int b, int c, int d)
         {
             return a + b + c + d;
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void InterpretedCallsWorkWithPrecompiledCallSupportSwitch(bool isPrecompiledCallSupported)
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions.Add("System.Linq.Expressions.Interpreter.IsPrecompiledCallSupported", isPrecompiledCallSupported.ToString());
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                Expression<Func<int>> noArgs = () => Environment.ProcessorCount;
+                Assert.Equal(Environment.ProcessorCount, noArgs.Compile(preferInterpretation: true)());
+
+                Expression<Func<double, double>> oneArg = a => Math.Abs(a);
+                Assert.Equal(2.5, oneArg.Compile(preferInterpretation: true)(-2.5));
+
+                Expression<Func<int, int, int>> twoArgs = (a, b) => Add(a, b);
+                Assert.Equal(29, twoArgs.Compile(preferInterpretation: true)(20, 9));
+
+                Expression<Func<string, char, int>> instanceCall = (s, c) => s.IndexOf(c);
+                Assert.Equal(2, instanceCall.Compile(preferInterpretation: true)("abcd", 'c'));
+
+                List<long> list = new List<long>();
+                Expression<Action<List<long>, long>> voidCall = (l, v) => l.Add(v);
+                voidCall.Compile(preferInterpretation: true)(list, 42L);
+                Assert.Equal(42L, Assert.Single(list));
+            }, options);
         }
     }
 
