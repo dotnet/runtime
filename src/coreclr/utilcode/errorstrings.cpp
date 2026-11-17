@@ -133,7 +133,7 @@ bool GetSystemErrorMessage(DWORD code, WCHAR *buffer, size_t cchBuffer)
     }
 
     char errorString[sizeof("Error 4294967295")];
-    int count = sprintf_s(errorString, sizeof(errorString), "Error %u", code);
+    int count = sprintf_s(errorString, ARRAY_SIZE(errorString), "Error %u", code);
     if (count < 0 || (size_t)count >= cchBuffer)
     {
         return false;
