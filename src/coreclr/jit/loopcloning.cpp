@@ -1311,12 +1311,13 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 JITDUMP("Added stride>1 overflow guard: V%02u <= %d\n", limitLcl, maxLimit);
             }
         }
-        else if (iterInfo->HasArrayLengthLimit && largeStride)
+        else if (iterInfo->HasArrayLengthLimit)
         {
-            // For stride <= 57 the implicit Array.MaxLength bound suffices;
-            // we fall through with no extra check. For wider strides emit a
-            // runtime guard on arr.Length so the fast clone only runs when
-            // the array is short enough that the post-step IV stays in int.
+            // We only get here for spans or wide strides. The limit is arr.Length + offset, so
+            // Array.MaxLength alone does not keep the post-step IV in int (a span can be longer
+            // than any array, and a large offset pushes the limit close to INT_MAX).
+            // Emit a runtime guard on arr.Length so the fast clone only runs when the
+            // post-step IV stays in int; it is elided when trivially true.
             assert(limitArrIndex != nullptr);
             if (maxLimitBase64 >= CORINFO_Array_MaxLength)
             {
