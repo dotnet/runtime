@@ -324,6 +324,7 @@ namespace System
         /// <typeparam name="T"></typeparam>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
+        [Intrinsic] // Unrolled into a range/bitmask check when the span is a constant
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool Contains<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
         {

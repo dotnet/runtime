@@ -538,8 +538,46 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
 }
 
 //------------------------------------------------------------------------
-// impStringLiteralContainsChar: Folds a `str.Contains(char value)` call when
-//    `str` is a constant string, into a range or set membership check:
+// impUtf16SpanContainsChar: Folds a `MemoryExtensions.Contains<char>(span, value)`
+//    call when `span` is a constant string literal, e.g. "abc".AsSpan(), into a
+//    range or set membership check. `String.Contains(char)` routes through this
+//    overload for known-constant strings, so both spellings fold identically.
+//
+// Arguments:
+//    sig         - signature of the Contains method
+//    methodFlags - its flags
+//
+// Returns:
+//    GenTree representing the folded check or nullptr
+//
+GenTree* Compiler::impUtf16SpanContainsChar(CORINFO_SIG_INFO* sig, unsigned methodFlags)
+{
+    // MemoryExtensions.Contains<T>(ReadOnlySpan<T> span, T value)
+    if (((methodFlags & CORINFO_FLG_STATIC) == 0) || (sig->numArgs != 2) || (sig->sigInst.methInstCount != 1))
+    {
+        return nullptr;
+    }
+
+    // Only the char element type (and its bitwise-equivalent 16-bit types)
+    CorInfoType elemType = info.compCompHnd->getTypeForPrimitiveValueClass(sig->sigInst.methInst[0]);
+    if ((elemType != CORINFO_TYPE_CHAR) && (elemType != CORINFO_TYPE_SHORT) && (elemType != CORINFO_TYPE_USHORT))
+    {
+        return nullptr;
+    }
+
+    // impStackTop(0) is the searched value, impStackTop(1) is the span
+    GenTreeStrCon* cnsStr = impGetStrConFromSpan(impStackTop(1).val);
+    if (cnsStr == nullptr)
+    {
+        return nullptr;
+    }
+
+    return impConstCharSetContains(cnsStr, impStackTop(0).val);
+}
+
+//------------------------------------------------------------------------
+// impConstCharSetContains: Folds a membership test of `value` against the
+//    constant chars of `cnsStr`:
 //    - a continuous range, e.g. "cdef", becomes `value >= 'c' && value <= 'f'`
 //      (represented as nested QMARKs), which optOptimizeRangeTests later folds
 //      into a single unsigned range check;
@@ -549,33 +587,14 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
 //    In all other cases the call is left as-is.
 //
 // Arguments:
-//    sig         - signature of the Contains method
-//    methodFlags - its flags
+//    cnsStr - the constant string whose chars form the set
+//    value  - the char value to test for membership
 //
 // Returns:
 //    GenTree representing the folded check or nullptr
 //
-GenTree* Compiler::impStringLiteralContainsChar(CORINFO_SIG_INFO* sig, unsigned methodFlags)
+GenTree* Compiler::impConstCharSetContains(GenTreeStrCon* cnsStr, GenTree* value)
 {
-    const bool isStatic  = methodFlags & CORINFO_FLG_STATIC;
-    const int  argsCount = sig->numArgs + (isStatic ? 0 : 1);
-
-    // We only fold the `str.Contains(char value)` overload and not, e.g.,
-    // `Contains(string value)`
-    CORINFO_CLASS_HANDLE argClass;
-    if ((argsCount != 2) || (strip(info.compCompHnd->getArgType(sig, sig->args, &argClass)) != CORINFO_TYPE_CHAR))
-    {
-        return nullptr;
-    }
-
-    // impStackTop(0) is the searched value, impStackTop(1) is the receiver
-    GenTree* value = impStackTop(0).val;
-    if (!impStackTop(1).val->OperIs(GT_CNS_STR))
-    {
-        return nullptr;
-    }
-    GenTreeStrCon* cnsStr = impStackTop(1).val->AsStrCon();
-
     if (cnsStr->IsStringEmptyField())
     {
         // check for fake ""
@@ -642,7 +661,7 @@ GenTree* Compiler::impStringLiteralContainsChar(CORINFO_SIG_INFO* sig, unsigned 
     // This optimization spawns a couple of temps so make sure we have room
     if (lvaHaveManyLocals(0.75))
     {
-        JITDUMP("impStringLiteralContainsChar: Method has too many locals - bail out.\n")
+        JITDUMP("impConstCharSetContains: Method has too many locals - bail out.\n")
         return nullptr;
     }
 
@@ -654,7 +673,7 @@ GenTree* Compiler::impStringLiteralContainsChar(CORINFO_SIG_INFO* sig, unsigned 
     lvaTable[valueTmp].lvType = TYP_INT;
     GenTreeLclVar* valueLcl   = gtNewLclvNode(valueTmp, TYP_INT);
 
-    impPopStack(argsCount);
+    impPopStack(2);
     impStoreToTemp(valueTmp, gtNewCastNode(TYP_INT, value, false, TYP_USHORT), CHECK_SPILL_ALL);
 
     // QMARK nodes cannot reside on the evaluation stack, so the result is
@@ -665,7 +684,7 @@ GenTree* Compiler::impStringLiteralContainsChar(CORINFO_SIG_INFO* sig, unsigned 
     if (isContinuous)
     {
         // "cdef".Contains(value) -> value >= 'c' && value <= 'f'
-        JITDUMP("Folding literal.Contains(char) into a range check\n")
+        JITDUMP("Folding span.Contains(char) into a range check\n")
 
         GenTree* folded = gtNewQmarkNode(
             TYP_INT, gtNewOperNode(GT_GE, TYP_INT, gtCloneExpr(valueLcl), gtNewIconNode(mn, TYP_INT)),
@@ -688,7 +707,7 @@ GenTree* Compiler::impStringLiteralContainsChar(CORINFO_SIG_INFO* sig, unsigned 
         // shape optRecognizeAndOptimizeSwitchJumps folds into a bitmask test
         // (`bt`). Since the chain only writes the result when no char matched,
         // the result temp is seeded with `true` first.
-        JITDUMP("Folding literal.Contains(char) into a bitmask test\n")
+        JITDUMP("Folding span.Contains(char) into a bitmask test\n")
 
         impStoreToTemp(resultTmp, gtNewTrue(), CHECK_SPILL_ALL);
 
