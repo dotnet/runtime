@@ -1195,6 +1195,11 @@ namespace System.Tests
             yield return new object[] { 1667m, 325.66574961026426932314500573m, 38.67125194867865338427497135m };
             yield return new object[] { 1667m, 0.00000000013630700224712809m, 0.00000000002527942770321278m };
             yield return new object[] { 60596869520933069.9m, 8063773.1275438997671m, 5700076.9722872002614m };
+
+            yield return new object[] { 4294967295m, 1m, 0m };
+            yield return new object[] { 4294967295m, 1.0000000000000000000000000000m, 0.0000000000000000000000000000 };
+            yield return new object[] { 4294967296m, 0.1428571428571428571428571429m, 0.1428571428571428558543669541m };
+            yield return new object[] { decimal.MaxValue, 1.0000000000000000000000000000m, 0.0000000000000000000000000000 };
         }
 
         [Theory]
@@ -1204,7 +1209,6 @@ namespace System.Tests
             Assert.Equal(expected, d1 % d2);
             Assert.Equal(expected, decimal.Remainder(d1, d2));
         }
-
 
         public static IEnumerable<object[]> Remainder_Invalid_TestData()
         {
