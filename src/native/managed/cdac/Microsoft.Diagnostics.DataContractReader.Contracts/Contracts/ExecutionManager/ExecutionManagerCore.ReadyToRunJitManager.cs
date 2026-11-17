@@ -44,7 +44,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (!TryAdjustRuntimeFunctionToMethodStart(r2rInfo, codeBase, index, out index, out TargetPointer methodDesc))
                 return false;
 
-            Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
+            TargetPointer function = _runtimeFunctions.GetRuntimeFunctionAddress(r2rInfo.RuntimeFunctions, index);
             uint functionBeginAddress = _runtimeFunctions.GetBeginAddress(function);
 
             TargetPointer addr = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
@@ -59,7 +59,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap ?? 0, r2rInfo.HotColdMap, index, out uint coldFunctionIndex))
             {
                 Debug.Assert(coldFunctionIndex < r2rInfo.NumRuntimeFunctions);
-                Data.RuntimeFunction coldFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldFunctionIndex);
+                TargetPointer coldFunction = _runtimeFunctions.GetRuntimeFunctionAddress(r2rInfo.RuntimeFunctions, coldFunctionIndex);
                 TargetPointer coldStart = CodePointerUtils.AddressFromCodePointer(
                     new TargetCodePointer(codeBase.Value + _runtimeFunctions.GetBeginAddress(coldFunction)), Target);
                 if (addr >= coldStart)
@@ -96,8 +96,8 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap ?? 0, r2rInfo.HotColdMap, index, r2rInfo.NumRuntimeFunctions, out uint coldStartIdx, out uint coldEndIdx))
             {
-                Data.RuntimeFunction coldStartFunc = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldStartIdx);
-                Data.RuntimeFunction coldEndFunc = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldEndIdx);
+                TargetPointer coldStartFunc = _runtimeFunctions.GetRuntimeFunctionAddress(r2rInfo.RuntimeFunctions, coldStartIdx);
+                TargetPointer coldEndFunc = _runtimeFunctions.GetRuntimeFunctionAddress(r2rInfo.RuntimeFunctions, coldEndIdx);
                 uint coldBeginOffset = _runtimeFunctions.GetBeginAddress(coldStartFunc);
                 uint coldEndOffset = _runtimeFunctions.GetBeginAddress(coldEndFunc)
                     + _runtimeFunctions.GetFunctionLength(GetLoadedImageBase(rangeSection, r2rInfo), coldEndFunc);
@@ -180,9 +180,12 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (!TryAdjustRuntimeFunctionToMethodStart(r2rInfo, codeBase, index, out index, out _))
                 return;
 
-            Data.RuntimeFunction runtimeFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
+            TargetPointer runtimeFunction = _runtimeFunctions.GetRuntimeFunctionAddress(r2rInfo.RuntimeFunctions, index);
 
-            TargetPointer unwindInfo = runtimeFunction.UnwindData + GetLoadedImageBase(rangeSection, r2rInfo);
+            TargetPointer unwindInfoBase = rangeSection.IsVirtualIP
+                ? r2rInfo.GetWasmGCInfoBase()
+                : GetLoadedImageBase(rangeSection, r2rInfo);
+            TargetPointer unwindInfo = _runtimeFunctions.GetUnwindData(runtimeFunction) + unwindInfoBase;
             uint unwindDataSize = UnwindDataSize.GetUnwindDataSize(Target, unwindInfo, Target.Contracts.RuntimeInfo.GetTargetArchitecture());
             gcInfo = unwindInfo + unwindDataSize;
             gcVersion = GetR2RGCInfoVersion(r2rInfo);
@@ -297,7 +300,9 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
         private TargetPointer GetMethodDescForRuntimeFunction(Data.ReadyToRunInfo r2rInfo, TargetPointer codeBase, uint runtimeFunctionIndex)
         {
-            Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, runtimeFunctionIndex);
+            TargetPointer function = _runtimeFunctions.GetRuntimeFunctionAddress(r2rInfo.RuntimeFunctions, runtimeFunctionIndex);
+            if (_runtimeFunctions.IsSkip(function))
+                return TargetPointer.Null;
 
             // ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage
             TargetCodePointer startAddress = codeBase + _runtimeFunctions.GetBeginAddress(function);

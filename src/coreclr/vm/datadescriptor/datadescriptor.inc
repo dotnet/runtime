@@ -988,6 +988,7 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, LoadedImageBase, cdac_data<ReadyToRun
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, Composite, cdac_data<ReadyToRunInfo>::Composite)
 #ifdef TARGET_WASM
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, MinVirtualIP, cdac_data<ReadyToRunInfo>::MinVirtualIP)
+CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, GCInfoBase, cdac_data<ReadyToRunInfo>::GCInfoBase)
 #endif // TARGET_WASM
 CDAC_TYPE_END(ReadyToRunInfo)
 
@@ -1052,6 +1053,18 @@ CDAC_TYPE_FIELD(RuntimeFunction, T_UINT32, EndAddress, offsetof(RUNTIME_FUNCTION
 CDAC_TYPE_FIELD(RuntimeFunction, T_UINT32, UnwindData, offsetof(RUNTIME_FUNCTION, UnwindData))
 #endif // TARGET_WASM
 CDAC_TYPE_END(RuntimeFunction)
+
+#ifdef TARGET_WASM
+CDAC_TYPE_BEGIN(WasmRuntimeFunctionGroup)
+CDAC_TYPE_SIZE(sizeof(RUNTIME_FUNCTION_GROUP))
+CDAC_TYPE_FIELD(WasmRuntimeFunctionGroup, T_UINT32, VirtualIPBase, offsetof(RUNTIME_FUNCTION_GROUP, VirtualIPBase))
+CDAC_TYPE_FIELD(WasmRuntimeFunctionGroup, T_UINT32, IsFuncletBits, offsetof(RUNTIME_FUNCTION_GROUP, IsFuncletBits))
+CDAC_TYPE_FIELD(WasmRuntimeFunctionGroup, T_ARRAY(T_UINT8), HighBitsOfUnwindOffset, offsetof(RUNTIME_FUNCTION_GROUP, HighBitsOfUnwindOffset))
+CDAC_TYPE_FIELD(WasmRuntimeFunctionGroup, T_ARRAY(T_UINT8), VirtualIPOffsets, offsetof(RUNTIME_FUNCTION_GROUP, VirtualIPOffsets))
+CDAC_TYPE_FIELD(WasmRuntimeFunctionGroup, T_ARRAY(T_UINT8), MidBitsOfUnwindOffset, offsetof(RUNTIME_FUNCTION_GROUP, MidBitsOfUnwindOffset))
+CDAC_TYPE_FIELD(WasmRuntimeFunctionGroup, T_ARRAY(T_UINT8), LowBitsOfUnwindOffset, offsetof(RUNTIME_FUNCTION_GROUP, LowBitsOfUnwindOffset))
+CDAC_TYPE_END(WasmRuntimeFunctionGroup)
+#endif // TARGET_WASM
 
 CDAC_TYPE_BEGIN(UnwindInfo)
 CDAC_TYPE_INDETERMINATE(UnwindInfo)

@@ -57,7 +57,13 @@ internal sealed class WasmR2RInfo : IWasmR2RInfo
             return false;
 
         TargetPointer unwindInfoBaseAddress = _executionManager.GetUnwindInfoBaseAddress(codeBlock);
-        RuntimeFunction runtimeFunction = _target.ProcessedData.GetOrAdd<RuntimeFunction>(runtimeFunctionAddress);
+        if (unwindInfoBaseAddress == TargetPointer.Null)
+            return false;
+
+        WasmRuntimeFunction runtimeFunction = _target.ProcessedData.GetOrAdd<WasmRuntimeFunction>(runtimeFunctionAddress);
+        if (runtimeFunction.IsSkip)
+            return false;
+
         unwindDataAddress = unwindInfoBaseAddress + runtimeFunction.UnwindData;
         return true;
     }

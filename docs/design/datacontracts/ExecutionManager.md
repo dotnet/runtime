@@ -269,11 +269,12 @@ virtual-IP ranges bypass native thunk classification.
 | `ReadyToRunInfo` | `DebugInfoSection` | `pointer` | Pointer to an `ImageDataDirectory` for the debug info |
 | `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | `pointer` | Pointer to an `ImageDataDirectory` for the delay load method call thunks; absent on WebAssembly |
 | `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
+| `ReadyToRunInfo` | `GCInfoBase` | `pointer` | WebAssembly-only base of the WasmGCInfo section containing unwind and GC data |
 | `ReadyToRunInfo` | `HotColdMap` | `pointer` | Pointer to an array of 32-bit integers; present only with `FEATURE_COLD_R2R_CODE` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
 | `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image; unset for component assemblies of a composite image, so it is read from the `CompositeInfo` |
 | `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base virtual IP assigned to the ReadyToRun module on WebAssembly |
 | `ReadyToRunInfo` | `NumHotColdMap` | `uint32` | Number of entries in the `HotColdMap`; absent without `FEATURE_COLD_R2R_CODE`, meaning no hot/cold mapping |
-| `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
+| `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of logical `RuntimeFunctions`, including WebAssembly padding entries |
 | `ReadyToRunInfo` | `ReadyToRunHeader` | `pointer` | Pointer to the ReadyToRunHeader |
 | `ReadyToRunInfo` | `RuntimeFunctions` | `pointer` | Pointer to an array of `RuntimeFunctions` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontyperuntimefunctions) |
 | `ReadyToRunSection` | *(type size)* | `uint32` | Size of a ReadyToRun section entry in bytes |
@@ -286,12 +287,19 @@ virtual-IP ranges bypass native thunk classification.
 | `RealCodeHeader` | `NumUnwindInfos` | `uint32` | Number of Unwind Infos |
 | `RealCodeHeader` | `UnwindInfos` | `pointer` | Start address of Unwind Infos |
 | `RuntimeFunction` | *(type size)* | `uint32` | Size of a runtime function entry in bytes |
-| `RuntimeFunction` | `BeginAddress` | `uint32` | Begin address of the function. On ARM32, bit 0 is the Thumb bit; on WebAssembly, bit 31 marks a funclet and is excluded from address arithmetic. |
+| `RuntimeFunction` | `BeginAddress` | `uint32` | Begin address of a flat runtime function; on ARM32, bit 0 is the Thumb bit. Absent on WebAssembly. |
 | `RuntimeFunction` | `EndAddress` | `uint32` | End address of the function. Only exists on some platforms |
-| `RuntimeFunction` | `UnwindData` | `uint32` | Pointer to the unwind info for the function |
+| `RuntimeFunction` | `UnwindData` | `uint32` | Offset to unwind info for a flat runtime function; absent on WebAssembly |
 | `UnwindInfo` | `FunctionLength` | `uint32` | Length of the associated function in bytes. Only exists on some platforms |
 | `VirtualIPRangeSection` | `Next` | `pointer` | Pointer to the next registered WebAssembly ReadyToRun virtual-IP range |
 | `VirtualIPRangeSection` | `RangeSection` | `pointer` | Address of the embedded synthetic `RangeSection` describing the virtual-IP range |
+| `WasmRuntimeFunctionGroup` | *(type size)* | `uint32` | Size of a 32-entry WebAssembly runtime-function group (128 bytes) |
+| `WasmRuntimeFunctionGroup` | `HighBitsOfUnwindOffset` | `uint8[]` | Packed upper unwind-offset nibbles, two entries per byte; 0xf denotes a shared-upper-bits escape |
+| `WasmRuntimeFunctionGroup` | `IsFuncletBits` | `uint32` | Bit mask identifying funclet entries in the group |
+| `WasmRuntimeFunctionGroup` | `LowBitsOfUnwindOffset` | `uint8[]` | Low byte of each unwind offset; skipped slot 31 supplies escape bits 16-23 |
+| `WasmRuntimeFunctionGroup` | `MidBitsOfUnwindOffset` | `uint8[]` | Middle byte of each unwind offset; skipped slot 31 supplies escape bits 24-31 |
+| `WasmRuntimeFunctionGroup` | `VirtualIPBase` | `uint32` | Base added to each virtual-IP residual and slot offset |
+| `WasmRuntimeFunctionGroup` | `VirtualIPOffsets` | `uint8[]` | Per-entry virtual-IP residuals; 0xff marks a padding slot |
 
 ### Global variables used
 
@@ -381,7 +389,7 @@ bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddre
 }
 ```
 
-The R2R JitManager `GetMethodInfo` finds the runtime function corresponding to an address and maps its entry point pack to a method:
+The R2R JitManager `GetMethodInfo` finds the runtime function corresponding to an address and maps its entry point back to a method. On WebAssembly, runtime functions are 128-byte-aligned groups of 32 logical four-byte entries. For an entry address, align down to its group and use `(address & 127) / 4` as its slot. A virtual-IP residual of `0xff` marks padding; otherwise its begin address is `VirtualIPBase + VirtualIPOffsets[slot] + 4 * slot`, and `IsFuncletBits` supplies the funclet flag. The unwind offset is formed from the corresponding packed high nibble and middle and low bytes. A high nibble of `0xf` instead takes its upper 16 bits from the middle and low bytes of skipped slot 31; an escape without that skipped slot is invalid. The address lookup and backwards method lookup skip padding without changing logical indices.
 
 ```csharp
 bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
@@ -406,24 +414,29 @@ bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddre
     if (index < 0)
         return false;
 
-    bool featureEHFunclets = Target.ReadGlobal<byte>("FeatureEHFunclets") != 0;
-    if (featureEHFunclets)
-    {
-        index = // look up hot part index in the hot/cold map
-    }
-
-    TargetPointer function = runtimeFunctions + (ulong)(index * /* size of RuntimeFunction */);
-
-    uint beginAddress = /* RuntimeFunction.BeginAddress with platform flags removed */;
-    TargetPointer startAddress = codeBase + beginAddress;
-    TargetPointer entryPoint = /* code pointer from startAddress using PlatformMetadata.GetCodePointerFlags */
+    index = // look up hot part index in the hot/cold map
 
     TargetPointer mapAddress = r2rInfo + /* ReadyToRunInfo::EntryPointToMethodDescMap offset */;
-    TargetPointer methodDesc = /* look up entryPoint in HashMap at mapAddress */;
-    while (featureEHFunclets && methodDesc == TargetPointer.Null)
+    TargetPointer function, startAddress, methodDesc;
+    while (true)
     {
+        function = runtimeFunctions + (ulong)(index * /* size of RuntimeFunction */);
+        if (/* WebAssembly padding entry */)
+        {
+            if (index == 0)
+                return false;
+            index--;
+            continue;
+        }
+        uint beginAddress = /* flat or grouped RuntimeFunction begin address */;
+        startAddress = codeBase + beginAddress;
+        TargetPointer entryPoint = /* code pointer from startAddress using PlatformMetadata.GetCodePointerFlags */;
+        methodDesc = /* look up entryPoint in HashMap at mapAddress */;
+        if (methodDesc != TargetPointer.Null)
+            break;
+        if (index == 0)
+            return false;
         index--;
-        methodDesc = /* re-compute entryPoint based on updated index and look up in HashMap at mapAddress */
     }
 
     TargetNUInt relativeOffset = new TargetNUInt(code - startAddress);
@@ -553,16 +566,16 @@ bool TryGetWasmVirtualIPFromFunctionTableIndex(uint functionTableIndex, out ulon
     // Walk the FunctionTableIndexRangeSection list headed by *FunctionTableIndexRangeList (with cycle
     // detection) to the section where MinFunctionTableIndex <= functionTableIndex < MinFunctionTableIndex + NumRuntimeFunctions.
     // Starting at RuntimeFunctions[functionTableIndex - MinFunctionTableIndex] of the section's
-    // R2RModule's ReadyToRunInfo, step back past funclet entries to the controlling function, then
-    // virtualIP = ReadyToRunInfo.MinVirtualIP + RuntimeFunction.BeginAddress.
+    // R2RModule's ReadyToRunInfo, reject a padding entry. Step back past funclets and padding to
+    // the controlling function, then virtualIP = ReadyToRunInfo.MinVirtualIP + its grouped begin address.
 }
 
 // Mirrors ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex.
 bool TryGetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(uint runtimeFunctionIndex, out ulong virtualIP)
 {
     // Find the R2R module whose ReadyToRunInfo.MinVirtualIP is the reserved initial WebAssembly
-    // virtual IP, 0x80000001. Reject an out-of-range index or a funclet entry, then compute
-    // virtualIP = ReadyToRunInfo.MinVirtualIP + RuntimeFunctions[runtimeFunctionIndex].BeginAddress.
+    // virtual IP, 0x80000001. Reject an out-of-range, padding, or funclet entry, then compute
+    // virtualIP = ReadyToRunInfo.MinVirtualIP + the entry's grouped begin address.
 }
 ```
 
@@ -618,7 +631,7 @@ The `GetMethodDesc`, `GetStartAddress`, and `GetRelativeOffset` APIs extract fie
 
 * For interpreted code (`InterpreterJitManager`), there is no native unwind info. `GetUnwindInfo` returns null.
 
-Unwind info (`RUNTIME_FUNCTION`) uses relative addressing. For managed code, these values are relative to the beginning of a `CodeHeap` for jitted code or the loaded-image base for ReadyToRun code. On WebAssembly, ReadyToRun entrypoint identity remains relative to `MinVirtualIP`, while unwind, debug, GC, and exception data RVAs are resolved from `LoadedImageBase`.
+Unwind info (`RUNTIME_FUNCTION`) uses relative addressing. For managed code, these values are relative to the beginning of a `CodeHeap` for jitted code or the loaded-image base for ReadyToRun code. On WebAssembly, ReadyToRun entrypoint identity is relative to `MinVirtualIP`, unwind and GC data offsets are relative to `ReadyToRunInfo.GCInfoBase`, and debug and exception data RVAs remain relative to `LoadedImageBase`.
 `GetUnwindInfoBaseAddress` finds this base address for a given `CodeBlockHandle`.
 
 `IExecutionManager.GetDebugInfo` gets a pointer to the relevant DebugInfo for a `CodeBlockHandle`. The ExecutionManager delegates to the JitManager implementations as the DebugInfo is stored in different ways on jitted and R2R code.

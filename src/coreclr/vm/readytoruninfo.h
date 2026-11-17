@@ -490,6 +490,7 @@ struct cdac_data<ReadyToRunInfo>
     static constexpr size_t Composite = offsetof(ReadyToRunInfo, m_pComposite);
 #ifdef TARGET_WASM
     static constexpr size_t MinVirtualIP = offsetof(ReadyToRunInfo, m_minVirtualIP);
+    static constexpr size_t GCInfoBase = offsetof(ReadyToRunInfo, m_gcInfoBase);
 #endif // TARGET_WASM
 };
 

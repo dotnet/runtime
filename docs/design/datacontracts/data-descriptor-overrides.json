@@ -5,6 +5,12 @@
       "type.Table": "pointer",
       "type.TableSize": "uint32"
     },
+    "StackWalk": {
+      "ReadyToRunInfo.GCInfoBase": "pointer",
+      "WasmRuntimeFunctionGroup.HighBitsOfUnwindOffset": "uint8[]",
+      "WasmRuntimeFunctionGroup.LowBitsOfUnwindOffset": "uint8[]",
+      "WasmRuntimeFunctionGroup.MidBitsOfUnwindOffset": "uint8[]"
+    },
     "StackWalk@c2": {
       "MethodTableAuxiliaryData.<type size>": "uint32"
     }

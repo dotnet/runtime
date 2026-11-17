@@ -208,15 +208,16 @@ On ARM64, the `pac` unwind opcode strips pointer authentication bits from `Lr` u
 | `PInvokeCalliFrame` | `VASigCookiePtr` | `pointer` | Pointer to the varargs signature cookie for the unmanaged call |
 | `PortableEntryPoint` | `ActualCode` | `pointer` | Native code for the entrypoint; on WebAssembly R2R code this is a function-table index (only defined if `FeaturePortableEntrypoints` is enabled) |
 | `ReadyToRunInfo` | `CompositeInfo` | `pointer` | Pointer to composite R2R info - or itself for non-composite |
+| `ReadyToRunInfo` | `GCInfoBase` | `pointer` | WebAssembly-only base of the WasmGCInfo section containing unwind and GC data |
 | `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
 | `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image; unset for component assemblies of a composite image, so it is read from the `CompositeInfo` |
 | `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base virtual IP assigned to the ReadyToRun module on WebAssembly |
 | `ReadyToRunInfo` | `NumImportSections` | `uint32` | Number of ReadyToRun import sections |
-| `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
+| `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of logical `RuntimeFunctions`, including WebAssembly padding entries |
 | `ReadyToRunInfo` | `RuntimeFunctions` | `pointer` | Pointer to an array of `RuntimeFunctions` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontyperuntimefunctions) |
 | `ResumableFrame` | `TargetContextPtr` | `pointer` | Pointer to the Frame's Target Context |
 | `RuntimeFunction` | *(type size)* | `uint32` | Size of a runtime function entry in bytes |
-| `RuntimeFunction` | `BeginAddress` | `uint32` | Begin address of the function. On ARM32, bit 0 is the Thumb bit; on WebAssembly, bit 31 marks a funclet and is excluded from address arithmetic. |
+| `RuntimeFunction` | `BeginAddress` | `uint32` | Begin address of a flat runtime function; on ARM32, bit 0 is the Thumb bit. Absent on WebAssembly. |
 | `SoftwareExceptionFrame` | `ReturnAddress` | `CodePointer` | Return address saved in Frame |
 | `SoftwareExceptionFrame` | `TargetContext` | `pointer` | Context object saved in Frame |
 | `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
@@ -235,6 +236,13 @@ On ARM64, the `pac` unwind opcode strips pointer authentication bits from `Lr` u
 | `TransitionBlock` | `ReturnAddress` | `CodePointer` | Return address associated with the TransitionBlock |
 | `TransitionBlock` | `StackPointer` | `pointer` | WASM only: R2R linear-stack pointer of the caller, saved by the transition helper |
 | `VASigCookie` | `SizeOfArgs` | `uint32` | Total size in bytes of the varargs argument area; used on x86 to locate the argument base |
+| `WasmRuntimeFunctionGroup` | *(type size)* | `uint32` | Size of a 32-entry WebAssembly runtime-function group (128 bytes) |
+| `WasmRuntimeFunctionGroup` | `HighBitsOfUnwindOffset` | `uint8[]` | Packed upper unwind-offset nibbles, two entries per byte; 0xf denotes a shared-upper-bits escape |
+| `WasmRuntimeFunctionGroup` | `IsFuncletBits` | `uint32` | Bit mask identifying funclet entries in the group |
+| `WasmRuntimeFunctionGroup` | `LowBitsOfUnwindOffset` | `uint8[]` | Low byte of each unwind offset; skipped slot 31 supplies escape bits 16-23 |
+| `WasmRuntimeFunctionGroup` | `MidBitsOfUnwindOffset` | `uint8[]` | Middle byte of each unwind offset; skipped slot 31 supplies escape bits 24-31 |
+| `WasmRuntimeFunctionGroup` | `VirtualIPBase` | `uint32` | Base added to each virtual-IP residual and slot offset |
+| `WasmRuntimeFunctionGroup` | `VirtualIPOffsets` | `uint8[]` | Per-entry virtual-IP residuals; 0xff marks a padding slot |
 
 ### Global variables used
 
@@ -510,7 +518,7 @@ Root-method frame identities have three forms:
 
 A funclet instead stores its establishing-frame pointer plus two, giving the identity low bits `10`. These tags are followed until the root-method frame is reached. The physical funclet frame supplies the function-local virtual IP, while the root frame supplies the identity used to find the controlling method's base virtual IP. cDAC requires each establishing-frame link to move toward the caller and bounds the traversal so corrupt target memory cannot create an unbounded walk.
 
-**WASM R2R unwinding.** The virtual IP is the identity-derived method base plus twice the physical frame's stored function-local value. `WasmContext.Unwind` resolves its current virtual IP through `IExecutionManager.GetCodeBlockHandle`, then uses `GetUnwindInfo` and `GetUnwindInfoBaseAddress` to locate the unwind data. It reads the fixed frame size as a uint32 ULEB128 value from `unwindInfoBaseAddress + RuntimeFunction.UnwindData` and adds that size to the physical frame base. A zero frame size terminates the R2R walk because it would make no progress; malformed uint32 ULEB128 data is invalid.
+**WASM R2R unwinding.** The virtual IP is the identity-derived method base plus twice the physical frame's stored function-local value. `WasmContext.Unwind` resolves its current virtual IP through `IExecutionManager.GetCodeBlockHandle`, then uses `GetUnwindInfo` and `GetUnwindInfoBaseAddress` to locate the unwind data. The latter is the module's `ReadyToRunInfo.GCInfoBase`; the unwind offset is decoded from the grouped runtime-function entry as described in [ExecutionManager](ExecutionManager.md). It reads the fixed frame size as a uint32 ULEB128 value from their sum and adds that size to the physical frame base. A zero frame size terminates the R2R walk because it would make no progress; malformed uint32 ULEB128 data is invalid.
 
 For a managed caller, the resulting stack pointer identifies the caller's R2R frame record; its virtual IP and logical frame pointer are resolved as above. When the current frame has a positive odd reverse-P/Invoke identity, unwinding still preserves the advanced caller SP for the explicit `Frame` chain, but leaves IP and FP null because the caller is native. When the resulting stack pointer has no R2R frame record (a terminator, an interpreter transition or the stack top), the caller is not R2R code: the advanced SP is kept, IP and FP are null, and walking continues through the explicit `Frame` or interpreter frame chain. The R2R walk is cleared (SP, IP and FP all null) only when the current frame cannot be unwound at all: no R2R frame at SP, no unwind data, or a zero frame size.
 
