@@ -344,11 +344,15 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true'))"
                                   Condition="'$(TargetOS)' == 'wasi'" />
 
-      <!-- The test's own modules, named after the linked archives without the 'lib' prefix: a direct
-           P/Invoke entry matches the [DllImport] name and its variations, and tests omit the prefix. -->
+      <!-- The test's own modules, named after the linked archives without the static library prefix,
+           as the NativeAOT wasm test build does: a direct P/Invoke entry matches the [DllImport] name
+           and its variations, and tests omit the prefix. -->
+      <_WasmCorerunTestLib Update="@(_WasmCorerunTestLib)">
+        <ModuleName>%(Filename)</ModuleName>
+        <ModuleName Condition="$([System.String]::Copy('%(Filename)').StartsWith('$(StaticLibPrefix)'))">$([System.String]::Copy('%(Filename)').Substring($(StaticLibPrefix.Length)))</ModuleName>
+      </_WasmCorerunTestLib>
       <_WasmCorerunPInvokeModule Include="@(_WasmCorerunNativeSource->'%(FileName)')" />
-      <_WasmCorerunPInvokeModule Include="$([System.Text.RegularExpressions.Regex]::Replace('%(_WasmCorerunTestLib.FileName)', '^lib(?=.)', ''))"
-                                  Condition="'@(_WasmCorerunTestLib)' != ''" />
+      <_WasmCorerunPInvokeModule Include="@(_WasmCorerunTestLib->'%(ModuleName)')" />
     </ItemGroup>
 
     <!--
