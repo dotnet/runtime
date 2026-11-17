@@ -123,6 +123,7 @@ namespace System.Diagnostics
         public static ProcessExitStatus Run(ProcessStartInfo startInfo, TimeSpan? timeout = default)
         {
             ValidateNonCapturingStartInfo(startInfo, nameof(Run));
+            ValidateTimeout(timeout);
 
             if (startInfo.KillTreeOnRunCancellation is true && timeout.HasValue && timeout.Value != Timeout.InfiniteTimeSpan)
             {
@@ -262,6 +263,7 @@ namespace System.Diagnostics
         public static ProcessTextOutput RunAndCaptureText(ProcessStartInfo startInfo, TimeSpan? timeout = default)
         {
             ValidateCaptureStartInfo(startInfo, nameof(RunAndCaptureText));
+            ValidateTimeout(timeout);
 
             long startTimestamp = Stopwatch.GetTimestamp();
             if (startInfo.KillTreeOnRunCancellation is true)
@@ -303,7 +305,7 @@ namespace System.Diagnostics
             }
 
             ProcessExitStatus exitStatus;
-            if (timeout.HasValue)
+            if (timeout.HasValue && timeout.Value != Timeout.InfiniteTimeSpan)
             {
                 TimeSpan elapsed = Stopwatch.GetElapsedTime(startTimestamp);
                 TimeSpan remaining = timeout.Value - elapsed;
@@ -449,10 +451,17 @@ namespace System.Diagnostics
         private static void ValidateNonCapturingStartInfo(ProcessStartInfo startInfo, string methodName)
         {
             ThrowIfUseShellExecute(startInfo, methodName);
-            startInfo.ThrowIfInvalid(out bool anyRedirection, out _);
-            if (anyRedirection)
+            if (startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError)
             {
                 throw new InvalidOperationException(SR.CantSetRedirectForSafeProcessHandleStart);
+            }
+        }
+
+        private static void ValidateTimeout(TimeSpan? timeout)
+        {
+            if (timeout.HasValue)
+            {
+                _ = ProcessUtils.ToTimeoutMilliseconds(timeout.Value);
             }
         }
 

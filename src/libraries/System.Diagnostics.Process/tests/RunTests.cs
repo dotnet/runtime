@@ -299,8 +299,8 @@ namespace System.Diagnostics.Tests
             List<string>? arguments = Helpers.MapToArgumentList(template.StartInfo);
 
             ProcessTextOutput result = useAsync
-                ? await Process.RunAndCaptureTextAsync(template.StartInfo.FileName, arguments, default)
-                : Process.RunAndCaptureText(template.StartInfo.FileName, arguments, default);
+                ? await Process.RunAndCaptureTextAsync(template.StartInfo.FileName, arguments)
+                : Process.RunAndCaptureText(template.StartInfo.FileName, arguments);
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, result.ExitStatus.ExitCode);
             Assert.Equal("output", result.StandardOutput);
@@ -388,6 +388,56 @@ namespace System.Diagnostics.Tests
                 Assert.ThrowsAny<TimeoutException>(() =>
                     Process.RunAndCaptureText(template.StartInfo, TimeSpan.FromMilliseconds(100)));
             }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void RunAndCaptureText_InfiniteTimeout_WaitsForExitAfterOutputIsClosed(bool entireProcessTree)
+        {
+            using Process template = CreateProcess(static () =>
+            {
+                new SafeFileHandle(Console.OpenStandardOutputHandle().DangerousGetHandle(), ownsHandle: true).Dispose();
+                new SafeFileHandle(Console.OpenStandardErrorHandle().DangerousGetHandle(), ownsHandle: true).Dispose();
+                Thread.Sleep(500);
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            template.StartInfo.RedirectStandardOutput = true;
+            template.StartInfo.RedirectStandardError = true;
+            template.StartInfo.KillTreeOnRunCancellation = entireProcessTree;
+
+            ProcessTextOutput result = Process.RunAndCaptureText(template.StartInfo, Timeout.InfiniteTimeSpan);
+
+            Assert.Equal(RemoteExecutor.SuccessExitCode, result.ExitStatus.ExitCode);
+            Assert.False(result.ExitStatus.Canceled);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void Run_InvalidTimeout_ThrowsBeforeStartingProcess(bool captureText, bool entireProcessTree)
+        {
+            ProcessStartInfo startInfo = new(GetTestFilePath())
+            {
+                RedirectStandardOutput = captureText,
+                RedirectStandardError = captureText,
+                KillTreeOnRunCancellation = entireProcessTree
+            };
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () =>
+            {
+                if (captureText)
+                {
+                    Process.RunAndCaptureText(startInfo, TimeSpan.FromMilliseconds(-2));
+                }
+                else
+                {
+                    Process.Run(startInfo, TimeSpan.FromMilliseconds(-2));
+                }
+            });
         }
 
         [Theory]

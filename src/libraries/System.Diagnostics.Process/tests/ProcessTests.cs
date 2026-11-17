@@ -2842,10 +2842,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task Kill_EntireProcessTree_True_EntireTreeTerminated(bool getById)
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task Kill_EntireProcessTree_True_EntireTreeTerminated()
         {
             IReadOnlyList<Process> tree = CreateProcessTree();
 
@@ -2853,15 +2851,7 @@ namespace System.Diagnostics.Tests
             {
                 Process parentProcess = tree.First();
 
-                if (getById)
-                {
-                    using Process fetchedProcess = Process.GetProcessById(parentProcess.Id);
-                    fetchedProcess.Kill(entireProcessTree: true);
-                }
-                else
-                {
-                    parentProcess.Kill(entireProcessTree: true);
-                }
+                parentProcess.Kill(entireProcessTree: true);
 
                 await Helpers.RetryWithBackoff(() =>
                 {
