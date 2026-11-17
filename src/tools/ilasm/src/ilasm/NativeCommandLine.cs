@@ -127,7 +127,7 @@ internal static class NativeCommandLine
             string? normalizedOption;
             if (optionName.StartsWith("ARM64", StringComparison.OrdinalIgnoreCase))
             {
-                SetMachine("arm64");
+                machine = "arm64";
                 continue;
             }
             else if (optionName.Equals("ARM", StringComparison.OrdinalIgnoreCase))
@@ -153,12 +153,12 @@ internal static class NativeCommandLine
                 }
                 if (prefix.Equals("X64", StringComparison.OrdinalIgnoreCase))
                 {
-                    SetMachine("x64");
+                    machine = "x64";
                     continue;
                 }
                 if (prefix.Equals("PE6", StringComparison.OrdinalIgnoreCase))
                 {
-                    SetPe64();
+                    pe64 = true;
                     continue;
                 }
 
@@ -224,16 +224,6 @@ internal static class NativeCommandLine
         }
 
         return result.ToArray();
-
-        void SetMachine(string value)
-        {
-            machine = value;
-        }
-
-        void SetPe64()
-        {
-            pe64 = true;
-        }
 
         void AddModernOption(string name, Option option)
         {
