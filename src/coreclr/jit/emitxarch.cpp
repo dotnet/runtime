@@ -383,6 +383,10 @@ bool emitter::IsVexEncodableInstruction(instruction ins) const
 // Returns:
 //    `true` if ins can be Evex encoded.
 //
+// Notes:
+//    GenTree::isEvexCompatibleHWIntrinsic needs to be kept in sync with this, so that an
+//    intrinsic is only reported as EVEX compatible when its instructions can be EVEX encoded.
+//
 bool emitter::IsEvexEncodableInstruction(instruction ins) const
 {
     if (!UseEvexEncoding())

@@ -23127,6 +23127,11 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp) const
 // Return Value:
 // true if the intrinsic node lowering instruction has an EVEX form
 //
+// Notes:
+//    This needs to be kept in sync with emitter::IsEvexEncodableInstruction. LSRA can assign
+//    xmm16-xmm31, and with APX the extended GPRs, to the operands of an EVEX compatible
+//    intrinsic, and a VEX encoded instruction can't address them.
+//
 bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
 {
     if (OperIsHWIntrinsic())
