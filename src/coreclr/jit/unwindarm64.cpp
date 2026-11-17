@@ -391,6 +391,10 @@ void Compiler::unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset)
 
         pu->AddCode(0xD6 | (BYTE)(x >> 2), (BYTE)(x << 6) | (BYTE)z);
     }
+    else if (REG_NEXT(reg2) == reg1)
+    {
+        unwindSaveRegPairReversed(reg2, z, /* preindexed */ false);
+    }
     else if (emitter::isGeneralRegister(reg1))
     {
         // save_regp: 110010xx | xxzzzzzz: save r(19 + #X) pair at [sp + #Z * 8], offset <= 504
@@ -475,6 +479,11 @@ void Compiler::unwindSaveRegPairPreindexed(regNumber reg1, regNumber reg2, int o
 
         pu->AddCode(0x20 | (BYTE)z);
     }
+    else if (REG_NEXT(reg2) == reg1)
+    {
+        assert(-512 <= offset);
+        unwindSaveRegPairReversed(reg2, (-offset) / 8 - 1, /* preindexed */ true);
+    }
     else if (emitter::isGeneralRegister(reg1))
     {
         // save_regp_x: 110011xx | xxzzzzzz: save pair r(19 + #X) at [sp - (#Z + 1) * 8]!, pre-indexed offset >= -512
@@ -508,6 +517,34 @@ void Compiler::unwindSaveRegPairPreindexed(regNumber reg1, regNumber reg2, int o
         assert(0 <= x && x <= 0x7);
 
         pu->AddCode(0xDA | (BYTE)(x >> 2), (BYTE)(x << 6) | (BYTE)z);
+    }
+}
+
+// unwindSaveRegPairReversed: save the pair <reg + 1, reg> with stp in that order, which the standard unwind codes can't
+// describe. NativeAOT on Apple platforms saves the callee-saved registers this way so that the compact unwind encoding
+// can describe the frames.
+//
+// save_regp_rev: 11111001 | pf0xxxxx | 00zzzzzz: save the pair <r(19 + #X + 1), r(19 + #X)>, or with f the pair
+// <d(8 + #X + 1), d(8 + #X)>, at [sp + #Z * 8], or with p at [sp - (#Z + 1) * 8]!. This is a NativeAOT extension in the
+// range the Windows ARM64 unwind codes reserve for future extensions (11111001 | yyyyyyyy | yyyyyyyy), which unwinders
+// without it skip as a nop.
+void Compiler::unwindSaveRegPairReversed(regNumber reg, int z, bool preindexed)
+{
+    assert(0 <= z && z <= 0x3F);
+
+    UnwindInfo* pu = &funCurrentFunc()->uwi;
+
+    if (emitter::isGeneralRegister(reg))
+    {
+        assert(REG_R19 <= reg && reg <= REG_R27);
+        BYTE x = (BYTE)(reg - REG_R19);
+        pu->AddCode(0xF9, (preindexed ? 0x80 : 0) | x, (BYTE)z);
+    }
+    else
+    {
+        assert(REG_V8 <= reg && reg <= REG_V14);
+        BYTE x = (BYTE)(reg - REG_V8);
+        pu->AddCode(0xF9, (preindexed ? 0x80 : 0) | 0x40 | x, (BYTE)z);
     }
 }
 
@@ -702,7 +739,7 @@ unsigned GetUnwindSizeFromUnwindHeader(BYTE b1)
         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // C0-CF
         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, // D0-DF
         4, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // E0-EF
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1  // F0-FF
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1  // F0-FF
     };
 
     unsigned size = s_UnwindSize[b1];
@@ -1110,6 +1147,21 @@ void DumpUnwindInfo(Compiler*         comp,
             // save_next: 11100110 : save next non - volatile Int or FP register pair.
 
             printf("    %02X          save_next\n", b1);
+        }
+        else if (b1 == 0xF9)
+        {
+            // save_regp_rev: 11111001 | pf0xxxxx | 00zzzzzz: NativeAOT extension, see unwindSaveRegPairReversed
+            assert(i + 2 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            b3 = *pUnwindCode++;
+            i += 2;
+
+            x = (DWORD)(b2 & 0x1F);
+            z = (DWORD)(b3 & 0x3F);
+            regNumber first = (b2 & 0x40) ? (regNumber)(REG_V8 + x) : (regNumber)(REG_R19 + x);
+            printf("    %02X %02X %02X    save_regp_rev%s X#%u Z#%u; stp %s, %s, [sp, #%s%u]%s\n", b1, b2, b3,
+                   (b2 & 0x80) ? "_x" : "", x, z, getRegName(REG_NEXT(first)), getRegName(first),
+                   (b2 & 0x80) ? "-" : "", (b2 & 0x80) ? (z + 1) * 8 : z * 8, (b2 & 0x80) ? "!" : "");
         }
         else if (b1 == 0xFC)
         {

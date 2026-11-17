@@ -609,6 +609,8 @@
     <Compile Include="Compiler\DependencyAnalysis\GenericDictionaryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericLookupResult.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IEETypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\CompactUnwindRecordsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\CompactUnwindTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeMethodFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ProxyTypeMapRequestNode.cs" />
@@ -695,6 +697,7 @@
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfCfiOpcode.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfCie.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfEhFrame.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\UnwindInfoToCfi.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfExpressionBuilder.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfFde.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfFileName.cs" />
@@ -703,7 +706,6 @@
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfLineProgramTableWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfLineSequenceWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfNative.cs" />
-    <Compile Include="Compiler\ObjectWriter\Eabi\EabiUnwindConverter.cs" />
     <Compile Include="Compiler\ObjectWriter\ElfObjectWriter.Aot.cs" />
     <Compile Include="Compiler\ObjectWriter\CoffObjectWriter.Aot.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWriter.Aot.cs" />

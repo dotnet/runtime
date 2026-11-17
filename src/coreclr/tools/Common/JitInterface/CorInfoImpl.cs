@@ -4583,14 +4583,6 @@ namespace Internal.JitInterface
                 }
             }
 
-#if !READYTORUN
-            var target = _compilation.TypeSystemContext.Target;
-
-            if (target.Architecture == TargetArchitecture.ARM64 && target.OperatingSystem == TargetOS.Linux)
-            {
-                blobData = CompressARM64CFI(blobData);
-            }
-#endif
 #if READYTORUN
             if (pColdCode == null)
 #endif

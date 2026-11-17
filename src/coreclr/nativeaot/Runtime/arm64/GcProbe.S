@@ -141,7 +141,11 @@
     ldr         lr, [x9, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
     ldr         x16, [x9, #OFFSETOF__Thread__m_pSpForPacSign]
     cbz         x16, 1f
-    autia       lr, x16
+    // Code compiled with return address signing can run on hardware without pointer authentication,
+    // where autia is undefined. autia1716 is in the hint space, so it is a NOP there.
+    mov         x17, lr
+    autia1716
+    mov         lr, x17
 
 1:
     //

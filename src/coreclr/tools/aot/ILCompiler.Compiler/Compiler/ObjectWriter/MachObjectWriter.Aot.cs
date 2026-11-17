@@ -57,7 +57,7 @@ namespace ILCompiler.ObjectWriter
     /// </remarks>
     internal sealed partial class MachObjectWriter : UnixObjectWriter
     {
-        private sealed record CompactUnwindCode(Utf8String PcStartSymbolName, uint PcLength, uint Code, Utf8String LsdaSymbolName, Utf8String PersonalitySymbolName);
+        private sealed record CompactUnwindCode(Utf8String PcStartSymbolName, uint PcLength, uint Code);
 
         // Exception handling sections
         private MachSection _compactUnwindSection;
@@ -79,38 +79,32 @@ namespace ILCompiler.ObjectWriter
                 Flags = S_REGULAR | S_ATTR_DEBUG,
             };
 
-            IList<MachSymbol> symbols = _symbolTable;
             Span<byte> tempBuffer = stackalloc byte[8];
             foreach (var cu in _compactUnwindCodes)
             {
-                EmitCompactUnwindSymbol(cu.PcStartSymbolName);
+                SymbolDefinition symbol = definedSymbols[cu.PcStartSymbolName];
+                MachSection section = _sections[symbol.SectionIndex];
+                BinaryPrimitives.WriteUInt64LittleEndian(tempBuffer, section.VirtualAddress + (ulong)symbol.Value);
+                _compactUnwindSection.Relocations.Add(
+                    new MachRelocation
+                    {
+                        Address = (int)_compactUnwindStream.Position,
+                        SymbolOrSectionIndex = (byte)(1 + symbol.SectionIndex), // 1-based
+                        Length = 8,
+                        RelocationType = ARM64_RELOC_UNSIGNED,
+                        IsExternal = false,
+                        IsPCRelative = false,
+                    }
+                );
+                _compactUnwindStream.Write(tempBuffer);
+
                 BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, cu.PcLength);
                 BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer.Slice(4), cu.Code);
                 _compactUnwindStream.Write(tempBuffer);
-                EmitCompactUnwindSymbol(cu.PersonalitySymbolName);
-                EmitCompactUnwindSymbol(cu.LsdaSymbolName);
-            }
 
-            void EmitCompactUnwindSymbol(Utf8String symbolName)
-            {
-                Span<byte> tempBuffer = stackalloc byte[8];
-                if (!symbolName.IsNull)
-                {
-                    SymbolDefinition symbol = definedSymbols[symbolName];
-                    MachSection section = _sections[symbol.SectionIndex];
-                    BinaryPrimitives.WriteUInt64LittleEndian(tempBuffer, section.VirtualAddress + (ulong)symbol.Value);
-                    _compactUnwindSection.Relocations.Add(
-                        new MachRelocation
-                        {
-                            Address = (int)_compactUnwindStream.Position,
-                            SymbolOrSectionIndex = (byte)(1 + symbol.SectionIndex), // 1-based
-                            Length = 8,
-                            RelocationType = ARM64_RELOC_UNSIGNED,
-                            IsExternal = false,
-                            IsPCRelative = false,
-                        }
-                    );
-                }
+                // The runtime doesn't use a personality routine, and finds the LSDAs in the compact unwind table
+                tempBuffer.Clear();
+                _compactUnwindStream.Write(tempBuffer);
                 _compactUnwindStream.Write(tempBuffer);
             }
         }
@@ -255,6 +249,11 @@ namespace ILCompiler.ObjectWriter
                     nextOffset -= 16;
                     unwindCode |= UNWIND_ARM64_FRAME_X19_X20_PAIR << (i >> 1);
                 }
+                else
+                {
+                    // The pair isn't where the compact encoding expects it
+                    return UNWIND_ARM64_MODE_DWARF;
+                }
             }
 
             // Check that the floating point register pairs are in the right order and mark
@@ -273,12 +272,17 @@ namespace ILCompiler.ObjectWriter
                     nextOffset -= 16;
                     unwindCode |= UNWIND_ARM64_FRAME_D8_D9_PAIR << (i >> 1);
                 }
+                else
+                {
+                    // The pair isn't where the compact encoding expects it
+                    return UNWIND_ARM64_MODE_DWARF;
+                }
             }
 
             return unwindCode;
         }
 
-        private protected override bool EmitCompactUnwinding(Utf8String startSymbolName, ulong length, Utf8String lsdaSymbolName, byte[] blob)
+        private protected override bool EmitCompactUnwinding(Utf8String startSymbolName, ulong length, byte[] blob)
         {
             uint encoding = _compactUnwindDwarfCode;
 
@@ -290,14 +294,19 @@ namespace ILCompiler.ObjectWriter
             _compactUnwindCodes.Add(new CompactUnwindCode(
                 PcStartSymbolName: startSymbolName,
                 PcLength: (uint)length,
-                Code: encoding | (encoding != _compactUnwindDwarfCode && !lsdaSymbolName.IsNull ? 0x40000000u : 0), // UNWIND_HAS_LSDA
-                LsdaSymbolName: encoding != _compactUnwindDwarfCode ? lsdaSymbolName : default,
-                PersonalitySymbolName: default
+                Code: encoding
             ));
 
             return encoding != _compactUnwindDwarfCode;
         }
 
         private protected override bool UseFrameNames => true;
+
+        // The crash reporter, lldb and sample only read __unwind_info and __eh_frame from the image
+        private protected override bool KeepsPlatformUnwindInfo => true;
+
+        // ld-prime keeps only addends that fit in 20 bits inline, so the blocks can't be relative to the start
+        // of a code section
+        private protected override bool CompactUnwindTableUsesNodeSymbols => true;
     }
 }

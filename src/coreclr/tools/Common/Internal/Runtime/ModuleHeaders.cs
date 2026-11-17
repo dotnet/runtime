@@ -105,6 +105,8 @@ namespace Internal.Runtime
         ModuleInitializerList = 213,
         GvmDispatchCellInfoRegion = 214,
         GvmDispatchCellRegion = 215,
+        CompactUnwindTable = 216,
+        CompactUnwindRecords = 217,
 
         // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
         ReadonlyBlobRegionStart = 300,
