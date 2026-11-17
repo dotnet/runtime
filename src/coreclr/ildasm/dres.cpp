@@ -292,8 +292,9 @@ DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName)
                     printLine(GUICookie,szString);
                     if(g_pPELoader->getVAforRVA(VAL32(g_prResNodePtr[i]->DataEntry.OffsetToData), (void **) &pbData))
                     {
-                        strcat(g_szAsmCodeIndent,"//  ");
-                        strcpy(szString,g_szAsmCodeIndent);
+                        strcat_s(g_szAsmCodeIndent, MAX_MEMBER_LENGTH, "//  ");
+
+                        strcpy_s(szString, ARRAY_SIZE(szString), g_szAsmCodeIndent);
                         DumpByteArray(szString,pbData,VAL32(g_prResNodePtr[i]->DataEntry.Size),GUICookie);
                         printLine(GUICookie,szString);
                         g_szAsmCodeIndent[strlen(g_szAsmCodeIndent)-4] = 0;

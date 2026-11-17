@@ -166,8 +166,8 @@ HRESULT GCHeapUtilities::InitializeStandaloneGC()
         {
             return E_OUTOFMEMORY;
         }
-        strcpy(modulePath, convertedExecutableModulePath);
-        strcpy(modulePath + folderLength, moduleName);
+        memcpy(modulePath, convertedExecutableModulePath, folderLength);
+        memcpy(modulePath + folderLength, moduleName, nameLength + 1);
     }
 
     NewArrayHolder<char> modulePathHolder(modulePath);

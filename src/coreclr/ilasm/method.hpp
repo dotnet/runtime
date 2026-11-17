@@ -60,7 +60,7 @@ struct  ARG_NAME_LIST
     {
         nNum = i;
         //dwName = (DWORD)strlen(sz);
-        //strcpy(szName,sz);
+        //strcpy_s(szName, sizeof(szName), sz);
         szName = sz;
         dwName = (sz == NULL) ? 0 : (DWORD)strlen(sz);
         pNext = NULL;

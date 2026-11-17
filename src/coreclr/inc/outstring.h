@@ -16,7 +16,7 @@
 #define _OutString_h 1
 
 #include "utilcode.h"   // for overloaded new
-#include <string.h>     // for strlen, strcpy
+#include <string.h>
 
 /*****************************************************************/
     // a light weight character 'output' stream
