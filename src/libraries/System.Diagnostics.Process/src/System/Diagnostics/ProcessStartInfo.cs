@@ -342,7 +342,20 @@ namespace System.Diagnostics
         /// <see langword="true"/> to terminate the process and its descendants; <see langword="false"/> or <see langword="null"/>
         /// to terminate only the process. The default is <see langword="null"/>.
         /// </value>
-        public bool? KillTreeOnRunCancellation { get; set; }
+        public bool? KillTreeOnRunCancellation
+        {
+            get;
+            set
+            {
+                if (value is true)
+                {
+#pragma warning disable CA1416 // Process.Run* methods that use these funcs are unsupported on the same platforms
+                    Process.EnsureEntireProcessTreeFuncs();
+#pragma warning restore CA1416
+                }
+                field = value;
+            }
+        }
 
         public Encoding? StandardInputEncoding { get; set; }
 

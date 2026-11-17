@@ -13,6 +13,24 @@ namespace System.Diagnostics
 {
     public partial class Process
     {
+        // Assigned only by the ProcessStartInfo.KillTreeOnRunCancellation setter, so that apps which never set it
+        // can trim the process tree termination code (and its dependencies).
+        private static Func<ProcessStartInfo, TimeSpan, ProcessExitStatus>? s_runWithEntireProcessTree;
+        private static Func<ProcessStartInfo, CancellationToken, Task<ProcessExitStatus>>? s_runWithEntireProcessTreeAsync;
+        private static Func<ProcessStartInfo, TimeSpan?, long, ProcessTextOutput>? s_runAndCaptureTextWithEntireProcessTree;
+        private static Func<ProcessStartInfo, CancellationToken, Task<ProcessTextOutput>>? s_runAndCaptureTextWithEntireProcessTreeAsync;
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        internal static void EnsureEntireProcessTreeFuncs()
+        {
+            s_runWithEntireProcessTree ??= RunWithEntireProcessTree;
+            s_runWithEntireProcessTreeAsync ??= RunWithEntireProcessTreeAsync;
+            s_runAndCaptureTextWithEntireProcessTree ??= RunAndCaptureTextWithEntireProcessTree;
+            s_runAndCaptureTextWithEntireProcessTreeAsync ??= RunAndCaptureTextWithEntireProcessTreeAsync;
+        }
+
         /// <summary>
         /// Starts the process described by <paramref name="startInfo"/>, releases all associated resources,
         /// and returns the process ID.
@@ -108,7 +126,7 @@ namespace System.Diagnostics
 
             if (startInfo.KillTreeOnRunCancellation is true && timeout.HasValue && timeout.Value != Timeout.InfiniteTimeSpan)
             {
-                return RunWithEntireProcessTree(startInfo, timeout.Value);
+                return s_runWithEntireProcessTree!(startInfo, timeout.Value);
             }
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo);
@@ -177,7 +195,7 @@ namespace System.Diagnostics
 
             if (startInfo.KillTreeOnRunCancellation is true && cancellationToken.CanBeCanceled)
             {
-                return await RunWithEntireProcessTreeAsync(startInfo, cancellationToken).ConfigureAwait(false);
+                return await s_runWithEntireProcessTreeAsync!(startInfo, cancellationToken).ConfigureAwait(false);
             }
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo);
@@ -248,7 +266,7 @@ namespace System.Diagnostics
             long startTimestamp = Stopwatch.GetTimestamp();
             if (startInfo.KillTreeOnRunCancellation is true)
             {
-                return RunAndCaptureTextWithEntireProcessTree(startInfo, timeout, startTimestamp);
+                return s_runAndCaptureTextWithEntireProcessTree!(startInfo, timeout, startTimestamp);
             }
 
             using Process process = Start(startInfo)!;
@@ -349,7 +367,7 @@ namespace System.Diagnostics
 
             if (startInfo.KillTreeOnRunCancellation is true)
             {
-                return await RunAndCaptureTextWithEntireProcessTreeAsync(startInfo, cancellationToken).ConfigureAwait(false);
+                return await s_runAndCaptureTextWithEntireProcessTreeAsync!(startInfo, cancellationToken).ConfigureAwait(false);
             }
 
             using Process process = Start(startInfo)!;
