@@ -69,12 +69,9 @@ jobs:
 
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))}}:
               # inner and outer loop CoreCLR (general set)
-              # Primary distros for all builds
               - Ubuntu.2604.Amd64.Open
               - (AzureLinux.3.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64@sha256:312d2163878c3b244ffbf734bde2b0270a19632d356f995c32eaaf362fff7e74
-              # Additional distros on non-PR builds for broader coverage
-              - ${{ if or(eq(variables['isRollingBuild'], true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-                - (AzureLinux.4.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:3bfd1af9f2c2fb0d5da149edb0ede44805eb8348bd6124d44a40335d6f191f76
+              - (AzureLinux.4.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:3bfd1af9f2c2fb0d5da149edb0ede44805eb8348bd6124d44a40335d6f191f76
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
