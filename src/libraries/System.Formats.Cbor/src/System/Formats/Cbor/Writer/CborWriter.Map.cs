@@ -71,12 +71,15 @@ namespace System.Formats.Cbor
             EnsureMaxDepthNotExceeded();
             WriteUnsignedInteger(CborMajorType.Map, (ulong)definiteLength);
             PushDataItem(CborMajorType.Map, definiteLength: 2 * definiteLength);
-            _currentKeyOffset = _offset;
+            if (_tracksMapKeys)
+            {
+                _currentKeyOffset = _offset;
+            }
         }
 
         private void WriteStartMapIndefiniteLength()
         {
-            if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
+            if (!ConvertIndefiniteLengthEncodings && _requiresDefiniteLengthItems)
             {
                 throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
@@ -85,7 +88,10 @@ namespace System.Formats.Cbor
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
             PushDataItem(CborMajorType.Map, definiteLength: null);
-            _currentKeyOffset = _offset;
+            if (_tracksMapKeys)
+            {
+                _currentKeyOffset = _offset;
+            }
         }
 
         //
@@ -96,7 +102,7 @@ namespace System.Formats.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset == null);
 
-            if (CborConformanceModeHelpers.RequiresUniqueKeys(ConformanceMode))
+            if (_requiresUniqueKeys)
             {
                 HashSet<(int Offset, int Length)> keyEncodingRanges = GetKeyEncodingRanges();
 
@@ -120,7 +126,7 @@ namespace System.Formats.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset != null);
 
-            if (CborConformanceModeHelpers.RequiresSortedKeys(ConformanceMode))
+            if (_requiresSortedKeys)
             {
                 List<KeyValuePairEncodingRange> keyValuePairEncodingRanges = GetKeyValueEncodingRanges();
 
