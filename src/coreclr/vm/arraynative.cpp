@@ -168,35 +168,8 @@ extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32
     }
 
     {
-        _ASSERTE(rank <= MAX_RANK); // Ensures that the stack buffer size allocations below won't overflow
-
-        DWORD boundsSize = 0;
-        INT32* bounds;
-        if (pLowerBounds != NULL)
-        {
-            boundsSize = 2 * rank;
-            bounds = (INT32*) _alloca(boundsSize * sizeof(INT32));
-
-            for (int i=0;i<rank;i++) {
-                bounds[2*i] = pLowerBounds[i];
-                bounds[2*i+1] = pLengths[i];
-            }
-        }
-        else
-        {
-            boundsSize = rank;
-            bounds = (INT32*) _alloca(boundsSize * sizeof(INT32));
-
-            // We need to create a private copy of pLengths to avoid holes caused
-            // by caller mutating the array
-            for (int i=0; i < rank; i++)
-                bounds[i] = pLengths[i];
-        }
-
-        {
-            GCX_COOP();
-            retArray.Set(AllocateArrayEx(typeHnd, bounds, boundsSize));
-        }
+        GCX_COOP();
+        retArray.Set(AllocateArrayEx(typeHnd, pLengths, pLowerBounds, rank));
     }
 
 Done: ;

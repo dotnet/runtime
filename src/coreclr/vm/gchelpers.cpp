@@ -917,27 +917,15 @@ OBJECTREF   DupArrayForCloning(BASEARRAYREF pRef)
     } CONTRACTL_END;
 
     MethodTable *pArrayMT = pRef->GetMethodTable();
-    unsigned rank = pArrayMT->GetRank();
-
-    DWORD numArgs =  rank*2;
-    INT32* args = (INT32*) _alloca(sizeof(INT32)*numArgs);
 
     if (pArrayMT->GetInternalCorElementType() == ELEMENT_TYPE_ARRAY)
     {
-        const INT32* bounds = pRef->GetBoundsPtr();
-        const INT32* lowerBounds = pRef->GetLowerBoundsPtr();
-        for(unsigned int i=0; i < rank; i++)
-        {
-            args[2*i]   = lowerBounds[i];
-            args[2*i+1] = bounds[i];
-        }
+        return AllocateArrayEx(pArrayMT, pRef->GetBoundsPtr(), pRef->GetLowerBoundsPtr(), pArrayMT->GetRank(), GC_ALLOC_ZEROING_OPTIONAL);
     }
     else
     {
-        numArgs = 1;
-        args[0] = pRef->GetNumComponents();
+        return AllocateSzArray(pArrayMT, pRef->GetNumComponents(), GC_ALLOC_ZEROING_OPTIONAL);
     }
-    return AllocateArrayEx(pArrayMT, args, numArgs, GC_ALLOC_ZEROING_OPTIONAL);
 }
 
 
