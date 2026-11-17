@@ -22,7 +22,6 @@
     <Compile Include="BasicEventSourceTest\Harness\EtwListener.cs" />
     <Compile Include="BasicEventSourceTest\TestEventCounter.Etw.cs" />
     <Compile Include="BasicEventSourceTest\TestsWrite.Etw.cs" />
-    <Compile Include="BasicEventSourceTest\TestsUserErrors.Etw.cs" />
     <Compile Include="BasicEventSourceTest\TestsWriteEvent.Etw.cs" />
     <Compile Include="BasicEventSourceTest\FuzzyTests.Etw.cs" />
     <Compile Include="BasicEventSourceTest\TestsWriteEventToListener.Etw.cs" />

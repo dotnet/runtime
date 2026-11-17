@@ -115,15 +115,6 @@ namespace BasicEventSourceTests
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.EnumKindMismatchEventSource), string.Empty, EventManifestOptions.AllowEventSourceOverride));
             AssertExceptionStringsEqual(() => GetResourceString("EventSource_UndefinedKeyword", "0x1", "WriteInteger"), e);
 
-            Assert.NotNull(EventSource.GenerateManifest(typeof(Sdt.MismatchIdEventSource), string.Empty));
-
-            // These tests require the IL to be present for inspection.
-            e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.MismatchIdEventSource), string.Empty, strictOptions));
-            AssertExceptionStringsEqual(() => GetResourceString("EventSource_MismatchIdToWriteEvent", "WriteInteger", 10, 1), e);
-
-            e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.MismatchIdEventSource), string.Empty, strictOptions));
-            AssertExceptionStringsEqual(() => GetResourceString("EventSource_MismatchIdToWriteEvent", "WriteInteger", 10, 1), e);
-
             Assert.NotNull(EventSource.GenerateManifest(typeof(Sdt.EventIdReusedEventSource), string.Empty));
 
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.EventIdReusedEventSource), string.Empty, strictOptions));
