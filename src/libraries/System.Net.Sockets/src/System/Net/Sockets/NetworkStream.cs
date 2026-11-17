@@ -271,12 +271,10 @@ namespace System.Net.Sockets
             }
         }
 
-        public override unsafe int ReadByte()
+        public override int ReadByte()
         {
-            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
-
-            byte b;
-            return Read(new Span<byte>(&b, 1)) == 0 ? -1 : b;
+            byte b = 0;
+            return Read(new Span<byte>(ref b)) == 0 ? -1 : b;
         }
 
         // Write - provide core Write functionality.
