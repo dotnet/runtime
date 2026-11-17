@@ -24,6 +24,9 @@ namespace System
         // Large value types may benefit from a smaller number.
         internal const int IntrosortSizeThreshold = 16;
 
+        // Keep in sync with MAX_RANK in array.h
+        private const int MaxRank = 32;
+
         // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area.
         private protected Array() { }
 
@@ -161,6 +164,10 @@ namespace System
                 if (lengths[i] < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
+            // Check the rank preemptively to avoid stack overflow for overly large length
+            if (lengths.Length > MaxRank)
+                ThrowHelper.ThrowArrayRankTooLarge(elementType, lengths.Length);
+
             // Create a local copy of the lengths that cannot be modified by the caller
             int* pImmutableLengths = stackalloc int[lengths.Length];
             for (int i = 0; i < lengths.Length; i++)
@@ -192,6 +199,10 @@ namespace System
             for (int i = 0; i < lengths.Length; i++)
                 if (lengths[i] < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+
+            // Check the rank preemptively to avoid stack overflow for overly large length
+            if (lengths.Length > MaxRank)
+                ThrowHelper.ThrowArrayRankTooLarge(elementType, lengths.Length);
 
             // Create a local copy of the lengths that cannot be modified by the caller
             int* pImmutableLengths = stackalloc int[lengths.Length];

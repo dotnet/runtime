@@ -686,6 +686,13 @@ namespace System
             throw new SynchronizationLockException(SR.Lock_Exit_SynchronizationLockException);
         }
 
+        [DoesNotReturn]
+        internal static void ThrowArrayRankTooLarge(Type elementType, int rank)
+        {
+            string typeName = elementType.ToString() + "[" + rank.ToString() + "]";
+            throw new TypeLoadException(SR.Format(SR.ClassLoad_RankTooLarge, typeName, elementType.Assembly), typeName);
+        }
+
         internal static AmbiguousMatchException GetAmbiguousMatchException(MemberInfo memberInfo)
         {
             Type? declaringType = memberInfo.DeclaringType;
