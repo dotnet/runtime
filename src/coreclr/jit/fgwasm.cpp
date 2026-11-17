@@ -2706,9 +2706,9 @@ PhaseStatus Compiler::fgWasmSpillRefs()
 
                 // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
                 // it won't be mutated between its def (here) and its use (the call that would produce a spill).
-                // If the local is NOT a gc ref wasm local candidate, then it will be assigned a pinned stack home
-                // by RA already. Otherwise, temporary reads of candidates that are live across a call still need to be
-                // spilled.
+                // Locals outside the GC-safe candidate set have pinned stack homes, including write-through
+                // candidates. Their reads need no additional spill. Temporary reads of GC-safe candidates still
+                // need protection if they are live across a call.
                 if (!dsc->IsAddressExposed() && !isRefLocalCandidate)
                 {
                     continue;

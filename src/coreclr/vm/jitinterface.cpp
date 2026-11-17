@@ -12497,7 +12497,8 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
     _ASSERTE(objRef != NULL);
 
     // TODO: support types containing GC pointers
-    if (bufferSize + valueOffset <= (int)objRef->GetSize())
+    size_t objSize = objRef->GetSize();
+    if ((size_t)bufferSize <= objSize && (size_t)valueOffset <= objSize - (size_t)bufferSize)
     {
         Object* obj = OBJECTREFToObject(objRef);
         PTR_MethodTable type = obj->GetMethodTable();

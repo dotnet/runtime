@@ -45,10 +45,10 @@
     only covers framework top-level UCO callbacks). Runs crossgen2's portable call-helpers
     generator (TargetOS=wasi) over the bundle, compiles the generated callhelpers with the wasi-sdk
     clang, and links libWasiHost.a from the runtime-pack static archives + the app callhelper .o
-    (replacing libcoreclr_gen_static.a) via wasm-component-ld. The wasi:http import that
-    System.Net.* pulls in is declared via the component-type link flag
-    (WasiHttpWorld_component_type.wit, as Mono does); wasmtime gets -S http from
-    eng/testing/tests.wasi.targets.
+    (replacing libcoreclr_gen_static.a) via wasm-component-ld. The WIT worlds of framework
+    libraries that import WASI interfaces directly (@(NetCoreAppComponentType), e.g. the
+    wasi:http world System.Net.Http uses) are passed as component-type link flags; wasmtime
+    gets -S http from eng/testing/tests.wasi.targets.
 
     See https://github.com/dotnet/runtime/issues/130129.
   -->
@@ -76,6 +76,11 @@
     <WasmBuildNative>false</WasmBuildNative>
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
   </PropertyGroup>
+
+  <!-- WIT worlds for framework libraries that import WASI interfaces directly. Unused imports are dropped from the component. -->
+  <ItemGroup>
+    <NetCoreAppComponentType Include="WasiHttpWorld_component_type" />
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
@@ -241,11 +246,6 @@
       <_WasiMinipalIncludeRoot Condition="'$(MINIPAL_INCLUDE_DIR)' != ''">$([MSBuild]::NormalizeDirectory($([System.IO.Path]::GetFullPath('$(MINIPAL_INCLUDE_DIR)')), '..'))</_WasiMinipalIncludeRoot>
       <_WasiMinipalIncludeRoot Condition="'$(_WasiMinipalIncludeRoot)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'native'))</_WasiMinipalIncludeRoot>
 
-      <!-- wasi:http world declaration for the component encoder. Prefer the pack native
-           dir (shippable); fall back to the in-repo source (in-tree builds). -->
-      <_WasiHttpWorldWit>$(MicrosoftNetCoreAppRuntimePackRidNativeDir)WasiHttpWorld_component_type.wit</_WasiHttpWorldWit>
-      <_WasiHttpWorldWit Condition="!Exists('$(_WasiHttpWorldWit)')">$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)..', '..', '..', 'libraries', 'System.Net.Http', 'src', 'System', 'Net', 'Http', 'WasiHttpHandler', 'WasiHttpWorld_component_type.wit'))</_WasiHttpWorldWit>
-
       <_WasiRelinkCompileRsp>$(_WasiRelinkObjDir)compile.rsp</_WasiRelinkCompileRsp>
       <_WasiRelinkLinkRsp>$(_WasiRelinkObjDir)link.rsp</_WasiRelinkLinkRsp>
       <_WasiRelinkOptFlag Condition="'$(Configuration)' == 'Debug'">-O1</_WasiRelinkOptFlag>
@@ -256,8 +256,6 @@
 
     <Error Condition="!Exists('$(_WasiCoreClrCompatHeader)')"
            Text="coreclr_compat.h not found at $(_WasiCoreClrCompatHeader). For out-of-tree/pack builds set %24(CORECLR_COMPAT_HEADER) to the staged header (and CORECLR_VM_WASM_INCLUDE_DIR/MINIPAL_INCLUDE_DIR for the include dirs); see #128362." />
-    <Error Condition="!Exists('$(_WasiHttpWorldWit)')"
-           Text="WasiHttpWorld_component_type.wit not found at $(_WasiHttpWorldWit)." />
 
     <!-- 1. Generate the per-app callhelper tables over the bundled managed closure.
          The bundle can carry native payloads named .dll, and the generator reads managed
@@ -467,7 +465,7 @@
       <_WasiRelinkLinkFlags Include="-Wl,-z,stack-size=8388608" />
       <_WasiRelinkLinkFlags Include="-Wl,--initial-memory=134217728" />
       <_WasiRelinkLinkFlags Include="-Wl,--max-memory=4294967296" />
-      <_WasiRelinkLinkFlags Include="-Wl,--component-type,&quot;$(_WasiHttpWorldWit.Replace('\','/'))&quot;" />
+      <_WasiRelinkLinkFlags Include="@(NetCoreAppComponentType->'-Wl,--component-type,&quot;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity).wit&quot;')" />
       <!-- Host archive first, whole-archive so main()/_start are included. -->
       <_WasiRelinkLinkFlags Include="-Wl,--whole-archive" />
       <_WasiRelinkLinkFlags Include="&quot;$(WasiCoreCLRHostNativeDir)libWasiHost.a&quot;" />
