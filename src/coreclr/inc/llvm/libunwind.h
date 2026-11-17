@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -13,7 +16,7 @@
 #ifndef __LIBUNWIND__
 #define __LIBUNWIND__
 
-#include <__libunwind_config.h>
+#include "__libunwind_config.h"
 
 #include <stdint.h>
 #include <stddef.h>

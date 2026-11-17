@@ -53,6 +53,8 @@ enum class ReadyToRunSectionType
     // 210 is unused - it was used by ThreadStaticIndex
     // 211 is unused - it was used by LoopHijackFlag
     ImportAddressTables         = 212,
+    CompactUnwindTable          = 216,
+    CompactUnwindRecords        = 217,
 
     // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
     ReadonlyBlobRegionStart     = 300,

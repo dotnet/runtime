@@ -554,7 +554,7 @@ namespace ILCompiler.ObjectWriter
                 // Emit unwinding frames and LSDA
                 if (_options.HasFlag(ObjectWritingOptions.GenerateUnwindInfo))
                 {
-                    EmitUnwindInfoForNode(node, currentSymbolName, sectionWriter);
+                    EmitUnwindInfoForNode(node, currentSymbolName, sectionWriter, nodeContents.Data.Length);
                 }
 
                 if (_outputInfoBuilder is not null)
@@ -782,7 +782,7 @@ namespace ILCompiler.ObjectWriter
 
         partial void PrepareForUnwindInfo();
 
-        partial void EmitUnwindInfoForNode(ObjectNode node, Utf8String currentSymbolName, SectionWriter sectionWriter);
+        partial void EmitUnwindInfoForNode(ObjectNode node, Utf8String currentSymbolName, SectionWriter sectionWriter, int length);
 
         protected static ReadOnlySpan<byte> FormatUtf8Int(Span<byte> buffer, int number)
         {

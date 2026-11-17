@@ -186,27 +186,6 @@ else()
     include_directories($ENV{EMSCRIPTEN/system/lib/libcxxabi/include})
   endif()
 
-  # Disable building _Unwind_XXX style APIs of libunwind, since we don't use them.
-  add_definitions(-D_LIBUNWIND_DISABLE_ZERO_COST_APIS=1)
-
-  # Compile unwinding only for the current compilation target architecture
-  add_definitions(-D_LIBUNWIND_IS_NATIVE_ONLY)
-
-  include(CheckSymbolExists)
-  check_symbol_exists(getauxval "sys/auxv.h" HAVE_GETAUXVAL)
-  if (HAVE_GETAUXVAL)
-    add_definitions(-D_LIBUNWIND_HAVE_GETAUXVAL)
-  endif()
-
-  check_symbol_exists(elf_aux_info "sys/auxv.h" HAVE_ELF_AUX_INFO)
-  if (HAVE_ELF_AUX_INFO)
-    add_definitions(-D_LIBUNWIND_HAVE_ELF_AUX_INFO)
-  endif()
-
-  if(CLR_CMAKE_TARGET_HAIKU)
-    add_definitions(-DPT_GNU_EH_FRAME=PT_EH_FRAME)
-  endif()
-
   list(APPEND COMMON_RUNTIME_SOURCES
     ${RUNTIME_DIR}/unix/CLREventBase.cpp
     unix/PalUnix.cpp
@@ -241,29 +220,6 @@ else()
       unix/UnwindHelpers.cpp
       unix/UnixNativeCodeManager.cpp
     )
-
-    include(${CLR_SRC_NATIVE_DIR}/external/llvm-libunwind.cmake)
-
-    set(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS OFF)
-    if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
-      set(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS ON)
-    endif()
-
-    if(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS)
-      # Build the bundled libunwind implementation and the runtime unwinder code
-      # that references it into one relocatable object. The runtime sources are
-      # part of the partial link so their references to libunwind's implementation
-      # symbols are resolved before those symbols are localized.
-      set(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES
-        unix/UnwindHelpers.cpp
-        unix/UnixNativeCodeManager.cpp
-        ${LLVM_LIBUNWIND_SOURCES}
-        ${LLVM_LIBUNWIND_ASM_SOURCES})
-      list(REMOVE_ITEM COMMON_RUNTIME_SOURCES unix/UnwindHelpers.cpp unix/UnixNativeCodeManager.cpp)
-    else()
-      list(APPEND COMMON_RUNTIME_SOURCES ${LLVM_LIBUNWIND_SOURCES})
-      set(RUNTIME_SOURCES_ARCH_ASM ${LLVM_LIBUNWIND_ASM_SOURCES})
-    endif()
   endif()
 
   set(ASM_SUFFIX S)
@@ -408,7 +364,6 @@ convert_to_absolute_path(COMMON_RUNTIME_SOURCES ${COMMON_RUNTIME_SOURCES})
 convert_to_absolute_path(GC_WKS_SVR_SOURCES ${GC_WKS_SVR_SOURCES})
 convert_to_absolute_path(STANDALONEGC_DISABLED_SOURCES ${STANDALONEGC_DISABLED_SOURCES})
 convert_to_absolute_path(STANDALONEGC_ENABLED_SOURCES ${STANDALONEGC_ENABLED_SOURCES})
-convert_to_absolute_path(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES ${NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES})
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 convert_to_absolute_path(VXSORT_SOURCES ${VXSORT_SOURCES})
 convert_to_absolute_path(DUMMY_VXSORT_SOURCES ${DUMMY_VXSORT_SOURCES})
@@ -441,49 +396,6 @@ else()
     include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR})
     preprocess_files(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
   endif()
-endif()
-
-if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
-  add_library(Runtime.PrivateLibunwind OBJECT ${NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES})
-
-  set(NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.o")
-  set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.localize")
-  set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.localize.unsorted")
-  # The relocatable object includes runtime-owned objects so their references to
-  # libunwind implementation symbols are resolved before localization. The
-  # localize list is generated only from the bundled libunwind source objects.
-  set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS "$<FILTER:$<TARGET_OBJECTS:Runtime.PrivateLibunwind>,EXCLUDE,.*(UnwindHelpers|UnixNativeCodeManager)\\.cpp\\.o$>")
-
-  add_custom_command(
-    OUTPUT "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
-    COMMAND "${CMAKE_COMMAND}" -E rm -f
-            "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
-            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
-    # Generate the objcopy symbol list from libunwind-owned object files only.
-    COMMAND sh -c "nm_tool=\"$1\" && shift && \"$nm_tool\" --extern-only --defined-only --format=just-symbols \"$@\" > \"$0\""
-            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
-            "${CMAKE_NM}"
-            ${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS}
-    COMMAND sort -u -o
-            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
-            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
-    COMMAND "${CMAKE_COMMAND}" -E rm -f
-            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
-    COMMAND "${CMAKE_LINKER}" -r $<TARGET_OBJECTS:Runtime.PrivateLibunwind> -o "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
-    COMMAND "${CMAKE_OBJCOPY}"
-            "--localize-symbols=${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
-            "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
-    DEPENDS
-      Runtime.PrivateLibunwind
-      $<TARGET_OBJECTS:Runtime.PrivateLibunwind>
-    BYPRODUCTS "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
-    COMMENT "Privatizing NativeAOT libunwind symbols"
-    COMMAND_EXPAND_LISTS
-    VERBATIM
-  )
-  set_source_files_properties("${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}" PROPERTIES
-    EXTERNAL_OBJECT TRUE
-    GENERATED TRUE)
 endif()
 
 get_compile_definitions(DEFINITIONS)
@@ -531,7 +443,6 @@ endif()
 
 add_library(Runtime.WorkstationGC STATIC
   ${COMMON_RUNTIME_SOURCES}
-  ${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}
   $<TARGET_OBJECTS:Runtime.GC.Workstation>)
 if(FEATURE_PERFTRACING)
   add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
@@ -558,7 +469,6 @@ if(FEATURE_MULTITHREADING AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
   add_library(Runtime.ServerGC STATIC
     ${COMMON_RUNTIME_SOURCES}
-    ${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}
     $<TARGET_OBJECTS:Runtime.GC.Workstation>
     $<TARGET_OBJECTS:Runtime.GC.Server>)
   if(FEATURE_PERFTRACING)
