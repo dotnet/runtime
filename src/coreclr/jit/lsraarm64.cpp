@@ -808,14 +808,11 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // MOVI can broadcast a repeated, encodable vector element without an integer temp.
                 // Keep these immediate checks in sync with CodeGen::genSetRegToConst.
-                simd16_t   val = vecCon->gtSimd16Val;
-                const bool is8 = vecCon->TypeIs(TYP_SIMD8);
-                bool       canEncode =
-                    (ElementsAreSame(val.i32, is8 ? 2 : 4) &&
-                     emitter::emitIns_valid_imm_for_movi(val.i32[0], EA_4BYTE)) ||
-                    (ElementsAreSame(val.i16, is8 ? 4 : 8) &&
-                     emitter::emitIns_valid_imm_for_movi(val.i16[0], EA_2BYTE)) ||
-                    (ElementsAreSame(val.i8, is8 ? 8 : 16) && emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE));
+                simd16_t val = vecCon->gtSimd16Val;
+                bool     canEncode =
+                    (vecCon->IsBroadcast(TYP_INT) && emitter::emitIns_valid_imm_for_movi(val.i32[0], EA_4BYTE)) ||
+                    (vecCon->IsBroadcast(TYP_SHORT) && emitter::emitIns_valid_imm_for_movi(val.i16[0], EA_2BYTE)) ||
+                    (vecCon->IsBroadcast(TYP_BYTE) && emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE));
 
                 if (!canEncode)
                 {
