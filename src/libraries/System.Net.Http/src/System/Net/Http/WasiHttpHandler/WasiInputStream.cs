@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using WasiHttpWorld;
@@ -75,12 +74,7 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        private async Task<int> ReadAsyncCore(
-            byte[] bytes,
-            int offset,
-            int length,
-            CancellationToken cancellationToken
-        )
+        private async Task<int> ReadAsyncCore(Memory<byte> destination, CancellationToken cancellationToken)
         {
             ObjectDisposedException.ThrowIf(isClosed, this);
             cancellationToken.ThrowIfCancellationRequested();
@@ -126,8 +120,8 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    var min = Math.Min(this.buffer.Length - this.offset, length);
-                    Array.Copy(this.buffer, this.offset, bytes, offset, min);
+                    var min = Math.Min(this.buffer.Length - this.offset, destination.Length);
+                    new ReadOnlySpan<byte>(this.buffer, this.offset, min).CopyTo(destination.Span);
                     if (min < buffer.Length - this.offset)
                     {
                         this.offset += min;
@@ -159,23 +153,8 @@ namespace System.Net.Http
         public override ValueTask<int> ReadAsync(
             Memory<byte> buffer,
             CancellationToken cancellationToken = default
-        )
-        {
-            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment))
-            {
-                return new ValueTask<int>(ReadAsyncCore(segment.Array!, segment.Offset, segment.Count, cancellationToken));
-            }
-
-            return ReadIntoTemporaryAsync(buffer, cancellationToken);
-        }
-
-        private async ValueTask<int> ReadIntoTemporaryAsync(Memory<byte> buffer, CancellationToken cancellationToken)
-        {
-            var dst = new byte[buffer.Length];
-            var result = await ReadAsyncCore(dst, 0, dst.Length, cancellationToken).ConfigureAwait(false);
-            new ReadOnlySpan<byte>(dst, 0, result).CopyTo(buffer.Span);
-            return result;
-        }
+        ) =>
+            new ValueTask<int>(ReadAsyncCore(buffer, cancellationToken));
 
         // A synchronous read would block, which isn't possible on single-threaded WASI.
         public override int Read(Span<byte> buffer) => throw new PlatformNotSupportedException();
