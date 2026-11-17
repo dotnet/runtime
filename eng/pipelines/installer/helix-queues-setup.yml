@@ -41,7 +41,7 @@ steps:
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
-      - AzureLinux.4.Amd64.Open
+      - (AzureLinux.4.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:ad2717f231981d3218538ac74169b1354367e1ce2bd479bbf0ada3573b1db8c1
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
