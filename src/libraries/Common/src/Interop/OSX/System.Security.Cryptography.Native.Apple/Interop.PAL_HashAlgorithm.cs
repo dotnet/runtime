@@ -16,9 +16,6 @@ internal static partial class Interop
             Sha256,
             Sha384,
             Sha512,
-            Sha3_256,
-            Sha3_384,
-            Sha3_512,
         }
 
         private static PAL_HashAlgorithm PalAlgorithmFromAlgorithmName(HashAlgorithmName hashAlgorithmName) =>

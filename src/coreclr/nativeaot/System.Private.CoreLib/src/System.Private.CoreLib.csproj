@@ -216,7 +216,9 @@
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
-    <Compile Include="System\Runtime\ExceptionIDs.cs" />
+    <Compile Include="$(RuntimeBasePath)System\Runtime\ExceptionIDs.cs">
+      <Link>System\Runtime\ExceptionIDs.cs</Link>
+    </Compile>
     <Compile Include="System\Runtime\ExceptionServices\ExceptionHandling.NativeAot.cs" />
     <Compile Include="System\Runtime\GCSettings.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeMapLazyDictionary.NativeAot.cs" />

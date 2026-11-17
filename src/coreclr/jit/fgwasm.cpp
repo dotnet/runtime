@@ -4004,6 +4004,23 @@ PhaseStatus Compiler::fgWasmVirtualIP()
         vipFuncIdx++;
     }
 
+    if (!IsNativeAot() && (compHndBBtabCount == 0))
+    {
+        assert(virtualIP == 2);
+        // The unwind extent identifies methods whose only observable virtual IP is 1.
+        // Keep the frame header layout, but let the VM infer the IP without reading its slot.
+        for (BasicBlock* const block : Blocks())
+        {
+            if (blockData[block->bbNum].isRequired)
+            {
+                getVirtualIPLclNum();
+                break;
+            }
+        }
+        JITDUMP("Virtual IP is always 1; omitting frame stores\n");
+        return lvaWasmVirtualIP == BAD_VAR_NUM ? PhaseStatus::MODIFIED_NOTHING : PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
     // Solve the available-Virtual-IP dataflow: a block's incoming value is the meet of its
     // in-func predecessors' outgoing values (cross-func edges and function entries are unknown).
     //

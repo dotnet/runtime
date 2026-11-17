@@ -2958,22 +2958,39 @@ struct cdac_data<StoredSigMethodDesc>
 
 class FCallMethodDesc : public MethodDesc
 {
-
-    DWORD   m_dwECallID;
-#ifdef TARGET_64BIT
-    DWORD   m_padding;
-#endif
+    // String FCalls cache a dynamic implementation ID instead of an address.
+    union
+    {
+        PCODE m_pFCallImpl;
+        DWORD m_dwECallID;
+    };
 
 public:
+    void SetCachedFCallImpl(PCODE implementation)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(GetMethodTable() != g_pStringClass);
+        VolatileStore(&m_pFCallImpl, implementation);
+    }
+
+    PCODE GetCachedFCallImpl()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(GetMethodTable() != g_pStringClass);
+        return VolatileLoad(&m_pFCallImpl);
+    }
+
     void SetECallID(DWORD dwID)
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(GetMethodTable() == g_pStringClass);
         m_dwECallID = dwID;
     }
 
     DWORD GetECallID()
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(GetMethodTable() == g_pStringClass);
         return m_dwECallID;
     }
 };

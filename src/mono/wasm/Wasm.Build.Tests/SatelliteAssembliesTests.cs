@@ -91,8 +91,10 @@ namespace Wasm.Build.Tests
                 Path.Combine(_projectDir, "..", "LibraryWithResources"));
             CreateProgramForCultureTest("LibraryWithResources.resx.words", "LibraryWithResources.Class1");
             // move src/mono/wasm/testassets/SatelliteAssemblyFromProjectRef/LibraryWithResources to the test project
-            // The root D.B.props should be empty and D.B.targets should use the non-Wasm targeting-pack setup.
-            File.WriteAllText(Path.Combine(_projectDir, "..", "Directory.Build.props"), "<Project />");
+            // Only runtime selection belongs in the root props; targets use the non-Wasm targeting-pack setup.
+            File.WriteAllText(Path.Combine(_projectDir, "..", "Directory.Build.props"), IsCoreClrRuntime
+                ? "<Project><PropertyGroup><UseMonoRuntime>false</UseMonoRuntime></PropertyGroup></Project>"
+                : "<Project />");
             File.Copy(
                 Path.Combine(BuildEnvironment.TestDataPath, "Local.Directory.Build.targets"),
                 Path.Combine(_projectDir, "..", "Directory.Build.targets"));

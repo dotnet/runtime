@@ -30,8 +30,12 @@ public class WasmUnwinderTests
         public Dictionary<uint, ulong> VirtualIpBases { get; } = new();
         public Dictionary<ulong, ulong> UnwindData { get; } = new();
 
-        public bool TryGetVirtualIPBase(uint frameIdentity, out ulong baseVirtualIP)
-            => VirtualIpBases.TryGetValue(frameIdentity, out baseVirtualIP);
+        public bool TryGetVirtualIPBase(uint frameIdentity, out ulong baseVirtualIP, out TargetPointer unwindDataAddress)
+        {
+            bool found = VirtualIpBases.TryGetValue(frameIdentity, out baseVirtualIP);
+            unwindDataAddress = new TargetPointer(UnwindData.GetValueOrDefault(baseVirtualIP, BlobsBase + 0x100));
+            return found;
+        }
 
         public bool TryGetUnwindData(TargetCodePointer controlPC, out TargetPointer unwindDataAddress)
         {
@@ -62,6 +66,7 @@ public class WasmUnwinderTests
     private static TestPlaceholderTarget CreateTarget(MockMemorySpace.HeapFragment[] fragments)
     {
         TestPlaceholderTarget.Builder builder = new(WasmArch);
+        builder.MemoryBuilder.AddHeapFragment(Blob(BlobsBase + 0x100, [0, 3], "defaultMultiIPUnwind"));
         foreach (MockMemorySpace.HeapFragment fragment in fragments)
             builder.MemoryBuilder.AddHeapFragment(fragment);
         return builder.Build();
@@ -190,6 +195,24 @@ public class WasmUnwinderTests
 
         // baseVirtualIP + (localVirtualIPHalf * 2) == 0x50000 + 6
         Assert.Equal(VirtualIpBase + 6, unwinder.GetVirtualIP(new TargetPointer(FramesBase)).Value);
+    }
+
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(uint.MaxValue)]
+    public void GetVirtualIP_SingleVirtualIP_IgnoresUninitializedSlot(uint slotValue)
+    {
+        FakeWasmR2RInfo info = new();
+        info.VirtualIpBases[FuncIndexLeaf] = VirtualIpBase;
+        info.UnwindData[VirtualIpBase] = BlobsBase;
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexLeaf, slotValue, "leaf"),
+            Blob(BlobsBase, [0x80, 1, 2], "singleIPUnwind"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+
+        Assert.Equal(VirtualIpBase + 2, unwinder.GetVirtualIP(new TargetPointer(FramesBase)).Value);
     }
 
     [Fact]
@@ -519,10 +542,11 @@ public class WasmUnwinderTests
         FakeExecutionManager executionManager = new();
         for (int i = 0; i < functions.Length; i++)
         {
-            // Unwind data is the ULEB128 fixed frame size, addressed as LoadedImageBase (0) + UnwindData.
+            // Unwind data holds the frame size and virtual IP extent, both ULEB128.
             Assert.True(functions[i].FrameSize < 0x80);
-            MockMemorySpace.HeapFragment unwindData = allocator.Allocate(1, "UnwindData");
+            MockMemorySpace.HeapFragment unwindData = allocator.Allocate(2, "UnwindData");
             unwindData.Data[0] = (byte)functions[i].FrameSize;
+            unwindData.Data[1] = 0x60;
 
             Span<byte> entry = runtimeFunctions.Data.AsSpan(i * (int)runtimeFunctionLayout.Stride, (int)runtimeFunctionLayout.Stride);
             helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), functions[i].BeginAddress);

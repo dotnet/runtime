@@ -7,6 +7,7 @@ set(SOURCES
     cpufeatures.c
     descriptorlimit.c
     entrypoints.c
+    environ.c
     getexepath.c
     memorybarrierprocesswide.c
     mutex.c
