@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <minipal/debugger.h>
 #include <minipal/random.h>
+#include <minipal/environ.h>
 #include <minipal/utf8.h>
 
 static bool breakOnDebugBreakorAV = false;
@@ -59,11 +60,11 @@ char* GetEnvironmentVariableWithDefaultA(const char* envVarName, const char* def
     char* retString = nullptr;
 
     // Figure out how much space we need to allocate
-    DWORD dwRetVal = ::GetEnvironmentVariableA(envVarName, nullptr, 0);
+    DWORD dwRetVal = minipal_environ_get_variable(envVarName, nullptr, 0);
     if (dwRetVal != 0)
     {
         retString = new char[dwRetVal];
-        dwRetVal  = ::GetEnvironmentVariableA(envVarName, retString, dwRetVal);
+        dwRetVal  = minipal_environ_get_variable(envVarName, retString, dwRetVal);
     }
     else
     {
@@ -83,11 +84,11 @@ WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* 
     WCHAR* retString = nullptr;
 
     // Figure out how much space we need to allocate
-    DWORD dwRetVal = ::GetEnvironmentVariableW(envVarName, nullptr, 0);
+    DWORD dwRetVal = minipal_environ_get_variable_u16((const CHAR16_T*)envVarName, nullptr, 0);
     if (dwRetVal != 0)
     {
         retString = new WCHAR[dwRetVal];
-        dwRetVal  = ::GetEnvironmentVariableW(envVarName, retString, dwRetVal);
+        dwRetVal  = minipal_environ_get_variable_u16((const CHAR16_T*)envVarName, (CHAR16_T*)retString, dwRetVal);
     }
     else
     {
@@ -104,7 +105,7 @@ WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* 
 
 const char* GetEnvWithDefault(const char* envVarName, const char* defaultValue)
 {
-    // getenv isn't thread safe, but it's simple and sufficient since we are development-only tool
+    // Intentionally uses getenv for a non-owning pointer into the process environment.
     char* env = getenv(envVarName);
     return env ? env : defaultValue;
 }

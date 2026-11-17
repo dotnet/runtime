@@ -463,6 +463,52 @@ namespace System.Diagnostics.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
+        public void TestExited_ConcurrentSubscriptions(bool removeHandlers)
+        {
+            const int HandlerCount = 1000;
+            using var p = new ProcessWithAccessibleOnExited();
+            int calls = 0;
+            EventHandler handler = (_, _) => Interlocked.Increment(ref calls);
+
+            if (removeHandlers)
+            {
+                for (int i = 0; i < HandlerCount; i++)
+                {
+                    p.Exited += handler;
+                }
+            }
+
+            p.RaiseExited();
+            Assert.Equal(removeHandlers ? HandlerCount : 0, calls);
+            calls = 0;
+
+            // Exercise handler-list updates without process-exit timing. Lost updates cause
+            // missing callbacks after adds or retained callbacks after removes. Repetition
+            // increases race exposure, but does not force a particular interleaving.
+            Parallel.For(0, HandlerCount, _ =>
+            {
+                if (removeHandlers)
+                {
+                    p.Exited -= handler;
+                }
+                else
+                {
+                    p.Exited += handler;
+                }
+            });
+
+            p.RaiseExited();
+            Assert.Equal(removeHandlers ? 0 : HandlerCount, calls);
+        }
+
+        private sealed class ProcessWithAccessibleOnExited : Process
+        {
+            public void RaiseExited() => OnExited();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
         public void TestExited_SynchronizingObject(bool invokeRequired)
         {
             var mres = new ManualResetEventSlim();

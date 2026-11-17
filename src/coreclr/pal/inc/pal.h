@@ -246,7 +246,6 @@ VOID
 PALAPI
 PAL_SetCreateDumpCallback(
     IN PCREATEDUMP_CALLBACK callback);
-
 /// <summary>
 /// Callback invoked when a signal is received that will terminate the process.
 /// The callback should log the managed callstack for the signal.
@@ -1846,21 +1845,6 @@ PVOID
 PALAPI
 PAL_GetStackLimit();
 
-PALIMPORT
-DWORD
-PALAPI
-PAL_GetLogicalCpuCountFromOS();
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_GetTotalCpuCount();
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetCpuLimit(UINT* val);
-
 PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context);
 
 #define PAGE_NOACCESS                   0x01
@@ -2061,47 +2045,6 @@ VOID
 PALAPI
 DebugBreak();
 
-PALIMPORT
-DWORD
-PALAPI
-GetEnvironmentVariableW(
-            IN LPCWSTR lpName,
-            OUT LPWSTR lpBuffer,
-            IN DWORD nSize);
-
-#ifdef UNICODE
-#define GetEnvironmentVariable GetEnvironmentVariableW
-#else
-#define GetEnvironmentVariable GetEnvironmentVariableA
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-SetEnvironmentVariableW(
-            IN LPCWSTR lpName,
-            IN LPCWSTR lpValue);
-
-#ifdef UNICODE
-#define SetEnvironmentVariable SetEnvironmentVariableW
-#else
-#define SetEnvironmentVariable SetEnvironmentVariableA
-#endif
-
-PALIMPORT
-LPWSTR
-PALAPI
-GetEnvironmentStringsW();
-
-#define GetEnvironmentStrings GetEnvironmentStringsW
-
-PALIMPORT
-BOOL
-PALAPI
-FreeEnvironmentStringsW(
-            IN LPWSTR);
-
-#define FreeEnvironmentStrings FreeEnvironmentStringsW
 
 PALIMPORT
 BOOL
@@ -2798,8 +2741,6 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
 }
 
 #endif // !__has_builtin(_rotr)
-
-PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
 
 #ifndef ERANGE
 #define ERANGE          34

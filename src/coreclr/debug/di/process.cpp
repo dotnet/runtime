@@ -25,6 +25,7 @@
 
 #include "readonlydatatargetfacade.h"
 #include "metahost.h"
+#include <minipal/environ.h>
 
 // Defined in dbgutil; resolves a runtime export address from the data target.
 extern "C" bool TryGetSymbol(
@@ -7134,7 +7135,7 @@ void CordbProcess::VerifyControlBlock()
 
 #ifdef _DEBUG
     char buf[MAX_LONGPATH];
-    DWORD len = GetEnvironmentVariableA("CORDBG_NotCompatibleTest", buf, sizeof(buf));
+    DWORD len = minipal_environ_get_variable("CORDBG_NotCompatibleTest", buf, sizeof(buf));
     _ASSERTE(len < sizeof(buf));
 
     if (len > 0)
