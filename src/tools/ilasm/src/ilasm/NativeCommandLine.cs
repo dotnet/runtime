@@ -34,14 +34,12 @@ internal static class NativeCommandLine
         ["OPT"] = "--optimize",
         ["OUT"] = "--output",
         ["PDB"] = "--pdb",
-        ["PE6"] = "--pe64",
         ["QUI"] = "--quiet",
         ["RES"] = "--resource",
         ["STA"] = "--stack",
         ["STR"] = "--stripreloc",
         ["SSV"] = "--ssver",
         ["SUB"] = "--subsystem",
-        ["X64"] = "--x64",
     };
 
     internal static string[] Normalize(string[] args) =>
@@ -69,6 +67,11 @@ internal static class NativeCommandLine
         List<string> result = new(args.Length);
         bool preserveRemainingArguments = false;
         bool preserveNextArgument = false;
+
+        // Native ilasm applies the last /X64 or /ARM64 switch, and /PE64 without either targets x64.
+        int architectureIndex = -1;
+        bool pe64 = false;
+        string? machine = null;
 
         foreach (string arg in args)
         {
@@ -119,7 +122,8 @@ internal static class NativeCommandLine
             string? normalizedOption;
             if (optionName.StartsWith("ARM64", StringComparison.OrdinalIgnoreCase))
             {
-                normalizedOption = "--arm64";
+                SetMachine("arm64");
+                continue;
             }
             else if (optionName.Equals("ARM", StringComparison.OrdinalIgnoreCase))
             {
@@ -140,6 +144,16 @@ internal static class NativeCommandLine
                 }
                 if (prefix.Equals("LIS", StringComparison.OrdinalIgnoreCase))
                 {
+                    continue;
+                }
+                if (prefix.Equals("X64", StringComparison.OrdinalIgnoreCase))
+                {
+                    SetMachine("x64");
+                    continue;
+                }
+                if (prefix.Equals("PE6", StringComparison.OrdinalIgnoreCase))
+                {
+                    SetPe64();
                     continue;
                 }
 
@@ -188,7 +202,33 @@ internal static class NativeCommandLine
             }
         }
 
+        string? architecture = machine ?? (pe64 ? "x64" : null);
+        if (architecture is not null)
+        {
+            result.InsertRange(architectureIndex, ["--arch", architecture]);
+        }
+
         return result.ToArray();
+
+        void SetMachine(string value)
+        {
+            MarkArchitectureIndex();
+            machine = value;
+        }
+
+        void SetPe64()
+        {
+            MarkArchitectureIndex();
+            pe64 = true;
+        }
+
+        void MarkArchitectureIndex()
+        {
+            if (architectureIndex < 0)
+            {
+                architectureIndex = result.Count;
+            }
+        }
 
         void AddModernOption(string name, Option option)
         {

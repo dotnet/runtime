@@ -15,20 +15,18 @@ public class CommandLineTests
 {
     [Theory]
     [InlineData("", Machine.I386, PEMagic.PE32)]
+    [InlineData("--arch x86", Machine.I386, PEMagic.PE32)]
+    [InlineData("--arch x64", Machine.Amd64, PEMagic.PE32Plus)]
+    [InlineData("--arch arm64", Machine.Arm64, PEMagic.PE32Plus)]
     [InlineData("-PE64", Machine.Amd64, PEMagic.PE32Plus)]
-    [InlineData("--pe64", Machine.Amd64, PEMagic.PE32Plus)]
     [InlineData("-X64", Machine.Amd64, PEMagic.PE32Plus)]
-    [InlineData("--x64", Machine.Amd64, PEMagic.PE32Plus)]
     [InlineData("-ARM64", Machine.Arm64, PEMagic.PE32Plus)]
-    [InlineData("--arm64", Machine.Arm64, PEMagic.PE32Plus)]
     [InlineData("-PE64 -ARM64", Machine.Arm64, PEMagic.PE32Plus)]
     [InlineData("-ARM64 -PE64", Machine.Arm64, PEMagic.PE32Plus)]
-    [InlineData("--pe64 --arm64", Machine.Arm64, PEMagic.PE32Plus)]
-    [InlineData("--arm64 --pe64", Machine.Arm64, PEMagic.PE32Plus)]
     [InlineData("-PE64 -X64", Machine.Amd64, PEMagic.PE32Plus)]
     [InlineData("-X64 -PE64", Machine.Amd64, PEMagic.PE32Plus)]
-    [InlineData("--pe64 --x64", Machine.Amd64, PEMagic.PE32Plus)]
-    [InlineData("--x64 --pe64", Machine.Amd64, PEMagic.PE32Plus)]
+    [InlineData("-X64 -ARM64", Machine.Arm64, PEMagic.PE32Plus)]
+    [InlineData("-ARM64 -X64", Machine.Amd64, PEMagic.PE32Plus)]
     public void TargetOptions_EmitRequestedArchitecture(string options, Machine machine, PEMagic magic)
     {
         string directory = Directory.CreateTempSubdirectory("ilasm-architecture-").FullName;
@@ -230,10 +228,8 @@ public class CommandLineTests
         { "NOL", "--nologo" },
         { "OPT", "--optimize" },
         { "PDB", "--pdb" },
-        { "PE6", "--pe64" },
         { "QUI", "--quiet" },
         { "STR", "--stripreloc" },
-        { "X64", "--x64" },
     };
 
     public static TheoryData<string, string> NativeValueOptions { get; } = new()
@@ -466,15 +462,39 @@ public class CommandLineTests
     }
 
     [Theory]
-    [InlineData("-arm64", "--arm64")]
-    [InlineData("-ARM64Anything", "--arm64")]
-    [InlineData("-ARM64=value", "--arm64")]
-    [InlineData("/ARM64Anything:value", "--arm64")]
-    public void ArmOptions_UseNativeDisambiguation(string argument, string expectedOption)
+    [InlineData("-arm64", "arm64")]
+    [InlineData("-ARM64Anything", "arm64")]
+    [InlineData("-ARM64=value", "arm64")]
+    [InlineData("/ARM64Anything:value", "arm64")]
+    public void ArmOptions_UseNativeDisambiguation(string argument, string expectedArchitecture)
     {
         Assert.Equal(
-            [expectedOption],
+            ["--arch", expectedArchitecture],
             NativeCommandLine.Normalize([argument], allowSlashOptions: argument[0] == '/'));
+    }
+
+    [Theory]
+    [InlineData("-PE64 -DLL input.il", "--arch x64 --dll input.il")]
+    [InlineData("-x64anything -DLL", "--arch x64 --dll")]
+    [InlineData("-DLL -PE64 -ARM64 input.il", "--dll --arch arm64 input.il")]
+    [InlineData("-ARM64 -DLL -PE64", "--arch arm64 --dll")]
+    [InlineData("-X64 -ARM64 -DLL", "--arch arm64 --dll")]
+    [InlineData("-ARM64 -PE64 -X64", "--arch x64")]
+    [InlineData("-PE64 -- -X64", "--arch x64 -- -X64")]
+    public void NativeArchitectureOptions_LastMachineWins(string arguments, string expected)
+    {
+        Assert.Equal(
+            expected.Split(' '),
+            NativeCommandLine.Normalize(arguments.Split(' '), allowSlashOptions: false));
+    }
+
+    [Theory]
+    [InlineData("--arch arm")]
+    [InlineData("--arch pe64")]
+    public void ArchitectureOption_RejectsUnsupportedValue(string options)
+    {
+        var command = new IlasmRootCommand();
+        Assert.NotEmpty(command.Parse([.. options.Split(' '), "input.il"]).Errors);
     }
 
     [Theory]
