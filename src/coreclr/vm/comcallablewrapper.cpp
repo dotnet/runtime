@@ -96,7 +96,6 @@ typedef ComCallWrapper *ComCallWrapperPtr;
 // This is used to hold a newly created CCW. It will release the CCW (and linked wrappers)
 // upon exit, if SuppressRelease() is not called. It doesn't try to release the SimpleComCallWrapper
 // or destroy the handle
-// I need to use BaseHolder instead of BaseWrapper because BaseHolder allows me to use a class as BASE
 //
 class NewCCWHolder : public BaseHolder<ComCallWrapperPtr, NewCCWHolderBase>
 {
@@ -1899,19 +1898,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                 pStartWrapper = GetWrapperForObject(pServer, pTemplate);
                 if (pStartWrapper == NULL)
                 {
-                    struct RefcountedHandleTraits final
-                    {
-                        using Type = OBJECTHANDLE;
-                        static constexpr Type Default() { return NULL; }
-                        static void Free(Type value) noexcept
-                        {
-                            WRAPPER_NO_CONTRACT;
-                            if (value != NULL)
-                                DestroyRefcountedHandle(value);
-                        }
-                    };
-
-                    LifetimeHolder<RefcountedHandleTraits> ownedHandle;
+                    RefcountedHandleHolder ownedHandle;
                     OBJECTHANDLE oh = NULL;
 
                     ComCallWrapper *pRootWrapper = GetWrapperForObject(pServer, NULL);

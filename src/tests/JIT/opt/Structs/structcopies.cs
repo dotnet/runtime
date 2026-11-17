@@ -110,10 +110,14 @@ namespace TestStructFields
             return s;
         }
 
+        [StructLayout(LayoutKind.Explicit)]
         private struct Padded
         {
+            [FieldOffset(0)]
             public byte A;
+            [FieldOffset(4)]
             public int B;
+            [FieldOffset(8)]
             public byte C;
         }
 

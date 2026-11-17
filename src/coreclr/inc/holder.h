@@ -364,176 +364,6 @@ class StateHolder
 };  // class StateHolder<>
 
 //-----------------------------------------------------------------------------
-// BaseWrapper is just Base like a Holder, but it "transparently" proxies the type it contains,
-// using operator overloads.  Use this when you want a holder to expose the functionality of
-// the value it contains.
-//-----------------------------------------------------------------------------
-template <typename TYPE, typename BASE,
-          UINT_PTR DEFAULTVALUE = 0, BOOL IS_NULL(TYPE, TYPE) = CompareDefault<TYPE>>
-class BaseWrapper : public BaseHolder<TYPE, BASE, DEFAULTVALUE, IS_NULL>
-{
-    typedef BaseHolder<TYPE, BASE, DEFAULTVALUE, IS_NULL> BaseT;
-
-
-#ifdef __GNUC__
-//#pragma GCC visibility push(hidden)
-#endif // __GNUC__
-    // This temporary object takes care of the case where we are initializing
-    // a holder's contents by passing it as an out parameter.  The object is
-    // guaranteed to live longer than the call it is passed to, hence we should
-    // properly acquire the object on return
-    friend class AddressInitHolder;
-    class AddressInitHolder
-    {
-      protected:
-        BaseWrapper<TYPE,BASE,DEFAULTVALUE,IS_NULL> &m_holder;
-
-      public:
-        FORCEINLINE AddressInitHolder(BaseWrapper<TYPE,BASE,DEFAULTVALUE,IS_NULL> &holder)
-          : m_holder(holder)
-        {
-            //
-            // We must clear the value, to avoid the following scenario:
-            //
-            //      ReleaseHolder<MyType> pMyType;
-            //      hr = MyFunction(&pMyType, ...);
-            //      <do something with pMyType>
-            //      hr = MyFunction(&pMyType, ...); <- calls Release before call and Acquire on return.
-            //
-            // If the second call to MyFunction were to fail and return without updating the
-            // out parameter, then ~AddressInitHolder will all Acquire, which is a no-op on
-            // the underlying pointer but sets m_acquired to TRUE. Thus, when pMyType goes
-            // out of scope, ReleaseHolder will cause a double-release of pMyType.
-            //
-            // By calling Clear, then the call to Acquire in the dtor will not set m_acquired
-            // to true since IsNull(m_holder.m_value) will return true.
-            //
-            m_holder.Clear();
-        }
-        FORCEINLINE ~AddressInitHolder()
-        {
-            m_holder.Acquire();
-        }
-
-        // It's not optimal to have to declare these casting operators.  But if we don't,
-        // people cannot cast the result of &holder to these values.  (The C++ compiler won't
-        // automatically use the TYPE * cast as an intermediate value.)  So we put them here,
-        // rather than forcing callers to double cast in these common cases.
-
-        FORCEINLINE operator IUnknown **()
-        {
-            IUnknown *unknown;
-            // Typesafe check.  This will fail at compile time if
-            // m_holder.m_value can't be converted to an IUnknown *.
-            unknown = static_cast<IUnknown*>(m_holder.m_value);
-            // do the cast with an unsafe cast
-            return (IUnknown **)(&m_holder.m_value);
-        }
-
-#if defined(FEATURE_COMINTEROP) && !defined(STRIKE)
-        FORCEINLINE operator IInspectable **()
-        {
-            IInspectable *inspectable;
-            // Typesafe check.  This will fail at compile time if
-            // m_holder.m_value can't be converted to an IInspectable *.
-            inspectable = static_cast<IInspectable *>(m_holder.m_value);
-            return (IInspectable **)(&m_holder.m_value);
-
-        }
-#endif // FEATURE_COMINTEROP
-
-        FORCEINLINE operator void **()
-        {
-            return (void **)(&m_holder.m_value);
-        }
-        FORCEINLINE operator void *()
-        {
-            return (void *)(&m_holder.m_value);
-        }
-    };
-
-    // Separate out method with TYPE * cast operator, since it may clash with IUnknown ** or
-    // void ** cast operator.
-    friend class TypedAddressInitHolder;
-    class TypedAddressInitHolder : public AddressInitHolder
-    {
-      public:
-        FORCEINLINE TypedAddressInitHolder(BaseWrapper & holder)
-          : AddressInitHolder(holder)
-        {
-        }
-
-        FORCEINLINE operator TYPE *()
-        {
-            return static_cast<TYPE *>(&this->m_holder.m_value);
-        }
-    };
-#ifdef __GNUC__
-//#pragma GCC visibility pop
-#endif // __GNUC__
-
-  public:
-    FORCEINLINE BaseWrapper()
-        : BaseT(TYPE(DEFAULTVALUE), FALSE)
-    {
-    }
-    FORCEINLINE BaseWrapper(TYPE value)
-        : BaseT(value)
-    {
-    }
-    FORCEINLINE BaseWrapper(TYPE value, BOOL take)
-        : BaseT(value, take)
-    {
-    }
-    FORCEINLINE BaseWrapper& operator=(TYPE value)
-    {
-        BaseT::Assign(value);
-        return *this;
-    }
-    FORCEINLINE operator TYPE() const
-    {
-        return this->m_value;
-    }
-    FORCEINLINE TypedAddressInitHolder operator&()
-    {
-        return TypedAddressInitHolder(*this);
-    }
-    template <typename T>
-    FORCEINLINE bool operator==(T const & value) const
-    {
-        return !!(this->m_value == TYPE(value));
-    }
-    template <typename T>
-    FORCEINLINE bool operator!=(T const & value) const
-    {
-        return !!(this->m_value != TYPE(value));
-    }
-
-    // This handles the NULL value that is an int and the
-    // compiler doesn't want to convert int to a pointer.
-    FORCEINLINE bool operator==(int value) const
-    {
-        return !!(this->m_value == TYPE((void*)(SIZE_T)value));
-    }
-    FORCEINLINE bool operator!=(int value) const
-    {
-        return !!(this->m_value != TYPE((void*)(SIZE_T)value));
-    }
-
-    FORCEINLINE const TYPE &operator->() const
-    {
-        return this->m_value;
-    }
-    FORCEINLINE int operator!() const
-    {
-        return this->IsNull();
-    }
-
-  private:
-    HIDE_GENERATED_METHODS(BaseWrapper)
-};  // class BaseWrapper<>
-
-//-----------------------------------------------------------------------------
 // Generic templates to use to wrap up acquire/release functionality for Holder
 //-----------------------------------------------------------------------------
 
@@ -633,7 +463,7 @@ class LifetimeHolder final
 
 public:
     LifetimeHolder() : m_value{ T::Default() } { STATIC_CONTRACT_LEAF; }
-    explicit LifetimeHolder(Type value) : m_value{ value } { STATIC_CONTRACT_LEAF; }
+    explicit LifetimeHolder(Type value) : m_value{ std::move(value) } { STATIC_CONTRACT_LEAF; }
 
     LifetimeHolder(const LifetimeHolder&) = delete;
     LifetimeHolder& operator=(const LifetimeHolder&) = delete;
@@ -661,7 +491,7 @@ public:
     {
         STATIC_CONTRACT_WRAPPER;
         Free();
-        m_value = value;
+        m_value = std::move(value);
         return *this;
     }
 
@@ -695,9 +525,7 @@ public:
     Type Detach()
     {
         STATIC_CONTRACT_WRAPPER;
-        Type value = m_value;
-        m_value = T::Default();
-        return value;
+        return std::exchange(m_value, T::Default());
     }
 };
 

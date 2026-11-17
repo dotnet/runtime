@@ -43,9 +43,6 @@ namespace System
                     case ExceptionIDs.OutOfMemory:
                         return PreallocatedOutOfMemoryException.Instance;
 
-                    case ExceptionIDs.Arithmetic:
-                        return new ArithmeticException();
-
                     case ExceptionIDs.ArrayTypeMismatch:
                         return new ArrayTypeMismatchException();
 
@@ -64,9 +61,11 @@ namespace System
                     case ExceptionIDs.NullReference:
                         return new NullReferenceException();
 
+#if !TARGET_WASM
                     case ExceptionIDs.DataMisaligned:
                         // We don't have this in Test.CoreLib
                         return new PlatformNotSupportedException();
+#endif
 
                     default:
                         Debug.Fail("unexpected ExceptionID");
