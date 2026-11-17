@@ -69,6 +69,11 @@ namespace System.Text.RegularExpressions.Symbolic
             internal readonly int Upper = upper;
             internal readonly TSet Set = set;
             internal readonly SymbolicRegexInfo Info = info;
+            /// <summary>
+            /// Caches nullability of this node for any given context (0 &lt;= context &lt; <see cref="CharKind.ContextLimit"/>)
+            /// when <see cref="SymbolicRegexInfo.StartsWithSomeAnchor"/> and <see cref="SymbolicRegexInfo.CanBeNullable"/> are true.
+            /// Otherwise the cache is null.
+            /// </summary>
             internal readonly byte[]? NullabilityCache =
                 info.StartsWithSomeAnchor && info.CanBeNullable ? new byte[CharKind.ContextLimit] : null;
         }

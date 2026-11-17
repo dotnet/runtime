@@ -116,7 +116,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Determines whether the node is nullable for the given context.</summary>
         /// <remarks>
-        /// This is functionally equivalent to <see cref="SymbolicRegexNode{TSet}.IsNullableFor(SymbolicRegexBuilder{TSet}, uint)"/>, but using cached
+        /// This is functionally equivalent to <see cref="SymbolicRegexNodeContext{TSet}.IsNullableFor(uint)"/>, but using cached
         /// answers stored in <see cref="NullabilityInfo"/>.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

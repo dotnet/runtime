@@ -37,28 +37,18 @@ namespace System.Text.RegularExpressions.Symbolic
         public static bool operator !=(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right) => !left.Equals(right);
 
         internal SymbolicRegexNodeKind Kind(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).Kind;
-        internal bool IsLazy(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).IsLazy;
-        internal bool IsHighPriorityNullable(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).IsHighPriorityNullable;
-        internal bool IsHighPriorityNullableFor(SymbolicRegexBuilder<TSet> builder, uint context) => builder.GetNodeContext(this).IsHighPriorityNullableFor(context);
-        internal bool IsNullable(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).IsNullable;
         internal bool CanBeNullable(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).CanBeNullable;
-        internal bool IsNullableFor(SymbolicRegexBuilder<TSet> builder, uint context) => builder.GetNodeContext(this).IsNullableFor(context);
         internal bool IsAnyStar(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).IsAnyStar(builder._solver);
         internal bool IsNothing(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).IsNothing(builder._solver);
-        internal bool IsStar(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).IsStar;
-        internal bool IsEpsilon(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).IsEpsilon;
-        internal bool IsPlus(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).IsPlus;
         internal bool Subsumes(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> other, int depth = 0) => builder.GetNodeContext(this).Subsumes(builder, other, depth);
 
         internal List<SymbolicRegexNode<TSet>> ToList(SymbolicRegexBuilder<TSet> builder, List<SymbolicRegexNode<TSet>>? list = null, SymbolicRegexNodeKind listKind = SymbolicRegexNodeKind.Concat) =>
             builder.GetNodeContext(this).ToList(list, listKind);
 
-        internal int GetFixedLength(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).GetFixedLength();
         internal SymbolicRegexNode<TSet> AddFixedLengthMarkers(SymbolicRegexBuilder<TSet> builder, int lengthSoFar = 0) => builder.GetNodeContext(this).AddFixedLengthMarkers(builder, lengthSoFar);
         internal SymbolicRegexNode<TSet> CreateDerivativeWithoutEffects(SymbolicRegexBuilder<TSet> builder, TSet elem, uint context) => builder.GetNodeContext(this).CreateDerivativeWithoutEffects(builder, elem, context);
         internal SymbolicRegexNode<TSet> CreateDerivative(SymbolicRegexBuilder<TSet> builder, TSet elem, uint context) => builder.GetNodeContext(this).CreateDerivative(builder, elem, context);
         internal SymbolicRegexNode<TSet> PruneLowerPriorityThanNullability(SymbolicRegexBuilder<TSet> builder, uint context) => builder.GetNodeContext(this).PruneLowerPriorityThanNullability(builder, context);
-        internal SymbolicRegexNode<TSet> CreateLoopContinuation(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).CreateLoopContinuation(builder);
         internal List<(SymbolicRegexNode<TSet>, DerivativeEffect[])> CreateNfaDerivativeWithEffects(SymbolicRegexBuilder<TSet> builder, TSet elem, uint context) => builder.GetNodeContext(this).CreateNfaDerivativeWithEffects(builder, elem, context);
         internal SymbolicRegexNode<TSet> StripEffects(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).StripEffects(builder);
         internal void StripAndMapEffects(SymbolicRegexBuilder<TSet> builder, uint context, List<(SymbolicRegexNode<TSet>, DerivativeEffect[])> alternativesAndEffects, List<DerivativeEffect>? currentEffects = null) =>
@@ -68,7 +58,6 @@ namespace System.Text.RegularExpressions.Symbolic
         internal HashSet<TSet> GetSets(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).GetSets(builder);
         internal TSet[] ComputeMinterms(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).ComputeMinterms(builder);
         internal SymbolicRegexNode<TSet> Reverse(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).Reverse(builder);
-        internal bool StartsWithLoop(SymbolicRegexBuilder<TSet> builder, int upperBoundLowestValue = 1) => builder.GetNodeContext(this).StartsWithLoop(upperBoundLowestValue);
         internal SymbolicRegexNode<TSet> PruneAnchors(SymbolicRegexBuilder<TSet> builder, uint prevKind) => builder.GetNodeContext(this).PruneAnchors(builder, prevKind);
         internal int ResolveFixedLength(SymbolicRegexBuilder<TSet> builder, uint context) => builder.GetNodeContext(this).ResolveFixedLength(context);
 
@@ -108,7 +97,6 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
         internal int EstimateNfaSize(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).EstimateNfaSize();
-        internal int CountSingletons(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).CountSingletons();
 
 #if DEBUG
         internal string ToString(SymbolicRegexBuilder<TSet> builder) => builder.GetNodeContext(this).ToString();
@@ -196,12 +184,6 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         internal SymbolicRegexInfo _info => Data.Info;
-
-        /// <summary>
-        /// Caches nullability of this node for any given context (0 &lt;= context &lt; ContextLimit)
-        /// when _info.StartsWithSomeAnchor and _info.CanBeNullable are true. Otherwise the cache is null.
-        /// </summary>
-        private byte[]? _nullabilityCache => Data.NullabilityCache;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private SymbolicRegexNodeContext<TSet> GetContext(int id) =>
@@ -392,7 +374,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="context">kind info for previous and next characters</param>
         internal bool IsNullableFor(uint context)
         {
-            // if _nullabilityCache is null then IsNullable==CanBeNullable
+            // if data.NullabilityCache is null then IsNullable==CanBeNullable
             // Observe that if IsNullable==true then CanBeNullable==true.
             // but when the node does not start with an anchor
             // and IsNullable==false then CanBeNullable==false.
