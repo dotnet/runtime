@@ -109,14 +109,20 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false })]
-        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, false })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, false })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, true })]
         [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
-        public async Task DirectPInvokeBindsListedEntryPoints(Configuration config, bool aot, bool readyToRun)
+        public async Task DirectPInvokeBindsListedEntryPoints(Configuration config, bool aot, bool readyToRun, bool useList)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"directpinvoke_{readyToRun}",
-                extraProperties: $"<PublishReadyToRun>{readyToRun}</PublishReadyToRun>",
-                extraItems: "<DirectPInvoke Include=\"libc!strlen\" />");
+            const string ListFileName = "direct-pinvokes.txt";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"directpinvoke_{readyToRun}_{useList}",
+                extraProperties: $"<PublishReadyToRun>{readyToRun}</PublishReadyToRun><AllowUnsafeBlocks>true</AllowUnsafeBlocks>",
+                extraItems: useList
+                    ? $"<DirectPInvokeList Include=\"{ListFileName}\" />"
+                    : "<DirectPInvoke Include=\"libc!strlen\" />");
+            if (useList)
+                File.WriteAllText(Path.Combine(_projectDir, ListFileName), "# Bound statically\nlibc!strlen\n");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DirectPInvoke.cs"));
             ReplaceMainJsWithMinimalRunMain();
 
@@ -126,6 +132,7 @@ namespace Wasm.Build.Tests
             string nativeBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-publish");
             string table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
             Assert.Contains("{ \"strlen\", (void*)&direct_pinvoke::strlen },", table);
+            Assert.Single(table.Split('\n'), line => line.Contains("__asm__(\"strlen\")", StringComparison.Ordinal));
             Assert.Contains("{\"libc\", s_libc, 1}", table);
             Assert.DoesNotContain("definitely_not_in_libc", table);
 

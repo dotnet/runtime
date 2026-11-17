@@ -1427,8 +1427,16 @@ public class WasmArgumentLayoutTests
                 public static extern int Statx(int dirfd);
                 [DllImport("libc", EntryPoint = "strlen")]
                 public static extern nuint StrLen(nint value);
+                [DllImport("libc", EntryPoint = "strlen")]
+                public static extern uint StrLenUInt32(int value);
+                [DllImport("libc", EntryPoint = "llabs")]
+                public static extern long Abs(long value);
+                [DllImport("libc", EntryPoint = "llabs")]
+                public static extern int AbsInt32(int value);
                 [DllImport("Native", EntryPoint = "Native_Test")]
                 public static extern int Native();
+                [DllImport("*", EntryPoint = "direct_pinvoke")]
+                public static extern int NamedLikeTheNamespace();
             }
             """;
         string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -1452,7 +1460,7 @@ public class WasmArgumentLayoutTests
             {
                 OutputDirectory = Path.Combine(workingDirectory, "generated"),
                 TargetOS = targetOS,
-                PInvokeModules = new[] { "# comment", "c!link", "libc!strlen", "Native!Missing", "Native" },
+                PInvokeModules = new[] { "# comment", "c!link", "libc!strlen", "libc!llabs", "Native!Missing", "Native" },
             };
 
             var log = new StringWriter();
@@ -1460,10 +1468,16 @@ public class WasmArgumentLayoutTests
             Assert.True(exitCode == 0, log.ToString());
 
             string table = File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp"));
-            string linkedDecls = table.Split("namespace direct_pinvoke {")[1].Split("} // namespace direct_pinvoke")[0];
+            // A global declaration already takes the default namespace name.
+            Assert.Contains("int32_t direct_pinvoke ();", table);
+            string linkedDecls = table.Split("namespace direct_pinvoke_ {")[1].Split("} // namespace direct_pinvoke_")[0];
             Assert.Contains("int32_t link (void *, void *) __asm__(\"link\");", linkedDecls);
-            Assert.Contains("{ \"link\", (void*)&direct_pinvoke::link },", table);
-            Assert.Contains("void * strlen (void *) __asm__(\"strlen\");", linkedDecls);
+            Assert.Contains("{ \"link\", (void*)&direct_pinvoke_::link },", table);
+            // Declarations that differ only in C types share one declaration.
+            Assert.Single(linkedDecls.Split('\n'), line => line.Contains("__asm__(\"strlen\")", StringComparison.Ordinal));
+            // Declarations that lower to different wasm signatures are rejected rather than bound.
+            Assert.DoesNotContain("llabs", table);
+            Assert.Contains("warning WASM0001: Found a native function (llabs) with conflicting signatures in libc.", log.ToString());
             Assert.Contains("{\"libc\", s_libc, 2}", table);
             Assert.DoesNotContain("statx", table);
             Assert.Contains("DllImportEntry(Native_Test)", table);

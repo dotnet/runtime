@@ -106,6 +106,7 @@ namespace ILCompiler.PortableCallHelpers
                 """);
 
             var linkedEntryPointDecls = new List<string>();
+            var globalNames = new HashSet<string>(StringComparer.Ordinal);
             var pinvokesGroupedByEntryPoint = emitted
                                                 .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
                                                 .GroupBy(CEntryPoint, StringComparer.Ordinal);
@@ -114,12 +115,15 @@ namespace ILCompiler.PortableCallHelpers
             {
                 PInvokeInfo[] candidates = group.Distinct().ToArray();
                 PInvokeInfo first = candidates[0];
-                if (ShouldTreatAsVariadic(candidates))
+                string problem = ShouldTreatAsVariadic(candidates) ? "with varargs"
+                    : HasConflictingSignatures(candidates) ? "with conflicting signatures"
+                    : null;
+                if (problem is not null)
                 {
                     string imports = string.Join(Environment.NewLine,
                                                 candidates.Select(
                                                     p => $"    {p.Method} (in [{((EcmaAssembly)p.Method.Module).GetName().Name}] {p.Method.OwningType})"));
-                    log.Warning("WASM0001", $"Found a native function ({first.EntryPoint}) with varargs in {first.Module}." +
+                    log.Warning("WASM0001", $"Found a native function ({first.EntryPoint}) {problem} in {first.Module}." +
                                      " Calling such functions is not supported, and will fail at runtime." +
                                     $" Managed DllImports: {Environment.NewLine}{imports}");
 
@@ -129,21 +133,19 @@ namespace ILCompiler.PortableCallHelpers
                     continue;
                 }
 
-                var decls = new HashSet<string>();
-                foreach (PInvokeInfo candidate in candidates)
+                // Every P/Invoke of an entry point now lowers to the same wasm signature, and the table
+                // holds one address for it, so one declaration serves them all. More than one - uint
+                // against nuint, say - would conflict as extern "C" and overload in the namespace.
+                PInvokeInfo plain = candidates.FirstOrDefault(c => !linkedEntryPoints.Contains(c));
+                if (plain is not null)
                 {
-                    if (linkedEntryPoints.Contains(candidate))
-                    {
-                        string linkedDecl = GenPInvokeDecl(candidate, CEntryPoint(candidate));
-                        if (decls.Add(linkedDecl))
-                            linkedEntryPointDecls.Add(linkedDecl);
-                        continue;
-                    }
-
-                    string decl = GenPInvokeDecl(candidate);
-                    if (decls.Add(decl))
-                        w.WriteLine(decl);
+                    w.WriteLine(GenPInvokeDecl(plain));
+                    globalNames.Add(CEntryPoint(plain));
                 }
+
+                PInvokeInfo linkedEntryPoint = candidates.FirstOrDefault(linkedEntryPoints.Contains);
+                if (linkedEntryPoint is not null)
+                    linkedEntryPointDecls.Add(GenPInvokeDecl(linkedEntryPoint, CEntryPoint(linkedEntryPoint)));
             }
 
             w.Write(
@@ -154,15 +156,20 @@ namespace ILCompiler.PortableCallHelpers
 
             // Entry points listed individually typically come from a library the native link provides
             // implicitly, such as libc, whose system headers - string.h, through minipal/entrypoints.h -
-            // can already declare them with C types. Declaring them with C++ linkage in a namespace
-            // nothing else uses, bound to the native symbol by an asm label, keeps the metadata-derived
-            // declarations from conflicting with any other declaration in this file.
+            // can already declare them with C types. Declaring them with C++ linkage in a namespace,
+            // bound to the native symbol by an asm label, keeps the metadata-derived declarations from
+            // conflicting with those. Entry points can be named anything, so the namespace takes a
+            // name none of the global declarations above uses.
+            string linkedEntryPointNamespace = "direct_pinvoke";
+            while (globalNames.Contains(linkedEntryPointNamespace))
+                linkedEntryPointNamespace += "_";
+
             if (linkedEntryPointDecls.Count > 0)
             {
-                w.WriteLine($"namespace {LinkedEntryPointNamespace} {{");
+                w.WriteLine($"namespace {linkedEntryPointNamespace} {{");
                 foreach (string decl in linkedEntryPointDecls)
                     w.WriteLine(decl);
-                w.WriteLine($"}} // namespace {LinkedEntryPointNamespace}");
+                w.WriteLine($"}} // namespace {linkedEntryPointNamespace}");
             }
 
             var moduleImports = new Dictionary<string, List<string>>();
@@ -183,10 +190,14 @@ namespace ILCompiler.PortableCallHelpers
                         if (p.WasmLinkage)
                             return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{CEntryPoint(p)} }}, // {ListRefs(l)}{w.NewLine}";
                         if (linkedEntryPoints.Contains(p))
-                            return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{LinkedEntryPointNamespace}::{CEntryPoint(p)} }}, // {ListRefs(l)}{w.NewLine}";
+                            return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{linkedEntryPointNamespace}::{CEntryPoint(p)} }}, // {ListRefs(l)}{w.NewLine}";
                         return $"    DllImportEntry({CEntryPoint(p)}) // {ListRefs(l)}{w.NewLine}";
                     })
                     .ToList();
+
+                // Every import of the module was skipped; an empty array would not compile.
+                if (imports.Count == 0)
+                    continue;
 
                 moduleImports[module] = imports;
                 w.Write(
@@ -208,7 +219,7 @@ namespace ILCompiler.PortableCallHelpers
                 } PInvokeTable;
 
                 static PInvokeTable s_PInvokeTables[] = {
-                    {{string.Join($",{w.NewLine}    ", modules.Select(m => $"{{\"{EscapeLiteral(m)}\", s_{FixupSymbolName(m)}, {moduleImports[m].Count}}}"))}}
+                    {{string.Join($",{w.NewLine}    ", modules.Where(moduleImports.ContainsKey).Select(m => $"{{\"{EscapeLiteral(m)}\", s_{FixupSymbolName(m)}, {moduleImports[m].Count}}}"))}}
                 };
                 const size_t s_PInvokeTablesCount = sizeof(s_PInvokeTables) / sizeof(s_PInvokeTables[0]);
 
@@ -229,6 +240,23 @@ namespace ILCompiler.PortableCallHelpers
                 """);
 
             EmitQCallTable(w, target, qcallImports);
+
+            // Declarations that differ only in C types are fine; ones that lower to different wasm
+            // signatures cannot all call the single native function the table points at.
+            static bool HasConflictingSignatures(PInvokeInfo[] candidates)
+            {
+                if (candidates.Length < 2)
+                    return false;
+
+                string firstSignature = InteropSignature.GetMethodSignature(candidates[0].Method, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly);
+                for (int i = 1; i < candidates.Length; i++)
+                {
+                    if (InteropSignature.GetMethodSignature(candidates[i].Method, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly) != firstSignature)
+                        return true;
+                }
+
+                return false;
+            }
 
             static bool ShouldTreatAsVariadic(PInvokeInfo[] candidates)
             {
@@ -553,8 +581,6 @@ namespace ILCompiler.PortableCallHelpers
 
             return FixupSymbolName(pinvoke.EntryPoint);
         }
-
-        private const string LinkedEntryPointNamespace = "direct_pinvoke";
 
         private string GenPInvokeDecl(PInvokeInfo pinvoke, string symbolName = null)
         {
