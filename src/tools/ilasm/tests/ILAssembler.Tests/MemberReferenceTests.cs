@@ -174,7 +174,7 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         }
 
         [Fact]
-        public void ForwardNumericTokens_AreRemappedWhenReferencesAreCompacted()
+        public void NumericTokens_AreWrittenWithoutRemappingWhenReferencesAreCompacted()
         {
             string source = """
                 .assembly extern External { }
@@ -187,6 +187,8 @@ namespace Microsoft.DotNet.ILAssembler.Tests
                         ldtoken mdtoken(0x1B000003)
                         pop
                         ldtoken mdtoken(0x2B000003)
+                        pop
+                        box mdtoken(0x1B000003)
                         pop
                         ldtoken class [test]Payload[]
                         pop
@@ -209,11 +211,62 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             MetadataReader reader = pe.GetMetadataReader();
             ImmutableArray<int> tokens =
                 DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.ldtoken);
+            ImmutableArray<int> boxTokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.box);
 
             Assert.Equal(2, reader.GetTableRowCount(TableIndex.TypeSpec));
             Assert.Equal(2, reader.GetTableRowCount(TableIndex.MethodSpec));
-            Assert.Equal(MetadataTokens.GetToken(MetadataTokens.TypeSpecificationHandle(2)), tokens[0]);
-            Assert.Equal(MetadataTokens.GetToken(MetadataTokens.MethodSpecificationHandle(2)), tokens[1]);
+            Assert.Equal(0x1B000003, tokens[0]);
+            Assert.Equal(0x2B000003, tokens[1]);
+            Assert.Equal(0x1B000003, Assert.Single(boxTokens));
+        }
+
+        [Fact]
+        public void NumericMemberReferenceTokens_AreWrittenWithoutRemappingWhenReferencesAreCompacted()
+        {
+            string source = """
+                .assembly extern External { }
+                .assembly test { }
+                .class Test
+                {
+                    .method public static void Caller() cil managed
+                    {
+                        ldtoken mdtoken(0x0A000002)
+                        pop
+                        ldtoken mdtoken(0x0A000003)
+                        pop
+                        call mdtoken(0x0A000003)
+                        ldsfld mdtoken(0x0A000003)
+                        ldtoken method void [External]Owner::M()
+                        pop
+                        ldtoken method void [External]Owner::M()
+                        pop
+                        ldtoken method void [External]Owner::N()
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            ImmutableArray<int> tokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.ldtoken);
+            ImmutableArray<int> callTokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.call);
+            ImmutableArray<int> fieldTokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.ldsfld);
+
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.MemberRef));
+            Assert.Equal(0x0A000002, tokens[0]);
+            Assert.Equal(0x0A000003, tokens[1]);
+            Assert.Equal(0x0A000003, Assert.Single(callTokens));
+            Assert.Equal(0x0A000003, Assert.Single(fieldTokens));
+            Assert.Equal(0x0A000001, tokens[2]);
+            Assert.Equal(tokens[2], tokens[3]);
+            Assert.Equal(0x0A000002, tokens[4]);
+            Assert.Equal("M", reader.GetString(reader.GetMemberReference(MetadataTokens.MemberReferenceHandle(1)).Name));
+            Assert.Equal("N", reader.GetString(reader.GetMemberReference(MetadataTokens.MemberReferenceHandle(2)).Name));
         }
 
         [Fact]
