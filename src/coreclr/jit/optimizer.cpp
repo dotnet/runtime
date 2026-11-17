@@ -5907,6 +5907,35 @@ void Compiler::optRemoveRedundantZeroInits()
                         break;
                     }
                     default:
+                        // Count definitions made by other nodes so that later stores to the same locals are
+                        // not treated as their first reference.
+                        tree->VisitLogicalLocalDefs(this, [&](const auto& def) {
+                            unsigned  lclNum    = def.GetLclNum();
+                            unsigned* pRefCount = refCounts.LookupPointer(lclNum);
+                            if (pRefCount != nullptr)
+                            {
+                                *pRefCount = (*pRefCount) + 1;
+                            }
+                            else
+                            {
+                                refCounts.Set(lclNum, 1);
+                            }
+
+                            if (lvaGetDesc(lclNum)->lvTracked)
+                            {
+                                unsigned* pDefsCount = defsInBlock.LookupPointer(lclNum);
+                                if (pDefsCount != nullptr)
+                                {
+                                    *pDefsCount = (*pDefsCount) + 1;
+                                }
+                                else
+                                {
+                                    defsInBlock.Set(lclNum, 1);
+                                }
+                            }
+
+                            return GenTree::VisitResult::Continue;
+                        });
                         break;
                 }
             }

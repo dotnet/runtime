@@ -2140,6 +2140,8 @@ public:
 
     template <typename TVisitor>
     VisitResult VisitLogicalLocalDefs(Compiler* comp, TVisitor visitor);
+    template <typename TVisitor>
+    VisitResult VisitLogicalLocalDefsInternal(Compiler* comp, TVisitor visitor);
 
     bool HasAnyLocalDefs(Compiler* comp);
 

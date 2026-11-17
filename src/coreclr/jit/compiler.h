@@ -4055,7 +4055,7 @@ public:
     GenTree* gtReverseCond(GenTree* tree);
     bool     gtTryReverseCond(GenTree* tree);
 
-    static bool gtHasRef(GenTree* tree, unsigned lclNum);
+    bool gtHasRef(GenTree* tree, unsigned lclNum);
 
     bool gtHasLocalsWithAddrOp(GenTree* tree);
     bool gtHasAddressExposedLocals(GenTree* tree);
