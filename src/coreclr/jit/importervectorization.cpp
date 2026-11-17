@@ -654,34 +654,45 @@ GenTree* Compiler::impStringLiteralContainsChar(CORINFO_SIG_INFO* sig, unsigned 
     lvaTable[valueTmp].lvType = TYP_INT;
     GenTreeLclVar* valueLcl   = gtNewLclvNode(valueTmp, TYP_INT);
 
-    GenTree* folded;
+    impPopStack(argsCount);
+    impStoreToTemp(valueTmp, gtNewCastNode(TYP_INT, value, false, TYP_USHORT), CHECK_SPILL_ALL);
+
+    // QMARK nodes cannot reside on the evaluation stack, so the result is
+    // produced through a temp.
+    unsigned resultTmp         = lvaGrabTemp(true DEBUGARG("spilling Contains result"));
+    lvaTable[resultTmp].lvType = TYP_INT;
 
     if (isContinuous)
     {
         // "cdef".Contains(value) -> value >= 'c' && value <= 'f'
         JITDUMP("Folding literal.Contains(char) into a range check\n")
 
-        folded = gtNewQmarkNode(
+        GenTree* folded = gtNewQmarkNode(
             TYP_INT, gtNewOperNode(GT_GE, TYP_INT, gtCloneExpr(valueLcl), gtNewIconNode(mn, TYP_INT)),
             gtNewColonNode(
                 TYP_INT,
                 gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_LE, TYP_INT, gtCloneExpr(valueLcl), gtNewIconNode(mx, TYP_INT)),
                                gtNewColonNode(TYP_INT, gtNewTrue(), gtNewFalse())),
                 gtNewFalse()));
+
+        impStoreToTemp(resultTmp, folded, CHECK_SPILL_ALL);
     }
     else
     {
         // "0123456789ABCDEF".Contains(value) ->
         //   value == '0' || value == '1' || ... || value == 'F'
         //
-        // Emit it as a chain of QMARKs with empty "true" arms. Expanding it
-        // produces a chain of conditional blocks that all branch to the same
-        // block, the shape optRecognizeAndOptimizeSwitchJumps folds into a
-        // bitmask test (`bt`). The chain only writes the result when no char
-        // matched, so the result temp is seeded with `true` below.
+        // Emit the tests as a chain of void QMARKs with empty "true" arms, so
+        // that a match just skips to the end. Expanding the chain produces a
+        // series of conditional blocks that all branch to the same block, the
+        // shape optRecognizeAndOptimizeSwitchJumps folds into a bitmask test
+        // (`bt`). Since the chain only writes the result when no char matched,
+        // the result temp is seeded with `true` first.
         JITDUMP("Folding literal.Contains(char) into a bitmask test\n")
 
-        folded = gtNewFalse();
+        impStoreToTemp(resultTmp, gtNewTrue(), CHECK_SPILL_ALL);
+
+        GenTree* chain = gtNewStoreLclVarNode(resultTmp, gtNewFalse());
         for (unsigned bit = span + 1; bit-- > 0;)
         {
             if ((mask[bit / 64] & (1ULL << (bit % 64))) == 0)
@@ -690,27 +701,11 @@ GenTree* Compiler::impStringLiteralContainsChar(CORINFO_SIG_INFO* sig, unsigned 
             }
 
             GenTree* cond = gtNewOperNode(GT_EQ, TYP_INT, gtCloneExpr(valueLcl), gtNewIconNode(mn + bit, TYP_INT));
-            folded        = gtNewQmarkNode(TYP_INT, cond, gtNewColonNode(TYP_INT, gtNewNothingNode(), folded));
+            chain         = gtNewQmarkNode(TYP_VOID, cond, gtNewColonNode(TYP_VOID, gtNewNothingNode(), chain));
         }
+
+        impAppendTree(chain, CHECK_SPILL_ALL, impCurStmtDI);
     }
-
-    impPopStack(argsCount);
-    impStoreToTemp(valueTmp, gtNewCastNode(TYP_INT, value, false, TYP_USHORT), CHECK_SPILL_ALL);
-
-    // QMARK nodes cannot reside on the evaluation stack
-    unsigned resultTmp         = lvaGrabTemp(true DEBUGARG("spilling Contains qmark"));
-    lvaTable[resultTmp].lvType = TYP_INT;
-
-    if (!isContinuous)
-    {
-        // The bitmask chain leaves the result untouched when a char matched.
-        impStoreToTemp(resultTmp, gtNewTrue(), CHECK_SPILL_ALL);
-    }
-
-    impStoreToTemp(resultTmp, folded, CHECK_SPILL_ALL);
-
-    JITDUMP("\n... Successfully folded to:\n")
-    DISPTREE(folded)
 
     return gtNewLclvNode(resultTmp, TYP_INT);
 }
