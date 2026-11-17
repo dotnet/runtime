@@ -203,8 +203,8 @@ internal sealed partial class GrammarActions
             attributeName = reflectionNotation.ReflectionNotation;
         }
 
-        // COMPAT: See the DeclSecurity permission-set encoding in
-        // docs/design/specs/Ecma-335-Augments.md#declsecurity-permission-set-encoding.
+        // See the DeclSecurity binary permission-set encoding in
+        // docs/design/specs/Ecma-335-Augments.md#declsecurity-binary-permission-set-encoding.
         BlobBuilder arguments = new();
         arguments.WriteCompressedInteger(attribute.Arguments.Length);
         foreach (CustomAttributeNamedArgumentValue argument in attribute.Arguments)

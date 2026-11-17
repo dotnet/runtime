@@ -8,7 +8,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Heap sizes](#heap-sizes)
 - [Metadata merging](#metadata-merging)
 - [Metadata logical format](#metadata-logical-format)
-- [DeclSecurity permission-set encoding](#declsecurity-permission-set-encoding)
+- [DeclSecurity binary permission-set encoding](#declsecurity-binary-permission-set-encoding)
 - [Module Initializer](#module-initializer)
 - [Default Interface Methods](#default-interface-methods)
 - [Static Interface Methods](#static-interface-methods)
@@ -369,9 +369,9 @@ This line should be changed.
 
 > Finally, this TypeDef _and ExportedType_ ~~table has~~ _tables have_ a special ordering constraint: the definition of an enclosing class shall precede the definition of all classes it encloses.
 
-## DeclSecurity permission-set encoding
+## DeclSecurity binary permission-set encoding
 
-The _PermissionSet_ is a 'blob' having the following format:
+The binary permission-set encoding in §II.22.11 is updated as follows: The _PermissionSet_ is a 'blob' having the following format:
 
 ```mermaid
 flowchart LR
