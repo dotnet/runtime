@@ -101,9 +101,9 @@ jobs:
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (AzureLinux.4.0.ArmArch.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-arm64v8@sha256:ab6055ae6babba940f88b314ce38a6a87fae5c9590626d7f8d516da614f30085
+        - AzureLinux.3.Arm64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (AzureLinux.4.0.ArmArch)AzureLinux.4.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-arm64v8@sha256:ab6055ae6babba940f88b314ce38a6a87fae5c9590626d7f8d516da614f30085
+        - AzureLinux.3.Arm64
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
@@ -129,9 +129,9 @@ jobs:
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (AzureLinux.4.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:ad2717f231981d3218538ac74169b1354367e1ce2bd479bbf0ada3573b1db8c1
+        - AzureLinux.3.Amd64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (AzureLinux.4.0.Amd64)AzureLinux.4.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:ad2717f231981d3218538ac74169b1354367e1ce2bd479bbf0ada3573b1db8c1
+        - AzureLinux.3.Amd64
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:

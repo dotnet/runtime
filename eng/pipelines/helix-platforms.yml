@@ -84,12 +84,12 @@ variables:
   # ===========================================
 
   # Linux x64
-  # Latest: Azure Linux 4.0
+  # Latest: Azure Linux 3.0
   - name: helix_linux_x64_latest
-    value: (AzureLinux.4.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:ad2717f231981d3218538ac74169b1354367e1ce2bd479bbf0ada3573b1db8c1
+    value: AzureLinux.3.Amd64.Open
 
   - name: helix_linux_x64_latest_internal
-    value: (AzureLinux.4.0.Amd64)AzureLinux.4.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:ad2717f231981d3218538ac74169b1354367e1ce2bd479bbf0ada3573b1db8c1
+    value: AzureLinux.3.Amd64
 
   # Oldest: Ubuntu 24.04
   - name: helix_linux_x64_oldest
