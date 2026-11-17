@@ -2408,7 +2408,11 @@ extern "C" void* ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* 
         // example when delayed R2R code is activated and the interpreter code is poisoned.
 #ifdef TARGET_WASM
         void* nativeCode = GetR2RNativeCodeForUnmanagedCallersOnly(pMD);
-        _ASSERTE(nativeCode != NULL);
+        if (nativeCode == nullptr)
+        {
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE,
+                W("Unmanaged callback has neither interpreter nor native code."));
+        }
         return nativeCode;
 #else
         _ASSERTE(!"ExecuteInterpretedMethodFromUnmanaged: method has no interpreter code");
