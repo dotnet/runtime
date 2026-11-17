@@ -5741,9 +5741,16 @@ void Compiler::optRemoveRedundantZeroInits()
 
                 switch (tree->gtOper)
                 {
+                    case GT_LCL_ADDR:
+                        if ((tree->gtFlags & GTF_VAR_DEF) != 0)
+                        {
+                            // Counted as a definition of the node that defines the local.
+                            break;
+                        }
+                        FALLTHROUGH;
+
                     case GT_LCL_VAR:
                     case GT_LCL_FLD:
-                    case GT_LCL_ADDR:
                     case GT_STORE_LCL_VAR:
                     case GT_STORE_LCL_FLD:
                     {
@@ -5808,8 +5815,7 @@ void Compiler::optRemoveRedundantZeroInits()
                         }
 
                         // TODO-Cleanup: there is potential for cleaning this algorithm up by deleting
-                        // double lookups of various reference counts. This is complicated somewhat by
-                        // the present of LCL_ADDR (GTF_CALL_M_RETBUFFARG_LCLOPT) definitions.
+                        // double lookups of various reference counts.
                         pRefCount = refCounts.LookupPointer(lclNum);
                         if (*pRefCount != 1)
                         {
