@@ -9,11 +9,10 @@ int verbRemoveDup::DoWork(const char* nameOfInput, const char* nameOfOutput, boo
 {
     LogVerbose("Removing duplicates from '%s', writing to '%s'", nameOfInput, nameOfOutput);
 
-    HANDLE hFileOut = CreateFileA(nameOfOutput, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (hFileOut == INVALID_HANDLE_VALUE)
+    FILE* hFileOut = fopen(nameOfOutput, "wb");
+    if (hFileOut == nullptr)
     {
-        LogError("Failed to open output '%s'. GetLastError()=%u", nameOfOutput, GetLastError());
+        LogError("Failed to open output '%s'. errno=%d", nameOfOutput, errno);
         return -1;
     }
 
@@ -25,9 +24,9 @@ int verbRemoveDup::DoWork(const char* nameOfInput, const char* nameOfOutput, boo
         return -1;
     }
 
-    if (CloseHandle(hFileOut) == 0)
+    if (fclose(hFileOut) != 0)
     {
-        LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
+        LogError("fclose failed. errno=%d", errno);
         return -1;
     }
 

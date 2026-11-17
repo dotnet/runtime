@@ -35,6 +35,19 @@ public class Program
             return 3;
         }
 
+        ProcessTextOutput listsResult = Process.RunAndCaptureText(new ProcessStartInfo(llvmDwarfDumpPath, ["--debug-info", "--recurse-depth=0", "--debug-loc", "--debug-ranges", "--debug-loclists", "--debug-rnglists", Environment.ProcessPath])
+        {
+            InheritedHandles = [],
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        });
+
+        if (listsResult.ExitStatus.ExitCode != 0)
+        {
+            Console.Error.WriteLine(listsResult.StandardError);
+            return 4;
+        }
+
         ProcessTextOutput result = Process.RunAndCaptureText(new ProcessStartInfo(llvmDwarfDumpPath, ["--verify", Environment.ProcessPath])
         {
             InheritedHandles = [],
@@ -42,9 +55,17 @@ public class Program
             RedirectStandardError = true
         });
 
-        // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
-        const int MinWarnings = 15;
-        const int MaxWarnings = 150;
+        // A verifier that was killed or crashed reports nothing, which would look like a clean il.cpp.
+        // It always ends with a summary line, and fails normally because of the native units.
+        string output = result.StandardOutput.TrimEnd();
+        if (result.ExitStatus.Signal is not null || result.ExitStatus.Canceled ||
+            !(output.EndsWith("Errors detected.") || output.EndsWith("No errors.")))
+        {
+            Console.Error.WriteLine($"llvm-dwarfdump --verify did not complete (exit code {result.ExitStatus.ExitCode}, signal {result.ExitStatus.Signal}).");
+            Console.Error.WriteLine(result.StandardError);
+            return 5;
+        }
+
         int count = 0;
         bool foundIlCpp = false;
         bool insideIlCpp = false;
@@ -75,32 +96,9 @@ public class Program
             return 10;
         }
 
-        if (count == 0)
-        {
-            // something is off, lets check the StandardError stream
-            int errorCount = 0;
-            string[] firstFiveErrors = new string[5];
-            foreach (string rawLine in result.StandardError.Split('\n'))
-            {
-                string line = rawLine.TrimEnd('\r');
-                if (line.Contains("error:"))
-                {
-                    if (errorCount < 5) firstFiveErrors[errorCount] = line;
-                    errorCount++;
-                }
-            }
-
-            if (errorCount > 0)
-            {
-                Console.Error.WriteLine($"llvm-dwarfdump failed. First five errors:{Environment.NewLine}{string.Join(Environment.NewLine, firstFiveErrors)}");
-                return 10;
-            }
-        }
-
         Console.WriteLine($"Found {count} warnings and errors");
-        if (count is not (>= MinWarnings and <= MaxWarnings))
+        if (count != 0)
         {
-            Console.WriteLine($"Found {count} warnings and errors, expected between {MinWarnings} and {MaxWarnings}");
             Console.WriteLine("This is likely a result of debug info changes. To see the new output, run the following command:");
             Console.WriteLine("\tllvm-dwarfdump --verify " + Environment.ProcessPath);
             return 10;

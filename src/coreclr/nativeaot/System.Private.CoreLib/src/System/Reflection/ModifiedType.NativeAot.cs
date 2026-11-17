@@ -29,6 +29,10 @@ namespace System.Reflection
             SignatureReader reader = signature.GetReader();
             switch ((SignatureTypeCode)reader.ReadByte())
             {
+                case SignatureTypeCode.GenericTypeParameter:
+                case SignatureTypeCode.GenericMethodParameter:
+                    // Substitution does not provide a signature for nested types.
+                    return Create(unmodifiedType);
                 case SignatureTypeCode.SZArray:
                 case SignatureTypeCode.Array:
                 case SignatureTypeCode.Pointer:

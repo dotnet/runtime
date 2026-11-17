@@ -105,7 +105,7 @@ int64_t AtomicLoad64WithoutTearing(int64_t volatile *valueRef)
 #endif // TARGET_64BIT
 }
 
-FCIMPL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompiledILBytes, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -113,7 +113,7 @@ FCIMPL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread)
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompiledMethodCount, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -121,7 +121,7 @@ FCIMPL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread)
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompilationTimeInTicks, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompilationTimeInTicks, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -1068,6 +1068,12 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 // we cannot resolve to an Async variant in such case.
                 // return NULL, so that caller would re-resolve as a regular method call
                 pMD = pMD->ReturnsTaskOrValueTask() ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
+                if (pMD != NULL && pMD->IsCovariantForwardingThunk())
+                {
+                    // This variant preserves the base slot's return type and dispatches virtually.
+                    // It cannot replace a direct await or a nonvirtual call to the ordinary variant.
+                    pMD = NULL;
+                }
             }
             break;
 
@@ -9084,7 +9090,15 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     MethodDesc * pMD = GetMethod(ftn);
 
     if (isUnsafeFunctionPointer)
+    {
         pMD->PrepareForUseAsAFunctionPointer();
+    }
+    else
+    {
+        // Delegate targets can be called from precompiled code without a call-site signature
+        // load, so the target must be ready for prestub stack walks before it is published.
+        pMD->PrepareForUseAsACallTargetOfANativeImage();
+    }
 
     pResult->accessType = IAT_VALUE;
     pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
@@ -11603,7 +11617,8 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
     EX_TRY
     {
         const InstrumentedILOffsetMapping *pILOffsetMapping = NULL;
-        InstrumentedILOffsetMapping loadTimeMapping;
+        // Owns the copy of the load-time map. The ReJIT map is borrowed and must not be freed.
+        InstrumentedILOffsetMappingHolder loadTimeMapping;
 #ifdef FEATURE_REJIT
         ILCodeVersion ilVersion;
 
@@ -11624,8 +11639,8 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
             // if there is a profiler load-time mapping and not a rejit mapping, apply that instead
             loadTimeMapping =
                 m_pMethodBeingCompiled->GetAssembly()->GetModule()->GetInstrumentedILOffsetMapping(m_pMethodBeingCompiled->GetMemberDef());
-            if (!loadTimeMapping.IsNull())
-                pILOffsetMapping = &loadTimeMapping;
+            if (!loadTimeMapping.Get().IsNull())
+                pILOffsetMapping = &loadTimeMapping.Get();
         }
 
         PTR_BYTE pDebugInfo = CompressDebugInfo::Compress(
@@ -12482,7 +12497,8 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
     _ASSERTE(objRef != NULL);
 
     // TODO: support types containing GC pointers
-    if (bufferSize + valueOffset <= (int)objRef->GetSize())
+    size_t objSize = objRef->GetSize();
+    if ((size_t)bufferSize <= objSize && (size_t)valueOffset <= objSize - (size_t)bufferSize)
     {
         Object* obj = OBJECTREFToObject(objRef);
         PTR_MethodTable type = obj->GetMethodTable();
@@ -12683,14 +12699,13 @@ HRESULT CEECodeGenInfo::getPgoInstrumentationResults(
     if (pDataCur == nullptr)
     {
         // If not found in previous list, gather it here, and add to linked list
-        NewHolder<ComputedPgoData> newPgoData = new ComputedPgoData(pMD);
+        NewHolder<ComputedPgoData> newPgoData(new ComputedPgoData(pMD));
         newPgoData->m_next = m_foundPgoData;
-        m_foundPgoData = newPgoData;
-        newPgoData.SuppressRelease();
+        pDataCur = newPgoData.Detach();
+        m_foundPgoData = pDataCur;
 
-        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, m_ILHeader, &newPgoData->m_allocatedData, &newPgoData->m_schema,
-            &newPgoData->m_cSchemaElems, &newPgoData->m_pInstrumentationData, &newPgoData->m_pgoSource);
-        pDataCur = m_foundPgoData;
+        pDataCur->m_hr = PgoManager::getPgoInstrumentationResults(pMD, m_ILHeader, &pDataCur->m_allocatedData, &pDataCur->m_schema,
+            &pDataCur->m_cSchemaElems, &pDataCur->m_pInstrumentationData, &pDataCur->m_pgoSource);
     }
 
     *pSchema = pDataCur->m_schema;
@@ -14631,6 +14646,15 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 DWORD instructionSetEncoded = CorSigUncompressData(pBlob);
                 bool mustInstructionSetBeSupported = !!(instructionSetEncoded & 1);
                 ReadyToRunInstructionSet instructionSet = (ReadyToRunInstructionSet)(instructionSetEncoded >> 1);
+#ifdef TARGET_WASM
+                // Other images must match the instruction sets CoreLib was compiled for.
+                if (mustInstructionSetBeSupported && currentModule->IsSystem())
+                {
+                    ExecutionManager::GetEEJitManager()->SetInstructionSetFromCoreLib(InstructionSetFromR2RInstructionSet(instructionSet));
+                    corjitFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
+                    continue;
+                }
+#endif // TARGET_WASM
                 if (IsInstructionSetSupported(corjitFlags, instructionSet) != mustInstructionSetBeSupported)
                 {
                     return FALSE;
@@ -15348,6 +15372,14 @@ void CEEInfo::recordWasmManagedCallSig(
     // No-op for the VM. Only meaningful for ReadyToRun Wasm compilation.
 }
 
+void CEEInfo::recordWasmVirtualFunctionPointerLookup(
+        CORINFO_METHOD_HANDLE method        /* IN */
+        )
+{
+    LIMITED_METHOD_CONTRACT;
+    // No-op for the VM. Only meaningful for ReadyToRun Wasm compilation.
+}
+
 void CEEInfo::recordRelocation(
         void *                 location,   /* IN  */
         void *                 locationRW, /* IN  */
@@ -15505,6 +15537,7 @@ EECodeInfo::EECodeInfo()
 
     m_pFunctionEntry = NULL;
     m_isFuncletCache = IsFuncletCache::NotSet;
+    m_gcInfoToken = { NULL, 0 };
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -15530,6 +15563,7 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
 
     m_codeAddress = codeAddress;
     m_isFuncletCache = IsFuncletCache::NotSet;
+    m_gcInfoToken = { NULL, 0 };
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -15550,6 +15584,7 @@ Invalid:
     m_pMD = NULL;
     m_relOffset = 0;
     m_pFunctionEntry = NULL;
+    m_gcInfoToken = { NULL, 0 };
 }
 
 TADDR EECodeInfo::GetSavedMethodCode()
@@ -15606,6 +15641,15 @@ NativeCodeVersion EECodeInfo::GetNativeCodeVersion() const
     {
         return NativeCodeVersion();
     }
+
+#if defined(HAVE_GCCOVER) && defined(FEATURE_READYTORUN)
+    // R2R code is the default version, even when its entry point was registered
+    // by a different instantiation or by diagnostic enumeration before publication.
+    if (m_pJM == ExecutionManager::GetReadyToRunJitManager())
+    {
+        return NativeCodeVersion(pMD);
+    }
+#endif // HAVE_GCCOVER && FEATURE_READYTORUN
 
 #ifdef FEATURE_CODE_VERSIONING
     if (pMD->IsVersionable())

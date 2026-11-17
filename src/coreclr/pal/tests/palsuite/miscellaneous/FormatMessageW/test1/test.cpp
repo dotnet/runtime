@@ -12,6 +12,7 @@
 
 #define UNICODE
 #include <palsuite.h>
+#include <dn-u16.h>
 
 
 PALTEST(miscellaneous_FormatMessageW_test1_paltest_formatmessagew_test1, "miscellaneous/FormatMessageW/test1/paltest_formatmessagew_test1")
@@ -49,7 +50,7 @@ PALTEST(miscellaneous_FormatMessageW_test1_paltest_formatmessagew_test1, "miscel
              ", with no formatters in it.");      
     }
   
-    if(memcmp(OutBuffer,TheString,wcslen(OutBuffer)*2+2) != 0) 
+    if(memcmp(OutBuffer,TheString,u16_strlen(OutBuffer)*2+2) != 0) 
     {
         Fail("ERROR: The formatted string should be %s but is really %s.",
              convertC(TheString),

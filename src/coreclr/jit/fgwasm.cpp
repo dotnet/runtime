@@ -3942,7 +3942,9 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             PerBlockData& data = blockData[block->bbNum];
             data.requiredVip   = virtualIP;
             data.funcIndex     = vipFuncIdx;
-            data.isRequired    = !block->isEmpty() || block->KindIs(BBJ_CALLFINALLY);
+            // Throw helpers inherit the throwing site's Virtual IP.
+            data.isRequired =
+                !block->HasFlag(BBF_THROW_HELPER) && (!block->isEmpty() || block->KindIs(BBJ_CALLFINALLY));
             if (vipFirstInFunc)
             {
                 data.isFuncEntry = true;
@@ -4000,6 +4002,23 @@ PhaseStatus Compiler::fgWasmVirtualIP()
 
         func->endVirtualIP = virtualIP;
         vipFuncIdx++;
+    }
+
+    if (!IsNativeAot() && (compHndBBtabCount == 0))
+    {
+        assert(virtualIP == 2);
+        // The unwind extent identifies methods whose only observable virtual IP is 1.
+        // Keep the frame header layout, but let the VM infer the IP without reading its slot.
+        for (BasicBlock* const block : Blocks())
+        {
+            if (blockData[block->bbNum].isRequired)
+            {
+                getVirtualIPLclNum();
+                break;
+            }
+        }
+        JITDUMP("Virtual IP is always 1; omitting frame stores\n");
+        return lvaWasmVirtualIP == BAD_VAR_NUM ? PhaseStatus::MODIFIED_NOTHING : PhaseStatus::MODIFIED_EVERYTHING;
     }
 
     // Solve the available-Virtual-IP dataflow: a block's incoming value is the meet of its

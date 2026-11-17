@@ -6,7 +6,7 @@
 typedef BOOL (PALAPI_NOEXPORT *PFN_DLLMAIN)(HINSTANCE, DWORD, LPVOID);      /* entry point of module */
 typedef HINSTANCE (PALAPI_NOEXPORT *PFN_REGISTER_MODULE)(LPCSTR);           /* used to create the HINSTANCE for above DLLMain entry point */
 
-// This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
+// This is for the VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
 
 static bool ModuleInfoCompare(const ModuleInfo* lhs, const ModuleInfo* rhs) { return lhs->BaseAddress() < rhs->BaseAddress(); }
@@ -425,7 +425,7 @@ CrashInfo::EnumerateManagedModules()
 
                 if (!moduleData.IsDynamic && loadedPEAddress != 0)
                 {
-                    WStringHolder wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
+                    WStringHolder wszUnicodeName(new WCHAR[MAX_LONGPATH + 1]);
                     if (SUCCEEDED(hr = pClrDataModule->GetFileName(MAX_LONGPATH, nullptr, wszUnicodeName)))
                     {
                         std::string moduleName = ConvertString(wszUnicodeName);
@@ -842,7 +842,7 @@ GetDirectory(const std::string& fileName)
 std::string
 FormatString(const char* format, ...)
 {
-    AStringHolder buffer = new char[MAX_LONGPATH + 1];
+    AStringHolder buffer(new char[MAX_LONGPATH + 1]);
     va_list args;
     va_start(args, format);
     int result = vsnprintf(buffer, MAX_LONGPATH, format, args);
@@ -864,7 +864,7 @@ ConvertString(const WCHAR* str)
     if (len == 0)
         return { };
 
-    AStringHolder buffer = new char[len + 1];
+    AStringHolder buffer(new char[len + 1]);
     minipal_convert_utf16_to_utf8((CHAR16_T*)str, cch, buffer, len + 1, 0);
     return std::string { buffer };
 }

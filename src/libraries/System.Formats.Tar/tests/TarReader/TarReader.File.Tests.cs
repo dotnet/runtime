@@ -285,11 +285,11 @@ namespace System.Formats.Tar.Tests
         {
             // writer-big has a header for a 16G file but not its contents.
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "writer-big");
-            // MemoryStream throws when we try to change its Position past its Length.
+            // The size field is larger than the number of bytes remaining in the archive stream.
             await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
-            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => GetNextEntry(reader, async: async));
+            await Assert.ThrowsAsync<InvalidDataException>(() => GetNextEntry(reader, async: async));
         }
 
         [Theory]
@@ -381,12 +381,12 @@ namespace System.Formats.Tar.Tests
         public async Task PaxSizeLargerThanMaxAllowedByStream(bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "writer-big-long");
-            // The extended attribute 'size' has the value 17179869184
-            // Exception message: Stream length must be non-negative and less than 2^31 - 1 - origin
+            // The extended attribute 'size' has the value 17179869184, which is larger than
+            // the number of bytes remaining in the archive stream.
             await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
-            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => GetNextEntry(reader, async: async));
+            await Assert.ThrowsAsync<InvalidDataException>(() => GetNextEntry(reader, async: async));
         }
 
         private static async Task VerifyDataStreamOfTarUncompressedInternal(string testFolderName, string testCaseName, bool copyData, bool async)

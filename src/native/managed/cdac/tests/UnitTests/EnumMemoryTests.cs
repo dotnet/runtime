@@ -1613,6 +1613,57 @@ public unsafe partial class EnumMemoryTests
         Assert.Equal(count, callback.Ranges.Count);
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void Enumeration_PreservesSystemAssemblyWithoutManagedLayoutLookup(MockTarget.Architecture arch)
+    {
+        const ulong SystemDomainSlot = 0x1000;
+        const ulong SystemDomainAddress = 0x2000;
+        const ulong SystemAssemblyAddress = 0x3000;
+        TargetTestHelpers helpers = new(arch);
+        ContractDescriptorBuilder builder = new(helpers);
+        byte[] domainPointer = new byte[helpers.PointerSize];
+        helpers.WritePointer(domainPointer, SystemDomainAddress);
+        builder.AddHeapFragment(new() { Address = SystemDomainSlot, Data = domainPointer, Name = "SystemDomainSlot" });
+        byte[] domain = new byte[2 * helpers.PointerSize];
+        helpers.WritePointer(domain.AsSpan(helpers.PointerSize), SystemAssemblyAddress);
+        builder.AddHeapFragment(new() { Address = SystemDomainAddress, Data = domain, Name = "SystemDomain" });
+        ContractDescriptorBuilder.DescriptorBuilder descriptor = new(builder);
+        descriptor.SetTypes(new Dictionary<DataType, Target.TypeInfo>
+        {
+            [DataType.SystemDomain] = new()
+            {
+                Fields = new Dictionary<string, Target.FieldInfo>
+                {
+                    [nameof(Data.SystemDomain.SystemAssembly)] = new() { Offset = helpers.PointerSize },
+                },
+            },
+        });
+        descriptor.SetGlobals([("SystemDomain", SystemDomainSlot, null)]);
+        descriptor.SetContracts(new Dictionary<string, string> { ["Loader"] = "c1", ["ManagedTypeSource"] = "c1" });
+        ulong descriptorAddress = descriptor.CreateSubDescriptor(0x10000, 0x11000, 0x12000);
+        MockMemorySpace.MemoryContext memory = builder.GetMemoryContext();
+        ContractDescriptorTarget target = ContractDescriptorTarget.Create(descriptorAddress, memory.ReadFromTarget, memory.WriteToTarget,
+            (_, _, _) => HResults.E_NOTIMPL, (_, _) => HResults.E_NOTIMPL,
+            (ulong _, out ulong address) => { address = 0; return HResults.E_NOTIMPL; }, [CoreCLRContracts.Register]);
+        Mock<IManagedTypeSource> managedTypes = new();
+        target.Contracts.Register<IManagedTypeSource>("c1", _ => managedTypes.Object);
+        ICLRDataEnumMemoryRegions impl = new SOSDacImpl(target, legacyObj: null, new());
+
+        Assert.Same(managedTypes.Object, target.Contracts.ManagedTypeSource);
+        Assert.Equal(new TargetPointer(SystemAssemblyAddress), target.Contracts.Loader.GetSystemAssembly());
+        foreach (uint flags in new uint[] { 0, 0x200, 0x100000 })
+        {
+            using RecordingCallback callback = new(supportsUpdates: false);
+            Assert.Equal(HResults.S_OK, impl.EnumMemoryRegions((void*)callback.Address, flags, CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_DEFAULT));
+            AssertFullyReported(callback, SystemDomainSlot, (uint)helpers.PointerSize);
+            AssertFullyReported(callback, SystemDomainAddress + (ulong)helpers.PointerSize, (uint)helpers.PointerSize);
+            Assert.Equal(new TargetPointer(SystemAssemblyAddress), target.Contracts.Loader.GetSystemAssembly());
+        }
+
+        managedTypes.Verify(m => m.TryGetTypeInfo(It.IsAny<string>(), out It.Ref<Target.TypeInfo>.IsAny), Times.Never);
+    }
+
     [Fact]
     public void ReadShimScopes_RestorePreviousReadersWithoutChangingCaches()
     {
