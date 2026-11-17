@@ -68,13 +68,8 @@ namespace System.Runtime.CompilerServices
             int cctorIndex = cctor.Index;
             try
             {
-#if FEATURE_MULTITHREADING
                 Lock cctorLock = cctors[cctorIndex].Lock;
                 if (DeadlockAwareAcquire(cctor, pContext))
-#else
-                // An active constructor can only be reached recursively on the sole thread.
-                if (cctors[cctorIndex].HoldingThread == ManagedThreadIdNone)
-#endif
                 {
                     int currentManagedThreadId = CurrentManagedThreadId;
                     try
@@ -110,9 +105,7 @@ namespace System.Runtime.CompilerServices
                         cctors[cctorIndex].HoldingThread = ManagedThreadIdNone;
                         NoisyLog("Releasing cctor lock, context={0}, thread={1}", pContext, currentManagedThreadId);
 
-#if FEATURE_MULTITHREADING
                         cctorLock.Exit();
-#endif
                     }
                 }
                 else
@@ -128,7 +121,6 @@ namespace System.Runtime.CompilerServices
             NoisyLog("EnsureClassConstructorRun complete, context={0}, thread={1}", pContext, CurrentManagedThreadId);
         }
 
-#if FEATURE_MULTITHREADING
         //=========================================================================================================
         // Return value:
         //   true   - lock acquired.
@@ -248,7 +240,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
-#endif
 
         //==============================================================================================================
         // These structs are allocated on demand whenever the runtime tries to run a class constructor. Once the
@@ -257,9 +248,7 @@ namespace System.Runtime.CompilerServices
         //==============================================================================================================
         private unsafe struct Cctor
         {
-#if FEATURE_MULTITHREADING
             public Lock Lock;
-#endif
             public TypeInitializationException Exception;
             public int HoldingThread;
             private int _refCount;
@@ -276,9 +265,19 @@ namespace System.Runtime.CompilerServices
                 const int Grow = 10;
 #endif
 
-#if FEATURE_MULTITHREADING
+                // WASMTODO: Remove this when the Initialize method gets called by the runtime startup
+#if TARGET_WASM
+                if (s_cctorGlobalLock == null)
+                {
+                    Interlocked.CompareExchange(ref s_cctorGlobalLock, new Lock(useTrivialWaits: true), null);
+                }
+                if (s_cctorArrays == null)
+                {
+                    Interlocked.CompareExchange(ref s_cctorArrays, new Cctor[10][], null);
+                }
+#endif // TARGET_WASM
+
                 using (s_cctorGlobalLock.EnterScope())
-#endif
                 {
                     Cctor[]? resultArray = null;
                     int resultIndex = -1;
@@ -337,9 +336,7 @@ namespace System.Runtime.CompilerServices
 
                         Debug.Assert(resultArray[resultIndex]._pContext == default(StaticClassConstructionContext*));
                         resultArray[resultIndex]._pContext = pContext;
-#if FEATURE_MULTITHREADING
                         resultArray[resultIndex].Lock = new Lock(useTrivialWaits: true);
-#endif
                         s_count++;
                     }
 
@@ -348,7 +345,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-#if FEATURE_MULTITHREADING
             public static int Count
             {
                 get
@@ -357,13 +353,10 @@ namespace System.Runtime.CompilerServices
                     return s_count;
                 }
             }
-#endif
 
             public static void Release(CctorHandle cctor)
             {
-#if FEATURE_MULTITHREADING
                 using (s_cctorGlobalLock.EnterScope())
-#endif
                 {
                     Cctor[] cctors = cctor.Array;
                     int cctorIndex = cctor.Index;
@@ -394,7 +387,6 @@ namespace System.Runtime.CompilerServices
             private int _index;
         }
 
-#if FEATURE_MULTITHREADING
         //==============================================================================================================
         // Keeps track of threads that are blocked on a cctor lock (alas, we don't have ThreadLocals here in
         // System.Private.CoreLib so we have to use a side table.)
@@ -471,14 +463,11 @@ namespace System.Runtime.CompilerServices
             private static BlockingRecord[] s_blockingRecords;
             private static int s_nextBlockingRecordIndex;
         }
-#endif
 
         private static int CurrentManagedThreadId => ManagedThreadId.Current;
         private const int ManagedThreadIdNone = ManagedThreadId.IdNone;
 
-#if FEATURE_MULTITHREADING
         private static Lock s_cctorGlobalLock;
-#endif
 
         // These three  statics are used by ClassConstructorRunner.Cctor but moved out to avoid an unnecessary
         // extra class constructor call.
@@ -490,13 +479,11 @@ namespace System.Runtime.CompilerServices
         private static int s_cctorArraysCount;
         private static int s_count;
 
-        // Eager construction called from LibraryInitialize before class constructors run.
+        // Eager construction called from LibraryInitialize Cctor.GetCctor uses _cctorGlobalLock.
         internal static void Initialize()
         {
             s_cctorArrays = new Cctor[10][];
-#if FEATURE_MULTITHREADING
             s_cctorGlobalLock = new Lock(useTrivialWaits: true);
-#endif
         }
 
         [Conditional("ENABLE_NOISY_CCTOR_LOG")]
