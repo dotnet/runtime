@@ -342,6 +342,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void SumOfNullableFloatingPoint_PreservesAccumulation()
+        {
+            foreach (IEnumerable<float?> source in CreateSources<float?>([16_777_216f, null, 1f, -16_777_216f]))
+            {
+                Assert.Equal(1f, source.Sum());
+            }
+
+            foreach (IEnumerable<double?> source in CreateSources<double?>([1e16, null, 1d, -1e16]))
+            {
+                Assert.Equal(0d, source.Sum());
+            }
+        }
+
+        [Fact]
         public void SumOfDecimal_SourceIsNotEmpty_ProperSumReturned()
         {
             IEnumerable<decimal> sourceDecimal = [1m, 0.5m, -1m, 0.5m];
