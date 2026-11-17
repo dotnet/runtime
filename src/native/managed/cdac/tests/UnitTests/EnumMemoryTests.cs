@@ -5,6 +5,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -426,11 +427,106 @@ public unsafe partial class EnumMemoryTests
         reader.Verify(r => r.EnumerateModules(), Times.Once);
     }
 
+    [Fact]
+    public void ClrMdDumpHost_PeFallbackAppliesRelocations()
+    {
+        const ulong RelocationDelta = 0x10000;
+        string imagePath = typeof(ClrMdDumpHost).Assembly.Location;
+        using FileStream stream = File.OpenRead(imagePath);
+        using PEReader peReader = new(stream);
+        PEHeader peHeader = Assert.IsType<PEHeader>(peReader.PEHeaders.PEHeader);
+        DirectoryEntry directory = peHeader.BaseRelocationTableDirectory;
+        Assert.NotEqual(0, directory.RelativeVirtualAddress);
+        Assert.NotEqual(0, directory.Size);
+
+        PEMemoryBlock relocationBlock = peReader.GetSectionData(directory.RelativeVirtualAddress);
+        BlobReader relocationReader = relocationBlock.GetReader(0, directory.Size);
+        int relocationRva = 0;
+        int relocationSize = 0;
+        while (relocationReader.RemainingBytes >= 8 && relocationRva == 0)
+        {
+            int blockRva = relocationReader.ReadInt32();
+            int blockSize = relocationReader.ReadInt32();
+            Assert.True(blockSize >= 8);
+            int entryCount = (blockSize - 8) / sizeof(ushort);
+            for (int i = 0; i < entryCount; i++)
+            {
+                ushort entry = relocationReader.ReadUInt16();
+                int type = entry >> 12;
+                if (type is 3 or 10)
+                {
+                    relocationRva = blockRva + (entry & 0xfff);
+                    relocationSize = type == 3 ? sizeof(uint) : sizeof(ulong);
+                    break;
+                }
+            }
+        }
+        Assert.NotEqual(0, relocationRva);
+
+        byte[] expected = new byte[relocationSize];
+        PEMemoryBlock imageBlock = peReader.GetSectionData(relocationRva);
+        new ReadOnlySpan<byte>(imageBlock.Pointer, relocationSize).CopyTo(expected);
+        if (relocationSize == sizeof(uint))
+        {
+            uint value = BinaryPrimitives.ReadUInt32LittleEndian(expected);
+            BinaryPrimitives.WriteUInt32LittleEndian(expected, value + (uint)RelocationDelta);
+        }
+        else
+        {
+            ulong value = BinaryPrimitives.ReadUInt64LittleEndian(expected);
+            BinaryPrimitives.WriteUInt64LittleEndian(expected, value + RelocationDelta);
+        }
+
+        ulong imageBase = peHeader.ImageBase + RelocationDelta;
+        var module = new Mock<ModuleInfo>(imageBase, imagePath) { CallBase = true };
+        module.SetupGet(m => m.IndexFileSize).Returns(peHeader.SizeOfImage);
+        Assert.Equal(peHeader.SizeOfImage, module.Object.ImageSize);
+        using DataTarget dataTarget = new(new EmptyDataReader(module.Object, peHeader.Magic == PEMagic.PE32 ? 4 : 8), new DataTargetOptions());
+        ClrMdDumpHost host = Assert.IsType<ClrMdDumpHost>(Activator.CreateInstance(
+            typeof(ClrMdDumpHost), BindingFlags.Instance | BindingFlags.NonPublic, binder: null,
+            args: ["test.dmp", dataTarget, Array.Empty<string>()], culture: null));
+
+        byte[] actual = new byte[relocationSize];
+        Assert.Equal(0, host.ReadFromTarget(imageBase + (uint)relocationRva, actual));
+        Assert.Equal(expected, actual);
+    }
+
     private static ModuleInfo CreateModule(ulong imageBase, string fileName, ulong descriptorAddress)
     {
         var module = new Mock<ModuleInfo>(imageBase, fileName);
         module.Setup(m => m.GetExportSymbolAddress("DotNetRuntimeContractDescriptor")).Returns(descriptorAddress);
         return module.Object;
+    }
+
+    private sealed class EmptyDataReader(ModuleInfo module, int pointerSize) : IDataReader
+    {
+        public string DisplayName => nameof(EmptyDataReader);
+        public bool IsThreadSafe => true;
+        public OSPlatform TargetPlatform => OSPlatform.Windows;
+        public Architecture Architecture => pointerSize == 4 ? Architecture.X86 : Architecture.X64;
+        public int ProcessId => 0;
+        public int PointerSize => pointerSize;
+
+        public IEnumerable<ModuleInfo> EnumerateModules()
+        {
+            yield return module;
+        }
+
+        public int Read(ulong address, Span<byte> buffer) => 0;
+        public bool Read<T>(ulong address, out T value) where T : unmanaged
+        {
+            value = default;
+            return false;
+        }
+        public T Read<T>(ulong address) where T : unmanaged => default;
+        public bool ReadPointer(ulong address, out ulong value)
+        {
+            value = 0;
+            return false;
+        }
+        public ulong ReadPointer(ulong address) => 0;
+        public bool GetThreadContext(uint threadId, uint contextFlags, Span<byte> context) => false;
+        public void FlushCachedData() { }
     }
 
     private sealed class CorDebugDataTarget(MockMemorySpace.MemoryContext memory) : ICorDebugDataTarget

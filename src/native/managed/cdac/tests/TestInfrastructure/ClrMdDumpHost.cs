@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using Microsoft.Diagnostics.Runtime;
 
@@ -81,11 +84,10 @@ public sealed class ClrMdDumpHost : IDisposable
             ulong current = address + (ulong)bytesRead;
             while (filled < buffer.Length)
             {
-                PEMemoryBlock block = peReader.GetSectionData((int)(current - info.ImageBase));
+                int rva = checked((int)(current - info.ImageBase));
+                PEMemoryBlock block = peReader.GetSectionData(rva);
                 if (block.Length == 0)
-                {
                     return -1;
-                }
 
                 int toCopy = Math.Min(block.Length, buffer.Length - filled);
                 unsafe
@@ -96,11 +98,71 @@ public sealed class ClrMdDumpHost : IDisposable
                 current += (ulong)toCopy;
             }
 
+            int synthesizedRva = checked((int)(address + (ulong)bytesRead - info.ImageBase));
+            ApplyRelocations(peReader, info.ImageBase, synthesizedRva, buffer.Slice(bytesRead));
             return 0;
         }
         catch
         {
             return -1;
+        }
+    }
+
+    private enum BaseRelocationType
+    {
+        Absolute = 0,
+        HighLow = 3,
+        Dir64 = 10,
+    }
+
+    private static void ApplyRelocations(PEReader peReader, ulong imageBase, int dataRva, Span<byte> data)
+    {
+        if (data.IsEmpty || peReader.PEHeaders.PEHeader is not PEHeader peHeader)
+            return;
+
+        PEMemoryBlock relocations = peReader.GetSectionData(".reloc");
+        if (relocations.Length == 0)
+            return;
+
+        long dataEnd = (long)dataRva + data.Length;
+        ulong baseDelta = unchecked(imageBase - peHeader.ImageBase);
+        BlobReader reader = relocations.GetReader();
+        while (reader.RemainingBytes > 0)
+        {
+            int blockRva = reader.ReadInt32();
+            int blockSize = reader.ReadInt32();
+            if (blockSize <= 0)
+                break;
+
+            int entryCount = (blockSize - 8) / sizeof(ushort);
+            for (int i = 0; i < entryCount; i++)
+            {
+                ushort entry = reader.ReadUInt16();
+                BaseRelocationType type = (BaseRelocationType)(entry >> 12);
+                int relocationRva = blockRva + (entry & 0xfff);
+                if (relocationRva < dataRva || relocationRva >= dataEnd)
+                    continue;
+
+                int offset = relocationRva - dataRva;
+                switch (type)
+                {
+                    case BaseRelocationType.Absolute:
+                        break;
+                    case BaseRelocationType.HighLow when offset + sizeof(uint) <= data.Length:
+                        Span<byte> relocated32 = data.Slice(offset, sizeof(uint));
+                        uint value32 = BinaryPrimitives.ReadUInt32LittleEndian(relocated32);
+                        BinaryPrimitives.WriteUInt32LittleEndian(relocated32, unchecked(value32 + (uint)baseDelta));
+                        break;
+                    case BaseRelocationType.Dir64 when offset + sizeof(ulong) <= data.Length:
+                        Span<byte> relocated64 = data.Slice(offset, sizeof(ulong));
+                        ulong value64 = BinaryPrimitives.ReadUInt64LittleEndian(relocated64);
+                        BinaryPrimitives.WriteUInt64LittleEndian(relocated64, unchecked(value64 + baseDelta));
+                        break;
+                    default:
+                        Debug.Fail($"Unsupported or partial PE base relocation type {type}.");
+                        break;
+                }
+            }
         }
     }
 
