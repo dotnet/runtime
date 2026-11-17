@@ -106,9 +106,8 @@ namespace ILCompiler
                     }
                     else
                     {
-                        // AreSame considers targets equal if one got interned into the other. Interned
-                        // targets are never interning targets themselves, so hashing the target this
-                        // maps to is consistent with that.
+                        // AreSame considers targets equal if they got interned to the same body, so
+                        // hash the body this target maps to.
                         if (interner != null && interner.TryGetValue(target, out ISymbolNode internedTarget))
                             target = internedTarget;
 
@@ -146,6 +145,9 @@ namespace ILCompiler
 
             private static bool AreSame(ReadOnlySpan<byte> o1, ReadOnlySpan<byte> o2) => o1.SequenceEqual(o2);
 
+            private ISymbolNode GetRepresentative(ISymbolNode node)
+                => _interner.TryGetValue(node, out ISymbolNode representative) ? representative : node;
+
             private bool AreSame(ObjectNode.ObjectData o1, ObjectNode.ObjectData o2, ISymbolNode owner1 = null, ISymbolNode owner2 = null)
             {
                 if (AreSame(o1.Data, o2.Data) && o1.Relocs.Length == o2.Relocs.Length)
@@ -179,10 +181,10 @@ namespace ILCompiler
                                 // We can consider same MethodReadOnlyDataNode the same.
                             }
                             else if (_interner != null &&
-                                ((_interner.TryGetValue(r1.Target, out ISymbolNode t1) && r2.Target == t1)
-                                || (_interner.TryGetValue(r2.Target, out ISymbolNode t2) && r1.Target == t2)))
+                                GetRepresentative(r1.Target) == GetRepresentative(r2.Target))
                             {
-                                // These got already interned
+                                // Both targets were already interned to the same body. This covers one
+                                // being folded into the other as well as both being folded into a third.
                             }
                             else
                             {

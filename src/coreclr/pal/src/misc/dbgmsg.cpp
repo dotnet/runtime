@@ -16,7 +16,6 @@ Abstract:
 
 #include "config.h"
 #include "pal/dbgmsg.h"
-#include "pal/environ.h"
 
 /* standard headers */
 
@@ -661,27 +660,10 @@ bool DBG_ShouldCheckStackAlignment()
 
     if (caMode == CheckAlignment_Uninitialized)
     {
-        char* checkAlignmentSettings;
-        bool shouldFreeCheckAlignmentSettings = false;
-        if (palEnvironment == nullptr)
-        {
-            // This function might be called before the PAL environment is initialized.
-            // In this case, use the system getenv instead.
-            checkAlignmentSettings = ::getenv(PAL_CHECK_ALIGNMENT_MODE);
-        }
-        else
-        {
-            checkAlignmentSettings = EnvironGetenv(PAL_CHECK_ALIGNMENT_MODE);
-            shouldFreeCheckAlignmentSettings = true;
-        }
+        const char* checkAlignmentSettings = getenv(PAL_CHECK_ALIGNMENT_MODE);
 
         caMode = checkAlignmentSettings ?
             (CheckAlignmentMode)atoi(checkAlignmentSettings) : CheckAlignment_Default;
-
-        if (checkAlignmentSettings && shouldFreeCheckAlignmentSettings)
-        {
-            free(checkAlignmentSettings);
-        }
     }
 
     return caMode == CheckAlignment_On;
@@ -719,11 +701,10 @@ void PAL_DisplayDialog(const char *szTitle, const char *szText)
 
     if (dispDialog == DisplayDialog_Uninitialized)
     {
-        char* displayDialog = EnvironGetenv(PAL_DISPLAY_DIALOG);
+        const char* displayDialog = getenv(PAL_DISPLAY_DIALOG);
         if (displayDialog)
         {
             int i = atoi(displayDialog);
-            free(displayDialog);
 
             switch (i)
             {
