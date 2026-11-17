@@ -396,6 +396,7 @@
     <Compile Include="..\..\Common\JitInterface\WasmLowering.cs" Link="JitInterface\WasmLowering.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyTrackingLevel.cs" Link="Compiler\DependencyTrackingLevel.cs" />
     <Compile Include="..\..\Common\Compiler\DevirtualizationManager.cs" Link="Compiler\DevirtualizationManager.cs" />
+    <Compile Include="..\..\Common\Compiler\DirectPInvokeSet.cs" Link="Compiler\DirectPInvokeSet.cs" />
     <Compile Include="..\..\Common\Compiler\FeatureSettings.cs" Link="Compiler\FeatureSettings.cs" />
     <Compile Include="..\..\Common\Compiler\HardwareIntrinsicHelpers.cs" Link="Compiler\HardwareIntrinsicHelpers.cs" />
     <Compile Include="..\..\Common\Compiler\ICompilationRootProvider.cs" Link="Compiler\ICompilationRootProvider.cs" />

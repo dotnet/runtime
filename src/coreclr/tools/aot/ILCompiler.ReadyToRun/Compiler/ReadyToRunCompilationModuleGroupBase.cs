@@ -32,11 +32,7 @@ namespace ILCompiler
         public bool CompileGenericDependenciesFromVersionBubbleModuleSet;
         public bool CompileAllPossibleCrossModuleCode;
         public InstructionSetSupport InstructionSetSupport;
-        /// <summary>
-        /// <c>--directpinvoke</c> entries: a module name, or <c>module!entrypoint</c> for a single
-        /// entry point. See <see cref="DirectPInvokeSet"/>.
-        /// </summary>
-        public IEnumerable<string> DirectPInvokeModules = Array.Empty<string>();
+        public DirectPInvokeSet DirectPInvokes;
     }
 
     public abstract class ReadyToRunCompilationModuleGroupBase : CompilationModuleGroup
@@ -93,7 +89,7 @@ namespace ILCompiler
             _crossModuleInlineableModuleSet.UnionWith(_versionBubbleModuleSet);
 
             _compileGenericDependenciesFromVersionBubbleModuleSet = config.CompileGenericDependenciesFromVersionBubbleModuleSet;
-            _directPInvokes = new DirectPInvokeSet(config.DirectPInvokeModules);
+            _directPInvokes = config.DirectPInvokes ?? new DirectPInvokeSet(config.Context.Target, [], []);
 
             _tokenResolver = new ModuleTokenResolver(this, config.Context);
 
@@ -124,7 +120,7 @@ namespace ILCompiler
                 return true;
             }
 
-            return _directPInvokes.Contains(method.Context.Target, metadata.Module, metadata.Name ?? method.GetName());
+            return _directPInvokes.Contains(metadata.Module, metadata.Name ?? method.GetName());
         }
 
         public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)

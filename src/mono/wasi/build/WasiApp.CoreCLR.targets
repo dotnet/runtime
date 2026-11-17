@@ -16,16 +16,16 @@
       <_WasiReadyToRunPInvokeModule Remove="@(_WasiReadyToRunPInvokeModule)" />
     </ItemGroup>
     <ComputeWasmPInvokeModules TargetOS="wasi"
-                               IncludeCustomModules="true"
                                InvariantGlobalization="$(InvariantGlobalization)"
-                               FrameworkModules="@(WasmCoreClrFrameworkPInvokeModule)"
-                               DirectPInvokes="@(DirectPInvoke)"
-                               DirectPInvokeLists="@(DirectPInvokeList)">
+                               FrameworkModules="@(WasmCoreClrFrameworkPInvokeModule)">
       <Output TaskParameter="Modules" ItemName="_WasiReadyToRunPInvokeModule" />
     </ComputeWasmPInvokeModules>
+    <ItemGroup>
+      <_WasiReadyToRunPInvokeModule Include="@(DirectPInvoke)" />
+    </ItemGroup>
     <PropertyGroup>
       <_WasiReadyToRunPInvokeManifest>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'R2R', 'pinvoke-modules.txt'))</_WasiReadyToRunPInvokeManifest>
-      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(_WasiReadyToRunPInvokeModule->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
+      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(_WasiReadyToRunPInvokeModule->'--directpinvoke:%(Identity)', ';');@(DirectPInvokeList->'--directpinvokelist:%(FullPath)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
     </PropertyGroup>
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasiReadyToRunPInvokeManifest)'))" />
     <WriteLinesToFile File="$(_WasiReadyToRunPInvokeManifest)"
@@ -33,7 +33,7 @@
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
-      <_ReadyToRunCompilerInputs Include="$(_WasiReadyToRunPInvokeManifest)" />
+      <_ReadyToRunCompilerInputs Include="$(_WasiReadyToRunPInvokeManifest);@(DirectPInvokeList)" />
       <FileWrites Include="$(_WasiReadyToRunPInvokeManifest)" />
     </ItemGroup>
   </Target>
@@ -275,13 +275,13 @@
       <_WasiBundledFile Include="@(_WasiBundledFileR2RRemap->'$(IntermediateLinkDir)%(FileName)%(Extension)')" />
     </ItemGroup>
     <ComputeWasmPInvokeModules TargetOS="wasi"
-                               IncludeCustomModules="true"
                                InvariantGlobalization="$(InvariantGlobalization)"
-                               FrameworkModules="@(WasmCoreClrFrameworkPInvokeModule)"
-                               DirectPInvokes="@(DirectPInvoke)"
-                               DirectPInvokeLists="@(DirectPInvokeList)">
+                               FrameworkModules="@(WasmCoreClrFrameworkPInvokeModule)">
       <Output TaskParameter="Modules" ItemName="_WasiPInvokeModules" />
     </ComputeWasmPInvokeModules>
+    <ItemGroup>
+      <_WasiPInvokeModules Include="@(DirectPInvoke)" />
+    </ItemGroup>
 
     <FilterManagedAssemblies Assemblies="@(_WasiBundledFile)">
       <Output TaskParameter="ManagedAssemblies" ItemName="_WasiManagedAssemblies" />
@@ -311,6 +311,7 @@
       <_Crossgen2GeneratorArg Include="--targetarch:wasm" />
       <_Crossgen2GeneratorArg Include="--generate-portable-callhelpers:$(_WasiRelinkObjDir)" />
       <_Crossgen2GeneratorArg Include="@(_WasiPInvokeModules->'--directpinvoke:%(Identity)')" />
+      <_Crossgen2GeneratorArg Include="@(DirectPInvokeList->'--directpinvokelist:%(FullPath)')" />
       <_Crossgen2GeneratorArg Include="@(_WasiManagedAssemblies->'%(FullPath)')" />
     </ItemGroup>
 

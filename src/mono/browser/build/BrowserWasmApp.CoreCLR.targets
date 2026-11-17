@@ -145,6 +145,7 @@
           BeforeTargets="_CreateR2RImages">
     <ItemGroup>
       <_WasmReadyToRunPInvokeModule Remove="@(_WasmReadyToRunPInvokeModule)" />
+      <_WasmReadyToRunPInvokeList Remove="@(_WasmReadyToRunPInvokeList)" />
     </ItemGroup>
     <PropertyGroup>
       <_WasmIncludeCustomPInvokeModules>false</_WasmIncludeCustomPInvokeModules>
@@ -155,14 +156,16 @@
                                InvariantGlobalization="$(InvariantGlobalization)"
                                FrameworkModules="@(WasmCoreClrFrameworkPInvokeModule)"
                                NativeFileReferences="@(NativeFileReference)"
-                               NativeLibraries="@(NativeLibrary)"
-                               DirectPInvokes="@(DirectPInvoke)"
-                               DirectPInvokeLists="@(DirectPInvokeList)">
+                               NativeLibraries="@(NativeLibrary)">
       <Output TaskParameter="Modules" ItemName="_WasmReadyToRunPInvokeModule" />
     </ComputeWasmPInvokeModules>
+    <ItemGroup Condition="'$(_WasmIncludeCustomPInvokeModules)' == 'true'">
+      <_WasmReadyToRunPInvokeModule Include="@(DirectPInvoke)" />
+      <_WasmReadyToRunPInvokeList Include="@(DirectPInvokeList)" />
+    </ItemGroup>
     <PropertyGroup>
       <_WasmReadyToRunPInvokeManifest>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'R2R', 'pinvoke-modules.txt'))</_WasmReadyToRunPInvokeManifest>
-      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(_WasmReadyToRunPInvokeModule->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
+      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(_WasmReadyToRunPInvokeModule->'--directpinvoke:%(Identity)', ';');@(_WasmReadyToRunPInvokeList->'--directpinvokelist:%(FullPath)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
     </PropertyGroup>
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasmReadyToRunPInvokeManifest)'))" />
     <WriteLinesToFile File="$(_WasmReadyToRunPInvokeManifest)"
@@ -170,7 +173,7 @@
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
-      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunPInvokeManifest)" />
+      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunPInvokeManifest);@(_WasmReadyToRunPInvokeList)" />
       <FileWrites Include="$(_WasmReadyToRunPInvokeManifest)" />
     </ItemGroup>
   </Target>
@@ -711,11 +714,12 @@
                                IncludeCustomModules="true"
                                InvariantGlobalization="$(InvariantGlobalization)"
                                FrameworkModules="@(WasmCoreClrFrameworkPInvokeModule)"
-                               NativeFileReferences="@(_WasmNativeFileForLinking);@(_WasmSourceFileToCompile)"
-                               DirectPInvokes="@(DirectPInvoke)"
-                               DirectPInvokeLists="@(DirectPInvokeList)">
+                               NativeFileReferences="@(_WasmNativeFileForLinking);@(_WasmSourceFileToCompile)">
       <Output TaskParameter="Modules" ItemName="_WasmPInvokeModules" />
     </ComputeWasmPInvokeModules>
+    <ItemGroup>
+      <_WasmPInvokeModules Include="@(DirectPInvoke)" />
+    </ItemGroup>
 
     <!-- Managed assemblies to scan. An app bundle legitimately carries native payloads named .dll -
          per-architecture content shipped by a NuGet package is the usual case - and the generator
@@ -784,6 +788,7 @@
       <_Crossgen2GeneratorArg Include="--targetarch:wasm" />
       <_Crossgen2GeneratorArg Include="--generate-portable-callhelpers:$(_WasmIntermediateOutputPath)" />
       <_Crossgen2GeneratorArg Include="@(_WasmPInvokeModules->'--directpinvoke:%(Identity)')" />
+      <_Crossgen2GeneratorArg Include="@(DirectPInvokeList->'--directpinvokelist:%(FullPath)')" />
       <_Crossgen2GeneratorArg Include="@(_WasmManagedAssemblies->'%(FullPath)')" />
     </ItemGroup>
 

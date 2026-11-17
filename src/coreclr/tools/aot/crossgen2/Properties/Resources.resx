@@ -297,6 +297,9 @@
   <data name="DirectPInvokeOption" xml:space="preserve">
     <value>A statically linked native module P/Invokes may resolve against, or module!entrypoint for a single entry point</value>
   </data>
+  <data name="DirectPInvokeListOption" xml:space="preserve">
+    <value>File with a list of direct P/Invoke entries, one per line</value>
+  </data>
   <data name="GeneratePortableCallHelpersRequiresWasmTarget" xml:space="preserve">
     <value>--generate-portable-callhelpers requires --targetarch wasm together with --targetos browser or --targetos wasi</value>
   </data>

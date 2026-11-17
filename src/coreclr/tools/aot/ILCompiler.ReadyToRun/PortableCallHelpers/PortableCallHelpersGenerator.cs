@@ -19,10 +19,11 @@ namespace ILCompiler.PortableCallHelpers
     {
         public string OutputDirectory { get; init; }
         /// <summary>
-        /// The statically linked P/Invoke targets: module names, or <c>module!entrypoint</c> for a
-        /// single entry point. See <see cref="DirectPInvokeSet"/>.
+        /// The statically linked P/Invoke targets, as <c>--directpinvoke</c> entries and
+        /// <c>--directpinvokelist</c> files. See <see cref="DirectPInvokeSet"/>.
         /// </summary>
         public IReadOnlyList<string> PInvokeModules { get; init; } = [];
+        public IReadOnlyList<string> PInvokeModuleLists { get; init; } = [];
         public string TargetOS { get; init; }
     }
 
@@ -127,7 +128,7 @@ namespace ILCompiler.PortableCallHelpers
                 pinvokes.Add(entry);
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, PInvokeFileName), log,
-                w => generator.EmitPInvokeTable(w, context.Target, context.SystemModule, options.PInvokeModules, pinvokes));
+                w => generator.EmitPInvokeTable(w, context.Target, context.SystemModule, options.PInvokeModules, pinvokes, options.PInvokeModuleLists));
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, ReversePInvokeFileName), log,
                 w => generator.EmitNativeToInterp(w, callbacks));

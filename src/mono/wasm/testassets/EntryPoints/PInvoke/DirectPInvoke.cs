@@ -29,6 +29,12 @@ catch (DllNotFoundException)
 {
 }
 
+#if DIRECT_PINVOKE_CONFLICT
+// One native function declared with signatures that lower to different wasm types.
+Imports.LLAbs(-1);
+Imports.LLAbsInt32(-1);
+#endif
+
 Console.WriteLine("TestOutput -> DirectPInvoke sample passed");
 return 42;
 
@@ -42,6 +48,14 @@ static class Imports
 
     [DllImport("libc", EntryPoint = "strlen")]
     public static extern nuint StrLenAddress(int value);
+
+#if DIRECT_PINVOKE_CONFLICT
+    [DllImport("libc", EntryPoint = "llabs")]
+    public static extern long LLAbs(long value);
+
+    [DllImport("libc", EntryPoint = "llabs")]
+    public static extern int LLAbsInt32(int value);
+#endif
 
     // Not listed in DirectPInvoke, so it stays unbound and fails only when called.
     [DllImport("libc", EntryPoint = "definitely_not_in_libc")]

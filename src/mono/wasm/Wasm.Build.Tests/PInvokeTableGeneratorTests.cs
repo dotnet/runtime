@@ -140,6 +140,21 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, line => line.Contains("DirectPInvoke sample passed", StringComparison.Ordinal));
         }
 
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [BuildAndRun(aot: false, config: Configuration.Release)]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        public void DirectPInvokeRejectsConflictingSignatures(Configuration config, bool aot)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "directpinvoke_conflict",
+                extraProperties: "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><DefineConstants>$(DefineConstants);DIRECT_PINVOKE_CONFLICT</DefineConstants>",
+                extraItems: "<DirectPInvoke Include=\"libc!strlen\" /><DirectPInvoke Include=\"libc!llabs\" />");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DirectPInvoke.cs"));
+
+            (_, string output) = PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false, ExpectSuccess: false,
+                ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)), isNativeBuild: true);
+            Assert.Contains("Native function 'llabs' is declared with signatures that lower to different WebAssembly signatures", output);
+        }
+
         // Only Mono's generator rejects a non-blittable callback signature; crossgen2 leaves the
         // check to Roslyn and the runtime.
         [Theory, TestCategory("mono")]

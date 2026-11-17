@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
 
 using Internal.IL;
@@ -17,68 +16,16 @@ namespace ILCompiler
     internal sealed class ConfigurablePInvokePolicy : PInvokeILEmitterConfiguration
     {
         private readonly TargetDetails _target;
-        private readonly Dictionary<string, HashSet<string>> _directPInvokes;
+        private readonly DirectPInvokeSet _directPInvokes;
 
         public ConfigurablePInvokePolicy(TargetDetails target, IReadOnlyList<string> directPInvokes, IReadOnlyList<string> directPInvokeLists)
         {
-            _directPInvokes = new Dictionary<string, HashSet<string>>(target.IsWindows ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+            _directPInvokes = new DirectPInvokeSet(target, directPInvokes, directPInvokeLists);
 
             // * is always a direct call
-            _directPInvokes.Add("*", null);
-
-            foreach (var file in directPInvokeLists)
-            {
-                foreach (var entry in File.ReadLines(file))
-                {
-                    AddDirectPInvoke(entry);
-                }
-            }
-
-            foreach (var entry in directPInvokes)
-            {
-                AddDirectPInvoke(entry);
-            }
+            _directPInvokes.Add("*");
 
             _target = target;
-        }
-
-        private void AddDirectPInvoke(string entry)
-        {
-            // Ignore comments
-            if (entry.StartsWith('#'))
-                return;
-
-            entry = entry.Trim();
-
-            // Ignore empty entries
-            if (string.IsNullOrEmpty(entry))
-                return;
-
-            int separator = entry.IndexOf('!');
-
-            if (separator != -1)
-            {
-                string libraryName = entry.Substring(0, separator);
-                string entrypointName = entry.Substring(separator + 1);
-
-                if (_directPInvokes.TryGetValue(libraryName, out HashSet<string> entrypointSet))
-                {
-                    // All entrypoints from the library are direct
-                    if (entrypointSet == null)
-                        return;
-                }
-                else
-                {
-                    _directPInvokes.Add(libraryName, entrypointSet = new HashSet<string>());
-                }
-
-                entrypointSet.Add(entrypointName);
-            }
-            else
-            {
-                // All entrypoints from the library are direct
-                _directPInvokes[entry] = null;
-            }
         }
 
         private IEnumerable<string> EntryPointNameVariations(string name, PInvokeFlags flags)
@@ -129,7 +76,7 @@ namespace ILCompiler
 
             foreach (var moduleName in MarshalHelpers.GetPInvokeModuleNameVariations(_target, pInvokeMetadata.Module))
             {
-                if (_directPInvokes.TryGetValue(moduleName, out HashSet<string> entrypoints))
+                if (_directPInvokes.TryGetEntryPoints(moduleName, out IReadOnlySet<string> entrypoints))
                 {
                     string entryPointMetadataName = pInvokeMetadata.Name ?? method.GetName();
 
