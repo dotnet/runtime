@@ -282,6 +282,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop("Spins waiting for DataAvailable")]
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "FIONREAD (Socket.Available) isn't supported on WASI")]
         public async Task DataAvailable_ReturnsFalseOrTrueAppropriately()
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
