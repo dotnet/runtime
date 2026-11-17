@@ -826,7 +826,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         if (!treatLikeCall && (argx->gtFlags & GTF_EXCEPT) && (argCount > 1) && comp->opts.compDbgCode)
         {
             exceptionFlags = comp->gtCollectExceptions(argx);
-            if ((exceptionFlags & (ExceptionSetFlags::IndexOutOfRangeException |
+            if ((exceptionFlags & (ExceptionSetFlags::IndexOutOfRangeException | ExceptionSetFlags::ArgumentException |
+                                   ExceptionSetFlags::ArgumentOutOfRangeException |
                                    ExceptionSetFlags::OverflowException)) != ExceptionSetFlags::None)
             {
                 for (CallArg& otherArg : Args())
