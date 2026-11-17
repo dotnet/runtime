@@ -116,6 +116,9 @@ public:
 };
 
 #ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+// Activation flags are read with VolatileLoad for explicit ordering. Although the
+// current browser-WASM runtime is single-threaded and does not need it for thread
+// synchronization, these loads do not emit a hardware memory fence on WASM.
 struct ReadyToRun_AuxiliaryModuleMetadataEntry
 {
 public:
