@@ -67,15 +67,21 @@ internal static class NativeCommandLine
         List<string> result = new(args.Length);
         bool preserveRemainingArguments = false;
         bool preserveNextArgument = false;
+        List<string>? remainingArguments = null;
 
         // Native ilasm applies the last /X64 or /ARM64 switch, and /PE64 without either targets x64.
-        int architectureIndex = -1;
         bool pe64 = false;
         string? machine = null;
 
         foreach (string arg in args)
         {
-            if (preserveRemainingArguments || preserveNextArgument)
+            if (preserveRemainingArguments)
+            {
+                (remainingArguments ??= new()).Add(arg);
+                continue;
+            }
+
+            if (preserveNextArgument)
             {
                 result.Add(arg);
                 preserveNextArgument = false;
@@ -84,7 +90,6 @@ internal static class NativeCommandLine
 
             if (arg == "--")
             {
-                result.Add(arg);
                 preserveRemainingArguments = true;
                 continue;
             }
@@ -205,29 +210,29 @@ internal static class NativeCommandLine
         string? architecture = machine ?? (pe64 ? "x64" : null);
         if (architecture is not null)
         {
-            result.InsertRange(architectureIndex, ["--arch", architecture]);
+            result.Add("--arch");
+            result.Add(architecture);
+        }
+
+        if (preserveRemainingArguments)
+        {
+            result.Add("--");
+            if (remainingArguments is not null)
+            {
+                result.AddRange(remainingArguments);
+            }
         }
 
         return result.ToArray();
 
         void SetMachine(string value)
         {
-            MarkArchitectureIndex();
             machine = value;
         }
 
         void SetPe64()
         {
-            MarkArchitectureIndex();
             pe64 = true;
-        }
-
-        void MarkArchitectureIndex()
-        {
-            if (architectureIndex < 0)
-            {
-                architectureIndex = result.Count;
-            }
         }
 
         void AddModernOption(string name, Option option)

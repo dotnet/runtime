@@ -474,11 +474,11 @@ public class CommandLineTests
     }
 
     [Theory]
-    [InlineData("-PE64 -DLL input.il", "--arch x64 --dll input.il")]
-    [InlineData("-x64anything -DLL", "--arch x64 --dll")]
-    [InlineData("-DLL -PE64 -ARM64 input.il", "--dll --arch arm64 input.il")]
-    [InlineData("-ARM64 -DLL -PE64", "--arch arm64 --dll")]
-    [InlineData("-X64 -ARM64 -DLL", "--arch arm64 --dll")]
+    [InlineData("-PE64 -DLL input.il", "--dll input.il --arch x64")]
+    [InlineData("-x64anything -DLL", "--dll --arch x64")]
+    [InlineData("-DLL -PE64 -ARM64 input.il", "--dll input.il --arch arm64")]
+    [InlineData("-ARM64 -DLL -PE64", "--dll --arch arm64")]
+    [InlineData("-X64 -ARM64 -DLL", "--dll --arch arm64")]
     [InlineData("-ARM64 -PE64 -X64", "--arch x64")]
     [InlineData("-PE64 -- -X64", "--arch x64 -- -X64")]
     public void NativeArchitectureOptions_LastMachineWins(string arguments, string expected)
