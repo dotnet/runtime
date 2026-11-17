@@ -188,6 +188,68 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             }
         }
 
+        [Theory]
+        [InlineData(2, 1, false)]
+        [InlineData(1, 0, false)]
+        [InlineData(2, 1, true)]
+        [InlineData(1, 0, true)]
+        public void ExportDirective_WithoutVTableFixup_InvalidExplicitEntryReportsDiagnostic(
+            int entry,
+            int slot,
+            bool hasValidExport)
+        {
+            string validExport = hasValidExport
+                ? """
+                    .method public static void Valid() cil managed
+                    {
+                        .export [2] as Valid
+                        ret
+                    }
+                    """
+                : string.Empty;
+            string source = $$"""
+                .assembly test { }
+                .method public static void Invalid() cil managed
+                {
+                    .vtentry {{entry}} : {{slot}}
+                    .export [1] as Invalid
+                    ret
+                }
+                {{validExport}}
+                """;
+
+            var (strictDiagnostics, strictResult) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options());
+            Diagnostic strictError = Assert.Single(strictDiagnostics);
+            Assert.Equal(
+                hasValidExport ? DiagnosticIds.InvalidVTableEntry : DiagnosticIds.InvalidVTableExport,
+                strictError.Id);
+            Assert.Equal(DiagnosticSeverity.Error, strictError.Severity);
+            Assert.Null(strictResult);
+
+            (ImmutableArray<Diagnostic> diagnostics, PEReader pe) = CompileErrorTolerant(source);
+            using (pe)
+            {
+                Diagnostic error = Assert.Single(diagnostics);
+                Assert.Equal(strictError.Id, error.Id);
+                DirectoryEntry exports = pe.PEHeaders.PEHeader!.ExportTableDirectory;
+                DirectoryEntry fixups = pe.PEHeaders.CorHeader!.VtableFixupsDirectory;
+                if (hasValidExport)
+                {
+                    Assert.NotEqual(0, exports.RelativeVirtualAddress);
+                    Assert.Equal(8, fixups.Size);
+                    Assert.Equal(1, ReadInt32(pe, exports.RelativeVirtualAddress + 24));
+                    int nameTableRva = ReadInt32(pe, exports.RelativeVirtualAddress + 32);
+                    Assert.Equal("Valid", ReadAsciiString(pe, ReadInt32(pe, nameTableRva)));
+                }
+                else
+                {
+                    Assert.Equal(0, exports.RelativeVirtualAddress);
+                    Assert.Equal(0, fixups.Size);
+                }
+            }
+        }
+
         [Fact]
         public void VTableFixupAndExport_UseDeclaredWritableDataAndExecutableStubs()
         {

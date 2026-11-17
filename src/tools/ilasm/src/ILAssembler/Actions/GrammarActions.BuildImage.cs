@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.ILAssembler
             ImmutableArray<ILAssemblerPEBuilder.DataLabelFixup> validatedDataLabelFixups =
                 ValidateDataLabelFixups();
             ImmutableArray<ValidatedExport> validatedExports =
-                ValidateExports(validatedVTableAssociations, machine);
+                ValidateExports(validatedVTableFixups, validatedVTableAssociations, machine);
             if (_options.PseudoAttributes)
             {
                 PseudoCustomAttributes.Lower(_entityRegistry, _diagnostics);
@@ -477,6 +477,7 @@ namespace Microsoft.DotNet.ILAssembler
         }
 
         private ImmutableArray<ValidatedExport> ValidateExports(
+            ImmutableArray<ValidatedVTableFixup> validatedVTableFixups,
             ImmutableArray<ValidatedVTableAssociation> validatedVTableAssociations,
             Machine machine)
         {
@@ -513,7 +514,8 @@ namespace Microsoft.DotNet.ILAssembler
                     method,
                     out ValidatedVTableAssociation association))
                 {
-                    if (!_vtableEntryDirectiveContexts.ContainsKey(method))
+                    if (!_vtableEntryDirectiveContexts.ContainsKey(method) ||
+                        (_vtableFixups.Count == 0 && validatedVTableFixups.IsEmpty))
                     {
                         ReportError(
                             DiagnosticIds.InvalidVTableExport,
