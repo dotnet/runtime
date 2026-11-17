@@ -352,31 +352,32 @@ namespace Microsoft.DotNet.ILAssembler
                 slots.Add(method.VTableSlot);
             }
 
+            int nextAvailableSlot = 1;
             foreach (EntityRegistry.MethodDefinitionEntity method in methods)
             {
                 if (!_vtableEntryDirectiveContexts.ContainsKey(method))
                 {
-                    int slot = 1;
-                    while (slots.Contains(slot))
+                    while (slots.Contains(nextAvailableSlot))
                     {
-                        slot++;
+                        nextAvailableSlot++;
                     }
 
-                    if (slot > ushort.MaxValue)
+                    if (nextAvailableSlot > ushort.MaxValue)
                     {
                         ReportError(
                             DiagnosticIds.InvalidVTableSlotCount,
                             string.Format(
                                 DiagnosticMessageTemplates.InvalidVTableSlotCount,
-                                slot,
+                                nextAvailableSlot,
                                 ushort.MaxValue),
                             _exportDirectiveContexts[method]);
                         return ImmutableArray<ValidatedVTableFixup>.Empty;
                     }
 
-                    slots.Add(slot);
+                    slots.Add(nextAvailableSlot);
                     method.VTableEntry = 1;
-                    method.VTableSlot = slot;
+                    method.VTableSlot = nextAvailableSlot;
+                    nextAvailableSlot++;
                 }
             }
 
