@@ -223,9 +223,6 @@ namespace Wasm.Build.Tests
             };
             commandLineArgs.AddRange(buildOptions.ExtraMSBuildArgs);
 
-            if (buildOptions.IsPublish && buildOptions is PublishOptions po && po.BuildOnlyAfterPublish)
-                commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
-
             using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir);
             cmd.WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)

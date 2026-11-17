@@ -1048,7 +1048,7 @@ void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ct
 #endif // FEATURE_VARARGS
 
 #ifndef DACCESS_COMPILE
-FCIMPL1(void, GCReporting::Register, GCFrame* frame)
+FCIMPL1(void, GCFrameRegistration_RegisterForGCReporting, GCFrame* frame)
 {
     FCALL_CONTRACT;
 
@@ -1073,7 +1073,7 @@ FCIMPL1(void, GCReporting::Register, GCFrame* frame)
 }
 FCIMPLEND
 
-FCIMPL1(void, GCReporting::Unregister, GCFrame* frame)
+FCIMPL1(void, GCFrameRegistration_UnregisterForGCReporting, GCFrame* frame)
 {
     FCALL_CONTRACT;
 
@@ -1817,23 +1817,16 @@ unsigned int EECodeManager::GetFrameSize(GCInfoToken gcInfoToken)
 
 /*****************************************************************************/
 
-#ifndef TARGET_WASM
-
 // This is an assembly helper that enables us to call into EH funclets.
-EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP);
+EXTERN_C UINT_PTR F_CALL_CONV CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP);
 
 // This is an assembly helper that enables us to call into EH filter funclets.
-#ifdef TARGET_64BIT
-EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, CONTEXT *pContext, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
-#else
-EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
-#endif
+EXTERN_C int F_CALL_CONV CallEHFilterFunclet(Object *pThrowable, CONTEXT *pContext, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
 
+#ifndef TARGET_WASM
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
 #else
 typedef TADDR HandlerFn;
-DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP);
-DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP);
 #endif // TARGET_WASM
 
 static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
@@ -1862,30 +1855,10 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
     // to the CallerStackFrame instance so that it can be updated.
     UINT_PTR *pFuncletCallerSP = &(pExInfo->m_csfEHClause.SP);
 
-#ifdef TARGET_WASM
-    TADDR wasmFramePointer = GetFP(pRD->pCurrentContext);
-    _ASSERTE(wasmFramePointer != 0);
-    TADDR handlerFnIndex = CastHandlerFn(pfnHandler);
-    if (throwable != NULL)
-    {
-        dwResult = CallFuncletWithThrowable(handlerFnIndex, wasmFramePointer, OBJECTREFToObject(throwable), pFuncletCallerSP);
-    }
-    else
-    {
-        dwResult = CallFuncletWithoutThrowable(handlerFnIndex, wasmFramePointer, pFuncletCallerSP);
-    }
-#else
     if (isFilterFunclet)
     {
-        // For invoking IL filter funclet, we pass the CallerSP to the funclet using which
-        // it will retrieve the framepointer for accessing the locals in the parent
-        // method.
         dwResult = CallEHFilterFunclet(OBJECTREFToObject(throwable),
-#ifdef TARGET_64BIT
                                        pRD->pCurrentContext,
-#else
-                                       GetFP(pRD->pCurrentContext),
-#endif
                                        CastHandlerFn(pfnHandler),
                                        pFuncletCallerSP);
     }
@@ -1897,7 +1870,6 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
                                  pFuncletCallerSP);
     }
 
-#endif // TARGET_WASM
     return dwResult;
 }
 

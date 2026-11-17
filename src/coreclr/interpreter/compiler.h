@@ -1005,7 +1005,7 @@ private:
     bool    IsLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
     int     ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
-    bool ResolveAsyncCallToken(const uint8_t* ip);
+    bool ResolveAsyncCallToken(const uint8_t* ip, const CORINFO_RESOLVED_TOKEN* awaitToken = NULL);
     enum class ContinuationContextHandling : uint8_t
     {
         ContinueOnCapturedContext,
@@ -1025,6 +1025,7 @@ private:
     int     ApplyAsyncVersionPeepSkipToRet(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
     ContinuationContextHandling m_currentContinuationContextHandling = ContinuationContextHandling::None;
     CORINFO_RESOLVED_TOKEN m_resolvedAsyncCallToken;
+    bool m_isVoidAwait = false;
 
     // Code emit
     void    EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp);

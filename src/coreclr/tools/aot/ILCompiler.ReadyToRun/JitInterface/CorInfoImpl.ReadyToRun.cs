@@ -1084,6 +1084,27 @@ namespace Internal.JitInterface
                 genericContextObject: typeOrMethodContext,
                 forceOwningTypeFromMethodDesc: strippedInstantiation);
 
+            if (DelegateCtorSignature.CanEmitGCRefMap(targetMethod))
+            {
+                // A delegate-ctor import can cache a GCRefMap on the target method when resolved. Check the
+                // signature layouts at this caller's entrypoint so a versioning mismatch rejects the R2R caller
+                // before it can use a map computed from stale layouts.
+                MethodSignature signature = targetMethodDesc.Signature;
+                if (NeedsTypeLayoutCheck(signature.ReturnType))
+                {
+                    AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckTypeLayout(signature.ReturnType));
+                }
+
+                for (int i = 0; i < signature.Length; i++)
+                {
+                    TypeDesc parameterType = signature[i];
+                    if (NeedsTypeLayoutCheck(parameterType))
+                    {
+                        AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckTypeLayout(parameterType));
+                    }
+                }
+            }
+
             // runtime lookup is not needed, callerHandle is unused
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));

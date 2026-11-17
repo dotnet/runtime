@@ -487,7 +487,8 @@ namespace ILCompiler.ObjectWriter
             int methodPCLength,
             uint methodTypeIndex,
             IEnumerable<(DebugVarInfoMetadata, uint)> debugVars,
-            DebugEHClauseInfo[] debugEHClauseInfos)
+            DebugEHClauseInfo[] debugEHClauseInfos,
+            FrameInfo[] frameInfos)
         {
             if (methodTypeIndex == 0)
             {
@@ -496,6 +497,10 @@ namespace ILCompiler.ObjectWriter
 
             DwarfMemberFunction memberFunction = _memberFunctions[(int)methodTypeIndex - 1];
             memberFunction.LinkageName = methodName;
+            if (frameInfos.Length > 1)
+            {
+                memberFunction.FuncletInfoOffsets = new long[frameInfos.Length - 1];
+            }
 
             _dwarfSubprograms.Add(new DwarfSubprogramInfo(
                 sectionSymbolName,
@@ -503,7 +508,8 @@ namespace ILCompiler.ObjectWriter
                 methodPCLength,
                 memberFunction,
                 debugVars.ToArray(),
-                debugEHClauseInfos));
+                debugEHClauseInfos,
+                frameInfos));
         }
 
         public void EmitLineInfo(

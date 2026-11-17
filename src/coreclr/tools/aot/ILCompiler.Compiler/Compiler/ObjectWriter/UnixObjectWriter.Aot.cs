@@ -255,10 +255,12 @@ namespace ILCompiler.ObjectWriter
             INodeWithDebugInfo debugNode)
         {
             DebugEHClauseInfo[] clauses = null;
+            FrameInfo[] frameInfos = null;
 
             if (debugNode is INodeWithCodeInfo nodeWithCodeInfo)
             {
                 clauses = nodeWithCodeInfo.DebugEHClauseInfos;
+                frameInfos = nodeWithCodeInfo.FrameInfos;
             }
 
             if (_sections[methodSymbol.SectionIndex] is UnixSectionDefinition section)
@@ -270,7 +272,8 @@ namespace ILCompiler.ObjectWriter
                     methodSymbol.Size,
                     methodTypeIndex,
                     debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
-                    clauses ?? []);
+                    clauses ?? [],
+                    frameInfos ?? []);
 
                 if (debugNode.GetNativeSequencePoints().Any())
                 {
