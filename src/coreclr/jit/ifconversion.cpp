@@ -635,11 +635,13 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 
     if (select->OperIs(GT_SELECT))
     {
+#ifndef TARGET_WASM
         if (varTypeIsFloating(select))
         {
             JITDUMP("Abort: SELECT of type float\n");
             return true;
         }
+#endif
 
 #ifdef TARGET_RISCV64
         // Without Zicond, riscv64 has no native lowering for GT_SELECT - the
@@ -673,7 +675,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
             JITDUMP("Skipping if-conversion: branchy form fits in ~2 insns; Zicond would need 5+\n");
             return true;
         }
-#elif !defined(TARGET_64BIT)
+#elif !defined(TARGET_64BIT) && !defined(TARGET_WASM)
         // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
         // handle contained relops efficiently after decomposition.
         if (varTypeIsLong(select))
@@ -1038,7 +1040,7 @@ PhaseStatus Compiler::optIfConversion()
     assert(!fgSsaValid);
     optReachableBitVecTraits = nullptr;
 
-#if defined(TARGET_ARM64) || defined(TARGET_XARCH) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;
 

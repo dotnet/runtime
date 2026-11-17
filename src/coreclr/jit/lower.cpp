@@ -4827,6 +4827,10 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     DISPTREERANGE(BlockRange(), select);
     JITDUMP("\n");
 
+#ifdef TARGET_WASM
+    TryMoveWasmSelectCondition(select);
+#endif
+
     // Do not transform GT_SELECT with GTF_SET_FLAGS into GT_SELECTCC; this
     // node is used by decomposition on x86.
     // TODO-CQ: If we allowed multiple nodes to consume the same CPU flags then
@@ -4858,6 +4862,11 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     {
         TryLowerCnsIntCselToCinc(select, cond);
     }
+#endif
+
+#ifdef TARGET_WASM
+    assert(newSelect == nullptr);
+    select->SetOper(GT_WASM_SELECT);
 #endif
 
     return newSelect != nullptr ? newSelect->gtNext : select->gtNext;

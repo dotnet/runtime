@@ -8559,6 +8559,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             case GT_SELECT_INV:
             case GT_SELECT_INC:
 #endif
+#ifdef TARGET_WASM
+            case GT_WASM_SELECT:
+#endif
             case GT_SELECT:
             {
                 GenTreeConditional* const conditional = AsConditional();
@@ -9333,6 +9336,15 @@ GenTree::VtablePtr GenTree::GetVtableForOper(genTreeOps oper)
             res = *reinterpret_cast<VtablePtr*>(&gt);
         }
         break;
+
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+        {
+            GenTreeConditional gt;
+            res = *reinterpret_cast<VtablePtr*>(&gt);
+        }
+        break;
+#endif
 
             // We don't need to handle GTSTRUCT_N for LclVarCommon, since all those allowed opers are specified
             // in their proper subtype. Similarly for GenTreeIndir.
@@ -12433,6 +12445,13 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::AdvanceConditional;
             return;
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+            m_edge = &m_node->AsConditional()->gtOp1;
+            assert(*m_edge != nullptr);
+            m_advance = &GenTreeUseEdgeIterator::AdvanceWasmSelect;
+            return;
+#endif
 
         // Binary nodes
         default:
@@ -12550,6 +12569,31 @@ void GenTreeUseEdgeIterator::AdvanceConditional()
 
     assert(*m_edge != nullptr);
 }
+
+#ifdef TARGET_WASM
+//------------------------------------------------------------------------
+// GenTreeUseEdgeIterator::AdvanceWasmSelect: produces the next operand in Wasm stack order.
+//
+void GenTreeUseEdgeIterator::AdvanceWasmSelect()
+{
+    GenTreeConditional* const select = m_node->AsConditional();
+    switch (m_state)
+    {
+        case 0:
+            m_edge  = &select->gtOp2;
+            m_state = 1;
+            break;
+        case 1:
+            m_edge    = &select->gtCond;
+            m_advance = &GenTreeUseEdgeIterator::Terminate;
+            break;
+        default:
+            unreached();
+    }
+
+    assert(*m_edge != nullptr);
+}
+#endif // TARGET_WASM
 
 //------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::AdvanceBinOp: produces the next operand of a binary node and advances the state.
@@ -15231,10 +15275,22 @@ void Compiler::gtDispTree(GenTree*                    tree,
             break;
 
         case GT_SELECT:
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+#endif
             gtDispCommonEndLine(tree);
 
             if (!topOnly)
             {
+#ifdef TARGET_WASM
+                if (tree->OperIs(GT_WASM_SELECT))
+                {
+                    gtDispChild(tree->AsConditional()->gtOp1, indentStack, IIArc, childMsg, topOnly);
+                    gtDispChild(tree->AsConditional()->gtOp2, indentStack, IIArc, childMsg, topOnly);
+                    gtDispChild(tree->AsConditional()->gtCond, indentStack, IIArcBottom, childMsg, topOnly);
+                    break;
+                }
+#endif
                 gtDispChild(tree->AsConditional()->gtCond, indentStack, IIArc, childMsg, topOnly);
                 gtDispChild(tree->AsConditional()->gtOp1, indentStack, IIArc, childMsg, topOnly);
                 gtDispChild(tree->AsConditional()->gtOp2, indentStack, IIArcBottom, childMsg, topOnly);
