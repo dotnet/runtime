@@ -44,10 +44,53 @@ void CallDefaultConstructor(OBJECTREF ref);
 //
 class UnmanagedCallersOnlyCaller final
 {
-    MethodDesc* _pMD;
 public:
-    explicit UnmanagedCallersOnlyCaller(BinderMethodID id)
+    // Controls whether the reverse P/Invoke into the target is reported to the
+    // debugger as a possible step-in destination (see DebuggerTraceCall).
+    //
+    // HiddenFromDebugger is for runtime-internal callbacks. Nested reverse
+    // P/Invokes, including class constructors, are also hidden unless they
+    // explicitly restore visibility. Use VisibleEvenIfNested for callbacks
+    // that may run user code, such as first-chance exception notifications.
+    enum DebuggerVisibility
+    {
+        VisibleToDebugger,
+        HiddenFromDebugger,
+        VisibleEvenIfNested,
+    };
+
+private:
+    MethodDesc* _pMD;
+    DebuggerVisibility _debuggerVisibility;
+
+#ifdef DEBUGGING_SUPPORTED
+    // True while a HiddenFromDebugger invocation is in progress on this thread.
+    static thread_local bool t_fDebuggerTraceCallsHidden;
+
+    class DebuggerHiddenHolder final
+    {
+        bool _fPrevious;
+    public:
+        explicit DebuggerHiddenHolder(DebuggerVisibility visibility)
+            : _fPrevious{ t_fDebuggerTraceCallsHidden }
+        {
+            LIMITED_METHOD_CONTRACT;
+            t_fDebuggerTraceCallsHidden = visibility == HiddenFromDebugger ||
+                (visibility == VisibleToDebugger && _fPrevious);
+        }
+
+        ~DebuggerHiddenHolder()
+        {
+            LIMITED_METHOD_CONTRACT;
+            t_fDebuggerTraceCallsHidden = _fPrevious;
+        }
+    };
+#endif // DEBUGGING_SUPPORTED
+
+public:
+    explicit UnmanagedCallersOnlyCaller(BinderMethodID id, DebuggerVisibility debuggerVisibility = VisibleToDebugger)
         : _pMD{}
+        , _debuggerVisibility{ debuggerVisibility }
     {
         CONTRACTL
         {
@@ -61,6 +104,18 @@ public:
         _ASSERTE(_pMD != NULL);
         _ASSERTE(_pMD->HasUnmanagedCallersOnlyAttribute());
     }
+
+#ifdef DEBUGGING_SUPPORTED
+    // Returns true while a HiddenFromDebugger invocation is in progress on the current thread.
+    // This covers the callback itself and any managed code it reaches through further
+    // native-to-managed transitions (for example, a class constructor run by the runtime),
+    // except callbacks that explicitly restore visibility.
+    static bool AreDebuggerTraceCallsHidden()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return t_fDebuggerTraceCallsHidden;
+    }
+#endif // DEBUGGING_SUPPORTED
 
     template<typename... Args>
     void InvokeThrowing(Args... args)
@@ -97,6 +152,10 @@ public:
             // Cast the function pointer to the appropriate type.
             // Note that we append the exception handle argument.
             auto fptr = reinterpret_cast<void(*)(Args..., OBJECTREF*)>(methodEntry);
+
+#ifdef DEBUGGING_SUPPORTED
+            DebuggerHiddenHolder debuggerHidden(_debuggerVisibility);
+#endif // DEBUGGING_SUPPORTED
 
             // The last argument is the implied exception handle for any exceptions.
             fptr(args..., &gc.Exception);
@@ -147,6 +206,10 @@ public:
             // Note that we append the exception handle argument.
             auto fptr = reinterpret_cast<Ret(*)(Args..., OBJECTREF*)>(methodEntry);
 
+#ifdef DEBUGGING_SUPPORTED
+            DebuggerHiddenHolder debuggerHidden(_debuggerVisibility);
+#endif // DEBUGGING_SUPPORTED
+
             // The last argument is the implied exception handle for any exceptions.
             ret = fptr(args..., &gc.Exception);
         }
@@ -172,6 +235,8 @@ public:
         CONTRACTL_END;
 
         _ASSERTE(_pMD->GetModule()->IsSystem());
+        // The callee may unwind through this frame, so non-default debugger visibility is not supported here.
+        _ASSERTE(_debuggerVisibility == VisibleToDebugger);
 
         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
@@ -202,6 +267,7 @@ public:
         CONTRACTL_END;
 
         _ASSERTE(_pMD->GetModule()->IsSystem());
+        _ASSERTE(_debuggerVisibility == VisibleToDebugger);
 
         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 

@@ -3220,7 +3220,10 @@ OBJECTREF Thread::GetExposedObject()
             // Registering memory pressure can trigger a GC, so do it after
             // releasing our ThreadStore lock.
             _ASSERTE(!ThreadStore::HoldingThreadStore(pCurThread));
-            UnmanagedCallersOnlyCaller registerMemoryPressure(METHOD__THREAD__REGISTER_MEMORY_PRESSURE);
+            // Hide this runtime-internal callback from debugger stepping. Otherwise a step
+            // into Thread.CurrentThread, or the debugger looking for a thread's first managed
+            // code, could stop in it.
+            UnmanagedCallersOnlyCaller registerMemoryPressure(METHOD__THREAD__REGISTER_MEMORY_PRESSURE, UnmanagedCallersOnlyCaller::HiddenFromDebugger);
             registerMemoryPressure.InvokeThrowing();
         }
 #endif // FEATURE_MULTITHREADING
