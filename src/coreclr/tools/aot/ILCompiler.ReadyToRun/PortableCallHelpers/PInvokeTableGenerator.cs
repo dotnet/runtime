@@ -105,6 +105,7 @@ namespace ILCompiler.PortableCallHelpers
                 extern "C" {
                 """);
 
+            var linkedEntryPointDecls = new List<string>();
             var pinvokesGroupedByEntryPoint = emitted
                                                 .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
                                                 .GroupBy(CEntryPoint, StringComparer.Ordinal);
@@ -131,9 +132,15 @@ namespace ILCompiler.PortableCallHelpers
                 var decls = new HashSet<string>();
                 foreach (PInvokeInfo candidate in candidates)
                 {
-                    string decl = linkedEntryPoints.Contains(candidate)
-                        ? GenPInvokeDecl(candidate, LinkedEntryPointSymbol(candidate))
-                        : GenPInvokeDecl(candidate);
+                    if (linkedEntryPoints.Contains(candidate))
+                    {
+                        string linkedDecl = GenPInvokeDecl(candidate, CEntryPoint(candidate));
+                        if (decls.Add(linkedDecl))
+                            linkedEntryPointDecls.Add(linkedDecl);
+                        continue;
+                    }
+
+                    string decl = GenPInvokeDecl(candidate);
                     if (decls.Add(decl))
                         w.WriteLine(decl);
                 }
@@ -144,6 +151,19 @@ namespace ILCompiler.PortableCallHelpers
                 } // extern "C"
 
                 """);
+
+            // Entry points listed individually typically come from a library the native link provides
+            // implicitly, such as libc, whose system headers - string.h, through minipal/entrypoints.h -
+            // can already declare them with C types. Declaring them with C++ linkage in a namespace
+            // nothing else uses, bound to the native symbol by an asm label, keeps the metadata-derived
+            // declarations from conflicting with any other declaration in this file.
+            if (linkedEntryPointDecls.Count > 0)
+            {
+                w.WriteLine($"namespace {LinkedEntryPointNamespace} {{");
+                foreach (string decl in linkedEntryPointDecls)
+                    w.WriteLine(decl);
+                w.WriteLine($"}} // namespace {LinkedEntryPointNamespace}");
+            }
 
             var moduleImports = new Dictionary<string, List<string>>();
             foreach (string module in modules)
@@ -163,7 +183,7 @@ namespace ILCompiler.PortableCallHelpers
                         if (p.WasmLinkage)
                             return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{CEntryPoint(p)} }}, // {ListRefs(l)}{w.NewLine}";
                         if (linkedEntryPoints.Contains(p))
-                            return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{LinkedEntryPointSymbol(p)} }}, // {ListRefs(l)}{w.NewLine}";
+                            return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{LinkedEntryPointNamespace}::{CEntryPoint(p)} }}, // {ListRefs(l)}{w.NewLine}";
                         return $"    DllImportEntry({CEntryPoint(p)}) // {ListRefs(l)}{w.NewLine}";
                     })
                     .ToList();
@@ -534,11 +554,7 @@ namespace ILCompiler.PortableCallHelpers
             return FixupSymbolName(pinvoke.EntryPoint);
         }
 
-        // Entry points listed individually typically come from a library the native link provides
-        // implicitly, such as libc, whose system headers - string.h, through minipal/entrypoints.h -
-        // can already declare them with C types. A separate C identifier bound to the same linker
-        // symbol keeps the metadata-derived declaration from conflicting with those.
-        private string LinkedEntryPointSymbol(PInvokeInfo pinvoke) => $"PInvoke_{CEntryPoint(pinvoke)}";
+        private const string LinkedEntryPointNamespace = "direct_pinvoke";
 
         private string GenPInvokeDecl(PInvokeInfo pinvoke, string symbolName = null)
         {

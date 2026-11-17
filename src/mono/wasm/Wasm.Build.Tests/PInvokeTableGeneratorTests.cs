@@ -125,7 +125,7 @@ namespace Wasm.Build.Tests
 
             string nativeBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-publish");
             string table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
-            Assert.Contains("{ \"strlen\", (void*)&PInvoke_strlen },", table);
+            Assert.Contains("{ \"strlen\", (void*)&direct_pinvoke::strlen },", table);
             Assert.Contains("{\"libc\", s_libc, 1}", table);
             Assert.DoesNotContain("definitely_not_in_libc", table);
 

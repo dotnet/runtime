@@ -1460,9 +1460,10 @@ public class WasmArgumentLayoutTests
             Assert.True(exitCode == 0, log.ToString());
 
             string table = File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp"));
-            Assert.Contains("PInvoke_link (void *, void *) __asm__(\"link\");", table);
-            Assert.Contains("{ \"link\", (void*)&PInvoke_link },", table);
-            Assert.Contains("PInvoke_strlen (void *) __asm__(\"strlen\");", table);
+            string linkedDecls = table.Split("namespace direct_pinvoke {")[1].Split("} // namespace direct_pinvoke")[0];
+            Assert.Contains("int32_t link (void *, void *) __asm__(\"link\");", linkedDecls);
+            Assert.Contains("{ \"link\", (void*)&direct_pinvoke::link },", table);
+            Assert.Contains("void * strlen (void *) __asm__(\"strlen\");", linkedDecls);
             Assert.Contains("{\"libc\", s_libc, 2}", table);
             Assert.DoesNotContain("statx", table);
             Assert.Contains("DllImportEntry(Native_Test)", table);
