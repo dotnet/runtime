@@ -544,12 +544,11 @@ namespace System.Tests
             yield return new object[] { new string('9', 34) + "001", new string('9', 34) + "000" };
         }
 
-        [Fact]
-        public static void MaxValue_Rounding()
+        [Theory]
+        [MemberData(nameof(MaxValue_Rounding_TestData))]
+        public static void MaxValue_Rounding(string value, Decimal128 expected)
         {
-            Assert.Equal(Decimal128.MaxValue, Decimal128.Parse(new string('9', 34) + '4' + new string('0', 6110), CultureInfo.InvariantCulture));
-            Assert.Equal(Decimal128.PositiveInfinity, Decimal128.Parse(new string('9', 34) + '5' + new string('0', 6110), CultureInfo.InvariantCulture));
-            Assert.Equal(Decimal128.PositiveInfinity, Decimal128.Parse(new string('9', 34) + '5' + new string('0', 6109) + '1', CultureInfo.InvariantCulture));
+            Assert.Equal(expected, Decimal128.Parse(value, CultureInfo.InvariantCulture));
         }
 
         public static IEnumerable<object[]> MaxValue_Rounding_TestData()
