@@ -78,7 +78,7 @@ namespace System.Net
                 return true;
             }
 
-            if (address.AddressFamily == AddressFamily.InterNetwork || address.IsIPv4MappedToIPv6)
+            if (BaseAddress.AddressFamily == AddressFamily.InterNetwork)
             {
                 uint mask = uint.MaxValue << (32 - PrefixLength);
                 if (BitConverter.IsLittleEndian)
