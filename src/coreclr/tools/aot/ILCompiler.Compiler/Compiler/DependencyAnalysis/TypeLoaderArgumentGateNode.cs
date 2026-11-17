@@ -20,7 +20,8 @@ namespace ILCompiler.DependencyAnalysis
     /// A generic type that could be created by the type loader at runtime can only be created if all of its
     /// arguments exist at runtime. If some argument is not needed for any other reason, there is no
     /// need to eagerly create the type. Arguments that the type loader can create themselves, such as generic
-    /// types and arrays that have a template, do not need to be in the compilation.
+    /// types and arrays that have a template, do not need to be in the compilation. The element type of an array
+    /// is its single argument.
     ///
     /// A conditional dependency can only be conditioned on a single other node, so "all arguments are present" is
     /// expressed as a chain with one node per argument, plus the final node returned by <see cref="GetLast"/>. The node
@@ -34,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public TypeLoaderArgumentGateNode(TypeDesc type, int argumentIndex)
         {
-            Debug.Assert(argumentIndex >= 0 && argumentIndex <= type.Instantiation.Length);
+            Debug.Assert(argumentIndex >= 0 && argumentIndex <= GetArgumentCount(type));
             _type = type;
             _argumentIndex = argumentIndex;
         }
@@ -42,11 +43,16 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Gets the last node of the chain, which is marked once all arguments have been checked.
         /// </summary>
-        public TypeLoaderArgumentGateNode GetLast(NodeFactory factory) => factory.TypeLoaderArgumentGate(_type, _type.Instantiation.Length);
+        public TypeLoaderArgumentGateNode GetLast(NodeFactory factory) => factory.TypeLoaderArgumentGate(_type, GetArgumentCount(_type));
+
+        // The element type of an array is its only argument, since the type loader can't create the array without it.
+        private static int GetArgumentCount(TypeDesc type) => type.IsArray ? 1 : type.Instantiation.Length;
+
+        private static TypeDesc GetArgument(TypeDesc type, int index) => type.IsArray ? ((ArrayType)type).ElementType : type.Instantiation[index];
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
-        public override bool HasConditionalStaticDependencies => _argumentIndex < _type.Instantiation.Length;
+        public override bool HasConditionalStaticDependencies => _argumentIndex < GetArgumentCount(_type);
         public override bool StaticDependenciesAreComputed => true;
 
         public override void AddStaticDependencies(DependencySink sink, NodeFactory context) { }
@@ -57,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
             // arrays that also need a template (which is assumed to be present for arrays of reference types).
             // This is the type that has to be present or loadable for the argument to exist at runtime.
             TypeDesc argument = RuntimeConstructableTypeDependencies.GetEffectiveTrimTargetType(
-                context, _type.Instantiation[_argumentIndex], conditionConstructed: false).Type;
+                context, GetArgument(_type, _argumentIndex), conditionConstructed: false).Type;
 
             TypeLoaderArgumentGateNode next = context.TypeLoaderArgumentGate(_type, _argumentIndex + 1);
 
@@ -78,7 +84,7 @@ namespace ILCompiler.DependencyAnalysis
         public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
 
         protected override string GetName(NodeFactory context)
-            => _argumentIndex < _type.Instantiation.Length
+            => _argumentIndex < GetArgumentCount(_type)
                 ? $"Type loader candidate gate: {_type} (argument {_argumentIndex})"
                 : $"Type loader candidate gate: {_type} (loadable)";
     }
