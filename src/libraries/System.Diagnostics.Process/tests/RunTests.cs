@@ -21,14 +21,11 @@ namespace System.Diagnostics.Tests
         public async Task Run_ExitCodeIsReturned(bool useAsync, bool entireProcessTree)
         {
             using Process template = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            template.StartInfo.KillTreeOnRunCancellation = entireProcessTree;
 
-            ProcessExitStatus exitStatus = (useAsync, entireProcessTree) switch
-            {
-                (true, false) => await Process.RunAsync(template.StartInfo),
-                (true, true) => await Process.RunAsync(template.StartInfo, entireProcessTree: true, cancellationToken: default),
-                (false, false) => Process.Run(template.StartInfo),
-                (false, true) => Process.Run(template.StartInfo, TimeSpan.FromMilliseconds(Timeout.Infinite), entireProcessTree: true),
-            };
+            ProcessExitStatus exitStatus = useAsync
+                ? await Process.RunAsync(template.StartInfo)
+                : Process.Run(template.StartInfo);
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
             Assert.False(exitStatus.Canceled);
@@ -100,16 +97,17 @@ namespace System.Diagnostics.Tests
         public async Task Run_WithTimeout_ExitCodeIsReturned(bool useAsync, bool entireProcessTree)
         {
             using Process template = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            template.StartInfo.KillTreeOnRunCancellation = entireProcessTree;
 
             ProcessExitStatus exitStatus;
             if (useAsync)
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
-                exitStatus = await Process.RunAsync(template.StartInfo, entireProcessTree, cts.Token);
+                exitStatus = await Process.RunAsync(template.StartInfo, cts.Token);
             }
             else
             {
-                exitStatus = Process.Run(template.StartInfo, TimeSpan.FromMinutes(1), entireProcessTree);
+                exitStatus = Process.Run(template.StartInfo, TimeSpan.FromMinutes(1));
             }
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
@@ -124,16 +122,17 @@ namespace System.Diagnostics.Tests
         public async Task Run_WithTimeoutOrCancellation_KillsLongRunningProcess(bool useAsync, bool entireProcessTree)
         {
             using Process template = CreateSleepProcess((int)TimeSpan.FromHours(1).TotalMilliseconds);
+            template.StartInfo.KillTreeOnRunCancellation = entireProcessTree;
 
             ProcessExitStatus exitStatus;
             if (useAsync)
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
-                exitStatus = await Process.RunAsync(template.StartInfo, entireProcessTree, cts.Token);
+                exitStatus = await Process.RunAsync(template.StartInfo, cts.Token);
             }
             else
             {
-                exitStatus = Process.Run(template.StartInfo, TimeSpan.FromMilliseconds(100), entireProcessTree);
+                exitStatus = Process.Run(template.StartInfo, TimeSpan.FromMilliseconds(100));
             }
 
             Assert.True(exitStatus.Canceled);
@@ -202,12 +201,13 @@ namespace System.Diagnostics.Tests
                 }
                 outerTemplate.StartInfo.InheritedHandles = [writePipe, controlReadPipe];
                 outerTemplate.StartInfo.KillOnParentExit = killOnParentExit;
+                outerTemplate.StartInfo.KillTreeOnRunCancellation = entireProcessTree;
 
                 using CancellationTokenSource cts = new();
 
                 Task runTask = captureText
-                        ? Process.RunAndCaptureTextAsync(outerTemplate.StartInfo, entireProcessTree, cts.Token)
-                        : Process.RunAsync(outerTemplate.StartInfo, entireProcessTree, cts.Token);
+                        ? Process.RunAndCaptureTextAsync(outerTemplate.StartInfo, cts.Token)
+                        : Process.RunAsync(outerTemplate.StartInfo, cts.Token);
 
                 writePipe.Close(); // close the write end of the pipe so that we can detect when the process tree is killed
                 controlReadPipe.Close();
@@ -271,14 +271,11 @@ namespace System.Diagnostics.Tests
 
             template.StartInfo.RedirectStandardOutput = true;
             template.StartInfo.RedirectStandardError = true;
+            template.StartInfo.KillTreeOnRunCancellation = entireProcessTree;
 
-            ProcessTextOutput result = (useAsync, entireProcessTree) switch
-            {
-                (true, false) => await Process.RunAndCaptureTextAsync(template.StartInfo),
-                (true, true) => await Process.RunAndCaptureTextAsync(template.StartInfo, entireProcessTree: true, cancellationToken: default),
-                (false, false) => Process.RunAndCaptureText(template.StartInfo),
-                (false, true) => Process.RunAndCaptureText(template.StartInfo, TimeSpan.FromMilliseconds(Timeout.Infinite), entireProcessTree: true),
-            };
+            ProcessTextOutput result = useAsync
+                ? await Process.RunAndCaptureTextAsync(template.StartInfo)
+                : Process.RunAndCaptureText(template.StartInfo);
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, result.ExitStatus.ExitCode);
             Assert.False(result.ExitStatus.Canceled);
@@ -321,14 +318,11 @@ namespace System.Diagnostics.Tests
 
             template.StartInfo.RedirectStandardOutput = true;
             template.StartInfo.RedirectStandardError = true;
+            template.StartInfo.KillTreeOnRunCancellation = entireProcessTree;
 
-            ProcessTextOutput result = (useAsync, entireProcessTree) switch
-            {
-                (true, false) => await Process.RunAndCaptureTextAsync(template.StartInfo),
-                (true, true) => await Process.RunAndCaptureTextAsync(template.StartInfo, entireProcessTree: true, cancellationToken: default),
-                (false, false) => Process.RunAndCaptureText(template.StartInfo),
-                (false, true) => Process.RunAndCaptureText(template.StartInfo, TimeSpan.FromMilliseconds(Timeout.Infinite), entireProcessTree: true),
-            };
+            ProcessTextOutput result = useAsync
+                ? await Process.RunAndCaptureTextAsync(template.StartInfo)
+                : Process.RunAndCaptureText(template.StartInfo);
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, result.ExitStatus.ExitCode);
             Assert.Equal(string.Empty, result.StandardOutput);
@@ -351,16 +345,17 @@ namespace System.Diagnostics.Tests
 
             template.StartInfo.RedirectStandardOutput = true;
             template.StartInfo.RedirectStandardError = true;
+            template.StartInfo.KillTreeOnRunCancellation = entireProcessTree;
 
             ProcessTextOutput result;
             if (useAsync)
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
-                result = await Process.RunAndCaptureTextAsync(template.StartInfo, entireProcessTree, cts.Token);
+                result = await Process.RunAndCaptureTextAsync(template.StartInfo, cts.Token);
             }
             else
             {
-                result = Process.RunAndCaptureText(template.StartInfo, TimeSpan.FromMinutes(1), entireProcessTree);
+                result = Process.RunAndCaptureText(template.StartInfo, TimeSpan.FromMinutes(1));
             }
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, result.ExitStatus.ExitCode);
@@ -380,17 +375,18 @@ namespace System.Diagnostics.Tests
 
             template.StartInfo.RedirectStandardOutput = true;
             template.StartInfo.RedirectStandardError = true;
+            template.StartInfo.KillTreeOnRunCancellation = entireProcessTree;
 
             if (useAsync)
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
-                    await Process.RunAndCaptureTextAsync(template.StartInfo, entireProcessTree, cts.Token));
+                    await Process.RunAndCaptureTextAsync(template.StartInfo, cts.Token));
             }
             else
             {
                 Assert.ThrowsAny<TimeoutException>(() =>
-                    Process.RunAndCaptureText(template.StartInfo, TimeSpan.FromMilliseconds(100), entireProcessTree));
+                    Process.RunAndCaptureText(template.StartInfo, TimeSpan.FromMilliseconds(100)));
             }
         }
 
