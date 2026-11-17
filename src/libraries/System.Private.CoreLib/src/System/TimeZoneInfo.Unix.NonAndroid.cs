@@ -16,14 +16,16 @@ namespace System
     public sealed partial class TimeZoneInfo
     {
         private const string TimeZoneFileName = "zone.tab";
-#if !TARGET_BROWSER
         private const string TimeZoneDirectoryEnvironmentVariable = "TZDIR";
-#endif
         private const string TimeZoneEnvironmentVariable = "TZ";
 
-#if TARGET_WASI
+#if TARGET_BROWSER
+        private static bool UseEmbeddedTzDatabase => true;
+#elif TARGET_WASI
         // If TZDIR is set, use the file system instead of the embedded time zone database.
-        private static readonly bool UseEmbeddedTzDatabase = string.IsNullOrEmpty(Environment.GetEnvironmentVariable(TimeZoneDirectoryEnvironmentVariable));
+        private static bool UseEmbeddedTzDatabase { get; } = string.IsNullOrEmpty(Environment.GetEnvironmentVariable(TimeZoneDirectoryEnvironmentVariable));
+#else
+        private static bool UseEmbeddedTzDatabase => false;
 #endif
 
         private static TimeZoneInfo GetLocalTimeZoneCore()
@@ -89,10 +91,7 @@ namespace System
             string timeZoneDirectory = GetTimeZoneDirectory();
             string timeZoneFilePath = Path.Combine(timeZoneDirectory, id);
 
-#if TARGET_WASI || TARGET_BROWSER
-#if TARGET_WASI
             if (UseEmbeddedTzDatabase)
-#endif
             {
                 if (!TryLoadEmbeddedTzFile(timeZoneFilePath, out rawData))
                 {
@@ -110,9 +109,7 @@ namespace System
 
                 return TimeZoneInfoResult.Success;
             }
-#endif
 
-#if !TARGET_BROWSER
             try
             {
                 rawData = ReadAllBytesFromSeekableNonZeroSizeFile(timeZoneFilePath, maxFileSize: 20 * 1024 * 1024 /* 20 MB */); // timezone files usually less than 1 MB.
@@ -147,7 +144,6 @@ namespace System
             }
 
             return TimeZoneInfoResult.Success;
-#endif
         }
 
         /// <summary>
@@ -166,10 +162,7 @@ namespace System
             try
             {
                 var fileName = Path.Combine(GetTimeZoneDirectory(), TimeZoneFileName);
-#if TARGET_WASI || TARGET_BROWSER
-#if TARGET_WASI
                 if (UseEmbeddedTzDatabase)
-#endif
                 {
                     if (!TryLoadEmbeddedTzFile(fileName, out var rawData))
                     {
@@ -178,11 +171,9 @@ namespace System
                     using var blobReader = new StreamReader(new MemoryStream(rawData), Encoding.UTF8);
                     return ParseTimeZoneIds(blobReader);
                 }
-#endif
-#if !TARGET_BROWSER
+
                 using var reader = new StreamReader(fileName, Encoding.UTF8);
                 return ParseTimeZoneIds(reader);
-#endif
             }
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }
@@ -383,11 +374,11 @@ namespace System
             return false;
         }
 
-#if TARGET_WASI || TARGET_BROWSER
         private static bool TryLoadEmbeddedTzFile(string name, [NotNullWhen(true)] out byte[]? rawData)
         {
             Debug.Assert(!Invariant);
 
+#if TARGET_WASI || TARGET_BROWSER
             IntPtr bytes = Interop.Sys.GetTimeZoneData(name, out int length);
             if (bytes == IntPtr.Zero)
             {
@@ -398,8 +389,10 @@ namespace System
             rawData = new byte[length];
             Marshal.Copy(bytes, rawData, 0, length);
             return true;
-        }
+#else
+            throw new PlatformNotSupportedException();
 #endif
+        }
 
         /// <summary>
         /// Gets the tzfile raw data for the current 'local' time zone using the following rules.
@@ -440,14 +433,12 @@ namespace System
             {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 tzVariable = Interop.Sys.GetDefaultTimeZone();
-#elif TARGET_BROWSER
-                return false; // use UTC
-#elif TARGET_WASI
-                if (UseEmbeddedTzDatabase)
+#else
+                if (UseEmbeddedTzDatabase || OperatingSystem.IsWasi())
                 {
                     return false; // use UTC
                 }
-#else
+
                 return
                     TryLoadTzFile("/etc/localtime", ref rawData, ref id) ||
                     TryLoadTzFile(Path.Combine(GetTimeZoneDirectory(), "localtime"), ref rawData, ref id);
@@ -474,10 +465,7 @@ namespace System
                 tzFilePath = tzVariable;
             }
 
-#if TARGET_WASI || TARGET_BROWSER
-#if TARGET_WASI
             if (UseEmbeddedTzDatabase)
-#endif
             {
                 // embedded database only supports relative paths
                 if (tzVariable[0] == '/')
@@ -491,11 +479,8 @@ namespace System
                 id = tzVariable;
                 return true;
             }
-#endif
 
-#if !TARGET_BROWSER
             return TryLoadTzFile(tzFilePath, ref rawData, ref id);
-#endif
         }
 
         /// <summary>
@@ -525,9 +510,11 @@ namespace System
 
         private static string GetTimeZoneDirectory()
         {
-#if TARGET_BROWSER
-            return DefaultTimeZoneDirectory;
-#else
+            if (OperatingSystem.IsBrowser())
+            {
+                return DefaultTimeZoneDirectory;
+            }
+
             string? tzDirectory = Environment.GetEnvironmentVariable(TimeZoneDirectoryEnvironmentVariable);
 
             if (string.IsNullOrEmpty(tzDirectory))
@@ -540,7 +527,6 @@ namespace System
             }
 
             return tzDirectory;
-#endif
         }
     }
 }
