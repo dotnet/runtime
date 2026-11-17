@@ -552,6 +552,19 @@ namespace System.IO.Tests
             return firedEvent => (firedEvent.EventType & filteredTypes) != 0 || !seenEvents.TryAdd(firedEvent, true);
         }
 
+        // Where the OS doesn't preserve the order of events for different paths, compare them as a multiset.
+        // Elsewhere the implementation must preserve the OS order (e.g. the deferred IN_MOVED_FROM handling on Linux).
+        internal static void AssertEventsEqual(IEnumerable<FiredEvent> expected, IEnumerable<FiredEvent> actual)
+        {
+            if (!PlatformDetection.IsFileSystemWatcherEventOrderPreserved)
+            {
+                expected = expected.OrderBy(e => e.ToString(), StringComparer.Ordinal);
+                actual = actual.OrderBy(e => e.ToString(), StringComparer.Ordinal);
+            }
+
+            Assert.Equal(expected, actual);
+        }
+
         // Observe until an expected count of events is triggered, otherwise fail. Return all filtered events.
         internal static List<FiredEvent> ExpectEvents(FileSystemWatcher watcher, int expectedEvents, Action action, Func<FiredEvent, bool>? isFilteredOut = null)
         {
