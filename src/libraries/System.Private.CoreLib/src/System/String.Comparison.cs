@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -735,6 +735,37 @@ namespace System
 
                 case StringComparison.OrdinalIgnoreCase:
                     return GetHashCodeOrdinalIgnoreCase(value);
+
+                default:
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.NotSupported_StringComparison, ExceptionArgument.comparisonType);
+                    Debug.Fail("Should not reach this point.");
+                    return default;
+            }
+        }
+
+        /// <summary>
+        /// Computes a non-randomized hash code for the specified character span using an ordinal comparison.
+        /// </summary>
+        /// <param name="value">The character span to hash.</param>
+        /// <returns>A 32-bit signed integer hash code.</returns>
+        public static int GetHashCodeWeak(ReadOnlySpan<char> value) => GetNonRandomizedHashCode(value);
+
+        /// <summary>
+        /// Computes a non-randomized hash code for the specified character span using the specified comparison rules.
+        /// </summary>
+        /// <param name="value">The character span to hash.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the hash computation. Only <see cref="StringComparison.Ordinal"/> and <see cref="StringComparison.OrdinalIgnoreCase"/> are supported.</param>
+        /// <returns>A 32-bit signed integer hash code.</returns>
+        /// <exception cref="ArgumentException"><paramref name="comparisonType"/> is not <see cref="StringComparison.Ordinal"/> or <see cref="StringComparison.OrdinalIgnoreCase"/>.</exception>
+        public static int GetHashCodeWeak(ReadOnlySpan<char> value, StringComparison comparisonType)
+        {
+            switch (comparisonType)
+            {
+                case StringComparison.Ordinal:
+                    return GetNonRandomizedHashCode(value);
+
+                case StringComparison.OrdinalIgnoreCase:
+                    return GetNonRandomizedHashCodeOrdinalIgnoreCase(value);
 
                 default:
                     ThrowHelper.ThrowArgumentException(ExceptionResource.NotSupported_StringComparison, ExceptionArgument.comparisonType);

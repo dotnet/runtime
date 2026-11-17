@@ -102,5 +102,58 @@ namespace System.Tests
             yield return new object[] { "\u60F3\u50CF\u3092\u8D85\u3048\u305F\u3001\u30D1\u30D5\u30A9\u30FC\u30DE\u30F3\u30B9\u3092\u3002" }; // ja-JP
             yield return new object[] { "\u00C9l\u00E9gant et performant." }; // fr-FR
         }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("a")]
+        [InlineData("abc")]
+        [InlineData("Hello, World!")]
+        [InlineData("The quick brown fox jumps over the lazy dog.")]
+        public void GetHashCodeWeak_Span_ReturnsDeterministicHashCode(string input)
+        {
+            int hash1 = string.GetHashCodeWeak(input.AsSpan());
+            int hash2 = string.GetHashCodeWeak(input.AsSpan());
+            Assert.Equal(hash1, hash2);
+
+            // Equivalent to string.GetHashCodeWeak(input, StringComparison.Ordinal)
+            int hashOrdinal = string.GetHashCodeWeak(input.AsSpan(), StringComparison.Ordinal);
+            Assert.Equal(hash1, hashOrdinal);
+
+            // Verify implicit string conversion
+            Assert.Equal(hash1, string.GetHashCodeWeak(input));
+            Assert.Equal(hash1, string.GetHashCodeWeak(input, StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void GetHashCodeWeak_EmptySpan_ReturnsSameAsEmptyString()
+        {
+            Assert.Equal(string.GetHashCodeWeak(string.Empty.AsSpan()), string.GetHashCodeWeak(ReadOnlySpan<char>.Empty));
+            Assert.Equal(string.GetHashCodeWeak(string.Empty.AsSpan(), StringComparison.OrdinalIgnoreCase), string.GetHashCodeWeak(ReadOnlySpan<char>.Empty, StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Theory]
+        [InlineData("abc", "ABC")]
+        [InlineData("hello world", "HeLLo WoRLD")]
+        [InlineData("foo_BAR_123", "FOO_bar_123")]
+        [InlineData("\u00E9cole", "\u00C9COLE")]
+        public void GetHashCodeWeak_OrdinalIgnoreCase_ReturnsSameHashCodeForDifferentCases(string lower, string upper)
+        {
+            int hashLower = string.GetHashCodeWeak(lower.AsSpan(), StringComparison.OrdinalIgnoreCase);
+            int hashUpper = string.GetHashCodeWeak(upper.AsSpan(), StringComparison.OrdinalIgnoreCase);
+
+            Assert.Equal(hashLower, hashUpper);
+        }
+
+        [Theory]
+        [InlineData(StringComparison.CurrentCulture)]
+        [InlineData(StringComparison.CurrentCultureIgnoreCase)]
+        [InlineData(StringComparison.InvariantCulture)]
+        [InlineData(StringComparison.InvariantCultureIgnoreCase)]
+        [InlineData((StringComparison)(-1))]
+        [InlineData((StringComparison)999)]
+        public void GetHashCodeWeak_UnsupportedComparisonType_ThrowsArgumentException(StringComparison comparisonType)
+        {
+            AssertExtensions.Throws<ArgumentException>("comparisonType", () => string.GetHashCodeWeak("test".AsSpan(), comparisonType));
+        }
     }
 }
