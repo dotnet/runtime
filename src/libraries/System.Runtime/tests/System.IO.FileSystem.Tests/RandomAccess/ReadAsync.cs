@@ -107,13 +107,12 @@ namespace System.IO.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(true, true)]
-        public async Task HandlesAreFinalizedWhenNotDisposed(bool asyncHandle, bool cancellable)
+        public void HandlesAreFinalizedWhenNotDisposed(bool asyncHandle, bool cancellable)
         {
             string path = GetTestFilePath();
             File.WriteAllBytes(path, new byte[] { 42 });
 
-            (ValueTask<int> readTask, WeakReference<SafeFileHandle> handle) = StartRead(path, asyncHandle, cancellable);
-            Assert.Equal(1, await readTask);
+            WeakReference<SafeFileHandle> handle = Read(path, asyncHandle, cancellable);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -121,8 +120,10 @@ namespace System.IO.Tests
 
             Assert.False(handle.TryGetTarget(out _));
 
+            // The helper is synchronous on purpose: the continuation of an async method references the handle
+            // until the thread that completed it is done with it, which races with the GC above.
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static (ValueTask<int>, WeakReference<SafeFileHandle>) StartRead(string path, bool asyncHandle, bool cancellable)
+            static WeakReference<SafeFileHandle> Read(string path, bool asyncHandle, bool cancellable)
             {
                 SafeFileHandle handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read, options: asyncHandle ? FileOptions.Asynchronous : FileOptions.None);
 
@@ -135,7 +136,9 @@ namespace System.IO.Tests
                     cancellationToken = cts.Token;
                 }
 
-                return (RandomAccess.ReadAsync(handle, new byte[1], fileOffset: 0, cancellationToken), new(handle, trackResurrection: true));
+                Assert.Equal(1, RandomAccess.ReadAsync(handle, new byte[1], fileOffset: 0, cancellationToken).AsTask().Result);
+
+                return new(handle, trackResurrection: true);
             }
         }
     }
