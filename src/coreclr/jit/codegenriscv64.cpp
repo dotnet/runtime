@@ -2110,18 +2110,18 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     GenTree* valOp       = treeNode->Data();
     GenTree* comparandOp = treeNode->Comparand();
 
-    regNumber target    = treeNode->GetRegNum();
-    regNumber loc       = locOp->GetRegNum();
-    regNumber val       = !valOp->isContained() ? valOp->GetRegNum() : REG_ZERO;
-    regNumber comparand = REG_ZERO;
+    regNumber target            = treeNode->GetRegNum();
+    regNumber loc               = locOp->GetRegNum();
+    regNumber val               = !valOp->isContained() ? valOp->GetRegNum() : REG_ZERO;
+    regNumber comparand         = REG_ZERO;
+    regNumber comparandToExtend = REG_NA;
     if (!comparandOp->isContained())
     {
         comparand = comparandOp->GetRegNum();
         if (comparandOp->TypeIs(TYP_INT, TYP_UINT))
         {
-            regNumber signExtendedComparand = internalRegisters.Extract(treeNode);
-            GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, signExtendedComparand, comparand);
-            comparand = signExtendedComparand;
+            comparandToExtend = comparand;
+            comparand         = internalRegisters.Extract(treeNode);
         }
     }
     regNumber storeErr = internalRegisters.GetSingle(treeNode);
@@ -2144,6 +2144,12 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     genConsumeAddress(locOp);
     genConsumeRegs(valOp);
     genConsumeRegs(comparandOp);
+
+    // The comparand may have been reloaded from its spill location by genConsumeRegs above
+    if (comparandToExtend != REG_NA)
+    {
+        GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, comparand, comparandToExtend);
+    }
 
     // NOTE: `genConsumeAddress` marks consumed register as not a GC pointer, assuming the input
     // registers die at the first generated instruction. However, here the input registers are reused,

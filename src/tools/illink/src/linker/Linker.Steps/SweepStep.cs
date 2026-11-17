@@ -63,18 +63,21 @@ namespace Mono.Linker.Steps
                 UpdateAssemblyReferencesToRemovedAssemblies(assembly);
 
             // Update scopes before removing any type forwarder.
-            foreach (var assembly in assemblies)
+            if (Context.UpdateReferenceScopes)
             {
-                var action = Annotations.GetAction(assembly);
-                switch (action)
+                foreach (var assembly in assemblies)
                 {
-                    case AssemblyAction.CopyUsed:
-                    case AssemblyAction.Link:
-                    case AssemblyAction.Save:
-                        bool changed = SweepAssemblyReferences(assembly);
-                        if (changed && action == AssemblyAction.CopyUsed)
-                            Annotations.SetAction(assembly, AssemblyAction.Save);
-                        break;
+                    var action = Annotations.GetAction(assembly);
+                    switch (action)
+                    {
+                        case AssemblyAction.CopyUsed:
+                        case AssemblyAction.Link:
+                        case AssemblyAction.Save:
+                            bool changed = SweepAssemblyReferences(assembly);
+                            if (changed && action == AssemblyAction.CopyUsed)
+                                Annotations.SetAction(assembly, AssemblyAction.Save);
+                            break;
+                    }
                 }
             }
 
@@ -629,7 +632,7 @@ namespace Mono.Linker.Steps
             //
             assembly.MainModule.AssemblyReferences.Clear();
 
-            var arc = new AssemblyReferencesCorrector(assembly, walkSymbols: Context.LinkSymbols);
+            var arc = new AssemblyReferencesCorrector(assembly, walkSymbols: Context.LinkSymbols, updateScopes: Context.UpdateReferenceScopes);
             arc.Process();
 
             return arc.ChangedAnyScopes;
@@ -638,17 +641,25 @@ namespace Mono.Linker.Steps
         sealed class AssemblyReferencesCorrector : TypeReferenceWalker
         {
             readonly DefaultMetadataImporter importer;
+            readonly bool updateScopes;
 
             public bool ChangedAnyScopes { get; private set; }
 
-            public AssemblyReferencesCorrector(AssemblyDefinition assembly, bool walkSymbols) : base(assembly, walkSymbols)
+            public AssemblyReferencesCorrector(AssemblyDefinition assembly, bool walkSymbols, bool updateScopes) : base(assembly, walkSymbols)
             {
                 this.importer = new DefaultMetadataImporter(assembly.MainModule);
+                this.updateScopes = updateScopes;
                 ChangedAnyScopes = false;
             }
 
             protected override void ProcessTypeReference(TypeReference type)
             {
+                if (!updateScopes && type.Scope is AssemblyNameReference originalScope)
+                {
+                    type.Scope = importer.ImportReference(originalScope);
+                    return;
+                }
+
                 //
                 // Resolve to type definition to remove any type forwarding imports
                 //
@@ -683,6 +694,12 @@ namespace Mono.Linker.Steps
 
             protected override void ProcessExportedType(ExportedType exportedType)
             {
+                if (!updateScopes && exportedType.Scope is AssemblyNameReference originalScope)
+                {
+                    exportedType.Scope = importer.ImportReference(originalScope);
+                    return;
+                }
+
 #pragma warning disable RS0030 // Cecil's Resolve is banned -- it's necessary when the metadata graph is unstable
                 TypeDefinition? td = exportedType.Resolve();
 #pragma warning restore RS0030

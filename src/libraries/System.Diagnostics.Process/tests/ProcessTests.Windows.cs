@@ -4,21 +4,68 @@
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests
     {
+        private static bool IsPreciseGcAndRemoteExecutorSupported =>
+            PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
+
         private static bool IsNotNanoServerNotServerCoreAndRemoteExecutorSupported =>
             PlatformDetection.IsNotWindowsNanoServer &&
             PlatformDetection.IsNotWindowsServerCore &&
             RemoteExecutor.IsSupported;
+
+        [ConditionalFact(typeof(ProcessTests), nameof(IsPreciseGcAndRemoteExecutorSupported))]
+        public void RedirectedOutputHandlesAreFinalizedAfterAsyncReads()
+        {
+            (WeakReference<SafeFileHandle> output, WeakReference<SafeFileHandle> error) = ReadOutputAndError();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(output.TryGetTarget(out _));
+            Assert.False(error.TryGetTarget(out _));
+        }
+
+        // The helper is synchronous on purpose: the continuation of an async helper references the process
+        // until the thread that completed it is done with it, which races with the GC in the test.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static (WeakReference<SafeFileHandle>, WeakReference<SafeFileHandle>) ReadOutputAndError()
+        {
+            RemoteInvokeOptions options = new()
+            {
+                StartInfo = new ProcessStartInfo { RedirectStandardOutput = true, RedirectStandardError = true }
+            };
+
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () =>
+            {
+                Console.Write("out");
+                Console.Error.Write("err");
+            }, options);
+
+            Process process = handle.Process;
+            WeakReference<SafeFileHandle> outputHandle = new(((FileStream)process.StandardOutput.BaseStream).SafeFileHandle, trackResurrection: true);
+            WeakReference<SafeFileHandle> errorHandle = new(((FileStream)process.StandardError.BaseStream).SafeFileHandle, trackResurrection: true);
+
+            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+            Task<string> errorTask = process.StandardError.ReadToEndAsync();
+            Assert.Equal("out", outputTask.Result);
+            Assert.Equal("err", errorTask.Result);
+            process.WaitForExit();
+
+            return (outputHandle, errorHandle);
+        }
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern int MessageBoxW(IntPtr hWnd, string lpText, string lpCaption, uint uType);

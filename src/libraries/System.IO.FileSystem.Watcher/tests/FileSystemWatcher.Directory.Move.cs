@@ -26,7 +26,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalTheory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/127651", TestPlatforms.OSX)]
         [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData(1)]
         [InlineData(2)]
@@ -196,7 +195,7 @@ namespace System.IO.Tests
 
             var expectedEvents = dirs.Select(dir => new FiredEvent(WatcherChangeTypes.Deleted, dir.DirectoryInWatchedDir));
 
-            Assert.Equal(expectedEvents, events);
+            AssertEventsEqual(expectedEvents, events);
         }
 
         private void DirectoryMove_Multiple_FromUnwatchedToWatched(int filesCount)
@@ -222,7 +221,7 @@ namespace System.IO.Tests
             List<FiredEvent> events = ExpectEvents(watcher, filesCount, action);
             var expectedEvents = dirs.Select(dir => new FiredEvent(WatcherChangeTypes.Created, dir.DirectoryInWatchedDir));
 
-            Assert.Equal(expectedEvents, events);
+            AssertEventsEqual(expectedEvents, events);
         }
 
         private void DirectoryMove_FromWatchedToUnwatched(WatcherChangeTypes eventType)

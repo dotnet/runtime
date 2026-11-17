@@ -38,7 +38,7 @@ namespace System.Net.Http.Functional.Tests
             string requestBody)
         {
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
-            if (!PlatformDetection.IsBrowser)
+            if (!PlatformDetection.IsBrowser && PlatformDetection.IsMD5Supported)
             {
                 // Verify that response body from the server was corrected received by comparing MD5 hash.
                 byte[] actualMD5Hash = ComputeMD5Hash(responseContent);

@@ -241,8 +241,10 @@ namespace System.Buffers
             }
             else if (PackedSimd.IsSupported)
             {
-                sourceLower = PackedSimd.ConvertNarrowingSaturateUnsigned((source0 & Vector128.Create((ushort)255)).AsInt16(), (source1 & Vector128.Create((ushort)255)).AsInt16());
-                sourceUpper = PackedSimd.ConvertNarrowingSaturateUnsigned((source0 >>> 8).AsInt16(), (source1 >>> 8).AsInt16());
+                sourceLower = PackedSimd.Shuffle(source0.AsByte(), source1.AsByte(),
+                    Vector128.Create((byte)0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30));
+                sourceUpper = PackedSimd.Shuffle(source0.AsByte(), source1.AsByte(),
+                    Vector128.Create((byte)1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31));
             }
             else
             {

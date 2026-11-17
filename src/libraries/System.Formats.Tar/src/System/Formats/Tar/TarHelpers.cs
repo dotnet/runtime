@@ -28,6 +28,7 @@ namespace System.Formats.Tar
             internal SortedDictionary<string, UnixFileMode>? PendingModes;
             internal Stack<(string, DateTimeOffset)> DirectoryModificationTimes;
             internal TarHardLinkMode HardLinkMode;
+            internal string? ResolvedDestinationDirectoryPath;
             // Allocated lazily on the first deferred symlink; most archives have none.
             internal Dictionary<FileId, (string SymlinkPath, string LinkTarget)>? PendingLinks;
 
@@ -141,13 +142,33 @@ namespace System.Formats.Tar
         internal static bool IsAllNullBytes(ReadOnlySpan<byte> buffer) =>
             !buffer.ContainsAnyExcept((byte)0);
 
-        // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
-        internal static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(long secondsSinceUnixEpoch) =>
-            new DateTimeOffset((secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
+        // The range DateTimeOffset can represent, expressed as seconds since the Unix Epoch.
+        private const long MinSecondsSinceUnixEpoch = -62135596800; // DateTime.MinValue
+        private const long MaxSecondsSinceUnixEpochExclusive = 253402300800; // One second past DateTime.MaxValue
 
         // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
-        private static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(decimal secondsSinceUnixEpoch) =>
-            new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
+        internal static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(long secondsSinceUnixEpoch)
+        {
+            // Values outside this range overflow the conversion to ticks below, so they are rejected
+            // as an invalid number, the same way a timestamp field with a non octal digit is.
+            if (secondsSinceUnixEpoch is < MinSecondsSinceUnixEpoch or >= MaxSecondsSinceUnixEpochExclusive)
+            {
+                ThrowInvalidNumber();
+            }
+
+            return new DateTimeOffset((secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
+        }
+
+        // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
+        private static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(decimal secondsSinceUnixEpoch)
+        {
+            if (secondsSinceUnixEpoch < MinSecondsSinceUnixEpoch || secondsSinceUnixEpoch >= MaxSecondsSinceUnixEpochExclusive)
+            {
+                ThrowInvalidNumber();
+            }
+
+            return new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
+        }
 
         // Converts the specified DateTimeOffset to the number of seconds that have passed since the Unix Epoch.
         private static decimal GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset dateTimeOffset) =>
@@ -182,7 +203,8 @@ namespace System.Formats.Tar
             return secondsSinceEpoch.ToString("G", CultureInfo.InvariantCulture);
         }
 
-        // If the specified fieldName has a non-empty value, parses it as a base-10 integer and returns true. Parsing exceptions propagate.
+        // If the specified fieldName has a non-empty value, parses it as a base-10 integer and returns true.
+        // A value that is not a base-10 integer, or that doesn't fit the field's type, is invalid archive data.
         internal static bool TryGetStringAsBaseTenInteger(IReadOnlyDictionary<string, string> dict, string fieldName, out int baseTenInteger)
         {
             return TryGetStringAsBaseTenInteger(
@@ -195,7 +217,12 @@ namespace System.Formats.Tar
         {
             if (!string.IsNullOrEmpty(value))
             {
-                id = ToUidGid(long.Parse(value, CultureInfo.InvariantCulture));
+                if (!long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long parsed))
+                {
+                    ThrowInvalidNumber();
+                }
+
+                id = ToUidGid(parsed);
                 return true;
             }
 
@@ -207,7 +234,11 @@ namespace System.Formats.Tar
         {
             if (!string.IsNullOrEmpty(value))
             {
-                baseTenInteger = int.Parse(value, CultureInfo.InvariantCulture);
+                if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out baseTenInteger))
+                {
+                    ThrowInvalidNumber();
+                }
+
                 return true;
             }
 
@@ -215,7 +246,8 @@ namespace System.Formats.Tar
             return false;
         }
 
-        // If the specified fieldName has a non-empty value, parses it as a base-10 long and returns true. Parsing exceptions propagate.
+        // If the specified fieldName has a non-empty value, parses it as a base-10 long and returns true.
+        // A value that is not a base-10 long, or that doesn't fit the field's type, is invalid archive data.
         internal static bool TryGetStringAsBaseTenLong(IReadOnlyDictionary<string, string> dict, string fieldName, out long baseTenLong)
         {
             return TryGetStringAsBaseTenLong(
@@ -227,7 +259,11 @@ namespace System.Formats.Tar
         {
             if (!string.IsNullOrEmpty(value))
             {
-                baseTenLong = long.Parse(value, CultureInfo.InvariantCulture);
+                if (!long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out baseTenLong))
+                {
+                    ThrowInvalidNumber();
+                }
+
                 return true;
             }
 
@@ -279,16 +315,29 @@ namespace System.Formats.Tar
             byte leadingByte = buffer[0];
             if (leadingByte == 0xff)
             {
-                return T.ReadBigEndian(buffer, isUnsigned: false);
+                return ReadBigEndian<T>(buffer, isUnsigned: false);
             }
             else if (leadingByte == 0x80)
             {
-                return T.ReadBigEndian(buffer.Slice(1), isUnsigned: true);
+                return ReadBigEndian<T>(buffer.Slice(1), isUnsigned: true);
             }
             else
             {
                 return ParseOctal<T>(buffer);
             }
+        }
+
+        /// <summary>Reads a GNU base-256 value that must fit <typeparamref name="T"/>.</summary>
+        private static T ReadBigEndian<T>(ReadOnlySpan<byte> buffer, bool isUnsigned) where T : struct, INumber<T>, IBinaryInteger<T>
+        {
+            // A value that doesn't fit the field's type can't be valid for that field. Report it as an
+            // invalid number, like the octal representation does, instead of letting the overflow surface.
+            if (!T.TryReadBigEndian(buffer, isUnsigned, out T value))
+            {
+                ThrowInvalidNumber();
+            }
+
+            return value;
         }
 
         /// <summary>Parses a byte span that represents an ASCII string containing a number in octal base.</summary>

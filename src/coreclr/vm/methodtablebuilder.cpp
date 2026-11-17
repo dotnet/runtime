@@ -7973,7 +7973,7 @@ MethodTableBuilder::PlaceMethodFromParentEquivalentInterfaceIntoInterfaceSlot(
             _ASSERTE(cInterfaceDuplicates > 0);
 
             // NOTE: This override does not cache the resulting MethodData object
-            MethodTable::MethodDataWrapper hParentData;
+            MethodTable::MethodDataHolder hParentData;
             hParentData = MethodTable::GetMethodData(
                     *prgInterfaceDispatchMapTypeIDs,
                     cInterfaceDuplicates,
@@ -8180,7 +8180,7 @@ MethodTableBuilder::PlaceInterfaceMethods()
                 // find implementations for all of the methods on the interface on the parent type.
                 // The parent type may or may not be abstract.
 
-                MethodTable::MethodDataWrapper hParentData;
+                MethodTable::MethodDataHolder hParentData;
                 CONSISTENCY_CHECK(CheckPointer(GetParentMethodTable()));
 
                 if (rgInterfaceDispatchMapTypeIDs == NULL)
@@ -10124,7 +10124,7 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT)
         // just the first indirection to detect sharing.
         if (pMT->GetVtableIndirections()[0] != pCanonMT->GetVtableIndirections()[0])
         {
-            MethodTable::MethodDataWrapper hCanonMTData(MethodTable::GetMethodData(pCanonMT, MethodDataComputeOptions::NoCacheVirtualsOnly));
+            MethodTable::MethodDataHolder hCanonMTData(MethodTable::GetMethodData(pCanonMT, MethodDataComputeOptions::NoCacheVirtualsOnly));
             for (DWORD i = 0; i < nParentVirtuals; i++)
             {
                 pMT->CopySlotFrom(i, hCanonMTData, pCanonMT);
@@ -10133,10 +10133,10 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT)
     }
     else
     {
-        MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, MethodDataComputeOptions::NoCacheVirtualsOnly));
+        MethodTable::MethodDataHolder hMTData(MethodTable::GetMethodData(pMT, MethodDataComputeOptions::NoCacheVirtualsOnly));
 
         MethodTable * pParentMT = pMT->GetParentMethodTable();
-        MethodTable::MethodDataWrapper hParentMTData(MethodTable::GetMethodData(pParentMT, MethodDataComputeOptions::NoCacheVirtualsOnly));
+        MethodTable::MethodDataHolder hParentMTData(MethodTable::GetMethodData(pParentMT, MethodDataComputeOptions::NoCacheVirtualsOnly));
 
         for (DWORD i = 0; i < nParentVirtuals; i++)
         {
@@ -11995,7 +11995,7 @@ MethodTableBuilder::SetupMethodTable2(
     // load and so caching it would result in errors down the road since the memory and
     // type occupying the same memory location would very likely be incorrect. The second
     // argument specifies that GetMethodData should not cache the returned object.
-    MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, MethodDataComputeOptions::NoCacheVirtualsOnly));
+    MethodTable::MethodDataHolder hMTData(MethodTable::GetMethodData(pMT, MethodDataComputeOptions::NoCacheVirtualsOnly));
 
     if (!IsInterface())
     {
@@ -12096,7 +12096,7 @@ MethodTableBuilder::SetupMethodTable2(
                 BOOL hasManagedMethod = FALSE;
 
                 // NOTE: Avoid caching the MethodData object for the type being built.
-                MethodTable::MethodDataWrapper hItfImplData(MethodTable::GetMethodData(pIntfMT, pMT, MethodDataComputeOptions::NoCache));
+                MethodTable::MethodDataHolder hItfImplData(MethodTable::GetMethodData(pIntfMT, pMT, MethodDataComputeOptions::NoCache));
                 MethodTable::MethodIterator it(hItfImplData);
                 for (;it.IsValid(); it.Next())
                 {
@@ -12333,7 +12333,7 @@ void MethodTableBuilder::VerifyVirtualMethodsImplemented(MethodTable::MethodData
             _ASSERTE(cInterfaceDuplicates > 0);
 
             // NOTE: This override does not cache the resulting MethodData object.
-            MethodTable::MethodDataWrapper hData(MethodTable::GetMethodData(
+            MethodTable::MethodDataHolder hData(MethodTable::GetMethodData(
                 rgInterfaceDispatchMapTypeIDs,
                 cInterfaceDuplicates,
                 intIt->GetInterfaceType()->GetMethodTable(),

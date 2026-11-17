@@ -88,10 +88,12 @@ void emitter::emitIns_BlockTy(instruction ins, WasmValueType valType)
 //   attr     - emit attributes
 //   imm      - immediate value
 //   isLastUse - whether this local.get is the last use of the stored value
+//   lclNum   - local variable number for register-local disassembly annotations
 //
-void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool isLastUse)
+void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool isLastUse, unsigned lclNum)
 {
     assert(!isLastUse || (ins == INS_local_get));
+    assert((lclNum == BAD_VAR_NUM) || (ins == INS_local_get) || (ins == INS_local_set) || (ins == INS_local_tee));
 
     // Keep the local assignment unless this get is known to be its last use.
     //
@@ -121,6 +123,11 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+
+    if (m_debugInfoSize > 0)
+    {
+        id->idDebugOnlyInfo()->idLclNum = lclNum;
+    }
 
     dispIns(id);
     appendToCurIG(id);
@@ -1004,9 +1011,10 @@ size_t emitter::emitOutputPaddedReloc(uint8_t* destination)
 
 size_t emitter::emitOutputConstantFunclet(uint8_t* destination, const instrDesc* id, CorInfoReloc relocType)
 {
+    assert((emitGetInsSC(id) >= 0) && FitsIn<int32_t>(emitGetInsSC(id)));
+    // Keep a valid funclet index even when the EE only records relocations.
+    emitOutputULEB128Padded(destination, static_cast<uint32_t>(emitGetInsSC(id)));
     emitRecordRelocationWithAddlDelta(destination, emitCodeBlock, relocType, (int32_t)emitGetInsSC(id));
-    // emitRecordRelocationWithAddlDelta writes the relocation addend and padding,
-    // so we don't need to write anything else here.
     return PADDED_RELOC_SIZE;
 }
 
