@@ -23140,6 +23140,14 @@ bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
                 return comp->compOpportunisticallyDependsOn(InstructionSet_AES_V512);
             }
 
+            case NI_AVXVNNIINT_MultiplyWideningAndAdd:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddSaturate:
+            {
+                // The AVX-VNNI-INT8/16 instructions can only be EVEX encoded when AVXVNNIINT_V512
+                // is supported, see emitter::IsEvexEncodableInstruction
+                return comp->compOpportunisticallyDependsOn(InstructionSet_AVXVNNIINT_V512);
+            }
+
             default:
             {
                 return HWIntrinsicInfo::HasEvexSemantics(intrinsicId);

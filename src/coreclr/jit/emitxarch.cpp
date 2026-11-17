@@ -11317,6 +11317,26 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         assert(idOp == ID_OP_CNS || idOp == ID_OP_AMD_CNS || idOp == ID_OP_DSP_CNS || idOp == ID_OP_SPEC ||
                idOp == ID_OP_CALL || idOp == ID_OP_JMP);
     }
+
+#if defined(TARGET_AMD64)
+    // Only the EVEX encoding can address xmm16-xmm31. An EVEX encodable instruction is always EVEX encoded
+    // when it uses one of them, but any other instruction, such as a VNNI instruction that only has its VEX
+    // form available, would silently drop the upper register bit and access a different register. Registers
+    // 3 and 4 are only checked for formats without a memory operand, since they otherwise share storage with
+    // the address.
+    instruction ins = id->idIns();
+
+    if (IsSimdInstruction(ins) && !IsEvexEncodableInstruction(ins))
+    {
+        assert(!isHighSimdReg(id->idReg1()) && !isHighSimdReg(id->idReg2()));
+
+        if (!id->idIsSmallDsc() && !id->idHasMem())
+        {
+            assert(!id->idHasReg3() || !isHighSimdReg(id->idReg3()));
+            assert(!id->idHasReg4() || !isHighSimdReg(id->idReg4()));
+        }
+    }
+#endif // TARGET_AMD64
 }
 #endif
 
