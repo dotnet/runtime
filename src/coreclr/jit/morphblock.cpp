@@ -1280,9 +1280,16 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         if (m_srcDoFldStore)
         {
             noway_assert((m_srcLclNum != BAD_VAR_NUM) && (m_srcLclNode != nullptr));
-            unsigned srcFieldLclNum = m_compiler->lvaGetDesc(m_srcLclNum)->lvFieldLclStart + i;
+            unsigned   srcFieldLclNum = m_compiler->lvaGetDesc(m_srcLclNum)->lvFieldLclStart + i;
+            LclVarDsc* srcFieldVarDsc = m_compiler->lvaGetDesc(srcFieldLclNum);
 
-            srcFld = m_compiler->gtNewLclVarNode(srcFieldLclNum, m_compiler->lvaGetDesc(srcFieldLclNum)->TypeGet());
+            srcFld = m_compiler->gtNewLclVarNode(srcFieldLclNum, srcFieldVarDsc->TypeGet());
+            // A scalar destination that normalizes on store needs a normalized value.
+            if (m_dstSingleStoreLclVar && srcFieldVarDsc->lvNormalizeOnLoad() &&
+                m_compiler->lvaGetDesc(m_dstLclNum)->lvNormalizeOnStore())
+            {
+                srcFld = m_compiler->gtNewCastNode(TYP_INT, srcFld, false, srcFieldVarDsc->TypeGet());
+            }
         }
         else
         {
