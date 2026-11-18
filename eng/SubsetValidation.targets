@@ -13,12 +13,6 @@
 
       <!-- MSBuild Exclude is case-insensitive, which matches intended behavior. -->
       <InvalidSpecifiedSubsetName Include="@(SpecifiedSubsetName)" Exclude="@(SubsetName)" />
-
-      <!-- Check support after alias expansion, including the default subset selection.
-           An empty SupportedSubsets leaves existing targets unrestricted. -->
-      <UnsupportedSpecifiedSubsetName Include="$([MSBuild]::Unescape($(_subset.Replace('+', ';'))))"
-                                     Exclude="$(SupportedSubsets)"
-                                     Condition="'$(SupportedSubsets)' != ''" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -27,7 +21,7 @@
   </Target>
 
   <Target Name="ReportValidSubsetList"
-          Condition="'@(InvalidSpecifiedSubsetName)' != '' or '@(UnsupportedSpecifiedSubsetName)' != ''">
+          Condition="'@(InvalidSpecifiedSubsetName)' != ''">
     <ItemGroup>
       <SubsetName Text="- %(Identity)" />
       <SubsetName Text="%(Text) [only runs on demand]" Condition="'%(SubsetName.OnDemand)' == 'true'" />
@@ -35,16 +29,12 @@
     </ItemGroup>
 
     <Message Text="%0AAccepted Subset values:%0A@(SubsetName->'%(Text)', '%0A')%0A" Importance="High" />
-    <Message Text="Supported expanded subsets for $(TargetOS)-$(TargetArchitecture): $(SupportedSubsets)."
-             Condition="'$(SupportedSubsets)' != ''" Importance="High" />
 
     <Error Text="Subset not recognized: @(InvalidSpecifiedSubsetName, ' ')"
-           Condition="'@(InvalidSpecifiedSubsetName)' != '' and '$(UserRequestedHelp)' != 'true'" />
+           Condition="'$(UserRequestedHelp)' != 'true'" />
 
-    <Error Text="Subsets not supported for $(TargetOS)-$(TargetArchitecture): @(UnsupportedSpecifiedSubsetName, ', ')."
-           Condition="'@(UnsupportedSpecifiedSubsetName)' != '' and '$(UserRequestedHelp)' != 'true'" />
-
-    <Error Text="This is not an error. These are the available subsets. Choose a subset or omit Subset to build the default selection."
+    <Error Text="This is not an error. These are the available subsets. You can choose one or none at all for a full build."
            Condition="'$(UserRequestedHelp)' == 'true'" />
   </Target>
+
 </Project>
