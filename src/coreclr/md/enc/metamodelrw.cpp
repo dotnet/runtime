@@ -1374,7 +1374,8 @@ HRESULT
 CMiniMdRW::InitOnMem(
     const void *pvBuf,          // The data from which to init.
     ULONG       ulBufLen,       // The data size
-    int         fIsReadOnly)    // Is the memory read-only?
+    int         fIsReadOnly,    // Is the memory read-only?
+    bool        fIsDelta)       // Is this metadata being loaded to apply an EnC delta?
 {
     HRESULT  hr = S_OK;
     UINT32   cbSchemaSize;      // Size of the schema structure.
@@ -1398,7 +1399,7 @@ CMiniMdRW::InitOnMem(
     }
 
     // Uncompress the schema from the buffer into our structures.
-    IfFailGo(SchemaPopulate(pvBuf, ulBufLen, (ULONG *)&cbSchemaSize));
+    IfFailGo(SchemaPopulate(pvBuf, ulBufLen, (ULONG *)&cbSchemaSize, fIsDelta));
 
     if (m_fMinimalDelta)
         IfFailGo(InitWithLargeTables());

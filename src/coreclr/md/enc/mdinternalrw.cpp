@@ -138,7 +138,8 @@ HRESULT GetInternalWithRWFormat(
     ULONG       cbData,
     DWORD       flags,                  // [IN] MDInternal_OpenForRead or MDInternal_OpenForENC
     REFIID      riid,                   // [in] The interface desired.
-    void        **ppIUnk)               // [out] Return interface on success.
+    void        **ppIUnk,               // [out] Return interface on success.
+    bool        fIsDelta)               // Is this metadata being loaded to apply an EnC delta?
 {
     MDInternalRW *pInternalRW = NULL;
     HRESULT     hr;
@@ -146,10 +147,11 @@ HRESULT GetInternalWithRWFormat(
     *ppIUnk = 0;
     pInternalRW = new (nothrow) MDInternalRW;
     IfNullGo( pInternalRW );
-    IfFailGo( pInternalRW->Init(
+    IfFailGo(pInternalRW->Init(
             const_cast<void*>(pData),
             cbData,
-            (flags == ofRead) ? true : false) );
+            (flags == ofRead) ? true : false,
+            fIsDelta));
     IfFailGo( pInternalRW->QueryInterface(riid, ppIUnk) );
 ErrExit:
     if (FAILED(hr))
@@ -514,7 +516,8 @@ __checkReturn
 HRESULT MDInternalRW::Init(
     LPVOID pData,       // points to meta data section in memory
     ULONG  cbData,      // count of bytes in pData
-    int    bReadOnly)   // Is it open for read only?
+    int    bReadOnly,   // Is it open for read only?
+    bool   fIsDelta)    // Is this metadata being loaded to apply an EnC delta?
 {
     CLiteWeightStgdbRW * pStgdb = NULL;
     HRESULT     hr = NOERROR;
@@ -527,7 +530,7 @@ HRESULT MDInternalRW::Init(
     m_fOwnLock = true;
     INDEBUG(pStgdb->m_MiniMd.Debug_EnableLockCheck();)
 
-    IfFailGo(pStgdb->InitOnMem(cbData, (BYTE*)pData, bReadOnly));
+    IfFailGo(pStgdb->InitOnMem(cbData, (BYTE*)pData, bReadOnly, fIsDelta));
     IfFailGo(pStgdb->m_MiniMd.SetOption(&optVal));
     m_tdModule = COR_GLOBAL_PARENT_TOKEN;
     m_fOwnStgdb = true;
@@ -3893,7 +3896,7 @@ HRESULT MDInternalRW::ApplyEditAndContinue(
     HRESULT hr = E_FAIL;
     IMDInternalImportENC *pDeltaMDImport = NULL;
 
-    IfFailGo(GetInternalWithRWFormat(pDeltaMD, cbDeltaMD, 0, IID_IMDInternalImportENC, (void**)&pDeltaMDImport));
+    IfFailGo(GetInternalWithRWFormat(pDeltaMD, cbDeltaMD, 0, IID_IMDInternalImportENC, (void**)&pDeltaMDImport, true));
 
     *ppv = this;
     IfFailGo(MDApplyEditAndContinue(ppv, pDeltaMDImport));

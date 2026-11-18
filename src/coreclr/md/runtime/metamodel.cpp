@@ -519,7 +519,8 @@ HRESULT
 CMiniMdBase::SchemaPopulate(
     const void *pvData,     // Pointer to the buffer.
     ULONG       cbData,     // Size of the buffer.
-    ULONG      *pcbUsed)    // Put size of the header here.
+    ULONG      *pcbUsed,    // Put size of the header here.
+    bool        fIsDelta)   // Is this metadata being loaded to apply an EnC delta?
 {
     HRESULT hr;
     ULONG   cb;         // Bytes read for header.
@@ -554,10 +555,10 @@ CMiniMdBase::SchemaPopulate(
         }
     }
 
-    // Deleted records are not supported. EnC deltas may set HAS_DELETE, but are applied rather than enumerated.
-    if ((m_Schema.m_heaps & (CMiniMdSchema::HAS_DELETE | CMiniMdSchema::DELTA_ONLY)) == CMiniMdSchema::HAS_DELETE)
+    // Delta-only metadata and deleted records are valid only when loading a delta for application.
+    if (!fIsDelta && (m_Schema.m_heaps & (CMiniMdSchema::HAS_DELETE | CMiniMdSchema::DELTA_ONLY)) != 0)
     {
-        Debug_ReportError("MetaData with deleted records is not supported.");
+        Debug_ReportError("EnC delta metadata is not supported outside of delta application.");
         return PostError(CLDB_E_FILE_CORRUPT);
     }
 

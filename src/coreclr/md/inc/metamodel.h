@@ -565,7 +565,7 @@ protected:
     ULONG       m_iBlobsMask;
 
     __checkReturn
-    HRESULT SchemaPopulate(const void *pvData, ULONG cbData, ULONG *pcbUsed);
+    HRESULT SchemaPopulate(const void *pvData, ULONG cbData, ULONG *pcbUsed, bool fIsDelta = false);
     __checkReturn
     HRESULT SchemaPopulate(const CMiniMdBase &that);
     __checkReturn

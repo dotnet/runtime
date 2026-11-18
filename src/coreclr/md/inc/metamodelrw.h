@@ -226,7 +226,7 @@ public:
     __checkReturn
     HRESULT InitNew();
     __checkReturn
-    HRESULT InitOnMem(const void *pBuf, ULONG ulBufLen, int bReadOnly);
+    HRESULT InitOnMem(const void *pBuf, ULONG ulBufLen, int bReadOnly, bool fIsDelta = false);
     __checkReturn
     HRESULT PostInit(int iLevel);
     __checkReturn

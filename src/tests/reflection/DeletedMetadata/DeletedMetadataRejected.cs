@@ -13,14 +13,33 @@ using Xunit;
 
 public class DeletedMetadataRejected
 {
-    // Metadata with deleted records (HAS_DELETE set outside of an EnC delta) is not supported.
-    [Fact]
-    public static void MetadataWithDeletedRecordsIsRejected()
+    private const byte DeltaOnly = 0x20;
+    private const byte HasDelete = 0x80;
+    private const byte HasDeleteAndDeltaOnly = HasDelete | DeltaOnly;
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void MetadataWithoutDeleteFlagLoads(bool uncompressed)
     {
-        Assert.Throws<BadImageFormatException>(() => Assembly.Load(BuildImage()));
+        Assembly assembly = Assembly.Load(BuildImage(uncompressed, heapSizes: 0));
+        Assert.NotNull(assembly.ManifestModule.GetField("Live"));
+        Assert.NotNull(assembly.ManifestModule.GetField("_Deleted"));
     }
 
-    private static byte[] BuildImage()
+    [Theory]
+    [InlineData(false, HasDelete)]
+    [InlineData(true, HasDelete)]
+    [InlineData(false, HasDeleteAndDeltaOnly)]
+    [InlineData(true, HasDeleteAndDeltaOnly)]
+    [InlineData(false, DeltaOnly)]
+    [InlineData(true, DeltaOnly)]
+    public static void MetadataWithDeleteOrDeltaFlagIsRejected(bool uncompressed, byte heapSizes)
+    {
+        Assert.Throws<BadImageFormatException>(() => Assembly.Load(BuildImage(uncompressed, heapSizes)));
+    }
+
+    private static byte[] BuildImage(bool uncompressed, byte heapSizes)
     {
         var strings = new MemoryStream();
         strings.WriteByte(0);
@@ -46,13 +65,16 @@ public class DeletedMetadataRejected
         tables.Write(0u);           // Reserved
         tables.Write((byte)2);      // MajorVersion
         tables.Write((byte)0);      // MinorVersion
-        tables.Write((byte)0x80);   // HeapSizes: HAS_DELETE
+        tables.Write(heapSizes);    // HeapSizes flags
         tables.Write((byte)1);      // Reserved
-        tables.Write((1UL << 0x00) | (1UL << 0x02) | (1UL << 0x03) | (1UL << 0x04) | (1UL << 0x20)); // Valid
+        tables.Write((1UL << 0x00) | (1UL << 0x02) | (uncompressed ? 1UL << 0x03 : 0) | (1UL << 0x04) | (1UL << 0x20)); // Valid
         tables.Write(0UL);          // Sorted
         tables.Write(1u);           // Module
         tables.Write(1u);           // TypeDef
-        tables.Write(2u);           // FieldPtr
+        if (uncompressed)
+        {
+            tables.Write(2u);       // FieldPtr
+        }
         tables.Write(2u);           // Field
         tables.Write(1u);           // Assembly
 
@@ -71,16 +93,19 @@ public class DeletedMetadataRejected
         tables.Write((ushort)1);
         tables.Write((ushort)1);
 
-        // FieldPtr: the logical field order is the reverse of the physical Field rows.
-        tables.Write((ushort)2);
-        tables.Write((ushort)1);
+        if (uncompressed)
+        {
+            // FieldPtr: the logical field order is the reverse of the physical Field rows.
+            tables.Write((ushort)2);
+            tables.Write((ushort)1);
+        }
 
         // Field 1: public static int Live
         tables.Write((ushort)(FieldAttributes.Public | FieldAttributes.Static));
         tables.Write((ushort)liveName);
         tables.Write(fieldSignature);
 
-        // Field 2: a deleted field
+        // Field 2: a field with the historical deleted-record name.
         tables.Write((ushort)(FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName));
         tables.Write((ushort)deletedName);
         tables.Write(fieldSignature);
@@ -98,10 +123,10 @@ public class DeletedMetadataRejected
 
         (string Name, byte[] Data)[] streams =
         [
-            ("#-", Pad(((MemoryStream)tables.BaseStream).ToArray())),
+            (uncompressed ? "#-" : "#~", Pad(((MemoryStream)tables.BaseStream).ToArray())),
             ("#Strings", Pad(strings.ToArray())),
             ("#US", new byte[4]),
-            ("#GUID", Guid.NewGuid().ToByteArray()),
+            ("#GUID", new Guid("00000000-0000-0000-0000-000000000001").ToByteArray()),
             ("#Blob", Pad(blob)),
         ];
 
