@@ -66,8 +66,5 @@ namespace System.Reflection
         {
             throw new PlatformNotSupportedException();
         }
-
-        internal RuntimeType GetPointerType() => _ptrType;
-        internal IntPtr GetPointerValue() => (IntPtr)_ptr;
     }
 }
