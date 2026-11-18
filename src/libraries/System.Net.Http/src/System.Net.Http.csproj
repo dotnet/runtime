@@ -473,6 +473,10 @@
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.IStreamsImports.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.PollImportsInterop.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.StreamsImportsInterop.cs" />
+    <!-- wasi:http component type that app links pass to wasm-component-ld. -->
+    <NativeBinPlaceItem Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld_component_type.wit" />
+    <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(LibrariesNativeArtifactsPath)" ItemName="NativeBinPlaceItem" />
   </ItemGroup>
 
   <ItemGroup>

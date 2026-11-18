@@ -12497,7 +12497,8 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
     _ASSERTE(objRef != NULL);
 
     // TODO: support types containing GC pointers
-    if (bufferSize + valueOffset <= (int)objRef->GetSize())
+    size_t objSize = objRef->GetSize();
+    if ((size_t)bufferSize <= objSize && (size_t)valueOffset <= objSize - (size_t)bufferSize)
     {
         Object* obj = OBJECTREFToObject(objRef);
         PTR_MethodTable type = obj->GetMethodTable();
@@ -14645,6 +14646,15 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 DWORD instructionSetEncoded = CorSigUncompressData(pBlob);
                 bool mustInstructionSetBeSupported = !!(instructionSetEncoded & 1);
                 ReadyToRunInstructionSet instructionSet = (ReadyToRunInstructionSet)(instructionSetEncoded >> 1);
+#ifdef TARGET_WASM
+                // Other images must match the instruction sets CoreLib was compiled for.
+                if (mustInstructionSetBeSupported && currentModule->IsSystem())
+                {
+                    ExecutionManager::GetEEJitManager()->SetInstructionSetFromCoreLib(InstructionSetFromR2RInstructionSet(instructionSet));
+                    corjitFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
+                    continue;
+                }
+#endif // TARGET_WASM
                 if (IsInstructionSetSupported(corjitFlags, instructionSet) != mustInstructionSetBeSupported)
                 {
                     return FALSE;

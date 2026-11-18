@@ -29,7 +29,9 @@ using std::nothrow;
 #include "clrhost.h"
 #include "dn_xxhash.h"
 #include "debugmacros.h"
+#ifndef JIT_BUILD
 #include "corhlprpriv.h"
+#endif // !JIT_BUILD
 #include "check.h"
 #include "safemath.h"
 
@@ -497,11 +499,6 @@ public:
 #endif // HOST_WINDOWS
 
 int GetTotalProcessorCount();
-
-//******************************************************************************
-// Returns the number of processors that a process has been configured to run on
-//******************************************************************************
-int GetCurrentProcessCpuCount();
 
 
 //*****************************************************************************
