@@ -251,7 +251,7 @@ public:
 
         DELTA_ONLY      =   0x20,       // If set, only deltas were persisted.
         EXTRA_DATA      =   0x40,       // If set, schema persists an extra 4 bytes of data.
-        HAS_DELETE      =   0x80,       // If set, this metadata can contain _Delete tokens.
+        HAS_DELETE      =   0x80,       // If set, this metadata can contain _Delete tokens. Only supported in EnC deltas.
     };
 
     uint64_t    m_maskvalid;            // Bit mask of present table counts.

@@ -352,7 +352,7 @@ HRESULT RegMeta::UnmarkAll()
 
     if (m_OptionValue.m_LinkerOption == MDNetModule)
     {
-        // Mark global function if NetModule. We will not keep _Delete method.
+        // Mark global function if NetModule.
         IfFailGo(m_pStgdb->m_MiniMd.GetTypeDefRecord(1, &pRec));
         iStart = m_pStgdb->m_MiniMd.getMethodListOfTypeDef(pRec);
         IfFailGo(m_pStgdb->m_MiniMd.getEndMethodListOfTypeDef(1, (RID *)&iEnd));
@@ -363,23 +363,11 @@ HRESULT RegMeta::UnmarkAll()
             IfFailGo(m_pStgdb->m_MiniMd.GetMethodRid(i, &rid));
             IfFailGo(m_pStgdb->m_MiniMd.GetMethodRecord(rid, &pMethodRec));
 
-            // check the name
-            if (IsMdRTSpecialName(pMethodRec->GetFlags()))
+            if (IsMdRTSpecialName(pMethodRec->GetFlags()) ||
+                !IsMiForwardRef(pMethodRec->GetImplFlags()) ||
+                IsMiRuntime(pMethodRec->GetImplFlags()) ||
+                IsMdPinvokeImpl(pMethodRec->GetFlags()))
             {
-                LPCUTF8 szName;
-                IfFailGo(m_pStgdb->m_MiniMd.getNameOfMethod(pMethodRec, &szName));
-
-                // Only mark method if not a _Deleted method
-                if (strcmp(szName, COR_DELETED_NAME_A) != 0)
-                    IfFailGo( m_pFilterManager->Mark( TokenFromRid( rid, mdtMethodDef) ) );
-            }
-            else
-            {
-                //
-            if (!IsMiForwardRef(pMethodRec->GetImplFlags()) ||
-                    IsMiRuntime(pMethodRec->GetImplFlags())    ||
-                    IsMdPinvokeImpl(pMethodRec->GetFlags()) )
-
                 IfFailGo( m_pFilterManager->Mark( TokenFromRid( rid, mdtMethodDef) ) );
             }
         }

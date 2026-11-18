@@ -980,7 +980,6 @@ public:
 
     FORCEINLINE int IsSorted(ULONG ixTbl) { return m_Schema.IsSorted(ixTbl);}
     FORCEINLINE int IsSortable(ULONG ixTbl) { return m_bSortable[ixTbl];}
-    FORCEINLINE bool HasDelete() { return ((m_Schema.m_heaps & CMiniMdSchema::HAS_DELETE) ? true : false); }
     FORCEINLINE int IsPreSaveDone() { return m_bPreSaveDone; }
 
 protected:

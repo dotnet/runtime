@@ -554,6 +554,13 @@ CMiniMdBase::SchemaPopulate(
         }
     }
 
+    // Deleted records are not supported. EnC deltas may set HAS_DELETE, but are applied rather than enumerated.
+    if ((m_Schema.m_heaps & (CMiniMdSchema::HAS_DELETE | CMiniMdSchema::DELTA_ONLY)) == CMiniMdSchema::HAS_DELETE)
+    {
+        Debug_ReportError("MetaData with deleted records is not supported.");
+        return PostError(CLDB_E_FILE_CORRUPT);
+    }
+
     // Populate the schema, based on the row counts and heap sizes.
     IfFailRet(SchemaPopulate2(&cbTables));
 

@@ -267,14 +267,6 @@ MDInfo::MDInfo(IMetaDataDispenserEx *pDispenser, LPCWSTR szScope, strPassBackFn 
             Error("SetOption failed.", hr);
 
     hr = pDispenser->OpenScope(szScope, ofNoTransform, IID_IMetaDataImport2, (IUnknown**)&m_pImport);
-    if (hr == CLDB_E_BADUPDATEMODE)
-    {
-        V_VT(&value) = VT_UI4;
-        V_UI4(&value) = MDUpdateIncremental;
-        if (FAILED(hr = pDispenser->SetOption(MetaDataSetUpdate, &value)))
-            Error("SetOption failed.", hr);
-        hr = pDispenser->OpenScope(szScope, ofNoTransform, IID_IMetaDataImport2, (IUnknown**)&m_pImport);
-    }
     if (FAILED(hr))
         Error("OpenScope failed", hr);
 

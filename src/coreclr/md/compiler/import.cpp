@@ -249,27 +249,13 @@ STDMETHODIMP RegMeta::EnumMethods(
         ridStart = m_pStgdb->m_MiniMd.getMethodListOfTypeDef(pRec);
         IfFailGo(m_pStgdb->m_MiniMd.getEndMethodListOfTypeDef(RidFromToken(td), &ridEnd));
 
-        if (pMiniMd->HasIndirectTable(TBL_Method) || pMiniMd->HasDelete())
+        if (pMiniMd->HasIndirectTable(TBL_Method))
         {
             IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtMethodDef, &pEnum) );
 
             // add all methods to the dynamic array
             for (ULONG index = ridStart; index < ridEnd; index++ )
             {
-                if (pMiniMd->HasDelete() &&
-                    ((m_OptionValue.m_ImportOption & MDImportOptionAllMethodDefs) == 0))
-                {
-                    MethodRec *pMethRec;
-                    RID rid;
-                    IfFailGo(pMiniMd->GetMethodRid(index, &rid));
-                    IfFailGo(pMiniMd->GetMethodRecord(rid, &pMethRec));
-                    LPCSTR szMethodName;
-                    IfFailGo(pMiniMd->getNameOfMethod(pMethRec, &szMethodName));
-                    if (IsMdRTSpecialName(pMethRec->GetFlags()) && IsDeletedName(szMethodName) )
-                    {
-                        continue;
-                    }
-                }
                 RID rid;
                 IfFailGo(pMiniMd->GetMethodRid(index, &rid));
                 IfFailGo(HENUMInternal::AddElementToEnum(
@@ -429,27 +415,13 @@ RegMeta::EnumFields(
         ridStart = m_pStgdb->m_MiniMd.getFieldListOfTypeDef(pRec);
         IfFailGo(m_pStgdb->m_MiniMd.getEndFieldListOfTypeDef(RidFromToken(td), &ridEnd));
 
-        if (pMiniMd->HasIndirectTable(TBL_Field) || pMiniMd->HasDelete())
+        if (pMiniMd->HasIndirectTable(TBL_Field))
         {
             IfFailGo(HENUMInternal::CreateDynamicArrayEnum(mdtFieldDef, &pEnum));
 
             // add all methods to the dynamic array
             for (ULONG index = ridStart; index < ridEnd; index++)
             {
-                if (pMiniMd->HasDelete() &&
-                    ((m_OptionValue.m_ImportOption & MDImportOptionAllFieldDefs) == 0))
-                {
-                    FieldRec *pFieldRec;
-                    RID       rid;
-                    IfFailGo(pMiniMd->GetFieldRid(index, &rid));
-                    IfFailGo(pMiniMd->GetFieldRecord(rid, &pFieldRec));
-                    LPCUTF8 szFieldName;
-                    IfFailGo(pMiniMd->getNameOfField(pFieldRec, &szFieldName));
-                    if (IsFdRTSpecialName(pFieldRec->GetFlags()) && IsDeletedName(szFieldName))
-                    {
-                        continue;
-                    }
-                }
                 RID rid;
                 IfFailGo(pMiniMd->GetFieldRid(index, &rid));
                 IfFailGo(HENUMInternal::AddElementToEnum(
@@ -824,7 +796,7 @@ STDMETHODIMP RegMeta::EnumPermissionSets(     // S_OK, S_FALSE, or error.
             ridEnd = pMiniMd->getCountDeclSecuritys() + 1;
         }
 
-        if (IsDclActionNil(dwActions) && !fCompareParent && !m_pStgdb->m_MiniMd.HasDelete())
+        if (IsDclActionNil(dwActions) && !fCompareParent)
         {
             // create simple enumerator
             IfFailGo( HENUMInternal::CreateSimpleEnum( mdtPermission, ridStart, ridEnd, &pEnum) );
@@ -1200,27 +1172,13 @@ STDMETHODIMP RegMeta::EnumProperties(         // S_OK, S_FALSE, or error.
             if(ridStart > ridEnd) ridStart=ridEnd;
         }
 
-        if (pMiniMd->HasIndirectTable(TBL_Property) || pMiniMd->HasDelete())
+        if (pMiniMd->HasIndirectTable(TBL_Property))
         {
             IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtProperty, &pEnum) );
 
             // add all methods to the dynamic array
             for (ULONG index = ridStart; index < ridEnd; index++ )
             {
-                if (pMiniMd->HasDelete() &&
-                    ((m_OptionValue.m_ImportOption & MDImportOptionAllProperties) == 0))
-                {
-                    PropertyRec *pRec;
-                    RID rid;
-                    IfFailGo(pMiniMd->GetPropertyRid(index, &rid));
-                    IfFailGo(pMiniMd->GetPropertyRecord(rid, &pRec));
-                    LPCUTF8 szPropertyName;
-                    IfFailGo(pMiniMd->getNameOfProperty(pRec, &szPropertyName));
-                    if (IsPrRTSpecialName(pRec->GetPropFlags()) && IsDeletedName(szPropertyName))
-                    {
-                        continue;
-                    }
-                }
                 RID rid;
                 IfFailGo(pMiniMd->GetPropertyRid(index, &rid));
                 IfFailGo(HENUMInternal::AddElementToEnum(
@@ -1292,27 +1250,13 @@ STDMETHODIMP RegMeta::EnumEvents(              // S_OK, S_FALSE, or error.
             if(ridStart > ridEnd) ridStart=ridEnd;
         }
 
-        if (pMiniMd->HasIndirectTable(TBL_Event) || pMiniMd->HasDelete())
+        if (pMiniMd->HasIndirectTable(TBL_Event))
         {
             IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtEvent, &pEnum) );
 
             // add all methods to the dynamic array
             for (ULONG index = ridStart; index < ridEnd; index++ )
             {
-                if (pMiniMd->HasDelete() &&
-                    ((m_OptionValue.m_ImportOption & MDImportOptionAllEvents) == 0))
-                {
-                    EventRec *pRec;
-                    RID rid;
-                    IfFailGo(pMiniMd->GetEventRid(index, &rid));
-                    IfFailGo(pMiniMd->GetEventRecord(rid, &pRec));
-                    LPCSTR szEventName;
-                    IfFailGo(pMiniMd->getNameOfEvent(pRec, &szEventName));
-                    if (IsEvRTSpecialName(pRec->GetEventFlags()) && IsDeletedName(szEventName))
-                    {
-                        continue;
-                    }
-                }
                 RID rid;
                 IfFailGo(pMiniMd->GetEventRid(index, &rid));
                 IfFailGo(HENUMInternal::AddElementToEnum(

@@ -1125,19 +1125,6 @@ CMiniMdRW::SetOption(
         m_OptionValue.m_UpdateMode |= MDUpdateDelta;
 #endif
 
-    // if a scope is previously updated as incremental, then it should not be open again
-    // with full update for read/write.
-    //
-    if ((m_Schema.m_heaps & CMiniMdSchema::HAS_DELETE) &&
-        (m_OptionValue.m_UpdateMode & MDUpdateMask) == MDUpdateFull &&
-        !m_fIsReadOnly)
-    {
-        IfFailGo( CLDB_E_BADUPDATEMODE );
-    }
-
-    if ((m_OptionValue.m_UpdateMode & MDUpdateMask) == MDUpdateIncremental)
-        m_Schema.m_heaps |= CMiniMdSchema::HAS_DELETE;
-
     // Set the value of sortable based on the options.
     switch (m_OptionValue.m_UpdateMode & MDUpdateMask)
     {

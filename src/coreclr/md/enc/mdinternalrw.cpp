@@ -752,44 +752,20 @@ HRESULT MDInternalRW::EnumTypeDefInit( // return hresult
 
     HENUMInternal::ZeroEnum(phEnum);
     phEnum->m_tkKind = mdtTypeDef;
+    phEnum->m_EnumType = MDSimpleEnum;
+    phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountTypeDefs();
 
-    if ( m_pStgdb->m_MiniMd.HasDelete() )
-    {
-        HENUMInternal::InitDynamicArrayEnum(phEnum);
+    // Skip over the global model typedef
+    //
+    // phEnum->u.m_ulCur : the current rid that is not yet enumerated
+    // phEnum->u.m_ulStart : the first rid that will be returned by enumerator
+    // phEnum->u.m_ulEnd : the last rid that will be returned by enumerator
+    phEnum->u.m_ulStart = phEnum->u.m_ulCur = 2;
+    phEnum->u.m_ulEnd = phEnum->m_ulCount + 1;
+    if (phEnum->m_ulCount > 0)
+        phEnum->m_ulCount --;
 
-        phEnum->m_tkKind = mdtTypeDef;
-        for (ULONG index = 2; index <= m_pStgdb->m_MiniMd.getCountTypeDefs(); index ++ )
-        {
-            TypeDefRec *pTypeDefRec;
-            IfFailGo(m_pStgdb->m_MiniMd.GetTypeDefRecord(index, &pTypeDefRec));
-            LPCSTR szTypeDefName;
-            IfFailGo(m_pStgdb->m_MiniMd.getNameOfTypeDef(pTypeDefRec, &szTypeDefName));
-            if (IsDeletedName(szTypeDefName))
-            {
-                continue;
-            }
-            IfFailGo( HENUMInternal::AddElementToEnum(
-                phEnum,
-                TokenFromRid(index, mdtTypeDef) ) );
-        }
-    }
-    else
-    {
-        phEnum->m_EnumType = MDSimpleEnum;
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountTypeDefs();
-
-        // Skip over the global model typedef
-        //
-        // phEnum->u.m_ulCur : the current rid that is not yet enumerated
-        // phEnum->u.m_ulStart : the first rid that will be returned by enumerator
-        // phEnum->u.m_ulEnd : the last rid that will be returned by enumerator
-        phEnum->u.m_ulStart = phEnum->u.m_ulCur = 2;
-        phEnum->u.m_ulEnd = phEnum->m_ulCount + 1;
-        if (phEnum->m_ulCount > 0)
-            phEnum->m_ulCount --;
-    }
 ErrExit:
-
     return hr;
 } // MDInternalRW::EnumTypeDefInit
 
@@ -938,28 +914,7 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
         IfFailGo(m_pStgdb->m_MiniMd.GetTypeDefRecord(RidFromToken(tkParent), &pRec));
         ulStart = m_pStgdb->m_MiniMd.getFieldListOfTypeDef(pRec);
         IfFailGo(m_pStgdb->m_MiniMd.getEndFieldListOfTypeDef(RidFromToken(tkParent), &ulEnd));
-        if ( m_pStgdb->m_MiniMd.HasDelete() )
-        {
-            HENUMInternal::InitDynamicArrayEnum(phEnum);
-            for (index = ulStart; index < ulEnd; index ++ )
-            {
-                FieldRec *pFieldRec;
-                RID fieldRid;
-                IfFailGo(m_pStgdb->m_MiniMd.GetFieldRid(index, &fieldRid));
-                IfFailGo(m_pStgdb->m_MiniMd.GetFieldRecord(index, &pFieldRec));
-                LPCSTR szFieldName;
-                IfFailGo(m_pStgdb->m_MiniMd.getNameOfField(pFieldRec, &szFieldName));
-                if (IsFdRTSpecialName(pFieldRec->GetFlags()) && IsDeletedName(szFieldName) )
-                {
-                    continue;
-                }
-                IfFailGo(m_pStgdb->m_MiniMd.GetFieldRid(index, &fieldRid));
-                IfFailGo(HENUMInternal::AddElementToEnum(
-                    phEnum,
-                    TokenFromRid(fieldRid, mdtFieldDef)));
-            }
-        }
-        else if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Field))
+        if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Field))
         {
             HENUMInternal::InitDynamicArrayEnum(phEnum);
             for (index = ulStart; index < ulEnd; index ++ )
@@ -981,28 +936,7 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
         IfFailGo(m_pStgdb->m_MiniMd.GetTypeDefRecord(RidFromToken(tkParent), &pRec));
         ulStart = m_pStgdb->m_MiniMd.getMethodListOfTypeDef(pRec);
         IfFailGo(m_pStgdb->m_MiniMd.getEndMethodListOfTypeDef(RidFromToken(tkParent), &ulEnd));
-        if ( m_pStgdb->m_MiniMd.HasDelete() )
-        {
-            HENUMInternal::InitDynamicArrayEnum(phEnum);
-            for (index = ulStart; index < ulEnd; index ++ )
-            {
-                MethodRec *pMethodRec;
-                RID methodRid;
-                IfFailGo(m_pStgdb->m_MiniMd.GetMethodRid(index, &methodRid));
-                IfFailGo(m_pStgdb->m_MiniMd.GetMethodRecord(methodRid, &pMethodRec));
-                LPCSTR szMethodName;
-                IfFailGo(m_pStgdb->m_MiniMd.getNameOfMethod(pMethodRec, &szMethodName));
-                if (IsMdRTSpecialName(pMethodRec->GetFlags()) && IsDeletedName(szMethodName))
-                {
-                    continue;
-                }
-                IfFailGo(m_pStgdb->m_MiniMd.GetMethodRid(index, &methodRid));
-                IfFailGo(HENUMInternal::AddElementToEnum(
-                    phEnum,
-                    TokenFromRid(methodRid, mdtMethodDef)));
-            }
-        }
-        else if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Method))
+        if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Method))
         {
             HENUMInternal::InitDynamicArrayEnum(phEnum);
             for (index = ulStart; index < ulEnd; index ++ )
@@ -1108,30 +1042,7 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
             if(ulStart == 0) ulStart = 1;
             if(ulEnd > ulMax) ulEnd = ulMax;
             if(ulStart > ulEnd) ulStart = ulEnd;
-            if ( m_pStgdb->m_MiniMd.HasDelete() )
-            {
-                HENUMInternal::InitDynamicArrayEnum(phEnum);
-                for (index = ulStart; index < ulEnd; index ++ )
-                {
-                    PropertyRec *pPropertyRec;
-                    RID propertyRid;
-                    IfFailGo(m_pStgdb->m_MiniMd.GetPropertyRid(index, &propertyRid));
-                    IfFailGo(m_pStgdb->m_MiniMd.GetPropertyRecord(
-                        propertyRid,
-                        &pPropertyRec));
-                    LPCSTR szPropertyName;
-                    IfFailGo(m_pStgdb->m_MiniMd.getNameOfProperty(pPropertyRec, &szPropertyName));
-                    if (IsPrRTSpecialName(pPropertyRec->GetPropFlags()) && IsDeletedName(szPropertyName))
-                    {
-                        continue;
-                    }
-                    IfFailGo(m_pStgdb->m_MiniMd.GetPropertyRid(index, &propertyRid));
-                    IfFailGo(HENUMInternal::AddElementToEnum(
-                        phEnum,
-                        TokenFromRid(propertyRid, mdtProperty)));
-                }
-            }
-            else if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Property))
+            if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Property))
             {
                 HENUMInternal::InitDynamicArrayEnum(phEnum);
                 for (index = ulStart; index < ulEnd; index ++ )
@@ -1165,28 +1076,7 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
             if(ulStart == 0) ulStart = 1;
             if(ulEnd > ulMax) ulEnd = ulMax;
             if(ulStart > ulEnd) ulStart = ulEnd;
-            if ( m_pStgdb->m_MiniMd.HasDelete() )
-            {
-                HENUMInternal::InitDynamicArrayEnum(phEnum);
-                for (index = ulStart; index < ulEnd; index ++ )
-                {
-                    EventRec *pEventRec;
-                    RID eventRid;
-                    IfFailGo(m_pStgdb->m_MiniMd.GetEventRid(index, &eventRid));
-                    IfFailGo(m_pStgdb->m_MiniMd.GetEventRecord(eventRid, &pEventRec));
-                    LPCSTR szEventName;
-                    IfFailGo(m_pStgdb->m_MiniMd.getNameOfEvent(pEventRec, &szEventName));
-                    if (IsEvRTSpecialName(pEventRec->GetEventFlags()) && IsDeletedName(szEventName))
-                    {
-                        continue;
-                    }
-                    IfFailGo(m_pStgdb->m_MiniMd.GetEventRid(index, &eventRid));
-                    IfFailGo(HENUMInternal::AddElementToEnum(
-                        phEnum,
-                        TokenFromRid(eventRid, mdtEvent)));
-                }
-            }
-            else if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Event))
+            if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Event))
             {
                 HENUMInternal::InitDynamicArrayEnum(phEnum);
                 for (index = ulStart; index < ulEnd; index ++ )
@@ -1270,31 +1160,8 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
         break;
     case mdtExportedType:
         _ASSERTE(IsNilToken(tkParent));
-        if ( m_pStgdb->m_MiniMd.HasDelete() )
-        {
-            HENUMInternal::InitDynamicArrayEnum(phEnum);
-
-            phEnum->m_tkKind = mdtExportedType;
-            for (ULONG typeindex = 1; typeindex <= m_pStgdb->m_MiniMd.getCountExportedTypes(); typeindex ++ )
-            {
-                ExportedTypeRec *pExportedTypeRec;
-                IfFailGo(m_pStgdb->m_MiniMd.GetExportedTypeRecord(typeindex, &pExportedTypeRec));
-                LPCSTR szTypeName;
-                IfFailGo(m_pStgdb->m_MiniMd.getTypeNameOfExportedType(pExportedTypeRec, &szTypeName));
-                if (IsDeletedName(szTypeName))
-                {
-                    continue;
-                }
-                IfFailGo( HENUMInternal::AddElementToEnum(
-                    phEnum,
-                    TokenFromRid(typeindex, mdtExportedType) ) );
-            }
-        }
-        else
-        {
-            phEnum->u.m_ulStart = 1;
-            phEnum->u.m_ulEnd = m_pStgdb->m_MiniMd.getCountExportedTypes() + 1;
-        }
+        phEnum->u.m_ulStart = 1;
+        phEnum->u.m_ulEnd = m_pStgdb->m_MiniMd.getCountExportedTypes() + 1;
         break;
     case mdtManifestResource:
         _ASSERTE(IsNilToken(tkParent));
