@@ -92,6 +92,8 @@ namespace IntelHardwareIntrinsicTest.General
                 Convert.ToBoolean(typeof(Pclmulqdq.V256).GetMethod(issupported).Invoke(null, null)) != Pclmulqdq.V256.IsSupported ||
                 Convert.ToBoolean(typeof(Pclmulqdq.V512).GetMethod(issupported).Invoke(null, null)) != Pclmulqdq.V512.IsSupported ||
                 Convert.ToBoolean(typeof(Pclmulqdq.X64).GetMethod(issupported).Invoke(null, null)) != Pclmulqdq.X64.IsSupported ||
+                Convert.ToBoolean(typeof(Sha).GetMethod(issupported).Invoke(null, null)) != Sha.IsSupported ||
+                Convert.ToBoolean(typeof(Sha.X64).GetMethod(issupported).Invoke(null, null)) != Sha.X64.IsSupported ||
                 Convert.ToBoolean(typeof(X86Base).GetMethod(issupported).Invoke(null, null)) != X86Base.IsSupported ||
                 Convert.ToBoolean(typeof(X86Base.X64).GetMethod(issupported).Invoke(null, null)) != X86Base.X64.IsSupported ||
                 Convert.ToBoolean(typeof(X86Serialize).GetMethod(issupported).Invoke(null, null)) != X86Serialize.IsSupported ||

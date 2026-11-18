@@ -254,10 +254,10 @@ namespace XarchHardwareIntrinsicTest._CpuId
 
             isHierarchyDisabled = isBaselineHierarchyDisabled;
 
-            // if (IsBitIncorrect(ebx, 29, typeof(Sha), Sha.IsSupported, "SHA", ref isHierarchyDisabled))
-            // {
-            //     testResult = Fail;
-            // }
+            if (IsBitIncorrect(ebx, 29, typeof(Sha), Sha.IsSupported, "SHA", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
 
             isHierarchyDisabled = isBaselineHierarchyDisabled;
 

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>X86_Sha_r</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Would have to translate Illegal instruction to PNSE -->
+    <!-- https://github.com/dotnet/runtime/issues/110293 -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- Needed for NativeAotIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.Sha.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>
