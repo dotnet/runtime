@@ -5048,12 +5048,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_WASM_SPILL_REFS, &Compiler::fgWasmSpillRefs);
 
-    // Reorder blocks for wasm and figure out wasm control flow nesting
-    //
-    DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
 #endif
 
     FinalizeEH();
+
+#ifdef TARGET_WASM
+    // Reorder blocks for wasm and figure out wasm control flow nesting.
+    // Note: This phase is ordered after FinalizeEH since the
+    // pass shouldn't alter EH structure.
+    DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
+#endif
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
