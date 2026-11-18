@@ -50,8 +50,12 @@ public:
     //
     // HiddenFromDebugger is for runtime-internal callbacks. Nested reverse
     // P/Invokes, including class constructors, are also hidden unless they
-    // explicitly restore visibility. Use VisibleEvenIfNested for callbacks
-    // that may run user code, such as first-chance exception notifications.
+    // explicitly restore visibility. Callbacks that may run user code may need
+    // VisibleEvenIfNested, but callers should account for internal-only paths.
+    // VisibleEvenIfNested restores visibility for the duration of the call; nested
+    // callbacks inherit it, including runtime-internal ones, unless they use
+    // HiddenFromDebugger. Only InvokeThrowing and InvokeThrowing_Ret apply non-default
+    // visibility; InvokeDirect and InvokeDirect_Ret ignore it (checked builds assert).
     enum DebuggerVisibility
     {
         VisibleToDebugger,
