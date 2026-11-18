@@ -58,6 +58,9 @@ struct user_vfpregs_struct
 
 #if defined(__aarch64__) && defined(__linux__)
 // Matches struct user_pac_mask in Linux's arch/arm64/include/uapi/asm/ptrace.h.
+// Defined locally because user_pac_mask was only added to the kernel UAPI headers in
+// Linux 5.0 and the build sysroot's headers may predate it (see the NT_ARM_PAC_MASK
+// fallback in createdumpcore.h). The layout is part of the stable kernel ABI.
 struct UserPacMask
 {
     uint64_t data_mask;
