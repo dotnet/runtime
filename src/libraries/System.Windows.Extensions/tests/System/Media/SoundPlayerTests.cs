@@ -6,6 +6,8 @@ using System.ComponentModel;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -225,6 +227,34 @@ namespace System.Media.Test
 
             // Load.
             soundPlayer.Load();
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
+        [OuterLoop]
+        public void Play_Stream_KeepsBufferPinnedUntilStop()
+        {
+            using FileStream stream = File.OpenRead("pcm.wav");
+            using var player = new SoundPlayer(stream);
+            player.Load();
+
+            // The in-memory WAV buffer must stay pinned while async playback is in
+            // progress: WinMM keeps reading it after PlaySound returns
+            // (dotnet/runtime#136991). There is no public observable for the pin,
+            // so assert on the backing field.
+            FieldInfo? pinnedField = typeof(SoundPlayer).GetField("_pinnedStreamData", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(pinnedField);
+            Assert.False(((GCHandle)pinnedField.GetValue(player)!).IsAllocated);
+
+            player.Play();
+            Assert.True(((GCHandle)pinnedField.GetValue(player)!).IsAllocated);
+
+            // Playing again replaces the sound; the buffer stays pinned.
+            player.Play();
+            Assert.True(((GCHandle)pinnedField.GetValue(player)!).IsAllocated);
+
+            // Stopping playback releases the pin.
+            player.Stop();
+            Assert.False(((GCHandle)pinnedField.GetValue(player)!).IsAllocated);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]

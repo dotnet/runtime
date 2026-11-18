@@ -38,6 +38,11 @@ namespace System.Media
         private Exception? _lastLoadException;
         private bool _doesLoadAppearSynchronous;
         private byte[]? _streamData;
+        // Pinned handle for the in-memory WAV buffer while async playback is in progress.
+        // PlaySound with SND_MEMORY | SND_ASYNC keeps reading the buffer after the
+        // P/Invoke returns, so the [LibraryImport] stub's temporary pin is not enough:
+        // the buffer must stay pinned until playback stops. See dotnet/runtime#136991.
+        private GCHandle _pinnedStreamData;
         private AsyncOperation? _asyncOperation;
         private readonly SendOrPostCallback _loadAsyncOperationCompleted;
 
@@ -231,7 +236,40 @@ namespace System.Media
                 LoadSync();
                 Debug.Assert(_streamData != null);
                 ValidateSoundData(_streamData);
-                Interop.WinMM.PlaySound(_streamData, IntPtr.Zero, Interop.WinMM.SND_MEMORY | Interop.WinMM.SND_NODEFAULT | flags);
+                if ((flags & Interop.WinMM.SND_ASYNC) != 0)
+                {
+                    // Pin the buffer for the duration of async playback: WinMM keeps
+                    // reading it after PlaySound returns (see _pinnedStreamData).
+                    PinStreamDataForAsyncPlayback();
+                }
+                try
+                {
+                    Interop.WinMM.PlaySound(_streamData, IntPtr.Zero, Interop.WinMM.SND_MEMORY | Interop.WinMM.SND_NODEFAULT | flags);
+                }
+                catch
+                {
+                    // No playback started, so the buffer is no longer in use by WinMM.
+                    ReleasePinnedStreamData();
+                    throw;
+                }
+            }
+        }
+
+        private void PinStreamDataForAsyncPlayback()
+        {
+            // A new PlaySound call replaces any currently playing sound, so the
+            // previously pinned buffer is no longer in use by WinMM and its pin
+            // can be released before pinning the new buffer.
+            ReleasePinnedStreamData();
+            Debug.Assert(_streamData != null);
+            _pinnedStreamData = GCHandle.Alloc(_streamData, GCHandleType.Pinned);
+        }
+
+        private void ReleasePinnedStreamData()
+        {
+            if (_pinnedStreamData.IsAllocated)
+            {
+                _pinnedStreamData.Free();
             }
         }
 
@@ -426,6 +464,14 @@ namespace System.Media
         public void Stop()
         {
             Interop.WinMM.PlaySound((byte[]?)null, IntPtr.Zero, Interop.WinMM.SND_PURGE);
+            // SND_PURGE stops playback, so WinMM no longer reads the buffer.
+            ReleasePinnedStreamData();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            ReleasePinnedStreamData();
+            base.Dispose(disposing);
         }
 
         public event AsyncCompletedEventHandler? LoadCompleted
