@@ -6,11 +6,13 @@ function wasm_common() {
     case "$1" in
     wasm)
         # Put your common commands for wasm here
-        ./build.sh mono+libs -os browser -c Release
+        # NativeAOT cDAC is not supported on browser-wasm
+        ./build.sh -os browser -c Release /p:SupportsNativeAotComponents=false
         ;;
     wasm-multithreaded)
         # Put your common commands for wasm-multithread here
-        ./build.sh mono+libs -os browser -c Release /p:WasmEnableThreads=true
+        # Multithreading is not supported on CoreCLR yet
+        # ./build.sh -os browser -c Release /p:SupportsNativeAotComponents=false /p:WasmEnableThreads=true
         ;;
     *)
         # install dotnet-serve for running wasm samples
@@ -30,8 +32,8 @@ case "$opt" in
     ;;
 
     android)
-        # prebuild the repo for Mono, so it is ready for development
-        ./build.sh mono+libs+clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages -os android
+        # prebuild the repo so it is ready for development
+        ./build.sh libs+clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages -os android
         # restore libs tests so that the project is ready to be loaded by OmniSharp
         ./build.sh libs.tests -restore
     ;;
@@ -45,5 +47,6 @@ case "$opt" in
     ;;
 esac
 
-# save the commit hash of the currently built assemblies, so developers know which version was built
+# save the commit hash used for the devcontainer setup
+mkdir -p ./artifacts
 git rev-parse HEAD > ./artifacts/prebuild.sha
