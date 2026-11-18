@@ -11,6 +11,6 @@ namespace System.Runtime.Caching
     {
         public abstract ReadOnlyCollection<string> CacheKeys { get; }
         public abstract DateTimeOffset LastModified { get; }
-        public abstract string RegionName { get; }
+        public abstract string? RegionName { get; }
     }
 }

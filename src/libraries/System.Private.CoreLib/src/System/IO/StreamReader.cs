@@ -1143,9 +1143,6 @@ namespace System.IO
             // data read in, let's try writing directly to the user's buffer.
             bool readToUserBuffer = false;
 
-            byte[] tmpByteBuffer = _byteBuffer;
-            Stream tmpStream = _stream;
-
             int count = buffer.Length;
             while (count > 0)
             {
@@ -1175,7 +1172,7 @@ namespace System.IO
                         {
                             Debug.Assert(_bytePos <= _encoding.Preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
                             int tmpBytePos = _bytePos;
-                            int len = await tmpStream.ReadAsync(new Memory<byte>(tmpByteBuffer, tmpBytePos, tmpByteBuffer.Length - tmpBytePos), cancellationToken).ConfigureAwait(false);
+                            int len = await _stream.ReadAsync(new Memory<byte>(_byteBuffer, tmpBytePos, _byteBuffer.Length - tmpBytePos), cancellationToken).ConfigureAwait(false);
                             Debug.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
                             if (len == 0)
@@ -1186,12 +1183,12 @@ namespace System.IO
                                 {
                                     if (readToUserBuffer)
                                     {
-                                        n = _decoder.GetChars(new ReadOnlySpan<byte>(tmpByteBuffer, 0, _byteLen), buffer.Span.Slice(charsRead), flush: false);
+                                        n = _decoder.GetChars(new ReadOnlySpan<byte>(_byteBuffer, 0, _byteLen), buffer.Span.Slice(charsRead), flush: false);
                                         _charLen = 0;  // StreamReader's buffer is empty.
                                     }
                                     else
                                     {
-                                        n = _decoder.GetChars(tmpByteBuffer, 0, _byteLen, _charBuffer, 0);
+                                        n = _decoder.GetChars(_byteBuffer, 0, _byteLen, _charBuffer, 0);
                                         _charLen += n;  // Number of chars in StreamReader's buffer.
                                     }
                                 }
@@ -1211,7 +1208,7 @@ namespace System.IO
                         {
                             Debug.Assert(_bytePos == 0, "_bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
 
-                            _byteLen = await tmpStream.ReadAsync(new Memory<byte>(tmpByteBuffer), cancellationToken).ConfigureAwait(false);
+                            _byteLen = await _stream.ReadAsync(new Memory<byte>(_byteBuffer), cancellationToken).ConfigureAwait(false);
 
                             Debug.Assert(_byteLen >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
@@ -1225,7 +1222,7 @@ namespace System.IO
                         // _isBlocked == whether we read fewer bytes than we asked for.
                         // Note we must check it here because CompressBuffer or
                         // DetectEncoding will change _byteLen.
-                        _isBlocked = (_byteLen < tmpByteBuffer.Length);
+                        _isBlocked = (_byteLen < _byteBuffer.Length);
 
                         // Check for preamble before detect encoding. This is not to override the
                         // user supplied Encoding for the one we implicitly detect. The user could
@@ -1250,12 +1247,12 @@ namespace System.IO
                         _charPos = 0;
                         if (readToUserBuffer)
                         {
-                            n = _decoder.GetChars(new ReadOnlySpan<byte>(tmpByteBuffer, 0, _byteLen), buffer.Span.Slice(charsRead), flush: false);
+                            n = _decoder.GetChars(new ReadOnlySpan<byte>(_byteBuffer, 0, _byteLen), buffer.Span.Slice(charsRead), flush: false);
                             _charLen = 0;  // StreamReader's buffer is empty.
                         }
                         else
                         {
-                            n = _decoder.GetChars(tmpByteBuffer, 0, _byteLen, _charBuffer, 0);
+                            n = _decoder.GetChars(_byteBuffer, 0, _byteLen, _charBuffer, 0);
                             _charLen += n;  // Number of chars in StreamReader's buffer.
                         }
                     } while (n == 0);
@@ -1375,8 +1372,6 @@ namespace System.IO
         {
             _charLen = 0;
             _charPos = 0;
-            byte[] tmpByteBuffer = _byteBuffer;
-            Stream tmpStream = _stream;
 
             if (!_checkPreamble)
             {
@@ -1391,7 +1386,7 @@ namespace System.IO
                 {
                     Debug.Assert(_bytePos <= _encoding.Preamble.Length, "possible bug in _compressPreamble. Are two threads using this StreamReader at the same time?");
                     int tmpBytePos = _bytePos;
-                    int len = await tmpStream.ReadAsync(tmpByteBuffer.AsMemory(tmpBytePos), cancellationToken).ConfigureAwait(false);
+                    int len = await _stream.ReadAsync(_byteBuffer.AsMemory(tmpBytePos), cancellationToken).ConfigureAwait(false);
                     Debug.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
                     if (len == 0)
@@ -1405,7 +1400,7 @@ namespace System.IO
                 else
                 {
                     Debug.Assert(_bytePos == 0, "_bytePos can be non zero only when we are trying to _checkPreamble. Are two threads using this StreamReader at the same time?");
-                    _byteLen = await tmpStream.ReadAsync(new Memory<byte>(tmpByteBuffer), cancellationToken).ConfigureAwait(false);
+                    _byteLen = await _stream.ReadAsync(new Memory<byte>(_byteBuffer), cancellationToken).ConfigureAwait(false);
                     Debug.Assert(_byteLen >= 0, "Stream.Read returned a negative number!  Bug in stream class.");
 
                     if (_byteLen == 0)
@@ -1418,7 +1413,7 @@ namespace System.IO
                 // _isBlocked == whether we read fewer bytes than we asked for.
                 // Note we must check it here because CompressBuffer or
                 // DetectEncoding will change _byteLen.
-                _isBlocked = (_byteLen < tmpByteBuffer.Length);
+                _isBlocked = (_byteLen < _byteBuffer.Length);
 
                 // Check for preamble before detect encoding. This is not to override the
                 // user supplied Encoding for the one we implicitly detect. The user could
@@ -1436,7 +1431,7 @@ namespace System.IO
                 }
 
                 Debug.Assert(_charPos == 0 && _charLen == 0, "We shouldn't be trying to decode more data if we made progress in an earlier iteration.");
-                _charLen = _decoder.GetChars(tmpByteBuffer, 0, _byteLen, _charBuffer, 0, flush: false);
+                _charLen = _decoder.GetChars(_byteBuffer, 0, _byteLen, _charBuffer, 0, flush: false);
             } while (_charLen == 0);
 
             if (eofReached)

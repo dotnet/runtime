@@ -61,8 +61,8 @@ namespace ILCompiler.DependencyAnalysis
                 ReadyToRunHelper.NewArrayFast => "RhpNewArrayFast",
 
                 ReadyToRunHelper.NativeMemSet => "memset",
-                ReadyToRunHelper.DblRem => target.Architecture is TargetArchitecture.X86 or TargetArchitecture.Wasm32 ? "Rhp_fmod" : "fmod",
-                ReadyToRunHelper.FltRem => target.Architecture is TargetArchitecture.X86 or TargetArchitecture.Wasm32 ? "Rhp_fmodf" : "fmodf",
+                ReadyToRunHelper.DblRem => target.Architecture is TargetArchitecture.X86 or TargetArchitecture.Wasm32 ? "Math_FMod" : "fmod",
+                ReadyToRunHelper.FltRem => target.Architecture is TargetArchitecture.X86 or TargetArchitecture.Wasm32 ? "MathF_FMod" : "fmodf",
 
                 ReadyToRunHelper.Lng2Dbl => "RhpLng2Dbl",
                 ReadyToRunHelper.ULng2Dbl => "RhpULng2Dbl",

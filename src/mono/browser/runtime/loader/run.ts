@@ -228,7 +228,9 @@ export class HostBuilder implements DotnetHostBuilder {
 
     withConfigLoaded (callback?: (config: MonoConfig) => void | Promise<void>): DotnetHostBuilder {
         try {
-            loaderHelpers.callbacks.configLoaded = callback;
+            if (callback) {
+                loaderHelpers.callbacks.configLoaded.push(callback);
+            }
             return this;
         } catch (err) {
             mono_exit(1, err);

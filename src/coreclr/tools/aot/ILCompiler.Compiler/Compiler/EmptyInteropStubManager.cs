@@ -8,6 +8,7 @@ using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore
 using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
 using Internal.IL;
+using Internal.Text;
 using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler
@@ -19,10 +20,10 @@ namespace ILCompiler
     {
         private class DummyConfiguration : PInvokeILEmitterConfiguration
         {
-            public override bool GenerateDirectCall(MethodDesc method, out string externName)
+            public override LinkageMetadata GetLinkageMetadata(MethodDesc method)
             {
-                externName = method.GetPInvokeMethodMetadata().Name;
-                return true;
+                string symbol = method.GetPInvokeMethodMetadata().Name;
+                return new LinkageMetadata(symbol is null ? default : new Utf8String(symbol));
             }
         }
 

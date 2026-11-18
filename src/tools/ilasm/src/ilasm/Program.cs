@@ -9,7 +9,7 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed class Program
 {
@@ -182,6 +182,7 @@ internal sealed class Program
             // Assembly options
             options.AssemblyName = Get(_command.AssemblyName);
             options.KeyFile = Get(_command.KeyFile);
+            options.Win32ResourceFile = Get(_command.ResourceFile);
             options.Optimize = Get(_command.Optimize);
             options.PseudoAttributes = Get(_command.PseudoAttributes);
             options.Fold = Get(_command.Fold);

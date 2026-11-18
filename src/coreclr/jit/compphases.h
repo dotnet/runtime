@@ -135,6 +135,7 @@ CompPhaseNameMacro(PHASE_WASM_CONTROL_FLOW,          "Wasm control flow",       
 CompPhaseNameMacro(PHASE_WASM_IDENTIFY_GCSAFE_LOCALS, "Wasm identify GC safe locals",  false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_SPILL_REFS,            "Wasm spill refs",                false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_VIRTUAL_IP,            "Wasm virtual IP",                false, -1, false)
+CompPhaseNameMacro(PHASE_WASM_PROF_INSTRUMENT,       "Wasm profiler instrumentation",  false, -1, false)
 
 CompPhaseNameMacro(PHASE_ASYNC,                      "Transform async",                false, -1, true)
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS,             "Local var liveness",             true,  -1, false)

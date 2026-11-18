@@ -59,7 +59,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Creates a <see cref="DiagnosticMethodInfo"/> that represents the method this stack frame is associtated with.
+        /// Creates a <see cref="DiagnosticMethodInfo"/> that represents the method this stack frame is associated with.
         /// </summary>
         /// <remarks>This returns the definition of the target method, with stripped instantiation information.
         /// The return value might be null if the `StackTraceSupport` feature switch is set to false.

@@ -509,8 +509,12 @@ private:
     void     LowerBswapOp(GenTreeOp* node);
     GenTree* LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node);
 #elif defined(TARGET_ARM64)
-    bool     IsValidConstForMovImm(GenTreeHWIntrinsic* node);
-    void     LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
+    bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
+    void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    GenTree* TryLowerSveConvertVectorToMask(GenTreeHWIntrinsic* node);
+    bool     TryLowerSvePredicateBitwiseClear(GenTreeHWIntrinsic* node, NamedIntrinsic* intrinsicId, genTreeOps* oper);
+#endif // FEATURE_MASKED_HW_INTRINSICS
     void     LowerModPow2(GenTree* node);
     GenTree* LowerCnsMask(GenTreeMskCon* mask);
     bool     TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
@@ -574,7 +578,7 @@ public:
         return false;
     }
 
-    bool IsContainableLclAddr(GenTreeLclFld* lclAddr, unsigned accessSize) const;
+    bool IsContainableLclAddr(GenTreeLclFld* lclAddr, ValueSize accessSize) const;
 
 #ifdef TARGET_ARM64
     bool IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const;

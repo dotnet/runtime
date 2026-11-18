@@ -23,8 +23,13 @@
 #endif
 #include <fcntl.h>
 
-#if defined(__linux__) && !defined(TARGET_OPENHARMONY)
-#if !HAVE_CLOSE_RANGE
+#if defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
+#include <dirent.h>
+#include <stddef.h>
+#endif
+
+#if defined(__linux__)
+#if !HAVE_CLOSE_RANGE || defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 #include <sys/syscall.h>
 #if !defined(__NR_close_range)
 // close_range was added in Linux 5.9. The syscall number is 436 for all
@@ -37,9 +42,9 @@
 #  define __NR_close_range 436
 # endif
 #endif // !defined(__NR_close_range)
-#endif // !HAVE_CLOSE_RANGE
+#endif // !HAVE_CLOSE_RANGE || defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 #endif // defined(__linux__)
-#if (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
+#if !defined(TARGET_ANDROID) && (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
 #endif
 #include <pthread.h>
@@ -229,12 +234,8 @@ handler_from_sigaction (struct sigaction *sa)
     }
 }
 
-#if defined(TARGET_OPENHARMONY)
-#include <dirent.h>
-#endif
-
-#if HAVE_FDWALK || defined(TARGET_OPENHARMONY)
-// Sets FD_CLOEXEC on fd if it is >= 3; fdwalk() callback on Illumos/Solaris, /proc/self/fd walker on OpenHarmony.
+#if HAVE_FDWALK
+// Callback used with fdwalk() on Illumos/Solaris to set FD_CLOEXEC on all file descriptors >= 3.
 static int SetCloexecForFd(void* context, int fd)
 {
     (void)context;
@@ -250,46 +251,80 @@ static int SetCloexecForFd(void* context, int fd)
 }
 #endif
 
-#if defined(TARGET_OPENHARMONY)
-// Runs in the vfork()ed child, so it must not allocate: read /proc/self/fd with getdents()
-// into a stack buffer instead of opendir()/readdir().
+#if defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 static int SetCloexecForOpenFds(void)
 {
-    int dirFd = open("/proc/self/fd", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
-    if (dirFd < 0)
+    // Android's and OpenHarmony's app seccomp policies can kill the child on close_range(), rather than returning ENOSYS.
+    // Enumerate only open descriptors. Use getdents64 directly to avoid opendir/readdir allocations
+    // and locks between fork and exec. Android's dirent64 matches the kernel's linux_dirent64 layout:
+    // https://man7.org/linux/man-pages/man2/getdents.2.html
+    static_assert(offsetof(struct dirent64, d_name) == 19, "dirent64 must match linux_dirent64");
+
+    int directoryFd;
+    while (CheckInterrupted(directoryFd = open("/proc/self/fd", O_RDONLY | O_DIRECTORY | O_CLOEXEC)));
+    if (directoryFd == -1)
     {
         return -1;
     }
 
-    struct dirent buffer[16];
-    int bytes;
-    while ((bytes = getdents(dirFd, buffer, sizeof(buffer))) > 0)
+    int result = 0;
+    struct dirent64 buffer[4];
+    while (true)
     {
-        for (int offset = 0; offset < bytes;)
+        ssize_t bytesRead;
+        while (CheckInterrupted(bytesRead = syscall(__NR_getdents64, directoryFd, buffer, sizeof(buffer))));
+        if (bytesRead <= 0)
         {
-            struct dirent* entry = (struct dirent*)(void*)((char*)buffer + offset);
-            offset += entry->d_reclen;
+            result = (int)bytesRead;
+            break;
+        }
 
-            int fd = 0;
-            for (const char* c = entry->d_name; *c >= '0' && *c <= '9'; c++)
+        for (ssize_t offset = 0; offset < bytesRead;)
+        {
+            struct dirent64* entry = (struct dirent64*)((char*)buffer + offset);
+            offset += entry->d_reclen;
+            if (entry->d_name[0] == '.')
             {
-                fd = fd * 10 + (*c - '0');
+                continue;
             }
 
-            SetCloexecForFd(NULL, fd); // "." and ".." parse as 0 and are skipped
+            // /proc/self/fd names are decimal file descriptors, bounded by INT_MAX.
+            int fd = 0;
+            for (const char* digit = entry->d_name; *digit != '\0'; digit++)
+            {
+                fd = fd * 10 + (*digit - '0');
+            }
+
+            if (fd >= 3)
+            {
+                int flags;
+                while (CheckInterrupted(flags = fcntl(fd, F_GETFD)));
+                if (flags == -1)
+                {
+                    result = -1;
+                    goto done;
+                }
+
+                while (CheckInterrupted(result = fcntl(fd, F_SETFD, flags | FD_CLOEXEC)));
+                if (result == -1)
+                {
+                    goto done;
+                }
+            }
         }
     }
 
-    close(dirFd);
-    return bytes == 0 ? 0 : -1;
+done:
+    close(directoryFd);
+    return result;
 }
-#endif
+#endif // defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 
 // Returns 0 on success, or -1 (with errno set to ENOTSUP) if this platform/kernel doesn't provide
-// a performant native way (close_range()/fdwalk()) to restrict which fds a child process inherits.
+// a performant native way (close_range()/fdwalk()/procfs) to restrict which fds a child process inherits.
 //
 // We intentionally do NOT fall back to manually scanning every possible fd via fcntl() in that
-// case: without close_range()/fdwalk(), there is no reliable way to learn only the fds that are
+// case: without close_range()/fdwalk()/procfs, there is no reliable way to learn only the fds that are
 // actually open, so such a scan would need to cover the entire valid fd range (up to INT_MAX) to
 // be correct -- something that has been measured to take multiple minutes of CPU time per
 // Process.Start call. That's not an acceptable cost, so we report failure instead and let the
@@ -303,9 +338,7 @@ static int32_t RestrictHandleInheritance(int32_t* inheritedFds, int32_t inherite
     // Using closefrom() or close_range() with flag 0 (direct close) would destroy this pipe.
 
     int result;
-#if defined(TARGET_OPENHARMONY)
-    // OpenHarmony's app seccomp policy uses SCMP_ACT_TRAP for close_range, so the
-    // process receives SIGSYS and never returns; an errno-based fallback cannot run.
+#if defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
     result = SetCloexecForOpenFds();
 #elif HAVE_CLOSE_RANGE
     // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34).

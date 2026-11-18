@@ -65,12 +65,19 @@ internal class Program
         TestInitBlock.Run();
         TestDataflow.Run();
         TestConversions.Run();
-        TestVTables.Run();
-        TestVTableManipulation.Run();
+        // ComWrappers are disabled on WASM
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            TestVTables.Run();
+            TestVTableManipulation.Run();
+        }
         TestVTableNegativeScenarios.Run();
         TestByRefFieldAddressEquality.Run();
         TestComInterfaceEntry.Run();
-        TestPreinitializedBclTypes.Run();
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            TestPreinitializedComWrappers.Run();
+        }
         TestArrayLoadBounds.Run();
         TestFloatNaNComparison.Run();
         TestDivisionOverflow.Run();
@@ -79,6 +86,7 @@ internal class Program
         TestDuplicateCallArguments.Run();
         TestSpanAssignmentAliases.Run();
         TestRvaSpanIdentity.Run();
+        TestFrozenStructArrayElementCopy.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -721,11 +729,18 @@ class TestDelegate
 
     static Func<int> s_lambda = () => 2020;
 
+    static Func<string> s_objectTypeName = GetTypeName<object>;
+    static Func<string> s_stringTypeName = GetTypeName<string>;
+
+    static string GetTypeName<T>() => typeof(T).Name;
+
     public static void Run()
     {
         Assert.IsPreinitialized(typeof(TestDelegate));
         Assert.AreEqual(42, s_delegate());
         Assert.AreEqual(2020, s_lambda());
+        Assert.AreEqual(nameof(Object), s_objectTypeName());
+        Assert.AreEqual(nameof(String), s_stringTypeName());
     }
 }
 
@@ -2240,7 +2255,7 @@ unsafe class TestComInterfaceEntry
     }
 }
 
-unsafe class TestPreinitializedBclTypes
+unsafe class TestPreinitializedComWrappers
 {
     // Verify that (given that all of the other tests have passed), that a select number of BCL types
     // that depend on this optimization for high-performance scenarios are preinitialized.
@@ -2678,6 +2693,68 @@ class TestRvaSpanIdentity
         Assert.AreEqual(true, s_same);
         Assert.AreEqual(false, s_differentOffset);
         Assert.AreEqual(false, s_array);
+    }
+}
+
+class TestFrozenStructArrayElementCopy
+{
+    // Copying an element of a frozen struct array to a local is an unrolled block copy whose
+    // source address adds the array's handle to the element offset; the handle needs a relocation.
+    struct Element
+    {
+        public int A, B, C, D, E, F, G, H, I, J, K, L, M;
+
+        public Element(int seed)
+        {
+            A = seed;
+            B = seed + 1;
+            C = seed + 2;
+            D = seed + 3;
+            E = seed + 4;
+            F = seed + 5;
+            G = seed + 6;
+            H = seed + 7;
+            I = seed + 8;
+            J = seed + 9;
+            K = seed + 10;
+            L = seed + 11;
+            M = seed + 12;
+        }
+    }
+
+    static readonly Element[] s_elements = new Element[]
+    {
+        new Element(0),
+        new Element(100),
+        new Element(200),
+        new Element(300),
+        new Element(400),
+        new Element(500),
+    };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Checksum(Element e, int index) =>
+        (e.A + e.B * 2 + e.C * 3 + e.D * 4 + e.E * 5 + e.F * 6 + e.G * 7 +
+         e.H * 8 + e.I * 9 + e.J * 10 + e.K * 11 + e.L * 12 + e.M * 13) * (index + 1);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int SumElements()
+    {
+        int sum = 0;
+        int index = 0;
+        foreach (Element e in s_elements)
+        {
+            sum += Checksum(e, index);
+            index++;
+        }
+
+        return sum;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestFrozenStructArrayElementCopy));
+        Assert.AreEqual(652288, SumElements());
     }
 }
 

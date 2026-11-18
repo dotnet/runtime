@@ -41,6 +41,7 @@
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatWriterExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(MetadataCommonPath)\BlobReader.cs" />
     <Compile Include="$(MetadataCommonPath)\NativeFormatReaderCommonGen.cs" />
     <Compile Include="$(MetadataCommonPath)\MdBinaryReader.cs" />
     <Compile Include="$(MetadataCommonPath)\MdBinaryReaderGen.cs" />
@@ -48,9 +49,9 @@
     <Compile Include="$(MetadataCommonPath)\NativeFormatReaderGen.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(MetadataWriterPath)\ConstantValues.cs" />
     <Compile Include="$(MetadataWriterPath)\MdBinaryWriter.cs" />
     <Compile Include="$(MetadataWriterPath)\MdBinaryWriterGen.cs" />
+    <Compile Include="$(MetadataWriterPath)\MetadataBlob.cs" />
     <Compile Include="$(MetadataWriterPath)\NativeFormatWriterGen.cs" />
     <Compile Include="$(MetadataWriterPath)\NativeMetadataWriter.cs" />
   </ItemGroup>

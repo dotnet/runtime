@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices.Marshalling
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
         /// <summary>
-        /// Marshaller for marshalling a array from managed to unmanaged.
+        /// Marshaller for marshalling an array from managed to unmanaged.
         /// </summary>
         public ref struct ManagedToUnmanagedIn
         {

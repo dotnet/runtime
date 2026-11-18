@@ -340,8 +340,15 @@ namespace System.IO.Compression.Tests
             // Creation will go through the path that sets the data descriptor bit when the stream is unseekable
             ZipArchive archive = await CreateZipArchive(async, wrappedStream, ZipArchiveMode.Create);
 
-            CreateEntry(archive, "A", "xxx");
-            CreateEntry(archive, "B", "yyy");
+            foreach ((string name, byte[] data) in new[] { ("A", "xxx"u8.ToArray()), ("B", "yyy"u8.ToArray()) })
+            {
+                Stream stream = await OpenEntryStream(async, archive.CreateEntry(name));
+                if (async)
+                    await stream.WriteAsync(data);
+                else
+                    stream.Write(data);
+                await DisposeStream(async, stream);
+            }
 
             await DisposeZipArchive(async, archive);
 
@@ -429,6 +436,31 @@ namespace System.IO.Compression.Tests
             byte[] fileBytes = memoryStream.ToArray();
             Assert.Equal(hasDataDescriptor ? 8 : 0, fileBytes[6]);
             Assert.Equal(0, fileBytes[7]);
+
+            if (hasDataDescriptor)
+            {
+                ReadOnlySpan<byte> header = fileBytes;
+                Assert.Equal(45, BinaryPrimitives.ReadUInt16LittleEndian(header.Slice(4)));
+                Assert.Equal(uint.MaxValue, BinaryPrimitives.ReadUInt32LittleEndian(header.Slice(18)));
+                Assert.Equal(uint.MaxValue, BinaryPrimitives.ReadUInt32LittleEndian(header.Slice(22)));
+                ushort nameLength = BinaryPrimitives.ReadUInt16LittleEndian(header.Slice(26));
+                ushort extraLength = BinaryPrimitives.ReadUInt16LittleEndian(header.Slice(28));
+                Assert.Equal(20, extraLength);
+                ReadOnlySpan<byte> extra = header.Slice(30 + nameLength, extraLength);
+                Assert.Equal(1, BinaryPrimitives.ReadUInt16LittleEndian(extra));
+                Assert.Equal(16, BinaryPrimitives.ReadUInt16LittleEndian(extra.Slice(2)));
+                Assert.Equal(0, BinaryPrimitives.ReadInt64LittleEndian(extra.Slice(4)));
+                Assert.Equal(0, BinaryPrimitives.ReadInt64LittleEndian(extra.Slice(12)));
+
+                using var readArchive = new ZipArchive(new MemoryStream(fileBytes), ZipArchiveMode.Read);
+                ZipArchiveEntry firstEntry = readArchive.Entries[0];
+                int descriptorOffset = checked(30 + nameLength + extraLength + (int)firstEntry.CompressedLength);
+                ReadOnlySpan<byte> descriptor = header.Slice(descriptorOffset);
+                Assert.Equal(0x08074b50u, BinaryPrimitives.ReadUInt32LittleEndian(descriptor));
+                Assert.Equal(firstEntry.CompressedLength, BinaryPrimitives.ReadInt64LittleEndian(descriptor.Slice(8)));
+                Assert.Equal(firstEntry.Length, BinaryPrimitives.ReadInt64LittleEndian(descriptor.Slice(16)));
+                Assert.Equal(0x04034b50u, BinaryPrimitives.ReadUInt32LittleEndian(descriptor.Slice(24)));
+            }
         }
 
         private static void AssertUnicodeFileNameAndComment(MemoryStream memoryStream, bool isUnicodeFlagExpected)

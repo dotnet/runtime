@@ -18,13 +18,16 @@
 #   against the runtime we want to collect over. That response file is then replayed with the
 #   locally built ILC under the SuperPMI collector shim.
 #
-#   Replaying it, rather than letting the SDK run the compilation, keeps the collection from
-#   needing the C++ toolchain the SDK would go on to link the result with: `IlcToolsPath` points
-#   at a directory holding no ILC, so the build stops right after the response file is written,
-#   and `IlcUseEnvironmentalTools` skips the toolchain search that happens before that.
+#   Signed applications can use --public_sign to preserve assembly identity without requiring
+#   RSA/SHA-1 signatures, which can be blocked by the OS crypto policy.
+#
+#   Replaying it, rather than letting the SDK run the compilation, avoids native linking:
+#   `IlcToolsPath` points at a directory holding no ILC, so the build stops right after the
+#   response file is written. Unix SDKs still check for a platform linker; on Windows,
+#   `IlcUseEnvironmentalTools` skips the Visual C++ toolchain search.
 #
 #   Everything (clone, build, collect) happens on the machine running this script, so it needs
-#   nothing but a Core_Root, a network connection and, outside Windows, a `git` on the PATH.
+#   a Core_Root, a network connection and, outside Windows, `git` and the platform linker.
 #
 #   The app is pinned to DEFAULT_COMMIT so that it can't change under the collection; note that
 #   the SDK it is built with is a channel, so it does move. Update DEFAULT_COMMIT (and
@@ -284,7 +287,7 @@ def create_framework_dir(core_root, destination):
     return destination
 
 
-def generate_ilc_rsp(dotnet, project, clone_dir, rid, work_dir, core_root, framework_dir):
+def generate_ilc_rsp(dotnet, project, clone_dir, rid, work_dir, core_root, framework_dir, public_sign=False):
     """ Publish just far enough for the SDK to write the ILC response file; see the notes on top. """
     # Where the response file lands is up to the repository (Arcade, for one, redirects the
     # intermediate output out of the project directory), so look for it afterwards instead. Clear
@@ -293,6 +296,20 @@ def generate_ilc_rsp(dotnet, project, clone_dir, rid, work_dir, core_root, frame
         stale.unlink()
 
     aotsdk = msbuild_directory(core_root / "aotsdk")
+    signing_args = []
+    if public_sign:
+        # Set this per project so unsigned applications and dependencies remain unsigned.
+        signing_targets = work_dir / "public_sign.targets"
+        signing_targets.write_text(
+            '<Project>\n'
+            '  <Target Name="SuperPmiPublicSign" BeforeTargets="CoreCompile" Condition="\'$(SignAssembly)\' == \'true\'">\n'
+            '    <PropertyGroup>\n'
+            '      <PublicSign>true</PublicSign>\n'
+            '      <DelaySign>false</DelaySign>\n'
+            '    </PropertyGroup>\n'
+            '  </Target>\n'
+            '</Project>\n', encoding="utf-8")
+        signing_args = [f"-p:CustomAfterMicrosoftCommonTargets={signing_targets}"]
     run_command([dotnet, "publish", project,
                  "-c", "Release",
                  "-r", rid,
@@ -302,7 +319,7 @@ def generate_ilc_rsp(dotnet, project, clone_dir, rid, work_dir, core_root, frame
                  f"-p:IlcToolsPath={msbuild_directory(work_dir / 'no_ilc_here')}",
                  f"-p:IlcSdkPath={aotsdk}",
                  f"-p:IlcFrameworkNativePath={aotsdk}",
-                 f"-p:IlcFrameworkPath={msbuild_directory(framework_dir)}"],
+                 f"-p:IlcFrameworkPath={msbuild_directory(framework_dir)}"] + signing_args,
                 cwd=project.parent, check=False)
 
     rsp_files = sorted(clone_dir.rglob("*.ilc.rsp"))
@@ -431,6 +448,8 @@ def main():
                         help="Number of threads ILC may use; it uses its own default when this isn't specified.")
     parser.add_argument("--sdk_channel", default=DEFAULT_SDK_CHANNEL,
                         help="dotnet-install channel to get the SDK to build the application with from.")
+    parser.add_argument("--public_sign", action="store_true",
+                        help="Use public signing for collection-only builds of signed applications.")
     parser.add_argument("--skip_cleanup", action="store_true",
                         help="Don't delete the working directory created under the system temp folder.")
     args = parser.parse_args()
@@ -512,7 +531,8 @@ def main():
         mc_dir.mkdir(parents=True)
 
         framework_dir = create_framework_dir(core_root, work_dir / "framework")
-        rsp_path = generate_ilc_rsp(dotnet, project, clone_dir, args.rid, work_dir, core_root, framework_dir)
+        rsp_path = generate_ilc_rsp(dotnet, project, clone_dir, args.rid, work_dir, core_root, framework_dir,
+                                    public_sign=args.public_sign)
         collection_rsp = rewrite_ilc_rsp(rsp_path, work_dir / f"{name}.ilc.rsp", core_root, args.parallelism)
         collect(core_root, project, collection_rsp, mc_dir, jit_copy)
         merge_mc_files(core_root, mc_dir, output_mch)

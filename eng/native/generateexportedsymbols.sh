@@ -11,7 +11,7 @@ while test $# -gt 0; do
 done
 set -- "${saved[@]}"
 
-while read -r line; do
+while read -r line || [[ -n "$line" ]]; do
   # Skip empty lines and comment lines starting with semicolon
   if [[ "$line" =~ ^\;.*$|^[[:space:]]*$ ]]; then
     continue

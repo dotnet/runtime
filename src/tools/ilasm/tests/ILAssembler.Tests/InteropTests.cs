@@ -9,9 +9,8 @@ using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class InteropTests
     {
