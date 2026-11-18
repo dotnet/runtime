@@ -1001,6 +1001,25 @@ namespace System.Collections.Tests
             Assert.True(expected.SetEquals(destination));
         }
 
+        [Fact]
+        public void HashSet_UnionWith_ThrowsWhenDestinationEmptiedByRemove()
+        {
+            var target = new HashSet<string>(StringComparer.Ordinal) { "s0" };
+            target.Remove("s0");
+
+            var source = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < 8; i++)
+                source.Add("k" + i);
+
+            for (int i = 0; i < 4; i++)
+                source.Remove("k" + i);
+
+            target.UnionWith(source);
+
+            Assert.Equal(4, target.Count);
+            Assert.True(target.SetEquals(new[] { "k4", "k5", "k6", "k7" }));
+        }
+
         #endregion
     }
 }
