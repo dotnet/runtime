@@ -211,12 +211,24 @@ namespace System.Runtime.Intrinsics.Wasm
         ///   <para>v128_t wasm_i8x16_shuffle (v128_t a, v128_t b, int c0, int c1, int c2, int c3, int c4, int c5, int c6, int c7, int c8, int c9, int c10, int c11, int c12, int c13, int c14, int c15)</para>
         ///   <para>i8x16.shuffle laneidx^16 : [v128 v128] -> [v128]</para>
         /// </summary>
-        internal static Vector128<sbyte> Shuffle(Vector128<sbyte> lower, Vector128<sbyte> upper, Vector128<sbyte> indices) => Shuffle(lower, upper, indices);
+        /// <param name="lower">The vector that supplies the elements selected by indices 0 through 15.</param>
+        /// <param name="upper">The vector that supplies the elements selected by indices 16 through 31.</param>
+        /// <param name="indices">The per-element indices, each in the range 0 through 31, used to select a value from <paramref name="lower" /> or <paramref name="upper" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="lower" /> and <paramref name="upper" /> selected by <paramref name="indices" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">An element of <paramref name="indices" /> is greater than 31.</exception>
+        /// <remarks>The <c>i8x16.shuffle</c> instruction is emitted only when <paramref name="indices" /> is a constant; otherwise, the operation is emulated with <c>i8x16.swizzle</c>.</remarks>
+        public static Vector128<sbyte> Shuffle(Vector128<sbyte> lower, Vector128<sbyte> upper, Vector128<sbyte> indices) => Shuffle(lower, upper, indices);
         /// <summary>
         ///   <para>v128_t wasm_i8x16_shuffle (v128_t a, v128_t b, int c0, int c1, int c2, int c3, int c4, int c5, int c6, int c7, int c8, int c9, int c10, int c11, int c12, int c13, int c14, int c15)</para>
         ///   <para>i8x16.shuffle laneidx^16 : [v128 v128] -> [v128]</para>
         /// </summary>
-        internal static Vector128<byte>  Shuffle(Vector128<byte>  lower, Vector128<byte>  upper, Vector128<byte>  indices) => Shuffle(lower, upper, indices);
+        /// <param name="lower">The vector that supplies the elements selected by indices 0 through 15.</param>
+        /// <param name="upper">The vector that supplies the elements selected by indices 16 through 31.</param>
+        /// <param name="indices">The per-element indices, each in the range 0 through 31, used to select a value from <paramref name="lower" /> or <paramref name="upper" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="lower" /> and <paramref name="upper" /> selected by <paramref name="indices" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">An element of <paramref name="indices" /> is greater than 31.</exception>
+        /// <remarks>The <c>i8x16.shuffle</c> instruction is emitted only when <paramref name="indices" /> is a constant; otherwise, the operation is emulated with <c>i8x16.swizzle</c>.</remarks>
+        public static Vector128<byte>  Shuffle(Vector128<byte>  lower, Vector128<byte>  upper, Vector128<byte>  indices) => Shuffle(lower, upper, indices);
 
         /// <summary>
         ///   <para>v128_t wasm_i8x16_swizzle (v128_t a, v128_t b)</para>
