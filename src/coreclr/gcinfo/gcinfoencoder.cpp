@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+#ifdef GCINFO_USE_VM_HEADERS
 #include "../vm/common.h"
 #endif
 
