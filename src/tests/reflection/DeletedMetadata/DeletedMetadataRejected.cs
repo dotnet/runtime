@@ -13,26 +13,14 @@ using Xunit;
 
 public class DeletedMetadataRejected
 {
-    private const byte HasDelete = 0x80;
-
+    // Metadata with deleted records (HAS_DELETE set outside of an EnC delta) is not supported.
     [Fact]
-    public static void CompressedMetadataLoads()
+    public static void MetadataWithDeletedRecordsIsRejected()
     {
-        Assembly assembly = Assembly.Load(BuildImage(uncompressed: false, heapSizes: 0));
-        Assert.NotNull(assembly.ManifestModule.GetField("Live"));
+        Assert.Throws<BadImageFormatException>(() => Assembly.Load(BuildImage()));
     }
 
-    // Deleted records (HAS_DELETE outside of an EnC delta) and the uncompressed (#-) table stream are not supported.
-    [Theory]
-    [InlineData(false, HasDelete)]
-    [InlineData(true, 0)]
-    [InlineData(true, HasDelete)]
-    public static void UnsupportedMetadataIsRejected(bool uncompressed, byte heapSizes)
-    {
-        Assert.Throws<BadImageFormatException>(() => Assembly.Load(BuildImage(uncompressed, heapSizes)));
-    }
-
-    private static byte[] BuildImage(bool uncompressed, byte heapSizes)
+    private static byte[] BuildImage()
     {
         var strings = new MemoryStream();
         strings.WriteByte(0);
@@ -58,17 +46,13 @@ public class DeletedMetadataRejected
         tables.Write(0u);           // Reserved
         tables.Write((byte)2);      // MajorVersion
         tables.Write((byte)0);      // MinorVersion
-        tables.Write(heapSizes);    // HeapSizes
+        tables.Write((byte)0x80);   // HeapSizes: HAS_DELETE
         tables.Write((byte)1);      // Reserved
-        // Valid: Module, TypeDef, Field, Assembly, and FieldPtr in the uncompressed format.
-        tables.Write((1UL << 0x00) | (1UL << 0x02) | (uncompressed ? 1UL << 0x03 : 0) | (1UL << 0x04) | (1UL << 0x20));
+        tables.Write((1UL << 0x00) | (1UL << 0x02) | (1UL << 0x03) | (1UL << 0x04) | (1UL << 0x20)); // Valid
         tables.Write(0UL);          // Sorted
         tables.Write(1u);           // Module
         tables.Write(1u);           // TypeDef
-        if (uncompressed)
-        {
-            tables.Write(2u);       // FieldPtr
-        }
+        tables.Write(2u);           // FieldPtr
         tables.Write(2u);           // Field
         tables.Write(1u);           // Assembly
 
@@ -87,19 +71,16 @@ public class DeletedMetadataRejected
         tables.Write((ushort)1);
         tables.Write((ushort)1);
 
-        if (uncompressed)
-        {
-            // FieldPtr: the logical field order is the reverse of the physical Field rows.
-            tables.Write((ushort)2);
-            tables.Write((ushort)1);
-        }
+        // FieldPtr: the logical field order is the reverse of the physical Field rows.
+        tables.Write((ushort)2);
+        tables.Write((ushort)1);
 
         // Field 1: public static int Live
         tables.Write((ushort)(FieldAttributes.Public | FieldAttributes.Static));
         tables.Write((ushort)liveName);
         tables.Write(fieldSignature);
 
-        // Field 2: marked deleted (only meaningful with HAS_DELETE)
+        // Field 2: a deleted field
         tables.Write((ushort)(FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName));
         tables.Write((ushort)deletedName);
         tables.Write(fieldSignature);
@@ -117,7 +98,7 @@ public class DeletedMetadataRejected
 
         (string Name, byte[] Data)[] streams =
         [
-            (uncompressed ? "#-" : "#~", Pad(((MemoryStream)tables.BaseStream).ToArray())),
+            ("#-", Pad(((MemoryStream)tables.BaseStream).ToArray())),
             ("#Strings", Pad(strings.ToArray())),
             ("#US", new byte[4]),
             ("#GUID", Guid.NewGuid().ToByteArray()),

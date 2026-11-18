@@ -31,16 +31,6 @@ STDAPI  GetMDInternalInterface(
     REFIID      riid,                   // [IN] desired interface
     void        **ppv);                 // [OUT] returned interface
 
-// Helper function to get a read/write internal interface on an uncompressed (#-) metadata section.
-// Only metadata produced by the runtime itself (Reflection.Emit modules and EnC deltas) uses this format;
-// GetMDInternalInterface rejects it.
-HRESULT GetInternalWithRWFormat(
-    LPVOID      pData,                  // [IN] in memory metadata section
-    ULONG       cbData,                 // [IN] size of the metadata section
-    DWORD       flags,                  // [IN] CorOpenFlags
-    REFIID      riid,                   // [IN] desired interface
-    void        **ppIUnk);              // [OUT] returned interface
-
 // Helper function to get an internal scopeless interface given a scope.
 STDAPI  GetMDInternalInterfaceFromPublic(
     IUnknown    *pv,                    // [IN] Given interface
