@@ -137,18 +137,17 @@ private:
     CrstExplicitInit m_Crst;
 };
 
-class PinnedHeapHandleBlockHolder;
-void PinnedHeapHandleBlockHolder__StaticFree(PinnedHeapHandleBlockHolder*);
-
-
-class PinnedHeapHandleBlockHolder:public Holder<PinnedHeapHandleBlockHolder*,DoNothing,PinnedHeapHandleBlockHolder__StaticFree>
-
+class PinnedHeapHandleBlockHolder final
 {
-    PinnedHeapHandleTable* m_pTable;
-    DWORD m_Count;
+    PinnedHeapHandleTable* const m_pTable;
     OBJECTREF* m_Data;
+    const DWORD m_Count;
+
 public:
-    FORCEINLINE PinnedHeapHandleBlockHolder(PinnedHeapHandleTable* pOwner, DWORD nCount)
+    PinnedHeapHandleBlockHolder(PinnedHeapHandleTable* pOwner, DWORD nCount)
+        : m_pTable(pOwner)
+        , m_Data(NULL)
+        , m_Count(nCount)
     {
         CONTRACTL
         {
@@ -159,29 +158,37 @@ public:
         CONTRACTL_END;
 
         m_Data = pOwner->AllocateHandles(nCount);
-        m_Count=nCount;
-        m_pTable=pOwner;
-    };
+    }
 
-    FORCEINLINE void FreeData()
+    PinnedHeapHandleBlockHolder(const PinnedHeapHandleBlockHolder&) = delete;
+    PinnedHeapHandleBlockHolder& operator=(const PinnedHeapHandleBlockHolder&) = delete;
+
+    ~PinnedHeapHandleBlockHolder() noexcept
     {
         WRAPPER_NO_CONTRACT;
-        for (DWORD i=0;i< m_Count;i++)
-            ClearObjectReference(m_Data+i);
-        m_pTable->ReleaseHandles(m_Data, m_Count);
-    };
-    FORCEINLINE OBJECTREF* operator[] (DWORD idx)
+        if (m_Data != NULL)
+        {
+            for (DWORD i = 0; i < m_Count; i++)
+                ClearObjectReference(m_Data + i);
+            m_pTable->ReleaseHandles(m_Data, m_Count);
+        }
+    }
+
+    OBJECTREF* operator[](DWORD idx)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(idx<m_Count);
+        _ASSERTE(m_Data != NULL);
+        _ASSERTE(idx < m_Count);
         return &(m_Data[idx]);
     }
-};
 
-FORCEINLINE  void PinnedHeapHandleBlockHolder__StaticFree(PinnedHeapHandleBlockHolder* pHolder)
-{
-    WRAPPER_NO_CONTRACT;
-    pHolder->FreeData();
+    OBJECTREF* Detach()
+    {
+        LIMITED_METHOD_CONTRACT;
+        OBJECTREF* pData = m_Data;
+        m_Data = NULL;
+        return pData;
+    }
 };
 
 #define LOW_FREQUENCY_HEAP_RESERVE_SIZE        (3 * minipal_getpagesize())

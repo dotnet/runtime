@@ -64,7 +64,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishPrebuiltR2RDirectory>$(_WasmPublishR2RDir)</_WasmPublishPrebuiltR2RDirectory>
       <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
       <_WasmCompositeBundlePath Condition="'$(PublishReadyToRunComposite)' == 'true' and '$(WasmBundleCompositeComponents)' == 'true'">$(_WasmPublishR2RDir)$(AssemblyName).components.wasm</_WasmCompositeBundlePath>
-      <PublishReadyToRunCrossgen2CompositeExtraArgs Condition="'$(_WasmCompositeBundlePath)' != ''">$(PublishReadyToRunCrossgen2CompositeExtraArgs);--webcil-component-bundle:&quot;$(_WasmCompositeBundlePath)&quot;</PublishReadyToRunCrossgen2CompositeExtraArgs>
+      <_PublishReadyToRunCrossgen2CompositeExtraArgs Condition="'$(_WasmCompositeBundlePath)' != ''">$(_PublishReadyToRunCrossgen2CompositeExtraArgs);--webcil-component-bundle:&quot;$(_WasmCompositeBundlePath)&quot;</_PublishReadyToRunCrossgen2CompositeExtraArgs>
     </PropertyGroup>
     <PropertyGroup Condition="'$(_WasmUsePrebuiltReadyToRun)' == 'true' and '$(_WasmCoreClrUnderPublish)' != 'true' and
                               '$(DeployOnBuild)' != 'true' and '$(_WasmEnableWebcil)' == 'true' and '$(WasmPerformanceInstrumentation)' == ''">
@@ -306,7 +306,7 @@ Copyright (c) .NET Foundation. All rights reserved.
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories;_WasmCoreClrConfigureReadyToRunPgo"
           BeforeTargets="_CreateR2RImages">
     <PropertyGroup>
-      <_WasmReadyToRunState>Composite=$(PublishReadyToRunComposite)|Bundle=$(WasmBundleCompositeComponents)|Lazy=@(BlazorWebAssemblyLazyLoad, '|')|Inputs=@(_ReadyToRunCompositeBuildInput, '|')|Unrooted=@(_ReadyToRunCompositeUnrootedBuildInput, '|')|PgoFiles=@(PublishReadyToRunPgoFiles->'%(FullPath)', '|')|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)|CompositeArgs=$(PublishReadyToRunCrossgen2CompositeExtraArgs)</_WasmReadyToRunState>
+      <_WasmReadyToRunState>Composite=$(PublishReadyToRunComposite)|Bundle=$(WasmBundleCompositeComponents)|Lazy=@(BlazorWebAssemblyLazyLoad, '|')|Inputs=@(_ReadyToRunCompositeBuildInput, '|')|Unrooted=@(_ReadyToRunCompositeUnrootedBuildInput, '|')|PgoFiles=@(PublishReadyToRunPgoFiles->'%(FullPath)', '|')|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)|CompositeArgs=$(_PublishReadyToRunCrossgen2CompositeExtraArgs)</_WasmReadyToRunState>
       <!-- The workload targets record settings for steps that rewrite the images in place after crossgen2
            (wasm-opt), so changing them recompiles every image. -->
       <_WasmReadyToRunState Condition="'$(_WasmReadyToRunPostProcessState)' != ''">$(_WasmReadyToRunState)|PostProcess=$(_WasmReadyToRunPostProcessState)</_WasmReadyToRunState>
