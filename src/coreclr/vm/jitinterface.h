@@ -417,7 +417,7 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
 
-    virtual ~CEEInfo()
+    CORINFO_VIRTUAL ~CEEInfo()
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -543,7 +543,7 @@ public:
 #endif
     }
 
-    virtual void ResetForJitRetry()
+    CORINFO_VIRTUAL void ResetForJitRetry()
     {
         CONTRACTL {
             NOTHROW;
@@ -591,20 +591,20 @@ public:
 
     // ICorDebugInfo stuff.
     void getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
-                 bool *extendOthers) override final;
+                 bool *extendOthers) CORINFO_OVERRIDE_FINAL;
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
-                       ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
+                       ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) CORINFO_OVERRIDE_FINAL;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
-                 ICorDebugInfo::NativeVarInfo *vars) override final;
+                 ICorDebugInfo::NativeVarInfo *vars) CORINFO_OVERRIDE_FINAL;
     void CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nativeCodeVersion);
-    virtual void SetDebugInfo(PTR_BYTE pDebugInfo) = 0;
+    CORINFO_VIRTUAL void SetDebugInfo(PTR_BYTE pDebugInfo) CORINFO_PURE;
 
-    virtual PatchpointInfo* GetPatchpointInfo()
+    CORINFO_VIRTUAL PatchpointInfo* GetPatchpointInfo()
     {
         return NULL;
     }
 
-    virtual BOOL JitAgain()
+    CORINFO_VIRTUAL BOOL JitAgain()
     {
         return FALSE;
     }
@@ -613,26 +613,26 @@ public:
         ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
         uint32_t                          numInlineTreeNodes,
         ICorDebugInfo::RichOffsetMapping* mappings,
-        uint32_t                          numMappings) override final;
+        uint32_t                          numMappings) CORINFO_OVERRIDE_FINAL;
 
     void reportAsyncDebugInfo(
         ICorDebugInfo::AsyncInfo*             asyncInfo,
         ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
         ICorDebugInfo::AsyncContinuationVarInfo* vars,
-        uint32_t                              numVars) override final;
+        uint32_t                              numVars) CORINFO_OVERRIDE_FINAL;
 
-    void reportMetadata(const char* key, const void* value, size_t length) override final;
+    void reportMetadata(const char* key, const void* value, size_t length) CORINFO_OVERRIDE_FINAL;
 
-    virtual void WriteCode(EECodeGenManager * jitMgr) = 0;
+    CORINFO_VIRTUAL void WriteCode(EECodeGenManager * jitMgr) CORINFO_PURE;
 
     void getHelperFtn(CorInfoHelpFunc         tnNum,                     /* IN  */
                       CORINFO_CONST_LOOKUP *  pNativeEntrypoint,         /* OUT */
-                      CORINFO_METHOD_HANDLE * pMethodHandle) override;   /* OUT */
+                      CORINFO_METHOD_HANDLE * pMethodHandle) CORINFO_OVERRIDE;   /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
 
-    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override;
-    InfoAccessType emptyStringLiteral(void ** ppValue) override;
-    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
+    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) CORINFO_OVERRIDE;
+    InfoAccessType emptyStringLiteral(void ** ppValue) CORINFO_OVERRIDE;
+    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) CORINFO_OVERRIDE;
 
     CORINFO_METHOD_INFO* getMethodInfoInternal();
     CORJIT_FLAGS* getJitFlagsInternal();
@@ -642,7 +642,7 @@ public:
             PgoInstrumentationSchema* pSchema, /* IN/OUT */
             uint32_t countSchemaItems, /* IN */
             uint8_t** pInstrumentationData /* OUT */
-            ) override;
+            ) CORINFO_OVERRIDE;
 
     HRESULT getPgoInstrumentationResults(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
@@ -651,7 +651,7 @@ public:
             uint8_t**pInstrumentationData, /* OUT */
             PgoSource *pPgoSource, /* OUT */
             bool* pDynamicPgo /* OUT */
-            ) override;
+            ) CORINFO_OVERRIDE;
 
 protected:
 
@@ -664,12 +664,14 @@ protected:
     template<class TCodeHeader>
     void NibbleMapSet();
 
+public:
     void getEHinfo(
                     CORINFO_METHOD_HANDLE ftn,              /* IN  */
                     unsigned      EHnumber,                 /* IN */
                     CORINFO_EH_CLAUSE* clause               /* OUT */
-                  ) override final;
+                  ) CORINFO_OVERRIDE_FINAL;
 
+protected:
     void setEHinfoWorker(
                           EE_ILEXCEPTION* pEHInfo,
                           unsigned      EHnumber,
@@ -750,18 +752,18 @@ class CEEJitInfo final : public CEECodeGenInfo
 public:
     // ICorJitInfo stuff
 
-    void allocMem (AllocMemArgs *pArgs) override;
-    void * allocGCInfo(size_t  size) override;
-    void setEHcount (unsigned cEH) override;
+    void allocMem (AllocMemArgs *pArgs) CORINFO_OVERRIDE;
+    void * allocGCInfo(size_t  size) CORINFO_OVERRIDE;
+    void setEHcount (unsigned cEH) CORINFO_OVERRIDE;
     void setEHinfo (
         unsigned      EHnumber,
         const CORINFO_EH_CLAUSE* clause
-       ) override;
+       ) CORINFO_OVERRIDE;
 
     void WriteCodeBytes();
-    void WriteCode(EECodeGenManager * jitMgr) override;
+    void WriteCode(EECodeGenManager * jitMgr) CORINFO_OVERRIDE;
 
-    void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override;
+    void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) CORINFO_OVERRIDE;
 
     void allocUnwindInfo (
             uint8_t * pHotCode,              /* IN */
@@ -771,26 +773,26 @@ public:
             uint32_t  unwindSize,            /* IN */
             uint8_t * pUnwindBlock,          /* IN */
             CorJitFuncKind funcKind       /* IN */
-            ) override;
+            ) CORINFO_OVERRIDE;
 
     void recordCallSite(
             uint32_t                     instrOffset,  /* IN */
             CORINFO_SIG_INFO *        callSig,      /* IN */
             CORINFO_METHOD_HANDLE     methodHandle  /* IN */
-            ) override;
+            ) CORINFO_OVERRIDE;
 
     void recordRelocation(
             void                    *location,
             void                    *locationRW,
             void                    *target,
             CorInfoReloc             fRelocType,
-            int32_t                  addlDelta) override;
+            int32_t                  addlDelta) CORINFO_OVERRIDE;
 
-    CorInfoReloc getRelocTypeHint(void * target) override;
+    CorInfoReloc getRelocTypeHint(void * target) CORINFO_OVERRIDE;
 
-    void SetDebugInfo(PTR_BYTE pDebugInfo) override;
+    void SetDebugInfo(PTR_BYTE pDebugInfo) CORINFO_OVERRIDE;
 
-    void ResetForJitRetry() override
+    void ResetForJitRetry() CORINFO_OVERRIDE
     {
         CONTRACTL {
             NOTHROW;
@@ -835,7 +837,7 @@ public:
         return m_fJumpStubOverflow;
     }
 
-    BOOL JitAgain() override
+    BOOL JitAgain() CORINFO_OVERRIDE
     {
         LIMITED_METHOD_CONTRACT;
         return m_fJumpStubOverflow;
@@ -853,7 +855,7 @@ public:
         m_reserveForJumpStubs = value;
     }
 
-    PatchpointInfo* GetPatchpointInfo() override
+    PatchpointInfo* GetPatchpointInfo() CORINFO_OVERRIDE
     {
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         return m_pPatchpointInfoFromJit;
@@ -863,7 +865,7 @@ public:
     }
 
 #else
-    BOOL JitAgain() override
+    BOOL JitAgain() CORINFO_OVERRIDE
     {
         LIMITED_METHOD_CONTRACT;
         return FALSE;
@@ -944,12 +946,12 @@ public:
                     bool                      *pbHookFunction,
                     void                     **pProfilerHandle,
                     bool                      *pbIndirectedHandles
-                    ) override;
+                    ) CORINFO_OVERRIDE;
 
-    void setPatchpointInfo(PatchpointInfo* patchpointInfo) override;
-    PatchpointInfo* getOSRInfo(unsigned* ilOffset) override;
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo) CORINFO_OVERRIDE;
+    PatchpointInfo* getOSRInfo(unsigned* ilOffset) CORINFO_OVERRIDE;
 
-    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
+    CORINFO_VIRTUAL CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) CORINFO_OVERRIDE_FINAL;
 
 protected :
 
@@ -996,22 +998,22 @@ public:
         } CONTRACTL_END;
     }
 
-    void allocMem(AllocMemArgs *pArgs) override;
-    void * allocGCInfo(size_t  size) override;
-    void setEHcount (unsigned cEH) override;
+    void allocMem(AllocMemArgs *pArgs) CORINFO_OVERRIDE;
+    void * allocGCInfo(size_t  size) CORINFO_OVERRIDE;
+    void setEHcount (unsigned cEH) CORINFO_OVERRIDE;
     void setEHinfo (
         unsigned      EHnumber,
         const CORINFO_EH_CLAUSE* clause
-       ) override;
+       ) CORINFO_OVERRIDE;
 
     void WriteCodeBytes();
-    void WriteCode(EECodeGenManager * jitMgr) override;
+    void WriteCode(EECodeGenManager * jitMgr) CORINFO_OVERRIDE;
 
-    void SetDebugInfo(PTR_BYTE pDebugInfo) override;
+    void SetDebugInfo(PTR_BYTE pDebugInfo) CORINFO_OVERRIDE;
 
-    LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override;
+    LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) CORINFO_OVERRIDE;
 
-    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
+    CORINFO_VIRTUAL CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) CORINFO_OVERRIDE_FINAL;
 };
 #endif // FEATURE_INTERPRETER
 

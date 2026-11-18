@@ -147,7 +147,11 @@ public:
         } CONTRACTL_END;
 
         m_RWLock = 0;
+#ifndef DACCESS_COMPILE
         m_spinCount = (GetCurrentProcessCpuCount() == 1) ? 0 : 4000;
+#else
+        m_spinCount = 0;
+#endif
         m_WriterWaiting = FALSE;
 
 #ifdef _DEBUG
