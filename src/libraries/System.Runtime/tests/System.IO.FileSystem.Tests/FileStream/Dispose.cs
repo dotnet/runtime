@@ -524,9 +524,9 @@ namespace System.IO.Tests
         [InlineData(false, true, true)]
         [InlineData(true, false, true)]
         [InlineData(true, true, true)]
-        public async Task PipeHandlesAreFinalizedWhenNotDisposed(bool asyncRead, bool asyncWrite, bool cancellable)
+        public void PipeHandlesAreFinalizedWhenNotDisposed(bool asyncRead, bool asyncWrite, bool cancellable)
         {
-            (WeakReference<SafeFileHandle> readHandle, WeakReference<SafeFileHandle> writeHandle) = await ReadAndWriteAsync(asyncRead, asyncWrite, cancellable);
+            (WeakReference<SafeFileHandle> readHandle, WeakReference<SafeFileHandle> writeHandle) = ReadAndWrite(asyncRead, asyncWrite, cancellable);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -535,8 +535,10 @@ namespace System.IO.Tests
             Assert.False(readHandle.TryGetTarget(out _));
             Assert.False(writeHandle.TryGetTarget(out _));
 
+            // The helper is synchronous on purpose: the continuation of an async helper references the streams
+            // until the thread that completed it is done with it, which races with the GC above.
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static async Task<(WeakReference<SafeFileHandle>, WeakReference<SafeFileHandle>)> ReadAndWriteAsync(bool asyncRead, bool asyncWrite, bool cancellable)
+            static (WeakReference<SafeFileHandle>, WeakReference<SafeFileHandle>) ReadAndWrite(bool asyncRead, bool asyncWrite, bool cancellable)
             {
                 SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead, asyncWrite);
                 FileStream reader = new(readHandle, FileAccess.Read, bufferSize: 0, isAsync: asyncRead);
@@ -552,9 +554,9 @@ namespace System.IO.Tests
                 }
 
                 byte[] buffer = new byte[1];
-                ValueTask<int> readTask = reader.ReadAsync(buffer, cancellationToken);
-                await writer.WriteAsync(new byte[] { 42 });
-                Assert.Equal(1, await readTask);
+                Task<int> readTask = reader.ReadAsync(buffer, cancellationToken).AsTask();
+                writer.WriteAsync(new byte[] { 42 }).AsTask().Wait();
+                Assert.Equal(1, readTask.Result);
 
                 return (new(readHandle, trackResurrection: true), new(writeHandle, trackResurrection: true));
             }

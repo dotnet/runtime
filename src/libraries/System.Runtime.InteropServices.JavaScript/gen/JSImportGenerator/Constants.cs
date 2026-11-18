@@ -29,6 +29,7 @@ namespace Microsoft.Interop.JavaScript
         public const string ActionGlobal = "global::System.Action";
         public const string ExceptionGlobal = "global::System.Exception";
         public const string OSArchitectureGlobal = "global::System.Runtime.InteropServices.RuntimeInformation.OSArchitecture";
+        public const string ArchitectureWasm64Global = "global::System.Runtime.InteropServices.Architecture.Wasm64";
         public const string ArchitectureWasmGlobal = "global::System.Runtime.InteropServices.Architecture.Wasm";
         public const string ArgumentsBuffer = "__arguments_buffer";
         public const string ArgumentException = "__arg_exception";
