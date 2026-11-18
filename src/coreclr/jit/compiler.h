@@ -7075,6 +7075,7 @@ public:
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmRepairTryEntries();
     PhaseStatus fgWasmVirtualIP();
+    bool        fgWasmMayEmitCall();
     PhaseStatus fgWasmFindGCRefCandidates();
     PhaseStatus fgWasmSpillRefs();
     PhaseStatus fgWasmProfInstrument();
