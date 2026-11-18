@@ -7,15 +7,14 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        /// <summary>Whether the processor times of the current process are taken from <see cref="Environment.CpuUsage"/>.</summary>
-        private static bool UsesEnvironmentCpuUsage =>
-            OperatingSystem.IsLinux() || OperatingSystem.IsAndroid() || OperatingSystem.IsFreeBSD() || OperatingSystem.IsOpenBSD();
+        // For the current process, the processor times come from Environment.CpuUsage (getrusage) on all Unix
+        // platforms, which avoids reading procfs or sysctl.
 
         public partial TimeSpan PrivilegedProcessorTime
         {
             get
             {
-                if (UsesEnvironmentCpuUsage && IsCurrentProcess)
+                if (IsCurrentProcess)
                 {
                     return Environment.CpuUsage.PrivilegedTime;
                 }
@@ -46,7 +45,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (UsesEnvironmentCpuUsage && IsCurrentProcess)
+                if (IsCurrentProcess)
                 {
                     return Environment.CpuUsage.TotalTime;
                 }
@@ -77,7 +76,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (UsesEnvironmentCpuUsage && IsCurrentProcess)
+                if (IsCurrentProcess)
                 {
                     return Environment.CpuUsage.UserTime;
                 }
