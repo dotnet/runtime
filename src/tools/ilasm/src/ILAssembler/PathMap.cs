@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 /// <summary>
 /// Maps path prefixes to the paths that the debug information records, as the C# compiler's <c>-pathmap</c> option

@@ -23,6 +23,7 @@ using ILCompiler.ReadyToRun.TypeSystem;
 using ILCompiler.ReadyToRun;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -79,6 +80,18 @@ namespace ILCompiler.DependencyAnalysis
     public sealed partial class NodeFactory
     {
         private bool _markingComplete;
+
+        internal List<Import> DeferredImportPlacement { get; set; }
+
+        internal void CompleteDeferredImportPlacement()
+        {
+            List<Import> imports = DeferredImportPlacement;
+            DeferredImportPlacement = null;
+            foreach (Import import in imports)
+            {
+                import.CompleteDeferredPlacement(this);
+            }
+        }
 
         public CompilerTypeSystemContext TypeSystemContext { get; }
 
@@ -224,7 +237,7 @@ namespace ILCompiler.DependencyAnalysis
             return _arrayInterfaceMethods.GetOrAdd((ArrayType)arrayType.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
-        public void AddVirtualMethodDiscoveryDependencies(ref DependencyList dependencies, TypeDesc type)
+        public void AddVirtualMethodDiscoveryDependencies(DependencySink dependencies, TypeDesc type)
         {
             if (CompilationCurrentPhase != 0)
                 return;
@@ -239,14 +252,12 @@ namespace ILCompiler.DependencyAnalysis
                 type.IsDefType &&
                 CompilationModuleGroup.VersionsWithType(type))
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(InheritedVirtualMethods(type), "Inherited virtual/interface methods on type");
             }
             // Arrays implement the generic collection interfaces through SZArrayHelper. Discover those
             // implementations so that e.g. ((ICollection<int>)intArray).Count gets discovered.
             else if (type.IsSzArray)
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(ArrayInterfaceMethods((ArrayType)type), "Array generic interface methods");
             }
         }
@@ -618,6 +629,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public ImportSectionNode EagerImports;
 
+        public ImportSectionNode EagerMethodImports;
+
+        public ImportSectionNode EagerStringImports;
+
         public ImportSectionNode MethodImports;
 
         public ImportSectionNode DispatchImports;
@@ -625,6 +640,7 @@ namespace ILCompiler.DependencyAnalysis
         public ImportSectionNode StringImports;
 
         public ImportSectionNode HelperImports;
+        public ImportSectionNode DelegateCtorImports;
 
         public ImportSectionNode PrecodeImports;
 
@@ -1220,6 +1236,26 @@ namespace ILCompiler.DependencyAnalysis
                 emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(EagerImports);
 
+            EagerStringImports = new ImportSectionNode(
+                "EagerStringImports",
+                ReadyToRunImportSectionType.StringHandle,
+                ReadyToRunImportSectionFlags.Eager,
+                (byte)Target.PointerSize,
+                emitPrecode: false,
+                emitGCRefMap: false);
+            ImportSectionsTable.AddEmbeddedObject(EagerStringImports);
+
+            // All eager validation and data-cell fixups must precede method activation,
+            // which can permanently publish R2R code and consume those cells.
+            EagerMethodImports = new ImportSectionNode(
+                "Z_EagerMethodImports",
+                ReadyToRunImportSectionType.Unknown,
+                ReadyToRunImportSectionFlags.Eager,
+                (byte)Target.PointerSize,
+                emitPrecode: false,
+                emitGCRefMap: false);
+            ImportSectionsTable.AddEmbeddedObject(EagerMethodImports);
+
             // All ready-to-run images have a module import helper which gets patched by the runtime on image load
             ModuleImport = new Import(EagerImports, new ReadyToRunHelperSignature(
                 ReadyToRunHelper.Module));
@@ -1307,6 +1343,15 @@ namespace ILCompiler.DependencyAnalysis
                 emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(HelperImports);
 
+            DelegateCtorImports = new ImportSectionNode(
+                "DelegateCtorImports",
+                ReadyToRunImportSectionType.Unknown,
+                ReadyToRunImportSectionFlags.PCode,
+                (byte)Target.PointerSize,
+                emitPrecode: false,
+                emitGCRefMap: true);
+            ImportSectionsTable.AddEmbeddedObject(DelegateCtorImports);
+
             PrecodeImports = new ImportSectionNode(
                 "PrecodeImports",
                 ReadyToRunImportSectionType.Unknown,
@@ -1328,9 +1373,12 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(ImportSectionsTable, "Import sections table is always generated");
             graph.AddRoot(ModuleImport, "Module import is always generated");
             graph.AddRoot(EagerImports, "Eager imports are always generated");
+            graph.AddRoot(EagerStringImports, "Eager string imports are always generated");
+            graph.AddRoot(EagerMethodImports, "Eager method imports are always generated");
             graph.AddRoot(MethodImports, "Method imports are always generated");
             graph.AddRoot(DispatchImports, "Dispatch imports are always generated");
             graph.AddRoot(HelperImports, "Helper imports are always generated");
+            graph.AddRoot(DelegateCtorImports, "Delegate constructor imports are always generated");
             graph.AddRoot(PrecodeImports, "Precode helper imports are always generated");
             graph.AddRoot(ILBodyPrecodeImports, "IL body precode imports are always generated");
             graph.AddRoot(StringImports, "String imports are always generated");

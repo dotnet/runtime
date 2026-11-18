@@ -74,12 +74,6 @@ private:
         YIELD_WHILE(InterlockedExchange(&m_value, 1) == 1);
     }
 
-    FORCEINLINE BOOL TryAcquire()
-    {
-        WRAPPER_NO_CONTRACT;
-        return (InterlockedExchange(&m_value, 1) == 0);
-    }
-
     FORCEINLINE void Release()
     {
         LIMITED_METHOD_CONTRACT;
@@ -87,7 +81,6 @@ private:
     }
 
     inline static void AcquireLock(DangerousNonHostedSpinLock *pLock) { WRAPPER_NO_CONTRACT; pLock->Acquire(); }
-    inline static BOOL TryAcquireLock(DangerousNonHostedSpinLock *pLock) { WRAPPER_NO_CONTRACT; return pLock->TryAcquire(); }
     inline static void ReleaseLock(DangerousNonHostedSpinLock *pLock) { WRAPPER_NO_CONTRACT; pLock->Release(); }
 
     Volatile<LONG> m_value;
@@ -100,11 +93,9 @@ public:
     }
 
     typedef Holder<DangerousNonHostedSpinLock *, DangerousNonHostedSpinLock::AcquireLock, DangerousNonHostedSpinLock::ReleaseLock> LockHolder;
-    typedef ConditionalStateHolder<DangerousNonHostedSpinLock *, DangerousNonHostedSpinLock::TryAcquireLock, DangerousNonHostedSpinLock::ReleaseLock> LockTryHolder;
 };
 
 typedef DangerousNonHostedSpinLock::LockHolder DangerousNonHostedSpinLockHolder;
-typedef DangerousNonHostedSpinLock::LockTryHolder DangerousNonHostedSpinLockTryHolder;
 
 
 class SpinLock;

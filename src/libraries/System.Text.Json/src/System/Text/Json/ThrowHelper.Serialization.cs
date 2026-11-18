@@ -781,22 +781,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(ReadOnlySpan<byte> propertyName, scoped ref ReadStack state, in Utf8JsonReader reader)
-        {
-            // Set PropertyInfo or KeyName to write down the conflicting property name in JsonException.Path
-            if (state.Current.IsProcessingDictionary())
-            {
-                state.Current.JsonPropertyNameAsString = reader.GetString();
-            }
-            else
-            {
-                state.Current.JsonPropertyName = propertyName.ToArray();
-            }
-
-            ThrowJsonException(SR.MetadataInvalidPropertyWithLeadingDollarSign);
-        }
-
-        [DoesNotReturn]
         public static void ThrowJsonException_MetadataDuplicateIdFound(string id)
         {
             ThrowJsonException(SR.Format(SR.MetadataDuplicateIdFound, id));
@@ -853,24 +837,6 @@ namespace System.Text.Json
         {
             Debug.Assert(propertyInfo.DeclaringTypeInfo is not null, "We should not throw this exception when ParentTypeInfo is null");
             throw new InvalidOperationException(SR.Format(SR.JsonPropertyInfoBoundToDifferentParent, propertyInfo.Name, propertyInfo.DeclaringTypeInfo.Type.FullName));
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowUnexpectedMetadataException(
-            ReadOnlySpan<byte> propertyName,
-            ref Utf8JsonReader reader,
-            scoped ref ReadStack state)
-        {
-
-            MetadataPropertyName name = JsonSerializer.GetMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver);
-            if (name != 0)
-            {
-                ThrowJsonException_MetadataUnexpectedProperty(propertyName, ref state);
-            }
-            else
-            {
-                ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(propertyName, ref state, reader);
-            }
         }
 
         [DoesNotReturn]

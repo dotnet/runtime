@@ -174,6 +174,9 @@
   <data name="ErrorReadyToRunHeaderSymbolNameRequiresComposite" xml:space="preserve">
     <value>Error: --rtr-header-symbol-name requires --composite.</value>
   </data>
+  <data name="ErrorStripILBodiesRequiresComposite" xml:space="preserve">
+    <value>Error: --strip-il-bodies requires --composite.</value>
+  </data>
   <data name="ErrorReadyToRunHeaderSymbolNameEmpty" xml:space="preserve">
     <value>Error: --rtr-header-symbol-name must not be empty or whitespace.</value>
   </data>
@@ -470,6 +473,9 @@
   </data>
   <data name="StripInliningInfoOption" xml:space="preserve">
     <value>Strip inlining info from the R2R image.</value>
+  </data>
+  <data name="DisableDeferredWasmCallsOption" xml:space="preserve">
+    <value>Disable deferred WebAssembly calls while retaining the selected optimization mode.</value>
   </data>
   <data name="StripDebugInfoOption" xml:space="preserve">
     <value>Strip debug info from the R2R image.</value>

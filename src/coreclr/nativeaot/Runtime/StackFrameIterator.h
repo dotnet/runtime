@@ -17,7 +17,10 @@ typedef VPTR(ICodeManager) PTR_ICodeManager;
 
 enum ExKind : uint8_t
 {
+    EK_None = 0,
+    EK_Throw = 1,
     EK_HardwareFault = 2,
+    EK_RethrowFlag = 4,
     EK_SupersededFlag  = 8,
 };
 
@@ -38,6 +41,13 @@ class StackFrameIterator
     friend class AsmOffsets;
 
 public:
+#ifdef FEATURE_PORTABLE_HELPERS
+    // Reserved virtual IPs used to identify portable EH helpers.
+    static constexpr uintptr_t ThrowSiteThunkIP = UINT32_MAX;
+    static constexpr uintptr_t FuncletInvokeThunkIP = UINT32_MAX - 1;
+    static constexpr uintptr_t FilterFuncletInvokeThunkIP = UINT32_MAX - 2;
+#endif
+
     StackFrameIterator() {}
     StackFrameIterator(Thread * pThreadToWalk, PInvokeTransitionFrame* pInitialTransitionFrame);
     StackFrameIterator(Thread* pThreadToWalk, NATIVE_CONTEXT* pCtx);
@@ -71,6 +81,8 @@ public:
 
     // Implementations of RhpSfiInit and RhpSfiNext called from managed code
     bool             Init(PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault);
+    // Portable EH walks return false with pfUnwoundReversePInvoke set at a native
+    // boundary, since no native caller frame can be exposed.
     bool             Next(uint32_t* puExCollideClauseIdx, bool* pfUnwoundReversePInvoke);
 
 private:
@@ -161,6 +173,7 @@ private:
         StackTraceStackWalkFlags = GcStackWalkFlags
     };
 
+#ifndef FEATURE_PORTABLE_HELPERS
     struct PreservedRegPtrs
     {
 #ifdef TARGET_ARM
@@ -228,6 +241,7 @@ private:
 #endif // TARGET_AMD64
 #endif // TARGET_ARM
     };
+#endif // !FEATURE_PORTABLE_HELPERS
 
 protected:
     Thread *            m_pThread;
@@ -248,9 +262,11 @@ protected:
     uint32_t            m_dwFlags;
     PTR_ExInfo          m_pNextExInfo;
     PTR_VOID            m_pendingFuncletFramePointer;
+#ifndef FEATURE_PORTABLE_HELPERS
     PreservedRegPtrs    m_funcletPtrs;  // @TODO: Placing the 'scratch space' in the StackFrameIterator is not
                                         // preferred because not all StackFrameIterators require this storage
                                         // space.  However, the implementation simpler by doing it this way.
+#endif // !FEATURE_PORTABLE_HELPERS
     PTR_VOID            m_OriginalControlPC;
     PTR_PInvokeTransitionFrame m_pPreviousTransitionFrame;
 };

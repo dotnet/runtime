@@ -24,7 +24,7 @@ namespace System.Threading.Tasks
     /// <see cref="Task{TResult}.Factory">Task{TResult}.Factory</see> property.
     /// </para>
     /// </remarks>
-    public class TaskFactory<TResult>
+    public partial class TaskFactory<TResult>
     {
         // Member variables, DefaultScheduler, other properties and ctors
         // copied right out of TaskFactory...  Lots of duplication here...
@@ -646,54 +646,7 @@ namespace System.Threading.Tasks
 
             TaskFactory.CheckFromAsyncOptions(creationOptions, false);
 
-            Task<TResult> promise = new Task<TResult>((object?)null, creationOptions);
-
-            if (TplEventSource.Log.IsEnabled())
-                TplEventSource.Log.TraceOperationBegin(promise.Id, "TaskFactory.FromAsync", 0);
-
-            if (Task.s_asyncDebuggingEnabled)
-                Task.AddToActiveTasks(promise);
-
-            // Just specify this task as detached. No matter what happens, we want endMethod
-            // to be called -- even if the parent is canceled.  So we don't want to flow
-            // RespectParentCancellation.
-            Task t = new Task(new Action<object>(delegate
-            {
-                FromAsyncCoreLogic(asyncResult, endFunction, endAction, promise, requiresSynchronization: true);
-            }),
-                (object?)null, null,
-                default, TaskCreationOptions.None, InternalTaskOptions.None, null);
-
-            if (TplEventSource.Log.IsEnabled())
-                TplEventSource.Log.TraceOperationBegin(t.Id, "TaskFactory.FromAsync Callback", 0);
-
-            if (Task.s_asyncDebuggingEnabled)
-                Task.AddToActiveTasks(t);
-
-            if (asyncResult.IsCompleted)
-            {
-                try { t.InternalRunSynchronously(scheduler, waitForCompletion: false); }
-                catch (Exception e) { promise.TrySetException(e); } // catch and log any scheduler exceptions
-            }
-            else
-            {
-                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-
-#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44544
-                ThreadPool.RegisterWaitForSingleObject(
-                    asyncResult.AsyncWaitHandle,
-                    delegate
-                    {
-                        try { t.InternalRunSynchronously(scheduler, waitForCompletion: false); }
-                        catch (Exception e) { promise.TrySetException(e); } // catch and log any scheduler exceptions
-                    },
-                    null,
-                    Timeout.Infinite,
-                    true);
-#pragma warning restore CA1416
-            }
-
-            return promise;
+            return FromAsyncImplCore(asyncResult, endFunction, endAction, creationOptions, scheduler);
         }
 
         /// <summary>

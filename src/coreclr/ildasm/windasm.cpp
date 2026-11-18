@@ -82,8 +82,6 @@ extern BOOL                 g_fDumpMetaInfo;
 extern ULONG                g_ulMetaInfoFilter;
 HINSTANCE                   g_hInstance;
 HINSTANCE                   g_hResources;
-HANDLE                      hConsoleOut=NULL;
-HANDLE                      hConsoleErr=NULL;
 // These are implemented in DASM.CPP:
 BOOL Init();
 void Uninit();
@@ -137,17 +135,21 @@ char* EqualOrColon(_In_ __nullterminated char* szArg)
 
 void GetInputFileFullPath()
 {
+#ifdef TARGET_UNIX
+    minipal_convert_utf8_to_utf16(g_szInputFile, strlen(g_szInputFile) + 1, (CHAR16_T*)g_wszFullInputFile, MAX_PATH + 1, 0);
+#else
     // We need the input file's full path to make uses of it later, despite changing CurrentDirectory
 
     // First, convert back up to UTF16
     DWORD len = (DWORD) strlen(g_szInputFile) + 16;
     WCHAR* wzArg = new WCHAR[len];
     memset(wzArg, 0, len * sizeof(WCHAR));
-    MultiByteToWideChar(g_uConsoleCP, 0, g_szInputFile, -1, wzArg, len);
+    minipal_convert_utf8_to_utf16(g_szInputFile, strlen(g_szInputFile) + 1, (CHAR16_T*)wzArg, len, 0);
 
     // Get the full path
     len = GetFullPathName(wzArg, MAX_PATH, g_wszFullInputFile, NULL);
     VDELETE(wzArg);
+#endif
 }
 
 int ProcessOneArg(_In_ __nullterminated char* szArg, _Out_ char** ppszObjFileName)
@@ -427,7 +429,7 @@ int ParseCmdLineW(int argc, _In_ __nullterminated wchar_t* argv[], _Out_ char** 
     for(int i=1; i < argc; i++)
     {
         memset(szArg,0,2048);
-        WideCharToMultiByte(CP_UTF8,0,argv[i],-1,szArg,2048,NULL,NULL);
+        minipal_convert_utf16_to_utf8((const CHAR16_T*)argv[i],u16_strlen(argv[i])+1,szArg,2048,0);
         if((ret = ProcessOneArg(szArg,ppszObjFileName)) != 0) break;
     }
     VDELETE(szArg);
@@ -481,8 +483,6 @@ int main(int argc, char* argv[])
     g_pszObjFileName = NULL;
 
     g_szAsmCodeIndent[0] = 0;
-    hConsoleOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    hConsoleErr = GetStdHandle(STD_ERROR_HANDLE);
 
 #ifndef TARGET_UNIX
     // Dev11 #5320 - pull the localized resource loader up so if ParseCmdLineW need resources, they're already loaded
@@ -506,52 +506,46 @@ int main(int argc, char* argv[])
         g_fHideFOA = FALSE;
         g_fHidePrivScope = FALSE;
     }
-    if(hConsoleOut != INVALID_HANDLE_VALUE) //First pass: console
+    g_uConsoleCP = CP_UTF8;
+
+    if(iCommandLineParsed)
     {
-        g_uConsoleCP = GetConsoleOutputCP();
+        if(iCommandLineParsed > 0) PrintLogo();
+        SyntaxCon();
+        exit((iCommandLineParsed == 1) ? 0 : 1);
+    }
 
-        if(iCommandLineParsed)
+    DWORD   exitCode = 1;
+    if(g_szInputFile[0] == 0)
+    {
+        SyntaxCon();
+        exit(1);
+    }
+    g_pFile = NULL;
+    if(g_szOutputFile[0])
+    {
+        g_pFile = OpenOutput(g_szOutputFile);
+        if(g_pFile == NULL)
         {
-            if(iCommandLineParsed > 0) PrintLogo();
-            SyntaxCon();
-            exit((iCommandLineParsed == 1) ? 0 : 1);
-        }
-
-        {
-            DWORD   exitCode = 1;
-            if(g_szInputFile[0] == 0)
-            {
-                SyntaxCon();
-                exit(1);
-            }
-            g_pFile = NULL;
-            if(g_szOutputFile[0])
-            {
-                g_pFile = OpenOutput(g_szOutputFile);
-                if(g_pFile == NULL)
-                {
-                    char sz[4096];
-                    sprintf_s(sz,4096,RstrUTF(IDS_E_CANTOPENOUT)/*"Unable to open '%s' for output."*/,   g_szOutputFile);
-                    g_uCodePage = CP_ACP;
-                    printError(NULL,sz);
-                    exit(1);
-                }
-            }
-            else // console output -- force the code page to ANSI
-            {
-                g_uCodePage = g_uConsoleCP;
-                g_fDumpRTF = FALSE;
-                g_fDumpHTML = FALSE;
-            }
-            if (Init() == TRUE)
-            {
-                exitCode = DumpFile() ? 0 : 1;
-                Cleanup();
-            }
-            Uninit();
-            exit(exitCode);
+            char sz[4096];
+            sprintf_s(sz,4096,RstrUTF(IDS_E_CANTOPENOUT)/*"Unable to open '%s' for output."*/,   g_szOutputFile);
+            g_uCodePage = CP_ACP;
+            printError(NULL,sz);
+            exit(1);
         }
     }
-    return 0;
+    else // console output -- force the code page to ANSI
+    {
+        g_uCodePage = g_uConsoleCP;
+        g_fDumpRTF = FALSE;
+        g_fDumpHTML = FALSE;
+    }
+    if (Init() == TRUE)
+    {
+        exitCode = DumpFile() ? 0 : 1;
+        Cleanup();
+    }
+    Uninit();
+    return exitCode;
 }
 

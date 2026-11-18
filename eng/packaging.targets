@@ -38,6 +38,11 @@
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
   </PropertyGroup>
 
+  <!-- When retargeting, frameworks reaching end of support (EOL) by the new release may be
+       dropped from the packages. Add those frameworks here so baseline validation permits
+       the intentional removal. Do not ignore frameworks whose assets are still shipped:
+       their APIs must remain validated. Check tool packages too, since they may retain
+       an older framework than the libraries. -->
   <ItemGroup>
     <PackageValidationBaselineFrameworkToIgnore Include="net8.0" />
     <PackageValidationBaselineFrameworkToIgnore Include="net9.0" />

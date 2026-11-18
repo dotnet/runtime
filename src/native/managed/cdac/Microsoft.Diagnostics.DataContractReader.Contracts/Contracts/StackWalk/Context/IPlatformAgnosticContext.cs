@@ -8,6 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 public interface IPlatformAgnosticContext
 {
     public abstract uint Size { get; }
+    public abstract uint GetSize();
     public abstract uint ContextControlFlags { get; }
     public abstract uint FullContextFlags { get; }
     public abstract uint AllContextFlags { get; }
@@ -23,12 +24,15 @@ public interface IPlatformAgnosticContext
     public abstract void Clear();
     public abstract void ReadFromAddress(Target target, TargetPointer address);
     public abstract void FillFromBuffer(Span<byte> buffer);
-    public abstract byte[] GetBytes();
+    public abstract ReadOnlySpan<byte> GetBytes();
     public abstract IPlatformAgnosticContext Clone();
     public abstract bool TrySetRegister(string fieldName, TargetNUInt value);
     public abstract bool TryReadRegister(string fieldName, out TargetNUInt value);
     public abstract bool TrySetRegister(int number, TargetNUInt value);
     public abstract bool TryReadRegister(int number, out TargetNUInt value);
+    public abstract bool TryReadFloatingPointRegister(int index, out double value);
+    public abstract bool TryWriteFloatingPointRegister(int index, double value);
+    public abstract void CopyContext(IPlatformAgnosticContext source);
 
     public abstract void Unwind(Target target);
 
@@ -42,17 +46,32 @@ public interface IPlatformAgnosticContext
     public static IPlatformAgnosticContext GetContextForPlatform(Target target)
     {
         IRuntimeInfo runtimeInfo = target.Contracts.RuntimeInfo;
-        return runtimeInfo.GetTargetArchitecture() switch
-        {
-            RuntimeInfoArchitecture.X86 => new ContextHolder<X86Context>(),
-            RuntimeInfoArchitecture.X64 => new ContextHolder<AMD64Context>(),
-            RuntimeInfoArchitecture.Arm => new ContextHolder<ARMContext>(),
-            RuntimeInfoArchitecture.Arm64 => new ContextHolder<ARM64Context>(),
-            RuntimeInfoArchitecture.LoongArch64 => new ContextHolder<LoongArch64Context>(),
-            RuntimeInfoArchitecture.RiscV64 => new ContextHolder<RISCV64Context>(),
-            RuntimeInfoArchitecture.Wasm => new ContextHolder<WasmContext>(),
-            RuntimeInfoArchitecture.Unknown => throw new InvalidOperationException($"Processor architecture is required for creating a platform specific context and is not provided by the target"),
-            _ => throw new InvalidOperationException($"Unsupported architecture {runtimeInfo.GetTargetArchitecture()}"),
-        };
+        RuntimeInfoArchitecture architecture = runtimeInfo.GetTargetArchitecture();
+
+        if (TargetArchitectureSupport.IsX86Supported && architecture == RuntimeInfoArchitecture.X86)
+            return new ContextHolder<X86Context>();
+
+        if (TargetArchitectureSupport.IsX64Supported && architecture == RuntimeInfoArchitecture.X64)
+            return new ContextHolder<AMD64Context>();
+
+        if (TargetArchitectureSupport.IsArmSupported && architecture == RuntimeInfoArchitecture.Arm)
+            return new ContextHolder<ARMContext>();
+
+        if (TargetArchitectureSupport.IsArm64Supported && architecture == RuntimeInfoArchitecture.Arm64)
+            return new ContextHolder<ARM64Context>();
+
+        if (TargetArchitectureSupport.IsLoongArch64Supported && architecture == RuntimeInfoArchitecture.LoongArch64)
+            return new ContextHolder<LoongArch64Context>();
+
+        if (TargetArchitectureSupport.IsRiscV64Supported && architecture == RuntimeInfoArchitecture.RiscV64)
+            return new ContextHolder<RISCV64Context>();
+
+        if (TargetArchitectureSupport.IsWasmSupported && architecture == RuntimeInfoArchitecture.Wasm)
+            return new ContextHolder<WasmContext>();
+
+        throw new InvalidOperationException(
+            architecture == RuntimeInfoArchitecture.Unknown
+                ? "Processor architecture is required for creating a platform specific context and is not provided by the target"
+                : $"Unsupported architecture {architecture}");
     }
 }

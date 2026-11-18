@@ -25,4 +25,9 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting\src\Microsoft.Extensions.Hosting.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\ExceptionPolyfills.cs" Link="Common\Polyfills\ExceptionPolyfills.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
+  </ItemGroup>
+
 </Project>

@@ -70,7 +70,7 @@ namespace BINDER_SPACE
         }
         else
         {
-            m_pExecutionContext = pExecutionContext.Extract();
+            m_pExecutionContext = pExecutionContext.Detach();
 
             m_pFailureCache = pFailureCache;
         }

@@ -117,6 +117,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\ArrayPolyfills.cs" Link="Common\Polyfills\ArrayPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs"
             Link="Common\System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
   </ItemGroup>

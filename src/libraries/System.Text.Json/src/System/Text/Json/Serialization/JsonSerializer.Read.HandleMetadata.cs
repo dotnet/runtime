@@ -222,12 +222,6 @@ namespace System.Text.Json
                                     ThrowHelper.ThrowJsonException_MetadataInvalidPropertyInArrayMetadata(ref state, jsonTypeInfo.Type, reader);
                                 }
 
-                                if (IsMetadataPropertyName(propertyName, resolver: null))
-                                {
-                                    // properties starting with '$' are reserved for metadata
-                                    ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
-                                }
-
                                 break;
                             }
                             else
@@ -358,9 +352,7 @@ namespace System.Text.Json
 
         internal static bool IsMetadataPropertyName(ReadOnlySpan<byte> propertyName, PolymorphicTypeResolver? resolver)
         {
-            return
-                (propertyName.Length > 0 && propertyName[0] == '$') ||
-                (resolver?.CustomTypeDiscriminatorPropertyNameUtf8?.AsSpan().SequenceEqual(propertyName) == true);
+            return GetMetadataPropertyName(propertyName, resolver) != MetadataPropertyName.None;
         }
 
         internal static MetadataPropertyName GetMetadataPropertyName(ReadOnlySpan<byte> propertyName, PolymorphicTypeResolver? resolver)

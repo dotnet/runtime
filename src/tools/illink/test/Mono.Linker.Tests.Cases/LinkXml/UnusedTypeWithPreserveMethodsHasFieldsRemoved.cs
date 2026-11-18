@@ -11,8 +11,9 @@ namespace Mono.Linker.Tests.Cases.LinkXml
         }
 
         [Kept]
+        [KeptBaseType(typeof(Base))]
         [KeptMember(".ctor()")]
-        class Unused
+        class Unused : Base
         {
             public int Field1;
             private int Field2;
@@ -74,6 +75,17 @@ namespace Mono.Linker.Tests.Cases.LinkXml
             internal static void Method6()
             {
             }
+        }
+
+        [Kept]
+        [KeptMember(".ctor()")]
+        class Base
+        {
+            public void PublicMethod() { }
+            protected void ProtectedMethod() { }
+            private void PrivateMethod() { }
+
+            public int Property { get; set; }
         }
     }
 }

@@ -795,9 +795,9 @@ HRESULT MulticoreJitModuleEnumerator::EnumerateLoadedModules(AppDomain * pDomain
 
     AppDomain::AssemblyIterator appIt = pDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
 
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
+    CollectibleAssemblyHolder pAssembly;
 
-    while (appIt.Next(pAssembly.This()) && SUCCEEDED(hr))
+    while (appIt.Next(&pAssembly) && SUCCEEDED(hr))
     {
         {
             hr = HandleAssembly(pAssembly);
@@ -1062,7 +1062,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
                     minipal_sleep(g_MulticoreJitDelay);
                 }
 
-                player.SuppressRelease();
+                player.Detach();
             }
 
             MulticoreJitTrace(("ProcessProfile('%s') returns %x", m_fullFileName.GetUTF8(), hr1));

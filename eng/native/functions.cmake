@@ -302,6 +302,19 @@ function(generate_exports_file)
   list(GET INPUT_LIST -1 outputFilename)
   list(REMOVE_AT INPUT_LIST -1)
 
+  # The generator scripts take a single input file (the second argument is a symbol prefix).
+  list(LENGTH INPUT_LIST inputCount)
+  if (inputCount GREATER 1)
+    set(combinedInput ${outputFilename}.src)
+    add_custom_command(
+      OUTPUT ${combinedInput}
+      COMMAND ${CMAKE_COMMAND} -E cat ${INPUT_LIST} >${combinedInput}
+      DEPENDS ${INPUT_LIST}
+      COMMENT "Combining exports sources into ${combinedInput}"
+    )
+    set(INPUT_LIST ${combinedInput})
+  endif()
+
   # Win32 may be false when cross compiling
   if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
     set(SCRIPT_NAME ${CLR_ENG_NATIVE_DIR}/generateversionscript.ps1)
@@ -698,6 +711,17 @@ function(add_library_clr targetName kind)
   if("${kind}" STREQUAL "SHARED" AND NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
     strip_symbols(${ARGV0} symbolFile)
   endif()
+endfunction()
+
+# Call only for concrete macOS executables, not apphost templates.
+function(set_macos_bundle_identifier targetName identifier)
+    set(MACOS_BUNDLE_IDENTIFIER "${identifier}")
+    set(infoPlist "${CMAKE_CURRENT_BINARY_DIR}/${targetName}.Info.plist")
+    configure_file("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/Info.plist.in" "${infoPlist}")
+
+    # Let signing tools use a stable identifier instead of a UUID-derived fallback.
+    target_link_options(${targetName} PRIVATE "LINKER:-sectcreate,__TEXT,__info_plist,${infoPlist}")
+    set_property(TARGET ${targetName} APPEND PROPERTY LINK_DEPENDS "${infoPlist}")
 endfunction()
 
 # Adhoc sign targetName with the entitlements in entitlementsFile.

@@ -414,7 +414,6 @@ enum BasicBlockFlags : uint64_t
     BBF_NEEDS_GCPOLL         = MAKE_BBFLAG( 6), // BB may need a GC poll because it uses the slow tail call helper
     BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG( 7), // First block of a cloned finally region
     BBF_CLONED_FINALLY_END   = MAKE_BBFLAG( 8), // Last block of a cloned finally region
-    BBF_HAS_SUPPRESSGC_CALL  = MAKE_BBFLAG( 9), // BB contains a call to a method with SuppressGCTransitionAttribute
     BBF_HAS_LABEL            = MAKE_BBFLAG(10), // BB needs a label
     BBF_LOOP_ALIGN           = MAKE_BBFLAG(11), // Block is lexically the first block in a loop we intend to align.
     BBF_HAS_ALIGN            = MAKE_BBFLAG(12), // BB ends with 'align' instruction

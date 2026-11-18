@@ -21,12 +21,6 @@ namespace System.Net
     [StructLayout(LayoutKind.Auto)]
     internal struct ArrayBuffer : IDisposable
     {
-#if NET
-        private static int ArrayMaxLength => Array.MaxLength;
-#else
-        private const int ArrayMaxLength = 0X7FFFFFC7;
-#endif
-
         private readonly bool _usePool;
         private byte[] _bytes;
         private int _activeStart;
@@ -156,13 +150,13 @@ namespace System.Net
 
             int desiredSize = ActiveLength + byteCount;
 
-            if ((uint)desiredSize > ArrayMaxLength)
+            if ((uint)desiredSize > Array.MaxLength)
             {
                 throw new OutOfMemoryException();
             }
 
             // Double the existing buffer size (capped at Array.MaxLength).
-            int newSize = Math.Max(desiredSize, (int)Math.Min(ArrayMaxLength, 2 * (uint)_bytes.Length));
+            int newSize = Math.Max(desiredSize, (int)Math.Min(Array.MaxLength, 2 * (uint)_bytes.Length));
 
             byte[] newBytes = _usePool ?
                 ArrayPool<byte>.Shared.Rent(newSize) :

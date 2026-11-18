@@ -36,7 +36,8 @@ class F1
     [MethodImpl(MethodImplOptions.NoInlining)] // The exception is thrown when restoring the caller with R2R
     public F1()
     {
-        var f2 = new F2();
+        // Keep the allocation observable so it isn't removed before the type is loaded
+        GC.KeepAlive(new F2());
     }
 }
 

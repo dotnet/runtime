@@ -44,7 +44,7 @@ namespace System.Composition.Hosting.Core
         /// <param name="metadataConstraints">Optionally, a non-empty collection of named constraints that apply to the contract.</param>
         public CompositionContract(Type contractType, string contractName, IDictionary<string, object> metadataConstraints)
         {
-            if (contractType == null) throw new ArgumentNullException(nameof(contractType));
+            ArgumentNullException.ThrowIfNull(contractType);
             if (metadataConstraints?.Count == 0) throw new ArgumentOutOfRangeException(nameof(metadataConstraints));
 
             _contractType = contractType;
@@ -124,7 +124,7 @@ namespace System.Composition.Hosting.Core
         /// new contract type.</returns>
         public CompositionContract ChangeType(Type newContractType)
         {
-            if (newContractType == null) throw new ArgumentNullException(nameof(newContractType));
+            ArgumentNullException.ThrowIfNull(newContractType);
             return new CompositionContract(newContractType, _contractName, _metadataConstraints);
         }
 

@@ -6,7 +6,7 @@ using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal static partial class PseudoCustomAttributes
 {
@@ -193,7 +193,11 @@ internal static partial class PseudoCustomAttributes
         TypeAttributes? layout = layoutKind switch
         {
             LayoutKind.Sequential => TypeAttributes.SequentialLayout,
+#if !NET11_0_OR_GREATER
+            var kindValue when kindValue == LayoutKind.Extended => TypeAttributes.ExtendedLayout,
+#else
             LayoutKind.Extended => TypeAttributes.ExtendedLayout,
+#endif
             LayoutKind.Explicit => TypeAttributes.ExplicitLayout,
             LayoutKind.Auto => TypeAttributes.AutoLayout,
             _ => null,

@@ -13,6 +13,11 @@ namespace System.Reflection.Runtime.MethodInfos
 {
     internal sealed class OpenMethodInvoker : MethodBaseInvoker
     {
+        public OpenMethodInvoker(int parameterCount)
+        {
+            _parameterCount = parameterCount;
+        }
+
         protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
             throw new InvalidOperationException(SR.Arg_UnboundGenParam);
@@ -25,22 +30,32 @@ namespace System.Reflection.Runtime.MethodInfos
 
         protected internal sealed override object CreateInstance(Span<object?> arguments)
         {
+            ValidateArgumentCount(arguments.Length);
             throw new InvalidOperationException(SR.Arg_UnboundGenParam);
         }
 
         protected internal sealed override object CreateInstanceWithFewArgs(Span<object?> arguments)
         {
+            ValidateArgumentCount(arguments.Length);
             throw new InvalidOperationException(SR.Arg_UnboundGenParam);
         }
 
         protected internal sealed override object? Invoke(object? thisObject, Span<object?> arguments)
         {
+            ValidateArgumentCount(arguments.Length);
             throw new InvalidOperationException(SR.Arg_UnboundGenParam);
         }
 
         protected internal sealed override object? InvokeDirectWithFewArgs(object? thisObject, Span<object?> arguments)
         {
+            ValidateArgumentCount(arguments.Length);
             throw new InvalidOperationException(SR.Arg_UnboundGenParam);
+        }
+
+        private void ValidateArgumentCount(int argumentCount)
+        {
+            if (argumentCount != _parameterCount)
+                throw new TargetParameterCountException(SR.Arg_ParmCnt);
         }
 
         public sealed override Delegate CreateDelegate(RuntimeTypeHandle delegateType, object target, bool isStatic, bool isVirtual, bool isOpen)
@@ -55,5 +70,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 throw new InvalidOperationException(SR.Arg_UnboundGenParam);
             }
         }
+
+        private readonly int _parameterCount;
     }
 }
