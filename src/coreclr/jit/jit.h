@@ -311,7 +311,30 @@ typedef ptrdiff_t ssize_t;
                                  // with our new(compiler*) pattern.
 
 #include "utilcode.h" // this defines assert as _ASSERTE
-#include "host.h"     // this redefines assert for the JIT to use assertAbort
+
+#include <new>
+
+// Shared headers can use the global allocator. Diagnose uses in the JIT.
+// clang-format off
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new(std::size_t size);
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new[](std::size_t size);
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new(std::size_t size, std::align_val_t alignment);
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new[](std::size_t size, std::align_val_t alignment);
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new(std::size_t size, const std::nothrow_t& tag) noexcept;
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new[](std::size_t size, const std::nothrow_t& tag) noexcept;
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new(std::size_t size, std::align_val_t alignment, const std::nothrow_t& tag) noexcept;
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new[](std::size_t size, std::align_val_t alignment, const std::nothrow_t& tag) noexcept;
+// clang-format on
+
+#include "host.h" // this redefines assert for the JIT to use assertAbort
 #include "utils.h"
 #include "targetosarch.h"
 

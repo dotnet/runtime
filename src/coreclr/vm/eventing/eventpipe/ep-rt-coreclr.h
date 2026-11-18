@@ -27,6 +27,7 @@
 #endif // HOST_WINDOWS
 
 #include "ProcessEnvironment.h"
+#include <minipal/cpucount.h>
 #include <minipal/guid.h>
 #include <minipal/strings.h>
 #include <minipal/time.h>
@@ -1191,7 +1192,7 @@ ep_rt_processors_get_count (void)
 	STATIC_CONTRACT_NOTHROW;
 
 #ifdef TARGET_UNIX
-	return static_cast<uint32_t>(PAL_GetLogicalCpuCountFromOS ());
+	return static_cast<uint32_t>(minipal_get_cpu_affinity_count ());
 #else
 	SYSTEM_INFO sys_info = {};
 	GetSystemInfo (&sys_info);

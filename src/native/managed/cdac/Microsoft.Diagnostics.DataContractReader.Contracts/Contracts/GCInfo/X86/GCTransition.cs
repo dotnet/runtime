@@ -251,7 +251,7 @@ public class GcTransitionCall : BaseGcTransition
             if ((regMask & 8) != 0)
             {
                 RegMask reg = RegMask.EBP;
-                CallRegisters.Add(new CallRegister(reg, false));
+                CallRegisters.Add(new CallRegister(reg, (byRefRegMask & 8) != 0));
             }
         }
         ArgMask = 0;

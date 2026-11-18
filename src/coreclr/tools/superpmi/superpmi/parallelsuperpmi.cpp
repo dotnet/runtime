@@ -9,6 +9,7 @@
 #include "commandline.h"
 #include "errorhandling.h"
 #include "fileio.h"
+#include <minipal/cpucount.h>
 #include <minipal/random.h>
 
 #include <signal.h>
@@ -820,7 +821,7 @@ static bool GetTempFolderPath(char* tempPath)
 static int GetDefaultWorkerCount()
 {
 #ifdef HOST_UNIX
-    int count = (int)PAL_GetLogicalCpuCountFromOS();
+    int count = minipal_get_cpu_affinity_count();
 #else
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);
