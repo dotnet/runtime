@@ -6306,9 +6306,19 @@ bool CEEInfo::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
 
     // ECMA augment III.1.7.7 allows making this escaping assumption based on
     // RefSafetyRules and UnscopedRef attributes.
-    if (pMD->GetModule()->OptsIntoRefSafetyRulesV11())
+    Module* pModule = pMD->GetModule();
+    if (pModule->OptsIntoRefSafetyRulesV11())
     {
-        result = (pMD->GetCustomAttribute(WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+        mdMethodDef md = pMD->GetMemberDef();
+        result = (pModule->GetCustomAttribute(md, WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+
+        // C# emits [UnscopedRef] for properties on the property rather than on its accessors.
+        mdProperty pd;
+        if (!result && IsMdSpecialName(pMD->GetAttrs()) &&
+            (pModule->GetMDImport()->GetPropertyInfoForMethodDef(md, &pd, NULL, NULL) == S_OK))
+        {
+            result = (pModule->GetCustomAttribute(pd, WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+        }
     }
 
     EE_TO_JIT_TRANSITION();
