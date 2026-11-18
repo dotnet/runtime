@@ -5,6 +5,8 @@
 #include <minipal/entrypoints.h>
 #include <emscripten.h>
 
+#include "console.h"
+
 #ifndef EXTERN_C
 #define EXTERN_C extern
 #endif//EXTERN_C
@@ -23,6 +25,7 @@ static const Entry s_browserNative[] =
     DllImportEntry(SystemJS_ScheduleTimer)
     DllImportEntry(SystemJS_ScheduleBackgroundJob)
     DllImportEntry(SystemJS_ConsoleClear)
+    DllImportEntry(SystemJS_ConsoleWrite)
 };
 
 EXTERN_C const void* SystemJSResolveDllImport(const char* name);

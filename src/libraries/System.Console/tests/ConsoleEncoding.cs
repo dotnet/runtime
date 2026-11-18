@@ -185,6 +185,22 @@ public partial class ConsoleEncoding
         AssertExtensions.Throws<ArgumentNullException>("value", () => Console.OutputEncoding = null);
     }
 
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+    [PlatformSpecific(TestPlatforms.Browser)]
+    public void OutputEncoding_SetUnicodeInNode()
+    {
+        Encoding originalEncoding = Console.OutputEncoding;
+        try
+        {
+            Console.OutputEncoding = Encoding.Unicode;
+            Assert.Equal(Encoding.Unicode, Console.OutputEncoding);
+        }
+        finally
+        {
+            Console.OutputEncoding = originalEncoding;
+        }
+    }
+
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     public void OutputEncoding_SetEncodingWithInvalidCodePage_ThrowsIOException()

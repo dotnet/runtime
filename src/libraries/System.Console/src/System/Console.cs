@@ -13,7 +13,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
-    public static class Console
+    public static partial class Console
     {
         // Unlike many other buffer sizes throughout .NET, which often only affect performance, this buffer size has a
         // functional impact on interactive console apps, where the size of the buffer passed to ReadFile/Console impacts
@@ -129,6 +129,7 @@ namespace System
             set
             {
                 ArgumentNullException.ThrowIfNull(value);
+                ValidateOutputEncoding(value);
 
                 lock (s_syncObject)
                 {
@@ -206,7 +207,7 @@ namespace System
                     {
                         if (s_out == null)
                         {
-                            Volatile.Write(ref s_out, CreateOutputWriter(ConsolePal.OpenStandardOutput()));
+                            Volatile.Write(ref s_out, CreateOutputWriter(CreateStandardOutputStream(isError: false)));
                         }
                         return s_out;
                     }
@@ -226,7 +227,7 @@ namespace System
                     {
                         if (s_error == null)
                         {
-                            Volatile.Write(ref s_error, CreateOutputWriter(ConsolePal.OpenStandardError()));
+                            Volatile.Write(ref s_error, CreateOutputWriter(CreateStandardOutputStream(isError: true)));
                         }
                         return s_error;
                     }
@@ -247,6 +248,8 @@ namespace System
                         AutoFlush = true
                     });
         }
+
+        static partial void ValidateOutputEncoding(Encoding encoding);
 
         private static StrongBox<bool>? _isStdInRedirected;
         private static StrongBox<bool>? _isStdOutRedirected;
@@ -540,7 +543,7 @@ namespace System
         [UnsupportedOSPlatform("tvos")]
         public static void Clear()
         {
-            ConsolePal.Clear();
+            ClearConsole();
         }
 
         [UnsupportedOSPlatform("android")]
@@ -631,26 +634,26 @@ namespace System
 
         public static Stream OpenStandardOutput()
         {
-            return ConsolePal.OpenStandardOutput();
+            return CreateStandardOutputStream(isError: false);
         }
 
         public static Stream OpenStandardOutput(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
             ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
-            return ConsolePal.OpenStandardOutput();
+            return CreateStandardOutputStream(isError: false);
         }
 
         public static Stream OpenStandardError()
         {
-            return ConsolePal.OpenStandardError();
+            return CreateStandardOutputStream(isError: true);
         }
 
         public static Stream OpenStandardError(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
             ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
-            return ConsolePal.OpenStandardError();
+            return CreateStandardOutputStream(isError: true);
         }
 
         /// <summary>

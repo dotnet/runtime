@@ -58,6 +58,12 @@ const memoryTestImports = {
 
 let memoryTestCallManagedExports = () => "managed exports were not initialized";
 
+const consoleEvents = [];
+const consoleBytes = [];
+let consoleClearCount = 0;
+let consoleTestExports;
+const consoleTextEncoder = globalThis.TextEncoder;
+
 // Prepare base runtime parameters
 dotnet.withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true });
 
@@ -218,6 +224,44 @@ switch (testCase) {
             },
         });
         break;
+    case "ConsoleDirect":
+    case "ConsoleDirectExit":
+    case "ConsoleDirectExitListener":
+    case "ConsoleDirectMainExit": {
+        const moduleConfig = {
+            out: message => {
+                consoleEvents.push(["out", message]);
+                if (testCase !== "ConsoleDirect") testOutput(`Console exit out: ${message}`);
+                if (message === "reenter") consoleTestExports.Reenter();
+                if (message === "byte-reentry") consoleTestExports.ReenterBytes();
+                if (message === "byte-reentry-incomplete") consoleTestExports.ReenterIncompleteBytes();
+                if (message === "span-short-head" || message === "span-boundary-head") consoleTestExports.ReenterSurrogate();
+                if (message === "gc trigger") consoleTestExports.Collect();
+                if (message === "throw sink") throw new Error("console sink failed \u4e16\u754c \u{1f600}");
+                if (testCase === "ConsoleDirectExitListener" && message === "pending stdout") {
+                    consoleTestExports.WriteExitBytes("nested");
+                }
+            },
+            err: message => {
+                consoleEvents.push(["err", message]);
+                if (testCase !== "ConsoleDirect") testOutput(`Console exit err: ${message}`);
+                if (testCase === "ConsoleDirectExitListener" && message === "pending stderr\ufffd") {
+                    consoleTestExports.WriteExitBytes(" cross");
+                }
+            },
+            stdout: value => consoleBytes.push(value),
+            stderr: value => consoleBytes.push(value),
+        };
+        if (params.get("printOverride") === "true") {
+            moduleConfig.print = moduleConfig.out;
+            moduleConfig.printErr = moduleConfig.err;
+            moduleConfig.out = () => { throw new Error("out should not override print"); };
+            moduleConfig.err = () => { throw new Error("err should not override printErr"); };
+        }
+        dotnet.withModuleConfig(moduleConfig);
+        console.clear = () => consoleClearCount++;
+        break;
+    }
     case "InterpPgoTest":
         dotnet
             .withConfig({ forwardConsole: true })
@@ -342,7 +386,7 @@ switch (testCase) {
         break;
 }
 
-const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL, invokeLibraryInitializers } = await dotnet.create();
+const { setModuleImports, Module, getAssemblyExports, getConfig, runMainAndExit, INTERNAL, invokeLibraryInitializers } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith('.wasm') ? ".wasm" : ".dll";
@@ -497,6 +541,80 @@ try {
         case "DotnetRun":
         case "MainWithArgs":
             await dotnet.runMainAndExit();
+            break;
+        case "ConsoleDirectWorker": {
+            const workerUrl = new URL("./console-direct-worker.js", import.meta.url);
+            workerUrl.searchParams.set("dotnet", import.meta.resolve("./_framework/dotnet.js"));
+            const worker = new Worker(workerUrl, { type: "module" });
+            try {
+                const result = await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error("Console worker timed out")), 30000);
+                    worker.onmessage = event => {
+                        clearTimeout(timeout);
+                        resolve(event.data);
+                    };
+                    worker.onerror = event => {
+                        clearTimeout(timeout);
+                        reject(new Error(event.message));
+                    };
+                });
+                if (result.error) throw new Error(result.error);
+                testOutput(`Console worker events: ${JSON.stringify(result.events)}`);
+            } finally {
+                worker.terminate();
+            }
+            exit(0);
+            break;
+        }
+        case "ConsoleDirect":
+        case "ConsoleDirectExit":
+        case "ConsoleDirectExitListener":
+        case "ConsoleDirectMainExit":
+            setModuleImports("main.js", {
+                consoleEventCount: () => consoleEvents.length,
+                consoleClearCount: () => consoleClearCount,
+                consoleSetTextEncoder: enabled => globalThis.TextEncoder = enabled ? consoleTextEncoder : undefined,
+            });
+            consoleTestExports = exports.ConsoleTest;
+            consoleEvents.length = 0;
+            consoleBytes.length = 0;
+            if (testCase === "ConsoleDirect") {
+                if (INTERNAL.consoleDrain !== undefined) throw new Error("Console drain was installed before direct output");
+                let installCount = 0;
+                const installExit = INTERNAL.consoleInstallExit;
+                INTERNAL.consoleInstallExit = () => {
+                    installCount++;
+                    installExit();
+                };
+                consoleTestExports.Run();
+                await consoleTestExports.RunAsync();
+                if (installCount !== 1 || typeof INTERNAL.consoleDrain !== "function") {
+                    throw new Error("Console exit handling was not installed exactly once");
+                }
+                if (consoleBytes.length !== 0) throw new Error("Managed output reached Emscripten byte hooks");
+                testOutput(`Console events: ${JSON.stringify(consoleEvents)}`);
+                exit(0);
+            } else if (testCase === "ConsoleDirectExit" || testCase === "ConsoleDirectExitListener") {
+                consoleTestExports.PrepareExit();
+                if (consoleBytes.length !== 0) throw new Error("Managed output reached Emscripten byte hooks");
+                if (testCase === "ConsoleDirectExitListener") {
+                    const originalLog = console.log;
+                    console.log = (...args) => {
+                        if (args[0] === `WASM EXIT ${params.get("exitCode")}`) {
+                            const errorIndex = consoleEvents.findIndex(([kind, message]) => kind === "err" && message === "pending stderr\ufffd");
+                            const reentrantIndex = consoleEvents.findIndex(([kind, message]) => kind === "out" && message === "nested cross");
+                            if (errorIndex >= 0 && reentrantIndex > errorIndex) {
+                                testOutput("Reentrant output observed before exit listener");
+                            }
+                            consoleTestExports.WriteFromExitListener();
+                        }
+                        originalLog(...args);
+                    };
+                }
+                exit(Number(params.get("exitCode")));
+            } else if (testCase === "ConsoleDirectMainExit") {
+                await runMainAndExit(config.mainAssemblyName, ["console-direct-exit", params.get("exitCode")]);
+            }
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);

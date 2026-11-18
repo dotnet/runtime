@@ -8,6 +8,7 @@ import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 import GitHash from "consts:gitHash";
 
 export { SystemJS_RandomBytes } from "./crypto";
+export { SystemJS_ConsoleWriteJS } from "./console";
 export { SystemJS_GetLocaleInfo } from "./globalization-locale";
 export { SystemJS_RejectMainPromise, SystemJS_ResolveMainPromise, SystemJS_MarkAsyncMain, SystemJS_ConsoleClear } from "./main";
 export { SystemJS_ScheduleTimer, SystemJS_ScheduleBackgroundJob, SystemJS_ScheduleFinalization, SystemJS_ScheduleDiagnosticServer } from "./scheduling";
@@ -33,6 +34,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     });
     _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
 
+    runtimeApi.INTERNAL.consoleInstallExit = installConsoleExit;
     setupEmscripten();
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -59,6 +61,14 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         return typeof callbacks === "function" ? [callbacks] : callbacks;
     }
 
+    function installConsoleExit() {
+        const originalExit = _ems_._exit;
+        _ems_._exit = (exitCode, implicit) => {
+            _ems_.dotnetApi.INTERNAL.consoleDrain?.();
+            originalExit(exitCode, implicit);
+        };
+    }
+
     function setupEmscripten() {
         _ems_.Module.preInit = [() => {
             if (_ems_.dotnetApi.getConfig) {
@@ -81,7 +91,11 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
                     if (_ems_.dotnetBrowserUtilsExports.abortBackgroundTimers) {
                         _ems_.dotnetBrowserUtilsExports.abortBackgroundTimers();
                     }
-                    _ems_.EXITSTATUS = _ems_._BrowserHost_ShutdownDotnet(_ems_.EXITSTATUS || 0);
+                    try {
+                        _ems_.EXITSTATUS = _ems_._BrowserHost_ShutdownDotnet(_ems_.EXITSTATUS || 0);
+                    } finally {
+                        _ems_.dotnetApi.INTERNAL.consoleDrain?.();
+                    }
                     orig_funcs_on_exit();
                 } catch (err) {
                     // silently ignore any error during shutdown

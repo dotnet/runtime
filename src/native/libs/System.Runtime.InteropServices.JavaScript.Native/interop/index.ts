@@ -19,6 +19,7 @@ import { cancelPromise } from "./cancelable-promise";
 import { loadLazyAssembly, loadSatelliteAssemblies } from "./lazy";
 import { jsInteropState } from "./marshal";
 import { initializeScheduling, abortInteropTimers } from "./scheduling";
+import { createConsoleChannels } from "./console";
 import { wsAbort, wsClose, wsCreate, wsGetState, wsOpen, wsReceive, wsSend } from "./web-socket";
 import {
     httpSupportsStreamingRequest, httpSupportsStreamingResponse, httpCreateController, httpGetResponseType,
@@ -93,6 +94,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         abortInteropTimers,
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
+    Object.assign(runtimeApi.INTERNAL, createConsoleChannels());
 
     initializeMarshalersToJs();
     initializeMarshalersToCs();

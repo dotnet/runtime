@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.NET.Sdk.WebAssembly;
@@ -124,6 +125,89 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             result.ConsoleOutput.Any(m => m.Contains("Emscripten err override works!")),
             "Emscripten err override doesn't work"
         );
+    }
+
+    [Theory, TestCategory("coreclr"), TestCategory("no-workload")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ConsoleDirectOutput(bool usePrintOverride)
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ConsoleDirectOutput");
+        PublishProject(info, config);
+
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            config,
+            TestScenario: "ConsoleDirect",
+            BrowserQueryString: new NameValueCollection { { "printOverride", usePrintOverride.ToString().ToLowerInvariant() } }));
+        const string Prefix = "Console events: ";
+        string output = Assert.Single(result.TestOutput.Where(message => message.StartsWith(Prefix, StringComparison.Ordinal)));
+        using JsonDocument events = JsonDocument.Parse(output.Substring(Prefix.Length));
+        string[] expected =
+        [
+            "out:partial-line", "out:", "out:carriage\rend", "out:\ud83d\ude00",
+            "out:x\ufffdy", "out:\ufffdflush", "out:format:42", "out:custom!",
+            "out:span-short-head", "out:\ufffd\ufffd", "out:span-boundary-head",
+            "out:\ud83d\ude00" + new string('x', 255 - "span-boundary-head\n".Length),
+            "out:start", "out:prefix\ufeffmiddle", "err:error",
+            "out:B\u00e9", "err:\ud83d\ude00", "out:" + new string('f', 1025) + "\u20ac",
+            "out:stack", "out:gc trigger", "out:post-gc",
+            "out:text-bytes-tail", "out:no-encoder:\u20ac\ud83d\ude00-end", "out:\ufffdtail",
+            "out:\ud83d\ude00", "out:\ufffd(", "err:\ufffd\ufffd\ufffd", "out:\ufffd", "err:error", "out:reenter",
+            "out:nested", "out:byte-reentry", "out:nested byte:remaining", "out:byte-reentry-incomplete", "out:\ufffdtail",
+            "out:throw sink", "out:throw sink", "out:after-throw", "out:fallback:?X",
+            "out:after-restore", "out:after-handle", "out:after-writer-dispose", "out:async",
+            "out:async writer line", "err:async writer error", "err:async independent",
+            "out:async overlap", "out:async original", "out:async cancelled write",
+            "out:async cancelled line", "out:async flush:\ufffd:after",
+            "out:cancel-first-line", "out:" + new string('z', 494) + "after-cancel"
+        ];
+        Assert.Equal(expected, events.RootElement.EnumerateArray().Select(e => $"{e[0].GetString()}:{e[1].GetString()}"));
+    }
+
+    [Fact, TestCategory("coreclr"), TestCategory("no-workload")]
+    public async Task ConsoleDirectOutputInWorker()
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ConsoleDirectOutputInWorker");
+        PublishProject(info, config);
+
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            config,
+            TestScenario: "ConsoleDirectWorker"));
+        const string Prefix = "Console worker events: ";
+        string output = Assert.Single(result.TestOutput.Where(message => message.StartsWith(Prefix, StringComparison.Ordinal)));
+        using JsonDocument events = JsonDocument.Parse(output.Substring(Prefix.Length));
+        string[] expected = ["out:worker output", "err:worker error"];
+        Assert.Equal(expected, events.RootElement.EnumerateArray().Select(e => $"{e[0].GetString()}:{e[1].GetString()}"));
+    }
+
+    [Theory, TestCategory("coreclr"), TestCategory("no-workload")]
+    [InlineData("ConsoleDirectExit", 0)]
+    [InlineData("ConsoleDirectExit", 7)]
+    [InlineData("ConsoleDirectExitListener", 0)]
+    [InlineData("ConsoleDirectExitListener", 7)]
+    [InlineData("ConsoleDirectMainExit", 0)]
+    [InlineData("ConsoleDirectMainExit", 7)]
+    public async Task ConsoleDirectOutputOnExit(string scenario, int exitCode)
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ConsoleDirectOutputOnExit");
+        PublishProject(info, config);
+
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            config,
+            TestScenario: scenario,
+            ExpectedExitCode: exitCode,
+            BrowserQueryString: new NameValueCollection { { "exitCode", exitCode.ToString() } }));
+        Assert.Single(result.TestOutput, message => message == "Console exit out: pending stdout");
+        Assert.Single(result.TestOutput, message => message == "Console exit err: pending stderr\ufffd");
+        if (scenario == "ConsoleDirectExitListener")
+        {
+            Assert.Single(result.TestOutput, message => message == "Console exit out: nested cross");
+            Assert.Single(result.TestOutput, message => message == "Reentrant output observed before exit listener");
+            Assert.Single(result.TestOutput, message => message == "Console exit out: \ufffdexit listener");
+        }
     }
 
     [Theory]

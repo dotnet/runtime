@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { OnExitListener } from "../types";
-import { dotnetLogger, Module, dotnetBrowserUtilsExports, dotnetRuntimeExports, dotnetLoaderExports } from "./cross-module";
+import { dotnetApi, dotnetLogger, Module, dotnetBrowserUtilsExports, dotnetRuntimeExports, dotnetLoaderExports } from "./cross-module";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, globalThisAny } from "./per-module";
 
 export const runtimeState = {
@@ -117,6 +117,7 @@ export function exit(exitCode: number, reason: any): void {
             if (runtimeState.creatingRuntime) {
                 dotnetLogger.info(`Aborting startup, reason: ${reason}`);
             }
+            dotnetApi.INTERNAL.consoleDrain?.();
             if (!alreadySilent) {
                 if (runtimeState.onExitListeners.length === 0 && !runtimeState.dotnetReady) {
                     dotnetLogger.error("Exiting during runtime startup: ", message);
@@ -132,6 +133,7 @@ export function exit(exitCode: number, reason: any): void {
                     }
                 }
             }
+            dotnetApi.INTERNAL.consoleDrain?.();
             if (runtimeState.creatingRuntime) {
                 dotnetLoaderExports.abortStartup(reason);
             }

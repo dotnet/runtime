@@ -60,6 +60,7 @@ extern "C" {
     void SystemInteropJS_InvokeJSImportST (int32_t, void *);
     void SystemInteropJS_ReleaseCSOwnedObject (void *);
     void SystemInteropJS_ResolveOrRejectPromise (void *);
+    void * SystemJS_ConsoleWrite (void *, int32_t, int32_t);
     void * SystemJS_GetLocaleInfo (void *, int32_t, void *, int32_t, void *, int32_t, void *);
     int32_t SystemNative_Access (void *, int32_t);
     void * SystemNative_AlignedAlloc (void *, void *);
@@ -290,6 +291,7 @@ static const Entry s_libSystem_Native [] = {
 };
 
 static const Entry s_libSystem_Native_Browser [] = {
+    DllImportEntry(SystemJS_ConsoleWrite) // System.Console
     DllImportEntry(SystemJS_GetLocaleInfo) // System.Private.CoreLib
 };
 
@@ -312,7 +314,7 @@ static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
     {"libSystem.Native", s_libSystem_Native, 87},
-    {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
+    {"libSystem.Native.Browser", s_libSystem_Native_Browser, 2},
     {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
 };
 const size_t s_PInvokeTablesCount = sizeof(s_PInvokeTables) / sizeof(s_PInvokeTables[0]);

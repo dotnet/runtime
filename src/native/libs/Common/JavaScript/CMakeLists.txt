@@ -77,6 +77,7 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/per-module.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/symbolicate.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/types.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/console.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/crypto.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/diagnostics.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/globalization-locale.ts"
@@ -99,6 +100,7 @@ set(ROLLUP_TS_SOURCES
 
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/cancelable-promise.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/console.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/cross-module.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/gc-handles.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/http.ts"
