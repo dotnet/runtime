@@ -599,15 +599,9 @@
           DependsOnTargets="CopyAllNativeProjectReferenceBinaries;_WasmResolveNativeTestLibraries"
           Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetArchitecture)' == 'wasm'">
     <ItemGroup Condition="'$(InMergedTestDirectory)' != 'true' or '$(_WasmNativeTestRunsFromOutDir)' == 'true'">
-      <_NativeAotWasmTestLibrary Include="@(_WasmNativeTestLib)" />
-      <_NativeAotWasmTestLibrary Include="@(NativeFileReference)" Condition="'%(Extension)' == '$(StaticLibSuffix)'" />
-      <_NativeAotWasmTestLibrary Update="@(_NativeAotWasmTestLibrary)">
-        <ModuleName>%(Filename)</ModuleName>
-        <ModuleName Condition="$([System.String]::Copy('%(Filename)').StartsWith('$(StaticLibPrefix)'))">$([System.String]::Copy('%(Filename)').Substring($(StaticLibPrefix.Length)))</ModuleName>
-      </_NativeAotWasmTestLibrary>
-      <NativeLibrary Include="@(_NativeAotWasmTestLibrary)" KeepDuplicates="false" />
+      <NativeLibrary Include="@(_WasmNativeTestArchive)" KeepDuplicates="false" />
       <NativeLibrary Include="@(_WasmNativeCommonLib)" KeepDuplicates="false" />
-      <DirectPInvoke Include="@(_NativeAotWasmTestLibrary->'%(ModuleName)')" KeepDuplicates="false" />
+      <DirectPInvoke Include="@(_WasmNativeTestArchive->'%(ModuleName)')" KeepDuplicates="false" />
     </ItemGroup>
   </Target>
 
