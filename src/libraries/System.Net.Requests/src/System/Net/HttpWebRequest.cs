@@ -1002,6 +1002,12 @@ namespace System.Net
                 return;
             }
 
+            // Cancellation callbacks can run before HandleResponse finishes.
+            if (_sendRequestMessage?.RequestUri is Uri requestUri)
+            {
+                _responseUri = requestUri;
+            }
+
             // .NET Desktop behavior requires us to invoke outstanding callbacks
             // before returning if used in either the BeginGetRequestStream or
             // BeginGetResponse methods.
@@ -1270,18 +1276,17 @@ namespace System.Net
                 requestStream.Complete();
             }
 
-            if (_sendRequestTask is null && _requestStream is RequestBufferingStream requestBufferingStream)
-            {
-                ArraySegment<byte> buffer = requestBufferingStream.GetBuffer();
-                _sendRequestTask = SendRequest(async, new ByteArrayContent(buffer.Array!, buffer.Offset, buffer.Count));
-            }
-
-            _sendRequestTask ??= SendRequest(async);
-
             try
             {
+                if (_sendRequestTask is null && _requestStream is RequestBufferingStream requestBufferingStream)
+                {
+                    ArraySegment<byte> buffer = requestBufferingStream.GetBuffer();
+                    _sendRequestTask = SendRequest(async, new ByteArrayContent(buffer.Array!, buffer.Offset, buffer.Count));
+                }
+
+                _sendRequestTask ??= SendRequest(async);
+
                 HttpResponseMessage responseMessage = await _sendRequestTask.ConfigureAwait(false);
-                _responseUri = responseMessage.RequestMessage!.RequestUri!;
                 HttpWebResponse response = new(responseMessage, _requestUri, _cookieContainer);
 
                 int maxSuccessStatusCode = AllowAutoRedirect ? 299 : 399;
@@ -1298,6 +1303,7 @@ namespace System.Net
             }
             finally
             {
+                _responseUri = _sendRequestMessage?.RequestUri;
                 _sendRequestMessage?.Dispose();
                 if (_requestStream is RequestBufferingStream bufferStream)
                 {
