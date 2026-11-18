@@ -1785,7 +1785,10 @@ private:
     static int FindVNPair(VNPairList& list, ValueNum from);
 
     // Private union operation; RecordCseUseRewrite supplies the equality guarantee.
-    void RecordVNEquivalence(ValueNum fromVN, ValueNum toVN);
+    void        RecordVNEquivalence(ValueNum fromVN, ValueNum toVN);
+    ValueNum    VNCanonicalRoot(ValueNum vn);
+    ValueNum    VNCanonicalThroughFunc(ValueNum vn);
+    static bool VNFuncIsReformable(VNFunc vnf);
 
     // Allocated on the first rewrite CSE records, so methods without one carry a pointer.
     struct VNEquivalences
@@ -1796,9 +1799,16 @@ private:
         // Union-find over rewritten numbers, pointing each toward its representative.
         VNPairList entries;
 
+        // Cache unchanged and rebuilt VNs separately. NoVN marks an in-progress rebuild
+        // to break cycles through equivalent arguments. A new union clears both caches.
+        GrowableBitSet canonicalIdentity;
+        VNPairList     rebuilt;
+
         VNEquivalences(CompAllocator alloc)
             : members(alloc)
             , entries(alloc)
+            , canonicalIdentity(alloc)
+            , rebuilt(alloc)
         {
         }
     };

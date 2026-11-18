@@ -8033,6 +8033,20 @@ ValueNum ValueNumStore::VNCanonical(ValueNum vn)
         return vn;
     }
 
+    return VNCanonicalThroughFunc(VNCanonicalRoot(vn));
+}
+
+//------------------------------------------------------------------------
+// VNCanonicalRoot: Follow recorded equivalences to the representative.
+//
+// Arguments:
+//    vn - the value number
+//
+// Return Value:
+//    The value number itself when no equivalence was recorded for it.
+//
+ValueNum ValueNumStore::VNCanonicalRoot(ValueNum vn)
+{
     VNEquivalences& eq = *m_vnEquivalences;
     if (!eq.members.Test(vn))
     {
@@ -8108,6 +8122,139 @@ void ValueNumStore::RecordCseUseRewrite(ValueNumPair oldVNPair, GenTreeLclVarCom
 }
 
 //------------------------------------------------------------------------
+// VNFuncIsReformable: Can a function application be rebuilt over equal arguments?
+//
+// Arguments:
+//    vnf - the function
+//
+// Return Value:
+//    True for value functions whose arguments are values. Maps, phis, memory and
+//    exception sets are excluded.
+//
+bool ValueNumStore::VNFuncIsReformable(VNFunc vnf)
+{
+    if (vnf < VNF_Boundary)
+    {
+        return GenTreeOpIsLegalVNFunc(static_cast<genTreeOps>(vnf));
+    }
+    switch (vnf)
+    {
+        case VNF_LT_UN:
+        case VNF_LE_UN:
+        case VNF_GE_UN:
+        case VNF_GT_UN:
+        case VNF_Cast:
+        case VNF_CastOvf:
+        case VNF_MDArrLength:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
+// VNCanonicalThroughFunc: Canonicalize a function application through its arguments.
+//
+// Arguments:
+//    vn - a representative value number
+//
+// Return Value:
+//    The function rebuilt over canonical arguments, or vn when unchanged.
+//    CSE leaves parent VNs unchanged, so rebuild them lazily and memoize the result.
+//    Return NoVN for an in-progress rebuild. Equivalences can lead a function back
+//    to its own argument when liberal VN folding made them equal.
+//
+ValueNum ValueNumStore::VNCanonicalThroughFunc(ValueNum vn)
+{
+    VNEquivalences& eq = *m_vnEquivalences;
+    if (eq.canonicalIdentity.Test(vn))
+    {
+        return vn;
+    }
+    int index = FindVNPair(eq.rebuilt, vn);
+    if (index >= 0)
+    {
+        return eq.rebuilt.BottomRef(index).to; // NoVN while in progress
+    }
+
+    VNFuncApp funcApp;
+    if (!GetVNFunc(vn, &funcApp) || !VNFuncIsReformable(funcApp.GetFunc()) || (funcApp.GetArity() == 0) ||
+        (funcApp.GetArity() > 4))
+    {
+        // Nothing to rebuild. Remember that so the next lookup is one bit test.
+        eq.canonicalIdentity.Set(vn);
+        return vn;
+    }
+
+    eq.rebuilt.Push({vn, NoVN});
+
+    ValueNum args[4];
+    bool     changed = false;
+    for (unsigned i = 0; i < funcApp.GetArity(); i++)
+    {
+        ValueNum arg   = funcApp.GetArg(i);
+        ValueNum canon = VNCanonicalThroughFunc(VNCanonicalRoot(arg));
+        if (canon == NoVN)
+        {
+            // The argument leads back to this function, so keep it as it is.
+            canon = arg;
+        }
+        args[i] = canon;
+        changed |= (canon != arg);
+    }
+
+    ValueNum reformed = vn;
+    if (changed)
+    {
+        var_types type = TypeOfVN(vn);
+        switch (funcApp.GetArity())
+        {
+            case 1:
+                reformed = VNForFunc(type, funcApp.GetFunc(), args[0]);
+                break;
+            case 2:
+                reformed = VNForFunc(type, funcApp.GetFunc(), args[0], args[1]);
+                break;
+            case 3:
+                reformed = VNForFunc(type, funcApp.GetFunc(), args[0], args[1], args[2]);
+                break;
+            default:
+                reformed = VNForFunc(type, funcApp.GetFunc(), args[0], args[1], args[2], args[3]);
+                break;
+        }
+        reformed = VNCanonicalRoot(reformed);
+
+        // The rebuilt number is new, so carry over the memberships recorded under the original.
+        // A rebuilt number that folded to a constant needs none: assertion prop reads constants directly.
+        if (!IsVNConstant(reformed))
+        {
+            if (IsVNCheckedBound(vn))
+            {
+                SetVNIsCheckedBound(reformed);
+            }
+            if (IsVNCheckedBoundIndex(vn))
+            {
+                SetVNIsCheckedBound(reformed, /* isIndex */ true);
+            }
+        }
+    }
+    index = FindVNPair(eq.rebuilt, vn);
+    assert(index >= 0);
+    if (reformed == vn)
+    {
+        // Nested walks may have left entries above this one.
+        eq.rebuilt.BottomRef(index) = eq.rebuilt.TopRef();
+        eq.rebuilt.Pop();
+        eq.canonicalIdentity.Set(vn);
+    }
+    else
+    {
+        eq.rebuilt.BottomRef(index).to = reformed;
+    }
+    return reformed;
+}
+
+//------------------------------------------------------------------------
 // RecordVNEquivalence: Union the equivalence classes of two value numbers.
 //
 // Arguments:
@@ -8158,6 +8305,8 @@ void ValueNumStore::RecordVNEquivalence(ValueNum fromVN, ValueNum toVN)
     assert(FindVNPair(m_vnEquivalences->entries, fromRoot) < 0);
     m_vnEquivalences->members.Set(fromRoot);
     m_vnEquivalences->entries.Push({fromRoot, toRoot});
+    m_vnEquivalences->canonicalIdentity.Clear();
+    m_vnEquivalences->rebuilt.Reset();
 
     // Checked-bound membership is recorded during value numbering, before CSE, so carry it
     // to the representative rather than relying on later canonicalization. A constant needs
