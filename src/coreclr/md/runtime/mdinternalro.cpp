@@ -2583,6 +2583,9 @@ HRESULT MDInternalRO::GetPermissionSetProps(
     void const  **ppvPermission,        // [OUT] permission blob.
     ULONG       *pcbPermission)         // [OUT] count of bytes of pvPermission.
 {
+#ifndef FEATURE_METADATA_PERMISSION_SETS
+    return E_NOTIMPL;
+#else // FEATURE_METADATA_PERMISSION_SETS
     HRESULT hr;
     _ASSERTE(TypeFromToken(pm) == mdtPermission);
     _ASSERTE(pdwAction && ppvPermission && pcbPermission);
@@ -2594,6 +2597,7 @@ HRESULT MDInternalRO::GetPermissionSetProps(
     IfFailRet(m_LiteWeightStgdb.m_MiniMd.getPermissionSetOfDeclSecurity(pPerm, (const BYTE **)ppvPermission, pcbPermission));
 
     return S_OK;
+#endif // FEATURE_METADATA_PERMISSION_SETS
 } // MDInternalRO::GetPermissionSetProps
 
 //*****************************************************************************
