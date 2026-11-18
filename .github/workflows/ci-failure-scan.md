@@ -166,7 +166,7 @@ The agent runs read-only. All writes go through `safe-outputs`.
 4. **One area path per issue.** Title each KBE around a single failure shape (assertion text or test family), not a list of pipelines. If a root cause spans multiple area paths, file one KBE per area and cross-link with `Related: dotnet/runtime#<n>`.
 5. **No `Mute` / `Muting` in titles.** Use `Skip`, `Disable`, `Suppress`, or `Exclude` when a title must describe a mitigation; prefer describing the failure itself.
 6. **Every issue title starts with `[ci-scan] `.**
-7. **Every actionable failure becomes a `Known Build Error` issue.** Test failures, hangs, AND build breaks all converge on the same KBE template; Build Analysis matches both via the JSON body. Skip emission entirely for: pre-existing issue/PR matches (shared KBE search flow), unstable signatures (< 2 occurrences in window with no current-run severity), or true infra noise (agent disconnect, pool offline) where no stable signature can be extracted.
+7. **Every actionable failure becomes a `Known Build Error` issue.** Test failures, hangs, AND build breaks all converge on the same KBE template; Build Analysis matches both via the JSON body. Skip emission entirely for: pre-existing issue/PR matches (shared KBE search flow), unstable signatures (< 2 occurrences in window with no current-run severity, except on pipelines marked `first-failure`), or true infra noise (agent disconnect, pool offline) where no stable signature can be extracted.
 8. **One signature = one outcome.** No duplicate KBEs. No comments on existing KBEs — Build Analysis already counts occurrences in the issue body, and hand-off comments are `ci-failure-fix`'s job.
 9. **Never mute.** This workflow does not open test-disable PRs and never emits any test annotation, csproj flag, or `[ActiveIssue]`. Disabling a test is a human decision routed through `ci-failure-fix`'s hand-off, not this scan.
 10. **All intermediate state under `/tmp/gh-aw/agent/`.** Each bash invocation is a fresh subshell; persist anything you want to keep.
@@ -212,44 +212,49 @@ Read once at start:
 For each row in the pipeline table below:
 
 1. Pre-bind the build-list URL to a shell variable, then `curl -s "$url" | tee /tmp/gh-aw/agent/builds_<id>.json`. Fetch at least 25 builds.
-2. Pick `source` = most recent build with `result in {failed, partiallySucceeded}` that has at least one COMPLETED build with a strictly later `finishTime`. That later build is the `follow_up` anchor for Step 3.5; without it, a freshly-fixed regression cannot be distinguished from a still-failing one. (The dnceng-public build-list is sorted DESC by `queueTime`, so `source` will appear AFTER its `follow_up` in the JSON array; "later in time" refers to wall-clock, not array position.)
-3. Skip reasons: `source.finishTime > 14d` -> `pipeline-skipped: stale build window (>14d)`. No `follow_up` (source is the absolute latest) -> `pipeline-skipped: no follow-up build yet — defer to next run`. No qualifying build in 7 days -> `pipeline-skipped: stale`. The 14-day window accommodates JIT-stress family pipelines (defs 109–160, 230, 235) that run on a weekly-or-longer cadence; tightening to 72h blanket-suppresses their actionable failures.
+2. Pick `source` by pipeline policy:
+   - For pipelines marked `first-failure` below, pick the most recent COMPLETED build with `result in {failed, partiallySucceeded}`, even when it is the latest build. Do not wait for another build.
+   - For all other pipelines, pick the most recent build with `result in {failed, partiallySucceeded}` that has at least one COMPLETED build with a strictly later `finishTime`.
+   - When a later completed build exists, use it as the `follow_up` anchor for Step 3.5. Compare `finishTime`, not build-list position; the API sorts by `queueTime`.
+3. Skip reasons: `source.finishTime > 14d` -> `pipeline-skipped: stale build window (>14d)`. For pipelines not marked `first-failure`, no `follow_up` -> `pipeline-skipped: no follow-up build yet — defer to next run`, and no qualifying build in 7 days -> `pipeline-skipped: stale`. First-failure pipelines use the 14-day window to accommodate weekly-or-longer schedules; do not apply the 7-day cutoff to them.
 4. Otherwise pass `source`'s failed timeline records to Step 3.
+
+`first-failure` marks the JIT stress, experimental JIT, JIT CFG, PGO, and SuperPMI pipelines that can file a verified new failure after one build. Some run only on weekends, so neither discovery nor filing may wait for a later build or a second occurrence. This policy applies only to the marked rows, not every `optional-ci` pipeline. All shared KBE validation, duplicate checks, staleness checks, labels, and per-run caps still apply.
 
 | Pipeline | Definition ID | Notes |
 |---|---|---|
 | runtime-extra-platforms | 154 | Apple mobile, Android, browser, wasi, NativeAOT outer loop |
 | runtime-coreclr outerloop | 108 | |
-| runtime-coreclr jitstress | 109 | JIT stress modes; optional-ci |
-| runtime-coreclr jitstressregs | 110 | optional-ci |
-| runtime-coreclr jitstress2-jitstressregs | 111 | optional-ci |
+| runtime-coreclr jitstress | 109 | JIT stress modes; optional-ci; first-failure |
+| runtime-coreclr jitstressregs | 110 | optional-ci; first-failure |
+| runtime-coreclr jitstress2-jitstressregs | 111 | optional-ci; first-failure |
 | runtime-coreclr gcstress-gcstress | 112 | optional-ci |
 | runtime-coreclr gcstress-extra | 113 | optional-ci |
 | runtime-coreclr r2r-extra | 114 | |
-| runtime-coreclr jitstress-isas-x86 | 115 | optional-ci |
-| runtime-coreclr jitstress-isas-arm | 116 | optional-ci |
-| runtime-coreclr jitstressregs-x86 | 117 | optional-ci |
-| runtime-coreclr libraries-jitstressregs | 118 | optional-ci |
-| runtime-coreclr libraries-jitstress2-jitstressregs | 119 | optional-ci |
+| runtime-coreclr jitstress-isas-x86 | 115 | optional-ci; first-failure |
+| runtime-coreclr jitstress-isas-arm | 116 | optional-ci; first-failure |
+| runtime-coreclr jitstressregs-x86 | 117 | optional-ci; first-failure |
+| runtime-coreclr libraries-jitstressregs | 118 | optional-ci; first-failure |
+| runtime-coreclr libraries-jitstress2-jitstressregs | 119 | optional-ci; first-failure |
 | runtime-coreclr r2r | 120 | |
 | runtime-coreclr gc-simulator | 123 | |
 | runtime-coreclr crossgen2 | 124 | |
 | runtime-coreclr crossgen2 outerloop | 134 | |
 | runtime-coreclr crossgen2-composite | 136 | |
 | runtime-coreclr crossgen2-composite gcstress | 141 | Weekends |
-| runtime-jit-experimental | 137 | OSR / partial compilation |
-| runtime-coreclr libraries-jitstress | 138 | optional-ci |
+| runtime-jit-experimental | 137 | OSR / partial compilation; first-failure |
+| runtime-coreclr libraries-jitstress | 138 | optional-ci; first-failure |
 | runtime-coreclr ilasm | 140 | optional-ci |
-| runtime-coreclr pgo | 144 | optional-ci |
-| runtime-coreclr libraries-pgo | 145 | optional-ci |
+| runtime-coreclr pgo | 144 | optional-ci; first-failure |
+| runtime-coreclr libraries-pgo | 145 | optional-ci; first-failure |
 | gc-standalone | 146 | ADO name differs from display name |
-| runtime-coreclr superpmi-replay | 150 | |
-| runtime-coreclr superpmi-asmdiffs-checked-release | 153 | |
-| runtime-coreclr jit-cfg | 155 | Control flow guard |
-| runtime-coreclr jitstress-random | 159 | Stress mode value comes from logs; optional-ci |
-| runtime-coreclr libraries-jitstress-random | 160 | Stress mode value comes from logs; optional-ci |
-| runtime-coreclr pgostress | 230 | optional-ci |
-| runtime-coreclr jitstress-isas-avx512 | 235 | optional-ci |
+| runtime-coreclr superpmi-replay | 150 | first-failure |
+| runtime-coreclr superpmi-asmdiffs-checked-release | 153 | first-failure |
+| runtime-coreclr jit-cfg | 155 | Control flow guard; first-failure |
+| runtime-coreclr jitstress-random | 159 | Stress mode value comes from logs; optional-ci; first-failure |
+| runtime-coreclr libraries-jitstress-random | 160 | Stress mode value comes from logs; optional-ci; first-failure |
+| runtime-coreclr pgostress | 230 | optional-ci; first-failure |
+| runtime-coreclr jitstress-isas-avx512 | 235 | optional-ci; first-failure |
 | runtime-nativeaot-outerloop | 265 | |
 | runtime-diagnostics | 309 | |
 | runtime-interpreter | 316 | ADO name differs from display name |
@@ -313,6 +318,8 @@ If the same signature appears in *every* sampled build (100% failure rate in the
   in Step 4.2 after a miss.
 
 ### Step 3.5 — Follow-up-build presence gate
+
+For pipelines marked `first-failure`, `follow_up` is optional. When none exists, skip the presence check below, but still run the build-break merged-PR check. When a later completed build exists, apply the presence check normally so a failure already fixed is not filed. All other pipelines still require a follow-up build.
 
 For each signature from `source`, check `follow_up`:
 
@@ -426,9 +433,17 @@ No meta / aggregate / outage issues. Every KBE is keyed to a single `(definition
 
 **Leg-level failures.** Evaluate this per leg (`definition + queue + stress mode`, per [the leg definition](#leg-definition)) before per-test signature scoring. When > 80% of a single leg's work items fail on a shared crash signal (same exit code / signal / assertion, e.g. arm32 NativeAOT all SIGBUS), file ONE KBE keyed to `(definition_id, queue, stress_mode, shared-signal)` — matching the Step 4.0 dedup key shape `<definition_id>|<queue>|<stress_mode>|<signature_norm>` so the leg identity is preserved and unrelated legs sharing a crash signal do not collide — scoped to that leg with `Known Build Error` + the blocking label from [KBE label selection](#kbe-label-selection), and skip the per-test signatures with `skipped: leg-level failure filed as #aw_<id>`.
 
-**Branch A — No existing KBE; signature is stable.**
+**Branch A — No existing KBE; signature meets the filing threshold.**
 
-Stable means >= 2 occurrences across >= 2 distinct builds in the ~10-build window, OR a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight). Multiple legs, retries, or work items of the SAME build (same build id) count as a single occurrence, not two — a one-off failure that appears in only one build is NOT stable; record `skipped: < 2 occurrences and not blocking` and let the next run revisit. Emit one `create_issue` using exactly the shared new-KBE template from `.github/workflows/shared/create-kbe.instructions.md` section `<a id="new-kbe-template"></a>` / `## New-KBE template`, including whichever of `<a id="literal-kbe-template"></a>` / `### KBE issue body - literal substring match`, `<a id="regex-kbe-template"></a>` / `### KBE issue body - regex match`, or `<a id="kbe-array-form"></a>` / `### KBE multi-line array form` fits the signature. Apply `Known Build Error` and the blocking label chosen per [KBE label selection](#kbe-label-selection) so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow. Append to the same-run dedup cache (Step 4.0) after emission.
+A signature meets the filing threshold when any of these applies:
+
+- The source pipeline is marked `first-failure` and the signature is verified in the source failure log. One occurrence in one build is sufficient for test failures, hangs, and build breaks; do not skip it for having fewer than two occurrences.
+- It has >= 2 occurrences across >= 2 distinct builds in the ~10-build window.
+- It is a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight).
+
+Multiple legs, retries, or work items of the SAME build (same build id) count as a single occurrence, not two. For pipelines not marked `first-failure`, a one-off failure that does not meet the build-break severity exception gets `skipped: < 2 occurrences and not blocking`; let the next run revisit. First-failure filing does not bypass Step 3.5 or any shared KBE validation or duplicate checks.
+
+Emit one `create_issue` using exactly the shared new-KBE template from `.github/workflows/shared/create-kbe.instructions.md` section `<a id="new-kbe-template"></a>` / `## New-KBE template`, including whichever of `<a id="literal-kbe-template"></a>` / `### KBE issue body - literal substring match`, `<a id="regex-kbe-template"></a>` / `### KBE issue body - regex match`, or `<a id="kbe-array-form"></a>` / `### KBE multi-line array form` fits the signature. Apply `Known Build Error` and the blocking label chosen per [KBE label selection](#kbe-label-selection) so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow. Append to the same-run dedup cache (Step 4.0) after emission.
 
 **Match-count gate.** Reject the emit unless the KBE body contains the collapsed, workflow-identified verification block defined by check #7 of the shared instructions, with `N >= 1`. Treat an absent block or field as `N=0` and record the same skip reason check #7 uses: `skipped: signature did not match failure.log (N=<count>)`. Rationale, log-source caveats, and native-assert handling live in check #7.
 
