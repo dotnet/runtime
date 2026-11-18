@@ -1576,7 +1576,7 @@ private:
     void     updateLsraStat(LsraStat stat, unsigned currentBBNum);
     void     dumpLsraStats(FILE* file);
     LsraStat getLsraStatFromScore(RegisterScore registerScore);
-    LsraStat firstRegSelStat = STAT_FREE;
+    LsraStat firstRegSelStat = STAT_FREE_OR_CHEAPER_SPILL;
 
 public:
     virtual void       dumpLsraStatsCsv(FILE* file);

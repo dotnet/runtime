@@ -10060,7 +10060,7 @@ LsraStat LinearScan::getLsraStatFromScore(RegisterScore registerScore)
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
         default:
-            return LsraStat::STAT_FREE;
+            return LsraStat::STAT_FREE_OR_CHEAPER_SPILL;
     }
 }
 
@@ -10284,11 +10284,11 @@ void LinearScan::dumpLsraStatsCsv(FILE* file)
 //
 void LinearScan::dumpLsraStatsSummary(FILE* file)
 {
-    unsigned sumStats[LsraStat::STAT_FREE] = {0};
-    weight_t wtdStats[LsraStat::STAT_FREE] = {0.0};
+    unsigned sumStats[LsraStat::STAT_FREE_OR_CHEAPER_SPILL] = {0};
+    weight_t wtdStats[LsraStat::STAT_FREE_OR_CHEAPER_SPILL] = {0.0};
 
     // Iterate for block 0
-    for (int statIndex = 0; statIndex < LsraStat::STAT_FREE; statIndex++)
+    for (int statIndex = 0; statIndex < LsraStat::STAT_FREE_OR_CHEAPER_SPILL; statIndex++)
     {
         unsigned lsraStat = blockInfo[0].stats[statIndex];
         sumStats[statIndex] += lsraStat;
@@ -10303,7 +10303,7 @@ void LinearScan::dumpLsraStatsSummary(FILE* file)
             continue;
         }
 
-        for (int statIndex = 0; statIndex < LsraStat::STAT_FREE; statIndex++)
+        for (int statIndex = 0; statIndex < LsraStat::STAT_FREE_OR_CHEAPER_SPILL; statIndex++)
         {
             unsigned lsraStat = blockInfo[block->bbNum].stats[statIndex];
             sumStats[statIndex] += lsraStat;
@@ -10311,7 +10311,7 @@ void LinearScan::dumpLsraStatsSummary(FILE* file)
         }
     }
 
-    for (int regSelectI = 0; regSelectI < LsraStat::STAT_FREE; regSelectI++)
+    for (int regSelectI = 0; regSelectI < LsraStat::STAT_FREE_OR_CHEAPER_SPILL; regSelectI++)
     {
         fprintf(file, ", %s %u %sWt %f", getStatName(regSelectI), sumStats[regSelectI], getStatName(regSelectI),
                 wtdStats[regSelectI]);
@@ -12661,9 +12661,9 @@ bool LinearScan::RegisterSelection::applySingleRegSelection(int selectionScore, 
 }
 
 // ----------------------------------------------------------
-//  try_FREE: Apply the FREE heuristic.
+//  try_FREE_OR_CHEAPER_SPILL: Apply the FREE_OR_CHEAPER_SPILL heuristic.
 //
-void LinearScan::RegisterSelection::try_FREE()
+void LinearScan::RegisterSelection::try_FREE_OR_CHEAPER_SPILL()
 {
     assert(!found);
     // JitLsraOrdering can invoke this after other heuristics have narrowed the candidates.
@@ -12727,7 +12727,7 @@ void LinearScan::RegisterSelection::try_FREE()
         }
     }
 
-    found = applySelection(FREE, freeCandidates);
+    found = applySelection(FREE_OR_CHEAPER_SPILL, freeCandidates);
 }
 
 // ----------------------------------------------------------
@@ -12739,7 +12739,7 @@ void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
 {
     assert(!found);
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12765,7 +12765,7 @@ void LinearScan::RegisterSelection::try_THIS_ASSIGNED()
 {
     assert(!found);
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12786,7 +12786,7 @@ void LinearScan::RegisterSelection::try_COVERS()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12808,7 +12808,7 @@ void LinearScan::RegisterSelection::try_OWN_PREFERENCE()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12827,7 +12827,7 @@ void LinearScan::RegisterSelection::try_COVERS_RELATED()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12846,7 +12846,7 @@ void LinearScan::RegisterSelection::try_RELATED_PREFERENCE()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12864,7 +12864,7 @@ void LinearScan::RegisterSelection::try_CALLER_CALLEE()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12882,7 +12882,7 @@ void LinearScan::RegisterSelection::try_UNASSIGNED()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12901,7 +12901,7 @@ void LinearScan::RegisterSelection::try_COVERS_FULL()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12926,7 +12926,7 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -13004,7 +13004,7 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
 void LinearScan::RegisterSelection::try_IS_PREV_REG()
 {
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -13025,7 +13025,7 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -13971,15 +13971,15 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
     }
 #else // RELEASE
 
-    // FREE may choose eviction instead. Dispatch the remaining heuristics using that decision.
+    // FREE_OR_CHEAPER_SPILL may choose eviction instead. Dispatch the remaining heuristics using that decision.
     IF_FOUND_GOTO_DONE
-    try_FREE();
+    try_FREE_OR_CHEAPER_SPILL();
     IF_FOUND_GOTO_DONE
 
     if (freeCandidates != RBM_NONE)
     {
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
-    if constexpr (stat != FREE)                                                                                        \
+    if constexpr (stat != FREE_OR_CHEAPER_SPILL)                                                                       \
     {                                                                                                                  \
         try_##stat();                                                                                                  \
         IF_FOUND_GOTO_DONE                                                                                             \
