@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -33,14 +34,15 @@ public class Runtime_134893
     [SkipOnMono("CoreCLR JIT regression test")]
     public static void TestEntryPoint()
     {
-        Assert.Equal(Vector128.Create(0, 1, 0, 0), WithElement(Vector128<int>.Zero, 1));
+        Assert.Equal(Vector128.Create(0, 1, 0, 0), WithElement(Vector128<int>.Zero, 1, 100));
+        Assert.Throws<ArgumentOutOfRangeException>(() => WithElement(Vector128<int>.Zero, 6, 0));
         Assert.Equal(Vector256.Create((byte)16), Shuffle(Vector256.Create((byte)16)));
         Assert.Equal(Vector256.Create((short)8), Shuffle(Vector256.Create((short)8)));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-    private static Vector128<int> WithElement(Vector128<int> vector, int index) =>
-        vector.WithElement(index, Interlocked.Exchange(ref index, 100));
+    private static Vector128<int> WithElement(Vector128<int> vector, int index, int replacementIndex) =>
+        vector.WithElement(index, Interlocked.Exchange(ref index, replacementIndex));
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static Vector256<byte> Shuffle(Vector256<byte> vector)
