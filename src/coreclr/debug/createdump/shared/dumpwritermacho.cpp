@@ -3,7 +3,6 @@
 
 #include "createdump.h"
 #include "specialthreadinfo.h"
-#include <sys/sysctl.h>
 
 extern int g_readProcessMemoryResult;
 
@@ -24,20 +23,11 @@ DumpWriter::WriteDump()
 
     BuildThreadLoadCommands();
 
-    BuildAddressableBitsNote();
-
     BuildProcessMetadataNote();
 
     uint64_t fileOffset = 0;
     if (!WriteHeader(&fileOffset)) {
         return false;
-    }
-
-    // LC_NOTE payloads follow the load commands in the order the notes are written
-    if (m_hasAddressableBitsNote)
-    {
-        m_addressableBitsNote.offset = fileOffset;
-        fileOffset += m_addressableBitsNote.size;
     }
 
     m_processMetadataNote.offset = fileOffset;
@@ -76,16 +66,8 @@ DumpWriter::WriteDump()
         }
     }
 
-    // Write the LC_NOTE commands as the final load commands, followed by their payloads
-    if (m_hasAddressableBitsNote &&
-        !WriteData(&m_addressableBitsNote, m_addressableBitsNote.cmdsize)) {
-        return false;
-    }
+    // Write the process metadata note as the final load command
     if (!WriteData(&m_processMetadataNote, m_processMetadataNote.cmdsize)) {
-        return false;
-    }
-    if (m_hasAddressableBitsNote &&
-        !WriteData(&m_addressableBits, sizeof(m_addressableBits))) {
         return false;
     }
     if (!WriteData(m_processMetadata.data(), m_processMetadata.size())) {
@@ -123,43 +105,6 @@ ConvertFlags(uint32_t flags)
         prot |= VM_PROT_EXECUTE;
     }
     return prot;
-}
-
-void
-DumpWriter::BuildAddressableBitsNote()
-{
-#if defined(__aarch64__)
-    // arm64e system libraries sign return addresses with pointer authentication. Without
-    // this note, LLDB only strips the top byte and can't unwind through signed frames.
-    // Use the same source as debugserver for the number of valid address bits.
-    uint32_t addressBits = 0;
-    size_t length = sizeof(addressBits);
-    if (sysctlbyname("machdep.virtual_address_size", &addressBits, &length, nullptr, 0) != 0)
-    {
-        TRACE("sysctlbyname(machdep.virtual_address_size) FAILED %s (%d)\n", strerror(errno), errno);
-        return;
-    }
-    if (length != sizeof(addressBits) || addressBits == 0 || addressBits >= 64)
-    {
-        TRACE("sysctlbyname(machdep.virtual_address_size) returned unexpected value %u (length %zu)\n",
-            addressBits, length);
-        return;
-    }
-
-    m_addressableBits.version = 4;
-    m_addressableBits.lowAddressBits = addressBits;
-    m_addressableBits.highAddressBits = addressBits;
-    m_addressableBits.reserved = 0;
-
-    m_addressableBitsNote.cmd = LC_NOTE;
-    m_addressableBitsNote.cmdsize = sizeof(note_command);
-    static_assert(sizeof(AddressableBitsPayload) == 16);
-    static_assert(sizeof(m_addressableBitsNote.data_owner) > sizeof("addrable bits") - 1);
-    memset(m_addressableBitsNote.data_owner, 0, sizeof(m_addressableBitsNote.data_owner));
-    memcpy(m_addressableBitsNote.data_owner, "addrable bits", sizeof("addrable bits") - 1);
-    m_addressableBitsNote.size = sizeof(m_addressableBits);
-    m_hasAddressableBitsNote = true;
-#endif
 }
 
 void
@@ -298,12 +243,6 @@ DumpWriter::WriteHeader(uint64_t* pFileOffset)
     {
         header.ncmds++;
         header.sizeofcmds += segment.cmdsize;
-    }
-
-    if (m_hasAddressableBitsNote)
-    {
-        header.ncmds++;
-        header.sizeofcmds += m_addressableBitsNote.cmdsize;
     }
 
     header.ncmds++;
