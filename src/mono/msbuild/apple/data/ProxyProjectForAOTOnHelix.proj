@@ -147,19 +147,11 @@
       SourceFiles="@(AppleAssembliesToBundle)"
       DestinationFolder="$(IntermediateOutputPath)" />
 
-    <PropertyGroup Condition="'$(UseRuntimeComponents)' == 'true'">
-      <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
-    </PropertyGroup>
-
     <ItemGroup Condition="'$(_NativeAotLibraryTestOnHelix)' == 'true'">
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
       <IntermediateAssembly Include="$(OriginalPublishDir)$(AssemblyName).dll" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(UseRuntimeComponents)' == 'true'">
-      <RuntimeComponents Include="diagnostics_tracing" />
-      <RuntimeComponents Include="marshal-ilgen" />
-    </ItemGroup>
   </Target>
 
   <Target Name="_RunR2RCompilationOnHelix"

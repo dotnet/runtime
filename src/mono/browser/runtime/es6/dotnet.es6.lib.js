@@ -13,7 +13,6 @@ const WASM_ENABLE_EH = process.env.WASM_ENABLE_EH === "1";
 const ENABLE_DEVTOOLS_PROFILER = process.env.ENABLE_DEVTOOLS_PROFILER === "1";
 const ENABLE_AOT_PROFILER = process.env.ENABLE_AOT_PROFILER === "1";
 const ENABLE_LOG_PROFILER = process.env.ENABLE_LOG_PROFILER === "1";
-const RUN_AOT_COMPILATION = process.env.RUN_AOT_COMPILATION === "1";
 var methodIndexByName = undefined;
 var gitHash = undefined;
 
@@ -87,7 +86,6 @@ function injectDependencies() {
         `enableDevToolsProfiler: ${ENABLE_DEVTOOLS_PROFILER}, ` +
         `enableLogProfiler: ${ENABLE_LOG_PROFILER}, ` +
         `enableEventPipe: ${WASM_ENABLE_EVENTPIPE}, ` +
-        `runAOTCompilation: ${RUN_AOT_COMPILATION}, ` +
         `wasmEnableThreads: ${!!PTHREADS}, ` +
         `gitHash: "${gitHash}", ` +
         `});`;

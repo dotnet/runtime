@@ -86,7 +86,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         if (assertOptions.AssertSymbolsFile && assertOptions.ExpectSymbolsFile)
             res.Add("dotnet.native.js.symbols");
 
-        if (assertOptions.BuildOptions.EnableDiagnostics || EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+        if (assertOptions.BuildOptions.EnableDiagnostics || BuildTestBase.IsCoreClrRuntime)
         {
             res.Add("dotnet.diagnostics.js");
             if (!assertOptions.BuildOptions.IsPublish)
@@ -247,7 +247,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
         // --- Materialized framework assets: JS modules and source maps in fx/_framework/ ---
         string[] materializedFiles = ["dotnet.runtime.js", "dotnet.runtime.js.map", "dotnet.js.map"];
-        if (buildOptions.EnableDiagnostics || EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+        if (buildOptions.EnableDiagnostics || BuildTestBase.IsCoreClrRuntime)
         {
             materializedFiles = [.. materializedFiles, "dotnet.diagnostics.js", "dotnet.diagnostics.js.map"];
         }
@@ -264,7 +264,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         // BrowserWasmApp.CoreCLR.targets (imported by data/Local.Directory.Build.targets), so
         // treat CoreCLR as having native-rebuild capability regardless of isUsingWorkloads.
         string[] nativeFiles = ["dotnet.native.js", "dotnet.native.wasm"];
-        bool hasNativeRebuildCapability = isUsingWorkloads || EnvironmentVariables.RuntimeFlavor == "CoreCLR";
+        bool hasNativeRebuildCapability = isUsingWorkloads || BuildTestBase.IsCoreClrRuntime;
         var expectedFileType = hasNativeRebuildCapability
             ? GetExpectedFileType(config, buildOptions.AOT, isPublish: false, isUsingWorkloads: isUsingWorkloads, isNativeBuild: isNativeBuild)
             : NativeFilesType.FromRuntimePack;

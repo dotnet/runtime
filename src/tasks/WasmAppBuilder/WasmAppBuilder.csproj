@@ -25,6 +25,7 @@
   <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />
+    <Compile Include="..\Common\RuntimeConfigProperties.cs" />
     <Compile Include="..\Common\TempFileName.cs" />
     <Compile Include="..\Common\JoinedString.cs" />
     <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\ArtifactWriter.cs" />
@@ -55,7 +56,5 @@
                       TargetPath="tasks\netframework" />
     </ItemGroup>
   </Target>
-
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.Mono.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)net\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'Mono'" />
 
 </Project>

@@ -15,14 +15,6 @@ set_target_properties(dotnet PROPERTIES COMPILE_FLAGS ${CONFIGURATION_WASICC_FLA
 target_link_libraries(dotnet
     PRIVATE
     stdc++
-    ${MONO_ARTIFACTS_DIR}/libmono-component-hot_reload-static.a
-    ${MONO_ARTIFACTS_DIR}/libmono-component-debugger-static.a
-    ${MONO_ARTIFACTS_DIR}/libmono-component-diagnostics_tracing-stub-static.a
-    ${MONO_ARTIFACTS_DIR}/libmono-component-marshal-ilgen-static.a
-    ${MONO_ARTIFACTS_DIR}/libmono-ee-interp.a
-    ${MONO_ARTIFACTS_DIR}/libmonosgen-2.0.a
-    ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
-    ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_INTERPSIMDTABLES_LIB}.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
     ${NATIVE_BIN_DIR}/libSystem.Native.TimeZoneData.a
     ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a

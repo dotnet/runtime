@@ -99,7 +99,6 @@ This file should be imported by eng/Versions.props
     <optimizationwindows_ntx64MIBCRuntimePackageVersion>1.0.0-prerelease.26451.1</optimizationwindows_ntx64MIBCRuntimePackageVersion>
     <optimizationwindows_ntx86MIBCRuntimePackageVersion>1.0.0-prerelease.26451.1</optimizationwindows_ntx86MIBCRuntimePackageVersion>
     <!-- dotnet-runtime-assets dependencies -->
-    <MicrosoftDotNetCilStripSourcesPackageVersion>12.0.0-beta.26566.1</MicrosoftDotNetCilStripSourcesPackageVersion>
     <MicrosoftDotnetFuzzingTestDataPackageVersion>12.0.0-beta.26566.1</MicrosoftDotnetFuzzingTestDataPackageVersion>
     <MicrosoftNETHostModelTestDataPackageVersion>12.0.0-beta.26566.1</MicrosoftNETHostModelTestDataPackageVersion>
     <SystemComponentModelTypeConverterTestDataPackageVersion>12.0.0-beta.26566.1</SystemComponentModelTypeConverterTestDataPackageVersion>
@@ -216,7 +215,6 @@ This file should be imported by eng/Versions.props
     <optimizationwindows_ntx64MIBCRuntimeVersion>$(optimizationwindows_ntx64MIBCRuntimePackageVersion)</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>$(optimizationwindows_ntx86MIBCRuntimePackageVersion)</optimizationwindows_ntx86MIBCRuntimeVersion>
     <!-- dotnet-runtime-assets dependencies -->
-    <MicrosoftDotNetCilStripSourcesVersion>$(MicrosoftDotNetCilStripSourcesPackageVersion)</MicrosoftDotNetCilStripSourcesVersion>
     <MicrosoftDotnetFuzzingTestDataVersion>$(MicrosoftDotnetFuzzingTestDataPackageVersion)</MicrosoftDotnetFuzzingTestDataVersion>
     <MicrosoftNETHostModelTestDataVersion>$(MicrosoftNETHostModelTestDataPackageVersion)</MicrosoftNETHostModelTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>$(SystemComponentModelTypeConverterTestDataPackageVersion)</SystemComponentModelTypeConverterTestDataVersion>

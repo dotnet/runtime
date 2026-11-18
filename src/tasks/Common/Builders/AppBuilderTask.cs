@@ -27,12 +27,6 @@ public class AppBuilderTask : Task
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
-    /// Path to Mono public headers (*.h)
-    /// </summary>
-    [Required]
-    public string[] MonoRuntimeHeaders { get; set; } = [];
-
-    /// <summary>
     /// Path to store build artifacts
     /// </summary>
     [Required]

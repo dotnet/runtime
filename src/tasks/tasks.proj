@@ -2,13 +2,11 @@
 
   <ItemGroup>
     <ProjectReference Include="**\*.csproj" />
-    <ProjectReference Remove="AotCompilerTask\MonoAOTCompiler.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
     <ProjectReference Remove="AndroidAppBuilder\AndroidAppBuilder.csproj" />
     <ProjectReference Remove="AppleAppBuilder\AppleAppBuilder.csproj" />
-    <ProjectReference Remove="LibraryBuilder\LibraryBuilder.csproj" />
     <ProjectReference Remove="Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
     <ProjectReference Remove="Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
     <ProjectReference Remove="MobileBuildTasks\MobileBuildTasks.csproj" />
@@ -19,10 +17,4 @@
     <ProjectReference Remove="WorkloadBuildTasks\WorkloadBuildTasks.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsMobile)' != 'true' or '$(DotNetBuildSourceOnly)' == 'true'">
-    <ProjectReference Remove="MonoTargetsTasks\MonoTargetsTasks.csproj" />
-    <ProjectReference Remove="AssemblyStripper\AssemblyStripper.csproj" />
-  </ItemGroup>
-
 </Project>
-

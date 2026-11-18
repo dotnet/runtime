@@ -84,7 +84,7 @@ public class GenerateWasmBootJson : Task
 
     public bool IsPublish { get; set; }
 
-    public bool IsAot { get; set; }
+    public bool IsAot { get; set; }  // legacy, only used when targetting net11.0 and earlier
 
     public bool IsMultiThreaded { get; set; }
 
@@ -128,6 +128,11 @@ public class GenerateWasmBootJson : Task
     {
         bool isMonoRuntime = string.IsNullOrEmpty(UseMonoRuntime) || string.Equals(UseMonoRuntime, "true", StringComparison.OrdinalIgnoreCase);
         var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion, isMonoRuntime);
+
+        if (isMonoRuntime && IsTargeting120OrLater())
+        {
+            throw new InvalidOperationException("Mono runtime is not supported for target framework 12.0 or later.");
+        }
 
         // ReadyToRun webcil-in-wasm images carry payload/table sizes that the loader needs before
         // instantiation. Record them (keyed by fingerprinted route) so they can be emitted into the

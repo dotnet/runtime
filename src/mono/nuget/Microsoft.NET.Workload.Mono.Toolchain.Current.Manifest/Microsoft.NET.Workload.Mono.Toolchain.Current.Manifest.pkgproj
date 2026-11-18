@@ -17,17 +17,13 @@
     <PropertyGroup>
       <WorkloadManifestPath>$(IntermediateOutputPath)WorkloadManifest.json</WorkloadManifestPath>
       <WorkloadManifestTargetsPath>$(IntermediateOutputPath)WorkloadManifest.targets</WorkloadManifestTargetsPath>
-      <WorkloadManifestWasiTargetsPath>$(IntermediateOutputPath)WorkloadManifest.Wasi.targets</WorkloadManifestWasiTargetsPath>
       <WorkloadManifestWasmFeaturesPath>$(MSBuildThisFileDirectory)WasmFeatures.props</WorkloadManifestWasmFeaturesPath>
-      <WorkloadManifestTelemetryTargetsPath>$(MSBuildThisFileDirectory)WorkloadTelemetry.targets</WorkloadManifestTelemetryTargetsPath>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageFile Include="$(WorkloadManifestPath)" TargetPath="data" />
       <PackageFile Include="$(WorkloadManifestTargetsPath)" TargetPath="data" />
-      <PackageFile Include="$(WorkloadManifestWasiTargetsPath)" TargetPath="data" />
       <PackageFile Include="$(WorkloadManifestWasmFeaturesPath)" TargetPath="data" />
-      <PackageFile Include="$(WorkloadManifestTelemetryTargetsPath)" TargetPath="data" />
     </ItemGroup>
 
     <ItemGroup>
@@ -49,12 +45,6 @@
       <_WorkloadManifestValues Include="FrameworkVersionCurrent" Value="12.0" />
       <_WorkloadManifestValues Include="WorkloadVersion" Value="$(PackageVersion)" />
       <_WorkloadManifestValues Include="PackageVersion" Value="$(PackageVersion)" />
-      <_WorkloadManifestValues Include="PackageVersionNet11" Value="$(PackageVersionNet11)" />
-      <_WorkloadManifestValues Include="PackageVersionNet10" Value="$(PackageVersionNet10)" />
-      <_WorkloadManifestValues Include="PackageVersionNet9" Value="$(PackageVersionNet9)" />
-      <_WorkloadManifestValues Include="PackageVersionNet8" Value="$(PackageVersionNet8)" />
-      <_WorkloadManifestValues Include="PackageVersionNet7" Value="$(PackageVersionNet7)" />
-      <_WorkloadManifestValues Include="PackageVersionNet6" Value="$(PackageVersionNet6)" />
       <_WorkloadManifestValues Include="NetCoreAppCurrent" Value="$(NetCoreAppCurrent)" />
       <_WorkloadManifestValues Include="EmscriptenVersion" Value="$(MicrosoftNETRuntimeEmscriptenVersion)" />
     </ItemGroup>
@@ -72,10 +62,6 @@
       Properties="@(_WorkloadManifestValues->'%(Identity)=%(Value)')"
       OutputPath="$(WorkloadManifestTargetsPath)" />
 
-    <GenerateFileFromTemplate
-      TemplateFile="WorkloadManifest.Wasi.targets.in"
-      Properties="@(_WorkloadManifestValues->'%(Identity)=%(Value)')"
-      OutputPath="$(WorkloadManifestWasiTargetsPath)" />
   </Target>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

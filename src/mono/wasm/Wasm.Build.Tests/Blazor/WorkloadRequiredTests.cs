@@ -21,7 +21,6 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
      */
     public static (string propertyName, bool triggerValue)[] PropertiesWithTriggerValues = new[]
     {
-        ("RunAOTCompilation", true),
         ("WasmEnableSIMD", false),
         ("WasmEnableExceptionHandling", false),
         ("InvariantTimezone", true),
@@ -94,30 +93,6 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         res.EnsureSuccessful();
         Assert.Matches("warning : .*but the native references won't be linked in", res.Output);
     }
-
-    [Theory, TestCategory("no-workload")]
-    [InlineData(Configuration.Debug)]
-    [InlineData(Configuration.Release)]
-    public void AOT_FailsBecauseItRequiresWorkload(Configuration config)
-    {
-        CommandResult res = PublishForRequiresWorkloadTest(config, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
-        Assert.NotEqual(0, res.ExitCode);
-        Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
-    }
-
-    [Theory, TestCategory("no-workload")]
-    [InlineData(Configuration.Debug)]
-    [InlineData(Configuration.Release)]
-    public void AOT_And_NativeRef_FailBecauseTheyRequireWorkload(Configuration config)
-    {
-        CommandResult res = PublishForRequiresWorkloadTest(config,
-                                extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>",
-                                extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
-
-        Assert.NotEqual(0, res.ExitCode);
-        Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
-    }
-
 
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ false)]

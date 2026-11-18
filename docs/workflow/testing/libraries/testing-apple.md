@@ -108,19 +108,9 @@ The script generates an Apple bundle that can be executed using Xcode or XHarnes
 
 ### Testing various configurations
 
-It's possible to test various configurations by setting a combination of additional MSBuild properties such as `RunAOTCompilation`,`MonoEnableInterpreter`, and some more.
+It's possible to test various configurations by setting a combination of additional MSBuild properties.
 
-1. Interpreter Only
-
-This configuration is necessary for hot reload scenarios.
-
-To enable the interpreter, add `/p:RunAOTCompilation=true /p:MonoEnableInterpreter=true` to a build command.
-
-2. AOT only
-
-To build for AOT only mode, add `/p:RunAOTCompilation=true /p:MonoEnableInterpreter=false` to a build command.
-
-3. App Sandbox
+1. App Sandbox
 
 To build the test app bundle with the App Sandbox entitlement, add `/p:EnableAppSandbox=true` to a build command.
 

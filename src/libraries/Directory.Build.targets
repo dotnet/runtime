@@ -140,8 +140,7 @@
     <RuntimeAsyncSupported Condition="'$(TargetOS)' != 'browser'
       and '$(TargetOS)' != 'wasi'
       and '$(TargetOS)' != 'android'
-      and '$(TargetsAppleMobile)' != 'true'
-      and '$(RuntimeFlavor)' != 'Mono'">true</RuntimeAsyncSupported>
+      and '$(TargetsAppleMobile)' != 'true'">true</RuntimeAsyncSupported>
   </PropertyGroup>
 
   <!-- Enable runtime async for netcoreapp source projects, excluding unsupported platforms and OOB packages. -->

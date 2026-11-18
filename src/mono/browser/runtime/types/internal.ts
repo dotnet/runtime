@@ -289,7 +289,6 @@ export type EmscriptenBuildOptions = {
     enableDevToolsProfiler: boolean,
     enableLogProfiler: boolean,
     enableEventPipe: boolean,
-    runAOTCompilation: boolean,
     wasmEnableThreads: boolean,
     gitHash: string,
 };

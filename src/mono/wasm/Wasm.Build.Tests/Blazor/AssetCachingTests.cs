@@ -328,20 +328,6 @@ public class AssetCachingTests : BlazorWasmTestBase
         string clientProjectDir = Path.GetFullPath(Path.Combine(_projectDir, "..", "BlazorWebWasm.Client"));
         string extraProperties = "", extraItems = "", insertAtEnd = "";
         AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
-        if (IsMonoRuntime)
-        {
-            string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
-            extraProperties +=
-                $$"""
-                <UseMonoRuntime>true</UseMonoRuntime>
-                <WBTMonoRuntimePackVersion>{{runtimePackVersion}}</WBTMonoRuntimePackVersion>
-                """;
-            File.Copy(
-                BuildEnvironment.WasmOverridePacksTargetsPath,
-                Path.Combine(clientProjectDir, "WasmOverridePacks.targets"),
-                overwrite: true);
-            insertAtEnd += """<Import Project="WasmOverridePacks.targets" />""";
-        }
         UpdateProjectFile(
             Path.Combine(clientProjectDir, "BlazorWebWasm.Client.csproj"),
             runAnalyzers: true, extraProperties, extraItems, insertAtEnd);

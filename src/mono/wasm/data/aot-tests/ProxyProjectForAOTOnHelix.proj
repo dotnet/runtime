@@ -4,14 +4,11 @@
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$([MSBuild]::NormalizeDirectory($(HELIX_WORKITEM_ROOT), 'wasm_build'))</TestRootDir>
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'wasm_build'))</TestRootDir>
 
-    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
-    <RunAOTCompilationAfterBuild>true</RunAOTCompilationAfterBuild>
     <OriginalPublishDir>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'publish'))</OriginalPublishDir>
     <VFSFilesPath>$([MSBuild]::NormalizeDirectory($(OriginalPublishDir), '..', 'vfsFiles'))</VFSFilesPath>
     <ExtraFilesPath>$([MSBuild]::NormalizeDirectory($(OriginalPublishDir), '..', 'extraFiles'))</ExtraFilesPath>
     <IntermediateOutputPath>$(TestRootDir)\obj\</IntermediateOutputPath>
 
-    <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
     <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
 
     <_PropsFile>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props</_PropsFile>

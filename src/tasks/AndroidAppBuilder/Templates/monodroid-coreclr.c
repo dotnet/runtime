@@ -65,8 +65,6 @@ static struct host_runtime_contract g_host_contract = {
 #error Unknown architecture
 #endif
 
-#define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
-
 static void
 strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
 {
@@ -186,7 +184,6 @@ mono_droid_runtime_init (const char* executable)
 
     // build using DiagnosticPorts property in AndroidAppBuilder
     // or set DOTNET_DiagnosticPorts env via adb, xharness when undefined.
-    // NOTE, using DOTNET_DiagnosticPorts requires app build using AndroidAppBuilder and RuntimeComponents to include 'diagnostics_tracing' component
 #ifdef DIAGNOSTIC_PORTS
     setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
 #endif

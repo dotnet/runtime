@@ -62,10 +62,7 @@
 
     <!--
       - For regular builds, it will use the symbols file from the runtime pack.
-      - for AOT builds on CI, we avoid WasmNativeDebugSymbols and we WasmNativeStrip so that we don't run OOM on helix during wasm-opt
     -->
-    <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">true</WasmNativeStrip>
-    <WasmNativeDebugSymbols Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">false</WasmNativeDebugSymbols>
     <WasmNativeDebugSymbols Condition="'$(DebuggerSupport)' == 'true' and '$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
 
     <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
@@ -73,8 +70,8 @@
   </PropertyGroup>
 
   <!-- EmccInitialHeapSize is the documented browser property (src/mono/browser/README.md) and
-       EmccTotalMemory is its legacy alias; the Mono path collapses both into WasmInitialHeapSize
-       (BrowserWasmApp.targets). Do the same here at evaluation time so the relink registry in
+       EmccTotalMemory is its legacy alias; the Mono path used to collapse both into WasmInitialHeapSize.
+       Do the same here at evaluation time so the relink registry in
        native.wasm.targets compares the effective value and the emcc link below uses it. -->
   <PropertyGroup Condition="'$(IsBrowserWasmProject)' == 'true'">
     <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
@@ -1117,4 +1114,27 @@
     <Touch Files="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.stamp')" AlwaysCreate="true" />
   </Target>
 
+  <Target Name="_WasmGenerateRunV8Script" Condition="'$(WasmGenerateRunV8Script)' == 'true'">
+    <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
+
+    <PropertyGroup>
+      <WasmRunV8ScriptPath Condition="'$(WasmRunV8ScriptPath)' == ''">$(WasmAppDir)run-v8.sh</WasmRunV8ScriptPath>
+      <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
+      <V8ScriptShebang Condition="'$(OS)' != 'Windows_NT'">#!/bin/sh</V8ScriptShebang>
+    </PropertyGroup>
+
+    <Error Condition="'$(WasmMainAssemblyFileName)' == ''" Text="%24(WasmMainAssemblyFileName) property needs to be set for generating $(WasmRunV8ScriptPath)." />
+
+    <WriteLinesToFile
+      File="$(WasmRunV8ScriptPath)"
+      Lines="$(V8ScriptShebang);v8 $(_WasmMainJSFileName) -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
+      Overwrite="true">
+    </WriteLinesToFile>
+
+    <ItemGroup>
+      <FileWrites Include="$(WasmRunV8ScriptPath)" />
+    </ItemGroup>
+
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x &quot;$(WasmRunV8ScriptPath)&quot;" />
+  </Target>
 </Project>

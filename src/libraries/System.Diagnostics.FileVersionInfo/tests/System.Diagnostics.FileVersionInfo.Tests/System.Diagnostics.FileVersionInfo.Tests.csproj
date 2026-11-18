@@ -19,11 +19,6 @@
       <LogicalName>Assembly1.cs</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
-    <!-- Identifies native libraries that should be skipped during AOT -->
-    <NativeLibraries Include="NativeLibrary.dll" />
-    <NativeLibraries Include="SecondNativeLibrary.dll" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="FileVersionInfoTest.cs" />
     <Compile Include="AssemblyInfo.cs" />

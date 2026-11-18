@@ -1,6 +1,5 @@
 <Solution>
   <Project Path="../../../libraries/Common/tests/WasmTestRunner/WasmTestRunner.csproj" />
-  <Project Path="../../../tasks/AotCompilerTask/MonoAOTCompiler.csproj" />
   <Project Path="../../../tasks/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
   <Project Path="../../../tasks/WasmAppBuilder/WasmAppBuilder.csproj" />
   <Project Path="../../../tasks/WasmBuildTasks/WasmBuildTasks.csproj" />

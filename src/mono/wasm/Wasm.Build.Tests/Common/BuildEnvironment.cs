@@ -27,7 +27,6 @@ namespace Wasm.Build.Tests
 
         public bool UseWebcil { get; init; }
         public bool IsWorkloadWithMultiThreadingForDefaultFramework { get; init; }
-        public bool IsMonoRuntime { get; init; }
         public bool IsCoreClrRuntime { get; init; }
         public bool IsRunningOnCI => EnvironmentVariables.IsRunningOnCI;
 
@@ -106,8 +105,7 @@ namespace Wasm.Build.Tests
             }
 
             UseWebcil = EnvironmentVariables.UseWebcil;
-            IsMonoRuntime = EnvironmentVariables.RuntimeFlavor == "Mono";
-            IsCoreClrRuntime = EnvironmentVariables.RuntimeFlavor == "CoreCLR";
+            IsCoreClrRuntime = true;
 
             // Only Mono ships a multithreaded browser-wasm runtime pack.
             IsWorkloadWithMultiThreadingForDefaultFramework = !IsCoreClrRuntime && IsMultiThreadingRuntimePackAvailableFor(BuildTestBase.DefaultTargetFramework);

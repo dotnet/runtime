@@ -253,7 +253,7 @@ inputs.
 - To recreate a similar build+test run locally, add `/p:BuildAOTTestsOnHelix=true` to the usual command line.
 - For example, with `./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release`
 
-    - AOT:  add `/p:EnableAggressiveTrimming=true /p:RunAOTCompilation=true /p:BuildAOTTestsOnHelix=true`
+    - AOT:  add `/p:EnableAggressiveTrimming=true /p:PublishReadyToRun=true /p:BuildAOTTestsOnHelix=true`
     - Only trimming (helpful to isolate issues caused by trimming):
         - add `/p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true`
 ## Debugging
