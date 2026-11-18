@@ -48,6 +48,16 @@ namespace System.Buffers.Text
                     // For overflow see comment below
                     maxSrcLength = destLength / 3 * 4;
                 }
+                // Base64Url final blocks can have remainder 1 or 2. With decodedLength - 2 destination bytes,
+                // the final AVX2 or AdvSimd store exceeds the destination. Limit only the SIMD input here; the
+                // scalar input limit is recalculated below. The type checks preserve standard Base64 codegen.
+                else if (typeof(TBase64Decoder) != typeof(Base64DecoderByte) &&
+                    typeof(TBase64Decoder) != typeof(Base64DecoderChar) &&
+                    destLength == decodedLength - 2 &&
+                    (srcLength & 0x3) is 1 or 2)
+                {
+                    maxSrcLength--;
+                }
 
                 T* src = srcBytes;
                 byte* dest = destBytes;
@@ -69,11 +79,6 @@ namespace System.Buffers.Text
                     }
 
                     end = srcMax - 45;
-                    // Avoid the final AVX2 store when a remainder-1 source has only decodedLength - 2 destination bytes.
-                    if ((srcLength & 0x3) == 1 && destLength == decodedLength - 2)
-                    {
-                        end--;
-                    }
                     if (Avx2.IsSupported && (end >= src))
                     {
                         Avx2Decode(decoder, ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
@@ -1172,7 +1177,7 @@ namespace System.Buffers.Text
                 Vector128<byte> res3 = ((str3 << 6) | str4);
 
                 // Step 6: Interleave and store decoded results.
-                AssertWrite<Vector128<byte>>(dest, destStart, destLength);
+                AssertWrite(dest, destStart, destLength, 48);
                 AdvSimd.Arm64.StoreVectorAndZip(dest, (res1, res2, res3));
 
                 src += 64;
