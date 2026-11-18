@@ -64,6 +64,17 @@ public class OffsetLimit
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int VarMinusLargeKStrideMax(int[] a, int start, int limit)
+    {
+        int sum = 0;
+        for (int i = start; i < limit + (int.MinValue + 100); i += int.MaxValue)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     static int UShortVarPlusK(int[] a, ushort src)
     {
         ushort n = src;
@@ -238,6 +249,12 @@ public class OffsetLimit
         int got = VarMinusK(a, n);
         int want = ExpectedInc(0, Math.Max(0, n - 4), 1, a);
         Assert.Equal(want, got);
+    }
+
+    [Fact]
+    public static void VarMinusLargeKStrideMaxOverflowTest()
+    {
+        Assert.Throws<IndexOutOfRangeException>(() => VarMinusLargeKStrideMax(new int[128], 32, int.MinValue + 3));
     }
 
     [Theory]

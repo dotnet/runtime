@@ -1285,6 +1285,22 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         }
         else if (iterInfo->HasInvariantLocalLimit)
         {
+            const unsigned limitLcl = iterInfo->VarLimit();
+            if (offset < 0)
+            {
+                if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+                {
+                    JITDUMP("> Stride %d: limit var V%02u not TYP_INT-compatible\n", stride, limitLcl);
+                    return false;
+                }
+
+                // Prevent a negative limit plus a negative offset from wrapping positive.
+                LC_Ident     limitVarIdent = LC_Ident::CreateVar(limitLcl, iterInfo->LimitBase()->TypeGet());
+                LC_Condition nonNegativeLimitGuard(GT_GE, LC_Expr(limitVarIdent), LC_Expr(LC_Ident::CreateConst(0u)));
+                context->EnsureConditions(loop->GetIndex())->Push(nonNegativeLimitGuard);
+                JITDUMP("Added stride>1 nonnegative limit guard: V%02u >= 0\n", limitLcl);
+            }
+
             if (maxLimitBase64 >= INT32_MAX)
             {
                 JITDUMP("Stride>1 overflow guard trivially holds (offset %d)\n", offset);
@@ -1296,7 +1312,6 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             }
             else
             {
-                const unsigned limitLcl = iterInfo->VarLimit();
                 if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
                 {
                     JITDUMP("> Stride %d: limit var V%02u not TYP_INT-compatible\n", stride, limitLcl);
