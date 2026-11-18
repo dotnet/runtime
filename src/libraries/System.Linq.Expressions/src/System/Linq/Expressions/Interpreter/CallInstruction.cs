@@ -19,7 +19,6 @@ namespace System.Linq.Expressions.Interpreter
         [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
         private static bool CanCreateArbitraryDelegates => RuntimeFeature.IsDynamicCodeSupported;
 
-#if FEATURE_FAST_CREATE
         /// <summary>
         /// Gets a value indicating whether call instructions for methods with few arguments are created through
         /// statically referenced generic instantiations. Disabling this avoids precompiling thousands of generic
@@ -27,7 +26,6 @@ namespace System.Linq.Expressions.Interpreter
         /// </summary>
         [FeatureSwitchDefinition("System.Linq.Expressions.Interpreter.IsPrecompiledCallSupported")]
         private static bool IsPrecompiledCallSupported { get; } = AppContext.TryGetSwitch("System.Linq.Expressions.Interpreter.IsPrecompiledCallSupported", out bool isEnabled) ? isEnabled : true;
-#endif
 
         #region Construction
 
@@ -91,13 +89,11 @@ namespace System.Linq.Expressions.Interpreter
             // create it
             try
             {
-#if FEATURE_FAST_CREATE
                 if (IsPrecompiledCallSupported && argumentCount < MaxArgs)
                 {
                     res = FastCreate(info, parameters);
                 }
                 else
-#endif
                 {
                     res = SlowCreate(info, parameters);
                 }
@@ -176,7 +172,6 @@ namespace System.Linq.Expressions.Interpreter
             array.SetValue(value, index0, index1, index2);
         }
 
-#if FEATURE_FAST_CREATE
         /// <summary>
         /// Gets the next type or null if no more types are available.
         /// </summary>
@@ -211,7 +206,6 @@ namespace System.Linq.Expressions.Interpreter
         {
             return pi.Length != index || (pi.Length == index && !target.IsStatic);
         }
-#endif
 
         /// <summary>
         /// Uses reflection to create new instance of the appropriate ReflectedCaller
