@@ -1323,7 +1323,160 @@ namespace System.Net.Tests
                     HttpWebResponse httpResponse = Assert.IsType<HttpWebResponse>(response);
                     Assert.Equal(HttpStatusCode.Redirect, httpResponse.StatusCode);
                 }
-            }, server => server.HandleRequestAsync(HttpStatusCode.Redirect));
+
+                Assert.Equal(uri, request.Address);
+            }, server => server.HandleRequestAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", new Uri(server.Address, "redirected").AbsoluteUri) }));
+        }
+
+        [Fact]
+        public async Task Address_GetResponseAsyncWithRedirect_ExpectRedirectedUri()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                Uri redirectedUri = new(uri, "redirected");
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                Assert.Equal(uri, request.Address);
+                Assert.Equal(uri, request.RequestUri);
+
+                using WebResponse response = await GetResponseAsync(request);
+
+                Assert.Equal(uri, request.RequestUri);
+                Assert.Equal(redirectedUri, request.Address);
+            }, async server =>
+            {
+                Uri redirectedUri = new(server.Address, "redirected");
+                await server.HandleRequestAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectedUri.AbsoluteUri) });
+                await server.HandleRequestAsync();
+            });
+        }
+
+        [Theory]
+        [InlineData("http://original.example/", "http://redirected.example:8080/", null, "original.example", "redirected.example:8080")]
+        [InlineData("http://original.example/", "http://redirected.example:8080/", "virtual.example", "virtual.example", "virtual.example")]
+        [InlineData("http://original.example:8080/", "http://redirected.example/", "virtual.example", "virtual.example:80", "virtual.example:80")]
+        [InlineData("http://original.example/", "http://redirected.example:8080/", "virtual.example:80", "virtual.example:80", "virtual.example:80")]
+        public async Task Host_AfterRedirect_UsesCustomHostOrRedirectedAddress(string originalUrl, string redirectedUrl, string customHost, string expectedInitialHost, string expectedRedirectedHost)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(originalUrl);
+                request.Proxy = new WebProxy(proxyUri);
+                if (customHost is not null)
+                {
+                    request.Host = customHost;
+                }
+                Assert.Equal(expectedInitialHost, request.Host);
+
+                using WebResponse response = await GetResponseAsync(request);
+
+                Assert.Equal(new Uri(originalUrl), request.RequestUri);
+                Assert.Equal(new Uri(redirectedUrl), request.Address);
+                Assert.Equal(expectedRedirectedHost, request.Host);
+            }, async server =>
+            {
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectedUrl) });
+                Assert.Equal(expectedInitialHost, requestData.GetSingleHeaderValue("Host"));
+                HttpRequestData redirectedRequestData = await server.HandleRequestAsync();
+                Assert.Equal(expectedRedirectedHost, redirectedRequestData.GetSingleHeaderValue("Host"));
+            });
+        }
+
+        [Fact]
+        public async Task Address_GetResponseAsyncWithRedirectToNotFound_ExpectRedirectedUri()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                Uri redirectedUri = new(uri, "redirected");
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+
+                WebException ex = await Assert.ThrowsAsync<WebException>(() => GetResponseAsync(request));
+
+                Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status);
+                using HttpWebResponse response = Assert.IsType<HttpWebResponse>(ex.Response);
+                Assert.Equal(redirectedUri, response.ResponseUri);
+                Assert.Equal(redirectedUri, request.Address);
+            }, async server =>
+            {
+                Uri redirectedUri = new(server.Address, "redirected");
+                await server.HandleRequestAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectedUri.AbsoluteUri) });
+                await server.HandleRequestAsync(HttpStatusCode.NotFound);
+            });
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task Address_GetResponseAsyncWithFailure_ExpectLastUri(bool redirect, bool usePost)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                Uri redirectedUri = new(uri, "redirected");
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                if (usePost)
+                {
+                    request.Method = "POST";
+                    using Stream requestStream = await request.GetRequestStreamAsync();
+                    requestStream.WriteByte(42);
+                }
+
+                WebException ex = await Assert.ThrowsAsync<WebException>(() => GetResponseAsync(request));
+
+                Assert.Equal(WebExceptionStatus.UnknownError, ex.Status);
+                Assert.Null(ex.Response);
+                Assert.Equal(uri, request.RequestUri);
+                Assert.Equal(redirect ? redirectedUri : uri, request.Address);
+            }, async server =>
+            {
+                if (redirect)
+                {
+                    Uri redirectedUri = new(server.Address, "redirected");
+                    await server.HandleRequestAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectedUri.AbsoluteUri) });
+                }
+
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync();
+                    await connection.SendResponseAsync("INVALID RESPONSE LINE\r\n\r\n");
+                });
+            });
+        }
+
+        [Fact]
+        public async Task Address_AbortAfterRedirect_ExpectRedirectedUri()
+        {
+            TaskCompletionSource redirected = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource releaseServer = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                Task<WebResponse> responseTask = GetResponseAsync(request);
+                await redirected.Task;
+
+                try
+                {
+                    request.Abort();
+                    Assert.Equal(new Uri(uri, "redirected"), request.Address);
+                }
+                finally
+                {
+                    releaseServer.SetResult();
+                }
+
+                await Assert.ThrowsAsync<WebException>(() => responseTask);
+            }, async server =>
+            {
+                Uri redirectedUri = new(server.Address, "redirected");
+                await server.HandleRequestAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectedUri.AbsoluteUri) });
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync();
+                    redirected.SetResult();
+                    await releaseServer.Task;
+                    await connection.SendResponseAsync("INVALID RESPONSE LINE\r\n\r\n");
+                });
+            });
         }
 
         [Fact]
