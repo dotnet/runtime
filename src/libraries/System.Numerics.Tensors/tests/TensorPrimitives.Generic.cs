@@ -1772,8 +1772,11 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationDestinationFunctionsToTest))]
-        public void SpanDestinationDestinationFunctions_ThrowsForTooShortDestination(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> _, T? tolerance = null)
+        public void SpanDestinationDestinationFunctions_ThrowsForTooShortDestination(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> expectedMethod, T? tolerance = null)
         {
+            _ = expectedMethod;
+            _ = tolerance;
+
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
                 using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
@@ -1795,8 +1798,11 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationDestinationFunctionsToTest))]
-        public void SpanDestinationDestinationFunctions_ThrowsForOverlappingInputsWithOutputs(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> _, T? tolerance = null)
+        public void SpanDestinationDestinationFunctions_ThrowsForOverlappingInputsWithOutputs(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> expectedMethod, T? tolerance = null)
         {
+            _ = expectedMethod;
+            _ = tolerance;
+
             T[] array = new T[10];
             Assert.Throws<ArgumentException>(() => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(0, 2), array.AsSpan(4, 2)));
             Assert.Throws<ArgumentException>(() => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(2, 2), array.AsSpan(4, 2)));
@@ -1806,8 +1812,11 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationDestinationFunctionsToTest))]
-        public void SpanDestinationDestinationFunctions_ThrowsForOverlappingOutputs(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> _, T? tolerance = null)
+        public void SpanDestinationDestinationFunctions_ThrowsForOverlappingOutputs(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> expectedMethod, T? tolerance = null)
         {
+            _ = expectedMethod;
+            _ = tolerance;
+
             foreach (int length in new[] { 1, 3, 5, 9, 17, 33 })
             {
                 T[] source = new T[length];
