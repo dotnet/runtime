@@ -81,6 +81,14 @@ public class Async2SharedGeneric
     }
 
     [Fact]
+    public static async Task TestGenericClassWithStaticConstructor()
+    {
+        Assert.Equal("abc", await new GenericClassWithStaticConstructor<string>().InstanceMethod("abc"));
+        Assert.Equal("def", await GenericClassWithStaticConstructor<string>.StaticMethod("def"));
+        Assert.Equal(typeof(string), GenericClassWithStaticConstructor<string>.InitializedFor);
+    }
+
+    [Fact]
     public static Task TestInterface() => TestInterfaceAsync(new JsonDeserializer<ArrayReader>());
 
     private static async Task TestInterfaceAsync(ITypeDeserializer deserializer)
@@ -100,6 +108,31 @@ public class Async2SharedGeneric
     private class JsonDeserializer<TReader> : ITypeDeserializer
     {
         Task<string> ITypeDeserializer.ReadString() => Task.FromResult("abc");
+    }
+}
+
+public class GenericClassWithStaticConstructor<T>
+{
+    public static Type InitializedFor;
+
+    // Explicit static constructor makes the type precise-init (not beforefieldinit)
+    static GenericClassWithStaticConstructor()
+    {
+        InitializedFor = typeof(T);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public async Task<T> InstanceMethod(T value)
+    {
+        await Task.Yield();
+        return value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static async Task<T> StaticMethod(T value)
+    {
+        await Task.Yield();
+        return value;
     }
 }
 

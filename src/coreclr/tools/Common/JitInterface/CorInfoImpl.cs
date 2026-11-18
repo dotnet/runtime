@@ -3032,6 +3032,14 @@ namespace Internal.JitInterface
 
             MetadataType typeToInit = (MetadataType)type;
 
+#if READYTORUN
+            if (typeToInit.IsModuleType)
+            {
+                // Like the runtime, consider the global class always initialized
+                return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+            }
+#endif
+
             if (fd == null)
             {
                 if (typeToInit.IsBeforeFieldInit)
