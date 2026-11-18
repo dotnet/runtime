@@ -5,4 +5,4 @@ using Xunit;
 
 // We don't want to run the tests in parallel because they need exclusive access to serial ports
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly, DisableTestParallelization = true)]
-[assembly: SkipOnPlatform(TestPlatforms.NetBSD | TestPlatforms.OpenBSD | TestPlatforms.illumos | TestPlatforms.Solaris | TestPlatforms.Haiku, "SerialPort.GetPortNames is not supported on this platform.")]
+[assembly: SkipOnPlatform(TestPlatforms.NetBSD | TestPlatforms.OpenBSD | TestPlatforms.illumos | TestPlatforms.Solaris | TestPlatforms.Haiku, "SerialPort.GetPortNames is not implemented on this platform yet.")]
