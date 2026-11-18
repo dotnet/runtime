@@ -3376,37 +3376,6 @@ ErrExit:
 
 
 //*****************************************************************************
-// Get the Action and Permissions blob for a given PermissionSet.
-//*****************************************************************************
-__checkReturn
-HRESULT MDInternalRW::GetPermissionSetProps(
-    mdPermission pm,                    // [IN] the permission token.
-    DWORD       *pdwAction,             // [OUT] CorDeclSecurity.
-    void const  **ppvPermission,        // [OUT] permission blob.
-    ULONG       *pcbPermission)         // [OUT] count of bytes of pvPermission.
-{
-#ifndef FEATURE_METADATA_PERMISSION_SETS
-    return E_NOTIMPL;
-#else // FEATURE_METADATA_PERMISSION_SETS
-    HRESULT hr = S_OK;
-    _ASSERTE(TypeFromToken(pm) == mdtPermission);
-    _ASSERTE(pdwAction && ppvPermission && pcbPermission);
-
-    DeclSecurityRec *pPerm;
-    LOCKREAD();
-
-    IfFailGo(m_pStgdb->m_MiniMd.GetDeclSecurityRecord(RidFromToken(pm), &pPerm));
-    *pdwAction = m_pStgdb->m_MiniMd.getActionOfDeclSecurity(pPerm);
-    IfFailGo(m_pStgdb->m_MiniMd.getPermissionSetOfDeclSecurity(pPerm, reinterpret_cast<const BYTE **>(ppvPermission), pcbPermission));
-
-ErrExit:
-
-    return hr;
-#endif // FEATURE_METADATA_PERMISSION_SETS
-} // MDInternalRW::GetPermissionSetProps
-
-
-//*****************************************************************************
 // Get the String given the String token.
 // Return a pointer to the string, or NULL in case of error.
 //*****************************************************************************
