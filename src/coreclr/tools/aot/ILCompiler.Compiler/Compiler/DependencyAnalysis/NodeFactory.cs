@@ -620,6 +620,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new ProxyTypeMapRequestNode(type);
             });
 
+            _typeLoaderArgumentGates = new NodeCache<(TypeDesc, int), TypeLoaderArgumentGateNode>(key =>
+            {
+                return new TypeLoaderArgumentGateNode(key.Item1, key.Item2);
+            });
+
             _analysisCharacteristics = new NodeCache<string, AnalysisCharacteristicNode>(c =>
             {
                 return new AnalysisCharacteristicNode(c);
@@ -1597,6 +1602,13 @@ namespace ILCompiler.DependencyAnalysis
         public ExternalTypeMapRequestNode ExternalTypeMapRequest(TypeDesc type)
         {
             return _externalTypeMapRequests.GetOrAdd(type);
+        }
+
+        private NodeCache<(TypeDesc, int), TypeLoaderArgumentGateNode> _typeLoaderArgumentGates;
+
+        public TypeLoaderArgumentGateNode TypeLoaderArgumentGate(TypeDesc type, int argumentIndex)
+        {
+            return _typeLoaderArgumentGates.GetOrAdd((type, argumentIndex));
         }
 
         private NodeCache<TypeDesc, ProxyTypeMapRequestNode> _proxyTypeMapRequests;
