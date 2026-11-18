@@ -172,7 +172,8 @@ unsafe
     MarshallingCallback marshallingCallback = static value => value;
     try
     {
-        _ = Marshal.GetFunctionPointerForDelegate(marshallingCallback);
+        var marshallingPointer = (delegate* unmanaged[Cdecl]<byte, byte>)Marshal.GetFunctionPointerForDelegate(marshallingCallback);
+        _ = marshallingPointer(1);
         return -11;
     }
     catch (MarshalDirectiveException)

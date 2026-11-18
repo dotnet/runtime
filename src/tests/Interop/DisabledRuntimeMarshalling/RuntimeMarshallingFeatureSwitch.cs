@@ -240,16 +240,28 @@ public unsafe class RuntimeMarshallingFeatureSwitch
             else
             {
                 Assert.Throws<MarshalDirectiveException>(() => Marshal.GetDelegateForFunctionPointer<MarshallingDelegate>(address)(true));
-                MarshallingDelegate managedMarshallingCallback = static value => value;
-                nint managedMarshallingCallbackAddress = Marshal.GetFunctionPointerForDelegate(managedMarshallingCallback);
-                Assert.Throws<MarshalDirectiveException>(() => ((delegate* unmanaged[Cdecl]<byte, byte>)managedMarshallingCallbackAddress)(1));
-                GC.KeepAlive(managedMarshallingCallback);
             }
         }
         finally
         {
             NativeLibrary.Free(library);
         }
+    }
+
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsExceptionInteropSupported))]
+    public static void ReverseDelegateRequiringMarshalling()
+    {
+        MarshallingDelegate callback = static value => value;
+        nint address = Marshal.GetFunctionPointerForDelegate(callback);
+        if (IsEnabled)
+        {
+            Assert.Equal((byte)1, ((delegate* unmanaged[Cdecl]<byte, byte>)address)(1));
+        }
+        else
+        {
+            Assert.Throws<MarshalDirectiveException>(() => ((delegate* unmanaged[Cdecl]<byte, byte>)address)(1));
+        }
+        GC.KeepAlive(callback);
     }
 
     [Fact]
