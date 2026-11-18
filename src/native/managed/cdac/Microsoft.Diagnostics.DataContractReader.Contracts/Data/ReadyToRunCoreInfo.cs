@@ -7,5 +7,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class ReadyToRunCoreInfo : IData<ReadyToRunCoreInfo>
 {
     [Field(Pointer = true)]
-    public ReadyToRunCoreHeader Header { get; }
+    public partial ReadyToRunCoreHeader Header { get; }
 }

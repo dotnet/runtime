@@ -34,6 +34,8 @@ namespace System.Threading.Tasks
 
             Debug = IsEnabled(EventLevel.Informational, Keywords.Debug);
             DebugActivityId = IsEnabled(EventLevel.Informational, Keywords.DebugActivityId);
+
+            AsyncInstrumentation.UpdateTplFlags(IsEnabled() ? AsyncInstrumentation.DefaultTplFlags : AsyncInstrumentation.Flags.Disabled);
         }
 
         /// <summary>

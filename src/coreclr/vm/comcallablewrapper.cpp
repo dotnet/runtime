@@ -60,68 +60,28 @@ CrstStatic g_CreateWrapperTemplateCrst;
 // This is the prestub that is used for Com calls entering CLR
 extern "C" VOID ComCallPreStub();
 
-class NewCCWHolderBase : public HolderBase<ComCallWrapper *>
+// Frees a newly created CCW and its linked wrappers, but not its SimpleComCallWrapper
+// or object handle.
+struct NewCCWHolderTraits final
 {
-
-protected:
-    NewCCWHolderBase(ComCallWrapper *pValue)
-        : HolderBase<ComCallWrapper *>(pValue)
+    struct Type final
     {
-    }
+        ComCallWrapper* Wrapper;
+        ComCallWrapperCache* Cache;
+    };
 
-    // BaseHolder only initialize BASE with one parameter, so I had to
-    // use a separate function to set the cache which will be used in the release
-    void SetCache(ComCallWrapperCache *pCache)
+    static constexpr Type Default() { return {nullptr, nullptr}; }
+
+    static void Free(Type value) noexcept
     {
-        m_pCache = pCache;
+        WRAPPER_NO_CONTRACT;
+
+        if (value.Wrapper != nullptr)
+            value.Wrapper->FreeWrapper(value.Cache);
     }
-
-    void DoAcquire()
-    {
-        // Do nothing
-    }
-
-    void DoRelease()
-    {
-        this->m_value->FreeWrapper(m_pCache);
-    }
-
-
-private :
-    ComCallWrapperCache *m_pCache;
 };
 
-typedef ComCallWrapper *ComCallWrapperPtr;
-
-// This is used to hold a newly created CCW. It will release the CCW (and linked wrappers)
-// upon exit, if SuppressRelease() is not called. It doesn't try to release the SimpleComCallWrapper
-// or destroy the handle
-// I need to use BaseHolder instead of BaseWrapper because BaseHolder allows me to use a class as BASE
-//
-class NewCCWHolder : public BaseHolder<ComCallWrapperPtr, NewCCWHolderBase>
-{
-public :
-    NewCCWHolder(ComCallWrapperCache *pCache)
-    {
-        SetCache(pCache);
-    }
-
-    ComCallWrapperPtr& operator=(ComCallWrapperPtr p)
-    {
-        Assign(p);
-        return m_value;
-    }
-
-    FORCEINLINE const ComCallWrapperPtr &operator->()
-    {
-        return this->m_value;
-    }
-
-    operator ComCallWrapperPtr()
-    {
-        return m_value;
-    }
-};
+using NewCCWHolder = LifetimeHolder<NewCCWHolderTraits>;
 
 // Forward declarations
 static bool GetComIPFromCCW_HandleCustomQI(ComCallWrapper *pWrap, REFIID riid, MethodTable * pIntfMT, IUnknown **ppUnkOut);
@@ -267,13 +227,13 @@ static void FillInComVtableSlot(SLOT* pComVtable,
 
 ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
 {
-    CONTRACT(ComCallMethodDesc*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SLOT* rgVtable = (SLOT*)((ComMethodTable *)this+1);
 
@@ -282,7 +242,7 @@ ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
 
     ComCallUMThunkMarshInfo* pMarshInfo = (ComCallUMThunkMarshInfo*)pUMEntryThunk->GetData()->GetUMThunkMarshInfo();
 
-    RETURN pMarshInfo->GetComCallMethodDesc();
+    return pMarshInfo->GetComCallMethodDesc();
 }
 
 //--------------------------------------------------------------------------
@@ -710,7 +670,7 @@ BOOL SimpleComCallWrapper::CustomQIRespondsToIMarshal()
     {
         DWORD newFlags = enum_CustomQIRespondsToIMarshal_Inited;
 
-        SafeComHolder<IUnknown> pUnk;
+        ReleaseHolderAnyMode<IUnknown> pUnk;
         if (GetComIPFromCCW_HandleCustomQI(GetMainWrapper(), IID_IMarshal, NULL, &pUnk))
         {
             newFlags |= enum_CustomQIRespondsToIMarshal;
@@ -718,7 +678,7 @@ BOOL SimpleComCallWrapper::CustomQIRespondsToIMarshal()
         InterlockedOr((LONG*)&m_flags, newFlags);
     }
 
-    return (m_flags & enum_CustomQIRespondsToIMarshal);
+    return m_flags & enum_CustomQIRespondsToIMarshal;
 }
 
 //--------------------------------------------------------------------------
@@ -740,7 +700,6 @@ void SimpleComCallWrapper::InitDispatchExInfo()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
 
         // Make sure the class supports at least IReflect..
         PRECONDITION(SupportsIReflect(m_pMT));
@@ -752,14 +711,14 @@ void SimpleComCallWrapper::InitDispatchExInfo()
         return;
 
     // Create the DispatchExInfo object.
-    NewHolder<DispatchExInfo> pDispExInfo = new DispatchExInfo(this, m_pMT);
+    NewHolder<DispatchExInfo> pDispExInfo{ new DispatchExInfo(this, m_pMT) };
 
     // Synchronize the DispatchExInfo with the actual object.
     pDispExInfo->SynchWithManagedView();
 
     // Swap the lock into the class member in a thread safe manner.
-    if (NULL == InterlockedCompareExchangeT(&pAuxData->m_pDispatchExInfo, pDispExInfo.GetValue(), NULL))
-        pDispExInfo.SuppressRelease();
+    if (NULL == InterlockedCompareExchangeT(&pAuxData->m_pDispatchExInfo, static_cast<DispatchExInfo*>(pDispExInfo), NULL))
+        pDispExInfo.Detach();
 
     // Set the vtable entry to ensure that the next QI call will return immediately.
     m_rgpVtable[enum_IDispatchEx] = g_rgStdVtables[enum_IDispatchEx];
@@ -834,56 +793,51 @@ void SimpleComCallWrapper::SetUpCPListHelper(MethodTable **apSrcItfMTs, int cSrc
 
 ConnectionPoint *SimpleComCallWrapper::TryCreateConnectionPoint(ComCallWrapper *pWrap, MethodTable *pEventMT)
 {
-    CONTRACT (ConnectionPoint*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pWrap));
         PRECONDITION(CheckPointer(pEventMT));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     EX_TRY
     {
-        RETURN CreateConnectionPoint(pWrap, pEventMT);
+        return CreateConnectionPoint(pWrap, pEventMT);
     }
     EX_SWALLOW_NONTERMINAL
 
-    RETURN nullptr;
+    return nullptr;
 }
 
 ConnectionPoint *SimpleComCallWrapper::CreateConnectionPoint(ComCallWrapper *pWrap, MethodTable *pEventMT)
 {
-    CONTRACT (ConnectionPoint*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pWrap));
         PRECONDITION(CheckPointer(pEventMT));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN (new ConnectionPoint(pWrap, pEventMT));
+    return new ConnectionPoint(pWrap, pEventMT);
 }
 
 CQuickArray<ConnectionPoint*> *SimpleComCallWrapper::CreateCPArray()
 {
-    CONTRACT (CQuickArray<ConnectionPoint*>*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN (new CQuickArray<ConnectionPoint*>());
+    return new CQuickArray<ConnectionPoint*>();
 }
 
 //--------------------------------------------------------------------------
@@ -999,7 +953,7 @@ NOINLINE BOOL SimpleComCallWrapper::ShouldUseManagedIProvideClassInfo()
 // The returned interface is AddRef'd.
 IUnknown* SimpleComCallWrapper::QIStandardInterface(Enum_StdInterfaces index)
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -1008,9 +962,8 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(Enum_StdInterfaces index)
         // assert for valid index
         PRECONDITION(index < enum_LastStdVtable);
         INSTANCE_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     IUnknown* pIntf = NULL;
 
@@ -1062,7 +1015,7 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(Enum_StdInterfaces index)
             this->AddRefWithAggregationCheck();
     }
 
-    RETURN pIntf;
+    return pIntf;
 }
 
 #include <optsmallperfcritical.h>   // improves CCW QI perf by ~10%
@@ -1081,7 +1034,7 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(Enum_StdInterfaces index)
 #define HANDLE_IID_INLINE(itfEnum,data1,data2,data3, data4,data5,data6,data7,data8,data9,data10,data11)     \
     CASE_IID_INLINE(itfEnum,data1,data2,data3, data4,data5,data6,data7,data8,data9,data10,data11)           \
     {                                                                                                       \
-        RETURN QIStandardInterface(itfEnum);                                                                \
+        return QIStandardInterface(itfEnum);                                                                \
     }                                                                                                       \
     break;                                                                                                  \
 
@@ -1090,48 +1043,46 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(Enum_StdInterfaces index)
         if (IS_EQUAL_GUID_LOW_12_BYTES(riid,data1,data2,data3, data4,data5,data6,data7,data8,data9,data10,data11))  \
 
 #define IS_KNOWN_INTERFACE_CONTRACT(iid) \
-    CONTRACT(bool)                                          \
+    CONTRACTL \
     {                                                       \
         MODE_ANY;                                           \
         NOTHROW;                                            \
         GC_NOTRIGGER;                                       \
-        POSTCONDITION(RETVAL == !!IsEqualGUID(iid, riid));  \
     }                                                       \
-    CONTRACT_END;                                           \
+    CONTRACTL_END;                                           \
 
 inline bool IsIUnknown(REFIID riid)
 {
     IS_KNOWN_INTERFACE_CONTRACT(IID_IUnknown);
-    RETURN IS_EQUAL_GUID(riid, 0x00000000,0x0000,0x0000,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46);
+    return IS_EQUAL_GUID(riid, 0x00000000,0x0000,0x0000,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46);
 }
 inline bool IsIDispatch(REFIID riid)
 {
     IS_KNOWN_INTERFACE_CONTRACT(IID_IDispatch);
-    RETURN IS_EQUAL_GUID(riid, 0x00020400,0x0000,0x0000,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46);
+    return IS_EQUAL_GUID(riid, 0x00020400,0x0000,0x0000,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46);
 }
 inline bool IsGUID_NULL(REFIID riid)
 {
     IS_KNOWN_INTERFACE_CONTRACT(GUID_NULL);
-    RETURN IS_EQUAL_GUID(riid, 0x00000000,0x0000,0x0000,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00);
+    return IS_EQUAL_GUID(riid, 0x00000000,0x0000,0x0000,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00);
 }
 inline bool IsIErrorInfo(REFIID riid)
 {
     IS_KNOWN_INTERFACE_CONTRACT(IID_IErrorInfo);
-    RETURN IS_EQUAL_GUID(riid, 0x1CF2B120,0x547D,0x101B,0x8E,0x65,0x08,0x00,0x2B,0x2B,0xD1,0x19);
+    return IS_EQUAL_GUID(riid, 0x1CF2B120,0x547D,0x101B,0x8E,0x65,0x08,0x00,0x2B,0x2B,0xD1,0x19);
 }
 
 // QI for well known interfaces from within the runtime based on an IID.
 IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         INSTANCE_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // IID_IMarshal                    00000003-0000-0000-C000-000000000046
     // IID_IErrorInfo                  1CF2B120-547D-101B-8E65-08002B2BD119
@@ -1162,7 +1113,7 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
                 {
                     if (!pTemplate->SupportsICustomQueryInterface() || !CustomQIRespondsToIMarshal())
                     {
-                        RETURN QIStandardInterface(enum_IAgileObject);
+                        return QIStandardInterface(enum_IAgileObject);
                     }
                 }
             }
@@ -1170,7 +1121,7 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
         break;
     }
 
-    RETURN NULL;
+    return NULL;
 }
 #include <optdefault.h>
 
@@ -1219,16 +1170,15 @@ void SimpleComCallWrapper::ResetOuter()
 //--------------------------------------------------------------------------
 IUnknown* SimpleComCallWrapper::GetOuter()
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN m_pOuter;
+    return m_pOuter;
 }
 
 BOOL SimpleComCallWrapper::FindConnectionPoint(REFIID riid, IConnectionPoint **ppCP)
@@ -1273,7 +1223,6 @@ void SimpleComCallWrapper::EnumConnectionPoints(IEnumConnectionPoints **ppEnumCP
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(ppEnumCP));
     }
     CONTRACTL_END;
@@ -1284,13 +1233,13 @@ void SimpleComCallWrapper::EnumConnectionPoints(IEnumConnectionPoints **ppEnumCP
 
     // Create a new connection point enum.
     ComCallWrapper *pWrap = GetMainWrapper();
-    NewHolder<ConnectionPointEnum>pCPEnum = new ConnectionPointEnum(pWrap, m_pCPList);
+    NewHolder<ConnectionPointEnum> pCPEnum{ new ConnectionPointEnum(pWrap, m_pCPList) };
 
     // Retrieve the IEnumConnectionPoints interface. This cannot fail.
     HRESULT hr = SafeQueryInterface((IUnknown*)pCPEnum, IID_IEnumConnectionPoints, (IUnknown**)ppEnumCP);
     _ASSERTE(hr == S_OK);
 
-    pCPEnum.SuppressRelease();
+    pCPEnum.Detach();
 }
 
 //--------------------------------------------------------------------------
@@ -1492,16 +1441,15 @@ HRESULT ComCallWrapper::GetInnerUnknown(void **ppv)
 //--------------------------------------------------------------------------
 IUnknown* ComCallWrapper::GetOuter()
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN GetSimpleWrapper()->GetOuter();
+    return GetSimpleWrapper()->GetOuter();
 }
 
 //--------------------------------------------------------------------------
@@ -1509,16 +1457,15 @@ IUnknown* ComCallWrapper::GetOuter()
 //--------------------------------------------------------------------------
 SyncBlock* ComCallWrapper::GetSyncBlock()
 {
-    CONTRACT (SyncBlock*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN GetSimpleWrapper()->GetSyncBlock();
+    return GetSimpleWrapper()->GetSyncBlock();
 }
 
 //--------------------------------------------------------------------------
@@ -1530,26 +1477,23 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
                                                  ComCallWrapperCache *pWrapperCache,
                                                  OBJECTHANDLE oh)
 {
-    CONTRACT (ComCallWrapper*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pTemplate));
         PRECONDITION(CheckPointer(pWrapperCache));
         PRECONDITION(oh != NULL);
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // num interfaces on the object
     size_t numInterfaces = pTemplate->GetNumInterfaces();
 
     // we have a template, create a wrapper and initialize from the template
     // alloc wrapper, aligned to cache line
-    NewCCWHolder pStartWrapper(pWrapperCache);
-    pStartWrapper = (ComCallWrapper*)pWrapperCache->GetCacheLineAllocator()->
+    ComCallWrapper* pStartWrapper = (ComCallWrapper*)pWrapperCache->GetCacheLineAllocator()->
 #ifdef HOST_64BIT
                                     GetCacheLine64();
     _ASSERTE(sizeof(ComCallWrapper) <= 64);
@@ -1558,10 +1502,12 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
     _ASSERTE(sizeof(ComCallWrapper) <= 32);
 #endif
 
+    NewCCWHolder startWrapperHolder({pStartWrapper, pWrapperCache});
+
     if (pStartWrapper == NULL)
         COMPlusThrowOM();
 
-    LOG((LF_INTEROP, LL_INFO100, "ComCallWrapper::CopyFromTemplate on Object %8.8x, Wrapper %8.8x\n", oh, static_cast<ComCallWrapperPtr>(pStartWrapper)));
+    LOG((LF_INTEROP, LL_INFO100, "ComCallWrapper::CopyFromTemplate on Object %p, Wrapper %p\n", oh, pStartWrapper));
 
     // addref commgr
     pWrapperCache->AddRef();
@@ -1607,7 +1553,7 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
             blockIndex = 0; // reset block index
             if (pNewWrapper == NULL)
             {
-                RETURN NULL;
+                return NULL;
             }
 
             pWrapper = pNewWrapper;
@@ -1623,9 +1569,9 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
     if (pWrapper != pStartWrapper)
         SetNext(pWrapper, LinkedWrapperTerminator);
 
-    pStartWrapper.SuppressRelease();
+    startWrapperHolder.Detach();
 
-    RETURN pStartWrapper;
+    return pStartWrapper;
 }
 
 //--------------------------------------------------------------------------
@@ -1634,16 +1580,15 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
 //--------------------------------------------------------------------------
 SLOT** ComCallWrapper::GetComIPLocInWrapper(ComCallWrapper* pWrap, unsigned int iIndex)
 {
-    CONTRACT (SLOT**)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(pWrap));
         PRECONDITION(iIndex > 1);  // We should never attempt to get the basic or IClassX interface here.
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SLOT** pTearOff = NULL;
     while (iIndex >= NumVtablePtrs)
@@ -1656,7 +1601,7 @@ SLOT** ComCallWrapper::GetComIPLocInWrapper(ComCallWrapper* pWrap, unsigned int 
     _ASSERTE(pWrap != NULL);
     pTearOff = (SLOT **)&pWrap->m_rgpIPtr[iIndex];
 
-    RETURN pTearOff;
+    return pTearOff;
 }
 
 //--------------------------------------------------------------------------
@@ -1727,7 +1672,7 @@ void ComCallWrapper::Cleanup()
             // Check for an associated RCW
             RCWHolder pRCW(GetThread());
             pRCW.InitNoCheck(pSyncBlock);
-            NewRCWHolder pNewRCW = pRCW.GetRawRCWUnsafe();
+            NewRCWHolder pNewRCW{ pRCW.GetRawRCWUnsafe() };
 
             if (!pRCW.IsNull())
             {
@@ -1809,17 +1754,16 @@ void ComCallWrapper::ClearHandle()
 
 SLOT** ComCallWrapper::GetFirstInterfaceSlot()
 {
-    CONTRACT(SLOT**)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SLOT** firstInterface = GetComIPLocInWrapper(this, Slot_FirstInterface);
-    RETURN firstInterface;
+    return firstInterface;
 }
 
 //--------------------------------------------------------------------------
@@ -1871,15 +1815,14 @@ void ComCallWrapper::FreeWrapper(ComCallWrapperCache *pWrapperCache)
 //--------------------------------------------------------------------------
 ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
 {
-    CONTRACT(ComCallWrapper *)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(ppObj != NULL);
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ComCallWrapper* pStartWrapper = NULL;
     OBJECTREF pServer = NULL;
@@ -1891,11 +1834,6 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
     // grab the sync block from the server
     SyncBlock* pSyncBlock = pServer->GetSyncBlock();
 
-    pSyncBlock->SetPrecious();
-
-    // if the object belongs to a domain neutral class, need to allocate the wrapper in the default domain.
-    // The object is potentially agile so if allocate out of the current domain and then hand out to
-    // multiple domains we might never release the wrapper for that object and hence never unload the CCWC.
     ComCallWrapperCache *pWrapperCache = NULL;
     TypeHandle thClass = pServer->GetTypeHandle();
 
@@ -1913,7 +1851,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
             // Make sure the CCW will be destroyed when exception happens
             // Also keep pWrapperCache alive within this scope
             // It needs to be destroyed after ComCallWrapperCache::LockHolder otherwise there would be a lock violation
-            NewCCWHolder pNewCCW(pWrapperCache);
+            NewCCWHolder newCCW;
 
             // Now we'll take the lock in a place where we won't be calling managed code and check again.
             {
@@ -1922,7 +1860,8 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                 pStartWrapper = GetWrapperForObject(pServer, pTemplate);
                 if (pStartWrapper == NULL)
                 {
-                    Wrapper<OBJECTHANDLE, DoNothing, DestroyRefcountedHandle> oh;
+                    RefcountedHandleHolder ownedHandle;
+                    OBJECTHANDLE oh = NULL;
 
                     ComCallWrapper *pRootWrapper = GetWrapperForObject(pServer, NULL);
                     if (pRootWrapper == NULL)
@@ -1932,19 +1871,20 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                         // attempt to hand this out to another domain then we will assume that the object is truly
                         // agile and will convert the handle to a global handle.
                         oh = GetAppDomain()->CreateRefcountedHandle(NULL);
+                        ownedHandle = oh;
                         _ASSERTE(oh);
                     }
                     else
                     {
                         // if the object already has a CCW, we reuse the handle
                         oh = pRootWrapper->GetObjectHandle();
-                        oh.SuppressRelease();
                     }
 
                     // copy from template
-                    pNewCCW = CopyFromTemplate(pTemplate, pWrapperCache, oh);
+                    ComCallWrapper* pNewCCW = CopyFromTemplate(pTemplate, pWrapperCache, oh);
+                    newCCW = {pNewCCW, pWrapperCache};
 
-                    NewHolder<SimpleComCallWrapper> pSimpleWrap = new SimpleComCallWrapper();
+                    NewHolder<SimpleComCallWrapper> pSimpleWrap{ new SimpleComCallWrapper() };
 
                     pSimpleWrap->InitNew(pServer, pWrapperCache, pNewCCW, pSyncBlock, pTemplate);
 
@@ -1969,9 +1909,9 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                         ComCallWrapper::SetNext(pRootWrapper, pNewCCW);
                     }
 
-                    oh.SuppressRelease();
-                    pNewCCW.SuppressRelease();
-                    pSimpleWrap.SuppressRelease();
+                    ownedHandle.Detach();
+                    newCCW.Detach();
+                    pSimpleWrap.Detach();
 
                     pStartWrapper = pNewCCW;
                 }
@@ -1980,7 +1920,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
     }
     GCPROTECT_END();
 
-    RETURN pStartWrapper;
+    return pStartWrapper;
 }
 
 //--------------------------------------------------------------------------
@@ -1990,14 +1930,13 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
 //--------------------------------------------------------------------------
 IUnknown* ComCallWrapper::GetIClassXIP(bool inspectionOnly)
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ComCallWrapper *pWrap = this;
     IUnknown *pIntf = NULL;
@@ -2011,7 +1950,7 @@ IUnknown* ComCallWrapper::GetIClassXIP(bool inspectionOnly)
     if (NULL == slot)
     {
         if (inspectionOnly)
-            RETURN NULL;
+            return NULL;
 
         // Get the IClassX ComMethodTable (create if it doesn't exist),
         //  and set it into the vtable map.
@@ -2029,7 +1968,7 @@ IUnknown* ComCallWrapper::GetIClassXIP(bool inspectionOnly)
         // We won't attempt to lay out the class if we are only trying to
         // passively inspect the interface.
         if (inspectionOnly)
-            RETURN NULL;
+            return NULL;
         else
             pIClassXComMT->LayOutClassMethodTable();
     }
@@ -2039,7 +1978,9 @@ IUnknown* ComCallWrapper::GetIClassXIP(bool inspectionOnly)
 
     // If we are only inspecting, don't addref.
     if (inspectionOnly)
-        RETURN pIntf;
+        {
+            return pIntf;
+        }
 
     // AddRef the wrapper.
     // Note that we don't do SafeAddRef(pIntf) because it's overkill to
@@ -2047,60 +1988,21 @@ IUnknown* ComCallWrapper::GetIClassXIP(bool inspectionOnly)
     ULONG cbRef = pWrap->AddRefWithAggregationCheck();
 
     // 0xbadF00d implies the AddRef didn't go through
-    RETURN ((cbRef != 0xbadf00d) ? pIntf : NULL);
+    return (cbRef != 0xbadf00d) ? pIntf : NULL;
 }
 
 IUnknown* ComCallWrapper::GetBasicIP(bool inspectionOnly)
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    // If the legacy switch is set, we'll always return the IClassX IP
-    //  when QIing for IUnknown or IDispatch.
-    // Whidbey Tactics has decided to make this opt-in rather than
-    // opt-out for now.  Remove the check for the legacy switch.
-    if (GetComCallWrapperTemplate()->SupportsIClassX())
-        RETURN GetIClassXIP(inspectionOnly);
-
-    ComCallWrapper *pWrap = this;
-    IUnknown *pIntf = NULL;
-
-    // The IClassX VTable pointer is in the start wrapper.
-    if (pWrap->IsLinked())
-        pWrap = ComCallWrapper::GetStartWrapper(pWrap);
-
-    ComMethodTable* pIBasicComMT = (ComMethodTable*)pWrap->m_rgpIPtr[Slot_Basic] - 1;
-    _ASSERTE(pIBasicComMT);
-
-    // Lay out the basic COM method table if it has not yet been laid out.
-    if (!pIBasicComMT->IsLayoutComplete())
-    {
-        if (inspectionOnly)
-            RETURN NULL;
-        else
-            pIBasicComMT->LayOutBasicMethodTable();
-    }
-
-    // Return the basic vtable pointer.
-    pIntf = (IUnknown*)&pWrap->m_rgpIPtr[Slot_Basic];
-
-    // If we are not addref'ing the IUnknown (for passive inspection like ETW), return it now.
-    if (inspectionOnly)
-        RETURN pIntf;
-
-    // AddRef the wrapper.
-    // Note that we don't do SafeAddRef(pIntf) because it's overkill to
-    // go via IUnknown when we already have the wrapper in-hand.
-    ULONG cbRef = pWrap->AddRefWithAggregationCheck();
-
-    // 0xbadF00d implies the AddRef didn't go through
-    RETURN ((cbRef != 0xbadf00d) ? pIntf : NULL);
+    // We always return the IClassX IP when QIing for IUnknown or IDispatch.
+    return GetIClassXIP(inspectionOnly);
 }
 
 //--------------------------------------------------------------------------
@@ -2135,7 +2037,7 @@ static IUnknown *GetComIPFromCCW_VisibilityCheck(
     ComMethodTable *pIntfComMT,
     GetComIPFromCCW::flags flags)
 {
-    CONTRACT(IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -2143,16 +2045,16 @@ static IUnknown *GetComIPFromCCW_VisibilityCheck(
         PRECONDITION(CheckPointer(pIntf));
         PRECONDITION(CheckPointer(pIntfComMT));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (// Do a visibility check if needed.
         ((flags & GetComIPFromCCW::CheckVisibility) && (!pIntfComMT->IsComVisible())))
     {
         //  If not, fail to return the interface.
         SafeRelease(pIntf);
-        RETURN NULL;
+        return NULL;
     }
-    RETURN pIntf;
+    return pIntf;
 }
 
 static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
@@ -2209,7 +2111,7 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
         SyncBlock* pBlock = pWrap->GetSyncBlock();
         _ASSERTE(pBlock);
 
-        SafeComHolder<IUnknown> pUnk;
+        ReleaseHolderAnyMode<IUnknown> pUnk;
 
         RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, pBlock);
@@ -2218,7 +2120,7 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
                                  : pRCW->GetComIPFromRCW(riid);
 
         RCWPROTECT_END(pRCW);
-        return pUnk.Extract();
+        return pUnk.Detach();
     }
 
     return NULL;
@@ -2231,15 +2133,14 @@ static IUnknown * GetComIPFromCCW_ForIID_Worker(
     GetComIPFromCCW::flags flags,
     ComCallWrapperTemplate * pTemplate)
 {
-    CONTRACT(IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pWrap));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ComMethodTable * pIntfComMT = NULL;
     MethodTable * pMT = pWrap->GetMethodTableOfObjectRef();
@@ -2261,24 +2162,23 @@ static IUnknown * GetComIPFromCCW_ForIID_Worker(
             // Giveout IClassX of this class because the IID matches one of the IClassX in the hierarchy
             // This assumes any IClassX implementation must be derived from base class IClassX's implementation
             IUnknown * pIntf = pWrap->GetIClassXIP();
-            RETURN GetComIPFromCCW_VisibilityCheck(pIntf, pIntfMT, pIntfComMT, flags);
+            return GetComIPFromCCW_VisibilityCheck(pIntf, pIntfMT, pIntfComMT, flags);
         }
     }
 
-    RETURN NULL;
+    return NULL;
 }
 
 static IUnknown *GetComIPFromCCW_ForIntfMT_Worker(ComCallWrapper *pWrap, MethodTable *pIntfMT, GetComIPFromCCW::flags flags)
 {
-    CONTRACT(IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pWrap));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodTable * pMT = pWrap->GetMethodTableOfObjectRef();
 
@@ -2293,26 +2193,23 @@ static IUnknown *GetComIPFromCCW_ForIntfMT_Worker(ComCallWrapper *pWrap, MethodT
 
         // Retrieve the COM method table for the requested interface.
         ComCallWrapperTemplate *pIntfCCWTemplate = ComCallWrapperTemplate::GetTemplate(TypeHandle(pIntfMT));
-        if (pIntfCCWTemplate->SupportsIClassX())
+        ComMethodTable * pIntfComMT = pIntfCCWTemplate->GetClassComMT();
+
+        // If the class that this IClassX's was generated for is marked
+        // as ClassInterfaceType.AutoDual or AutoDisp,
+        // then give out the IClassX IP.
+        if (pIntfComMT->GetClassInterfaceType() == clsIfAutoDual || pIntfComMT->GetClassInterfaceType() == clsIfAutoDisp)
         {
-            ComMethodTable * pIntfComMT = pIntfCCWTemplate->GetClassComMT();
+            // Make sure the all the base classes of the class this IClassX corresponds to
+            // are visible to COM.
+            pIntfComMT->CheckParentComVisibility();
 
-            // If the class that this IClassX's was generated for is marked
-            // as ClassInterfaceType.AutoDual or AutoDisp,
-            // then give out the IClassX IP.
-            if (pIntfComMT->GetClassInterfaceType() == clsIfAutoDual || pIntfComMT->GetClassInterfaceType() == clsIfAutoDisp)
-            {
-                // Make sure the all the base classes of the class this IClassX corresponds to
-                // are visible to COM.
-                pIntfComMT->CheckParentComVisibility();
-
-                // Giveout IClassX
-                IUnknown * pIntf = pWrap->GetIClassXIP();
-                RETURN GetComIPFromCCW_VisibilityCheck(pIntf, pIntfMT, pIntfComMT, flags);
-            }
+            // Giveout IClassX
+            IUnknown * pIntf = pWrap->GetIClassXIP();
+            return GetComIPFromCCW_VisibilityCheck(pIntf, pIntfMT, pIntfComMT, flags);
         }
     }
-    RETURN NULL;
+    return NULL;
 }
 
 static bool GetComIPFromCCW_HandleCustomQI(
@@ -2396,15 +2293,14 @@ MethodTable * ComCallWrapper::GetMethodTableOfObjectRef()
 IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, MethodTable* pIntfMT,
                                           GetComIPFromCCW::flags flags)
 {
-    CONTRACT(IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pWrap));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // scan the wrapper
     if (pWrap->IsLinked())
@@ -2419,7 +2315,7 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
     if (IsIUnknown(riid))
     {
         // We don't do visibility checks on IUnknown.
-        RETURN pWrap->GetBasicIP();
+        return pWrap->GetBasicIP();
     }
 
     if (!(flags & GetComIPFromCCW::SuppressCustomizedQueryInterface)
@@ -2429,20 +2325,22 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
         //               GetInterface implemented by user to do the customized QI work.
         IUnknown * pUnkCustomQIResult = NULL;
         if (GetComIPFromCCW_HandleCustomQI(pWrap, riid, pIntfMT, &pUnkCustomQIResult))
-            RETURN pUnkCustomQIResult;
+            {
+                return pUnkCustomQIResult;
+            }
     }
 
     if (IsIDispatch(riid))
     {
         // We don't do visibility checks on IUnknown.
-        RETURN pWrap->GetIDispatchIP();
+        return pWrap->GetIDispatchIP();
     }
 
     signed imapIndex = -1;
     if (pIntfMT == NULL)
     {
         if (IsGUID_NULL(riid))  // there's no interface with GUID_NULL IID so we can bail out right away
-            RETURN NULL;
+            return NULL;
 
         // Go through all the implemented methods except the COM imported class interfaces
         // and compare the IID's to find the requested one.
@@ -2466,11 +2364,15 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
             SimpleComCallWrapper* pSimpleWrap = pWrap->GetSimpleWrapper();
             IUnknown * pIntf = pSimpleWrap->QIStandardInterface(riid);
             if (pIntf)
-                RETURN pIntf;
+                {
+                    return pIntf;
+                }
 
             pIntf = GetComIPFromCCW_ForIID_Worker(pWrap, riid, pIntfMT, flags, pTemplate);
             if (pIntf)
-                RETURN pIntf;
+                {
+                    return pIntf;
+                }
         }
     }
     else
@@ -2481,7 +2383,9 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
         {
             IUnknown * pIntf = GetComIPFromCCW_ForIntfMT_Worker(pWrap, pIntfMT, flags);
             if (pIntf)
-                RETURN pIntf;
+                {
+                    return pIntf;
+                }
         }
     }
 
@@ -2515,12 +2419,14 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
         IUnknown * pIntf = GetComIPFromCCW_HandleExtendsCOMObject(pWrap, riid, pIntfMT,
                                 pTemplate, imapIndex, intfIndex);
         if (pIntf)
-            RETURN pIntf;
+            {
+                return pIntf;
+            }
     }
 
     // check if interface is supported
     if (imapIndex == -1)
-        RETURN NULL;
+        return NULL;
 
     // interface method table != NULL
     _ASSERTE(pIntfMT != NULL);
@@ -2535,7 +2441,7 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
     {
         MethodTable *pClassMT = pTemplate->GetClassType().GetMethodTable();
         if (!pItfComMT->LayOutInterfaceMethodTable(pClassMT))
-            RETURN NULL;
+            return NULL;
     }
 
     // AddRef the wrapper.
@@ -2545,7 +2451,7 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
 
     // 0xbadF00d implies the AddRef didn't go through
     if (cbRef == 0xbadf00d)
-        RETURN NULL;
+        return NULL;
 
     // The interface pointer is the pointer to the vtable.
     IUnknown * pIntf = (IUnknown*)ppVtable;
@@ -2560,7 +2466,7 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
         SafeRelease(pIntf);
         pIntf = NULL;
     }
-    RETURN pIntf;
+    return pIntf;
 }
 
 //--------------------------------------------------------------------------
@@ -2569,14 +2475,13 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
 //--------------------------------------------------------------------------
 IDispatch* ComCallWrapper::GetIDispatchIP()
 {
-    CONTRACT (IDispatch*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SimpleComCallWrapper* pSimpleWrap = GetSimpleWrapper();
     MethodTable*          pMT         = pSimpleWrap->GetMethodTable();
@@ -2588,7 +2493,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
     if ((DefItfType == DefaultInterfaceType_AutoDual) || (DefItfType == DefaultInterfaceType_AutoDispatch))
     {
         // Make sure we release the BasicIP we're about to get.
-        SafeComHolder<IUnknown> pBasic = GetBasicIP();
+        ReleaseHolderAnyMode<IUnknown> pBasic{ GetBasicIP() };
         ComMethodTable* pCMT = ComMethodTable::ComMethodTableFromIP(pBasic);
         pCMT->CheckParentComVisibility();
     }
@@ -2598,7 +2503,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
     {
         // The class implements IReflect so lets let it handle IDispatch calls.
         // We will do this by exposing the IDispatchEx implementation of IDispatch.
-        RETURN (IDispatch *)pSimpleWrap->QIStandardInterface(IID_IDispatchEx);
+        return (IDispatch *)pSimpleWrap->QIStandardInterface(IID_IDispatchEx);
     }
 
     // Get the correct default interface
@@ -2612,23 +2517,23 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
             CorIfaceAttr ifaceType = hndDefItfClass.GetMethodTable()->GetComInterfaceType();
             if (IsDispatchBasedItf(ifaceType))
             {
-                RETURN (IDispatch*)GetComIPFromCCW(this, GUID_NULL, hndDefItfClass.GetMethodTable());
+                return (IDispatch*)GetComIPFromCCW(this, GUID_NULL, hndDefItfClass.GetMethodTable());
             }
             else
             {
-                RETURN NULL;
+                return NULL;
             }
         }
 
         case DefaultInterfaceType_IUnknown:
         {
-            RETURN NULL;
+            return NULL;
         }
 
         case DefaultInterfaceType_AutoDual:
         case DefaultInterfaceType_AutoDispatch:
         {
-            RETURN (IDispatch*)GetBasicIP();
+            return (IDispatch*)GetBasicIP();
         }
 
         case DefaultInterfaceType_BaseComClass:
@@ -2636,7 +2541,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
             SyncBlock* pBlock = GetSyncBlock();
             _ASSERTE(pBlock);
 
-            SafeComHolder<IDispatch> pDisp;
+            ReleaseHolderAnyMode<IDispatch> pDisp;
 
             RCWHolder pRCW(GetThread());
             RCWPROTECT_BEGIN(pRCW, pBlock);
@@ -2644,13 +2549,13 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
             pDisp = pRCW->GetIDispatch();
 
             RCWPROTECT_END(pRCW);
-            RETURN pDisp.Extract();
+            return pDisp.Detach();
         }
 
         default:
         {
             _ASSERTE(!"Invalid default interface type!");
-            RETURN NULL;
+            return NULL;
         }
     }
 }
@@ -2707,32 +2612,28 @@ ComCallWrapperCache::~ComCallWrapperCache()
 //-------------------------------------------------------------------
 ComCallWrapperCache *ComCallWrapperCache::Create(LoaderAllocator *pLoaderAllocator)
 {
-    CONTRACT (ComCallWrapperCache*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pLoaderAllocator));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    NewHolder<ComCallWrapperCache> pWrapperCache = new ComCallWrapperCache();
+    NewHolder<ComCallWrapperCache> pWrapperCache{ new ComCallWrapperCache() };
 
     LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::Create %8.8x in loader allocator [%d] %8.8x\n",
         (ComCallWrapperCache *)pWrapperCache, pLoaderAllocator ? pLoaderAllocator->GetCreationNumber() : 0, pLoaderAllocator));
 
-    NewHolder<CCacheLineAllocator> line = new CCacheLineAllocator;
+    NewHolder<CCacheLineAllocator> line{ new CCacheLineAllocator };
 
     pWrapperCache->m_pLoaderAllocator = pLoaderAllocator;
-    pWrapperCache->m_pCacheLineAllocator = line;
+    pWrapperCache->m_pCacheLineAllocator = line.Detach();
 
     pWrapperCache->AddRef();
 
-    line.SuppressRelease();
-    pWrapperCache.SuppressRelease();
-    RETURN pWrapperCache;
+    return pWrapperCache.Detach();
 }
 
 //-------------------------------------------------------------------
@@ -2783,7 +2684,7 @@ LONG ComCallWrapperCache::Release()
 
 //--------------------------------------------------------------------------
 // void ComMethodTable::Cleanup()
-// free the stubs and the vtable
+// Release the cached dispatch and type information.
 //--------------------------------------------------------------------------
 void ComMethodTable::Cleanup()
 {
@@ -2795,37 +2696,12 @@ void ComMethodTable::Cleanup()
     }
     CONTRACTL_END;
 
-    unsigned cbExtraSlots = GetNumExtraSlots(GetInterfaceType());
-    unsigned cbSlots = m_cbSlots;
-
-    SLOT* pComVtable = (SLOT *)(this + 1);
-
-    // If we have created and laid out the method desc then we need to delete them.
-    if (IsLayoutComplete())
-    {
-#ifdef PROFILING_SUPPORTED
-        // We used to issue the COMClassicVTableDestroyed callback from here.
-        // However, that causes an AV.  At this point the MethodTable is gone
-        // (as the AppDomain containing it has been unloaded), but the ComMethodTable
-        // still points to it.  The code here used to wrap a TypeHandle around the
-        // MethodTable pointer, cast to a ClassID, and then call COMClassicVTableDestroyed.
-        // But the act of casting to a TypeHandle invokes debug-code to verify the
-        // MethodTable, which causes an AV.
-        //
-        // For now, we're not issuing the COMClassicVTableDestroyed callback anymore.
-        // <REVISIT_TODO>Reexamine the profiling API around
-        // CCWs and move the callback elsewhere and / or rethink the current
-        // set of CCW callbacks to mirror reality more accurately.</REVISIT_TODO>
-#endif // PROFILING_SUPPORTED
-    }
-
     if (m_pDispatchInfo)
         delete m_pDispatchInfo;
     if (m_pITypeInfo && !IsAtProcessExit())
         SafeRelease(m_pITypeInfo);
 
-    // The m_pMDescr and the current instance is allocated from the related LoaderAllocator
-    // so no cleanup is needed here.
+    // The method descriptors, entry thunks, and this instance belong to the LoaderAllocator.
 }
 
 namespace
@@ -2836,8 +2712,7 @@ namespace
         {
             THROWS;
             GC_NOTRIGGER;
-            MODE_ANY;
-            INJECT_FAULT(COMPlusThrowOM());
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
 
@@ -2865,7 +2740,6 @@ void ComMethodTable::LayOutClassMethodTable()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -2875,8 +2749,6 @@ void ComMethodTable::LayOutClassMethodTable()
     IDispatchVtable* pDispVtable;
     SLOT *pComVtable;
     unsigned cbPrevSlots = 0;
-    unsigned cbAlloc = 0;
-    BYTE* pMDMemoryPtr = nullptr;
     AllocMemTracker amTracker;
     LoaderAllocator* pLoaderAllocator = m_pMT->GetLoaderAllocator();
     ComCallMethodDesc* pMethodDescMemory = NULL;
@@ -2915,8 +2787,8 @@ void ComMethodTable::LayOutClassMethodTable()
     if (cbTempVtable.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
-    NewArrayHolder<BYTE> pTempVtable = new BYTE[cbTempVtable.Value()];
-    pDispVtable = (IDispatchVtable *)pTempVtable.GetValue();
+    NewArrayHolder<BYTE> pTempVtable{ new BYTE[cbTempVtable.Value()] };
+    pDispVtable = reinterpret_cast<IDispatchVtable*>(static_cast<BYTE*>(pTempVtable));
 
     //
     // Set up the IUnknown and IDispatch methods.
@@ -2976,18 +2848,12 @@ void ComMethodTable::LayOutClassMethodTable()
         // Allocate method desc's for the rest of the slots.
         //
         unsigned cbMethodDescs = sizeof(ComCallMethodDesc) * (m_cbSlots - cbParentComMTSlots);
-        cbAlloc = cbMethodDescs;
-        if (cbAlloc > 0)
+        if (cbMethodDescs > 0)
         {
-            pMDMemoryPtr = (BYTE*)amTracker.Track(m_pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbAlloc + sizeof(UINT_PTR))));
+            pMethodDescMemory = (ComCallMethodDesc*)amTracker.Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbMethodDescs)));
 
             // initialize the method desc memory to zero
-            FillMemory(pMDMemoryPtr, cbAlloc + sizeof(UINT_PTR), 0x0);
-
-            *(UINT_PTR *)(pMDMemoryPtr) = cbMethodDescs; // fill in the size of the method desc's
-
-            // move past the size
-            pMethodDescMemory = (ComCallMethodDesc*)(pMDMemoryPtr + sizeof(UINT_PTR));
+            FillMemory(pMethodDescMemory, cbMethodDescs, 0x0);
         }
 
         _ASSERTE(0 == (((DWORD_PTR)pMethodDescMemory) & (sizeof(void*)-1)));
@@ -3161,16 +3027,11 @@ void ComMethodTable::LayOutClassMethodTable()
         // IDispatch vtable follows the header
         CopyMemory(this + 1, pDispVtable, cbTempVtable.Value());
 
-        // Set the layout complete flag and release the lock.
-        m_Flags |= enum_LayoutComplete;
+        amTracker.SuppressRelease();
 
-        // We've successfully laid out the class method table so we need to suppress the release of the
-        // memory for the ComCallMethodDescs and store it inside the ComMethodTable so we can
-        // release it when we clean up the ComMethodTable.
-        m_pMDescr = (BYTE*)pMDMemoryPtr;
+        // Publish only after the descriptors and allocation ownership are committed.
+        SetFlags(enum_LayoutComplete);
     }
-
-    amTracker.SuppressRelease();
 
     LOG((LF_INTEROP, LL_INFO1000, "LayOutClassMethodTable: %s, parent: %s, this: %p  [DONE]\n", m_pMT->GetDebugClassName(), pParentClass ? pParentClass->GetDebugClassName() : 0, this));
 }
@@ -3213,9 +3074,9 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
     if (cbTempVtable.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
-    NewArrayHolder<BYTE> pTempVtable = new BYTE[cbTempVtable.Value()];
+    NewArrayHolder<BYTE> pTempVtable{ new BYTE[cbTempVtable.Value()] };
 
-    pUnkVtable = (IUnkVtable *)pTempVtable.GetValue();
+    pUnkVtable = reinterpret_cast<IUnkVtable*>(static_cast<BYTE*>(pTempVtable));
     pComVtable = ((SLOT*)pUnkVtable) + cbExtraSlots;
 
     // Set all vtable slots to -1 for sparse vtables. That way we catch attempts
@@ -3352,7 +3213,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         _ASSERTE(numVtableSlots == cbEmittedSlots);
 
         // Set the layout complete flag and release the lock.
-        m_Flags |= enum_LayoutComplete;
+        SetFlags(enum_LayoutComplete);
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -3389,7 +3250,6 @@ void ComMethodTable::LayOutBasicMethodTable()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3400,7 +3260,7 @@ void ComMethodTable::LayOutBasicMethodTable()
 
     //
     // Set up the IUnknown and IDispatch methods. Each thread will write exactly the same values to the
-    // slots so we let it run concurrently and execute a memory barrier by doing InterlockOr at the end.
+    // slots so we let it run concurrently and publish them with an atomic flag update at the end.
     //
 
     // IDispatch vtable follows the header
@@ -3436,9 +3296,30 @@ void ComMethodTable::LayOutBasicMethodTable()
     //
     // Set the layout complete flag.
     //
-    InterlockedOr((LONG*)&m_Flags, enum_LayoutComplete);
+    SetFlags(enum_LayoutComplete);
 
     LOG((LF_INTEROP, LL_INFO1000, "LayOutClassMethodTable: %s, this: %p  [DONE]\n", m_pMT->GetDebugClassName(), this));
+}
+
+void ComMethodTable::GenerateIID()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Metadata generation can throw and trigger GC, so do it outside the commit lock.
+    IID iid = GenerateClassItfGuid(TypeHandle(m_pMT));
+
+    CrstHolder ch(&g_CreateWrapperTemplateCrst);
+    if (!(VolatileLoad(&m_Flags) & enum_GuidGenerated))
+    {
+        m_IID = iid;
+        SetFlags(enum_GuidGenerated);
+    }
 }
 
 //--------------------------------------------------------------------------
@@ -3447,31 +3328,29 @@ void ComMethodTable::LayOutBasicMethodTable()
 //--------------------------------------------------------------------------
 DispatchInfo *ComMethodTable::GetDispatchInfo()
 {
-    CONTRACT (DispatchInfo*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!m_pDispatchInfo)
     {
         // Create the DispatchInfo object.
-        NewHolder<DispatchInfo> pDispInfo = new DispatchInfo(m_pMT);
+        NewHolder<DispatchInfo> pDispInfo{ new DispatchInfo(m_pMT) };
 
         // Synchronize the DispatchInfo with the actual object.
         pDispInfo->SynchWithManagedView();
 
         // Swap the lock into the class member in a thread safe manner.
-        if (NULL == InterlockedCompareExchangeT(&m_pDispatchInfo, pDispInfo.GetValue(), NULL))
-            pDispInfo.SuppressRelease();
+        if (NULL == InterlockedCompareExchangeT(&m_pDispatchInfo, static_cast<DispatchInfo*>(pDispInfo), NULL))
+            pDispInfo.Detach();
 
     }
 
-    RETURN m_pDispatchInfo;
+    return m_pDispatchInfo;
 }
 
 //--------------------------------------------------------------------------
@@ -3499,25 +3378,24 @@ void ComMethodTable::SetITypeInfo(ITypeInfo *pNew)
 //--------------------------------------------------------------------------
 ComMethodTable *ComMethodTable::GetParentClassComMT()
 {
-    CONTRACT (ComMethodTable*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(IsIClassX());
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodTable *pParentComPlusMT = m_pMT->GetComPlusParentMethodTable();
     if (!pParentComPlusMT)
-        RETURN NULL;
+        return NULL;
 
     ComCallWrapperTemplate *pTemplate = pParentComPlusMT->GetComCallWrapperTemplate();
     if (!pTemplate)
-        RETURN NULL;
+        return NULL;
 
-    RETURN pTemplate->GetClassComMT();
+    return pTemplate->GetClassComMT();
 }
 
 //---------------------------------------------------------
@@ -3651,19 +3529,19 @@ LONG ComCallWrapperTemplate::Release()
 
 ComMethodTable* ComCallWrapperTemplate::GetClassComMT()
 {
-    CONTRACT (ComMethodTable*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(SupportsIClassX());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // First check the cache
     if (m_pClassComMT)
-        RETURN m_pClassComMT;
+        {
+            return m_pClassComMT;
+        }
 
     MethodTable *pMT = m_thClass.GetMethodTable();
 
@@ -3677,21 +3555,20 @@ ComMethodTable* ComCallWrapperTemplate::GetClassComMT()
         pClassComMT->Release();
     }
 
-    RETURN m_pClassComMT;
+    return m_pClassComMT;
 }
 
 ComMethodTable* ComCallWrapperTemplate::GetComMTForItf(MethodTable *pItfMT)
 {
-    CONTRACT (ComMethodTable*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(pItfMT));
         PRECONDITION(pItfMT->IsInterface());
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Look through all the implemented interfaces to see if the specified
     // one is present yet.
@@ -3699,25 +3576,26 @@ ComMethodTable* ComCallWrapperTemplate::GetComMTForItf(MethodTable *pItfMT)
     {
         ComMethodTable* pItfComMT = (ComMethodTable *)m_rgpIPtr[iItf] - 1;
         if (pItfComMT && (pItfComMT->m_pMT == pItfMT))
-            RETURN pItfComMT;
+            {
+                return pItfComMT;
+            }
     }
 
     // The class does not implement the specified interface.
-    RETURN NULL;
+    return NULL;
 }
 
 ComMethodTable* ComCallWrapperTemplate::GetBasicComMT()
 {
-    CONTRACT (ComMethodTable*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN m_pBasicComMT;
+    return m_pBasicComMT;
 }
 
 
@@ -3729,17 +3607,16 @@ ULONG ComCallWrapperTemplate::GetNumInterfaces()
 
 SLOT* ComCallWrapperTemplate::GetVTableSlot(ULONG index)
 {
-    CONTRACT (SLOT*)
+    CONTRACTL
     {
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
         PRECONDITION(index >= 0 && index < m_cbInterfaces);
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN m_rgpIPtr[index];
+    return m_rgpIPtr[index];
 }
 
 // Determines whether the template is for a type that cannot be safely marshalled to
@@ -3850,19 +3727,16 @@ DefaultInterfaceType ComCallWrapperTemplate::GetDefaultInterface(MethodTable **p
 //--------------------------------------------------------------------------
 ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable *pClassMT)
 {
-    CONTRACT (ComMethodTable*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pClassMT));
         PRECONDITION(!pClassMT->IsInterface());
         PRECONDITION(!pClassMT->GetComPlusParentMethodTable() || pClassMT->GetComPlusParentMethodTable()->GetComCallWrapperTemplate());
-        PRECONDITION(SupportsIClassX());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     unsigned cbNewPublicFields = 0;
     unsigned cbNewPublicMethods = 0;
@@ -4034,7 +3908,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
     pComMT->m_ptReserved = (SLOT)(size_t)0xDEADC0FF;          // reserved
     pComMT->m_pMT  = pClassMT; // pointer to the class method table
     pComMT->m_cbRefCount = 0;
-    pComMT->m_pMDescr = NULL;
     pComMT->m_pITypeInfo = NULL;
     pComMT->m_pDispatchInfo = NULL;
     pComMT->m_cbSlots = cbTotalSlots.Value(); // number of slots not counting IDisp methods.
@@ -4060,7 +3933,7 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
     LOG((LF_INTEROP, LL_INFO1000, "---------- end of CreateComMethodTableForClass %s -----------\n", pClassMT->GetClass()->GetDebugClassName()));
 
     pComMT.SuppressRelease();
-    RETURN pComMT;
+    return pComMT;
 }
 
 //--------------------------------------------------------------------------
@@ -4068,17 +3941,15 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
 //--------------------------------------------------------------------------
 ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForInterface(MethodTable* pInterfaceMT)
 {
-    CONTRACT (ComMethodTable*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pInterfaceMT));
         PRECONDITION(pInterfaceMT->IsInterface());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodTable *pItfClass = pInterfaceMT;
     CorIfaceAttr ItfType = pInterfaceMT->GetComInterfaceType();
@@ -4110,7 +3981,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForInterface(MethodT
     pComMT->m_pMT  = pInterfaceMT; // pointer to the interface's method table
     pComMT->m_cbSlots = cbComSlots; // number of slots not counting IUnk
     pComMT->m_cbRefCount = 0;
-    pComMT->m_pMDescr = NULL;
     pComMT->m_pITypeInfo = NULL;
     pComMT->m_pDispatchInfo = NULL;
 
@@ -4141,20 +4011,18 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForInterface(MethodT
     LOG((LF_INTEROP, LL_INFO1000, "---------- end of CreateComMethodTableForInterface %s -----------\n", pItfClass->GetDebugClassName()));
 
     pComMT.SuppressRelease();
-    RETURN pComMT;
+    return pComMT;
 }
 
 ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForBasic(MethodTable* pMT)
 {
-    CONTRACT (ComMethodTable*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     const unsigned cbExtraSlots = ComMethodTable::GetNumExtraSlots(ifDispatch);
     CorClassIfaceAttr ClassItfType = pMT->GetComClassInterfaceType();
@@ -4171,7 +4039,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForBasic(MethodTable
     pComMT->m_pMT  = pMT;
     pComMT->m_cbSlots = 0;  // number of slots not counting IUnk
     pComMT->m_cbRefCount = 0;
-    pComMT->m_pMDescr = NULL;
     pComMT->m_pITypeInfo = NULL;
     pComMT->m_pDispatchInfo = NULL;
 
@@ -4203,7 +4070,7 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForBasic(MethodTable
     LOG((LF_INTEROP, LL_INFO1000, "---------- end of CreateComMethodTableForBasic %s -----------\n", pMT->GetDebugClassName()));
 
     pComMT.SuppressRelease();
-    RETURN pComMT;
+    return pComMT;
 }
 
 //--------------------------------------------------------------------------
@@ -4324,16 +4191,14 @@ ComMethodTable *ComCallWrapperTemplate::InitializeForInterface(MethodTable *pPar
 //--------------------------------------------------------------------------
 ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClass)
 {
-    CONTRACT (ComCallWrapperTemplate*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!thClass.IsNull());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     GCX_PREEMP();
 
@@ -4365,14 +4230,13 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
     // Check to see if another thread has already set up the template.
     {
         // Move this inside the scope so it is destroyed before its memory is.
-        ComCallWrapperTemplateHolder pTemplate = NULL;
+        ComCallWrapperTemplateHolder pTemplate;
 
         pTemplate = thClass.GetComCallWrapperTemplate();
 
         if (pTemplate)
         {
-            pTemplate.SuppressRelease();
-            RETURN pTemplate;
+            return pTemplate.Detach();
         }
 
         // Allocate the template.
@@ -4398,12 +4262,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         pTemplate->m_pBasicComMT = pTemplate->CreateComMethodTableForBasic(pMT);
         pTemplate->m_pBasicComMT->AddRef();
 
-        if (ClassSupportsIClassX(pMT))
-        {
-            // we will allow building IClassX for the class
-            pTemplate->m_flags |= enum_SupportsIClassX;
-        }
-
         // Eagerly create the interface CMTs.
         // when iterate the interfaces implemented by the methodtable, we can check whether
         // the interface supports ICustomQueryInterface.
@@ -4423,45 +4281,42 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
             pTemplate = thClass.GetComCallWrapperTemplate();
             _ASSERTE(pTemplate != NULL);
 
-            pTemplate.SuppressRelease();
-            RETURN pTemplate;
+            return pTemplate.Detach();
         }
-        pTemplate.SuppressRelease();
+        // The class now owns the template refcount; take a non-owning pointer for the return path.
+        ComCallWrapperTemplate* pRetTemplate = pTemplate.Detach();
 
 #ifdef PROFILING_SUPPORTED
         // Notify profiler of the CCW, so it can avoid double-counting.
-        if (pTemplate->SupportsIClassX())
-        {
-            BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
-            // When under the profiler, we'll eagerly generate the IClassX CMT.
-            pTemplate->GetClassComMT();
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
+        // When under the profiler, we'll eagerly generate the IClassX CMT.
+        pRetTemplate->GetClassComMT();
 
-            IID IClassXIID = GUID_NULL;
-            SLOT *pComVtable = (SLOT *)(pTemplate->m_pClassComMT + 1);
+        IID IClassXIID = GUID_NULL;
+        SLOT *pComVtable = (SLOT *)(pRetTemplate->m_pClassComMT + 1);
 
-            // If the class is visible from COM, then give out the IClassX IID.
-            if (pTemplate->m_pClassComMT->IsComVisible())
-                GenerateClassItfGuid(thClass, &IClassXIID);
+        // If the class is visible from COM, then give out the IClassX IID.
+        if (pRetTemplate->m_pClassComMT->IsComVisible())
+            IClassXIID = GenerateClassItfGuid(thClass);
 
 #if defined(_DEBUG)
-            CHAR rIID[MINIPAL_GUID_BUFFER_LEN];
-            minipal_guid_as_string(IClassXIID, rIID, MINIPAL_GUID_BUFFER_LEN);
-            SString ssName;
-            thClass.GetName(ssName);
-            LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%s, IID:%s, vTbl:%#08x\n",
-                 ssName.GetUTF8(), rIID, pComVtable));
+        CHAR rIID[MINIPAL_GUID_BUFFER_LEN];
+        minipal_guid_as_string(IClassXIID, rIID, MINIPAL_GUID_BUFFER_LEN);
+        SString ssName;
+        thClass.GetName(ssName);
+        LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%s, IID:%s, vTbl:%#08x\n",
+             ssName.GetUTF8(), rIID, pComVtable));
 #else
-            LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated TypeHandle:%#x, IID:{%08x-...}, vTbl:%#08x\n",
-                 thClass.AsPtr(), IClassXIID.Data1, pComVtable));
+        LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated TypeHandle:%#x, IID:{%08x-...}, vTbl:%#08x\n",
+             thClass.AsPtr(), IClassXIID.Data1, pComVtable));
 #endif
-            (&g_profControlBlock)->COMClassicVTableCreated(
-                (ClassID) thClass.AsPtr(), IClassXIID, pComVtable,
-                pTemplate->m_pClassComMT->m_cbSlots +
-                    ComMethodTable::GetNumExtraSlots(pTemplate->m_pClassComMT->GetInterfaceType()));
-            END_PROFILER_CALLBACK();
-        }
+        (&g_profControlBlock)->COMClassicVTableCreated(
+            (ClassID) thClass.AsPtr(), IClassXIID, pComVtable,
+            pRetTemplate->m_pClassComMT->m_cbSlots +
+                ComMethodTable::GetNumExtraSlots(pRetTemplate->m_pClassComMT->GetInterfaceType()));
+        END_PROFILER_CALLBACK();
 #endif // PROFILING_SUPPORTED
-        RETURN pTemplate;
+        return pRetTemplate;
     }
 }
 
@@ -4470,17 +4325,15 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
 //--------------------------------------------------------------------------
 ComCallWrapperTemplate *ComCallWrapperTemplate::CreateTemplateForInterface(MethodTable *pItfMT)
 {
-    CONTRACT (ComCallWrapperTemplate*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pItfMT));
         PRECONDITION(pItfMT->IsInterface());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     GCX_PREEMP();
 
@@ -4488,11 +4341,10 @@ ComCallWrapperTemplate *ComCallWrapperTemplate::CreateTemplateForInterface(Metho
     unsigned numInterfaces = 1;
 
     // Allocate the template.
-    ComCallWrapperTemplateHolder pTemplate = pItfMT->GetComCallWrapperTemplate();
+    ComCallWrapperTemplateHolder pTemplate{ pItfMT->GetComCallWrapperTemplate() };
     if (pTemplate)
     {
-        pTemplate.SuppressRelease();
-        RETURN pTemplate;
+        return pTemplate.Detach();
     }
 
     pTemplate = (ComCallWrapperTemplate *)new BYTE[sizeof(ComCallWrapperTemplate) + numInterfaces * sizeof(SLOT)];
@@ -4523,8 +4375,7 @@ ComCallWrapperTemplate *ComCallWrapperTemplate::CreateTemplateForInterface(Metho
         _ASSERTE(pTemplate != NULL);
     }
 
-    pTemplate.SuppressRelease();
-    RETURN pTemplate;
+    return pTemplate.Detach();
 }
 
 void ComCallWrapperTemplate::DetermineComVisibility()
@@ -4577,29 +4428,30 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::FindInvisibleParent()
 //--------------------------------------------------------------------------
 ComCallWrapperTemplate* ComCallWrapperTemplate::GetTemplate(TypeHandle thType)
 {
-    CONTRACT (ComCallWrapperTemplate*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 
     // Check to see if the specified class already has a template set up.
     ComCallWrapperTemplate* pTemplate = thType.GetComCallWrapperTemplate();
     if (pTemplate)
-        RETURN pTemplate;
+        {
+            return pTemplate;
+        }
 
     // Create the template and return it. CreateTemplate will take care of synchronization.
     if (thType.IsInterface())
     {
-        RETURN CreateTemplateForInterface(thType.AsMethodTable());
+        return CreateTemplateForInterface(thType.AsMethodTable());
     }
     else
     {
-        RETURN CreateTemplate(thType);
+        return CreateTemplate(thType);
     }
 }
 
@@ -4612,15 +4464,14 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::GetTemplate(TypeHandle thType)
 //--------------------------------------------------------------------------
 ComMethodTable *ComCallWrapperTemplate::SetupComMethodTableForClass(MethodTable *pMT, BOOL bLayOutComMT)
 {
-    CONTRACT (ComMethodTable*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(!pMT->IsInterface());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Retrieve the COM call wrapper template for the class.
     ComCallWrapperTemplate *pTemplate = GetTemplate(pMT);
@@ -4637,7 +4488,7 @@ ComMethodTable *ComCallWrapperTemplate::SetupComMethodTableForClass(MethodTable 
         _ASSERTE(pIClassXComMT->IsLayoutComplete());
     }
 
-    RETURN pIClassXComMT;
+    return pIClassXComMT;
 }
 
 //--------------------------------------------------------------------------
@@ -4646,18 +4497,17 @@ ComMethodTable *ComCallWrapperTemplate::SetupComMethodTableForClass(MethodTable 
 //--------------------------------------------------------------------------
 Module* ComCallMethodDesc::GetModule()
 {
-    CONTRACT (Module*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION( IsFieldCall() ? (m_pFD != NULL) : (m_pMD != NULL) );
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodTable* pClass = (IsFieldCall()) ? m_pFD->GetEnclosingMethodTable() : m_pMD->GetMethodTable();
     _ASSERTE(pClass != NULL);
 
-    RETURN pClass->GetModule();
+    return pClass->GetModule();
 }

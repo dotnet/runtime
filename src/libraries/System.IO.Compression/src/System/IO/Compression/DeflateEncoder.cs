@@ -51,24 +51,24 @@ namespace System.IO.Compression
         /// Initializes a new instance of the <see cref="DeflateEncoder"/> class using the specified quality and window size.
         /// </summary>
         /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression), or -1 to use the default value.</param>
-        /// <param name="windowLog">The base-2 logarithm of the window size (8-15), or -1 to use the default value. Larger values result in better compression at the expense of memory usage.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9 or -1), or <paramref name="windowLog"/> is not in the valid range (8-15 or -1).</exception>
+        /// <param name="windowLog2">The base-2 logarithm of the window size (8-15), or -1 to use the default value. Larger values result in better compression at the expense of memory usage.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9 or -1), or <paramref name="windowLog2"/> is not in the valid range (8-15 or -1).</exception>
         /// <exception cref="IOException">Failed to create the <see cref="DeflateEncoder"/> instance.</exception>
-        public DeflateEncoder(int quality, int windowLog)
-            : this(quality, windowLog, CompressionFormat.Deflate)
+        public DeflateEncoder(int quality, int windowLog2)
+            : this(quality, windowLog2, CompressionFormat.Deflate)
         {
         }
 
         /// <summary>
-        /// Internal constructor that accepts quality, windowLog (8-15), and format.
-        /// Validates both parameters and transforms windowLog to windowBits based on format.
+        /// Internal constructor that accepts quality, windowLog2 (8-15), and format.
+        /// Validates both parameters and transforms windowLog2 to windowBits based on format.
         /// </summary>
-        internal DeflateEncoder(int quality, int windowLog, CompressionFormat format)
+        internal DeflateEncoder(int quality, int windowLog2, CompressionFormat format)
         {
             ValidateQuality(quality);
-            ValidateWindowLog(windowLog);
+            ValidateWindowLog(windowLog2);
 
-            int windowBits = CompressionFormatHelper.ResolveWindowBits(windowLog, format);
+            int windowBits = CompressionFormatHelper.ResolveWindowBits(windowLog2, format);
 
             int memLevel = quality == (int)ZLibNative.CompressionLevel.NoCompression
                 ? ZLibNative.Deflate_NoCompressionMemLevel
@@ -88,7 +88,7 @@ namespace System.IO.Compression
         {
             ArgumentNullException.ThrowIfNull(options);
 
-            int windowBits = CompressionFormatHelper.ResolveWindowBits(options.WindowLog, format);
+            int windowBits = CompressionFormatHelper.ResolveWindowBits(options.WindowLog2, format);
 
             int memLevel = options.CompressionLevel == (int)ZLibNative.CompressionLevel.NoCompression
                 ? ZLibNative.Deflate_NoCompressionMemLevel
@@ -110,12 +110,12 @@ namespace System.IO.Compression
             }
         }
 
-        private static void ValidateWindowLog(int windowLog)
+        private static void ValidateWindowLog(int windowLog2)
         {
-            if (windowLog != -1)
+            if (windowLog2 != -1)
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(windowLog, ZLibNative.MinWindowLog, nameof(windowLog));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog, ZLibNative.MaxWindowLog, nameof(windowLog));
+                ArgumentOutOfRangeException.ThrowIfLessThan(windowLog2, ZLibNative.MinWindowLog, nameof(windowLog2));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog2, ZLibNative.MaxWindowLog, nameof(windowLog2));
             }
         }
 
@@ -144,30 +144,16 @@ namespace System.IO.Compression
         {
             ArgumentOutOfRangeException.ThrowIfNegative(inputLength);
 
-            // For inputs up to 2 GiB, delegate to the native compressBound() function, which returns
-            // the exact upper bound for the zlib implementation linked into the current process
-            // (either classic zlib or zlib-ng, depending on platform and build flags). The 2^31
-            // threshold keeps the value within the uint P/Invoke signature on all platforms.
-
-            // Browser/WASI builds do not link the native compression library,
-            // so fall through to the managed formula on those platforms.
-            if (inputLength <= (1L << 31) && !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi())
-            {
-                return Interop.ZLib.compressBound((uint)inputLength);
-            }
-
-            // For larger inputs, compute the bound in managed code using zlib-ng's quick-strategy
-            // formula. It is strictly larger than classic zlib's compressBound(), so it is a safe
-            // upper bound regardless of which implementation is linked at runtime.
-            // See: src/native/external/zlib-ng/compress.c and zutil.h.
-            // Use ulong to avoid overflow; reject inputs whose bound does not fit in long.
+            // This method does not know which windowLog2 or quality the caller will use, so
+            // compute the maximum of the bounds used by zlib-ng's deflateBound(). The code below mimics the logic
+            // to compute the maximum possible size returned by deflateBound. Our API doesn't expose all knobs
+            // so z_stream's strstart and gzhead are always null. We also don't handle the s390 corner case.
             ulong sourceLength = (ulong)inputLength;
-            ulong maxCompressedLength = sourceLength
-                + (sourceLength == 0 ? 1u : 0u)
-                + (sourceLength < 9 ? 1u : 0u)
-                + ((sourceLength + 7) >> 3)
-                + 3   // DEFLATE_BLOCK_OVERHEAD: (3 + 15 + 6) >> 3
-                + 6;  // ZLIB_WRAPLEN: zlib header (2 bytes) + Adler32 trailer (4 bytes)
+            const ulong wrapLength = 6; // GZIP_WRAPLEN is 18, GZipEncoder compensates for the rest
+            ulong maxCompressedLength = sourceLength + ((sourceLength + 7) >> 3) + ((sourceLength + 63) >> 6) + 5;
+            ulong storedBlockBound = sourceLength + (sourceLength >> 5) + (sourceLength >> 7) + (sourceLength >> 11) + 7;
+
+            maxCompressedLength = Math.Max(maxCompressedLength, storedBlockBound) + wrapLength;
 
             if (maxCompressedLength > long.MaxValue)
             {
@@ -297,6 +283,22 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Resets the encoder to its initial state so the same instance can be reused for a new, independent compression operation.
+        /// </summary>
+        /// <remarks>
+        /// The encoder keeps the compression quality and window size it was created with. Any pending output or unflushed input from a previous, unfinished compression is discarded.
+        /// </remarks>
+        /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
+        public void Reset()
+        {
+            EnsureNotDisposed();
+            Debug.Assert(_state is not null);
+
+            _state.DeflateReset();
+            _finished = false;
+        }
+
+        /// <summary>
         /// Tries to compress a source byte span into a destination span using the default quality.
         /// </summary>
         /// <param name="source">A read-only span of bytes containing the source data to compress.</param>
@@ -324,11 +326,11 @@ namespace System.IO.Compression
         /// <param name="destination">When this method returns, a span of bytes where the compressed data is stored.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
         /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression), or -1 to use the default value.</param>
-        /// <param name="windowLog">The base-2 logarithm of the window size (8-15), or -1 to use the default value. Larger values result in better compression at the expense of memory usage.</param>
+        /// <param name="windowLog2">The base-2 logarithm of the window size (8-15), or -1 to use the default value. Larger values result in better compression at the expense of memory usage.</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
-        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog)
+        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog2)
         {
-            using var encoder = new DeflateEncoder(quality, windowLog);
+            using var encoder = new DeflateEncoder(quality, windowLog2);
             OperationStatus status = encoder.Compress(source, destination, out int consumed, out bytesWritten, isFinalBlock: true);
 
             bool success = status == OperationStatus.Done && consumed == source.Length;

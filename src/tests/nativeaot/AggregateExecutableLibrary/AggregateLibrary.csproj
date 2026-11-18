@@ -5,6 +5,8 @@
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <BuildAsStandalone>false</BuildAsStandalone>
+    <!-- NativeAOT WebAssembly shared libraries are not supported. -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWasm)' == 'true'">true</CLRTestTargetUnsupported>
     <!-- Unable to compile a project with the Library output type for apple mobile devices -->
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
     <!-- Unable to build a library project with native dependencies for android mobile devices:
@@ -16,6 +18,8 @@
     <CLRTestRunFile Condition="'$(TargetsWindows)' != 'true'">./native/ValidatorExe</CLRTestRunFile>
     <SkipInferOutputType>true</SkipInferOutputType>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <NativeDebugSymbols Condition="'$(TargetsOSX)' == 'true'">true</NativeDebugSymbols>
+    <CopyOutputSymbolsToPublishDirectory Condition="'$(TargetsOSX)' == 'true'">true</CopyOutputSymbolsToPublishDirectory>
     <!-- warning CS2008: No source files specified -->
     <NoWarn>$(NoWarn);CS2008</NoWarn>
   </PropertyGroup>
@@ -31,6 +35,12 @@
     </PropertyGroup>
   </Target>
 
+  <Target Name="UseDsymAggregateExecutableShimSymbols" BeforeTargets="ComputeAggregateExecutableInputs" Condition="'$(TargetsOSX)' == 'true'">
+    <PropertyGroup>
+      <NativeSymbolExt>.dSYM</NativeSymbolExt>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="WriteHelixExtraExecutablesList" AfterTargets="NativeCompile" Condition="'$(TargetsWindows)' != 'true'">
     <PropertyGroup>
       <_HelloExeRelative>$(BuildProjectRelativeDir)native/HelloExe</_HelloExeRelative>
@@ -38,5 +48,17 @@
     </PropertyGroup>
 
     <WriteLinesToFile File="$(TargetDir)helix-extra-executables.list" Lines="$(_HelloExeRelative)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+
+  <Target Name="ValidateAggregateExecutableShimSymbols" AfterTargets="NativeCompile" Condition="'$(TargetsOSX)' == 'true'">
+    <ItemGroup>
+      <_ExpectedAggregateExecutableShimSymbol Include="HelloExe.dSYM/Contents/Info.plist" />
+      <_ExpectedAggregateExecutableShimSymbol Include="HelloExe.dSYM/Contents/Resources/DWARF/HelloExe" />
+      <_PublishedFileRelativePath Include="@(ResolvedFileToPublish->'%(RelativePath)')" />
+      <_MissingAggregateExecutableShimSymbol Include="@(_ExpectedAggregateExecutableShimSymbol)" Exclude="@(_PublishedFileRelativePath)" />
+    </ItemGroup>
+
+    <Error Condition="'@(_MissingAggregateExecutableShimSymbol)' != ''"
+           Text="Aggregate executable shim symbol files have incorrect publish paths: @(_MissingAggregateExecutableShimSymbol, ', ')" />
   </Target>
 </Project>

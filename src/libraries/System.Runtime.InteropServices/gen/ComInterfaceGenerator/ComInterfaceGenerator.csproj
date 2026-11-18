@@ -19,7 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System\Runtime\InteropServices\Marshalling\ComInterfaceOptions.cs" Link="Production\ComInterfaceOptions.cs" />
     <Compile Include="..\..\tests\Common\ExceptionMarshalling.cs" Link="Common\ExceptionMarshalling.cs" />
     <Compile Include="$(CommonPath)\Roslyn\DiagnosticDescriptorHelper.cs" Link="Common\Roslyn\DiagnosticDescriptorHelper.cs" />
     <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
@@ -28,7 +27,7 @@
     <Compile Include="..\Common\FixAllContextExtensions.cs" Link="Common\FixAllContextExtensions.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Index.cs" Link="Common\System\Index.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
-    <Compile Include="../Common/UnreachableException.cs" Link="Common/UnreachableException.cs" />
+    <Compile Include="$(CommonPath)System\Diagnostics\UnreachableException.cs" Link="Common\System\Diagnostics\UnreachableException.cs" />
   </ItemGroup>
 
   <ItemGroup>

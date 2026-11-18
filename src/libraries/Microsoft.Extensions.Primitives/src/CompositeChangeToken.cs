@@ -35,10 +35,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="changeTokens">The list of <see cref="IChangeToken"/> to compose.</param>
         public CompositeChangeToken(IReadOnlyList<IChangeToken> changeTokens)
         {
-            if (changeTokens is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokens);
-            }
+            ArgumentNullException.ThrowIfNull(changeTokens);
 
             ChangeTokens = changeTokens;
             for (int i = 0; i < ChangeTokens.Count; i++)

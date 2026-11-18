@@ -725,24 +725,24 @@ namespace System
             }
         }
 
-        static unsafe bool IsNegativeZero(float value)
+        static bool IsNegativeZero(float value)
         {
-            return (*(uint*)(&value)) == 0x80000000;
+            return BitConverter.SingleToInt32Bits(value) == int.MinValue;
         }
 
-        static unsafe bool IsPositiveZero(float value)
+        static bool IsPositiveZero(float value)
         {
-            return (*(uint*)(&value)) == 0x00000000;
+            return BitConverter.SingleToInt32Bits(value) == 0;
         }
 
-        static unsafe bool IsNegativeZero(double value)
+        static bool IsNegativeZero(double value)
         {
-            return (*(ulong*)(&value)) == 0x8000000000000000;
+            return BitConverter.DoubleToInt64Bits(value) == long.MinValue;
         }
 
-        static unsafe bool IsPositiveZero(double value)
+        static bool IsPositiveZero(double value)
         {
-            return (*(ulong*)(&value)) == 0x0000000000000000;
+            return BitConverter.DoubleToInt64Bits(value) == 0;
         }
 
 #if NET
@@ -1190,6 +1190,25 @@ namespace System
                 throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual), banner);
             }
         }
+
+        /// <summary>Verifies that two <see cref="NFloat"/> values are equal, within the <paramref name="variance"/>.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <param name="banner">The banner to show; if <c>null</c>, then the standard
+        /// banner of "Values differ" will be used</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void Equal(NFloat expected, NFloat actual, NFloat variance, string? banner = null)
+        {
+            if (NFloat.Size == 4)
+            {
+                Equal((float)expected, (float)actual, (float)variance, banner);
+            }
+            else
+            {
+                Equal((double)expected, (double)actual, (double)variance, banner);
+            }
+        }
 #endif
 
         /// <summary>Verifies that two <see cref="double"/> values's binary representations are identical.</summary>
@@ -1203,9 +1222,8 @@ namespace System
                 return;
             }
 
-            if (PlatformDetection.IsRiscV64Process && double.IsNaN(expected) && double.IsNaN(actual))
+            if (!PlatformDetection.IsNaNPayloadPreservationExpected && double.IsNaN(expected) && double.IsNaN(actual))
             {
-                // RISC-V does not preserve payload
                 return;
             }
 
@@ -1218,19 +1236,13 @@ namespace System
         /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
         public static void Equal(float expected, float actual)
         {
-            static unsafe int SingleToInt32Bits(float value)
-            {
-                return *(int*)&value;
-            }
-
-            if (SingleToInt32Bits(expected) == SingleToInt32Bits(actual))
+            if (BitConverter.SingleToInt32Bits(expected) == BitConverter.SingleToInt32Bits(actual))
             {
                 return;
             }
 
-            if (PlatformDetection.IsRiscV64Process && float.IsNaN(expected) && float.IsNaN(actual))
+            if (!PlatformDetection.IsNaNPayloadPreservationExpected && float.IsNaN(expected) && float.IsNaN(actual))
             {
-                // RISC-V does not preserve payload
                 return;
             }
 
@@ -1249,13 +1261,28 @@ namespace System
                 return;
             }
 
-            if (PlatformDetection.IsRiscV64Process && Half.IsNaN(expected) && Half.IsNaN(actual))
+            if (!PlatformDetection.IsNaNPayloadPreservationExpected && Half.IsNaN(expected) && Half.IsNaN(actual))
             {
-                // RISC-V does not preserve payload
                 return;
             }
 
             throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+        }
+
+        /// <summary>Verifies that two <see cref="NFloat"/> values's binary representations are identical.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
+        public static void Equal(NFloat expected, NFloat actual)
+        {
+            if (NFloat.Size == 4)
+            {
+                Equal((float)expected, (float)actual);
+            }
+            else
+            {
+                Equal((double)expected, (double)actual);
+            }
         }
 #endif
     }

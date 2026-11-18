@@ -205,15 +205,15 @@ namespace System.SpanTests
                 fixed (byte* pOuterStart = &Unsafe.As<T, byte>(ref refOuter))
                 fixed (byte* pInnerStart = &Unsafe.As<T, byte>(ref refInner))
                 {
-                    byte* pOuterEnd = pOuterStart + (uint)outer.Length * (nuint)Unsafe.SizeOf<T>();
-                    byte* pInnerEnd = pInnerStart + (uint)inner.Length * (nuint)Unsafe.SizeOf<T>();
+                    byte* pOuterEnd = pOuterStart + (uint)outer.Length * (nuint)sizeof(T);
+                    byte* pInnerEnd = pInnerStart + (uint)inner.Length * (nuint)sizeof(T);
 
                     Assert.True(pOuterStart <= pInnerStart && pInnerStart <= pOuterEnd, "Inner span begins outside outer span.");
                     Assert.True(pOuterStart <= pInnerEnd && pInnerEnd <= pOuterEnd, "Inner span ends outside outer span.");
 
                     nuint byteOffset = (nuint)(pInnerStart - pOuterStart);
-                    Assert.Equal((nuint)0, byteOffset % (nuint)Unsafe.SizeOf<T>()); // Unaligned elements; cannot compute offset
-                    nuint elementOffset = byteOffset / (nuint)Unsafe.SizeOf<T>();
+                    Assert.Equal((nuint)0, byteOffset % (nuint)sizeof(T)); // Unaligned elements; cannot compute offset
+                    nuint elementOffset = byteOffset / (nuint)sizeof(T);
                     return checked((int)elementOffset)..checked((int)elementOffset + inner.Length);
                 }
             }

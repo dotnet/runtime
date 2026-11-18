@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
     /// optimization, this node is not skipped and instead emits a jump stub. The purpose of the jump stub is to provide a
     /// unique code address for the address taken method.
     /// </summary>
-    internal sealed class AddressTakenMethodNode : JumpStubNode, IMethodNode, ISymbolNodeWithLinkage
+    internal sealed class AddressTakenMethodNode : JumpStubNode, IMethodCodeNodeWithTypeSignature, ISymbolNodeWithLinkage
     {
         private readonly IMethodNode _methodNode;
 
@@ -32,6 +32,10 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public MethodDesc Method => _methodNode.Method;
+        public override MethodSignature Signature => Method.Signature;
+        public override bool IsUnmanagedCallersOnly => Method.IsUnmanagedCallersOnly;
+        public override bool IsAsyncCall => Method.IsAsyncCall();
+        public override bool HasGenericContextArg => Method.RequiresInstMethodDescArg() || Method.RequiresInstMethodTableArg() || Method.IsArrayAddressMethod();
 
         protected override string GetName(NodeFactory factory)
         {
@@ -43,8 +47,8 @@ namespace ILCompiler.DependencyAnalysis
             return factory.ObjectInterner.GetDeduplicatedSymbol(factory, RealBody) == RealBody;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;

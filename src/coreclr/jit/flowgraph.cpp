@@ -64,9 +64,7 @@ static bool blockNeedsGCPoll(BasicBlock* block)
 //                   with SuppressGCTransitionAttribute.
 //
 // Notes:
-//    When not optimizing, the method relies on BBF_HAS_SUPPRESSGC_CALL flag to
-//    find the basic blocks that require GC polls; when optimizing the tree nodes
-//    are scanned to find calls to methods with SuppressGCTransitionAttribute.
+//    The tree nodes are scanned to find calls to methods with SuppressGCTransitionAttribute.
 //
 //    This must be done after any transformations that would add control flow between
 //    calls.
@@ -91,21 +89,9 @@ PhaseStatus Compiler::fgInsertGCPolls()
     {
         compCurBB = block;
 
-        // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
-        // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
-        if (opts.OptimizationDisabled())
+        if (!blockNeedsGCPoll(block))
         {
-            if (!block->HasAnyFlag(BBF_HAS_SUPPRESSGC_CALL | BBF_NEEDS_GCPOLL))
-            {
-                continue;
-            }
-        }
-        else
-        {
-            if (!blockNeedsGCPoll(block))
-            {
-                continue;
-            }
+            continue;
         }
 
         result = PhaseStatus::MODIFIED_EVERYTHING;
@@ -115,7 +101,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
         // If we're doing GCPOLL_CALL, just insert a GT_CALL node before the last node in the block.
 
-        assert(block->KindIs(BBJ_RETURN, BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, BBJ_THROW, BBJ_CALLFINALLY));
+        assert(block->KindIs(BBJ_RETURN, BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, BBJ_THROW, BBJ_CALLFINALLY) ||
+               block->hasEHBoundaryOut());
 
         GCPollType pollType = GCPOLL_INLINE;
 
@@ -142,6 +129,14 @@ PhaseStatus Compiler::fgInsertGCPolls()
             // We don't want to deal with all the outgoing edges of a switch block.
             //
             JITDUMP("Selecting CALL poll in block " FMT_BB " because it is a SWITCH block\n", block->bbNum);
+            pollType = GCPOLL_CALL;
+        }
+        else if (block->hasEHBoundaryOut())
+        {
+            // We can't split a block that leaves an EH region: fgCreateGCPoll does not know how to
+            // move its outgoing flow onto the new bottom block.
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because it ends an EH region\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
         else if (block->HasFlag(BBF_COLD))
@@ -746,6 +741,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
             // type = TYP_BYREF;
             break;
 
@@ -758,11 +755,15 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
         case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
         case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
-            type = TYP_I_IMPL;
+            // In async calls we model these helpers as byrefs to get "killed
+            // across suspensions" behavior for free, while also properly
+            // ensuring derived addresses are byref typed and are treated
+            // similarly.
+            type = impInlineRoot()->compIsAsync() ? TYP_BYREF : TYP_I_IMPL;
             break;
 
         case CORINFO_HELP_INITCLASS:
-            type = TYP_VOID;
+            type = HelperInitClassRetType;
             break;
 
         default:
@@ -782,6 +783,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
     if ((helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
         (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED) ||
         (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2) ||
         (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT))
     {
@@ -861,8 +864,11 @@ void Compiler::fgSetPreferredInitCctor()
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
 #if defined(TARGET_WASM)
-    // Wasm does not support dynamically created helpers
-    return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+    // CoreCLR Wasm does not support dynamically created helpers.
+    if (!IsNativeAot())
+    {
+        return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+    }
 #endif
 
 #ifdef FEATURE_READYTORUN
@@ -914,7 +920,11 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             return !addr->IsBoxedValue();
 
         case GT_LCL_VAR:
-            return !lvaIsImplicitByRefLocal(addr->AsLclVar()->GetLclNum());
+        {
+            // Implicit byrefs and return buffers always point to caller-allocated storage.
+            const unsigned lclNum = addr->AsLclVar()->GetLclNum();
+            return !lvaIsImplicitByRefLocal(lclNum) && (lclNum != impInlineRoot()->info.compRetBuffArg);
+        }
 
         case GT_COMMA:
             return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
@@ -994,6 +1004,9 @@ bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
     target_ssize_t offset;
     gtPeelOffsets(&op, &offset);
 
+    // After LSRA the base of a contained address mode may be wrapped in a COPY/RELOAD
+    op = op->gtSkipReloadOrCopy();
+
     // Ignore the offset for locals
 
     if (op->OperIs(GT_LCL_ADDR))
@@ -1004,6 +1017,12 @@ bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
     if (op->OperIsScalarLocal() && (op->AsLclVarCommon()->GetLclNum() == impInlineRoot()->info.compRetBuffArg))
     {
         // RetBuf is known to be on the stack
+        return false;
+    }
+
+    if (op->OperIs(GT_LCL_VAR) && lvaIsImplicitByRefLocal(op->AsLclVar()->GetLclNum()))
+    {
+        // Implicit byrefs are known to not be on the heap
         return false;
     }
 
@@ -1108,7 +1127,13 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
 
 #ifdef FEATURE_READYTORUN
+#ifdef TARGET_WASM
+    // Wasm can't use the dynamically composed ReadyToRun delegate constructor helpers,
+    // so ReadyToRun uses GetDelegateCtor below, like the JIT.
+    if (IsAot() && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+#else
     if (IsAot())
+#endif
     {
         if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
@@ -1156,9 +1181,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             }
         }
         // ReadyToRun has this optimization for a non-virtual function pointers only for now.
-#ifndef TARGET_WASM // TODO-WASM: Wasm doesn't use the dynamically composed helpers yet. When we do, we probably will
-                    // need to use a different set of arguments to construct the right helper call to avoid dynamically
-                    // composing a helper
+#ifndef TARGET_WASM
         else if ((oper == GT_FTN_ADDR) && (ldftnToken != nullptr))
         {
             JITDUMP("optimized\n");
@@ -1199,6 +1222,16 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             *ExactContextHnd = nullptr;
 
             call->gtCallMethHnd = alternateCtor;
+
+#ifdef FEATURE_READYTORUN
+            if (IsAot())
+            {
+                // The importer computed the entry point for the original constructor.
+                CORINFO_CONST_LOOKUP entryPoint;
+                info.compCompHnd->getFunctionEntryPoint(alternateCtor, &entryPoint);
+                call->setEntryPoint(entryPoint);
+            }
+#endif
 
             CallArg* lastArg = nullptr;
             if (ctorData.pArg3 != nullptr)
@@ -1614,9 +1647,11 @@ void Compiler::fgAddSyncMethodEnterExit()
     // For EnC this is part of the frame header. Furthermore, this is allocated above PSP on ARM64.
     // To avoid complicated reasoning about alignment we always allocate a full pointer sized slot for this.
     var_types typeMonAcquired = TYP_I_IMPL;
-    this->lvaMonAcquired      = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
-
-    lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
+    if (lvaMonAcquired == BAD_VAR_NUM)
+    {
+        lvaMonAcquired                  = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
+        lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
+    }
 
     if (opts.IsOSR())
     {
@@ -1670,11 +1705,15 @@ void Compiler::fgAddSyncMethodEnterExit()
                         false /*exit*/);
 
     // non-exceptional cases
-    for (BasicBlock* const block : Blocks())
+    // For async versions we created these directly in import
+    if (!compIsAsyncVersion())
     {
-        if (block->KindIs(BBJ_RETURN))
+        for (BasicBlock* const block : Blocks())
         {
-            fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, block, false /*exit*/);
+            if (block->KindIs(BBJ_RETURN))
+            {
+                fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, block, false /*exit*/);
+            }
         }
     }
 }
@@ -1845,12 +1884,10 @@ void Compiler::fgAddReversePInvokeEnterExit()
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS))
     {
         GenTree* stubArgument;
-        if (info.compPublishStubParam)
+        if (compHasSecretStubArgument())
         {
-            // If we have a secret param for a Reverse P/Invoke, that means that we are in an IL stub.
-            // In this case, the method handle we pass down to the Reverse P/Invoke helper should be
-            // the target method, which is passed in the secret parameter.
-            stubArgument = gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
+            // Reverse P/Invoke IL stubs receive UMEntryThunkData in the secret parameter.
+            stubArgument = gtNewLclvNode(lvaGetSecretStubArgumentVar(), TYP_I_IMPL);
         }
         else
         {
@@ -2587,9 +2624,10 @@ PhaseStatus Compiler::fgAddInternal()
 
         LclVarDsc* varDsc = lvaGetDesc(lvaInlinedPInvokeFrameVar);
         // Make room for the inlined frame.
-        const CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
-        unsigned frameSize            = info.compPublishStubParam ? eeInfo->inlinedCallFrameInfo.sizeWithSecretStubArg
-                                                                  : eeInfo->inlinedCallFrameInfo.size;
+        const CORINFO_EE_INFO* eeInfo          = eeGetEEInfo();
+        const bool             hasMDContextArg = info.compIsVarArgs && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB);
+        unsigned               frameSize =
+            hasMDContextArg ? eeInfo->inlinedCallFrameInfo.sizeWithSecretStubArg : eeInfo->inlinedCallFrameInfo.size;
         lvaSetStruct(lvaInlinedPInvokeFrameVar, typGetBlkLayout(frameSize), false);
     }
 
@@ -3888,11 +3926,11 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
     if (ehGetDsc(hndIndex - 1)->InFilterRegionBBRange(blk))
     {
         *dsg = AcdKeyDesignator::KD_FLT;
-        return hndIndex | 0x80000000;
+        return hndIndex | AddCodeDscKey::AcdFilterFlag;
     }
 
     *dsg = AcdKeyDesignator::KD_HND;
-    return hndIndex | 0x40000000;
+    return hndIndex | AddCodeDscKey::AcdHandlerFlag;
 }
 
 //------------------------------------------------------------------------
@@ -3946,10 +3984,10 @@ Compiler::AddCodeDscKey::AddCodeDscKey(AddCodeDsc* add)
                 acdData = add->acdTryIndex;
                 break;
             case AcdKeyDesignator::KD_HND:
-                acdData = add->acdHndIndex | 0x40000000;
+                acdData = add->acdHndIndex | AcdHandlerFlag;
                 break;
             case AcdKeyDesignator::KD_FLT:
-                acdData = add->acdHndIndex | 0x80000000;
+                acdData = add->acdHndIndex | AcdFilterFlag;
                 break;
             default:
                 unreached();
@@ -5464,7 +5502,7 @@ void FlowGraphNaturalLoops::Dump(FlowGraphNaturalLoops* loops)
 //   TFunc - Callback functor type
 //
 // Parameters:
-//   func - Callback functor that accepts a GenTreeLclVarCommon* and returns a
+//   func - Generic callback functor that accepts a local definition provider and returns a
 //   bool. On true, continue looking for defs; on false, abort.
 //
 // Returns:
@@ -5499,11 +5537,11 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
                 return Compiler::WALK_SKIP_SUBTREES;
             }
 
-            auto visitDef = [=](GenTreeLclVarCommon* lcl) {
-                return m_func(lcl) ? GenTree::VisitResult::Continue : GenTree::VisitResult::Abort;
+            auto visitDef = [=](const auto& def) {
+                return m_func(def) ? GenTree::VisitResult::Continue : GenTree::VisitResult::Abort;
             };
 
-            if (tree->VisitLocalDefNodes(m_compiler, visitDef) == GenTree::VisitResult::Abort)
+            if (tree->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
             {
                 return Compiler::WALK_ABORT;
             }
@@ -5534,8 +5572,7 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
 //   lclNum - The local.
 //
 // Returns:
-//   Tree that represents a def of the local, or a def of the parent local if
-//   the local is a field; nullptr if no def was found.
+//   Tree that represents a def of the local; nullptr if no def was found.
 //
 // Remarks:
 //   Does not support promoted struct locals, but does support fields of
@@ -5546,18 +5583,11 @@ GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
     LclVarDsc* dsc = m_dfsTree->GetCompiler()->lvaGetDesc(lclNum);
     assert(!dsc->lvPromoted);
 
-    unsigned lclNum2 = BAD_VAR_NUM;
-
-    if (dsc->lvIsStructField)
-    {
-        lclNum2 = dsc->lvParentLcl;
-    }
-
     GenTreeLclVarCommon* result = nullptr;
-    VisitDefs([&result, lclNum, lclNum2](GenTreeLclVarCommon* def) {
-        if ((def->GetLclNum() == lclNum) || (def->GetLclNum() == lclNum2))
+    VisitDefs([&result, lclNum](const auto& def) {
+        if (def.GetLclNum() == lclNum)
         {
-            result = def;
+            result = def.GetDefNode();
             return false;
         }
 
@@ -5689,11 +5719,11 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allo
             continue;
         }
 
-        bool result = VisitDefs([=](GenTreeLclVarCommon* def) {
-            if ((def->GetLclNum() != iterVar) || (def == iterTree))
+        bool result = VisitDefs([=](const auto& def) {
+            if ((def.GetLclNum() != iterVar) || (def.GetDefNode() == iterTree))
                 return true;
 
-            JITDUMP("    Loop has extraneous def [%06u]\n", Compiler::dspTreeID(def));
+            JITDUMP("    Loop has extraneous def [%06u]\n", Compiler::dspTreeID(def.GetDefNode()));
             return false;
         });
 
@@ -5798,21 +5828,12 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     info->HasArrayLengthLimit    = false;
     info->HasInvariantLocalLimit = false;
     info->LimitOffset            = 0;
+    info->LimitVar               = BAD_VAR_NUM;
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
-    // Obtain the relop from the "test" tree.
-    GenTree* relop;
-    if (test->OperIs(GT_JTRUE))
-    {
-        relop = test->gtGetOp1();
-    }
-    else
-    {
-        assert(test->OperIs(GT_STORE_LCL_VAR));
-        relop = test->AsLclVar()->Data();
-    }
-
+    assert(test->OperIs(GT_JTRUE));
+    GenTree* relop = test->gtGetOp1();
     noway_assert(relop->OperIsCompare());
 
     GenTree* opr1 = relop->AsOp()->gtOp1;
@@ -5846,9 +5867,10 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     // peeling the constant into LimitOffset and form-checking the base.
     // Morph canonicalizes commutative ops so that any constant operand sits on
     // op2, and folds `base ± 0`, so we only need to look for `base op2-cns`.
+    // An overflow-checked limit can throw instead of wrapping, so it is not peeled.
     int      peeledOffset = 0;
     GenTree* peeledBase   = nullptr;
-    if (limitOp->OperIs(GT_ADD, GT_SUB) && limitOp->TypeIs(TYP_INT))
+    if (limitOp->OperIs(GT_ADD, GT_SUB) && limitOp->TypeIs(TYP_INT) && !limitOp->gtOverflow())
     {
         GenTree* lop1 = limitOp->gtGetOp1();
         GenTree* lop2 = limitOp->gtGetOp2();
@@ -5910,6 +5932,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         }
 
         info->HasInvariantLocalLimit = true;
+        info->LimitVar               = limitOp->AsLclVarCommon()->GetLclNum();
     }
     else if (limitOp->OperIs(GT_ARR_LENGTH))
     {
@@ -5938,6 +5961,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         }
 
         info->HasArrayLengthLimit = true;
+        info->LimitVar            = array->AsLclVarCommon()->GetLclNum();
     }
     else
     {
@@ -6113,11 +6137,24 @@ bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* preheader, Nat
 bool FlowGraphNaturalLoop::HasZeroTripTest(BasicBlock* preheader, NaturalLoopIterInfo* info)
 {
     assert(!preheader->KindIs(BBJ_COND));
+    Compiler*   comp     = GetDfsTree()->GetCompiler();
     BasicBlock* curBlock = preheader;
     while (true)
     {
+        for (Statement* stmt : curBlock->Statements())
+        {
+            GenTree* tree = stmt->GetRootNode();
+            if (comp->gtTreeHasLocalStore(tree, info->IterVar) ||
+                ((info->LimitVar != BAD_VAR_NUM) && comp->gtTreeHasLocalStore(tree, info->LimitVar)))
+            {
+                JITDUMP("  Iterator or limit modified by [%06u] in " FMT_BB "\n", Compiler::dspTreeID(tree),
+                        curBlock->bbNum);
+                return false;
+            }
+        }
+
         BasicBlock* prevBlock = curBlock;
-        curBlock              = curBlock->GetUniquePred(GetDfsTree()->GetCompiler());
+        curBlock              = curBlock->GetUniquePred(comp);
 
         if (curBlock == nullptr)
         {
@@ -6272,15 +6309,8 @@ bool FlowGraphNaturalLoop::HasDef(unsigned lclNum)
     // Currently does not handle promoted locals, only fields.
     assert(!dsc->lvPromoted);
 
-    unsigned defLclNum1 = lclNum;
-    unsigned defLclNum2 = BAD_VAR_NUM;
-    if (dsc->lvIsStructField)
-    {
-        defLclNum2 = dsc->lvParentLcl;
-    }
-
-    bool result = VisitDefs([=](GenTreeLclVarCommon* lcl) {
-        if ((lcl->GetLclNum() == defLclNum1) || (lcl->GetLclNum() == defLclNum2))
+    bool result = VisitDefs([=](const auto& def) {
+        if (def.GetLclNum() == lclNum)
         {
             return false;
         }
@@ -7724,7 +7754,7 @@ FlowGraphTryRegions::FlowGraphTryRegions(Compiler* comp, FlowGraphDfsTree* dfsTr
     , m_numRegions(0)
     , m_numTryCatchRegions(0)
     , m_tryRegionsIncludeHandlerBlocks(false)
-    , m_hasMultipleEntryTryRegions(false)
+    , m_hasSideEntry(false)
     , m_traits((dfsTree == nullptr) ? comp->fgBBNumMax + 1 : dfsTree->GetPostOrderCount(), comp)
 {
 }
@@ -7771,7 +7801,6 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
     , m_entryEdges(regions->GetCompiler()->getAllocator(CMK_BasicBlock))
     , m_unreachableBlocks(regions->GetCompiler()->getAllocator(CMK_BasicBlock))
     , m_requiresRuntimeResumption(false)
-    , m_hasSideEntry(false)
 {
     BitVecTraits* const traits = regions->GetBlockBitVecTraits();
     m_blocks                   = BitVecOps::MakeEmpty(traits);
@@ -7909,31 +7938,14 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
                         continue;
                     }
 
-                    // Async resumption and catch resumption entry edges
+                    // Any other edge is a side entry, which fgWasmRepairTryEntries
+                    // should already have routed through the region header. Record it
+                    // so wasm codegen can bail out rather than emit a region that
+                    // cannot be expressed.
                     //
-                    if (predBlock->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION))
-                    {
-                        JITDUMP("Found %s resumption edge from " FMT_BB " to " FMT_BB "\n",
-                                predBlock->HasFlag(BBF_ASYNC_RESUMPTION) ? "async" : "catch", predBlock->bbNum,
-                                block->bbNum);
-
-                        region->AddEntryEdge(edge);
-                        region->SetHasSideEntry();
-
-                        // Only try/catch regions need to be reshaped into single-entry form for
-                        // Wasm codegen (they will be lowered to a wasm try_table). Try/fault and
-                        // try/finally are emitted differently and tolerate multi-entry.
-                        //
-                        if (dsc->HasCatchHandler())
-                        {
-                            regions->SetHasMultipleEntryTryRegions();
-                        }
-                        continue;
-                    }
-
                     JITDUMP("Unexpected try region entry edge from " FMT_BB " to " FMT_BB "\n", predBlock->bbNum,
                             block->bbNum);
-                    assert(!"Unexpected try region entry edge");
+                    regions->SetHasSideEntry();
                 }
 
                 region = region->m_parent;
@@ -7962,80 +7974,6 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
     }
 
     return regions;
-}
-
-//------------------------------------------------------------------------
-// FlowGraphTryRegions::AddMultipleEntryRegionEdges: Add temporary
-//    edges for multiple entry try regions.
-//
-// Arguments:
-//    edges -- collection of temporary edges to augment
-//
-void FlowGraphTryRegions::AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges)
-{
-    for (FlowGraphTryRegion* region : m_tryRegions)
-    {
-        if (region != nullptr && region->HasCatchHandler() && region->HasSideEntry())
-        {
-            BasicBlock* const headerBlock = region->GetHeaderBlock();
-
-            for (FlowEdge* edge : region->EntryEdges())
-            {
-                BasicBlock* const destBlock = edge->getDestinationBlock();
-
-                // Skip the normal entry edges.
-                //
-                if (destBlock == headerBlock)
-                {
-                    continue;
-                }
-
-                // We need an edge from dest to try header.
-                FlowEdge* const destheaderEdge = m_compiler->fgAddRefPred(headerBlock, destBlock);
-                edges.Push(destheaderEdge);
-
-                // And an edge from method entry to dest.
-                FlowEdge* const entryDestEdge = m_compiler->fgAddRefPred(destBlock, m_compiler->fgFirstBB);
-                edges.Push(entryDestEdge);
-
-                // If the dest is not reachable within the try, then we need to also add
-                // a temporary edge from the try header to the dest to create the SCC.
-                // Since we've pruned away dead blocks, any other pred edge suffices to
-                // establish reachability.
-                //
-                bool isReachableInTry = false;
-                for (FlowEdge* const predEdge : destBlock->PredEdges())
-                {
-                    if (predEdge != edge)
-                    {
-                        isReachableInTry = true;
-                        break;
-                    }
-                }
-
-                if (!isReachableInTry)
-                {
-                    FlowEdge* const headerDestEdge = m_compiler->fgAddRefPred(destBlock, headerBlock);
-                    edges.Push(headerDestEdge);
-                }
-            }
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// FlowGraphTryRegions::RemoveMultipleEntryRegionEdges: Remove temporary
-//    edges added for multiple entry try regions.
-//
-// Arguments:
-//    edges -- collection of edges to remove
-//
-void FlowGraphTryRegions::RemoveMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges)
-{
-    for (FlowEdge* const edge : edges.BottomUpOrder())
-    {
-        m_compiler->fgRemoveRefPred(edge);
-    }
 }
 
 //------------------------------------------------------------------------

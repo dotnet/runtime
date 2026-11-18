@@ -5,8 +5,10 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <InterpreterIncompatible>true</InterpreterIncompatible> <!-- This test is too sensitive to exactly the behavior of the jit that even thought it basically works in some interpreter modes its just not ready to be used in any interpreter scenarios -->
+    <!-- TODO: Re-enable when browser CoreCLR no longer relies on the interpreter for this JIT-counting test.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <ItemGroup>

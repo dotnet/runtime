@@ -173,4 +173,14 @@
   <data name="NonKeyedDescriptorMisuse" xml:space="preserve">
     <value>This service descriptor is not keyed.</value>
   </data>
+  <data name="NoKeyedServiceRegistered" xml:space="preserve">
+    <value>No keyed service for type '{0}' using key type '{1}' has been registered.</value>
+  </data>
+  <data name="KeyedServiceAnyKeyUsedToResolveService" xml:space="preserve">
+    <value>KeyedService.AnyKey cannot be used to resolve a single service via {0} or {1}.</value>
+  </data>
+  <data name="AotCannotCreateEnumerableValueType" xml:space="preserve">
+    <value>Unable to create an Enumerable service of type '{0}' because it is a ValueType. Native code to support creating Enumerable services might not be available with native AOT.</value>
+    <comment>{0} = element type</comment>
+  </data>
 </root>

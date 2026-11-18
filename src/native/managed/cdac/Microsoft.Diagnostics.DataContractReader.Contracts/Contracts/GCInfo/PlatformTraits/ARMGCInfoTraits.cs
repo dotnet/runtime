@@ -7,6 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 internal class ARMGCInfoTraits : IGCInfoTraits
 {
+    public static bool UsesStackPointerAsAmbientSP => true;
+
     public static uint DenormalizeStackBaseRegister(uint reg) => (reg ^ 7u) + 4;
     public static uint DenormalizeCodeLength(uint len) => len << 1;
     public static uint NormalizeCodeLength(uint len) => len >> 1;

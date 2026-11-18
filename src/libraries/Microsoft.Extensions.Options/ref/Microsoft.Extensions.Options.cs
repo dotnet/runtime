@@ -141,6 +141,7 @@ namespace Microsoft.Extensions.Options
     {
         void PostConfigure(string? name, TOptions options);
     }
+    [System.ObsoleteAttribute("Implement IAsyncStartupValidator instead.", DiagnosticId = "SYSLIB0066", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface IStartupValidator
     {
         void Validate();
@@ -153,7 +154,7 @@ namespace Microsoft.Extensions.Options
     {
         Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, TOptions options);
     }
-    public partial interface IAsyncValidateOptions<in TOptions> where TOptions : class
+    public partial interface IAsyncValidateOptions<TOptions> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
         System.Threading.Tasks.Task<Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync(string? name, TOptions options, System.Threading.CancellationToken cancellationToken = default);
     }
@@ -425,6 +426,7 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get { throw null; } }
         public string? Name { get { throw null; } }
         public System.Func<TOptions, System.Threading.CancellationToken, System.Threading.Tasks.Task<bool>> Validation { get { throw null; } }
+        public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, TOptions options) { throw null; }
         public System.Threading.Tasks.Task<Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync(string? name, TOptions options, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
     public partial class AsyncValidateOptions<TOptions, TDep> : Microsoft.Extensions.Options.IAsyncValidateOptions<TOptions> where TOptions : class
@@ -434,6 +436,7 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get { throw null; } }
         public string? Name { get { throw null; } }
         public System.Func<TOptions, TDep, System.Threading.CancellationToken, System.Threading.Tasks.Task<bool>> Validation { get { throw null; } }
+        public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, TOptions options) { throw null; }
         public System.Threading.Tasks.Task<Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync(string? name, TOptions options, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
     public partial class AsyncValidateOptions<TOptions, TDep1, TDep2> : Microsoft.Extensions.Options.IAsyncValidateOptions<TOptions> where TOptions : class
@@ -444,6 +447,7 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get { throw null; } }
         public string? Name { get { throw null; } }
         public System.Func<TOptions, TDep1, TDep2, System.Threading.CancellationToken, System.Threading.Tasks.Task<bool>> Validation { get { throw null; } }
+        public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, TOptions options) { throw null; }
         public System.Threading.Tasks.Task<Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync(string? name, TOptions options, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
     public partial class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3> : Microsoft.Extensions.Options.IAsyncValidateOptions<TOptions> where TOptions : class
@@ -455,6 +459,7 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get { throw null; } }
         public string? Name { get { throw null; } }
         public System.Func<TOptions, TDep1, TDep2, TDep3, System.Threading.CancellationToken, System.Threading.Tasks.Task<bool>> Validation { get { throw null; } }
+        public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, TOptions options) { throw null; }
         public System.Threading.Tasks.Task<Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync(string? name, TOptions options, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
     public partial class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4> : Microsoft.Extensions.Options.IAsyncValidateOptions<TOptions> where TOptions : class
@@ -467,6 +472,7 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get { throw null; } }
         public string? Name { get { throw null; } }
         public System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, System.Threading.CancellationToken, System.Threading.Tasks.Task<bool>> Validation { get { throw null; } }
+        public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, TOptions options) { throw null; }
         public System.Threading.Tasks.Task<Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync(string? name, TOptions options, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
     public partial class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> : Microsoft.Extensions.Options.IAsyncValidateOptions<TOptions> where TOptions : class
@@ -480,6 +486,7 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get { throw null; } }
         public string? Name { get { throw null; } }
         public System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, System.Threading.CancellationToken, System.Threading.Tasks.Task<bool>> Validation { get { throw null; } }
+        public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, TOptions options) { throw null; }
         public System.Threading.Tasks.Task<Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync(string? name, TOptions options, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
 }

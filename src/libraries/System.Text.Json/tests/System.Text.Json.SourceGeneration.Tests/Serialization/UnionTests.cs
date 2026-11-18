@@ -33,6 +33,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(UnionWithCustomConverterCase))]
         [JsonSerializable(typeof(UnionWithIntAndLongCase))]
         [JsonSerializable(typeof(UnionWithMixedAmbiguity))]
+        [JsonSerializable(typeof(IntOrString))]
+        [JsonSerializable(typeof(NumberHandlingUnion))]
         [JsonSerializable(typeof(AsyncEnumerableUnion))]
         [JsonSerializable(typeof(CustomCase))]
         [JsonSerializable(typeof(OtherCase))]
@@ -51,7 +53,14 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(CustomDiscriminatedFlora))]
         [JsonSerializable(typeof(NullableEnumUnion))]
         [JsonSerializable(typeof(RecursiveNat))]
+        [JsonSerializable(typeof(RecursiveNatReversed))]
+#if false // ActiveIssue https://github.com/dotnet/roslyn/issues/85762
+        [JsonSerializable(typeof(NullableNat))]
+#endif
         [JsonSerializable(typeof(SelfReferentialUnion))]
+        [JsonSerializable(typeof(ShapeUnion))]
+        [JsonSerializable(typeof(WritableUnion))]
+        [JsonSerializable(typeof(NodeUnion))]
         internal sealed partial class UnionTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -92,6 +101,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(UnionWithCustomConverterCase))]
         [JsonSerializable(typeof(UnionWithIntAndLongCase))]
         [JsonSerializable(typeof(UnionWithMixedAmbiguity))]
+        [JsonSerializable(typeof(IntOrString))]
+        [JsonSerializable(typeof(NumberHandlingUnion))]
         [JsonSerializable(typeof(AsyncEnumerableUnion))]
         [JsonSerializable(typeof(CustomCase))]
         [JsonSerializable(typeof(OtherCase))]
@@ -110,7 +121,14 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(CustomDiscriminatedFlora))]
         [JsonSerializable(typeof(NullableEnumUnion))]
         [JsonSerializable(typeof(RecursiveNat))]
+        [JsonSerializable(typeof(RecursiveNatReversed))]
+#if false // ActiveIssue https://github.com/dotnet/roslyn/issues/85762
+        [JsonSerializable(typeof(NullableNat))]
+#endif
         [JsonSerializable(typeof(SelfReferentialUnion))]
+        [JsonSerializable(typeof(ShapeUnion))]
+        [JsonSerializable(typeof(WritableUnion))]
+        [JsonSerializable(typeof(NodeUnion))]
         internal sealed partial class UnionTestsContext_Default : JsonSerializerContext
         {
         }

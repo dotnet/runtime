@@ -169,7 +169,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
             GenTree* node = comp->gtNewLclvNode(lclNum, comp->lvaTable[lclNum].lvType);
             if (offset != 0)
             {
-                node = comp->gtNewOperNode(GT_ADD, node->TypeGet(), node, comp->gtNewIconNode(offset));
+                node = comp->gtNewOperNode(GT_ADD, genActualType(node), node, comp->gtNewIconNode(offset));
             }
             return node;
         }
@@ -331,7 +331,7 @@ bool LC_Condition::Evaluates(bool* pResult)
 //
 // Operation:
 //      Check if both conditions are equal. If so, return just 1 of them.
-//      Reverse their operators and check if their reversed operands match. If so, return either of them.
+//      Swap the operands and relational operator to check for equivalent conditions.
 //
 // Notes:
 //      This is not a full-fledged expression optimizer, it is supposed
@@ -341,13 +341,18 @@ bool LC_Condition::Evaluates(bool* pResult)
 //      would be: "beg >= 0, end <= a.len, inc > 0"
 bool LC_Condition::Combines(const LC_Condition& cond, LC_Condition* newCond)
 {
-    if (oper == cond.oper && op1 == cond.op1 && op2 == cond.op2)
+    if (GenTree::StaticOperIs(oper, GT_LT, GT_LE, GT_GT, GT_GE) && (compareUnsigned != cond.compareUnsigned))
+    {
+        return false;
+    }
+
+    if ((oper == cond.oper) && (op1 == cond.op1) && (op2 == cond.op2))
     {
         *newCond = *this;
         return true;
     }
-    else if ((oper == GT_LT || oper == GT_LE || oper == GT_GT || oper == GT_GE) &&
-             GenTree::ReverseRelop(oper) == cond.oper && op1 == cond.op2 && op2 == cond.op1)
+    else if (GenTree::StaticOperIs(oper, GT_LT, GT_LE, GT_GT, GT_GE) && (GenTree::SwapRelop(oper) == cond.oper) &&
+             (op1 == cond.op2) && (op2 == cond.op1))
     {
         *newCond = *this;
         return true;
@@ -1285,6 +1290,22 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         }
         else if (iterInfo->HasInvariantLocalLimit)
         {
+            const unsigned limitLcl = iterInfo->VarLimit();
+            if (offset < 0)
+            {
+                if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+                {
+                    JITDUMP("> Stride %d: limit var V%02u not TYP_INT-compatible\n", stride, limitLcl);
+                    return false;
+                }
+
+                // Prevent a negative limit plus a negative offset from wrapping positive.
+                LC_Ident     limitVarIdent = LC_Ident::CreateVar(limitLcl, iterInfo->LimitBase()->TypeGet());
+                LC_Condition nonNegativeLimitGuard(GT_GE, LC_Expr(limitVarIdent), LC_Expr(LC_Ident::CreateConst(0u)));
+                context->EnsureConditions(loop->GetIndex())->Push(nonNegativeLimitGuard);
+                JITDUMP("Added stride>1 nonnegative limit guard: V%02u >= 0\n", limitLcl);
+            }
+
             if (maxLimitBase64 >= INT32_MAX)
             {
                 JITDUMP("Stride>1 overflow guard trivially holds (offset %d)\n", offset);
@@ -1296,7 +1317,6 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             }
             else
             {
-                const unsigned limitLcl = iterInfo->VarLimit();
                 if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
                 {
                     JITDUMP("> Stride %d: limit var V%02u not TYP_INT-compatible\n", stride, limitLcl);
@@ -1311,12 +1331,13 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 JITDUMP("Added stride>1 overflow guard: V%02u <= %d\n", limitLcl, maxLimit);
             }
         }
-        else if (iterInfo->HasArrayLengthLimit && largeStride)
+        else if (iterInfo->HasArrayLengthLimit)
         {
-            // For stride <= 57 the implicit Array.MaxLength bound suffices;
-            // we fall through with no extra check. For wider strides emit a
-            // runtime guard on arr.Length so the fast clone only runs when
-            // the array is short enough that the post-step IV stays in int.
+            // We only get here for spans or wide strides. The limit is arr.Length + offset, so
+            // Array.MaxLength alone does not keep the post-step IV in int (a span can be longer
+            // than any array, and a large offset pushes the limit close to INT_MAX).
+            // Emit a runtime guard on arr.Length so the fast clone only runs when the
+            // post-step IV stays in int; it is elided when trivially true.
             assert(limitArrIndex != nullptr);
             if (maxLimitBase64 >= CORINFO_Array_MaxLength)
             {
@@ -1337,6 +1358,62 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 context->EnsureConditions(loop->GetIndex())->Push(overflowGuard);
                 JITDUMP("Added stride>1 arr.Length overflow guard: <= %d\n", maxLimit);
             }
+        }
+    }
+
+    // Decreasing loops with unsigned control variables can wrap around to a huge
+    // value instead of exiting, if the final decrement steps past 0. For example,
+    // "for (uint i = 7; i >= 2; i -= 3)" visits i = 7, 4, then exits (4 - 3 = 1,
+    // and 1 >= 2 is false). But "for (uint i = 7; i >= 1; i -= 3)" visits
+    // i = 7, 4, 1, then wraps: 1 - 3 underflows to UINT_MAX, and UINT_MAX >= 1
+    // is true, so the loop keeps running with i far out of range. This applies
+    // even for unit stride: "i >= 0" is never false for unsigned i.
+    if (!isIncreasingLoop && iterInfo->TestTree->IsUnsigned())
+    {
+        bool provenSafe = false;
+        if (iterInfo->HasConstInit && iterInfo->HasConstLimit)
+        {
+            const int constInit  = iterInfo->ConstInitValue;
+            const int constLimit = iterInfo->ConstLimit();
+            if ((constInit >= 0) && (constLimit >= 0) && (constInit >= constLimit))
+            {
+                // All the values being cast here are non-negative; by
+                // casting, we can add two of them without risking overflow.
+                const unsigned uInit   = (unsigned)constInit;
+                const unsigned uLimit  = (unsigned)constLimit;
+                const unsigned uStride = (unsigned)stride;
+
+                // "remainder" is the difference between the value the IV
+                // would land on -- if the test were inclusive -- and
+                // constLimit, e.g. decrementing from 7 to a limit of 2 by 3
+                // stops at 4 (remainder 4 - 2 == 2); decrementing to a limit
+                // of 1 stops exactly at 1 (remainder 0).
+                const unsigned remainder = (uInit - uLimit) % uStride;
+
+                // "lastValue" is the lowest value of the IV before the loop
+                // exits. For an inclusive ">=" test this is uLimit + remainder
+                // (which may be uLimit itself). For an exclusive ">" test, if
+                // remainder is 0 then uLimit fails the test, so the lowest
+                // value actually visited is uLimit + uStride instead. "!=" is
+                // also exclusive in this sense (and only occurs with unit
+                // stride, so remainder is always 0 there).
+                const bool     testIsExclusive = (iterInfo->TestOper() == GT_GT) || (iterInfo->TestOper() == GT_NE);
+                const unsigned lastValue =
+                    (testIsExclusive && (remainder == 0)) ? (uLimit + uStride) : (uLimit + remainder);
+
+                // Safe (won't underflow past 0 on the loop's final decrement)
+                // iff the lowest value visited is itself >= stride.
+                if (lastValue >= uStride)
+                {
+                    provenSafe = true;
+                }
+            }
+        }
+
+        if (!provenSafe)
+        {
+            JITDUMP("> Unsigned decreasing loop with stride %d: IV might wrap around 0\n", stride);
+            return false;
         }
     }
 
@@ -1520,10 +1597,12 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                                               iterInfo->LimitOffset);
         }
 
-        // arr.Length is non-negative, but arr.Length + offset can be < 0 when
-        // offset < 0 and the array is short. Guard the fast clone against
-        // out-of-bounds access on the low side.
-        if (iterInfo->LimitOffset < 0)
+        // arr.Length is non-negative, but arr.Length + offset can be < 0 when a negative offset exceeds the array
+        // length or a positive offset overflows. Array lengths are at most CORINFO_Array_MaxLength, so small positive
+        // offsets cannot overflow.
+        const bool positiveOffsetCanOverflow =
+            iterInfo->LimitOffset > (INT32_MAX - static_cast<int>(CORINFO_Array_MaxLength));
+        if ((iterInfo->LimitOffset < 0) || positiveOffsetCanOverflow)
         {
             LC_Ident arrLenIdent =
                 LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen),
@@ -2323,7 +2402,9 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     unsigned const enclosingRegion = ehGetMostNestedRegionIndex(preheader, &inTry);
     if (!BasicBlock::sameEHRegion(beforeSlowPreheader, preheader))
     {
-        beforeSlowPreheader = fgFindInsertPoint(enclosingRegion, inTry, bottom, /* endBlk */ nullptr,
+        // The lexical bottom may be in a nested region, so start searching from the fast preheader,
+        // which is guaranteed to be in the target region.
+        beforeSlowPreheader = fgFindInsertPoint(enclosingRegion, inTry, fastPreheader, /* endBlk */ nullptr,
                                                 /* nearBlk */ bottom, /* jumpBlk */ nullptr, /* runRarely */ false);
     }
 
@@ -3184,11 +3265,28 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
     return true;
 }
 
-/* static */
-Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloningVisitor(GenTree** pTree, Compiler::fgWalkData* data)
+class LoopCloneVisitor final : public GenTreeVisitor<LoopCloneVisitor>
 {
-    return data->m_compiler->optCanOptimizeByLoopCloning(*pTree, (LoopCloneVisitorInfo*)data->pCallbackData);
-}
+    Compiler::LoopCloneVisitorInfo* m_info;
+
+public:
+    enum
+    {
+        DoPreOrder        = true,
+        UseExecutionOrder = true,
+    };
+
+    LoopCloneVisitor(Compiler* compiler, Compiler::LoopCloneVisitorInfo* info)
+        : GenTreeVisitor<LoopCloneVisitor>(compiler)
+        , m_info(info)
+    {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        return m_compiler->optCanOptimizeByLoopCloning(*use, m_info);
+    }
+};
 
 //------------------------------------------------------------------------
 // optIdentifyLoopOptInfo: Identify loop optimization candidates.
@@ -3231,16 +3329,14 @@ bool Compiler::optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneConte
             shouldCloneForArrayBounds ? " (array bounds)" : "", shouldCloneForGdvTests ? " (GDV tests)" : "");
 
     LoopCloneVisitorInfo info(context, loop, nullptr, shouldCloneForArrayBounds, shouldCloneForGdvTests);
+    LoopCloneVisitor     visitor(this, &info);
 
-    loop->VisitLoopBlocksReversePostOrder([=, &info](BasicBlock* block) {
+    loop->VisitLoopBlocksReversePostOrder([=, &info, &visitor](BasicBlock* block) {
         compCurBB = block;
         for (Statement* const stmt : block->Statements())
         {
-            info.stmt               = stmt;
-            const bool lclVarsOnly  = false;
-            const bool computeStack = false;
-            fgWalkTreePre(stmt->GetRootNodePointer(), optCanOptimizeByLoopCloningVisitor, &info, lclVarsOnly,
-                          computeStack);
+            info.stmt = stmt;
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
 
         return BasicBlockVisit::Continue;

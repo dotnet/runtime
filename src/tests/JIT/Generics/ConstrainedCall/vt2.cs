@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_ConstrainedCall_vt2;
+
 using System;
 using Xunit;
 interface IncrDecr

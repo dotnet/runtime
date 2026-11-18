@@ -159,9 +159,6 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
         {
             GenTreeCall* call                = node->AsCall();
             unsigned     usedStackSlotsCount = PopArgumentsFromCall(call);
-#if defined(UNIX_X86_ABI)
-            call->gtArgs.SetStkSizeBytes(usedStackSlotsCount * TARGET_POINTER_SIZE);
-#endif // UNIX_X86_ABI
         }
 #endif
 
@@ -190,13 +187,49 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
 
         if (checkForHelpers)
         {
-            if (((node->gtFlags & GTF_EXCEPT) != 0) && node->OperMayThrow(m_compiler))
+            if (MayUseThrowHelperBlock(node))
             {
                 SetThrowHelperBlocks(node, block);
             }
         }
     }
     assert(currentStackLevel == 0);
+}
+
+//------------------------------------------------------------------------
+// MayUseThrowHelperBlock: Check whether codegen may branch to a throw helper block.
+//
+// Arguments:
+//   node - The node to process.
+//
+// Return Value:
+//   True if the node may branch to a throw helper block.
+//
+bool StackLevelSetter::MayUseThrowHelperBlock(GenTree* node)
+{
+    if (((node->gtFlags & GTF_EXCEPT) != 0) && node->OperMayThrow(m_compiler))
+    {
+        return true;
+    }
+
+#if defined(TARGET_WASM)
+    switch (node->OperGet())
+    {
+        case GT_NULLCHECK:
+        case GT_IND:
+        case GT_STORE_BLK:
+        case GT_STOREIND:
+            return (node->gtFlags & GTF_IND_NONFAULTING) == 0;
+
+        case GT_CALL:
+            return node->AsCall()->NeedsNullCheck();
+
+        default:
+            break;
+    }
+#endif // defined(TARGET_WASM)
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -213,7 +246,7 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
 //
 void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 {
-    assert(node->OperMayThrow(m_compiler));
+    assert(MayUseThrowHelperBlock(node));
 
     // Check that it uses throw block, find its kind, find the block, set level.
     switch (node->OperGet())
@@ -230,14 +263,25 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         {
 
             NamedIntrinsic intrinsicId = node->AsHWIntrinsic()->GetHWIntrinsicId();
-            if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division)
+            if (intrinsicId == NI_Vector_op_Division)
             {
                 SetThrowHelperBlock(SCK_DIV_BY_ZERO, block);
                 SetThrowHelperBlock(SCK_OVERFLOW, block);
             }
         }
         break;
-#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+#elif defined(FEATURE_HW_INTRINSICS) && defined(TARGET_WASM)
+        case GT_HWINTRINSIC:
+        {
+            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(node->AsHWIntrinsic()->GetHWIntrinsicId());
+            if (category == HW_Category_MemoryLoad || category == HW_Category_MemoryStore)
+            {
+                SetThrowHelperBlock(SCK_NULL_CHECK, block);
+            }
+        }
+        break;
+
+#endif // defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_WASM))
 
         case GT_INDEX_ADDR:
             if (node->AsIndexAddr()->IsBoundsChecked())
@@ -349,21 +393,10 @@ void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* blo
         // array element in a parameter list to have an EBP frame,
         // this restriction could be removed with more careful code
         // generation for BBJ_THROW (i.e. range check failed).
-        //
-        // For Linux/x86, we possibly need to insert stack alignment adjustment
-        // before the first stack argument pushed for every call. But we
-        // don't know what the stack alignment adjustment will be when
-        // we morph a tree that calls a throw helper, so the stack depth
-        // number will be incorrect. For now, simply force all functions with
-        // these helpers to have EBP frames.
-#if defined(UNIX_X86_ABI)
-        framePointerRequired = true;
-#else  // !defined(UNIX_X86_ABI)
         if (add->acdStkLvl != currentStackLevel)
         {
             framePointerRequired = true;
         }
-#endif // !defined(UNIX_X86_ABI)
     }
     else
     {

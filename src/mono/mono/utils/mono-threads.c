@@ -259,7 +259,7 @@ mono_threads_begin_global_suspend (void)
 {
 	size_t ps = pending_suspends;
 	if (G_UNLIKELY (ps != 0))
-		g_error ("pending_suspends = %d, but must be 0", ps);
+		g_error ("pending_suspends = %zu, but must be 0", ps);
 	THREADS_SUSPEND_DEBUG ("------ BEGIN GLOBAL OP sp %d rp %d ap %d wd %d po %d (sp + rp + ap == wd) (wd == po)\n", suspend_posts, resume_posts,
 		abort_posts, waits_done, pending_ops);
 	g_assert ((suspend_posts + resume_posts + abort_posts) == waits_done);
@@ -271,7 +271,7 @@ mono_threads_end_global_suspend (void)
 {
 	size_t ps = pending_suspends;
 	if (G_UNLIKELY (ps != 0))
-		g_error ("pending_suspends = %d, but must be 0", ps);
+		g_error ("pending_suspends = %zu, but must be 0", ps);
 	THREADS_SUSPEND_DEBUG ("------ END GLOBAL OP sp %d rp %d ap %d wd %d po %d\n", suspend_posts, resume_posts,
 		abort_posts, waits_done, pending_ops);
 	g_assert ((suspend_posts + resume_posts + abort_posts) == waits_done);

@@ -1,11 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: OleVariant.cpp
-//
-
-//
-
 
 #include "common.h"
 
@@ -14,7 +8,6 @@
 #include "frames.h"
 #include "vars.hpp"
 #include "olevariant.h"
-#include "comdatetime.h"
 #include "fieldmarshaler.h"
 #include "dllimport.h"
 
@@ -39,7 +32,7 @@ VARTYPE OleVariant::GetElementVarTypeForArrayRef(BASEARRAYREF pArrayRef)
     CONTRACTL_END;
 
     TypeHandle elemTypeHnd = pArrayRef->GetArrayElementTypeHandle();
-    return(::GetVarTypeForTypeHandle(elemTypeHnd));
+    return GetVarTypeForTypeHandle(elemTypeHnd);
 }
 
 BOOL OleVariant::IsValidArrayForSafeArrayElementType(BASEARRAYREF *pArrayRef, VARTYPE vtExpected)
@@ -385,6 +378,7 @@ UINT OleVariant::GetElementSizeForVarType(VARTYPE vt, MethodTable *pInterfaceMT)
 }
 
 //
+
 void SafeVariantClear(VARIANT* pVar)
 {
     CONTRACTL
@@ -425,10 +419,17 @@ struct RecordVariantHolderTraits final
     static constexpr Type Default() { return NULL; }
     static void Free(Type value)
     {
-        LIMITED_METHOD_CONTRACT;
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
 
         if (value != NULL)
         {
+            GCX_PREEMP();
             if (V_RECORD(value))
                 V_RECORDINFO(value)->RecordDestroy(V_RECORD(value));
             if (V_RECORDINFO(value))
@@ -451,7 +452,6 @@ void OleVariant::MarshalRecordVariantOleToObject(const VARIANT *pOleVariant,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pOleVariant));
         PRECONDITION(CheckPointer(pObj));
         PRECONDITION(*pObj == NULL || (IsProtectedByGCFrame (pObj)));
@@ -660,6 +660,25 @@ void OleVariant::MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
     }
 }
 
+void OleVariant::MarshalVariantArrayElementForObject(OBJECTREF *pObj, VARIANT *pOle)
+{
+   CONTRACTL
+   {
+       THROWS;
+       GC_TRIGGERS;
+       MODE_COOPERATIVE;
+       PRECONDITION(CheckPointer(pObj));
+       PRECONDITION(IsProtectedByGCFrame(pObj));
+       PRECONDITION(CheckPointer(pOle));
+   }
+   CONTRACTL_END;
+
+   if (!(V_VT(pOle) & VT_BYREF) || FAILED(MarshalCommonOleRefVariantForObject(pObj, pOle)))
+   {
+       MarshalOleVariantForObject(pObj, pOle);
+   }
+}
+
 HRESULT OleVariant::MarshalCommonOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
 {
     CONTRACTL
@@ -808,17 +827,16 @@ Exit:
 
 void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * const & pObj)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pOle));
         PRECONDITION(CheckPointer(pObj));
         PRECONDITION(*pObj == NULL || (IsProtectedByGCFrame (pObj)));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // if V_ISBYREF(pOle) and V_BYREF(pOle) is null then we have a problem,
     // unless we're dealing with VT_EMPTY or VT_NULL in which case that is ok??
@@ -980,7 +998,7 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
         default:
             MarshalObjectForOleVariantUncommon(pOle, pObj);
         }
-        RETURN;
+        return;
     }
 
 /* ------------------------------------------------------------------------- *
@@ -989,7 +1007,7 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
 
 void OleVariant::ExtractContentsFromByrefVariant(VARIANT *pByrefVar, VARIANT *pDestVar)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -997,7 +1015,7 @@ void OleVariant::ExtractContentsFromByrefVariant(VARIANT *pByrefVar, VARIANT *pD
         PRECONDITION(CheckPointer(pByrefVar));
         PRECONDITION(CheckPointer(pDestVar));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     VARTYPE vt = V_VT(pByrefVar) & ~VT_BYREF;
 
@@ -1058,13 +1076,11 @@ void OleVariant::ExtractContentsFromByrefVariant(VARIANT *pByrefVar, VARIANT *pD
             break;
         }
     }
-
-    RETURN;
 }
 
 void OleVariant::InsertContentsIntoByRefVariant(VARIANT *pSrcVar, VARIANT *pByrefVar)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -1072,7 +1088,7 @@ void OleVariant::InsertContentsIntoByRefVariant(VARIANT *pSrcVar, VARIANT *pByre
         PRECONDITION(CheckPointer(pByrefVar));
         PRECONDITION(CheckPointer(pSrcVar));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(V_VT(pSrcVar) == (V_VT(pByrefVar) & ~VT_BYREF) || V_VT(pByrefVar) == (VT_BYREF | VT_VARIANT));
 
@@ -1117,12 +1133,11 @@ void OleVariant::InsertContentsIntoByRefVariant(VARIANT *pSrcVar, VARIANT *pByre
             break;
         }
     }
-    RETURN;
 }
 
 void OleVariant::CreateByrefVariantForVariant(VARIANT *pSrcVar, VARIANT *pByrefVar)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -1130,7 +1145,7 @@ void OleVariant::CreateByrefVariantForVariant(VARIANT *pSrcVar, VARIANT *pByrefV
         PRECONDITION(CheckPointer(pByrefVar));
         PRECONDITION(CheckPointer(pSrcVar));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Set the type of the byref variant based on the type of the source variant.
     VARTYPE vt = V_VT(pSrcVar);
@@ -1180,8 +1195,6 @@ void OleVariant::CreateByrefVariantForVariant(VARIANT *pSrcVar, VARIANT *pByrefV
 
         V_VT(pByrefVar) = vt | VT_BYREF;
     }
-
-    RETURN;
 }
 
 /* ------------------------------------------------------------------------- *
@@ -1289,40 +1302,6 @@ void OleVariant::MarshalOleVariantForObjectUncommon(OBJECTREF * const & pObj, VA
 }
 
 // Used by customer checked build to test validity of VARIANT
-
-BOOL OleVariant::CheckVariant(VARIANT* pOle)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pOle));
-    }
-    CONTRACTL_END;
-
-    BOOL bValidVariant = FALSE;
-
-    // We need a try/catch here since VariantCopy could cause an AV if the VARIANT isn't valid.
-    EX_TRY
-    {
-        VARIANT pOleCopy;
-        SafeVariantInit(&pOleCopy);
-
-        GCX_PREEMP();
-        if (SUCCEEDED(VariantCopy(&pOleCopy, pOle)))
-        {
-            SafeVariantClear(&pOleCopy);
-            bValidVariant = TRUE;
-        }
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH
-
-    return bValidVariant;
-}
 
 HRESULT OleVariant::ClearAndInsertContentsIntoByrefRecordVariant(VARIANT* pOle, OBJECTREF* pObj)
 {
@@ -1459,7 +1438,7 @@ void OleVariant::MarshalArrayVariantOleToObject(const VARIANT* pOleVariant,
         PCODE pConvertCode;
         {
             GCX_PREEMP();
-            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE)->GetMultiCallableAddrOfCode();
+            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT)->GetMultiCallableAddrOfCode();
         }
 
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
@@ -1505,7 +1484,7 @@ void OleVariant::MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj,
         PCODE pConvertCode;
         {
             GCX_PREEMP();
-            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, vt, pElemMT, FALSE)->GetMultiCallableAddrOfCode();
+            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, vt, pElemMT)->GetMultiCallableAddrOfCode();
         }
 
         MarshalSafeArrayForArrayRef(pArrayRef, pSafeArray, vt, pElemMT, pConvertCode);
@@ -1540,7 +1519,7 @@ void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
         PCODE pConvertCode;
         {
             GCX_PREEMP();
-            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE)->GetMultiCallableAddrOfCode();
+            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT)->GetMultiCallableAddrOfCode();
         }
 
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
@@ -1570,16 +1549,15 @@ void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
 SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArrayRef, VARTYPE vt,
                                                             MethodTable *pInterfaceMT)
 {
-    CONTRACT (SAFEARRAY*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pArrayRef));
         PRECONDITION(!(vt & VT_ARRAY));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ASSERT_PROTECTED(pArrayRef);
 
@@ -1664,14 +1642,14 @@ SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArray
     {
         GCX_PREEMP();
 
-        SafeComHolder<ITypeInfo> pITI;
-        SafeComHolder<IRecordInfo> pRecInfo;
+        ReleaseHolder<ITypeInfo> pITI;
+        ReleaseHolder<IRecordInfo> pRecInfo;
         IfFailThrow(GetITypeInfoForEEClass(pInterfaceMT, &pITI));
         IfFailThrow(GetRecordInfoFromTypeInfo(pITI, &pRecInfo));
         IfFailThrow(SafeArraySetRecordInfo(pSafeArray, pRecInfo));
     }
 
-    RETURN pSafeArray.Detach();
+    return pSafeArray.Detach();
 }
 
 //
@@ -1683,7 +1661,7 @@ SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArray
 SAFEARRAY *OleVariant::CreateSafeArrayForArrayRef(BASEARRAYREF *pArrayRef, VARTYPE vt,
                                                   MethodTable *pInterfaceMT)
 {
-    CONTRACT (SAFEARRAY*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -1692,7 +1670,7 @@ SAFEARRAY *OleVariant::CreateSafeArrayForArrayRef(BASEARRAYREF *pArrayRef, VARTY
 //        PRECONDITION(CheckPointer(*pArrayRef));
         PRECONDITION(vt != VT_EMPTY);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
     ASSERT_PROTECTED(pArrayRef);
 
     // Validate that the type of the managed array is the expected type.
@@ -1715,7 +1693,7 @@ SAFEARRAY *OleVariant::CreateSafeArrayForArrayRef(BASEARRAYREF *pArrayRef, VARTY
         COMPlusThrowHR(hr);
     }
 
-    RETURN pSafeArray;
+    return pSafeArray;
 }
 
 //
@@ -1733,7 +1711,6 @@ BASEARRAYREF OleVariant::CreateArrayRefForSafeArray(SAFEARRAY *pSafeArray, VARTY
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pSafeArray));
         PRECONDITION(vt != VT_EMPTY);
     }
@@ -1814,7 +1791,7 @@ namespace
 {
     // Returns the managed IArrayMarshaler<T> MethodTable for a given VARTYPE.
     // This mirrors the logic in GetMarshalerAndElementTypes for SAFEARRAY-compatible types.
-    MethodTable* GetMarshalerMTForSafeArrayVarType(VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous, BOOL bNativeDataValid)
+    MethodTable* GetMarshalerMTForSafeArrayVarType(VARTYPE vt, MethodTable* pElementMT, BOOL bNativeDataValid)
     {
         STANDARD_VM_CONTRACT;
 
@@ -1920,10 +1897,9 @@ namespace
         {
             if (pElementMT == NULL || pElementMT == g_pObjectClass)
             {
-                if (bHeterogeneous)
-                {
-                    return CoreLibBinder::GetClass(CLASS__HETEROGENEOUS_INTERFACE_ARRAY_ELEMENT_MARSHALER);
-                }
+                // Marshal.GetIDispatchForObject/GetIUnknownForObject resolve the
+                // requested interface per-element from each object's own runtime
+                // type, so this also covers heterogeneous object[] arrays.
                 MethodTable* pEnabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_ENABLED);
                 MethodTable* pDisabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_DISABLED);
                 TypeHandle thDispatch(vt == VT_DISPATCH ? pEnabledMT : pDisabledMT);
@@ -1936,9 +1912,10 @@ namespace
                 MethodTable* pDefaultItfMT = GetDefaultInterfaceMTForClass(pElementMT, &bDispatch);
                 if (pDefaultItfMT != NULL)
                 {
-                    // Use the resolved interface type.
-                    TypeHandle thElement(pDefaultItfMT);
-                    return TypeHandle(CoreLibBinder::GetClass(CLASS__TYPED_INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+                    TypeHandle thElement(pElementMT);
+                    TypeHandle thInterface(pDefaultItfMT);
+                    TypeHandle thArgs[2] = { thElement, thInterface };
+                    return TypeHandle(CoreLibBinder::GetClass(CLASS__TYPED_CLASS_INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
                 }
                 else
                 {
@@ -1946,7 +1923,9 @@ namespace
                     MethodTable* pEnabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_ENABLED);
                     MethodTable* pDisabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_DISABLED);
                     TypeHandle thDispatch(bDispatch ? pEnabledMT : pDisabledMT);
-                    return TypeHandle(CoreLibBinder::GetClass(CLASS__INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thDispatch, 1)).AsMethodTable();
+                    TypeHandle thElement(pElementMT);
+                    TypeHandle thArgs[2] = { thElement, thDispatch };
+                    return TypeHandle(CoreLibBinder::GetClass(CLASS__TYPED_CLASS_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
                 }
             }
             else
@@ -2047,16 +2026,7 @@ namespace
         case VT_DISPATCH:
             if (pElementMT == NULL || pElementMT == g_pObjectClass)
                 return TypeHandle(g_pObjectClass);
-            if (pElementMT->IsInterface())
-                return TypeHandle(pElementMT);
-            {
-                // For class types, resolve to the default interface type.
-                BOOL bDispatch = FALSE;
-                MethodTable* pDefaultItfMT = GetDefaultInterfaceMTForClass(pElementMT, &bDispatch);
-                if (pDefaultItfMT != NULL)
-                    return TypeHandle(pDefaultItfMT);
-                return TypeHandle(g_pObjectClass);
-            }
+            return TypeHandle(pElementMT);
         case VT_RECORD:
             _ASSERTE(pElementMT != NULL);
             return TypeHandle(pElementMT);
@@ -2067,14 +2037,14 @@ namespace
     }
 }
 
-MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous, BOOL bNativeDataValid)
+MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, MethodTable* pElementMT, BOOL bNativeDataValid)
 {
     STANDARD_VM_CONTRACT;
 
     MethodDesc* pGenericMD = CoreLibBinder::GetMethod(methodId);
 
     TypeHandle thElementType = GetElementTypeForSafeArrayVarType(vt, pElementMT);
-    TypeHandle thMarshalerType(GetMarshalerMTForSafeArrayVarType(vt, pElementMT, bHeterogeneous, bNativeDataValid));
+    TypeHandle thMarshalerType(GetMarshalerMTForSafeArrayVarType(vt, pElementMT, bNativeDataValid));
 
     TypeHandle thArgs[2] = { thElementType, thMarshalerType };
 
@@ -2084,6 +2054,45 @@ MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, 
         FALSE,
         Instantiation(thArgs, 2),
         FALSE);
+}
+
+static void MarshalInterfaceWrapperArray(BASEARRAYREF* pArrayRef, IUnknown** pNativeElements, SIZE_T elementCount, VARTYPE vt)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    ASSERT_PROTECTED(pArrayRef);
+
+    MethodTable* pLastElementMT = NULL;
+    MethodTable* pDefaultInterfaceMT = NULL;
+    BOOL bDispatch = vt == VT_DISPATCH;
+    OBJECTREF element = NULL;
+    GCPROTECT_BEGIN(element);
+    for (SIZE_T i = 0; i < elementCount; i++)
+    {
+        element = ((OBJECTREF*)(*pArrayRef)->GetDataPtr())[i];
+        if (element == NULL)
+        {
+            pNativeElements[i] = NULL;
+            continue;
+        }
+
+        if (element->GetMethodTable() != pLastElementMT)
+        {
+            pLastElementMT = element->GetMethodTable();
+            pDefaultInterfaceMT = GetDefaultInterfaceMTForClass(pLastElementMT, &bDispatch);
+        }
+
+        pNativeElements[i] = pDefaultInterfaceMT != NULL
+            ? GetComIPFromObjectRef(&element, pDefaultInterfaceMT)
+            : GetComIPFromObjectRef(&element, bDispatch ? ComIpType_Dispatch : ComIpType_Unknown);
+    }
+    GCPROTECT_END();
 }
 
 //
@@ -2129,9 +2138,18 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
             Array = *pArrayRef;
         }
 
-        // Use managed IArrayMarshaler<T> implementations for content conversion.
-        UnmanagedCallersOnlyCaller invoker(METHOD__STUBHELPERS__INVOKE_ARRAY_CONTENTS_CONVERTER);
-        invoker.InvokeThrowing(&Array, pSafeArray->pvData, (INT32)dwNumComponents, (void*)pConvertContentsCode);
+        if (bArrayOfInterfaceWrappers)
+        {
+            _ASSERTE(vt == VT_UNKNOWN || vt == VT_DISPATCH);
+            // Wrapper arrays expose each wrapped object's default COM interface, not
+            // necessarily the IUnknown or IDispatch selected by the SAFEARRAY VARTYPE.
+            MarshalInterfaceWrapperArray(&Array, (IUnknown**)pSafeArray->pvData, dwNumComponents, vt);
+        }
+        else
+        {
+            UnmanagedCallersOnlyCaller invoker(METHOD__STUBHELPERS__INVOKE_ARRAY_CONTENTS_CONVERTER);
+            invoker.InvokeThrowing(&Array, pSafeArray->pvData, (INT32)dwNumComponents, (void*)pConvertContentsCode);
+        }
 
         if (pSafeArray->cDims != 1)
         {
@@ -2205,7 +2223,7 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-    SafeComHolder<ITypeInfo> pTypeInfo = NULL;
+    ReleaseHolderAnyMode<ITypeInfo> pTypeInfo;
     RecordVariantHolder pRecHolder(pOleVariant);
 
     // Initialize the OLE variant's VT_RECORD fields to NULL.
@@ -2269,7 +2287,6 @@ void OleVariant::TransposeArrayData(BYTE *pDestData, BYTE *pSrcData, SIZE_T dwNu
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pDestData));
         PRECONDITION(CheckPointer(pSrcData));
         PRECONDITION(CheckPointer(pSafeArray));
@@ -2506,9 +2523,13 @@ BASEARRAYREF OleVariant::ExtractWrappedObjectsFromArray(BASEARRAYREF *pArray)
             for (; pSrc < pSrcEnd; pSrc++, pDest++)
             {
                 if (*pSrc != NULL)
-                    memcpyNoGCRefs(pDest, &(*pSrc)->GetWrappedObject(), sizeof(DECIMAL));
+                {
+                    *pDest = (*pSrc)->GetWrappedObject();
+                }
                 else
-                    memset(pDest, 0, sizeof(DECIMAL));
+                {
+                    *pDest = DECIMAL{};
+                }
             }
         }
         else if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__BSTR_WRAPPER)))
@@ -2638,28 +2659,29 @@ void OleVariant::ConvertBSTRToString(BSTR bstr, STRINGREF *pStringObj)
 
 BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
 {
-    CONTRACT(BSTR)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pStringObj));
-
-        // A null BSTR should only be returned if the input string is null.
-        POSTCONDITION(RETVAL != NULL || *pStringObj == NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (*pStringObj == NULL)
     {
-        RETURN NULL;
+        return NULL;
     }
 
     UnmanagedCallersOnlyCaller convertToNative(METHOD__BSTRMARSHALER__CONVERT_TO_NATIVE_UCO);
-    RETURN (BSTR)convertToNative.InvokeThrowing_Ret<INT_PTR>(pStringObj);
+    BSTR result = (BSTR)convertToNative.InvokeThrowing_Ret<INT_PTR>(pStringObj);
+
+    // A null BSTR should only be returned if the input string is null.
+    _ASSERTE(result != NULL);
+    return result;
 }
 
-extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT * pOle)
+extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT * pOle, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -2674,4 +2696,3 @@ extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOn
 
     END_QCALL;
 }
-

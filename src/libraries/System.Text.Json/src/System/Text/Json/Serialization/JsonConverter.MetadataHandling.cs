@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization
                     else
                     {
                         // Standard discriminator-based resolution.
-                        Debug.Assert(state.PolymorphicTypeDiscriminator != null);
+                        Debug.Assert(state.PolymorphicTypeDiscriminator is not null);
                         Debug.Assert(resolver.UsesTypeDiscriminators);
                         resolver.TryGetDerivedJsonTypeInfo(state.PolymorphicTypeDiscriminator, out resolvedType);
                     }
@@ -83,8 +83,8 @@ namespace System.Text.Json.Serialization
         internal JsonConverter? ResolvePolymorphicConverter(object value, JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, ref WriteStack state)
         {
             Debug.Assert(!IsValueType);
-            Debug.Assert(value != null && Type!.IsAssignableFrom(value.GetType()));
-            Debug.Assert(CanBePolymorphic || jsonTypeInfo.PolymorphicTypeResolver != null);
+            Debug.Assert(value is not null && Type!.IsAssignableFrom(value.GetType()));
+            Debug.Assert(CanBePolymorphic || jsonTypeInfo.PolymorphicTypeResolver is not null);
             Debug.Assert(state.PolymorphicTypeDiscriminator is null);
 
             JsonConverter? polymorphicConverter = null;
@@ -153,7 +153,7 @@ namespace System.Text.Json.Serialization
         {
             Debug.Assert(!IsValueType);
             Debug.Assert(!state.IsContinuation);
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             switch (options.ReferenceHandlingStrategy)
             {

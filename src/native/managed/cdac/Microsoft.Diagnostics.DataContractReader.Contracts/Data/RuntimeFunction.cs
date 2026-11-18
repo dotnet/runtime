@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.RuntimeFunction))]
 internal sealed partial class RuntimeFunction : IData<RuntimeFunction>
 {
-    [Field] public uint BeginAddress { get; }
+    [Field] public partial uint BeginAddress { get; }
 
     // Not all platforms define EndAddress
-    [Field] public uint? EndAddress { get; }
-    [Field] public uint UnwindData { get; }
+    [Field] public partial uint? EndAddress { get; }
+    [Field] public partial uint UnwindData { get; }
 }

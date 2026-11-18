@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.InstrumentedILOffsetMapping))]
 internal sealed partial class InstrumentedILOffsetMapping : IData<InstrumentedILOffsetMapping>
 {
-    [Field] public uint Count { get; }
-    [Field] public TargetPointer Map { get; }
+    [Field] public partial uint Count { get; }
+    [Field] public partial TargetPointer Map { get; }
 }

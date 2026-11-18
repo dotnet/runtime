@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 
 namespace System.Numerics
@@ -308,13 +309,7 @@ namespace System.Numerics
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out BFloat16 result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-
-            if (s == null)
-            {
-                result = Zero;
-                return false;
-            }
-            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         /// <summary>
@@ -328,7 +323,7 @@ namespace System.Numerics
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out BFloat16 result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         // Comparison
@@ -448,7 +443,7 @@ namespace System.Numerics
         /// <summary>Explicitly converts a <see cref="decimal" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        public static explicit operator BFloat16(decimal value) => (BFloat16)(float)value;
+        public static explicit operator BFloat16(decimal value) => decimal.VarBFloat16FromDec(in value);
 
         /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -592,8 +587,12 @@ namespace System.Numerics
             uint bits = BitConverter.SingleToUInt32Bits(value);
             uint roundedBits = RoundMidpointToEven(bits, 16);
 
-            // Only do rounding for non-NaN
-            return new BFloat16((ushort)(!float.IsNaN(value) ? roundedBits : (bits >> 16)));
+            // Only do rounding for non-NaN. For NaN we truncate to the top 16 bits, but that can
+            // zero out all of BFloat16's significand bits (e.g. 0x7F80_0001 -> 0x7F80, which is
+            // +Infinity), silently turning the NaN into an Infinity. Force the MSB of the significand
+            // (the quiet bit) so the result stays a NaN while preserving the sign and any surviving payload.
+            const uint QuietBit = 1u << (TrailingSignificandLength - 1);
+            return new BFloat16((ushort)(!float.IsNaN(value) ? roundedBits : ((bits >> 16) | QuietBit)));
         }
 
         private static unsafe BFloat16 RoundFromUnsigned<TInteger>(TInteger value)
@@ -1397,6 +1396,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static BFloat16 CreateChecked<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1416,6 +1416,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static BFloat16 CreateSaturating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1435,6 +1436,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static BFloat16 CreateTruncating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1545,6 +1547,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<BFloat16>.TryConvertFromChecked<TOther>(TOther value, out BFloat16 result)
         {
             return TryConvertFrom(value, out result);
@@ -1552,6 +1555,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<BFloat16>.TryConvertFromSaturating<TOther>(TOther value, out BFloat16 result)
         {
             return TryConvertFrom(value, out result);
@@ -1559,12 +1563,14 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<BFloat16>.TryConvertFromTruncating<TOther>(TOther value, out BFloat16 result)
         {
             return TryConvertFrom(value, out result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertFrom<TOther>(TOther value, out BFloat16 result)
             where TOther : INumberBase<TOther>
         {
@@ -1682,6 +1688,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<BFloat16>.TryConvertToChecked<TOther>(BFloat16 value, [MaybeNullWhen(false)] out TOther result)
         {
             // `BFloat16` is non-first class type in System.Numerics namespace.
@@ -1798,6 +1805,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<BFloat16>.TryConvertToSaturating<TOther>(BFloat16 value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo(value, out result);
@@ -1805,12 +1813,14 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<BFloat16>.TryConvertToTruncating<TOther>(BFloat16 value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo(value, out result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertTo<TOther>(BFloat16 value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
@@ -1941,6 +1951,27 @@ namespace System.Numerics
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out BFloat16 result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s.AsSpan(), style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out BFloat16 result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BFloat16 result, out int bytesConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(utf8Text, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed);
+        }
+
         //
         // IParsable
         //
@@ -2024,22 +2055,10 @@ namespace System.Numerics
         public static BFloat16 CosPi(BFloat16 x) => (BFloat16)float.CosPi((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
-        public static BFloat16 DegreesToRadians(BFloat16 degrees)
-        {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
-
-            return (BFloat16)float.DegreesToRadians((float)degrees);
-        }
+        public static BFloat16 DegreesToRadians(BFloat16 degrees) => (BFloat16)float.DegreesToRadians((float)degrees);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
-        public static BFloat16 RadiansToDegrees(BFloat16 radians)
-        {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
-
-            return (BFloat16)float.RadiansToDegrees((float)radians);
-        }
+        public static BFloat16 RadiansToDegrees(BFloat16 radians) => (BFloat16)float.RadiansToDegrees((float)radians);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static BFloat16 Sin(BFloat16 x) => (BFloat16)float.Sin((float)x);
@@ -2096,7 +2115,7 @@ namespace System.Numerics
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BFloat16 result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />

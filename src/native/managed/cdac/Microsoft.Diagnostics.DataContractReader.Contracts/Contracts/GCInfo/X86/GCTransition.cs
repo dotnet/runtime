@@ -28,13 +28,13 @@ public abstract class BaseGcTransition
     }
 }
 
-public class CalleeSavedRegister : BaseGcTransition
+public class ThisPointerRegister : BaseGcTransition
 {
     public RegMask Register { get; set; }
 
-    public CalleeSavedRegister() { }
+    public ThisPointerRegister() { }
 
-    public CalleeSavedRegister(int codeOffset, RegMask reg)
+    public ThisPointerRegister(int codeOffset, RegMask reg)
         : base(codeOffset)
     {
         Register = reg;
@@ -79,6 +79,8 @@ public class GcTransitionRegister : BaseGcTransition
     {
         Register = reg;
         IsLive = isLive;
+        IsThis = isThis;
+        Iptr = iptr;
         PushCountOrPopSize = pushCountOrPopSize;
     }
 
@@ -130,6 +132,8 @@ public class GcTransitionPointer : BaseGcTransition
         ArgOffset = argOffs;
         ArgCount = argCnt;
         Act = act;
+        IsThis = isThis;
+        Iptr = iptr;
         IsPtr = isPtr;
     }
 
@@ -247,7 +251,7 @@ public class GcTransitionCall : BaseGcTransition
             if ((regMask & 8) != 0)
             {
                 RegMask reg = RegMask.EBP;
-                CallRegisters.Add(new CallRegister(reg, false));
+                CallRegisters.Add(new CallRegister(reg, (byRefRegMask & 8) != 0));
             }
         }
         ArgMask = 0;

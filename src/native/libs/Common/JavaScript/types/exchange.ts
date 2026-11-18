@@ -12,7 +12,7 @@ import type { instantiateWasm, installVfsFile, registerDllBytes, loadIcuData, re
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../loader/promise-completion-source";
 import type { fetchSatelliteAssemblies, fetchLazyAssembly } from "../loader/assets";
 
-import type { isSharedArrayBuffer, viewOrCopy, zeroRegion } from "../../../System.Native.Browser/utils/memory";
+import type { arrayBufferNeedsCopy, viewOrCopy, zeroRegion } from "../../../System.Native.Browser/utils/memory";
 import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString, utf8ToStringRelaxed } from "../../../System.Native.Browser/utils/strings";
 import type { abortPosix, getExitStatus } from "../../../System.Native.Browser/utils/host";
 import type { abortBackgroundTimers, runBackgroundTimers } from "../../../System.Native.Browser/utils/scheduling";
@@ -168,7 +168,7 @@ export type BrowserUtilsExports = {
     stringToUTF8: typeof stringToUTF8,
     utf8ToStringRelaxed: typeof utf8ToStringRelaxed,
     zeroRegion: typeof zeroRegion,
-    isSharedArrayBuffer: typeof isSharedArrayBuffer,
+    arrayBufferNeedsCopy: typeof arrayBufferNeedsCopy,
     viewOrCopy: typeof viewOrCopy,
     abortBackgroundTimers: typeof abortBackgroundTimers,
     abortPosix: typeof abortPosix,
@@ -184,7 +184,7 @@ export type BrowserUtilsExportsTable = [
     typeof stringToUTF8,
     typeof utf8ToStringRelaxed,
     typeof zeroRegion,
-    typeof isSharedArrayBuffer,
+    typeof arrayBufferNeedsCopy,
     typeof viewOrCopy,
     typeof abortBackgroundTimers,
     typeof abortPosix,

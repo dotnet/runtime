@@ -101,13 +101,6 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
             targetStrPrecomposed = ConvertToKatakana(targetStrPrecomposed);
         }
 
-        if (comparisonOptions != 0 && comparisonOptions != StringSort)
-        {
-            NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions((CompareOptions)comparisonOptions, false);
-            sourceStrPrecomposed = [sourceStrPrecomposed stringByFoldingWithOptions:options locale:currentLocale];
-            targetStrPrecomposed = [targetStrPrecomposed stringByFoldingWithOptions:options locale:currentLocale];
-        }
-
         NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions((CompareOptions)comparisonOptions, true);
         NSRange comparisonRange = NSMakeRange(0, sourceStrPrecomposed.length);
         return (int32_t)[sourceStrPrecomposed compare:targetStrPrecomposed

@@ -6,6 +6,7 @@ parameters:
   testBuildArgs: ''
   helixQueues: ''
   liveLibrariesBuildConfig: ''
+  useHelixMonitor: false
 
 steps:
   # Build coreclr native test output and send to helix
@@ -21,3 +22,4 @@ steps:
       nativeAotTest: true
       helixQueues: ${{ parameters.helixQueues }}
       liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}

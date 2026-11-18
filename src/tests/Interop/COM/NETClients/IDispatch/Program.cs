@@ -373,6 +373,16 @@ namespace NetClient
             Assert.Equal("1001", result2);
         }
 
+        static void Validate_PropertySetter()
+        {
+            var dispatchTesting = new DispatchTesting();
+
+            Console.WriteLine("Validating IDispatch property setter");
+            int expected = 42;
+            dispatchTesting.PropertySetterRegressionTest = expected;
+            Assert.Equal(expected, dispatchTesting.PropertySetterRegressionTest);
+        }
+
         [Fact]
         public static int TestEntryPoint()
         {
@@ -394,6 +404,7 @@ namespace NetClient
                 Validate_ValueCoerce_ReturnToManaged();
                 Validate_Sum_IntArray_SafeArray();
                 Validate_GetDispId_Methods();
+                Validate_PropertySetter();
             }
             catch (Exception e)
             {

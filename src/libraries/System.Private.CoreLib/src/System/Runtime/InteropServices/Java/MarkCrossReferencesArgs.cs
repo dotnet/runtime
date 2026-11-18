@@ -22,6 +22,7 @@ namespace System.Runtime.InteropServices.Java
         /// <summary>
         /// A pointer to the array of strongly connected components.
         /// </summary>
+        /// <safety>Reading or writing this field only copies a pointer value and never dereferences it; the sequential-layout struct contains no managed reference, and StronglyConnectedComponent is a public interop type rather than a runtime-internal structure.</safety>
         public StronglyConnectedComponent* Components;
 
         /// <summary>
@@ -32,6 +33,7 @@ namespace System.Runtime.InteropServices.Java
         /// <summary>
         /// A pointer to the array of cross-references.
         /// </summary>
+        /// <safety>Reading or writing this field only copies a pointer value and never dereferences it; the sequential-layout struct contains no managed reference, and ComponentCrossReference holds only nuint indices.</safety>
         public ComponentCrossReference* CrossReferences;
     }
 }

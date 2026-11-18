@@ -8,14 +8,12 @@ parameters:
 
 steps:
   # Download artifact
-  - task: DownloadBuildArtifacts@0
+  - task: DownloadPipelineArtifact@2
     displayName: 'Download ${{ parameters.displayName }}'
     inputs:
       buildType: current
-      downloadType: single
-      downloadPath: '$(Build.SourcesDirectory)/__download__'
       artifactName: '${{ parameters.artifactName }}'
-      checkDownloadedFiles: true
+      targetPath: '$(Build.SourcesDirectory)/__download__/${{ parameters.artifactName }}'
 
   # Unzip artifact
   - task: ExtractFiles@1

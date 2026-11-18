@@ -6,8 +6,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.GCFrame))]
 internal sealed partial class GCFrame : IData<GCFrame>
 {
-    [Field] public TargetPointer Next { get; }
-    [Field] public TargetPointer ObjRefs { get; }
-    [Field] public uint NumObjRefs { get; }
-    [Field] public uint GCFlags { get; }
+    [Field] public partial TargetPointer Next { get; }
+    [Field] public partial TargetPointer ObjRefs { get; }
+    [Field] public partial uint NumObjRefs { get; }
+    [Field] public partial uint GCFlags { get; }
 }

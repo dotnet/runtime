@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 /// <summary>
@@ -14,7 +16,9 @@ internal enum GCRefMapToken
     Interior = 2,
     MethodParam = 3,
     TypeParam = 4,
-    VASigCookie = 5,
+    ThisRef = 5,
+    ThisByRef = 6,
+    VASigCookie = 7,
 }
 
 /// <summary>
@@ -25,24 +29,54 @@ internal enum GCRefMapToken
 /// It is used by ExternalMethodFrame and StubDispatchFrame to report GC roots
 /// without needing the full MethodDesc/signature decoding path.
 ///
-/// Encoding: each slot is encoded as a variable-length integer using 3 bits per
-/// token (see <see cref="GCRefMapToken"/>), with a high-bit continuation flag.
-/// A "skip" token advances the slot position without reporting. The stream ends
-/// when all slots have been consumed (indicated by a zero byte after the last token).
+/// Encoding: two-bit tokens use escape 3 for extended tokens and longer skips.
+/// Extended integers use three payload bits and a continuation bit per group.
+/// THIS_REF and THIS_BYREF encode the original callsite receiver kind. Each byte
+/// carries seven stream bits and a high continuation bit; trailing zero bits
+/// need not be stored.
 ///
 /// The native implementation lives in coreclr/inc/gcrefmap.h (GCRefMapDecoder class).
 /// </summary>
 internal ref struct GCRefMapDecoder
 {
-    private readonly Target _target;
+    internal const byte LegacyVASigCookie = 5;
+
+    // The decoder can source its bytes either from target memory (the R2R image,
+    // for ExternalMethodFrame / StubDispatchFrame) or from a host-side byte[]
+    // (for blobs we synthesize via ICallingConvention.TryComputeArgGCRefMapBlob).
+    // Exactly one of (_target + _currentByte) or (_blob) is non-null per instance;
+    // see UsesBlob below for the invariant that lets GetBit pick the right path
+    // without runtime null checks.
+    private readonly Target? _target;
+    private readonly bool _legacyTokens;
     private TargetPointer _currentByte;
+    private readonly byte[]? _blob;
+    private int _blobIndex;
     private int _pendingByte;
     private int _pos;
+
+    // StackWalk version 2 targets require R2R 33 and its new token assignments.
+    internal static bool UsesLegacyTokens(Target target) =>
+        target.Contracts.TryGetContractVersion<IStackWalk>(out string? version) && version == "c1";
 
     public GCRefMapDecoder(Target target, TargetPointer blob)
     {
         _target = target;
+        _legacyTokens = UsesLegacyTokens(target);
         _currentByte = blob;
+        _blob = null;
+        _blobIndex = 0;
+        _pendingByte = 0x80; // Forces first byte read
+        _pos = 0;
+    }
+
+    public GCRefMapDecoder(byte[] blob, bool legacyTokens = false)
+    {
+        _target = null;
+        _legacyTokens = legacyTokens;
+        _currentByte = TargetPointer.Null;
+        _blob = blob;
+        _blobIndex = 0;
         _pendingByte = 0x80; // Forces first byte read
         _pos = 0;
     }
@@ -51,13 +85,25 @@ internal ref struct GCRefMapDecoder
 
     public readonly int CurrentPos => _pos;
 
+    [MemberNotNullWhen(true, nameof(_blob))]
+    [MemberNotNullWhen(false, nameof(_target))]
+    private readonly bool UsesBlob => _blob is not null;
+
     private int GetBit()
     {
         int x = _pendingByte;
         if ((x & 0x80) != 0)
         {
-            x = _target.Read<byte>(_currentByte);
-            _currentByte = new TargetPointer(_currentByte.Value + 1);
+            if (UsesBlob)
+            {
+                x = _blobIndex < _blob.Length ? _blob[_blobIndex] : 0;
+                _blobIndex++;
+            }
+            else
+            {
+                x = _target.Read<byte>(_currentByte);
+                _currentByte = new TargetPointer(_currentByte.Value + 1);
+            }
             x |= (x & 0x80) << 7;
         }
         _pendingByte = x >> 1;
@@ -114,7 +160,10 @@ internal ref struct GCRefMapDecoder
             else
             {
                 _pos++;
-                return (GCRefMapToken)((ext >> 1) + 3);
+                GCRefMapToken token = (GCRefMapToken)((ext >> 1) + 3);
+                if (_legacyTokens && token is GCRefMapToken.ThisRef)
+                    return GCRefMapToken.VASigCookie;
+                return token;
             }
         }
         _pos++;

@@ -19,21 +19,23 @@ internal enum KnownPrecodeType
 }
 
 // Interface used to abstract behavior which may be different between multiple versions of the precode stub implementations
-internal interface IPrecodeStubsContractCommonApi<TStubPrecodeData>
+internal interface IPrecodeStubsContractCommonApi
 {
     public static abstract TargetPointer StubPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
     public static abstract TargetPointer ThisPtrRetBufPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
     public static abstract TargetPointer FixupPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
     public static abstract TargetPointer InterpreterPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
-    public static abstract byte StubPrecodeData_GetType(TStubPrecodeData stubPrecodeData);
     public static abstract KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
 }
 
-internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData> : IPrecodeStubs where TPrecodeStubsImplementation : IPrecodeStubsContractCommonApi<TStubPrecodeData> where TStubPrecodeData : IData<TStubPrecodeData>
+internal class PrecodeStubsCommon<TPrecodeStubsImplementation> : IPrecodeStubs where TPrecodeStubsImplementation : IPrecodeStubsContractCommonApi
 {
     private readonly Target _target;
-    private readonly CodePointerFlags _codePointerFlags;
-    internal readonly Data.PrecodeMachineDescriptor MachineDescriptor;
+
+    internal Data.PrecodeMachineDescriptor MachineDescriptor =>
+        _target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(_target.Contracts.PlatformMetadata.GetPrecodeMachineDescriptor());
+
+    protected Target Target => _target;
 
     internal abstract class ValidPrecode
     {
@@ -95,12 +97,6 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
 
     private bool IsAlignedInstrPointer(TargetPointer instrPointer) => _target.IsAlignedToPointerSize(instrPointer);
 
-    private TStubPrecodeData GetStubPrecodeData(TargetPointer stubInstrPointer)
-    {
-        TargetPointer stubPrecodeDataAddress = stubInstrPointer + MachineDescriptor.StubCodePageSize;
-        return _target.ProcessedData.GetOrAdd<TStubPrecodeData>(stubPrecodeDataAddress);
-    }
-
     private KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrAddress)
     {
         return TPrecodeStubsImplementation.TryGetKnownPrecodeType(instrAddress, _target, MachineDescriptor);
@@ -108,18 +104,14 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
 
     internal TargetPointer CodePointerReadableInstrPointer(TargetCodePointer codePointer)
     {
-        if (_codePointerFlags.HasFlag(CodePointerFlags.HasArm32ThumbBit))
+        CodePointerFlags codePointerFlags = _target.Contracts.PlatformMetadata.GetCodePointerFlags();
+        if (codePointerFlags.HasFlag(CodePointerFlags.HasArm32ThumbBit))
         {
             return codePointer.AsTargetPointer & ~1ul;
         }
-        if (_codePointerFlags.HasFlag(CodePointerFlags.HasArm64PtrAuth))
-        {
-            throw new NotImplementedException("CodePointerReadableInstrPointer for ARM64 with pointer authentication");
-        }
-        Debug.Assert(_codePointerFlags == 0);
+        Debug.Assert(codePointerFlags == 0);
         return codePointer.AsTargetPointer;
     }
-
 
     internal ValidPrecode GetPrecodeFromEntryPoint(TargetCodePointer entryPoint)
     {
@@ -147,10 +139,6 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
     public PrecodeStubsCommon(Target target)
     {
         _target = target;
-        IPlatformMetadata pm = target.Contracts.PlatformMetadata;
-        TargetPointer descAddr = pm.GetPrecodeMachineDescriptor();
-        MachineDescriptor = target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(descAddr);
-        _codePointerFlags = pm.GetCodePointerFlags();
     }
 
     TargetPointer IPrecodeStubs.GetMethodDescFromStubAddress(TargetCodePointer entryPoint)
@@ -163,22 +151,23 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
     TargetPointer IPrecodeStubs.GetPrecodeEntryPointFromInteriorAddress(TargetCodePointer interiorAddress, bool isFixupPrecode)
     {
         TargetPointer instrPointer = CodePointerReadableInstrPointer(interiorAddress);
+        Data.PrecodeMachineDescriptor machineDescriptor = MachineDescriptor;
 
         uint stubSize;
         if (isFixupPrecode)
         {
-            if (MachineDescriptor.FixupStubPrecodeSize is not byte fixupSize || fixupSize == 0)
+            if (machineDescriptor.FixupStubPrecodeSize is not byte fixupSize || fixupSize == 0)
                 throw new InvalidOperationException("FixupPrecode size not available");
             stubSize = fixupSize;
         }
         else
         {
-            if (MachineDescriptor.StubPrecodeSize is not byte stubPrecodeSize || stubPrecodeSize == 0)
+            if (machineDescriptor.StubPrecodeSize is not byte stubPrecodeSize || stubPrecodeSize == 0)
                 throw new InvalidOperationException("StubPrecode size not available");
             stubSize = stubPrecodeSize;
         }
 
-        ulong pageMask = MachineDescriptor.StubCodePageSize - 1;
+        ulong pageMask = machineDescriptor.StubCodePageSize - 1;
         ulong pageBase = instrPointer.Value & ~pageMask;
         ulong offset = instrPointer.Value - pageBase;
         ulong entryPointAddress = pageBase + (offset / stubSize) * stubSize;
@@ -186,27 +175,6 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
         return new TargetPointer(entryPointAddress);
     }
 
-    TargetCodePointer IPrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(TargetCodePointer entryPoint)
-    {
-        try
-        {
-            TargetPointer instrPointer = CodePointerReadableInstrPointer(entryPoint);
-            if (!IsAlignedInstrPointer(instrPointer))
-                return entryPoint;
-
-            if (TryGetKnownPrecodeType(instrPointer) is not KnownPrecodeType.Interpreter)
-                return entryPoint;
-
-            TargetPointer dataAddr = instrPointer + MachineDescriptor.StubCodePageSize;
-            Data.InterpreterPrecodeData precodeData = _target.ProcessedData.GetOrAdd<Data.InterpreterPrecodeData>(dataAddr);
-            if (precodeData.ByteCodeAddr == TargetPointer.Null)
-                return entryPoint;
-
-            return new TargetCodePointer(precodeData.ByteCodeAddr);
-        }
-        catch (VirtualReadException)
-        {
-            return entryPoint;
-        }
-    }
+    public virtual TargetCodePointer GetInterpreterCodeFromInterpreterPrecodeIfPresent(
+        TargetCodePointer entryPoint) => entryPoint;
 }

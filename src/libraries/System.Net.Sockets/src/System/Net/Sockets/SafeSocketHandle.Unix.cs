@@ -31,7 +31,7 @@ namespace System.Net.Sockets
 #endif
         }
 
-        private Flags _flags = Flags.IsSocket | (SocketAsyncEngine.InlineSocketCompletionsEnabled ? Flags.PreferInlineCompletions : 0);
+        private Flags _flags = Flags.IsSocket | (SocketAsyncContext.InlineSocketCompletionsEnabled ? Flags.PreferInlineCompletions : 0);
 
         private void SetFlag(Flags flag, bool value)
         {
@@ -60,7 +60,11 @@ namespace System.Net.Sockets
         internal bool PreferInlineCompletions
         {
             get => (_flags & Flags.PreferInlineCompletions) != 0;
-            set => SetFlag(Flags.PreferInlineCompletions, value);
+            set
+            {
+                SetFlag(Flags.PreferInlineCompletions, value);
+                AsyncContext.SetInlineCompletions(value);
+            }
         }
 
         // (ab)use Socket class for performing async I/O on non-socket fds.
@@ -98,6 +102,7 @@ namespace System.Net.Sockets
             target.DualMode = DualMode;
             target.ExposedHandleOrUntrackedConfiguration = ExposedHandleOrUntrackedConfiguration;
             target.IsSocket = IsSocket;
+            target.PreferInlineCompletions = PreferInlineCompletions;
 #if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             target.TfoEnabled = TfoEnabled;
 #endif
@@ -142,10 +147,10 @@ namespace System.Net.Sockets
         internal bool IsUnderlyingHandleBlocking => !AsyncContext.IsHandleNonBlocking;
 
         /// <summary>
-        /// Sets the underlying socket to blocking mode.
+        /// Attempts to set the underlying socket to blocking mode.
         /// Only sets blocking if the user hasn't explicitly set Blocking = false (i.e., IsNonBlocking is false).
         /// This is only safe to call when the socket is guaranteed by construction to not be used concurrently
-        /// with any other operation, such as at the completion of ConnectAsync.
+        /// with any other I/O operation, such as at the completion of ConnectAsync. Concurrent disposal is allowed.
         /// </summary>
         internal void SetBlocking()
         {

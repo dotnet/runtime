@@ -183,7 +183,7 @@ namespace System.Text.Json
 
             int charsWritten = JsonReaderHelper.TranscodeHelper(unescapedSource, destination);
 
-            if (rentedBuffer != null)
+            if (rentedBuffer is not null)
             {
                 new Span<byte>(rentedBuffer, 0, unescapedSource.Length).Clear();
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
@@ -219,7 +219,7 @@ namespace System.Text.Json
 
             bool success = JsonReaderHelper.TryUnescape(source, destination, out bytesWritten);
 
-            if (rentedBuffer != null)
+            if (rentedBuffer is not null)
             {
                 new Span<byte>(rentedBuffer, 0, source.Length).Clear();
                 ArrayPool<byte>.Shared.Return(rentedBuffer);

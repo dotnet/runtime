@@ -9,9 +9,6 @@ elseif(CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_TARGET_ANDROID)
         # -O2 optimization generates faster/smaller code on Android
         add_compile_options($<$<CONFIG:Release>:-O2>)
-    elseif (CLR_CMAKE_TARGET_BROWSER)
-        # -O2 prevents emscripten metadce from stripping user-requested global exports
-        add_link_options($<$<CONFIG:Release>:-O2>)
     else()
         add_compile_options($<$<CONFIG:Release>:-O3>)
     endif()

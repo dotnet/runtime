@@ -84,20 +84,25 @@ namespace System.Threading
         [StructLayout(LayoutKind.Explicit, Size = Internal.PaddingHelpers.CACHE_LINE_SIZE * 6)]
         private struct CacheLineSeparated
         {
+            /// <safety>Occupies its own cache-line offset and overlaps no other field; ThreadCounts wraps only a ulong, so accessing it cannot forge a managed reference or read out of bounds.</safety>
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 1)]
-            public ThreadCounts counts; // SOS's ThreadPool command depends on this name
+            public safe ThreadCounts counts; // SOS's ThreadPool command depends on this name
 
             // Periodically updated heartbeat timestamp to indicate that we are making progress.
             // Used in starvation detection.
+            /// <safety>This int occupies its own cache-line offset in the explicit layout and overlaps no other field, so accessing it cannot forge a managed reference or read out of bounds.</safety>
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 2)]
-            public int lastDispatchTime;
+            public safe int lastDispatchTime;
 
+            /// <safety>This int occupies its own offset in the explicit layout and overlaps no other field, so accessing it cannot forge a managed reference or read out of bounds.</safety>
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 3)]
-            public int priorCompletionCount;
+            public safe int priorCompletionCount;
+            /// <safety>This int occupies its own offset in the explicit layout and overlaps no other field, so accessing it cannot forge a managed reference or read out of bounds.</safety>
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 3 + sizeof(int))]
-            public int priorCompletedWorkRequestsTime;
+            public safe int priorCompletedWorkRequestsTime;
+            /// <safety>This int occupies its own offset in the explicit layout and overlaps no other field, so accessing it cannot forge a managed reference or read out of bounds.</safety>
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 3 + sizeof(int) * 2)]
-            public int nextCompletedWorkRequestsTime;
+            public safe int nextCompletedWorkRequestsTime;
 
             // This flag is used for communication between item enqueuing and workers that process the items.
             // There are two states of this flag:
@@ -110,11 +115,13 @@ namespace System.Threading
             //       and resetting the flag, when the flag is in a wrong state.
             //       A new work item may be added right before the flag is reset
             //       without asking for a worker, while the last worker is quitting.
+            /// <safety>This int occupies its own cache-line offset in the explicit layout and overlaps no other field, so accessing it cannot forge a managed reference or read out of bounds.</safety>
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 4)]
-            public int _hasOutstandingThreadRequest;
+            public safe int _hasOutstandingThreadRequest;
 
+            /// <safety>This int occupies its own offset in the explicit layout and overlaps no other field, so accessing it cannot forge a managed reference or read out of bounds.</safety>
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 4 + sizeof(int))]
-            public int gateThreadRunningState;
+            public safe int gateThreadRunningState;
         }
 
         private long _currentSampleStartTime;

@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 //  util.cpp
 //
-
-//
 //  This contains a bunch of C++ utility classes.
-//
 //*****************************************************************************
+
 #include "stdafx.h"                     // Precompiled header key.
 #include "utilcode.h"
 #include "metadata.h"
@@ -18,6 +17,7 @@
 #include "cor.h"
 #include "corinfo.h"
 #include "volatile.h"
+#include <minipal/cpucount.h>
 #include "mdfileformat.h"
 #include <configuration.h>
 
@@ -342,192 +342,6 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
     }
 
     return hr;
-}
-
-#ifdef _DEBUG
-static DWORD ShouldInjectFaultInRange()
-{
-    static DWORD fInjectFaultInRange = 99;
-
-    if (fInjectFaultInRange == 99)
-        fInjectFaultInRange = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault) & 0x40);
-    return fInjectFaultInRange;
-}
-#endif
-
-// Reserves free memory within the range [pMinAddr..pMaxAddr] using
-// ClrVirtualQuery to find free memory and ClrVirtualAlloc to reserve it.
-//
-// This method only supports the flAllocationType of MEM_RESERVE, and expects that the memory
-// is being reserved for the purpose of eventually storing executable code.
-//
-// Callers also should set dwSize to a multiple of sysInfo.dwAllocationGranularity (64k).
-// That way they can reserve a large region and commit smaller sized pages
-// from that region until it fills up.
-//
-// This functions returns the reserved memory block upon success
-//
-// It returns NULL when it fails to find any memory that satisfies
-// the range.
-//
-
-BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
-                                  const BYTE *pMaxAddr,
-                                  SIZE_T dwSize,
-                                  DWORD flAllocationType,
-                                  DWORD flProtect)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        PRECONDITION(dwSize != 0);
-
-#ifdef HOST_UNIX
-        PRECONDITION(flAllocationType == (MEM_RESERVE | MEM_RESERVE_EXECUTABLE));
-#else
-        PRECONDITION(flAllocationType == MEM_RESERVE);
-#endif
-    }
-    CONTRACTL_END;
-
-    BYTE *pResult = nullptr;  // our return value;
-
-    static unsigned countOfCalls = 0;  // We log the number of tims we call this method
-    countOfCalls++;                    // increment the call counter
-
-    if (dwSize == 0)
-    {
-        return nullptr;
-    }
-
-    //
-    // First lets normalize the pMinAddr and pMaxAddr values
-    //
-    // If pMinAddr is NULL then set it to BOT_MEMORY
-    if ((pMinAddr == 0) || (pMinAddr < (BYTE *) BOT_MEMORY))
-    {
-        pMinAddr = (BYTE *) BOT_MEMORY;
-    }
-
-    // If pMaxAddr is NULL then set it to TOP_MEMORY
-    if ((pMaxAddr == 0) || (pMaxAddr > (BYTE *) TOP_MEMORY))
-    {
-        pMaxAddr = (BYTE *) TOP_MEMORY;
-    }
-
-    // If pMaxAddr is not greater than pMinAddr we can not make an allocation
-    if (pMaxAddr <= pMinAddr)
-    {
-        return nullptr;
-    }
-
-    // If pMinAddr is BOT_MEMORY and pMaxAddr is TOP_MEMORY
-    // then we can call ClrVirtualAlloc instead
-    if ((pMinAddr == (BYTE *) BOT_MEMORY) && (pMaxAddr == (BYTE *) TOP_MEMORY))
-    {
-        return (BYTE*) ClrVirtualAlloc(nullptr, dwSize, flAllocationType, flProtect);
-    }
-
-#ifdef HOST_UNIX
-    pResult = (BYTE *)PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(pMinAddr, pMaxAddr, dwSize, TRUE /* fStoreAllocationInfo */);
-    if (pResult != nullptr)
-    {
-        return pResult;
-    }
-#endif // HOST_UNIX
-
-    // We will do one scan from [pMinAddr .. pMaxAddr]
-    // First align the tryAddr up to next 64k base address.
-    // See docs for VirtualAllocEx and lpAddress and 64k alignment for reasons.
-    //
-    BYTE *   tryAddr            = (BYTE *)ALIGN_UP((BYTE *)pMinAddr, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
-    bool     virtualQueryFailed = false;
-    bool     faultInjected      = false;
-    unsigned virtualQueryCount  = 0;
-
-    // Now scan memory and try to find a free block of the size requested.
-    while ((tryAddr + dwSize) <= (BYTE *) pMaxAddr)
-    {
-        MEMORY_BASIC_INFORMATION mbInfo;
-
-        // Use VirtualQuery to find out if this address is MEM_FREE
-        //
-        virtualQueryCount++;
-        if (!ClrVirtualQuery((LPCVOID)tryAddr, &mbInfo, sizeof(mbInfo)))
-        {
-            // Exit and return nullptr if the VirtualQuery call fails.
-            virtualQueryFailed = true;
-            break;
-        }
-
-        // Is there enough memory free from this start location?
-        // Note that for most versions of UNIX the mbInfo.RegionSize returned will always be 0
-        if ((mbInfo.State == MEM_FREE) &&
-            (mbInfo.RegionSize >= (SIZE_T) dwSize || mbInfo.RegionSize == 0))
-        {
-            // Try reserving the memory using VirtualAlloc now
-            pResult = (BYTE*)ClrVirtualAlloc(tryAddr, dwSize, flAllocationType, flProtect);
-
-            // Normally this will be successful
-            //
-            if (pResult != nullptr)
-            {
-                // return pResult
-                break;
-            }
-
-#ifdef _DEBUG
-            if (ShouldInjectFaultInRange())
-            {
-                // return nullptr (failure)
-                faultInjected = true;
-                break;
-            }
-#endif // _DEBUG
-
-            // On UNIX we can also fail if our request size 'dwSize' is larger than 64K and
-            // and our tryAddr is pointing at a small MEM_FREE region (smaller than 'dwSize')
-            // However we can't distinguish between this and the race case.
-
-            // We might fail in a race.  So just move on to next region and continue trying
-            tryAddr = tryAddr + VIRTUAL_ALLOC_RESERVE_GRANULARITY;
-        }
-        else
-        {
-            // Try another section of memory
-            tryAddr = max(tryAddr + VIRTUAL_ALLOC_RESERVE_GRANULARITY,
-                          (BYTE*) mbInfo.BaseAddress + mbInfo.RegionSize);
-        }
-    }
-
-    STRESS_LOG7(LF_JIT, LL_INFO100,
-                "ClrVirtualAllocWithinRange request #%u for %08x bytes in [ %p .. %p ], query count was %u - returned %s: %p\n",
-                countOfCalls, (DWORD)dwSize, pMinAddr, pMaxAddr,
-                virtualQueryCount, (pResult != nullptr) ? "success" : "failure", pResult);
-
-    // If we failed this call the process will typically be terminated
-    // so we log any additional reason for failing this call.
-    //
-    if (pResult == nullptr)
-    {
-        if ((tryAddr + dwSize) > (BYTE *)pMaxAddr)
-        {
-            // Our tryAddr reached pMaxAddr
-            STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: Address space exhausted.\n");
-        }
-
-        if (virtualQueryFailed)
-        {
-            STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: VirtualQuery operation failed.\n");
-        }
-
-        if (faultInjected)
-        {
-            STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: fault injected.\n");
-        }
-    }
-
-    return pResult;
 }
 
 #ifdef HOST_WINDOWS
@@ -931,13 +745,33 @@ BOOL CPUGroupInfo::GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* 
 }
 #endif // HOST_WINDOWS
 
+#if defined(HOST_WINDOWS) && defined(SELF_NO_HOST)
+static INIT_ONCE g_globalSystemInfoInitOnce = INIT_ONCE_STATIC_INIT;
+SYSTEM_INFO g_SystemInfo;
+
+static BOOL CALLBACK InitializeGlobalSystemInfoOnce(PINIT_ONCE /*initOnce*/, PVOID /*parameter*/, PVOID* /*context*/)
+{
+    GetSystemInfo(&g_SystemInfo);
+    return TRUE;
+}
+
+static void InitializeGlobalSystemInfo()
+{
+    InitOnceExecuteOnce(&g_globalSystemInfoInitOnce, InitializeGlobalSystemInfoOnce, NULL, NULL);
+}
+#else
 extern SYSTEM_INFO g_SystemInfo;
+#endif // SELF_NO_HOST && HOST_WINDOWS
 
 int GetTotalProcessorCount()
 {
     LIMITED_METHOD_CONTRACT;
 
 #ifdef HOST_WINDOWS
+#ifdef SELF_NO_HOST
+    InitializeGlobalSystemInfo();
+#endif // SELF_NO_HOST
+
     if (CPUGroupInfo::CanEnableGCCPUGroups())
     {
         return CPUGroupInfo::GetNumActiveProcessors();
@@ -947,143 +781,9 @@ int GetTotalProcessorCount()
         return g_SystemInfo.dwNumberOfProcessors;
     }
 #else // HOST_WINDOWS
-    return PAL_GetTotalCpuCount();
+    return minipal_get_cpu_total_count();
 #endif // HOST_WINDOWS
 }
-
-// The cached number of CPUs available for the current process
-static DWORD g_currentProcessCpuCount = 0;
-
-//******************************************************************************
-// Returns the number of processors that a process has been configured to run on
-//******************************************************************************
-int GetCurrentProcessCpuCount()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-    if (g_currentProcessCpuCount > 0)
-        return g_currentProcessCpuCount;
-
-    DWORD count;
-
-    // If the configuration value has been set, it takes precedence. Otherwise, take into account
-    // process affinity and CPU quota limit.
-
-    DWORD configValue = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ProcessorCount);
-    const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
-
-    if (0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
-    {
-        count = configValue;
-    }
-    else
-    {
-#ifdef HOST_WINDOWS
-        CPUGroupInfo::EnsureInitialized();
-
-        if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-        {
-            count = CPUGroupInfo::GetNumActiveProcessors();
-        }
-        else
-        {
-            DWORD_PTR pmask, smask;
-
-            if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
-            {
-                count = 1;
-            }
-            else
-            {
-                count = 0;
-
-                while (pmask)
-                {
-                    pmask &= (pmask - 1);
-                    count++;
-                }
-
-                // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
-                // than 64 processors, which would leave us with a count of 0.  Since the GC
-                // expects there to be at least one processor to run on (and thus at least one
-                // heap), we'll return 64 here if count is 0, since there are likely a ton of
-                // processors available in that case.
-                if (count == 0)
-                    count = 64;
-            }
-        }
-
-        JOBOBJECT_CPU_RATE_CONTROL_INFORMATION cpuRateControl;
-
-        if (QueryInformationJobObject(NULL, JobObjectCpuRateControlInformation, &cpuRateControl,
-            sizeof(cpuRateControl), NULL))
-        {
-            const DWORD HardCapEnabled = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP;
-            const DWORD MinMaxRateEnabled = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE;
-            DWORD maxRate = 0;
-
-            if ((cpuRateControl.ControlFlags & HardCapEnabled) == HardCapEnabled)
-            {
-                maxRate = cpuRateControl.CpuRate;
-            }
-            else if ((cpuRateControl.ControlFlags & MinMaxRateEnabled) == MinMaxRateEnabled)
-            {
-                maxRate = cpuRateControl.MaxRate;
-            }
-
-            // The rate is the percentage times 100
-            const DWORD MAXIMUM_CPU_RATE = 10000;
-
-            if (0 < maxRate && maxRate < MAXIMUM_CPU_RATE)
-            {
-                DWORD cpuLimit = (maxRate * GetTotalProcessorCount() + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
-                if (cpuLimit < count)
-                    count = cpuLimit;
-            }
-        }
-
-#else // HOST_WINDOWS
-        count = PAL_GetLogicalCpuCountFromOS();
-
-        uint32_t cpuLimit;
-        if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < count)
-            count = cpuLimit;
-#endif // HOST_WINDOWS
-    }
-
-    _ASSERTE(count > 0);
-    g_currentProcessCpuCount = count;
-
-    return count;
-}
-
-#ifdef HOST_WINDOWS
-DWORD_PTR GetCurrentProcessCpuMask()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-#ifdef HOST_WINDOWS
-    DWORD_PTR pmask, smask;
-
-    if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
-        return 1;
-
-    return pmask;
-#else
-    return 0;
-#endif
-}
-#endif // HOST_WINDOWS
 
 //=============================================================================
 // AssemblyNamesList
@@ -1097,6 +797,7 @@ AssemblyNamesList::AssemblyNamesList(_In_ LPWSTR list)
 {
     CONTRACTL {
         THROWS;
+        GC_NOTRIGGER;
     } CONTRACTL_END;
 
     WCHAR prevChar = '?'; // dummy
@@ -1150,6 +851,7 @@ AssemblyNamesList::~AssemblyNamesList()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -1809,9 +1511,9 @@ HRESULT Utf2Quick(
     CONTRACTL_END;
 
     HRESULT     hr = S_OK;              // A result.
-    int         iReqLen;                // Required additional length.
-    int         iActLen;
-    int         bAlloc = 0;             // If non-zero, allocation was required.
+    size_t      cchReq;                 // Required additional length.
+    size_t      cchAct;
+    bool        bAlloc = false;         // If true, allocation was required.
 
     if (iCurLen < 0 )
     {
@@ -1821,7 +1523,7 @@ HRESULT Utf2Quick(
 
     // Calculate the space available
     S_SIZE_T cchAvail = S_SIZE_T(rStr.MaxSize()) - S_SIZE_T(iCurLen);
-    if (cchAvail.IsOverflow() || cchAvail.Value() > INT_MAX)
+    if (cchAvail.IsOverflow())
     {
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
@@ -1834,21 +1536,31 @@ HRESULT Utf2Quick(
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
     }
-    iReqLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, rNewStr, (int)(cchAvail.Value()));
+    size_t cchSrc = strlen(pStr) + 1;
+    cchReq = minipal_convert_utf8_to_utf16(pStr, cchSrc, (CHAR16_T*)rNewStr, cchAvail.Value(), 0);
 
     // If the buffer was too small, determine what is required.
-    if (iReqLen == 0)
-        bAlloc = iReqLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, 0, 0);
+    if (cchReq == 0)
+    {
+        cchReq = minipal_get_length_utf8_to_utf16(pStr, cchSrc, 0);
+        bAlloc = true;
+    }
     // Resize the buffer.  If the buffer was large enough, this just sets the internal
     //  counter, but if it was too small, this will attempt a reallocation.  Note that
     //  the length includes the terminating W('/0').
-    IfFailGo(rStr.ReSizeNoThrow(iCurLen+iReqLen));
+    S_SIZE_T newSize = S_SIZE_T(iCurLen) + S_SIZE_T(cchReq);
+    if (newSize.IsOverflow())
+    {
+        _ASSERTE_MSG(false, "Integer overflow/underflow");
+        return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
+    }
+    IfFailGo(rStr.ReSizeNoThrow(newSize.Value()));
     // If we had to realloc, then do the conversion again, now that the buffer is
     //  large enough.
     if (bAlloc) {
         //recalculating cchAvail since MaxSize could have been changed.
         cchAvail = S_SIZE_T(rStr.MaxSize()) - S_SIZE_T(iCurLen);
-        if (cchAvail.IsOverflow() || cchAvail.Value() > INT_MAX)
+        if (cchAvail.IsOverflow())
         {
             _ASSERTE_MSG(false, "Integer overflow/underflow");
             return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
@@ -1861,8 +1573,8 @@ HRESULT Utf2Quick(
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
         }
-        iActLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, rNewStr, (int)(cchAvail.Value()));
-        _ASSERTE(iReqLen == iActLen);
+        cchAct = minipal_convert_utf8_to_utf16(pStr, cchSrc, (CHAR16_T*)rNewStr, cchAvail.Value(), 0);
+        _ASSERTE(cchReq == cchAct);
     }
 ErrExit:
     return hr;
@@ -2110,6 +1822,49 @@ void PutArm64Rel12(UINT32 * pCode, INT32 imm12)
 }
 
 //*****************************************************************************
+//  Extract the 12-bit page offset from an LDR instruction (unsigned immediate).
+//  For a 64-bit LDR the encoded immediate is scaled by 8 bytes.
+//*****************************************************************************
+INT32 GetArm64Rel12Ldr(UINT32 * pCode)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    UINT32 ldrInstr = *pCode;
+
+    // 21-10 contains the scaled immediate. Mask 12 bits and shift by 10 bits.
+    INT32 scaledImm12 = (INT32)(ldrInstr & 0x003FFC00) >> 10;
+
+    // Scale back to a byte offset (multiply by 8).
+    return scaledImm12 << 3;
+}
+
+//*****************************************************************************
+//  Deposit the PC-Relative page offset 'imm12' into an LDR instruction (unsigned
+//  immediate). For a 64-bit LDR the immediate represents offset/8 (scaled by 8).
+//*****************************************************************************
+void PutArm64Rel12Ldr(UINT32 * pCode, INT32 imm12)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Verify that we got a valid offset that is aligned to 8 bytes.
+    _ASSERTE(FitsInRel12(imm12));
+    _ASSERTE((imm12 & 7) == 0);
+
+    UINT32 ldrInstr = *pCode;
+    // Check ldr opcode: 1111 1001 0100 .... (LDR 64-bit, unsigned immediate)
+    _ASSERTE((ldrInstr & 0xFFC00000) == 0xF9400000);
+
+    INT32 scaledImm12 = imm12 >> 3;       // scale the offset by the access size (8)
+
+    ldrInstr &= 0xFFC003FF;               // keep bits 31-22, 9-0
+    ldrInstr |= (scaledImm12 << 10);      // Occupy 21-10.
+
+    *pCode = ldrInstr;                    // write the assembled instruction
+
+    _ASSERTE(GetArm64Rel12Ldr(pCode) == imm12);
+}
+
+//*****************************************************************************
 //  Extract the PC-Relative page address and page offset from pcalau12i+add/ld
 //*****************************************************************************
 INT64 GetLoongArch64PC12(UINT32 * pCode)
@@ -2133,8 +1888,8 @@ INT64 GetLoongArch64JIR(UINT32 * pCode)
 {
     UINT32 pcInstr = *pCode;
 
-    // first get the high 20 bits,
-    INT64 imm = ((INT64)((pcInstr >> 5) & 0xFFFFF) << 18);
+    // first get and sign-extend the high 20 bits,
+    INT64 imm = ((INT32)(pcInstr << 7) >> 12) * 0x40000LL;
 
     // then get the low 18 bits
     pcInstr = *(pCode + 1);
@@ -2281,99 +2036,6 @@ void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype)
     _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == offset);
 }
 
-//======================================================================
-// This function returns true, if it can determine that the instruction pointer
-// refers to a code address that belongs in the range of the given image.
-BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip)
-{
-    STATIC_CONTRACT_LEAF;
-    SUPPORTS_DAC;
-
-    struct Param
-    {
-        PTR_VOID pModuleBaseAddress;
-        PCODE ip;
-        BOOL fRet;
-    } param;
-    param.pModuleBaseAddress = pModuleBaseAddress;
-    param.ip = ip;
-    param.fRet = FALSE;
-
-// UNIXTODO: implement a proper version for PAL
-#ifdef HOST_WINDOWS
-    PAL_TRY(Param *, pParam, &param)
-    {
-        PTR_BYTE pBase = dac_cast<PTR_BYTE>(pParam->pModuleBaseAddress);
-
-        PTR_IMAGE_DOS_HEADER pDOS = NULL;
-        PTR_IMAGE_NT_HEADERS pNT  = NULL;
-        USHORT cbOptHdr;
-        PCODE baseAddr;
-
-        //
-        // First, must validate the format of the PE headers to make sure that
-        // the fields we're interested in using exist in the image.
-        //
-
-        // Validate the DOS header.
-        pDOS = PTR_IMAGE_DOS_HEADER(pBase);
-        if (pDOS->e_magic != VAL16(IMAGE_DOS_SIGNATURE) ||
-            pDOS->e_lfanew == 0)
-        {
-            goto lDone;
-        }
-
-        // Validate the NT header
-        pNT = PTR_IMAGE_NT_HEADERS(pBase + VAL32(pDOS->e_lfanew));
-
-        if (pNT->Signature != VAL32(IMAGE_NT_SIGNATURE))
-        {
-            goto lDone;
-        }
-
-        // Validate that the optional header is large enough to contain the fields
-        // we're interested, namely IMAGE_OPTIONAL_HEADER::SizeOfImage. The reason
-        // we don't just check that SizeOfOptionalHeader == IMAGE_SIZEOF_NT_OPTIONAL_HEADER
-        // is due to VSW443590, which states that the extensibility of this structure
-        // is such that it is possible to include only a portion of the optional header.
-        cbOptHdr = pNT->FileHeader.SizeOfOptionalHeader;
-
-        // Check that the magic field is contained by the optional header and set to the correct value.
-        if (cbOptHdr < (offsetof(IMAGE_OPTIONAL_HEADER, Magic) + sizeofmember(IMAGE_OPTIONAL_HEADER, Magic)) ||
-            pNT->OptionalHeader.Magic != VAL16(IMAGE_NT_OPTIONAL_HDR_MAGIC))
-        {
-            goto lDone;
-        }
-
-        // Check that the SizeOfImage is contained by the optional header.
-        if (cbOptHdr < (offsetof(IMAGE_OPTIONAL_HEADER, SizeOfImage) + sizeofmember(IMAGE_OPTIONAL_HEADER, SizeOfImage)))
-        {
-            goto lDone;
-        }
-
-        //
-        // The real check
-        //
-
-        baseAddr = dac_cast<PCODE>(pBase);
-        if ((pParam->ip < baseAddr) || (pParam->ip >= (baseAddr + VAL32(pNT->OptionalHeader.SizeOfImage))))
-        {
-            goto lDone;
-        }
-
-        pParam->fRet = TRUE;
-
-lDone: ;
-    }
-    PAL_EXCEPT (EXCEPTION_EXECUTE_HANDLER)
-    {
-    }
-    PAL_ENDTRY
-#endif // HOST_WINDOWS
-
-    return param.fRet;
-}
-
 namespace Clr
 {
 namespace Util
@@ -2381,7 +2043,7 @@ namespace Util
 #ifdef HOST_WINDOWS
     // Struct used to scope suspension of client impersonation for the current thread.
     // https://learn.microsoft.com/windows/desktop/secauthz/client-impersonation
-    class SuspendImpersonation
+    class SuspendImpersonation final
     {
     public:
         SuspendImpersonation()
@@ -2405,11 +2067,14 @@ namespace Util
         ~SuspendImpersonation()
         {
             if (_token != nullptr)
+            {
                 ::SetThreadToken(nullptr, _token);
+                ::CloseHandle(_token);
+            }
         }
 
     private:
-        HandleHolder _token;
+        HANDLE _token;
     };
 
     struct ProcessIntegrityResult
@@ -2458,7 +2123,7 @@ namespace Util
         if (err != ERROR_INSUFFICIENT_BUFFER || dwSize == 0)
             return s_Result.RecordAndReturnError((err == ERROR_SUCCESS) ? E_FAIL : HRESULT_FROM_WIN32(err));
 
-        NewArrayHolder<BYTE> pLabel = new (nothrow) BYTE[dwSize];
+        NewArrayHolder<BYTE> pLabel{ new (nothrow) BYTE[dwSize] };
         if (pLabel == NULL)
             return s_Result.RecordAndReturnError(E_OUTOFMEMORY);
 

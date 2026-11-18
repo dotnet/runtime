@@ -187,7 +187,11 @@ namespace System.Diagnostics
         public string DisplayName
         {
             get => _displayName ?? OperationName;
-            set => _displayName = value ?? throw new ArgumentNullException(nameof(value));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _displayName = value;
+            }
         }
 
         /// <summary>Get the ActivitySource object associated with this Activity.</summary>
@@ -261,7 +265,7 @@ namespace System.Diagnostics
         /// <summary>
         /// If the parent for this activity comes from outside the process, the activity
         /// does not have a Parent Activity but MAY have a ParentId (which was deserialized from
-        /// from the parent).   This accessor fetches the parent ID if it exists at all.
+        /// the parent).   This accessor fetches the parent ID if it exists at all.
         /// Note this can be null if this is a root Activity (it has no parent)
         /// <para/>
         /// See <see href="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
@@ -297,7 +301,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Root Id is substring from Activity.Id (or ParentId) between '|' (or beginning) and first '.'.
-        /// Filtering by root Id allows to find all Activities involved in operation processing.
+        /// Filtering by root Id allows you to find all Activities involved in operation processing.
         /// RootId may be null if Activity has neither ParentId nor Id.
         /// See <see href="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
@@ -428,12 +432,18 @@ namespace System.Diagnostics
         public Enumerator<ActivityLink> EnumerateLinks() => new Enumerator<ActivityLink>(_links?.First);
 
         /// <summary>
+        /// Enumerate the baggage attached to this Activity object and its ancestors without allocating.
+        /// </summary>
+        /// <returns><see cref="BaggageEnumerator"/>.</returns>
+        internal BaggageEnumerator EnumerateBaggage() => new BaggageEnumerator(this);
+
+        /// <summary>
         /// Returns the value of the key-value pair added to the activity with <see cref="AddBaggage(string, string)"/>.
         /// Returns null if that key does not exist.
         /// </summary>
         public string? GetBaggageItem(string key)
         {
-            foreach (KeyValuePair<string, string?> keyValue in Baggage)
+            foreach (KeyValuePair<string, string?> keyValue in EnumerateBaggage())
                 if (key == keyValue.Key)
                     return keyValue.Value;
             return null;
@@ -1133,7 +1143,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// SetCustomProperty allow attaching any custom object to this Activity object.
-        /// If the property name was previously associated with other object, SetCustomProperty will update to use the new propert value instead.
+        /// If the property name was previously associated with other object, SetCustomProperty will update to use the new property value instead.
         /// </summary>
         /// <param name="propertyName"> The name to associate the value with.<see cref="OperationName"/></param>
         /// <param name="propertyValue">The object to attach and map to the property name.</param>
@@ -1191,7 +1201,10 @@ namespace System.Diagnostics
             activity.IdFormat = idFormat;
             activity._traceState = traceState;
 
-            if (links != null)
+            // Links and creation tags are unnecessary for activities sampled as PropagationData, so skip copying them.
+            bool copyData = request is ActivitySamplingResult.AllData or ActivitySamplingResult.AllDataAndRecorded;
+
+            if (copyData && links != null)
             {
                 using (IEnumerator<ActivityLink> enumerator = links.GetEnumerator())
                 {
@@ -1202,7 +1215,7 @@ namespace System.Diagnostics
                 }
             }
 
-            if (tags != null)
+            if (copyData && tags != null)
             {
                 using (IEnumerator<KeyValuePair<string, object?>> enumerator = tags.GetEnumerator())
                 {
@@ -1600,6 +1613,54 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>
+        /// Enumerates the baggage stored on this Activity and its ancestors without allocating.
+        /// Mirrors the semantics of the <see cref="Baggage"/> property, which uses an iterator
+        /// (allocating a state machine on every call) to walk the same data.
+        /// </summary>
+        internal struct BaggageEnumerator
+        {
+            // The next Activity (if any) to search for a non-empty baggage list. Always points at an
+            // Activity whose own baggage list has not yet been consumed by this enumerator.
+            private Activity? _activity;
+
+            // The remaining nodes of the baggage list currently being drained.
+            private DiagNode<KeyValuePair<string, string?>>? _next;
+
+            internal BaggageEnumerator(Activity? activity)
+            {
+                _activity = activity;
+                _next = null;
+                Current = default;
+            }
+
+            public KeyValuePair<string, string?> Current { get; private set; }
+
+            public readonly BaggageEnumerator GetEnumerator() => this;
+
+            public bool MoveNext()
+            {
+                while (_next is null)
+                {
+                    if (_activity is null)
+                    {
+                        return false;
+                    }
+
+                    BaggageLinkedList? baggage = _activity._baggage;
+                    _activity = _activity.Parent;
+                    if (baggage != null)
+                    {
+                        _next = baggage.First;
+                    }
+                }
+
+                Current = _next.Value;
+                _next = _next.Next;
+                return true;
+            }
+        }
+
         private sealed class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
         {
             private DiagNode<KeyValuePair<string, string?>>? _first;
@@ -1697,6 +1758,19 @@ namespace System.Diagnostics
                 while (e.MoveNext())
                 {
                     _last.Next = new DiagNode<KeyValuePair<string, object?>>(e.Current);
+                    _last = _last.Next;
+                }
+            }
+
+            public TagsLinkedList(ReadOnlySpan<KeyValuePair<string, object?>> tags)
+            {
+                Debug.Assert(tags.Length > 0);
+
+                _last = _first = new DiagNode<KeyValuePair<string, object?>>(tags[0]);
+
+                for (int i = 1; i < tags.Length; i++)
+                {
+                    _last.Next = new DiagNode<KeyValuePair<string, object?>>(tags[i]);
                     _last = _last.Next;
                 }
             }
@@ -1963,11 +2037,7 @@ namespace System.Diagnostics
             if (idData.Length != 16)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-#if NET
             return new ActivityTraceId(Convert.ToHexStringLower(idData));
-#else
-            return new ActivityTraceId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
-#endif
         }
         public static ActivityTraceId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivityTraceId(idData);
 
@@ -2046,11 +2116,7 @@ namespace System.Diagnostics
                 span[1] = BinaryPrimitives.ReverseEndianness(span[1]);
             }
 
-#if NET
             _hexString = Convert.ToHexStringLower(MemoryMarshal.AsBytes(span));
-#else
-            _hexString = HexConverter.ToString(MemoryMarshal.AsBytes(span), HexConverter.Casing.Lower);
-#endif
         }
 
         /// <summary>
@@ -2079,15 +2145,25 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Converts 'idData' which is assumed to be HEX Unicode characters to binary
-        /// puts it in 'outBytes'
+        /// Converts 'charData' which is assumed to be HEX Unicode characters to binary
+        /// and puts it in 'destination'. destination.Length * 2 must equal charData.Length.
         /// </summary>
-        internal static void SetSpanFromHexChars(ReadOnlySpan<char> charData, Span<byte> outBytes)
+        internal static void SetSpanFromHexChars(ReadOnlySpan<char> charData, Span<byte> destination)
         {
-            Debug.Assert(outBytes.Length * 2 == charData.Length);
-            for (int i = 0; i < outBytes.Length; i++)
-                outBytes[i] = HexByteFromChars(charData[i * 2], charData[i * 2 + 1]);
+            if (destination.Length * 2 != charData.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(destination));
+            }
+
+#if NET
+            OperationStatus status = Convert.FromHexString(charData, destination, out _, out _);
+            Debug.Assert(status == OperationStatus.Done);
+#else
+            for (int i = 0; i < destination.Length; i++)
+                destination[i] = HexByteFromChars(charData[i * 2], charData[i * 2 + 1]);
+#endif
         }
+
         internal static byte HexByteFromChars(char char1, char char2)
         {
             int hi = HexConverter.FromLowerChar(char1);
@@ -2131,22 +2207,14 @@ namespace System.Diagnostics
         {
             ulong id;
             ActivityTraceId.SetToRandomBytes(new Span<byte>(&id, sizeof(ulong)));
-#if NET
             return new ActivitySpanId(Convert.ToHexStringLower(new ReadOnlySpan<byte>(&id, sizeof(ulong))));
-#else
-            return new ActivitySpanId(HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower));
-#endif
         }
         public static ActivitySpanId CreateFromBytes(ReadOnlySpan<byte> idData)
         {
             if (idData.Length != 8)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-#if NET
             return new ActivitySpanId(Convert.ToHexStringLower(idData));
-#else
-            return new ActivitySpanId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
-#endif
         }
         public static ActivitySpanId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivitySpanId(idData);
 
@@ -2214,11 +2282,7 @@ namespace System.Diagnostics
                 id = BinaryPrimitives.ReverseEndianness(id);
             }
 
-#if NET
             _hexString = Convert.ToHexStringLower(new ReadOnlySpan<byte>(&id, sizeof(ulong)));
-#else
-            _hexString = HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower);
-#endif
         }
 
         /// <summary>

@@ -155,6 +155,8 @@ internal sealed class MockILCodeVersionNode : TypedView
     private const string InstrumentedILMapFieldName = "InstrumentedILMap";
     private const string InstrumentedILMapEntriesFieldName = "InstrumentedILMapEntries";
     private const string DeoptimizedFieldName = "Deoptimized";
+    private const string SourceFieldName = "Source";
+    private const string EnCVersionFieldName = "EnCVersion";
 
     public static Layout<MockILCodeVersionNode> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ILCodeVersionNode", architecture)
@@ -165,6 +167,8 @@ internal sealed class MockILCodeVersionNode : TypedView
             .AddUInt32Field(InstrumentedILMapFieldName)
             .AddPointerField(InstrumentedILMapEntriesFieldName)
             .AddUInt32Field(DeoptimizedFieldName)
+            .AddUInt32Field(SourceFieldName)
+            .AddNUIntField(EnCVersionFieldName)
             .Build<MockILCodeVersionNode>();
 
     public ulong VersionId
@@ -207,6 +211,18 @@ internal sealed class MockILCodeVersionNode : TypedView
     {
         get => ReadUInt32Field(DeoptimizedFieldName);
         set => WriteUInt32Field(DeoptimizedFieldName, value);
+    }
+
+    public uint Source
+    {
+        get => ReadUInt32Field(SourceFieldName);
+        set => WriteUInt32Field(SourceFieldName, value);
+    }
+
+    public ulong EnCVersion
+    {
+        get => ReadPointerField(EnCVersionFieldName);
+        set => WritePointerField(EnCVersionFieldName, value);
     }
 }
 
@@ -350,13 +366,15 @@ internal sealed class MockCodeVersionsBuilder
         => ILCodeVersioningStateLayout.Create(
             _codeVersionsAllocator.Allocate((ulong)ILCodeVersioningStateLayout.Size, "ILCodeVersioningState"));
 
-    public MockILCodeVersionNode AddILCodeVersionNode(ulong versionId, uint rejitFlags, bool deoptimized = false, ulong ilAddress = 0)
+    public MockILCodeVersionNode AddILCodeVersionNode(ulong versionId, uint rejitFlags, bool deoptimized = false, uint source = 1 /* CodeVersionSource.ReJIT */, ulong encVersion = 1 /* CorDB_DEFAULT_ENC_FUNCTION_VERSION */, ulong ilAddress = 0)
     {
         MockILCodeVersionNode node = ILCodeVersionNodeLayout.Create(
             _codeVersionsAllocator.Allocate((ulong)ILCodeVersionNodeLayout.Size, "ILCodeVersionNode"));
         node.VersionId = versionId;
         node.RejitState = rejitFlags;
         node.Deoptimized = deoptimized ? 1u : 0u;
+        node.Source = source;
+        node.EnCVersion = encVersion;
         node.ILAddress = ilAddress;
         node.Next = 0;
 

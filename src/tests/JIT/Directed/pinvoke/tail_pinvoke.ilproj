@@ -3,6 +3,8 @@
     <MonoAotIncompatible>true</MonoAotIncompatible>  <!-- https://github.com/dotnet/runtime/issues/90427  -->
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- https://github.com/dotnet/runtime/issues/123946 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWasm)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

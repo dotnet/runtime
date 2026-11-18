@@ -584,7 +584,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //
 void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (!m_compiler->getNeedsGSSecurityCookie())
     {
@@ -717,13 +717,22 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
         {
             genConsumeOperands(treeNode->AsOp());
 
-            regNumber tmpReg = internalRegisters.GetSingle(treeNode);
             regNumber srcReg = srcNode->GetRegNum();
             regNumber dstReg = treeNode->GetRegNum();
 
-            assert(genIsValidFloatReg(tmpReg));
             assert(genIsValidIntReg(srcReg));
             assert(genIsValidIntReg(dstReg));
+
+            if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_Cssc))
+            {
+                // FEAT_CSSC provides a scalar cnt operating directly on general registers.
+                GetEmitter()->emitIns_R_R(INS_cnt, emitActualTypeSize(srcNode), dstReg, srcReg, INS_OPTS_NONE);
+                break;
+            }
+
+            regNumber tmpReg = internalRegisters.GetSingle(treeNode);
+
+            assert(genIsValidFloatReg(tmpReg));
 
             emitAttr attr = emitTypeSize(srcNode->TypeGet());
 
@@ -748,6 +757,13 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             assert(genIsValidIntReg(srcReg));
             assert(genIsValidIntReg(dstReg));
 
+            if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_Cssc))
+            {
+                // FEAT_CSSC provides a scalar ctz operating directly on general registers.
+                GetEmitter()->emitIns_R_R(INS_ctz, emitActualTypeSize(srcNode), dstReg, srcReg, INS_OPTS_NONE);
+                break;
+            }
+
             GetEmitter()->emitIns_R_R(INS_rbit, emitActualTypeSize(srcNode), dstReg, srcReg, INS_OPTS_NONE);
             GetEmitter()->emitIns_R_R(INS_clz, emitActualTypeSize(srcNode), dstReg, dstReg, INS_OPTS_NONE);
             break;
@@ -758,6 +774,32 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_SQRT, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
+
+#ifdef TARGET_ARM
+        case NI_PRIMITIVE_SaturateToInt8:
+            // SSAT Rd, #8, Rn - saturate int32 to signed 8-bit range [-128, 127]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_ssat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 8);
+            break;
+
+        case NI_PRIMITIVE_SaturateToInt16:
+            // SSAT Rd, #16, Rn - saturate int32 to signed 16-bit range [-32768, 32767]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_ssat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 16);
+            break;
+
+        case NI_PRIMITIVE_SaturateToUInt8:
+            // USAT Rd, #8, Rn - saturate int32 to unsigned 8-bit range [0, 255]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_usat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 8);
+            break;
+
+        case NI_PRIMITIVE_SaturateToUInt16:
+            // USAT Rd, #16, Rn - saturate int32 to unsigned 16-bit range [0, 65535]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_usat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 16);
+            break;
+#endif // TARGET_ARM
 
 #if defined(FEATURE_SIMD)
             // The handling is a bit more complex so genSimdUpperSave/Restore
@@ -1037,7 +1079,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                     // Load from our address expression source
                     emit->emitIns_R_R_R_I(INS_ldp, emitTypeSize(type0), loReg, hiReg, addrReg, structOffset,
-                                          INS_OPTS_NONE, emitTypeSize(type0));
+                                          INS_OPTS_NONE, emitTypeSize(type1));
                 }
 
                 // Emit stp instruction to store the two registers into the outgoing argument area
@@ -1509,55 +1551,84 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL);
     }
 
-    // Can we use a ScaledAdd instruction?
-    //
-    if (isPow2(node->gtElemSize) && (node->gtElemSize <= 32768))
-    {
-        DWORD scale;
-        BitScanForward(&scale, node->gtElemSize);
-
 #ifdef TARGET_ARM64
+    if (varTypeHasUnknownSize(node->gtElemType))
+    {
         if (!index->TypeIs(TYP_I_IMPL))
         {
-            if (scale <= 4)
-            {
-                // target = base + index<<scale
-                GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(),
-                                              indexReg, scale, INS_OPTS_UXTW);
-            }
-            else
-            {
-                GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg, indexReg, /* canSkip */ false);
-                indexReg      = tmpReg;
-                emitter* emit = GetEmitter();
-                genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
-            }
-        }
-        else
-#endif // TARGET_ARM64
-        {
-            // dest = base + index * scale
-            genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
-        }
-    }
-    else // we have to load the element size and use a MADD (multiply-add) instruction
-    {
-#ifdef TARGET_ARM64
-        if (!index->TypeIs(TYP_I_IMPL))
-        {
+            // We require zero extension for madd here.
             const regNumber tmpReg2 = internalRegisters.Extract(node);
             GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg2, indexReg, /* canSkip */ false);
             indexReg = tmpReg2;
         }
+
+        if (node->gtElemType == TYP_SIMD)
+        {
+            // tmpReg = VL
+            GetEmitter()->emitIns_R_I(INS_sve_rdvl, EA_8BYTE, tmpReg, 1);
+        }
+        else
+        {
+            // tmpReg = PL
+            assert(node->gtElemType == TYP_MASK);
+            instGen_Set_Reg_To_Zero(EA_8BYTE, tmpReg);
+            GetEmitter()->emitIns_R_R_I(INS_sve_addpl, EA_8BYTE, tmpReg, tmpReg, 1);
+        }
+
+        // Generate addr = base + {VL|PL} * index;
+        GetEmitter()->emitIns_R_R_R_R(INS_madd, EA_8BYTE, node->GetRegNum(), indexReg, tmpReg, base->GetRegNum());
+    }
+    else
+#endif
+        // Can we use a ScaledAdd instruction?
+        //
+        if (isPow2(node->GetElemSize()) && (node->GetElemSize() <= 32768))
+        {
+            DWORD scale;
+            BitScanForward(&scale, node->GetElemSize());
+
+#ifdef TARGET_ARM64
+            if (!index->TypeIs(TYP_I_IMPL))
+            {
+                if (scale <= 4)
+                {
+                    // target = base + index<<scale
+                    GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(),
+                                                  base->GetRegNum(), indexReg, scale, INS_OPTS_UXTW);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg, indexReg, /* canSkip */ false);
+                    indexReg      = tmpReg;
+                    emitter* emit = GetEmitter();
+                    genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
+                }
+            }
+            else
+#endif // TARGET_ARM64
+            {
+                // dest = base + index * scale
+                genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
+            }
+        }
+        else // we have to load the element size and use a MADD (multiply-add) instruction
+        {
+#ifdef TARGET_ARM64
+            if (!index->TypeIs(TYP_I_IMPL))
+            {
+                const regNumber tmpReg2 = internalRegisters.Extract(node);
+                GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg2, indexReg, /* canSkip */ false);
+                indexReg = tmpReg2;
+            }
 #endif // TARGET_ARM64
 
-        // tmpReg = element size
-        instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, (ssize_t)node->gtElemSize);
+            // tmpReg = element size
+            instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, (ssize_t)node->GetElemSize());
 
-        // dest = index * tmpReg + base
-        GetEmitter()->emitIns_R_R_R_R(INS_MULADD, emitActualTypeSize(node), node->GetRegNum(), indexReg, tmpReg,
-                                      base->GetRegNum());
-    }
+            // dest = index * tmpReg + base
+            GetEmitter()->emitIns_R_R_R_R(INS_MULADD, emitActualTypeSize(node), node->GetRegNum(), indexReg, tmpReg,
+                                          base->GetRegNum());
+        }
 
     // dest = dest + elemOffs
     GetEmitter()->emitIns_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), node->GetRegNum(),
@@ -3149,6 +3220,10 @@ void CodeGen::genCall(GenTreeCall* call)
     if (m_compiler->killGCRefs(call))
     {
         genDefineTempLabel(genCreateTempLabel());
+
+        // The runtime can't find callee-saved registers through an InlinedCallFrame,
+        // so LSRA must have spilled any GC values held in them.
+        assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & RBM_INT_CALLEE_SAVED) == RBM_NONE);
     }
 
     genCallInstruction(call);
@@ -3308,33 +3383,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         params.sigInfo = call->callSig;
     }
-
-    if (call->IsFastTailCall())
-    {
-        regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
-
-        // The epilog may use and trash some registers for the GS cookie check.
-        // Make sure we have no non-standard args that may be trash if this is
-        // a tailcall.
-        if (m_compiler->getNeedsGSSecurityCookie())
-        {
-            trashedByEpilog |= genGetGSCookieTempRegs(/* tailCall */ true);
-        }
-
-        for (CallArg& arg : call->gtArgs.Args())
-        {
-            for (const ABIPassingSegment& seg : arg.AbiInfo.Segments())
-            {
-                if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
-                {
-                    JITDUMP("Tail call node:\n");
-                    DISPTREE(call);
-                    JITDUMP("Register used: %s\n", getRegName(seg.GetRegister()));
-                    assert(!"Argument to tailcall may be trashed by epilog");
-                }
-            }
-        }
-    }
+    genCheckTailCallEpilogRegisters(call);
 #endif // DEBUG
 
     GenTree* target = getCallTarget(call, &params.methHnd);
@@ -3886,6 +3935,13 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
             assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaMonAcquired) == -preservedAreaSize);
         }
 
+        if (m_compiler->lvaResumedIndicator != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaResumedIndicator) == -preservedAreaSize);
+        }
+
         if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
         {
             preservedAreaSize += TARGET_POINTER_SIZE;
@@ -4255,31 +4311,33 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         else
         {
 #ifdef TARGET_ARM64
-
             if (index->isContained())
             {
+                // Only BFIZ/CAST nodes should be present for contained index on ARM64.
+                GenTreeCast* cast;
                 if (index->OperIs(GT_BFIZ))
                 {
-                    // Handle LEA with "contained" BFIZ
                     assert(scale == 0);
                     scale = (DWORD)index->gtGetOp2()->AsIntConCommon()->IconValue();
-                    index = index->gtGetOp1()->gtGetOp1();
-                }
-                else if (index->OperIs(GT_CAST))
-                {
-                    index = index->AsCast()->gtGetOp1();
+                    cast  = index->gtGetOp1()->AsCast();
                 }
                 else
                 {
-                    // Only BFIZ/CAST nodes should be present for for contained index on ARM64.
-                    // If there are more, we need to handle them here.
-                    unreached();
+                    cast = index->AsCast();
                 }
-            }
-#endif
 
-            // Then compute target reg from [base + index*scale]
-            genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
+                // The 32-bit index has to be sign/zero-extended as part of the add.
+                assert(genActualTypeIsInt(cast->CastOp()) && (scale <= 4));
+                emit->emitIns_R_R_R_I(INS_add, size, lea->GetRegNum(), memBase->GetRegNum(),
+                                      cast->CastOp()->GetRegNum(), scale,
+                                      cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW);
+            }
+            else
+#endif
+            {
+                // Then compute target reg from [base + index*scale]
+                genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
+            }
         }
     }
     else if (lea->HasBase())
@@ -4378,7 +4436,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, const ReturnTypeDesc* retTypeDesc
 //
 void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
 #ifdef TARGET_ARM64
     // Probe large frames now, if necessary, since genPushCalleeSavedRegisters() will allocate the frame. Note that
@@ -4997,6 +5055,54 @@ void CodeGen::genUnknownSizeFrame()
         GetEmitter()->emitIns_R_R_R_R(INS_msub, EA_8BYTE, REG_SP, rsvd, REG_SCRATCH, REG_SP);
     }
 }
+
+//----------------------------------------------------------------------------
+//
+// genZeroInitializeUnknownSizeFrame: Zero-initialize the UnknownSizeFrame stack space.
+//
+// Remarks:
+//     This function emits code that assumes the state of sp has not been modified since
+//     establishing the UnknownSizeFrame. sp must point to the end of the UnknownSizeFrame.
+//
+void CodeGen::genZeroInitializeUnknownSizeFrame()
+{
+    assert(m_compiler->compUsesUnknownSizeFrame);
+
+    unsigned vectorCount = m_compiler->unkSizeFrame.FrameSizeInVectors();
+
+    assert(vectorCount > 0);
+
+    // z9 <== {0, 0, ...}
+    GetEmitter()->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_SCRATCH_V, 0, INS_OPTS_SCALABLE_B);
+
+    // For small vector counts, emit unrolled loop of vector stores.
+    // Unrolling to a maximum of 5 stores optimizes for code size rather than performance.
+    // TODO-SVE: Does unrolling further improve performance?
+    if (vectorCount <= 5)
+    {
+        for (unsigned i = 0; i < vectorCount; i++)
+        {
+            // str z9, [sp, #i MUL VL]
+            GetEmitter()->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, REG_SP, i);
+        }
+    }
+    else
+    {
+        // $cursor <== x19
+        inst_Mov(TYP_BYREF, REG_SCRATCH, REG_UNKBASE, false);
+        BasicBlock* loop = genCreateTempLabel();
+        // loop:
+        genDefineInlineTempLabel(loop);
+        // addvl $cursor, $cursor, #-1
+        GetEmitter()->emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, REG_SCRATCH, REG_SCRATCH, -1);
+        // str z9, [$cursor]
+        GetEmitter()->emitIns_R_R(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, REG_SCRATCH);
+        // cmp sp, $cursor
+        GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, REG_SP, REG_SCRATCH, INS_OPTS_UXTX);
+        // b.ne loop
+        GetEmitter()->emitIns_J(INS_bne, loop);
+    }
+}
 #endif
 
 /*****************************************************************************
@@ -5012,8 +5118,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     if (verbose)
         printf("*************** In genFnEpilog()\n");
 #endif // DEBUG
-
-    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     VarSetOps::Assign(m_compiler, gcInfo.gcVarPtrSetCur, GetEmitter()->emitInitGCrefVars);
     gcInfo.gcRegGCrefSetCur = GetEmitter()->emitInitGCrefRegs;

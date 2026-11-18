@@ -46,38 +46,18 @@
     <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs" Link="HelperExtensions.cs" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' != 'true' or '$(DotNetBuildFromVMR)' != 'true'">
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(DotNetBuildFromVMR)' == 'true'">
+    <!-- ILCompiler runs on the bootstrap SDK's bundled framework. In the VMR, use the previous-input package
+         for bootstrap compatibility; its version advances with the source-built inputs. -->
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLinePreviousVersion)" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="repro\*" />
-  </ItemGroup>
-
-  <PropertyGroup>
-    <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' == ''">$(TargetArchitecture)</TargetArchitectureForSharedLibraries>
-    <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' != ''">$(CrossHostArch)</TargetArchitectureForSharedLibraries>
-    <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitectureForSharedLibraries)'=='armel'">arm</TargetArchitectureForSharedLibraries>
-
-    <JitInterfaceLibraryName>$(_LibPrefix)jitinterface_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)</JitInterfaceLibraryName>
-    <!-- This will be provided when using the liveBuild, and unset otherwise. -->
-    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$(RuntimeBinDir)$(CrossHostArch)</CoreCLRArtifactsPath>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <Content Include="$(CoreCLRArtifactsPath)/$(JitInterfaceLibraryName)"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="PreserveNewest"
-      ExcludeFromSingleFile="$(PublishSingleFile)"
-      Link="%(FileName)%(Extension)"
-      Condition="'$(TargetsWasm)' != 'true'"
-      />
-
-    <Content Include="$(CoreCLRArtifactsPath)/$(_LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="PreserveNewest"
-      ExcludeFromSingleFile="$(PublishSingleFile)"
-      Link="%(FileName)%(Extension)"
-      />
+    <Compile Remove="reproZero\*" />
   </ItemGroup>
 </Project>

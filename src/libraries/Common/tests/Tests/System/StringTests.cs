@@ -317,6 +317,8 @@ namespace System.Tests
             Validate(string.Concat((ReadOnlySpan<string?>)values));
             Validate(string.Concat((IEnumerable<string>)values));
             Validate(string.Concat<string>((IEnumerable<string>)values)); // Call the generic IEnumerable<T>-based overload
+            Validate(string.Concat(values.Select(s => s)));
+            Validate(string.Concat(new List<string?>(values)));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
@@ -4030,6 +4032,50 @@ namespace System.Tests
                 }
             }
             Assert.Equal(expected, string.Join(separator, values, startIndex, count));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(1, 0)]
+        [InlineData(1, 1)]
+        [InlineData(2, 0)]
+        [InlineData(2, 1)]
+        [InlineData(4000, 0)]
+        [InlineData(4000, 1)]
+        [OuterLoop]
+        public static void Join_StringArray_ConcurrencySafe(int separatorLength, int mutationIndex)
+        {
+            string separator = new string(',', separatorLength);
+            string value = new string('x', separatorLength);
+            var values = new string?[3];
+            string withoutValue = separator + separator;
+            string withValue = mutationIndex == 0 ? value + withoutValue : separator + value + separator;
+
+            using var cts = new CancellationTokenSource();
+            using var barrier = new Barrier(2);
+            Task mutator = Task.Run(() =>
+            {
+                barrier.SignalAndWait();
+                while (!cts.IsCancellationRequested)
+                {
+                    Volatile.Write(ref values[mutationIndex], value);
+                    Volatile.Write(ref values[mutationIndex], null);
+                }
+            });
+
+            try
+            {
+                barrier.SignalAndWait();
+                for (int i = 0; i < 10000; i++)
+                {
+                    string result = string.Join(separator, values);
+                    Assert.True(result == withoutValue || result == withValue);
+                }
+            }
+            finally
+            {
+                cts.Cancel();
+                mutator.GetAwaiter().GetResult();
+            }
         }
 
         [Fact]

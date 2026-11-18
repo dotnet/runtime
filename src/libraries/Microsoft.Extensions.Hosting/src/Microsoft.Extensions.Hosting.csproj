@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\OperatingSystemPolyfills.cs" Link="Common\Polyfills\OperatingSystemPolyfills.cs" />
     <Compile Remove="HostBuilder.netcoreapp.cs" />
     <Compile Remove="Internal\ConsoleLifetime.netcoreapp.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />

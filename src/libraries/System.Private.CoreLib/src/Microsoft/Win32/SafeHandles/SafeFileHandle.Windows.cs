@@ -108,8 +108,6 @@ namespace Microsoft.Win32.SafeHandles
 
         internal bool IsNoBuffering => (GetFileOptions() & FileStreamHelpers.NoBuffering) != 0;
 
-        internal bool CanSeek => !IsClosed && Type == FileHandleType.RegularFile;
-
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
         internal bool TryGetCachedLength(out long cachedLength)
@@ -328,6 +326,19 @@ namespace Microsoft.Win32.SafeHandles
 
             return _fileOptions = result;
         }
+
+        // We need to figure out whether given file is seekable or not.
+        // The options that were considered:
+        // 1. Using SetFilePointerEx to move by 0 from current position:
+        //  - It can succeed for non-seekable files (pipes, sockets) opened for sync IO,
+        //  - It can fail for non-seekable files (pipes, sockets) opened for async IO.
+        // 2. Using Type property which internally uses GetFileType and then GetNamedPipeInfo to distinguish pipes from sockets.
+        // GetNamedPipeInfo requires GENERIC_READ or GENERIC_WRITE and FILE_READ_ATTRIBUTES access.
+        // There are valid scenarios like CreateNamedPipeW(PIPE_ACCESS_OUTBOUND) where GetNamedPipeInfo fails with ERROR_ACCESS_DENIED.
+        // 3. Switching from GetNamedPipeInfo to getsockopt to distinguish pipes from sockets. It would add a dependency on ws2_32.dll, which is not desirable.
+        // That is why we use GetFileType directly. Using the cached Type value would make the result depend on whether Type was queried first:
+        // handles such as symbolic links are FILE_TYPE_DISK, but their refined type is not RegularFile.
+        private bool GetCanSeekCore() => Interop.Kernel32.GetFileType(this) == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
 
         internal FileHandleType GetFileTypeCore()
         {

@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.MemoryRange))]
 internal sealed partial class MemoryRange : IData<MemoryRange>
 {
-    [Field] public TargetPointer StartAddress { get; }
-    [Field] public TargetNUInt Size { get; }
+    [Field] public partial TargetPointer StartAddress { get; }
+    [Field] public partial TargetNUInt Size { get; }
 }

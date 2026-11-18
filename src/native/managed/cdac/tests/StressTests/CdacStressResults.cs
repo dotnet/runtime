@@ -26,13 +26,33 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests.GCStress;
 /// </remarks>
 internal sealed partial class CdacStressResults
 {
+    // GCREFS sub-check (DOTNET_CdacStress bit 0x100). The native harness
+    // emits one [GC_STATS] summary line at shutdown when GCREFS is enabled.
+    // AnyGcRefsRecorded distinguishes "GCREFS ran" from "no [GC_STATS]
+    // line in the log" so an ARGITER-only run (where Passed/Failed/etc are
+    // all zero by design) can be told apart from a GCREFS run where the
+    // debuggee crashed before any allocation fired.
     public int TotalVerifications { get; private set; }
     public int Passed { get; private set; }
     public int Failed { get; private set; }
     public int KnownIssues { get; private set; }
+    public bool AnyGcRefsRecorded { get; private set; }
     public string LogFilePath { get; private set; } = string.Empty;
     public List<string> FailureDetails { get; } = [];
     public List<FailedVerification> FailedVerifications { get; } = [];
+
+    // ArgIter sub-check (DOTNET_CdacStress bit 0x200). The native harness
+    // emits one [ARG_STATS] summary line at shutdown when ARGITER is enabled.
+    // AnyArgIterRecorded distinguishes "ARGITER ran" from "no [ARG_STATS]
+    // line in the log" so callers can fail fast on a missing summary
+    // (typically meaning the runtime wasn't built with cdacstress support
+    // or ARGITER wasn't actually enabled this run).
+    public int ArgIterPassed { get; private set; }
+    public int ArgIterFailed { get; private set; }
+    public int ArgIterSkipped { get; private set; }
+    public int ArgIterErrors { get; private set; }
+    public bool AnyArgIterRecorded { get; private set; }
+    public List<string> ArgIterFailureLines { get; } = [];
 
     [GeneratedRegex(@"^\[PASS\]")]
     private static partial Regex PassPattern();
@@ -64,6 +84,22 @@ internal sealed partial class CdacStressResults
     // "#N <method> (cDAC=N RT=N)[ <-- MISMATCH | <-- KNOWN_NIE (...)]"
     [GeneratedRegex(@"^#\d+\s+.+?\s+\(cDAC=\d+\s+RT=\d+\)")]
     private static partial Regex StackTraceLinePattern();
+
+    // ArgIter sub-check summary: "[ARG_STATS] pass=N fail=N skip=N error=N"
+    [GeneratedRegex(@"^\[ARG_STATS\]\s+pass=(\d+)\s+fail=(\d+)\s+skip=(\d+)\s+error=(\d+)")]
+    private static partial Regex ArgStatsPattern();
+
+    // GCREFS sub-check summary: "[GC_STATS] verifications=N pass=N fail=N known_issue=N".
+    // Like [ARG_STATS], emitted only when the sub-check ran -- presence is
+    // the authoritative signal that GCREFS was enabled this run.
+    [GeneratedRegex(@"^\[GC_STATS\]\s+verifications=(\d+)\s+pass=(\d+)\s+fail=(\d+)\s+known_issue=(\d+)")]
+    private static partial Regex GcStatsPattern();
+
+    // Per-method ArgIter failure / error markers; captured verbatim into
+    // ArgIterFailureLines so AssertAllArgIterPassed can include them in the
+    // failure message without re-parsing the structured fields.
+    [GeneratedRegex(@"^\[ARG_(FAIL|ERROR)\]")]
+    private static partial Regex ArgFailOrErrorPattern();
 
     public static CdacStressResults Parse(string logFilePath)
     {
@@ -108,6 +144,38 @@ internal sealed partial class CdacStressResults
             {
                 results.TotalVerifications = int.Parse(totalMatch.Groups[1].Value, CultureInfo.InvariantCulture);
                 continue;
+            }
+
+            Match argStatsMatch = ArgStatsPattern().Match(trimmed);
+            if (argStatsMatch.Success)
+            {
+                results.ArgIterPassed = int.Parse(argStatsMatch.Groups[1].Value, CultureInfo.InvariantCulture);
+                results.ArgIterFailed = int.Parse(argStatsMatch.Groups[2].Value, CultureInfo.InvariantCulture);
+                results.ArgIterSkipped = int.Parse(argStatsMatch.Groups[3].Value, CultureInfo.InvariantCulture);
+                results.ArgIterErrors = int.Parse(argStatsMatch.Groups[4].Value, CultureInfo.InvariantCulture);
+                results.AnyArgIterRecorded = true;
+                continue;
+            }
+
+            Match gcStatsMatch = GcStatsPattern().Match(trimmed);
+            if (gcStatsMatch.Success)
+            {
+                // Authoritative GCREFS counts -- override anything inferred
+                // from the older "Total verifications:" line / per-frame
+                // [PASS]/[FAIL] increments so the two stay consistent.
+                results.TotalVerifications = int.Parse(gcStatsMatch.Groups[1].Value, CultureInfo.InvariantCulture);
+                results.Passed = int.Parse(gcStatsMatch.Groups[2].Value, CultureInfo.InvariantCulture);
+                results.Failed = int.Parse(gcStatsMatch.Groups[3].Value, CultureInfo.InvariantCulture);
+                results.KnownIssues = int.Parse(gcStatsMatch.Groups[4].Value, CultureInfo.InvariantCulture);
+                results.AnyGcRefsRecorded = true;
+                continue;
+            }
+
+            if (ArgFailOrErrorPattern().IsMatch(trimmed))
+            {
+                results.ArgIterFailureLines.Add(trimmed);
+                // Fall through: a stray [ARG_FAIL] without a preceding [ARG_STATS]
+                // still gets recorded for the failure analyzer below.
             }
 
             if (currentFailure is null)
@@ -177,8 +245,19 @@ internal sealed partial class CdacStressResults
         _ => RefDisposition.Unknown,
     };
 
-    public override string ToString() =>
-        $"Total={TotalVerifications}, Passed={Passed}, Failed={Failed}, KnownIssues={KnownIssues}";
+    public override string ToString()
+    {
+        // Format only the sub-checks that actually ran so the log clearly
+        // shows which mode produced the results. A mixed-mode run shows both.
+        var parts = new List<string>(2);
+        if (AnyGcRefsRecorded)
+            parts.Add($"GCREFS Total={TotalVerifications} Passed={Passed} Failed={Failed} KnownIssues={KnownIssues}");
+        if (AnyArgIterRecorded)
+            parts.Add($"ARGITER pass={ArgIterPassed} fail={ArgIterFailed} skip={ArgIterSkipped} error={ArgIterErrors}");
+        if (parts.Count == 0)
+            return "(no sub-check ran -- neither [GC_STATS] nor [ARG_STATS] in log)";
+        return string.Join("; ", parts);
+    }
 
     /// <summary>
     /// Formats the first N failed verifications using the structured per-frame data

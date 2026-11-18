@@ -18,7 +18,7 @@ typedef enum
 typedef struct
 {
     uint32_t InterfaceIndex; // The index of the interface to which this address belongs.
-    uint8_t AddressBytes[8]; // A pointer to the bytes containing the address.
+    uint8_t AddressBytes[12]; // The bytes containing the address.
     uint8_t NumAddressBytes; // The number of bytes actually stored in the address.
     uint8_t _padding;
     uint16_t HardwareType;
@@ -42,7 +42,7 @@ typedef struct
     uint16_t HardwareType;      // Interface mapped from L2 to NetworkInterfaceType.
     uint8_t OperationalState;   // Operational status.
     uint8_t NumAddressBytes;    // The number of bytes actually stored in the address.
-    uint8_t AddressBytes[8];    // Link address.
+    uint8_t AddressBytes[12];   // Link address.
     uint8_t SupportsMulticast;  // Interface supports multicast.
     uint8_t _padding[3];
 } NetworkInterfaceInfo;

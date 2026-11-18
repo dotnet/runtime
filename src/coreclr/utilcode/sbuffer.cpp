@@ -31,18 +31,17 @@ const DWORD g_garbageFillBuffer[GARBAGE_FILL_BUFFER_ITEMS] =
 //----------------------------------------------------------------------------
 void SBuffer::ReallocateBuffer(COUNT_T allocation, Preserve preserve)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckBufferClosed());
         PRECONDITION(CheckAllocation(allocation));
         PRECONDITION(allocation >= m_size);
-        POSTCONDITION(m_allocation == allocation);
         if (allocation > 0) THROWS; else NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     BYTE *newBuffer = NULL;
     if (allocation > 0)
@@ -69,12 +68,12 @@ void SBuffer::ReallocateBuffer(COUNT_T allocation, Preserve preserve)
 
     ClearImmutable();
 
-    RETURN;
+    _ASSERTE(m_allocation == allocation);
 }
 
 void SBuffer::Replace(const Iterator &i, COUNT_T deleteSize, COUNT_T insertSize)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
@@ -82,7 +81,7 @@ void SBuffer::Replace(const Iterator &i, COUNT_T deleteSize, COUNT_T insertSize)
         PRECONDITION(CheckIteratorRange(i, deleteSize));
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     COUNT_T startRange = (COUNT_T) (i.m_ptr - m_buffer);
     // The PRECONDITION(CheckIterationRange(i, deleteSize)) should check this in
@@ -138,8 +137,4 @@ void SBuffer::Replace(const Iterator &i, COUNT_T deleteSize, COUNT_T insertSize)
     }
 
     DebugConstructBuffer(i.m_ptr, insertSize);
-
-    RETURN;
 }
-
-

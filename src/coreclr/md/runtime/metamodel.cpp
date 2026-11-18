@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // MetaModel.cpp -- Base portion of compressed CLR metadata.
-//
-
-//
 //*****************************************************************************
+
 #include "stdafx.h"
 
 #include <metamodel.h>
@@ -1041,87 +1040,6 @@ CMiniMdBase::FindEventMapFor(
         return S_OK;
     }
 } // CMiniMdBase::FindEventMapFor
-
-
-//*****************************************************************************
-// Search for a custom value with a given type.
-//*****************************************************************************
-__checkReturn
-HRESULT
-CMiniMdBase::FindCustomAttributeFor(
-    RID     rid,        // The object's rid.
-    mdToken tkObj,      // The object's type.
-    mdToken tkType,     // Type of custom value.
-    RID    *pFoundRid)  // RID of custom value, or 0.
-{
-    HRESULT hr;
-    int     ixFound;                // index of some custom value row.
-    ULONG   ulTarget = encodeToken(rid,tkObj,mdtHasCustomAttribute, ARRAY_SIZE(mdtHasCustomAttribute)); // encoded token representing target.
-    ULONG   ixCur;                  // Current row being examined.
-    mdToken tkFound;                // Type of some custom value row.
-    void   *pCur;                   // A custom value entry.
-
-    // Search for any entry in CustomAttribute table.  Convert to RID.
-    IfFailRet(vSearchTable(TBL_CustomAttribute, _COLDEF(CustomAttribute,Parent), ulTarget, (RID *)&ixFound));
-    if (ixFound == 0)
-    {
-        *pFoundRid = 0;
-        return S_OK;
-    }
-
-    // Found an entry that matches the item.  Could be anywhere in a range of
-    //  custom values for the item, somewhat at random.  Search for a match
-    //  on name.  On entry to the first loop, we know the object is the desired
-    //  one, so the object test is at the bottom.
-    ixCur = ixFound;
-    IfFailRet(vGetRow(TBL_CustomAttribute, ixCur, &pCur));
-    for(;;)
-    {
-        // Test the type of the current row.
-        tkFound = getIX(pCur, _COLDEF(CustomAttribute,Type));
-        tkFound = decodeToken(tkFound, mdtCustomAttributeType, ARRAY_SIZE(mdtCustomAttributeType));
-        if (tkFound == tkType)
-        {
-            *pFoundRid = ixCur;
-            return S_OK;
-        }
-        // Was this the last row of the CustomAttribute table?
-        if (ixCur == GetCountRecs(TBL_CustomAttribute))
-            break;
-        // No match, more rows, try for the next row.
-        ++ixCur;
-        // Get the row and see if it is for the same object.
-        IfFailRet(vGetRow(TBL_CustomAttribute, ixCur, &pCur));
-        if (getIX(pCur, _COLDEF(CustomAttribute,Parent)) != ulTarget)
-            break;
-    }
-    // Didn't find the name looking up.  Try looking down.
-    ixCur = ixFound - 1;
-    for(;;)
-    {
-        // Run out of table yet?
-        if (ixCur == 0)
-            break;
-        // Get the row and see if it is for the same object.
-        IfFailRet(vGetRow(TBL_CustomAttribute, ixCur, &pCur));
-        // still looking at the same object?
-        if (getIX(pCur, _COLDEF(CustomAttribute,Parent)) != ulTarget)
-            break;
-        // Test the type of the current row.
-        tkFound = getIX(pCur, _COLDEF(CustomAttribute,Type));
-        tkFound = decodeToken(tkFound, mdtCustomAttributeType, ARRAY_SIZE(mdtCustomAttributeType));
-        if (tkFound == tkType)
-        {
-            *pFoundRid = ixCur;
-            return S_OK;
-        }
-        // No match, try for the previous row.
-        --ixCur;
-    }
-    // Didn't find anything.
-    *pFoundRid = 0;
-    return S_OK;
-} // CMiniMdBase::FindCustomAttributeFor
 
 //*****************************************************************************
 // See if we can find a globally shared Column Def Array for this table

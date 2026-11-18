@@ -751,7 +751,7 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned ne
     {
         gtSetStmtInfo(stmt);
         fgSetStmtSeq(stmt);
-        JITDUMP("New tree:\n", dspTreeID(stmt->GetRootNode()));
+        JITDUMP("New tree:\n");
         DISPTREE(stmt->GetRootNode());
         JITDUMP("\n");
     }
@@ -921,7 +921,11 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, Sc
 
     BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
     BasicBlock* initBlock = preheader;
-    if ((startSsaDsc->GetBlock() != nullptr) && (startSsaDsc->GetDefNode() != nullptr))
+    // Prefer to initialize the widened IV in the same block as the reaching def
+    // of the narrow IV, but only if the reaching def is not a phi. RBO's jump threading
+    // can leave stale SSA with the once-containing block being unreachable.
+    if ((startSsaDsc->GetBlock() != nullptr) && (startSsaDsc->GetDefNode() != nullptr) &&
+        !startSsaDsc->GetDefNode()->IsPhiDefn())
     {
         initBlock = startSsaDsc->GetBlock();
     }
@@ -2149,6 +2153,12 @@ ScevAddRec* StrengthReductionContext::ComputeRephrasableIVByScaling(ScevAddRec* 
         return nullptr;
     }
 
+    // Avoid the edge case of computing MinValue / -1.
+    if (((T)iv1Step == std::numeric_limits<T>::min()) || ((T)iv2Step == std::numeric_limits<T>::min()))
+    {
+        return nullptr;
+    }
+
     T gcd = Gcd((T)iv1Step, (T)iv2Step);
 
     if ((!allowRephrasingByScalingIV1 && (gcd != (T)iv1Step)) || (!allowRephrasingByScalingIV2 && (gcd != (T)iv2Step)))
@@ -2780,7 +2790,7 @@ bool Compiler::optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, PerLoopInfo* loopI
             continue;
         }
 
-        JITDUMP(" has no essential uses and will be removed\n", lclNum);
+        JITDUMP(" has no essential uses and will be removed\n");
         auto remove = [=](BasicBlock* block, Statement* stmt) {
             JITDUMP("  Removing " FMT_STMT "\n", stmt->GetID());
             fgRemoveStmt(block, stmt);

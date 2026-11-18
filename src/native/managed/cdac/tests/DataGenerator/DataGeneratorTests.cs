@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
+using System.Reflection;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using Microsoft.Diagnostics.DataContractReader.Data.GeneratorTests;
 using Xunit;
@@ -26,6 +28,109 @@ public class DataGeneratorTests
     private static T Materialize<T>(TestTarget target, ulong address) where T : IData<T>
         => target.ProcessedData.GetOrAdd<T>(new TargetPointer(address));
 
+    private static DataDescriptorDependencyAttribute[] Dependencies(MemberInfo member) =>
+        member.GetCustomAttributes<DataDescriptorDependencyAttribute>().ToArray();
+
+    private static bool UsesTypeSize(MemberInfo member) =>
+        member.GetCustomAttribute<UsesDataDescriptorTypeSizeAttribute>() is not null;
+
+    [Fact]
+    public void GeneratedPropertiesDeclareDescriptorDependencies()
+    {
+        PropertyInfo field = typeof(TestNative).GetProperty(nameof(TestNative.A))!;
+        Assert.Equal(
+            [(FieldName: "A", NativeType: "uint32")],
+            Dependencies(field).Select(attribute => (attribute.FieldName, attribute.NativeType)));
+        Assert.False(UsesTypeSize(field));
+
+        PropertyInfo alias = typeof(TestNativeAlias).GetProperty(nameof(TestNativeAlias.A))!;
+        Assert.Equal(
+            [(FieldName: "A", NativeType: "uint32")],
+            Dependencies(alias).Select(attribute => (attribute.FieldName, attribute.NativeType)));
+
+        PropertyInfo address = typeof(TestFieldAddr).GetProperty(nameof(TestFieldAddr.AnchorAddress))!;
+        Assert.Equal(
+            [(FieldName: "Anchor", NativeType: "pointer")],
+            Dependencies(address).Select(attribute => (attribute.FieldName, attribute.NativeType)));
+
+        PropertyInfo instanceData =
+            typeof(TestInstanceDataStart).GetProperty(nameof(TestInstanceDataStart.Data))!;
+        Assert.Empty(Dependencies(instanceData));
+        Assert.True(UsesTypeSize(instanceData));
+
+        PropertyInfo rawOffset = typeof(TestRawOffset).GetProperty(nameof(TestRawOffset.Value))!;
+        Assert.Empty(Dependencies(rawOffset));
+        Assert.False(UsesTypeSize(rawOffset));
+    }
+
+    [Fact]
+    public void GeneratedHelpersDeclareDescriptorDependencies()
+    {
+        MethodInfo getSize = typeof(TestNative).GetMethod(nameof(TestNative.GetSize))!;
+        Assert.Empty(Dependencies(getSize));
+        Assert.True(UsesTypeSize(getSize));
+
+        MethodInfo getOffset = typeof(TestNative).GetMethod(nameof(TestNative.GetAOffset))!;
+        Assert.Equal(
+            [(FieldName: "A", NativeType: "uint32")],
+            Dependencies(getOffset).Select(attribute => (attribute.FieldName, attribute.NativeType)));
+
+        MethodInfo write = typeof(TestWriteNative).GetMethod(nameof(TestWriteNative.WriteFlags))!;
+        Assert.Equal(
+            [(FieldName: "Flags", NativeType: "uint32")],
+            Dependencies(write).Select(attribute => (attribute.FieldName, attribute.NativeType)));
+
+        MethodInfo rawOffset =
+            typeof(TestRawOffset).GetMethod(nameof(TestRawOffset.GetValueOffset))!;
+        Assert.Empty(Dependencies(rawOffset));
+        Assert.False(UsesTypeSize(rawOffset));
+    }
+
+    [Fact]
+    public void TryReadAllFieldsDeclaresGeneratedPropertyDependencies()
+    {
+        MethodInfo tryReadAllFields = typeof(TestNative).GetMethod(
+            "TryReadAllFields",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+        Assert.Equal(
+            [
+                (FieldName: "A", NativeType: "uint32"),
+                (FieldName: "B", NativeType: "pointer"),
+            ],
+            Dependencies(tryReadAllFields)
+                .Select(attribute => (attribute.FieldName, attribute.NativeType)));
+        Assert.False(UsesTypeSize(tryReadAllFields));
+    }
+
+    [Fact]
+    public void TryReadAllFieldsWithCustomInitHasNoShortCircuitingDependencies()
+    {
+        MethodInfo tryReadAllFields = typeof(TestCustomInit).GetMethod(
+            "TryReadAllFields",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+        Assert.Empty(Dependencies(tryReadAllFields));
+        Assert.False(UsesTypeSize(tryReadAllFields));
+    }
+
+    [Fact]
+    public void CustomInitNamesInitializerWithDependencyMetadata()
+    {
+        PropertyInfo property = typeof(TestCustomInit).GetProperty(nameof(TestCustomInit.Doubled))!;
+        CustomInitAttribute customInit = property.GetCustomAttribute<CustomInitAttribute>()!;
+        Assert.Equal("InitDoubled", customInit.MethodName);
+
+        MethodInfo initializer = typeof(TestCustomInit).GetMethod(
+            "InitDoubled",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+        Assert.Equal(
+            [(FieldName: "CustomValue", NativeType: "uint32", TypeName: "CustomDescriptor")],
+            Dependencies(initializer)
+                .Select(attribute => (attribute.FieldName, attribute.NativeType, attribute.TypeName)));
+        Assert.True(UsesTypeSize(initializer));
+    }
+
     // ================================================================
     // Single-source baselines
     // ================================================================
@@ -33,7 +138,7 @@ public class DataGeneratorTests
     [Fact]
     public void Native_Baseline_Reads()
     {
-        var target = new TestTarget()
+        TestTarget target = new TestTarget()
             .AddNativeType("TestNative", size: 16,
                 ("A", 0),
                 ("B", 8))
@@ -49,6 +154,69 @@ public class DataGeneratorTests
     }
 
     [Fact]
+    public void GetSize_UsesNativeLayoutSize()
+    {
+        var target = new TestTarget()
+            .AddNativeType("TestCross", size: 16, ("A", 0), ("B", 8))
+            .AddManagedType("Test.Cross", size: 32, ("A", 16), ("B", 20));
+
+        Assert.Equal(16u, TestCross.GetSize(target));
+        Assert.Empty(target.ManagedTypeSourceMock.Invocations);
+    }
+
+    [Fact]
+    public void GetSize_NativeSizeAbsent_DoesNotFallBackToManaged()
+    {
+        var target = new TestTarget()
+            .AddNativeType("TestCross", size: null, ("A", 0))
+            .AddManagedType("Test.Cross", size: 32, ("A", 16));
+
+        Assert.Throws<InvalidOperationException>(() => TestCross.GetSize(target));
+        Assert.Empty(target.ManagedTypeSourceMock.Invocations);
+    }
+
+    [Fact]
+    public void GetSize_ThrowsWhenNoLayoutHasSize()
+    {
+        var target = new TestTarget();
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => TestNative.GetSize(target));
+
+        Assert.Equal("No layout source has a known instance size.", exception.Message);
+    }
+
+    [Fact]
+    public void GetFieldOffset_UsesResolvedFieldName()
+    {
+        var target = new TestTarget()
+            .AddNativeType("TestNativeAlias", size: 4, ("A_old", 12));
+
+        Assert.Equal(12, TestNativeAlias.GetAOffset(target));
+    }
+
+    [Fact]
+    public void GetFieldOffset_UsesManagedFallback()
+    {
+        var target = new TestTarget()
+            .AddManagedType("Test.FieldAddr", size: 16, ("A", 4), ("Anchor", 8));
+
+        Assert.Equal(8, TestFieldAddr.GetAnchorAddressOffset(target));
+    }
+
+    [Fact]
+    public void GetFieldOffset_ThrowsWhenFieldIsMissing()
+    {
+        var target = new TestTarget()
+            .AddNativeType("TestNative", size: 16);
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => TestNative.GetAOffset(target));
+
+        Assert.Equal("Field not found in any layout (names=[A]).", exception.Message);
+    }
+
+    [Fact]
     public void Managed_Baseline_Reads()
     {
         var target = new TestTarget()
@@ -61,7 +229,7 @@ public class DataGeneratorTests
     }
 
     // ================================================================
-    // Source cascade (native preferred over managed)
+    // Whole-layout selection (native preferred over managed)
     // ================================================================
 
     [Fact]
@@ -81,9 +249,8 @@ public class DataGeneratorTests
     }
 
     [Fact]
-    public void Cross_NativeMissingField_FallsBackToManaged()
+    public void Cross_NativeMissingField_DoesNotFallBackToManaged()
     {
-        // Native descriptor exists but doesn't contain "A"; managed has it.
         var target = new TestTarget()
             .AddNativeType("TestCross", size: 20, ("B", 12))
             .AddManagedType("Test.Cross", size: 8, ("A", 0), ("B", 4))
@@ -93,8 +260,65 @@ public class DataGeneratorTests
 
         TestCross t = Materialize<TestCross>(target, InstanceAddr);
 
-        Assert.Equal(0xCAFEu, t.A);                   // fell back to managed
-        Assert.Equal((TargetPointer)0x4444u, t.B);    // native B kept
+        Assert.Throws<InvalidOperationException>(() => TestCross.GetAOffset(target));
+        Assert.Throws<InvalidOperationException>(() => t.A);
+        Assert.Equal((TargetPointer)0x4444u, t.B);
+        Assert.Empty(target.ManagedTypeSourceMock.Invocations);
+    }
+
+    [Theory]
+    [InlineData("TestCross")]
+    [InlineData("Test.Cross")]
+    public void Cross_NativeTypeAlias_TakesPrecedenceOverManaged(string nativeTypeName)
+    {
+        var target = new TestTarget()
+            .AddNativeType(nativeTypeName, size: 16, ("A", 0), ("B", 8))
+            .AddManagedType("TestCross", size: 32, ("A", 16), ("B", 24))
+            .Allocate(InstanceAddr, 32, (0, U32(42u)), (8, U64(0x1234u)), (16, U32(99u)));
+
+        TestCross t = Materialize<TestCross>(target, InstanceAddr);
+
+        Assert.Equal(42u, t.A);
+        Assert.Equal((TargetPointer)0x1234u, t.B);
+        Assert.Empty(target.ManagedTypeSourceMock.Invocations);
+    }
+
+    [Fact]
+    public void Cross_ManagedTypeAlias_DoesNotMixLayouts()
+    {
+        var target = new TestTarget()
+            .AddManagedType("TestCross", size: 4, ("A", 0))
+            .AddManagedType("Test.Cross", size: 16, ("A", 0), ("B", 8))
+            .Allocate(InstanceAddr, 16, (0, U32(42u)), (8, U64(0x1234u)));
+
+        TestCross t = Materialize<TestCross>(target, InstanceAddr);
+
+        Assert.Empty(target.ManagedTypeSourceMock.Invocations);
+        Assert.Equal(42u, t.A);
+        Assert.Throws<InvalidOperationException>(() => t.B);
+        Assert.Equal("TestCross", Assert.Single(target.ManagedTypeSourceMock.Invocations).Arguments[0]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Managed_LayoutResolution_IsLazyAndMemoized(bool typeExists)
+    {
+        var target = new TestTarget().Allocate(InstanceAddr, 4, (0, U32(42u)));
+        if (typeExists)
+            target.AddManagedType("Test.Managed.Ref", size: 4, ("_a", 0));
+
+        TestManagedRef t = Materialize<TestManagedRef>(target, InstanceAddr);
+
+        Assert.Empty(target.ManagedTypeSourceMock.Invocations);
+        for (int i = 0; i < 2; i++)
+        {
+            if (typeExists)
+                Assert.Equal(42u, t.A);
+            else
+                Assert.Throws<InvalidOperationException>(() => t.A);
+        }
+        Assert.Single(target.ManagedTypeSourceMock.Invocations);
     }
 
     [Fact]
@@ -114,16 +338,35 @@ public class DataGeneratorTests
     }
 
     [Fact]
-    public void Cross_BothMissingField_Throws()
+    public void Cross_BothMissingField_ThrowsOnRead()
     {
-        // Neither source has "A".
+        // Neither source has "A". Construction succeeds (lazy); the read throws
+        // the same exception the eager path threw, just deferred to first access.
         var target = new TestTarget()
             .AddNativeType("TestCross", size: 16, ("B", 8))
             .AddManagedType("Test.Cross", size: 8, ("B", 0))
             .Allocate(InstanceAddr, 32);
 
-        Assert.Throws<InvalidOperationException>(
-            () => Materialize<TestCross>(target, InstanceAddr));
+        TestCross t = Materialize<TestCross>(target, InstanceAddr);
+
+        Assert.Throws<InvalidOperationException>(() => t.A);
+    }
+
+    [Fact]
+    public void MissingField_ConstructionSucceeds_OtherFieldsReadable()
+    {
+        // The descriptor omits "A" but has "B". Constructing the object must
+        // not throw (versioning: an absent field only fails when read), and the
+        // present field "B" must still be readable.
+        var target = new TestTarget()
+            .AddNativeType("TestCross", size: 16, ("B", 8))
+            .AddManagedType("Test.Cross", size: 16, ("B", 8))
+            .Allocate(InstanceAddr, 16, (8, U64(0x1234u)));
+
+        TestCross t = Materialize<TestCross>(target, InstanceAddr);
+
+        Assert.Equal((TargetPointer)0x1234u, t.B);              // present field reads fine
+        Assert.Throws<InvalidOperationException>(() => t.A);    // absent field fails on read
     }
 
     // ================================================================
@@ -232,16 +475,27 @@ public class DataGeneratorTests
         Assert.Equal(0u, BitConverter.ToUInt32(target.Bytes(InstanceAddr).Slice(4, 4)));
     }
 
-    [Fact]
-    public void WriteCross_ManagedResolves_WritesManagedOffset()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WriteCross_UsesManagedOnlyWhenNativeDescriptorAbsent(bool nativeDescriptorPresent)
     {
-        // Native descriptor lacks "Flags"; write should fall back to managed.
         var target = new TestTarget()
-            .AddNativeType("TestWriteCross", size: 8)
             .AddManagedType("Test.WriteCross", size: 4, ("Flags", 4))
             .Allocate(InstanceAddr, 8, (4, U32(0u)));
 
+        if (nativeDescriptorPresent)
+            target.AddNativeType("TestWriteCross", size: 8);
+
         TestWriteCross t = Materialize<TestWriteCross>(target, InstanceAddr);
+        if (nativeDescriptorPresent)
+        {
+            Assert.Throws<InvalidOperationException>(() => t.WriteFlags(0x44u));
+            Assert.Equal(0u, BitConverter.ToUInt32(target.Bytes(InstanceAddr).Slice(4, 4)));
+            Assert.Empty(target.ManagedTypeSourceMock.Invocations);
+            return;
+        }
+
         t.WriteFlags(0x44u);
 
         Assert.Equal(0x44u, BitConverter.ToUInt32(target.Bytes(InstanceAddr).Slice(4, 4)));
@@ -275,6 +529,52 @@ public class DataGeneratorTests
 
         Assert.Equal(5u, t.Required);
         Assert.Null(t.Optional);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Optional_UsesManagedOnlyWhenNativeDescriptorAbsent(bool nativeDescriptorPresent)
+    {
+        var target = new TestTarget()
+            .AddManagedType("TestOptional", size: 8, ("Required", 0), ("Optional", 4))
+            .Allocate(InstanceAddr, 8, (0, U32(5u)), (4, U32(9u)));
+
+        if (nativeDescriptorPresent)
+            target.AddNativeType("TestOptional", size: 4, ("Required", 0));
+
+        TestOptional t = Materialize<TestOptional>(target, InstanceAddr);
+
+        Assert.True(t.TryReadAllFields());
+        Assert.Equal(5u, t.Required);
+        Assert.Equal(nativeDescriptorPresent ? null : (uint?)9u, t.Optional);
+        if (nativeDescriptorPresent)
+            Assert.Empty(target.ManagedTypeSourceMock.Invocations);
+    }
+
+    // ================================================================
+    // CustomInit -- author-provided lazy initializer
+    // ================================================================
+
+    [Fact]
+    public void CustomInit_ComputesLazilyAndMemoizes()
+    {
+        TestTarget target = new TestTarget()
+            .AddNativeType("TestCustomInit", size: 4, ("Raw", 0))
+            .Allocate(InstanceAddr, 4, (0, U32(21u)));
+
+        TestCustomInit.InitDoubledCallCount = 0;
+        TestCustomInit t = Materialize<TestCustomInit>(target, InstanceAddr);
+
+        // Constructing does not run the initializer (it is lazy).
+        Assert.Equal(0, TestCustomInit.InitDoubledCallCount);
+
+        Assert.Equal(42u, t.Doubled);
+        Assert.Equal(1, TestCustomInit.InitDoubledCallCount);
+
+        // Second access is memoized -- the initializer does not run again.
+        Assert.Equal(42u, t.Doubled);
+        Assert.Equal(1, TestCustomInit.InitDoubledCallCount);
     }
 
     // ================================================================
@@ -331,6 +631,33 @@ public class DataGeneratorTests
         Assert.Null(t.OptionalAddress);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FieldAddress_UsesManagedOnlyWhenNativeDescriptorAbsent(bool nativeDescriptorPresent)
+    {
+        var target = new TestTarget()
+            .AddManagedType("TestOptionalFieldAddr", size: 8, ("Required", 0), ("OptionalAddress", 4))
+            .Allocate(InstanceAddr, 8, (0, U32(7u)));
+
+        if (nativeDescriptorPresent)
+            target.AddNativeType("TestOptionalFieldAddr", size: 4, ("Required", 0));
+
+        TestOptionalFieldAddr t = Materialize<TestOptionalFieldAddr>(target, InstanceAddr);
+
+        Assert.True(t.TryReadAllFields());
+        Assert.Equal(nativeDescriptorPresent ? null : (TargetPointer?)(InstanceAddr + 4), t.OptionalAddress);
+        if (nativeDescriptorPresent)
+        {
+            Assert.Throws<InvalidOperationException>(() => TestOptionalFieldAddr.GetOptionalAddressOffset(target));
+            Assert.Empty(target.ManagedTypeSourceMock.Invocations);
+        }
+        else
+        {
+            Assert.Equal(4, TestOptionalFieldAddr.GetOptionalAddressOffset(target));
+        }
+    }
+
     // ================================================================
     // UsePropertyName = false
     // ================================================================
@@ -354,8 +681,9 @@ public class DataGeneratorTests
             .AddNativeType("TestNoPropertyName", size: 4, ("Flags", 0))
             .Allocate(InstanceAddr, 4, (0, U32(0xBEEFu)));
 
-        Assert.Throws<InvalidOperationException>(
-            () => Materialize<TestNoPropertyName>(target, InstanceAddr));
+        TestNoPropertyName t = Materialize<TestNoPropertyName>(target, InstanceAddr);
+
+        Assert.Throws<InvalidOperationException>(() => t.Flags);
     }
 
     // ================================================================

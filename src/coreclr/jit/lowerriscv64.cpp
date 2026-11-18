@@ -329,44 +329,13 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         }
         else // op2 is not constant
         {
-            GenTree* opp1 = isOp1Negated ? op1->gtGetOp1() : op1;
-            GenTree* opp2 = isOp2Negated ? op2->gtGetOp1() : op2;
-
-            bool isOp1SingleBit =
-                (isOp1Negated == binOp->OperIs(GT_AND)) && opp1->OperIs(GT_LSH) && opp1->gtGetOp1()->IsIntegralConst(1);
-            bool isOp2SingleBit =
-                (isOp2Negated == binOp->OperIs(GT_AND)) && opp2->OperIs(GT_LSH) && opp2->gtGetOp1()->IsIntegralConst(1);
-
-            if (isOp1SingleBit || isOp2SingleBit)
+            // a | (1 << b),  a ^ (1 << b),  a & ~(1 << b)   =>   BIT_{SET,INVERT,CLEAR}(a, b)
+            if (TryLowerBitwiseOpToBitOp(binOp) != nullptr)
             {
-                // a | (1 << b),  a ^ (1 << b),  a & ~(1 << b)   =>   BIT_{SET,INVERT,CLEAR}(a, b)
-
-                if (isOp1SingleBit)
-                    std::swap(op1, op2);
-
-                if (binOp->OperIs(GT_AND))
+                // binOp is now BIT_{SET,INVERT,CLEAR} with op2 as the (variable) bit index.
+                if (op1->TypeIs(TYP_INT))
                 {
-                    assert(op2->OperIs(GT_NOT));
-                    BlockRange().Remove(op2);
-                    op2 = op2->gtGetOp1();
-                }
-
-                assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
-                static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND), "");
-                constexpr genTreeOps singleBitOpers[] = {GT_BIT_SET, GT_BIT_INVERT, GT_BIT_CLEAR};
-                binOp->ChangeOper(singleBitOpers[binOp->OperGet() - GT_OR]);
-
-                assert(op2->OperIs(GT_LSH));
-                assert(op2->gtGetOp1()->IsIntegralConst(1));
-                assert(!op2->gtGetOp2()->IsIntegralConst());
-                BlockRange().Remove(op2->gtGetOp1());
-                BlockRange().Remove(op2);
-                op2 = op2->gtGetOp2(); // shift amount becomes bit index
-
-                assert(op1->TypeIs(TYP_INT, TYP_LONG));
-                if (!op2->IsIntegralConst() && op1->TypeIs(TYP_INT))
-                {
-                    // Zbs instructions don't have *w variants so wrap the bit index / shift amount to 0-31 manually
+                    // Zbs instructions don't have *w variants so wrap the bit index to 0-31 manually.
                     GenTreeIntCon* mask = m_compiler->gtNewIconNode(0x1F);
                     mask->SetContained();
                     BlockRange().InsertAfter(op2, mask);
@@ -493,7 +462,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size))
+    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), ValueSize(size)))
     {
         addr->SetContained();
         return;
@@ -506,6 +475,13 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 
     GenTreeIntCon* offsetNode = addr->AsOp()->gtGetOp2()->AsIntCon();
     ssize_t        offset     = offsetNode->IconValue();
+
+    // A constant that needs a relocation, such as a frozen object's handle, cannot be folded into the
+    // address mode: the offset is emitted as a plain immediate, without the relocation.
+    if (offsetNode->ImmedValNeedsReloc(m_compiler))
+    {
+        return;
+    }
 
     // TODO-RISCV64: not including the ldptr and SIMD offset which not used right now.
     if (!emitter::isValidSimm12(offset) || !emitter::isValidSimm12(offset + static_cast<int>(size)))
@@ -1051,7 +1027,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     {
         MakeSrcContained(indirNode, addr);
     }
-    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->Size()))
+    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->ValueSize()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
@@ -1136,7 +1112,8 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
-    if (op1->OperIs(GT_BITCAST))
+    // A small store implicitly truncates its source, so it cannot store directly from the other type.
+    if (op1->OperIs(GT_BITCAST) && !varTypeIsSmall(storeLoc))
     {
         // If we know that the source of the bitcast will be in a register, then we can make
         // the bitcast itself contained. This will allow us to store directly from the other
@@ -1219,7 +1196,59 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //
 void Lowering::ContainCheckSelect(GenTreeOp* node)
 {
-    noway_assert(!"GT_SELECT nodes are not supported on riscv64");
+    assert(node->OperIs(GT_SELECT));
+    // GT_SELECT is only produced/codegen'd on riscv64 when Zicond is available; integer-only.
+    assert(m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zicond));
+    assert(varTypeIsIntegralOrI(node));
+
+    GenTreeConditional* sel = node->AsConditional();
+
+    // czero already compares its register operand with zero, so the various relop+xori
+    // sequences that genCodeForCompare would emit are redundant when the SELECT's cond
+    // is itself a comparison.
+    GenTree* cond = sel->gtCond;
+    if (cond->OperIsCompare())
+    {
+        GenTreeOp* relop = cond->AsOp();
+
+        // SELECT(EQ(x,0), T, F) -> SELECT(x, F, T) and SELECT(NE(x,0), T, F) -> SELECT(x, T, F):
+        // czero with x as the predicate is equivalent to comparing x against zero.
+        if (relop->OperIs(GT_EQ, GT_NE))
+        {
+            GenTree* relopOp2 = relop->gtGetOp2();
+            if (relopOp2->IsIntegralConst(0))
+            {
+                sel->gtCond = relop->gtGetOp1();
+                if (relop->OperIs(GT_EQ))
+                {
+                    std::swap(sel->gtOp1, sel->gtOp2);
+                }
+                BlockRange().Remove(relopOp2);
+                BlockRange().Remove(relop);
+            }
+        }
+
+        // For polarities where genCodeForCompare would emit a trailing xori 1 (like GE/LE or
+        // floating-point unordered), reverse the condition in-place and swap the SELECT arms.
+        // czero.{eqz,nez} encode both polarities directly, dropping the need for xori.
+        else if (relop->OperIs(GT_GE, GT_LE) ||
+                 (varTypeIsFloating(relop->gtGetOp1()) && (relop->gtFlags & GTF_RELOP_NAN_UN) != 0))
+        {
+            bool reversed = m_compiler->gtTryReverseCond(cond);
+            assert(reversed); // gtTryReverseCond always succeeds for OperIsCompare()
+
+            std::swap(sel->gtOp1, sel->gtOp2);
+        }
+    }
+
+    // czero.{eqz,nez} take a register source and a register condition, so the only
+    // contained form is an integral-zero operand that can be expressed via REG_ZERO.
+    GenTree* op1 = sel->gtOp1;
+    GenTree* op2 = sel->gtOp2;
+    if (op1->IsIntegralConst(0) && !op1->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+        MakeSrcContained(node, op1);
+    if (op2->IsIntegralConst(0) && !op2->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+        MakeSrcContained(node, op2);
 }
 
 //------------------------------------------------------------------------

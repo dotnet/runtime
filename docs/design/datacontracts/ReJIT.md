@@ -8,9 +8,12 @@ This contract encapsulates support for [ReJIT](../features/code-versioning.md) i
 public enum RejitState
 {
     Requested,
-    Active
+    Active,
+    Unknown,
 }
 ```
+
+`GetRejitState` returns `Unknown` for any ReJIT state value that the contract does not recognize.
 
 ```csharp
 bool IsEnabled();
@@ -26,26 +29,28 @@ IEnumerable<TargetNUInt> GetRejitIds(TargetPointer methodDesc)
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| ProfControlBlock | GlobalEventMask | an `ICorProfiler` `COR_PRF_MONITOR` value |
-| ProfControlBlock | RejitOnAttachEnabled | cached value of the `ProfAPI_RejitOnAttach` configuration knob |
-| ProfControlBlock | MainProfilerProfInterface | pointer to the main profiler's `ICorProfilerCallback` interface, non-null means a main profiler is attached |
-| ProfControlBlock | NotificationProfilerCount | number of notification-only profilers currently attached |
-| ILCodeVersionNode | VersionId | `ILCodeVersion` ReJIT ID
-| ILCodeVersionNode | RejitState | a `RejitFlags` value |
-| ILCodeVersionNode | Deoptimized | whether this IL code version has been deoptimized |
+<!-- BEGIN GENERATED: usage contract=ReJIT version=c1 -->
+### Data descriptors used
 
-Global variables used:
-| Global Name | Type | Purpose |
-| --- | --- | --- |
-|ProfilerControlBlock | TargetPointer | pointer to the `ProfControlBlock` |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `ILCodeVersionNode` | `Deoptimized` | `uint32` | whether this IL code version has been deoptimized |
+| `ILCodeVersionNode` | `RejitState` | `uint32` | a RejitFlags value |
+| `ILCodeVersionNode` | `VersionId` | `nuint` | Unique IL code version ID of the IL code version node (used as a ReJIT ID when Source is ReJIT) |
+| `ProfControlBlock` | `GlobalEventMask` | `uint64` | an ICorProfiler COR_PRF_MONITOR value |
+| `ProfControlBlock` | `RejitOnAttachEnabled` | `uint8` | cached value of the ProfAPI_RejitOnAttach configuration knob |
 
-Contracts used:
-| Contract Name |
-| --- |
-| CodeVersions |
+### Global variables used
+
+| Global | Type | Meaning |
+| --- | --- | --- |
+| `ProfilerControlBlock` | `pointer` | pointer to the ProfControlBlock |
+
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=ReJIT version=c1 -->
+
 
 ```csharp
 // see src/coreclr/inc/corprof.idl
@@ -91,7 +96,7 @@ RejitState GetRejitState(ILCodeVersionHandle codeVersion)
         {
             RejitFlags.kStateRequested => RejitState.Requested,
             RejitFlags.kStateActive => RejitState.Active,
-            _ => throw new NotImplementedException($"Unknown ReJIT state: {ilCodeVersionNode.RejitState}"),
+            _ => RejitState.Unknown,
         };
     }
 }
@@ -135,7 +140,7 @@ IEnumerable<TargetNUInt> GetRejitIds(TargetPointer methodDesc)
 
     foreach (ILCodeVersionHandle ilCodeVersionHandle in ilCodeVersions)
     {
-        if (GetRejitState(ilCodeVersionHandle) == RejitState.Active)
+        if (cv.GetSource(ilCodeVersionHandle) == CodeVersionSource.ReJIT && GetRejitState(ilCodeVersionHandle) == RejitState.Active)
         {
             yield return GetRejitId(ilCodeVersionHandle);
         }

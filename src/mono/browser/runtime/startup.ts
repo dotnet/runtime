@@ -83,9 +83,8 @@ export function configureEmscriptenStartup (module: DotnetModuleInternal): void 
         mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     }
     if (runtimeHelpers.emscriptenBuildOptions.wasmEnableEH) {
-        mono_assert(runtimeHelpers.featureWasmEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
+        mono_assert(runtimeHelpers.featureWasmFinalEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     }
-    module.mainScriptUrlOrBlob = loaderHelpers.scriptUrl;// this is needed by worker threads
 
     // these all could be overridden on DotnetModuleConfig, we are chaining them to async below, as opposed to emscripten
     // when the user sets config, we are running our default startup sequence.
@@ -146,8 +145,8 @@ async function instantiateWasmWorker (
     const instance = new WebAssembly.Instance(Module.wasmModule!, imports);
     Module.wasmModule = null;
 
-    preRunWorker();
     successCallback(instance, undefined);
+    preRunWorker();
 }
 
 
@@ -357,13 +356,11 @@ export function postRunWorker () {
 async function mono_wasm_after_user_runtime_initialized (): Promise<void> {
     mono_log_debug("mono_wasm_after_user_runtime_initialized");
     try {
-        if (Module.onDotnetReady) {
-            try {
-                await Module.onDotnetReady();
-            } catch (err: any) {
-                mono_log_error("onDotnetReady () failed", err);
-                throw err;
-            }
+        try {
+            await loaderHelpers.callbacks.dotnetReady?.();
+        } catch (err: any) {
+            mono_log_error("onDotnetReady () failed", err);
+            throw err;
         }
     } catch (err: any) {
         mono_log_error("mono_wasm_after_user_runtime_initialized () failed", err);
@@ -424,10 +421,10 @@ async function instantiate_wasm_module (
 async function ensureUsedWasmFeatures () {
     const simd = loaderHelpers.simd();
     const relaxedSimd = loaderHelpers.relaxedSimd();
-    const exceptions = loaderHelpers.exceptions();
+    const exceptions = loaderHelpers.exceptionsFinal();
     runtimeHelpers.featureWasmSimd = await simd;
     runtimeHelpers.featureWasmRelaxedSimd = await relaxedSimd;
-    runtimeHelpers.featureWasmEh = await exceptions;
+    runtimeHelpers.featureWasmFinalEh = await exceptions;
 }
 
 export async function start_runtime () {

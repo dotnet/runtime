@@ -90,15 +90,11 @@ internal sealed class MethodValidation
 
     internal TargetPointer GetMethodDescChunkPointerThrowing(TargetPointer methodDescPointer, Data.MethodDesc umd)
     {
-        ulong? methodDescChunkSize = _target.GetTypeInfo(DataType.MethodDescChunk).Size;
-        if (!methodDescChunkSize.HasValue)
-        {
-            throw new InvalidOperationException("Target has no definite MethodDescChunk size");
-        }
+        ulong methodDescChunkSize = Data.MethodDescChunk.GetSize(_target);
         // The runtime allocates a contiguous block of memory for a MethodDescChunk followed by MethodDescAlignment * Size bytes of space
         // that is filled with MethodDesc (or its subclasses) instances.  Each MethodDesc has a ChunkIndex that indicates its
         // offset from the end of the MethodDescChunk.
-        ulong chunkAddress = (ulong)methodDescPointer - methodDescChunkSize.Value - umd.ChunkIndex * _methodDescAlignment;
+        ulong chunkAddress = (ulong)methodDescPointer - methodDescChunkSize - umd.ChunkIndex * _methodDescAlignment;
         return new TargetPointer(chunkAddress);
     }
 
@@ -195,8 +191,9 @@ internal sealed class MethodValidation
             TargetCodePointer temporaryEntryPoint = GetTemporaryEntryPointIfExists(umd);
             if (temporaryEntryPoint != TargetCodePointer.Null)
             {
-                Contracts.IPrecodeStubs precode = _target.Contracts.PrecodeStubs;
-                TargetPointer methodDesc = precode.GetMethodDescFromStubAddress(temporaryEntryPoint);
+                TargetPointer methodDesc = _target.Contracts.TryGetContract(out IPrecodeStubs precodeStubs)
+                    ? precodeStubs.GetMethodDescFromStubAddress(temporaryEntryPoint)
+                    : _target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(temporaryEntryPoint);
                 if (methodDesc != methodDescPointer)
                 {
                     return false;

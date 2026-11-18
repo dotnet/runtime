@@ -57,7 +57,6 @@ struct ExInfo
         void Reset();
         bool IsEmpty();
         bool IsSupersededBy(StackFrame sf);
-        void CombineWith(StackFrame sfCurrent, StackRange* pPreviousRange);
         bool Contains(StackFrame sf);
         void ExtendUpperBound(StackFrame sf);
         void ExtendLowerBound(StackFrame sf);
@@ -357,6 +356,10 @@ struct cdac_data<ExInfo>
     static constexpr size_t StackHighBound = offsetof(ExInfo, m_ScannedStackRange)
         + offsetof(ExInfo::StackRange, m_sfHighBound);
     static constexpr size_t ExceptionFlagsValue = offsetof(ExInfo, m_ExceptionFlags.m_flags);
+    static constexpr size_t ExceptionRecord = offsetof(ExInfo, m_ptrs)
+        + offsetof(ExInfo::DAC_EXCEPTION_POINTERS, ExceptionRecord);
+    static constexpr size_t ContextRecord = offsetof(ExInfo, m_ptrs)
+        + offsetof(ExInfo::DAC_EXCEPTION_POINTERS, ContextRecord);
 #ifndef TARGET_UNIX
     static constexpr size_t ExceptionWatsonBucketTrackerBuckets = offsetof(ExInfo, m_WatsonBucketTracker)
         + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);

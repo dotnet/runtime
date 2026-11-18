@@ -7,8 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class Array : IData<Array>
 {
     [Field("m_NumComponents")]
-    public uint NumComponents { get; }
+    public partial uint NumComponents { get; }
 
     [InstanceDataStart]
-    public TargetPointer DataPointer { get; }
+    public partial TargetPointer DataPointer { get; }
 }

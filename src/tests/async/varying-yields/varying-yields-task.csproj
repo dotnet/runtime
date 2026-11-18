@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.IL">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>ASYNC1_TASK;$(DefineConstants)</DefineConstants>
   </PropertyGroup>

@@ -19,6 +19,13 @@ bool interceptor_ICJI::isIntrinsic(
     return original_ICorJitInfo->isIntrinsic(ftn);
 }
 
+bool interceptor_ICJI::canValueClassInstancePointerEscape(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    mcs->AddCall("canValueClassInstancePointerEscape");
+    return original_ICorJitInfo->canValueClassInstancePointerEscape(ftn);
+}
+
 bool interceptor_ICJI::notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn)
 {
@@ -224,13 +231,6 @@ bool interceptor_ICJI::satisfiesMethodConstraints(
     return original_ICorJitInfo->satisfiesMethodConstraints(parent, method);
 }
 
-void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(
-          CORINFO_METHOD_HANDLE method)
-{
-    mcs->AddCall("methodMustBeLoadedBeforeCodeIsRun");
-    original_ICorJitInfo->methodMustBeLoadedBeforeCodeIsRun(method);
-}
-
 void interceptor_ICJI::getGSCookie(
           GSCookie* pCookieVal,
           GSCookie** ppCookieVal)
@@ -354,6 +354,20 @@ bool interceptor_ICJI::isValueClass(
 {
     mcs->AddCall("isValueClass");
     return original_ICorJitInfo->isValueClass(cls);
+}
+
+bool interceptor_ICJI::isByRefLike(
+          CORINFO_CLASS_HANDLE cls)
+{
+    mcs->AddCall("isByRefLike");
+    return original_ICorJitInfo->isByRefLike(cls);
+}
+
+bool interceptor_ICJI::isSharedInst(
+          CORINFO_CLASS_HANDLE cls)
+{
+    mcs->AddCall("isSharedInst");
+    return original_ICorJitInfo->isSharedInst(cls);
 }
 
 uint32_t interceptor_ICJI::getClassAttribs(
@@ -595,13 +609,6 @@ CorInfoInitClassResult interceptor_ICJI::initClass(
 {
     mcs->AddCall("initClass");
     return original_ICorJitInfo->initClass(field, method, context);
-}
-
-void interceptor_ICJI::classMustBeLoadedBeforeCodeIsRun(
-          CORINFO_CLASS_HANDLE cls)
-{
-    mcs->AddCall("classMustBeLoadedBeforeCodeIsRun");
-    original_ICorJitInfo->classMustBeLoadedBeforeCodeIsRun(cls);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getBuiltinClass(
@@ -971,10 +978,22 @@ void interceptor_ICJI::getAsyncInfo(
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(
           CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
           CORINFO_LOOKUP* instArg)
 {
     mcs->AddCall("getAwaitReturnCall");
-    return original_ICorJitInfo->getAwaitReturnCall(callerHandle, instArg);
+    return original_ICorJitInfo->getAwaitReturnCall(callerHandle, contextHandle, instArg);
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitAwaiterInContinuationCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          bool isUnsafe,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg)
+{
+    mcs->AddCall("getAwaitAwaiterInContinuationCall");
+    return original_ICorJitInfo->getAwaitAwaiterInContinuationCall(callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
 }
 
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
@@ -1041,6 +1060,20 @@ CorInfoWasmType interceptor_ICJI::getWasmLowering(
 {
     mcs->AddCall("getWasmLowering");
     return original_ICorJitInfo->getWasmLowering(structHnd);
+}
+
+uint32_t interceptor_ICJI::getAddressAlignment(
+          void* address)
+{
+    mcs->AddCall("getAddressAlignment");
+    return original_ICorJitInfo->getAddressAlignment(address);
+}
+
+void interceptor_ICJI::getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    mcs->AddCall("getWasmWellKnownGlobals");
+    original_ICorJitInfo->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(
@@ -1140,14 +1173,6 @@ void interceptor_ICJI::getAddressOfPInvokeTarget(
 {
     mcs->AddCall("getAddressOfPInvokeTarget");
     original_ICorJitInfo->getAddressOfPInvokeTarget(method, pLookup);
-}
-
-void* interceptor_ICJI::GetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig,
-          void** ppIndirection)
-{
-    mcs->AddCall("GetCookieForPInvokeCalliSig");
-    return original_ICorJitInfo->GetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
 }
 
 void* interceptor_ICJI::GetCookieForInterpreterCalliSig(
@@ -1300,10 +1325,11 @@ bool interceptor_ICJI::convertPInvokeCalliToCall(
 
 bool interceptor_ICJI::notifyInstructionSetUsage(
           CORINFO_InstructionSet instructionSet,
-          bool supportEnabled)
+          bool supportEnabled,
+          bool preserveNegativeDependency)
 {
     mcs->AddCall("notifyInstructionSetUsage");
-    return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled);
+    return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled, preserveNegativeDependency);
 }
 
 void interceptor_ICJI::updateEntryPointForTailCall(
@@ -1425,6 +1451,13 @@ void interceptor_ICJI::recordWasmManagedCallSig(
 {
     mcs->AddCall("recordWasmManagedCallSig");
     original_ICorJitInfo->recordWasmManagedCallSig(callSig);
+}
+
+void interceptor_ICJI::recordWasmVirtualFunctionPointerLookup(
+          CORINFO_METHOD_HANDLE method)
+{
+    mcs->AddCall("recordWasmVirtualFunctionPointerLookup");
+    original_ICorJitInfo->recordWasmVirtualFunctionPointerLookup(method);
 }
 
 void interceptor_ICJI::recordRelocation(

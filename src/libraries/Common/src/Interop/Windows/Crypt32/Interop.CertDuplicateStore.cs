@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         internal static partial SafeCertStoreHandle CertDuplicateStore(IntPtr hCertStore);
     }

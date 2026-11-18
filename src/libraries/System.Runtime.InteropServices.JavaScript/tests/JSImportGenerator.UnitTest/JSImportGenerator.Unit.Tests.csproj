@@ -14,6 +14,7 @@
     <Compile Include="Fails.cs" />
     <Compile Include="Compiles.cs" />
     <Compile Include="JSTestUtils.cs" />
+    <Compile Include="UnsafeCodeGeneration.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -18,28 +18,6 @@ namespace System.Diagnostics
         internal static bool PlatformSupportsConsole
             => !(OperatingSystem.IsAndroid() || OperatingSystem.IsMacCatalyst());
 
-        internal static string? FindProgramInPath(string program)
-        {
-            string? pathEnvVar = System.Environment.GetEnvironmentVariable("PATH");
-            if (pathEnvVar is not null)
-            {
-                StringParser pathParser = new(pathEnvVar, Path.PathSeparator, skipEmpty: true);
-                while (pathParser.MoveNext())
-                {
-                    string subPath = pathParser.ExtractCurrent();
-                    string path = Path.Combine(subPath, program);
-                    // On Unix, we need to verify the file has execute permissions.
-                    // On Windows, any file that exists is considered executable.
-                    if (IsExecutable(path))
-                    {
-                        return path;
-                    }
-                }
-            }
-
-            return null;
-        }
-
         internal static Win32Exception CreateExceptionForErrorStartingProcess(string errorMessage, int errorCode, string fileName, string? workingDirectory)
         {
             string directoryForException = string.IsNullOrEmpty(workingDirectory) ? Directory.GetCurrentDirectory() : workingDirectory;

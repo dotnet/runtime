@@ -14,38 +14,49 @@
     <InstallFirefoxForTests Condition="'$(InstallFirefoxForTests)' == '' and '$(ChromeOSIdentifier)' == ''">false</InstallFirefoxForTests>
     <InstallV8ForTests Condition="'$(InstallV8ForTests)' == ''">false</InstallV8ForTests>
 
-    <_BrowserStampDir>$(ArtifactsBinDir)\</_BrowserStampDir>
-
     <WasmProvisionAfterTarget Condition="'$(WasmProvisionAfterTarget)' == ''">Build</WasmProvisionAfterTarget>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)BrowserVersions.props" />
 
   <PropertyGroup>
-    <FirefoxDir>$(ArtifactsBinDir)firefox\</FirefoxDir>
     <FirefoxDirName>firefox</FirefoxDirName>
     <GeckoDriverDirName>geckodriver</GeckoDriverDirName>
-    <GeckoDriverDir>$(ArtifactsBinDir)geckodriver\</GeckoDriverDir>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('linux'))">
+    <FirefoxRevision>$(linux_FirefoxRevision)</FirefoxRevision>
+    <GeckoDriverRevision>$(linux_GeckoDriverRevision)</GeckoDriverRevision>
     <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(linux_FirefoxRevision)/linux-x86_64/en-US/firefox-$(linux_FirefoxRevision).tar.xz</FirefoxUrl>
     <GeckoDriverUrl>https://github.com/mozilla/geckodriver/releases/download/v$(linux_GeckoDriverRevision)/geckodriver-v$(linux_GeckoDriverRevision)-linux64.tar.gz</GeckoDriverUrl>
     <FirefoxBinaryName>firefox</FirefoxBinaryName>
     <GeckoDriverBinaryName>geckodriver</GeckoDriverBinaryName>
-    <FirefoxStampFile>$([MSBuild]::NormalizePath($(FirefoxDir), '.install-firefox-$(linux_FirefoxRevision).stamp'))</FirefoxStampFile>
-    <GeckoDriverStampFile>$([MSBuild]::NormalizePath($(GeckoDriverDir), '.install-geckodriver-$(linux_GeckoDriverRevision).stamp'))</GeckoDriverStampFile>
-    <FirefoxBinaryPath>$([MSBuild]::NormalizePath($(FirefoxDir), $(FirefoxDirName), $(FirefoxBinaryName)))</FirefoxBinaryPath>
-    <GeckoDriverBinaryPath>$([MSBuild]::NormalizePath($(GeckoDriverDir), $(GeckoDriverDirName), $(GeckoDriverBinaryName)))</GeckoDriverBinaryPath>
+    <_FirefoxArchiveKind>tarxz</_FirefoxArchiveKind>
+    <_GeckoDriverArchiveKind>targz</_GeckoDriverArchiveKind>
   </PropertyGroup>
 
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
+    <FirefoxRevision>$(win_FirefoxRevision)</FirefoxRevision>
+    <GeckoDriverRevision>$(win_GeckoDriverRevision)</GeckoDriverRevision>
     <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(win_FirefoxRevision)/win64/en-US/Firefox%20Setup%20$(win_FirefoxRevision).exe</FirefoxUrl>
     <GeckoDriverUrl>https://github.com/mozilla/geckodriver/releases/download/v$(win_GeckoDriverRevision)/geckodriver-v$(win_GeckoDriverRevision)-win64.zip</GeckoDriverUrl>
     <FirefoxBinaryName>firefox.exe</FirefoxBinaryName>
     <GeckoDriverBinaryName>geckodriver.exe</GeckoDriverBinaryName>
-    <FirefoxStampFile>$([MSBuild]::NormalizePath($(FirefoxDir), '.install-firefox-$(win_FirefoxRevision).stamp'))</FirefoxStampFile>
-    <GeckoDriverStampFile>$([MSBuild]::NormalizePath($(GeckoDriverDir), '.install-geckodriver-$(win_GeckoDriverRevision).stamp'))</GeckoDriverStampFile>
+    <_FirefoxArchiveKind>firefox-installer</_FirefoxArchiveKind>
+    <_GeckoDriverArchiveKind>zip</_GeckoDriverArchiveKind>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(FirefoxRevision)' != ''">
+    <!-- The tools are laid out as <cache>/<tool>/<version>-<rid>/<DirName>/<binary>, because the
+         Helix payload layout and the test runners address them by $(FirefoxDirName) etc. The
+         Linux Firefox tarball already contains a top level 'firefox' directory; on Windows the
+         installer is pointed at one. -->
+    <FirefoxDir>$([MSBuild]::NormalizeDirectory('$(WasmToolCacheDir)', 'firefox', '$(FirefoxRevision)-$(WasmToolHostRid)'))</FirefoxDir>
+    <FirefoxStampFile>$([MSBuild]::NormalizePath('$(WasmToolCacheDir)', 'firefox', '$(FirefoxRevision)-$(WasmToolHostRid).complete'))</FirefoxStampFile>
     <FirefoxBinaryPath>$([MSBuild]::NormalizePath($(FirefoxDir), $(FirefoxDirName), $(FirefoxBinaryName)))</FirefoxBinaryPath>
+    <_FirefoxSubDir Condition="'$(_FirefoxArchiveKind)' == 'firefox-installer'">$(FirefoxDirName)</_FirefoxSubDir>
+
+    <GeckoDriverDir>$([MSBuild]::NormalizeDirectory('$(WasmToolCacheDir)', 'geckodriver', '$(GeckoDriverRevision)-$(WasmToolHostRid)'))</GeckoDriverDir>
+    <GeckoDriverStampFile>$([MSBuild]::NormalizePath('$(WasmToolCacheDir)', 'geckodriver', '$(GeckoDriverRevision)-$(WasmToolHostRid).complete'))</GeckoDriverStampFile>
     <GeckoDriverBinaryPath>$([MSBuild]::NormalizePath($(GeckoDriverDir), $(GeckoDriverDirName), $(GeckoDriverBinaryName)))</GeckoDriverBinaryPath>
   </PropertyGroup>
 
@@ -110,164 +121,124 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ChromeVersion)' != ''">
-    <ChromeDir>$(ArtifactsBinDir)chrome\</ChromeDir>
-    <ChromeDriverDir>$(ArtifactsBinDir)chromedriver\</ChromeDriverDir>
-    <ChromeStampFile>$([MSBuild]::NormalizePath('$(ChromeDir)', '.install-$(ChromeVersion)-$(ChromeRevision).stamp'))</ChromeStampFile>
-    <ChromeDriverStampFile>$([MSBuild]::NormalizePath('$(ChromeDriverDir)', '.install-$(ChromeVersion)-$(ChromeRevision).stamp'))</ChromeDriverStampFile>
+    <ChromeDir>$([MSBuild]::NormalizeDirectory('$(WasmToolCacheDir)', 'chrome', '$(ChromeVersion)-$(ChromeRevision)-$(WasmToolHostRid)'))</ChromeDir>
+    <ChromeStampFile>$([MSBuild]::NormalizePath('$(WasmToolCacheDir)', 'chrome', '$(ChromeVersion)-$(ChromeRevision)-$(WasmToolHostRid).complete'))</ChromeStampFile>
+    <ChromeDriverDir>$([MSBuild]::NormalizeDirectory('$(WasmToolCacheDir)', 'chromedriver', '$(ChromeVersion)-$(ChromeRevision)-$(WasmToolHostRid)'))</ChromeDriverDir>
+    <ChromeDriverStampFile>$([MSBuild]::NormalizePath('$(WasmToolCacheDir)', 'chromedriver', '$(ChromeVersion)-$(ChromeRevision)-$(WasmToolHostRid).complete'))</ChromeDriverStampFile>
 
     <ChromeBinaryPath>$([MSBuild]::NormalizePath($(ChromeDir), $(ChromeDirName), $(ChromeBinaryName)))</ChromeBinaryPath>
     <ChromeDriverBinaryPath>$([MSBuild]::NormalizePath($(ChromeDriverDir), $(ChromeDriverDirName), $(ChromeDriverBinaryName)))</ChromeDriverBinaryPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(V8Version)' != ''">
-    <V8Dir>$(ArtifactsBinDir)$(V8DirName)\</V8Dir>
-    <V8StampFile>$([MSBuild]::NormalizePath('$(V8Dir)', '.install-$(V8Version).stamp'))</V8StampFile>
+    <V8Dir>$([MSBuild]::NormalizeDirectory('$(WasmToolCacheDir)', 'v8', '$(V8Version)-$(WasmToolHostRid)'))</V8Dir>
+    <V8StampFile>$([MSBuild]::NormalizePath('$(WasmToolCacheDir)', 'v8', '$(V8Version)-$(WasmToolHostRid).complete'))</V8StampFile>
     <V8BinaryPath>$([MSBuild]::NormalizePath($(V8Dir), $(V8BinaryName)))</V8BinaryPath>
+    <_V8SnapshotUrl>https://storage.googleapis.com/chromium-v8/official/canary/v8-$(_V8PlatformId)-rel-$(V8Version).zip</_V8SnapshotUrl>
   </PropertyGroup>
 
-  <Target Name="DownloadAndInstallChrome"
-          AfterTargets="$(WasmProvisionAfterTarget)"
-          Condition="(!Exists($(ChromeStampFile)) or !Exists($(ChromeBinaryPath))) and '$(InstallChromeForTests)' == 'true'">
-
-    <Error Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('windows')) and !$([MSBuild]::IsOSPlatform('macos'))"
-           Text="Chrome provisioning only supported on Linux, Windows, and macOS." />
-    <Error Condition="'$(ChromeVersion)' == ''"
-           Text="No %24(ChromeVersion) set. This can be set in eng/testing/BrowserVersions.props" />
-
-    <RemoveDir Directories="$(ChromeDir)" />
-
-    <Message Text="** Installing chrome version $(ChromeVersion), rev: $(ChromeRevision). To disable this set the msuild property InstallChromeForTests=false ."
-             Importance="High" />
-
-    <DownloadFile SourceUrl="$(ChromeUrl)" DestinationFolder="$(ArtifactsObjDir)" SkipUnchangedFiles="false">
-      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
-    </DownloadFile>
-    <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(ChromeDir)" />
-    <Delete Files="$(_DownloadedFile)" />
-
-    <Error Text="Cannot find chrome at $(ChromeBinaryPath) in the downloaded copy"
-           Condition="!Exists($(ChromeBinaryPath))" />
-
-    <Exec Command="chmod +x $(ChromeBinaryPath)" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
-
-    <Touch Files="$(ChromeStampFile)" AlwaysCreate="true" />
-  </Target>
-
-  <Target Name="DownloadAndInstallChromeDriver"
-          AfterTargets="$(WasmProvisionAfterTarget)"
-          Condition="(!Exists($(ChromeDriverStampFile)) or !Exists($(ChromeDriverBinaryPath))) and '$(InstallChromeForTests)' == 'true'">
-
-    <Error Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('windows')) and !$([MSBuild]::IsOSPlatform('macos'))"
-           Text="ChromeDriver provisioning only supported on Linux, Windows, and macOS." />
-    <Error Condition="'$(ChromeVersion)' == ''"
-           Text="No %24(ChromeVersion) set. This can be set in eng/testing/BrowserVersions.props" />
-
-    <RemoveDir Directories="$(ChromeDriverDir)" />
-
-    <Message Text="** Installing chromedriver version $(ChromeVersion), rev: $(ChromeRevision). To disable this set the msuild property InstallChromeForTests=false ."
-             Importance="High" />
-
-    <DownloadFile SourceUrl="$(ChromeDriverUrl)" DestinationFolder="$(ArtifactsObjDir)" SkipUnchangedFiles="false">
-      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
-    </DownloadFile>
-    <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(ChromeDriverDir)" />
-
-    <Error Text="Cannot find chromedriver at $(ChromeDriverBinaryPath) in the downloaded copy"
-           Condition="!Exists($(ChromeDriverBinaryPath))" />
-
-    <Exec Command="chmod +x $(ChromeDriverBinaryPath)" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
-
-    <Touch Files="$(ChromeDriverStampFile)" AlwaysCreate="true" />
-  </Target>
-
-  <Target Name="DownloadAndInstallV8"
-          AfterTargets="$(WasmProvisionAfterTarget)"
-          Condition="(!Exists($(V8StampFile)) or !Exists($(V8BinaryPath))) and '$(InstallV8ForTests)' == 'true'">
-
-    <Error Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('windows')) and !$([MSBuild]::IsOSPlatform('macos'))"
-           Text="V8 provisioning only supported on Linux, Windows, and macOS." />
-    <Error Condition="'$(V8Version)' == ''" Text="%24(V8Version) not set" />
-    <Error Condition="'$(_V8PlatformId)' == ''" Text="%24(_V8PlatformId) not set, needed for constructing the snapshot url." />
-
-    <PropertyGroup>
-      <_V8SnapshotUrl>https://storage.googleapis.com/chromium-v8/official/canary/v8-$(_V8PlatformId)-rel-$(V8Version).zip</_V8SnapshotUrl>
-
-      <_V8Script Condition="$([MSBuild]::IsOSPlatform('linux'))">#!/usr/bin/env bash
+  <PropertyGroup>
+    <_V8Script Condition="$([MSBuild]::IsOSPlatform('linux')) or $([MSBuild]::IsOSPlatform('macos'))">#!/usr/bin/env bash
 export __SCRIPT_DIR=%24( cd -- "%24( dirname -- "%24{BASH_SOURCE[0]}" )" &amp;> /dev/null &amp;&amp; pwd )
 "$__SCRIPT_DIR/d8" --snapshot_blob="$__SCRIPT_DIR/snapshot_blob.bin" "$@"
-      </_V8Script>
-      <_V8Script Condition="$([MSBuild]::IsOSPlatform('windows'))">@echo off
-"%~dp0\d8.exe --snapshot_blob="%~dp0\snapshot_blob.bin" %*
-      </_V8Script>
-    </PropertyGroup>
+    </_V8Script>
+    <_V8Script Condition="$([MSBuild]::IsOSPlatform('windows'))">@echo off
+"%~dp0d8.exe" --snapshot_blob="%~dp0snapshot_blob.bin" %*
+    </_V8Script>
+  </PropertyGroup>
 
-    <DownloadFile SourceUrl="$(_V8SnapshotUrl)" DestinationFolder="$(V8Dir)" SkipUnchangedFiles="true">
-      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
-    </DownloadFile>
-
-    <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(V8Dir)" />
-
-    <WriteLinesToFile Lines="$(_V8Script)" File="$(V8BinaryPath)" Overwrite="true" />
-    <Exec Command="chmod +x $(V8BinaryPath) $(V8Dir)/d8" Condition="$([MSBuild]::IsOSPlatform('linux'))" />
-
-    <Touch Files="$(V8StampFile)" AlwaysCreate="true" />
-  </Target>
-
-  <Target Name="DownloadAndInstallFirefox"
+  <Target Name="ProvisionBrowsersForTests"
           AfterTargets="$(WasmProvisionAfterTarget)"
-          Condition="!Exists($(FirefoxStampFile)) and '$(InstallFirefoxForTests)' == 'true'">
-    <ItemGroup>
-      <_StampFile Include="$(_BrowserStampDir).install-firefox*.stamp" />
+          Condition="'$(InstallChromeForTests)' == 'true' or '$(InstallFirefoxForTests)' == 'true' or '$(InstallV8ForTests)' == 'true'">
+
+    <!-- On Linux the Chrome/chromedriver/Firefox/geckodriver/V8 download URLs are x86_64-only, but
+         the cache entry is keyed by $(WasmToolHostRid). Fail fast rather than caching an x64 payload
+         under a linux-arm64 key. (macOS selects arm64/x64 URLs; Windows is x64.) -->
+    <Error Condition="$([MSBuild]::IsOSPlatform('linux')) and '$(BuildArchitecture)' != 'x64'"
+           Text="Browser and JS engine test tools are only available for x64 on Linux; provisioning them for '$(BuildArchitecture)' is not supported. Set InstallChromeForTests/InstallFirefoxForTests/InstallV8ForTests=false, or point the *_PATH_FOR_TESTS variables at a local install." />
+
+    <Error Condition="'$(InstallChromeForTests)' == 'true' and '$(ChromeVersion)' == ''"
+           Text="No %24(ChromeVersion) set. This can be set in eng/testing/BrowserVersions.props" />
+    <Error Condition="'$(InstallV8ForTests)' == 'true' and '$(V8Version)' == ''"
+           Text="%24(V8Version) not set. This can be set in eng/testing/BrowserVersions.props" />
+    <Error Condition="'$(InstallV8ForTests)' == 'true' and '$(_V8PlatformId)' == ''"
+           Text="%24(_V8PlatformId) not set, needed for constructing the snapshot url." />
+    <Error Condition="'$(InstallFirefoxForTests)' == 'true' and '$(FirefoxRevision)' == ''"
+           Text="Firefox provisioning is only supported on Linux and Windows." />
+
+    <ItemGroup Condition="'$(InstallChromeForTests)' == 'true'">
+      <_WasmToolToAcquire Include="chrome $(ChromeVersion) (rev $(ChromeRevision))"
+                          Url="$(ChromeUrl)"
+                          Kind="zip"
+                          CacheDir="$(ChromeDir)"
+                          StampFile="$(ChromeStampFile)"
+                          Verify="$(ChromeBinaryPath)"
+                          Chmod="$(ChromeBinaryPath)" />
+      <_WasmToolToAcquire Include="chromedriver $(ChromeVersion) (rev $(ChromeRevision))"
+                          Url="$(ChromeDriverUrl)"
+                          Kind="zip"
+                          CacheDir="$(ChromeDriverDir)"
+                          StampFile="$(ChromeDriverStampFile)"
+                          Verify="$(ChromeDriverBinaryPath)"
+                          Chmod="$(ChromeDriverBinaryPath)" />
     </ItemGroup>
 
-    <Delete Files="@(_StampFile)" />
-    <RemoveDir Directories="$(FirefoxDir)" />
-
-    <Message Text="** Installing firefox version $(FirefoxRevision), to: $(FirefoxDir). To disable this set the msuild property InstallFirefoxForTests=false ."
-             Importance="High" />
-
-    <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="$(FirefoxDir)" SkipUnchangedFiles="true">
-      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
-    </DownloadFile>
-    <MakeDir Directories="$(FirefoxDir)\$(FirefoxDirName)"/>
-    <Exec Command="tar -xf $(_DownloadedFile) -C $(FirefoxDir)" Condition="$([MSBuild]::IsOSPlatform('linux'))" />
-    <Exec Command="&quot;$(_DownloadedFile)&quot; /InstallDirectoryPath=$(FirefoxDir)$(FirefoxDirName) /TaskbarShortcut=false /DesktopShortcut=false /StartMenuShortcut=false /PrivateBrowsingShortcut=false /MaintenanceService=false /PreventRebootRequired=true" Condition="$([MSBuild]::IsOSPlatform('windows'))" />
-    <Delete Files="$(_DownloadedFile)" />
-
-    <Error Text="Cannot find firefox at $(FirefoxBinaryPath) in the downloaded copy"
-           Condition="!Exists($(FirefoxBinaryPath))" />
-
-    <Exec Command="chmod +x $(FirefoxBinaryPath)" Condition="$([MSBuild]::IsOSPlatform('linux'))"/>
-
-    <Touch Files="$(FirefoxStampFile)" AlwaysCreate="true" />
-  </Target>
-
-  <Target Name="DownloadAndInstallGeckoDriver"
-          AfterTargets="$(WasmProvisionAfterTarget)"
-          Condition="!Exists($(GeckoDriverStampFile)) and '$(InstallFirefoxForTests)' == 'true'">
-    <ItemGroup>
-      <_StampFile Include="$(_BrowserStampDir).install-geckodriver*.stamp" />
+    <ItemGroup Condition="'$(InstallFirefoxForTests)' == 'true'">
+      <_WasmToolToAcquire Include="firefox $(FirefoxRevision)"
+                          Url="$(FirefoxUrl)"
+                          Kind="$(_FirefoxArchiveKind)"
+                          SubDir="$(_FirefoxSubDir)"
+                          CacheDir="$(FirefoxDir)"
+                          StampFile="$(FirefoxStampFile)"
+                          Verify="$(FirefoxBinaryPath)"
+                          Chmod="$(FirefoxBinaryPath)" />
+      <_WasmToolToAcquire Include="geckodriver $(GeckoDriverRevision)"
+                          Url="$(GeckoDriverUrl)"
+                          Kind="$(_GeckoDriverArchiveKind)"
+                          SubDir="$(GeckoDriverDirName)"
+                          CacheDir="$(GeckoDriverDir)"
+                          StampFile="$(GeckoDriverStampFile)"
+                          Verify="$(GeckoDriverBinaryPath)"
+                          Chmod="$(GeckoDriverBinaryPath)" />
     </ItemGroup>
 
-    <Delete Files="@(_StampFile)" />
-    <RemoveDir Directories="$(GeckoDriverDir)" />
+    <!-- V8 ships without a launcher, so stage one and let the acquisition publish it as part of
+         the cache entry rather than writing into an already-stamped directory. The download
+         directory may not exist yet on a fresh checkout, so create it before writing. -->
+    <MakeDir Condition="'$(InstallV8ForTests)' == 'true' and !Exists('$(V8StampFile)')"
+             Directories="$(WasmToolDownloadDir)" />
+    <WriteLinesToFile Condition="'$(InstallV8ForTests)' == 'true' and !Exists('$(V8StampFile)')"
+                      File="$(WasmToolDownloadDir)$(V8BinaryName)"
+                      Lines="$(_V8Script)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
 
-    <Message Text="** Installing GeckoDriver version $(GeckoDriverRevision), to: $(GeckoDriverDir)/$(GeckoDriverDirName). To disable this set the msuild property InstallFirefoxForTests=false ."
-             Importance="High" />
+    <ItemGroup Condition="'$(InstallV8ForTests)' == 'true'">
+      <_WasmToolToAcquire Include="v8 $(V8Version)"
+                          Url="$(_V8SnapshotUrl)"
+                          Kind="zip"
+                          CacheDir="$(V8Dir)"
+                          StampFile="$(V8StampFile)"
+                          LauncherSource="$(WasmToolDownloadDir)$(V8BinaryName)"
+                          LauncherName="$(V8BinaryName)"
+                          Verify="$(V8BinaryPath)"
+                          Chmod="$(V8BinaryPath);$(V8Dir)d8" />
+    </ItemGroup>
 
-    <DownloadFile SourceUrl="$(GeckoDriverUrl)" DestinationFolder="$(GeckoDriverDir)" SkipUnchangedFiles="true">
-      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
-    </DownloadFile>
-    <MakeDir Directories="$(GeckoDriverDir)/$(GeckoDriverDirName)"/>
-    <Exec Command="tar -xf $(_DownloadedFile) -C $(GeckoDriverDir)/$(GeckoDriverDirName)" Condition="$([MSBuild]::IsOSPlatform('linux'))" />
-    <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(GeckoDriverDir)/$(GeckoDriverDirName)" Condition="$([MSBuild]::IsOSPlatform('windows'))" />
-    <Delete Files="$(_DownloadedFile)" />
-
-    <Error Text="Cannot find GeckoDriver at $(GeckoDriverBinaryPath) in the downloaded copy"
-           Condition="!Exists($(GeckoDriverBinaryPath))" />
-
-    <Exec Command="chmod +x $(GeckoDriverBinaryPath)" Condition="$([MSBuild]::IsOSPlatform('linux'))" />
-
-    <Touch Files="$(GeckoDriverStampFile)" AlwaysCreate="true" />
+    <MSBuild Projects="$(RepositoryEngineeringDir)wasm\AcquireWasmTool.proj"
+             Targets="AcquireWasmTool"
+             Condition="!Exists('%(_WasmToolToAcquire.StampFile)')"
+             Properties="WasmToolName=%(_WasmToolToAcquire.Identity);
+                         WasmToolUrl=%(_WasmToolToAcquire.Url);
+                         WasmToolKind=%(_WasmToolToAcquire.Kind);
+                         WasmToolSubDir=%(_WasmToolToAcquire.SubDir);
+                         WasmToolCacheEntryDir=%(_WasmToolToAcquire.CacheDir);
+                         WasmToolStampFile=%(_WasmToolToAcquire.StampFile);
+                         WasmToolVerify=%(_WasmToolToAcquire.Verify);
+                         WasmToolChmod=%(_WasmToolToAcquire.Chmod);
+                         WasmToolLauncherSource=%(_WasmToolToAcquire.LauncherSource);
+                         WasmToolLauncherName=%(_WasmToolToAcquire.LauncherName);
+                         WasmToolDownloadDir=$(WasmToolDownloadDir);
+                         HostOS=$(HostOS)" />
   </Target>
 </Project>

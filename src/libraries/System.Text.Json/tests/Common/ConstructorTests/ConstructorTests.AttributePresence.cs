@@ -40,6 +40,43 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData(typeof(PrivateParameterizedCtor_WithAttribute<int>), """{"Value":42}""")]
+        [InlineData(typeof(PrivateParameterizedCtor_WithAttribute<string>), """{"Value":"test"}""")]
+        [InlineData(typeof(PrivateParameterizedStructCtor_WithAttribute<int>), """{"Value":42}""")]
+        [InlineData(typeof(PrivateParameterizedStructCtor_WithAttribute<string>), """{"Value":"test"}""")]
+        [InlineData(typeof(PrivateParameterlessCtor_WithAttribute<int>), """{"X":42,"Value":7}""")]
+        [InlineData(typeof(PrivateParameterlessCtor_WithAttribute<string>), """{"X":42,"Value":"test"}""")]
+        [InlineData(typeof(PrivateParameterizedCtor_WithAttribute_FixedParameter<int>), """{"X":42,"Value":7}""")]
+        [InlineData(typeof(PrivateParameterizedCtor_WithAttribute_FixedParameter<string>), """{"X":42,"Value":"test"}""")]
+        [InlineData(typeof(PrivateCtorWithMixedParameterTypes<int>), """{"Value":42,"Count":7}""")]
+        [InlineData(typeof(PrivateCtorWithMixedParameterTypes<string>), """{"Value":"test","Count":7}""")]
+        [InlineData(typeof(PrivateCtorWithGenericMembers<string>), """{"Value":"constructor","Extra":"member"}""")]
+        [InlineData(typeof(PrivateCtorWithCompositeGenericMembers<int>), """{"Value":[[1,2],[],[3]],"Extra":[[4],[5,6]]}""")]
+        [InlineData(typeof(PrivateCtorWithCompositeGenericMembers<string>), """{"Value":[["one","two"],[],["three"]],"Extra":[["four"],["five","six"]]}""")]
+        [InlineData(typeof(PrivateCtorWithInheritedGenericMembers<int>), """{"Value":42}""")]
+        [InlineData(typeof(GenericConstructorOuter<int>.Nested), """{"Value":42}""")]
+        [InlineData(typeof(GenericConstructorOuter<int>.Nested<string>), """{"Value":42,"Item":"nested"}""")]
+        [InlineData(typeof(GenericConstructorOuter<int>.Middle.Inner<string>), """{"Value":42,"Item":"nested","Extra":17}""")]
+        [InlineData(typeof(GenericConstructorOuter<string>.Middle.Inner<int>), """{"Value":"outer","Item":42,"Extra":"member"}""")]
+        public async Task NonPublicGenericCtors_WithJsonConstructorAttribute_WorksAsExpected(Type type, string json)
+        {
+            object result = await Serializer.DeserializeWrapper(json, type);
+            Assert.IsType(type, result);
+            JsonTestHelper.AssertJsonEqual(json, await Serializer.SerializeWrapper(result, type));
+        }
+
+        [Theory]
+        [InlineData("""{"Value":42,"Name":"test"}""", "default")]
+        [InlineData("""{"Value":42,"Name":"test","Tag":"updated"}""", "updated")]
+        public async Task NonPublicGenericCtor_RequiredAndInitOnlyProperties(string json, string expectedTag)
+        {
+            var result = await Serializer.DeserializeWrapper<PrivateParameterizedCtor_WithAttribute_And_RequiredProperty<int>>(json);
+            Assert.Equal(42, result.Value);
+            Assert.Equal("test", result.Name);
+            Assert.Equal(expectedTag, result.Tag);
+        }
+
+        [Theory]
         [InlineData(typeof(PrivateParameterlessCtor_WithAttribute))]
         [InlineData(typeof(InternalParameterlessCtor_WithAttribute))]
         [InlineData(typeof(ProtectedParameterlessCtor_WithAttribute))]

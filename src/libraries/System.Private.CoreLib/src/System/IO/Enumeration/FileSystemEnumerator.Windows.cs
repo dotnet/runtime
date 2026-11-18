@@ -33,7 +33,7 @@ namespace System.IO.Enumeration
         private Interop.NtDll.FILE_FULL_DIR_INFORMATION* _entry;
         private TResult? _current;
 
-        private IntPtr _buffer;
+        private void* _buffer;
         private int _bufferLength;
         private IntPtr _directoryHandle;
         private string? _currentPath;
@@ -86,17 +86,11 @@ namespace System.IO.Enumeration
 
         private void Init()
         {
-            // We'll only suppress the media insertion prompt on the topmost directory as that is the
-            // most likely scenario and we don't want to take the perf hit for large enumerations.
-            // (We weren't consistent with how we handled this historically.)
-            using (default(DisableMediaInsertionPrompt))
-            {
-                // We need to initialize the directory handle up front to ensure
-                // we immediately throw IO exceptions for missing directory/etc.
-                _directoryHandle = CreateDirectoryHandle(_rootDirectory);
-                if (_directoryHandle == IntPtr.Zero)
-                    _lastEntryFound = true;
-            }
+            // We need to initialize the directory handle up front to ensure
+            // we immediately throw IO exceptions for missing directory/etc.
+            _directoryHandle = CreateDirectoryHandle(_rootDirectory);
+            if (_directoryHandle == IntPtr.Zero)
+                _lastEntryFound = true;
 
             _currentPath = _rootDirectory;
 
@@ -107,9 +101,8 @@ namespace System.IO.Enumeration
             try
             {
                 // NtQueryDirectoryFile needs its buffer to be 64bit aligned to work
-                // successfully with FileFullDirectoryInformation on ARM32. AllocHGlobal
-                // will return pointers aligned as such, new byte[] does not.
-                _buffer = Marshal.AllocHGlobal(_bufferLength);
+                // successfully with FileFullDirectoryInformation.
+                _buffer = NativeMemory.Alloc((nuint)_bufferLength);
             }
             catch
             {
@@ -171,6 +164,13 @@ namespace System.IO.Enumeration
                 case Interop.StatusOptions.STATUS_NO_MORE_FILES:
                 // FILE_NOT_FOUND can occur when there are NO files in a volume root (usually there are hidden system files).
                 case Interop.StatusOptions.STATUS_FILE_NOT_FOUND:
+                // STATUS_OBJECT_NAME_NOT_FOUND occurs when an OS-level filter (FileName) is passed to NtQueryDirectoryFile
+                // and nothing matches. Most file systems report this as STATUS_NO_SUCH_FILE (handled above as
+                // STATUS_FILE_NOT_FOUND), but some- particularly read-only or virtual file systems- report it as
+                // STATUS_OBJECT_NAME_NOT_FOUND instead. We can't know which file system driver a given directory is on. The
+                // directory handle was already opened successfully, so this can only mean the filter matched nothing; treat
+                // it the same as no matches.
+                case Interop.StatusOptions.STATUS_OBJECT_NAME_NOT_FOUND:
                 // STATUS_OBJECT_NAME_INVALID is returned when the FileName has characters the filesystem doesn't like. They
                 // never would have matched manually filtering the current directory, so we'll return no matches. It is
                 // better to let Windows tell us that we have an invalid name as opposed to guessing. We can't know which
@@ -381,12 +381,12 @@ namespace System.IO.Enumeration
                         _pending = null;
                     }
 
-                    if (_buffer != default)
+                    if (_buffer != null)
                     {
-                        Marshal.FreeHGlobal(_buffer);
+                        NativeMemory.Free(_buffer);
                     }
 
-                    _buffer = default;
+                    _buffer = null;
                 }
             }
 

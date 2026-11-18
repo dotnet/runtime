@@ -11,7 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DataGenerator;
 /// <summary>
 /// Source generator for cdac <see cref="IData{T}"/> classes. Emits the
 /// boilerplate <c>IData&lt;T&gt;.Create</c> factory, managed-type
-/// <c>TypeHandle</c> accessors, and static-field accessors from
+/// <c>ITypeHandle</c> accessors, and static-field accessors from
 /// declarative attributes.
 /// </summary>
 /// <remarks>
@@ -27,25 +27,25 @@ public sealed class CdacGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Emit the LayoutSet and TypeNameResolver helpers as internal source ONLY
+        // Emit the TypeLayout and TypeNameResolver helpers as internal source ONLY
         // when the consuming assembly doesn't already see them (via project reference
         // + InternalsVisibleTo). This avoids CS0436 type-conflict errors in assemblies
         // that inherit the helpers from a referenced assembly (e.g. the Tests project
         // sees Contracts' copy via [InternalsVisibleTo] and shouldn't emit its own).
         // Each helper is gated independently to handle version-skew scenarios where
         // one helper is present but the other is not.
-        IncrementalValueProvider<(bool EmitLayoutSet, bool EmitTypeNameResolver)> shouldEmitHelpers = context.CompilationProvider
+        IncrementalValueProvider<(bool EmitTypeLayout, bool EmitTypeNameResolver)> shouldEmitHelpers = context.CompilationProvider
             .Select(static (compilation, _) => (
-                EmitLayoutSet: !IsTypeAccessible(compilation, LayoutSetSource.FullyQualifiedName),
+                EmitTypeLayout: !IsTypeAccessible(compilation, TypeLayoutSource.FullyQualifiedName),
                 EmitTypeNameResolver: !IsTypeAccessible(compilation, TypeNameResolverSource.FullyQualifiedName)));
 
         context.RegisterSourceOutput(shouldEmitHelpers, static (ctx, flags) =>
         {
-            if (flags.EmitLayoutSet)
+            if (flags.EmitTypeLayout)
             {
                 ctx.AddSource(
-                    LayoutSetSource.HintName,
-                    SourceText.From(LayoutSetSource.Source, Encoding.UTF8));
+                    TypeLayoutSource.HintName,
+                    SourceText.From(TypeLayoutSource.Source, Encoding.UTF8));
             }
 
             if (flags.EmitTypeNameResolver)

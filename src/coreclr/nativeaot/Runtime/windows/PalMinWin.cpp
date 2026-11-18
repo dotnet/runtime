@@ -5,10 +5,11 @@
 #include <windows.h>
 #include <stdio.h>
 #include <errno.h>
+#include <minipal/environ.h>
+#include <minipal/utf8.h>
 
 #include "holder.h"
 
-#define _T(s) L##s
 #include "RhConfig.h"
 
 #include "gcenv.h"
@@ -18,7 +19,7 @@
 #include "thread.h"
 #include "threadstore.h"
 
-#include "nativecontext.h"
+#include "NativeContext.h"
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 #include <versionhelpers.h>
@@ -260,7 +261,7 @@ uint32_t PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t 
 {
     if (!allowReentrantWait)
     {
-        return WaitForMultipleObjectsEx(handleCount, pHandles, FALSE, timeout, alertable);
+        return WaitForMultipleObjectsEx(handleCount, pHandles, false, timeout, alertable);
     }
     else
     {
@@ -288,19 +289,9 @@ HANDLE PalCreateLowMemoryResourceNotification()
     return CreateMemoryResourceNotification(LowMemoryResourceNotification);
 }
 
-void PalSleep(uint32_t milliseconds)
-{
-    return Sleep(milliseconds);
-}
-
 UInt32_BOOL PalSwitchToThread()
 {
     return SwitchToThread();
-}
-
-HANDLE PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName)
-{
-    return CreateEventW(pEventAttributes, manualReset, initialState, pName);
 }
 
 UInt32_BOOL PalAreShadowStacksEnabled()
@@ -897,7 +888,7 @@ bool PalSetCurrentThreadName(const char* name)
     {
         return false;
     }
-    if (MultiByteToWideChar(CP_UTF8, 0, name, -1, threadNameWide, (int)(len + 1)) == 0)
+    if (minipal_convert_utf8_to_utf16(name, len + 1, (CHAR16_T*)threadNameWide, len + 1, 0) == 0)
     {
         delete[] threadNameWide;
         return false;
@@ -922,14 +913,15 @@ bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ vo
     return PalStartBackgroundWork(callback, pCallbackContext, FALSE);
 }
 
-HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule)
 {
-    // The runtime is not designed to be unloadable today. Use GET_MODULE_HANDLE_EX_FLAG_PIN to prevent
-    // the module from ever unloading.
+    // The runtime is not designed to be unloadable today.
+    DWORD flags = GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+        (pinModule ? GET_MODULE_HANDLE_EX_FLAG_PIN : GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT);
 
     HMODULE module;
     if (!GetModuleHandleExW(
-        GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
+        flags,
         (LPCWSTR)pointer,
         &module))
     {
@@ -949,15 +941,14 @@ void PalPrintFatalError(const char* message)
 
 char* PalCopyTCharAsChar(const TCHAR* toCopy)
 {
-    int len = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, nullptr, 0, nullptr, nullptr);
-    if (len == 0)
-        return nullptr;
+    size_t length = wcslen(toCopy) + 1;
+    size_t len = minipal_get_length_utf16_to_utf8((const CHAR16_T*)toCopy, length, 0);
 
     char* converted = new (nothrow) char[len];
 
     if (converted != nullptr)
     {
-        int written = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, converted, len, nullptr, nullptr);
+        size_t written = minipal_convert_utf16_to_utf8((const CHAR16_T*)toCopy, length, converted, len, 0);
         assert(len == written);
     }
     return converted;
@@ -972,7 +963,7 @@ HANDLE PalLoadLibrary(const char* moduleName)
     {
         return 0;
     }
-    if (MultiByteToWideChar(CP_UTF8, 0, moduleName, -1, moduleNameWide, (int)(len + 1)) == 0)
+    if (minipal_convert_utf8_to_utf16(moduleName, len + 1, (CHAR16_T*)moduleNameWide, len + 1, 0) == 0)
     {
         return 0;
     }
@@ -1042,11 +1033,6 @@ uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint
     return res;
 }
 
-UInt32_BOOL PalCloseHandle(HANDLE arg1)
-{
-    return ::CloseHandle(arg1);
-}
-
 uint32_t PalGetCurrentProcessId()
 {
     return static_cast<uint32_t>(::GetCurrentProcessId());
@@ -1054,20 +1040,5 @@ uint32_t PalGetCurrentProcessId()
 
 uint32_t PalGetEnvironmentVariable(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize)
 {
-    return ::GetEnvironmentVariableW(lpName, lpBuffer, nSize);
-}
-
-UInt32_BOOL PalResetEvent(HANDLE arg1)
-{
-    return ::ResetEvent(arg1);
-}
-
-UInt32_BOOL PalSetEvent(HANDLE arg1)
-{
-    return ::SetEvent(arg1);
-}
-
-uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3)
-{
-    return ::WaitForSingleObjectEx(arg1, arg2, arg3);
+    return minipal_environ_get_variable_u16(lpName, lpBuffer, nSize);
 }

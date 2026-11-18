@@ -10,12 +10,13 @@ internal static partial class Interop
 {
     internal static partial class BCrypt
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial NTSTATUS BCryptDeriveKey(
             SafeBCryptSecretHandle hSharedSecret,
             string pwszKDF,
             ref readonly BCryptBufferDesc pParameterList,
-            Span<byte> pbDerivedKey,
+            byte* pbDerivedKey,
             uint cbDerivedKey,
             out uint pcbResult,
             uint dwFlags);
@@ -27,21 +28,24 @@ internal static partial class Interop
             Span<byte> destination,
             out int written)
         {
-            NTSTATUS status = BCryptDeriveKey(
-                hSharedSecret,
-                pwszKDF,
-                in parameterList,
-                destination,
-                (uint)destination.Length,
-                out uint pcbResult,
-                0);
-
-            if (status != NTSTATUS.STATUS_SUCCESS)
+            fixed (byte* pDestination = destination)
             {
-                throw CreateCryptographicException(status);
-            }
+                NTSTATUS status = BCryptDeriveKey(
+                    hSharedSecret,
+                    pwszKDF,
+                    in parameterList,
+                    pDestination,
+                    (uint)destination.Length,
+                    out uint pcbResult,
+                    0);
 
-            written = checked((int)pcbResult);
+                if (status != NTSTATUS.STATUS_SUCCESS)
+                {
+                    throw CreateCryptographicException(status);
+                }
+
+                written = checked((int)pcbResult);
+            }
         }
     }
 }

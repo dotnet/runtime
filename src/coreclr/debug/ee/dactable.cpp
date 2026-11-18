@@ -19,6 +19,7 @@
 #include "../../vm/gcenv.h"
 #include "../../vm/ecall.h"
 #include "../../vm/cdacplatformmetadata.hpp"
+#include "../../vm/externalmemoryhandle.h"
 
 #ifdef DEBUGGING_SUPPORTED
 

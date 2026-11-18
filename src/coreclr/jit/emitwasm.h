@@ -19,7 +19,8 @@ public:
 bool isValidVectorIndex(uint8_t elemsize, uint8_t index);
 void emitIns(instruction ins);
 void emitIns_BlockTy(instruction ins, WasmValueType valType = WasmValueType::Invalid);
-void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm);
+void emitIns_I(
+    instruction ins, emitAttr attr, cnsval_ssize_t imm, bool isLastUse = false, unsigned lclNum = BAD_VAR_NUM);
 void emitIns_Ty_I(instruction ins, WasmValueType ty, unsigned int imm);
 void emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valType, int offs);
 void emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* tgtBlock);
@@ -34,11 +35,14 @@ void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int o
 
 // Packed SIMD instruction emit functions
 void emitIns_V128Imm(instruction ins, const uint8_t bytes[16]);
-void emitIns_Lane(instruction ins, emitAttr attr, uint8_t laneIdx);
+void emitIns_Lane(instruction ins, uint8_t laneIdx);
 void emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t offset, uint8_t laneIdx);
 
+void emitImageBase();
 void emitAddressConstant(void* address);
 void emitFuncletAddressConstant(cnsval_ssize_t funcletId);
+void emitDataOffsetConstant(UNATIVE_OFFSET dataOffs);
+void emitIns_MemargAddress(instruction ins, emitAttr attr, void* address);
 
 static unsigned SizeOfULEB128(uint64_t value);
 static unsigned SizeOfSLEB128(int64_t value);

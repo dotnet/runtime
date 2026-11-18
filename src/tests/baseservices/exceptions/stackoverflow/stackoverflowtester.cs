@@ -13,46 +13,52 @@ namespace TestStackOverflow
 {
     public class Program
     {
-        static void TestStackOverflow(string testName, string testArgs, out List<string> stderrLines)
+        static void TestStackOverflow(string testName, string[] testArgs, out List<string> stderrLines)
         {
-            Console.WriteLine($"Running {testName} test({testArgs})");
+            Console.WriteLine($"Running {testName} test({string.Join(" ", testArgs)})");
+            ProcessStartInfo startInfo = new ProcessStartInfo(
+                Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun"),
+                [Path.Combine(Directory.GetCurrentDirectory(), "..", testName, $"{testName}.dll"), .. testArgs]);
+            startInfo.InheritedHandles = [];
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
+            startInfo.Environment.Add("DOTNET_DbgEnableMiniDump", "0");
+            startInfo.Environment.Add("DOTNET_EnableCrashReport", "0");
+            startInfo.Environment.Add("DOTNET_LogStackOverflowExit", "1");
+
+            using Process testProcess = Process.Start(startInfo)!;
+
             List<string> lines = new List<string>();
-
-            Process testProcess = new Process();
-
-            testProcess.StartInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
-            testProcess.StartInfo.Arguments = $"{Path.Combine(Directory.GetCurrentDirectory(), "..", testName, $"{testName}.dll")} {testArgs}";
-            testProcess.StartInfo.UseShellExecute = false;
-            testProcess.StartInfo.RedirectStandardError = true;
-            testProcess.StartInfo.Environment.Add("DOTNET_DbgEnableMiniDump", "0");
-            testProcess.StartInfo.Environment.Add("DOTNET_LogStackOverflowExit", "1");
             bool endOfStackTrace = false;
-            
-            testProcess.ErrorDataReceived += (sender, line) => 
+            foreach (ProcessOutputLine line in testProcess.ReadAllLines())
             {
-                Console.WriteLine($"\"{line.Data}\"");
-                if (!endOfStackTrace && !string.IsNullOrEmpty(line.Data))
+                if (!line.StandardError)
+                {
+                    continue;
+                }
+
+                string data = line.Content;
+                Console.WriteLine($"\"{data}\"");
+                if (!endOfStackTrace && !string.IsNullOrEmpty(data))
                 {
                     // Store lines only till the end of the stack trace.
                     // In the CI it can also contain lines with createdump info.
-                    if (line.Data.StartsWith("Stack overflow.") ||
-                        line.Data.StartsWith("Repeated ") ||
-                        line.Data.StartsWith("------") ||
-                        line.Data.StartsWith("   at "))
+                    if (data.StartsWith("Stack overflow.") ||
+                        data.StartsWith("Repeated ") ||
+                        data.StartsWith("------") ||
+                        data.StartsWith("   at "))
                     {
-                        lines.Add(line.Data);
+                        lines.Add(data);
                     }
-                    else if (!line.Data.StartsWith("@"))
+                    else if (!data.StartsWith("@"))
                     {
                         endOfStackTrace = true;
                     }
                 }
-            };
+            }
 
-            testProcess.Start();
-            testProcess.BeginErrorReadLine();
-            testProcess.WaitForExit();
-            testProcess.CancelErrorRead();
+            // A process can close its std handles but keep running.
+            ProcessExitStatus status = testProcess.WaitForExitStatus();
 
             stderrLines = lines;
 
@@ -66,7 +72,7 @@ namespace TestStackOverflow
                 expectedExitCodes = new int[] { unchecked((int)0xC00000FD), unchecked((int)0x800703E9) };
             }
 
-            if (!Array.Exists(expectedExitCodes, code => testProcess.ExitCode == code))
+            if (!Array.Exists(expectedExitCodes, code => status.ExitCode == code))
             {
                 string separator = string.Empty;
                 StringBuilder expectedListBuilder = new StringBuilder();
@@ -74,7 +80,7 @@ namespace TestStackOverflow
                     expectedListBuilder.Append($"{separator}0x{code:X8}");
                     separator = " or ";
                 });
-                throw new Exception($"Exit code: 0x{testProcess.ExitCode:X8}, expected {expectedListBuilder.ToString()}");
+                throw new Exception($"Exit code: 0x{status.ExitCode:X8}, expected {expectedListBuilder.ToString()}");
             }
 
             if (lines[0] != "Stack overflow.")
@@ -86,10 +92,11 @@ namespace TestStackOverflow
         [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
         [ActiveIssue("Specific to CoreCLR", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
+        [SkipOnCoreClr("Fails in many GC stress jobs. See https://github.com/dotnet/runtime/issues/46279.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestStackOverflowSmallFrameMainThread()
         {
-            TestStackOverflow("stackoverflow", "smallframe main", out List<string> lines);
+            TestStackOverflow("stackoverflow", ["smallframe", "main"], out List<string> lines);
 
             if (!lines[lines.Count - 1].EndsWith(".Main(System.String[])"))
             {
@@ -120,6 +127,7 @@ namespace TestStackOverflow
         [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
         [ActiveIssue("Specific to CoreCLR", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
+        [SkipOnCoreClr("Fails in many GC stress jobs. See https://github.com/dotnet/runtime/issues/46279.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestStackOverflowLargeFrameMainThread()
         {
@@ -136,7 +144,7 @@ namespace TestStackOverflow
                 return;
             }
 
-            TestStackOverflow("stackoverflow", "largeframe main", out List<string> lines);
+            TestStackOverflow("stackoverflow", ["largeframe", "main"], out List<string> lines);
 
             if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow.Program.Main(System.String[])"))
             {
@@ -167,10 +175,11 @@ namespace TestStackOverflow
         [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
         [ActiveIssue("Specific to CoreCLR", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
+        [SkipOnCoreClr("Fails in many GC stress jobs. See https://github.com/dotnet/runtime/issues/46279.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestStackOverflowSmallFrameSecondaryThread()
         {
-            TestStackOverflow("stackoverflow", "smallframe secondary", out List<string> lines);
+            TestStackOverflow("stackoverflow", ["smallframe", "secondary"], out List<string> lines);
 
             if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.Test(Boolean)")))
             {
@@ -196,6 +205,7 @@ namespace TestStackOverflow
         [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
         [ActiveIssue("Specific to CoreCLR", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
+        [SkipOnCoreClr("Fails in many GC stress jobs. See https://github.com/dotnet/runtime/issues/46279.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestStackOverflowLargeFrameSecondaryThread()
         {
@@ -212,7 +222,7 @@ namespace TestStackOverflow
                 return;
             }
 
-            TestStackOverflow("stackoverflow", "largeframe secondary", out List<string> lines);
+            TestStackOverflow("stackoverflow", ["largeframe", "secondary"], out List<string> lines);
 
             if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.Test(Boolean)")))
             {
@@ -237,6 +247,7 @@ namespace TestStackOverflow
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
+        [SkipOnCoreClr("Fails in many GC stress jobs. See https://github.com/dotnet/runtime/issues/46279.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestStackOverflow3()
         {
@@ -247,7 +258,7 @@ namespace TestStackOverflow
                 return;
             }
 
-            TestStackOverflow("stackoverflow3", "", out List<string> lines);
+            TestStackOverflow("stackoverflow3", [], out List<string> lines);
 
             if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow3.Program.Main()"))
             {

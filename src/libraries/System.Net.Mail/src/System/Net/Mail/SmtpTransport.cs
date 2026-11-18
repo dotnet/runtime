@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Mime;
+using System.Net.Security;
 using System.Runtime.ExceptionServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -20,6 +21,10 @@ namespace System.Net.Mail
         private readonly SmtpClient _client;
         private ICredentialsByHost? _credentials;
         private bool _shouldAbort;
+        // Written (set true) from property setters without holding the transport lock and read
+        // from IsConnected on the send path, so it is volatile to make an invalidating
+        // configuration change reliably observable across threads without widening locking.
+        private volatile bool _stale;
 
         private bool _enableSsl;
 
@@ -43,7 +48,11 @@ namespace System.Net.Mail
             }
             set
             {
-                _credentials = value;
+                if (!ReferenceEquals(value, _credentials))
+                {
+                    _credentials = value;
+                    InvalidateCachedConnection();
+                }
             }
         }
 
@@ -51,7 +60,7 @@ namespace System.Net.Mail
         {
             get
             {
-                return _connection != null && _connection.IsConnected;
+                return _connection != null && _connection.IsConnected && !_stale;
             }
         }
 
@@ -63,11 +72,25 @@ namespace System.Net.Mail
             }
             set
             {
-                _enableSsl = value;
+                if (value != _enableSsl)
+                {
+                    _enableSsl = value;
+                    InvalidateCachedConnection();
+                }
             }
         }
 
-        internal X509CertificateCollection ClientCertificates => field ??= new X509CertificateCollection();
+        internal SslClientAuthenticationOptions SslOptions
+        {
+            get => field ??= new SslClientAuthenticationOptions();
+            set
+            {
+                field = value;
+                InvalidateCachedConnection();
+            }
+        }
+
+        internal X509CertificateCollection ClientCertificates => SslOptions.ClientCertificates ??= new X509CertificateCollection();
 
         internal bool ServerSupportsEai
         {
@@ -89,6 +112,15 @@ namespace System.Net.Mail
         {
             lock (this)
             {
+                // Abort any previously cached connection (for example one that became stale after a
+                // configuration change, or one whose connect attempt failed) so its socket is not
+                // leaked. Abort() only force-closes the socket without any network round-trip, so it
+                // is safe to run under the lock and does not block this async send path. A graceful
+                // QUIT is unnecessary for a connection we are discarding. Sends are serialized by
+                // SmtpClient._inCall, so no other GetConnectionAsync can run concurrently here.
+                _connection?.Abort();
+                _stale = false;
+
                 _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
                 if (_shouldAbort)
                 {
@@ -101,8 +133,9 @@ namespace System.Net.Mail
 
             if (EnableSsl)
             {
-                _connection.EnableSsl = true;
-                _connection.ClientCertificates = ClientCertificates;
+                SslClientAuthenticationOptions sslOptions = SslOptions.ShallowClone();
+                sslOptions.TargetHost ??= host;
+                _connection.SslOptions = sslOptions;
             }
 
             return _connection.GetConnectionAsync<TIOAdapter>(host, port, cancellationToken);
@@ -145,6 +178,15 @@ namespace System.Net.Mail
         internal void ReleaseConnection()
         {
             _connection?.ReleaseConnection();
+        }
+
+        // Marks any cached connection as stale without performing blocking work. The connection is
+        // aborted and replaced the next time one is established (see GetConnectionAsync). This is
+        // called when a property that affects how the connection is established (host, port,
+        // credentials, SSL settings, target name) changes.
+        internal void InvalidateCachedConnection()
+        {
+            _stale = true;
         }
 
         internal void Abort()

@@ -30,12 +30,48 @@ namespace ILCompiler.DependencyAnalysis
             return (_reflected ? "Reflected delegate target method:" : "Delegate target method: ") + _method.ToString();
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory) { }
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
+    }
+
+    public sealed class ReflectableVirtualMethodImplNode : DependencyNodeCore<NodeFactory>
+    {
+        private readonly MethodDesc _declaration;
+        private readonly MethodDesc _implementation;
+
+        public ReflectableVirtualMethodImplNode(MethodDesc declaration, MethodDesc implementation)
+        {
+            Debug.Assert(declaration.GetCanonMethodTarget(CanonicalFormKind.Specific) == declaration);
+            Debug.Assert(implementation.GetCanonMethodTarget(CanonicalFormKind.Specific) == implementation);
+
+            _declaration = declaration;
+            _implementation = implementation;
+        }
+
+        protected override string GetName(NodeFactory factory)
+        {
+            return $"Reflectable virtual method implementation: {_implementation} for {_declaration}";
+        }
+
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory) { }
+        public override bool InterestingForDynamicDependencyAnalysis => false;
+        public override bool HasDynamicDependencies => false;
+        public override bool HasConditionalStaticDependencies => true;
+        public override bool StaticDependenciesAreComputed => true;
+
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
+        {
+            sink.Add(new CombinedDependencyListEntry(
+                factory.ReflectedMethod(_implementation),
+                factory.ReflectedDelegateTargetVirtualMethod(_declaration),
+                "Virtual method declaration is reflectable"));
+        }
+
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }

@@ -18,16 +18,24 @@ namespace System.Numerics.Tensors
 
         internal TensorDimensionSpan(TensorSpan<T> tensor, int dimension)
         {
-            if ((uint)dimension >= tensor.Rank)
+            int rank = tensor.Rank;
+            if (rank == 0)
+            {
+                tensor = new TensorSpan<T>(ref tensor._reference, TensorShape.Normalize(tensor._shape));
+                rank = tensor.Rank;
+            }
+
+            if ((uint)dimension >= rank)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException();
             }
             dimension += 1;
 
+            ReadOnlySpan<nint> lengths = tensor.Lengths;
             _tensor = tensor;
-            _length = TensorPrimitives.Product(tensor.Lengths[..dimension]);
+            _length = TensorShape.GetProduct(lengths[..dimension]);
             _dimension = dimension;
-            _sliceShape = TensorShape.Create((dimension != tensor.Rank) ? tensor.Lengths[dimension..] : [1], tensor.Strides[dimension..], tensor.IsPinned);
+            _sliceShape = TensorShape.Create((dimension != rank) ? lengths[dimension..] : [1], tensor.Strides[dimension..], tensor.IsPinned);
         }
 
         /// <summary>Gets <c>true</c> if the slices that exist within the tracked dimension are dense; otherwise, <c>false</c>.</summary>
@@ -57,7 +65,7 @@ namespace System.Numerics.Tensors
         /// <param name="tensorDimension">The tensor dimension span to convert to a readonly tensor dimension span.</param>
         /// <returns>The tensor dimension span that corresponds to <paramref name="tensorDimension" />.</returns>
         public static implicit operator ReadOnlyTensorDimensionSpan<T>(scoped in TensorDimensionSpan<T> tensorDimension) =>
-            new ReadOnlyTensorDimensionSpan<T>(tensorDimension._tensor, tensorDimension._dimension);
+            new ReadOnlyTensorDimensionSpan<T>(tensorDimension._tensor, tensorDimension._dimension - 1);
 
         /// <summary>Gets an enumerator for the readonly tensor dimension span.</summary>
         public Enumerator GetEnumerator() => new Enumerator(this);

@@ -68,16 +68,16 @@ public:
 
 private:
     void MethodInitHelper(unsigned char* buff, unsigned int totalLen, bool readCompileResults);
-    void MethodInitHelperFile(HANDLE hFile, bool readCompileResults);
+    void MethodInitHelperFile(FILE* hFile, bool readCompileResults);
 
     bool Initialize(int mcIndex, unsigned char* buff, DWORD size, bool readCompileResults);
-    bool Initialize(int mcIndex, HANDLE hFile, bool readCompileResults);
+    bool Initialize(int mcIndex, FILE* hFile, bool readCompileResults);
 
     int dumpHashToBuffer(BYTE* pBuffer, int bufLen, char* buff, int len);
 
 public:
     static bool Initialize(int mcIndex, unsigned char* buff, DWORD size, bool readCompileResults, /* OUT */ MethodContext** ppmc);
-    static bool Initialize(int mcIndex, HANDLE hFile, bool readCompileResults, /* OUT */ MethodContext** ppmc);
+    static bool Initialize(int mcIndex, FILE* hFile, bool readCompileResults, /* OUT */ MethodContext** ppmc);
     ~MethodContext();
     void Destroy();
 
@@ -87,7 +87,7 @@ public:
     }
 
     bool Equal(MethodContext* other);
-    unsigned int saveToFile(HANDLE hFile);
+    unsigned int saveToFile(FILE* hFile);
     unsigned int calculateFileSize();
     unsigned int calculateRawFileSize();
 
@@ -122,13 +122,17 @@ public:
     void dmpIsIntrinsic(DWORDLONG key, DWORD value);
     bool repIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
 
+    void recCanValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn, bool result);
+    void dmpCanValueClassInstancePointerEscape(DWORDLONG key, DWORD value);
+    bool repCanValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn);
+
     void recNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn, bool result);
     void dmpNotifyMethodInfoUsage(DWORDLONG key, DWORD value);
     bool repNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn);
 
-    void recNotifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported, bool result);
+    void recNotifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported, bool preserveNegativeDependency, bool result);
     void dmpNotifyInstructionSetUsage(DD key, DWORD supported);
-    bool repNotifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported);
+    bool repNotifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported, bool preserveNegativeDependency);
 
     void recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs);
     void dmpGetMethodAttribs(DWORDLONG key, DWORD value);
@@ -213,6 +217,14 @@ public:
     void recIsValueClass(CORINFO_CLASS_HANDLE cls, bool result);
     void dmpIsValueClass(DWORDLONG key, DWORD value);
     bool repIsValueClass(CORINFO_CLASS_HANDLE cls);
+
+    void recIsByRefLike(CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpIsByRefLike(DWORDLONG key, DWORD value);
+    bool repIsByRefLike(CORINFO_CLASS_HANDLE cls);
+
+    void recIsSharedInst(CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpIsSharedInst(DWORDLONG key, DWORD value);
+    bool repIsSharedInst(CORINFO_CLASS_HANDLE cls);
 
     void recGetClassSize(CORINFO_CLASS_HANDLE cls, unsigned result);
     void dmpGetClassSize(DWORDLONG key, DWORD val);
@@ -352,7 +364,7 @@ public:
     InfoAccessType repConstructStringLiteral(CORINFO_MODULE_HANDLE module, mdToken metaTok, void** ppValue);
 
     void recConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert, bool result);
-    void dmpConvertPInvokeCalliToCall(DLD key, DWORDLONG value);
+    void dmpConvertPInvokeCalliToCall(DLD key, DLDL value);
     bool repConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert);
 
     void recEmptyStringLiteral(void** ppValue, InfoAccessType result);
@@ -559,9 +571,27 @@ public:
     void dmpGetAsyncInfo(DWORD key, const Agnostic_CORINFO_ASYNC_INFO& value);
     void repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut);
 
-    void recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_LOOKUP* instArg, CORINFO_METHOD_HANDLE methHnd);
+    void recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg, CORINFO_METHOD_HANDLE methHnd);
     void dmpGetAwaitReturnCall(DWORDLONG key, Agnostic_GetAwaitReturnCallResult& value);
-    CORINFO_METHOD_HANDLE repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_LOOKUP* instArg);
+    CORINFO_METHOD_HANDLE repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
+
+    void recGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHnd,
+                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                              bool isUnsafe,
+                                              CORINFO_CONTEXT_HANDLE* contextHandle,
+                                              CORINFO_LOOKUP* instArg,
+                                              CORINFO_METHOD_HANDLE methHnd);
+    void dmpGetAwaitAwaiterInContinuationCall(const Agnostic_GetAwaitAwaiterInContinuationCall& key,
+                                              Agnostic_GetAwaitReturnCallResult& value);
+    CORINFO_METHOD_HANDLE repGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHnd,
+                                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                                              bool isUnsafe,
+                                                              CORINFO_CONTEXT_HANDLE* contextHandle,
+                                                              CORINFO_LOOKUP* instArg);
+
+    void recGetWasmWellKnownGlobals(const CORINFO_WASM_WELLKNOWN_GLOBALS* pBaseGlobals);
+    void dmpGetWasmWellKnownGlobals(DWORD key, const Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS& value);
+    void repGetWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
 
     void recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
     void dmpGetGSCookie(DWORD key, DLDL value);
@@ -735,10 +765,6 @@ public:
     void dmpIsEnum(DWORDLONG key, DLD value);
     TypeCompareState repIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType);
 
-    void recGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection, LPVOID result);
-    void dmpGetCookieForPInvokeCalliSig(const GetCookieForPInvokeCalliSigValue& key, DLDL value);
-    LPVOID repGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection);
-
     LPVOID repGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig);
     void recGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig, LPVOID result);
     void dmpGetCookieForInterpreterCalliSig(const GetCookieForInterpreterCalliSigValue& key, DLDL value);
@@ -786,6 +812,10 @@ public:
     void recGetRelocTypeHint(void* target, CorInfoReloc result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     CorInfoReloc repGetRelocTypeHint(void* target);
+
+    void recGetAddressAlignment(void* address, uint32_t result);
+    void dmpGetAddressAlignment(DWORDLONG key, DWORD value);
+    uint32_t repGetAddressAlignment(void* address);
 
     void recGetExpectedTargetArchitecture(DWORD result);
     void dmpGetExpectedTargetArchitecture(DWORD key, DWORD result);
@@ -1092,10 +1122,10 @@ enum mcPackets
     PacketCR_AllocGCInfo = 114,
     PacketCR_AllocMem = 115,
     PacketCR_CallLog = 116,
-    PacketCR_ClassMustBeLoadedBeforeCodeIsRun = 117,
+    //PacketCR_ClassMustBeLoadedBeforeCodeIsRun = 117,
     PacketCR_CompileMethod = 118,
     PacketCR_MessageLog = 119,
-    PacketCR_MethodMustBeLoadedBeforeCodeIsRun = 120,
+    //PacketCR_MethodMustBeLoadedBeforeCodeIsRun = 120,
     PacketCR_ProcessName = 121,
     PacketCR_RecordRelocation = 122,
     PacketCR_ReportFatalError = 123,
@@ -1214,6 +1244,12 @@ enum mcPackets
     Packet_GetWasmLowering = 236,
     Packet_GetAsyncOtherVariant = 237,
     Packet_GetAwaitReturnCall = 238,
+    Packet_GetAddressAlignment = 239,
+    Packet_GetWasmWellKnownGlobals = 240,
+    Packet_CanValueClassInstancePointerEscape = 241,
+    Packet_GetAwaitAwaiterInContinuationCall = 242,
+    Packet_IsByRefLike = 243,
+    Packet_IsSharedInst = 244,
 };
 
 void SetDebugDumpVariables();

@@ -3344,11 +3344,6 @@ void emitter::emitIns_R_R_I_I(instruction ins,
     int msb   = lsb + width - 1;
     int imm   = 0; /* combined immediate */
 
-    assert((lsb >= 0) && (lsb <= 31));    // required for encodings
-    assert((width > 0) && (width <= 32)); // required for encodings
-    assert((msb >= 0) && (msb <= 31));    // required for encodings
-    assert(msb >= lsb);                   // required for encodings
-
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
@@ -3357,6 +3352,10 @@ void emitter::emitIns_R_R_I_I(instruction ins,
             assert(reg2 != REG_PC);
 
             assert(insDoesNotSetFlags(flags));
+            assert((lsb >= 0) && (lsb <= 31));    // required for encoding
+            assert((width > 0) && (width <= 32)); // required for encoding
+            assert((msb >= 0) && (msb <= 31));    // required for encoding
+            assert(msb >= lsb);                   // required for encoding
             imm = (lsb << 5) | msb;
 
             fmt = IF_T2_D0;
@@ -3369,7 +3368,39 @@ void emitter::emitIns_R_R_I_I(instruction ins,
             assert(reg2 != REG_PC);
 
             assert(insDoesNotSetFlags(flags));
+            assert((lsb >= 0) && (lsb <= 31));    // required for encoding
+            assert((width > 0) && (width <= 32)); // required for encoding
+            assert((msb >= 0) && (msb <= 31));    // required for encoding
+            assert(msb >= lsb);                   // required for encoding
             imm = (lsb << 5) | (width - 1);
+
+            fmt = IF_T2_D0;
+            sf  = INS_FLAGS_NOT_SET;
+            break;
+
+        case INS_ssat:
+            // imm1 = shift amount (must be 0 for no shift), imm2 = saturation bits N (1-32)
+            // Encoding: sat_imm field = N-1 stored in bits[4:0]; no shift (sh=0, imm5=0).
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+
+            assert(insDoesNotSetFlags(flags));
+            assert((imm1 == 0) && (imm2 >= 1) && (imm2 <= 32)); // required for encoding
+            imm = (lsb << 5) | (width - 1);                     // lsb=shift=0, width=N -> sat_imm = N-1
+
+            fmt = IF_T2_D0;
+            sf  = INS_FLAGS_NOT_SET;
+            break;
+
+        case INS_usat:
+            // imm1 = shift amount (must be 0 for no shift), imm2 = saturation bits N (0-31)
+            // Encoding: sat_imm field = N stored directly in bits[4:0]; no shift (sh=0, imm5=0).
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+
+            assert(insDoesNotSetFlags(flags));
+            assert((imm1 == 0) && (imm2 >= 0) && (imm2 <= 31)); // required for encoding
+            imm = (lsb << 5) | width;                           // lsb=shift=0, width=N -> sat_imm = N
 
             fmt = IF_T2_D0;
             sf  = INS_FLAGS_NOT_SET;
@@ -5321,8 +5352,10 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
             if (INTERESTING_JUMP_NUM == 0)
                 printf("[3] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
-            printf("[3] Jump  block is at %08X - %02X = %08X\n", blkOffs, emitOffsAdj, blkOffs - emitOffsAdj);
-            printf("[3] Jump        is at %08X - %02X = %08X\n", srcOffs, emitOffsAdj, srcOffs - emitOffsAdj);
+            printf("[3] Jump  block is at %08X - %02X = %08X\n", (unsigned)blkOffs, emitOffsAdj,
+                   (unsigned)(blkOffs - emitOffsAdj));
+            printf("[3] Jump        is at %08X - %02X = %08X\n", (unsigned)srcOffs, emitOffsAdj,
+                   (unsigned)(srcOffs - emitOffsAdj));
             printf("[3] Label block is at %08X - %02X = %08X\n", dstOffs, emitOffsAdj, dstOffs - emitOffsAdj);
         }
 #endif
@@ -5367,8 +5400,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
             if (INTERESTING_JUMP_NUM == 0)
                 printf("[4] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
-            printf("[4] Jump  block is at %08X\n", blkOffs);
-            printf("[4] Jump        is at %08X\n", srcOffs);
+            printf("[4] Jump  block is at %08X\n", (unsigned)blkOffs);
+            printf("[4] Jump        is at %08X\n", (unsigned)srcOffs);
             printf("[4] Label block is at %08X - %02X = %08X\n", dstOffs + emitOffsAdj, emitOffsAdj, dstOffs);
         }
 #endif
@@ -5384,8 +5417,9 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     {
         size_t sz          = 4; // Thumb-2 pretends all instructions are 4-bytes long for computing jump offsets?
         int    distValSize = id->idjShort ? 4 : 8;
-        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
-               dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs, distVal);
+        printf("; %s jump [%p/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
+               dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, (unsigned)(srcOffs + sz), distValSize, dstOffs,
+               (int)distVal);
     }
 #endif
 
@@ -6790,7 +6824,7 @@ void emitter::emitDispCond(int cond)
     const static char* armCond[16] = {"eq", "ne", "hs", "lo", "mi", "pl", "vs", "vc",
                                       "hi", "ls", "ge", "lt", "gt", "le", "AL", "NV"}; // The last two are invalid
     assert(0 <= cond && (unsigned)cond < ArrLen(armCond));
-    printf(armCond[cond]);
+    printf("%s", armCond[cond]);
 }
 
 /*****************************************************************************
@@ -7259,24 +7293,19 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg1(), attr, true);
             imm = emitGetInsSC(id);
             {
-                dataSection*  jdsc = nullptr;
-                NATIVE_OFFSET offs = 0;
+                dataSection* jdsc = nullptr;
 
                 /* Find the appropriate entry in the data section list */
 
                 for (jdsc = emitConsDsc.dsdList; jdsc; jdsc = jdsc->dsNext)
                 {
-                    UNATIVE_OFFSET size = jdsc->dsSize;
-
                     /* Is this a label table? */
 
                     if (jdsc->dsType == dataSection::blockAbsoluteAddr)
                     {
-                        if (offs == imm)
+                        if (jdsc->dsOffset == (UNATIVE_OFFSET)imm)
                             break;
                     }
-
-                    offs += size;
                 }
 
                 if (id->idIsDspReloc())
@@ -7568,6 +7597,18 @@ void emitter::emitDispInsHelp(
                 int imm2 = msb + 1 - lsb;
                 emitDispImm(imm1, true);
                 emitDispImm(imm2, false);
+            }
+            else if (ins == INS_ssat)
+            {
+                // SSAT: stored as sat_imm = N-1; display as #N (saturation bits)
+                int satBits = (imm & 0x1f) + 1;
+                emitDispImm(satBits, false);
+            }
+            else if (ins == INS_usat)
+            {
+                // USAT: stored as sat_imm = N; display as #N (saturation bits)
+                int satBits = imm & 0x1f;
+                emitDispImm(satBits, false);
             }
             else
             {

@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.RegionFreeList))]
 internal sealed partial class RegionFreeList : IData<RegionFreeList>
 {
-    [Field] public TargetPointer HeadFreeRegion { get; }
+    [Field] public partial TargetPointer HeadFreeRegion { get; }
 }

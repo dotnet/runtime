@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+#include <runtime_version.h>
 #include "gcenv.h"
 #include "gcheaputilities.h"
 #include "gcinterface.dac.h"
@@ -22,7 +23,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-GPTR_DECL(MethodTable, g_pFreeObjectEEType);
+GPTR_DECL(MethodTable, g_pFreeObjectMethodTable);
 GPTR_DECL(StressLog, g_pStressLog);
 GPTR_DECL(RuntimeInstance, g_pTheRuntimeInstance);
 

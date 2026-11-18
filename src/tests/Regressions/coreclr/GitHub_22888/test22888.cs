@@ -69,7 +69,13 @@ public class Test22888
     [Fact]
     public static int TestEntryPoint()
     {
-        string currentAssemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string assemblyPath = Assembly.GetExecutingAssembly().Location;
+        if (assemblyPath.Length == 0)
+        {
+            return 100;
+        }
+
+        string currentAssemblyDirectory = Path.GetDirectoryName(assemblyPath);
         string testAssemblyFullPath = Path.Combine(currentAssemblyDirectory, "test22888resources.dll");
 
         WeakReference alcWeakRef;

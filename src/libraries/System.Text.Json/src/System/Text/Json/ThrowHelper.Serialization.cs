@@ -153,11 +153,11 @@ namespace System.Text.Json
         {
             if (declaringType == null)
             {
-                Debug.Assert(propertyName == null);
+                Debug.Assert(propertyName is null);
                 throw new ArgumentException(SR.Format(SR.CannotSerializeInvalidType, typeToConvert), paramName);
             }
 
-            Debug.Assert(propertyName != null);
+            Debug.Assert(propertyName is not null);
             throw new ArgumentException(SR.Format(SR.CannotSerializeInvalidMember, typeToConvert, propertyName, declaringType), paramName);
         }
 
@@ -244,7 +244,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializerOptionsReadOnly(JsonSerializerContext? context)
         {
-            string message = context == null
+            string message = context is null
                 ? SR.SerializerOptionsReadOnly
                 : SR.SerializerContextOptionsReadOnly;
 
@@ -491,7 +491,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ReThrowWithPath(scoped ref ReadStack state, JsonReaderException ex)
         {
-            Debug.Assert(ex.Path == null);
+            Debug.Assert(ex.Path is null);
 
             string path = state.JsonPath();
             string message = ex.Message;
@@ -781,22 +781,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(ReadOnlySpan<byte> propertyName, scoped ref ReadStack state, in Utf8JsonReader reader)
-        {
-            // Set PropertyInfo or KeyName to write down the conflicting property name in JsonException.Path
-            if (state.Current.IsProcessingDictionary())
-            {
-                state.Current.JsonPropertyNameAsString = reader.GetString();
-            }
-            else
-            {
-                state.Current.JsonPropertyName = propertyName.ToArray();
-            }
-
-            ThrowJsonException(SR.MetadataInvalidPropertyWithLeadingDollarSign);
-        }
-
-        [DoesNotReturn]
         public static void ThrowJsonException_MetadataDuplicateIdFound(string id)
         {
             ThrowJsonException(SR.Format(SR.MetadataDuplicateIdFound, id));
@@ -851,26 +835,8 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_JsonPropertyInfoIsBoundToDifferentJsonTypeInfo(JsonPropertyInfo propertyInfo)
         {
-            Debug.Assert(propertyInfo.DeclaringTypeInfo != null, "We should not throw this exception when ParentTypeInfo is null");
+            Debug.Assert(propertyInfo.DeclaringTypeInfo is not null, "We should not throw this exception when ParentTypeInfo is null");
             throw new InvalidOperationException(SR.Format(SR.JsonPropertyInfoBoundToDifferentParent, propertyInfo.Name, propertyInfo.DeclaringTypeInfo.Type.FullName));
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowUnexpectedMetadataException(
-            ReadOnlySpan<byte> propertyName,
-            ref Utf8JsonReader reader,
-            scoped ref ReadStack state)
-        {
-
-            MetadataPropertyName name = JsonSerializer.GetMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver);
-            if (name != 0)
-            {
-                ThrowJsonException_MetadataUnexpectedProperty(propertyName, ref state);
-            }
-            else
-            {
-                ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(propertyName, ref state, reader);
-            }
         }
 
         [DoesNotReturn]
@@ -968,6 +934,18 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_InferredDerivedTypeIsNotAccessible(Type baseType, Type derivedType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_InferredDerivedTypeIsNotAccessible, derivedType, baseType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_InferClosedTypePolymorphismOnNonClosedType(Type baseType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_InferClosedTypePolymorphismOnNonClosedType, baseType));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_InvalidCustomTypeDiscriminatorPropertyName()
         {
             throw new InvalidOperationException(SR.Polymorphism_InvalidCustomTypeDiscriminatorPropertyName);
@@ -1022,12 +1000,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_UnionCaseWithCustomConverterRequiresClassifier(Type unionType)
-        {
-            ThrowJsonException(SR.Format(SR.UnionCaseWithCustomConverterRequiresClassifier, unionType));
-        }
-
-        [DoesNotReturn]
         public static void ThrowJsonException_UnionJsonTokenTypeNotSupported(Type unionType, JsonTokenType tokenType)
         {
             ThrowJsonException(SR.Format(SR.UnionJsonTokenTypeNotSupported, tokenType, unionType));
@@ -1049,6 +1021,63 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_UnionCannotReadValue(Type unionType)
         {
             throw new InvalidOperationException(SR.Format(SR.UnionCannotReadValue, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_UnionTypeStructuralClassifierOnlyForUnions(Type unionType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.UnionTypeStructuralClassifierOnlyForUnions, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_UnionTypeStructuralClassifierCaseNotSupported(
+            Type unionType,
+            Type caseType)
+        {
+            throw new NotSupportedException(
+                SR.Format(
+                    SR.UnionTypeStructuralClassifierCaseNotSupported,
+                    unionType,
+                    caseType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_UnionTypeStructuralClassifierPreserveReferencesNotSupported(Type unionType)
+        {
+            throw new NotSupportedException(
+                SR.Format(
+                    SR.UnionTypeStructuralClassifierPreserveReferencesNotSupported,
+                    unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_UnionTypeStructuralClassifierAmbiguousCases(
+            Type unionType,
+            Type conflictingCaseType,
+            Type caseType,
+            JsonValueType valueType)
+        {
+            throw new NotSupportedException(
+                SR.Format(
+                    SR.UnionTypeStructuralClassifierAmbiguousCases,
+                    unionType,
+                    conflictingCaseType,
+                    caseType,
+                    valueType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_UnionTypeStructuralClassifierUnreachableObjectCase(
+            Type unionType,
+            Type unreachableCaseType,
+            Type shadowingCaseType)
+        {
+            throw new NotSupportedException(
+                SR.Format(
+                    SR.UnionTypeStructuralClassifierUnreachableObjectCase,
+                    unionType,
+                    unreachableCaseType,
+                    shadowingCaseType));
         }
 
         [DoesNotReturn]

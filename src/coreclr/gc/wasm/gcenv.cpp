@@ -29,6 +29,7 @@
 #include <time.h>
 #endif
 
+#include <minipal/memorybarrierprocesswide.h>
 #include <minipal/thread.h>
 #include <minipal/time.h>
 #include <minipal/utils.h>
@@ -67,7 +68,7 @@ bool GCToOSInterface::Initialize()
 
     assert(g_totalPhysicalMemSize != 0);
 
-    return true;
+    return minipal_initialize_memory_barrier_process_wide();
 }
 
 void GCToOSInterface::Shutdown()
@@ -275,6 +276,11 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 // Thread affinity / priority
 // ============================================================================
 
+bool GCToOSInterface::CanSetThreadAffinity()
+{
+    return false;
+}
+
 bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
     (void)procNo;
@@ -387,25 +393,6 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
 
     if (available_page_file != nullptr)
         *available_page_file = 0; // No page file on wasm
-}
-
-// ============================================================================
-// Time
-// ============================================================================
-
-int64_t GCToOSInterface::QueryPerformanceCounter()
-{
-    return minipal_hires_ticks();
-}
-
-int64_t GCToOSInterface::QueryPerformanceFrequency()
-{
-    return minipal_hires_tick_frequency();
-}
-
-uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
-{
-    return (uint64_t)minipal_lowres_ticks();
 }
 
 // ============================================================================

@@ -465,14 +465,14 @@ void BulkStaticsLogger::WriteEntry(AppDomain *domain, Object **address, Object *
     ULONGLONG th = (ULONGLONG)typeHandle.AsTAddr();
     ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(m_typeLogger, th, ETW::TypeSystemLog::kTypeLogBehaviorTakeLockAndLogIfFirstTime);
 
-    // We should have at least 512 characters remaining in the buffer here.
+    // We should have room for an entry with the longest field name in the buffer here.
     int remaining = kMaxBytesValues - m_used;
-    _ASSERTE(kMaxBytesValues - m_used > 512);
+    _ASSERTE(remaining >= EventStaticEntry::MaxEntrySize());
 
     int len = EventStaticEntry::WriteEntry(m_buffer + m_used, remaining, (ULONGLONG)address,
                                            (ULONGLONG)obj, th, 0, fieldDesc);
 
-    // 512 bytes was not enough buffer?  This shouldn't happen, so we'll skip emitting the
+    // There was not enough buffer?  This shouldn't happen, so we'll skip emitting the
     // event on error.
     if (len > 0)
     {
@@ -481,7 +481,7 @@ void BulkStaticsLogger::WriteEntry(AppDomain *domain, Object **address, Object *
     }
 
     // When we are close to running out of buffer, emit the event.
-    if (kMaxBytesValues - m_used < 512)
+    if (kMaxBytesValues - m_used < EventStaticEntry::MaxEntrySize())
         FireBulkStaticsEvent();
 }
 
@@ -500,8 +500,8 @@ void BulkStaticsLogger::LogAllStatics()
         AppDomain *domain = ::GetAppDomain(); // There is only 1 AppDomain, so no iterator here.
 
         AppDomain::AssemblyIterator assemblyIter = domain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded|kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-        while (assemblyIter.Next(pAssembly.This()))
+        CollectibleAssemblyHolder pAssembly;
+        while (assemblyIter.Next(&pAssembly))
         {
             // Make sure the assembly is loaded.
             if (!pAssembly->IsLoaded())
@@ -737,10 +737,17 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         return -1;
 
     pVal->fixedSizedData.TypeID = (ULONGLONG) th.AsTAddr();
-    pVal->fixedSizedData.ModuleID = (ULONGLONG) (TADDR) th.GetModule();
-    pVal->fixedSizedData.TypeNameID = (th.GetMethodTable() == NULL) ? 0 : th.GetCl();
+
+    // Runtime Async continuation MethodTables have no metadata (nil TypeDef token, no name).
+    // Describe them via the base Continuation type so heap dumps show a real name instead of
+    // "Type(0x02000000)"; the per-object TypeID above stays the derived MT so GCBulkNode entries
+    // still resolve. See https://github.com/dotnet/runtime/issues/120800.
+    TypeHandle thNamed = th.UpCastTypeIfNeeded();
+
+    pVal->fixedSizedData.ModuleID = (ULONGLONG) (TADDR) thNamed.GetModule();
+    pVal->fixedSizedData.TypeNameID = (thNamed.GetMethodTable() == NULL) ? 0 : thNamed.GetCl();
     pVal->fixedSizedData.Flags = 0;
-    pVal->fixedSizedData.CorElementType = (BYTE) th.GetInternalCorElementType();
+    pVal->fixedSizedData.CorElementType = (BYTE) thNamed.GetInternalCorElementType();
 
     if (th.IsArray())
     {
@@ -846,7 +853,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
             TRACE_LEVEL_INFORMATION,
             CLR_GCHEAPANDTYPENAMES_KEYWORD))
         {
-            th.GetName(pVal->sName);
+            thNamed.GetName(pVal->sName);
         }
         pVal->sName.Normalize();
     }

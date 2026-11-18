@@ -79,6 +79,21 @@ namespace
         return S_OK;
     }
 
+    int WriteThreadContext(uint32_t threadId, uint32_t contextSize, const uint8_t* contextBuffer, void* context)
+    {
+        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
+        ICorDebugMutableDataTarget* mutableTarget = nullptr;
+        HRESULT hr = target->QueryInterface(__uuidof(ICorDebugMutableDataTarget), (void**)&mutableTarget);
+        if (FAILED(hr))
+            return hr;
+        hr = mutableTarget->SetThreadContext(threadId, contextSize, contextBuffer);
+        mutableTarget->Release();
+        if (FAILED(hr))
+            return hr;
+
+        return S_OK;
+    }
+
     int AllocVirtualCallback(uint32_t size, uint64_t* allocatedAddress, void* context)
     {
         ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
@@ -119,9 +134,8 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown
         target2->Release();
 
     intptr_t handle;
-    if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContext, allocCallback, target, &handle) != 0)
+    if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContext, &WriteThreadContext, allocCallback, target, &handle) != 0)
     {
-        ::FreeLibrary(cdacLib);
         return {};
     }
 
@@ -147,23 +161,40 @@ CDAC::~CDAC()
         _ASSERTE(free != nullptr);
         free(m_cdac_handle);
     }
-
-    if (m_module != NULL)
-        ::FreeLibrary(m_module);
 }
 
-void CDAC::CreateSosInterface(IUnknown** sos)
+HRESULT CDAC::CreateSosInterface(IUnknown** sos)
 {
+    if (sos == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    *sos = nullptr;
+
     decltype(&cdac_reader_create_sos_interface) createSosInterface = reinterpret_cast<decltype(&cdac_reader_create_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_create_sos_interface"));
-    _ASSERTE(createSosInterface != nullptr);
-    int ret = createSosInterface(m_cdac_handle, m_legacyImpl, sos);
-    _ASSERTE(ret == 0);
+    if (createSosInterface == nullptr)
+    {
+        return E_FAIL;
+    }
+
+    return createSosInterface(m_cdac_handle, m_legacyImpl, sos);
 }
 
-void CDAC::CreateDacDbiInterface(IUnknown** dbi)
+HRESULT CDAC::CreateDacDbiInterface(IUnknown** dbi)
 {
+    if (dbi == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    *dbi = nullptr;
+
     decltype(&cdac_reader_create_dacdbi_interface) createDacDbiInterface = reinterpret_cast<decltype(&cdac_reader_create_dacdbi_interface)>(::GetProcAddress(m_module, "cdac_reader_create_dacdbi_interface"));
-    _ASSERTE(createDacDbiInterface != nullptr);
-    int ret = createDacDbiInterface(m_cdac_handle, m_legacyImpl, dbi);
-    _ASSERTE(ret == 0);
+    if (createDacDbiInterface == nullptr)
+    {
+        return E_FAIL;
+    }
+
+    return createDacDbiInterface(m_cdac_handle, m_legacyImpl, dbi);
 }

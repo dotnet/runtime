@@ -8,10 +8,14 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
 
+using ILCompiler.Dataflow;
+using ILCompiler.Logging;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using DependencyNode = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -31,14 +35,13 @@ namespace ILCompiler.DependencyAnalysis
 
         private CustomAttributeHandle Handle => (CustomAttributeHandle)_handle;
 
-        public static void AddDependenciesDueToCustomAttributes(ref DependencyList dependencies, NodeFactory factory, EcmaModule module, CustomAttributeHandleCollection handles)
+        public static void AddDependenciesDueToCustomAttributes(DependencySink dependencies, NodeFactory factory, EcmaModule module, CustomAttributeHandleCollection handles)
         {
             foreach (CustomAttributeHandle customAttribute in handles)
             {
                 if (factory.Settings.StripSecurity && IsCustomAttributeForSecurity(module, customAttribute))
                     continue;
 
-                dependencies ??= new DependencyList();
                 dependencies.Add(factory.CustomAttribute(module, customAttribute), "Custom attribute");
             }
         }
@@ -63,15 +66,13 @@ namespace ILCompiler.DependencyAnalysis
             return false;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
-
             CustomAttribute customAttribute = _module.MetadataReader.GetCustomAttribute(Handle);
 
             // We decided not to report parent as a dependency because we don't expect custom attributes to be needed outside of their parent references
 
-            dependencies.Add(factory.GetNodeForMethodToken(_module, customAttribute.Constructor), "Custom attribute constructor");
+            sink.Add(factory.GetNodeForMethodToken(_module, customAttribute.Constructor), "Custom attribute constructor");
 
             // Parse the custom attribute value blob and add dependencies from it
             CustomAttributeValue<TypeDesc> decodedValue;
@@ -83,33 +84,98 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // Metadata decode failed.
                 _isCorrupted = true;
-                return dependencies;
+                return;
             }
 
             foreach (CustomAttributeTypedArgument<TypeDesc> fixedArg in decodedValue.FixedArguments)
             {
-                GetDependenciesFromCustomAttributeArgument(dependencies, factory, fixedArg.Type, fixedArg.Value);
+                GetDependenciesFromCustomAttributeArgument(sink, factory, fixedArg.Type, fixedArg.Value);
             }
 
-            // Resolve the constructor once for all named arguments
+            // Resolve the constructor once for the generic argument data flow and the named arguments
             MethodDesc constructor = _module.TryGetMethod(customAttribute.Constructor);
             if (constructor is null)
-                return dependencies;
+                return;
+
+            AddGenericArgumentDataFlowDependencies(sink, factory, customAttribute.Parent, constructor.OwningType);
 
             foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in decodedValue.NamedArguments)
             {
                 if (namedArg.Kind == CustomAttributeNamedArgumentKind.Property)
-                    GetDependenciesFromPropertySetter(dependencies, factory, constructor.OwningType, namedArg.Name);
+                    GetDependenciesFromPropertySetter(sink, factory, constructor.OwningType, namedArg.Name);
                 else if (namedArg.Kind == CustomAttributeNamedArgumentKind.Field)
-                    GetDependenciesFromField(dependencies, factory, constructor.OwningType, namedArg.Name);
+                    GetDependenciesFromField(sink, factory, constructor.OwningType, namedArg.Name);
 
-                GetDependenciesFromCustomAttributeArgument(dependencies, factory, namedArg.Type, namedArg.Value);
+                GetDependenciesFromCustomAttributeArgument(sink, factory, namedArg.Type, namedArg.Value);
             }
-
-            return dependencies;
         }
 
-        private static void GetDependenciesFromCustomAttributeArgument(DependencyList dependencies, NodeFactory factory, TypeDesc type, object value)
+        private void AddGenericArgumentDataFlowDependencies(DependencySink dependencies, NodeFactory factory, EntityHandle attributeTarget, TypeDesc attributeType)
+        {
+            if (!GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(factory.FlowAnnotations, attributeType))
+                return;
+
+            // The attribute type is decoded in the context of the module, so a reference to a generic parameter
+            // of the entity the attribute is applied to shows up as a signature variable. Substitute those using
+            // the generic context of the attribute's target before running the data flow.
+            Instantiation typeContext = Instantiation.Empty;
+            Instantiation methodContext = Instantiation.Empty;
+            MessageOrigin origin;
+
+            switch (GetAttributeTargetGenericContext(attributeTarget))
+            {
+                case MethodDesc contextMethod:
+                    typeContext = contextMethod.OwningType.Instantiation;
+                    methodContext = contextMethod.Instantiation;
+                    origin = new MessageOrigin(contextMethod);
+                    break;
+                case TypeDesc contextType:
+                    typeContext = contextType.Instantiation;
+                    origin = new MessageOrigin(contextType);
+                    break;
+                default:
+                    // The generic context of the target is not available (e.g. assembly level attributes,
+                    // or attributes on parameters and interface implementations, whose owner cannot be
+                    // looked up from the handle alone). Signature variables cannot be substituted in that
+                    // case, so skip the analysis.
+                    if (attributeType.ContainsSignatureVariables())
+                        return;
+                    origin = new MessageOrigin(_module);
+                    break;
+            }
+
+            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(dependencies, factory, origin, attributeType, typeContext, methodContext);
+        }
+
+        /// <summary>
+        /// Gets the type or method definition whose generic parameters a custom attribute applied to
+        /// <paramref name="attributeTarget"/> can refer to, or null if there's no such context.
+        /// </summary>
+        private TypeSystemEntity GetAttributeTargetGenericContext(EntityHandle attributeTarget)
+        {
+            MetadataReader reader = _module.MetadataReader;
+            switch (attributeTarget.Kind)
+            {
+                case HandleKind.TypeDefinition:
+                    return _module.GetType((TypeDefinitionHandle)attributeTarget);
+                case HandleKind.MethodDefinition:
+                    return _module.GetMethod((MethodDefinitionHandle)attributeTarget);
+                case HandleKind.FieldDefinition:
+                    return _module.GetType(reader.GetFieldDefinition((FieldDefinitionHandle)attributeTarget).GetDeclaringType());
+                case HandleKind.PropertyDefinition:
+                    return _module.GetType(reader.GetPropertyDefinition((PropertyDefinitionHandle)attributeTarget).GetDeclaringType());
+                case HandleKind.EventDefinition:
+                    return _module.GetType(reader.GetEventDefinition((EventDefinitionHandle)attributeTarget).GetDeclaringType());
+                case HandleKind.GenericParameter:
+                    return GetAttributeTargetGenericContext(reader.GetGenericParameter((GenericParameterHandle)attributeTarget).Parent);
+                case HandleKind.GenericParameterConstraint:
+                    return GetAttributeTargetGenericContext(reader.GetGenericParameterConstraint((GenericParameterConstraintHandle)attributeTarget).Parameter);
+                default:
+                    return null;
+            }
+        }
+
+        private static void GetDependenciesFromCustomAttributeArgument(DependencySink dependencies, NodeFactory factory, TypeDesc type, object value)
         {
             // Report the type itself (e.g. enum types that need to be kept for boxing)
             dependencies.Add(factory.ReflectedType(type), "Custom attribute blob");
@@ -137,7 +203,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private static void GetDependenciesFromPropertySetter(DependencyList dependencies, NodeFactory factory, TypeDesc attributeType, string propertyName)
+        private static void GetDependenciesFromPropertySetter(DependencySink dependencies, NodeFactory factory, TypeDesc attributeType, string propertyName)
         {
             if (attributeType.GetTypeDefinition() is not EcmaType ecmaType)
                 return;
@@ -166,7 +232,7 @@ namespace ILCompiler.DependencyAnalysis
                 GetDependenciesFromPropertySetter(dependencies, factory, baseType, propertyName);
         }
 
-        private static void GetDependenciesFromField(DependencyList dependencies, NodeFactory factory, TypeDesc attributeType, string fieldName)
+        private static void GetDependenciesFromField(DependencySink dependencies, NodeFactory factory, TypeDesc attributeType, string fieldName)
         {
             FieldDesc field = attributeType.GetField(Encoding.UTF8.GetBytes(fieldName));
             if (field is not null)

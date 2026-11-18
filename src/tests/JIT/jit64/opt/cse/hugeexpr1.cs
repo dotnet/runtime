@@ -12432,8 +12432,13 @@ namespace CseTest
 
     public class Test_Main
     {
+        public static bool IsJitOptimizationStressSupported =>
+            !PlatformDetection.IsCoreCLR ||
+            !((Utilities.IsX86 || Utilities.IsArm) && TestLibrary.CoreClrConfigurationDetection.IsAnyJitOptimizationStress);
 
-        [Fact]
+        // This test is resource-heavy under JIT stress when x86 memory is limited, and ARM crossgen can exceed relocation offset limits.
+        // See https://github.com/dotnet/runtime/issues/9821.
+        [ConditionalFact(typeof(Test_Main), nameof(IsJitOptimizationStressSupported))]
         [OuterLoop]
         [SkipOnCoreClr("", RuntimeTestModes.AnyGCStress)]
         [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process))]
@@ -89155,4 +89160,3 @@ do {
         }
     }
 }
-

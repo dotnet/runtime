@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for IlasmRoundTripIncompatible -->
+    <!-- Needed for CLRTestTargetUnsupported, IlasmRoundTripIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>

@@ -50,7 +50,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ true })]
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, /* simd */ true })]
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ false })]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public async Task PublishSIMD_AOT(Configuration config, bool aot, bool simd)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "simd_publish");
@@ -65,6 +65,88 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, m => m.Contains("<-2094756296, -2094756296, -2094756296, -2094756296>"));
             Assert.Contains(result.TestOutput, m => m.Contains("Hello, World!"));
         }
+
+        [Fact]
+        [TestCategory("coreclr"), TestCategory("wasm-opt")]
+        public Task PublishRelaxedSimdCoreClr() => PublishRelaxedSimdCoreClrCore(relaxedSimd: false);
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/137571")]
+        [TestCategory("coreclr"), TestCategory("wasm-opt")]
+        public Task PublishRelaxedSimdEnabledCoreClr() => PublishRelaxedSimdCoreClrCore(relaxedSimd: true);
+
+        private async Task PublishRelaxedSimdCoreClrCore(bool relaxedSimd)
+        {
+            Configuration config = Configuration.Debug;
+            string relaxedSimdValue = relaxedSimd.ToString().ToLowerInvariant();
+            string extraProperties = "<PublishReadyToRun>true</PublishReadyToRun>";
+            if (relaxedSimd)
+                extraProperties += "<PublishReadyToRunInstructionSet>relaxed-simd</PublishReadyToRunInstructionSet>";
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                $"relaxed_simd_{relaxedSimdValue}",
+                extraProperties: extraProperties);
+            UpdateFile(
+                Path.Combine("Common", "Program.cs"),
+                s_coreClrRelaxedSimdProgramText);
+            ReplaceMainJsWithMinimalRunMain();
+
+            PublishProject(info, config, isNativeBuild: false);
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+                config,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42));
+            Assert.Contains(result.TestOutput, m => m.Contains($"RelaxedSimd.IsSupported: {relaxedSimd}"));
+            if (relaxedSimd)
+            {
+                Assert.Contains(result.TestOutput, m => m.Contains("ConvertToInt32Native: <1, -2, 3, -4>"));
+                Assert.Contains(result.TestOutput, m => m.Contains("MultiplyAddEstimate: <7, 7, 7, 7>"));
+            }
+            else
+            {
+                Assert.Contains(result.TestOutput, m => m.Contains("ConvertToInt32Native: PlatformNotSupportedException"));
+            }
+        }
+
+        private static string s_coreClrRelaxedSimdProgramText = """
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.Intrinsics;
+            using System.Runtime.Intrinsics.Wasm;
+
+            public class TestClass
+            {
+                public static int Main()
+                {
+                    Console.WriteLine($"TestOutput -> RelaxedSimd.IsSupported: {RelaxedSimd.IsSupported}");
+                    try
+                    {
+                        Console.WriteLine($"TestOutput -> ConvertToInt32Native: {ConvertToInt32Native(Vector128.Create(1.75f, -2.25f, 3.0f, -4.99f))}");
+                    }
+                    catch (PlatformNotSupportedException)
+                    {
+                        Console.WriteLine("TestOutput -> ConvertToInt32Native: PlatformNotSupportedException");
+                    }
+
+                    if (RelaxedSimd.IsSupported)
+                    {
+                        Console.WriteLine($"TestOutput -> MultiplyAddEstimate: {MultiplyAddEstimate(Vector128.Create(2f), Vector128.Create(3f), Vector128.Create(1f))}");
+                    }
+
+                    return 42;
+                }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static Vector128<int> ConvertToInt32Native(Vector128<float> value) => RelaxedSimd.ConvertToInt32Native(value);
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static Vector128<float> MultiplyAddEstimate(Vector128<float> left, Vector128<float> right, Vector128<float> addend) =>
+                    RelaxedSimd.MultiplyAddEstimate(left, right, addend);
+            }
+            """;
 
         private static string s_simdProgramText = @"
             using System;

@@ -16,7 +16,7 @@ public class ReJITTests
 {
     private readonly record struct ReJITContractContext(IReJIT ReJIT, Target Target);
 
-    private static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockReJITBuilder rejitBuilder)
+    internal static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockReJITBuilder rejitBuilder)
         => new()
         {
             [DataType.ProfControlBlock] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.ProfControlBlockLayout),
@@ -122,13 +122,38 @@ public class ReJITTests
         }
     }
 
+    public static IEnumerable<object[]> ArchWithUnrecognizedState()
+    {
+        foreach (object[] stdArch in new MockTarget.StdArch())
+        {
+            yield return [stdArch[0], (uint)MockReJITBuilder.RejitFlags.kStateGettingReJITParameters];
+            yield return [stdArch[0], 0x3u];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ArchWithUnrecognizedState))]
+    public void GetRejitState_UnrecognizedState_IsUnknown(MockTarget.Architecture arch, uint state)
+    {
+        ILCodeVersionHandle handle = ILCodeVersionHandle.Invalid;
+        ReJITContractContext context = CreateReJITContract(
+            arch,
+            rejitBuilder =>
+            {
+                handle = ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(1, (MockReJITBuilder.RejitFlags)state).Address);
+            });
+        Assert.Equal(RejitState.Unknown, context.ReJIT.GetRejitState(handle));
+    }
+
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetRejitIds_SyntheticAndExplicit_Success(MockTarget.Architecture arch)
     {
         Mock<ICodeVersions> mockCodeVersions = new Mock<ICodeVersions>();
 
-        List<ulong> expectedRejitIds = [0, 1];
+        // Only explicit ReJIT versions that are active are returned. The synthetic default version
+        // (id 0) and requested-but-not-active versions are excluded (matches native GetReJITIDs).
+        List<ulong> expectedRejitIds = [1];
         expectedRejitIds.Sort();
 
         List<ILCodeVersionHandle> ilCodeVersionHandles =
@@ -140,6 +165,9 @@ public class ReJITTests
         TargetPointer methodDesc = new TargetPointer(/* arbitrary */ 0x200);
         mockCodeVersions.Setup(cv => cv.GetILCodeVersions(methodDesc))
             .Returns(ilCodeVersionHandles);
+        // Explicit versions in this test are ReJIT versions; the synthetic version is not.
+        mockCodeVersions.Setup(cv => cv.GetSource(It.IsAny<ILCodeVersionHandle>()))
+            .Returns((ILCodeVersionHandle h) => h.IsExplicit ? CodeVersionSource.ReJIT : CodeVersionSource.Unknown);
         ReJITContractContext context = CreateReJITContract(
             arch,
             rejitBuilder =>

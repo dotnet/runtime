@@ -138,6 +138,7 @@ if [!__PassThroughArgs!]==[] (
 
 if /i "%1" == "-hostos"              (set __HostOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-hostarch"            (set __HostArch=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-arch"                (set __TargetArch=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-os"                  (set __TargetOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-targetrid"           (set __TargetRid=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-outputrid"           (set __TargetRid=%2&shift&shift&goto Arg_Loop)
@@ -280,6 +281,9 @@ if "%__TargetOS%"=="android" (
 if "%__TargetOS%"=="browser" (
     set __CrossTarget=1
 )
+if "%__TargetOS%"=="wasi" (
+    set __CrossTarget=1
+)
 
 if %__CrossTarget% EQU 0 (
     call "%__RepoRootDir%\eng\native\version\copy_version_files.cmd"
@@ -298,9 +302,15 @@ set __IntermediatesEventingDir=%__ArtifactsIntermediatesDir%\Eventing\%__TargetA
 
 REM Find python and set it to the variable PYTHON
 set _C=-c "import sys; sys.stdout.write(sys.executable)"
-(py -3 %_C% || py -2 %_C% || python3 %_C% || python2 %_C% || python %_C%) > "%TEMP%\pythonlocation.txt" 2> NUL
+set __PythonLocation=
+for /f "delims=" %%i in ('py -3 %_C% 2^>NUL') do set "__PythonLocation=%%i"
+if NOT DEFINED __PythonLocation for /f "delims=" %%i in ('py -2 %_C% 2^>NUL') do set "__PythonLocation=%%i"
+if NOT DEFINED __PythonLocation for /f "delims=" %%i in ('python3 %_C% 2^>NUL') do set "__PythonLocation=%%i"
+if NOT DEFINED __PythonLocation for /f "delims=" %%i in ('python2 %_C% 2^>NUL') do set "__PythonLocation=%%i"
+if NOT DEFINED __PythonLocation for /f "delims=" %%i in ('python %_C% 2^>NUL') do set "__PythonLocation=%%i"
+if DEFINED __PythonLocation set "PYTHON=!__PythonLocation!"
+set __PythonLocation=
 set _C=
-set /p PYTHON=<"%TEMP%\pythonlocation.txt"
 
 if NOT DEFINED PYTHON (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Could not find a Python installation.
@@ -344,6 +354,9 @@ for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     )
     if not "!string:-debug-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! debug
+    )
+    if not "!string:-cdac-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! cdac
     )
 )
 if "!__CMakeTarget!" == "" (
@@ -435,13 +448,16 @@ if %__BuildNative% EQU 1 (
     set __CmakeBuildToolArgs=
     if %__Ninja% EQU 1 (
         set __CmakeBuildToolArgs=
+        REM Work around cl.exe's MAX_PATH limit using existing Windows 8.3 directory aliases.
+        REM Pass -C to Ninja because CMake --build expands aliases back to long paths.
+        for %%i in ("%__IntermediatesDir%") do set __CmakeBuildToolArgs=-C "%%~fsi"
     ) else (
         REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
         set __CmakeBuildToolArgs=/nologo /m !__Logging!
     )
 
-    echo running "%CMakePath%" --build %__IntermediatesDir% --target %__CMakeTarget% --config %__BuildType% -- !__CmakeBuildToolArgs!
-    "%CMakePath%" --build %__IntermediatesDir% --target %__CMakeTarget% --config %__BuildType% -- !__CmakeBuildToolArgs!
+    echo running "%CMakePath%" --build "%__IntermediatesDir%" --target %__CMakeTarget% --config %__BuildType% -- !__CmakeBuildToolArgs!
+    "%CMakePath%" --build "%__IntermediatesDir%" --target %__CMakeTarget% --config %__BuildType% -- !__CmakeBuildToolArgs!
 
     if not !errorlevel! == 0 (
         set __exitCode=!errorlevel!
@@ -591,9 +607,10 @@ echo.
 echo.-? -h -help --help: view this message.
 echo -all: Builds all configurations and platforms.
 echo Build architecture: one of -x64, -x86, -arm, -arm64, -loongarch64, -riscv64 ^(default: -x64^).
+echo                     Can also be set with "-arch ^<value^>" ^(e.g. -arch arm64^).
 echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
 echo -component ^<name^> : specify this option one or more times to limit components built to those specified.
-echo                     Allowed ^<name^>: hosts jit alljits runtime paltests iltools nativeaot spmi
+echo                     Allowed ^<name^>: hosts jit alljits runtime paltests iltools nativeaot spmi cdac
 echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
 echo -cmakeargs: user-settable additional arguments passed to CMake.

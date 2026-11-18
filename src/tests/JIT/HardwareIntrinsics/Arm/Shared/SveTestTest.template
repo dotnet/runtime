@@ -184,7 +184,7 @@ namespace {Namespace}
         {
             for (var i = 0; i < Vector<{MaskBaseType}>.Count; i++)
             {
-                if ((left[i] > 0) && (right[i] > 0)) return true;
+                if ((Helpers.IsMaskActive(left[i])) && (Helpers.IsMaskActive(right[i]))) return true;
             }
             return false;
         }
@@ -194,7 +194,7 @@ namespace {Namespace}
         {
             for (var i = 0; i < Vector<{MaskBaseType}>.Count; i++)
             {
-                if (left[i] > 0) return (right[i] > 0);
+                if (Helpers.IsMaskActive(left[i])) return (Helpers.IsMaskActive(right[i]));
             }
             return false;
         }
@@ -204,7 +204,7 @@ namespace {Namespace}
         {
             for (var i = Vector<{MaskBaseType}>.Count - 1; i >= 0; i--)
             {
-                if (left[i] > 0) return (right[i] > 0);
+                if (Helpers.IsMaskActive(left[i])) return (Helpers.IsMaskActive(right[i]));
             }
             return false;
         }

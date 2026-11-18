@@ -1,9 +1,11 @@
 parameters:
   configForBuild: 'Release'
-  artifactName: 'BrowserWasm'
-  runtimeFlavor: 'mono'
+  artifactName: 'BrowserWasmCoreCLR'
+  runtimeFlavor: 'coreclr'
   sdkDirName: 'dotnet-latest'
   includeRefPack: true
+  # CoreCLR R2R publishes require the matching host Crossgen2 and ILLink packages.
+  includeCoreClrToolchainPacks: false
 
 steps:
   - script: >-
@@ -16,19 +18,58 @@ steps:
       $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj
     displayName: "Install workload using artifacts"
 
-  # Stage artifacts: create staging/, copy SDK, runtime pack, and nugets
+  # Stage artifacts: create staging/, copy SDK and runtime pack.
   - script: >-
       mkdir -p $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
       cp -r $(Build.SourcesDirectory)/artifacts/bin/${{ parameters.sdkDirName }} $(Build.SourcesDirectory)/artifacts/staging &&
-      cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging &&
-      cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack* $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
-      cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NETCore.App.Ref* $(Build.SourcesDirectory)/artifacts/staging/built-nugets
+      cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging
     displayName: "Prepare artifacts staging directory"
 
-  # Mono also needs the ref pack directory (CoreCLR gets it from nugets)
+  - ${{ if ne(parameters.includeCoreClrToolchainPacks, true) }}:
+    - script: >-
+        cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack* $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
+        cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NETCore.App.Ref* $(Build.SourcesDirectory)/artifacts/staging/built-nugets
+      displayName: "Stage WebAssembly SDK and reference packs"
+
+  # Stage the ref pack directory when explicitly requested.
   - ${{ if eq(parameters.includeRefPack, true) }}:
     - script: cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging
       displayName: "Stage ref pack directory"
+
+  # The WebAssembly SDK, ref, and host tool packages form the complete local product cohort
+  # consumed by a trimmed CoreCLR R2R publish.
+  - ${{ if eq(parameters.includeCoreClrToolchainPacks, true) }}:
+    - script: >-
+        ./dotnet.sh pack --no-build --no-restore
+        /p:Configuration=${{ parameters.configForBuild }}
+        /p:ContinuousIntegrationBuild=true
+        /p:DisablePackageBaselineValidation=true
+        $(Build.SourcesDirectory)/src/tools/illink/src/ILLink.Tasks/ILLink.Tasks.csproj
+      displayName: "Pack ILLink tasks"
+    - script: |
+        shipping_dir="$(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping"
+        staging_dir="$(Build.SourcesDirectory)/artifacts/staging/built-nugets"
+
+        bash "$(Build.SourcesDirectory)/eng/pipelines/performance/scripts/stage-nuget-cohort.sh" \
+          "$shipping_dir" "$staging_dir" '' \
+          'Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg' \
+          'Microsoft.NETCore.App.Ref.*.nupkg' \
+          'Microsoft.NETCore.App.Crossgen2.*.nupkg' \
+          'Microsoft.NET.ILLink.Tasks.*.nupkg'
+      displayName: "Stage CoreCLR toolchain packs"
+    # Wasm-aware ReadyToRun task shim consumed by dotnet/performance's composite R2R lane until
+    # dotnet/sdk#56395 reaches the global.json SDK. TODO: remove with dotnet/runtime#135023.
+    - script: |
+        set -euo pipefail
+
+        src_dir="$(Build.SourcesDirectory)/artifacts/bin/Crossgen2Tasks/${{ parameters.configForBuild }}"
+        dst_dir="$(Build.SourcesDirectory)/artifacts/staging/Crossgen2Tasks"
+        for f in Crossgen2Tasks.dll Microsoft.NET.CrossGen.props Microsoft.NET.CrossGen.targets; do
+          [ -f "$src_dir/$f" ] || { echo "Missing $src_dir/$f" >&2; exit 1; }
+        done
+        mkdir -p "$dst_dir"
+        cp -R "$src_dir/." "$dst_dir/"
+      displayName: "Stage Crossgen2Tasks shim"
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:

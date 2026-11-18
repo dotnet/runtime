@@ -7,5 +7,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class ObjcTrackingInformation : IData<ObjcTrackingInformation>
 {
     [Field("_memory")]
-    public TargetPointer Memory { get; }
+    public partial TargetPointer Memory { get; }
 }

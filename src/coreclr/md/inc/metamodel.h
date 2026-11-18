@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // MetaModel.h -- header file for compressed CLR metadata.
-//
-
-//
 //*****************************************************************************
+
 #ifndef _METAMODEL_H_
 #define _METAMODEL_H_
 
@@ -16,6 +15,7 @@
 #include <cor.h>
 #include <stgpool.h>
 #include <metamodelpub.h>
+#include "cdacdata.h"
 
 #include "../datablob.h"
 #include "../debug_metadata.h"
@@ -399,10 +399,12 @@ public:
 //     To make that happen would be a substantial refactoring job as RegMeta
 //     always embeds CMiniMdRW even when it was opened for ReadOnly.
 //*****************************************************************************
+class DacDbiInterfaceImpl;
 class CMiniMdBase : public IMetaModelCommonRO
 {
 
-    friend class VerifyLayoutsMD; // verifies class layout doesn't accidentally change
+    friend struct ::cdac_data<CMiniMdBase>;
+    friend class ::DacDbiInterfaceImpl;
 
 public:
     CMiniMdBase();
@@ -430,14 +432,6 @@ public:
         CMiniColDef sColumn,            // the column def containing search value
         ULONG       ulTarget,           // target for search
         RID        *pRid) = 0;
-
-    // Search for a custom value with a given type.
-    __checkReturn
-    HRESULT FindCustomAttributeFor(// RID of custom value, or 0.
-        RID         rid,                // The object's rid.
-        mdToken     tkOjb,              // The object's type.
-        mdToken     tkType,             // Type of custom value.
-        RID        *pFoundRid);
 
     // Search for the specified Column Definition array in the global cache
     BOOL FindSharedColDefs(// TRUE if we found a match in the global cache and updated pTable, FALSE otherwise
@@ -585,6 +579,13 @@ protected:
 private:
 
     BOOL UsesAllocatedMemory(CMiniColDef* pCols);
+};
+
+template<>
+struct cdac_data<CMiniMdBase>
+{
+    static constexpr size_t Schema = offsetof(CMiniMdBase, m_Schema);
+    static constexpr size_t TableCount = offsetof(CMiniMdBase, m_TblCount);
 };
 
 

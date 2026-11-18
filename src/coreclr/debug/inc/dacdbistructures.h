@@ -160,6 +160,18 @@ struct MSLAYOUT TargetBuffer
     ULONG         cbSize;
 };
 
+// A variable sized host memory context buffer in target architecture specific layout.
+// The currently supported layout matches the CONTEXT structure for the
+// target architecture and OS.
+// Buffers may include trailing XSTATE/SVE data, but only the DT_CONTEXT portion is read or written.
+// Not (yet) supported:
+// - Add an architecture enum field to make the struct self-describing
+struct MSLAYOUT ContextBuffer
+{
+    BYTE *  pContextBytes;
+    ULONG32 contextSize;
+};
+
 // Module properties, retrieved by DAC.
 struct MSLAYOUT ModuleInfo
 {
@@ -519,7 +531,8 @@ struct MSLAYOUT Debugger_JITFuncData
 
     BOOL fIsFilterFrame;
     ULONG64 parentNativeOffset;
-    FramePointer fpParentOrSelf;
+    // FramePointer as CORDB_ADDRESS (fixed 64-bit); RS converts to/from FramePointer.
+    CORDB_ADDRESS fpParentOrSelf;
 
     // indicates if the MethodDesc is a generic function or a method inside a generic class (or
     // both!).
@@ -538,8 +551,14 @@ struct MSLAYOUT Debugger_JITFuncData
 #endif                          // ARM context structures have a 16-byte alignment requirement
 struct MSLAYOUT Debugger_STRData
 {
-    FramePointer            fp;
-    DT_CONTEXT *            ctx;
+    // fp is fixed-width across target architectures. ctx wraps a DBI-owned buffer
+    // (pointer plus size) holding the target's opaque CONTEXT byte image.
+    CORDB_ADDRESS           fp;
+    union MSLAYOUT
+    {
+        ContextBuffer       ctx;
+        UINT64              ctxPadding[2]; // Keep subsequent field offsets identical on 32- and 64-bit hosts.
+    };
     VMPTR_AppDomain         vmCurrentAppDomainToken;
 
 
@@ -582,6 +601,9 @@ struct MSLAYOUT Debugger_STRData
 
     };
 };
+static_assert(offsetof(Debugger_STRData, ctx) == 8);
+static_assert(offsetof(Debugger_STRData, vmCurrentAppDomainToken) == 24);
+static_assert(offsetof(Debugger_STRData, v) == 40);
 #if defined(_MSC_VER)
 #pragma warning( pop )
 #endif
@@ -631,7 +653,7 @@ public:
     VMPTR_MethodDesc vmNativeCodeMethodDescToken;
 
     // EnC version number of the function
-    SIZE_T           encVersion;
+    ULONG64          encVersion;
 };
 
 //----------------------------------------------------------------------------------
@@ -649,17 +671,17 @@ public:
     // initialize various fields of an instance of FieldData from information in a FieldDesc
     void Initialize(BOOL fIsStatic, BOOL fIsPrimitive, mdFieldDef mdToken);
 #else
-    HRESULT GetFieldSignature(class CordbModule * pModule, /*OUT*/ SigParser * pSigParser);
+    HRESULT GetFieldSignature(class CordbModule * pModule, /*OUT*/ SigParser * pSigParser) const;
 #endif
 
     // clear various fields for a new instance of FieldData
     void ClearFields();
 
     // Make sure it's okay to get or set an instance field offset.
-    BOOL OkToGetOrSetInstanceOffset();
+    BOOL OkToGetOrSetInstanceOffset() const;
 
     // Make sure it's okay to get or set a static field address.
-    BOOL OkToGetOrSetStaticAddress();
+    BOOL OkToGetOrSetStaticAddress() const;
 
     // If this is an instance field, store its offset
     void SetInstanceOffset( ULONG64 offset );
@@ -670,11 +692,11 @@ public:
     // If this is an instance field, return its offset
     // Note that this offset is always a real offset (possibly larger than 22 bits), which isn't
     // necessarily the same as the overloaded FieldDesc.dwOffset field.
-    CORDB_ADDRESS  GetInstanceOffset();
+    CORDB_ADDRESS  GetInstanceOffset() const;
 
     // If this is a "normal" static, get its absolute address
     // TLS and context-specific statics are "special".
-    CORDB_ADDRESS GetStaticAddress();
+    CORDB_ADDRESS GetStaticAddress() const;
 
 //
 // Data members
@@ -700,10 +722,10 @@ private:
                                               // the object.
     CORDB_ADDRESS   m_pFldStaticAddress;      // The absolute target address of a static field
 
-    PCCOR_SIGNATURE m_fldSignatureCache;      // This is passed across as null. It is a RS-only cache, and SHOULD
-                                              // NEVER BE ACCESSED DIRECTLY!
-    ULONG           m_fldSignatureCacheSize;  // This is passed across as 0. It is a RS-only cache, and SHOULD
-                                              // NEVER BE ACCESSED DIRECTLY!
+    mutable PCCOR_SIGNATURE m_fldSignatureCache;     // This is passed across as null. It is a RS-only cache, and SHOULD
+                                                    // NEVER BE ACCESSED DIRECTLY!
+    mutable ULONG           m_fldSignatureCacheSize; // This is passed across as 0. It is a RS-only cache, and SHOULD
+                                                    // NEVER BE ACCESSED DIRECTLY!
 public:
     VMPTR_FieldDesc m_vmFieldDesc;
 
@@ -797,30 +819,6 @@ typedef DacDbiArrayList<DebuggerIPCE_BasicTypeData> ArgInfoList;
 
 // TypeParamsList encapsulate a list of type parameters and the length of the list
 typedef DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> TypeParamsList;
-
-// A struct for passing version information from DBI to DAC.
-// See code:CordbProcess::CordbProcess#DBIVersionChecking for more information.
-const DWORD kCurrentDacDbiProtocolBreakingChangeCounter = 1;
-
-struct DbiVersion
-{
-    DWORD m_dwFormat;               // the format of this DbiVersion instance
-    DWORD m_dwDbiVersionMS;         // version of the DBI DLL, in the convention used by VS_FIXEDFILEINFO
-    DWORD m_dwDbiVersionLS;
-    DWORD m_dwProtocolBreakingChangeCounter;  // initially this was reserved and always set to 0
-	                                          // Now we use it as a counter to explicitly introduce breaking changes
-	                                          // between DBI and DAC when we have our IPC transport in the middle
-	                                          // If DBI and DAC don't agree on the same value CheckDbiVersion will return CORDBG_E_INCOMPATIBLE_PROTOCOL
-	                                          // Please document every time this value changes
-	                                          // 0 - initial value
-	                                          // 1 - Indicates that the protocol now supports the GetRemoteInterfaceHashAndTimestamp message
-	                                          //     The message must have ID 2, with signature:
-	                                          //     OUT DWORD & hash1, OUT DWORD & hash2, OUT DWORD & hash3, OUT DWORD & hash4, OUT DWORD & timestamp1, OUT DWORD & timestamp2
-	                                          //     The hash can be used as an indicator of many other breaking changes providing
-	                                          //     easier automated enforcement during development. It is NOT recommended to use
-	                                          //     the hash as a release versioning mechanism however.
-    DWORD m_dwReservedMustBeZero1;  // reserved for future use
-};
 
 // Opaque user defined data used in callbacks
 typedef void* CALLBACK_DATA;

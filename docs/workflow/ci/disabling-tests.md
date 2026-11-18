@@ -73,6 +73,7 @@ and inserting a property in a `<PropertyGroup>`, as follows:
 
 - Prevent a test from running when testing unloadability: add `<UnloadabilityIncompatible>true</UnloadabilityIncompatible>`
 - Prevent a test from running when testing ildasm/ilasm round-tripping: add `<IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>`
+  - Shared-library projects do not need process isolation for this property; merged runners skip their marked assemblies individually.
 - Prevent a test assembly from being passed to the Mono AOT compiler: add `<MonoAotIncompatible>true</MonoAotIncompatible>`
 - Prevent a test from being passed to CrossGen2: add `<CrossGenTest>false</CrossGenTest>`
 - Prevent a test from running in ReadyToRun (R2R) test legs: add `<R2RIncompatible>true</R2RIncompatible>`
@@ -82,7 +83,6 @@ When one of the following settings is already required for a given test, the fol
 
 - Prevent a test from running under GCStress: add `<GCStressIncompatible>true</GCStressIncompatible>`
 - Prevent a test from running running under JIT stress modes: add `<JitOptimizationSensitive>true</JitOptimizationSensitive>`
-- Prevent a test from running under HeapVerify: add `<HeapVerifyIncompatible>true</HeapVerifyIncompatible>`
 
 Note that these properties can be conditional, e.g.:
 ```

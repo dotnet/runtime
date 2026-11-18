@@ -6,5 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.PortableEntryPoint))]
 internal sealed partial class PortableEntryPoint : IData<PortableEntryPoint>
 {
-    [Field] public TargetPointer MethodDesc { get; }
+    [Field] public partial TargetPointer ActualCode { get; }
+    [Field] public partial TargetPointer MethodDesc { get; }
+    [Field] public partial int Flags { get; }
 }

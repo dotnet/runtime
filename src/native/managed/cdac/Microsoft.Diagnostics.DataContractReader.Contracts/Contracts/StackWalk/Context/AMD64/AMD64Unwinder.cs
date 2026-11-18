@@ -174,6 +174,8 @@ internal class AMD64Unwinder(Target target)
 
         if (unwindInfo.Version < 2)
         {
+            byte ReadByteAt(TargetPointer address) => _target.Contracts.Debugger.ReadInstructionByte(address);
+
             TargetPointer nextByte = controlPC;
 
             //
@@ -1262,8 +1264,6 @@ internal class AMD64Unwinder(Target target)
 
     #endregion
     #region Helpers
-
-    private byte ReadByteAt(TargetPointer address) => _target.Read<byte>(address);
 
     private static bool IsRexPrefix(byte b) => (b & 0xf0) == 0x40;
 

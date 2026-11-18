@@ -11,7 +11,6 @@ namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties to compress data using Zstandard compression.</summary>
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardEncoder : IDisposable
     {
         internal SafeZstdCompressHandle _context;
@@ -75,10 +74,10 @@ namespace System.IO.Compression
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> class with the specified quality and window size.</summary>
         /// <param name="quality">The compression quality level.</param>
-        /// <param name="windowLog">The window size for compression, expressed as base 2 logarithm.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not between the minimum and maximum allowed values, or <paramref name="windowLog"/> is not between the minimum and maximum allowed values.</exception>
+        /// <param name="windowLog2">The base-2 logarithm of the window size for compression.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not between the minimum and maximum allowed values, or <paramref name="windowLog2"/> is not between the minimum and maximum allowed values.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardEncoder"/> instance.</exception>
-        public ZstandardEncoder(int quality, int windowLog)
+        public ZstandardEncoder(int quality, int windowLog2)
         {
             _disposed = false;
             InitializeEncoder();
@@ -89,9 +88,9 @@ namespace System.IO.Compression
                 {
                     SetQuality(_context, quality);
                 }
-                if (windowLog != 0)
+                if (windowLog2 != 0)
                 {
-                    SetWindowLog(_context, windowLog);
+                    SetWindowLog(_context, windowLog2);
                 }
             }
             catch
@@ -103,11 +102,11 @@ namespace System.IO.Compression
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> class with the specified dictionary and window size.</summary>
         /// <param name="dictionary">The compression dictionary to use.</param>
-        /// <param name="windowLog">The window size for compression, expressed as base 2 logarithm.</param>
+        /// <param name="windowLog2">The base-2 logarithm of the window size for compression.</param>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="windowLog"/> is not between the minimum and maximum allowed values.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="windowLog2"/> is not between the minimum and maximum allowed values.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardEncoder"/> instance.</exception>
-        public ZstandardEncoder(ZstandardDictionary dictionary, int windowLog)
+        public ZstandardEncoder(ZstandardDictionary dictionary, int windowLog2)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
 
@@ -118,9 +117,9 @@ namespace System.IO.Compression
             {
                 SetDictionary(dictionary);
 
-                if (windowLog != 0)
+                if (windowLog2 != 0)
                 {
-                    SetWindowLog(_context, windowLog);
+                    SetWindowLog(_context, windowLog2);
                 }
             }
             catch
@@ -153,9 +152,9 @@ namespace System.IO.Compression
                     SetQuality(_context, compressionOptions.Quality);
                 }
 
-                if (compressionOptions.WindowLog != 0)
+                if (compressionOptions.WindowLog2 != 0)
                 {
-                    SetWindowLog(_context, compressionOptions.WindowLog);
+                    SetWindowLog(_context, compressionOptions.WindowLog2);
                 }
 
                 if (compressionOptions.AppendChecksum)
@@ -171,6 +170,16 @@ namespace System.IO.Compression
                 if (compressionOptions.TargetBlockSize != 0)
                 {
                     SetParameter(_context, Interop.Zstd.ZstdCParameter.ZSTD_c_targetCBlockSize, compressionOptions.TargetBlockSize);
+                }
+
+                if (compressionOptions.HashLog2 != 0)
+                {
+                    SetParameter(_context, Interop.Zstd.ZstdCParameter.ZSTD_c_hashLog, compressionOptions.HashLog2);
+                }
+
+                if (compressionOptions.ChainLog2 != 0)
+                {
+                    SetParameter(_context, Interop.Zstd.ZstdCParameter.ZSTD_c_chainLog, compressionOptions.ChainLog2);
                 }
             }
             catch
@@ -321,12 +330,12 @@ namespace System.IO.Compression
         /// <param name="destination">The buffer to write the compressed data to.</param>
         /// <param name="bytesWritten">When this method returns <see langword="true" />, contains the number of bytes written to the destination.</param>
         /// <param name="quality">The compression quality level.</param>
-        /// <param name="windowLog">The window size for compression, expressed as base 2 logarithm.</param>
+        /// <param name="windowLog2">The base-2 logarithm of the window size for compression.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> if the destination buffer is too small.</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> or <paramref name="windowLog"/> is out of the valid range.</exception>
-        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog)
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> or <paramref name="windowLog2"/> is out of the valid range.</exception>
+        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog2)
         {
-            return TryCompressCore(source, destination, out bytesWritten, quality, windowLog, null);
+            return TryCompressCore(source, destination, out bytesWritten, quality, windowLog2, null);
         }
 
         /// <summary>Attempts to compress the specified data with the specified dictionary and window size.</summary>
@@ -334,17 +343,17 @@ namespace System.IO.Compression
         /// <param name="destination">The buffer to write the compressed data to.</param>
         /// <param name="bytesWritten">When this method returns <see langword="true" />, contains the number of bytes written to the destination.</param>
         /// <param name="dictionary">The compression dictionary to use.</param>
-        /// <param name="windowLog">The window size for compression, expressed as base 2 logarithm.</param>
+        /// <param name="windowLog2">The base-2 logarithm of the window size for compression.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> if the destination buffer is too small.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="windowLog"/> is out of the valid range.</exception>
-        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary, int windowLog)
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="windowLog2"/> is out of the valid range.</exception>
+        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary, int windowLog2)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
-            return TryCompressCore(source, destination, out bytesWritten, 0, windowLog, dictionary);
+            return TryCompressCore(source, destination, out bytesWritten, 0, windowLog2, dictionary);
         }
 
-        internal static bool TryCompressCore(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog, ZstandardDictionary? dictionary)
+        internal static bool TryCompressCore(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog2, ZstandardDictionary? dictionary)
         {
             bytesWritten = 0;
 
@@ -363,9 +372,9 @@ namespace System.IO.Compression
                 SetQuality(ctx, quality);
             }
 
-            if (windowLog != 0)
+            if (windowLog2 != 0)
             {
-                SetWindowLog(ctx, windowLog);
+                SetWindowLog(ctx, windowLog2);
             }
 
             unsafe
@@ -387,6 +396,7 @@ namespace System.IO.Compression
         }
 
         /// <summary>Resets the encoder session, allowing reuse for the next compression operation.</summary>
+        /// <remarks>Clears any prefix and restores the dictionary supplied when the encoder was constructed.</remarks>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
         /// <exception cref="IOException">Failed to reset the encoder session.</exception>
         public void Reset()
@@ -398,7 +408,12 @@ namespace System.IO.Compression
         }
 
         /// <summary>References a prefix for the next compression operation.</summary>
-        /// <remarks>The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called. The referenced data must remain valid and unmodified for the duration of the compression operation.</remarks>
+        /// <remarks>
+        /// The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called.
+        /// The prefix replaces any dictionary supplied when the encoder was constructed until <see cref="Reset"/> restores that dictionary.
+        /// The referenced data must remain valid and unmodified for the duration of the compression operation.
+        /// When compressing with a prefix larger than ~32 MB at high quality levels, set <see cref="ZstandardCompressionOptions.HashLog2"/> so the entire prefix is indexed.
+        /// </remarks>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The encoder is in an invalid state for setting a prefix.</exception>
         public void SetPrefix(ReadOnlyMemory<byte> prefix)
@@ -467,15 +482,15 @@ namespace System.IO.Compression
             SetParameter(handle, Interop.Zstd.ZstdCParameter.ZSTD_c_compressionLevel, quality);
         }
 
-        internal static void SetWindowLog(SafeZstdCompressHandle handle, int windowLog)
+        internal static void SetWindowLog(SafeZstdCompressHandle handle, int windowLog2)
         {
-            if (windowLog != 0)
+            if (windowLog2 != 0)
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(windowLog, ZstandardUtils.WindowLog_Min, nameof(windowLog));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog, ZstandardUtils.WindowLog_Max, nameof(windowLog));
+                ArgumentOutOfRangeException.ThrowIfLessThan(windowLog2, ZstandardUtils.WindowLog_Min, nameof(windowLog2));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog2, ZstandardUtils.WindowLog_Max, nameof(windowLog2));
             }
 
-            SetParameter(handle, Interop.Zstd.ZstdCParameter.ZSTD_c_windowLog, windowLog);
+            SetParameter(handle, Interop.Zstd.ZstdCParameter.ZSTD_c_windowLog, windowLog2);
         }
 
         internal void SetDictionary(ZstandardDictionary dictionary)

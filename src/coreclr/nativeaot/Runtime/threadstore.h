@@ -16,12 +16,9 @@ enum class TrapThreadsFlags
     TrapThreads = 1,
 };
 
-extern "C" void PopulateDebugHeaders();
-
 class ThreadStore
 {
     friend class RuntimeInstance;
-    friend void PopulateDebugHeaders();
     friend struct ::cdac_data<ThreadStore>;
 
     SList<Thread>       m_ThreadList;
@@ -60,8 +57,6 @@ public:
     static void             DetachCurrentThread();
 #ifndef DACCESS_COMPILE
     static void             SaveCurrentThreadOffsetForDAC();
-#else
-    static PTR_Thread       GetThreadFromTEB(TADDR pvTEB);
 #endif
 
     void        Destroy();
@@ -88,5 +83,4 @@ ThreadStore * GetThreadStore();
 
 #define END_FOREACH_THREAD  \
     }                       \
-}                           \
-
+}

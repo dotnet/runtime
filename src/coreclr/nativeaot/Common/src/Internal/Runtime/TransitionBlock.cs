@@ -8,14 +8,12 @@
 
 //
 #if TARGET_ARM
-#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
+#define HAS_FLOAT_ARGUMENT_REGISTERS               // Calling convention has floating-point argument registers
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define FEATURE_HFA
 #elif TARGET_ARM64
-#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
+#define HAS_FLOAT_ARGUMENT_REGISTERS               // Calling convention has floating-point argument registers
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
@@ -23,21 +21,18 @@
 #elif TARGET_X86
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
-#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #elif TARGET_AMD64
 #if TARGET_UNIX
 #define UNIX_AMD64_ABI
-#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #else
 #endif
-#define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
+#define HAS_FLOAT_ARGUMENT_REGISTERS               // Calling convention has floating-point argument registers
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
 #elif TARGET_WASM
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
-#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
+#define HAS_FLOAT_ARGUMENT_REGISTERS               // Calling convention has floating-point argument registers
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
@@ -205,7 +200,7 @@ namespace Internal.Runtime
             return sizeof(IntPtr);
         }
     }
-    // This struct isn't used by x86, but exists for compatibility with the definition of the CallDescrData struct
+    // Floating-point arguments are stack-passed on x86; keep an empty placeholder for the shared ABI abstraction.
     [StructLayout(LayoutKind.Sequential)]
     internal struct FloatArgumentRegisters
     {
@@ -569,7 +564,7 @@ namespace Internal.Runtime
         }
 #endif
 
-#if CALLDESCR_FPARGREGS
+#if HAS_FLOAT_ARGUMENT_REGISTERS
         public static bool IsFloatArgumentRegisterOffset(int offset)
         {
             return offset < 0;
@@ -584,7 +579,7 @@ namespace Internal.Runtime
         public static unsafe int GetNegSpaceSize()
         {
             int negSpaceSize = 0;
-#if CALLDESCR_FPARGREGS
+#if HAS_FLOAT_ARGUMENT_REGISTERS
             negSpaceSize += sizeof(FloatArgumentRegisters);
 #endif
             return negSpaceSize;

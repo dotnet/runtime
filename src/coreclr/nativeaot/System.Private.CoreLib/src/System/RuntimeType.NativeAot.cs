@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
@@ -19,7 +20,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace System
 {
-    internal sealed unsafe class RuntimeType : TypeInfo, ICloneable
+    internal sealed unsafe partial class RuntimeType : TypeInfo, ICloneable
     {
         private MethodTable* _pUnderlyingEEType;
         private IntPtr _runtimeTypeInfoHandle;
@@ -211,7 +212,15 @@ namespace System
         {
             MethodTable* pEEType = _pUnderlyingEEType;
             if (pEEType != null)
-                return ((nuint)pEEType).GetHashCode();
+            {
+                // Fibonacci hashing moves the entropy in aligned handles into the high bits.
+#if TARGET_64BIT
+                return (int)(((ulong)(nuint)pEEType * 0x9E3779B97F4A7C15UL) >> 32);
+#else
+                uint hash = (uint)(nuint)pEEType * 0x9E3779B9U;
+                return (int)(hash ^ (hash >> 16));
+#endif
+            }
             return RuntimeHelpers.GetHashCode(this);
         }
 
@@ -796,30 +805,38 @@ namespace System
             => GetRuntimeTypeInfo().GetDefaultMembers();
 
         public override bool IsDefined(Type attributeType, bool inherit)
-            => GetRuntimeTypeInfo().IsDefined(attributeType, inherit);
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
+        }
 
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return GetRuntimeTypeInfo().GetCustomAttributes(inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object), inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            return GetRuntimeTypeInfo().GetCustomAttributes(attributeType, inherit);
-        }
+            ArgumentNullException.ThrowIfNull(attributeType);
 
-        public override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return GetRuntimeTypeInfo().CustomAttributes;
-            }
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
         }
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return GetRuntimeTypeInfo().GetCustomAttributesData();
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
+
+        internal MetadataReader? GetMetadataReader() => GetRuntimeTypeInfo().GetMetadataReader();
+
+        internal CustomAttributeHandleCollection GetCustomAttributeHandles() => GetRuntimeTypeInfo().GetCustomAttributeHandles();
 
         public override string Name
         {

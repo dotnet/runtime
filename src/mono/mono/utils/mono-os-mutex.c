@@ -44,7 +44,7 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 	res = pthread_cond_timedwait_relative_np (cond, mutex, &ts);
 	if (G_UNLIKELY (res != 0 && res != ETIMEDOUT)) {
 		g_print ("cond: %p mutex: %p\n", *(gpointer*)cond, *(gpointer*)mutex);
-		g_error ("%s: pthread_cond_timedwait_relative_np failed with \"%s\" (%d) %ld %ld %d", __func__, g_strerror (res), res, ts.tv_sec, ts.tv_nsec, timeout_ms);
+		g_error ("%s: pthread_cond_timedwait_relative_np failed with \"%s\" (%d) %lld %ld %d", __func__, g_strerror (res), res, (long long)ts.tv_sec, (long)ts.tv_nsec, timeout_ms);
 	}
 	return res != 0 ? -1 : 0;
 #else
@@ -75,7 +75,7 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 	res = pthread_cond_timedwait (cond, mutex, &ts);
 	if (G_UNLIKELY (res != 0 && res != ETIMEDOUT)) {
 		g_print ("cond: %p mutex: %p\n", *(gpointer*)cond, *(gpointer*)mutex);
-		g_error ("%s: pthread_cond_timedwait failed with \"%s\" (%d) %ld %ld %d", __func__, g_strerror (res), res, ts.tv_sec, ts.tv_nsec, timeout_ms);
+		g_error ("%s: pthread_cond_timedwait failed with \"%s\" (%d) %lld %ld %d", __func__, g_strerror (res), res, (long long)ts.tv_sec, (long)ts.tv_nsec, timeout_ms);
 	}
 	return res != 0 ? -1 : 0;
 #endif /* !HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP */

@@ -11,13 +11,12 @@
 #include "ep-rt-coreclr.h"
 #include <clrconfignocache.h>
 #include <generatedumpflags.h>
+#include "ProcessEnvironment.h"
 #include <minipal/log.h>
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #undef DS_LOG_ALWAYS_0
 #define DS_LOG_ALWAYS_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n")
@@ -160,9 +159,12 @@ ds_rt_transport_get_default_name (
 	STATIC_CONTRACT_NOTHROW;
 
 #ifdef TARGET_UNIX
+	// PAL_GetTransportName returns void, but sets name[0] to '\0' when it fails to generate a name.
 	PAL_GetTransportName (name_len, name, prefix, id, group_id, suffix);
+	return name [0] != '\0';
+#else
+	return false;
 #endif
-	return true;
 }
 
 /*
@@ -226,18 +228,15 @@ static
 uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-	return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+	uint32_t error = ProcessEnvironment_SetVariable((const CHAR16_T*)name, (const CHAR16_T*)value);
+	return HRESULT_FROM_WIN32(error);
 }
 
 static
 uint32_t
 ds_rt_enable_perfmap (uint32_t type)
 {
-    CONTRACTL
-    {
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifdef FEATURE_PERFMAP
 	PerfMap::PerfMapType perfMapType = (PerfMap::PerfMapType)type;
@@ -320,11 +319,7 @@ ds_rt_server_log_pause_message (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	const char diagPortsName[] = "DiagnosticPorts";
-#ifdef HOST_WINDOWS
     CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName);
-#else
-    CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName, /* noPrefix */ false, &PAL_getenv);
-#endif
 	LPCSTR ports = nullptr;
 	if (diagPorts.IsSet())
 	{

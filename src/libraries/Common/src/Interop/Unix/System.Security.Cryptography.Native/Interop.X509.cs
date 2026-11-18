@@ -37,9 +37,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509")]
         internal static partial SafeX509Handle DecodeX509(ref byte buf, int len);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509")]
-        internal static partial SafeX509Handle DecodeX509(IntPtr buf, int len);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509DerSize")]
         internal static partial int GetX509DerSize(SafeX509Handle x);
 
@@ -48,18 +45,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Destroy")]
         internal static partial void X509Destroy(IntPtr a);
-
-        /// <summary>
-        /// Clone the input certificate into a new object.
-        /// </summary>
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Duplicate")]
-        internal static partial SafeX509Handle X509Duplicate(IntPtr handle);
-
-        /// <summary>
-        /// Clone the input certificate into a new object.
-        /// </summary>
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Duplicate")]
-        internal static partial SafeX509Handle X509Duplicate(SafeX509Handle handle);
 
         /// <summary>
         /// Increment the native reference count of the certificate to protect against
@@ -365,7 +350,7 @@ internal static partial class Interop
             X509_V_ERR_EC_KEY_EXPLICIT_PARAMS = 79,
         }
 
-        internal enum X509VerifyStatusCode30
+        internal enum X509VerifyStatusCode3
         {
             X509_V_ERR_NO_ISSUER_PUBLIC_KEY = 24,
 
@@ -401,6 +386,13 @@ internal static partial class Interop
             X509_V_ERR_EC_KEY_EXPLICIT_PARAMS = 94,
         }
 
+        internal enum X509VerifyStatusCode4
+        {
+            X509_V_ERR_EMPTY_AUTHORITY_KEY_IDENTIFIER = 102,
+            X509_V_ERR_AKID_ISSUER_SERIAL_NOT_PAIRED = 103,
+            X509_V_ERR_DUPLICATE_EXTENSION = 104,
+        }
+
         internal readonly struct X509VerifyStatusCode : IEquatable<X509VerifyStatusCode>
         {
             internal static readonly X509VerifyStatusCode X509_V_OK = X509VerifyStatusCodeUniversal.X509_V_OK;
@@ -414,7 +406,8 @@ internal static partial class Interop
 
             public X509VerifyStatusCodeUniversal UniversalCode => (X509VerifyStatusCodeUniversal)Code;
             public X509VerifyStatusCode111 Code111 => (X509VerifyStatusCode111)Code;
-            public X509VerifyStatusCode30 Code30 => (X509VerifyStatusCode30)Code;
+            public X509VerifyStatusCode3 Code3 => (X509VerifyStatusCode3)Code;
+            public X509VerifyStatusCode4 Code4 => (X509VerifyStatusCode4)Code;
 
             public bool Equals(X509VerifyStatusCode other) => Code == other.Code;
 

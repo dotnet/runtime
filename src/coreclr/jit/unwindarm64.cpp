@@ -235,7 +235,7 @@ void Compiler::unwindAllocStack(unsigned size)
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        if (compGeneratingProlog)
+        if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
         {
             unwindAllocStackCFI(size);
         }
@@ -279,7 +279,7 @@ void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        if (compGeneratingProlog)
+        if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
         {
             unwindSetFrameRegCFI(reg, offset);
         }
@@ -351,7 +351,7 @@ void Compiler::unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset)
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        if (compGeneratingProlog)
+        if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
         {
             FuncInfoDsc*   func     = funCurrentFunc();
             UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
@@ -433,7 +433,7 @@ void Compiler::unwindSaveRegPairPreindexed(regNumber reg1, regNumber reg2, int o
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        if (compGeneratingProlog)
+        if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
         {
             FuncInfoDsc*   func     = funCurrentFunc();
             UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
@@ -522,7 +522,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        if (compGeneratingProlog)
+        if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
         {
             FuncInfoDsc*   func     = funCurrentFunc();
             UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
@@ -576,7 +576,7 @@ void Compiler::unwindSaveRegPreindexed(regNumber reg, int offset)
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        if (compGeneratingProlog)
+        if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
         {
             FuncInfoDsc*   func     = funCurrentFunc();
             UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
@@ -645,12 +645,15 @@ void Compiler::unwindPacSignLR()
     if (generateCFIUnwindCodes())
     {
         // Emit NEGATE_RA_STATE opcode in prologs.
-        if (!compGeneratingProlog)
+        if (!GetEmitter()->emitGeneratingPrologOrFuncletProlog())
         {
             return;
         }
         FuncInfoDsc*   func     = funCurrentFunc();
         UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
+        // Sign before frame setup so signing SP == CFA.
+        // Stack probes may precede PAC because they do not change SP.
+        assert(func->cfiCodes->empty());
         // Maps to DW_CFA_AARCH64_negate_ra_state
         createCfiCode(func, cbProlog, CFI_NEGATE_RA_STATE, DWARF_REG_ILLEGAL);
 

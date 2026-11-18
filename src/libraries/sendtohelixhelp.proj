@@ -40,6 +40,7 @@
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(Scenario)' == 'interpmode1'">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetsAppleMobile)' == 'true'">01:15:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'android'">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all')">04:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'">01:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser'">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'wasi'">00:30:00</_workItemTimeout>
@@ -157,6 +158,7 @@
     <HelixCommandPrefixEnvVarItem Condition="'$(WasmEnableWebcil)' == 'false'" Include="WASM_ENABLE_WEBCIL=false" />
     <HelixCommandPrefixEnvVarItem Condition="'$(WasmFingerprintAssets)' == 'false'" Include="WASM_FINGERPRINT_ASSETS=false" />
     <HelixCommandPrefixEnvVarItem Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'" Include="WASM_BUNDLER_FRIENDLY_BOOT_CONFIG=true" />
+    <HelixCommandPrefixEnvVarItem Condition="'$(WasmRunWasmOpt)' == 'true'" Include="WASM_RUN_WASM_OPT=true" />
     <HelixCommandPrefixEnvVarItem Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" Include="WORKLOADS_TEST_PREVIOUS_VERSIONS=true" />
   </ItemGroup>
 
@@ -256,7 +258,8 @@
     InitialTargets for this Project. This causes it to be invoked (and the Helix data created,
     such as the HelixWorkItem item group) before Helix "Test" target is invoked (as a normal target).
   -->
-  <Target Name="BuildHelixWorkItems" DependsOnTargets="$(BuildHelixWorkItemsDependsOn)">
+  <!-- Skipped when sendtohelix.proj invokes this project only to run StageDependenciesForHelix. -->
+  <Target Name="BuildHelixWorkItems" DependsOnTargets="$(BuildHelixWorkItemsDependsOn)" Condition="'$(_StageHelixDependenciesOnly)' != 'true'">
     <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Building Helix work items" />
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Building Helix work items for scenario $(Scenario)" />
     <Message Importance="High" Text="Using TestRunNamePrefix: $(TestRunNamePrefix)" />
@@ -266,7 +269,7 @@
     <Message Importance="High" Text="Using WorkItemArchiveWildCard: $(WorkItemArchiveWildCard)" />
     <Message Importance="High" Text="Using Timeout: $(_workItemTimeout)" />
 
-    <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(BUILD_BUILDID)' != ''">
+    <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(BUILD_BUILDID)' != '' and '$(TargetsMobile)' != 'true'">
       <HelixPostCommands Condition="'$(TargetOS)' == 'windows'">
         $(HelixPostCommands);
         %HELIX_PYTHONPATH% %HELIX_CORRELATION_PAYLOAD%\gen-debug-dump-docs.py -buildid $(BUILD_BUILDID) -workitem %HELIX_WORKITEM_FRIENDLYNAME% -jobid %HELIX_CORRELATION_ID% -outdir %HELIX_WORKITEM_UPLOAD_ROOT% -templatedir %HELIX_CORRELATION_PAYLOAD% -dumpdir %HELIX_DUMP_FOLDER% -productver $(ProductVersion)
@@ -336,13 +339,13 @@
     <Error Text="Stopping the build for dry run" Condition="'$(HelixDryRun)' == 'true'" />
   </Target>
 
-  <Target Name="PrintHelixQueues">
+  <Target Name="PrintHelixQueues" Condition="'$(_StageHelixDependenciesOnly)' != 'true'">
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
     <Message Condition="'$(Scenario)' == 'BuildWasmApps'" Importance="High"
-             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), WasmEnableWebcil: $(WasmEnableWebcil), WasmFingerprintAssets: $(WasmFingerprintAssets), WasmBundlerFriendlyBootConfig: $(WasmBundlerFriendlyBootConfig)" />
+             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), WasmEnableWebcil: $(WasmEnableWebcil), WasmFingerprintAssets: $(WasmFingerprintAssets), WasmBundlerFriendlyBootConfig: $(WasmBundlerFriendlyBootConfig), WasmRunWasmOpt: $(WasmRunWasmOpt)" />
   </Target>
 
-  <Target Name="PrintBuildTargetFramework">
+  <Target Name="PrintBuildTargetFramework" Condition="'$(_StageHelixDependenciesOnly)' != 'true'">
     <Message Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
   </Target>
 
@@ -368,7 +371,13 @@
            Text="Could not find %(__HelixDependenciesToStageThatDontExist.Name) at %(__HelixDependenciesToStageThatDontExist.SourcePath), needed to provision for running tests on helix" />
 
     <ItemGroup>
-      <__HelixDependenciesToStageThatDontExist Name="%(FileName)" />
+      <!-- The staging destination below is $(HelixDependenciesStagingPath)\%(Name), so Name must be
+           the full directory name from Include, not just %(Filename): a version-keyed name such as
+           'chrome-150.0.7871.129-1639810' would otherwise be truncated at the last '.' and the
+           files would be copied somewhere other than the directory created (and later uploaded) as
+           %(Identity), leaving an empty correlation payload. %(Extension) is empty for names
+           without a '.', so this is a no-op for existing callers. -->
+      <__HelixDependenciesToStageThatDontExist Name="%(Filename)%(Extension)" />
     </ItemGroup>
 
     <Message Importance="High" Text="Using %(__HelixDependenciesToStageThatDontExist.Name): %(__HelixDependenciesToStageThatDontExist.SourcePath)" />

@@ -13,7 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Net
 {
     /// <summary>Provides simple domain name resolution functionality.</summary>
-    public static class Dns
+    public static partial class Dns
     {
         /// <summary>Gets the host name of the local machine.</summary>
         public static string GetHostName()
@@ -39,7 +39,7 @@ namespace System.Net
 
         public static IPHostEntry GetHostEntry(IPAddress address)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ArgumentNullException.ThrowIfNull(address);
 
@@ -151,7 +151,7 @@ namespace System.Net
 
         public static Task<IPHostEntry> GetHostEntryAsync(IPAddress address)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ArgumentNullException.ThrowIfNull(address);
 
@@ -162,7 +162,7 @@ namespace System.Net
             }
 
             return RunAsync(static (s, activity) => {
-                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
                 IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified, activity);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info((IPAddress)s, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
@@ -178,8 +178,6 @@ namespace System.Net
 
         public static IPHostEntry EndGetHostEntry(IAsyncResult asyncResult)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ArgumentNullException.ThrowIfNull(asyncResult);
 
             return TaskToAsyncResult.End<IPHostEntry>(asyncResult);
@@ -254,8 +252,6 @@ namespace System.Net
 
         public static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ArgumentNullException.ThrowIfNull(asyncResult);
 
             return TaskToAsyncResult.End<IPAddress[]>(asyncResult);
@@ -281,8 +277,6 @@ namespace System.Net
         [Obsolete("EndGetHostByName has been deprecated. Use EndGetHostEntry instead.")]
         public static IPHostEntry EndGetHostByName(IAsyncResult asyncResult)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ArgumentNullException.ThrowIfNull(asyncResult);
 
             return TaskToAsyncResult.End<IPHostEntry>(asyncResult);
@@ -291,7 +285,7 @@ namespace System.Net
         [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry GetHostByAddress(string address)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ArgumentNullException.ThrowIfNull(address);
 
@@ -304,7 +298,7 @@ namespace System.Net
         [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry GetHostByAddress(IPAddress address)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ArgumentNullException.ThrowIfNull(address);
 
@@ -350,8 +344,6 @@ namespace System.Net
         [Obsolete("EndResolve has been deprecated. Use EndGetHostEntry instead.")]
         public static IPHostEntry EndResolve(IAsyncResult asyncResult)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             IPHostEntry ipHostEntry;
 
             try
@@ -417,6 +409,7 @@ namespace System.Net
         }
 
         private const string Localhost = "localhost";
+        private const string LocalhostWithTrailingDot = Localhost + ".";
         private const string InvalidDomain = "invalid";
 
         // Some systems (e.g. Android, some Linux distros) map ::1 to "ip6-localhost" instead of
@@ -451,11 +444,17 @@ namespace System.Net
         }
 
         /// <summary>
-        /// Checks if the given host name is a subdomain of localhost (e.g., "foo.localhost").
-        /// Plain "localhost" or "localhost." returns false.
+        /// Checks if the given host name should fall back to "localhost" when resolution fails or returns no addresses.
+        /// Fully qualified "localhost." and localhost subdomains return true; plain "localhost" returns false.
         /// </summary>
-        private static bool IsLocalhostSubdomain(string hostName)
+        private static bool ShouldFallbackToLocalhost(string hostName)
         {
+            // Plain "localhost" is the fallback target, so only its fully qualified form should enter this path.
+            if (hostName.Equals(LocalhostWithTrailingDot, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
             // Strip trailing dot for length comparison
             int length = hostName.Length;
             if (hostName.EndsWith('.'))
@@ -463,7 +462,7 @@ namespace System.Net
                 length--;
             }
 
-            // Must be longer than "localhost" (not just equal with trailing dot)
+            // Subdomains must be longer than "localhost".
             return length > Localhost.Length && IsReservedName(hostName, Localhost);
         }
 
@@ -513,10 +512,10 @@ namespace System.Net
 
                 if (errorCode != SocketError.Success)
                 {
-                    // RFC 6761 Section 6.3: If localhost subdomain fails, fall back to resolving plain "localhost".
-                    if (IsLocalhostSubdomain(hostName))
+                    // RFC 6761 Section 6.3: If a localhost name fails, fall back to resolving plain "localhost".
+                    if (ShouldFallbackToLocalhost(hostName))
                     {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain resolution failed, falling back to 'localhost'");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost name resolution failed, falling back to 'localhost'");
                         NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: CreateException(errorCode, nativeErrorCode));
                         fallbackToLocalhost = true;
                     }
@@ -526,10 +525,10 @@ namespace System.Net
                         throw CreateException(errorCode, nativeErrorCode);
                     }
                 }
-                else if (addresses.Length == 0 && IsLocalhostSubdomain(hostName))
+                else if (addresses.Length == 0 && ShouldFallbackToLocalhost(hostName))
                 {
-                    // RFC 6761 Section 6.3: If localhost subdomain returns empty addresses, fall back to plain "localhost".
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain returned empty, falling back to 'localhost'");
+                    // RFC 6761 Section 6.3: If a localhost name returns empty addresses, fall back to plain "localhost".
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost name returned empty, falling back to 'localhost'");
                     NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: justAddresses ? addresses : (object)new IPHostEntry { AddressList = addresses, HostName = newHostName!, Aliases = aliases }, exception: null);
                     fallbackToLocalhost = true;
                 }
@@ -581,7 +580,7 @@ namespace System.Net
         // Does internal IPAddress reverse and then forward lookups (for Legacy and current public methods).
         private static object GetHostEntryOrAddressesCore(IPAddress address, bool justAddresses, AddressFamily addressFamily, NameResolutionActivity? activityOrDefault = default)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             // Try to get the data for the host from its address.
             // We need to call getnameinfo first, because getaddrinfo w/ the ipaddress string
@@ -680,8 +679,8 @@ namespace System.Net
 
             object asyncState;
 
-            // See if it's an IP Address.
-            if (NameResolutionPal.SupportsGetNameInfo && IPAddress.TryParse(hostName, out IPAddress? ipAddress))
+            // See if it's an IP Address. Returning the parsed IP doesn't need a reverse lookup, so it doesn't require getnameinfo support.
+            if ((justReturnParsedIp || NameResolutionPal.SupportsGetNameInfo) && IPAddress.TryParse(hostName, out IPAddress? ipAddress))
             {
                 if (throwOnIIPAny && (ipAddress.Equals(IPAddress.Any) || ipAddress.Equals(IPAddress.IPv6Any)))
                 {
@@ -713,7 +712,7 @@ namespace System.Net
                         Task.FromException<IPHostEntry>(invalidDomainException!);
                 }
 
-                // For localhost subdomains (RFC 6761 Section 6.3), we try the OS resolver first.
+                // For localhost subdomains and fully qualified "localhost." (RFC 6761 Section 6.3), we try the OS resolver first.
                 // If it fails or returns empty, we fall back to resolving plain "localhost".
                 // This fallback logic is handled in GetHostEntryOrAddressesCore and GetAddrInfoWithTelemetryAsync.
 
@@ -725,11 +724,11 @@ namespace System.Net
                     // instead of calling the synchronous version in the ThreadPool.
                     // If it fails, we will fall back to ThreadPool as well.
 
-                    // Always use the telemetry-enabled path for localhost subdomains to ensure fallback handling.
+                    // Always use the telemetry-enabled path for names requiring localhost fallback handling.
                     // For other hostnames, use the non-telemetry path if diagnostics are disabled.
-                    bool isLocalhostSubdomain = IsLocalhostSubdomain(hostName);
+                    bool shouldFallbackToLocalhost = ShouldFallbackToLocalhost(hostName);
                     Task? t;
-                    if (NameResolutionTelemetry.AnyDiagnosticsEnabled() || isLocalhostSubdomain)
+                    if (NameResolutionTelemetry.AnyDiagnosticsEnabled() || shouldFallbackToLocalhost)
                     {
                         t = justAddresses
                             ? GetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses, family, cancellationToken)
@@ -783,15 +782,15 @@ namespace System.Net
 
             if (task != null)
             {
-                bool isLocalhostSubdomain = IsLocalhostSubdomain(hostName);
-                return CompleteAsync(task, hostName, justAddresses, addressFamily, isLocalhostSubdomain, startingTimestamp, cancellationToken);
+                bool shouldFallbackToLocalhost = ShouldFallbackToLocalhost(hostName);
+                return CompleteAsync(task, hostName, justAddresses, addressFamily, shouldFallbackToLocalhost, startingTimestamp, cancellationToken);
             }
 
             // If resolution even did not start don't bother with telemetry.
             // We will retry on thread-pool.
             return null;
 
-            static async Task<T> CompleteAsync(Task task, string hostName, bool justAddresses, AddressFamily addressFamily, bool isLocalhostSubdomain, long startingTimeStamp, CancellationToken cancellationToken)
+            static async Task<T> CompleteAsync(Task task, string hostName, bool justAddresses, AddressFamily addressFamily, bool shouldFallbackToLocalhost, long startingTimeStamp, CancellationToken cancellationToken)
             {
                 NameResolutionActivity activity = NameResolutionTelemetry.Log.BeforeResolution(hostName, startingTimeStamp);
                 Exception? exception = null;
@@ -801,19 +800,19 @@ namespace System.Net
                 {
                     result = await ((Task<T>)task).ConfigureAwait(false);
 
-                    // RFC 6761 Section 6.3: If localhost subdomain returns empty addresses, fall back to plain "localhost".
-                    if (isLocalhostSubdomain && result is IPAddress[] addresses && addresses.Length == 0)
+                    // RFC 6761 Section 6.3: If a localhost name returns empty addresses, fall back to plain "localhost".
+                    if (shouldFallbackToLocalhost && result is IPAddress[] addresses && addresses.Length == 0)
                     {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain returned empty, falling back to 'localhost'");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost name returned empty, falling back to 'localhost'");
                         NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: null);
                         fallbackOccurred = true;
 
                         return await GetLocalhostAddressesAsync(addressFamily, cancellationToken).ConfigureAwait(false);
                     }
 
-                    if (isLocalhostSubdomain && result is IPHostEntry entry && entry.AddressList.Length == 0)
+                    if (shouldFallbackToLocalhost && result is IPHostEntry entry && entry.AddressList.Length == 0)
                     {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain returned empty, falling back to 'localhost'");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost name returned empty, falling back to 'localhost'");
                         NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: null);
                         fallbackOccurred = true;
 
@@ -822,10 +821,10 @@ namespace System.Net
 
                     return result;
                 }
-                catch (SocketException ex) when (isLocalhostSubdomain && !fallbackOccurred)
+                catch (SocketException ex) when (shouldFallbackToLocalhost && !fallbackOccurred)
                 {
-                    // RFC 6761 Section 6.3: If localhost subdomain fails, fall back to resolving plain "localhost".
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain resolution failed, falling back to 'localhost'");
+                    // RFC 6761 Section 6.3: If a localhost name fails, fall back to resolving plain "localhost".
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost name resolution failed, falling back to 'localhost'");
                     NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: ex);
                     fallbackOccurred = true;
 

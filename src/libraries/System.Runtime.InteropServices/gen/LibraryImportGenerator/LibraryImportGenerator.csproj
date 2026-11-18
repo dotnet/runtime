@@ -29,7 +29,8 @@
     <Compile Include="..\Common\ConvertToSourceGeneratedInteropFixer.cs" Link="Common\ConvertToSourceGeneratedInteropFixer.cs" />
     <Compile Include="..\Common\FixAllContextExtensions.cs" Link="Common\FixAllContextExtensions.cs" />
     <Compile Include="../Common/LibraryImportData.cs" Link="Common/LibraryImportData.cs" />
-    <Compile Include="../Common/UnreachableException.cs" Link="Common/UnreachableException.cs" />
+    <Compile Include="../Common/MemorySafetyRules.cs" Link="Common/MemorySafetyRules.cs" />
+    <Compile Include="$(CommonPath)System\Diagnostics\UnreachableException.cs" Link="Common\System\Diagnostics\UnreachableException.cs" />
   </ItemGroup>
 
 </Project>

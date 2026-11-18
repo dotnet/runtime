@@ -38,6 +38,27 @@ internal sealed partial class ZipGenericExtraField
             await stream.WriteAsync(trailingExtraFieldData, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    public static async Task WriteAllBlocksExcludingTagAsync(List<ZipGenericExtraField>? fields, ReadOnlyMemory<byte> trailingExtraFieldData, Stream stream, ushort excludeTag, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (fields != null)
+        {
+            foreach (ZipGenericExtraField field in fields)
+            {
+                if (field.Tag != excludeTag)
+                {
+                    await field.WriteBlockAsync(stream, cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+
+        if (!trailingExtraFieldData.IsEmpty)
+        {
+            await stream.WriteAsync(trailingExtraFieldData, cancellationToken).ConfigureAwait(false);
+        }
+    }
 }
 
 internal sealed partial class Zip64ExtraField
@@ -108,7 +129,7 @@ internal sealed partial class Zip64EndOfCentralDirectoryRecord
 
 internal readonly partial struct ZipLocalFileHeader
 {
-    public static async Task<(List<ZipGenericExtraField>, byte[] trailingData)> GetExtraFieldsAsync(Stream stream, CancellationToken cancellationToken)
+    public static async Task<(List<ZipGenericExtraField>, byte[] trailingData, bool usesZip64)> GetExtraFieldsAsync(Stream stream, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -128,9 +149,9 @@ internal readonly partial struct ZipLocalFileHeader
             stream.Seek(filenameLength, SeekOrigin.Current);
             await stream.ReadExactlyAsync(extraFieldBuffer, cancellationToken).ConfigureAwait(false);
 
-            List<ZipGenericExtraField> list = GetExtraFieldPostReadWork(extraFieldBuffer.Span, out byte[] trailingData);
+            List<ZipGenericExtraField> list = GetExtraFieldPostReadWork(extraFieldBuffer.Span, out byte[] trailingData, out bool usesZip64);
 
-            return (list, trailingData);
+            return (list, trailingData, usesZip64);
         }
         finally
         {
@@ -147,9 +168,8 @@ internal readonly partial struct ZipLocalFileHeader
         cancellationToken.ThrowIfCancellationRequested();
 
         byte[] blockBytes = new byte[FieldLengths.Signature];
-        long currPosition = stream.Position;
         int bytesRead = await stream.ReadAtLeastAsync(blockBytes, blockBytes.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-        if (!TrySkipBlockCore(stream, blockBytes, bytesRead, currPosition))
+        if (!TrySkipBlockCore(stream, blockBytes, bytesRead))
         {
             return false;
         }
@@ -246,7 +266,7 @@ internal sealed partial class ZipEndOfCentralDirectoryBlock
 
         if (!TryReadBlockInitialize(stream, blockContents, bytesRead, out ZipEndOfCentralDirectoryBlock? eocdBlock, out bool readComment))
         {
-            // // We shouldn't get here becasue we found the eocd block using the signature finder
+            // We shouldn't get here because we found the EOCD block using the signature finder
             throw new InvalidDataException(SR.EOCDNotFound);
         }
         else if (readComment)

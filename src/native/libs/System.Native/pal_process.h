@@ -35,7 +35,8 @@ PALEXPORT int32_t SystemNative_ForkAndExecProcess(
                    int32_t* inheritedFds,  // array of fds to explicitly inherit (-1 to disable restriction)
                    int32_t inheritedFdCount, // count of fds in inheritedFds; -1 means no restriction
                    int32_t startDetached,  // whether to start the process as a leader of a new session
-                   int32_t killOnParentExit); // whether to kill the child when the parent exits
+                   int32_t killOnParentExit, // whether to kill the child when the parent exits
+                   int32_t startSuspended); // whether to start the process in a suspended state (macOS only)
 
 /************
  * The values below in the header are fixed and correct for managed callers to use forever.

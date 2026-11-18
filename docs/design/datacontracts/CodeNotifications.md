@@ -32,20 +32,28 @@ void SetAllCodeNotifications(TargetPointer module, CodeNotificationKind flags);
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Type | Purpose |
+<!-- BEGIN GENERATED: usage contract=CodeNotifications version=c1 -->
+### Data descriptors used
+
+| Data Descriptor | Field | Type | Meaning |
 | --- | --- | --- | --- |
-| `JITNotification` | `State` | uint16 | Notification flags (CLRDATA_METHNOTIFY_*) |
-| `JITNotification` | `ClrModule` | nuint | Target pointer to the module |
-| `JITNotification` | `MethodToken` | uint32 | Method metadata token |
+| `JITNotification` | *(type size)* | `uint32` | Size in bytes of each entry in the JIT notification table |
+| `JITNotification` | `ClrModule` | `nuint` | Target pointer to the module |
+| `JITNotification` | `MethodToken` | `uint32` | Method metadata token |
+| `JITNotification` | `State` | `uint16` | Notification flags (CLRDATA_METHNOTIFY_*) |
 
-Global variables used:
-| Global Name | Type | Purpose |
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| `JITNotificationTable` | TargetPointer | Pointer to the `g_pNotificationTable` array of `JITNotification` entries |
-| `JITNotificationTableSize` | uint32 | Maximum number of entries in the notification table (excluding bookkeeping) |
+| `JITNotificationTable` | `pointer` | Pointer to the g_pNotificationTable array of JITNotification entries |
+| `JITNotificationTableSize` | `uint32` | Maximum number of entries in the notification table (excluding bookkeeping) |
 
-Contracts used: none
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=CodeNotifications version=c1 -->
+
 
 The JIT notification table is an array of `JITNotification` structs. Index 0 is reserved for
 bookkeeping: its `MethodToken` field stores the current entry count (length). The table capacity

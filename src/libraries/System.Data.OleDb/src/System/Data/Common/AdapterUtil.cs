@@ -209,26 +209,18 @@ namespace System.Data.Common
             }
         }
 
-        // only StackOverflowException & ThreadAbortException are sealed classes
-        private static readonly Type StackOverflowType = typeof(StackOverflowException);
-        private static readonly Type OutOfMemoryType = typeof(OutOfMemoryException);
-        private static readonly Type ThreadAbortType = typeof(ThreadAbortException);
-        private static readonly Type NullReferenceType = typeof(NullReferenceException);
-        private static readonly Type AccessViolationType = typeof(AccessViolationException);
-        private static readonly Type SecurityType = typeof(SecurityException);
-
         internal static bool IsCatchableExceptionType(Exception e)
         {
             // a 'catchable' exception is defined by what it is not.
             Debug.Assert(e != null, "Unexpected null exception!");
             Type type = e.GetType();
 
-            return ((type != StackOverflowType) &&
-                     (type != OutOfMemoryType) &&
-                     (type != ThreadAbortType) &&
-                     (type != NullReferenceType) &&
-                     (type != AccessViolationType) &&
-                     !SecurityType.IsAssignableFrom(type));
+            return ((type != typeof(StackOverflowException)) &&
+                     (type != typeof(OutOfMemoryException)) &&
+                     (type != typeof(ThreadAbortException)) &&
+                     (type != typeof(NullReferenceException)) &&
+                     (type != typeof(AccessViolationException)) &&
+                     !typeof(SecurityException).IsAssignableFrom(type));
         }
 
         internal static bool IsCatchableOrSecurityExceptionType(Exception e)
@@ -243,11 +235,11 @@ namespace System.Data.Common
             Debug.Assert(e != null, "Unexpected null exception!");
             Type type = e.GetType();
 
-            return ((type != StackOverflowType) &&
-                     (type != OutOfMemoryType) &&
-                     (type != ThreadAbortType) &&
-                     (type != NullReferenceType) &&
-                     (type != AccessViolationType));
+            return ((type != typeof(StackOverflowException)) &&
+                     (type != typeof(OutOfMemoryException)) &&
+                     (type != typeof(ThreadAbortException)) &&
+                     (type != typeof(NullReferenceException)) &&
+                     (type != typeof(AccessViolationException)));
         }
 
         // Invalid Enumeration

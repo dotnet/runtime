@@ -6,7 +6,7 @@
 parameters:
   isExtraPlatformsBuild: false
   isiOSLikeOnlyBuild: false
-  isRollingBuild: false
+  useHelixMonitor: false
 
 jobs:
 
@@ -32,15 +32,16 @@ jobs:
         value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_NativeAOT_Smoke
-      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
-      timeoutInMinutes: 180
+      nameSuffix: AllSubsets_NativeAOT
+      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
+      timeoutInMinutes: 360
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
@@ -69,13 +70,23 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_CoreCLR
       buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
+      enablePublishTestResults: true
+      testResultsFormat: 'xunit'
       timeoutInMinutes: 240
       # extra steps, run tests
       postBuildSteps:
+        - script: >-
+            $(Build.SourcesDirectory)/build.sh
+            --projects
+            $(Build.SourcesDirectory)/src/mono/msbuild/apple/tests/Apple.Build.Tests/Apple.Build.Tests.csproj
+            -c $(_BuildConfig)
+            -test
+          displayName: Run Apple build tests
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
@@ -119,17 +130,18 @@ jobs:
             creator: dotnet-bot
             testBuildArgs: /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false /p:BuildTestsOnHelix=true
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
 # tvOS
-# Build the whole product using CoreCLR and run libraries smoke tests (Debug)
+# Build the whole product using CoreCLR and run libraries smoke tests (Checked)
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Debug
+    buildConfig: Checked
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
@@ -154,4 +166,5 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true

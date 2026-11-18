@@ -205,6 +205,8 @@ internal static partial class Interop
                 SCH_CRED_REVOCATION_CHECK_END_CERT = 0x100,
                 SCH_CRED_IGNORE_NO_REVOCATION_CHECK = 0x800,
                 SCH_CRED_IGNORE_REVOCATION_OFFLINE = 0x1000,
+                SCH_CRED_CACHE_ONLY_URL_RETRIEVAL = 0x8000,
+                SCH_CRED_CACHE_ONLY_URL_RETRIEVAL_ON_CREATE = 0x20000,
                 SCH_SEND_AUX_RECORD = 0x00200000,
                 SCH_USE_STRONG_CRYPTO = 0x00400000,
             }
@@ -246,7 +248,8 @@ internal static partial class Interop
                 SCH_CRED_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT = 0x400,
                 SCH_CRED_IGNORE_NO_REVOCATION_CHECK = 0x800,
                 SCH_CRED_IGNORE_REVOCATION_OFFLINE = 0x1000,
-                SCH_CRED_CACHE_ONLY_URL_RETRIEVAL_ON_CREATE = 0x2000,
+                SCH_CRED_CACHE_ONLY_URL_RETRIEVAL = 0x8000,
+                SCH_CRED_CACHE_ONLY_URL_RETRIEVAL_ON_CREATE = 0x20000,
                 SCH_SEND_ROOT_CERT = 0x40000,
                 SCH_SEND_AUX_RECORD = 0x00200000,
                 SCH_USE_STRONG_CRYPTO = 0x00400000,
@@ -354,6 +357,7 @@ internal static partial class Interop
             };
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int EncryptMessage(
             ref CredHandle contextHandle,
@@ -361,6 +365,7 @@ internal static partial class Interop
             ref SecBufferDesc inputOutput,
             uint sequenceNumber);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static unsafe partial int DecryptMessage(
             ref CredHandle contextHandle,
@@ -368,6 +373,7 @@ internal static partial class Interop
             uint sequenceNumber,
             uint* qualityOfProtection);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int MakeSignature(
             ref CredHandle contextHandle,
@@ -375,6 +381,7 @@ internal static partial class Interop
             ref SecBufferDesc inputOutput,
             uint sequenceNumber);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static unsafe partial int VerifySignature(
             ref CredHandle contextHandle,
@@ -382,23 +389,28 @@ internal static partial class Interop
             uint sequenceNumber,
             uint* qualityOfProtection);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int QuerySecurityContextToken(
             ref CredHandle phContext,
             out SecurityContextTokenHandle handle);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int FreeContextBuffer(
             IntPtr contextBuffer);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int FreeCredentialsHandle(
             ref CredHandle handlePtr);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int DeleteSecurityContext(
             ref CredHandle handlePtr);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static unsafe partial int AcceptSecurityContext(
             ref CredHandle credentialHandle,
@@ -411,12 +423,14 @@ internal static partial class Interop
             ref ContextFlags attributes,
             out long timeStamp);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static unsafe partial int QueryContextAttributesW(
             ref CredHandle contextHandle,
             ContextAttribute attribute,
             void* buffer);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int SetContextAttributesW(
             ref CredHandle contextHandle,
@@ -424,11 +438,13 @@ internal static partial class Interop
             byte[] buffer,
             int bufferSize);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int EnumerateSecurityPackagesW(
             out int pkgnum,
             out SafeFreeContextBuffer_SECURITY handle);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
@@ -441,6 +457,7 @@ internal static partial class Interop
             ref CredHandle handlePtr,
             out long timeStamp);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
@@ -453,6 +470,7 @@ internal static partial class Interop
             ref CredHandle handlePtr,
             out long timeStamp);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
@@ -465,6 +483,7 @@ internal static partial class Interop
             ref CredHandle handlePtr,
             out long timeStamp);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
@@ -477,6 +496,7 @@ internal static partial class Interop
             ref CredHandle handlePtr,
             out long timeStamp);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static unsafe partial int InitializeSecurityContextW(
             ref CredHandle credentialHandle,
@@ -492,20 +512,24 @@ internal static partial class Interop
             ref ContextFlags attributes,
             out long timeStamp);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static unsafe partial int CompleteAuthToken(
             void* inContextPtr,
             ref SecBufferDesc inputBuffers);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static unsafe partial int ApplyControlToken(
             void* inContextPtr,
             ref SecBufferDesc inputBuffers);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial SECURITY_STATUS SspiFreeAuthIdentity(
             IntPtr authData);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial SECURITY_STATUS SspiEncodeStringsAsAuthIdentity(
             string userName,
@@ -513,11 +537,12 @@ internal static partial class Interop
             string password,
             out SafeSspiAuthDataHandle authData);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial SECURITY_STATUS SetCredentialsAttributesW(
             in CredHandle handlePtr,
-            long ulAttribute,
+            uint ulAttribute,
             in SecPkgCred_ClientCertPolicy pBuffer,
-            long cbBuffer);
+            uint cbBuffer);
     }
 }

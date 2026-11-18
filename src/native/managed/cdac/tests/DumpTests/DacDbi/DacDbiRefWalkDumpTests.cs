@@ -20,7 +20,7 @@ public class DacDbiRefWalkDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "GCRoots";
 
-    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
+    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null, new());
 
     /// <summary>
     /// Drives <see cref="DacDbiImpl.WalkRefs"/> to completion and returns every reference reported.
@@ -138,5 +138,26 @@ public class DacDbiRefWalkDumpTests : DumpTestBase
             Assert.Equal(CorGCReferenceType.CorReferenceStack, r.dwType);
 
         Assert.Equal(expected, refs.Count);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void WalkRefs_ExternalMemoryHandles_ContributeNothing_WhenAppDomainHasNone(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+        IExternalMemoryHandles externalMemoryHandles = Target.Contracts.ExternalMemoryHandles;
+        IGC gc = Target.Contracts.GC;
+
+        // The GCRoots debuggee does not create any ExternalMemoryHandle instances, so requesting
+        // the strong handle mask (which also drives external-memory-handle scanning, matching
+        // native DacRefWalker::Init) must report exactly the strong GC handles and nothing more.
+        Assert.Empty(externalMemoryHandles.GetRoots(resolveInteriorPointers: true));
+
+        List<DacGcReference> refs = WalkAllRefs(dbi, walkStacks: false, handleWalkMask: CorGCReferenceType.CorHandleStrong);
+
+        HashSet<ulong> expectedHandles = gc.GetHandles([HandleType.Strong]).Select(h => h.Handle.Value).ToHashSet();
+        HashSet<ulong> walkedHandles = refs.Select(r => r.pObject).ToHashSet();
+        Assert.Equal(expectedHandles, walkedHandles);
     }
 }

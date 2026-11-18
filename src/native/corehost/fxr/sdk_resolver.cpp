@@ -179,9 +179,9 @@ void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, cons
         trace::error(_X("\nInstalled SDKs:"));
         sdk_exists = sdk_info::print_all_sdks(dotnet_root, _X(""));
         if (!sdk_exists)
-            trace::error(no_sdk_message);
+            trace::error(_X("%s"), no_sdk_message);
 
-        trace::error(_X(""));
+        trace::error(_X("%s"), _X(""));
         if (has_global_file)
         {
             trace::error(_X("Install the [%s] .NET SDK or update [%s] to match an installed SDK."), requested.c_str(), global_json.path.c_str());
@@ -337,7 +337,7 @@ sdk_resolver::global_file_info sdk_resolver::parse_global_file(const pal::string
     // After we're done parsing `global_file_path`, none of its contents will be referenced
     // from the data private to json_parser_t; it's safe to declare it on the stack.
     json_parser_t json;
-    if (!json.parse_file(global_file_path))
+    if (!json.parse_fully_trusted_file(global_file_path))
     {
         ret.error_message = json.get_error_message();
         ret.state = global_file_info::state::invalid_json;
@@ -374,7 +374,7 @@ sdk_resolver::global_file_info sdk_resolver::parse_global_file(const pal::string
             return ret;
         }
 
-        if (!fx_ver_t::parse(version_value->value.GetString(), &requested_version, false))
+        if (!fx_ver_t::parse(version_value->value.GetString(), &requested_version))
         {
             ret.error_message = utils::format_string(_X("Version '%s' is not valid for the 'sdk/version' value"), version_value->value.GetString());
             return ret;

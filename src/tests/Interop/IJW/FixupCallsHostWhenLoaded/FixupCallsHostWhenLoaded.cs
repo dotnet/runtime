@@ -13,14 +13,10 @@ namespace FixupCallsHostWhenLoaded
     public class FixupCallsHostWhenLoaded
     {
         [ActiveIssue("C++/CLI, IJW not supported on Mono", TestRuntimes.Mono)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public static int TestEntryPoint()
         {
-            if(Environment.OSVersion.Platform != PlatformID.Win32NT)
-            {
-                return 100;
-            }
-
             try
             {
                 IntPtr ijwHost = NativeLibrary.Load(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ijwhost.dll"));

@@ -44,7 +44,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IStackDataFrameHandle dataFrame = GetFirstManagedFrame();
-        IXCLRDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+        IXCLRDataFrame frame = CreateFrame(dataFrame);
 
         byte[] contextBuf = new byte[4096];
         uint contextSize;
@@ -52,7 +52,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
 
         AssertHResult(HResults.S_OK, hr);
 
-        byte[] rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
+        ReadOnlySpan<byte> rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
         Assert.Equal((uint)rawContext.Length, contextSize);
     }
 
@@ -63,16 +63,16 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IStackDataFrameHandle dataFrame = GetFirstManagedFrame();
-        IXCLRDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+        IXCLRDataFrame frame = CreateFrame(dataFrame);
 
-        byte[] rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
+        ReadOnlySpan<byte> rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
         byte[] contextBuf = new byte[rawContext.Length];
         uint contextSize;
         int hr = frame.GetContext(0, (uint)contextBuf.Length, &contextSize, contextBuf);
 
         AssertHResult(HResults.S_OK, hr);
         Assert.Equal((uint)rawContext.Length, contextSize);
-        Assert.True(contextBuf.SequenceEqual(rawContext), "Context bytes should match raw context exactly");
+        Assert.True(contextBuf.AsSpan().SequenceEqual(rawContext), "Context bytes should match raw context exactly");
     }
 
     [ConditionalTheory]
@@ -82,9 +82,9 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IStackDataFrameHandle dataFrame = GetFirstManagedFrame();
-        IXCLRDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+        IXCLRDataFrame frame = CreateFrame(dataFrame);
 
-        byte[] rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
+        ReadOnlySpan<byte> rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
         Assert.True(rawContext.Length > 0, "Raw context should not be empty for this test.");
 
         byte[] tinyBuf = new byte[rawContext.Length - 1];
@@ -102,9 +102,9 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IStackDataFrameHandle dataFrame = GetFirstManagedFrame();
-        IXCLRDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+        IXCLRDataFrame frame = CreateFrame(dataFrame);
 
-        byte[] rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
+        ReadOnlySpan<byte> rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
         int oversized = rawContext.Length + 128;
         byte[] contextBuf = new byte[oversized];
         // Fill extra region with a sentinel to verify it's untouched.
@@ -196,7 +196,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodA")
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
             uint numArgs;
             int hr = xclrFrame.GetNumArguments(&numArgs);
@@ -236,7 +236,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             MethodDescHandle mdh = rts.GetMethodDescHandle(md);
             Assert.True(rts.IsIL(mdh), "MethodB should be an IL method");
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
             uint numLocals;
             int hr = xclrFrame.GetNumLocalVariables(&numLocals);
@@ -267,7 +267,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (md == TargetPointer.Null)
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
 
             DacComNullableByRef<IXCLRDataMethodInstance> methodOut = new(isNullRef: false);
@@ -303,7 +303,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodA")
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
 
             // MethodA(int depth) is static with 1 argument
@@ -338,7 +338,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodA")
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
 
             // Get the name of the first (and only) argument: "depth"
@@ -376,7 +376,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodA")
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
 
             // MethodA has 1 argument, so index 1 should be out of range
@@ -412,7 +412,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodB")
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
 
             // MethodB has at least 1 local variable (localObj)
@@ -447,7 +447,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodB")
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
 
             // Get actual local count, then use an out-of-range index
@@ -485,7 +485,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodB")
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
 
             // Local variable names are not available - name should be empty
@@ -524,6 +524,12 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
     private IXCLRDataFrame CreateFrameForFirstManagedFrame()
     {
         IStackDataFrameHandle dataFrame = GetFirstManagedFrame();
-        return new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+        return CreateFrame(dataFrame);
+    }
+
+    private ClrDataFrame CreateFrame(IStackDataFrameHandle dataFrame)
+    {
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+        return new ClrDataFrame(Target, crashingThread.ThreadAddress, dataFrame, legacyImpl: null, new());
     }
 }

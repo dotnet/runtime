@@ -23,15 +23,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
-            return [
-                new DependencyListEntry(context.MethodEntrypoint(ThrowingMethodStub), "Throwing method stub for invalid type map"),
-                ];
+            sink.Add(context.MethodEntrypoint(ThrowingMethodStub), "Throwing method stub for invalid type map");
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context) => $"Invalid proxy type map: {TypeMapGroup}";
 
         public override int ClassCode => 36910224;
@@ -40,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
             Vertex typeMapStateVertex = writer.GetUnsignedConstant(0); // Invalid type map state
-            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup);
+            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup, null);
             Vertex throwingMethodStubVertex = externalReferences.EncodeReferenceToMethod(writer, ThrowingMethodStub);
             Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, throwingMethodStubVertex);
             return section.Place(tuple);

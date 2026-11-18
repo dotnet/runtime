@@ -2436,6 +2436,103 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
         }
 
+        // nint/nuint are the only Vector64 shuffle overloads with a pointer-sized element, so on a
+        // 64-bit platform they are the only way to reach a 64-bit element type (a 1D arrangement).
+        // The indices are passed through a non-inlined call so they stay variable, which is what
+        // selects the index fix-up path in the JIT.
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Vector64<nint> ShuffleNativeNoInline(Vector64<nint> vector, Vector64<nint> indices) => Vector64.ShuffleNative(vector, indices);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Vector64<nuint> ShuffleNativeNoInline(Vector64<nuint> vector, Vector64<nuint> indices) => Vector64.ShuffleNative(vector, indices);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Vector64<nint> ShuffleNoInline(Vector64<nint> vector, Vector64<nint> indices) => Vector64.Shuffle(vector, indices);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Vector64<nuint> ShuffleNoInline(Vector64<nuint> vector, Vector64<nuint> indices) => Vector64.Shuffle(vector, indices);
+
+        [Fact]
+        public void Vector64NIntShuffleWithVariableIndicesTest()
+        {
+            Vector64<nint> vector = Vector64<nint>.Zero;
+            Vector64<nint> indices = Vector64<nint>.Zero;
+
+            for (int index = 0; index < Vector64<nint>.Count; index++)
+            {
+                vector = vector.WithElement(index, (nint)(index + 1));
+                indices = indices.WithElement(index, (nint)(Vector64<nint>.Count - index - 1));
+            }
+
+            Vector64<nint> result = ShuffleNoInline(vector, indices);
+
+            for (int index = 0; index < Vector64<nint>.Count; index++)
+            {
+                Assert.Equal((nint)(Vector64<nint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector64NUIntShuffleWithVariableIndicesTest()
+        {
+            Vector64<nuint> vector = Vector64<nuint>.Zero;
+            Vector64<nuint> indices = Vector64<nuint>.Zero;
+
+            for (int index = 0; index < Vector64<nuint>.Count; index++)
+            {
+                vector = vector.WithElement(index, (nuint)(index + 1));
+                indices = indices.WithElement(index, (nuint)(Vector64<nuint>.Count - index - 1));
+            }
+
+            Vector64<nuint> result = ShuffleNoInline(vector, indices);
+
+            for (int index = 0; index < Vector64<nuint>.Count; index++)
+            {
+                Assert.Equal((nuint)(Vector64<nuint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector64NIntShuffleNativeWithVariableIndicesTest()
+        {
+            Vector64<nint> vector = Vector64<nint>.Zero;
+            Vector64<nint> indices = Vector64<nint>.Zero;
+
+            for (int index = 0; index < Vector64<nint>.Count; index++)
+            {
+                vector = vector.WithElement(index, (nint)(index + 1));
+                indices = indices.WithElement(index, (nint)(Vector64<nint>.Count - index - 1));
+            }
+
+            Vector64<nint> result = ShuffleNativeNoInline(vector, indices);
+
+            for (int index = 0; index < Vector64<nint>.Count; index++)
+            {
+                Assert.Equal((nint)(Vector64<nint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector64NUIntShuffleNativeWithVariableIndicesTest()
+        {
+            Vector64<nuint> vector = Vector64<nuint>.Zero;
+            Vector64<nuint> indices = Vector64<nuint>.Zero;
+
+            for (int index = 0; index < Vector64<nuint>.Count; index++)
+            {
+                vector = vector.WithElement(index, (nuint)(index + 1));
+                indices = indices.WithElement(index, (nuint)(Vector64<nuint>.Count - index - 1));
+            }
+
+            Vector64<nuint> result = ShuffleNativeNoInline(vector, indices);
+
+            for (int index = 0; index < Vector64<nuint>.Count; index++)
+            {
+                Assert.Equal((nuint)(Vector64<nuint>.Count - index), result.GetElement(index));
+            }
+        }
+
         [Fact]
         public void Vector64SByteShuffleNativeOneInputTest()
         {
@@ -5120,6 +5217,38 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertEqual(Vector64.Create(expectedResult), Vector64.Hypot(Vector64.Create(+y), Vector64.Create(-x)), Vector64.Create(variance));
             AssertEqual(Vector64.Create(expectedResult), Vector64.Hypot(Vector64.Create(+y), Vector64.Create(+x)), Vector64.Create(variance));
         }
+
+        private void IntegerClassification<T>(T value)
+            where T : IFloatingPointIeee754<T>
+        {
+            Vector64<T> vector = Vector64<T>.Zero;
+            Vector64<T> integer = Vector64<T>.Zero;
+            Vector64<T> even = Vector64<T>.Zero;
+            Vector64<T> odd = Vector64<T>.Zero;
+            T allBitsSet = Vector64<T>.AllBitsSet.GetElement(0);
+            T two = T.CreateChecked(2);
+
+            for (int i = 0; i < Vector64<T>.Count; i++)
+            {
+                T element = (i % 2 == 0) ? value : T.CreateChecked(i - 1);
+                vector = vector.WithElement(i, element);
+                integer = integer.WithElement(i, (element % T.One == T.Zero) ? allBitsSet : T.Zero);
+                even = even.WithElement(i, (element % two == T.Zero) ? allBitsSet : T.Zero);
+                odd = odd.WithElement(i, (T.Abs(element % two) == T.One) ? allBitsSet : T.Zero);
+            }
+
+            Assert.Equal(integer.AsByte(), Vector64.IsInteger(vector).AsByte());
+            Assert.Equal(even.AsByte(), Vector64.IsEvenInteger(vector).AsByte());
+            Assert.Equal(odd.AsByte(), Vector64.IsOddInteger(vector).AsByte());
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IntegerClassificationDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IntegerClassificationDoubleTest(double value) => IntegerClassification(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IntegerClassificationSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IntegerClassificationSingleTest(float value) => IntegerClassification(value);
 
         private void IsEvenInteger<T>(T value)
             where T : INumber<T>

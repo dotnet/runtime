@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -28,6 +29,9 @@ public unsafe class LoaderTests
             [DataType.Assembly] = TargetTestHelpers.CreateTypeInfo(loader.AssemblyLayout),
             [DataType.EEConfig] = TargetTestHelpers.CreateTypeInfo(loader.EEConfigLayout),
             [DataType.CGrowableSymbolStream] = TargetTestHelpers.CreateTypeInfo(loader.CGrowableSymbolStreamLayout),
+            [DataType.ModuleLookupMap] = TargetTestHelpers.CreateTypeInfo(loader.ModuleLookupMapLayout),
+            [DataType.DynamicILBlobTable] = TargetTestHelpers.CreateTypeInfo(loader.DynamicILBlobTableLayout),
+            [DataType.EETypeHashTable] = TargetTestHelpers.CreateTypeInfo(loader.EETypeHashTableLayout),
         };
 
     private static ILoader CreateLoaderContract(MockTarget.Architecture arch, Action<MockLoaderBuilder> configure)
@@ -61,6 +65,149 @@ public unsafe class LoaderTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void GetAvailableTypeParams_HashReadsOnlySelectedBucket(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddress = default;
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            moduleAddress = module.Address;
+            ulong buckets = loader.SetAvailableTypeParams(module, 7, (3, 0x1003), (10, 0x2001), (4, 0x3001));
+            TargetTestHelpers helpers = loader.Builder.TargetTestHelpers;
+            // An unrelated bucket is unreadable: lookup must not eagerly enumerate the table.
+            helpers.WritePointer(loader.Builder.BorrowAddressRange(buckets + (ulong)(3 * helpers.PointerSize), helpers.PointerSize), 0xdead0000);
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddress);
+        Assert.Equal(new TargetPointer[] { 0x2000, 0x1002 }, contract.GetAvailableTypeParams(handle, 3).ToArray());
+        Assert.Equal(new TargetPointer[] { 0x3000 }, contract.GetAvailableTypeParams(handle, 4).ToArray());
+        Assert.Empty(contract.GetAvailableTypeParams(handle, 2));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetAvailableTypeParams_HashSearchesResizeLinkedBuckets(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddress = default;
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            moduleAddress = module.Address;
+            ulong oldBuckets = loader.SetAvailableTypeParams(module, 7, (10, 0x1001));
+            ulong oldHeader = module.AvailableTypeParams;
+            ulong newBuckets = loader.SetAvailableTypeParams(module, 11, (10, 0x2003), (9, 0x3001));
+            TargetTestHelpers helpers = loader.Builder.TargetTestHelpers;
+            helpers.WritePointer(loader.Builder.BorrowAddressRange(oldBuckets + (ulong)helpers.PointerSize, helpers.PointerSize), newBuckets);
+            module.AvailableTypeParams = oldHeader;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddress);
+        Assert.Equal(new TargetPointer[] { 0x1000 }, contract.GetAvailableTypeParams(handle).ToArray());
+        Assert.Equal(new TargetPointer[] { 0x1000, 0x2002 }, contract.GetAvailableTypeParams(handle, 10).ToArray());
+        Assert.Equal(new TargetPointer[] { 0x3000 }, contract.GetAvailableTypeParams(handle, 9).ToArray());
+        Assert.Empty(contract.GetAvailableTypeParams(handle, 5));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetAvailableTypeParams_HashHandlesNullAndEmptyTables(MockTarget.Architecture arch)
+    {
+        TargetPointer nullModule = default;
+        TargetPointer emptyModule = default;
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            nullModule = loader.AddModule().Address;
+            MockLoaderModule module = loader.AddModule();
+            emptyModule = module.Address;
+            loader.SetAvailableTypeParams(module, 0);
+        });
+
+        Assert.Empty(contract.GetAvailableTypeParams(contract.GetModuleHandleFromModulePtr(nullModule), 123));
+        Assert.Empty(contract.GetAvailableTypeParams(contract.GetModuleHandleFromModulePtr(emptyModule), 123));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDynamicILAndILHeader_TokenBackedStorageWithoutPEImage(MockTarget.Architecture arch)
+    {
+        const uint MethodToken = 0x06000001;
+        const uint FieldToken = 0x04000001;
+        const uint MissingMethodToken = 0x06000006;
+        const uint MissingFieldToken = 0x04000006;
+        TargetPointer methodIL = new(0x0003_0000);
+        TargetPointer fieldData = new(0x0004_0000);
+        TargetPointer moduleAddress = default;
+        Mock<IEcmaMetadata> metadata = new(MockBehavior.Strict);
+
+        (ILoader contract, TestPlaceholderTarget target) = CreateLoaderContractWithTarget(arch, (loader, targetBuilder) =>
+        {
+            MockLoaderModule module = loader.AddModule(flags: (uint)ModuleFlags.ReflectionEmit);
+            moduleAddress = module.Address;
+
+            // Full tokens hash to buckets 0 and 2; the missing tokens probe past those occupied buckets.
+            loader.SetDynamicILBlobTable(module,
+                (FieldToken, fieldData.Value), default, (MethodToken, methodIL.Value), default, default);
+            loader.Builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+            {
+                Name = "Dynamic method IL",
+                Address = methodIL.Value,
+                Data = [0x06, 0x2a], // Tiny method header followed by ret.
+            });
+            loader.Builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+            {
+                Name = "Dynamic RVA field data",
+                Address = fieldData.Value,
+                Data = [0x12, 0x34, 0x56, 0x78],
+            });
+            targetBuilder
+                .AddContract<ISHash>(version: "c1")
+                .AddMockContract(metadata);
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddress);
+        Assert.Equal(TargetPointer.Null, contract.GetPEAssembly(handle));
+        Assert.Equal(methodIL, contract.GetDynamicIL(handle, MethodToken));
+        Assert.Equal(fieldData, contract.GetDynamicIL(handle, FieldToken));
+        Assert.Equal(TargetPointer.Null, contract.GetDynamicIL(handle, MissingMethodToken));
+        Assert.Equal(TargetPointer.Null, contract.GetDynamicIL(handle, MissingFieldToken));
+        Assert.Equal(methodIL, contract.GetILHeader(handle, MethodToken));
+
+        IXCLRDataMethodDefinition methodDefinition = new ClrDataMethodDefinition(
+            target, moduleAddress, MethodToken, legacyImpl: null, new());
+        ClrDataAddress entryAddress;
+        Assert.Equal(System.HResults.S_OK, methodDefinition.GetRepresentativeEntryAddress(&entryAddress));
+        Assert.Equal(new TargetPointer(methodIL + 1).ToClrDataAddress(target), entryAddress);
+        metadata.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDynamicIL_NullAndEmptyTablesReturnNull(MockTarget.Architecture arch)
+    {
+        const uint MethodToken = 0x06000001;
+        const uint FieldToken = 0x04000001;
+        TargetPointer uninitializedModuleAddress = default;
+        TargetPointer emptyModuleAddress = default;
+
+        (ILoader contract, _) = CreateLoaderContractWithTarget(arch, (loader, targetBuilder) =>
+        {
+            uninitializedModuleAddress = loader.AddModule(flags: (uint)ModuleFlags.ReflectionEmit).Address;
+            MockLoaderModule emptyModule = loader.AddModule(flags: (uint)ModuleFlags.ReflectionEmit);
+            loader.SetDynamicILBlobTable(emptyModule);
+            emptyModuleAddress = emptyModule.Address;
+            targetBuilder.AddContract<ISHash>(version: "c1");
+        });
+
+        foreach (TargetPointer moduleAddress in new[] { uninitializedModuleAddress, emptyModuleAddress })
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddress);
+            Assert.Equal(TargetPointer.Null, contract.GetDynamicIL(handle, MethodToken));
+            Assert.Equal(TargetPointer.Null, contract.GetDynamicIL(handle, FieldToken));
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetPath(MockTarget.Architecture arch)
     {
         const string expected = @"C:\some\path\TestModule.dll";
@@ -69,6 +216,83 @@ public unsafe class LoaderTests
 
         Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
         Assert.Equal(expected, contract.GetPath(handle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetPath_ReflectionEmitReturnsEmpty(MockTarget.Architecture arch)
+    {
+        var (target, moduleAddr) = CreatePETarget(
+            arch,
+            timeStamp: 1,
+            imageSize: 2,
+            path: @"C:\some\path\TestModule.dll",
+            moduleFlags: (uint)ModuleFlags.ReflectionEmit);
+        ILoader contract = target.Contracts.Loader;
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        Assert.Equal(string.Empty, contract.GetPath(handle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetPath_ProbeExtensionReturnsEmpty(MockTarget.Architecture arch)
+    {
+        var (target, moduleAddr) = CreatePETarget(
+            arch,
+            timeStamp: 1,
+            imageSize: 2,
+            path: @"C:\some\path\TestModule.dll",
+            probeExtensionType: 1);
+        ILoader contract = target.Contracts.Loader;
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        Assert.Equal(string.Empty, contract.GetPath(handle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void Module_NoCodeVersioning_MethodDefToILCodeVersioningStateMapIsNull(MockTarget.Architecture arch)
+    {
+        // On builds without code versioning (e.g. WASM, FEATURE_CODE_VERSIONING off) the Module
+        // layout omits MethodDefToILCodeVersioningStateMap. Reading it must yield null rather than
+        // throwing "Field not found in any layout", so type/module resolution keeps working.
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockLoaderBuilder loader = new(targetBuilder.MemoryBuilder, (0x0001_0000, 0x0002_0000), includeCodeVersioning: false);
+
+        ulong moduleAddr = loader.AddModule().Address;
+
+        var target = targetBuilder
+            .AddTypes(CreateContractTypes(loader))
+            .AddContract<ILoader>(version: "c1")
+            .Build();
+
+        Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(new TargetPointer(moduleAddr));
+
+        // The absent code-versioning map reads as null; a present map still resolves to an address.
+        Assert.Null(module.MethodDefToILCodeVersioningStateMap);
+        Assert.NotEqual(TargetPointer.Null, module.MethodDefToDescMap);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void LookupMemberRefAsMethod_FiltersFieldMemberRefs(MockTarget.Architecture arch)
+    {
+        const uint MethodMemberRef = 0x0a000001;
+        const uint FieldMemberRef = 0x0a000002;
+        TargetPointer methodDesc = new(0x3000);
+        TargetPointer fieldDesc = new(0x4000);
+        MockLoaderModule module = null!;
+
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            module = loader.AddModule();
+            loader.SetMemberRefToDescMap(module, methodDesc.Value, fieldDesc.Value | 2);
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(new TargetPointer(module.Address));
+        Assert.Equal(methodDesc, contract.LookupMemberRefAsMethod(handle, MethodMemberRef));
+        Assert.Equal(TargetPointer.Null, contract.LookupMemberRefAsMethod(handle, FieldMemberRef));
     }
 
     [Theory]
@@ -151,7 +375,6 @@ public unsafe class LoaderTests
         [LoaderAllocatorHeapType.LowFrequencyHeap] = new(0x1000),
         [LoaderAllocatorHeapType.HighFrequencyHeap] = new(0x2000),
         [LoaderAllocatorHeapType.StaticsHeap] = new(0x3000),
-        [LoaderAllocatorHeapType.StubHeap] = new(0x4000),
         [LoaderAllocatorHeapType.ExecutableHeap] = new(0x5000),
         [LoaderAllocatorHeapType.FixupPrecodeHeap] = new(0x6000),
         [LoaderAllocatorHeapType.NewStubPrecodeHeap] = new(0x7000),
@@ -186,7 +409,6 @@ public unsafe class LoaderTests
                 ["LowFrequencyHeap"] = dummyField,
                 ["HighFrequencyHeap"] = dummyField,
                 ["StaticsHeap"] = dummyField,
-                ["StubHeap"] = dummyField,
                 ["ExecutableHeap"] = dummyField,
                 ["FixupPrecodeHeap"] = dummyField,
                 ["NewStubPrecodeHeap"] = dummyField,
@@ -207,7 +429,7 @@ public unsafe class LoaderTests
                 l => l.GetLoaderAllocatorHeaps(It.IsAny<TargetPointer>()) == (IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)MockHeapDictionary
                 && l.GetGlobalLoaderAllocator() == new TargetPointer(0x100)))
             .Build();
-        return new SOSDacImpl(target, null);
+        return new SOSDacImpl(target, null, new());
     }
 
     private static (ISOSDacInterface Interface, Mock<ILoader> Loader) CreateSOSDacInterfaceForVirtCallHeapTests(MockTarget.Architecture arch)
@@ -220,7 +442,7 @@ public unsafe class LoaderTests
             .AddMockContract<ILoader>(loader.Object)
             .Build();
 
-        return (new SOSDacImpl(target, null), loader);
+        return (new SOSDacImpl(target, null, new()), loader);
     }
 
     [Theory]
@@ -230,27 +452,20 @@ public unsafe class LoaderTests
         (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
 
         TargetPointer indcellHeap = new(0x8000);
-        TargetPointer firstBlock = new(0x8100);
         var heaps = new Dictionary<LoaderAllocatorHeapType, TargetPointer>
         {
             [LoaderAllocatorHeapType.IndcellHeap] = indcellHeap,
         };
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
             .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)heaps);
-        loader.Setup(l => l.GetFirstLoaderHeapBlock(indcellHeap)).Returns(firstBlock);
-        loader.Setup(l => l.GetLoaderHeapBlockData(firstBlock)).Returns(new LoaderHeapBlockData
-        {
-            Address = new TargetPointer(0x9000),
-            Size = new TargetNUInt(0x40),
-            NextBlock = TargetPointer.Null,
-        });
+        loader.Setup(l => l.EnumerateLoaderHeapBlocks(indcellHeap))
+            .Returns([new LoaderHeapBlock(new TargetPointer(0x9000), new TargetNUInt(0x40))]);
 
         delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
         int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), VCSHeapTypeIndcell, callback);
 
         Assert.Equal(HResults.S_OK, hr);
-        loader.Verify(l => l.GetFirstLoaderHeapBlock(indcellHeap), Times.Once());
-        loader.Verify(l => l.GetLoaderHeapBlockData(firstBlock), Times.Once());
+        loader.Verify(l => l.EnumerateLoaderHeapBlocks(indcellHeap), Times.Once());
     }
 
     [Theory]
@@ -260,7 +475,6 @@ public unsafe class LoaderTests
         (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
 
         TargetPointer cacheEntryHeap = new(0x9000);
-        TargetPointer firstBlock = new(0x9100);
         var heaps = new Dictionary<LoaderAllocatorHeapType, TargetPointer>
         {
             [LoaderAllocatorHeapType.IndcellHeap] = new TargetPointer(0x8000),
@@ -268,20 +482,14 @@ public unsafe class LoaderTests
         };
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
             .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)heaps);
-        loader.Setup(l => l.GetFirstLoaderHeapBlock(cacheEntryHeap)).Returns(firstBlock);
-        loader.Setup(l => l.GetLoaderHeapBlockData(firstBlock)).Returns(new LoaderHeapBlockData
-        {
-            Address = new TargetPointer(0xA000),
-            Size = new TargetNUInt(0x40),
-            NextBlock = TargetPointer.Null,
-        });
+        loader.Setup(l => l.EnumerateLoaderHeapBlocks(cacheEntryHeap))
+            .Returns([new LoaderHeapBlock(new TargetPointer(0xA000), new TargetNUInt(0x40))]);
 
         delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
         int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), VCSHeapTypeCacheEntry, callback);
 
         Assert.Equal(HResults.S_OK, hr);
-        loader.Verify(l => l.GetFirstLoaderHeapBlock(cacheEntryHeap), Times.Once());
-        loader.Verify(l => l.GetLoaderHeapBlockData(firstBlock), Times.Once());
+        loader.Verify(l => l.EnumerateLoaderHeapBlocks(cacheEntryHeap), Times.Once());
     }
 
     [Theory]
@@ -316,7 +524,7 @@ public unsafe class LoaderTests
         int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), VCSHeapTypeCacheEntry, callback);
 
         Assert.Equal(HResults.S_OK, hr);
-        loader.Verify(l => l.GetFirstLoaderHeapBlock(It.IsAny<TargetPointer>()), Times.Never());
+        loader.Verify(l => l.EnumerateLoaderHeapBlocks(It.IsAny<TargetPointer>()), Times.Never());
     }
 
     [Theory]
@@ -508,7 +716,8 @@ public unsafe class LoaderTests
         MockTarget.Architecture arch,
         ushort coffSections,
         SectionDef[] sections,
-        ushort versionMajor = 0)
+        ushort versionMajor = 0,
+        bool useFlatLayout = false)
     {
         TargetTestHelpers helpers = new(arch);
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
@@ -521,8 +730,10 @@ public unsafe class LoaderTests
         var peAssemblyLayout = helpers.LayoutFields([
             new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
             new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+            new(nameof(Data.PEAssembly.MDImport), DataType.pointer),
         ]);
         var peImageLayout = helpers.LayoutFields([
+            new(nameof(Data.PEImage.FlatImageLayout), DataType.pointer),
             new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
             new(nameof(Data.PEImage.ProbeExtensionResult), DataType.ProbeExtensionResult, probeExtLayout.Stride),
         ]);
@@ -599,7 +810,8 @@ public unsafe class LoaderTests
         helpers.Write(layoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Format)].Offset, sizeof(uint)), 1u);
 
         var peImageFrag = allocator.Allocate(peImageLayout.Stride, "PEImage");
-        helpers.WritePointer(peImageFrag.Data.AsSpan().Slice(peImageLayout.Fields[nameof(Data.PEImage.LoadedImageLayout)].Offset, helpers.PointerSize), layoutFrag.Address);
+        string imageLayoutField = useFlatLayout ? nameof(Data.PEImage.FlatImageLayout) : nameof(Data.PEImage.LoadedImageLayout);
+        helpers.WritePointer(peImageFrag.Data.AsSpan().Slice(peImageLayout.Fields[imageLayoutField].Offset, helpers.PointerSize), layoutFrag.Address);
 
         var peAssemblyFrag = allocator.Allocate(peAssemblyLayout.Stride, "PEAssembly");
         helpers.WritePointer(peAssemblyFrag.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.PEImage)].Offset, helpers.PointerSize), peImageFrag.Address);
@@ -632,6 +844,23 @@ public unsafe class LoaderTests
 
         // RVA in second section: offset = (0x4500 - 0x4000) + 0x2200 = 0x2700
         Assert.Equal((TargetPointer)(imageBase + 0x2700u), contract.GetILAddr(peAssemblyAddr, 0x4500));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetILAddr_WebcilFlatLayout_ResolvesViaFlatFallback(MockTarget.Architecture arch)
+    {
+        // On WASM a webcil ReadyToRun image has no loaded layout -- only the flat layout. RVA
+        // resolution must fall back to the flat layout instead of throwing "no loaded layout".
+        SectionDef[] sections =
+        [
+            new(VirtualSize: 0x2000, VirtualAddress: 0x1000, SizeOfRawData: 0x2000, PointerToRawData: 0x200),
+        ];
+        var (target, peAssemblyAddr, imageBase) = CreateWebcilTarget(arch, (ushort)sections.Length, sections, useFlatLayout: true);
+        ILoader contract = target.Contracts.Loader;
+
+        // RVA in first section resolves through the flat layout: offset = (0x1100 - 0x1000) + 0x200 = 0x300
+        Assert.Equal((TargetPointer)(imageBase + 0x300u), contract.GetILAddr(peAssemblyAddr, 0x1100));
     }
 
     [Theory]
@@ -695,6 +924,95 @@ public unsafe class LoaderTests
         Assert.Equal((TargetPointer)(imageBase + 0x2700u), contract.GetILAddr(peAssemblyAddr, 0x4500));
     }
 
+    public static IEnumerable<object[]> GetModuleHandles_ProfilerNotifiedData()
+    {
+        const AssemblyIterationFlags Loaded = AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution;
+        const AssemblyIterationFlags AvailableToProfilers = AssemblyIterationFlags.IncludeAvailableToProfilers | AssemblyIterationFlags.IncludeExecution;
+        foreach (object[] archData in new MockTarget.StdArch())
+        {
+            var arch = (MockTarget.Architecture)archData[0];
+            // Profiler notified, still loading: not a loaded assembly
+            yield return [arch, true, false, Loaded, false];
+            // Profiler notified, still loading: available to profilers
+            yield return [arch, true, false, AvailableToProfilers, true];
+            // Profiler notified, loaded: a loaded assembly
+            yield return [arch, true, true, Loaded, true];
+            // Profiler notified, loaded: available to profilers
+            yield return [arch, true, true, AvailableToProfilers, true];
+            // Not notified, still loading: not available to profilers
+            yield return [arch, false, false, AvailableToProfilers, false];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetModuleHandles_ProfilerNotifiedData))]
+    public void GetModuleHandles_ProfilerNotified(
+        MockTarget.Architecture arch,
+        bool profilerNotified,
+        bool isLoaded,
+        AssemblyIterationFlags iterationFlags,
+        bool expected)
+    {
+        const uint ProfilerNotified = 0x1; // ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED
+        TargetPointer appDomain = default;
+        TargetPointer moduleAddress = default;
+
+        (ILoader contract, _) = CreateLoaderContractWithTarget(arch, (loader, targetBuilder) =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            MockLoaderAssembly assembly = loader.GetAssembly(module);
+            assembly.NotifyFlags = profilerNotified ? ProfilerNotified : 0;
+            assembly.IsLoaded = isLoaded;
+            moduleAddress = module.Address;
+            appDomain = loader.AddAppDomain(module);
+            targetBuilder.AddTypes(CreateAppDomainTypes(loader));
+        });
+
+        List<TargetPointer> modules = [];
+        foreach (Contracts.ModuleHandle handle in contract.GetModuleHandles(appDomain, iterationFlags))
+        {
+            modules.Add(handle.Address);
+        }
+
+        TargetPointer[] expectedModules = expected ? [moduleAddress] : [];
+        Assert.Equal(expectedModules, modules);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetModuleHandles_SkipsEmptySlots(MockTarget.Architecture arch)
+    {
+        TargetPointer appDomain = default;
+        TargetPointer[] expectedModules = [];
+
+        (ILoader contract, _) = CreateLoaderContractWithTarget(arch, (loader, targetBuilder) =>
+        {
+            MockLoaderModule first = loader.AddModule();
+            MockLoaderModule second = loader.AddModule();
+            loader.GetAssembly(first).IsLoaded = true;
+            loader.GetAssembly(second).IsLoaded = true;
+            expectedModules = [first.Address, second.Address];
+            appDomain = loader.AddAppDomain(null, first, null, second, null);
+            targetBuilder.AddTypes(CreateAppDomainTypes(loader));
+        });
+
+        List<TargetPointer> modules = [];
+        foreach (Contracts.ModuleHandle handle in contract.GetModuleHandles(appDomain, AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+        {
+            modules.Add(handle.Address);
+        }
+
+        Assert.Equal(expectedModules, modules);
+    }
+
+    private static Dictionary<DataType, Target.TypeInfo> CreateAppDomainTypes(MockLoaderBuilder loader)
+        => new()
+        {
+            [DataType.AppDomain] = TargetTestHelpers.CreateTypeInfo(loader.AppDomainLayout),
+            [DataType.ArrayListBase] = TargetTestHelpers.CreateTypeInfo(loader.ArrayListBaseLayout),
+            [DataType.ArrayListBlock] = TargetTestHelpers.CreateTypeInfo(loader.ArrayListBlockLayout),
+        };
+
     public static IEnumerable<object[]> IsModuleMappedData()
     {
         foreach (object[] archData in new MockTarget.StdArch())
@@ -739,6 +1057,7 @@ public unsafe class LoaderTests
         var peAssemblyLayout = helpers.LayoutFields([
             new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
             new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+            new(nameof(Data.PEAssembly.MDImport), DataType.pointer),
         ]);
         var peImageLayout = helpers.LayoutFields([
             new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
@@ -798,6 +1117,79 @@ public unsafe class LoaderTests
 
         Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
         Assert.False(contract.IsModuleMapped(handle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetLoadedImageContents_NoLoadedLayout_FallsBackToFlatLayout(MockTarget.Architecture arch)
+    {
+        // Images that are never mapped/loaded (e.g. a webcil ReadyToRun image on WASM) have a null
+        // LoadedImageLayout; their metadata lives in the flat layout. TryGetLoadedImageContents must
+        // fall back to FlatImageLayout instead of reporting "not loaded".
+        const ulong expectedBase = 0x0012_3000;
+        const uint expectedSize = 0x4560;
+        const uint flatFlags = 0; // flat layouts are not FLAG_MAPPED
+
+        TargetTestHelpers helpers = new(arch);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.Builder builder = targetBuilder.MemoryBuilder;
+        MockLoaderBuilder loader = new(builder);
+        var allocator = builder.CreateAllocator(0x0010_0000, 0x0020_0000);
+
+        MockLoaderModule module = loader.AddModule();
+
+        var probeExtLayout = helpers.LayoutFields([
+            new(nameof(Data.ProbeExtensionResult.Type), DataType.int32),
+        ]);
+        var peAssemblyLayout = helpers.LayoutFields([
+            new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
+            new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+            new(nameof(Data.PEAssembly.MDImport), DataType.pointer),
+        ]);
+        var peImageLayout = helpers.LayoutFields([
+            new(nameof(Data.PEImage.FlatImageLayout), DataType.pointer),
+            new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
+            new(nameof(Data.PEImage.ProbeExtensionResult), DataType.ProbeExtensionResult, probeExtLayout.Stride),
+        ]);
+        var imageLayoutLayout = helpers.LayoutFields([
+            new(nameof(Data.PEImageLayout.Base), DataType.pointer),
+            new(nameof(Data.PEImageLayout.Size), DataType.uint32),
+            new(nameof(Data.PEImageLayout.Flags), DataType.uint32),
+            new(nameof(Data.PEImageLayout.Format), DataType.uint32),
+        ]);
+
+        var flatLayoutFrag = allocator.Allocate(imageLayoutLayout.Stride, "FlatPEImageLayout");
+        helpers.WritePointer(flatLayoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Base)].Offset, helpers.PointerSize), expectedBase);
+        helpers.Write(flatLayoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Size)].Offset, sizeof(uint)), expectedSize);
+        helpers.Write(flatLayoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Flags)].Offset, sizeof(uint)), flatFlags);
+
+        // LoadedImageLayout is left null; only the flat layout is populated.
+        var peImageFrag = allocator.Allocate(peImageLayout.Stride, "PEImage");
+        helpers.WritePointer(peImageFrag.Data.AsSpan().Slice(peImageLayout.Fields[nameof(Data.PEImage.FlatImageLayout)].Offset, helpers.PointerSize), flatLayoutFrag.Address);
+
+        var peAssemblyFrag = allocator.Allocate(peAssemblyLayout.Stride, "PEAssembly");
+        helpers.WritePointer(peAssemblyFrag.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.PEImage)].Offset, helpers.PointerSize), peImageFrag.Address);
+
+        module.PEAssembly = peAssemblyFrag.Address;
+
+        var types = CreateContractTypes(loader);
+        types[DataType.PEAssembly] = new() { Fields = peAssemblyLayout.Fields, Size = peAssemblyLayout.Stride };
+        types[DataType.PEImage] = new() { Fields = peImageLayout.Fields, Size = peImageLayout.Stride };
+        types[DataType.PEImageLayout] = new() { Fields = imageLayoutLayout.Fields, Size = imageLayoutLayout.Stride };
+        types[DataType.ProbeExtensionResult] = new() { Fields = probeExtLayout.Fields, Size = probeExtLayout.Stride };
+
+        var target = targetBuilder
+            .AddTypes(types)
+            .AddContract<ILoader>(version: "c1")
+            .Build();
+
+        ILoader contract = target.Contracts.Loader;
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(new TargetPointer(module.Address));
+
+        Assert.True(contract.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out uint imageFlags));
+        Assert.Equal(expectedBase, baseAddress.Value);
+        Assert.Equal(expectedSize, size);
+        Assert.Equal(flatFlags, imageFlags);
     }
 
     [Theory]
@@ -999,7 +1391,7 @@ public unsafe class LoaderTests
             .AddContract<ILoader>(version: "c1")
             .Build();
 
-        DacDbiImpl dbi = new(target, legacyObj: null);
+        DacDbiImpl dbi = new(target, legacyObj: null, new());
 
         Interop.BOOL allowJITOpts;
         Interop.BOOL enableEnC;
@@ -1076,7 +1468,9 @@ public unsafe class LoaderTests
         uint imageSize,
         string? path,
         uint format = 0,
-        bool nullImageLayout = false)
+        bool nullImageLayout = false,
+        uint moduleFlags = 0,
+        int probeExtensionType = 0)
     {
         const uint Lfanew = 0x80;
         TargetTestHelpers helpers = new(arch);
@@ -1091,6 +1485,7 @@ public unsafe class LoaderTests
         var peAssemblyLayout = helpers.LayoutFields([
             new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
             new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+            new(nameof(Data.PEAssembly.MDImport), DataType.pointer),
         ]);
         var peImageLayout = helpers.LayoutFields([
             new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
@@ -1133,12 +1528,18 @@ public unsafe class LoaderTests
 
         var peImageFrag = allocator.Allocate(peImageLayout.Stride, "PEImage");
         helpers.WritePointer(peImageFrag.Data.AsSpan().Slice(peImageLayout.Fields[nameof(Data.PEImage.LoadedImageLayout)].Offset, helpers.PointerSize), nullImageLayout ? TargetPointer.Null : layoutFrag.Address);
+        helpers.Write(
+            peImageFrag.Data.AsSpan().Slice(
+                peImageLayout.Fields[nameof(Data.PEImage.ProbeExtensionResult)].Offset
+                    + probeExtLayout.Fields[nameof(Data.ProbeExtensionResult.Type)].Offset,
+                sizeof(int)),
+            probeExtensionType);
 
         var peAssemblyFrag = allocator.Allocate(peAssemblyLayout.Stride, "PEAssembly");
         helpers.WritePointer(peAssemblyFrag.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.PEImage)].Offset, helpers.PointerSize), peImageFrag.Address);
 
         // Build a Module that owns the PEAssembly and carries the module path.
-        MockLoaderModule module = loader.AddModule(path: path);
+        MockLoaderModule module = loader.AddModule(path: path, flags: moduleFlags);
         module.PEAssembly = peAssemblyFrag.Address;
 
         var target = targetBuilder

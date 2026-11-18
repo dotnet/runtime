@@ -9,6 +9,8 @@
 
 #include "stdafx.h"
 #include <clrdata.h>
+#include <minipal.h>
+#include <minipal/environ.h>
 #include "typestring.h"
 #include "holder.h"
 #include "debuginfostore.h"
@@ -94,20 +96,19 @@ ConvertUtf8(_In_ LPCUTF8 utf8,
             ULONG32* nameLen,
             _Out_writes_to_opt_(bufLen, *nameLen) PWSTR buffer)
 {
+    size_t cchUtf8 = strlen(utf8) + 1;
+
     if (nameLen)
     {
-        *nameLen = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
-        if (!*nameLen)
-        {
-            return HRESULT_FROM_GetLastError();
-        }
+        size_t cchName = minipal_get_length_utf8_to_utf16(utf8, cchUtf8, 0);
+        *nameLen = (ULONG32)cchName;
     }
 
     if (buffer && bufLen)
     {
-        if (!MultiByteToWideChar(CP_UTF8, 0, utf8, -1, buffer, bufLen))
+        if (!minipal_convert_utf8_to_utf16(utf8, cchUtf8, (CHAR16_T*)buffer, bufLen, 0))
         {
-            return HRESULT_FROM_GetLastError();
+            return HRESULT_FROM_WIN32(errno);
         }
     }
 
@@ -119,20 +120,23 @@ AllocUtf8(_In_opt_ LPCWSTR wstr,
           ULONG32 srcChars,
           _Outptr_ LPUTF8* utf8)
 {
-    ULONG32 chars = WideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
-                                           NULL, 0, NULL, NULL);
-    if (!chars)
+    if (wstr == NULL || srcChars == 0)
     {
-        return HRESULT_FROM_GetLastError();
+        return E_INVALIDARG;
     }
+
+    size_t cchSrc = srcChars == (ULONG32)-1 ? u16_strlen(wstr) + 1 : srcChars;
+    size_t chars = minipal_get_length_utf16_to_utf8((const CHAR16_T*)wstr, cchSrc, 0);
 
     // Make sure the converted string is always terminated.
     if (srcChars != (ULONG32)-1)
     {
-        if (!ClrSafeInt<ULONG32>::addition(chars, 1, chars))
+        S_SIZE_T charsWithNull = S_SIZE_T(chars) + S_SIZE_T(1);
+        if (charsWithNull.IsOverflow())
         {
             return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
         }
+        chars = charsWithNull.Value();
     }
 
     char* mem = new (nothrow) char[chars];
@@ -141,10 +145,9 @@ AllocUtf8(_In_opt_ LPCWSTR wstr,
         return E_OUTOFMEMORY;
     }
 
-    if (!WideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
-                                mem, chars, NULL, NULL))
+    if (!minipal_convert_utf16_to_utf8((const CHAR16_T*)wstr, cchSrc, mem, chars, 0))
     {
-        HRESULT hr = HRESULT_FROM_GetLastError();
+        HRESULT hr = HRESULT_FROM_WIN32(errno);
         delete [] mem;
         return hr;
     }
@@ -1487,21 +1490,19 @@ DAC_INSTANCE*
 DacInstanceManager::Add(DAC_INSTANCE* inst)
 {
     _ASSERTE(inst != NULL);
-    const KeyValuePair<TADDR, DAC_INSTANCE*>* pEntry = m_hash.LookupPtr(inst->addr);
-    if (pEntry != NULL)
-    {
-        DAC_INSTANCE* existing = pEntry->Value();
+    if (!m_hash.Update(inst->addr, [&](KeyValuePair<TADDR, DAC_INSTANCE*> &entry)
+        {
+            DAC_INSTANCE* existing = entry.Value();
 
-        //This is necessary to preserve the semantics of Supersede, however, it
-        //is more or less dead code.
-        inst->next = existing;
+            //This is necessary to preserve the semantics of Supersede, however, it
+            //is more or less dead code.
+            inst->next = existing;
 
-        //verify descending order
-        _ASSERTE(inst->size >= existing->size);
+            //verify descending order
+            _ASSERTE(inst->size >= existing->size);
 
-        m_hash.ReplacePtr(pEntry, KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst));
-    }
-    else
+            entry = KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst);
+        }))
     {
         inst->next = NULL;
         m_hash.Add(KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst));
@@ -1568,6 +1569,17 @@ DacInstanceManager::Alloc(TADDR addr, ULONG32 size, DAC_USAGE_TYPE usage)
         {
             blockSize = DAC_INSTANCE_BLOCK_ALLOCATION;
         }
+        else
+        {
+            // AllocateMemory requires a multiple of the system page size.
+            ULONG32 pageSize = minipal_getpagesize();
+            ULONG32 roundedSize = (blockSize + (pageSize - 1)) & ~(pageSize - 1);
+            if (roundedSize < blockSize)
+            {
+                return NULL;
+            }
+            blockSize = roundedSize;
+        }
 
         // If we have a saved block and it's large enough, use it.
         block = m_unusedBlock;
@@ -1584,7 +1596,7 @@ DacInstanceManager::Alloc(TADDR addr, ULONG32 size, DAC_USAGE_TYPE usage)
         else
         {
              block = (DAC_INSTANCE_BLOCK*)
-                ClrVirtualAlloc(NULL, blockSize, MEM_COMMIT, PAGE_READWRITE);
+                VMToOSInterface::AllocateMemory(NULL, blockSize, VMToOSInterface::MemoryProtection::ReadWrite);
         }
 
         if (!block)
@@ -1678,7 +1690,7 @@ DacInstanceManager::ReturnAlloc(DAC_INSTANCE* inst)
             _ASSERTE(pPrevBlock->next == block);
             pPrevBlock->next = block->next;
         }
-        ClrVirtualFree(block, 0, MEM_RELEASE);
+        VMToOSInterface::ReleaseMemoryReservation(block, block->bytesFree + block->bytesUsed);
     }
 }
 
@@ -1747,7 +1759,11 @@ DacInstanceManager::Supersede(DAC_INSTANCE* inst)
                 // Removing the head of the chain.
                 if (inst->next != NULL)
                 {
-                    m_hash.ReplacePtr(pEntry, KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst->next));
+                    bool updated = m_hash.Update(inst->addr, [&](KeyValuePair<TADDR, DAC_INSTANCE*> &entry)
+                    {
+                        entry = KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst->next);
+                    });
+                    _ASSERTE(updated);
                 }
                 else
                 {
@@ -1807,7 +1823,7 @@ void DacInstanceManager::Flush(bool fSaveBlock)
     {
         if (m_unusedBlock != NULL)
         {
-            ClrVirtualFree(m_unusedBlock, 0, MEM_RELEASE);
+            VMToOSInterface::ReleaseMemoryReservation(m_unusedBlock, DAC_INSTANCE_BLOCK_ALLOCATION);
             m_unusedBlock = NULL;
         }
     }
@@ -1943,7 +1959,7 @@ DacInstanceManager::FreeAllBlocks(bool fSaveBlock)
         }
         else
         {
-            ClrVirtualFree(block, 0, MEM_RELEASE);
+            VMToOSInterface::ReleaseMemoryReservation(block, block->bytesFree + block->bytesUsed);
         }
     }
 }
@@ -2815,7 +2831,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     m_globalBase = 0;
     m_refs = 1;
     m_instanceAge = 0;
-    m_debugMode = GetEnvironmentVariableA("MSCORDACWKS_DEBUG", NULL, 0) != 0;
+    m_debugMode = minipal_environ_get_variable("MSCORDACWKS_DEBUG", NULL, 0) != 0;
 
     m_enumMemCb = NULL;
     m_updateMemCb = NULL;
@@ -2836,12 +2852,6 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     {
         m_fEnableTargetConsistencyAsserts = true;
     }
-
-    // Verification asserts are disabled by default because some debuggers (cdb/windbg) probe likely locations
-    // for DAC and having this assert pop up all the time can be annoying.  We let derived classes enable
-    // this if they want.  It can also be overridden at run-time with DOTNET_DbgDACAssertOnMismatch,
-    // see ClrDataAccess::VerifyDlls for details.
-    m_fEnableDllVerificationAsserts = false;
 #endif
 }
 
@@ -5114,9 +5124,7 @@ ClrDataAccess::Initialize(void)
     // Determine our platform based on the pre-processor macros set when we were built
 
 #ifdef TARGET_UNIX
-    #if defined(TARGET_X86)
-        CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_X86;
-    #elif defined(TARGET_AMD64)
+    #if defined(TARGET_AMD64)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_AMD64;
     #elif defined(TARGET_ARM)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM;
@@ -5144,7 +5152,15 @@ ClrDataAccess::Initialize(void)
 #endif
 
     CorDebugPlatform targetPlatform;
-    IfFailRet(m_pTarget->GetPlatform(&targetPlatform));
+    hr = m_pTarget->GetPlatform(&targetPlatform);
+    if (hr == E_NOTIMPL)
+    {
+        targetPlatform = hostPlatform; // If the target doesn't implement GetPlatform, assume it matches the host platform.
+    }
+    else
+    {
+        IfFailRet(hr);
+    }
 
     if (targetPlatform != hostPlatform)
     {
@@ -5188,9 +5204,6 @@ ClrDataAccess::Initialize(void)
     //
     // DAC is now setup and ready to use
     //
-
-    // Do some validation
-    IfFailRet(VerifyDlls());
 
     // To support EH SxS, utilcode requires the base address of the runtime as part of its initialization
     // so that functions like "WasThrownByUs" work correctly since they use the CLR base address to check
@@ -5343,6 +5356,18 @@ ClrDataAccess::RawGetMethodName(
 
     PTR_StubManager pStubManager;
     MethodDesc* methodDesc = NULL;
+
+    EECodeInfo codeInfo(GetInterpreterCodeFromEntryPointIfPresent(taddr));
+    if (codeInfo.IsValid())
+    {
+        if (displacement)
+        {
+            *displacement = codeInfo.GetRelOffset();
+        }
+
+        methodDesc = codeInfo.GetMethodDesc();
+        return GetFullMethodName(methodDesc, bufLen, symbolLen, symbolBuf);
+    }
 
     pStubManager = StubManager::FindStubManager(TO_TADDR(address));
     if (pStubManager != NULL)
@@ -5507,7 +5532,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
 {
     SUPPORTS_DAC;
     COUNT_T countNativeVarInfo;
-    NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
+    NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars;
     TADDR nativeCodeStartAddr;
     if (address != (TADDR)NULL)
     {
@@ -5544,8 +5569,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     }
 
     *numVarInfo = countNativeVarInfo;
-    *varInfo = nativeVars;
-    nativeVars.SuppressRelease(); // To prevent NewHolder from releasing the memory
+    *varInfo = nativeVars.Detach();
 
     if (codeOffset)
     {
@@ -5587,7 +5611,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
 
     // Bounds info.
     ULONG32 countMapCopy;
-    NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
+    NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy;
 
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
@@ -5651,13 +5675,12 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
 MethodDesc * ClrDataAccess::FindLoadedMethodRefOrDef(Module* pModule,
     mdToken memberRef)
 {
-    CONTRACT(MethodDesc *)
+    CONTRACTL
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pModule));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Must have a MemberRef or a MethodDef
     mdToken tkType = TypeFromToken(memberRef);
@@ -5665,10 +5688,10 @@ MethodDesc * ClrDataAccess::FindLoadedMethodRefOrDef(Module* pModule,
 
     if (tkType == mdtMemberRef)
     {
-        RETURN pModule->LookupMemberRefAsMethod(memberRef);
+        return pModule->LookupMemberRefAsMethod(memberRef);
     }
 
-    RETURN pModule->LookupMethodDef(memberRef);
+    return pModule->LookupMethodDef(memberRef);
 } // FindLoadedMethodRefOrDef
 
 //
@@ -6273,16 +6296,6 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
     return m_fEnableTargetConsistencyAsserts;
 }
 
-//
-// VerifyDlls - Validate that the mscorwks in the target matches this version of mscordacwks
-// Only done on Windows and Mac builds at the moment.
-// See code:CordbProcess::CordbProcess#DBIVersionChecking for more information regarding version checking.
-//
-HRESULT ClrDataAccess::VerifyDlls()
-{
-    return S_OK;
-}
-
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
 void ClrDataAccess::InitStreamsForWriting(IN CLRDataEnumMemoryFlags flags)
@@ -6560,13 +6573,15 @@ CLRDataCreateInstance(REFIID iid,
 #endif
 
     // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
-    ReleaseHolder<IUnknown> cdacInterface = nullptr;
+    ReleaseHolder<IUnknown> cdacInterface;
 #ifdef CAN_USE_CDAC
     CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
     if (enable.IsSet())
     {
         DWORD val;
-        if (enable.TryAsInteger(10, val) && val == 1)
+        // cDAC does not yet support the memory enumeration used to create debugger dumps.
+        if (enable.TryAsInteger(10, val) && val == 1 &&
+            !(IsEqualIID(iid, __uuidof(ICLRDataEnumMemoryRegions))))
         {
             // TODO: [cdac] TryGetSymbol is only implemented for Linux, OSX, and Windows.
             uint64_t contractDescriptorAddr = 0;
@@ -6580,11 +6595,11 @@ CLRDataCreateInstance(REFIID iid,
                 if (cdac.IsValid())
                 {
                     // Get SOS interfaces from the cDAC if available.
-                    cdac.CreateSosInterface(&cdacInterface);
-                    _ASSERTE(cdacInterface != nullptr);
-
-                    // Lifetime is now managed by cDAC implementation of SOS interfaces
-                    pClrDataAccess->Release();
+                    if (cdac.CreateSosInterface(&cdacInterface) == S_OK && cdacInterface != nullptr)
+                    {
+                        // Lifetime is now managed by cDAC implementation of SOS interfaces.
+                        pClrDataAccess->Release();
+                    }
                 }
 
                 // Release the AddRef from the QI.
@@ -6691,7 +6706,7 @@ STDAPI OutOfProcessExceptionEventGetWatsonBucket(_In_ PDWORD pContext,
     }
 
     CLRDATA_ADDRESS baseAddressOfRuntime = (CLRDATA_ADDRESS)pContext;
-    NewHolder<LiveProcDataTarget> dataTarget(NULL);
+    NewHolder<LiveProcDataTarget> dataTarget;
 
     dataTarget = new (nothrow) LiveProcDataTarget(hProcess, PId, baseAddressOfRuntime);
     if (dataTarget == NULL)
@@ -6699,7 +6714,7 @@ STDAPI OutOfProcessExceptionEventGetWatsonBucket(_In_ PDWORD pContext,
         return E_OUTOFMEMORY;
     }
 
-    NewHolder<ClrDataAccess> pClrDataAccess(NULL);
+    NewHolder<ClrDataAccess> pClrDataAccess;
 
     HRESULT hr = CLRDataAccessCreateInstance(dataTarget, &pClrDataAccess);
     if (hr != S_OK)

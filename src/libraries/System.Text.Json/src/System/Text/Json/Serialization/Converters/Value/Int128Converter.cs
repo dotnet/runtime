@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowFormatException(NumericType.Int128);
             }
 
-            if (rentedBuffer != null)
+            if (rentedBuffer is not null)
             {
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
             }

@@ -51,6 +51,19 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Resets the decoder to its initial state so the same instance can be reused for a new, independent decompression operation.
+        /// </summary>
+        /// <remarks>
+        /// After this method returns, any sliding-window history from a previous decompression is discarded.
+        /// </remarks>
+        /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
+        public void Reset()
+        {
+            EnsureNotDisposed();
+            _deflateDecoder.Reset();
+        }
+
+        /// <summary>
         /// Tries to decompress a source byte span into a destination span.
         /// </summary>
         /// <param name="source">A read-only span of bytes containing the compressed source data.</param>

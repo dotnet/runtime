@@ -10,6 +10,7 @@
 #include "ex.h"
 
 #include "clrconfignocache.h"
+#include <minipal/environ.h>
 
 using ConfigDWORDInfo = CLRConfig::ConfigDWORDInfo;
 using ConfigStringInfo = CLRConfig::ConfigStringInfo;
@@ -99,6 +100,9 @@ namespace
     bool s_fUseEnvCache = false;
     ProbabilisticNameSet s_EnvNames; // set of environment value names seen
 
+    CLRConfig::GetEnvironmentVariableCallback s_getEnvironmentVariable = &minipal_environ_get_variable_u16;
+    CLRConfig::EnumerateEnvironmentCallback s_enumerateEnvironment = nullptr;
+
     bool EnvCacheValueNameSeenPerhaps(LPCWSTR name)
     {
         WRAPPER_NO_CONTRACT;
@@ -107,22 +111,80 @@ namespace
             || s_EnvNames.MayContain(name);
     }
 
+#ifndef TARGET_WINDOWS
+    // Adds the name of a UTF-8 "name=value" environment entry to the cache if it has one of the prefixes.
+    // Configuration names are ASCII and shorter than the buffer used to look them up, so other names are skipped.
+    void AddEnvironmentEntryToCache(const char* entry, void* /* context */)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        size_t prefixLength;
+        if (strncmp(entry, DOTNET_PREFIX_A, LEN_OF_DOTNET_PREFIX) == 0)
+            prefixLength = LEN_OF_DOTNET_PREFIX;
+        else if (strncmp(entry, COMPLUS_PREFIX_A, LEN_OF_COMPLUS_PREFIX) == 0)
+            prefixLength = LEN_OF_COMPLUS_PREFIX;
+        else if (strncmp(entry, CORECLR_PREFIX_A, LEN_OF_CORECLR_PREFIX) == 0)
+            prefixLength = LEN_OF_CORECLR_PREFIX;
+        else
+            return;
+
+        const char* source = entry + prefixLength;
+        WCHAR name[64];
+        DWORD count = 0;
+        while (source[count] != '=')
+        {
+            if (source[count] == '\0' || (unsigned char)source[count] >= 0x80 || count == ARRAY_SIZE(name))
+                return;
+
+            name[count] = (WCHAR)source[count];
+            count++;
+        }
+
+        if (count != 0)
+            s_EnvNames.Add(name, count);
+    }
+#endif // !TARGET_WINDOWS
+
+    DWORD GetEnvironmentVariableForConfig(LPCWSTR name, SString& value)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        COUNT_T size = value.GetUnicodeAllocation() + 1;
+        DWORD len = s_getEnvironmentVariable((const CHAR16_T*)name, (CHAR16_T*)value.OpenUnicodeBuffer(size - 1), size);
+
+        // The value may change between calls, so retry until it fits.
+        while (len > size)
+        {
+            size = len;
+            value.CloseBuffer();
+            len = s_getEnvironmentVariable((const CHAR16_T*)name, (CHAR16_T*)value.OpenUnicodeBuffer(size - 1), size);
+        }
+
+        value.CloseBuffer(len);
+        return len;
+    }
+
     bool CheckLookupOption(const ConfigDWORDInfo & info, LookupOptions option)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((info.options & option) == option);
+        return (info.options & option) == option;
     }
 
     bool CheckLookupOption(const ConfigStringInfo & info, LookupOptions option)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((info.options & option) == option);
+        return (info.options & option) == option;
     }
 
     bool CheckLookupOption(LookupOptions infoOptions, LookupOptions optionToCheck)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((infoOptions & optionToCheck) == optionToCheck);
+        return (infoOptions & optionToCheck) == optionToCheck;
     }
 
     //*****************************************************************************
@@ -136,7 +198,6 @@ namespace
         {
             NOTHROW;
             GC_NOTRIGGER;
-            FORBID_FAULT;
             CANNOT_TAKE_LOCK;
         }
         CONTRACTL_END;
@@ -147,7 +208,7 @@ namespace
 
         bool noPrefix = CheckLookupOption(options, LookupOptions::DontPrependPrefix);
         bool coreclrFallbackPrefix = CheckLookupOption(options, LookupOptions::CoreclrFallbackPrefix);
-        
+
         if (noPrefix)
         {
             if (namelen >= ARRAY_SIZE(buff))
@@ -180,39 +241,34 @@ namespace
 
         wcscat_s(buff, ARRAY_SIZE(buff), name);
 
-        FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
-
-        NewArrayHolder<WCHAR> ret = NULL;
+        WStringHolder ret;
         HRESULT hr = S_OK;
         EX_TRY
         {
             PathString temp;
 
-            DWORD len = WszGetEnvironmentVariable(buff, temp);
+            DWORD len = GetEnvironmentVariableForConfig(buff, temp);
             if (len == 0 && fallbackPrefix != NULL)
             {
                 wcscpy_s(buff, ARRAY_SIZE(buff), fallbackPrefix);
                 wcscat_s(buff, ARRAY_SIZE(buff), name);
-                len = WszGetEnvironmentVariable(buff, temp);
+                len = GetEnvironmentVariableForConfig(buff, temp);
             }
 
             if (len != 0)
             {
                 ret = temp.GetCopyOfUnicodeString();
 
-#if defined(DEBUG) && !defined(SELF_NO_HOST)
-                // Validate the cache and no-cache logic result in the same answer
+#if defined(DEBUG) && !defined(SELF_NO_HOST) && defined(TARGET_WINDOWS)
+                // Validate the cache and no-cache logic result in the same answer. On Unix, the runtime
+                // reads its own copy of the environment, which the no-cache logic does not see.
                 SString nameToConvert(name);
 
-#ifdef HOST_WINDOWS
                 CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix, nullptr, coreclrFallbackPrefix);
-#else
-                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix, &PAL_getenv, coreclrFallbackPrefix);
-#endif
                 LPCSTR valueNoCache = nonCache.AsString();
 
                 _ASSERTE(SString::_stricmp(valueNoCache, temp.GetUTF8()) == 0);
-#endif // defined(DEBUG) && !defined(SELF_NO_HOST)
+#endif // defined(DEBUG) && !defined(SELF_NO_HOST) && defined(TARGET_WINDOWS)
             }
         }
         EX_CATCH_HRESULT(hr);
@@ -223,7 +279,7 @@ namespace
         }
 
         if(ret != NULL)
-            return ret.Extract();
+            return ret.Detach();
 
         return NULL;
     }
@@ -238,20 +294,18 @@ namespace
         {
             NOTHROW;
             GC_NOTRIGGER;
-            FORBID_FAULT;
             CANNOT_TAKE_LOCK;
         }
         CONTRACTL_END;
 
         SUPPORTS_DAC_HOST_ONLY;
 
-        FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
         int radix = CheckLookupOption(options, LookupOptions::ParseIntegerAsBase10)
             ? 10
             : 16; // Parse as hex by default.
 
-        NewArrayHolder<WCHAR> val = EnvGetString(name, options);
+        WStringHolder val{ EnvGetString(name, options) };
         if (val != NULL)
         {
             errno = 0;
@@ -261,12 +315,12 @@ namespace
             if (fSuccess)
             {
                 *result = configMaybe;
-                return (S_OK);
+                return S_OK;
             }
         }
 
         *result = defValue;
-        return (E_FAIL);
+        return E_FAIL;
     }
 
     LPWSTR GetConfigString(
@@ -277,23 +331,20 @@ namespace
         {
             NOTHROW;
             GC_NOTRIGGER;
-            FORBID_FAULT;
         }
         CONTRACTL_END;
 
-        NewArrayHolder<WCHAR> ret(NULL);
+        WStringHolder ret;
 
-        FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
         ret = EnvGetString(name, options);
         if (ret != NULL)
         {
             if (*ret != W('\0'))
             {
-                ret.SuppressRelease();
-                return(ret);
+                return ret.Detach();
             }
-            ret.Clear();
+            ret.Free();
         }
 
         return NULL;
@@ -353,7 +404,7 @@ namespace
 
         // Create a new buffer to hold a copy of the trimmed string.  Caller will be
         // responsible for this buffer if we return it.
-        NewArrayHolder<WCHAR> wszTrimmedCopy(new (nothrow) WCHAR[cchAfterTrim + 1]);
+        WStringHolder wszTrimmedCopy{ new (nothrow) WCHAR[cchAfterTrim + 1] };
         if (wszTrimmedCopy == NULL)
         {
             return E_OUTOFMEMORY;
@@ -367,8 +418,7 @@ namespace
 
         // Successfully made a copy of the trimmed string.  Return it. Caller will be responsible for
         // deleting it.
-        wszTrimmedCopy.SuppressRelease();
-        *pwszTrimmed = wszTrimmedCopy;
+        *pwszTrimmed = wszTrimmedCopy.Detach();
         return S_OK;
     }
 }
@@ -444,7 +494,6 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, /* [Out] */ bool *
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -513,14 +562,12 @@ LPWSTR CLRConfig::GetConfigValue(const ConfigStringInfo & info)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
     LPWSTR result = NULL;
 
     // TODO: We swallow OOM exception here. Is this OK?
-    FAULT_NOT_FATAL();
 
     // If this fails, result will stay NULL.
     GetConfigValue(info, &result);
@@ -542,12 +589,10 @@ LPWSTR CLRConfig::GetConfigValue(const ConfigStringInfo & info)
 // static
 HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, _Outptr_result_z_ LPWSTR * outVal)
 {
-    CONTRACT(HRESULT) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT (CONTRACT_RETURN E_OUTOFMEMORY);
-        POSTCONDITION(CheckPointer(outVal, NULL_OK)); // TODO: Should this check be *outVal instead of outVal?
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     LPWSTR result = NULL;
 
@@ -568,7 +613,7 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, _Outptr_result_
     }
 
     *outVal = result;
-    RETURN S_OK;
+    return S_OK;
 }
 
 //
@@ -612,7 +657,7 @@ BOOL CLRConfig::IsConfigOptionSpecified(LPCWSTR name)
 // Deallocation function for code:CLRConfig::FreeConfigString
 //
 // static
-void CLRConfig::FreeConfigString(_In_z_ LPWSTR str)
+void CLRConfig::FreeConfigString(_In_z_ LPWSTR str) noexcept
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -637,6 +682,7 @@ void CLRConfig::Initialize()
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableConfigCache) != 0)
         return;
 
+#ifdef TARGET_WINDOWS
     const WCHAR prefixC = (WCHAR)towlower(COMPLUS_PREFIX[0]);
     const WCHAR prefixD = (WCHAR)towlower(DOTNET_PREFIX[0]);
 
@@ -644,8 +690,7 @@ void CLRConfig::Initialize()
     WCHAR* wszStrings = GetEnvironmentStringsW();
     if (wszStrings != NULL)
     {
-        // GetEnvironmentStrings returns pointer to a null terminated block containing
-        // null terminated strings
+        // GetEnvironmentStringsW returns pointer to a null terminated block containing null terminated strings
         for(WCHAR *wszCurr = wszStrings; *wszCurr; wszCurr++)
         {
             WCHAR wch = (WCHAR)towlower(*wszCurr);
@@ -694,4 +739,19 @@ void CLRConfig::Initialize()
         FreeEnvironmentStringsW(wszStrings);
         s_fUseEnvCache = true;
     }
+#else // TARGET_WINDOWS
+    // This is called during runtime startup, after the runtime has provided its environment callbacks.
+    _ASSERTE(s_enumerateEnvironment != nullptr);
+    s_enumerateEnvironment(AddEnvironmentEntryToCache, nullptr);
+    s_fUseEnvCache = true;
+#endif // TARGET_WINDOWS
+}
+
+// static
+void CLRConfig::SetEnvironmentCallbacks(GetEnvironmentVariableCallback getVariable, EnumerateEnvironmentCallback enumerate)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    s_getEnvironmentVariable = getVariable;
+    s_enumerateEnvironment = enumerate;
 }

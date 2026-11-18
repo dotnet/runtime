@@ -128,7 +128,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded) == 0;
+        return (VolatileLoad(&_typeAndFlags) & TypeDesc::enum_flag_IsNotFullyLoaded) == 0;
     }
 
     VOID SetIsFullyLoaded()
@@ -227,7 +227,6 @@ typedef DPTR(class ParamTypeDesc) PTR_ParamTypeDesc;
 
 class ParamTypeDesc : public TypeDesc {
     friend class TypeDesc;
-    friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
 
 public:
@@ -418,6 +417,7 @@ struct cdac_data<TypeVarTypeDesc>
 {
     static constexpr size_t Module = offsetof(TypeVarTypeDesc, m_pModule);
     static constexpr size_t Token = offsetof(TypeVarTypeDesc, m_token);
+    static constexpr size_t Index = offsetof(TypeVarTypeDesc, m_index);
 };
 
 /*************************************************************************/

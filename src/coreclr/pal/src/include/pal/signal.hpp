@@ -19,6 +19,11 @@ Abstract:
 #ifndef _PAL_SIGNAL_HPP_
 #define _PAL_SIGNAL_HPP_
 
+#include <signal.h>
+#if defined(TARGET_WASI)
+#include "pal/wasi/pal_wasi_missing.h"
+#endif
+
 #if !HAVE_MACH_EXCEPTIONS
 
 // Return context and status for the signal_handler_worker.
@@ -124,15 +129,5 @@ Parameters :
     (no parameters, no return value)
 --*/
 void SEHCleanupSignals(bool isChildProcess);
-
-/*++
-Function :
-    UnmaskActivationSignal
-
-    Unmask the INJECT_ACTIVATION_SIGNAL for the current thread
-
-    (no parameters, no return value)
---*/
-void UnmaskActivationSignal();
 
 #endif /* _PAL_SIGNAL_HPP_ */

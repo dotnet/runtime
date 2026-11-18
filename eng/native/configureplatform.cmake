@@ -11,6 +11,14 @@ set(PRERELEASE 1)
 #----------------------------------------
 set(CLR_CMAKE_HOST_OS ${CMAKE_SYSTEM_NAME})
 string(TOLOWER ${CLR_CMAKE_HOST_OS} CLR_CMAKE_HOST_OS)
+# OpenHarmony uses the OHOS NDK CMake toolchain which sets
+# CMAKE_SYSTEM_NAME=OHOS. Its libc is musl-based, so treat it as a linux/musl target.
+# NOTE: 'ohos' here is the NDK toolchain's contract name (lowercased CMAKE_SYSTEM_NAME)
+if(CLR_CMAKE_HOST_OS STREQUAL ohos)
+    set(CLR_CMAKE_HOST_OS linux)
+    set(CLR_CMAKE_HOST_LINUX_MUSL 1)
+    set(CLR_CMAKE_HOST_OPENHARMONY 1)
+endif()
 if(CLR_CMAKE_HOST_OS STREQUAL linux)
     set(CLR_CMAKE_HOST_UNIX 1)
     if(CLR_CROSS_COMPONENTS_BUILD)
@@ -160,6 +168,8 @@ if(CLR_CMAKE_HOST_OS STREQUAL freebsd)
         set(CLR_CMAKE_HOST_UNIX_AMD64 1)
     elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL arm64)
         set(CLR_CMAKE_HOST_UNIX_ARM64 1)
+    elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL ppc64le OR CMAKE_SYSTEM_PROCESSOR STREQUAL powerpc64le)
+        set(CLR_CMAKE_HOST_UNIX_POWERPC64 1)
     else()
         clr_unknown_arch()
     endif()
@@ -219,9 +229,10 @@ if(CLR_CMAKE_HOST_OS STREQUAL emscripten)
     set(CLR_CMAKE_HOST_BROWSER 1)
 endif(CLR_CMAKE_HOST_OS STREQUAL emscripten)
 
-if(CLR_CMAKE_TARGET_OS STREQUAL wasi)
+if(CLR_CMAKE_HOST_OS STREQUAL wasi)
     set(CLR_CMAKE_HOST_WASI 1)
-endif(CLR_CMAKE_TARGET_OS STREQUAL wasi)
+    set(CLR_CMAKE_HOST_UNIX 1)
+endif(CLR_CMAKE_HOST_OS STREQUAL wasi)
 
 #--------------------------------------------
 # This repo builds two set of binaries
@@ -354,6 +365,10 @@ if(CLR_CMAKE_HOST_LINUX_MUSL OR CLR_CMAKE_TARGET_OS STREQUAL alpine)
     set(CLR_CMAKE_TARGET_LINUX_MUSL 1)
 endif(CLR_CMAKE_HOST_LINUX_MUSL OR CLR_CMAKE_TARGET_OS STREQUAL alpine)
 
+if(CLR_CMAKE_HOST_OPENHARMONY)
+    set(CLR_CMAKE_TARGET_OPENHARMONY 1)
+endif()
+
 macro(set_cache_value)
   set(${ARGV0} ${ARGV1} CACHE STRING "Result from TRY_RUN" FORCE)
   set(${ARGV0}__TRYRUN_OUTPUT "dummy output" CACHE STRING "Output from TRY_RUN" FORCE)
@@ -436,6 +451,7 @@ if(CLR_CMAKE_TARGET_OS STREQUAL emscripten OR CLR_CMAKE_TARGET_OS STREQUAL brows
 endif(CLR_CMAKE_TARGET_OS STREQUAL emscripten OR CLR_CMAKE_TARGET_OS STREQUAL browser)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL wasi)
+    set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_WASI 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL wasi)
 
@@ -501,9 +517,13 @@ if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 else()
     if(CLR_CMAKE_RUNTIME_CORECLR)
+        if(NOT CLR_CROSS_COMPONENTS_BUILD)
+            # CoreCLR does not use throwing exception object destructors.
+            add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fassume-nothrow-exception-dtor>)
+        endif()
         if(CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CROSS_COMPONENTS_BUILD)
             add_link_options(-fwasm-exceptions)
-            add_link_options(-sWASM_LEGACY_EXCEPTIONS=1)
+            add_link_options(-sWASM_LEGACY_EXCEPTIONS=0)
             add_link_options(-Wno-unused-command-line-argument)
             add_link_options(-Wl,--error-limit=0)
 
@@ -511,18 +531,47 @@ else()
             add_link_options(-lstubs)
             add_link_options(-lc)
             add_link_options(-lmalloc)
-            add_link_options(-lcompiler_rt)
-            add_link_options(-lc++)
-            add_link_options(-lc++abi)
-            add_link_options(-lunwind)
+            add_link_options(-lclang_rt.builtins)
+            add_link_options(-lc++-wasmexcept)
+            add_link_options(-lc++abi-wasmexcept)
+            add_link_options(-lunwind-wasmexcept)
 
             add_compile_options(-fwasm-exceptions)
-            add_compile_options(-sWASM_LEGACY_EXCEPTIONS=1)
+            add_compile_options(-sWASM_LEGACY_EXCEPTIONS=0)
             add_compile_options(-mbulk-memory)
             add_compile_options(-msimd128)
         endif()
-        if(CLR_CMAKE_TARGET_WASI)
-            add_compile_options(-fexceptions)
+        if(CLR_CMAKE_TARGET_WASI AND NOT CLR_CROSS_COMPONENTS_BUILD)
+            # Native wasm exceptions: sjlj cannot handle the interpreter's
+            # ResumeAfterCatch (throw-from-catch). -wasm-use-legacy-eh=false
+            # selects the new try_table/throw_ref proposal that wasmtime 45+
+            # supports natively; legacy would require --legacy-exceptions.
+            add_compile_options(-fwasm-exceptions)
+            add_compile_options(-mllvm -wasm-use-legacy-eh=false)
+
+            # Suppress CMake's default -lstdc++; wasi-sdk has libc++ only and
+            # we link the eh-flavored variant explicitly below.
+            set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "" CACHE STRING "" FORCE)
+            set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
+            set(CMAKE_C_IMPLICIT_LINK_LIBRARIES "" CACHE STRING "" FORCE)
+            set(CMAKE_C_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
+
+            add_link_options(-fwasm-exceptions)
+            add_link_options(-mllvm -wasm-use-legacy-eh=false)
+            add_link_options(-Wno-unused-command-line-argument)
+            add_link_options(-Wl,--error-limit=0)
+
+            add_link_options(-lc)
+            add_link_options(-lc++)
+            add_link_options(-lc++abi)
+            add_link_options(-lunwind)
+            add_link_options(-ldl)
+
+            # WASI emulated libc helpers the CoreCLR PAL pulls in.
+            add_link_options(-lwasi-emulated-process-clocks)
+            add_link_options(-lwasi-emulated-signal)
+            add_link_options(-lwasi-emulated-mman)
+            add_link_options(-lwasi-emulated-getpid)
         endif()
     endif()
 endif()

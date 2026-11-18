@@ -216,7 +216,7 @@ public:
 		ep_char8_t *outputPathUTF8 = NULL;
 		if (outputPath)
 			outputPathUTF8 = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(outputPath));
-		EventPipeSessionID result = ep_enable (
+		EventPipeSessionID result = ep_init_session (
 			outputPathUTF8,
 			circularBufferSizeInMB,
 			providerConfigs.GetProviderConfigs(),
@@ -254,7 +254,7 @@ public:
 		}
 		CONTRACTL_END;
 
-		ep_start_streaming(id);
+		ep_start_session(id);
 	}
 
 	static inline EventPipeSession * GetSession(EventPipeSessionID id)
@@ -284,6 +284,15 @@ public:
 
 		return !ep_rt_wait_event_wait (ep_session_get_wait_event (session), (uint32_t)timeoutMs, false) ? true : false;
 	}
+
+#if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
+	// Runs the queued EventPipe jobs; returns true if any remain queued.
+	static inline bool RunWasiJobs()
+	{
+		STATIC_CONTRACT_NOTHROW;
+		return ep_rt_coreclr_wasi_run_jobs ();
+	}
+#endif // TARGET_WASI && PERFTRACING_DISABLE_THREADS
 
 	static inline FILETIME GetSessionStartTime(EventPipeSession *session)
 	{

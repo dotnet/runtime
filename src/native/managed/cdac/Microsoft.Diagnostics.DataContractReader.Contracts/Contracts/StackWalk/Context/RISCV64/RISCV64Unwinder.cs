@@ -132,7 +132,7 @@ internal class RISCV64Unwinder(Target target)
         }
 
         uint functionLength = headerWord & 0x3ffffu;
-        uint offsetInFunction = (controlPcRva - functionEntry.BeginAddress) / 4;
+        uint offsetInFunction = (controlPcRva - functionEntry.BeginAddress) / 2;
 
         //
         // Determine the number of epilog scope records and the maximum number
@@ -167,7 +167,7 @@ internal class RISCV64Unwinder(Target target)
 
         TargetPointer unwindCodePtr = unwindDataPtr + 4 * epilogScopeCount;
         TargetPointer unwindCodesEndPtr = unwindCodePtr + 4 * unwindWords;
-        uint skipWords = 0;
+        uint skipHalfwords = 0;
 
         //
         // If we're near the start of the function, and this function has a prolog,
@@ -176,24 +176,25 @@ internal class RISCV64Unwinder(Target target)
         // need to skip some to account for partial execution of the prolog.
         //
         // N.B. As an optimization here, note that each byte of unwind codes can
-        //      describe at most one 32-bit instruction. Thus, the largest prologue
-        //      that could possibly be described by UnwindWords (which is 4 * the
-        //      number of unwind code bytes) is 4 * UnwindWords words. If
-        //      OffsetInFunction is larger than this value, it is guaranteed to be
-        //      in the body of the function.
+        //      describe at most one instruction, and each instruction can cover at
+        //      most two halfwords. Thus, the largest prolog that could possibly be
+        //      described by UnwindWords (which is 4 * the number of unwind code
+        //      bytes) is 2 * (4 * UnwindWords) halfwords. If OffsetInFunction is
+        //      larger than this value, it is guaranteed to be in the body of the
+        //      function.
         //
         uint scopeSize;
-        if (offsetInFunction < 4 * unwindWords)
+        if (offsetInFunction < 2 * (4 * unwindWords))
         {
-            scopeSize = ComputeScopeSize(unwindCodePtr, unwindCodesEndPtr);
+            scopeSize = 2 * ComputeScopeSize(unwindCodePtr, unwindCodesEndPtr, isEpilog: false);
 
             if (offsetInFunction < scopeSize)
             {
-                skipWords = scopeSize - offsetInFunction;
+                skipHalfwords = scopeSize - offsetInFunction;
             }
         }
 
-        if (skipWords > 0)
+        if (skipHalfwords > 0)
         {
             // Found that we are in the middle of a prolog, no need to check for epilog scopes
         }
@@ -215,9 +216,9 @@ internal class RISCV64Unwinder(Target target)
         //
         else if ((headerWord & (1 << 21)) != 0)
         {
-            if (offsetInFunction + (4 * unwindWords - unwindIndex) >= functionLength)
+            if (offsetInFunction + 2 * (4 * unwindWords - unwindIndex) >= functionLength)
             {
-                scopeSize = ComputeScopeSize(unwindCodePtr + unwindIndex, unwindCodesEndPtr);
+                scopeSize = 2 * ComputeScopeSize(unwindCodePtr + unwindIndex, unwindCodesEndPtr, isEpilog: true);
                 uint scopeStart = functionLength - scopeSize;
 
                 //
@@ -227,7 +228,7 @@ internal class RISCV64Unwinder(Target target)
                 if (offsetInFunction >= scopeStart)
                 {
                     unwindCodePtr += unwindIndex;
-                    skipWords = offsetInFunction - scopeStart;
+                    skipHalfwords = offsetInFunction - scopeStart;
                 }
             }
         }
@@ -254,14 +255,14 @@ internal class RISCV64Unwinder(Target target)
                     break;
 
                 unwindIndex = headerWord >> 22;
-                if (offsetInFunction < scopeStart + (4 * unwindWords - unwindIndex))
+                if (offsetInFunction < scopeStart + 2 * (4 * unwindWords - unwindIndex))
                 {
-                    scopeSize = ComputeScopeSize(unwindCodePtr + unwindIndex, unwindCodesEndPtr);
+                    scopeSize = 2 * ComputeScopeSize(unwindCodePtr + unwindIndex, unwindCodesEndPtr, isEpilog: true);
 
                     if (offsetInFunction < scopeStart + scopeSize)
                     {
                         unwindCodePtr += unwindIndex;
-                        skipWords = offsetInFunction - scopeStart;
+                        skipHalfwords = offsetInFunction - scopeStart;
                         break;
                     }
                 }
@@ -273,7 +274,7 @@ internal class RISCV64Unwinder(Target target)
         // to skip.
         //
 
-        while (unwindCodePtr < unwindCodesEndPtr && skipWords > 0)
+        while (unwindCodePtr < unwindCodesEndPtr && skipHalfwords > 0)
         {
             byte curCode = _target.Read<byte>(unwindCodePtr);
             if (OpcodeIsEnd(curCode))
@@ -281,7 +282,7 @@ internal class RISCV64Unwinder(Target target)
                 break;
             }
             unwindCodePtr += UnwindCodeSizeTable[curCode];
-            skipWords--;
+            skipHalfwords -= 2;
         }
 
         //
@@ -318,7 +319,7 @@ internal class RISCV64Unwinder(Target target)
         return true;
     }
 
-    private uint ComputeScopeSize(TargetPointer unwindCodePtr, TargetPointer unwindCodesEndPtr)
+    private uint ComputeScopeSize(TargetPointer unwindCodePtr, TargetPointer unwindCodesEndPtr, bool isEpilog)
     {
         //
         // Iterate through the unwind codes until we hit an end marker.
@@ -337,6 +338,9 @@ internal class RISCV64Unwinder(Target target)
             unwindCodePtr += UnwindCodeSizeTable[opcode];
             scopeSize++;
         }
+
+        if (isEpilog)
+            scopeSize++;
 
         return scopeSize;
     }

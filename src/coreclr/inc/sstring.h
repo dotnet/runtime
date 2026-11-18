@@ -1,10 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// ---------------------------------------------------------------------------
-// SString.h  (Safe String)
-//
-
-// ---------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------
 // SString is the "standard" string representation for the EE.  Its has two purposes.
@@ -38,13 +33,13 @@
 // @todo: argument & overflow/underflow checking needs to be added
 // ------------------------------------------------------------------------------------------
 
-
 #ifndef _SSTRING_H_
 #define _SSTRING_H_
 
 #include "utilcode.h"
 #include "sbuffer.h"
 #include "debugmacros.h"
+#include <minipal/types.h>
 
 // ==========================================================================================
 // Documentational typedefs: use these to indicate specific representations of 8 bit strings:
@@ -466,7 +461,6 @@ private:
     const WCHAR *GetUnicode(const CIterator &i) const;
 
     void LowerCase();
-    void UpperCase();
 
     // Helper function to convert string in-place to lower-case (no allocation overhead for SString instance)
     static void LowerCase(__inout_z LPWSTR wszString);
@@ -566,9 +560,9 @@ private:
     // Utilities
     //---------------------------------------------------------------------
 
-    void Printf(const CHAR *format, ...);
+    void Printf(const CHAR *format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
     void VPrintf(const CHAR *format, va_list args);
-    void AppendPrintf(const CHAR *format, ...);
+    void AppendPrintf(const CHAR *format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
     void AppendVPrintf(const CHAR *format, va_list args);
 
 public:
@@ -684,7 +678,6 @@ public:
 private:
     void ClearNormalized() const;
 
-    void EnsureWritable() const;
     void ConvertToFixed() const;
     void ConvertToIteratable() const;
 
@@ -887,12 +880,6 @@ typedef InlineSString<2 * 260> LongPathString;
 
 #define THROWS_UNLESS_BOTH_NORMALIZED(s) \
     if (IsNormalized() && s.IsNormalized()) NOTHROW; else THROWS
-
-#define FAULTS_UNLESS_NORMALIZED(stmt) \
-    if (IsNormalized()) FORBID_FAULT; else INJECT_FAULT(stmt)
-
-#define FAULTS_UNLESS_BOTH_NORMALIZED(s, stmt) \
-    if (IsNormalized() && s.IsNormalized()) FORBID_FAULT; else INJECT_FAULT(stmt)
 
 // ================================================================================
 // Inline definitions

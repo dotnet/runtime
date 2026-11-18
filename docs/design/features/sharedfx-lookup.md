@@ -1,5 +1,10 @@
 # SharedFX Lookup
 
+> [!NOTE]
+> This document describes the original SharedFX lookup design. Starting in .NET 12,
+> `rollForwardOnNoCandidateFx` and `applyPatches` are ignored. Use `rollForward` to configure framework
+> version resolution.
+
 ## Introduction
 
 There are two main ways of running .NET Applications: through `dotnet` or through the `apphost` executables. The executable is in charge of finding and loading `hostfxr`. `hostfxr`, in turn, must find and load `hostpolicy`. It is also responsible for searching for the SDK when running .NET SDK commands. Finally, `hostpolicy` must find and load the runtime (`coreclr`). See [host components](host-components.md) for details.
@@ -47,7 +52,7 @@ The exact algorithm how versions as matched is described (with some history) in 
 Starting in .NET 11, once the SDK directory is resolved, the muxer checks for a `dotnet-aot` shared library in that directory. If the library exists and exports the `dotnet_execute` entry point, the muxer invokes it instead of running the managed `dotnet.dll`:
 
 ``` C
-int dotnet_execute(
+int __stdcall dotnet_execute(
     const char_t *host_path,     // path to the dotnet host executable
     const char_t *dotnet_root,   // path to the dotnet root directory
     const char_t *sdk_dir,       // path to the resolved SDK directory
@@ -55,6 +60,8 @@ int dotnet_execute(
     int argc,                    // user's command-line arguments (excluding dotnet executable itself)
     const char_t **argv);
 ```
+
+The entry point uses the `__stdcall` calling convention on Windows and the default calling convention elsewhere.
 
 If the `dotnet-aot` library is not found or does not have the expected entry point, the muxer falls back to running the managed `dotnet.dll` as a framework-dependent app.
 

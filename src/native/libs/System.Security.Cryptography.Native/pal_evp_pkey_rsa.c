@@ -82,11 +82,28 @@ static bool ConfigureEncryption(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const
             return false;
         }
 
-        // OpenSSL 3.2 introduced a change where PKCS#1 RSA decryption does not fail for invalid padding.
-        // If the padding is invalid, the decryption operation returns random data.
-        // See https://github.com/openssl/openssl/pull/13817 for background.
-        // Some Linux distributions backported this change to previous versions of OpenSSL.
-        // Here we do a best-effort to set a flag to revert the behavior to failing if the padding is invalid.
+        // OpenSSL 3.2 introduced "implicit rejection" for PKCS#1 RSA decryption
+        // (https://github.com/openssl/openssl/pull/13817). Instead of returning an error for invalid
+        // padding (software keys only), OpenSSL synthesizes a deterministic random value derived from the
+        // private key and ciphertext, leaving callers to handle it with constant-time comparison. This
+        // was intended to mitigate Bleichenbacher-style padding oracle attacks.
+        //
+        // Some Linux distributions (notably CentOS/RHEL via Red Hat backports) applied this change to
+        // earlier OpenSSL versions (e.g. 3.1), which broke some .NET tests.
+        //
+        // We disable this feature ("implicit rejection") for several reasons:
+        //   1. Platform consistency: other platforms (Windows, macOS) and hardware-backed keys still
+        //      return explicit errors; callers should see the same behavior everywhere.
+        //   2. It deviates from RSA specifications and OpenSSL itself had to disable it to pass FIPS
+        //      conformance tests.
+        //   3. It broke OpenSSL's own CMS (EnvelopedCMS) implementation, so OpenSSL turns it off
+        //      internally when doing CMS operations.
+        //   4. It does not fully solve the Bleichenbacher problem; it converts a "FFT" oracle into a
+        //      "FFF" oracle. While FFF is ~1000x harder to exploit, the attack is not eliminated.
+        //
+        // Therefore we revert to the prior behavior: invalid padding produces an explicit error code
+        // and .NET throws an exception. This is a best-effort flag; if the running OpenSSL version does
+        // not recognize it, we silently ignore the failure (see ERR_set_mark / ERR_pop_to_mark below).
         ERR_set_mark();
 
         EVP_PKEY_CTX_ctrl_str(ctx, "rsa_pkcs1_implicit_rejection", "0");

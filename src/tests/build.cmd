@@ -119,6 +119,7 @@ if /i "%arg%" == "test"                  (set __BuildTestProject=!__BuildTestPro
 if /i "%arg%" == "dir"                   (set __BuildTestDir=!__BuildTestDir!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "tree"                  (set __BuildTestTree=!__BuildTestTree!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "log"                   (set __BuildLogRootName=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%arg%" == "arch"                  (set __BuildArch=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "priority"              (set __Priority=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "fsanitize"             (set __CMakeArgs=%__CMakeArgs% "-DCLR_CMAKE_ENABLE_SANITIZERS=%2"&set __EnableNativeSanitizers=%2&set processedArgs=!processedArgs! %1=%2&shift&shift&goto Arg_Loop)
 
@@ -223,8 +224,10 @@ set __CommonMSBuildArgs=%__CommonMSBuildArgs% "/p:TargetArchitecture=%__BuildArc
 
 if "%__Mono%"=="1" (
   set __CommonMSBuildArgs=!__CommonMSBuildArgs! "/p:RuntimeFlavor=mono"
+  set __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=Mono" !__CMakeArgs!
 ) else (
   set __CommonMSBuildArgs=!__CommonMSBuildArgs! "/p:RuntimeFlavor=coreclr"
+  set __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=CoreCLR" !__CMakeArgs!
 )
 
 if %__Ninja% == 0 (
@@ -356,6 +359,7 @@ echo.
 echo.-? -h --help: View this message.
 echo.
 echo Build architecture: one of "x64", "x86", "arm64", "wasm" ^(default: x64^).
+echo     Can also be set with "arch ^<value^>" ^(e.g. "-arch arm64"^).
 echo Build type: one of "Debug", "Checked", "Release" ^(default: Debug^).
 echo.
 echo Build target OS options:

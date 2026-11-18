@@ -82,7 +82,7 @@ namespace {Namespace}
             }
         }
 
-        private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
+        private static readonly int RetElementCount = sizeof({RetVectorType}<{RetBaseType}>) / sizeof({RetBaseType});
 
         private static {Op1BaseType} _data1;
         private static {Op2BaseType} _data2;

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -239,6 +239,12 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     {
                         break;
                     }
+
+                    ZipArchiveEntry lastEntry = _entries[_entries.Count - 1];
+                    if (lastEntry.IsEncrypted)
+                    {
+                        await lastEntry.ReadEncryptionSaltIfNeededAsync(cancellationToken).ConfigureAwait(false);
+                    }
                 }
 
                 ReadCentralDirectoryEndOfOuterLoopWork(ref currPosition, sizedFileBuffer.Span);
@@ -266,6 +272,8 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
 
         try
         {
+            ValidateArchiveStreamLength();
+
             // This seeks backwards almost to the beginning of the EOCD, one byte after where the signature would be
             // located if the EOCD had the minimum possible size (no file zip comment)
             _archiveStream.Seek(-ZipEndOfCentralDirectoryBlock.SizeOfBlockWithoutSignature, SeekOrigin.End);
@@ -351,6 +359,8 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
         // if we are in create mode, we always set readEntries to true in Init
         // if we are in update mode, we call EnsureCentralDirectoryRead, which sets readEntries to true
         Debug.Assert(_readEntries);
+
+        ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting();
 
         // Entries starting after this offset have had a dynamically-sized change. Everything on or after this point must be rewritten.
         long completeRewriteStartingOffset = 0;

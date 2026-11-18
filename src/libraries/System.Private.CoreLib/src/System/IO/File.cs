@@ -742,7 +742,9 @@ namespace System.IO
 
                 int index = 0;
                 int count = (int)fileLength;
-                byte[] bytes = new byte[count];
+                // The entire array is overwritten by the read loop below (an exception is thrown
+                // if the file is truncated before all the bytes are read), so it does not need to be zeroed.
+                byte[] bytes = GC.AllocateUninitializedArray<byte>(count);
                 while (count > 0)
                 {
                     int n = RandomAccess.ReadAtOffset(sfh, bytes.AsSpan(index, count), index);
@@ -1225,7 +1227,9 @@ namespace System.IO
             using (sfh)
             {
                 int index = 0;
-                byte[] bytes = new byte[count];
+                // The entire array is overwritten by the read loop below (an exception is thrown
+                // if the file is truncated before all the bytes are read), so it does not need to be zeroed.
+                byte[] bytes = GC.AllocateUninitializedArray<byte>(count);
                 do
                 {
                     int n = await RandomAccess.ReadAtOffsetAsync(sfh, bytes.AsMemory(index), index, cancellationToken).ConfigureAwait(false);

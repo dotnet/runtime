@@ -33,6 +33,28 @@ void utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out
     memcpy(out_name, name, (len + 1) * sizeof(pal_char_t));
 }
 
+bool utils_starts_with(const pal_char_t* value, size_t value_len, const pal_char_t* prefix, size_t prefix_len, bool match_case)
+{
+    // Cannot start with an empty string.
+    if (prefix_len == 0 || value_len < prefix_len)
+        return false;
+
+    return match_case
+        ? pal_strncmp(value, prefix, prefix_len) == 0
+        : pal_strncasecmp(value, prefix, prefix_len) == 0;
+}
+
+bool utils_ends_with(const pal_char_t* value, size_t value_len, const pal_char_t* suffix, size_t suffix_len, bool match_case)
+{
+    if (value_len < suffix_len)
+        return false;
+
+    const pal_char_t* tail = value + value_len - suffix_len;
+    return match_case
+        ? pal_strncmp(tail, suffix, suffix_len) == 0
+        : pal_strncasecmp(tail, suffix, suffix_len) == 0;
+}
+
 void utils_append_path(pal_char_t* path_buffer, size_t path_buffer_len, const pal_char_t* component)
 {
     if (component == NULL || component[0] == _X('\0'))

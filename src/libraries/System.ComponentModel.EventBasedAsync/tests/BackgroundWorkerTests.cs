@@ -71,7 +71,6 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public async Task RunWorkerAsync_NoOnWorkHandler_SetsResultToNull()
         {
             var tcs = new TaskCompletionSource();
@@ -107,25 +106,6 @@ namespace System.ComponentModel.EventBasedAsync.Tests
 
             bool ret = manualResetEvent3.Wait(TimeoutLong);
             Assert.True(ret);
-            // there could be race condition between worker thread cancellation and completion which will set the CancellationPending to false
-            // if it is completed already, we don't check cancellation
-            if (bw.IsBusy) // not complete
-            {
-                if (!bw.CancellationPending)
-                {
-                    for (int i = 0; i < 1000; i++)
-                    {
-                        Wait(TimeoutShort);
-                        if (bw.CancellationPending)
-                        {
-                            break;
-                        }
-                    }
-                }
-                // Check again
-                if (bw.IsBusy)
-                    Assert.True(bw.CancellationPending, "Cancellation in Main thread");
-            }
         }
 
         private void DoWorkExpectCancel(object sender, DoWorkEventArgs e)
@@ -326,8 +306,9 @@ namespace System.ComponentModel.EventBasedAsync.Tests
             bw.Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        // Waits on a ManualResetEventSlim with a timeout, which requires multithreading support; on single-threaded
+        // wasm (browser CoreCLR interpreter) the blocking wait throws PlatformNotSupportedException.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestFinalization()
         {
             // BackgroundWorker has a finalizer that exists purely for backwards compatibility

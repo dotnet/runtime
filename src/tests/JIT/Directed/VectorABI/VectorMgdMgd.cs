@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+namespace JitTest_Directed_VectorABI_VectorMgdMgd;
+
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
@@ -116,7 +118,7 @@ public static class VectorMgdMgd
         // element type (byte).
         static T[] values;
         static T[] check;
-        private int ElementCount = (Unsafe.SizeOf<Vector128<T>>() / sizeof(byte)) * 5;
+        private int ElementCount = (sizeof(Vector128<T>) / sizeof(byte)) * 5;
         public bool isPassing = true;
         public bool isReflection = false;
 
@@ -1077,6 +1079,7 @@ public static class VectorMgdMgd
         }
     }
 
+    [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(DotNetFinalVersionKind)' != ''">$(DefineConstants);STABILIZE_PACKAGE_VERSION</DefineConstants>
@@ -29,5 +29,7 @@
              Link="Common\Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RealPath.cs"
              Link="Common\Interop\Unix\Interop.RealPath.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
 </Project>

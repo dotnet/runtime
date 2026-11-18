@@ -10,6 +10,7 @@ using Xunit;
 namespace System.Diagnostics.TraceSourceConfigTests
 {
     // Note that parallelization is disabled due to file access as each test replaces the single config file on disk.
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134952", TestPlatforms.Wasi)]
     public class ConfigurationTests
     {
         private static volatile string? _configFile = null;

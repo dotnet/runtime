@@ -104,7 +104,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Creates a ProcessInfo from the data parsed from a /proc/pid/stat file and the associated tasks directory.
         /// </summary>
-        internal static ProcessInfo CreateProcessInfo(Interop.procfs.ProcPid procPid, ref Interop.procfs.ParsedStat procFsStat, ref Interop.procfs.ParsedStatus procFsStatus, string? processName = null)
+        internal static unsafe ProcessInfo CreateProcessInfo(Interop.procfs.ProcPid procPid, ref Interop.procfs.ParsedStat procFsStat, ref Interop.procfs.ParsedStatus procFsStatus, string? processName = null)
         {
             int pid = procFsStat.pid;
 

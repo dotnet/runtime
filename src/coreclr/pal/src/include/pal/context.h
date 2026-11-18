@@ -30,6 +30,19 @@ extern "C"
 #endif // HAVE_UCONTEXT_H
 
 typedef ucontext_t native_context_t;
+#elif defined(TARGET_WASI)
+// WASI (wasm32-wasip2 in wasi-sdk 33) has no signal/ucontext support: <ucontext.h>
+// is absent and <signal.h> hides siginfo_t/FPE_*/ILL_* behind
+// __wasilibc_unmodified_upstream. PAL declarations still reference these types
+// at the header level even though the call sites are excluded from compilation
+// on WASI (exception/signal.cpp, exception/seh-unwind.cpp). Provide opaque
+// native_context_t here; siginfo_t lives in pal/wasi/pal_wasi_missing.h
+// which is pulled in below.
+//
+// TODO: delete when wasi-libc exposes siginfo_t and a ucontext_t (no upstream
+// plan as of WASI 0.2.8).
+typedef struct { int _placeholder; } native_context_t;
+#include "pal/wasi/pal_wasi_missing.h"
 #else   // HAVE_UCONTEXT_T
 #error Native context type is not known on this platform!
 #endif  // HAVE_UCONTEXT_T
@@ -171,6 +184,48 @@ struct sve_context {
 
 #elif HOST_POWERPC64
 
+#if defined(TARGET_FREEBSD)
+#define MCREG_R0(mc)        ((mc).mc_gpr[0])
+#define MCREG_R1(mc)        ((mc).mc_gpr[1])
+#define MCREG_R2(mc)        ((mc).mc_gpr[2])
+#define MCREG_R3(mc)        ((mc).mc_gpr[3])
+#define MCREG_R4(mc)        ((mc).mc_gpr[4])
+#define MCREG_R5(mc)        ((mc).mc_gpr[5])
+#define MCREG_R6(mc)        ((mc).mc_gpr[6])
+#define MCREG_R7(mc)        ((mc).mc_gpr[7])
+#define MCREG_R8(mc)        ((mc).mc_gpr[8])
+#define MCREG_R9(mc)        ((mc).mc_gpr[9])
+#define MCREG_R10(mc)       ((mc).mc_gpr[10])
+#define MCREG_R11(mc)       ((mc).mc_gpr[11])
+#define MCREG_R12(mc)       ((mc).mc_gpr[12])
+#define MCREG_R13(mc)       ((mc).mc_gpr[13])
+#define MCREG_R14(mc)       ((mc).mc_gpr[14])
+#define MCREG_R15(mc)       ((mc).mc_gpr[15])
+#define MCREG_R16(mc)       ((mc).mc_gpr[16])
+#define MCREG_R17(mc)       ((mc).mc_gpr[17])
+#define MCREG_R18(mc)       ((mc).mc_gpr[18])
+#define MCREG_R19(mc)       ((mc).mc_gpr[19])
+#define MCREG_R20(mc)       ((mc).mc_gpr[20])
+#define MCREG_R21(mc)       ((mc).mc_gpr[21])
+#define MCREG_R22(mc)       ((mc).mc_gpr[22])
+#define MCREG_R23(mc)       ((mc).mc_gpr[23])
+#define MCREG_R24(mc)       ((mc).mc_gpr[24])
+#define MCREG_R25(mc)       ((mc).mc_gpr[25])
+#define MCREG_R26(mc)       ((mc).mc_gpr[26])
+#define MCREG_R27(mc)       ((mc).mc_gpr[27])
+#define MCREG_R28(mc)       ((mc).mc_gpr[28])
+#define MCREG_R29(mc)       ((mc).mc_gpr[29])
+#define MCREG_R30(mc)       ((mc).mc_gpr[30])
+#define MCREG_R31(mc)       ((mc).mc_gpr[31])
+#define MCREG_Nip(mc)       ((mc).mc_srr0)
+#define MCREG_Msr(mc)       ((mc).mc_srr1)
+#define MCREG_Ctr(mc)       ((mc).mc_ctr)
+#define MCREG_Link(mc)      ((mc).mc_lr)
+#define MCREG_Xer(mc)       ((mc).mc_xer)
+#define MCREG_Ccr(mc)       ((mc).mc_cr)
+
+#else // !TARGET_FREEBSD
+
 #define MCREG_R0(mc)        ((mc).gp_regs[0])
 #define MCREG_R1(mc)        ((mc).gp_regs[1])
 #define MCREG_R2(mc)        ((mc).gp_regs[2])
@@ -209,6 +264,8 @@ struct sve_context {
 #define MCREG_Link(mc)      ((mc).gp_regs[36])
 #define MCREG_Xer(mc)       ((mc).gp_regs[37])
 #define MCREG_Ccr(mc)       ((mc).gp_regs[38])
+
+#endif // TARGET_FREEBSD
 
 #elif defined(HOST_WASM)
 
@@ -1161,21 +1218,6 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
     return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
 }
 
-#elif defined(HOST_X86)
-
-#define MCREG_Ebx(mc)       ((mc).mc_ebx)
-#define MCREG_Ecx(mc)       ((mc).mc_ecx)
-#define MCREG_Edx(mc)       ((mc).mc_edx)
-#define MCREG_Esi(mc)       ((mc).mc_esi)
-#define MCREG_Edi(mc)       ((mc).mc_edi)
-#define MCREG_Ebp(mc)       ((mc).mc_ebp)
-#define MCREG_Eax(mc)       ((mc).mc_eax)
-#define MCREG_Eip(mc)       ((mc).mc_eip)
-#define MCREG_SegCs(mc)     ((mc).mc_cs)
-#define MCREG_EFlags(mc)    ((mc).mc_eflags)
-#define MCREG_Esp(mc)       ((mc).mc_esp)
-#define MCREG_SegSs(mc)     ((mc).mc_ss)
-
 #else
 #error "Unsupported arch"
 #endif
@@ -1309,18 +1351,6 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define PTREG_Lr(ptreg)        ((ptreg).uregs[14])
 #define PTREG_Pc(ptreg)        ((ptreg).uregs[15])
 #define PTREG_Cpsr(ptreg)      ((ptreg).uregs[16])
-#elif defined(HOST_X86)
-#define PTREG_Ebx(ptreg)    ((ptreg).ebx)
-#define PTREG_Ecx(ptreg)    ((ptreg).ecx)
-#define PTREG_Edx(ptreg)    ((ptreg).edx)
-#define PTREG_Esi(ptreg)    ((ptreg).esi)
-#define PTREG_Edi(ptreg)    ((ptreg).edi)
-#define PTREG_Ebp(ptreg)    ((ptreg).ebp)
-#define PTREG_Eax(ptreg)    ((ptreg).eax)
-#define PTREG_Eip(ptreg)    ((ptreg).eip)
-#define PTREG_SegCs(ptreg)  ((ptreg).xcs)
-#define PTREG_SegSs(ptreg)  ((ptreg).xss)
-#define PTREG_Esp(ptreg)    ((ptreg).esp)
 #else
 #error "Unsupported arch"
 #endif
@@ -1402,6 +1432,56 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define BSDREG_Lr(reg) BSD_REGS_STYLE(reg,Lr,lr)
 #define BSDREG_Cpsr(reg) BSD_REGS_STYLE(reg,Spsr,spsr)
 
+#elif defined(HOST_POWERPC64)
+
+#define BSDREG_R0(reg)      ((reg).fixreg[0])
+#define BSDREG_R1(reg)      ((reg).fixreg[1])
+#define BSDREG_R2(reg)      ((reg).fixreg[2])
+#define BSDREG_R3(reg)      ((reg).fixreg[3])
+#define BSDREG_R4(reg)      ((reg).fixreg[4])
+#define BSDREG_R5(reg)      ((reg).fixreg[5])
+#define BSDREG_R6(reg)      ((reg).fixreg[6])
+#define BSDREG_R7(reg)      ((reg).fixreg[7])
+#define BSDREG_R8(reg)      ((reg).fixreg[8])
+#define BSDREG_R9(reg)      ((reg).fixreg[9])
+#define BSDREG_R10(reg)     ((reg).fixreg[10])
+#define BSDREG_R11(reg)     ((reg).fixreg[11])
+#define BSDREG_R12(reg)     ((reg).fixreg[12])
+#define BSDREG_R13(reg)     ((reg).fixreg[13])
+#define BSDREG_R14(reg)     ((reg).fixreg[14])
+#define BSDREG_R15(reg)     ((reg).fixreg[15])
+#define BSDREG_R16(reg)     ((reg).fixreg[16])
+#define BSDREG_R17(reg)     ((reg).fixreg[17])
+#define BSDREG_R18(reg)     ((reg).fixreg[18])
+#define BSDREG_R19(reg)     ((reg).fixreg[19])
+#define BSDREG_R20(reg)     ((reg).fixreg[20])
+#define BSDREG_R21(reg)     ((reg).fixreg[21])
+#define BSDREG_R22(reg)     ((reg).fixreg[22])
+#define BSDREG_R23(reg)     ((reg).fixreg[23])
+#define BSDREG_R24(reg)     ((reg).fixreg[24])
+#define BSDREG_R25(reg)     ((reg).fixreg[25])
+#define BSDREG_R26(reg)     ((reg).fixreg[26])
+#define BSDREG_R27(reg)     ((reg).fixreg[27])
+#define BSDREG_R28(reg)     ((reg).fixreg[28])
+#define BSDREG_R29(reg)     ((reg).fixreg[29])
+#define BSDREG_R30(reg)     ((reg).fixreg[30])
+#define BSDREG_R31(reg)     ((reg).fixreg[31])
+#define BSDREG_Nip(reg)     ((reg).pc)
+/* FreeBSD's ptrace `struct reg` has no MSR slot, and MSR can be neither read
+   nor set through ptrace. ASSIGN_CONTROL_REGS copies Msr in both directions,
+   so route it through a sink that discards writes and reads back 0: MSR is not
+   consumed on this path, and this keeps no per-TU storage or stale state. */
+struct PAL_BSDppcMsrSink
+{
+    void operator=(unsigned long) const { }
+    operator unsigned long() const { return 0; }
+};
+#define BSDREG_Msr(reg)     (PAL_BSDppcMsrSink{})
+#define BSDREG_Ctr(reg)     ((reg).ctr)
+#define BSDREG_Link(reg)    ((reg).lr)
+#define BSDREG_Xer(reg)     ((reg).xer)
+#define BSDREG_Ccr(reg)     ((reg).cr)
+
 #endif // HOST_ARM64
 
 #else // HOST_64BIT
@@ -1427,8 +1507,6 @@ inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
 {
 #if defined(HOST_AMD64)
     return pContext->Rip;
-#elif defined(HOST_X86)
-    return pContext->Eip;
 #elif defined(HOST_S390X)
     return pContext->PSWAddr;
 #elif defined(HOST_POWERPC64)
@@ -1444,8 +1522,6 @@ inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
 {
 #if defined(HOST_AMD64)
     pContext->Rip = pc;
-#elif defined(HOST_X86)
-    pContext->Eip = pc;
 #elif defined(HOST_S390X)
     pContext->PSWAddr = pc;
 #elif defined(HOST_POWERPC64)
@@ -1461,8 +1537,6 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
 {
 #if defined(HOST_AMD64)
     return pContext->Rbp;
-#elif defined(HOST_X86)
-    return pContext->Ebp;
 #elif defined(HOST_ARM)
     return pContext->R7;
 #elif defined(HOST_S390X)

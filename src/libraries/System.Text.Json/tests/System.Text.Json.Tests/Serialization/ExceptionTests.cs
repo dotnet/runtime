@@ -3,8 +3,10 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text.Encodings.Web;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -631,6 +633,72 @@ namespace System.Text.Json.Serialization.Tests
 
             public override void Write(Utf8JsonWriter writer, PocoUsingCustomConverterThrowingJsonException value, JsonSerializerOptions options)
                 => throw new JsonException(ExceptionMessage, ExceptionPath, 0, 0);
+        }
+
+        [Fact]
+        public static void ThrowingMembers_PropagateOriginalException()
+        {
+            // Exercises the default member accessor (Reflection.Emit on runtimes that compile dynamic code).
+            AssertThrowingMembersPropagateOriginalException();
+        }
+
+#if NET
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void ThrowingMembers_PropagateOriginalException_WithReflectionMemberAccessor()
+        {
+            // Disabling dynamic code support routes serialization through the reflection-based member
+            // accessor (as happens on WASM, iOS and the Mono interpreter) instead of the Reflection.Emit
+            // accessor. Exceptions thrown by user getters, setters and constructors must still propagate
+            // unwrapped rather than being surfaced as a TargetInvocationException.
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"] = false
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.False(RuntimeFeature.IsDynamicCodeCompiled);
+                AssertThrowingMembersPropagateOriginalException();
+            }, options).Dispose();
+        }
+#endif
+
+        private static void AssertThrowingMembersPropagateOriginalException()
+        {
+            InvalidOperationException ex;
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new ClassWithThrowingGetter()));
+            Assert.Equal(ThrowingMember_ExceptionMessage, ex.Message);
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithThrowingSetter>("""{"Value":1}"""));
+            Assert.Equal(ThrowingMember_ExceptionMessage, ex.Message);
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithThrowingConstructor>("{}"));
+            Assert.Equal(ThrowingMember_ExceptionMessage, ex.Message);
+        }
+
+        private const string ThrowingMember_ExceptionMessage = "Exception thrown from user code.";
+
+        public class ClassWithThrowingGetter
+        {
+            public int Value => throw new InvalidOperationException(ThrowingMember_ExceptionMessage);
+        }
+
+        public class ClassWithThrowingSetter
+        {
+            public int Value { get => 0; set => throw new InvalidOperationException(ThrowingMember_ExceptionMessage); }
+        }
+
+        public class ClassWithThrowingConstructor
+        {
+            [JsonConstructor]
+            public ClassWithThrowingConstructor(int value)
+                => throw new InvalidOperationException(ThrowingMember_ExceptionMessage);
+
+            public int Value { get; }
         }
     }
 }

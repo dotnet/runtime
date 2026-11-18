@@ -30,13 +30,13 @@ CordbModule::CordbModule(
 : CordbBase(pProcess, VmPtrToCookie(vmModule), enumCordbModule),
     m_pAssembly(0),
     m_pAppDomain(0),
-    m_classes(11),
-    m_functions(101),
+    m_classes(),
+    m_functions(),
     m_vmAssembly(vmAssembly),
     m_vmModule(vmModule),
     m_EnCCount(0),
     m_fForceMetaDataSerialize(FALSE),
-    m_nativeCodeTable(101)
+    m_nativeCodeTable()
 {
     _ASSERTE(pProcess->GetProcessLock()->HasLock());
 
@@ -335,7 +335,7 @@ void CordbModule::UpdateMetaDataCacheIfNeeded(mdToken token)
     }
 
     //
-    // 1) Check if in-range? Compare against tables, etc.
+    // 1) Check whether the token is in the cached metadata.
     //
     if(CheckIfTokenInMetaData(token))
     {
@@ -365,37 +365,7 @@ BOOL CordbModule::CheckIfTokenInMetaData(mdToken token)
     CONTRACTL_END;
     LOG((LF_CORDB,LL_INFO10000, "CM::CITIM token=0x%x\n", token));
     _ASSERTE(TypeFromToken(token) == mdtSignature);
-    RSExtSmartPtr<IMetaDataTables> pTable;
-
-    HRESULT hr = GetMetaDataImporter()->QueryInterface(IID_IMetaDataTables, (void**) &pTable);
-
-    _ASSERTE(SUCCEEDED(hr));
-    if (FAILED(hr))
-    {
-        ThrowHR(hr);
-    }
-
-    ULONG cbRowsAvailable; // number of rows in the table
-
-    hr = pTable->GetTableInfo(
-        mdtSignature >> 24,                      // [IN] Which table.
-        NULL,                    // [OUT] Size of a row, bytes.
-        &cbRowsAvailable,                    // [OUT] Number of rows.
-        NULL,                    // [OUT] Number of columns in each row.
-        NULL,                     // [OUT] Key column, or -1 if none.
-        NULL);          // [OUT] Name of the table.
-
-    _ASSERTE(SUCCEEDED(hr));
-    if (FAILED(hr))
-    {
-        ThrowHR(hr);
-    }
-
-
-    // Rows start counting with number 1.
-    ULONG rowRequested = RidFromToken(token);
-    LOG((LF_CORDB,LL_INFO10000, "CM::UMCIN requested=0x%x available=0x%x\n", rowRequested, cbRowsAvailable));
-    return (rowRequested <= cbRowsAvailable);
+    return GetMetaDataImporter()->IsValidToken(token);
 }
 
 // This helper class ensures the remote serailzied buffer gets deleted in the RefreshMetaData
@@ -491,27 +461,24 @@ void CordbModule::RefreshMetaData()
         // So far we've only got a reader for in-memory-writable metadata (MDInternalRW implementation)
         // We could make a reader for MDInternalRO, but no need yet. This also ensures we don't encroach into common
         // scenario where we can map a file on disk.
-        TADDR remoteMDInternalRWAddr = (TADDR)NULL;
-        IfFailThrow(GetProcess()->GetDAC()->GetPEFileMDInternalRW(m_vmPEFile, &remoteMDInternalRWAddr));
-        if (remoteMDInternalRWAddr != (TADDR)NULL)
+        BOOL hasReadWriteMetadata = FALSE;
+        IfFailThrow(GetProcess()->GetDAC()->HasReadWriteMetadata(m_vmPEFile, &hasReadWriteMetadata));
+        if (hasReadWriteMetadata)
         {
-            // we should only be doing this once to initialize, we don't support reopen with this technique
             _ASSERTE(m_pIMImport == NULL);
-            ULONG32 mdStructuresVersion;
-            HRESULT hr = GetProcess()->GetDAC()->GetMDStructuresVersion(&mdStructuresVersion);
-            IfFailThrow(hr);
-            ULONG32 mdStructuresDefines;
-            hr = GetProcess()->GetDAC()->GetDefinesBitField(&mdStructuresDefines);
-            IfFailThrow(hr);
-            IMetaDataDispenserCustom* pDispCustom = NULL;
-            hr = GetProcess()->GetDispenser()->QueryInterface(IID_IMetaDataDispenserCustom, (void**)&pDispCustom);
-            IfFailThrow(hr);
-            IMDCustomDataSource* pDataSource = NULL;
-            hr = CreateRemoteMDInternalRWSource(remoteMDInternalRWAddr, GetProcess()->GetDataTarget(), mdStructuresDefines, mdStructuresVersion, &pDataSource);
-            IfFailThrow(hr);
-            IMetaDataImport* pImport = NULL;
-            hr = pDispCustom->OpenScopeOnCustomDataSource(pDataSource, 0, IID_IMetaDataImport, (IUnknown**)&m_pIMImport);
-            IfFailThrow(hr);
+            ULONG32 cbSize = 0;
+            IfFailThrow(GetProcess()->GetDAC()->GetReadWriteMetadataSize(m_vmModule, &cbSize));
+            CoTaskMemHolder<BYTE> pBuffer{ (BYTE*)CoTaskMemAlloc(cbSize) };
+            if (pBuffer == NULL)
+            {
+                ThrowOutOfMemory();
+            }
+
+            IfFailThrow(GetProcess()->GetDAC()->FillReadWriteMetadata(m_vmModule, pBuffer, cbSize));
+            IMetaDataDispenserEx *  pDisp = GetProcess()->GetDispenser();
+            _ASSERTE(pDisp != NULL);
+            IfFailThrow(pDisp->OpenScopeOnMemory(pBuffer, cbSize, ofTakeOwnership, IID_IMetaDataImport, (IUnknown**)&m_pIMImport));
+            pBuffer.Detach(); // ownership transferred to the IMetaDataImport
             UpdateInternalMetaData();
             return;
         }
@@ -544,6 +511,10 @@ void CordbModule::RefreshMetaData()
         IfFailThrow(pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
 
         _ASSERTE(event.type == DB_IPCE_RESOLVE_UPDATE_METADATA_1_RESULT);
+
+        // The runtime reports a serialization failure in the reply's hr, with no buffer,
+        // so check it before using the buffer or arming the cleanup.
+        IfFailThrow(event.hr);
 
         //
         // Update it on the RS
@@ -804,13 +775,13 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         // If the timestamp and size don't match, then this is the wrong file!
         // Map the file and check them.
-        HandleHolder hMDFile = WszCreateFile(pszFullPathName,
+        HandleHolder hMDFile{ WszCreateFile(pszFullPathName,
                                               GENERIC_READ,
                                               FILE_SHARE_READ,
                                               NULL,                 // default security descriptor
                                               OPEN_EXISTING,
                                               FILE_ATTRIBUTE_NORMAL,
-                                              NULL);
+                                              NULL) };
 
         if (hMDFile == INVALID_HANDLE_VALUE)
         {
@@ -828,7 +799,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         _ASSERTE(dwFileHigh == 0);
 
-        HandleHolder hMap = CreateFileMapping(hMDFile, NULL, PAGE_READONLY, dwFileHigh, dwFileLow, NULL);
+        HandleHolder hMap{ CreateFileMapping(hMDFile, NULL, PAGE_READONLY, dwFileHigh, dwFileLow, NULL) };
         if (hMap == NULL)
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't create mapping of file \"%s\" (GLE=%x)\n", pszFullPathName, GetLastError()));
@@ -883,7 +854,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
     }
 
     return hr;
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 }
 
 //---------------------------------------------------------------------------------------
@@ -1736,7 +1707,7 @@ HRESULT CordbModule::UpdateFunction(mdMethodDef funcMetaDataToken,
     // go looking for it later and easier to put it in now than have code to insert it later.
     if (!pOldVersion)
     {
-        LOG((LF_ENC, LL_INFO10000, "CM::UF: adding %8.8x with version %d\n", funcMetaDataToken, enCVersion));
+        LOG((LF_ENC, LL_INFO10000, "CM::UF: adding %8.8x with version %zu\n", funcMetaDataToken, enCVersion));
         HRESULT hr = S_OK;
         EX_TRY
         {
@@ -1752,7 +1723,7 @@ HRESULT CordbModule::UpdateFunction(mdMethodDef funcMetaDataToken,
     // This method should not be called for versions that already exist
     _ASSERTE( enCVersion > pOldVersion->GetEnCVersionNumber());
 
-    LOG((LF_ENC, LL_INFO10000, "CM::UF: updating %8.8x with version %d\n", funcMetaDataToken, enCVersion));
+    LOG((LF_ENC, LL_INFO10000, "CM::UF: updating %8.8x with version %zu\n", funcMetaDataToken, enCVersion));
     // Create a new function object.
     CordbFunction * pNewVersion = new (nothrow) CordbFunction(this, funcMetaDataToken, enCVersion);
 
@@ -2124,7 +2095,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
     if (m_vmAssembly.IsNull())
         return E_UNEXPECTED;
 
-#ifdef FEATURE_REMAP_FUNCTION
+#ifdef FEATURE_METADATA_UPDATER
     HRESULT hr;
 
     void * pRemoteBuf = NULL;
@@ -2186,18 +2157,19 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
                 {
                     // Done receiving update events
                     hr = retEvent->ApplyChangesResult.hr;
-                    LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC apply changes result %8.8x.\n", hr));
+                    LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC apply changes result %8.8x.\n", GetCurrentThreadId(), hr));
                     break;
                 }
 
                 _ASSERTE(retEvent->type == DB_IPCE_ENC_UPDATE_FUNCTION ||
                                   retEvent->type == DB_IPCE_ENC_ADD_FUNCTION ||
                                   retEvent->type == DB_IPCE_ENC_ADD_FIELD);
-                LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC %s %8.8x to version %d.\n",
+                LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC %s %8.8x to version %llu.\n",
                         GetCurrentThreadId(),
                         retEvent->type == DB_IPCE_ENC_UPDATE_FUNCTION ? "Update function" :
                         retEvent->type == DB_IPCE_ENC_ADD_FUNCTION ? "Add function" : "Add field",
-                        retEvent->EnCUpdate.memberMetadataToken, retEvent->EnCUpdate.newVersionNumber));
+                        static_cast<mdToken>(retEvent->EnCUpdate.memberMetadataToken),
+                        static_cast<unsigned long long>(retEvent->EnCUpdate.newVersionNumber)));
 
                 CordbAppDomain *pAppDomain = GetAppDomain();
                 _ASSERTE(NULL != pAppDomain);
@@ -2412,7 +2384,7 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
         ReleaseHolder<ISymUnmanagedBinder> pBinder;
         if (symFormat == IDacDbiInterface::kSymbolFormatPDB)
         {
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
             // PDB format - use diasymreader.dll with COM activation
             InlineSString<MAX_PATH> ssBuf;
             IfFailThrow(GetClrModuleDirectory(ssBuf));
@@ -2924,7 +2896,7 @@ HRESULT CordbCode::GetVersionNumber( ULONG32 *nVersion)
     FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT(nVersion, ULONG32 *);
 
-    LOG((LF_CORDB,LL_INFO10000,"R:CC:GVN:Returning 0x%x "
+    LOG((LF_CORDB,LL_INFO10000,"R:CC:GVN:Returning 0x%zx "
         "as version\n",m_nVersion));
 
     *nVersion = (ULONG32)m_nVersion;
@@ -3126,7 +3098,7 @@ HRESULT CordbILCode::GetLocalVarSig(SigParser *pLocalSigParser,
         }
         IfFailRet(hr);
 
-        LOG((LF_CORDB, LL_INFO100000, "CIC::GLVS creating sig parser sig=0x%x size=0x%x\n", localSignature, size));
+        LOG((LF_CORDB, LL_INFO100000, "CIC::GLVS creating sig parser sig=%p size=0x%x\n", localSignature, size));
         SigParser sigParser = SigParser(localSignature, size);
 
         uint32_t data;
@@ -3285,7 +3257,7 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
         m_cILMap = pSharedReJitInfo->m_cInstrumentedMapEntries;
         m_pILMap = new (nothrow)COR_IL_MAP[m_cILMap];
         TargetBuffer mapBuffer(pSharedReJitInfo->m_rgInstrumentedMapEntries, m_cILMap*sizeof(COR_IL_MAP));
-        IfFailRet(GetProcess()->SafeReadBuffer(mapBuffer, (BYTE*)m_pILMap.GetValue(), FALSE /* bThrowOnError */));
+        IfFailRet(GetProcess()->SafeReadBuffer(mapBuffer, reinterpret_cast<BYTE*>(static_cast<COR_IL_MAP*>(m_pILMap)), FALSE /* bThrowOnError */));
     }
 
     // Read the method's IL header
@@ -3336,8 +3308,9 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
     m_cbLocalIL = ilCodeSize;
     IfFailRet(GetProcess()->SafeReadBuffer(m_codeRegionInfo, m_pLocalIL, FALSE /*throwOnError*/));
 
-    // Check if this il code has exception clauses
-    if ((pMethodTinyHeader->Flags_CodeSize & CorILMethod_MoreSects) == 0)
+    // Check if this il code has exception clauses. A tiny header has no flags for extra sections:
+    // its upper bits are the code size, so CorILMethod_MoreSects only applies to a fat header.
+    if (isTinyHeader || (pMethodTinyHeader->Flags_CodeSize & CorILMethod_MoreSects) == 0)
     {
         return S_OK; // no EH, done initing
     }
@@ -3363,10 +3336,11 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
 
         // Read in the clauses
         TargetBuffer buffer(ehClauseHeader + sizeof(IMAGE_COR_ILMETHOD_SECT_FAT), m_cClauses*sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT));
-        NewArrayHolder<IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT> pClauses = new (nothrow)IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT[m_cClauses];
+        NewArrayHolder<IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT> pClauses(new (nothrow)IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT[m_cClauses]);
         if (pClauses == NULL)
             return E_OUTOFMEMORY;
-        IfFailRet(GetProcess()->SafeReadBuffer(buffer, (BYTE*)pClauses.GetValue(), FALSE /*throwOnError*/));
+        IfFailRet(GetProcess()->SafeReadBuffer(buffer,
+            reinterpret_cast<BYTE*>(static_cast<IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT*>(pClauses)), FALSE /*throwOnError*/));
 
         // convert clauses
         m_pClauses = new (nothrow)CorDebugEHClause[m_cClauses];
@@ -3390,18 +3364,21 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
         // Read in the section header to see how many small clauses there are
         IMAGE_COR_ILMETHOD_SECT_SMALL sectionHeader = { 0 };
         IfFailRet(GetProcess()->SafeReadStruct(ehClauseHeader, &sectionHeader));
-        ULONG32 m_cClauses = (sectionHeader.DataSize - 4) / sizeof(IMAGE_COR_ILMETHOD_SECT_SMALL);
+        // The small clauses start after the 2 byte section header and a 2 byte Reserved field
+        const ULONG32 cbSmallSectionHeader = offsetof(IMAGE_COR_ILMETHOD_SECT_EH_SMALL, Clauses);
+        m_cClauses = (sectionHeader.DataSize - cbSmallSectionHeader) / sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL);
         if (m_cClauses > 10000) // sanity check the data before allocating
         {
             return CORDBG_E_TARGET_INCONSISTENT;
         }
 
         // Read in the clauses
-        TargetBuffer buffer(ehClauseHeader + sizeof(IMAGE_COR_ILMETHOD_SECT_SMALL), m_cClauses*sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL));
-        NewArrayHolder<IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL> pClauses = new (nothrow)IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL[m_cClauses];
+        TargetBuffer buffer(ehClauseHeader + cbSmallSectionHeader, m_cClauses*sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL));
+        NewArrayHolder<IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL> pClauses(new (nothrow)IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL[m_cClauses]);
         if (pClauses == NULL)
             return E_OUTOFMEMORY;
-        IfFailRet(GetProcess()->SafeReadBuffer(buffer, (BYTE*)pClauses.GetValue(), FALSE /*throwOnError*/));
+        IfFailRet(GetProcess()->SafeReadBuffer(buffer,
+            reinterpret_cast<BYTE*>(static_cast<IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL*>(pClauses)), FALSE /*throwOnError*/));
 
         // convert clauses
         m_pClauses = new (nothrow)CorDebugEHClause[m_cClauses];
@@ -3514,7 +3491,7 @@ HRESULT CordbReJitILCode::GetInstrumentedILMap(ULONG32 cMap, ULONG32 *pcMap, COR
 {
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
-    VALIDATE_POINTER_TO_OBJECT_OR_NULL(pcClauses, ULONG32 *);
+    VALIDATE_POINTER_TO_OBJECT_OR_NULL(pcMap, ULONG32 *);
     VALIDATE_POINTER_TO_OBJECT_ARRAY_OR_NULL(map, COR_IL_MAP *, cMap, true, true);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
@@ -3842,15 +3819,14 @@ HRESULT CordbVariableHome::GetRegister(CorDebugRegister *pRegister)
     switch (m_nativeVarInfo.loc.vlType)
     {
     case ICorDebugInfo::VLT_REG:
-        *pRegister = ConvertRegNumToCorDebugRegister(m_nativeVarInfo.loc.vlReg.vlrReg);
-        break;
+        return m_pCode->GetProcess()->ConvertJitRegNumToCorDebugRegister(
+            m_nativeVarInfo.loc.vlReg.vlrReg, pRegister);
     case ICorDebugInfo::VLT_STK:
-        *pRegister = ConvertRegNumToCorDebugRegister(m_nativeVarInfo.loc.vlStk.vlsBaseReg);
-        break;
+        return m_pCode->GetProcess()->ConvertJitRegNumToCorDebugRegister(
+            m_nativeVarInfo.loc.vlStk.vlsBaseReg, pRegister);
     default:
         return E_FAIL;
     }
-    return S_OK;
 }
 
 //-----------------------------------------------------------------------------
@@ -3902,7 +3878,7 @@ HRESULT CordbVariableHome::GetOffset(LONG *pOffset)
 CordbNativeCode::CordbNativeCode(CordbFunction *                pFunction,
                                  const NativeCodeFunctionData * pJitData,
                                  BOOL                           fIsInstantiatedGeneric)
-  : CordbCode(pFunction, (UINT_PTR)pJitData->m_rgCodeRegions[kHot].pAddress, pJitData->encVersion, FALSE),
+  : CordbCode(pFunction, (UINT_PTR)pJitData->m_rgCodeRegions[kHot].pAddress, (SIZE_T)pJitData->encVersion, FALSE),
     m_vmNativeCodeMethodDescToken(pJitData->vmNativeCodeMethodDescToken),
     m_fCodeAvailable(TRUE),
     m_fIsInstantiatedGeneric(fIsInstantiatedGeneric != FALSE)
@@ -4721,14 +4697,14 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
         // We didn't have an instance, so we'll build one and add it to the hash table
         LOG((LF_CORDB,
              LL_INFO10000,
-             "R:CT::RSCreating code w/ ver:0x%x, md:0x%x, nativeStart=0x%08x, nativeSize=0x%08x\n",
-             codeInfo.encVersion,
-             VmPtrToCookie(codeInfo.vmNativeCodeMethodDescToken),
-             codeInfo.m_rgCodeRegions[kHot].pAddress,
+             "R:CT::RSCreating code w/ ver:0x%zx, md:0x%zx, nativeStart=0x%08zx, nativeSize=0x%08x\n",
+             static_cast<size_t>(codeInfo.encVersion),
+             (size_t)VmPtrToCookie(codeInfo.vmNativeCodeMethodDescToken),
+             (size_t)codeInfo.m_rgCodeRegions[kHot].pAddress,
              codeInfo.m_rgCodeRegions[kHot].cbSize));
 
         // Lookup the function object that this code should be bound to
-        CordbFunction* pFunction = CordbModule::LookupOrCreateFunction(methodToken, codeInfo.encVersion);
+        CordbFunction* pFunction = CordbModule::LookupOrCreateFunction(methodToken, (SIZE_T)codeInfo.encVersion);
         _ASSERTE(pFunction != NULL);
 
         // There are bugs with the on-demand class load performed by CordbFunction in some cases. The old stack
@@ -4771,11 +4747,42 @@ void CordbNativeCode::LoadNativeInfo()
     if (m_fCodeAvailable)
     {
         RSLockHolder lockHolder(pProcess->GetProcessLock());
-        IfFailThrow(pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(GetVMNativeCodeMethodDescToken(),
-                                                                  GetAddress(),
-                                                                  m_fCodeAvailable,
-                                                                  &m_nativeVarData,
-                                                                  &m_sequencePoints));
+
+        struct CallbackData
+        {
+            CallbackAccumulator<ICorDebugInfo::NativeVarInfo> varInfos;
+            CallbackAccumulator<ICorDebugInfo::OffsetMapping> seqPoints;
+        };
+
+        CallbackData data;
+
+        ULONG32 fixedArgCount = 0;
+        IfFailThrow(pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(
+            GetVMNativeCodeMethodDescToken(),
+            GetAddress(),
+            m_fCodeAvailable,
+            &fixedArgCount,
+            [](ICorDebugInfo::NativeVarInfo *pVarInfo, void *pUserData)
+            {
+                static_cast<CallbackData *>(pUserData)->varInfos.Push(*pVarInfo);
+            },
+            [](ICorDebugInfo::OffsetMapping *pMapping, void *pUserData)
+            {
+                static_cast<CallbackData *>(pUserData)->seqPoints.Push(*pMapping);
+            },
+            &data));
+        IfFailThrow(data.varInfos.hrError);
+        IfFailThrow(data.seqPoints.hrError);
+
+        // Initialize native var data from collected entries
+        m_nativeVarData.InitVarDataList(data.varInfos.items.Ptr(), (int)fixedArgCount, (int)data.varInfos.items.Size());
+
+        // Initialize sequence points from collected entries
+        m_sequencePoints.InitSequencePoints((ULONG32)data.seqPoints.items.Size());
+        if (data.seqPoints.items.Size() > 0)
+        {
+            m_sequencePoints.CopyAndSortSequencePoints(data.seqPoints.items.Ptr());
+        }
     }
 
 } // CordbNativeCode::LoadNativeInfo

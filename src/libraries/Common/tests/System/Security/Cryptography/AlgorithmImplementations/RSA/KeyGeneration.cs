@@ -6,44 +6,46 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class KeyGeneration
+    public abstract class KeyGeneration
     {
+        protected abstract RSAProvider RSAFactory { get; }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotSymCryptOpenSsl))]
-        public static void GenerateMinKey()
+        public void GenerateMinKey()
         {
             GenerateKey(rsa => GetMin(rsa.LegalKeySizes));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotSymCryptOpenSsl))]
-        public static void GenerateSecondMinKey()
+        public void GenerateSecondMinKey()
         {
             GenerateKey(rsa => GetSecondMin(rsa.LegalKeySizes));
         }
 
         [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
-        public static void GenerateMaxKey()
+        public void GenerateMaxKey()
         {
             GenerateKey(rsa => GetMax(rsa.LegalKeySizes));
         }
 
         [Fact]
-        public static void GenerateKey_2048()
+        public void GenerateKey_2048()
         {
             GenerateKey(2048);
         }
 
         [Fact]
-        public static void GenerateKey_4096()
+        public void GenerateKey_4096()
         {
             GenerateKey(4096);
         }
 
-        private static void GenerateKey(int size)
+        private void GenerateKey(int size)
         {
             GenerateKey(rsa => size);
         }
 
-        private static void GenerateKey(Func<RSA, int> getSize)
+        private void GenerateKey(Func<RSA, int> getSize)
         {
             int keySize;
 

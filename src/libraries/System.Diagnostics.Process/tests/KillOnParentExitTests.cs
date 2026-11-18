@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -50,6 +53,92 @@ namespace System.Diagnostics.Tests
 
             Assert.True(process.WaitForExit(WaitInMS));
             Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void KillOnParentExit_ProcessStartsAfterParentJoinsAdditionalJob(bool startSuspended, bool restrictInheritance)
+        {
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke((startSuspendedString, restrictInheritanceString) =>
+            {
+                using (Process seed = CreateProcess(static () => RemoteExecutor.SuccessExitCode))
+                {
+                    seed.StartInfo.KillOnParentExit = true;
+                    seed.Start();
+
+                    Assert.True(seed.WaitForExit(WaitInMS));
+                    Assert.Equal(RemoteExecutor.SuccessExitCode, seed.ExitCode);
+                }
+
+                using SafeFileHandle job = AssignCurrentProcessToNewJob();
+
+                using Process child = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+                child.StartInfo.KillOnParentExit = true;
+                child.StartInfo.StartSuspended = bool.Parse(startSuspendedString);
+                child.StartInfo.InheritedHandles = bool.Parse(restrictInheritanceString) ? [] : null;
+                child.Start();
+
+                if (child.StartInfo.StartSuspended)
+                {
+                    child.SafeHandle.Resume();
+                }
+
+                Assert.True(child.WaitForExit(WaitInMS));
+                Assert.Equal(RemoteExecutor.SuccessExitCode, child.ExitCode);
+
+                return RemoteExecutor.SuccessExitCode;
+            }, startSuspended.ToString(), restrictInheritance.ToString());
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void KillOnParentExit_KillsChildrenFromBeforeAndAfterParentJoinsAdditionalJob()
+        {
+            RemoteInvokeOptions options = new() { CheckExitCode = false };
+            options.StartInfo.RedirectStandardInput = true;
+            options.StartInfo.RedirectStandardOutput = true;
+
+            using RemoteInvokeHandle parentHandle = RemoteExecutor.Invoke(
+                () =>
+                {
+                    using Process firstChild = CreateProcessLong();
+                    firstChild.StartInfo.KillOnParentExit = true;
+                    firstChild.Start();
+                    Console.WriteLine(firstChild.Id);
+
+                    using SafeFileHandle job = AssignCurrentProcessToNewJob();
+
+                    using Process secondChild = CreateProcessLong();
+                    secondChild.StartInfo.KillOnParentExit = true;
+                    secondChild.Start();
+                    Console.WriteLine(secondChild.Id);
+
+                    _ = Console.ReadLine();
+                },
+                options);
+
+            int firstChildPid = int.Parse(parentHandle.Process.StandardOutput.ReadLine());
+            int secondChildPid = int.Parse(parentHandle.Process.StandardOutput.ReadLine());
+            using Process firstChild = Process.GetProcessById(firstChildPid);
+            using Process secondChild = Process.GetProcessById(secondChildPid);
+
+            try
+            {
+                parentHandle.Process.StandardInput.WriteLine("Exit.");
+
+                Assert.True(parentHandle.Process.WaitForExit(WaitInMS));
+                Assert.True(firstChild.WaitForExit(WaitInMS));
+                Assert.True(secondChild.WaitForExit(WaitInMS));
+            }
+            finally
+            {
+                firstChild.Kill();
+                secondChild.Kill();
+            }
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -146,6 +235,65 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void KillEntireProcessTree_KillsGrandchild_WhenIntermediateChildHasKillOnParentExit(bool enabled)
+        {
+            // Mimics the scenario: Process A -> Process B (KillOnParentExit) -> Process C
+            // Killing A with entireProcessTree:true should kill C regardless of KillOnParentExit setting.
+            RemoteInvokeOptions parentOptions = new() { CheckExitCode = false };
+            parentOptions.StartInfo.RedirectStandardOutput = true;
+            parentOptions.StartInfo.RedirectStandardInput = true;
+
+            using RemoteInvokeHandle parentHandle = RemoteExecutor.Invoke(
+                (enabledStr) =>
+                {
+                    // This is "Process A". Start "Process B" with KillOnParentExit.
+                    // Process B will start "Process C" and report C's PID.
+                    using Process child = CreateProcess(() =>
+                    {
+                        // This is "Process B". Start "Process C" (long-running, no KillOnParentExit).
+                        using Process grandChild = CreateProcessLong();
+                        grandChild.Start();
+                        Console.WriteLine(grandChild.Id);
+
+                        // Block until killed
+                        Thread.Sleep(Timeout.Infinite);
+                        return RemoteExecutor.SuccessExitCode;
+                    });
+                    child.StartInfo.KillOnParentExit = bool.Parse(enabledStr);
+                    child.StartInfo.RedirectStandardOutput = true;
+                    child.Start();
+
+                    // Read grandchild PID from Process B and forward to test
+                    string grandChildPidStr = child.StandardOutput.ReadLine();
+                    Console.WriteLine(grandChildPidStr);
+
+                    // Block until killed
+                    Thread.Sleep(Timeout.Infinite);
+                },
+                enabled.ToString(),
+                parentOptions);
+
+            int grandChildPid = int.Parse(parentHandle.Process.StandardOutput.ReadLine());
+            using Process grandchild = Process.GetProcessById(grandChildPid);
+
+            try
+            {
+                // Kill Process A with entireProcessTree: true
+                parentHandle.Process.Kill(entireProcessTree: true);
+
+                Assert.True(parentHandle.Process.WaitForExit(WaitInMS));
+                // The grandchild (Process C) should also be killed
+                Assert.True(grandchild.WaitForExit(WaitInMS));
+            }
+            finally
+            {
+                grandchild.Kill();
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true, true)]
         [InlineData(true, false)]
         [InlineData(false, false)] // (false, true) is tested by ProcessHandleTests
@@ -194,6 +342,34 @@ namespace System.Diagnostics.Tests
             {
                 grandchild.Kill();
             }
+        }
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern SafeFileHandle CreateJobObjectW(IntPtr jobAttributes, IntPtr name);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool AssignProcessToJobObject(SafeFileHandle job, SafeProcessHandle process);
+
+        private static SafeFileHandle AssignCurrentProcessToNewJob()
+        {
+            SafeFileHandle job = CreateJobObjectW(IntPtr.Zero, IntPtr.Zero);
+            if (job.IsInvalid)
+            {
+                throw new Win32Exception(Marshal.GetLastPInvokeError());
+            }
+
+            using Process currentProcess = Process.GetCurrentProcess();
+            if (!AssignProcessToJobObject(job, currentProcess.SafeHandle))
+            {
+                int error = Marshal.GetLastPInvokeError();
+                job.Dispose();
+                throw new Win32Exception(error);
+            }
+
+            return job;
         }
     }
 }

@@ -102,11 +102,14 @@ inline bool genExactlyOneBit(T value)
 inline regMaskTP genFindLowestBit(regMaskTP value)
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    // If we ever need to use this method for predicate
-    // registers, then handle it.
-    assert(value.getHigh() == RBM_NONE);
-#endif
+    if (value.getLow() != RBM_NONE)
+    {
+        return regMaskTP(genFindLowestBit(value.getLow()));
+    }
+    return regMaskTP(RBM_NONE, genFindLowestBit(value.getHigh()));
+#else
     return regMaskTP(genFindLowestBit(value.getLow()));
+#endif
 }
 
 /*****************************************************************************
@@ -117,11 +120,18 @@ inline regMaskTP genFindLowestBit(regMaskTP value)
 inline bool genMaxOneBit(regMaskTP value)
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    // If we ever need to use this method for predicate
-    // registers, then handle it.
-    assert(value.getHigh() == RBM_NONE);
-#endif
+    if (value.getLow() == RBM_NONE)
+    {
+        return genMaxOneBit(value.getHigh());
+    }
+    if (value.getHigh() == RBM_NONE)
+    {
+        return genMaxOneBit(value.getLow());
+    }
+    return false;
+#else
     return genMaxOneBit(value.getLow());
+#endif
 }
 
 /*****************************************************************************
@@ -463,53 +473,30 @@ BasicBlockVisit BasicBlock::VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp
 
     assert(enclosingHBtab->HasFilter());
 
-    // Search the EH table for enclosed regions.
-    //
-    // All the enclosed regions will be lower numbered and
-    // immediately prior to and contiguous with the enclosing
-    // region in the EH tab.
+    // Search all lower-numbered regions. Regions nested in sibling handlers
+    // can intervene, so a non-enclosed region does not end the search.
     unsigned index = thisHndIndex;
 
     while (index > 0)
     {
         index--;
-        bool     inTry;
-        unsigned enclosingIndex = comp->ehGetEnclosingRegionIndex(index, &inTry);
-        bool     isEnclosed     = false;
-
-        // To verify this is an enclosed region, search up
-        // through the enclosing regions until we find the
-        // region associated with the filter.
-        while (enclosingIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        EHblkDsc* enclosedHBtab = comp->ehGetDsc(index);
+        if (!enclosedHBtab->HasFinallyOrFaultHandler())
         {
-            if (enclosingIndex == thisHndIndex)
-            {
-                isEnclosed = true;
-                break;
-            }
-
-            enclosingIndex = comp->ehGetEnclosingRegionIndex(enclosingIndex, &inTry);
+            continue;
         }
 
-        // If we found an enclosed region, check if the region
-        // is a try fault or try finally, and if so, invoke the callback
-        // for the enclosed region's handler.
-        if (isEnclosed)
+        // Follow only enclosing tries, as in BlockPredsWithEH. Following a
+        // handler link could lead to a mutually-protecting sibling's try.
+        unsigned enclosingIndex = enclosedHBtab->ebdEnclosingTryIndex;
+        while (enclosingIndex < thisHndIndex)
         {
-            if (inTry)
-            {
-                EHblkDsc* enclosedHBtab = comp->ehGetDsc(index);
-
-                if (enclosedHBtab->HasFinallyOrFaultHandler())
-                {
-                    RETURN_ON_ABORT(func(enclosedHBtab->ebdHndBeg));
-                }
-            }
+            enclosingIndex = comp->ehGetEnclosingTryIndex(enclosingIndex);
         }
-        // Once we run across a non-enclosed region, we can stop searching.
-        else
+
+        if (enclosingIndex == thisHndIndex)
         {
-            break;
+            RETURN_ON_ABORT(func(enclosedHBtab->ebdHndBeg));
         }
     }
 
@@ -859,6 +846,47 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
     return funcIdx;
 }
 
+/*****************************************************************************
+ *  Return the index of the function region (funclet) that physically contains
+ *  `block`. The main method is region 0. Unlike funGetFuncIdx, this works for
+ *  an arbitrary block (not just a funclet entry), distinguishing a filter
+ *  funclet (FUNC_FILTER) from its filter-handler. Only valid after funclets
+ *  are created.
+ *
+ */
+inline unsigned Compiler::bbFuncletRegionOf(BasicBlock* block)
+{
+    assert(fgFuncletsCreated);
+
+    if (!block->hasHndIndex())
+    {
+        return 0;
+    }
+
+    EHblkDsc* const eh      = ehGetDsc(block->getHndIndex());
+    unsigned        funcIdx = eh->ebdFuncIndex;
+
+    if (eh->HasFilter() && eh->InFilterRegionBBRange(block))
+    {
+        // The filter is the funclet immediately preceding its filter-handler.
+        funcIdx--;
+    }
+
+    return funcIdx;
+}
+
+/*****************************************************************************
+ *  Are two blocks physically contained in the same function region (funclet)?
+ *  The main method is region 0. Unlike funGetFuncIdx, this works for an
+ *  arbitrary block (not just a funclet entry), distinguishing a filter
+ *  funclet (FUNC_FILTER) from its filter-handler. Only valid after funclets
+ *  are created.
+ *
+ */
+inline bool Compiler::bbIsInSameFunclet(BasicBlock* block1, BasicBlock* block2)
+{
+    return bbFuncletRegionOf(block1) == bbFuncletRegionOf(block2);
+}
 #if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------------
 // genRegNumFromMask : Maps a single register mask to a register number.
@@ -1313,7 +1341,6 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     gtLIRFlags = 0;
 #ifdef DEBUG
     gtDebugFlags = GTF_DEBUG_NONE;
-    gtMorphCount = 0;
 #endif // DEBUG
     gtCSEnum = NO_CSE;
     ClearAssertion();
@@ -1509,7 +1536,7 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
-    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper, IsNativeAot()))
     {
         result->gtFlags |= GTF_EXCEPT;
 
@@ -1572,7 +1599,7 @@ inline GenTreeCall* Compiler::gtNewVirtualFunctionLookupHelperCallNode(
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
-    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper, IsNativeAot()))
     {
         result->gtFlags |= GTF_EXCEPT;
 
@@ -1651,8 +1678,8 @@ inline GenTreeIndexAddr* Compiler::gtNewIndexAddr(GenTree*             arrayOp,
                                                   unsigned             firstElemOffset,
                                                   unsigned             lengthOffset)
 {
-    unsigned elemSize =
-        (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : genTypeSize(elemType);
+    ValueSize elemSize = (elemType == TYP_STRUCT) ? ValueSize(info.compCompHnd->getClassSize(elemClassHandle))
+                                                  : ValueSize::FromJitType(elemType);
 
 #ifdef DEBUG
     bool boundsCheck = JitConfig.JitSkipArrayBoundCheck() != 1;
@@ -1702,8 +1729,6 @@ inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
 inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen)
 {
     assert(arrLen->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH));
-    static_assert(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
-    static_assert(GTF_MDARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
     arrLen->SetIndirExceptionFlags(this);
 }
 
@@ -1760,7 +1785,6 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
 {
     GenTreeMDArr* arrOp = new (this, GT_MDARR_LOWER_BOUND) GenTreeMDArr(GT_MDARR_LOWER_BOUND, arrayOp, dim, rank);
 
-    static_assert(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
     arrOp->SetIndirExceptionFlags(this);
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrOp;
@@ -1798,7 +1822,7 @@ inline GenTree* Compiler::gtNewNothingNode()
 
 inline bool GenTree::IsNothingNode() const
 {
-    return OperIs(GT_NOP) && TypeIs(TYP_VOID);
+    return OperIs(GT_NOP);
 }
 
 /*****************************************************************************
@@ -2330,7 +2354,7 @@ inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* re
 
 #ifdef DEBUG
         // Fill the old table with junks. So to detect the un-intended use.
-        memset(lvaTable, JitConfig.JitDefaultFill(), lvaCount * sizeof(*lvaTable));
+        memset(lvaTable, UninitializedFillByte, lvaCount * sizeof(*lvaTable));
 #endif
 
         lvaTableCnt = newLvaTableCnt;
@@ -2424,7 +2448,7 @@ inline unsigned Compiler::lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason)
 
 #ifdef DEBUG
         // Fill the old table with junks. So to detect the un-intended use.
-        memset(lvaTable, JitConfig.JitDefaultFill(), lvaCount * sizeof(*lvaTable));
+        memset(lvaTable, UninitializedFillByte, lvaCount * sizeof(*lvaTable));
 #endif
 
         lvaTableCnt = newLvaTableCnt;
@@ -2722,7 +2746,7 @@ inline
     bool fConservative = false;
     if (varNum >= 0)
     {
-        assert(!lvaIsUnknownSizeLocal(varNum));
+        assert(!lvaLocalIsOnUnknownSizeFrame(varNum));
         LclVarDsc* varDsc          = lvaGetDesc(varNum);
         bool       isPrespilledArg = false;
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
@@ -3104,163 +3128,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************
  *
- *  Call the given function pointer for all nodes in the tree. The 'visitor'
- *  fn should return one of the following values:
- *
- *  WALK_ABORT          stop walking and return immediately
- *  WALK_CONTINUE       continue walking
- *  WALK_SKIP_SUBTREES  don't walk any subtrees of the node just visited
- *
- *  computeStack - true if we want to make stack visible to callback function
- */
-
-inline Compiler::fgWalkResult Compiler::fgWalkTreePre(
-    GenTree** pTree, fgWalkPreFn* visitor, void* callBackData, bool lclVarsOnly, bool computeStack)
-
-{
-    fgWalkData walkData;
-
-    walkData.m_compiler    = this;
-    walkData.wtprVisitorFn = visitor;
-    walkData.pCallbackData = callBackData;
-    walkData.parent        = nullptr;
-    walkData.wtprLclsOnly  = lclVarsOnly;
-#ifdef DEBUG
-    walkData.printModified = false;
-#endif
-
-    fgWalkResult result;
-    if (lclVarsOnly && computeStack)
-    {
-        GenericTreeWalker<true, false, true, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else if (lclVarsOnly)
-    {
-        GenericTreeWalker<true, false, true, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else if (computeStack)
-    {
-        GenericTreeWalker<true, false, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else
-    {
-        GenericTreeWalker<true, false, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-
-#ifdef DEBUG
-    if (verbose && walkData.printModified)
-    {
-        gtDispTree(*pTree);
-    }
-#endif
-
-    return result;
-}
-
-/*****************************************************************************
- *
- *  Same as above, except the tree walk is performed in a depth-first fashion,
- *  The 'visitor' fn should return one of the following values:
- *
- *  WALK_ABORT          stop walking and return immediately
- *  WALK_CONTINUE       continue walking
- *
- *  computeStack - true if we want to make stack visible to callback function
- */
-
-inline Compiler::fgWalkResult Compiler::fgWalkTreePost(GenTree**     pTree,
-                                                       fgWalkPostFn* visitor,
-                                                       void*         callBackData,
-                                                       bool          computeStack)
-{
-    fgWalkData walkData;
-
-    walkData.m_compiler    = this;
-    walkData.wtpoVisitorFn = visitor;
-    walkData.pCallbackData = callBackData;
-    walkData.parent        = nullptr;
-
-    fgWalkResult result;
-    if (computeStack)
-    {
-        GenericTreeWalker<false, true, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else
-    {
-        GenericTreeWalker<false, true, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-
-    assert(result == WALK_CONTINUE || result == WALK_ABORT);
-
-    return result;
-}
-
-/*****************************************************************************
- *
- *  Call the given function pointer for all nodes in the tree. The 'visitor'
- *  fn should return one of the following values:
- *
- *  WALK_ABORT          stop walking and return immediately
- *  WALK_CONTINUE       continue walking
- *  WALK_SKIP_SUBTREES  don't walk any subtrees of the node just visited
- */
-
-inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
-                                                   fgWalkPreFn* preVisitor,
-                                                   fgWalkPreFn* postVisitor,
-                                                   void*        callBackData)
-
-{
-    fgWalkData walkData;
-
-    walkData.m_compiler    = this;
-    walkData.wtprVisitorFn = preVisitor;
-    walkData.wtpoVisitorFn = postVisitor;
-    walkData.pCallbackData = callBackData;
-    walkData.parent        = nullptr;
-    walkData.wtprLclsOnly  = false;
-#ifdef DEBUG
-    walkData.printModified = false;
-#endif
-
-    fgWalkResult result;
-
-    assert(preVisitor || postVisitor);
-
-    if (preVisitor && postVisitor)
-    {
-        GenericTreeWalker<true, true, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else if (preVisitor)
-    {
-        GenericTreeWalker<true, false, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else
-    {
-        GenericTreeWalker<false, true, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-
-#ifdef DEBUG
-    if (verbose && walkData.printModified)
-    {
-        gtDispTree(*pTree);
-    }
-#endif
-
-    return result;
-}
-
-/*****************************************************************************
- *
  * Has this block been added to throw an inlined exception
  * Returns true if the block was added to throw one of:
  *    range-check exception
@@ -3324,7 +3191,8 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 // IsValidLclAddr: Can the given local address be represented as "LCL_ADDR"?
 //
 // Local address nodes cannot point beyond the local and can only store
-// 16 bits worth of offset.
+// 16 bits worth of offset. Additionally, the emitter can only encode byte-sized
+// offsets for locals numbered 32768 or greater.
 //
 // Arguments:
 //    lclNum - The local's number
@@ -3341,6 +3209,16 @@ inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
         return (offset == 0);
     }
 #endif
+
+    // The emitter only supports byte-sized offsets for locals numbered 32768 or greater
+    // (see emitLclVarAddr::initLclVarAddr). Reject larger offsets here so such accesses are
+    // kept as explicit address computations instead of being folded into a LCL_FLD or a
+    // contained LCL_ADDR, both of which the emitter would be unable to encode.
+    if ((lclNum >= 32768) && (offset >= 256))
+    {
+        return false;
+    }
+
     return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
 }
 
@@ -3368,7 +3246,9 @@ inline bool Compiler::IsEntireAccess(unsigned lclNum, unsigned offset, ValueSize
 // IsWideAccess: Is the access to a local wide?
 //
 // An access is wide when the access overflows the end of the local. If the
-// access size is unknown, the access is assumed wide if it is not entire.
+// access size or local size is unknown, the access is assumed wide if it is not entire.
+//
+// If the access size is known, it must also fit inside a uint16_t.
 //
 // Arguments:
 //    lclNum - The local's number
@@ -3381,7 +3261,7 @@ inline bool Compiler::IsEntireAccess(unsigned lclNum, unsigned offset, ValueSize
 inline bool Compiler::IsWideAccess(unsigned lclNum, unsigned offset, ValueSize accessSize)
 {
     assert(!accessSize.IsNull());
-    if (accessSize.IsExact())
+    if (accessSize.IsExact() && lvaLclValueSize(lclNum).IsExact())
     {
         ClrSafeInt<uint32_t> extent = ClrSafeInt<uint32_t>(offset) + ClrSafeInt<uint32_t>(accessSize.GetExact());
         // The access is wide if:
@@ -3416,6 +3296,12 @@ inline bool Compiler::IsPotentialGCSafePoint(GenTree* tree) const
             // assume that we have a safe point.
             return true;
         }
+    }
+
+    // A tree that may throw can call a throw helper, which is a gc safe point.
+    if ((tree->gtFlags & GTF_EXCEPT) != 0)
+    {
+        return true;
     }
 
     // TYP_STRUCT-typed stores might be converted into calls (with gc safe points) in Lower.
@@ -3983,7 +3869,8 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
 
 inline bool Compiler::IsGcSafePoint(GenTreeCall* call)
 {
-    if (!call->IsFastTailCall())
+    // Special intrinsics may be removed or expanded into code without calls after morph.
+    if (!call->IsFastTailCall() && !call->IsSpecialIntrinsic())
     {
         if (call->IsUnmanaged() && call->IsSuppressGCTransition())
         {
@@ -4278,8 +4165,7 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
     bool       result = varDsc->lvIsParam || varDsc->lvIsParamRegTarget || lvaIsOSRLocal(varNum) ||
-                  (varNum == lvaGSSecurityCookie) || (varNum == lvaInlinedPInvokeFrameVar) ||
-                  (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
+                  (varNum == lvaGSSecurityCookie) || (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaRetAddrVar);
 
 #ifdef TARGET_ARM64
     result = result || (varNum == lvaFfrRegister);
@@ -4529,10 +4415,19 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             return VisitResult::Continue;
         }
 
+#ifdef TARGET_ARM64
+        case GT_SELECT_NEG:
+        case GT_SELECT_INV:
+        case GT_SELECT_INC:
+#endif
         case GT_SELECT:
         {
             GenTreeConditional* const cond = this->AsConditional();
             RETURN_IF_ABORT(visitor(&cond->gtCond));
+            if (cond->gtOp2 == nullptr)
+            {
+                return visitor(&cond->gtOp1);
+            }
             RETURN_IF_ABORT(visitor(&cond->gtOp1));
             return visitor(&cond->gtOp2);
         }
@@ -4545,45 +4440,503 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
     }
 }
 
+template <typename TDerived>
+struct LocalDefProvider
+{
+    bool HasMultiDefIndex() const
+    {
+        return static_cast<const TDerived*>(this)->GetMultiDefIndex() != BAD_VAR_NUM;
+    }
+
+    unsigned GetSsaNum(Compiler* compiler) const
+    {
+        const TDerived* derived = static_cast<const TDerived*>(this);
+        unsigned        index   = derived->GetMultiDefIndex();
+        return index == BAD_VAR_NUM ? derived->GetDefNode()->GetSsaNum()
+                                    : derived->GetDefNode()->GetSsaNum(compiler, index);
+    }
+
+    void SetSsaNum(Compiler* compiler, unsigned ssaNum) const
+    {
+        const TDerived* derived = static_cast<const TDerived*>(this);
+        unsigned        index   = derived->GetMultiDefIndex();
+        if (index == BAD_VAR_NUM)
+        {
+            derived->GetDefNode()->SetSsaNum(ssaNum);
+        }
+        else
+        {
+            derived->GetDefNode()->SetSsaNum(compiler, index, ssaNum);
+        }
+    }
+};
+
+struct StoreLclVarDef : LocalDefProvider<StoreLclVarDef>
+{
+    GenTreeLclVarCommon* m_def;
+
+    explicit StoreLclVarDef(GenTreeLclVarCommon* def)
+        : m_def(def)
+    {
+    }
+
+    GenTreeLclVarCommon* GetDefNode() const
+    {
+        return m_def;
+    }
+
+    unsigned GetLclNum() const
+    {
+        return m_def->GetLclNum();
+    }
+
+    unsigned GetMultiDefIndex() const
+    {
+        return BAD_VAR_NUM;
+    }
+
+    bool IsEntire(Compiler* compiler) const
+    {
+        return true;
+    }
+
+    ssize_t GetOffset(Compiler* compiler) const
+    {
+        return 0;
+    }
+
+    ValueSize GetSize(Compiler* compiler) const
+    {
+        return GetStoreSize(compiler);
+    }
+
+    ssize_t GetValueOffset(Compiler* compiler) const
+    {
+        return 0;
+    }
+
+    ValueSize GetStoreSize(Compiler* compiler) const
+    {
+        return compiler->lvaLclValueSize(GetLclNum());
+    }
+};
+
+struct PromotedStoreLclVarDef : LocalDefProvider<PromotedStoreLclVarDef>
+{
+    GenTreeLclVarCommon* m_def;
+    unsigned             m_lclNum;
+    uint8_t              m_index;
+
+    PromotedStoreLclVarDef(GenTreeLclVarCommon* def, unsigned lclNum, unsigned index)
+        : m_def(def)
+        , m_lclNum(lclNum)
+        , m_index(static_cast<uint8_t>(index))
+    {
+        assert(index < UINT8_MAX);
+    }
+
+    GenTreeLclVarCommon* GetDefNode() const
+    {
+        return m_def;
+    }
+
+    unsigned GetLclNum() const
+    {
+        return m_lclNum;
+    }
+
+    unsigned GetMultiDefIndex() const
+    {
+        return m_index;
+    }
+
+    bool IsEntire(Compiler* compiler) const
+    {
+        return true;
+    }
+
+    ssize_t GetOffset(Compiler* compiler) const
+    {
+        return 0;
+    }
+
+    ValueSize GetSize(Compiler* compiler) const
+    {
+        return compiler->lvaGetDesc(m_lclNum)->lvValueSize();
+    }
+
+    ssize_t GetValueOffset(Compiler* compiler) const
+    {
+        return compiler->lvaGetDesc(m_lclNum)->lvFldOffset;
+    }
+
+    ValueSize GetStoreSize(Compiler* compiler) const
+    {
+        return compiler->lvaLclValueSize(m_def->GetLclNum());
+    }
+};
+
+struct StoreLclFldDef : LocalDefProvider<StoreLclFldDef>
+{
+    GenTreeLclFld* m_def;
+
+    explicit StoreLclFldDef(GenTreeLclFld* def)
+        : m_def(def)
+    {
+    }
+
+    GenTreeLclVarCommon* GetDefNode() const
+    {
+        return m_def;
+    }
+
+    unsigned GetLclNum() const
+    {
+        return m_def->GetLclNum();
+    }
+
+    unsigned GetMultiDefIndex() const
+    {
+        return BAD_VAR_NUM;
+    }
+
+    bool IsEntire(Compiler* compiler) const
+    {
+        return !m_def->IsPartialLclFld(compiler);
+    }
+
+    ssize_t GetOffset(Compiler* compiler) const
+    {
+        return m_def->GetLclOffs();
+    }
+
+    ValueSize GetSize(Compiler* compiler) const
+    {
+        return m_def->GetValueSize();
+    }
+
+    ssize_t GetValueOffset(Compiler* compiler) const
+    {
+        return 0;
+    }
+
+    ValueSize GetStoreSize(Compiler* compiler) const
+    {
+        return m_def->GetValueSize();
+    }
+};
+
+struct CallLocalDef : LocalDefProvider<CallLocalDef>
+{
+    GenTreeLclVarCommon* m_def;
+    ssize_t              m_offset;
+    ValueSize            m_size;
+    bool                 m_isEntire;
+
+    CallLocalDef(GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, ValueSize size)
+        : m_def(def)
+        , m_offset(offset)
+        , m_size(size)
+        , m_isEntire(isEntire)
+    {
+    }
+
+    GenTreeLclVarCommon* GetDefNode() const
+    {
+        return m_def;
+    }
+
+    unsigned GetLclNum() const
+    {
+        return m_def->GetLclNum();
+    }
+
+    unsigned GetMultiDefIndex() const
+    {
+        return BAD_VAR_NUM;
+    }
+
+    bool IsEntire(Compiler* compiler) const
+    {
+        return m_isEntire;
+    }
+
+    ssize_t GetOffset(Compiler* compiler) const
+    {
+        return m_offset;
+    }
+
+    ValueSize GetSize(Compiler* compiler) const
+    {
+        return m_size;
+    }
+
+    ssize_t GetValueOffset(Compiler* compiler) const
+    {
+        return 0;
+    }
+
+    ValueSize GetStoreSize(Compiler* compiler) const
+    {
+        return m_size;
+    }
+};
+
+struct PromotedRangeLocalDef : LocalDefProvider<PromotedRangeLocalDef>
+{
+    GenTreeLclVarCommon* m_def;
+    unsigned             m_lclNum;
+    uint8_t              m_index;
+    bool                 m_isEntire;
+    ssize_t              m_offset;
+    ValueSize            m_size;
+    ssize_t              m_valueOffset;
+    ValueSize            m_storeSize;
+
+    PromotedRangeLocalDef(GenTreeLclVarCommon* def,
+                          unsigned             lclNum,
+                          unsigned             index,
+                          bool                 isEntire,
+                          ssize_t              offset,
+                          ValueSize            size,
+                          ssize_t              valueOffset,
+                          ValueSize            storeSize)
+        : m_def(def)
+        , m_lclNum(lclNum)
+        , m_index(static_cast<uint8_t>(index))
+        , m_isEntire(isEntire)
+        , m_offset(offset)
+        , m_size(size)
+        , m_valueOffset(valueOffset)
+        , m_storeSize(storeSize)
+    {
+        assert(index < UINT8_MAX);
+    }
+
+    GenTreeLclVarCommon* GetDefNode() const
+    {
+        return m_def;
+    }
+
+    unsigned GetLclNum() const
+    {
+        return m_lclNum;
+    }
+
+    unsigned GetMultiDefIndex() const
+    {
+        return m_index;
+    }
+
+    bool IsEntire(Compiler* compiler) const
+    {
+        return m_isEntire;
+    }
+
+    ssize_t GetOffset(Compiler* compiler) const
+    {
+        return m_offset;
+    }
+
+    ValueSize GetSize(Compiler* compiler) const
+    {
+        return m_size;
+    }
+
+    ssize_t GetValueOffset(Compiler* compiler) const
+    {
+        return m_valueOffset;
+    }
+
+    ValueSize GetStoreSize(Compiler* compiler) const
+    {
+        return m_storeSize;
+    }
+};
+
+template <typename TVisitor>
+GenTree::VisitResult VisitPromotedRangeLocalDefs(Compiler*            comp,
+                                                 GenTreeLclVarCommon* def,
+                                                 LclVarDsc*           varDsc,
+                                                 ssize_t              offset,
+                                                 ValueSize            storeSize,
+                                                 TVisitor             visitor,
+                                                 bool*                needsBaseDef)
+{
+    *needsBaseDef        = false;
+    unsigned coveredSize = 0;
+    for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+    {
+        unsigned   fieldLclNum = varDsc->lvFieldLclStart + index;
+        LclVarDsc* fieldVarDsc = comp->lvaGetDesc(fieldLclNum);
+
+        ssize_t   fieldStoreOffset;
+        ValueSize fieldStoreSize;
+        if (!comp->gtStoreMayDefineField(fieldVarDsc, offset, storeSize, &fieldStoreOffset, &fieldStoreSize))
+        {
+            continue;
+        }
+
+        if (fieldStoreSize.IsExact())
+        {
+            coveredSize += fieldStoreSize.GetExact();
+        }
+
+        bool    isEntire    = (fieldStoreOffset == 0) && (fieldStoreSize == fieldVarDsc->lvValueSize());
+        ssize_t valueOffset = max(static_cast<ssize_t>(fieldVarDsc->lvFldOffset), offset) - offset;
+        if (visitor(PromotedRangeLocalDef(def, fieldLclNum, index, isEntire, fieldStoreOffset, fieldStoreSize,
+                                          valueOffset, storeSize)) == GenTree::VisitResult::Abort)
+        {
+            return GenTree::VisitResult::Abort;
+        }
+    }
+
+    *needsBaseDef = varDsc->lvContainsHoles && (ValueSize(coveredSize) != storeSize) && varDsc->lvDoNotEnregister;
+
+    return GenTree::VisitResult::Continue;
+}
+
 //------------------------------------------------------------------------
-// VisitLocalDefs: Visit locals being defined by this node.
+// VisitLocalDef: Visit the logical locals represented by one physical definition.
 //
 // Arguments:
 //   comp    - the compiler instance
-//   visitor - Functor of type GenTree::VisitResult(LocalDef)
+//   def     - the physical definition
+//   visitor - generic functor accepting a local definition provider
+//
+// Return Value:
+//   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
+//
+template <typename TVisitor>
+GenTree::VisitResult GenTree::VisitLocalDef(Compiler* comp, GenTreeLclVarCommon* def, TVisitor visitor)
+{
+    assert(OperIs(GT_STORE_LCL_VAR));
+
+    unsigned   lclNum = def->GetLclNum();
+    LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
+    if (!varDsc->lvPromoted)
+    {
+        return visitor(StoreLclVarDef(def));
+    }
+
+    for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+    {
+        unsigned fieldLclNum = varDsc->lvFieldLclStart + index;
+        RETURN_IF_ABORT(visitor(PromotedStoreLclVarDef(def, fieldLclNum, index)));
+    }
+
+    if (varDsc->lvContainsHoles && varDsc->lvDoNotEnregister)
+    {
+        return visitor(StoreLclVarDef(def));
+    }
+
+    return VisitResult::Continue;
+}
+
+//------------------------------------------------------------------------
+// VisitLocalDef: Visit the logical locals represented by one physical call
+// definition.
+//
+// Arguments:
+//   comp          - the compiler instance
+//   def           - the physical definition
+//   isEntire      - whether the physical store entirely defines its local
+//   offset        - offset of the store relative to the physical local
+//   size          - size of the store
+//   visitor       - generic functor accepting a local definition provider
+//
+// Return Value:
+//   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
+//
+template <typename TVisitor>
+GenTree::VisitResult GenTree::VisitLocalDef(
+    Compiler* comp, GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, ValueSize size, TVisitor visitor)
+{
+    assert(OperIs(GT_CALL));
+
+    unsigned   lclNum       = def->GetLclNum();
+    LclVarDsc* varDsc       = comp->lvaGetDesc(lclNum);
+    bool       needsBaseDef = true;
+    if (varDsc->lvPromoted)
+    {
+        RETURN_IF_ABORT(VisitPromotedRangeLocalDefs(comp, def, varDsc, offset, size, visitor, &needsBaseDef));
+    }
+
+    if (needsBaseDef)
+    {
+        return visitor(CallLocalDef(def, isEntire, offset, size));
+    }
+
+    return VisitResult::Continue;
+}
+
+//------------------------------------------------------------------------
+// VisitLogicalLocalDefs: Visit logical locals being defined by this node.
+//
+// Arguments:
+//   comp    - the compiler instance
+//   visitor - generic functor accepting a local definition provider
 //
 // Return Value:
 //   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
 //
 // Notes:
+//   Stores touching padding in dependently promoted locals also report a
+//   definition of the parent covering the full store range, overlapping any
+//   reported field definitions.
+//
 //   This function is contractually bound to recognize a superset of stores
 //   that "LocalAddressVisitor" recognizes and transforms, as it is used to
 //   detect which trees can define tracked locals.
 //
 template <typename TVisitor>
-GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
+GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor visitor)
 {
     if (OperIs(GT_STORE_LCL_VAR))
     {
-        ValueSize size = comp->lvaLclValueSize(AsLclVarCommon()->GetLclNum());
-        return visitor(LocalDef(AsLclVarCommon(), /* isEntire */ true, 0, size));
+        return VisitLocalDef(comp, AsLclVarCommon(), visitor);
     }
     if (OperIs(GT_STORE_LCL_FLD))
     {
-        GenTreeLclFld* fld = AsLclFld();
-        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), fld->GetValueSize()));
+        GenTreeLclFld* fld          = AsLclFld();
+        LclVarDsc*     varDsc       = comp->lvaGetDesc(fld);
+        bool           needsBaseDef = true;
+        if (varDsc->lvPromoted)
+        {
+            RETURN_IF_ABORT(VisitPromotedRangeLocalDefs(comp, fld, varDsc, fld->GetLclOffs(), fld->GetValueSize(),
+                                                        visitor, &needsBaseDef));
+        }
+
+        if (needsBaseDef)
+        {
+            return visitor(StoreLclFldDef(fld));
+        }
+
+        return VisitResult::Continue;
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeCall*         call    = AsCall();
-        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
-        if (lclAddr != nullptr)
+        GenTreeCall* call = AsCall();
+
+        GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(call);
+        if (asyncResumedLclAddr != nullptr)
+        {
+            bool isEntire = comp->lvaLclExactSize(asyncResumedLclAddr->GetLclNum()) == TARGET_POINTER_SIZE;
+
+            RETURN_IF_ABORT(VisitLocalDef(comp, asyncResumedLclAddr, isEntire, asyncResumedLclAddr->GetLclOffs(),
+                                          ValueSize(TARGET_POINTER_SIZE), visitor));
+        }
+
+        GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
+        if (retBufLclAddr != nullptr)
         {
             unsigned storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
 
-            bool isEntire = comp->IsEntireAccess(lclAddr->GetLclNum(), lclAddr->GetLclOffs(), ValueSize(storeSize));
+            bool isEntire =
+                comp->IsEntireAccess(retBufLclAddr->GetLclNum(), retBufLclAddr->GetLclOffs(), ValueSize(storeSize));
 
-            return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), ValueSize(storeSize)));
+            return VisitLocalDef(comp, retBufLclAddr, isEntire, retBufLclAddr->GetLclOffs(), ValueSize(storeSize),
+                                 visitor);
         }
     }
 
@@ -4591,7 +4944,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 }
 
 //------------------------------------------------------------------------
-// VisitLocalDefNodes: Visit GenTreeLclVarCommon nodes representing definitions in the specified node.
+// VisitCallLocalDefNodes: Visit local address nodes representing definitions made by this call.
 //
 // Arguments:
 //   comp    - the compiler instance
@@ -4600,30 +4953,19 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 // Return Value:
 //   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
 //
-// Notes:
-//   This function is contractually bound to recognize a superset of stores
-//   that "LocalAddressVisitor" recognizes and transforms, as it is used to
-//   detect which trees can define tracked locals.
-//
 template <typename TVisitor>
-GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visitor)
+GenTree::VisitResult GenTreeCall::VisitCallLocalDefNodes(Compiler* comp, TVisitor visitor)
 {
-    if (OperIs(GT_STORE_LCL_VAR))
+    GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(this);
+    if (asyncResumedLclAddr != nullptr)
     {
-        return visitor(AsLclVarCommon());
+        RETURN_IF_ABORT(visitor(asyncResumedLclAddr));
     }
-    if (OperIs(GT_STORE_LCL_FLD))
+
+    GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(this);
+    if (retBufLclAddr != nullptr)
     {
-        return visitor(AsLclFld());
-    }
-    if (OperIs(GT_CALL))
-    {
-        GenTreeCall*         call    = AsCall();
-        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
-        if (lclAddr != nullptr)
-        {
-            return visitor(lclAddr);
-        }
+        return visitor(retBufLclAddr);
     }
 
     return VisitResult::Continue;
@@ -4641,9 +4983,38 @@ GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visito
 //
 inline bool GenTree::HasAnyLocalDefs(Compiler* comp)
 {
-    return VisitLocalDefNodes(comp, [](GenTreeLclVarCommon* lcl) {
+    return VisitLogicalLocalDefs(comp, [](const auto& def) {
         return GenTree::VisitResult::Abort;
     }) == GenTree::VisitResult::Abort;
+}
+
+//------------------------------------------------------------------------
+// VisitLogicalLocalOccurrencesViaLocalsTreeList:
+//   Visit occurrences in locals-list order without expanding promoted parents.
+//
+// Arguments:
+//   visitor - Generic functor accepting a local occurrence provider.
+//
+// Return Value:
+//   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
+//
+// Remarks:
+//   The callback may abort the walk, but must not change the list and continue.
+//
+template <typename TVisitor>
+GenTree::VisitResult Statement::VisitLogicalLocalOccurrencesViaLocalsTreeList(TVisitor visitor)
+{
+    assert(JitTls::GetCompiler()->fgNodeThreading == NodeThreading::AllLocals);
+
+    for (GenTree* node : LocalsTreeList())
+    {
+        if (visitor(LocalOccurrence(node->AsLclVarCommon())) == GenTree::VisitResult::Abort)
+        {
+            return GenTree::VisitResult::Abort;
+        }
+    }
+
+    return GenTree::VisitResult::Continue;
 }
 
 /*****************************************************************************

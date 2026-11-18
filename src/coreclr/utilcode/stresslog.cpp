@@ -1,21 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*************************************************************************************/
-/*                                   StressLog.cpp                                   */
-/*************************************************************************************/
-
-/*************************************************************************************/
-
 #include "stdafx.h"			// precompiled headers
 
 #include "switches.h"
 #include "stresslog.h"
 #include "clrhost.h"
 #include "ex.h"
-#define DONOT_DEFINE_ETW_CALLBACK
+#ifndef SELF_NO_HOST
 #include "eventtracebase.h"
+#endif // !SELF_NO_HOST
 #include "minipal/time.h"
+
+#if defined(MEMORY_MAPPED_STRESSLOG) && !defined(HOST_WINDOWS)
+#include <dn-stdio.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#endif
 
  #if !defined(STRESS_LOG_READONLY)
 #ifdef HOST_WINDOWS
@@ -151,6 +152,32 @@ void StressLog::Leave(CRITSEC_COOKIE) {
     DecCantAllocCount();
 }
 
+namespace
+{
+    struct StressLogLockHolderTraits final
+    {
+        using Type = CRITSEC_COOKIE;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type cookie) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+            if (cookie != NULL)
+                StressLog::Leave(cookie);
+        }
+    };
+
+    using StressLogLockHolder = LifetimeHolder<StressLogLockHolderTraits>;
+
+    StressLogLockHolder TakeStressLogLock()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        CRITSEC_COOKIE cookie = StressLog::theLog.lock;
+        if (cookie != NULL)
+            StressLog::Enter(cookie);
+        return StressLogLockHolder(cookie);
+    }
+}
+
 void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
 {
     // if the string "{pid}" occurs in the logFilename,
@@ -191,27 +218,49 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     WCHAR logFilenameReplaced[MAX_PATH];
     ReplacePid(logFilename, logFilenameReplaced, MAX_PATH);
 
-    HandleHolder hFile = WszCreateFile(logFilenameReplaced,
+    size_t fileSize = maxBytesTotal;
+
+#ifdef HOST_WINDOWS
+    HandleHolder hFile{ WszCreateFile(logFilenameReplaced,
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ,
         NULL,                 // default security descriptor
         CREATE_ALWAYS,
         FILE_ATTRIBUTE_NORMAL,
-        NULL);
+        NULL) };
 
     if (hFile == INVALID_HANDLE_VALUE)
     {
         return nullptr;
     }
 
-    size_t fileSize = maxBytesTotal;
-    HandleHolder hMap = CreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL);
+    HandleHolder hMap{ CreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL) };
     if (hMap == NULL)
     {
         return nullptr;
     }
 
     return MapViewOfFileEx(hMap, FILE_MAP_ALL_ACCESS, 0, 0, fileSize, MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS);
+#else // HOST_WINDOWS
+    FILE* stream;
+    if (u16_fopen_s(&stream, logFilenameReplaced, W("w+b")) != 0)
+    {
+        return nullptr;
+    }
+
+    void* address = nullptr;
+    if (ftruncate(fileno(stream), (off_t)fileSize) == 0)
+    {
+        address = mmap(nullptr, fileSize, PROT_READ | PROT_WRITE, MAP_SHARED, fileno(stream), 0);
+        if (address == MAP_FAILED)
+        {
+            address = nullptr;
+        }
+    }
+
+    fclose(stream);
+    return address;
+#endif // HOST_WINDOWS
 }
 #endif //MEMORY_MAPPED_STRESSLOG
 
@@ -377,21 +426,21 @@ void StressLog::AddModule(uint8_t* moduleBase)
 /*********************************************************************************/
 void StressLog::Terminate(BOOL fProcessDetach) {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     theLog.facilitiesToLog = 0;
 
-    StressLogLockHolder lockh(theLog.lock, FALSE);
+    StressLogLockHolder lockh;
     if (!fProcessDetach) {
-        lockh.Acquire(); lockh.Release();       // The Enter() Leave() forces a memory barrier on weak memory model systems
+        lockh = TakeStressLogLock();
+        lockh.Free();            // The Enter() Leave() forces a memory barrier on weak memory model systems
                                 // we want all the other threads to notice that facilitiesToLog is now zero
 
                 // This is not strictly threadsafe, since there is no way of ensuring when all the
                 // threads are out of logMsg.  In practice, since they can no longer enter logMsg
                 // and there are no blocking operations in logMsg, simply sleeping will ensure
                 // that everyone gets out.
-        ClrSleepEx(2, FALSE);
-        lockh.Acquire();
+        minipal_sleep(2);
+        lockh = TakeStressLogLock();
     }
 
     // Free the log memory
@@ -404,7 +453,7 @@ void StressLog::Terminate(BOOL fProcessDetach) {
     }
 
     if (!fProcessDetach) {
-        lockh.Release();
+        lockh.Free();
     }
 
 #if !defined (STRESS_LOG_READONLY) && defined(HOST_WINDOWS)
@@ -423,7 +472,6 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -459,7 +507,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         return NULL;
     }
 
-    StressLogLockHolder lockh(theLog.lock, FALSE);
+    StressLogLockHolder lockh;
 
     class NestedCaller
     {
@@ -486,7 +534,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         // Acquiring the lack can throw an OOM exception the first time its called on a thread. We go
         // ahead and try to provoke that now, before we've altered the list of available stress logs, and bail if
         // we fail.
-        lockh.Acquire();
+        lockh = TakeStressLogLock();
         nested.Mark();
 
         // ClrFlsSetValue can throw an OOM exception the first time its called on a thread for a given slot. We go
@@ -519,7 +567,6 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -572,7 +619,6 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
     }
 
     if (msgs == 0)  {
-    	FAULT_NOT_FATAL(); // We don't mind if we can't allocate here, we'll try again later.
     	if (IsInCantAllocStressLogRegion ())
     	{
             goto LEAVE;
@@ -638,7 +684,6 @@ LEAVE:
 /* static */
 void StressLog::ThreadDetach() {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
     ThreadStressLog* msgs = t_pCurrentThreadLog;
@@ -715,32 +760,11 @@ BOOL StressLog::ReserveStressLogChunks (unsigned chunksToReserve)
     return msgs->chunkListLength >= (LONG)chunksToReserve;
 }
 
-void (*FSwitchToSOTolerant)();
-void (*FSwitchToSOIntolerant)();
-void TrackSO(BOOL tolerance)
-{
-    if (tolerance)
-    {
-        if (FSwitchToSOTolerant)
-        {
-            FSwitchToSOTolerant();
-        }
-    }
-    else
-    {
-        if (FSwitchToSOIntolerant)
-        {
-            FSwitchToSOIntolerant();
-        }
-    }
-}
-
 /*********************************************************************************/
 /* fetch a buffer that can be used to write a stress message, it is thread safe */
 FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const char* format, va_list Args)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     // Asserts in this function cause infinite loops in the asserting mechanism.
     // Just use debug breaks instead.
@@ -863,7 +887,6 @@ void StressLog::LogMsg(unsigned level, unsigned facility, int cArgs, const char*
 #ifndef DACCESS_COMPILE
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     // Any stresslog LogMsg could theoretically create a new stress log and thus
@@ -903,7 +926,6 @@ void StressLog::LogMsg(unsigned level, unsigned facility, const StressLogMsg &ms
 #ifndef DACCESS_COMPILE
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     // Any stresslog LogMsg could theoretically create a new stress log and thus
@@ -1007,4 +1029,3 @@ void __cdecl ThreadStressLog::operator delete(void* p)
 #endif //MEMORY_MAPPED_STRESSLOG
 
 #endif // STRESS_LOG
-

@@ -46,6 +46,8 @@ public enum DebugVarLocKind
     RegisterStack,
     StackRegister,
     DoubleStack,
+    FloatingPointStack,
+    FixedVarArg,
 }
 
 /// <summary>
@@ -59,6 +61,7 @@ public readonly struct DebugVarInfo
     public uint VarNumber { get; init; }
     public DebugVarLocKind Kind { get; init; }
     public bool IsByRef { get; init; }
+    public bool IsFloatingPoint { get; init; }
 
     /// <summary>Primary register number (Register, RegisterRegister, RegisterStack, StackRegister).</summary>
     public uint Register { get; init; }
@@ -72,6 +75,10 @@ public readonly struct DebugVarInfo
     public uint BaseRegister2 { get; init; }
     /// <summary>Second stack offset (RegisterStack).</summary>
     public int StackOffset2 { get; init; }
+    /// <summary>Floating-point stack register number (FloatingPointStack).</summary>
+    public uint FloatingPointStackRegister { get; init; }
+    /// <summary>Offset of a fixed argument in a varargs function (FixedVarArg).</summary>
+    public uint FixedVarArgOffset { get; init; }
     /// <summary>
     /// For <see cref="VarNumber"/> == <c>ICorDebugInfo::CALL_RETURN_ILNUM</c> entries, the IL offset of
     /// the call site whose return value this entry describes. Zero for all other entries.

@@ -20,6 +20,7 @@
 #include "generics.h"
 #include "stackwalk.h"
 #include "virtualcallstub.h"
+#include "externalmemoryhandle.h"
 
 #include "dacdbiimpl.h"
 
@@ -31,8 +32,13 @@
 #include "request_common.h"
 #include "conditionalweaktable.h"
 
+#include "metamodelro.h"
+#include "metamodelrw.h"
+#include "liteweightstgdb.h"
+#include "mdinternalrw.h"
+#include "stgpool.h"
+
 #ifndef USE_DAC_TABLE_RVA
-extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
 #include <clrconfignocache.h>
 #define CAN_USE_CDAC
 #endif
@@ -232,6 +238,8 @@ template<class T> void DeleteDbiArrayMemory(T *p, int count)
 //    pMetadataLookup - callback interface to do internal metadata lookup. This is because
 //                  metadata is not dac-ized.
 //    ppInterface - mandatory out-parameter
+//    ppLegacyDac - mandatory out-parameter; receives a reference to the native
+//                  DAC when ppInterface receives a cDAC implementation
 //
 // Return Value:
 //    S_OK on success.
@@ -244,7 +252,7 @@ template<class T> void DeleteDbiArrayMemory(T *p, int count)
 //    This will yield an IDacDbiInterface to provide structured access to the
 //    data-target.
 //
-//    Must call Release on interface to free its resources.
+//    Must call Release on each returned interface to free its resources.
 //
 //---------------------------------------------------------------------------------------
 STDAPI
@@ -252,22 +260,30 @@ DLLEXPORT
 DacDbiInterfaceInstance(
     ICorDebugDataTarget * pTarget,
     CORDB_ADDRESS baseAddress,
+    CLRDATA_ADDRESS contractDescriptorAddress,
     IDacDbiInterface::IAllocator * pAllocator,
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup,
-    IDacDbiInterface ** ppInterface)
+    IDacDbiInterface ** ppInterface,
+    IUnknown ** ppLegacyDac)
 {
+#ifndef CAN_USE_CDAC
+    // Consumed only by the cDAC path, which is compiled out here.
+    (void)contractDescriptorAddress;
+#endif
+
     // No marshalling is done by the instantiationf function - we just need to setup the infrastructure.
     // We don't want to warn if this involves creating and accessing undacized data structures,
     // because it's for the infrastructure, not DACized code itself.
     SUPPORTS_DAC_HOST_ONLY;
 
     // Since this is public, verify it.
-    if ((ppInterface == NULL) || (pTarget == NULL) || (baseAddress == 0))
+    if ((ppInterface == NULL) || (ppLegacyDac == NULL) || (pTarget == NULL) || (baseAddress == 0))
     {
         return E_INVALIDARG;
     }
 
     *ppInterface = NULL;
+    *ppLegacyDac = NULL;
 
     //
     // Actually allocate the real object and initialize it.
@@ -293,8 +309,8 @@ DacDbiInterfaceInstance(
         DWORD val;
         if (enable.TryAsInteger(10, val) && val == 1)
         {
-            uint64_t contractDescriptorAddr = 0;
-            if (TryGetSymbol(pDac->m_pTarget, pDac->m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+            uint64_t contractDescriptorAddr = contractDescriptorAddress;
+            if (contractDescriptorAddr != 0)
             {
                 IUnknown* legacyImpl;
                 HRESULT qiRes = pDac->QueryInterface(IID_IUnknown, (void**)&legacyImpl);
@@ -304,19 +320,18 @@ DacDbiInterfaceInstance(
                 cdac = CDAC::Create(contractDescriptorAddr, pDac->m_pTarget, legacyImpl);
                 if (cdac.IsValid())
                 {
-                    ReleaseHolder<IUnknown> cdacInterface = nullptr;
-                    cdac.CreateDacDbiInterface(&cdacInterface);
-                    if (cdacInterface != nullptr)
+                    ReleaseHolder<IUnknown> cdacInterface;
+                    if (cdac.CreateDacDbiInterface(&cdacInterface) == S_OK && cdacInterface != nullptr)
                     {
                         IDacDbiInterface* pCDacDbi = nullptr;
                         HRESULT hr = cdacInterface->QueryInterface(__uuidof(IDacDbiInterface), (void**)&pCDacDbi);
                         if (SUCCEEDED(hr))
                         {
-                            // Lifetime is now managed by cDAC implementation
-                            pDac->Release();
-                            // Release the AddRef from the QI for legacyImpl
+                            // Transfer the QI reference to DBI so the legacy DAC remains alive
+                            // until the managed cDAC interface has been released.
                             pDac->Release();
                             *ppInterface = pCDacDbi;
+                            *ppLegacyDac = legacyImpl;
                             return S_OK;
                         }
                     }
@@ -372,13 +387,6 @@ DacDbiInterfaceImpl::DacDbiInterfaceImpl(
     _ASSERTE(pMetaDataLookup != NULL);
     _ASSERTE(pAllocator != NULL);
     _ASSERTE(pTarget != NULL);
-
-#ifdef _DEBUG
-    // Enable verification asserts in ICorDebug scenarios.  ICorDebug never guesses at the DAC path, so any
-    // mismatch should be fatal, and so always of interest to the user.
-    // This overrides the assignment in the base class ctor (which runs first).
-    m_fEnableDllVerificationAsserts = true;
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -522,26 +530,6 @@ DacDbiInterfaceImpl::Release(THIS)
     return ClrDataAccess::Release();
 }
 
-// Check whether the version of the DBI matches the version of the runtime.
-// See code:CordbProcess::CordbProcess#DBIVersionChecking for more information regarding version checking.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckDbiVersion(const DbiVersion * pVersion)
-{
-    DD_ENTER_MAY_THROW;
-
-    if (pVersion->m_dwFormat != kCurrentDbiVersionFormat)
-    {
-        return CORDBG_E_INCOMPATIBLE_PROTOCOL;
-    }
-
-    if ((pVersion->m_dwProtocolBreakingChangeCounter != kCurrentDacDbiProtocolBreakingChangeCounter) ||
-        (pVersion->m_dwReservedMustBeZero1 != 0))
-    {
-        return CORDBG_E_INCOMPATIBLE_PROTOCOL;
-    }
-
-    return S_OK;
-}
-
 // Flush the DAC cache. This should be called when target memory changes.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::FlushCache()
 {
@@ -558,6 +546,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::FlushCache()
     // Current impl of Flush() should always succeed. If it ever fails, we want to know.
     _ASSERTE(SUCCEEDED(hr));
     return hr;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::Destroy()
+{
+    return S_OK;
 }
 
 // enable or disable DAC target consistency checks
@@ -783,8 +776,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetCompilerFlags(VMPTR_Assembly v
 // sequence points and var info
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-// Initialize the native/IL sequence points and native var info for a function.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT NativeVarData * pNativeVarData, OUT SequencePoints * pSequencePoints)
+// Allocator to pass to the debug-info-stores...
+static BYTE* InfoStoreNew(void * pData, size_t cBytes)
+{
+    return new (nothrow) BYTE[cBytes];
+}
+
+// Get the native/IL sequence points and native var info for a function via callbacks.
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT ULONG32 * pFixedArgCount, FP_NATIVEVARINFO_CALLBACK fpVarInfoCallback, FP_SEQUENCEPOINT_CALLBACK fpSeqPointCallback, CALLBACK_DATA pUserData)
 {
     DD_ENTER_MAY_THROW;
 
@@ -798,11 +797,46 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeSequencePointsAndVar
 
         _ASSERTE(fCodeAvailable != 0);
 
-        // get information about the locations of arguments and local variables
-        GetNativeVarData(pMD, startAddress, GetArgCount(pMD), pNativeVarData);
+        // Return the fixed argument count
+        if (pFixedArgCount != NULL)
+        {
+            *pFixedArgCount = (ULONG32)GetArgCount(pMD);
+        }
 
-        // get the sequence points
-        GetSequencePoints(pMD, startAddress, pSequencePoints);
+        DebugInfoRequest request;
+        request.InitFromStartingAddr(pMD, CORDB_ADDRESS_TO_TADDR(startAddress));
+
+        // Retrieve sequence points and native variable info in a single request
+        NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy;
+        NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars;
+        ULONG32 seqEntryCount = 0;
+        ULONG32 varEntryCount = 0;
+
+        BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
+                                                    InfoStoreNew, NULL,
+                                                    BoundsType::Uninstrumented,
+                                                    &seqEntryCount, &mapCopy,
+                                                    &varEntryCount, &nativeVars);
+        if (!success)
+            ThrowHR(E_FAIL);
+
+        // Invoke the native variable info callback for each entry
+        if (fpVarInfoCallback != NULL)
+        {
+            for (ULONG32 i = 0; i < varEntryCount; i++)
+            {
+                fpVarInfoCallback(&nativeVars[i], pUserData);
+            }
+        }
+
+        // Invoke the sequence point callback for each entry
+        if (fpSeqPointCallback != NULL)
+        {
+            for (ULONG32 i = 0; i < seqEntryCount; i++)
+            {
+                fpSeqPointCallback(&mapCopy[i], pUserData);
+            }
+        }
 
     }
     EX_CATCH_HRESULT(hr);
@@ -856,108 +890,6 @@ SIZE_T DacDbiInterfaceImpl::GetArgCount(MethodDesc * pMD)
     return NumArguments;
 } //GetArgCount
 
-// Allocator to pass to the debug-info-stores...
-BYTE* InfoStoreNew(void * pData, size_t cBytes)
-{
-    return new BYTE[cBytes];
-}
-
-//-----------------------------------------------------------------------------
-// Get locations and code offsets for local variables and arguments in a function
-// This information is used to find the location of a value at a given IP.
-// Arguments:
-//    input:
-//        pMethodDesc   pointer to the method desc for the function
-//        startAddr     starting address of the function--used to differentiate
-//                      EnC versions
-//        fixedArgCount number of fixed arguments to the function
-//    output:
-//        pVarInfo      data structure containing a list of variable and
-//                      argument locations by range of IP offsets
-// Note: this function may throw
-//-----------------------------------------------------------------------------
-void DacDbiInterfaceImpl::GetNativeVarData(MethodDesc *    pMethodDesc,
-                                           CORDB_ADDRESS   startAddr,
-                                           SIZE_T          fixedArgCount,
-                                           NativeVarData * pVarInfo)
-{
-    // make sure we haven't done this already
-    if (pVarInfo->IsInitialized())
-    {
-        return;
-    }
-
-    NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
-
-    DebugInfoRequest request;
-    request.InitFromStartingAddr(pMethodDesc, CORDB_ADDRESS_TO_TADDR(startAddr));
-
-    ULONG32 entryCount;
-
-    BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
-                                                InfoStoreNew, NULL, // allocator
-                                                BoundsType::Instrumented,
-                                                NULL, NULL,
-                                                &entryCount, &nativeVars);
-
-    if (!success)
-        ThrowHR(E_FAIL);
-
-    // set key fields of pVarInfo
-    pVarInfo->InitVarDataList(nativeVars, (int)fixedArgCount, (int)entryCount);
-} // GetNativeVarData
-
-
-
-
-//-----------------------------------------------------------------------------
-// Get the native/IL sequence points for a function
-// Arguments:
-//    input:
-//        pMethodDesc   pointer to the method desc for the function
-//        startAddr     starting address of the function--used to differentiate
-//    output:
-//        pNativeMap    data structure containing a list of sequence points
-// Note: this function may throw
-//-----------------------------------------------------------------------------
-void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
-                                            CORDB_ADDRESS    startAddr,
-                                            SequencePoints * pSeqPoints)
-{
-
-    // make sure we haven't done this already
-    if (pSeqPoints->IsInitialized())
-    {
-        return;
-    }
-
-    // Use the DebugInfoStore to get IL->Native maps.
-    // It doesn't matter whether we're jitted, ngenned etc.
-    DebugInfoRequest request;
-    request.InitFromStartingAddr(pMethodDesc, CORDB_ADDRESS_TO_TADDR(startAddr));
-
-
-    // Bounds info.
-    NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
-
-    ULONG32 entryCount;
-    BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
-                                                      InfoStoreNew,
-                                                      NULL, // allocator
-                                                      BoundsType::Uninstrumented,
-                                                      &entryCount, &mapCopy,
-                                                      NULL, NULL);
-    if (!success)
-        ThrowHR(E_FAIL);
-
-    pSeqPoints->InitSequencePoints(entryCount);
-
-    // mapCopy and pSeqPoints have elements of different types. Thus, we
-    // need to copy the individual members from the elements of mapCopy to the
-    // elements of pSeqPoints. Once we're done, we can release mapCopy
-    pSeqPoints->CopyAndSortSequencePoints(mapCopy);
-
-} // GetSequencePoints
 
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Function Data
@@ -1056,14 +988,10 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
     // If a MethodDesc is provided, it has to be consistent with the MethodDef token and the RVA.
     _ASSERTE((pMD == NULL) || ((pMD->GetMemberDef() == mdMethodToken) && (pMD->GetRVA() == methodRVA)));
 
-    TADDR pTargetIL; // target address of start of IL blob
-
-    // This works for methods in dynamic modules, and methods overridden by a profiler.
-    pTargetIL = pModule->GetDynamicIL(mdMethodToken);
+    TADDR pTargetIL = pModule->GetDynamicIL(mdMethodToken);
 
     // Method not overridden - get the original copy of the IL by going to the PE file/RVA
-    // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
-    // implemented for DAC.
+    // Dynamic modules have no PE-backed fallback.
     if (pTargetIL == 0 && !pModule->IsReflectionEmit())
     {
         pTargetIL = (TADDR)pModule->GetIL(methodRVA);
@@ -1323,7 +1251,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(CORDB_AD
         pCodeInfo->isInstantiatedGeneric = pMethodDesc->HasClassOrMethodInstantiation();
         pCodeInfo->vmNativeCodeMethodDescToken = vmMethodDesc;
 
-        SIZE_T unusedLatestEncVersion;
+        ULONG64 unusedLatestEncVersion;
         Module * pModule = pMethodDesc->GetModule();
         _ASSERTE(pModule != NULL);
         LookupEnCVersions(pModule,
@@ -3262,23 +3190,14 @@ DacDbiInterfaceImpl::DelegateType DacDbiInterfaceImpl::GetDelegateType(VMPTR_Obj
 
     DelegateType delegateType = DelegateType::kUnknownDelegateType;
     PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
-    INT_PTR invocationCount = pDelObj->GetInvocationCount();
 
-    if (invocationCount == 0)
+    INT_PTR extraData = pDelObj->GetExtraData();
+    OBJECTREF helperObject = pDelObj->GetHelperObject();
+    if (((helperObject == NULL) || !helperObject->GetMethodTable()->IsArray()) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
     {
-        // If this delegate points to a static function or this is a open virtual delegate, this should be non-null
-        // Special case: This might fail in a VSD delegate (instance open virtual)...
-        // TODO: There is the special signatures cases missing.
+        // If this delegate is open, this should be non-null
         TADDR targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
-        if (targetMethodPtr == (TADDR)NULL)
-        {
-            // Static extension methods, other closed static delegates, and instance delegates fall into this category.
-            delegateType = DelegateType::kClosedDelegate;
-        }
-        else
-        {
-            delegateType = DelegateType::kOpenDelegate;
-        }
+        delegateType = targetMethodPtr == (TADDR)NULL ? DelegateType::kClosedDelegate : DelegateType::kOpenDelegate;
     }
     return delegateType;
 }
@@ -3991,7 +3910,438 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMetadata(VMPTR_Module vmModule
     return hr;
 }
 
-// Implementation of IDacDbiInterface::GetSymbolsBuffer
+//-----------------------------------------------------------------------------
+// Serialization of the target's writable (MDInternalRW) metadata into a
+// single contiguous ECMA-335 metadata image.
+//-----------------------------------------------------------------------------
+namespace
+{
+    // Heap index size flags (ECMA-335 II.24.2.6)
+    const BYTE HEAP_STRING_4 = 0x01;
+    const BYTE HEAP_GUID_4 = 0x02;
+    const BYTE HEAP_BLOB_4 = 0x04;
+
+    const ULONG64 MaxPoolBytes = 100000000;
+    const ULONG32 MaxPoolSegments = 1000;
+    const ULONG32 MaxTableCount = 64;
+
+    FORCEINLINE ULONG32 AlignUp4(ULONG32 value)
+    {
+        return (value + 3) & ~(ULONG32)3;
+    }
+
+    // Owns a copy of a coalesced storage pool.
+    struct PoolData
+    {
+        NewArrayHolder<BYTE> Data;
+        ULONG32 Size;
+
+        PoolData() : Data{}, Size(0) {}
+    };
+
+    void ReadStoragePool(TADDR poolAddress, PoolData & result)
+    {
+        TADDR segData[MaxPoolSegments];
+        ULONG32 segSize[MaxPoolSegments];
+        ULONG32 segCount = 0;
+        ULONG64 totalSize = 0;
+
+        StgPool * pPool = dac_cast<DPTR(StgPool)>(poolAddress);
+        StgPoolSeg * pSeg = pPool;
+        for (ULONG32 iteration = 0; ; iteration++)
+        {
+            ULONG32 dataSize = pSeg->GetDataSize();
+            if (iteration >= MaxPoolSegments ||
+                totalSize > MaxPoolBytes ||
+                dataSize > MaxPoolBytes - totalSize)
+            {
+                ThrowHR(CLDB_E_FILE_CORRUPT);
+            }
+            if (dataSize > 0)
+            {
+                segData[segCount] = (TADDR)pSeg->GetSegData();
+                segSize[segCount] = dataSize;
+                segCount++;
+                totalSize += dataSize;
+            }
+
+            TADDR nextSegment = (TADDR)pSeg->GetNextSeg();
+            if (nextSegment == (TADDR)NULL)
+            {
+                break;
+            }
+            pSeg = dac_cast<DPTR(StgPoolSeg)>(nextSegment);
+        }
+
+        result.Size = (ULONG32)totalSize;
+        result.Data = new BYTE[result.Size == 0 ? 1 : result.Size];
+        ULONG32 offset = 0;
+        for (ULONG32 i = 0; i < segCount; i++)
+        {
+            DacReadAll(segData[i], result.Data + offset, segSize[i], true);
+            offset += segSize[i];
+        }
+    }
+
+    // Minimal growable byte buffer used to assemble the ECMA-335 metadata image.
+    class MetadataBlobBuilder
+    {
+    public:
+        MetadataBlobBuilder() : m_pData(NULL), m_count(0), m_capacity(0) {}
+        ~MetadataBlobBuilder() { delete[] m_pData; }
+
+        ULONG32 Count() const { return m_count; }
+        const BYTE * Data() const { return m_pData; }
+
+        void WriteByte(BYTE value) { EnsureCapacity(m_count + 1); m_pData[m_count++] = value; }
+        void WriteUInt16(UINT16 value) { WriteRaw(&value, sizeof(value)); }
+        void WriteUInt32(UINT32 value) { WriteRaw(&value, sizeof(value)); }
+        void WriteUInt64(UINT64 value) { WriteRaw(&value, sizeof(value)); }
+        void WriteBytes(const BYTE * pData, ULONG32 size) { if (size != 0) WriteRaw(pData, size); }
+
+        void WriteZeros(ULONG32 count)
+        {
+            EnsureCapacity(m_count + count);
+            memset(m_pData + m_count, 0, count);
+            m_count += count;
+        }
+
+        // Reserve a 4-byte slot to be patched later; returns its offset.
+        ULONG32 Reserve4()
+        {
+            ULONG32 offset = m_count;
+            WriteUInt32(0);
+            return offset;
+        }
+
+        void PatchUInt32(ULONG32 offset, UINT32 value)
+        {
+            memcpy(m_pData + offset, &value, sizeof(value));
+        }
+
+        // Writes a null-terminated ASCII string padded with zeros to a 4-byte boundary,
+        // occupying AlignUp(length + 1, 4) bytes total.
+        void WriteAlignedString(const char * value, ULONG32 length)
+        {
+            ULONG32 total = AlignUp4(length + 1);
+            EnsureCapacity(m_count + total);
+            if (length != 0)
+            {
+                memcpy(m_pData + m_count, value, length);
+            }
+            memset(m_pData + m_count + length, 0, total - length);
+            m_count += total;
+        }
+
+        // Writes a heap's bytes padded with zeros to a 4-byte boundary.
+        void WriteAlignedHeap(const BYTE * pData, ULONG32 size)
+        {
+            WriteBytes(pData, size);
+            WriteZeros(AlignUp4(size) - size);
+        }
+
+    private:
+        void WriteRaw(const void * pData, ULONG32 size)
+        {
+            EnsureCapacity(m_count + size);
+            memcpy(m_pData + m_count, pData, size);
+            m_count += size;
+        }
+
+        void EnsureCapacity(ULONG32 needed)
+        {
+            if (needed <= m_capacity)
+            {
+                return;
+            }
+            ULONG32 newCapacity = (m_capacity == 0) ? 256 : m_capacity;
+            while (newCapacity < needed)
+            {
+                newCapacity *= 2;
+            }
+            BYTE * pNew = new BYTE[newCapacity];
+            if (m_count != 0)
+            {
+                memcpy(pNew, m_pData, m_count);
+            }
+            delete[] m_pData;
+            m_pData = pNew;
+            m_capacity = newCapacity;
+        }
+
+        BYTE * m_pData;
+        ULONG32 m_count;
+        ULONG32 m_capacity;
+    };
+
+    // Writes an ECMA-335 stream header (offset placeholder, size, name) and returns
+    // the offset of the placeholder for the caller to patch with the stream start.
+    ULONG32 WriteStreamHeader(MetadataBlobBuilder & builder, const char * name, ULONG32 size)
+    {
+        ULONG32 offsetField = builder.Reserve4();
+        builder.WriteUInt32(size);
+        builder.WriteAlignedString(name, (ULONG32)strlen(name));
+        return offsetField;
+    }
+}
+
+// Reconstruct and serialize the writable metadata of a module into a freshly allocated
+// ECMA-335 image. On success *ppBlob is a new[]-allocated buffer of *pcbBlob bytes that
+// the caller owns.
+void DacDbiInterfaceImpl::SerializeReadWriteMetadata(Module * pModule, BYTE ** ppBlob, ULONG32 * pcbBlob)
+{
+    PEAssembly * pPEAssembly = pModule->GetPEAssembly();
+    TADDR mdRWAddr = pPEAssembly->GetMDInternalRWAddress();
+    if (mdRWAddr == (TADDR)NULL)
+    {
+        ThrowHR(E_INVALIDARG);
+    }
+
+    MDInternalRW * pMDInternalRW = dac_cast<DPTR(MDInternalRW)>(mdRWAddr);
+    CLiteWeightStgdbRW * pStgdb = dac_cast<DPTR(CLiteWeightStgdbRW)>((TADDR)pMDInternalRW->m_pStgdb);
+    CMiniMdRW * pMiniMd = dac_cast<DPTR(CMiniMdRW)>(PTR_HOST_MEMBER_TADDR(CLiteWeightStgdbRW, pStgdb, m_MiniMd));
+
+    ULONG32 tableCount = pMiniMd->GetCountTables();
+    if (tableCount > MaxTableCount)
+    {
+        ThrowHR(CLDB_E_FILE_CORRUPT);
+    }
+
+    // ECMA-335 II.24.2.6
+    ULONG32 rowCounts[MaxTableCount];
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        rowCounts[i] = pMiniMd->m_Schema.m_cRecs[i];
+    }
+
+    ULONG64 sorted = pMiniMd->m_Schema.m_sorted;
+    BYTE heaps = pMiniMd->m_Schema.m_heaps;
+
+    bool largeStringHeap = (heaps & HEAP_STRING_4) != 0;
+    bool largeGuidHeap = (heaps & HEAP_GUID_4) != 0;
+    bool largeBlobHeap = (heaps & HEAP_BLOB_4) != 0;
+    bool all4ByteColumns = pMiniMd->m_fAll4ByteColumns != FALSE;
+
+    PoolData stringHeap;
+    PoolData blobHeap;
+    PoolData userStringHeap;
+    PoolData guidHeap;
+    ReadStoragePool(PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_StringHeap), stringHeap);
+    ReadStoragePool(PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_BlobHeap), blobHeap);
+    ReadStoragePool(PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_UserStringHeap), userStringHeap);
+    ReadStoragePool(PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_GuidHeap), guidHeap);
+
+    // Coalesce the record data for each table.
+    NewArrayHolder<PoolData> tables(new PoolData[tableCount == 0 ? 1 : tableCount]);
+    TADDR tablesBase = PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_Tables);
+    ULONG32 tableStride = (ULONG32)sizeof(MetaData::TableRW);
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        ReadStoragePool(tablesBase + i * tableStride, tables[i]);
+    }
+
+    // Read the metadata version string (ECMA-335 II.24.2.1 metadata root):
+    // Signature(4) | MajorVersion(2) | MinorVersion(2) | Reserved(4) | VersionLength(4) | Version[VersionLength]
+    const ULONG32 MetadataRootVersionLengthOffset = 12;
+    const ULONG32 MetadataRootVersionStringOffset = 16;
+    const ULONG32 MaxMetadataVersionLength = 256;
+    BYTE versionBuffer[MaxMetadataVersionLength];
+    ULONG32 versionLength = 0;
+    TADDR metadataRootAddress = (TADDR)pStgdb->m_pvMd;
+    if (metadataRootAddress != (TADDR)NULL)
+    {
+        ULONG32 rawVersionLength = *dac_cast<DPTR(ULONG32)>(metadataRootAddress + MetadataRootVersionLengthOffset);
+        if (rawVersionLength != 0)
+        {
+            ULONG32 toRead = rawVersionLength < MaxMetadataVersionLength ? rawVersionLength : MaxMetadataVersionLength;
+            DacReadAll(metadataRootAddress + MetadataRootVersionStringOffset, versionBuffer, toRead, true);
+            for (versionLength = 0; versionLength < toRead; versionLength++)
+            {
+                if (versionBuffer[versionLength] == 0)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    // From the multiple different storage pools, build a single contiguous ECMA-335 metadata blob.
+    MetadataBlobBuilder builder;
+    builder.WriteUInt32(0x424A5342);
+
+    // major version
+    builder.WriteUInt16(1);
+
+    // minor version
+    builder.WriteUInt16(1);
+
+    // reserved
+    builder.WriteUInt32(0);
+
+    builder.WriteUInt32(AlignUp4(versionLength + 1));
+    builder.WriteAlignedString((const char *)versionBuffer, versionLength);
+
+    // reserved
+    builder.WriteUInt16(0);
+
+    // number of streams
+    UINT16 numStreams = 5; // #Strings, #US, #Blob, #GUID, #~ (metadata)
+    if (all4ByteColumns)
+    {
+        // The #JTD marker stream directs the reader to a "minimal delta" image
+        // in which all variable-sized columns are 4 bytes long.
+        numStreams++;
+    }
+    builder.WriteUInt16(numStreams);
+
+    // Write stream headers
+    if (all4ByteColumns)
+    {
+        ULONG32 jtdOffset = WriteStreamHeader(builder, "#JTD", 0);
+        builder.PatchUInt32(jtdOffset, builder.Count());
+    }
+
+    ULONG32 stringsOffset = WriteStreamHeader(builder, "#Strings", AlignUp4(stringHeap.Size));
+    ULONG32 blobOffset = WriteStreamHeader(builder, "#Blob", AlignUp4(blobHeap.Size));
+    ULONG32 guidOffset = WriteStreamHeader(builder, "#GUID", AlignUp4(guidHeap.Size));
+    ULONG32 userStringOffset = WriteStreamHeader(builder, "#US", AlignUp4(userStringHeap.Size));
+
+    // Use the "uncompressed" tables stream name as the runtime may have created the *Ptr tables
+    // that are only present in the uncompressed tables stream.
+    ULONG32 tablesOffset = builder.Reserve4();
+    ULONG32 tablesSize = builder.Reserve4();
+    builder.WriteAlignedString("#-", 2);
+
+    // Write the heap-style streams
+    builder.PatchUInt32(stringsOffset, builder.Count());
+    builder.WriteAlignedHeap(stringHeap.Data, stringHeap.Size);
+
+    builder.PatchUInt32(blobOffset, builder.Count());
+    builder.WriteAlignedHeap(blobHeap.Data, blobHeap.Size);
+
+    builder.PatchUInt32(guidOffset, builder.Count());
+    builder.WriteAlignedHeap(guidHeap.Data, guidHeap.Size);
+
+    builder.PatchUInt32(userStringOffset, builder.Count());
+    builder.WriteAlignedHeap(userStringHeap.Data, userStringHeap.Size);
+
+    // Write tables stream
+    ULONG32 tableStreamStart = builder.Count();
+    builder.PatchUInt32(tablesOffset, tableStreamStart);
+
+    // Write tables stream header
+    builder.WriteUInt32(0); // reserved
+    // ECMA-335 II.24.2.6: MajorVersion shall be 2, MinorVersion shall be 0.
+    builder.WriteByte(2); // major version
+    builder.WriteByte(0); // minor version
+    BYTE heapSizes =
+        (BYTE)((largeStringHeap ? HEAP_STRING_4 : 0) |
+               (largeGuidHeap ? HEAP_GUID_4 : 0) |
+               (largeBlobHeap ? HEAP_BLOB_4 : 0));
+    builder.WriteByte(heapSizes);
+    builder.WriteByte(1); // reserved
+
+    ULONG64 validTables = 0;
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        if (rowCounts[i] != 0)
+        {
+            validTables |= (ULONG64)1 << i;
+        }
+    }
+
+    ULONG64 sortedTables = 0;
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        if ((sorted & ((ULONG64)1 << i)) != 0)
+        {
+            sortedTables |= (ULONG64)1 << i;
+        }
+    }
+
+    builder.WriteUInt64(validTables);
+    builder.WriteUInt64(sortedTables);
+
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        if (rowCounts[i] != 0)
+        {
+            builder.WriteUInt32(rowCounts[i]);
+        }
+    }
+
+    // Write the tables
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        builder.WriteBytes(tables[i].Data, tables[i].Size);
+    }
+
+    // Patch the #- stream size now that the full table stream has been written.
+    builder.PatchUInt32(tablesSize, builder.Count() - tableStreamStart);
+
+    ULONG32 blobSize = builder.Count();
+    BYTE * pBlob = new BYTE[blobSize == 0 ? 1 : blobSize];
+    memcpy(pBlob, builder.Data(), blobSize);
+    *ppBlob = pBlob;
+    *pcbBlob = blobSize;
+}
+
+// Implementation of IDacDbiInterface::GetReadWriteMetadataSize
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetReadWriteMetadataSize(VMPTR_Module vmModule, OUT ULONG32 * pSize)
+{
+    DD_ENTER_MAY_THROW;
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        if (pSize == NULL)
+        {
+            ThrowHR(E_POINTER);
+        }
+
+        *pSize = 0;
+
+        Module * pModule = vmModule.GetDacPtr();
+        BYTE * pRawBlob = NULL;
+        ULONG32 blobSize = 0;
+        SerializeReadWriteMetadata(pModule, &pRawBlob, &blobSize);
+        NewArrayHolder<BYTE> blob(pRawBlob);
+        *pSize = blobSize;
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
+}
+
+// Implementation of IDacDbiInterface::FillReadWriteMetadata
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer)
+{
+    DD_ENTER_MAY_THROW;
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        if (pBuffer == NULL)
+        {
+            ThrowHR(E_POINTER);
+        }
+
+        Module * pModule = vmModule.GetDacPtr();
+        BYTE * pRawBlob = NULL;
+        ULONG32 blobSize = 0;
+        SerializeReadWriteMetadata(pModule, &pRawBlob, &blobSize);
+        NewArrayHolder<BYTE> blob(pRawBlob);
+
+        if (cbBuffer < blobSize)
+        {
+            ThrowHR(HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER));
+        }
+
+        memcpy(pBuffer, pRawBlob, blobSize);
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
+}
+
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetSymbolsBuffer(VMPTR_Module vmModule, OUT TargetBuffer * pTargetBuffer, OUT SymbolFormat * pSymbolFormat)
 {
     DD_ENTER_MAY_THROW;
@@ -4135,9 +4485,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(VM
 
         // Pass the magical flags to the loader enumerator to get all Execution-only assemblies.
         iterator = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        CollectibleAssemblyHolder pAssembly;
 
-        while (iterator.Next(pAssembly.This()))
+        while (iterator.Next(&pAssembly))
         {
             VMPTR_Assembly vmAssembly = VMPTR_Assembly::NullPtr();
             vmAssembly.SetHostPtr(pAssembly);
@@ -4983,7 +5333,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::Hijack(VMPTR_Thread vmThread, ULO
         //
         // The debugger could always re-enable the single-step flag if it wants to.
     #ifndef FEATURE_EMULATE_SINGLESTEP
-        UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(&ctx));
+        UnsetSSFlag(&ctx);
     #endif
 
         // Push pointers
@@ -5124,7 +5474,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::Hijack(VMPTR_Thread vmThread, ULO
 }
 
 // Return the filter CONTEXT on the LS.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Thread vmThread, OUT VMPTR_CONTEXT * pRetVal)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Thread vmThread, OUT CORDB_ADDRESS * pRetVal)
 {
     DD_ENTER_MAY_THROW;
 
@@ -5132,13 +5482,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Th
     EX_TRY
     {
 
-        VMPTR_CONTEXT vmContext = VMPTR_CONTEXT::NullPtr();
+        CORDB_ADDRESS contextAddr = (CORDB_ADDRESS)NULL;
 
         Thread * pThread = vmThread.GetDacPtr();
         if (pThread->GetInteropDebuggingHijacked())
         {
             _ASSERTE(!ISREDIRECTEDTHREAD(pThread));
-            vmContext = VMPTR_CONTEXT::NullPtr();
+            contextAddr = (CORDB_ADDRESS)NULL;
         }
         else
         {
@@ -5146,7 +5496,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Th
             if (pLSContext != NULL)
             {
                 _ASSERTE(!ISREDIRECTEDTHREAD(pThread));
-                vmContext.SetHostPtr(pLSContext);
+                contextAddr = (CORDB_ADDRESS)PTR_HOST_TO_TADDR(pLSContext);
             }
             else if (ISREDIRECTEDTHREAD(pThread))
             {
@@ -5155,12 +5505,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Th
 
                 if (pLSContext != NULL)
                 {
-                    vmContext.SetHostPtr(pLSContext);
+                    contextAddr = (CORDB_ADDRESS)PTR_HOST_TO_TADDR(pLSContext);
                 }
             }
         }
 
-        *pRetVal = vmContext;
+        *pRetVal = contextAddr;
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -5171,6 +5521,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
 {
     DD_ENTER_MAY_THROW;
 
+#ifndef FEATURE_VARARGS
+    *pArgBase = (CORDB_ADDRESS)NULL;
+    *pRetVal = TargetBuffer();
+    return E_NOTIMPL;
+#else // FEATURE_VARARGS
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -5197,6 +5552,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
     }
     EX_CATCH_HRESULT(hr);
     return hr;
+#endif // FEATURE_VARARGS
 }
 
 // returns TRUE if the type requires 8-byte alignment
@@ -5290,7 +5646,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsDiagnosticsHiddenOrLCGMethod(VM
 
         MethodDesc * pMD = vmMethodDesc.GetDacPtr();
 
-        if (pMD->IsDiagnosticsHidden())
+        if (pMD->IsDiagnosticsHiddenLCGMethod())
+        {
+            *pRetVal = kDiagnosticHiddenLCGMethod;
+        }
+        else if (pMD->IsDiagnosticsHidden())
         {
             *pRetVal = kDiagnosticHidden;
         }
@@ -5438,8 +5798,8 @@ void DacDbiInterfaceImpl::LookupEnCVersions(Module*          pModule,
                                             VMPTR_MethodDesc vmMethodDesc,
                                             mdMethodDef      mdMethod,
                                             CORDB_ADDRESS    pNativeStartAddress,
-                                            SIZE_T *         pLatestEnCVersion,
-                                            SIZE_T *         pJittedInstanceEnCVersion /* = NULL */)
+                                            ULONG64 *        pLatestEnCVersion,
+                                            ULONG64 *        pJittedInstanceEnCVersion /* = NULL */)
 {
     MethodDesc * pMD     = vmMethodDesc.GetDacPtr();
 
@@ -5448,46 +5808,37 @@ void DacDbiInterfaceImpl::LookupEnCVersions(Module*          pModule,
 
     _ASSERTE(pLatestEnCVersion != NULL);
 
-    // @dbgtodo  inspection - once we do EnC, stop using DMIs.
-    // If the method wasn't EnCed, DMIs may not exist. And since this is DAC, we can't create them.
+#ifdef FEATURE_CODE_VERSIONING
+    CodeVersionManager * pCodeVersionManager = pModule->GetCodeVersionManager();
 
-    // We may not have the memory for the DebuggerMethodInfos in a minidump.
-    // When dump debugging EnC information isn't very useful so just fallback
-    // to default version.
-    DebuggerMethodInfo * pDMI = NULL;
-    DebuggerJitInfo * pDJI = NULL;
-    EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
+    // Latest EnC version: the active IL code version for this method.
+    ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_Module>(pModule), mdMethod);
+    *pLatestEnCVersion = activeILVersion.IsNull()
+        ? (SIZE_T)CorDB_DEFAULT_ENC_FUNCTION_VERSION
+        : activeILVersion.GetEnCVersion();
+
+    // Jitted-instance EnC version: the version the native code at pNativeStartAddress was built from.
+    if (pJittedInstanceEnCVersion != NULL)
     {
-        if (g_pDebugger != NULL)
+        *pJittedInstanceEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
+        if (pNativeStartAddress != (CORDB_ADDRESS)NULL)
         {
-            pDMI = g_pDebugger->GetOrCreateMethodInfo(pModule, mdMethod);
-            if (pDMI != NULL)
+            NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(
+                dac_cast<PTR_MethodDesc>(pMD),
+                PINSTRToPCODE(CORDB_ADDRESS_TO_TADDR(pNativeStartAddress)));
+            if (!nativeCodeVersion.IsNull())
             {
-                pDJI = pDMI->FindJitInfo(pMD, CORDB_ADDRESS_TO_TADDR(pNativeStartAddress));
+                *pJittedInstanceEnCVersion = nativeCodeVersion.GetILCodeVersion().GetEnCVersion();
             }
         }
     }
-    EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
-    if (pDJI != NULL)
+#else // !FEATURE_CODE_VERSIONING
+    *pLatestEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
+    if (pJittedInstanceEnCVersion != NULL)
     {
-        if (pJittedInstanceEnCVersion != NULL)
-        {
-            *pJittedInstanceEnCVersion = pDJI->m_encVersion;
-        }
-        *pLatestEnCVersion = pDMI->GetCurrentEnCVersion();
+        *pJittedInstanceEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
     }
-    else
-    {
-        // If we have no DMI/DJI, then we must never have EnCed. So we can use default EnC info
-        // Several cases where we don't have a DMI/DJI:
-        // - LCG methods
-        // - method was never "touched" by debugger. (DJIs are created lazily).
-        if (pJittedInstanceEnCVersion != NULL)
-        {
-            *pJittedInstanceEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
-        }
-        *pLatestEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
-    }
+#endif // FEATURE_CODE_VERSIONING
 }
 
 // Get the address of the Debugger control block on the helper thread
@@ -5517,15 +5868,20 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDebuggerControlBlockAddress(OU
 }
 
 // DacDbi API: Get the context for a particular thread of the target process
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContextBuffer)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, ContextBuffer contextBuffer)
 {
     DD_ENTER_MAY_THROW
+
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < sizeof(DT_CONTEXT)))
+    {
+        return E_INVALIDARG;
+    }
 
     HRESULT hr = S_OK;
     EX_TRY
     {
 
-        _ASSERTE(pContextBuffer != NULL);
+        DT_CONTEXT * pContextBuffer = reinterpret_cast<DT_CONTEXT *>(contextBuffer.pContextBytes);
 
         Thread *  pThread  = vmThread.GetDacPtr();
 
@@ -5576,6 +5932,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread,
                                                     | DT_CONTEXT_INTEGER
     #endif
                         ;
+#ifdef FEATURE_INTERPRETER
+                        EECodeInfo codeInfo(GetIP(&tmpContext));
+                        if (codeInfo.IsInterpretedCode())
+                        {
+                            pContextBuffer->ContextFlags |= DT_CONTEXT_INTEGER;
+                        }
+#endif // FEATURE_INTERPRETER
                         return S_OK;
                     }
                     frame = frame->Next();
@@ -5597,6 +5960,753 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread,
     }
     EX_CATCH_HRESULT(hr);
     return hr;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetFullContextFlags(OUT ULONG32 * pFlags)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (pFlags == NULL)
+        return E_INVALIDARG;
+
+    *pFlags = DT_CONTEXT_FULL;
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetContextSize(ULONG32 contextFlags, OUT ULONG32 * pSize)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (pSize == NULL)
+        return E_INVALIDARG;
+
+#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
+    if ((contextFlags & DT_CONTEXT_EXTENDED_REGISTERS) != DT_CONTEXT_EXTENDED_REGISTERS)
+    {
+        *pSize = offsetof(DT_CONTEXT, ExtendedRegisters);
+    }
+    else
+#endif
+    {
+        *pSize = sizeof(DT_CONTEXT);
+    }
+
+    return S_OK;
+}
+
+static UINT_PTR * GetRegisterSlotFromContext(BYTE * ctxBuf, CorDebugRegister reg)
+{
+    DT_CONTEXT * pCtx = (DT_CONTEXT *)ctxBuf;
+
+#if defined(TARGET_X86)
+    switch (reg)
+    {
+    case REGISTER_INSTRUCTION_POINTER: return (UINT_PTR *)&pCtx->Eip;
+    case REGISTER_STACK_POINTER:       return (UINT_PTR *)&pCtx->Esp;
+    case REGISTER_FRAME_POINTER:       return (UINT_PTR *)&pCtx->Ebp;
+    case REGISTER_X86_EAX:             return (UINT_PTR *)&pCtx->Eax;
+    case REGISTER_X86_ECX:             return (UINT_PTR *)&pCtx->Ecx;
+    case REGISTER_X86_EDX:             return (UINT_PTR *)&pCtx->Edx;
+    case REGISTER_X86_EBX:             return (UINT_PTR *)&pCtx->Ebx;
+    case REGISTER_X86_ESI:             return (UINT_PTR *)&pCtx->Esi;
+    case REGISTER_X86_EDI:             return (UINT_PTR *)&pCtx->Edi;
+    default: return NULL;
+    }
+#elif defined(TARGET_AMD64)
+    switch (reg)
+    {
+    case REGISTER_INSTRUCTION_POINTER: return (UINT_PTR *)&pCtx->Rip;
+    case REGISTER_STACK_POINTER:       return (UINT_PTR *)&pCtx->Rsp;
+    case REGISTER_AMD64_RBP:           return (UINT_PTR *)&pCtx->Rbp;
+    case REGISTER_AMD64_RAX:           return (UINT_PTR *)&pCtx->Rax;
+    case REGISTER_AMD64_RCX:           return (UINT_PTR *)&pCtx->Rcx;
+    case REGISTER_AMD64_RDX:           return (UINT_PTR *)&pCtx->Rdx;
+    case REGISTER_AMD64_RBX:           return (UINT_PTR *)&pCtx->Rbx;
+    case REGISTER_AMD64_RSI:           return (UINT_PTR *)&pCtx->Rsi;
+    case REGISTER_AMD64_RDI:           return (UINT_PTR *)&pCtx->Rdi;
+    case REGISTER_AMD64_R8:            return (UINT_PTR *)&pCtx->R8;
+    case REGISTER_AMD64_R9:            return (UINT_PTR *)&pCtx->R9;
+    case REGISTER_AMD64_R10:           return (UINT_PTR *)&pCtx->R10;
+    case REGISTER_AMD64_R11:           return (UINT_PTR *)&pCtx->R11;
+    case REGISTER_AMD64_R12:           return (UINT_PTR *)&pCtx->R12;
+    case REGISTER_AMD64_R13:           return (UINT_PTR *)&pCtx->R13;
+    case REGISTER_AMD64_R14:           return (UINT_PTR *)&pCtx->R14;
+    case REGISTER_AMD64_R15:           return (UINT_PTR *)&pCtx->R15;
+    default: return NULL;
+    }
+#elif defined(TARGET_ARM)
+    switch (reg)
+    {
+    case REGISTER_INSTRUCTION_POINTER: return (UINT_PTR *)&pCtx->Pc;
+    case REGISTER_STACK_POINTER:       return (UINT_PTR *)&pCtx->Sp;
+    case REGISTER_ARM_R0:              return (UINT_PTR *)&pCtx->R0;
+    case REGISTER_ARM_R1:              return (UINT_PTR *)&pCtx->R1;
+    case REGISTER_ARM_R2:              return (UINT_PTR *)&pCtx->R2;
+    case REGISTER_ARM_R3:              return (UINT_PTR *)&pCtx->R3;
+    case REGISTER_ARM_R4:              return (UINT_PTR *)&pCtx->R4;
+    case REGISTER_ARM_R5:              return (UINT_PTR *)&pCtx->R5;
+    case REGISTER_ARM_R6:              return (UINT_PTR *)&pCtx->R6;
+    case REGISTER_ARM_R7:              return (UINT_PTR *)&pCtx->R7;
+    case REGISTER_ARM_R8:              return (UINT_PTR *)&pCtx->R8;
+    case REGISTER_ARM_R9:              return (UINT_PTR *)&pCtx->R9;
+    case REGISTER_ARM_R10:             return (UINT_PTR *)&pCtx->R10;
+    case REGISTER_ARM_R11:             return (UINT_PTR *)&pCtx->R11;
+    case REGISTER_ARM_R12:             return (UINT_PTR *)&pCtx->R12;
+    case REGISTER_ARM_LR:              return (UINT_PTR *)&pCtx->Lr;
+    default: return NULL;
+    }
+#elif defined(TARGET_ARM64)
+    switch (reg)
+    {
+    case REGISTER_INSTRUCTION_POINTER: return (UINT_PTR *)&pCtx->Pc;
+    case REGISTER_STACK_POINTER:       return (UINT_PTR *)&pCtx->Sp;
+    case REGISTER_ARM64_FP:            return (UINT_PTR *)&pCtx->Fp;
+    case REGISTER_ARM64_LR:            return (UINT_PTR *)&pCtx->Lr;
+    default:
+        if (reg >= REGISTER_ARM64_X0 && reg <= REGISTER_ARM64_X28)
+            return (UINT_PTR *)&pCtx->X[reg - REGISTER_ARM64_X0];
+        return NULL;
+    }
+#elif defined(TARGET_LOONGARCH64)
+    switch (reg)
+    {
+    case REGISTER_INSTRUCTION_POINTER: return (UINT_PTR *)&pCtx->Pc;
+    case REGISTER_STACK_POINTER:       return (UINT_PTR *)&pCtx->Sp;
+    case REGISTER_LOONGARCH64_FP:      return (UINT_PTR *)&pCtx->Fp;
+    case REGISTER_LOONGARCH64_RA:      return (UINT_PTR *)&pCtx->Ra;
+    case REGISTER_LOONGARCH64_TP:      return (UINT_PTR *)&pCtx->Tp;
+    case REGISTER_LOONGARCH64_X0:       return (UINT_PTR *)&pCtx->X0;
+    default:
+        if (reg >= REGISTER_LOONGARCH64_A0 && reg <= REGISTER_LOONGARCH64_A7)
+            return (UINT_PTR *)&pCtx->A0 + (reg - REGISTER_LOONGARCH64_A0);
+        if (reg >= REGISTER_LOONGARCH64_T0 && reg <= REGISTER_LOONGARCH64_T8)
+            return (UINT_PTR *)&pCtx->T0 + (reg - REGISTER_LOONGARCH64_T0);
+        if (reg >= REGISTER_LOONGARCH64_S0 && reg <= REGISTER_LOONGARCH64_S8)
+            return (UINT_PTR *)&pCtx->S0 + (reg - REGISTER_LOONGARCH64_S0);
+        return NULL;
+    }
+#elif defined(TARGET_RISCV64)
+    switch (reg)
+    {
+    case REGISTER_INSTRUCTION_POINTER: return (UINT_PTR *)&pCtx->Pc;
+    case REGISTER_STACK_POINTER:       return (UINT_PTR *)&pCtx->Sp;
+    case REGISTER_RISCV64_FP:          return (UINT_PTR *)&pCtx->Fp;
+    case REGISTER_RISCV64_RA:          return (UINT_PTR *)&pCtx->Ra;
+    case REGISTER_RISCV64_GP:          return (UINT_PTR *)&pCtx->Gp;
+    case REGISTER_RISCV64_TP:          return (UINT_PTR *)&pCtx->Tp;
+    case REGISTER_RISCV64_S1:          return (UINT_PTR *)&pCtx->S1;
+    default:
+        if (reg >= REGISTER_RISCV64_T0 && reg <= REGISTER_RISCV64_T2)
+            return (UINT_PTR *)&pCtx->T0 + (reg - REGISTER_RISCV64_T0);
+        if (reg >= REGISTER_RISCV64_A0 && reg <= REGISTER_RISCV64_A7)
+            return (UINT_PTR *)&pCtx->A0 + (reg - REGISTER_RISCV64_A0);
+        if (reg >= REGISTER_RISCV64_S2 && reg <= REGISTER_RISCV64_S11)
+            return (UINT_PTR *)&pCtx->S2 + (reg - REGISTER_RISCV64_S2);
+        if (reg >= REGISTER_RISCV64_T3 && reg <= REGISTER_RISCV64_T6)
+            return (UINT_PTR *)&pCtx->T3 + (reg - REGISTER_RISCV64_T3);
+        return NULL;
+    }
+#else
+    return NULL;
+#endif
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::WriteRegistersToContext(
+    IN ContextBuffer contextBuffer,
+    IN const CorDebugRegister * regs,
+    IN ULONG32 nRegs,
+    IN const TADDR * values)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (contextBuffer.pContextBytes == NULL || (nRegs > 0 && (regs == NULL || values == NULL)))
+        return E_INVALIDARG;
+    if (contextBuffer.contextSize < sizeof(DT_CONTEXT))
+        return E_INVALIDARG;
+
+    for (ULONG32 i = 0; i < nRegs; i++)
+    {
+        // Registers with no CONTEXT slot (e.g. float / SIMD registers) are skipped.
+        UINT_PTR * pSlot = GetRegisterSlotFromContext(contextBuffer.pContextBytes, regs[i]);
+        if (pSlot != NULL)
+            *pSlot = (UINT_PTR)values[i];
+    }
+    return S_OK;
+}
+
+namespace
+{
+    bool TryReadFloatRegisterFromContext(BYTE * ctxBuf, CorDebugRegister reg, DOUBLE * pValue);
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ReadRegistersFromContext(
+    IN ContextBuffer contextBuffer,
+    IN const CorDebugRegister * regs,
+    IN ULONG32 nRegs,
+    OUT CORDB_REGISTER * pValues)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (contextBuffer.pContextBytes == NULL || (nRegs > 0 && (regs == NULL || pValues == NULL)))
+        return E_INVALIDARG;
+    if (contextBuffer.contextSize < sizeof(DT_CONTEXT))
+        return E_INVALIDARG;
+
+    for (ULONG32 i = 0; i < nRegs; i++)
+    {
+        UINT_PTR * pSlot = GetRegisterSlotFromContext(contextBuffer.pContextBytes, regs[i]);
+        if (pSlot != NULL)
+        {
+            pValues[i] = (CORDB_REGISTER)(UINT_PTR)*pSlot;
+            continue;
+        }
+
+        DOUBLE floatValue = 0.0;
+        if (TryReadFloatRegisterFromContext(contextBuffer.pContextBytes, regs[i], &floatValue))
+            memcpy(&pValues[i], &floatValue, sizeof(CORDB_REGISTER));
+        else
+            pValues[i] = (CORDB_REGISTER)0;
+    }
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAvailableRegistersMask(
+    IN BOOL fActive,
+    IN BOOL fQuickUnwind,
+    IN ULONG32 regCount,
+    OUT BYTE pAvailable[])
+{
+    DD_ENTER_MAY_THROW;
+
+    if (pAvailable == NULL || regCount == 0)
+        return E_INVALIDARG;
+
+    ZeroMemory(pAvailable, regCount);
+
+    auto setBit = [pAvailable, regCount](int reg)
+    {
+        ULONG32 byteIdx = (ULONG32)reg / 8;
+        if (byteIdx < regCount)
+            pAvailable[byteIdx] |= (BYTE)(1 << (reg % 8));
+    };
+
+#if defined(TARGET_X86)
+    setBit(REGISTER_INSTRUCTION_POINTER);
+    setBit(REGISTER_STACK_POINTER);
+    setBit(REGISTER_FRAME_POINTER);
+    if (!fQuickUnwind || fActive)
+    {
+        setBit(REGISTER_X86_EAX);
+        setBit(REGISTER_X86_ECX);
+        setBit(REGISTER_X86_EDX);
+        setBit(REGISTER_X86_EBX);
+        setBit(REGISTER_X86_ESI);
+        setBit(REGISTER_X86_EDI);
+    }
+    if (fActive)
+    {
+        for (int r = REGISTER_X86_FPSTACK_0; r <= REGISTER_X86_FPSTACK_7; r++)
+            setBit(r);
+    }
+#elif defined(TARGET_AMD64)
+    setBit(REGISTER_INSTRUCTION_POINTER);
+    setBit(REGISTER_STACK_POINTER);
+    if (!fQuickUnwind || fActive)
+    {
+        setBit(REGISTER_AMD64_RBP);
+        setBit(REGISTER_AMD64_RAX);
+        setBit(REGISTER_AMD64_RCX);
+        setBit(REGISTER_AMD64_RDX);
+        setBit(REGISTER_AMD64_RBX);
+        setBit(REGISTER_AMD64_RSI);
+        setBit(REGISTER_AMD64_RDI);
+        for (int r = REGISTER_AMD64_R8; r <= REGISTER_AMD64_R15; r++)
+            setBit(r);
+    }
+    if (fActive)
+    {
+        for (int r = REGISTER_AMD64_XMM0; r <= REGISTER_AMD64_XMM15; r++)
+            setBit(r);
+    }
+#elif defined(TARGET_ARM)
+    UNREFERENCED_PARAMETER(fActive);
+    UNREFERENCED_PARAMETER(fQuickUnwind);
+    setBit(REGISTER_INSTRUCTION_POINTER);
+    setBit(REGISTER_STACK_POINTER);
+    for (int r = REGISTER_ARM_R0; r <= REGISTER_ARM_R12; r++)
+        setBit(r);
+    setBit(REGISTER_ARM_LR);
+#elif defined(TARGET_ARM64)
+    UNREFERENCED_PARAMETER(fActive);
+    UNREFERENCED_PARAMETER(fQuickUnwind);
+    setBit(REGISTER_ARM64_PC);
+    setBit(REGISTER_ARM64_SP);
+    setBit(REGISTER_ARM64_FP);
+    setBit(REGISTER_ARM64_LR);
+    for (int r = REGISTER_ARM64_X0; r <= REGISTER_ARM64_X28; r++)
+        setBit(r);
+    for (int r = REGISTER_ARM64_V0; r <= REGISTER_ARM64_V31; r++)
+        setBit(r);
+#elif defined(TARGET_LOONGARCH64)
+    UNREFERENCED_PARAMETER(fActive);
+    UNREFERENCED_PARAMETER(fQuickUnwind);
+    setBit(REGISTER_LOONGARCH64_PC);
+    setBit(REGISTER_LOONGARCH64_SP);
+    setBit(REGISTER_LOONGARCH64_FP);
+    setBit(REGISTER_LOONGARCH64_RA);
+    setBit(REGISTER_LOONGARCH64_TP);
+    setBit(REGISTER_LOONGARCH64_X0);
+    for (int r = REGISTER_LOONGARCH64_A0; r <= REGISTER_LOONGARCH64_A7; r++)
+        setBit(r);
+    for (int r = REGISTER_LOONGARCH64_T0; r <= REGISTER_LOONGARCH64_T8; r++)
+        setBit(r);
+    for (int r = REGISTER_LOONGARCH64_S0; r <= REGISTER_LOONGARCH64_S8; r++)
+        setBit(r);
+    for (int r = REGISTER_LOONGARCH64_F0; r <= REGISTER_LOONGARCH64_F31; r++)
+        setBit(r);
+#elif defined(TARGET_RISCV64)
+    UNREFERENCED_PARAMETER(fActive);
+    UNREFERENCED_PARAMETER(fQuickUnwind);
+    setBit(REGISTER_RISCV64_PC);
+    setBit(REGISTER_RISCV64_RA);
+    setBit(REGISTER_RISCV64_SP);
+    setBit(REGISTER_RISCV64_GP);
+    setBit(REGISTER_RISCV64_TP);
+    setBit(REGISTER_RISCV64_FP);
+    setBit(REGISTER_RISCV64_S1);
+    for (int r = REGISTER_RISCV64_T0; r <= REGISTER_RISCV64_T2; r++)
+        setBit(r);
+    for (int r = REGISTER_RISCV64_A0; r <= REGISTER_RISCV64_A7; r++)
+        setBit(r);
+    for (int r = REGISTER_RISCV64_S2; r <= REGISTER_RISCV64_S11; r++)
+        setBit(r);
+    for (int r = REGISTER_RISCV64_T3; r <= REGISTER_RISCV64_T6; r++)
+        setBit(r);
+    for (int r = REGISTER_RISCV64_F0; r <= REGISTER_RISCV64_F31; r++)
+        setBit(r);
+#else
+    UNREFERENCED_PARAMETER(fActive);
+    UNREFERENCED_PARAMETER(fQuickUnwind);
+    return E_NOTIMPL;
+#endif
+
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ContextHasExtendedRegisters(
+    IN ContextBuffer contextBuffer,
+    OUT BOOL * pResult)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (contextBuffer.pContextBytes == NULL || pResult == NULL)
+        return E_INVALIDARG;
+    if (contextBuffer.contextSize < sizeof(DT_CONTEXT))
+        return E_INVALIDARG;
+
+    *pResult = FALSE;
+#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
+    DT_CONTEXT * pCtx = (DT_CONTEXT *)contextBuffer.pContextBytes;
+    *pResult = (pCtx->ContextFlags & DT_CONTEXT_EXTENDED_REGISTERS) == DT_CONTEXT_EXTENDED_REGISTERS;
+#endif
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CompareControlRegisters(
+    IN ContextBuffer contextBuffer1,
+    IN ContextBuffer contextBuffer2,
+    OUT BOOL * pResult)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (contextBuffer1.pContextBytes == NULL || contextBuffer2.pContextBytes == NULL || pResult == NULL)
+        return E_INVALIDARG;
+    if (contextBuffer1.contextSize < sizeof(DT_CONTEXT) || contextBuffer2.contextSize < sizeof(DT_CONTEXT))
+        return E_INVALIDARG;
+
+    *pResult = ::CompareControlRegisters(
+        reinterpret_cast<const DT_CONTEXT *>(contextBuffer1.pContextBytes),
+        reinterpret_cast<const DT_CONTEXT *>(contextBuffer2.pContextBytes));
+    return S_OK;
+}
+
+// DT_CONTEXT has no XSTATE area, so size these buffers by DT_CONTEXT rather than by
+// ContextSizeForFlags, which sizes T_CONTEXT and requires the XSTATE area when CONTEXT_XSTATE is set.
+static bool DTContextSizeForFlagsSufficient(ULONG32 size, ULONG32 contextFlags)
+{
+#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
+    if ((contextFlags & DT_CONTEXT_EXTENDED_REGISTERS) != DT_CONTEXT_EXTENDED_REGISTERS)
+        return size >= offsetof(DT_CONTEXT, ExtendedRegisters);
+#endif
+    return size >= sizeof(DT_CONTEXT);
+}
+
+static bool DTContextBufferSufficient(ContextBuffer context)
+{
+    return DTContextSizeForFlagsSufficient(context.contextSize,
+        reinterpret_cast<const DT_CONTEXT *>(context.pContextBytes)->ContextFlags);
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CopyContext(
+    IN ContextBuffer destinationContext,
+    IN ContextBuffer sourceContext,
+    IN ContextCopyMode copyMode,
+    IN ULONG32 flags)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (destinationContext.pContextBytes == NULL || sourceContext.pContextBytes == NULL)
+        return E_INVALIDARG;
+
+    // The chunk-wise copy below only touches the CONTEXT regions selected by the
+    // ContextFlags.
+    if (!DTContextBufferSufficient(sourceContext))
+        return E_INVALIDARG;
+    if (copyMode != kCopyContextUseExplicitFlags && flags != 0)
+        return E_INVALIDARG;
+
+    switch (copyMode)
+    {
+        case kCopyContextPreserveDestinationFlags:
+            if (!DTContextBufferSufficient(destinationContext))
+                return E_INVALIDARG;
+            break;
+
+        case kCopyContextMergeSourceFlags:
+        {
+            if (!DTContextBufferSufficient(destinationContext))
+                return E_INVALIDARG;
+
+            DT_CONTEXT * pDestination = reinterpret_cast<DT_CONTEXT *>(destinationContext.pContextBytes);
+            const DT_CONTEXT * pSource = reinterpret_cast<const DT_CONTEXT *>(sourceContext.pContextBytes);
+            DWORD mergedFlags = pDestination->ContextFlags | pSource->ContextFlags;
+            if (!DTContextSizeForFlagsSufficient(destinationContext.contextSize, mergedFlags))
+                return E_INVALIDARG;
+            pDestination->ContextFlags = mergedFlags;
+            break;
+        }
+
+        case kCopyContextUseExplicitFlags:
+            if (!DTContextSizeForFlagsSufficient(destinationContext.contextSize, flags))
+                return E_INVALIDARG;
+            reinterpret_cast<DT_CONTEXT *>(destinationContext.pContextBytes)->ContextFlags = flags;
+            break;
+
+        default:
+            return E_INVALIDARG;
+    }
+
+    CORDbgCopyThreadContext(
+        destinationContext.pContextBytes, destinationContext.contextSize,
+        sourceContext.pContextBytes, sourceContext.contextSize);
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ConvertJitRegNumToCorDebugRegister(
+    IN ULONG32 jitRegNum,
+    OUT CorDebugRegister * pReg,
+    OUT BOOL * pIsAmbientSP)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (pReg == NULL)
+        return E_INVALIDARG;
+
+    BOOL isAmbientSP = jitRegNum == static_cast<ULONG32>(ICorDebugInfo::REGNUM_AMBIENT_SP);
+    if (pIsAmbientSP != NULL)
+        *pIsAmbientSP = isAmbientSP;
+
+    if (isAmbientSP)
+    {
+        *pReg = REGISTER_STACK_POINTER;
+        return S_OK;
+    }
+    if (jitRegNum >= ARRAY_SIZE(g_JITToCorDbgReg))
+        return E_INVALIDARG;
+
+    *pReg = ConvertRegNumToCorDebugRegister(static_cast<ICorDebugInfo::RegNum>(jitRegNum));
+    return S_OK;
+}
+
+namespace
+{
+    double BitsToDouble(UINT64 bits)
+    {
+        double d;
+        memcpy(&d, &bits, sizeof(double));
+        return d;
+    }
+
+    // Convert an x87 80-bit double-extended value to IEEE-754 binary64 with
+    // round-to-nearest-even, matching the hardware FSTP conversion the legacy
+    // x86 path used (gradual underflow to subnormals, overflow to infinity).
+    // Layout (Intel SDM Vol 1 sec 8.2.2): bytes 0-7 = 64-bit significand with an
+    // explicit integer bit at 63; bytes 8-9 = 15-bit biased exponent (bias
+    // 16383) in bits 0-14 and the sign in bit 15.
+    double X87ExtendedToDouble(const BYTE * slot10)
+    {
+        UINT64 significand = 0;
+        memcpy(&significand, slot10, sizeof(UINT64));
+        UINT16 signExp = 0;
+        memcpy(&signExp, slot10 + 8, sizeof(UINT16));
+
+        UINT64 sign  = (UINT64)((signExp >> 15) & 1) << 63;
+        UINT32 exp80 = (UINT32)(signExp & 0x7FFF);
+
+        if (exp80 == 0x7FFF)
+        {
+            UINT64 frac = significand & ~(1ULL << 63);
+            if (frac == 0)
+                return BitsToDouble(sign | ((UINT64)0x7FF << 52));
+            // Force a quiet NaN (keeping the high payload bits) so a signaling
+            // NaN is never misencoded as an infinity.
+            UINT64 payload = (frac >> 12) & ((1ULL << 51) - 1);
+            return BitsToDouble(sign | ((UINT64)0x7FF << 52) | (1ULL << 51) | payload);
+        }
+
+        // Zero, extended denormals and unnormals all fall below the binary64
+        // subnormal floor (2^-1074) and map to signed zero.
+        if (exp80 == 0 || (significand & (1ULL << 63)) == 0)
+            return BitsToDouble(sign);
+
+        int expD = (int)exp80 - 16383 + 1023;   // pre-rounding binary64 biased exponent
+
+        if (expD >= 0x7FF)
+            return BitsToDouble(sign | ((UINT64)0x7FF << 52));   // overflow -> infinity
+
+        if (expD > 0)
+        {
+            // Normal: keep the top 52 fraction bits and round the low 11 to even.
+            UINT64 frac      = significand & ~(1ULL << 63);   // 63 fraction bits
+            UINT64 result    = frac >> 11;                    // top 52 bits
+            UINT64 discarded = frac & 0x7FF;                  // low 11 bits
+            if (discarded > 0x400 || (discarded == 0x400 && (result & 1)))
+            {
+                result++;
+                if (result >> 52)                             // carry out of the fraction
+                {
+                    result = 0;
+                    expD++;
+                    if (expD >= 0x7FF)
+                        return BitsToDouble(sign | ((UINT64)0x7FF << 52));
+                }
+            }
+            return BitsToDouble(sign | ((UINT64)expD << 52) | (result & ((1ULL << 52) - 1)));
+        }
+
+        // Subnormal / underflow (expD <= 0): right-shift the significand by
+        // (12 - expD) and round to nearest-even. A carry into bit 52 promotes the
+        // value to the smallest normal, which the encoding produces for free.
+        int shift = 12 - expD;                                // >= 12
+        if (shift > 64)                                       // below half the smallest subnormal
+            return BitsToDouble(sign);
+
+        UINT64 result;
+        UINT64 discarded;
+        UINT64 half;
+        if (shift == 64)
+        {
+            result    = 0;
+            discarded = significand;
+            half      = 1ULL << 63;
+        }
+        else
+        {
+            result    = significand >> shift;
+            discarded = significand & ((1ULL << shift) - 1);
+            half      = 1ULL << (shift - 1);
+        }
+        if (discarded > half || (discarded == half && (result & 1)))
+            result++;
+        return BitsToDouble(sign | result);
+    }
+
+    UINT64 DoubleToBits(double d)
+    {
+        UINT64 bits;
+        memcpy(&bits, &d, sizeof(UINT64));
+        return bits;
+    }
+
+    void X87DoubleToExtended(double value, BYTE * slot10)
+    {
+        UINT64 bits = DoubleToBits(value);
+        UINT64 sign = (bits >> 63) & 1;
+        UINT32 exp  = (UINT32)((bits >> 52) & 0x7FF);
+        UINT64 frac = bits & ((1ULL << 52) - 1);
+
+        UINT64 mant;      // 64-bit significand with explicit integer bit at 63
+        UINT16 signExp;   // sign (bit 15) + 15-bit biased exponent
+
+        if (exp == 0x7FF)
+        {
+            // Infinity or NaN: max exponent, integer bit set. Preserve the NaN
+            // payload (shifted into the extended fraction) and force it quiet.
+            mant = (1ULL << 63) | (frac << 11);
+            if (frac != 0)
+                mant |= (1ULL << 62);   // quiet bit
+            signExp = (UINT16)((sign << 15) | 0x7FFF);
+        }
+        else if (exp == 0 && frac == 0)
+        {
+            // Signed zero.
+            mant    = 0;
+            signExp = (UINT16)(sign << 15);
+        }
+        else if (exp == 0)
+        {
+            // Binary64 subnormal: normalize into the wider extended exponent range.
+            // value = frac * 2^(-1074); shift the leading fraction bit up to bit 63.
+            int leadingZeros = 0;
+            UINT64 m = frac;
+            while ((m & (1ULL << 51)) == 0)
+            {
+                m <<= 1;
+                leadingZeros++;
+            }
+            mant = m << 12;                                  // integer bit lands at 63
+            int e = -1023 - leadingZeros + 16383;            // rebias to extended
+            signExp = (UINT16)((sign << 15) | (UINT32)(e & 0x7FFF));
+        }
+        else
+        {
+            // Normal: prepend the implicit integer bit, align to bit 63, rebias.
+            mant = ((1ULL << 52) | frac) << 11;
+            int e = (int)exp - 1023 + 16383;
+            signExp = (UINT16)((sign << 15) | (UINT32)(e & 0x7FFF));
+        }
+
+        memcpy(slot10, &mant, sizeof(UINT64));
+        memcpy(slot10 + 8, &signExp, sizeof(UINT16));
+    }
+
+    // Read a single floating-point / SIMD register from a target CONTEXT buffer.
+    bool TryReadFloatRegisterFromContext(BYTE * ctxBuf, CorDebugRegister reg, DOUBLE * pValue)
+    {
+        DT_CONTEXT * pCtx = (DT_CONTEXT *)ctxBuf;
+
+#if defined(TARGET_X86)
+        if ((int)reg < REGISTER_X86_FPSTACK_0 || (int)reg > REGISTER_X86_FPSTACK_7)
+            return false;
+
+        const DT_FLOATING_SAVE_AREA * pFp = &pCtx->FloatSave;
+        ULONG32 rawTop        = (pFp->StatusWord >> 11) & 0x7;
+        ULONG32 floatStackTop = 7 - rawTop;
+        ULONG32 logical       = (ULONG32)((int)reg - REGISTER_X86_FPSTACK_0);
+
+        // The availability mask exposes all 8 FPSTACK registers even when the
+        // live stack is shallower; those out-of-depth slots read 0.
+        if (logical > floatStackTop)
+        {
+            *pValue = 0.0;
+            return true;
+        }
+
+        // REGISTER_X86_FPSTACK_0 names the bottom of the logical stack, so a
+        // logical index counts up from the bottom: ST(i) with i = top - logical.
+        ULONG32 slotIndex = floatStackTop - logical;
+        *pValue = X87ExtendedToDouble((const BYTE *)pFp->RegisterArea + slotIndex * 10);
+        return true;
+#elif defined(TARGET_AMD64)
+        if ((int)reg < REGISTER_AMD64_XMM0 || (int)reg > REGISTER_AMD64_XMM0 + 15)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->Xmm0 + (ULONG32)((int)reg - REGISTER_AMD64_XMM0) * 16, sizeof(DOUBLE));
+        return true;
+#elif defined(TARGET_ARM64)
+        if ((int)reg < REGISTER_ARM64_V0 || (int)reg > REGISTER_ARM64_V0 + 31)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->V + (ULONG32)((int)reg - REGISTER_ARM64_V0) * 16, sizeof(DOUBLE));
+        return true;
+#elif defined(TARGET_LOONGARCH64)
+        if ((int)reg < REGISTER_LOONGARCH64_F0 || (int)reg > REGISTER_LOONGARCH64_F0 + 31)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->F + (ULONG32)((int)reg - REGISTER_LOONGARCH64_F0) * 32, sizeof(DOUBLE));
+        return true;
+#elif defined(TARGET_RISCV64)
+        if ((int)reg < REGISTER_RISCV64_F0 || (int)reg > REGISTER_RISCV64_F0 + 31)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->F + (ULONG32)((int)reg - REGISTER_RISCV64_F0) * 8, sizeof(DOUBLE));
+        return true;
+#elif defined(TARGET_ARM)
+        if ((int)reg < REGISTER_ARM_D0 || (int)reg > REGISTER_ARM_D0 + 31)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->D + (ULONG32)((int)reg - REGISTER_ARM_D0) * 8, sizeof(DOUBLE));
+        return true;
+#else
+        UNREFERENCED_PARAMETER(pCtx);
+        UNREFERENCED_PARAMETER(reg);
+        UNREFERENCED_PARAMETER(pValue);
+        return false;
+#endif
+    }
+}
+
+// Write a single floating-point / SIMD register into a target CONTEXT buffer.
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::WriteFloatRegisterToContext(
+    IN  ContextBuffer contextBuffer,
+    IN  CorDebugRegister reg,
+    IN  const BYTE * pValue,
+    IN  ULONG32 valueSize)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (contextBuffer.pContextBytes == NULL || pValue == NULL ||
+        (valueSize != sizeof(float) && valueSize != sizeof(double)))
+    {
+        return E_INVALIDARG;
+    }
+    if (contextBuffer.contextSize < sizeof(DT_CONTEXT))
+        return E_INVALIDARG;
+
+    DT_CONTEXT * pCtx = reinterpret_cast<DT_CONTEXT *>(contextBuffer.pContextBytes);
+
+#if defined(TARGET_X86)
+    if ((int)reg < REGISTER_X86_FPSTACK_0 || (int)reg > REGISTER_X86_FPSTACK_7)
+        return E_INVALIDARG;
+
+    DT_FLOATING_SAVE_AREA * pFp = &pCtx->FloatSave;
+    ULONG32 rawTop        = (pFp->StatusWord >> 11) & 0x7;
+    ULONG32 floatStackTop = 7 - rawTop;
+    ULONG32 logical       = (ULONG32)((int)reg - REGISTER_X86_FPSTACK_0);
+    if (logical > floatStackTop)
+        return E_INVALIDARG;
+
+    // REGISTER_X86_FPSTACK_0 names the bottom of the logical stack: ST(i) with
+    // i = top - logical. FNSAVE stores slots in logical ST order.
+    ULONG32 slotIndex = floatStackTop - logical;
+    BYTE * slot      = (BYTE *)pFp->RegisterArea + slotIndex * 10;
+    double d = (valueSize == sizeof(float)) ? (double)(*(const float *)pValue)
+                                            : *(const double *)pValue;
+    X87DoubleToExtended(d, slot);
+#elif defined(TARGET_AMD64)
+    if ((int)reg < REGISTER_AMD64_XMM0 || (int)reg > REGISTER_AMD64_XMM0 + 15)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->Xmm0 + (ULONG32)((int)reg - REGISTER_AMD64_XMM0) * 16, pValue, valueSize);
+#elif defined(TARGET_ARM64)
+    if ((int)reg < REGISTER_ARM64_V0 || (int)reg > REGISTER_ARM64_V0 + 31)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->V + (ULONG32)((int)reg - REGISTER_ARM64_V0) * 16, pValue, valueSize);
+#elif defined(TARGET_LOONGARCH64)
+    if ((int)reg < REGISTER_LOONGARCH64_F0 || (int)reg > REGISTER_LOONGARCH64_F0 + 31)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->F + (ULONG32)((int)reg - REGISTER_LOONGARCH64_F0) * 32, pValue, valueSize);
+#elif defined(TARGET_RISCV64)
+    if ((int)reg < REGISTER_RISCV64_F0 || (int)reg > REGISTER_RISCV64_F0 + 31)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->F + (ULONG32)((int)reg - REGISTER_RISCV64_F0) * 8, pValue, valueSize);
+#elif defined(TARGET_ARM)
+    if ((int)reg < REGISTER_ARM_D0 || (int)reg > REGISTER_ARM_D0 + 31)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->D + (ULONG32)((int)reg - REGISTER_ARM_D0) * 8, pValue, valueSize);
+#else
+    UNREFERENCED_PARAMETER(pCtx);
+    UNREFERENCED_PARAMETER(reg);
+    UNREFERENCED_PARAMETER(pValue);
+    UNREFERENCED_PARAMETER(valueSize);
+    return E_NOTIMPL;
+#endif
+
+    return S_OK;
 }
 
 // Create a VMPTR_Object from a target object address
@@ -6292,7 +7402,7 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
     if (threadStore != NULL)
     {
         int count = (int)threadStore->ThreadCountInEE();
-        mAllocInfo = new (nothrow) AllocInfo[count + 1];
+        mAllocInfo = new (nothrow) AllocInfo[count];
         if (mAllocInfo == NULL)
             return E_OUTOFMEMORY;
 
@@ -6319,14 +7429,6 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
                 j++;
             }
         }
-        gc_alloc_context globalCtx = ((ee_alloc_context)g_global_alloc_context).m_GCAllocContext;
-        if (globalCtx.alloc_ptr != nullptr)
-        {
-            mAllocInfo[j].Ptr = (CORDB_ADDRESS)globalCtx.alloc_ptr;
-            mAllocInfo[j].Limit = (CORDB_ADDRESS)globalCtx.alloc_limit;
-            j++;
-        }
-
         mAllocContextCount = j;
     }
 
@@ -6672,7 +7774,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateHeapSegments(
     HRESULT hr = DacHeapWalker::InitHeapDataWks(heaps, heapCount);
 #endif
 
-    NewArrayHolder<HeapData> _heapHolder = heaps;
+    NewArrayHolder<HeapData> _heapHolder(heaps);
 
     if (FAILED(hr))
         return hr;
@@ -7063,13 +8165,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGCHeapInformation(OUT COR_HEAP
 }
 
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::HasReadWriteMetadata(VMPTR_PEAssembly vmPEAssembly, OUT BOOL* pHasReadWriteMetadata)
 {
     DD_ENTER_MAY_THROW;
-    if (pAddrMDInternalRW == NULL)
+    if (pHasReadWriteMetadata == NULL)
         return E_INVALIDARG;
     PEAssembly * pPEAssembly = vmPEAssembly.GetDacPtr();
-    *pAddrMDInternalRW = pPEAssembly->GetMDInternalRWAddress();
+    *pHasReadWriteMetadata = pPEAssembly->HasReadWriteMetadata();
     return S_OK;
 }
 
@@ -7089,7 +8191,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetActiveRejitILCodeVersionNode(V
     // manager's active IL version hasn't yet asked the profiler for the IL body to use, in which case we want to filter it
     //  out from the return in this method.
     ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodTk);
-    if (activeILVersion.IsNull() || activeILVersion.IsDefaultVersion() || activeILVersion.GetRejitState() != RejitFlags::kStateActive)
+    if (activeILVersion.IsNull() || activeILVersion.IsDefaultVersion() || activeILVersion.GetRejitState() != RejitFlags::kStateActive || activeILVersion.GetSource() != CodeVersionSource::kReJIT)
     {
         pVmILCodeVersionNode->SetDacTargetPtr(0);
     }
@@ -7128,7 +8230,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetILCodeVersionNode(VMPTR_Native
 #ifdef FEATURE_REJIT
     NativeCodeVersionNode* pNativeCodeVersionNode = vmNativeCodeVersionNode.GetDacPtr();
     ILCodeVersion ilCodeVersion = pNativeCodeVersionNode->GetILCodeVersion();
-    if (ilCodeVersion.IsDefaultVersion())
+    if (ilCodeVersion.IsDefaultVersion() || ilCodeVersion.GetSource() != CodeVersionSource::kReJIT)
     {
         pVmILCodeVersionNode->SetDacTargetPtr(0);
     }
@@ -7141,6 +8243,59 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetILCodeVersionNode(VMPTR_Native
     _ASSERTE(!"You shouldn't be calling this - rejit is not supported in this build");
     pVmILCodeVersionNode->SetDacTargetPtr(0);
 #endif
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetEnCILCodeAndSig(VMPTR_Module vmModule, mdMethodDef methodTk, SIZE_T enCVersion, TargetBuffer * pCodeInfo, mdSignature * pLocalSigToken)
+{
+    DD_ENTER_MAY_THROW;
+    if (pCodeInfo == NULL || pLocalSigToken == NULL)
+        return E_INVALIDARG;
+
+    pCodeInfo->Clear();
+    *pLocalSigToken = mdSignatureNil;
+
+    PTR_Module pModule = vmModule.GetDacPtr();
+    CodeVersionManager * pCodeVersionManager = pModule->GetCodeVersionManager();
+
+    TADDR pTargetIL = 0; // target address of start of IL blob for the requested EnC version
+    {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+
+        // Find the explicit EnC IL code version stamped with the requested EnC version. The default
+        // version has no explicit node (it represents the original, unedited IL), so it is skipped.
+        ILCodeVersionCollection ilCodeVersions = pCodeVersionManager->GetILCodeVersions(pModule, methodTk);
+        for (ILCodeVersionIterator cur = ilCodeVersions.Begin(), end = ilCodeVersions.End(); cur != end; cur++)
+        {
+            ILCodeVersion ilCodeVersion = *cur;
+            if (!ilCodeVersion.IsDefaultVersion() &&
+                ilCodeVersion.GetSource() == CodeVersionSource::kEnC &&
+                ilCodeVersion.GetEnCVersion() == enCVersion)
+            {
+                pTargetIL = dac_cast<TADDR>(ilCodeVersion.GetIL());
+                break;
+            }
+        }
+    }
+
+    if (pTargetIL != 0)
+    {
+        // Bring the IL blob over to the host and extract the code buffer and local var sig token.
+        // We need the target address of the IL itself (beyond the header), so we add the offset from
+        // the beginning of the host IL blob (the header) to the beginning of the IL to the target
+        // address of the blob.
+        COR_ILMETHOD * pHostIL = DacGetIlMethod(pTargetIL);
+        COR_ILMETHOD_DECODER header(pHostIL);
+
+        pCodeInfo->pAddress = pTargetIL + ((SIZE_T)(header.Code) - (SIZE_T)pHostIL);
+        pCodeInfo->cbSize = header.GetCodeSize();
+
+        if (header.LocalVarSigTok != mdTokenNil)
+        {
+            *pLocalSigToken = header.GetLocalVarSigTok();
+        }
+    }
+
     return S_OK;
 }
 
@@ -7189,32 +8344,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Mo
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDefinesBitField(ULONG32 *pDefines)
-{
-    DD_ENTER_MAY_THROW;
-    if (pDefines == NULL)
-        return E_INVALIDARG;
-
-    if (g_pDebugger == NULL)
-        return CORDBG_E_NOTREADY;
-
-    *pDefines = g_pDebugger->m_defines;
-    return S_OK;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMDStructuresVersion(ULONG32* pMDStructuresVersion)
-{
-    DD_ENTER_MAY_THROW;
-    if (pMDStructuresVersion == NULL)
-        return E_INVALIDARG;
-
-    if (g_pDebugger == NULL)
-        return CORDBG_E_NOTREADY;
-
-    *pMDStructuresVersion = g_pDebugger->m_mdDataStructureVersion;
-    return S_OK;
-}
-
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnableGCNotificationEvents(BOOL fEnable)
 {
     DD_ENTER_MAY_THROW
@@ -7251,7 +8380,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAssemblyFromModule(VMPTR_Modul
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ParseContinuation(
     CORDB_ADDRESS continuationAddress,
-    OUT PCODE* pDiagnosticIP,
+    OUT CORDB_ADDRESS* pDiagnosticIP,
     OUT CORDB_ADDRESS* pNextContinuation,
     OUT UINT32* pState)
 {
@@ -7275,6 +8404,10 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ParseContinuation(
     PTR_ResumeInfo pResumeInfo = nullptr;
     UINT32 state = 0;
     int numFound = 0;
+
+    *pDiagnosticIP = 0;
+    *pNextContinuation = 0;
+    *pState = 0;
 
     ApproxFieldDescIterator continuationFieldIter(pContinuationMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
     for (FieldDesc *continuationField = continuationFieldIter.Next(); continuationField != NULL && numFound < 3; continuationField = continuationFieldIter.Next())
@@ -7302,7 +8435,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ParseContinuation(
         return E_FAIL;
     }
 
-    *pDiagnosticIP = pResumeInfo->pDiagnosticIP;
+    *pDiagnosticIP = static_cast<CORDB_ADDRESS>(pResumeInfo->pDiagnosticIP);
     *pNextContinuation = static_cast<CORDB_ADDRESS>(dac_cast<TADDR>(OBJECTREFToObject(pNext)));
     *pState = state;
 
@@ -7338,19 +8471,19 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAsyncLocals(VMPTR_Method
             {
                 return hr;
             }
-            nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
+            nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode()));
         }
         else
         {
-            nativeCodeStartAddr = PCODEToPINSTR(pMethodDesc->GetNativeCode());
+            nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(pMethodDesc->GetNativeCode()));
         }
 
         DebugInfoRequest request;
         request.InitFromStartingAddr(pMethodDesc, nativeCodeStartAddr);
 
         ICorDebugInfo::AsyncInfo asyncInfo = {};
-        NewArrayHolder<ICorDebugInfo::AsyncSuspensionPoint> asyncSuspensionPoints(NULL);
-        NewArrayHolder<ICorDebugInfo::AsyncContinuationVarInfo> asyncVars(NULL);
+        NewArrayHolder<ICorDebugInfo::AsyncSuspensionPoint> asyncSuspensionPoints;
+        NewArrayHolder<ICorDebugInfo::AsyncContinuationVarInfo> asyncVars;
         ULONG32 cAsyncVars = 0;
 
         BOOL success = DebugInfoManager::GetAsyncDebugInfo(
@@ -7413,9 +8546,71 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGenericArgTokenIndex(VMPTR_Met
     return S_OK;
 }
 
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetRuntimeVersion(OUT COR_VERSION * pVersion)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (pVersion == nullptr)
+        return E_INVALIDARG;
+
+    pVersion->dwMajor = RuntimeProductMajorVersion;
+    pVersion->dwMinor = RuntimeProductMinorVersion;
+    pVersion->dwBuild = RuntimeProductPatchVersion;
+    pVersion->dwSubBuild = 0;
+
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetInfo(OUT TargetInfo * pTargetInfo)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (pTargetInfo == NULL)
+        return E_INVALIDARG;
+
+#if defined(TARGET_X86)
+    pTargetInfo->arch = kArchX86;
+#elif defined(TARGET_AMD64)
+    pTargetInfo->arch = kArchAMD64;
+#elif defined(TARGET_ARM)
+    pTargetInfo->arch = kArchArm;
+#elif defined(TARGET_ARM64)
+    pTargetInfo->arch = kArchArm64;
+#elif defined(TARGET_LOONGARCH64)
+    pTargetInfo->arch = kArchLoongArch64;
+#elif defined(TARGET_RISCV64)
+    pTargetInfo->arch = kArchRiscV64;
+#elif defined(TARGET_WASM)
+    pTargetInfo->arch = kArchWasm;
+#else
+    pTargetInfo->arch = kArchUnknown;
+#endif
+
+#if defined(TARGET_BROWSER)
+    pTargetInfo->os = kOSBrowser;
+#elif defined(TARGET_APPLE)
+    pTargetInfo->os = kOSApple;
+#elif defined(TARGET_UNIX)
+    pTargetInfo->os = kOSUnix;
+#elif defined(TARGET_WINDOWS)
+    pTargetInfo->os = kOSWindows;
+#else
+    pTargetInfo->os = kOSUnknown;
+#endif
+
+#if defined(TARGET_64BIT)
+    pTargetInfo->pointerSize = 8;
+#else
+    pTargetInfo->pointerSize = 4;
+#endif
+
+    return S_OK;
+}
+
 DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, UINT32 handleMask, BOOL resolvePointers)
     : mDac(dac), mWalkStacks(walkStacks), mHandleMask(handleMask), mStackWalker(NULL),
-      mResolvePointers(resolvePointers), mHandleWalker(NULL)
+      mResolvePointers(resolvePointers), mHandleWalker(NULL), mExternalMemoryHandleIndex(0),
+      mExternalMemoryHeapInitialized(false)
 {
 }
 
@@ -7438,6 +8633,11 @@ HRESULT DacRefWalker::Init()
     if (mWalkStacks && SUCCEEDED(hr))
     {
         hr = NextThread();
+    }
+
+    if ((mHandleMask & CorHandleStrong) && SUCCEEDED(hr))
+    {
+        hr = WalkExternalMemoryHandles();
     }
 
     return hr;
@@ -7486,6 +8686,74 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
     return result;
 }
 
+HRESULT DacRefWalker::WalkExternalMemoryHandles()
+{
+    ExternalMemoryScanContext context(this);
+    ExternalMemoryHandle::GCScanRoots(ExternalMemoryHandleCallback, &context);
+    return context.Result;
+}
+
+void DacRefWalker::ExternalMemoryHandleCallback(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags)
+{
+    ExternalMemoryScanContext* context = static_cast<ExternalMemoryScanContext*>(sc);
+    DacRefWalker* walker = context->Walker;
+
+    DacGcReference data = {};
+    data.vmDomain.SetDacTargetPtr(AppDomain::GetCurrentDomain().GetAddr());
+    data.dwType = CorHandleStrong;
+    data.i64ExtraData = 0;
+
+    if (flags & GC_CALL_INTERIOR)
+    {
+        CLRDATA_ADDRESS object = walker->ReadPointer(ppObj.GetAddr());
+        if (object == 0 || object == (CLRDATA_ADDRESS)~0)
+            return;
+
+        if (walker->mResolvePointers)
+        {
+            if (!walker->mExternalMemoryHeapInitialized)
+            {
+                HRESULT hr = walker->mExternalMemoryHeap.Init();
+                if (FAILED(hr))
+                {
+                    context->Result = hr;
+                    return;
+                }
+
+                walker->mExternalMemoryHeapInitialized = true;
+            }
+
+            CORDB_ADDRESS resolvedObject = 0;
+            HRESULT hr = walker->mExternalMemoryHeap.ListNearObjects((CORDB_ADDRESS)object, NULL, &resolvedObject, NULL);
+            if (FAILED(hr))
+                return;
+
+            object = TO_CDADDR(resolvedObject);
+        }
+
+        data.pObject = CLRDATA_ADDRESS_TO_TADDR(object) | 1;
+    }
+    else
+    {
+        data.objHnd.SetDacTargetPtr(ppObj.GetAddr());
+    }
+
+    if (!walker->mExternalMemoryHandles.Add(data))
+        context->Result = E_OUTOFMEMORY;
+}
+
+CLRDATA_ADDRESS DacRefWalker::ReadPointer(TADDR address)
+{
+    ULONG32 bytesRead = 0;
+    TADDR result = 0;
+    HRESULT hr = mDac->m_pTarget->ReadVirtual(address, (BYTE*)&result, sizeof(TADDR), &bytesRead);
+
+    if (FAILED(hr) || bytesRead != sizeof(TADDR))
+        return (CLRDATA_ADDRESS)~0;
+
+    return TO_CDADDR(result);
+}
+
 
 
 HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetched)
@@ -7508,6 +8776,11 @@ HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetch
             if (FAILED(hr))
                 return hr;
         }
+    }
+
+    while (total < celt && mExternalMemoryHandleIndex < mExternalMemoryHandles.GetCount())
+    {
+        roots[total++] = mExternalMemoryHandles.Get(mExternalMemoryHandleIndex++);
     }
 
     while (total < celt && mStackWalker)

@@ -203,6 +203,12 @@ static void OpenLibraryOnce(void)
     {
         DlOpen(MAKELIB("111"));
     }
+
+    // OpenSSL 4 from ports is probed last, but not preferred.
+    if (libssl == NULL)
+    {
+        DlOpen(MAKELIB("19"));
+    }
 #elif defined(__OpenBSD__)
     // OpenBSD base is LibreSSL; load the OpenSSL ports build from /usr/local/lib/eopenssl<NN>.
     // Probe the known package directories explicitly, preferring 3.x and trying 4.0 last.

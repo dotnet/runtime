@@ -13,10 +13,20 @@ if (FEATURE_DYNAMIC_CODE_COMPILED)
   set(FEATURE_PGO 1)
 endif()
 
+if (NOT DEFINED FEATURE_PGO AND CLR_CMAKE_TARGET_ARCH_WASM)
+  set(FEATURE_PGO 1)
+endif()
+
 # On desktop, if dynamic code compiled is false, we still enable static linking so we don't have to add platform manifest entries
 # for interpreter library, which is required for the packs build
 if (CLR_CMAKE_TARGET_ARCH_WASM OR CLR_CMAKE_TARGET_APPLE_MOBILE OR NOT FEATURE_DYNAMIC_CODE_COMPILED)
   set(FEATURE_STATICALLY_LINKED 1)
+endif()
+
+if(FEATURE_MULTITHREADING)
+  set(FEATURE_MULTICOREJIT 1)
+else()
+  set(FEATURE_MULTICOREJIT 0)
 endif()
 
 if(CLR_CMAKE_TARGET_TIZEN_LINUX)
@@ -34,10 +44,9 @@ endif(NOT DEFINED FEATURE_EVENT_TRACE)
 
 # FEATURE_EVENTSOURCE_XPLAT: Enables the LTTng-based XplatEventLogger path (LTTNG_TRACE_CONTEXT,
 # XplatEventLogger, XplatEventLoggerController, and the generated FireEtXplat* functions).
-# Currently Linux-only (excluding Android). Used as the sole guard for all LTTng-related code;
-# platforms without this flag (Windows, macOS, Browser, WASI) use EventPipe-only eventing.
+# Currently Linux-only (excluding Android and OpenHarmony).
 if(NOT DEFINED FEATURE_EVENTSOURCE_XPLAT)
-  if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT (CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_WASM))
+  if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_OPENHARMONY AND NOT (CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_WASM))
     # To actually disable FEATURE_EVENTSOURCE_XPLAT, also change clr.featuredefines.props
     set(FEATURE_EVENTSOURCE_XPLAT 1)
   endif()
@@ -53,7 +62,7 @@ if(NOT DEFINED FEATURE_PERFTRACING)
 endif(NOT DEFINED FEATURE_PERFTRACING)
 
 if(NOT DEFINED FEATURE_DBGIPC)
-  if(CLR_CMAKE_TARGET_UNIX)
+  if(CLR_CMAKE_HOST_UNIX)
     set(FEATURE_DBGIPC 1)
   endif()
 endif(NOT DEFINED FEATURE_DBGIPC)
@@ -68,13 +77,17 @@ if(NOT DEFINED FEATURE_CORPROFILER)
   endif()
 endif()
 
+if(NOT DEFINED FEATURE_PROFAPI_ATTACH_DETACH)
+  set(FEATURE_PROFAPI_ATTACH_DETACH ${FEATURE_CORPROFILER})
+endif()
+
 if(CLR_CMAKE_TARGET_ARCH_WASM)
   # FEATURE_INTERPRETER is already enabled by default
   set(FEATURE_PORTABLE_ENTRYPOINTS 1)
   set(FEATURE_PORTABLE_HELPERS 1)
 endif(CLR_CMAKE_TARGET_ARCH_WASM)
 
-if(CLR_CMAKE_TARGET_BROWSER)
+if(CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
   set(FEATURE_WEBCIL 1)
 endif()
 
@@ -91,6 +104,16 @@ if(NOT DEFINED FEATURE_INTERPRETER)
   endif()
 endif()
 
+# FEATURE_INTERPRETER_DIRECT_CALLS: In interpreter-only runtimes, the interpreter and GC info encoder
+# call the VM's JIT-EE implementation directly instead of through the virtual ICorJitInfo interface.
+# JITs and other tools that use ICorJitInfo opt out via the IGNORE_FEATURE_INTERPRETER_DIRECT_CALLS target property.
+if(NOT DEFINED FEATURE_INTERPRETER_DIRECT_CALLS)
+  set(FEATURE_INTERPRETER_DIRECT_CALLS 0)
+  if(NOT FEATURE_DYNAMIC_CODE_COMPILED AND NOT CLR_CROSS_COMPONENTS_BUILD)
+    set(FEATURE_INTERPRETER_DIRECT_CALLS ${FEATURE_INTERPRETER})
+  endif()
+endif()
+
 if(NOT DEFINED FEATURE_STANDALONE_GC)
   set(FEATURE_STANDALONE_GC 1)
 endif(NOT DEFINED FEATURE_STANDALONE_GC)
@@ -100,10 +123,12 @@ if(NOT DEFINED FEATURE_SINGLE_FILE_DIAGNOSTICS)
 endif(NOT DEFINED FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 if(NOT DEFINED FEATURE_INPROC_CRASHREPORT)
-  if(CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_TARGET_MACCATALYST)
-    set(FEATURE_INPROC_CRASHREPORT 1)
-  else()
+  if(CLR_CMAKE_TARGET_WIN32 OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+    # Windows, which requires a different native crash-context implementation.
+    # Browser and WASI, which do not provide the required native fatal-signal process model.
     set(FEATURE_INPROC_CRASHREPORT 0)
+  else()
+    set(FEATURE_INPROC_CRASHREPORT 1)
   endif()
 endif(NOT DEFINED FEATURE_INPROC_CRASHREPORT)
 
@@ -115,7 +140,9 @@ if (CLR_CMAKE_TARGET_APPLE)
   set(FEATURE_OBJCMARSHAL 1)
 endif()
 
-if(NOT DEFINED FEATURE_JAVAMARSHAL)
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+  set(FEATURE_JAVAMARSHAL 0)
+elseif(NOT DEFINED FEATURE_JAVAMARSHAL)
   if(CLR_CMAKE_TARGET_ANDROID)
     set(FEATURE_JAVAMARSHAL 1)
   else()

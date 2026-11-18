@@ -43,8 +43,11 @@ public enum DataType
     Module,
     ModuleLookupMap,
     AppDomain,
+    ExternalMemoryHandle,
     Debugger,
     DebuggerRCThread,
+    DebuggerPatchTable,
+    DebuggerControllerPatch,
     MemoryRange,
     SystemDomain,
     Assembly,
@@ -62,6 +65,8 @@ public enum DataType
     MethodTable,
     DynamicStaticsInfo,
     EEClass,
+    EEClassOptionalFields,
+    SystemVEightByteRegistersInfo,
     CoreLibBinder,
     MethodTableAuxiliaryData,
     GenericsDictInfo,
@@ -71,6 +76,13 @@ public enum DataType
     FnPtrTypeDesc,
     FieldDesc,
     DynamicMetadata,
+    MDInternalRW,
+    CLiteWeightStgdbRW,
+    CMiniMdRW,
+    CMiniMdSchema,
+    TableRW,
+    StgPool,
+    StgPoolSeg,
     StressLog,
     StressLogModuleDesc,
     StressLogHeader,
@@ -98,6 +110,8 @@ public enum DataType
     InterpByteCodeStart,
     InterpMethod,
     InterpMethodContextFrame,
+    VirtualIPRangeSection,
+    FunctionTableIndexRangeSection,
     Array,
     Delegate,
     TypedByRef,
@@ -125,6 +139,7 @@ public enum DataType
     CodeHeap,
     LoaderCodeHeap,
     HostCodeHeap,
+    DynamicFunctionTable,
     MethodDescVersioningState,
     ILCodeVersioningState,
     NativeCodeVersionNode,
@@ -178,6 +193,7 @@ public enum DataType
     ExternalMethodFrame,
     DynamicHelperFrame,
     InterpreterFrame,
+    PInvokeCalliFrame,
 
     ComCallWrapper,
     SimpleComCallWrapper,
@@ -190,6 +206,7 @@ public enum DataType
     InternalComInterfaceDispatch,
     AuxiliarySymbolInfo,
     VASigCookie,
+    Signature,
     CodeRangeMapRangeList,
 
     /* GC Data Types */
@@ -213,6 +230,9 @@ public enum DataType
     EnCAddedStaticField,
     EnCSyncBlockInfo,
     UnorderedArrayBase,
+
+    LayoutEEClass,
+    EEClassLayoutInfo,
 }
 
 public static class DataTypeTargetExtensions

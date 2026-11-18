@@ -680,7 +680,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
     public class Test
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -719,7 +718,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
     public class Test
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1784,7 +1782,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
             GC.KeepAlive(t);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void DynamicCSharpRunTest()
         {
@@ -1843,7 +1840,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
     public class Test
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -3464,7 +3460,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
             GC.KeepAlive(t);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void DynamicCSharpRunTest()
         {
@@ -3497,7 +3492,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
     public class Test
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

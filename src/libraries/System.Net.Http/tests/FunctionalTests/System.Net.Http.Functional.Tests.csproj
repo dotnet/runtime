@@ -9,6 +9,8 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)-osx</TargetFrameworks>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <!-- Tests exercise the experimental SocketsHttpHandler connection eviction control and HttpRequestMessage.ConnectionId (SYSLIB5008) APIs. -->
+    <NoWarn>$(NoWarn);SYSLIB5008</NoWarn>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
     <!-- https://github.com/dotnet/runtime/issues/126862 -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
@@ -40,6 +42,8 @@
     <Scenario>WasmTestOnWasmtime</Scenario>
     <DefineConstants>$(DefineConstants);TARGET_WASI</DefineConstants>
     <XunitShowProgress>true</XunitShowProgress>
+    <!-- Test SocketsHttpHandler through HttpClientHandler, as on Android, instead of the wasi:http handler. -->
+    <UseNativeHttpHandler>false</UseNativeHttpHandler>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
@@ -145,6 +149,8 @@
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="ByteArrayContentTest.cs" />
+    <Compile Include="CompressedContentTest.cs" />
+    <Compile Include="CompressedContentTest.NonBrowser.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ChannelBindingAwareContent.cs"
              Link="Common\System\Net\Http\ChannelBindingAwareContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\DribbleStream.cs"

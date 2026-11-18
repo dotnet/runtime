@@ -74,7 +74,7 @@ namespace System.Security.Principal
         public static readonly int MaxBinaryLength;
         public static readonly int MinBinaryLength;
         public SecurityIdentifier(byte[] binaryForm, int offset) { }
-        public SecurityIdentifier(System.IntPtr binaryForm) { }
+        public unsafe SecurityIdentifier(System.IntPtr binaryForm) { }
         public SecurityIdentifier(System.Security.Principal.WellKnownSidType sidType, System.Security.Principal.SecurityIdentifier? domainSid) { }
         public SecurityIdentifier(string sddlForm) { }
         public System.Security.Principal.SecurityIdentifier? AccountDomainSid { get { throw null; } }

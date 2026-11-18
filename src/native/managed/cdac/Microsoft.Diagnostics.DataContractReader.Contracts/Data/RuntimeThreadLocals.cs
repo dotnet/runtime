@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.RuntimeThreadLocals))]
 internal sealed partial class RuntimeThreadLocals : IData<RuntimeThreadLocals>
 {
-    [Field] public EEAllocContext AllocContext { get; }
+    [Field] public partial EEAllocContext AllocContext { get; }
 }

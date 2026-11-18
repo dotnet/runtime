@@ -1,7 +1,4 @@
 add_definitions(
-    -DDBI_COMPILE
-    -DFEATURE_METADATA_CUSTOM_DATA_SOURCE
-    -DFEATURE_METADATA_DEBUGGEE_DATA_SOURCE
     -DFEATURE_NO_HOST
     -DFEATURE_METADATA_LOAD_TRUSTED_IMAGES)
 
@@ -13,6 +10,7 @@ set(CORDBDI_SOURCES
   shimstackwalk.cpp
   breakpoint.cpp
   cordb.cpp
+  cordbregisterset.cpp
   divalue.cpp
   dbgtransportmanager.cpp
   hash.cpp
@@ -29,7 +27,6 @@ set(CORDBDI_SOURCES
   rsthread.cpp
   rstype.cpp
   shared.cpp
-  symbolinfo.cpp
   valuehome.cpp
 )
 
@@ -43,31 +40,12 @@ set(CORDBDI_HEADERS
     nativepipeline.h
     rsenumerator.hpp
     rspriv.h
-    rspriv.inl
-    symbolinfo.h)
+    rspriv.inl)
 
 
 if(CLR_CMAKE_HOST_WIN32)
     #use static crt
     set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
-
-    if (CLR_CMAKE_TARGET_ARCH_AMD64 OR ((CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM)
-        AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD))
-        set(CORDBDI_SOURCES_ASM_FILE ${ARCH_SOURCES_DIR}/floatconversion.asm)
-    endif()
-
-    if ((CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64) AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
-        convert_to_absolute_path(CORDBDI_SOURCES_ASM_FILE ${CORDBDI_SOURCES_ASM_FILE})
-        preprocess_files(CORDBDI_SOURCES_ASM_FILE ${CORDBDI_SOURCES_ASM_FILE})
-    endif()
-elseif(CLR_CMAKE_HOST_UNIX)
-
-    if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_LOONGARCH64 OR CLR_CMAKE_TARGET_ARCH_RISCV64)
-      set(CORDBDI_SOURCES_ASM_FILE
-        ${ARCH_SOURCES_DIR}/floatconversion.S
-      )
-    endif()
-
 endif(CLR_CMAKE_HOST_WIN32)
 
 if (CLR_CMAKE_TARGET_WIN32)
@@ -75,8 +53,13 @@ if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND CORDBDI_SOURCES ${CORDBDI_HEADERS})
 endif (CLR_CMAKE_TARGET_WIN32)
 
-list(APPEND CORDBDI_SOURCES ${CORDBDI_SOURCES_ASM_FILE})
-
 add_library_clr(cordbdi STATIC ${CORDBDI_SOURCES})
+set_target_properties(cordbdi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(cordbdi PRIVATE stdafx.h)
-add_dependencies(cordbdi eventing_headers)
+
+if(CLR_CMAKE_HOST_UNIX)
+    add_library_clr(cordbdi_universal STATIC ${CORDBDI_SOURCES})
+    set_target_properties(cordbdi_universal PROPERTIES DBI_COMPONENT TRUE)
+    target_compile_definitions(cordbdi_universal PRIVATE MSCORDBI_LINKS_PRIVATE_PAL)
+    target_precompile_headers(cordbdi_universal PRIVATE stdafx.h)
+endif(CLR_CMAKE_HOST_UNIX)

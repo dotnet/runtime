@@ -57,7 +57,7 @@ public:
     BOOL IsCompletelyInited()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_pILStub != (PCODE)1);
+        return m_pILStub != (PCODE)1;
     }
 
     static UINT32 GetOffsetOfStub()
@@ -287,14 +287,14 @@ public:
 
     PCODE GetManagedTarget() const
     {
-        CONTRACT (PCODE)
+        CONTRACTL
         {
             THROWS;
             GC_TRIGGERS;
             MODE_ANY;
             PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         OBJECTHANDLE hndDelegate = GetObjectHandle();
         if (hndDelegate != NULL)
@@ -308,26 +308,26 @@ public:
             // We have optimizations that skip the Invoke method and call directly the
             // delegate's target method. We need to return the target in that case,
             // otherwise debugger would fail to step in.
-            RETURN orDelegate->GetMethodPtr();
+            return orDelegate->GetMethodPtr();
         }
         else if (m_pManagedTarget != (PCODE)NULL)
         {
-            RETURN m_pManagedTarget;
+            return m_pManagedTarget;
         }
         else if (m_pMD != NULL)
         {
-            RETURN m_pMD->GetMultiCallableAddrOfCode();
+            return m_pMD->GetMultiCallableAddrOfCode();
         }
         else
         {
-            RETURN (PCODE)NULL;
+            return (PCODE)NULL;
         }
     }
 #endif // !DACCESS_COMPILE
 
     OBJECTHANDLE GetObjectHandle() const
     {
-        CONTRACT (OBJECTHANDLE)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
@@ -339,9 +339,9 @@ public:
                          m_state == kLoadTimeInited ||
                          m_pObjectHandle == NULL);
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pObjectHandle;
+        return m_pObjectHandle;
     }
 
     bool IsCollectedDelegate() const
@@ -353,50 +353,62 @@ public:
 
     UMThunkMarshInfo* GetUMThunkMarshInfo() const
     {
-        CONTRACT (UMThunkMarshInfo*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             SUPPORTS_DAC;
             PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pUMThunkMarshInfo;
+        return m_pUMThunkMarshInfo;
     }
 
     PCODE GetCode() const
     {
-        CONTRACT (PCODE)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
-            POSTCONDITION(CheckPointer(dac_cast<BYTE*>(RETVAL), NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN PINSTRToPCODE(dac_cast<TADDR>(m_pUMEntryThunk));
+        return PINSTRToPCODE(dac_cast<TADDR>(m_pUMEntryThunk));
     }
 
     MethodDesc* GetMethod() const
     {
-        CONTRACT (MethodDesc*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
-            POSTCONDITION(CheckPointer(RETVAL,NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pMD;
+        return m_pMD;
     }
 };
+
+struct UMEntryThunkDataHolderTraits final
+{
+    using Type = UMEntryThunkData*;
+    static constexpr Type Default() { return NULL; }
+
+    static void Free(Type thunk) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (thunk != NULL)
+            UMEntryThunkData::FreeUMEntryThunk(thunk);
+    }
+};
+
+using UMEntryThunkDataHolder = LifetimeHolder<UMEntryThunkDataHolderTraits>;
 
 // Cache to hold UMEntryThunk/UMThunkMarshInfo instances associated with MethodDescs.
 // All UMEntryThunk/UMThunkMarshInfo instances are destroyed when the cache goes away.
@@ -418,11 +430,18 @@ private:
         static count_t Hash(key_t k)           { LIMITED_METHOD_CONTRACT; return (count_t)(size_t)k; }
     };
 
-    static void DestroyMarshInfo(UMThunkMarshInfo *pMarshInfo)
+    struct MarshInfoHolderTraits final
     {
-        WRAPPER_NO_CONTRACT;
-        pMarshInfo->UMThunkMarshInfo::~UMThunkMarshInfo();
-    }
+        using Type = UMThunkMarshInfo*;
+        static constexpr Type Default() { return NULL; }
+
+        static void Free(Type pMarshInfo) noexcept
+        {
+            WRAPPER_NO_CONTRACT;
+            if (pMarshInfo != NULL)
+                pMarshInfo->UMThunkMarshInfo::~UMThunkMarshInfo();
+        }
+    };
 
     SHash<ThunkSHashTraits> m_hash;
     Crst       m_crst;

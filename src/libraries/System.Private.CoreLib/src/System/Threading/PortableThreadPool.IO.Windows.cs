@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
@@ -78,10 +79,9 @@ namespace System.Threading
         private void InitializeIOOnWindows()
         {
             Debug.Assert(IOCompletionPollerCount % IOCompletionPortCount == 0);
-            int numConcurrentThreads = IOCompletionPollerCount / IOCompletionPortCount;
             for (int i = 0; i < IOCompletionPortCount; i++)
             {
-                _ioPorts[i] = CreateIOCompletionPort(numConcurrentThreads);
+                _ioPorts[i] = CreateIOCompletionPort(int.MaxValue);
             }
         }
 
@@ -187,9 +187,20 @@ namespace System.Threading
                 1024;
 #endif
 
+            // The events of a batch are packed into balanced binary trees, one work item per tree.
+            // A tree is unpacked by the thread that executes its root, so the events of a large tree can
+            // end up serialized behind that thread unless other threads steal them, which only happens
+            // when they run out of work. Capping the size bounds that delay, at the cost of posting more
+            // work items - which is fine, since it only happens for batches that are large to begin with.
+            // Anything in the 8 - 64 range performs the same, larger values give up the latency benefit.
+            private const int MaxTreeSize = 32;
+
             private readonly nint _port;
             private readonly Interop.Kernel32.OVERLAPPED_ENTRY* _nativeEvents;
-            private readonly ThreadPoolTypedWorkItemQueue? _events;
+
+            // Pool of reusable Event objects to avoid allocating one per completion.
+            private readonly ConcurrentQueue<Event>? _eventPool;
+
             private readonly Thread _thread;
 
             public IOCompletionPoller(nint port)
@@ -202,7 +213,7 @@ namespace System.Threading
                     _nativeEvents =
                         (Interop.Kernel32.OVERLAPPED_ENTRY*)
                         NativeMemory.Alloc(NativeEventCapacity, (nuint)sizeof(Interop.Kernel32.OVERLAPPED_ENTRY));
-                    _events = new ThreadPoolTypedWorkItemQueue();
+                    _eventPool = new ConcurrentQueue<Event>();
 
                     // These threads don't run user code, use a smaller stack size
                     _thread = new Thread(Poll, SmallStackSizeBytes);
@@ -237,7 +248,7 @@ namespace System.Threading
             private void Poll()
             {
                 Debug.Assert(_nativeEvents != null);
-                Debug.Assert(_events != null);
+                Debug.Assert(_eventPool != null);
 
                 while (
                     Interop.Kernel32.GetQueuedCompletionStatusEx(
@@ -251,25 +262,67 @@ namespace System.Threading
                     Debug.Assert(nativeEventCount > 0);
                     Debug.Assert(nativeEventCount <= NativeEventCapacity);
 
-                    for (int i = 0; i < nativeEventCount; ++i)
+                    // Pack the events into balanced binary trees and post each tree to the thread pool
+                    // queue as one item. The trees are built directly from the native events buffer and
+                    // are unpacked into the local queues as the items execute.
+                    for (int i = 0; i < nativeEventCount; i += MaxTreeSize)
                     {
-                        Interop.Kernel32.OVERLAPPED_ENTRY* nativeEvent = &_nativeEvents[i];
-                        if (nativeEvent->lpOverlapped != null) // shouldn't be null since null is not posted
+                        Event? root = BuildTree(_nativeEvents, i, Math.Min(MaxTreeSize, nativeEventCount - i));
+                        if (root is not null)
                         {
-                            _events.BatchEnqueue(new Event(nativeEvent->lpOverlapped, nativeEvent->dwNumberOfBytesTransferred));
+                            ThreadPool.UnsafeQueueUserWorkItemInternal(root, preferLocal: false);
                         }
                     }
-
-                    _events.CompleteBatchEnqueue();
                 }
 
                 ThrowHelper.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
             }
 
+            private Event RentEvent()
+            {
+                Debug.Assert(_eventPool != null);
+
+                return _eventPool.TryDequeue(out Event? existingEvent) ? existingEvent : new Event(_eventPool);
+            }
+
+            // Builds a balanced binary tree out of the native events in [start, start + count), returning its root.
+            private Event? BuildTree(Interop.Kernel32.OVERLAPPED_ENTRY* nativeEvents, int start, int count)
+            {
+                Debug.Assert(_eventPool != null);
+
+                // Scan for the first non-null entry to use as the root. Entries shouldn't be null since null
+                // is not posted, but the completion port is shared and could receive one. Skipping such
+                // entries may leave the tree slightly unbalanced, which is fine given how rare this is.
+                while (count > 0 && nativeEvents[start].lpOverlapped == null)
+                {
+                    start++;
+                    count--;
+                }
+
+                if (count == 0)
+                {
+                    return null;
+                }
+
+                Interop.Kernel32.OVERLAPPED_ENTRY* nativeEvent = &nativeEvents[start];
+                Event root = RentEvent().With(nativeEvent->lpOverlapped, nativeEvent->dwNumberOfBytesTransferred);
+
+                int restCount = count - 1;
+                int restStart = start + 1;
+
+                // Give the left side the extra element when the count is odd.
+                int leftCount = (restCount + 1) / 2;
+
+                root._left = leftCount > 0 ? BuildTree(nativeEvents, restStart, leftCount) : null;
+                root._right = restCount > leftCount ? BuildTree(nativeEvents, restStart + leftCount, restCount - leftCount) : null;
+
+                return root;
+            }
+
             private void PollAndInlineCallbacks()
             {
                 Debug.Assert(_nativeEvents == null);
-                Debug.Assert(_events == null);
+                Debug.Assert(_eventPool == null);
 
                 while (true)
                 {
@@ -299,9 +352,65 @@ namespace System.Threading
                 }
             }
 
-            internal readonly partial struct Event
+            internal sealed partial class Event : IThreadPoolWorkItem
             {
-                public void Invoke()
+                private readonly ConcurrentQueue<Event> _pool;
+                public Event? _left;
+                public Event? _right;
+
+                public NativeOverlapped* nativeOverlapped;
+                public uint bytesTransferred;
+
+                // Assuming that Event + overhead of a queue slot takes ~ 64 bytes,
+                // we will limit the number of events in the pool to 1MB / 64bytes = 16k items
+                // to prevent unlimited growth in edge cases.
+                // The count of events in flight per poller should normally be much less than this.
+                private const int MaxEventPoolCount = 1024 * 1024 / 64;
+
+                public Event(ConcurrentQueue<Event> pool)
+                {
+                    _pool = pool;
+                }
+
+                public Event With(NativeOverlapped* nativeOverlapped, uint bytesTransferred)
+                {
+                    this.nativeOverlapped = nativeOverlapped;
+                    this.bytesTransferred = bytesTransferred;
+                    return this;
+                }
+
+                void IThreadPoolWorkItem.Execute()
+                {
+                    // Unpack the child subtrees into the local queue. Each of them will in turn
+                    // unpack its own children when it executes.
+                    Event? left = _left;
+                    Event? right = _right;
+
+                    if (left is not null)
+                    {
+                        ThreadPool.UnsafeQueueUserWorkItemInternal(left, preferLocal: true);
+                    }
+                    if (right is not null)
+                    {
+                        ThreadPool.UnsafeQueueUserWorkItemInternal(right, preferLocal: true);
+                    }
+
+                    NativeOverlapped* nativeOverlapped = this.nativeOverlapped;
+                    uint bytesTransferred = this.bytesTransferred;
+
+                    if (_pool.Count < MaxEventPoolCount)
+                    {
+                        this.nativeOverlapped = null;
+                        this.bytesTransferred = 0;
+                        _left = null;
+                        _right = null;
+                        _pool.Enqueue(this);
+                    }
+
+                    Invoke(nativeOverlapped, bytesTransferred);
+                }
+
+                private static void Invoke(NativeOverlapped* nativeOverlapped, uint bytesTransferred)
                 {
                     if (NativeRuntimeEventSource.Log.IsEnabled())
                     {
@@ -317,15 +426,6 @@ namespace System.Threading
                     }
 
                     IOCompletionCallbackHelper.PerformSingleIOCompletionCallback(errorCode, bytesTransferred, nativeOverlapped);
-                }
-
-                public readonly NativeOverlapped* nativeOverlapped;
-                public readonly uint bytesTransferred;
-
-                public Event(NativeOverlapped* nativeOverlapped, uint bytesTransferred)
-                {
-                    this.nativeOverlapped = nativeOverlapped;
-                    this.bytesTransferred = bytesTransferred;
                 }
             }
         }

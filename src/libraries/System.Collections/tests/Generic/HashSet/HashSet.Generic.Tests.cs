@@ -17,10 +17,11 @@ namespace System.Collections.Tests
         #region ISet<T> Helper Methods
         protected override bool Enumerator_Empty_UsesSingletonInstance => true;
         protected override bool Enumerator_Empty_Current_UndefinedOperation_Throws => true;
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
 
         protected override bool ResetImplemented => true;
 
-        protected override ModifyOperation ModifyEnumeratorThrows => base.ModifyEnumeratorAllowed & ~(ModifyOperation.Remove | ModifyOperation.Clear);
+        protected override ModifyOperation ModifyEnumeratorThrows => base.ModifyEnumeratorThrows & ~(ModifyOperation.Remove | ModifyOperation.Clear);
 
         protected override ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.Overwrite | ModifyOperation.Remove | ModifyOperation.Clear;
 
@@ -200,6 +201,46 @@ namespace System.Collections.Tests
 
         #endregion
 
+        #region Clear
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(17)]
+        [InlineData(100)]
+        public void HashSet_Generic_Clear_AfterRemovingItems_CanRefill(int count)
+        {
+            HashSet<T> set = (HashSet<T>)GenericISetFactory(count);
+            T[] items = set.ToArray();
+            int capacity = set.Capacity;
+
+            for (int cycle = 0; cycle < 3; cycle++)
+            {
+                for (int i = 0; i < items.Length; i += 2)
+                {
+                    Assert.True(set.Remove(items[i]));
+                }
+
+                HashSet<T>.Enumerator enumerator = set.GetEnumerator();
+                set.Clear();
+
+                Assert.Empty(set);
+                Assert.Equal(capacity, set.Capacity);
+                Assert.False(enumerator.MoveNext());
+
+                foreach (T item in items)
+                {
+                    Assert.False(set.Contains(item));
+                    Assert.False(set.TryGetValue(item, out _));
+                    Assert.True(set.Add(item));
+                }
+
+                CollectionAsserts.EqualUnordered<T>(items, set);
+            }
+        }
+
+        #endregion
+
         #region TrimExcess
 
         [Theory]
@@ -229,6 +270,16 @@ namespace System.Collections.Tests
             Assert.True(trimCapacity <= set.Capacity && set.Capacity < initialCapacity);
             Assert.Equal(initialCount, set.Count);
             Assert.Equal(clone, set);
+        }
+
+        [Theory]
+        [InlineData(132, 137)]
+        [InlineData(607, 613)]
+        public void HashSet_Generic_TrimExcess_UsesNearestValidPrime(int requestedCapacity, int expectedCapacity)
+        {
+            var set = new HashSet<T>(1000);
+            set.TrimExcess(requestedCapacity);
+            Assert.Equal(expectedCapacity, set.Capacity);
         }
 
         [Theory]

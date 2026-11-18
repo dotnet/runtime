@@ -6,7 +6,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { exceptions, simd, relaxedSimd } from "wasm-feature-detect";
+import { simd, relaxedSimd, exceptionsFinal } from "wasm-feature-detect";
 
 import gitHash from "consts:gitHash";
 
@@ -91,6 +91,7 @@ export function setLoaderGlobals (
     const lh: Partial<LoaderHelpers> = {
         gitHash,
         config: globalObjects.module.config,
+        callbacks: { configLoaded: [] },
         diagnosticTracing: false,
 
         maxParallelDownloads: 16,
@@ -131,7 +132,7 @@ export function setLoaderGlobals (
         isDebuggingSupported,
 
         // from wasm-feature-detect npm package
-        exceptions,
+        exceptionsFinal,
         simd,
         relaxedSimd
     };

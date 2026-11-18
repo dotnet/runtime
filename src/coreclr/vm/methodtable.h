@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: methodtable.h
-//
 
 #ifndef _METHODTABLE_H_
 #define _METHODTABLE_H_
@@ -26,7 +23,9 @@
 #include "generics.h"
 #include "gcinfotypes.h"
 #include "enum_class_flags.h"
+#ifdef FEATURE_MULTITHREADING
 #include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
 
 /*
  * Forward Declarations
@@ -38,14 +37,12 @@ class FCallMethodDesc;
 class    EEClass;
 class    EnCFieldDesc;
 class FieldDesc;
-class JIT_TrialAlloc;
 class MetaSig;
 class    MethodDesc;
 class    MethodDescChunk;
 class    MethodTable;
 class    Module;
 class    Object;
-class    Stub;
 class    Substitution;
 class    TypeHandle;
 class   Dictionary;
@@ -214,7 +211,7 @@ struct InteropMethodTableSlotData
     }
 
     BOOL IsDuplicate() {
-        return ((BOOL)(wFlags & e_DUPLICATE));
+        return (BOOL)(wFlags & e_DUPLICATE);
     }
 
     WORD GetSlot() {
@@ -299,11 +296,15 @@ typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
 
 // Any MethodTable which has static variables has this structure
 struct DynamicStaticsInfo;
+#ifdef FEATURE_MULTITHREADING
 struct ThreadStaticsInfo;
+#endif // FEATURE_MULTITHREADING
 struct GenericsStaticsInfo;
 
 typedef DPTR(DynamicStaticsInfo) PTR_DynamicStaticsInfo;
+#ifdef FEATURE_MULTITHREADING
 typedef DPTR(ThreadStaticsInfo) PTR_ThreadStaticsInfo;
+#endif // FEATURE_MULTITHREADING
 typedef DPTR(GenericsStaticsInfo) PTR_GenericsStaticsInfo;
 
 //
@@ -387,7 +388,9 @@ struct MethodTableAuxiliaryData
     // These pointers make it easier to examine the various statics structures in the debugger
     PTR_DynamicStaticsInfo m_debugOnlyDynamicStatics;
     PTR_GenericsStaticsInfo m_debugOnlyGenericStatics;
+#ifdef FEATURE_MULTITHREADING
     PTR_ThreadStaticsInfo m_debugOnlyThreadStatics;
+#endif // FEATURE_MULTITHREADING
 #endif
 
 public:
@@ -408,7 +411,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_dwFlagsDebug & enum_flagDebug_ParentMethodTablePointerValid);
+        return m_dwFlagsDebug & enum_flagDebug_ParentMethodTablePointerValid;
     }
     inline void SetParentMethodTablePointerValid()
     {
@@ -421,7 +424,7 @@ public:
     inline BOOL IsInitError() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (VolatileLoad(&m_dwFlags) & enum_flag_IsInitError);
+        return VolatileLoad(&m_dwFlags) & enum_flag_IsInitError;
     }
 
 #ifndef DACCESS_COMPILE
@@ -435,7 +438,7 @@ public:
     inline BOOL IsTlsIndexAllocated() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (VolatileLoad(&m_dwFlags) & enum_flag_IsTlsIndexAllocated);
+        return VolatileLoad(&m_dwFlags) & enum_flag_IsTlsIndexAllocated;
     }
 
 #ifndef DACCESS_COMPILE
@@ -491,7 +494,7 @@ public:
     inline BOOL IsStaticDataAllocated() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (VolatileLoad(&m_dwFlags) & enum_flag_IsStaticDataAllocated);
+        return VolatileLoad(&m_dwFlags) & enum_flag_IsStaticDataAllocated;
     }
 
 #ifndef DACCESS_COMPILE
@@ -550,7 +553,7 @@ public:
     bool IsPublished() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (VolatileLoad(&m_dwFlagsDebug) & enum_flagDebug_IsPublished);
+        return VolatileLoad(&m_dwFlagsDebug) & enum_flagDebug_IsPublished;
     }
 #endif // _DEBUG
 
@@ -574,7 +577,9 @@ public:
 
     static inline PTR_DynamicStaticsInfo GetDynamicStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
     static inline PTR_GenericsStaticsInfo GetGenericStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
+#ifdef FEATURE_MULTITHREADING
     static inline PTR_ThreadStaticsInfo GetThreadStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
+#endif // FEATURE_MULTITHREADING
     inline void SetMayHaveOpenInterfacesInInterfaceMap()
     {
         LIMITED_METHOD_CONTRACT;
@@ -694,6 +699,7 @@ struct GenericsStaticsInfo
     return dac_cast<PTR_GenericsStaticsInfo>(dac_cast<TADDR>(pAuxiliaryData) - sizeof(GenericsStaticsInfo));
 }
 
+#ifdef FEATURE_MULTITHREADING
 // And MethodTable with Thread Statics has this structure. NOTE: This structure includes
 // GenericsStatics which may not actually have the m_pFieldDescs filled in if the MethodTable
 // is not actually Generic
@@ -713,6 +719,7 @@ struct ThreadStaticsInfo
 {
     return dac_cast<PTR_ThreadStaticsInfo>(dac_cast<TADDR>(pAuxiliaryData) - sizeof(ThreadStaticsInfo));
 }
+#endif // FEATURE_MULTITHREADING
 
 #ifdef UNIX_AMD64_ABI_ITF
 inline
@@ -921,6 +928,18 @@ public:
         _ASSERTE(index < NumEightBytes);
         return EightByteSizes[index];
     }
+
+    friend struct ::cdac_data<SystemVEightByteRegistersInfo>;
+};
+
+template<> struct cdac_data<SystemVEightByteRegistersInfo>
+{
+    static constexpr size_t NumEightBytes = offsetof(SystemVEightByteRegistersInfo, NumEightBytes);
+    static constexpr size_t EightByteClassification0 = offsetof(SystemVEightByteRegistersInfo, EightByteClassifications) + 0 * sizeof(SystemVClassificationType);
+    static constexpr size_t EightByteClassification1 = offsetof(SystemVEightByteRegistersInfo, EightByteClassifications) + 1 * sizeof(SystemVClassificationType);
+    static constexpr size_t EightByteSize0 = offsetof(SystemVEightByteRegistersInfo, EightByteSizes) + 0;
+    static constexpr size_t EightByteSize1 = offsetof(SystemVEightByteRegistersInfo, EightByteSizes) + 1;
+    static_assert(CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS == 2, "cdac descriptor exposes exactly two eightbyte slots");
 };
 #endif
 
@@ -966,7 +985,6 @@ class MethodTable
 
     // Special access for setting up String object method table correctly
     friend class ClassLoader;
-    friend class JIT_TrialAlloc;
     friend class Module;
     friend class EEClass;
     friend class MethodTableBuilder;
@@ -1232,7 +1250,9 @@ public:
 
     // Allocate any memory needed for statics, acquire TLSIndex for TLS statics, and check to see if the class can be considered pre-inited, and if so, set the initialized flag
     void EnsureStaticDataAllocated();
+#ifdef FEATURE_MULTITHREADING
     void EnsureTlsIndexAllocated();
+#endif // FEATURE_MULTITHREADING
 
     BOOL IsInitError()
     {
@@ -1249,7 +1269,7 @@ public:
     inline BOOL IsGlobalClass()
     {
         WRAPPER_NO_CONTRACT;
-        return (GetTypeDefRid() == RidFromToken(COR_GLOBAL_PARENT_TOKEN));
+        return GetTypeDefRid() == RidFromToken(COR_GLOBAL_PARENT_TOKEN);
     }
 
 private:
@@ -1313,13 +1333,13 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded) == 0;
+        return (VolatileLoad(&GetAuxiliaryData()->m_dwFlags) & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded) == 0;
     }
 
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
+        return GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_CanCompareBitsOrUseFastGetHashCode;
     }
 
     // If canCompare is true, this method ensure an atomic operation for setting
@@ -1342,7 +1362,7 @@ public:
     inline BOOL HasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        return GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode;
     }
 
     inline void SetHasCheckedCanCompareBitsOrUseFastGetHashCode()
@@ -1370,7 +1390,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        DWORD dwFlags = GetAuxiliaryData()->m_dwFlags;
+        DWORD dwFlags = VolatileLoad(&GetAuxiliaryData()->m_dwFlags);
 
         if (dwFlags & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded)
         {
@@ -1591,6 +1611,17 @@ public:
         return *GetSlotPtrRaw(slotNumber);
     }
 
+#ifndef DACCESS_COMPILE
+    PCODE GetSlotForVirtualVolatileLoadWithoutBarrier(UINT32 slotNum)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        CONSISTENCY_CHECK(slotNum < GetNumVirtuals());
+        // Virtual slots live in chunks pointed to by vtable indirections
+        return VolatileLoadWithoutBarrier(GetVtableIndirections()[GetIndexOfVtableIndirection(slotNum)] + GetIndexAfterVtableIndirection(slotNum));
+    }
+#endif // DACCESS_COMPILE
+
     // Special-case for when we know that the slot number corresponds
     // to a virtual method.
     inline PCODE GetSlotForVirtual(UINT32 slotNum)
@@ -1810,7 +1841,7 @@ public:
     // Returns MethodTable that GetRestoredSlot get its values from
     MethodTable * GetRestoredSlotMT(DWORD slot);
 
-    // Used to map to "the same" method between instantiations. 
+    // Used to map to "the same" method between instantiations.
     MethodDesc* GetParallelMethodDesc(MethodDesc* pDefMD);
     // Maps methods between instantiations + filters/adjusts the result according to the lookup.
     MethodDesc* GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantLookup asyncVariantLookup);
@@ -1851,12 +1882,15 @@ public:
     // Only accurate on types which are not auto layout
     inline BOOL IsInt128OrHasInt128Fields();
 
+    // Only accurate on types which are not auto layout
+    inline BOOL IsDecimalFloatingPointOrHasDecimalFloatingPointFields();
+
     UINT32 GetNativeSize();
 
     DWORD           GetBaseSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return(m_BaseSize);
+        return m_BaseSize;
     }
 
     void            SetBaseSize(DWORD baseSize)
@@ -2122,7 +2156,7 @@ public:
     BOOL HasApproxParent()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasApproxParent) != 0;
+        return (VolatileLoad(&GetAuxiliaryData()->m_dwFlags) & MethodTableAuxiliaryData::enum_flag_HasApproxParent) != 0;
     }
     inline void SetHasExactParent()
     {
@@ -2184,8 +2218,6 @@ public:
 
     BOOL ValidateWithPossibleAV();
 
-    BOOL IsClassPointerValid();
-
     static UINT32 GetOffsetOfFlags()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2245,7 +2277,7 @@ public:
     inline int HasInterfaceMap()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wNumInterfaces != 0);
+        return m_wNumInterfaces != 0;
     }
 
     // Where possible, use this iterator over the interface map instead of accessing the map directly
@@ -2291,13 +2323,13 @@ public:
             PRECONDITION(!Finished());
             if (m_i != (DWORD) -1)
                 m_pMap++;
-            return (++m_i < m_count);
+            return ++m_i < m_count;
         }
 
         // Have we iterated over all of the items?
         BOOL Finished()
         {
-            return (m_i == m_count);
+            return m_i == m_count;
         }
 
 #ifndef DACCESS_COMPILE
@@ -2311,29 +2343,28 @@ public:
         // Get the interface at the current position, with whatever its normal load level is
         inline PTR_MethodTable GetInterfaceApprox()
         {
-            CONTRACT(PTR_MethodTable)
+            CONTRACTL
             {
                 GC_NOTRIGGER;
                 NOTHROW;
                 SUPPORTS_DAC;
                 PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
-                POSTCONDITION(CheckPointer(RETVAL));
             }
-            CONTRACT_END;
+            CONTRACTL_END;
 
-            RETURN (m_pMap->GetMethodTable());
+            return m_pMap->GetMethodTable();
         }
 
         inline bool CurrentInterfaceMatches(MethodTable* pMTOwner, MethodTable* pMT)
         {
-            CONTRACT(bool)
+            CONTRACTL
             {
                 GC_NOTRIGGER;
                 NOTHROW;
                 SUPPORTS_DAC;
                 PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
             }
-            CONTRACT_END;
+            CONTRACTL_END;
 
             MethodTable *pCurrentMethodTable = m_pMap->GetMethodTable();
 
@@ -2357,23 +2388,23 @@ public:
                 }
             }
 
-            RETURN (exactMatch);
+            return exactMatch;
         }
 
         bool CurrentInterfaceEquivalentTo(MethodTable* pMTOwner, MethodTable* pMT);
 
         inline bool HasSameTypeDefAs(MethodTable* pMT)
         {
-            CONTRACT(bool)
+            CONTRACTL
             {
                 GC_NOTRIGGER;
                 NOTHROW;
                 SUPPORTS_DAC;
                 PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
             }
-            CONTRACT_END;
+            CONTRACTL_END;
 
-            RETURN (m_pMap->GetMethodTable()->HasSameTypeDefAs(pMT));
+            return m_pMap->GetMethodTable()->HasSameTypeDefAs(pMT);
         }
 
 #ifndef DACCESS_COMPILE
@@ -2459,7 +2490,7 @@ public:
     //
 
     // get the method desc given the interface method desc
-    static MethodDesc *GetMethodDescForInterfaceMethodAndServer(TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer);
+    static MethodDesc *GetMethodDescForInterfaceMethodAndServer(TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer, MethodTable* pServerMT);
 
 #ifdef FEATURE_COMINTEROP
     // get the method desc given the interface method desc on a COM implemented server
@@ -2624,6 +2655,7 @@ public:
 
     inline PTR_BYTE GetNonGCStaticsBasePointer();
     inline PTR_BYTE GetGCStaticsBasePointer();
+#ifdef FEATURE_MULTITHREADING
 #ifndef DACCESS_COMPILE
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer();
     inline PTR_BYTE GetGCThreadStaticsBasePointer();
@@ -2637,6 +2669,7 @@ public:
     // This is particularly relevant as a problem for profiler developers, but they are given the tools (such as GC events) to be notified of situations where these invariants may not hold
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread);
     inline PTR_BYTE GetGCThreadStaticsBasePointer(PTR_Thread pThread);
+#endif // FEATURE_MULTITHREADING
 
     inline BOOL IsDynamicStatics()
     {
@@ -2801,7 +2834,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(g_pObjectClass);
-        return (this == g_pObjectClass);
+        return this == g_pObjectClass;
     }
 
     // Is this System.ValueType?
@@ -2809,7 +2842,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(g_pValueTypeClass);
-        return (this == g_pValueTypeClass);
+        return this == g_pValueTypeClass;
     }
 
     // Is this value type? Returns false for System.ValueType and System.Enum.
@@ -3170,14 +3203,7 @@ public:
         inline ULONG AddRef()
             { LIMITED_METHOD_CONTRACT; return (ULONG) InterlockedIncrement((LONG*)&m_cRef); }
 
-        ULONG Release();
-
-        // Since all methods that return a MethodData already AddRef'd, we do NOT
-        // want to AddRef when putting a holder around it. We only want to release it.
-        static void HolderAcquire(MethodData *pEntry)
-            { LIMITED_METHOD_CONTRACT; return; }
-        static void HolderRelease(MethodData *pEntry)
-            { WRAPPER_NO_CONTRACT; if (pEntry != NULL) pEntry->Release(); }
+        ULONG Release() noexcept;
 
         static void* operator new(size_t size)
         {
@@ -3283,8 +3309,19 @@ public:
             size_t                    cWorkingData);
     };  // class MethodData
 
-    typedef ::Holder < MethodData *, MethodData::HolderAcquire, MethodData::HolderRelease > MethodDataHolder;
-    typedef ::Wrapper < MethodData *, MethodData::HolderAcquire, MethodData::HolderRelease > MethodDataWrapper;
+    struct MethodDataHolderTraits final
+    {
+        using Type = MethodData*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            WRAPPER_NO_CONTRACT;
+            if (value != NULL)
+                value->Release();
+        }
+    };
+
+    using MethodDataHolder = LifetimeHolder<MethodDataHolderTraits>;
 
 protected:
     //--------------------------------------------------------------------------------------
@@ -3404,6 +3441,7 @@ protected:
             { LIMITED_METHOD_CONTRACT; CONSISTENCY_CHECK(i < GetNumMethods()); return GetEntryData() + i; }
 
         void FillEntryDataForAncestor(MethodTable *pMT);
+        void SetEntryDataForSlotIfNotYetSet(UINT32 i, MethodDesc *pMD);
 
         //
         // At the end of this object is an array
@@ -3604,7 +3642,7 @@ public:
         MethodTable *             pMTImpl,
         MethodDataComputeOptions computeOption);
 
-    void CopySlotFrom(UINT32 slotNumber, MethodDataWrapper &hSourceMTData, MethodTable *pSourceMT);
+    void CopySlotFrom(UINT32 slotNumber, MethodData *pSourceMTData, MethodTable *pSourceMT);
 
 protected:
     static MethodData *FindParentMethodDataHelper(MethodTable *pMT);
@@ -3672,7 +3710,7 @@ public:
         inline MethodDesc *GetMethodDesc() const;
 
         // Static worker methods of the iterator. These are meant to be used
-        // by RuntimeTypeHandle::GetFirstIntroducedMethod and RuntimeTypeHandle::GetNextIntroducedMethod
+        // by RuntimeTypeHandle_GetFirstIntroducedMethod and RuntimeTypeHandle_GetNextIntroducedMethod
         // only to expose this iterator to managed code.
         static MethodDesc * GetFirst(MethodTable * pMT);
         static MethodDesc * GetNext(MethodDesc * pMD);
@@ -3868,7 +3906,7 @@ private:
     FORCEINLINE DWORD GetFlag(WFLAGS_LOW_ENUM flag) const
     {
         SUPPORTS_DAC;
-        return (IsStringOrArray() ? (enum_flag_StringArrayValues & flag) : (m_dwFlags & flag));
+        return IsStringOrArray() ? (enum_flag_StringArrayValues & flag) : (m_dwFlags & flag);
     }
     FORCEINLINE BOOL TestFlagWithMask(WFLAGS_LOW_ENUM mask, WFLAGS_LOW_ENUM flag) const
     {
@@ -3893,7 +3931,7 @@ private:
     FORCEINLINE BOOL TestFlagWithMask(WFLAGS_HIGH_ENUM mask, WFLAGS_HIGH_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return ((m_dwFlags & (DWORD)mask) == (DWORD)flag);
+        return (m_dwFlags & (DWORD)mask) == (DWORD)flag;
     }
 
     FORCEINLINE void ClearFlag(WFLAGS2_ENUM flag)
@@ -3987,7 +4025,7 @@ private:
     FORCEINLINE static TADDR   union_getPointer(TADDR pCanonMT)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (pCanonMT & ~UNION_MASK);
+        return pCanonMT & ~UNION_MASK;
     }
 
     // m_pPerInstInfo and m_pInterfaceMap have to be at fixed offsets because of performance sensitive
@@ -4039,12 +4077,14 @@ public:
         return MethodTableAuxiliaryData::GetDynamicStaticsInfo(AuxiliaryData);
     }
 
+#ifdef FEATURE_MULTITHREADING
     PTR_ThreadStaticsInfo GetThreadStaticsInfo()
     {
         PTR_MethodTableAuxiliaryData AuxiliaryData = GetAuxiliaryDataForWrite();
         _ASSERTE(GetNumThreadStaticFields() > 0);
         return MethodTableAuxiliaryData::GetThreadStaticsInfo(AuxiliaryData);
     }
+#endif // FEATURE_MULTITHREADING
 private:
 
     // Optional members.  These are used for fields in the data structure where
@@ -4142,6 +4182,7 @@ template<> struct cdac_data<MethodTable>
     static constexpr size_t NumInterfaces = offsetof(MethodTable, m_wNumInterfaces);
     static constexpr size_t NumVirtuals = offsetof(MethodTable, m_wNumVirtuals);
     static constexpr size_t PerInstInfo = offsetof(MethodTable, m_pPerInstInfo);
+    static constexpr size_t InterfaceMap = offsetof(MethodTable, m_pInterfaceMap);
 };
 
 #ifndef CROSSBITNESS_COMPILE

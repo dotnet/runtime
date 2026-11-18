@@ -12,7 +12,12 @@ using Xunit;
 
 public class Test_271010 {
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/5933", TestRuntimes.CoreCLR)]
+    public static bool IsCoreClrOnNonBrowser =>
+        TestLibrary.PlatformDetection.IsCoreCLR &&
+        !TestLibrary.PlatformDetection.IsBrowser;
+
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/5933", typeof(Test_271010), nameof(IsCoreClrOnNonBrowser))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/131565", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     [Fact]
     public static int TestEntryPoint() {
 

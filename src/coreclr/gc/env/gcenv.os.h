@@ -10,6 +10,7 @@
 using std::nothrow;
 
 #include <minipal/mutex.h>
+#include <minipal/time.h>
 
 #define NUMA_NODE_UNDEFINED UINT16_MAX
 
@@ -124,17 +125,6 @@ public:
     //   true if the initialization succeeded, false if it did not
     bool CreateAutoEventNoThrow(bool initialState);
 
-    // Initializes this event to be a host-unaware manual reset event with the
-    // given initial state.
-    // Returns:
-    //   true if the initialization succeeded, false if it did not
-    bool CreateOSManualEventNoThrow(bool initialState);
-
-    // Initializes this event to be a host-unaware auto-resetting event with the
-    // given initial state.
-    // Returns:
-    //   true if the initialization succeeded, false if it did not
-    bool CreateOSAutoEventNoThrow(bool initialState);
 };
 
 // GC thread function prototype
@@ -418,6 +408,10 @@ public:
     //  Size of the cache
     static size_t GetCacheSizePerLogicalCpu(bool trueSize = true);
 
+    // Check if the OS supports setting the calling thread's affinity to a specific processor.
+    // The server GC relies on this, together with CanGetCurrentProcessorNumber, to map processors to heaps.
+    static bool CanSetThreadAffinity();
+
     // Sets the calling thread's affinity to only run on the processor specified.
     // Parameters:
     //  procNo - The requested affinity for the calling thread.
@@ -486,25 +480,6 @@ public:
 
     // Break into a debugger
     static void DebugBreak();
-
-    //
-    // Time
-    //
-
-    // Get a high precision performance counter
-    // Return:
-    //  The counter value
-    static int64_t QueryPerformanceCounter();
-
-    // Get a frequency of the high precision performance counter
-    // Return:
-    //  The counter frequency
-    static int64_t QueryPerformanceFrequency();
-
-    // Get a time stamp with a low precision
-    // Return:
-    //  Time stamp in milliseconds
-    static uint64_t GetLowPrecisionTimeStamp();
 
     // Gets the total number of processors on the machine, not taking
     // into account current process affinity.

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -13,7 +11,7 @@ namespace System.Numerics
         /// <summary>Reinterprets a <see cref="Vector3" /> as a new <see cref="Vector2" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector2" />.</returns>
-        public static Vector2 AsVector2(this Vector3 value) => value.AsVector128().AsVector2();
+        public static Vector2 AsVector2(this Vector3 value) => value.AsVector128Unsafe().AsVector2();
 
         /// <summary>Converts a <see cref="Vector3" /> to a new <see cref="Vector4" /> with the new elements zeroed.</summary>
         /// <param name="value">The vector to convert.</param>
@@ -45,7 +43,10 @@ namespace System.Numerics
         /// <param name="source">The vector that will be stored.</param>
         /// <param name="destination">The destination at which <paramref name="source" /> will be stored.</param>
         [CLSCompliant(false)]
-        public static void Store(this Vector3 source, float* destination) => source.StoreUnsafe(ref *destination);
+        public static void Store(this Vector3 source, float* destination)
+        {
+            *(Vector3*)destination = source;
+        }
 
         /// <summary>Stores a vector at the given 8-byte aligned destination.</summary>
         /// <param name="source">The vector that will be stored.</param>
@@ -59,7 +60,6 @@ namespace System.Numerics
             {
                 ThrowHelper.ThrowAccessViolationException();
             }
-
             *(Vector3*)destination = source;
         }
 
@@ -69,7 +69,14 @@ namespace System.Numerics
         /// <exception cref="AccessViolationException"><paramref name="destination" /> is not 8-byte aligned.</exception>
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         [CLSCompliant(false)]
-        public static void StoreAlignedNonTemporal(this Vector3 source, float* destination) => source.StoreAligned(destination);
+        public static void StoreAlignedNonTemporal(this Vector3 source, float* destination)
+        {
+            if (((nuint)destination % (uint)(Vector3.Alignment)) != 0)
+            {
+                ThrowHelper.ThrowAccessViolationException();
+            }
+            *(Vector3*)destination = source;
+        }
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <param name="source">The vector that will be stored.</param>
@@ -77,8 +84,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreUnsafe(this Vector3 source, ref float destination)
         {
-            ref byte address = ref Unsafe.As<float, byte>(ref destination);
-            Unsafe.WriteUnaligned(ref address, source);
+            Unsafe.As<float, Vector3>(ref destination) = source;
         }
 
         /// <summary>Stores a vector at the given destination.</summary>
@@ -89,8 +95,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreUnsafe(this Vector3 source, ref float destination, nuint elementOffset)
         {
-            destination = ref Unsafe.Add(ref destination, (nint)elementOffset);
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref destination), source);
+            Unsafe.As<float, Vector3>(ref Unsafe.Add(ref destination, (nint)elementOffset)) = source;
         }
 
         /// <inheritdoc cref="ToScalar(Vector4)" />

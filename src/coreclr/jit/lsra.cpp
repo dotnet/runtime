@@ -1419,10 +1419,6 @@ PhaseStatus LinearScan::doRegisterAllocation()
 
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_POST));
 
-#ifdef DEBUG
-    m_compiler->fgDebugCheckLinks();
-#endif
-
     m_compiler->compRegAllocDone = true;
 
     // If edge resolution didn't create new blocks,
@@ -2944,10 +2940,11 @@ bool LinearScan::canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation)
 
     if (recentAssignedRef != nullptr)
     {
-        // We can't spill a register that's active at the current location.
-        // We should already have determined this with isRegBusy before calling this method.
-        assert(!isRefPositionActive(recentAssignedRef, refLocation));
-        return true;
+        bool isActive = isRefPositionActive(recentAssignedRef, refLocation);
+        bool isHome   = isHomeReg(physRegRecord);
+        // An active interval can only be displaced from a stale copy register.
+        assert(!(isActive && isHome));
+        return !(isActive && isHome);
     }
     // recentAssignedRef can only be null if this is a parameter that has not yet been
     // moved to a register (or stack), in which case we can't spill it yet.
@@ -4170,6 +4167,14 @@ bool LinearScan::isAssignedToInterval(Interval* interval, RegRecord* regRec)
     isAssigned |= isSecondHalfReg(regRec, interval);
 #endif
     return isAssigned;
+}
+
+// Returns whether regRec is the recorded home of its assigned interval.
+// The interval need not be active.
+bool LinearScan::isHomeReg(RegRecord* regRec)
+{
+    Interval* interval = regRec->assignedInterval;
+    return (interval != nullptr) && isAssignedToInterval(interval, regRec);
 }
 
 void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap inVarToRegMap)
@@ -8135,6 +8140,15 @@ void LinearScan::resolveRegisters()
                 {
                     if (treeNode != nullptr)
                     {
+#ifdef TARGET_XARCH
+                        // A narrow producer can still need a full-width reload or register copy.
+                        // Record it before codegen decides where calls need vzeroupper.
+                        if (varTypeIsSIMD(treeNode))
+                        {
+                            SetContainsAVXFlags(genTypeSize(treeNode->TypeGet()));
+                        }
+#endif // TARGET_XARCH
+
                         if (currentRefPosition->spillAfter)
                         {
                             treeNode->gtFlags |= GTF_SPILL;
@@ -8211,6 +8225,19 @@ void LinearScan::resolveRegisters()
                         unreached();
                     }
                 }
+
+#ifdef TARGET_XARCH
+                // A local store only dirties upper state when it copies to a different register.
+                // Its final destination is not known until local reference resolution above.
+                if (varTypeIsSIMD(treeNode) && treeNode->OperIsLocalStore() && (treeNode->GetRegNum() != REG_NA))
+                {
+                    GenTree* source = treeNode->AsLclVarCommon()->Data();
+                    if (!source->isContained() && (source->GetRegNum() != treeNode->GetRegNum()))
+                    {
+                        SetContainsAVXFlags(genTypeSize(treeNode->TypeGet()));
+                    }
+                }
+#endif // TARGET_XARCH
             }
         }
 
@@ -10867,7 +10894,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 assert(reg == assignedReg || varDsc->lvRegister == false);
                 if (reg != argReg)
                 {
-                    printf(getRegName(argReg));
+                    printf("%s", getRegName(argReg));
                     printf("=>");
                 }
                 printf("%s)", getRegName(reg));
@@ -12958,8 +12985,69 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
     // This will always result in a single candidate. That is, it is the tie-breaker
     // for free candidates, and doesn't make sense as anything other than the last
     // heuristic for free registers.
-    unsigned         lowestRegOrder    = UINT_MAX;
-    SingleTypeRegSet lowestRegOrderBit = RBM_NONE;
+#ifdef TARGET_ARM64
+    // These groups preserve REG_VAR_ORDER and REG_VAR_ORDER_FLT in targetarm64.h. Select from
+    // the first nonempty group instead of visiting every candidate's rank.
+    SingleTypeRegSet preferred;
+    SingleTypeRegSet lowestRegOrderBit;
+    if (varTypeUsesFloatReg(regType))
+    {
+        // Mask off V0-V15 to select the V16-V31 group.
+        preferred = candidates & (RBM_ALLFLOAT.GetFloatRegSet() & ~((1ULL << REG_V16) - 1));
+        if (preferred != RBM_NONE)
+        {
+            lowestRegOrderBit = genFindLowestBit(preferred);
+        }
+        else
+        {
+            preferred = candidates & (RBM_V4 | RBM_V5 | RBM_V6 | RBM_V7).GetFloatRegSet();
+            if (preferred != RBM_NONE)
+            {
+                // V7..V4 are preferred in descending register-number order.
+                lowestRegOrderBit = 1ULL << BitOperations::BitScanReverse(preferred);
+            }
+            else
+            {
+                preferred =
+                    candidates &
+                    (RBM_V8 | RBM_V9 | RBM_V10 | RBM_V11 | RBM_V12 | RBM_V13 | RBM_V14 | RBM_V15).GetFloatRegSet();
+                if (preferred != RBM_NONE)
+                {
+                    lowestRegOrderBit = genFindLowestBit(preferred);
+                }
+                else
+                {
+                    // The remaining floating-point registers are V3..V0.
+                    lowestRegOrderBit = 1ULL << BitOperations::BitScanReverse(candidates);
+                }
+            }
+        }
+    }
+    else if (varTypeIsMask(regType))
+    {
+        // ARM64 predicate registers have equal regOrder ranks.
+        lowestRegOrderBit = genFindLowestBit(candidates);
+    }
+    else
+    {
+        preferred = candidates & (((1ULL << REG_R12) - 1) | (RBM_R13 | RBM_R14).GetIntRegSet());
+        if (preferred == RBM_NONE)
+        {
+            // After R13/R14, the remaining ranked registers are in ascending order.
+            preferred = candidates & RBM_ALLINT.GetIntRegSet();
+            if (preferred == RBM_NONE)
+            {
+                // Registers absent from REG_VAR_ORDER retain the same last rank.
+                preferred = candidates;
+            }
+        }
+        lowestRegOrderBit = genFindLowestBit(preferred);
+    }
+#endif // TARGET_ARM64
+
+#if !defined(TARGET_ARM64) || defined(DEBUG)
+    unsigned  lowestRegOrder = UINT_MAX;
+    regNumber lowestReg      = REG_NA;
     for (SingleTypeRegSet regOrderCandidates = candidates; regOrderCandidates != RBM_NONE;)
     {
         regNumber        regOrderCandidateRegNum = genFirstRegNumFromMask(regOrderCandidates, regType);
@@ -12969,10 +13057,19 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
         unsigned thisRegOrder = linearScan->getRegisterRecord(regOrderCandidateRegNum)->regOrder;
         if (thisRegOrder < lowestRegOrder)
         {
-            lowestRegOrder    = thisRegOrder;
-            lowestRegOrderBit = regOrderCandidateBit;
+            lowestRegOrder = thisRegOrder;
+            lowestReg      = regOrderCandidateRegNum;
         }
     }
+    assert(lowestReg != REG_NA);
+    SingleTypeRegSet scannedRegOrderBit = genSingleTypeRegMask(lowestReg);
+#ifdef TARGET_ARM64
+    // Check the grouped selection against the rank scan, including stress modes.
+    assert(lowestRegOrderBit == scannedRegOrderBit);
+#else
+    SingleTypeRegSet lowestRegOrderBit = scannedRegOrderBit;
+#endif
+#endif // !TARGET_ARM64 || DEBUG
     assert(lowestRegOrderBit != RBM_NONE);
     found = applySingleRegSelection(REG_ORDER, lowestRegOrderBit);
 }

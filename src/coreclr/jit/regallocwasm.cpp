@@ -181,15 +181,13 @@ void WasmRegAlloc::IdentifyCandidates()
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
             varIsRegCandidate = false;
         }
-        // We also need to ensure that any GC refs are not stored in wasm locals until we have support for
-        // spilling them to the stack before calls.
-        // TODO-WASM: Add support for spilling GC refs in order to relax this second restriction.
-        if (varTypeIsGC(varDsc->lvType))
+        // GC-exposed candidates also need an up-to-date pinned shadow-stack home.
+        if (varIsRegCandidate && varTypeIsGC(varDsc->lvType))
         {
-            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
-            varIsRegCandidate = false;
+            varDsc->lvWasmGCWriteThru =
+                !VarSetOps::IsMember(m_compiler, *m_compiler->m_wasmGCRefCandidates, varDsc->lvVarIndex);
+            anyFrameLocals |= varDsc->lvWasmGCWriteThru;
         }
-
         if (varIsRegCandidate)
         {
             JITDUMP("RA candidate: V%02u\n", lclNum);
@@ -434,11 +432,7 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
     switch (node->OperGet())
     {
         case GT_NULLCHECK:
-            if (node->gtGetOp1()->gtLIRFlags & LIR::Flags::MultiplyUsed)
-            {
-                ConsumeTemporaryRegForOperand(node->gtGetOp1()
-                                                  DEBUGARG("Orphaned GT_NULLCHECK with multiply-used flag"));
-            }
+            CollectReferencesForNullCheck(node->AsIndir());
             break;
 
         case GT_LCL_VAR:
@@ -453,6 +447,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             {
                 assert(node->OperIs(GT_STORE_LCL_VAR));
                 CollectReference(node->AsLclVarCommon());
+                if (varDsc->lvWasmGCWriteThru)
+                {
+                    RewriteLocalStackStore(node->AsLclVarCommon());
+                }
             }
             else
             {
@@ -486,8 +484,9 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForBinop(node->AsOp());
             break;
 
+        case GT_IND:
         case GT_STOREIND:
-            CollectReferencesForStoreInd(node->AsStoreInd());
+            CollectReferencesForIndir(node->AsIndir());
             break;
 
         case GT_STORE_BLK:
@@ -500,6 +499,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
 
         case GT_CKFINITE:
             ConsumeTemporaryRegForOperand(node->gtGetOp1() DEBUGARG("ckfinite finiteness check"));
+            break;
+
+        case GT_HWINTRINSIC:
+            CollectReferencesForHardwareIntrinsic(node->AsHWIntrinsic());
             break;
 
         default:
@@ -578,16 +581,12 @@ void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
 
     // For a fast tail call, wrap the SP arg with ADD(SP, FRAME_SIZE) so codegen
     // undoes the prolog's SP adjustment and the callee sees the incoming SP.
-    // The arg has been rewritten to GT_PHYSREG above (args are visited before the call).
     if (callNode->IsFastTailCall())
     {
         CallArg* const spArg = callNode->gtArgs.FindWellKnownArg(WellKnownArg::WasmShadowStackPointer);
         if (spArg != nullptr)
         {
             GenTree* const physReg = spArg->GetNode();
-            assert(physReg != nullptr);
-            assert(physReg->OperIs(GT_PHYSREG));
-            assert(physReg->AsPhysReg()->gtSrcReg == m_perFuncletData[m_currentFunclet]->m_spReg);
             // Fast tail calls from funclets are not supported.
             assert(m_currentFunclet == ROOT_FUNC_IDX);
 
@@ -648,15 +647,42 @@ void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
 }
 
 //------------------------------------------------------------------------
-// CollectReferencesForStoreInd: Collect virtual register references for an indirect store
+// CollectReferencesForNullCheck: Collect virtual register references for a null check.
 //
 // Arguments:
-//    node - The GT_STOREIND node
+//    node - The GT_NULLCHECK node.
 //
-void WasmRegAlloc::CollectReferencesForStoreInd(GenTreeStoreInd* node)
+void WasmRegAlloc::CollectReferencesForNullCheck(GenTreeIndir* node)
 {
-    GenTree* const addr = node->Addr();
-    ConsumeTemporaryRegForOperand(addr DEBUGARG("storeind null check"));
+    // "Base" is the address itself unless it is a contained address mode, which is never materialized.
+    //
+    GenTree* const base = node->Base();
+
+    if (base->gtLIRFlags & LIR::Flags::MultiplyUsed)
+    {
+        ConsumeTemporaryRegForOperand(base DEBUGARG("Orphaned GT_NULLCHECK with multiply-used flag"));
+    }
+}
+
+//------------------------------------------------------------------------
+// CollectReferencesForIndir: Collect virtual register references for an indirection.
+//
+// Arguments:
+//    node - The indirection node.
+//
+void WasmRegAlloc::CollectReferencesForIndir(GenTreeIndir* node)
+{
+    // "Base" is the address itself unless it is a contained address mode, which is never materialized.
+    //
+    ConsumeTemporaryRegForOperand(node->Base() DEBUGARG("indirection address"));
+
+    if (node->OperIs(GT_STOREIND) && node->TypeIs(TYP_SIMD12))
+    {
+        // The SIMD12 store stashes the v128 value so it can re-push it for the trailing lane store.
+        regNumber internalReg = RequestInternalRegister(node, TYP_SIMD16);
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -695,8 +721,67 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
     }
 }
 
+// ------------------------------------------------------------------------
+// CollectReferencesForHardwareIntrinsic: Collect virtual register references for a hardware intrinsic.
+//
+// Arguments:
+//    node - The GT_HWINTRINSIC node
+//
+// Notes:
+//   There are only 3 cases where we need to consume temporary registers for a hardware intrinsic:
+//   1) A swizzle with a contained mask (source operand multiply used)
+//   2) A hardware intrinsic with a non-constant immediate operand that requires a jump table fallback (all operands
+//   multiply used)
+//   3) A memory load/store hardware intrinsic that requires a null check of the address (address
+//   multiply used for null check)
+void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* node)
+{
+    // A constant, in-range mask Swizzle is lowered to an immediate i8x16.shuffle, which reuses the
+    // source operand as both shuffle inputs. Lowering marked the source multiply-used (and contained
+    // the mask), so release its temporary register here.
+    if ((node->GetHWIntrinsicId() == NI_PackedSimd_Swizzle) && node->Op(2)->isContained())
+    {
+        ConsumeTemporaryRegForOperand(node->Op(1) DEBUGARG("i8x16.shuffle source reuse"));
+        return;
+    }
+
+    bool needsJumpTableFallback = false;
+    if (HWIntrinsicInfo::HasImmediateOperand(node->GetHWIntrinsicId()))
+    {
+        GenTree* immOp = node->GetImmOp();
+        // Only intrinsics that have a non-constant immediate need a jump-table fallback, and mark operands
+        // MultiplyUsed during Lowering (see Lowering::LowerHWIntrinsic in lowerwasm.cpp).
+        if (!immOp->IsCnsIntOrI())
+        {
+            needsJumpTableFallback = true;
+        }
+    }
+
+    if (needsJumpTableFallback)
+    {
+        // All operands are marked multiply used in this case, so we consume a temporary register for each operand
+        // in reverse (wasm stack) order.
+        int operandCount = static_cast<int>(node->GetOperandCount());
+        for (int i = operandCount; i >= 1; i--)
+        {
+            ConsumeTemporaryRegForOperand(node->Op(i) DEBUGARG("hardware intrinsic fallback"));
+        }
+    }
+    else
+    {
+        // We still need to consume a temporary register due to a null check of the address operand for memory
+        // load/store intrinsics.
+        GenTree* addr;
+        if (node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr))
+        {
+            ConsumeTemporaryRegForOperand(addr DEBUGARG("hardware intrinsic memory address null check"));
+        }
+    }
+}
+
 //------------------------------------------------------------------------
-// RewriteLocalStackStore: rewrite a store to the stack to STOREIND(LCL_ADDR, ...).
+// RewriteLocalStackStore: rewrite a stack store to STOREIND(LCL_ADDR, ...),
+//   retaining the local definition for a write-through candidate.
 //
 // This is needed to obey WASM stack ordering constraints: as in IR, the
 // address operands comes first and we can't insert that into the middle
@@ -711,9 +796,6 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     // TODO-WASM-TP: this is nice and simple, but can we do this more efficiently?
     GenTree* value          = lclNode->Data();
     GenTree* insertionPoint = value->gtFirstNodeInOperandOrder();
-
-    // TODO-WASM-RA: figure out the address mode story here. Right now this will produce an address not folded
-    // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.
 
     var_types storeType = lclNode->TypeGet();
     // We can end up with a block copy operation storing a non-STRUCT into a STRUCT due to type erasure.
@@ -730,26 +812,66 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     bool         isStruct = storeType == TYP_STRUCT;
     uint16_t     offset   = lclNode->GetLclOffs();
     ClassLayout* layout   = isStruct ? lclNode->GetLayout(m_compiler) : nullptr;
-    lclNode->SetOper(GT_LCL_ADDR);
-    lclNode->ChangeType(TYP_I_IMPL);
-    lclNode->AsLclFld()->SetLclOffs(offset);
+    GenTree*     addr;
+    GenTree*     storeAfter;
+    if (m_compiler->lvaGetDesc(lclNode)->lvWasmGCWriteThru)
+    {
+        assert(lclNode->OperIs(GT_STORE_LCL_VAR) && varTypeIsGC(storeType));
+        // Before:                         After:
+        //
+        //                                 addr = LCL_ADDR dst
+        // ... RHS evaluation ...          ... RHS evaluation ...
+        // rhs = ...                       rhs = ...
+        // STORE_LCL_VAR dst(rhs)           STORE_LCL_VAR dst(rhs)
+        //                                 cached = LCL_VAR dst
+        //                                 STOREIND(addr, cached)
+        //
+        // The address precedes the first RHS node so it sits below the value on the Wasm stack.
+        // The retained local definition updates the cache; the final store updates its pinned home.
+        // The adjacent local.set/get folds to local.tee.
+        addr  = m_compiler->gtNewLclAddrNode(lclNode->GetLclNum(), 0);
+        value = m_compiler->gtNewLclVarNode(lclNode->GetLclNum(), storeType);
+        CurrentRange().InsertAfter(lclNode, value);
+        storeAfter = value;
+    }
+    else
+    {
+        lclNode->SetOper(GT_LCL_ADDR);
+        lclNode->ChangeType(TYP_I_IMPL);
+        lclNode->AsLclFld()->SetLclOffs(offset);
+        addr       = lclNode;
+        storeAfter = lclNode;
+    }
 
     GenTree*     store;
     GenTreeFlags indFlags = GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
     if (isStruct)
     {
-        store = m_compiler->gtNewStoreBlkNode(layout, lclNode, value, indFlags);
+        store = m_compiler->gtNewStoreBlkNode(layout, addr, value, indFlags);
     }
     else
     {
-        store = m_compiler->gtNewStoreIndNode(storeType, lclNode, value, indFlags);
+        store = m_compiler->gtNewStoreIndNode(storeType, addr, value, indFlags);
     }
-    CurrentRange().InsertAfter(lclNode, store);
-    CurrentRange().Remove(lclNode);
-    CurrentRange().InsertBefore(insertionPoint, lclNode);
+    CurrentRange().InsertAfter(storeAfter, store);
+    if (addr == lclNode)
+    {
+        CurrentRange().Remove(lclNode);
+    }
+    CurrentRange().InsertBefore(insertionPoint, addr);
 
     LIR::ReadOnlyRange storeRange(store, store);
     m_compiler->GetLowering()->LowerRange(m_currentBlock, storeRange);
+
+    if (store->OperIs(GT_STOREIND) && store->TypeIs(TYP_SIMD12))
+    {
+        // genStoreIndTypeSimd12 tees the value into a v128 temporary to split the store into an 8-byte and a
+        // 4-byte lane store. The main collection walk does not revisit this freshly-introduced node, so request
+        // that internal register here. The re-materializable LCL_ADDR address needs no temporary.
+        regNumber internalReg = RequestInternalRegister(store, TYP_SIMD16);
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
+    }
 
     // FIXME-WASM: Should we be doing this here?
     // CollectReferencesForNode(store);
@@ -822,8 +944,7 @@ void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
 
     if (node->OperIs(GT_LCL_VAR) && m_compiler->lvaGetDesc(node->AsLclVar())->lvIsRegCandidate())
     {
-        // Will be allocated into its own register, no need for a temporary.
-        node->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
+        // No temporary is needed, but codegen must know this IR use emits multiple reads.
         return;
     }
 
@@ -850,6 +971,11 @@ void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
 void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const char* reason))
 {
     if ((operand->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None)
+    {
+        return;
+    }
+
+    if (operand->OperIs(GT_LCL_VAR) && m_compiler->lvaGetDesc(operand->AsLclVar())->lvIsRegCandidate())
     {
         return;
     }
@@ -923,6 +1049,10 @@ void WasmRegAlloc::ResolveReferences()
         unsigned Index;
     };
 
+    auto canReuseAbiReg = [](regNumber virtReg, regNumber abiReg) {
+        return genIsValidReg(virtReg) && (WasmRegToType(virtReg) == WasmRegToType(abiReg));
+    };
+
     // Resolve funclet by funclet, in reverse order, so that we process the main method region last.
     //
     for (FuncInfoDsc* const funcInfo : m_compiler->Funcs().Reverse())
@@ -962,7 +1092,8 @@ void WasmRegAlloc::ResolveReferences()
                             indexBase              = max(indexBase, argIndex + 1);
 
                             LclVarDsc* argVarDsc = m_compiler->lvaGetDesc(argLclNum);
-                            if ((argVarDsc->GetRegNum() == argReg) || (argLclNum == m_compiler->lvaWasmSpArg))
+                            if (canReuseAbiReg(argVarDsc->GetRegNum(), argReg) ||
+                                (argLclNum == m_compiler->lvaWasmSpArg))
                             {
                                 assert(abiInfo.HasExactlyOneRegisterSegment());
                                 virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
@@ -971,7 +1102,7 @@ void WasmRegAlloc::ResolveReferences()
                             const ParameterRegisterLocalMapping* mapping =
                                 m_compiler->FindParameterRegisterLocalMappingByRegister(argReg);
                             if ((mapping != nullptr) &&
-                                (m_compiler->lvaGetDesc(mapping->LclNum)->GetRegNum() == argReg))
+                                canReuseAbiReg(m_compiler->lvaGetDesc(mapping->LclNum)->GetRegNum(), argReg))
                             {
                                 virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
                             }
@@ -1030,7 +1161,11 @@ void WasmRegAlloc::ResolveReferences()
                     unsigned                     lclNum  = m_compiler->lvaGetLclNum(varDsc);
                     const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
                     assert(abiInfo.HasExactlyOneRegisterSegment());
-                    physReg = abiInfo.Segment(0).GetRegister();
+                    regNumber abiReg = abiInfo.Segment(0).GetRegister();
+                    if (canReuseAbiReg(virtReg, abiReg))
+                    {
+                        physReg = abiReg;
+                    }
                 }
                 else if ((varDsc != nullptr) && varDsc->lvIsParamRegTarget)
                 {
@@ -1038,7 +1173,11 @@ void WasmRegAlloc::ResolveReferences()
                     const ParameterRegisterLocalMapping* mapping =
                         m_compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
                     assert(mapping != nullptr);
-                    physReg = mapping->RegisterSegment->GetRegister();
+                    regNumber abiReg = mapping->RegisterSegment->GetRegister();
+                    if (canReuseAbiReg(virtReg, abiReg))
+                    {
+                        physReg = abiReg;
+                    }
                 }
             }
             else
@@ -1188,6 +1327,7 @@ void WasmRegAlloc::ResolveReferences()
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {
             PhysicalRegBank& physRegs = virtToPhysRegMap[static_cast<unsigned>(type)];
+            assert(physRegs.Index <= physRegs.IndexBase + physRegs.DeclaredCount);
             if (physRegs.DeclaredCount != 0)
             {
                 decls->push_back({type, physRegs.DeclaredCount});
@@ -1220,8 +1360,8 @@ void WasmRegAlloc::ResolveReferences()
             // While register allocations are fixed per-funclet, they are unlikely
             // to agree across all funclets.
             //
-            varDsc->lvRegister = (m_compiler->compFuncCount() == 1);
-            varDsc->lvOnFrame  = false;
+            varDsc->lvRegister = !varDsc->lvWasmGCWriteThru && (m_compiler->compFuncCount() == 1);
+            varDsc->lvOnFrame  = varDsc->lvWasmGCWriteThru;
 
             if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget)
             {

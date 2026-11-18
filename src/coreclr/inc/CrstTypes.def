@@ -188,6 +188,9 @@ Crst ExecutableAllocatorLock
     AcquiredAfter LoaderHeap UMEntryThunkFreeListLock COMCallWrapper
 End
 
+Crst ExternalMemoryHandle
+End
+
 Crst FCall
     AcquiredBefore LoaderHeap
 End
@@ -505,7 +508,8 @@ Crst MethodDescBackpatchInfoTracker
 End
 
 Crst NativeImageEagerFixups
-    AcquiredBefore UnresolvedClassLock
+    AcquiredBefore AppDomainCache GlobalStrLiteralMap ILStubGen InstMethodHashTable LoaderAllocatorReferences
+                   PendingTypeLoadEntry PregeneratedStringThunks UnresolvedClassLock
 End
 
 Crst NativeImageLoad
@@ -528,4 +532,10 @@ End
 
 Crst PregeneratedStringThunks
     AcquiredBefore UnresolvedClassLock
+End
+
+// Guards the de-duplication set used when relocating host-probed webcil (WASM) R2R images.
+// It is a leaf that acquires no other Crst while held, so it is Unordered.
+Crst WebcilImageRelocation
+    Unordered
 End

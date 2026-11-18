@@ -19,6 +19,7 @@ public class ExternalException : Exception {
 
         static int retVal = 100;
 
+	[SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
 	[Fact]
 	public static int TestEntryPoint() {
 		Thread mv_Thread;

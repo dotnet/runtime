@@ -446,18 +446,6 @@ void CompileResult::dmpMessageLog(DWORD key, DWORD value)
     printf("MessageLog NYI");
 }
 
-void CompileResult::recClassMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
-{
-    if (ClassMustBeLoadedBeforeCodeIsRun == nullptr)
-        ClassMustBeLoadedBeforeCodeIsRun = new DenseLightWeightMap<DWORDLONG>();
-
-    ClassMustBeLoadedBeforeCodeIsRun->Append(CastHandle(cls));
-}
-void CompileResult::dmpClassMustBeLoadedBeforeCodeIsRun(DWORD key, DWORDLONG value)
-{
-    printf("ClassMustBeLoadedBeforeCodeIsRun key %u, value cls-%016" PRIX64, key, value);
-}
-
 void CompileResult::recReportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd,
                                               CORINFO_METHOD_HANDLE inlineeHnd,
                                               CorInfoInline         inlineResult,
@@ -610,18 +598,6 @@ CorInfoMethodRuntimeFlags CompileResult::repSetMethodAttribs(CORINFO_METHOD_HAND
     return result;
 }
 
-void CompileResult::recMethodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method)
-{
-    if (MethodMustBeLoadedBeforeCodeIsRun == nullptr)
-        MethodMustBeLoadedBeforeCodeIsRun = new DenseLightWeightMap<DWORDLONG>();
-
-    MethodMustBeLoadedBeforeCodeIsRun->Append(CastHandle(method));
-}
-void CompileResult::dmpMethodMustBeLoadedBeforeCodeIsRun(DWORD key, DWORDLONG value)
-{
-    printf("MethodMustBeLoadedBeforeCodeIsRun key %u, value ftn-%016" PRIX64, key, value);
-}
-
 void CompileResult::recReportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd,
                                               CORINFO_METHOD_HANDLE calleeHnd,
                                               bool                  fIsTailPrefix,
@@ -681,6 +657,7 @@ const char* relocationTypeToString(CorInfoReloc fRelocType)
         ADD_CASE(ARM64_BRANCH26);
         ADD_CASE(ARM64_PAGEBASE_REL21);
         ADD_CASE(ARM64_PAGEOFFSET_12A);
+        ADD_CASE(ARM64_PAGEOFFSET_12L);
         ADD_CASE(ARM64_LIN_TLSDESC_ADR_PAGE21);
         ADD_CASE(ARM64_LIN_TLSDESC_LD64_LO12);
         ADD_CASE(ARM64_LIN_TLSDESC_ADD_LO12);
@@ -820,15 +797,15 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
                 case CorInfoReloc::ARM32_THUMB_BRANCH24:
                 {
-                    INT32 delta = (INT32)(tmp.target - fixupLocation);
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
-                        if (!FitsInThumb2BlRel24(delta))
-                        {
-                            DWORDLONG target = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
-                            delta            = (INT32)(target - fixupLocation);
-                        }
-                        PutThumb2BlRel24((UINT16*)address, delta);
+                        // Like the arm64 ARM64_BRANCH26 and x64 RELATIVE32 handling, hardcode the
+                        // bottom bits of the target into the instruction so the encoding does not
+                        // depend on where SuperPMI allocated the code buffer. Otherwise a BL whose
+                        // target is out of the +-16MB range for one of the two compared blocks would
+                        // get a buffer-dependent placeholder, producing spurious asm diffs.
+                        DWORDLONG target = tmp.target + (int32_t)tmp.addlDelta;
+                        PutThumb2BlRel24((UINT16*)address, (INT32)(target & 0x00FFFFFE));
                     }
                     wasRelocHandled = true;
                 }
@@ -846,7 +823,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
             DWORDLONG target = tmp.target + (int32_t)tmp.addlDelta;
             if (relocType == CorInfoReloc::ARM64_PAGEBASE_REL21 || relocType == CorInfoReloc::ARM64_LIN_TLSDESC_ADR_PAGE21 ||
-                relocType == CorInfoReloc::ARM64_PAGEOFFSET_12A)
+                relocType == CorInfoReloc::ARM64_PAGEOFFSET_12A || relocType == CorInfoReloc::ARM64_PAGEOFFSET_12L)
             {
                 if ((rc->originalRoDataAddress2 <= (size_t)target) &&
                     ((size_t)target < rc->originalRoDataAddress2 + rc->roDataSize2))
@@ -908,6 +885,17 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                     {
                         INT32 imm12 = (INT32)(SIZE_T)target & 0xFFFLL;
                         PutArm64Rel12((UINT32*)address, imm12);
+                    }
+                    wasRelocHandled = true;
+                }
+                break;
+
+                case CorInfoReloc::ARM64_PAGEOFFSET_12L: // LDR 12 bit page offset
+                {
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        INT32 imm12 = (INT32)(SIZE_T)target & 0xFFFLL;
+                        PutArm64Rel12Ldr((UINT32*)address, imm12);
                     }
                     wasRelocHandled = true;
                 }

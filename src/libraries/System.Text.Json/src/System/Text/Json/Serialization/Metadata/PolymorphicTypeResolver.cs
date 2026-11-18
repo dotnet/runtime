@@ -70,7 +70,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (UsesTypeDiscriminators)
             {
-                Debug.Assert(_discriminatorIdtoType != null, "Discriminator index must have been populated.");
+                Debug.Assert(_discriminatorIdtoType is not null, "Discriminator index must have been populated.");
 
                 if (!converterCanHaveMetadata)
                 {
@@ -186,7 +186,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(typeDiscriminator is int or string);
             Debug.Assert(UsesTypeDiscriminators);
-            Debug.Assert(_discriminatorIdtoType != null);
+            Debug.Assert(_discriminatorIdtoType is not null);
 
             if (_discriminatorIdtoType.TryGetValue(typeDiscriminator, out DerivedJsonTypeInfo? result))
             {
@@ -210,7 +210,7 @@ namespace System.Text.Json.Serialization.Metadata
             !type.IsSealed &&
             !type.IsGenericTypeDefinition &&
             !type.IsPointer &&
-            type != JsonTypeInfo.ObjectType;
+            type != typeof(object);
 
         public static bool IsSupportedDerivedType(Type baseType, Type? derivedType) =>
             baseType.IsAssignableFrom(derivedType) && !derivedType.IsGenericTypeDefinition;
@@ -277,7 +277,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(typeInfo.IsConfigured);
 
-            if (typeInfo.PolymorphismOptions != null)
+            if (typeInfo.PolymorphismOptions is not null)
             {
                 // Type defines its own polymorphic configuration.
                 return null;
@@ -289,7 +289,7 @@ namespace System.Text.Json.Serialization.Metadata
             for (Type? candidate = typeInfo.Type.BaseType; candidate != null; candidate = candidate.BaseType)
             {
                 JsonTypeInfo? candidateInfo = ResolveAncestorTypeInfo(candidate, typeInfo.Options);
-                if (candidateInfo?.PolymorphismOptions != null)
+                if (candidateInfo?.PolymorphismOptions is not null)
                 {
                     // stop on the first ancestor that has a match
                     matchingResult = candidateInfo;
@@ -301,9 +301,9 @@ namespace System.Text.Json.Serialization.Metadata
             foreach (Type interfaceType in typeInfo.Type.GetInterfaces())
             {
                 JsonTypeInfo? candidateInfo = ResolveAncestorTypeInfo(interfaceType, typeInfo.Options);
-                if (candidateInfo?.PolymorphismOptions != null)
+                if (candidateInfo?.PolymorphismOptions is not null)
                 {
-                    if (matchingResult != null)
+                    if (matchingResult is not null)
                     {
                         // Resolve any conflicting matches.
                         if (matchingResult.Type.IsAssignableFrom(interfaceType))

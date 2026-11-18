@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-
+using System.Runtime.InteropServices;
 using Internal.Runtime;
 
 namespace System.Threading
@@ -16,7 +16,7 @@ namespace System.Threading
     /// Do not store managed pointers (ref int) to the object header in locals or parameters
     /// as they may be incorrectly updated during garbage collection.
     /// </remarks>
-    internal static class ObjectHeader
+    internal static partial class ObjectHeader
     {
         // The following three header bits are reserved for the GC engine:
         //   BIT_SBLK_UNUSED        = 0x80000000
@@ -48,187 +48,67 @@ namespace System.Threading
         private const int SBLK_MASK_LOCK_RECLEVEL = 0x003F0000;   // 64 recursion levels
         private const int SBLK_LOCK_RECLEVEL_INC = 0x00010000;    // each level is this much higher than the previous one
 
-        // These must match the values in syncblk.h
-        public enum HeaderLockResult
-        {
-            Success = 0,
-            Failure = 1,
-            UseSlowPath = 2
-        };
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern HeaderLockResult AcquireInternal(object obj);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern HeaderLockResult Release(object obj);
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe int* GetHeaderPtr(byte* ppObjectData)
+        private static unsafe int* GetHeaderPtr(nint* ppMethodTable)
         {
-            // The header is the 4 bytes before a pointer-sized chunk before the object data pointer.
-            return (int*)(ppObjectData - sizeof(void*) - sizeof(int));
+            // The header is 4 bytes before MT pointer on all architectures
+            return (int*)ppMethodTable - 1;
         }
 
-        //
-        // A few words about spinning choices:
-        //
-        // Most locks are not contentious. In fact most locks provide exclusive access safety, but in reality are used by
-        // one thread. And then there are locks that do see multiple threads, but the accesses are short and not overlapping.
-        // Thin lock is an optimization for such scenarios.
-        //
-        // If we see a thin lock held by other thread for longer than ~5 microseconds, we will "inflate" the lock
-        // and let the adaptive spinning in the fat Lock sort it out whether we have a contentious lock or a long-held lock.
-        //
-        // Another thing to consider is that SpinWait(1) is calibrated to about 35-50 nanoseconds.
-        // It can take much longer only if nop/pause takes much longer, which it should not, as that would be getting
-        // close to the RAM latency.
-        //
-        // Considering that taking and releasing the lock takes 2 CAS instructions + some overhead, we can estimate shortest
-        // time the lock can be held to be in hundreds of nanoseconds. Thus it is unlikely to see more than
-        // 8-10 threads contending for the lock without inflating it. Therefore we can expect to acquire a thin lock in
-        // under 16 tries.
-        //
-        // As for the backoff strategy we have two choices:
-        // Exponential back-off with a lmit:
-        //   0, 1, 2, 4, 8, 8, 8, 8, 8, 8, 8, . . . .
-        //
-        // Linear back-off
-        //   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, . . . .
-        //
-        // In this case these strategies are close in terms of average and worst case latency, so we will prefer linear
-        // back-off as it favors micro-contention scenario, which we expect.
-        //
+        internal static Lock GetLockObject(object obj)
+        {
+            IntPtr lockHandle = GetLockHandleIfExists(obj);
+            if (lockHandle != 0)
+            {
+                Lock lockObj = GCHandle<Lock>.FromIntPtr(lockHandle).Target;
+                GC.KeepAlive(obj);
+                return lockObj;
+            }
 
-        // Try acquiring the thin-lock
-        public static unsafe HeaderLockResult TryAcquireThinLock(object obj)
+            return GetLockObjectFallback(obj);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Lock GetLockObjectFallback(object obj)
+            {
+#pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
+                object lockObj = new Lock();
+#pragma warning restore CS9216
+                GetOrCreateLockObject(ObjectHandleOnStack.Create(ref obj), ObjectHandleOnStack.Create(ref lockObj));
+                return (Lock)lockObj!;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern IntPtr GetLockHandleIfExists(object obj);
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectHeader_GetOrCreateLockObject")]
+        private static partial void GetOrCreateLockObject(ObjectHandleOnStack obj, ObjectHandleOnStack lockObj);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe bool IsAcquired(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            HeaderLockResult result = AcquireInternal(obj);
-            if (result == HeaderLockResult.Failure)
+            fixed (nint* ppMethodTable = &obj.GetMethodTableRef())
             {
-                return TryAcquireThinLockSpin(obj);
-            }
-            return result;
-        }
+                int* pHeader = GetHeaderPtr(ppMethodTable);
 
-        private static unsafe HeaderLockResult TryAcquireThinLockSpin(object obj)
-        {
-            int currentThreadID = ManagedThreadId.Current;
-
-            // does thread ID fit?
-            if (currentThreadID > SBLK_MASK_LOCK_THREADID)
-                return HeaderLockResult.UseSlowPath;
-
-            int retries = Lock.IsSingleProcessor ? 0 : 16;
-
-            // retry when the lock is owned by somebody else.
-            // this loop will spinwait between iterations.
-            for (int i = 0; i <= retries; i++)
-            {
-                fixed (byte* pObjectData = &obj.GetRawData())
-                {
-                    int* pHeader = GetHeaderPtr(pObjectData);
-
-                    // rare retries when lock is not owned by somebody else.
-                    // these do not count as iterations and do not spinwait.
-                    while (true)
-                    {
-                        int oldBits = *pHeader;
-
-                        // If has a hash code, syncblock, or is in the process of upgrading,
-                        // we cannot use a thin-lock.
-                        if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) != 0)
-                        {
-                            // Need to use a thick-lock.
-                            return HeaderLockResult.UseSlowPath;
-                        }
-                        // If we already own the lock, try incrementing recursion level.
-                        else if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID)
-                        {
-                            // try incrementing recursion level, check for overflow
-                            int newBits = oldBits + SBLK_LOCK_RECLEVEL_INC;
-                            if ((newBits & SBLK_MASK_LOCK_RECLEVEL) != 0)
-                            {
-                                if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
-                                {
-                                    return HeaderLockResult.Success;
-                                }
-
-                                // rare contention on owned lock,
-                                // perhaps hashcode was installed or finalization bits were touched.
-                                // we still own the lock though and may be able to increment, try again
-                                continue;
-                            }
-                            else
-                            {
-                                // overflow, need to transition to a fat Lock
-                                return HeaderLockResult.UseSlowPath;
-                            }
-                        }
-                        // If no one owns the lock, try acquiring it.
-                        else if ((oldBits & SBLK_MASK_LOCK_THREADID) == 0)
-                        {
-                            int newBits = oldBits | currentThreadID;
-                            if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
-                            {
-                                return HeaderLockResult.Success;
-                            }
-
-                            // rare contention on lock.
-                            // Try again in case the finalization bits were touched.
-                            continue;
-                        }
-                        else
-                        {
-                            // Owned by somebody else. Now we spinwait and retry.
-                            break;
-                        }
-                    }
-                }
-
-                if (retries != 0)
-                {
-                    // spin a bit before retrying (1 spinwait is roughly 35 nsec)
-                    // the object is not pinned here
-                    Thread.SpinWait(i);
-                }
-            }
-
-            // owned by somebody else
-            return HeaderLockResult.Failure;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe HeaderLockResult IsAcquired(object obj)
-        {
-            ArgumentNullException.ThrowIfNull(obj);
-
-            fixed (byte* pObjectData = &obj.GetRawData())
-            {
-                int* pHeader = GetHeaderPtr(pObjectData);
-
-                // Ignore the spinlock here.
-                // Either we'll read the thin-lock data in the header or we'll have a sync block.
-                // In either case, the two will be consistent.
+                // If the spin lock is set, the header may be transitioning to a sync block.
+                // In that case, fall back to the slow path to determine ownership.
                 int oldBits = *pHeader;
 
-                // If has a hash code or syncblock, we cannot determine the lock state from the header
-                // use the slow path.
-                if ((oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
+                // If no hash code or syncblock, the lock state is determined by the header.
+                if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) == 0)
                 {
-                    return HeaderLockResult.UseSlowPath;
+                    // do we own the thin lock?
+                    return (oldBits & SBLK_MASK_LOCK_THREADID) == ManagedThreadId.Current;
                 }
-
-                // if we own the lock
-                if ((oldBits & SBLK_MASK_LOCK_THREADID) == ManagedThreadId.Current)
-                {
-                    return HeaderLockResult.Success;
-                }
-
-                // someone else owns or no one.
-                return HeaderLockResult.Failure;
             }
+
+            // Has a hash code or syncblock - let the slow path determine ownership.
+            // Done outside the fixed block to avoid pinning the object across the call.
+            return GetLockObject(obj).IsHeldByCurrentThread;
         }
     }
 }

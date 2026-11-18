@@ -52,7 +52,6 @@ namespace BasicEventSourceTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/129088", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsMonoRuntime))]
         public void StartStopCreatesActivity()
         {
@@ -69,7 +68,6 @@ namespace BasicEventSourceTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/129088", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsMonoRuntime))]
         public async Task ActivityFlowsAsync()
         {
@@ -119,7 +117,6 @@ namespace BasicEventSourceTests
         // the future we might decide it wasn't even desirable to begin with.
         // Compare with SetCurrentActivityIdAfterEventDoesNotFlowAsync below.
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/129088", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsMonoRuntime))]
         public async Task SetCurrentActivityIdBeforeEventFlowsAsync()
         {
@@ -146,7 +143,6 @@ namespace BasicEventSourceTests
         // the future we might decide it wasn't even desirable to begin with.
         // Compare with SetCurrentActivityIdBeforeEventFlowsAsync above.
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/129088", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsMonoRuntime))]
         public async Task SetCurrentActivityIdAfterEventDoesNotFlowAsync()
         {

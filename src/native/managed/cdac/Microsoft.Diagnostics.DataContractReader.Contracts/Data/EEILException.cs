@@ -7,5 +7,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class EEILException : IData<EEILException>
 {
     [FieldAddress]
-    public TargetPointer Clauses { get; }
+    public partial TargetPointer Clauses { get; }
 }

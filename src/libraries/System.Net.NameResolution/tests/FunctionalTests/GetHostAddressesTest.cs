@@ -370,7 +370,7 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAnyAsync<Exception>(() => Dns.GetHostAddressesAsync(hostName));
         }
 
-        // "localhost." (with trailing dot) should NOT be treated as a subdomain.
+        // "localhost." is resolved by the OS first, with fallback to plain "localhost" on failure or an empty result.
         [Fact]
         public async Task DnsGetHostAddresses_LocalhostWithTrailingDot_ReturnsLoopback()
         {

@@ -65,8 +65,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         /// <summary>
         /// Order:
         ///  IHostLifetime.WaitForStartAsync
-        ///  Services.GetService{IStartupValidator}().Validate()
-        ///  Services.GetService{IAsyncStartupValidator}().ValidateAsync()
+        ///  Startup validation: a custom sync-only IStartupValidator (if any) via Validate(), otherwise every IAsyncStartupValidator via ValidateAsync()
         ///  IHostedLifecycleService.StartingAsync
         ///  IHostedService.Start
         ///  IHostedLifecycleService.StartedAsync
@@ -94,26 +93,96 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 try
                 {
+                    // Run startup validation before resolving hosted services so that invalid configuration
+                    // fails fast and a hosted service reading validated options in its constructor observes
+                    // the startup-validated instance.
+#pragma warning disable SYSLIB0066 // IStartupValidator is obsolete but retained for compatibility.
+                    IStartupValidator? startupValidator = Services.GetService<IStartupValidator>();
+#pragma warning restore SYSLIB0066
+                    IAsyncStartupValidator[] asyncValidators = Array.Empty<IAsyncStartupValidator>();
+                    bool runSyncValidator;
+
+                    // A sync-only IStartupValidator takes precedence without resolving async validators that will
+                    // not run. This preserves the legacy replacement behavior and avoids their activation side effects.
+                    if (startupValidator is not null and not IAsyncStartupValidator)
+                    {
+                        runSyncValidator = true;
+                    }
+                    else
+                    {
+                        asyncValidators = Services.GetServices<IAsyncStartupValidator>().ToArray();
+
+                        // The built-in validator is intentionally exposed through both contracts as one shared
+                        // instance. A legacy service that is also the exact object in the async collection follows the
+                        // async path, recognizing that compatibility alias. Otherwise preserve legacy replacement
+                        // behavior. Object identity avoids conflating independent registrations of the same type.
+                        bool legacyInstanceIsAlsoResolvedAsAsync =
+                            startupValidator is not null &&
+                            asyncValidators.Any(asyncValidator => ReferenceEquals(asyncValidator, startupValidator));
+
+                        runSyncValidator =
+                            startupValidator is not null &&
+                            !legacyInstanceIsAlsoResolvedAsAsync;
+                    }
+
+                    if (runSyncValidator)
+                    {
+                        startupValidator?.Validate();
+                    }
+                    else
+                    {
+                        // Run every registered async startup validator so multiple IAsyncStartupValidator instances
+                        // all participate, aggregating their validation failures.
+                        List<Exception>? validationFailures = null;
+                        foreach (IAsyncStartupValidator asyncValidator in asyncValidators)
+                        {
+                            try
+                            {
+                                await asyncValidator.ValidateAsync(cancellationToken).ConfigureAwait(false);
+                            }
+                            catch (OptionsValidationException ex)
+                            {
+                                (validationFailures ??= new()).Add(ex);
+                            }
+                            catch (AggregateException ex) when (
+                                ex.InnerExceptions.Count > 0 &&
+                                ex.InnerExceptions.All(static e => e is OptionsValidationException))
+                            {
+                                // A validator (e.g. the built-in one) may itself aggregate multiple failing
+                                // option instances; flatten so every failure is reported together.
+                                (validationFailures ??= new()).AddRange(ex.InnerExceptions);
+                            }
+                            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                            {
+                                // Preserve StartAsync cancellation semantics: cancellation of the startup token
+                                // propagates as OperationCanceledException rather than being aggregated.
+                                throw;
+                            }
+                            catch (Exception ex)
+                            {
+                                // An unexpected (non-validation) failure stops further validation, but any
+                                // validation failures already collected are retained and reported alongside it.
+                                (validationFailures ??= new()).Add(ex);
+                                break;
+                            }
+                        }
+
+                        if (validationFailures is not null)
+                        {
+                            if (validationFailures.Count == 1)
+                            {
+                                ExceptionDispatchInfo.Capture(validationFailures[0]).Throw();
+                            }
+
+                            if (validationFailures.Count > 1)
+                            {
+                                throw new AggregateException(validationFailures);
+                            }
+                        }
+                    }
+
                     _hostedServices ??= Services.GetRequiredService<IEnumerable<IHostedService>>();
                     _hostedLifecycleServices = GetHostLifecycles(_hostedServices);
-
-                    // Two-stage startup validation:
-                    // Stage 1 (sync): Run IStartupValidator.Validate() — iterates _validators dictionary
-                    //   (or user's custom implementation if registered).
-                    //   If sync validation fails, skip async to avoid expensive I/O on invalid config.
-                    // Stage 2 (async): Run IAsyncStartupValidator.ValidateAsync() — iterates _asyncValidators
-                    //   dictionary (or user's custom implementation if registered).
-                    //
-                    // Each interface is resolved independently via DI. TryAddTransient semantics ensure
-                    // user-registered implementations replace the built-in for each interface separately.
-                    IStartupValidator? validator = Services.GetService<IStartupValidator>();
-                    validator?.Validate();
-
-                    IAsyncStartupValidator? asyncValidator = Services.GetService<IAsyncStartupValidator>();
-                    if (asyncValidator is not null)
-                    {
-                        await asyncValidator.ValidateAsync(cancellationToken).ConfigureAwait(false);
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -260,7 +329,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             using (cts)
             {
                 List<Exception> exceptions = new();
-                if (!_hostStarting) // Started?
+                if (!_hostStarting || _hostedServices is null) // Started (and hosted services resolved)?
                 {
 
                     // Cancel IHostApplicationLifetime.ApplicationStopping.

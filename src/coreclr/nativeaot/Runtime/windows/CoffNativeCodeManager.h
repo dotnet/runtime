@@ -49,7 +49,7 @@ public:
                           PTR_VOID pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
                           PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, uint32_t nRuntimeFunctionTable,
                           PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions);
-    ~CoffNativeCodeManager();
+    virtual ~CoffNativeCodeManager();
 
     //
     // Code manager methods
@@ -72,7 +72,7 @@ public:
 
     uint32_t GetCodeOffset(MethodInfo * pMethodInfo, PTR_VOID address, /*out*/ PTR_uint8_t* gcInfo);
 
-    bool IsSafePoint(PTR_VOID pvAddress);
+    bool IsSafePoint(MethodInfo * pMethodInfo, PTR_VOID pvAddress);
 
     void EnumGcRefs(MethodInfo *    pMethodInfo,
                     PTR_VOID        safePointAddress,
@@ -92,7 +92,8 @@ public:
 
     bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                     REGDISPLAY *    pRegisterSet,        // in
-                                    PTR_PTR_VOID *  ppvRetAddrLocation); // out
+                                    PTR_PTR_VOID *  ppvRetAddrLocation,  // out
+                                    uintptr_t *     pSpForArm64PacSign); // out
 
 #ifdef TARGET_X86
     GCRefKind GetReturnValueKind(MethodInfo *   pMethodInfo,

@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, JitOptimizationSensitive, CMakeProjectReference -->
+    <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- TODO: Re-enable when browser runtime-test payloads can relink per-test native components.
+         Tracked by https://github.com/dotnet/runtime/issues/123946. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <Optimize>True</Optimize>
-    <!-- This test can run for a very long time in stress modes -->
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
-    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="out_of_range_fp_to_int_conversions.cs" />

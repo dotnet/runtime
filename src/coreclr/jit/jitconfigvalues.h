@@ -79,8 +79,6 @@ RELEASE_CONFIG_INTEGER(JitCloneLoopsMinPerCallRatio, "JitCloneLoopsMinPerCallRat
                                                                                         // disables the gate.
 CONFIG_INTEGER(JitDebugLogLoopCloning, "JitDebugLogLoopCloning", 0) // In debug builds log places where loop cloning
                                                                     // optimizations are performed on the fast path.
-CONFIG_INTEGER(JitDefaultFill, "JitDefaultFill", 0xdd) // In debug builds, initialize the memory allocated by the nra
-                                                       // with this byte.
 
 // Minimum weight needed for the first block of a loop to make it a candidate for alignment.
 CONFIG_INTEGER(JitAlignLoopMinBlockWeight, "JitAlignLoopMinBlockWeight", DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT)
@@ -136,6 +134,8 @@ RELEASE_CONFIG_INTEGER(JitInlineBudget, "JitInlineBudget", DEFAULT_INLINE_BUDGET
 CONFIG_INTEGER(JitForceInlineDepth, "JitForceInlineDepth", DEFAULT_MAX_FORCE_INLINE_DEPTH)
 RELEASE_CONFIG_INTEGER(JitInlineMethodsWithEH, "JitInlineMethodsWithEH", 1)
 CONFIG_STRING(JitInlineMethodsWithEHRange, "JitInlineMethodsWithEHRange")
+CONFIG_STRING(JitOptimizeAwaitRange, "JitOptimizeAwaitRange") // Optimize awaits in this hash range
+CONFIG_INTEGER(JitAwaitHashBreak, "JitAwaitHashBreak", -1)    // Break on jitting await with specified hash
 
 CONFIG_INTEGER(JitLongAddress, "JitLongAddress", 0) // Force using the large pseudo instruction form for long address
 CONFIG_INTEGER(JitMaxUncheckedOffset, "JitMaxUncheckedOffset", 8)
@@ -198,7 +198,7 @@ CONFIG_INTEGER(JitProfileChecks, "JitProfileChecks", -1)
 CONFIG_INTEGER(JitRequired, "JITRequired", -1)
 CONFIG_INTEGER(JitStackAllocToLocalSize, "JitStackAllocToLocalSize", DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)
 CONFIG_INTEGER(JitSkipArrayBoundCheck, "JitSkipArrayBoundCheck", 0)
-CONFIG_INTEGER(JitSlowDebugChecksEnabled, "JitSlowDebugChecksEnabled", 1) // Turn on slow debug checks
+CONFIG_INTEGER(JitEnablePhaseChecks, "JitEnablePhaseChecks", 1) // Run the phase IR checks
 
 // On ARM, use this as the maximum function/funclet size for creating function fragments (and creating
 // multiple RUNTIME_FUNCTION entries)
@@ -416,13 +416,13 @@ RELEASE_CONFIG_INTEGER(EnableHWIntrinsic,           "EnableHWIntrinsic",        
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 RELEASE_CONFIG_INTEGER(EnableAVX,                   "EnableAVX",                 1) // Allows AVX and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX2,                  "EnableAVX2",                1) // Allows AVX2, BMI1, BMI2, F16C, FMA, LZCNT, MOVBE and dependent hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512,                "EnableAVX512",              1) // Allows AVX512 F+BW+CD+DQ+VL and depdendent hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512BMM,             "EnableAVX512BMM",           1) // Allows AVX10v2 and depdendent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512,                "EnableAVX512",              1) // Allows AVX512 F+BW+CD+DQ+VL and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512BMM,             "EnableAVX512BMM",           1) // Allows AVX512BMM and dependent hardware intrinsics to be disabled
 
-RELEASE_CONFIG_INTEGER(EnableAVX512v2,              "EnableAVX512v2",            1) // Allows AVX512 IFMA+VBMI and depdendent hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512v3,              "EnableAVX512v3",            1) // Allows AVX512 BITALG+VBMI2+VNNI+VPOPCNTDQ and depdendent hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX10v1,               "EnableAVX10v1",             1) // Allows AVX10v1 and depdendent hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX10v2,               "EnableAVX10v2",             0) // Allows AVX10v2 and depdendent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512v2,              "EnableAVX512v2",            1) // Allows AVX512 IFMA+VBMI and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512v3,              "EnableAVX512v3",            1) // Allows AVX512 BITALG+VBMI2+VPOPCNTDQ+VNNI and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX10v1,               "EnableAVX10v1",             1) // Allows AVX10v1 and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX10v2,               "EnableAVX10v2",             0) // Allows AVX10v2 and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAPX,                   "EnableAPX",                 0) // Allows APX and dependent features to be disabled
 
 RELEASE_CONFIG_INTEGER(EnableAES,                   "EnableAES",                 1) // Allows AES, PCLMULQDQ, and dependent hardware intrinsics to be disabled
@@ -439,8 +439,10 @@ RELEASE_CONFIG_INTEGER(EnableX86Serialize,          "EnableX86Serialize",       
 RELEASE_CONFIG_INTEGER(EnableArm64Aes,              "EnableArm64Aes",            1) // Allows Arm64 Aes+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Atomics,          "EnableArm64Atomics",        1) // Allows Arm64 Atomics+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Crc32,            "EnableArm64Crc32",          1) // Allows Arm64 Crc32+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64Cssc,             "EnableArm64Cssc",           1) // Allows Arm64 Cssc+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Dczva,            "EnableArm64Dczva",          1) // Allows Arm64 Dczva+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Dp,               "EnableArm64Dp",             1) // Allows Arm64 Dp+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64Fp16,             "EnableArm64Fp16",           1) // Allows Arm64 Fp16+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Rdm,              "EnableArm64Rdm",            1) // Allows Arm64 Rdm+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sha1,             "EnableArm64Sha1",           1) // Allows Arm64 Sha1+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sha256,           "EnableArm64Sha256",         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
@@ -449,12 +451,14 @@ RELEASE_CONFIG_INTEGER(EnableArm64Sve2,             "EnableArm64Sve2",          
 RELEASE_CONFIG_INTEGER(EnableArm64Sha3,             "EnableArm64Sha3",           1) // Allows Arm64 Sha3+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sm4,              "EnableArm64Sm4",            1) // Allows Arm64 Sm4+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64SveAes,           "EnableArm64SveAes",         1) // Allows Arm64 SveAes+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64SvePmull128,      "EnableArm64SvePmull128",    1) // Allows Arm64 SvePmull128+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64SveSha3,          "EnableArm64SveSha3",        1) // Allows Arm64 SveSha3+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64SveSm4,           "EnableArm64SveSm4",         1) // Allows Arm64 SveSm4+ hardware intrinsics to be disabled
 #elif defined(TARGET_RISCV64)
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zba,            "EnableRiscV64Zba",          1) // Allows RiscV64 Zba hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zbb,            "EnableRiscV64Zbb",          1) // Allows RiscV64 Zbb hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zbs,            "EnableRiscV64Zbs",          1) // Allows RiscV64 Zbs hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableRiscV64Zicond,         "EnableRiscV64Zicond",       1) // Allows RiscV64 Zicond hardware intrinsics to be disabled
 #endif
 
 RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",   1) // Allows embedded broadcasts to be disabled
@@ -576,10 +580,6 @@ RELEASE_CONFIG_INTEGER(JitInlineSIMDMultiplier, "JitInlineSIMDMultiplier", 3)
 // Ex lclMAX_TRACKED constant.
 RELEASE_CONFIG_INTEGER(JitMaxLocalsToTrack, "JitMaxLocalsToTrack", 0x400)
 
-#if defined(FEATURE_ENABLE_NO_RANGE_CHECKS)
-RELEASE_CONFIG_INTEGER(JitNoRngChks, "JitNoRngChks", 0) // If 1, don't generate range checks
-#endif
-
 OPT_CONFIG_INTEGER(JitDoAssertionProp, "JitDoAssertionProp", 1) // Perform assertion propagation optimization
 OPT_CONFIG_INTEGER(JitDoCopyProp, "JitDoCopyProp", 1) // Perform copy propagation on variables that appear redundant
 OPT_CONFIG_INTEGER(JitDoOptimizeIVs, "JitDoOptimizeIVs", 1)     // Perform optimization of induction variables
@@ -592,6 +592,8 @@ OPT_CONFIG_INTEGER(JitDoRangeAnalysis, "JitDoRangeAnalysis", 1)                 
 OPT_CONFIG_INTEGER(JitDoVNBasedDeadStoreRemoval, "JitDoVNBasedDeadStoreRemoval", 1) // Perform VN-based dead store
                                                                                     // removal
 OPT_CONFIG_INTEGER(JitDoRedundantBranchOpts, "JitDoRedundantBranchOpts", 1) // Perform redundant branch optimizations
+// Max number of dominating compares redundant branch opts inspects for each relop
+CONFIG_INTEGER(JitRboDominatorLimit, "JitRboDominatorLimit", 128)
 OPT_CONFIG_STRING(JitEnableRboRange, "JitEnableRboRange")
 OPT_CONFIG_STRING(JitEnableHeadTailMergeRange, "JitEnableHeadTailMergeRange")
 OPT_CONFIG_STRING(JitEnableVNBasedDeadStoreRemovalRange, "JitEnableVNBasedDeadStoreRemovalRange")
@@ -622,11 +624,11 @@ OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
 // a continuation is being reused.
 OPT_CONFIG_STRING(JitAsyncPreservedValueAnalysisRange, "JitAsyncPreservedValueAnalysisRange")
 
-// Enable continuation reuse based on method hash range
-OPT_CONFIG_STRING(JitAsyncReuseContinuationsRange, "JitAsyncReuseContinuationsRange")
-// Save and reuse continuation instances in runtime async functions. Also
-// implies use of shared continuation layouts for all suspension points.
-RELEASE_CONFIG_INTEGER(JitAsyncReuseContinuations, "JitAsyncReuseContinuations", 1)
+// Enable general inlining of runtime async calls, i.e. inlining of async
+// callees that may suspend. When zero, only the restricted cases are inlined:
+// callees without any awaits, async versions of synchronous methods, and tail
+// awaits.
+RELEASE_CONFIG_INTEGER(JitAsyncInlining, "JitAsyncInlining", 1)
 
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
@@ -663,10 +665,10 @@ RELEASE_CONFIG_STRING(TailCallOpt, "TailCallOpt")
 // If set, allow fast tail calls; otherwise allow only helper-based calls for explicit tail calls.
 RELEASE_CONFIG_INTEGER(FastTailCalls, "FastTailCalls", 1)
 
-// Set to 1 to measure noway_assert usage. Only valid if MEASURE_NOWAY is defined.
+// Set to 1 to measure noway_assert usage. Only valid if MEASURE_NOWAY is defined to 1.
 RELEASE_CONFIG_INTEGER(JitMeasureNowayAssert, "JitMeasureNowayAssert", 0)
 
-// Set to file to write noway_assert usage to a file (if not set: stdout). Only valid if MEASURE_NOWAY is defined.
+// Set to file to write noway_assert usage to a file (if not set: stdout). Only valid if MEASURE_NOWAY is defined to 1.
 RELEASE_CONFIG_STRING(JitMeasureNowayAssertFile, "JitMeasureNowayAssertFile")
 
 CONFIG_INTEGER(EnableExtraSuperPmiQueries, "EnableExtraSuperPmiQueries", 0) // Make extra queries to somewhat
@@ -687,6 +689,18 @@ CONFIG_INTEGER(JitInlinePolicyRandom, "JitInlinePolicyRandom", 0) // nonzero ena
 CONFIG_INTEGER(JitInlinePolicyReplay, "JitInlinePolicyReplay", 0)
 CONFIG_STRING(JitNoInlineRange, "JitNoInlineRange")
 CONFIG_STRING(JitInlineReplayFile, "JitInlineReplayFile")
+
+// Stress general runtime async inlining: forcibly inline async callees that may suspend,
+// with a probability that decays with inline depth. Nonzero enables; the value is the
+// external random seed. See AsyncStressPolicy.
+//
+// The stress is also enabled for roughly 50% of async methods under JitStress, in which
+// case the JitStress value is used as the external random seed.
+CONFIG_INTEGER(JitStressAsyncInlining, "JitStressAsyncInlining", 0)
+CONFIG_INTEGER(JitStressAsyncInliningMaxDepth, "JitStressAsyncInliningMaxDepth", 8)
+// Probability, in percent, that the first async candidate of a body at depth 1 is inlined.
+// The n'th candidate of a body at depth d is inlined with probability (pct/100)^(d + n).
+CONFIG_INTEGER(JitStressAsyncInliningPct, "JitStressAsyncInliningPct", 75)
 
 // Extended version of DefaultPolicy that includes a more precise IL scan,
 // relies on PGO if it exists and generally is more aggressive.
@@ -736,6 +750,11 @@ RELEASE_CONFIG_INTEGER(JitEnableGuardedDevirtualization, "JitEnableGuardedDevirt
 // Number of types to probe for polymorphic virtual call-sites to devirtualize them,
 // Max number is MAX_GDV_TYPE_CHECKS defined above ^. -1 means it's up to JIT to decide
 RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationMaxTypeChecks, "JitGuardedDevirtualizationMaxTypeChecks", -1)
+
+// Whether a guarded devirtualization candidate has to be inlineable.
+// 0 - keep it even if we won't inline it, a direct call is still cheaper.
+// 1 - drop it if the target can't be inlined (legacy behavior).
+RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationRequireInlining, "JitGuardedDevirtualizationRequireInlining", 0)
 
 // Various policies for GuardedDevirtualization (0x4B == 75)
 RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationChainLikelihood, "JitGuardedDevirtualizationChainLikelihood", 0x4B)
@@ -887,8 +906,6 @@ CONFIG_STRING(JitRawHexCodeFile, "JitRawHexCodeFile")
 //    1: disable frames that save FP/LR registers with the callee-saved registers (at the top of the frame)
 //    2: force all frames to use the frame types that save FP/LR registers with the callee-saved registers (at the top
 //    of the frame)
-//    3: force all frames to use the frame types that save FP/LR registers with the callee-saved registers (at the top
-//    of the frame) and also force using the large funclet frame variation (frame 5) if possible.
 CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, "JitSaveFpLrWithCalleeSavedRegisters", 0)
 
 // Experimental support for vector length agnostic implementation of Vector<T>
@@ -901,15 +918,14 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #endif // defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_WASM)
-// Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
-RELEASE_CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
-RELEASE_CONFIG_INTEGER(JitWasmSimdNyiToR2RUnsupported, "JitWasmSimdNyiToR2RUnsupported", 0)
-
 // Specify methods that will fail with R2R unsupported after codegen.
 // Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.
 CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
 // Enable processing methods with funclets. Set to 0 to bail to R2R unsupported before codegen.
 RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 1)
+// Method filter for WASM performance instrumentation profiler. Uses standard MethodSet pattern format.
+// Same key as the interpreter's InterpConfig.WasmPerformanceInstrumentation so both engines share it.
+RELEASE_CONFIG_METHODSET(WasmPerformanceInstrumentation, "WasmPerformanceInstrumentation")
 #endif // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.

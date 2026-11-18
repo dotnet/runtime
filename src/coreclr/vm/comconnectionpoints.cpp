@@ -287,17 +287,16 @@ HRESULT __stdcall ConnectionPoint::EnumConnections(IEnumConnections **ppEnum)
 
 IConnectionPointContainer *ConnectionPoint::GetConnectionPointContainerWorker()
 {
-    CONTRACT(IConnectionPointContainer*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Retrieve the IConnectionPointContainer from the owner wrapper.
-    RETURN (IConnectionPointContainer*)
+    return (IConnectionPointContainer*)
         ComCallWrapper::GetComIPFromCCW(m_pOwnerWrap, IID_IConnectionPointContainer, NULL);
 }
 
@@ -313,7 +312,7 @@ void ConnectionPoint::AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie)
     }
     CONTRACTL_END;
 
-    SafeComHolder<IUnknown> pEventItf = NULL;
+    ReleaseHolderAnyMode<IUnknown> pEventItf;
     HRESULT hr;
 
     // Make sure we have a pointer to the interface and not to another IUnknown.
@@ -345,7 +344,7 @@ void ConnectionPoint::AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie)
 
         // Allocate the object handle and the connection cookie.
         OBJECTHANDLEHolder phndEventItfObj(GetAppDomain()->CreateHandle((OBJECTREF)pEventItfObj));
-        ConnectionCookieHolder pConCookie = ConnectionCookie::CreateConnectionCookie(std::move(phndEventItfObj));
+        ConnectionCookieHolder pConCookie(ConnectionCookie::CreateConnectionCookie(std::move(phndEventItfObj)));
 
         // Add the connection cookie to the list.
         InsertWithLock(pConCookie);
@@ -353,7 +352,7 @@ void ConnectionPoint::AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie)
         // Everything went ok so hand back the cookie id.
         *pdwCookie = pConCookie->m_id;
 
-        pConCookie.SuppressRelease();
+        pConCookie.Detach();
     }
     GCPROTECT_END();
     GCPROTECT_END();
@@ -376,7 +375,7 @@ void ConnectionPoint::UnadviseWorker(DWORD dwCookie)
     GCPROTECT_BEGIN(pTCEProviderObj)
     {
         // The cookie is actually a connection cookie.
-        ConnectionCookieHolder pConCookie = FindWithLock(dwCookie);
+        ConnectionCookieHolder pConCookie(FindWithLock(dwCookie));
 
         // Retrieve the CLR object from the cookie which in fact is the object handle.
         pEventItfObj = (COMOBJECTREF) ObjectFromHandle(pConCookie->m_hndEventProvObj);
@@ -409,7 +408,6 @@ void ConnectionPoint::SetupEventMethods()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -424,7 +422,7 @@ void ConnectionPoint::SetupEventMethods()
         return;
 
     // Allocate the event method tables.
-    NewArrayHolder<EventMethodInfo> EventMethodInfos = new EventMethodInfo[cMaxNumEventMethods];
+    NewArrayHolder<EventMethodInfo> EventMethodInfos(new EventMethodInfo[cMaxNumEventMethods]);
 
     // Find all the real event methods needed to be able to advise on the current connection point.
     int NumEventMethods = 0;
@@ -460,38 +458,36 @@ void ConnectionPoint::SetupEventMethods()
 
     // Now that the struct is totally setup, we'll set the members.
     m_NumEventMethods = NumEventMethods;
-    m_apEventMethods = EventMethodInfos;
-    EventMethodInfos.SuppressRelease();
+    m_apEventMethods = EventMethodInfos.Detach();
 }
 
 MethodDesc *ConnectionPoint::FindProviderMethodDesc( MethodDesc *pEventMethodDesc, EnumEventMethods Method )
 {
-    CONTRACT (MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pEventMethodDesc));
         PRECONDITION(Method == EventAdd || Method == EventRemove);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     // Retrieve the event method.
     MethodDesc *pProvMethodDesc =
         MemberLoader::FindEventMethod(m_pTCEProviderMT, pEventMethodDesc->GetName(), Method, MemberLoader::FM_IgnoreCase);
     if (!pProvMethodDesc)
-        RETURN NULL;
+        return NULL;
 
     // Validate that the signature of the delegate is the expected signature.
     MetaSig Sig(pProvMethodDesc);
     if (Sig.NextArg() != ELEMENT_TYPE_CLASS)
-        RETURN NULL;
+        return NULL;
 
     // <TODO>@TODO: this ignores the type of failure - try GetLastTypeHandleThrowing()</TODO>
     TypeHandle DelegateType = Sig.GetLastTypeHandleNT();
     if (DelegateType.IsNull())
-        RETURN NULL;
+        return NULL;
 
     PCCOR_SIGNATURE pEventMethSig;
     DWORD cEventMethSig;
@@ -503,10 +499,10 @@ MethodDesc *ConnectionPoint::FindProviderMethodDesc( MethodDesc *pEventMethodDes
         pEventMethodDesc->GetModule());
 
     if (!pInvokeMD)
-        RETURN NULL;
+        return NULL;
 
     // The requested method exists and has the appropriate signature.
-    RETURN pProvMethodDesc;
+    return pProvMethodDesc;
 }
 
 void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubscriber, MethodDesc *pProvMethodDesc, MethodDesc *pEventMethodDesc )
@@ -516,7 +512,6 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pProvMethodDesc));
         PRECONDITION(CheckPointer(pEventMethodDesc));
     }
@@ -556,14 +551,24 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
         {
             UnmanagedCallersOnlyCaller invokeConnectionPointProviderMethod(METHOD__STUBHELPERS__INVOKE_CONNECTION_POINT_PROVIDER_METHOD);
 
+            PCODE pProvCode;
+            PCODE pDlgCtorCode;
+            PCODE pEventMethodCode;
+            {
+                GCX_PREEMP();
+                pProvCode = pProvMethodDesc->GetSingleCallableAddrOfCode();
+                pDlgCtorCode = pDlgCtorMD->GetSingleCallableAddrOfCode();
+                pEventMethodCode = pEventMethodDesc->GetMultiCallableAddrOfCode();
+            }
+
             // Using GetMultiCallableAddrOfCode() for the event target since it is stored for future invokes.
             invokeConnectionPointProviderMethod.InvokeThrowing(
                 &pProvider,
-                pProvMethodDesc->GetSingleCallableAddrOfCode(),
+                pProvCode,
                 &pDelegate,
-                pDlgCtorMD->GetSingleCallableAddrOfCode(),
+                pDlgCtorCode,
                 &pSubscriber,
-                pEventMethodDesc->GetMultiCallableAddrOfCode());
+                pEventMethodCode);
         }
         GCPROTECT_END();
     }

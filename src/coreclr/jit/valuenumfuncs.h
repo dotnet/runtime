@@ -13,7 +13,7 @@ ValueNumFuncDef(MapPhysicalStore, 3, false, false)   // Args: 0: map, 1: "physic
 ValueNumFuncDef(BitCast, 2, false, false)            // Args: 0: VN of the arg, 1: VN of the target type
 ValueNumFuncDef(ZeroObj, 1, false, false)            // Args: 0: VN of the class handle.
 
-ValueNumFuncDef(PtrToLoc, 2, false, true)            // Pointer (byref) to a local variable.  Args: VN's of: 0: local's number, 1: offset.
+ValueNumFuncDef(PtrToLoc, 3, false, true)            // Pointer (byref) to a local variable.  Args: VN's of: 0: local's number, 1: offset, 2: frame version.
 ValueNumFuncDef(PtrToArrElem, 4, false, true)        // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: offset.
 ValueNumFuncDef(PtrToStatic, 3, false, true)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).
                                                                    // Args: 0: (VN of) the box's address if the static is "boxed",
@@ -35,12 +35,14 @@ ValueNumFuncDef(CastClass, 2, false, false)          // Args: 0: Handle of class
 ValueNumFuncDef(IsInstanceOf, 2, false, false)       // Args: 0: Handle of class being queried, 1: object being queried.
 ValueNumFuncDef(ReadyToRunCastClass, 2, false, false)          // Args: 0: Helper stub address, 1: object being cast.
 ValueNumFuncDef(ReadyToRunIsInstanceOf, 2, false, false)       // Args: 0: Helper stub address, 1: object being queried.
-ValueNumFuncDef(TypeHandleToRuntimeType, 1, false, false)      // Args: 0: TypeHandle to translate
+ValueNumFuncDef(TypeHandleToRuntimeType, 1, false, true)       // Args: 0: TypeHandle to translate
 ValueNumFuncDef(TypeHandleToRuntimeTypeHandle, 1, false, false)      // Args: 0: TypeHandle to translate
 
-ValueNumFuncDef(LdElemA, 3, false, false)            // Args: 0: array value; 1: index value; 2: type handle of element.
+ValueNumFuncDef(LdElemA, 3, false, true)             // Args: 0: array value; 1: index value; 2: type handle of element.
 
 ValueNumFuncDef(ByrefExposedLoad, 3, false, false)      // Args: 0: type handle/id, 1: pointer value; 2: ByrefExposed heap value
+ValueNumFuncDef(ByrefExposedStore, 4, false, false)     // int/long/float/double store. Args: 0: liberal pointer, 1: conservative pointer, 2: stored value, 3: opaque memory value
+ValueNumFuncDef(ByrefExposedLocalLoad, 4, false, false) // Args: 0: type handle/id, 1: local's number, 2: offset; 3: ByrefExposed heap value
 
 ValueNumFuncDef(GetRefanyVal, 2, false, false)       // Args: 0: type handle; 1: typedref value.  Returns the value (asserting that the type is right).
 
@@ -114,7 +116,10 @@ ValueNumFuncDef(LeadingZeroCount, 1, false, false)
 ValueNumFuncDef(TrailingZeroCount, 1, false, false)
 ValueNumFuncDef(PopCount, 1, false, false)
 
-ValueNumFuncDef(ManagedThreadId, 0, false, false)
+ValueNumFuncDef(SaturateToInt8, 1, false, false)
+ValueNumFuncDef(SaturateToInt16, 1, false, false)
+ValueNumFuncDef(SaturateToUInt8, 1, false, false)
+ValueNumFuncDef(SaturateToUInt16, 1, false, false)
 
 ValueNumFuncDef(ObjGetType, 1, false, true)
 ValueNumFuncDef(GetGcstaticBase, 1, false, true)
@@ -139,6 +144,8 @@ ValueNumFuncDef(GetGcthreadstaticBaseNoctor, 1, false, true)
 ValueNumFuncDef(GetNongcthreadstaticBaseNoctor, 1, false, true)
 ValueNumFuncDef(GetdynamicGcthreadstaticBase, 1, false, true)
 ValueNumFuncDef(GetdynamicNongcthreadstaticBase, 1, false, true)
+ValueNumFuncDef(GetdynamicGcthreadstaticBaseOptimized, 1, false, true)
+ValueNumFuncDef(GetdynamicNongcthreadstaticBaseOptimized, 1, false, true)
 ValueNumFuncDef(GetdynamicGcthreadstaticBaseNoctor, 1, false, true)
 ValueNumFuncDef(GetdynamicGcthreadstaticBaseNoctorOptimized, 1, false, true)
 ValueNumFuncDef(GetdynamicNongcthreadstaticBaseNoctor, 1, false, true)
@@ -154,6 +161,7 @@ ValueNumFuncDef(GetStaticAddrTLS, 1, false, true)
 
 ValueNumFuncDef(VirtualFuncPtr, 3, false, true)
 ValueNumFuncDef(GVMLookupForSlot, 2, false, true)
+ValueNumFuncDef(InterfaceLookupForSlot, 2, false, true)
 ValueNumFuncDef(ReadyToRunVirtualFuncPtr, 2, false, true)
 
 ValueNumFuncDef(JitNew, 2, false, true)
@@ -191,43 +199,26 @@ ValueNumFuncDef(SimdType, 2, false, false)  // A value number function to compos
 
 // In VN all HW intrinsics encode an extra arg for the base type (except when
 // they are variadic), hence the +1 to the arg count below here.
-#if defined(TARGET_XARCH)
+#if defined(FEATURE_HW_INTRINSICS)
+ValueNumFuncDef(HWI_INTRINSIC_START, -1, false, false)
+
 #define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost, category, flag) \
-ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for x86/x64
-#include "hwintrinsiclistxarch.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector128_Abs
-#define VNF_HWI_LAST  VNF_HWI_AVX512_XnorMask
+ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS
+#include "hwintrinsiclist.h"
 
-#elif defined(TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for arm64
-#include "hwintrinsiclistarm64.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector64_Abs
-#define VNF_HWI_LAST  VNF_HWI_Sve_ReverseElement_Predicates
+ValueNumFuncDef(HWI_INTRINSIC_END, -1, false, false)
 
-#elif defined(TARGET_ARM)
-// No Hardware Intrinsics on ARM32
+#define VNF_HWI_FIRST (VNF_HWI_INTRINSIC_START + 1)
+#define VNF_HWI_LAST  (VNF_HWI_INTRINSIC_END - 1)
+#endif // FEATURE_HW_INTRINSICS
 
-#elif defined(TARGET_LOONGARCH64)
-    //TODO-LOONGARCH64-CQ: add LoongArch64's Hardware Intrinsics Instructions if supported.
-
-#elif defined (TARGET_RISCV64)
+#if defined(TARGET_RISCV64)
     // Signed/Unsigned integer min/max intrinsics
     ValueNumFuncDef(MinInt, 2, true, false)
     ValueNumFuncDef(MaxInt, 2, true, false)
     ValueNumFuncDef(MinInt_UN, 2, true, false)
     ValueNumFuncDef(MaxInt_UN, 2, true, false)
-
-#elif defined(TARGET_WASM)
-#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for wasm
-#include "hwintrinsiclistwasm.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector128_As
-#define VNF_HWI_LAST  VNF_HWI_Vector128_op_UnaryPlus
-
-#else
-#error Unsupported platform
-#endif
+#endif // TARGET_RISCV64
 
 // clang-format on
 

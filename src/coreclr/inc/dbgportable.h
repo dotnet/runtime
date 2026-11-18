@@ -129,6 +129,15 @@ public:
 #endif // DBG_BYTE_SWAP_REQUIRED
     }
 
+    // Direct access is valid only when the portable representation is also native.
+    T* GetNativeAddress()
+    {
+#ifdef DBG_BYTE_SWAP_REQUIRED
+        static_assert(sizeof(T) == 1, "Native storage access cannot bypass byte swapping.");
+#endif
+        return &m_data;
+    }
+
     // Forwarders to T's methods. Each one goes through operator=/operator T().
     // Each is templated (or has a Dummy default) so it isn't instantiated for T's that don't define
     // the underlying method (e.g. Portable<CORDB_ADDRESS>). Intended to be used for Portable<VMPTR>.

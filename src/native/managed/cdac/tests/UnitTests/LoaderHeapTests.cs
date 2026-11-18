@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
@@ -47,8 +48,7 @@ public class LoaderHeapTests
             heapAddr = new TargetPointer(heap.Address);
         });
 
-        TargetPointer firstBlock = loader.GetFirstLoaderHeapBlock(heapAddr);
-        Assert.Equal(TargetPointer.Null, firstBlock);
+        Assert.Empty(loader.EnumerateLoaderHeapBlocks(heapAddr));
     }
 
     [Theory]
@@ -66,13 +66,9 @@ public class LoaderHeapTests
             heapAddr = new TargetPointer(heap.Address);
         });
 
-        TargetPointer firstBlock = loader.GetFirstLoaderHeapBlock(heapAddr);
-        Assert.NotEqual(TargetPointer.Null, firstBlock);
-
-        LoaderHeapBlockData blockData = loader.GetLoaderHeapBlockData(firstBlock);
+        LoaderHeapBlock blockData = Assert.Single(loader.EnumerateLoaderHeapBlocks(heapAddr));
         Assert.Equal(virtualAddress, blockData.Address.Value);
         Assert.Equal(virtualSize, blockData.Size.Value);
-        Assert.Equal(TargetPointer.Null, blockData.NextBlock);
     }
 
     [Theory]
@@ -92,18 +88,30 @@ public class LoaderHeapTests
             heapAddr = new TargetPointer(heap.Address);
         });
 
-        List<(ulong Address, ulong Size)> blocks = [];
-        TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr);
-        while (block != TargetPointer.Null)
-        {
-            LoaderHeapBlockData blockData = loader.GetLoaderHeapBlockData(block);
-            blocks.Add((blockData.Address.Value, blockData.Size.Value));
-            block = blockData.NextBlock;
-        }
+        List<(ulong Address, ulong Size)> blocks = loader.EnumerateLoaderHeapBlocks(heapAddr)
+            .Select(block => (block.Address.Value, block.Size.Value))
+            .ToList();
 
         Assert.Equal(2, blocks.Count);
         Assert.Equal((virtualAddresses[0], virtualSizes[0]), blocks[0]);
         Assert.Equal((virtualAddresses[1], virtualSizes[1]), blocks[1]);
     }
-}
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void CyclicLoaderHeapThrows(MockTarget.Architecture arch)
+    {
+        TargetPointer heapAddr = TargetPointer.Null;
+
+        ILoader loader = CreateLoaderContract(arch, loaderBuilder =>
+        {
+            MockLoaderHeapBlock block1 = loaderBuilder.AddLoaderHeapBlock(0x1000_0000, 0x8000);
+            MockLoaderHeapBlock block2 = loaderBuilder.AddLoaderHeapBlock(0x2000_0000, 0x10000, block1.Address);
+            block1.Next = block2.Address;
+            MockLoaderHeap heap = loaderBuilder.AddLoaderHeap(firstBlockAddress: block1.Address);
+            heapAddr = new TargetPointer(heap.Address);
+        });
+
+        Assert.Throws<InvalidOperationException>(() => loader.EnumerateLoaderHeapBlocks(heapAddr).ToList());
+    }
+}

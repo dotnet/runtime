@@ -139,6 +139,22 @@ namespace Internal.IL.Stubs
                             flags = ecmaType.GetDelegatePInvokeFlags();
                         }
 
+                        MethodSignatureFlags unmanagedCallingConvention = flags.UnmanagedCallingConvention;
+                        if (unmanagedCallingConvention == MethodSignatureFlags.None)
+                            unmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConvention;
+
+                        MethodSignature delegateSignature = _invokeMethod.Signature;
+                        if (!MarshalHelpers.IsRuntimeMarshallingEnabled(_delegateType.Module))
+                        {
+                            // When runtime marshalling is disabled, arguments and the return value are passed
+                            // through blittably, so the native signature matches the managed signature.
+                            var builder = new MethodSignatureBuilder(delegateSignature);
+                            builder.Flags = MethodSignatureFlags.Static | unmanagedCallingConvention;
+                            MethodSignature blittableSignature = builder.ToSignature();
+                            _signature = CreateSignatureWithSecretStubArgument(blittableSignature, blittableSignature.Flags);
+                            return _signature;
+                        }
+
                         // Mirror CharSet normalization from Marshaller.CreateMarshaller
                         bool isAnsi = flags.CharSet switch
                         {
@@ -148,7 +164,6 @@ namespace Internal.IL.Stubs
                             _ => true
                         };
 
-                        MethodSignature delegateSignature = _invokeMethod.Signature;
                         TypeDesc[] nativeParameterTypes = new TypeDesc[delegateSignature.Length];
                         ParameterMetadata[] parameterMetadataArray = _invokeMethod.GetParameterMetadata();
                         int parameterIndex = 0;
@@ -192,11 +207,12 @@ namespace Internal.IL.Stubs
                             nativeParameterTypes[i] = isByRefType ? nativeType.MakePointerType() : nativeType;
                         }
 
-                        MethodSignatureFlags unmanagedCallingConvention = flags.UnmanagedCallingConvention;
-                        if (unmanagedCallingConvention == MethodSignatureFlags.None)
-                            unmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConvention;
-
-                        _signature = new MethodSignature(MethodSignatureFlags.Static | unmanagedCallingConvention, 0, nativeReturnType, nativeParameterTypes);
+                        MethodSignature nativeSignature = new MethodSignature(
+                            MethodSignatureFlags.Static | unmanagedCallingConvention,
+                            0,
+                            nativeReturnType,
+                            nativeParameterTypes);
+                        _signature = CreateSignatureWithSecretStubArgument(nativeSignature, nativeSignature.Flags);
                     }
                 }
                 return _signature;

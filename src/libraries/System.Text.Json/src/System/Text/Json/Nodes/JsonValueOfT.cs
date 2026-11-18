@@ -14,7 +14,7 @@ namespace System.Text.Json.Nodes
 
         protected JsonValue(TValue value, JsonNodeOptions? options) : base(options)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
             Debug.Assert(value is not JsonElement or JsonElement { ValueKind: not JsonValueKind.Null });
             Debug.Assert(value is not JsonNode);
             Value = value;
@@ -100,6 +100,13 @@ namespace System.Text.Json.Nodes
 
 #if NET
             if (type == typeof(Half) || type == typeof(UInt128) || type == typeof(Int128))
+            {
+                return JsonValueKind.Number;
+            }
+#endif
+#if NET11_0_OR_GREATER
+            if (type == typeof(System.Numerics.BFloat16) || type == typeof(System.Numerics.Decimal32) ||
+                type == typeof(System.Numerics.Decimal64) || type == typeof(System.Numerics.Decimal128))
             {
                 return JsonValueKind.Number;
             }

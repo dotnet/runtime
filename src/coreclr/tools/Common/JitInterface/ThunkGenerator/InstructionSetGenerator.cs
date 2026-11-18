@@ -636,6 +636,7 @@ namespace Internal.JitInterface
             return resultflags;
         }
 
+        // Expands unsupported instruction sets. If A implies B and B is unsupported, A is unsupported too.
         public void ExpandInstructionSetByReverseImplication(TargetArchitecture architecture)
         {
             this = ExpandInstructionSetByReverseImplicationHelper(architecture, this);
@@ -1056,8 +1057,9 @@ enum CORINFO_InstructionSet
     InstructionSet_ILLEGAL = 0,
 ");
 
-            int lastAvailableBit = (FlagsFieldCount * 64) - 1;
-            tr.WriteLine($"    InstructionSet_NONE = {lastAvailableBit},");
+            int lastAvailableBit = (FlagsFieldCount * 64) - 2;
+            tr.WriteLine($"    InstructionSet_Vector = {lastAvailableBit},");
+            tr.WriteLine($"    InstructionSet_NONE = {lastAvailableBit + 1},");
 
             foreach (string architecture in _architectures)
             {

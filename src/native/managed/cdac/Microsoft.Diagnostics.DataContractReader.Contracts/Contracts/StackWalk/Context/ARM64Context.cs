@@ -70,6 +70,9 @@ internal struct ARM64Context : IPlatformContext
         unwinder.Unwind(ref this);
     }
 
+    // Clears the AArch64 hardware single-step flag (CPSR.SS, bit 0x00200000).
+    public void UnsetSingleStepFlag() => Cpsr &= ~0x00200000u;
+
     public bool TrySetRegister(string name, TargetNUInt value)
     {
         if (name.Equals("cpsr", StringComparison.OrdinalIgnoreCase)) { Cpsr = (uint)value.Value; return true; }
@@ -196,6 +199,12 @@ internal struct ARM64Context : IPlatformContext
 
     public bool TryReadRegister(int number, out TargetNUInt value)
     {
+        if ((uint)(number - 33) < 32)
+        {
+            value = ReadVectorRegister(number - 33);
+            return true;
+        }
+
         switch (number)
         {
             case 0: value = new TargetNUInt(X0); return true;
@@ -235,6 +244,57 @@ internal struct ARM64Context : IPlatformContext
         }
     }
 
+    // V0-V31 are the 128-bit NEON registers, a 16-byte stride within the context.
+    private const int VRegisterCount = 32;
+    private const int VRegisterStride = 16;
+
+    public readonly bool TryReadFloatingPointRegister(int index, out double value)
+        => SimdRegisterAccess.TryReadRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in this, 1)),
+            (int)Marshal.OffsetOf<ARM64Context>(nameof(V)), VRegisterStride, VRegisterCount, index, out value);
+
+    public bool TryWriteFloatingPointRegister(int index, double value)
+        => SimdRegisterAccess.TryWriteRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1)),
+            (int)Marshal.OffsetOf<ARM64Context>(nameof(V)), VRegisterStride, VRegisterCount, index, value);
+
+    public void CopyContext(ReadOnlySpan<byte> source)
+    {
+        uint flags = RawContextFlags & MemoryMarshal.Read<ARM64Context>(source).RawContextFlags;
+        Span<byte> destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1));
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_CONTROL) == (uint)ContextFlagsValues.CONTEXT_CONTROL)
+        {
+            int start = (int)Marshal.OffsetOf<ARM64Context>(nameof(Fp));
+            int end = (int)Marshal.OffsetOf<ARM64Context>(nameof(V));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<ARM64Context>(nameof(Cpsr));
+            end = (int)Marshal.OffsetOf<ARM64Context>(nameof(X0));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_INTEGER) == (uint)ContextFlagsValues.CONTEXT_INTEGER)
+        {
+            int start = (int)Marshal.OffsetOf<ARM64Context>(nameof(X0));
+            int end = (int)Marshal.OffsetOf<ARM64Context>(nameof(Fp));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT) == (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT)
+        {
+            int start = (int)Marshal.OffsetOf<ARM64Context>(nameof(V));
+            int end = (int)Marshal.OffsetOf<ARM64Context>(nameof(Bcr));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS) == (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS)
+        {
+            int start = (int)Marshal.OffsetOf<ARM64Context>(nameof(Bcr));
+            int end = (int)Marshal.OffsetOf<ARM64Context>(nameof(Wvr)) + (ARM64_MAX_WATCHPOINTS * sizeof(ulong));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+    }
+
+    private readonly unsafe TargetNUInt ReadVectorRegister(int index)
+    {
+        // V indexes into the low 64 bits of each 128-bit register, so double the index.
+        return new TargetNUInt(V[index * 2]);
+    }
+
     // Control flags
 
     [FieldOffset(0x0)]
@@ -242,7 +302,7 @@ internal struct ARM64Context : IPlatformContext
 
     #region General registers
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x4)]
     public uint Cpsr;
 

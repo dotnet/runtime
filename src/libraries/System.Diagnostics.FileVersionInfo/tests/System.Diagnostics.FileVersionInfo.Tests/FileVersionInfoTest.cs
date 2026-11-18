@@ -9,7 +9,6 @@ namespace System.Diagnostics.Tests
 {
     public partial class FileVersionInfoTest : FileCleanupTestBase
     {
-        private const string TestAssemblyFileName = "System.Diagnostics.FileVersionInfo.TestAssembly.dll";
         // On Unix the internal name's extension is .exe if OutputType is exe even though the TargetExt is .dll.
         private readonly string OriginalTestAssemblyInternalName = PlatformDetection.IsWindows ?
             "System.Diagnostics.FileVersionInfo.TestAssembly.dll" :
@@ -17,12 +16,26 @@ namespace System.Diagnostics.Tests
         private const string TestCsFileName = "Assembly1.cs";
         private const string TestNotFoundFileName = "notfound.dll";
 
+        private string WriteEmbeddedResourceToFile(string resourceName)
+        {
+            string path = GetTestFilePath();
+            using (Stream source = typeof(FileVersionInfoTest).Assembly.GetManifestResourceStream(resourceName))
+            using (FileStream destination = File.Create(path))
+            {
+                source.CopyTo(destination);
+            }
+
+            return path;
+        }
+
+        private string WriteTestAssemblyToFile() =>
+            WriteEmbeddedResourceToFile("System.Diagnostics.FileVersionInfo.TestAssembly.dll");
+
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void FileVersionInfo_CustomManagedAssembly()
         {
-            // Assembly1.dll
-            VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName), new MyFVI()
+            string filePath = WriteTestAssemblyToFile();
+            VerifyVersionInfo(filePath, new MyFVI()
             {
                 Comments = "Have you played a Contoso amusement device today?",
                 CompanyName = "The name of the company.",
@@ -30,7 +43,7 @@ namespace System.Diagnostics.Tests
                 FileDescription = "My File",
                 FileMajorPart = 4,
                 FileMinorPart = 3,
-                FileName = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName),
+                FileName = filePath,
                 FilePrivatePart = 1,
                 FileVersion = "4.3.2.1",
                 InternalName = OriginalTestAssemblyInternalName,
@@ -57,8 +70,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void FileVersionInfo_EmptyFVI()
         {
-            // Assembly1.cs
-            VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName), new MyFVI()
+            string filePath = WriteEmbeddedResourceToFile(TestCsFileName);
+            VerifyVersionInfo(filePath, new MyFVI()
             {
                 Comments = null,
                 CompanyName = null,
@@ -66,7 +79,7 @@ namespace System.Diagnostics.Tests
                 FileDescription = null,
                 FileMajorPart = 0,
                 FileMinorPart = 0,
-                FileName = Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName),
+                FileName = filePath,
                 FilePrivatePart = 0,
                 FileVersion = null,
                 InternalName = null,

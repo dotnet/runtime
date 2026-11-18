@@ -25,28 +25,49 @@ TargetPointer GetComWrappersRCWForObject(TargetPointer obj);
 
 ## Version 1
 
+<!-- BEGIN GENERATED: usage contract=ComWrappers version=c1 -->
 ### Data descriptors used
 
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `NativeObjectWrapperObject` | `ExternalComObject` | Address of the external COM object |
-| `ManagedObjectWrapperHolderObject` | `WrappedObject` | Address of the wrapped object |
-| `ManagedObjectWrapperHolderObject` | `Wrapper` | Pointer to the `ManagedObjectWrapperLayout` |
-| `ManagedObjectWrapperLayout` | `RefCount` | Reference count of the managed object wrapper |
-| `ManagedObjectWrapperLayout` | `Flags` | `CreateComInterfaceFlagsEx` flags |
-| `ManagedObjectWrapperLayout` | `UserDefinedCount` | Number of user-defined COM interface entries |
-| `ManagedObjectWrapperLayout` | `UserDefined` | Pointer to array of `ComInterfaceEntry` |
-| `ManagedObjectWrapperLayout` | `Dispatches` | Pointer to the dispatch section (`InternalComInterfaceDispatch` array) |
-| `ComInterfaceEntry` | `IID` | The interface GUID |
-| `InternalComInterfaceDispatch` | `Entries` | Start of vtable entry pointers within the dispatch block |
-| `ComWrappersVtablePtrs` | `Size` | Size of vtable pointers array |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `Array` | *(type size)* | `uint32` | Size of the fixed portion of an array object |
+| `ComInterfaceEntry` | *(type size)* | `uint32` | Size in bytes of each user-defined COM interface entry |
+| `ComInterfaceEntry` | `IID` | `nuint` | The interface GUID |
+| `ComWrappersVtablePtrs` | *(type size)* | `uint32` | Size of vtable pointers array |
+| `InternalComInterfaceDispatch` | *(type size)* | `uint32` | Size in bytes of each dispatch block; used to determine the number of vtable entries per block |
+| `InternalComInterfaceDispatch` | `Entries` | `pointer` | Start of vtable entry pointers within the dispatch block |
+| `ManagedObjectWrapperHolderObject` | `WrappedObject` | `pointer` | Address of the wrapped object |
+| `ManagedObjectWrapperHolderObject` | `Wrapper` | `pointer` | Pointer to the ManagedObjectWrapperLayout |
+| `ManagedObjectWrapperLayout` | `Dispatches` | `pointer` | Pointer to the dispatch section (InternalComInterfaceDispatch array) |
+| `ManagedObjectWrapperLayout` | `Flags` | `int32` | CreateComInterfaceFlagsEx flags |
+| `ManagedObjectWrapperLayout` | `RefCount` | `int64` | Reference count of the managed object wrapper |
+| `ManagedObjectWrapperLayout` | `UserDefined` | `pointer` | Pointer to array of ComInterfaceEntry |
+| `ManagedObjectWrapperLayout` | `UserDefinedCount` | `int32` | Number of user-defined COM interface entries |
+| `NativeObjectWrapperObject` | `ExternalComObject` | `pointer` | Address of the external COM object |
+| ``System.Collections.Generic.List`1`` | `_items` | `pointer` | Backing array containing the list elements |
+| ``System.Collections.Generic.List`1`` | `_size` | `int32` | Number of elements currently stored in the list |
 
 ### Global variables used
 
-| Global Name | Type | Purpose |
+| Global | Type | Meaning |
 | --- | --- | --- |
-| `ComWrappersVtablePtrs` | TargetPointer | Pointer to struct containing ComWrappers-related function pointers |
-| `DispatchThisPtrMask` | TargetPointer | Used to mask low bits of CCW pointer to the nearest valid address from which to read a managed object wrapper |
+| `ComWrappers.s_allManagedObjectWrapperTable` | `pointer` | Address of the ComWrappers managed static table that maps managed objects to their wrappers |
+| `ComWrappers.s_nativeObjectWrapperTable` | `pointer` | Address of the ComWrappers managed static table that maps native objects to their wrappers |
+| `ComWrappersVtablePtrs` | `pointer` | Pointer to struct containing ComWrappers-related function pointers |
+| `DispatchThisPtrMask` | `pointer` | Used to mask low bits of CCW pointer to the nearest valid address from which to read a managed object wrapper |
+| `System.Runtime.InteropServices.ComWrappers.s_allManagedObjectWrapperTable` | `pointer` | Address of the ComWrappers managed static table that maps managed objects to their wrappers |
+| `System.Runtime.InteropServices.ComWrappers.s_nativeObjectWrapperTable` | `pointer` | Address of the ComWrappers managed static table that maps native objects to their wrappers |
+
+### Contracts used
+
+| Contract Name |
+| --- |
+| `ConditionalWeakTable` |
+| `ManagedTypeSource` |
+| `Object` |
+| `PlatformMetadata` |
+<!-- END GENERATED: usage contract=ComWrappers version=c1 -->
+
 
 ### Managed types used
 
@@ -61,14 +82,6 @@ TargetPointer GetComWrappersRCWForObject(TargetPointer obj);
 | --- | --- | --- | --- |
 | `CallerDefinedIUnknown` | int | Flag bit for `CreateComInterfaceFlagsEx` indicating caller-defined IUnknown | `1` |
 | `IID_IUnknown` | Guid | The IID for IUnknown | `00000000-0000-0000-C000-000000000046` |
-
-### Contracts used
-
-| Contract Name |
-| --- |
-| `Object` |
-| `ManagedTypeSource` |
-| `ConditionalWeakTable` |
 
 
 ``` csharp

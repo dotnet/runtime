@@ -25,7 +25,7 @@ internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext
             return;
         }
 
-        _context.InstructionPointer = inlinedCallFrame.CallerReturnAddress;
+        _context.InstructionPointer = CodePointerUtils.StripPointerAuthentiationFromReturnAddress(inlinedCallFrame.CallerReturnAddress, _target);
         _context.StackPointer = inlinedCallFrame.CallSiteSP;
         _context.FramePointer = inlinedCallFrame.CalleeSavedFP;
     }
@@ -44,12 +44,9 @@ internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext
     public virtual void HandleTransitionFrame(FramedMethodFrame framedMethodFrame)
     {
         Data.TransitionBlock transitionBlock = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(framedMethodFrame.TransitionBlockPtr);
-        if (_target.GetTypeInfo(DataType.TransitionBlock).Size is not uint transitionBlockSize)
-        {
-            throw new InvalidOperationException("TransitionBlock size is not set");
-        }
+        uint transitionBlockSize = Data.TransitionBlock.GetSize(_target);
 
-        _context.InstructionPointer = transitionBlock.ReturnAddress;
+        _context.InstructionPointer = CodePointerUtils.StripPointerAuthentiationFromReturnAddress(transitionBlock.ReturnAddress, _target);
         _context.StackPointer = framedMethodFrame.TransitionBlockPtr + transitionBlockSize;
 
         Data.CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(transitionBlock.CalleeSavedRegisters);

@@ -11,7 +11,6 @@ namespace WKS
 {
 #endif // SERVER_GC
 
-#ifdef FEATURE_BASICFREEZE
 
 inline
 void gc_heap::seg_clear_mark_bits (heap_segment* seg)
@@ -58,7 +57,6 @@ void gc_heap::sweep_ro_segments()
 #endif //!USE_REGIONS
 }
 
-#endif //FEATURE_BASICFREEZE
 
 void gc_heap::make_free_lists (int condemned_gen_number)
 {
@@ -409,13 +407,13 @@ void gc_heap::make_unused_array (uint8_t* x, size_t size, BOOL clearp, BOOL rese
         clear_card_for_addresses (x, x + Align(size));
 }
 
-// Clear memory set by make_unused_array.
+// Clear memory set by make_unused_array, including free-list metadata.
 void gc_heap::clear_unused_array (uint8_t* x, size_t size)
 {
     // Also clear the sync block
     *(((PTR_PTR)x)-1) = 0;
 
-    ((CObjectHeader*)x)->UnsetFree();
+    ((CObjectHeader*)x)->UnsetFree(size);
 
 #ifdef HOST_64BIT
 
@@ -437,13 +435,13 @@ void gc_heap::clear_unused_array (uint8_t* x, size_t size)
             size_t current_size = UINT32_MAX - get_alignment_constant (FALSE)
                 - Align (min_obj_size, get_alignment_constant (FALSE));
 
-            ((CObjectHeader*)tmp)->UnsetFree();
+            ((CObjectHeader*)tmp)->UnsetFree(current_size);
 
             remaining_size -= current_size;
             tmp += current_size;
         }
 
-        ((CObjectHeader*)tmp)->UnsetFree();
+        ((CObjectHeader*)tmp)->UnsetFree(remaining_size);
     }
 #else
     UNREFERENCED_PARAMETER(size);

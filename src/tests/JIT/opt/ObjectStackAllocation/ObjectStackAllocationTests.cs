@@ -95,6 +95,12 @@ namespace ObjectStackAllocation
         public string[] b;
     }
 
+    struct NullableStruct
+    {
+        public int i;
+        public object o;
+    }
+
     enum AllocationKind
     {
         Heap,
@@ -126,6 +132,7 @@ namespace ObjectStackAllocation
         static int methodResult = 100;
 
         [ActiveIssue("needs triage", TestRuntimes.Mono)]
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
         [Fact]
         public static int TestEntryPoint()
         {
@@ -179,9 +186,14 @@ namespace ObjectStackAllocation
             // Stack allocation of boxed structs is now enabled
             CallTestAndVerifyAllocation(BoxSimpleStructAndAddFields, 12, expectedAllocationKind);
 
+            StoreStructWithStackObjectInNullable();
+            CallTestAndVerifyAllocation(StoreStructWithStackObjectInNullable, 42, expectedAllocationKind);
+
             // Fixed-sized stack array cases
             CallTestAndVerifyAllocation(AllocateArrayWithNonGCElements, 84, expectedAllocationKind);
             CallTestAndVerifyAllocation(AllocateArrayWithGCElements, 84, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayWithLongElements, 84, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayWithDoubleElements, 84, expectedAllocationKind);
             CallTestAndVerifyAllocation(AllocateArrayT<int>, 84, expectedAllocationKind);
             CallTestAndVerifyAllocation(AllocateArrayT<string>, 84, expectedAllocationKind);
 
@@ -387,6 +399,20 @@ namespace ObjectStackAllocation
             return ((SimpleStruct)boxedSimpleStruct).f1 + ((SimpleStruct)boxedSimpleStruct).f2;
         }
 
+        // R2R cannot inline Nullable<T>.Value here, so the object appears to escape and is heap allocated.
+        // AggressiveOptimization keeps this method out of R2R so the runtime JIT can optimize it.
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        static int StoreStructWithStackObjectInNullable()
+        {
+            NullableStruct s = default;
+            s.i = 42;
+            s.o = new object();
+            NullableStruct? nullable = (NullableStruct?)(object)s;
+            GC.Collect();
+
+            return nullable.HasValue && (nullable.Value.o is not null) ? nullable.Value.i : 0;
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int TestMixOfReportingAndWriteBarriers()
         {
@@ -443,6 +469,22 @@ namespace ObjectStackAllocation
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateArrayWithLongElements()
+        {
+            long[] array = new long[42];
+            array[24] = 42;
+            return (int)array[24] + array.Length;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateArrayWithDoubleElements()
+        {
+            double[] array = new double[42];
+            array[24] = 42;
+            return (int)array[24] + array.Length;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static int AllocateArrayT<T>()
         {
             T[] array = new T[42];
@@ -456,7 +498,9 @@ namespace ObjectStackAllocation
             return array.Length + 42;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        // R2R does not inline Span<T>.op_Implicit here, so escape analysis treats the arrays as escaping.
+        // AggressiveOptimization defers these tests to the runtime JIT, where inlining enables stack allocation.
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int SpanCaptureArray1()
         {
             Span<int> span = new int[100];
@@ -467,6 +511,7 @@ namespace ObjectStackAllocation
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int SpanCaptureArray2() => SpanCaptureArray2Helper(null);
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int SpanCaptureArray2Helper(int[]? x)
         {
             Span<int> span = x ?? new int[100];
@@ -474,7 +519,7 @@ namespace ObjectStackAllocation
             return span[10] + span[42];
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int SpanCaptureArray3()
         {
             Span<int> span = new int[128];
@@ -483,7 +528,7 @@ namespace ObjectStackAllocation
             return x[10] + span[42];
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int SpanCaptureArrayT<T>()
         {
             Span<T> span = new T[37];

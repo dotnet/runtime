@@ -4,6 +4,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Buffers
@@ -17,6 +18,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         public static (Vector128<byte> Result, Vector128<byte> Prev0) ProcessInputN2(
             Vector128<byte> input,
             Vector128<byte> prev0,
@@ -90,6 +92,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         public static (Vector128<byte> Result, Vector128<byte> Prev0, Vector128<byte> Prev1) ProcessInputN3(
             Vector128<byte> input,
             Vector128<byte> prev0, Vector128<byte> prev1,
@@ -216,6 +219,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         public static Vector128<byte> LoadAndPack16AsciiChars(ref char source)
         {
             Vector128<ushort> source0 = Vector128.LoadUnsafe(ref source);
@@ -228,6 +232,10 @@ namespace System.Buffers
             else if (AdvSimd.Arm64.IsSupported)
             {
                 return AdvSimd.Arm64.UnzipEven(source0.AsByte(), source1.AsByte());
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.ConvertNarrowingSaturateUnsigned(source0.AsInt16(), source1.AsInt16());
             }
             else
             {
@@ -276,10 +284,13 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static (Vector128<byte> Low, Vector128<byte> High) GetNibbles(Vector128<byte> input)
         {
             // 'low' is not strictly correct here, but we take advantage of Ssse3.Shuffle's behavior
-            // of doing an implicit 'AND 0xF' in order to skip the redundant AND.
+            // of doing an implicit 'AND 0xF' in order to skip the redundant AND. PackedSimd.Swizzle
+            // and AdvSimd's table lookup return 0 for indices >= 16 (instead of masking the low 4
+            // bits), so they need the explicit AND.
             Vector128<byte> low = Ssse3.IsSupported
                 ? input
                 : input & Vector128.Create((byte)0xF);
@@ -316,6 +327,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> Shuffle(Vector128<byte> maskLow, Vector128<byte> maskHigh, Vector128<byte> low, Vector128<byte> high)
         {
             return SearchValues.ShuffleNativeModified(maskLow, low) & Vector128.ShuffleNative(maskHigh, high);
@@ -338,6 +350,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> RightShift1(Vector128<byte> left, Vector128<byte> right)
         {
             // Given input vectors like
@@ -354,6 +367,11 @@ namespace System.Buffers
             {
                 return AdvSimd.ExtractVector128(left, right, 15);
             }
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.Shuffle(left, right,
+                    Vector128.Create((byte)15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30));
+            }
             else
             {
                 // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
@@ -365,6 +383,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> RightShift2(Vector128<byte> left, Vector128<byte> right)
         {
             // Given input vectors like
@@ -380,6 +399,11 @@ namespace System.Buffers
             else if (AdvSimd.IsSupported)
             {
                 return AdvSimd.ExtractVector128(left, right, 14);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.Shuffle(left, right,
+                    Vector128.Create((byte)14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29));
             }
             else
             {

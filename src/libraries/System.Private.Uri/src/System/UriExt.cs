@@ -15,9 +15,9 @@ namespace System
     {
         /// <summary>Helper called by all constructors to construct the Uri.</summary>
         [MemberNotNull(nameof(_string))]
-        private void CreateThis(string? uri, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
+        private void CreateThis(string? uri, Flags flags, UriKind uriKind)
         {
-            UriFormatException? e = TryCreateThis(uri, dontEscape, uriKind, in creationOptions);
+            UriFormatException? e = TryCreateThis(uri, flags, uriKind);
 
             if (e is not null)
             {
@@ -27,7 +27,7 @@ namespace System
 
         /// <summary>Core helper called by all constructors and TryCreate factories to construct the Uri.</summary>
         [MemberNotNull(nameof(_string))]
-        private UriFormatException? TryCreateThis(string? uri, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
+        private UriFormatException? TryCreateThis(string? uri, Flags flags, UriKind uriKind)
         {
             DebugAssertInCtor();
 
@@ -36,15 +36,14 @@ namespace System
                 throw new ArgumentException(SR.Format(SR.net_uri_InvalidUriKind, uriKind));
             }
 
+            Debug.Assert((flags & Flags.DisableImplicitFilePaths) == 0 || uriKind != UriKind.Relative);
+            Debug.Assert((flags & Flags.DisablePathAndQueryCanonicalization) == 0 || uriKind == UriKind.Absolute);
+
             _string = uri ?? string.Empty;
 
             Debug.Assert(_originalUnicodeString is null && _info is null && _syntax is null && _flags == Flags.Zero);
 
-            if (dontEscape)
-                _flags |= Flags.UserEscaped;
-
-            if (creationOptions.DangerousDisablePathAndQueryCanonicalization)
-                _flags |= Flags.DisablePathAndQueryCanonicalization;
+            _flags = flags;
 
             ParsingError err = ParseScheme(_string, ref _flags, ref _syntax!);
             Debug.Assert((err is ParsingError.None) == (_syntax is not null));
@@ -161,9 +160,7 @@ namespace System
 
             if (hasUnicode)
             {
-                var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
-                IriHelper.EscapeUnescapeIri(ref vsb, _originalUnicodeString, isQuery: false);
-                _string = vsb.ToString();
+                _string = EscapeUnescapeIri(default, _originalUnicodeString, isQuery: false);
             }
 
             DebugSetLeftCtor();
@@ -216,13 +213,30 @@ namespace System
             return false;
         }
 
+        /// <inheritdoc/>
+        static Uri IParsable<Uri>.Parse(string s, IFormatProvider? provider)
+        {
+            ArgumentNullException.ThrowIfNull(s);
+
+            Uri result = new();
+            result.CreateThis(s, Flags.DisableImplicitFilePaths, UriKind.RelativeOrAbsolute);
+            return result;
+        }
+
+        /// <inheritdoc/>
+        static bool IParsable<Uri>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [NotNullWhen(true)] out Uri? result)
+        {
+            result = CreateHelper(s, Flags.DisableImplicitFilePaths, UriKind.RelativeOrAbsolute);
+            return result is not null;
+        }
+
         //
         //  Returns true if the string represents a valid argument to the Uri ctor
         //  If uriKind != AbsoluteUri then certain parsing errors are ignored but Uri usage is limited
         //
         public static bool TryCreate([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
         {
-            result = CreateHelper(uriString, false, uriKind);
+            result = CreateHelper(uriString, Flags.Zero, uriKind);
             return result is not null;
         }
 
@@ -235,7 +249,7 @@ namespace System
         /// <returns><see langword="true"/> if the <see cref="Uri"/> was successfully created; otherwise, <see langword="false"/>.</returns>
         public static bool TryCreate([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri)] string? uriString, in UriCreationOptions creationOptions, [NotNullWhen(true)] out Uri? result)
         {
-            result = CreateHelper(uriString, false, UriKind.Absolute, in creationOptions);
+            result = CreateHelper(uriString, creationOptions._flags, UriKind.Absolute);
             return result is not null;
         }
 
@@ -281,7 +295,7 @@ namespace System
                     return false;
             }
 
-            result ??= CreateHelper(newUriString!, dontEscape, UriKind.Absolute);
+            result ??= CreateHelper(newUriString!, dontEscape ? Flags.UserEscaped : Flags.Zero, UriKind.Absolute);
             Debug.Assert(result is null || result.IsAbsoluteUri);
 
             return result is not null;
@@ -631,13 +645,13 @@ namespace System
         public static bool TryEscapeDataString(ReadOnlySpan<char> charsToEscape, Span<char> destination, out int charsWritten) =>
             UriHelper.TryEscapeDataString(charsToEscape, destination, out charsWritten);
 
-#pragma warning disable CS8618 // _string will be initialized by TryCreateThis later.
-        /// <summary>Must never be used except by <see cref="CreateHelper(string?, bool, UriKind, in UriCreationOptions)"/>.</summary>
+#pragma warning disable CS8618 // _string will be initialized by CreateThis or TryCreateThis later.
+        /// <summary>Creates an uninitialized instance for the parsing helpers.</summary>
         private Uri() { }
 #pragma warning restore CS8618
 
         /// <summary>Called by TryCreate.</summary>
-        internal static Uri? CreateHelper(string? uriString, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
+        internal static Uri? CreateHelper(string? uriString, Flags flags, UriKind uriKind)
         {
             if (uriString is null)
             {
@@ -647,7 +661,7 @@ namespace System
             Uri result = new();
             try
             {
-                UriFormatException? e = result.TryCreateThis(uriString, dontEscape, uriKind, in creationOptions);
+                UriFormatException? e = result.TryCreateThis(uriString, flags, uriKind);
                 return e is null ? result : null;
             }
             catch (UriFormatException)
@@ -869,7 +883,7 @@ namespace System
 
                 if (uriLink is null)
                 {
-                    uriLink = CreateHelper(newUriString!, dontEscape, UriKind.Absolute)!;
+                    uriLink = CreateHelper(newUriString!, dontEscape ? Flags.UserEscaped : Flags.Zero, UriKind.Absolute)!;
 
                     if (uriLink is null)
                     {

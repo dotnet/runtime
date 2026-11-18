@@ -3,9 +3,11 @@
 
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers.X86;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -19,7 +21,7 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
     protected override string DebuggeeName => "StackWalk";
     protected override string DumpType => "full";
 
-    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
+    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null, new());
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
@@ -35,7 +37,8 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
 
         fixed (byte* pContext = contextBuffer)
         {
-            int hr = dbi.GetContext(crashingThread.ThreadAddress, pContext);
+            ContextBuffer buffer = new() { pContextBytes = pContext, contextSize = contextSize };
+            int hr = dbi.GetContext(crashingThread.ThreadAddress, buffer);
             Assert.Equal(System.HResults.S_OK, hr);
         }
 
@@ -58,7 +61,8 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
         byte[] dbiContextBuffer = new byte[contextSize];
         fixed (byte* pContext = dbiContextBuffer)
         {
-            int hr = dbi.GetContext(crashingThread.ThreadAddress, pContext);
+            ContextBuffer buffer = new() { pContextBytes = pContext, contextSize = contextSize };
+            int hr = dbi.GetContext(crashingThread.ThreadAddress, buffer);
             Assert.Equal(System.HResults.S_OK, hr);
         }
 
@@ -90,7 +94,8 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
         Interop.BOOL result;
         fixed (byte* pContext = leafContext)
         {
-            int hr = dbi.IsLeafFrame(crashingThread.ThreadAddress, pContext, &result);
+            ContextBuffer contextBuffer = new() { pContextBytes = pContext, contextSize = (uint)leafContext.Length };
+            int hr = dbi.IsLeafFrame(crashingThread.ThreadAddress, contextBuffer, &result);
             Assert.Equal(System.HResults.S_OK, hr);
         }
 
@@ -116,7 +121,7 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
 
         // Find a frame whose SP+IP differs from the leaf context
         byte[]? nonLeafContext = DumpTestStackWalker.LegacyVisibleFrames(sw, crashingThread)
-            .Select(h => sw.GetRawContext(h))
+            .Select(h => sw.GetRawContext(h).ToArray())
             .FirstOrDefault(ctx =>
             {
                 IPlatformAgnosticContext frameCtx = IPlatformAgnosticContext.GetContextForPlatform(Target);
@@ -130,10 +135,91 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
         Interop.BOOL result;
         fixed (byte* pContext = nonLeafContext)
         {
-            int hr = dbi.IsLeafFrame(crashingThread.ThreadAddress, pContext, &result);
+            ContextBuffer contextBuffer = new() { pContextBytes = pContext, contextSize = (uint)nonLeafContext.Length };
+            int hr = dbi.IsLeafFrame(crashingThread.ThreadAddress, contextBuffer, &result);
             Assert.Equal(System.HResults.S_OK, hr);
         }
 
         Assert.Equal(Interop.BOOL.FALSE, result);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "x86 cDAC stack walking is not available in .NET 10")]
+    public unsafe void GetStackWalkCurrentFrameInfo_X86HandlerFrame_IncludesSavedRegistersInAmbientSP(TestConfiguration config)
+    {
+        InitializeDumpTest(config, DebuggeeName, dumpType: "heap");
+
+        if (Target.Contracts.RuntimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.X86)
+            throw new SkipTestException("This regression test applies only to x86 dumps.");
+
+        DacDbiImpl dbi = CreateDacDbi();
+        IExecutionManager executionManager = Target.Contracts.ExecutionManager;
+        IGCInfo gcInfo = Target.Contracts.GCInfo;
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+        uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(Target).Size;
+        byte[] contextBuffer = new byte[contextSize];
+        nuint stackWalkHandle = 0;
+
+        fixed (byte* pContext = contextBuffer)
+        {
+            ContextBuffer buffer = new() { pContextBytes = pContext, contextSize = contextSize };
+            int hr = dbi.CreateStackWalk(crashingThread.ThreadAddress, buffer, &stackWalkHandle);
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+
+        try
+        {
+            while (true)
+            {
+                Debugger_STRData data = default;
+                FrameType frameType;
+                fixed (byte* pContext = contextBuffer)
+                {
+                    data.ctx = new ContextBuffer { pContextBytes = pContext, contextSize = contextSize };
+                    int hr = dbi.GetStackWalkCurrentFrameInfo(stackWalkHandle, (nint)(&data), &frameType);
+                    Assert.Equal(System.HResults.S_OK, hr);
+                }
+
+                if (frameType == FrameType.AtEndOfStack)
+                    break;
+
+                TargetPointer methodDesc = new(data.v.jitFuncData.vmNativeCodeMethodDescToken);
+                if (frameType == FrameType.ManagedStackFrame &&
+                    DumpTestHelpers.GetMethodName(Target, methodDesc) == "MethodB")
+                {
+                    IPlatformAgnosticContext frameContext = IPlatformAgnosticContext.GetContextForPlatform(Target);
+                    frameContext.FillFromBuffer(contextBuffer);
+
+                    CodeBlockHandle? codeBlockHandle = executionManager.GetCodeBlockHandle(frameContext.InstructionPointer);
+                    Assert.NotNull(codeBlockHandle);
+                    executionManager.GetGCInfo(codeBlockHandle.Value, out TargetPointer gcInfoAddress, out uint gcInfoVersion);
+
+                    var decoder = Assert.IsType<X86GCInfo>(gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddress, gcInfoVersion));
+                    Assert.True(decoder.Header.Handlers);
+                    Assert.False(decoder.Header.LocalAlloc);
+
+                    uint expectedStackSize = decoder.RawStackSize
+                        + uint.PopCount((uint)decoder.SavedRegsMask) * (uint)Target.PointerSize;
+                    Assert.True(expectedStackSize > decoder.RawStackSize);
+
+                    ulong expectedAmbientSP = (frameContext.FramePointer.Value - expectedStackSize + sizeof(int)) & ~3UL;
+                    Assert.Equal(expectedAmbientSP, data.v.taAmbientESP);
+                    return;
+                }
+
+                Interop.BOOL hasMoreFrames;
+                int unwindHr = dbi.UnwindStackWalkFrame(stackWalkHandle, &hasMoreFrames);
+                Assert.Equal(System.HResults.S_OK, unwindHr);
+                if (hasMoreFrames == Interop.BOOL.FALSE)
+                    break;
+            }
+
+            Assert.Fail("MethodB was not found on the crashing thread's stack.");
+        }
+        finally
+        {
+            Assert.Equal(System.HResults.S_OK, dbi.DeleteStackWalk(stackWalkHandle));
+        }
     }
 }

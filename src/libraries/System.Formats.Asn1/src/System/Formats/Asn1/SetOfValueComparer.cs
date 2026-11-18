@@ -15,28 +15,12 @@ namespace System.Formats.Asn1
         internal static int Compare(ReadOnlySpan<byte> x, ReadOnlySpan<byte> y)
         {
             int min = Math.Min(x.Length, y.Length);
-            int diff;
-
-#if NET
             int diffIndex = x.CommonPrefixLength(y);
 
             if (diffIndex != min)
             {
                 return (int)x[diffIndex] - y[diffIndex];
             }
-#else
-            for (int i = 0; i < min; i++)
-            {
-                int xVal = x[i];
-                byte yVal = y[i];
-                diff = xVal - yVal;
-
-                if (diff != 0)
-                {
-                    return diff;
-                }
-            }
-#endif
 
             // The sorting rules (T-REC-X.690-201508 sec 11.6) say that the shorter one
             // counts as if it are padded with as many 0x00s on the right as required for
@@ -47,10 +31,8 @@ namespace System.Formats.Asn1
             // have hit end-of-contents, making it already different.
             //
             // This is here because the spec says it should be, but no values are known
-            // which will make diff != 0.
-            diff = x.Length - y.Length;
-
-            return diff;
+            // which will make the result non-zero.
+            return x.Length - y.Length;
         }
     }
 }

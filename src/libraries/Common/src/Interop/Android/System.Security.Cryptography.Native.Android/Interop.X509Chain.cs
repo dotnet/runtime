@@ -16,11 +16,12 @@ internal static partial class Interop
         private static partial SafeX509ChainContextHandle X509ChainCreateContext(
             SafeX509Handle cert,
             IntPtr[] extraStore,
-            int extraStoreLen);
+            int extraStoreLen,
+            [MarshalAs(UnmanagedType.U1)] bool useCustomRootTrust);
 
-        internal static SafeX509ChainContextHandle X509ChainCreateContext(SafeX509Handle cert, IntPtr[] extraStore)
+        internal static SafeX509ChainContextHandle X509ChainCreateContext(SafeX509Handle cert, IntPtr[] extraStore, bool useCustomRootTrust)
         {
-            SafeX509ChainContextHandle chainContext = X509ChainCreateContext(cert, extraStore, extraStore.Length);
+            SafeX509ChainContextHandle chainContext = X509ChainCreateContext(cert, extraStore, extraStore.Length, useCustomRootTrust);
 
             if (chainContext.IsInvalid)
             {
@@ -35,10 +36,28 @@ internal static partial class Interop
         internal static partial void X509ChainDestroyContext(IntPtr ctx);
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainBuild")]
-        [return: MarshalAs(UnmanagedType.U1)]
-        internal static partial bool X509ChainBuild(
+        private static partial int X509ChainBuild(
             SafeX509ChainContextHandle ctx,
-            long timeInMsFromUnixEpoch);
+            long timeInMsFromUnixEpoch,
+            [MarshalAs(UnmanagedType.U1)] bool useFullTrustStore,
+            out byte usedTargetedTrust);
+
+        internal static bool X509ChainBuild(
+            SafeX509ChainContextHandle ctx,
+            long timeInMsFromUnixEpoch,
+            bool useFullTrustStore,
+            out bool usedTargetedTrust)
+        {
+            int result = X509ChainBuild(ctx, timeInMsFromUnixEpoch, useFullTrustStore, out byte targetedTrust);
+            usedTargetedTrust = targetedTrust != 0;
+
+            if (result < 0)
+            {
+                throw new CryptographicException();
+            }
+
+            return result == SUCCESS;
+        }
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainGetCertificateCount")]
         private static partial int X509ChainGetCertificateCount(SafeX509ChainContextHandle ctx);
@@ -72,9 +91,9 @@ internal static partial class Interop
             }
             finally
             {
-                // The native side can populate part of certPtrs and then fail (returning 0) if a JNI
-                // exception is thrown mid-loop, so release every non-null entry rather than only the
-                // first `res` entries.
+                // X509Certificate2 above duplicates each global ref, so release the native-returned
+                // refs here. On failure the native side already released and cleared its entries, so
+                // the surviving non-null entries are the ones we still own.
                 for (int i = 0; i < certPtrs.Length; i++)
                 {
                     if (certPtrs[i] != IntPtr.Zero)
@@ -112,6 +131,8 @@ internal static partial class Interop
         internal static ValidationError[] X509ChainGetErrors(SafeX509ChainContextHandle ctx)
         {
             int count = Interop.AndroidCrypto.X509ChainGetErrorCount(ctx);
+            if (count < 0)
+                throw new CryptographicException();
             if (count == 0)
                 return Array.Empty<ValidationError>();
 

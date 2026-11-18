@@ -7,5 +7,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal partial class FaultingExceptionFrame : IData<FaultingExceptionFrame>
 {
     [FieldAddress]
-    public TargetPointer TargetContext { get; }
+    public partial TargetPointer TargetContext { get; }
 }

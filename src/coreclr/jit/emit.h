@@ -38,7 +38,7 @@
 #define EMIT_INSTLIST_VERBOSE (m_compiler->verbose)
 #endif
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_WASM)
 #define EMIT_BACKWARDS_NAVIGATION 1 // If 1, enable backwards navigation code for MIR (insGroup/instrDesc).
 #else
 #define EMIT_BACKWARDS_NAVIGATION 0
@@ -778,7 +778,7 @@ protected:
         // arm64:       21 bits
         // loongarch64: 14 bits
         // risc-v:      14 bits
-        // wasm:        16 bits (TODO-WASM-TP: shrink the format field)
+        // wasm:        17 bits (TODO-WASM-TP: shrink the format field)
 
     private:
 #if defined(TARGET_XARCH)
@@ -827,7 +827,7 @@ protected:
         // arm64:       46 bits
         // loongarch64: 28 bits
         // risc-v:      28 bits
-        // wasm:        20 bits (TODO-WASM-TP: remove the reg fields)
+        // wasm:        23 bits (TODO-WASM-TP: remove the reg fields)
 
         unsigned _idSmallDsc : 1; // is this a "small" descriptor?
         unsigned _idLargeCns : 1; // does a large constant     follow? (or if large call descriptor used)
@@ -920,7 +920,7 @@ protected:
         // arm64:       55 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
-        // wasm:        28 bits
+        // wasm:        31 bits
 
         //
         // How many bits have been used beyond the first 32?
@@ -938,7 +938,7 @@ protected:
 #elif defined(TARGET_AMD64)
 #define ID_EXTRA_BITFIELD_BITS (20)
 #elif defined(TARGET_WASM)
-#define ID_EXTRA_BITFIELD_BITS (-4)
+#define ID_EXTRA_BITFIELD_BITS (-1)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -978,7 +978,7 @@ protected:
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
-        // wasm:        35/30 bits
+        // wasm:        38/33 bits (64-bit host)
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
@@ -998,7 +998,7 @@ protected:
         // arm64:        2/7 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
-        // wasm:        32 bits
+        // wasm:        26/31 bits (64-bit host)
 
 #define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
 #define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
@@ -1053,6 +1053,9 @@ protected:
             BasicBlock* iiaBBlabel;
             insGroup*   iiaIGlabel;
             BYTE*       iiaAddr;
+#ifdef TARGET_WASM
+            CORINFO_WASM_TYPE_SYMBOL_HANDLE iiaWasmSignature;
+#endif // TARGET_WASM
 #ifdef TARGET_XARCH
             emitAddrMode iiaAddrMode;
 #endif // TARGET_XARCH
@@ -2069,18 +2072,20 @@ protected:
 
 #define PERFSCORE_THROUGHPUT_ZERO 0.0f // Only used for pseudo-instructions that don't generate code
 
-#define PERFSCORE_THROUGHPUT_9X (1.0f / 9.0f)
-#define PERFSCORE_THROUGHPUT_6X (1.0f / 6.0f) // Hextuple issue
-#define PERFSCORE_THROUGHPUT_5X 0.20f         // Pentuple issue
-#define PERFSCORE_THROUGHPUT_4X 0.25f         // Quad issue
-#define PERFSCORE_THROUGHPUT_3X (1.0f / 3.0f) // Three issue
-#define PERFSCORE_THROUGHPUT_2X 0.5f          // Dual issue
+#define PERFSCORE_THROUGHPUT_9X   (1.0f / 9.0f)
+#define PERFSCORE_THROUGHPUT_6X   (1.0f / 6.0f) // Hextuple issue
+#define PERFSCORE_THROUGHPUT_5X   0.20f         // Pentuple issue
+#define PERFSCORE_THROUGHPUT_4X   0.25f         // Quad issue
+#define PERFSCORE_THROUGHPUT_3X   (1.0f / 3.0f) // Three issue
+#define PERFSCORE_THROUGHPUT_2X   0.5f          // Dual issue
+#define PERFSCORE_THROUGHPUT_1P5X (2.0f / 3.0f) // 1.5x issue
 
 #define PERFSCORE_THROUGHPUT_1C 1.0f // Single Issue
 
 #define PERFSCORE_THROUGHPUT_2C   2.0f   // slower - 2 cycles
 #define PERFSCORE_THROUGHPUT_3C   3.0f   // slower - 3 cycles
 #define PERFSCORE_THROUGHPUT_4C   4.0f   // slower - 4 cycles
+#define PERFSCORE_THROUGHPUT_4P5C 4.5f   // slower - 4.5 cycles
 #define PERFSCORE_THROUGHPUT_5C   5.0f   // slower - 5 cycles
 #define PERFSCORE_THROUGHPUT_6C   6.0f   // slower - 6 cycles
 #define PERFSCORE_THROUGHPUT_7C   7.0f   // slower - 7 cycles
@@ -2287,9 +2292,9 @@ protected:
         // Indicates the jump was added at the end of a BBJ_ALWAYS basic block and is
         // a candidate for being removed if it jumps to the next instruction
         unsigned idjIsRemovableJmpCandidate : 1;
-        // Indicates the jump follows a call instruction and precedes an OS epilog.
-        // If this jump is removed, a nop will need to be emitted instead (see clr-abi.md for details).
-        unsigned idjIsAfterCallBeforeEpilog : 1;
+        // Indicates the jump follows a call instruction.
+        // If removed, replace it with a nop to preserve EH boundaries and call-return GC state.
+        unsigned idjIsAfterCall : 1;
 #elif defined(TARGET_X86)
             29;
         unsigned idjIsRemovableJmpCandidate : 1;
@@ -2818,7 +2823,7 @@ public:
     bool emitChkAlign; // perform some alignment checks
 #endif
 
-    insGroup* emitCurIG;
+    insGroup* emitCurIG = nullptr;
 
     void emitSetShortJump(instrDescJmp* id);
     void emitSetMediumJump(instrDescJmp* id);
@@ -2983,9 +2988,10 @@ private:
 
     void emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG); // Check for illegal branches between funclets
 
-    bool     emitFwdJumps;         // forward jumps present?
-    unsigned emitNoGCRequestCount; // Count of number of nested "NO GC" region requests we have.
-    bool     emitNoGCIG;           // Are we generating IGF_NOGCINTERRUPT insGroups (for prologs, epilogs, etc.)
+    bool     emitFwdJumps;           // forward jumps present?
+    unsigned emitNoGCRequestCount;   // Count of number of nested "NO GC" region requests we have.
+    bool     emitNoGCIG;             // Are we generating IGF_NOGCINTERRUPT insGroups (for prologs, epilogs, etc.)
+    bool     emitLastSavedIGWasNoGC; // Was the last non-empty saved IG non-interruptible?
     bool emitForceNewIG; // If we generate an instruction, and not another instruction group, force create a new emitAdd
                          // instruction group.
 
@@ -3072,7 +3078,7 @@ private:
 
     void emitDisableGC();
     void emitEnableGC();
-    bool emitGCDisabled();
+    bool emitLastCodeIsNoGC() const;
 
 #if defined(TARGET_XARCH)
     static bool emitAlignInstHasNoCode(instrDesc* id);
@@ -3627,6 +3633,7 @@ public:
 
         dataSection*   dsNext;
         UNATIVE_OFFSET dsAlignment;
+        UNATIVE_OFFSET dsOffset;
         UNATIVE_OFFSET dsSize;
         sectionType    dsType;
         var_types      dsDataType;
@@ -3893,6 +3900,7 @@ public:
         debugPrevGCrefRegs = RBM_NONE;
         debugPrevByrefRegs = RBM_NONE;
 #endif
+        emitCurIG = nullptr;
     }
 };
 
@@ -4375,6 +4383,18 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
         else
         {
             memSize = defaultSize / 2;
+        }
+    }
+    else if (tupleType == INS_TT_QUARTER)
+    {
+        // Embedded broadcast supported, so either loading scalar or quarter vector
+        if (!ignoreEmbeddedBroadcast && HasEmbeddedBroadcast(id))
+        {
+            memSize = GetInputSizeInBytes(id);
+        }
+        else
+        {
+            memSize = defaultSize / 4;
         }
     }
     else if (tupleType == INS_TT_FULL_MEM)

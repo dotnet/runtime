@@ -50,7 +50,7 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(double) || typeof(T) == typeof(float))
                 {
-                    Vector128<T> equalResult = IsNegative(x) & IsPositive(y);
+                    Vector128<T> equalResult = Vector128.IsNegative(x) & Vector128.IsPositive(y);
                     return Vector128.LessThan(x, y) | (Vector128.Equals(x, y) & equalResult);
                 }
                 else
@@ -64,7 +64,7 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(double) || typeof(T) == typeof(float))
                 {
-                    Vector256<T> equalResult = IsNegative(x) & IsPositive(y);
+                    Vector256<T> equalResult = Vector256.IsNegative(x) & Vector256.IsPositive(y);
                     return Vector256.LessThan(x, y) | (Vector256.Equals(x, y) & equalResult);
                 }
                 else
@@ -78,7 +78,7 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(double) || typeof(T) == typeof(float))
                 {
-                    Vector512<T> equalResult = IsNegative(x) & IsPositive(y);
+                    Vector512<T> equalResult = Vector512.IsNegative(x) & Vector512.IsPositive(y);
                     return Vector512.LessThan(x, y) | (Vector512.Equals(x, y) & equalResult);
                 }
                 else

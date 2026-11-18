@@ -2,20 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================
-**
 ** Header:  LoaderAllocator.hpp
 **
-
-**
 ** Purpose: Implements collection of loader heaps
-**
-**
 ===========================================================*/
 
 #ifndef __LoaderAllocator_h__
 #define __LoaderAllocator_h__
 
 class FuncPtrStubs;
+class ClosedStaticRetBufPortableEntryPoint;
 #include "qcall.h"
 #include "ilstubcache.h"
 
@@ -318,9 +314,9 @@ protected:
 
     DAC_ALIGNAS(UINT64) // Align the first member to alignof(m_nLoaderAllocator). Windows does this by default, force Linux to match.
     BYTE *              m_InitialReservedMemForLoaderHeaps;
+    size_t              m_InitialReservedMemForLoaderHeapsSize;
     BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
-    BYTE                m_StubHeapInstance[sizeof(LoaderHeap)];
 #ifdef HAS_FIXUP_PRECODE
     BYTE                m_FixupPrecodeHeapInstance[sizeof(InterleavedLoaderHeap)];
 #endif // HAS_FIXUP_PRECODE
@@ -336,7 +332,6 @@ protected:
     PTR_LoaderHeap      m_pLowFrequencyHeap;
     PTR_LoaderHeap      m_pHighFrequencyHeap;
     PTR_LoaderHeap      m_pStaticsHeap;
-    PTR_LoaderHeap      m_pStubHeap; // stubs for PInvoke, remoting, etc
     PTR_LoaderHeap      m_pExecutableHeap;
 #ifdef FEATURE_READYTORUN
 #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
@@ -363,7 +358,6 @@ protected:
 
     // Protect the handle table data structures, seperated from m_crstLoaderAllocator to allow thread cleanup to use the lock
     CrstExplicitInit    m_crstLoaderAllocatorHandleTable;
-    bool                m_fGCPressure;
     bool                m_fUnloaded;
     bool                m_fTerminated;
     bool                m_fMarked;
@@ -395,7 +389,9 @@ protected:
     Volatile<PgoManager *> m_pgoManager;
 #endif // FEATURE_PGO
 
+#ifdef FEATURE_MULTITHREADING
     SArray<TLSIndex> m_tlsIndices;
+#endif // FEATURE_MULTITHREADING
 
 public:
     BYTE *GetVSDHeapInitialBlock(DWORD *pSize);
@@ -404,6 +400,7 @@ public:
     // ExecutionManager caches
     void * m_pLastUsedCodeHeap;
     void * m_pLastUsedDynamicCodeHeap;
+    void * m_pLastUsedOptimizedCodeHeap;
 #ifdef FEATURE_INTERPRETER
     void * m_pLastUsedInterpreterCodeHeap;
     void * m_pLastUsedInterpreterDynamicCodeHeap;
@@ -439,11 +436,13 @@ protected:
 
     PTR_VirtualCallStubManager m_pVirtualCallStubManager;
 
+#ifdef FEATURE_MULTITHREADING
 public:
     SArray<TLSIndex>& GetTLSIndexList()
     {
         return m_tlsIndices;
     }
+#endif // FEATURE_MULTITHREADING
 
 private:
     LoaderAllocatorSet m_LoaderAllocatorReferences;
@@ -502,11 +501,15 @@ private:
     PTR_AsyncContinuationsManager m_asyncContinuationsManager;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    // Methods whose PortableEntryPoint was initialized without an R2R-to-interpreter thunk
-    // because the thunk wasn't yet loaded. When a new R2R module injects string thunks,
-    // these methods are re-checked and resolved if a thunk is now available.
-    // Protected by s_pendingThunkResolutionLock (not m_crstLoaderAllocator).
-    SArray<MethodDesc*> m_pendingPortableEntryPointThunks;
+    // Entries whose resolution couldn't complete immediately (e.g. a PortableEntryPoint
+    // initialized without an R2R-to-interpreter thunk because the thunk wasn't yet loaded,
+    // or a closed-static-retbuf adapter whose target wasn't yet resolved). When a new R2R
+    // module injects string thunks, these are re-checked and resolved if now available.
+    // Untyped so both pending lists can share the generic resolve-and-compact helper in
+    // pregeneratedstringthunks.cpp; elements are MethodDesc* / ClosedStaticRetBufPortableEntryPoint*
+    // respectively. Protected by s_pendingThunkResolutionLock (not m_crstLoaderAllocator).
+    SArray<void*> m_pendingPortableEntryPointThunks;
+    SArray<void*> m_pendingClosedStaticRetBufThunks;
     bool m_registeredForPendingThunkResolution;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
@@ -598,7 +601,7 @@ public:
     // Adds reference if the native object is alive  - code:#AssemblyPhases.
     // Returns TRUE if the reference was added.
     BOOL AddReferenceIfAlive();
-    BOOL Release();
+    BOOL Release() noexcept;
     // Checks if the native object is alive - see code:#AssemblyPhases.
     BOOL IsAlive() { LIMITED_METHOD_DAC_CONTRACT; return (m_cReferences != (UINT32)0); }
     // Checks if managed scout is alive - see code:#AssemblyPhases.
@@ -655,12 +658,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_pStaticsHeap;
-    }
-
-    PTR_LoaderHeap GetStubHeap()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pStubHeap;
     }
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
@@ -770,11 +767,6 @@ public:
 #endif // FEATURE_PGO
 #endif // !defined(DACCESS_COMPILE)
 
-
-    // This function is only safe to call if the handle is known to be a handle in a collectible
-    // LoaderAllocator, and the handle is allocated, and the LoaderAllocator is also not collected.
-    FORCEINLINE OBJECTREF GetHandleValueFastCannotFailType2(LOADERHANDLE handle);
-
     // These functions are designed to be used for maximum performance to access handle values
     // The GetHandleValueFast will handle the scenario where a loader allocator pointer does not
     // need to be acquired to do the handle lookup, and the GetHandleValueFastPhase2 handles
@@ -799,7 +791,6 @@ public:
     virtual ~LoaderAllocator();
     virtual BOOL CanUnload() = 0;
     void Init(BYTE *pExecutableHeapMemory);
-    void Terminate();
     virtual void ReleaseAssemblyLoadContext() {}
 
     SIZE_T EstimateSize();
@@ -875,6 +866,9 @@ private:
     // Deletes marshaling data at shutdown (which contains cached factories that needs to be released)
     void DeleteMarshalingData();
 
+    // Only called from the destructor.
+    void Terminate();
+
 public:
 
 #ifdef FEATURE_COMINTEROP
@@ -926,6 +920,9 @@ public:
     // Add a MethodDesc to the pending list of methods waiting for an R2R-to-interpreter thunk.
     // Takes s_pendingThunkResolutionLock internally.
     void AddPendingPortableEntryPointThunk(MethodDesc* pMD);
+
+    void AddPendingClosedStaticRetBufThunk(ClosedStaticRetBufPortableEntryPoint* pEntryPoint);
+
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #ifndef DACCESS_COMPILE
@@ -938,6 +935,7 @@ public:
     friend struct ::cdac_data<LoaderAllocator>;
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     friend void AddPendingPortableEntryPointThunkUnderLock(LoaderAllocator*, MethodDesc*);
+    friend void AddPendingClosedStaticRetBufThunkUnderLock(LoaderAllocator*, ClosedStaticRetBufPortableEntryPoint*);
     friend void UnregisterLoaderAllocatorForPendingThunkResolution(LoaderAllocator*);
     friend void ResolvePendingPortableEntryPointThunksGlobal();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
@@ -950,7 +948,6 @@ struct cdac_data<LoaderAllocator>
     static constexpr size_t HighFrequencyHeap = offsetof(LoaderAllocator, m_pHighFrequencyHeap);
     static constexpr size_t LowFrequencyHeap = offsetof(LoaderAllocator, m_pLowFrequencyHeap);
     static constexpr size_t StaticsHeap = offsetof(LoaderAllocator, m_pStaticsHeap);
-    static constexpr size_t StubHeap = offsetof(LoaderAllocator, m_pStubHeap);
     static constexpr size_t ExecutableHeap = offsetof(LoaderAllocator, m_pExecutableHeap);
 #ifdef HAS_FIXUP_PRECODE
     static constexpr size_t FixupPrecodeHeap = offsetof(LoaderAllocator, m_pFixupPrecodeHeap);
@@ -969,7 +966,7 @@ struct cdac_data<LoaderAllocator>
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
 
-extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
+extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator, QCallExceptionStatus* qcallError);
 
 class GlobalLoaderAllocator : public LoaderAllocator
 {
@@ -1078,41 +1075,27 @@ public:
 typedef VPTR(AssemblyLoaderAllocator) PTR_AssemblyLoaderAllocator;
 
 #ifndef DACCESS_COMPILE
-class LOADERHANDLEHolder
+struct LoaderHandleHolderTraits final
 {
-    LOADERHANDLE _handle;
-    LoaderAllocator* _pLoaderAllocator;
-
-public:
-
-    LOADERHANDLEHolder(LOADERHANDLE handle, LoaderAllocator* pLoaderAllocator)
+    struct Type final
     {
-        _handle = handle;
-        _pLoaderAllocator = pLoaderAllocator;
-        _ASSERTE(_pLoaderAllocator != NULL);
-    }
+        LOADERHANDLE Handle;
+        LoaderAllocator* Allocator;
+    };
 
-    LOADERHANDLEHolder(const LOADERHANDLEHolder&) = delete;
+    static constexpr Type Default() { return {0, NULL}; }
 
-    LOADERHANDLE GetValue() const
+    static void Free(Type value) noexcept
     {
-        return _handle;
-    }
-
-    void SuppressRelease()
-    {
-        _pLoaderAllocator = NULL;
-    }
-
-    ~LOADERHANDLEHolder()
-    {
-        if (_pLoaderAllocator != NULL)
-            _pLoaderAllocator->FreeHandle(_handle);
+        WRAPPER_NO_CONTRACT;
+        if (value.Allocator != NULL)
+            value.Allocator->FreeHandle(value.Handle);
     }
 };
-#endif
+
+using LOADERHANDLEHolder = LifetimeHolder<LoaderHandleHolderTraits>;
+#endif // !DACCESS_COMPILE
 
 #include "loaderallocator.inl"
 
 #endif //  __LoaderAllocator_h__
-

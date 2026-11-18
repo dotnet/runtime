@@ -22,13 +22,13 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "procprivate.hpp"
 #include "pal/process.h"
 #include "pal/module.h"
-#include "pal/environ.h"
 #include "pal/init.h"
+#include <minipal/utf8.h>
 #include "pal/utils.h"
-#include "pal/virtual.h"
 
 #include <minipal/thread.h>
 #include <minipal/cpucount.h>
+#include <minipal/ospagesize.h>
 
 #if defined(__NetBSD__) && !HAVE_PTHREAD_GETCPUCLOCKID
 #include <sys/cdefs.h>
@@ -101,10 +101,7 @@ CObjectType CorUnix::otThread(
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CThreadProcessLocalData),
-                NULL,   // No process local data cleanup routine
-                CObjectType::WaitableObject,
-                CObjectType::SingleTransitionObject,
-                CObjectType::ThreadReleaseHasNoSideEffects
+                NULL    // No process local data cleanup routine
                 );
 
 CAllowedObjectTypes aotThread(otiThread);
@@ -461,7 +458,7 @@ CorUnix::InternalCreateThread(
     if (alignedStackSize != 0)
     {
         // Some systems require the stack size to be aligned to the page size
-        if (sizeof(alignedStackSize) <= sizeof(dwStackSize) && alignedStackSize + (GetVirtualPageSize() - 1) < alignedStackSize)
+        if (sizeof(alignedStackSize) <= sizeof(dwStackSize) && alignedStackSize + (minipal_getpagesize() - 1) < alignedStackSize)
         {
             // When coming here from the public API surface, the incoming value is originally a nonnegative signed int32, so
             // this shouldn't happen
@@ -471,7 +468,7 @@ CorUnix::InternalCreateThread(
             palError = ERROR_INVALID_PARAMETER;
             goto EXIT;
         }
-        alignedStackSize = ALIGN_UP(alignedStackSize, GetVirtualPageSize());
+        alignedStackSize = ALIGN_UP(alignedStackSize, minipal_getpagesize());
     }
 
     // Ignore the STACK_SIZE_PARAM_IS_A_RESERVATION flag
@@ -525,7 +522,7 @@ CorUnix::InternalCreateThread(
     if (alignedStackSize != 0)
     {
 #ifdef PTHREAD_STACK_MIN
-        size_t MinStackSize = ALIGN_UP(PTHREAD_STACK_MIN, GetVirtualPageSize());
+        size_t MinStackSize = ALIGN_UP(PTHREAD_STACK_MIN, minipal_getpagesize());
 #else // !PTHREAD_STACK_MIN
         size_t MinStackSize = 64 * 1024; // this value is typically accepted by pthread_attr_setstacksize()
 #endif // PTHREAD_STACK_MIN
@@ -658,10 +655,16 @@ ExitThread(
     pThread->SetExitCode(dwExitCode);
 
     /* kill the thread (itself), resulting in a call to InternalEndCurrentThread */
+#if defined(TARGET_WASI)
+    // wasi-libc pthread_exit is a _Static_assert stub. PAL only reaches here
+    // on the orderly-shutdown path which is not exercised on WASI.
+    abort();
+#else
     pthread_exit(NULL);
 
     ASSERT("pthread_exit should not return!\n");
     while (true);
+#endif
 }
 
 /*++
@@ -677,9 +680,6 @@ CorUnix::InternalEndCurrentThread(
     CPalThread *pThread
     )
 {
-    PAL_ERROR palError = NO_ERROR;
-    ISynchStateController *pSynchStateController = NULL;
-
     //
     // Need to synchronize setting the thread state to TS_DONE since
     // this is checked for in InternalSuspendThreadFromData.
@@ -687,32 +687,8 @@ CorUnix::InternalEndCurrentThread(
     //
 
     pThread->suspensionInfo.AcquireSuspensionLock(pThread);
-    pThread->synchronizationInfo.SetThreadState(TS_DONE);
+    pThread->SetThreadState(TS_DONE);
     pThread->suspensionInfo.ReleaseSuspensionLock(pThread);
-
-    //
-    // Mark the thread object as signaled
-    //
-
-    palError = pThread->GetThreadObject()->GetSynchStateController(
-        pThread,
-        &pSynchStateController
-        );
-
-    if (NO_ERROR == palError)
-    {
-        palError = pSynchStateController->SetSignalCount(1);
-        if (NO_ERROR != palError)
-        {
-            ASSERT("Unable to mark thread object as signaled");
-        }
-
-        pSynchStateController->ReleaseController();
-    }
-    else
-    {
-        ASSERT("Unable to obtain state controller for thread");
-    }
 
     //
     // Add a reference to the thread data before releasing the
@@ -912,7 +888,7 @@ CorUnix::InternalSetThreadPriority(
     }
 
     /* check if the thread is still running */
-    if (TS_DONE == pTargetThread->synchronizationInfo.GetThreadState())
+    if (TS_DONE == pTargetThread->GetThreadState())
     {
         /* the thread has exited, set the priority in the thread structure
            and exit */
@@ -922,6 +898,14 @@ CorUnix::InternalSetThreadPriority(
 
     /* get the previous thread schedule parameters.  We need to know the
        scheduling policy to determine the priority range */
+#if defined(TARGET_WASI)
+    // wasi-libc replaces pthread scheduling functions with _Static_assert
+    // stubs (single-threaded). Record the requested priority but skip the
+    // pthread plumbing.
+    pTargetThread->m_iThreadPriority = iNewPriority;
+    palError = NO_ERROR;
+    goto InternalSetThreadPriorityExit;
+#else
     if (pthread_getschedparam(
             pTargetThread->GetPThreadSelf(),
             &policy,
@@ -1017,6 +1001,7 @@ CorUnix::InternalSetThreadPriority(
     }
 
     pTargetThread->m_iThreadPriority = iNewPriority;
+#endif // !TARGET_WASI
 
 InternalSetThreadPriorityExit:
 
@@ -1265,6 +1250,12 @@ CorUnix::GetThreadTimesInternal(
     close(fd);
 
     ts = status.pr_utime;
+#elif defined(TARGET_WASI)
+    // WASI 0.2.8 has no per-thread CPU time clock. Report zero rather than
+    // fail the build.
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 0;
 #else // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
 #error "Don't know how to obtain user cpu time on this platform."
 #endif // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
@@ -1311,7 +1302,7 @@ SetThreadDescription(
 
     CPalThread *pTargetThread = NULL;
     IPalObject *pobjThread = NULL;
-    int nameSize;
+    size_t nameSize;
     char *nameBuf = NULL;
 
     PAL_ERROR palError = InternalGetThreadDataFromHandle(pThread, hThread, &pTargetThread, &pobjThread);
@@ -1321,11 +1312,11 @@ SetThreadDescription(
         // it causes the value returned by Process.ProcessName to change.
         if ((pid_t)pTargetThread->GetThreadId() != getpid())
         {
-            nameSize = WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, NULL, 0, NULL, NULL);
+            nameSize = lpThreadDescription != NULL ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpThreadDescription, minipal_u16_strlen((const CHAR16_T*)lpThreadDescription) + 1, 0) : 0;
             if (nameSize > 0)
             {
                 nameBuf = (char *)malloc(nameSize);
-                if (nameBuf == NULL || WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, nameBuf, nameSize, NULL, NULL) != nameSize)
+                if (nameBuf == NULL || minipal_convert_utf16_to_utf8((const CHAR16_T*)lpThreadDescription, minipal_u16_strlen((const CHAR16_T*)lpThreadDescription) + 1, nameBuf, nameSize, 0) != nameSize)
                 {
                     pThread->SetLastError(ERROR_INSUFFICIENT_BUFFER);
                 }
@@ -1400,7 +1391,8 @@ CPalThread::ThreadEntry(
             configuredCpuCount = CPU_SETSIZE;
         }
 
-        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        int cpusToAllocate = std::max(configuredCpuCount, CPU_SETSIZE);
+        cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
         if (pCpuSet == nullptr)
         {
             ASSERT("CPU_ALLOC failed!\n");
@@ -1408,13 +1400,13 @@ CPalThread::ThreadEntry(
             goto fail;
         }
 
-        size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+        size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
         CPU_ZERO_S(cpuSetSize, pCpuSet);
 
         st = sched_getaffinity(gPID, cpuSetSize, pCpuSet);
         if (st == 0)
         {
-            st = sched_setaffinity(0, CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
+            st = sched_setaffinity(0, cpuSetSize, pCpuSet);
             if (st != 0)
             {
                 if (errno == EPERM || errno == EACCES)
@@ -1492,7 +1484,7 @@ CPalThread::ThreadEntry(
         pThread->SetStartStatus(TRUE);
     }
 
-    pThread->synchronizationInfo.SetThreadState(TS_RUNNING);
+    pThread->SetThreadState(TS_RUNNING);
 
     /* Inform all loaded modules that a thread has been created */
     /* note : no need to take a critical section to serialize here; the loader
@@ -1518,7 +1510,7 @@ fail:
 
     if (NULL != pThread)
     {
-        pThread->synchronizationInfo.SetThreadState(TS_FAILED);
+        pThread->SetThreadState(TS_FAILED);
         pThread->SetStartStatus(FALSE);
     }
 
@@ -1753,111 +1745,6 @@ CreateThreadObjectExit:
 }
 
 PAL_ERROR
-CorUnix::InternalCreateDummyThread(
-    CPalThread *pThread,
-    LPSECURITY_ATTRIBUTES lpThreadAttributes,
-    CPalThread **ppDummyThread,
-    HANDLE *phThread
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-    CPalThread *pDummyThread = NULL;
-    IPalObject *pobjThread = NULL;
-    IPalObject *pobjThreadRegistered = NULL;
-    IDataLock *pDataLock;
-    CThreadProcessLocalData *pLocalData;
-    CObjectAttributes oa(NULL, lpThreadAttributes);
-    bool fThreadDataStoredInObject = FALSE;
-
-    pDummyThread = AllocTHREAD();
-    if (NULL == pDummyThread)
-    {
-        palError = ERROR_OUTOFMEMORY;
-        goto InternalCreateDummyThreadExit;
-    }
-
-    pDummyThread->m_fIsDummy = TRUE;
-
-    palError = g_pObjectManager->AllocateObject(
-        pThread,
-        &otThread,
-        &oa,
-        &pobjThread
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto InternalCreateDummyThreadExit;
-    }
-
-    palError = pobjThread->GetProcessLocalData(
-        pThread,
-        WriteLock,
-        &pDataLock,
-        reinterpret_cast<void **>(&pLocalData)
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto InternalCreateDummyThreadExit;
-    }
-
-    pLocalData->pThread = pDummyThread;
-    pDataLock->ReleaseLock(pThread, TRUE);
-    fThreadDataStoredInObject = TRUE;
-
-    palError = g_pObjectManager->RegisterObject(
-        pThread,
-        pobjThread,
-        &aotThread,
-        phThread,
-        &pobjThreadRegistered
-        );
-
-    //
-    // pobjThread is invalidated by the above call, so NULL
-    // it out here
-    //
-
-    pobjThread = NULL;
-
-    if (NO_ERROR != palError)
-    {
-        goto InternalCreateDummyThreadExit;
-    }
-
-    //
-    // Note the we do NOT store the registered object for the
-    // thread w/in pDummyThread. Since this thread is not actually
-    // executing that reference would never be released (and thus
-    // the thread object would never be cleaned up...)
-    //
-
-    *ppDummyThread = pDummyThread;
-
-InternalCreateDummyThreadExit:
-
-    if (NULL != pobjThreadRegistered)
-    {
-        pobjThreadRegistered->ReleaseReference(pThread);
-    }
-
-    if (NULL != pobjThread)
-    {
-        pobjThread->ReleaseReference(pThread);
-    }
-
-    if (NO_ERROR != palError
-        && NULL != pDummyThread
-        && !fThreadDataStoredInObject)
-    {
-        pDummyThread->ReleaseThreadReference();
-    }
-
-    return palError;
-}
-
-PAL_ERROR
 CorUnix::InternalGetThreadDataFromHandle(
     CPalThread *pThread,
     HANDLE hThread,
@@ -1949,12 +1836,6 @@ CPalThread::RunPreCreateInitializers(
     // Call the pre-create initializers for embedded classes
     //
 
-    palError = synchronizationInfo.InitializePreCreate();
-    if (NO_ERROR != palError)
-    {
-        goto RunPreCreateInitializersExit;
-    }
-
     palError = suspensionInfo.InitializePreCreate();
     if (NO_ERROR != palError)
     {
@@ -2032,12 +1913,6 @@ CPalThread::RunPostCreateInitializers(
     {
         ASSERT("Unable to set the thread object key's value\n");
         palError = ERROR_INTERNAL_ERROR;
-        goto RunPostCreateInitializersExit;
-    }
-
-    palError = synchronizationInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
-    if (NO_ERROR != palError)
-    {
         goto RunPostCreateInitializersExit;
     }
 
@@ -2175,13 +2050,13 @@ CPalThread::EnsureSignalAlternateStack()
 
             // We include the size of the SignalHandlerWorkerReturnPoint in the alternate stack size since the
             // context contained in it is large and the SIGSTKSZ was not sufficient on ARM64 during testing.
-            int altStackSize = SIGSTKSZ + ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + GetVirtualPageSize();
+            int altStackSize = SIGSTKSZ + ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + minipal_getpagesize();
 #ifdef HAS_ADDRESS_SANITIZER
             // Asan also uses alternate stack so we increase its size on the SIGSTKSZ * 4 that enough for asan
             // (see kAltStackSize in compiler-rt/lib/sanitizer_common/sanitizer_posix_libcdep.cc)
             altStackSize += SIGSTKSZ * 4;
 #endif
-            altStackSize = ALIGN_UP(altStackSize, GetVirtualPageSize());
+            altStackSize = ALIGN_UP(altStackSize, minipal_getpagesize());
             int flags = MAP_ANONYMOUS | MAP_PRIVATE;
 #ifdef MAP_STACK
             flags |= MAP_STACK;
@@ -2190,7 +2065,7 @@ CPalThread::EnsureSignalAlternateStack()
             if (altStack != MAP_FAILED)
             {
                 // create a guard page for the alternate stack
-                st = mprotect(altStack, GetVirtualPageSize(), PROT_NONE);
+                st = mprotect(altStack, minipal_getpagesize(), PROT_NONE);
                 if (st == 0)
                 {
                     stack_t ss;
@@ -2203,6 +2078,7 @@ CPalThread::EnsureSignalAlternateStack()
                 if (st == 0)
                 {
                     m_alternateStack = altStack;
+                    m_alternateStackSize = altStackSize;
                 }
                 else
                 {
@@ -2234,27 +2110,25 @@ CPalThread::FreeSignalAlternateStack()
 {
 #ifndef TARGET_WASM // WebAssembly does not support alternate signal stacks.
     void *altstack = m_alternateStack;
+    size_t altStackSize = m_alternateStackSize;
     m_alternateStack = nullptr;
+    m_alternateStackSize = 0;
 
     if (altstack != nullptr)
     {
-        stack_t ss, oss;
-        // The man page for sigaltstack says that when the ss.ss_flags is set to SS_DISABLE,
-        // all other ss fields are ignored. However, MUSL implementation checks that the
-        // ss_size is >= MINSIGSTKSZ even in this case.
-        ss.ss_size = MINSIGSTKSZ;
-        ss.ss_flags = SS_DISABLE;
-        ss.ss_sp = NULL;
-        int st = sigaltstack(&ss, &oss);
-        if ((st == 0) && (oss.ss_flags != SS_DISABLE))
+        stack_t ss;
+        if (sigaltstack(nullptr, &ss) == 0 && (ss.ss_flags & SS_DISABLE) == 0 && ss.ss_sp == altstack)
         {
-            // Make sure this altstack is this PAL's before freeing.
-            if (oss.ss_sp == altstack)
-            {
-                int st = munmap(oss.ss_sp, oss.ss_size);
-                _ASSERTE(st == 0);
-            }
+            // The man page for sigaltstack says that when the ss.ss_flags is set to SS_DISABLE,
+            // all other ss fields are ignored. However, MUSL implementation checks that the
+            // ss_size is >= MINSIGSTKSZ even in this case.
+            ss.ss_size = MINSIGSTKSZ;
+            ss.ss_flags = SS_DISABLE;
+            ss.ss_sp = nullptr;
+            sigaltstack(&ss, nullptr);
         }
+        int st = munmap(altstack, altStackSize);
+        _ASSERTE(st == 0);
     }
 #endif // !TARGET_WASM
 }
@@ -2333,7 +2207,14 @@ CPalThread::GetStackBase()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
-#ifndef TARGET_BROWSER
+#if defined(TARGET_WASI)
+    // wasm-component-ld places the stack first with -Wl,-z,stack-size (see
+    // corerun CMakeLists.txt). Keep in sync with that value.
+    (void)thread; (void)stackAddr; (void)stackSize; (void)status;
+    pthread_attr_destroy(&attr);
+    constexpr size_t s_wasiStackSize = 8 * 1024 * 1024;
+    stackBase = (void*)s_wasiStackSize;
+#elif !defined(TARGET_BROWSER)
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2385,7 +2266,13 @@ CPalThread::GetStackLimit()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
-#ifndef TARGET_BROWSER
+#if defined(TARGET_WASI)
+    // See GetStackBase. CoreCLR rejects NULL stack limits, so return a
+    // small non-null placeholder.
+    (void)thread; (void)stackSize; (void)status;
+    pthread_attr_destroy(&attr);
+    stackLimit = (void*)4096;
+#elif !defined(TARGET_BROWSER)
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP

@@ -27,7 +27,8 @@ namespace System.Net.Http.Functional.Tests
         {
             CredentialPlugin credentialPlugin = new CredentialPlugin();
 
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            // Keep accepted connections owned by the server so failure cleanup can abort outstanding reads.
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer(new Http2Options { DeferConnectionClose = true });
             server.AllowMultipleConnections = true;
 
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -35,51 +36,64 @@ namespace System.Net.Http.Functional.Tests
             handler.Credentials = credentialPlugin;
             using HttpClient client = CreateHttpClient(handler);
 
-            Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+            int connectionNumber = 0;
+            await SendAndHandleAsync("", "username:password");
 
-            async Task<string> GetAuth(GenericLoopbackConnection connection)
+            credentialPlugin.ChangePassword();
+
+            // The cached credential must be rejected before the plugin supplies the new password.
+            await SendAndHandleAsync("username:password", "username:password1");
+
+            async Task SendAndHandleAsync(string preAuth, string challengeAuth)
             {
-                HttpRequestData data = await connection.ReadRequestDataAsync();
-                HttpHeaderData? header = data.Headers.FirstOrDefault(h => string.Equals(h.Name, "Authorization", StringComparison.OrdinalIgnoreCase));
-
-                if (header == null)
+                Task clientTask = SendAsync();
+                Task serverTask = HandleRequestsAsync();
+                try
                 {
-                    return "";
+                    await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(30_000);
+                }
+                finally
+                {
+                    if (!clientTask.IsCompleted || !serverTask.IsCompleted)
+                    {
+                        // A timed-out wait does not cancel the underlying accept or read.
+                        client.Dispose();
+                        server.Dispose();
+                        await IgnoreExceptions(Task.WhenAll(clientTask, serverTask).WaitAsync(TimeSpan.FromSeconds(30)));
+                    }
                 }
 
-                return Encoding.UTF8.GetString(Convert.FromBase64String(header.Value.Value.Replace("Basic", "", StringComparison.OrdinalIgnoreCase)));
+                async Task SendAsync()
+                {
+                    using HttpResponseMessage response = await client.GetAsync(server.Address);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+
+                async Task HandleRequestsAsync()
+                {
+                    await HandleRequestAsync(preAuth, HttpStatusCode.Unauthorized);
+                    await HandleRequestAsync(challengeAuth, HttpStatusCode.OK);
+                }
             }
 
-            await server.HandleRequestAsync(HttpStatusCode.Unauthorized, headers: new[] { new HttpHeaderData("WWW-Authenticate", "Basic realm=\"test\"") });
-            await server.AcceptConnectionAsync(async conn =>
+            async Task HandleRequestAsync(string expectedAuth, HttpStatusCode statusCode)
             {
-                Assert.Equal("username:password", await GetAuth(conn));
-                await conn.SendResponseAsync(HttpStatusCode.OK);
-            }).WaitAsync(TimeSpan.FromSeconds(30));
+                int currentConnection = ++connectionNumber;
+                _output.WriteLine($"Establishing connection {currentConnection}");
+                await using Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                _output.WriteLine($"Reading request on connection {currentConnection}");
+                HttpRequestData data = await connection.ReadRequestDataAsync();
+                HttpHeaderData header = data.Headers.SingleOrDefault(h => string.Equals(h.Name, "Authorization", StringComparison.OrdinalIgnoreCase));
+                string auth = header.Value is null ? "" :
+                    Encoding.UTF8.GetString(Convert.FromBase64String(header.Value.Replace("Basic", "", StringComparison.OrdinalIgnoreCase)));
+                Assert.Equal(expectedAuth, auth);
 
-            HttpResponseMessage response = await sendTask;
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-            // change password and try again
-            credentialPlugin.ChangePassword();
-            sendTask = client.GetAsync(server.Address);
-
-            // first one reuses the cached credentials -> 401
-            await server.AcceptConnectionAsync(async conn =>
-            {
-                Assert.Equal("username:password", await GetAuth(conn));
-                await conn.SendResponseAsync(HttpStatusCode.Unauthorized, headers: new[] { new HttpHeaderData("WWW-Authenticate", "Basic realm=\"test\"") });
-            }).WaitAsync(TimeSpan.FromSeconds(30));
-
-            // client should try again with correct credentials
-            await server.AcceptConnectionAsync(async conn =>
-            {
-                Assert.Equal("username:password1", await GetAuth(conn));
-                await conn.SendResponseAsync(HttpStatusCode.OK);
-            }).WaitAsync(TimeSpan.FromSeconds(30));
-
-            response = await sendTask;
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                // Prevent the authentication retry from racing with connection shutdown.
+                await connection.SendGoAway(data.RequestId);
+                await connection.SendResponseAsync(statusCode, headers: statusCode == HttpStatusCode.Unauthorized ?
+                    new[] { new HttpHeaderData("WWW-Authenticate", "Basic realm=\"test\"") } : null);
+                _output.WriteLine($"Sent {(int)statusCode} on connection {currentConnection}, stream {data.RequestId}");
+            }
         }
     }
 

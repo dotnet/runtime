@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -174,7 +175,25 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        return new MetaDataImportImpl(reader);
+        return new MetaDataImportImpl(reader, legacyImport: null, new());
+    }
+
+    [Fact]
+    public void UnimplementedMethods_DoNotDelegateToLegacyImport()
+    {
+        (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
+        using var _ = provider;
+
+        Mock<IMetaDataImport> legacyImport = new(MockBehavior.Strict);
+        legacyImport.As<IMetaDataImport2>();
+        legacyImport.As<IMetaDataAssemblyImport>();
+
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport.Object, new());
+        IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
+
+        Assert.Equal(HResults.E_NOTIMPL, wrapper.EnumTypeRefs(null, null, 0, null));
+        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetPEKind(null, null));
+        Assert.Equal(HResults.E_NOTIMPL, assemblyImport.EnumAssemblyRefs(null, null, 0, null));
     }
 
     [Fact]
@@ -457,6 +476,7 @@ public unsafe class MetaDataImportImplTests
         IMetaDataImport2 wrapper = CreateWrapper();
 
         Assert.Equal(HResults.E_NOTIMPL, wrapper.GetScopeProps(null, 0, null, null));
+        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetModuleFromScope(null));
         Assert.Equal(HResults.E_NOTIMPL, wrapper.ResolveTypeRef(0, null, null, null));
         Assert.Equal(HResults.E_NOTIMPL, wrapper.EnumTypeRefs(null, null, 0, null));
     }
@@ -629,7 +649,7 @@ public unsafe class MetaDataImportImplTests
         // When only reader is available (no legacy), implemented methods should still work
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
 
         uint flags;
         char* nameBuf = stackalloc char[256];
@@ -647,7 +667,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
 
         uint rva, implFlags;
         // DoWork is MethodDef token 0x06000002
@@ -661,7 +681,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
 
         uint rva;
         // TypeDef token (0x02) is not MethodDef or FieldDef
@@ -674,7 +694,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
 
         void* pData;
         uint cbData;
@@ -693,7 +713,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
 
         void* pData;
         uint cbData;
@@ -711,7 +731,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
         IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
 
         uint tkAssembly;
@@ -725,7 +745,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
         IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
 
         char* nameBuf = stackalloc char[256];
@@ -750,7 +770,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
         IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
 
         // mscorlib assembly ref is token 0x23000001
@@ -775,7 +795,7 @@ public unsafe class MetaDataImportImplTests
     {
         (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
         _testProvider = provider;
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
         IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
 
         char* nameBuf = stackalloc char[5];
@@ -810,7 +830,7 @@ public unsafe class MetaDataImportImplTests
         fixed (byte* ptr = metadata.AsSpan())
         {
             var reader = new MetadataReader(ptr, metadata.Length);
-            IMetaDataImport2 impl = new MetaDataImportImpl(reader);
+            IMetaDataImport2 impl = new MetaDataImportImpl(reader, legacyImport: null, new());
             var assemblyImport = (IMetaDataAssemblyImport)impl;
 
             // Pass an invalid assembly token (wrong RID)
@@ -907,7 +927,7 @@ public unsafe class MetaDataImportImplTests
         fixed (byte* ptr = bytes.AsSpan())
         {
             var reader = new MetadataReader(ptr, bytes.Length);
-            IMetaDataImport2 impl = new MetaDataImportImpl(reader);
+            IMetaDataImport2 impl = new MetaDataImportImpl(reader, legacyImport: null, new());
 
             uint parentClass;
             int hr = impl.GetFieldProps(0x04000001, &parentClass, null, 0, null, null, null, null, null, null, null);
@@ -975,7 +995,7 @@ public unsafe class MetaDataImportImplTests
         var (reader, provider) = CreateTestMetadata();
         using var _ = provider;
 
-        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader);
+        IMetaDataImport2 wrapper = new MetaDataImportImpl(reader, legacyImport: null, new());
 
         nint pUnk = (nint)ComInterfaceMarshaller<IMetaDataImport2>.ConvertToUnmanaged(wrapper);
 
@@ -1073,6 +1093,22 @@ public unsafe class MetaDataImportImplTests
         int hr = wrapper.CountEnum(0, &count);
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal(0u, count);
+    }
+
+    [Fact]
+    public void EnumOperations_UnknownHandle_ReturnsInvalidArg()
+    {
+        IMetaDataImport2 wrapper = CreateWrapper();
+
+        nint unknownHandle = nint.MaxValue;
+        uint count = 42;
+
+        int hr = wrapper.CountEnum(unknownHandle, &count);
+        Assert.Equal(HResults.E_INVALIDARG, hr);
+        Assert.Equal(0u, count);
+
+        hr = wrapper.ResetEnum(unknownHandle, 0);
+        Assert.Equal(HResults.E_INVALIDARG, hr);
     }
 
     [Fact]

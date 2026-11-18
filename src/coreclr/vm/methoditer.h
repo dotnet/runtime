@@ -33,6 +33,8 @@ class LoadedMethodDescIterator
     mdMethodDef  m_md;
     MethodDesc * m_mainMD;
     AppDomain *  m_pAppDomain;
+    AsyncVariantLookup m_asyncVariantLookup;
+    bool m_filterAsyncVariant;
 
     // The following hold the state of the iteration....
     // Yes we iterate everything for the moment - we need
@@ -62,13 +64,19 @@ public:
     // Iterates next MethodDesc. Updates the holder only if the assembly differs from the previous one.
     // Caller should not release (i.e. change) the holder explicitly between calls, otherwise collectible
     // assembly might be without a reference and get deallocated (even the native part).
-    BOOL Next(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
+    BOOL Next(CollectibleAssemblyHolder* pAssemblyHolder);
     MethodDesc *Current();
     void Start(AppDomain * pAppDomain,
                Module *pModule,
                mdMethodDef md,
                AssemblyIterationFlags assemIterationFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
     void Start(AppDomain * pAppDomain, Module *pModule, mdMethodDef md, MethodDesc *pDesc);
+    void StartForAsyncVariant(
+        AppDomain * pAppDomain,
+        Module *pModule,
+        mdMethodDef md,
+        MethodDesc *pDesc,
+        AssemblyIterationFlags assemIterationFlags);
 
     LoadedMethodDescIterator(
         AppDomain * pAppDomain,

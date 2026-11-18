@@ -76,7 +76,7 @@ namespace System.Text.Json.Nodes
             {
                 string? result = JsonReaderHelper.TranscodeHelper(_value.Span);
 
-                Debug.Assert(result != null);
+                Debug.Assert(result is not null);
                 value = (T)(object)result;
                 return true;
             }
@@ -108,7 +108,7 @@ namespace System.Text.Json.Nodes
             {
                 string? result = JsonReaderHelper.TranscodeHelper(_value.Span);
 
-                Debug.Assert(result != null);
+                Debug.Assert(result is not null);
                 if (result.Length == 1)
                 {
                     value = (T)(object)result[0];

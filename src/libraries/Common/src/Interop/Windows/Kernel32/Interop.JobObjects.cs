@@ -16,14 +16,30 @@ internal static partial class Interop
             protected override bool ReleaseHandle() => Interop.Kernel32.CloseHandle(handle);
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static partial SafeJobHandle CreateJobObjectW(IntPtr lpJobAttributes, IntPtr lpName);
 
         internal const uint JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000;
+        internal const uint JOB_OBJECT_LIMIT_BREAKAWAY_OK = 0x00000800;
 
         internal enum JOBOBJECTINFOCLASS
         {
+            JobObjectBasicAccountingInformation = 1,
             JobObjectExtendedLimitInformation = 9
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct JOBOBJECT_BASIC_ACCOUNTING_INFORMATION
+        {
+            internal long TotalUserTime;
+            internal long TotalKernelTime;
+            internal long ThisPeriodTotalUserTime;
+            internal long ThisPeriodTotalKernelTime;
+            internal uint TotalPageFaultCount;
+            internal uint TotalProcesses;
+            internal uint ActiveProcesses;
+            internal uint TotalTerminatedProcesses;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -62,10 +78,17 @@ internal static partial class Interop
             internal nuint PeakJobMemoryUsed;
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetInformationJobObject(SafeJobHandle hJob, JOBOBJECTINFOCLASS JobObjectInfoClass, ref JOBOBJECT_EXTENDED_LIMIT_INFORMATION lpJobObjectInfo, uint cbJobObjectInfoLength);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool QueryInformationJobObject(SafeJobHandle hJob, JOBOBJECTINFOCLASS JobObjectInfoClass, out JOBOBJECT_BASIC_ACCOUNTING_INFORMATION lpJobObjectInfo, uint cbJobObjectInfoLength, IntPtr lpReturnLength);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool AssignProcessToJobObject(SafeJobHandle hJob, SafeProcessHandle hProcess);

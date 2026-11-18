@@ -20,6 +20,7 @@
 // RandomPolicy         - randomized inlining
 // FullPolicy           - inlines everything up to size and depth limits
 // SizePolicy           - tries not to increase method sizes
+// AsyncStressPolicy    - over-inlines async callees to stress async inlining
 //
 // The default policy in use is the DefaultPolicy.
 
@@ -114,6 +115,7 @@ public:
         , m_ArgFeedsIsKnownConst(false)
         , m_InsideThrowBlock(false)
         , m_IsIntrinsicType(false)
+        , m_MayReturnSmallArray(false)
     {
         // empty
     }
@@ -191,6 +193,7 @@ protected:
     bool                    m_ArgFeedsIsKnownConst       : 1;
     bool                    m_InsideThrowBlock           : 1;
     bool                    m_IsIntrinsicType            : 1;
+    bool                    m_MayReturnSmallArray        : 1;
 };
 
 // ExtendedDefaultPolicy is a slightly more aggressive variant of
@@ -228,7 +231,6 @@ public:
         , m_NonGenericCallsGeneric(false)
         , m_IsCallsiteInNoReturnRegion(false)
         , m_HasProfileWeights(false)
-        , m_MayReturnSmallArray(false)
     {
         // Empty
     }
@@ -284,7 +286,6 @@ protected:
     bool     m_NonGenericCallsGeneric     : 1;
     bool     m_IsCallsiteInNoReturnRegion : 1;
     bool     m_HasProfileWeights          : 1;
-    bool     m_MayReturnSmallArray        : 1;
 };
 
 // DiscretionaryPolicy is a variant of the default policy.  It
@@ -497,6 +498,59 @@ public:
     {
         return "FullPolicy";
     }
+};
+
+// AsyncStressPolicy behaves like the ExtendedDefaultPolicy except that it
+// deliberately over-inlines async callees, to stress the general runtime async
+// inlining transformation. Async callees bypass the normal size and budget
+// heuristics, and their profitability is instead a random choice that decays
+// with inline depth and with the callee's position in its body's shuffled group
+// of async candidates (see Compiler::fgAsyncStressPrepare).
+
+class AsyncStressPolicy : public ExtendedDefaultPolicy
+{
+public:
+    // Construct an AsyncStressPolicy
+    AsyncStressPolicy(Compiler* compiler, bool isPrejitRoot)
+        : ExtendedDefaultPolicy(compiler, isPrejitRoot)
+        , m_IsAsyncCall(false)
+        , m_AsyncStressIndex(-1)
+        , m_BasicBlockCount(0)
+    {
+    }
+
+    // Policy observations
+    void NoteBool(InlineObservation obs, bool value) override;
+    void NoteInt(InlineObservation obs, int value) override;
+
+    // Policy determinations
+    void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
+    bool BudgetCheck() const override;
+
+    // Miscellaneous
+    const char* GetName() const override
+    {
+        return "AsyncStressPolicy";
+    }
+
+private:
+    // Is this an async callee that the stress mode picked, i.e. one that is part of
+    // its body's shuffled group of async candidates? Candidates created after the
+    // group was formed, such as ones from late devirtualization, are not, and are
+    // left to the normal heuristics. The prejit root has no call site and thus no
+    // group, but must stay inlineable for the call sites that will inline it.
+    bool IsStressPicked() const
+    {
+        return m_IsAsyncCall && (m_IsPrejitRoot || (m_AsyncStressIndex >= 0));
+    }
+
+    bool m_IsAsyncCall;
+    // Position of this callee in its enclosing body's shuffled group of async
+    // inline candidates, or -1 if it is not part of a group.
+    int m_AsyncStressIndex;
+    // Block count of the callee, kept so that DetermineProfitability can make the
+    // block count based rejection that NoteInt deferred.
+    unsigned m_BasicBlockCount;
 };
 
 // SizePolicy is an experimental policy that will inline as much

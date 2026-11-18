@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             var dynamicMethod = new DynamicMethod(
                 ConstructorInfo.ConstructorName,
-                JsonTypeInfo.ObjectType,
+                typeof(object),
                 Type.EmptyTypes,
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
@@ -68,8 +68,8 @@ namespace System.Text.Json.Serialization.Metadata
             return CreateDelegate<Func<object>>(dynamicMethod);
         }
 
-        public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
-            CreateDelegate<Func<object[], T>>(CreateParameterizedConstructor(constructor));
+        public override Func<object?[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
+            CreateDelegate<Func<object?[], T>>(CreateParameterizedConstructor(constructor));
 
         private static DynamicMethod CreateParameterizedConstructor(ConstructorInfo constructor)
         {
@@ -77,7 +77,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             Debug.Assert(type != null);
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(constructor.IsPublic && !constructor.IsStatic);
+            Debug.Assert(!constructor.IsStatic);
 
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;
@@ -187,7 +187,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             Debug.Assert(type != null);
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(constructor.IsPublic && !constructor.IsStatic);
+            Debug.Assert(!constructor.IsStatic);
 
             ParameterInfo[] parameters = constructor.GetParameters();
             Debug.Assert(parameters.Length == 1);
@@ -198,7 +198,7 @@ namespace System.Text.Json.Serialization.Metadata
             var dynamicMethod = new DynamicMethod(
                 ConstructorInfo.ConstructorName,
                 type,
-                new[] { JsonTypeInfo.ObjectType },
+                new[] { typeof(object) },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
@@ -344,7 +344,7 @@ namespace System.Text.Json.Serialization.Metadata
             var dynamicMethod = new DynamicMethod(
                 realMethod.Name,
                 typeof(void),
-                new[] { collectionType, JsonTypeInfo.ObjectType },
+                new[] { collectionType, typeof(object) },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
@@ -697,7 +697,7 @@ namespace System.Text.Json.Serialization.Metadata
             new DynamicMethod(
                 memberName + "Getter",
                 memberType,
-                new[] { JsonTypeInfo.ObjectType },
+                new[] { typeof(object) },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
@@ -713,7 +713,7 @@ namespace System.Text.Json.Serialization.Metadata
             new DynamicMethod(
                 memberName + "Setter",
                 typeof(void),
-                new[] { JsonTypeInfo.ObjectType, memberType },
+                new[] { typeof(object), memberType },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 

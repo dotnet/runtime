@@ -239,6 +239,7 @@ namespace Internal.TypeSystem
 
             // Step 2, convert targetMethod to method in type hierarchy of uninstantiated form
             targetMethod = targetMethod.GetMethodDefinition();
+            MethodDesc initialTargetMethodDefinition = targetMethod;
             if (uninstantiatedType != objectType)
             {
                 targetMethod = uninstantiatedType.FindMethodOnTypeWithMatchingTypicalMethod(targetMethod);
@@ -259,7 +260,7 @@ namespace Internal.TypeSystem
             {
                 resolutionTarget = objectType.FindMethodOnTypeWithMatchingTypicalMethod(resolutionTarget);
             }
-            if (initialTargetMethod.HasInstantiation)
+            if (initialTargetMethod != initialTargetMethodDefinition)
             {
                 resolutionTarget = resolutionTarget.MakeInstantiatedMethod(initialTargetMethod.Instantiation);
             }
@@ -440,6 +441,8 @@ namespace Internal.TypeSystem
         {
             if (method == null)
                 return method;
+
+            Debug.Assert(method.GetMethodDefinition() == method);
 
             DefType currentType = method.OwningType.BaseType;
 

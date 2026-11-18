@@ -3,17 +3,8 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class StackTraceArrayHeader : IData<StackTraceArrayHeader>
+[CdacType(nameof(DataType.StackTraceArrayHeader))]
+internal sealed partial class StackTraceArrayHeader : IData<StackTraceArrayHeader>
 {
-    static StackTraceArrayHeader IData<StackTraceArrayHeader>.Create(Target target, TargetPointer address)
-        => new StackTraceArrayHeader(target, address);
-
-    public StackTraceArrayHeader(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.StackTraceArrayHeader);
-
-        Size = target.ReadField<uint>(address, type, nameof(Size));
-    }
-
-    public uint Size { get; init; }
+    [Field] public partial uint Size { get; }
 }

@@ -97,6 +97,53 @@ namespace System.Net.ServerSentEvents.Tests
             yield return new SseItem<string>("LFCR at end\n\r", null);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static async Task WriteAsync_FlushesAfterEachEvent(bool useItemFormatter)
+        {
+            using FlushTrackingStream stream = new();
+
+            if (useItemFormatter)
+            {
+                await SseFormatter.WriteAsync(GetItemsAsync(), stream, static (item, writer) => writer.Write(Encoding.UTF8.GetBytes(item.Data)));
+            }
+            else
+            {
+                await SseFormatter.WriteAsync(GetItemsAsync(), stream);
+            }
+
+            // The destination must be flushed once after each event, so that consumers
+            // of buffering streams observe events as soon as they are written.
+            Assert.Equal(
+                new[] { "data: data0\n\n", "data: data0\n\ndata: data1\n\n", "data: data0\n\ndata: data1\n\ndata: data2\n\n" },
+                stream.FlushSnapshots);
+
+            static async IAsyncEnumerable<SseItem<string>> GetItemsAsync()
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    await Task.Yield();
+                    yield return new SseItem<string>($"data{i}");
+                }
+            }
+        }
+
+        private sealed class FlushTrackingStream : MemoryStream
+        {
+            /// <summary>Gets the contents of the stream as observed at the time of every flush.</summary>
+            public List<string> FlushSnapshots { get; } = new();
+
+            public override void Flush() => FlushSnapshots.Add(Encoding.UTF8.GetString(ToArray()));
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Flush();
+                return Task.CompletedTask;
+            }
+        }
+
         [Fact]
         public static async Task WriteAsync_HonorsCancellationToken()
         {

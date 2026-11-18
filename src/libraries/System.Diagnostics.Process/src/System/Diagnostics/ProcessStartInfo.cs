@@ -99,9 +99,9 @@ namespace System.Diagnostics
                 {
                     IDictionary envVars = System.Environment.GetEnvironmentVariables();
 
-                    _environmentVariables = new DictionaryWrapper(new Dictionary<string, string?>(
+                    Dictionary<string, string?> contents = new Dictionary<string, string?>(
                         envVars.Count,
-                        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal));
+                        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
                     // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
                     IDictionaryEnumerator e = envVars.GetEnumerator();
@@ -109,8 +109,13 @@ namespace System.Diagnostics
                     while (e.MoveNext())
                     {
                         DictionaryEntry entry = e.Entry;
-                        _environmentVariables.Add((string)entry.Key, (string?)entry.Value);
+                        // Values that come from the OS can't contain null characters, so the wrapper's validation is not needed.
+                        // Populating the inner dictionary directly also keeps the wrapper from being marked as mutated.
+                        // The indexer is used because the OS environment can contain keys that differ only by case.
+                        contents[(string)entry.Key] = (string?)entry.Value;
                     }
+
+                    _environmentVariables = new DictionaryWrapper(contents);
                 }
                 return _environmentVariables;
             }
@@ -158,10 +163,14 @@ namespace System.Diagnostics
         /// <see href="https://learn.microsoft.com/windows/win32/procthread/process-creation-flags">CREATE_SUSPENDED</see> flag.
         /// </para>
         /// <para>
+        /// On macOS, the process is started with the <c>POSIX_SPAWN_START_SUSPENDED</c> flag.
+        /// </para>
+        /// <para>
         /// This property cannot be used together with <see cref="UseShellExecute" /> set to <see langword="true" />.
         /// </para>
         /// </remarks>
         [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("macos")]
         public bool StartSuspended { get; set; }
 
         /// <summary>
@@ -254,7 +263,8 @@ namespace System.Diagnostics
         /// Only <see cref="SafeFileHandle"/> and <see cref="SafePipeHandle"/> are supported in this list.
         /// </para>
         /// <para>
-        /// Setting this property on Unix systems that do not have native support for controlling handle inheritance can severely degrade process start performance.
+        /// Setting this property on Unix systems that do not have native support for controlling handle inheritance
+        /// causes <see cref="Process.Start(ProcessStartInfo)"/> to throw <see cref="PlatformNotSupportedException"/>.
         /// </para>
         /// <para>
         /// Handles in this list should not have inheritance enabled beforehand.
@@ -445,14 +455,28 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
             }
+
+            // Per .NET's published security baselines, process arguments are trusted, and callers are responsible
+            // for their contents. The checks below are purely hygienic and should not be misconstrued as a primary
+            // security mitigation.
+            if (Arguments.Contains('\0'))
+            {
+                throw new ArgumentException(SR.Argument_NullCharInArgument, nameof(Arguments));
+            }
+
             if (HasArgumentList)
             {
                 int argumentCount = ArgumentList.Count;
                 for (int i = 0; i < argumentCount; i++)
                 {
-                    if (ArgumentList[i] is null)
+                    string? argument = ArgumentList[i];
+                    if (argument is null)
                     {
                         throw new ArgumentNullException($"ArgumentList[{i}]");
+                    }
+                    else if (argument.Contains('\0'))
+                    {
+                        throw new ArgumentException(SR.Argument_NullCharInArgument, $"ArgumentList[{i}]");
                     }
                 }
             }
@@ -469,10 +493,17 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.StartDetachedNotCompatible);
             }
 
-            if (OperatingSystem.IsWindows() && StartSuspended && UseShellExecute)
+#pragma warning disable CA1416 // StartSuspended getter works on all platforms; the attribute guards the actual effect
+            if (StartSuspended && !OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            if (StartSuspended && UseShellExecute)
             {
                 throw new InvalidOperationException(SR.StartSuspendedNotCompatible);
             }
+#pragma warning restore CA1416
 
             if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))
             {

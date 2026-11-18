@@ -13,10 +13,10 @@ namespace Mono.Linker.Dataflow
 {
     internal static class GenericArgumentDataFlow
     {
-        public static void ProcessGenericArgumentDataFlow(in MessageOrigin origin, MarkStep markStep, LinkContext context, TypeReference type)
+        public static void ProcessGenericArgumentDataFlow(in MessageOrigin origin, MarkStep markStep, LinkContext context, TypeReference type, bool suppressTrimAnalysisWarnings = false)
         {
-            var diagnosticContext = new DiagnosticContext(origin, !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(origin.Provider, out _), context);
-            var reflectionMarker = new ReflectionMarker(context, markStep, enabled: true);
+            var diagnosticContext = new DiagnosticContext(origin, !suppressTrimAnalysisWarnings && !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(origin.Provider, out _), context);
+            var reflectionMarker = new ReflectionMarker(context, markStep, enabled: true, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
             ProcessGenericArgumentDataFlow(in diagnosticContext, reflectionMarker, context, type);
         }
 

@@ -368,6 +368,7 @@ set( JIT_HEADERS
   host.h
   hostallocator.h
   hwintrinsic.h
+  hwintrinsiclist.h
   ICorJitInfo_names_generated.h
   ICorJitInfo_wrapper_generated.hpp
   inline.h
@@ -432,6 +433,7 @@ set( JIT_HEADERS
   varset.h
   vartype.h
   vartypesdef.h
+  wellknownargs.h
 )
 
 # Arch specific headers
@@ -691,11 +693,9 @@ function(add_jit jitName)
         link_natvis_sources_for_target(${jitName} PRIVATE clrjit.natvis)
     endif()
 
-    target_compile_definitions(${jitName} PRIVATE JIT_STANDALONE_BUILD)
-
     # add the install targets
     if (${jitName} MATCHES "clrjit_universal_wasm")
-        # TODO-WASM: add the WASM Jit to alljits once that becomes necessary.
+        install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT alljits)
         install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT wasmjit)
     else()
         install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT alljits)
@@ -716,11 +716,12 @@ else()
 endif()
 
 create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME})
-install_clr(TARGETS clrjit DESTINATIONS . sharedFramework COMPONENT jit)
+install_clr(TARGETS clrjit DESTINATIONS . COMPONENT jit)
 
 if (NOT CLR_CROSS_COMPONENTS_BUILD)
     # Install the clrjit into the sharedframework dir only when we're not doing a cross-components build.
     # We never want to ship the cross-component JIT (it would never be used).
+    install_clr(TARGETS clrjit DESTINATIONS sharedFramework COMPONENT jit)
     install_clr(TARGETS clrjit DESTINATIONS sharedFramework COMPONENT alljits)
 endif()
 
@@ -754,10 +755,6 @@ else()
   create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86)
 endif (CLR_CMAKE_TARGET_ARCH_RISCV64)
 
-if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
-  create_standalone_jit(TARGET clrjit_unix_x86_${ARCH_HOST_NAME} OS unix ARCH x86)
-endif (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
-
 if (CLR_CMAKE_TARGET_UNIX)
     if (NOT ARCH_TARGET_NAME STREQUAL s390x AND NOT ARCH_TARGET_NAME STREQUAL armv6 AND NOT ARCH_TARGET_NAME STREQUAL ppc64le AND NOT ARCH_TARGET_NAME STREQUAL riscv64 AND NOT ARCH_TARGET_NAME STREQUAL wasm)
       if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
@@ -765,6 +762,17 @@ if (CLR_CMAKE_TARGET_UNIX)
       else()
         install_clr(TARGETS clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
       endif()
+    endif()
+endif()
+
+# crossgen2 and ILC load the target-specific JIT (e.g. clrjit_win_x64_x64) rather than clrjit,
+# so it has to be part of the jit component for a build that only requests that component to be
+# able to run them. This mirrors what the block above already does for Unix targets.
+if (CLR_CMAKE_TARGET_WIN32)
+    if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
+      install_clr(TARGETS clrjit_universal_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
+    else()
+      install_clr(TARGETS clrjit_win_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
     endif()
 endif()
 

@@ -22,7 +22,9 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     --runtime-path|-r)
-      RUNTIME_PATH=$2
+      # Exported so that tests which need to launch a portable application of their own can find the
+      # same host the test run itself was handed. RunnerTemplate.cmd's "set" already does this.
+      export RUNTIME_PATH=$2
       shift
       ;;
     --rsp-file)

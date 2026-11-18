@@ -54,11 +54,4 @@ inline PTR_LoaderHeap AppDomain::GetLowFrequencyHeap()
     return GetLoaderAllocator()->GetLowFrequencyHeap();
 }
 
-inline PTR_LoaderHeap AppDomain::GetStubHeap()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetLoaderAllocator()->GetStubHeap();
-}
-
 #endif  // _APPDOMAIN_I
-

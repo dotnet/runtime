@@ -757,7 +757,7 @@
       <_PythonCmd Condition="'$(HostOS)' != 'windows'">python3</_PythonCmd>
       <_PythonCmd Condition="'$(HostOS)' == 'windows'">python</_PythonCmd>
       <!-- Use python from the transport pack on Browser/Wasi -->
-      <_PythonCmd Condition="'$(HostOS)' == 'windows' and ('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true')">$([MSBuild]::NormalizePath('$(PkgMicrosoft_NET_Runtime_Emscripten_5_0_6_Python_win-x64)', 'tools', 'python.exe'))</_PythonCmd>
+      <_PythonCmd Condition="'$(HostOS)' == 'windows' and ('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true')">$([MSBuild]::NormalizePath('$(PkgMicrosoft_NET_Runtime_Emscripten_6_0_2_Python_win-x64)', 'tools', 'python.exe'))</_PythonCmd>
     </PropertyGroup>
 
     <ItemGroup>

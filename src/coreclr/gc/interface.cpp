@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "gcinternal.h"
+#include "gcbridge.h"
 
 #ifdef SERVER_GC
 namespace SVR
@@ -81,8 +82,8 @@ init_sync_log_stats()
         gc_during_log = 0;
         gc_lock_contended = 0;
 
-        log_start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
-        log_start_hires = GCToOSInterface::QueryPerformanceCounter();
+        log_start_tick = minipal_lowres_ticks();
+        log_start_hires = minipal_hires_ticks();
     }
     gc_count_during_log++;
 #endif //SYNCHRONIZATION_STATS
@@ -112,76 +113,6 @@ void GCHeap::ValidateObjectMember (Object* obj)
 #endif // VERIFY_HEAP
 }
 
-HRESULT GCHeap::StaticShutdown()
-{
-    deleteGCShadow();
-
-    GCScan::GcRuntimeStructuresValid (FALSE);
-
-    // Cannot assert this, since we use SuspendEE as the mechanism to quiesce all
-    // threads except the one performing the shutdown.
-    // ASSERT( !GcInProgress );
-
-    // Guard against any more GC occurring and against any threads blocking
-    // for GC to complete when the GC heap is gone.  This fixes a race condition
-    // where a thread in GC is destroyed as part of process destruction and
-    // the remaining threads block for GC complete.
-
-    //GCTODO
-    //EnterAllocLock();
-    //Enter();
-    //EnterFinalizeLock();
-    //SetGCDone();
-
-    // during shutdown lot of threads are suspended
-    // on this even, we don't want to wake them up just yet
-    //CloseHandle (WaitForGCEvent);
-
-    //find out if the global card table hasn't been used yet
-    uint32_t* ct = &g_gc_card_table[card_word (gcard_of (g_gc_lowest_address))];
-    if (card_table_refcount (ct) == 0)
-    {
-        destroy_card_table (ct);
-        g_gc_card_table = nullptr;
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        g_gc_card_bundle_table = nullptr;
-#endif
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        SoftwareWriteWatch::StaticClose();
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    }
-
-#ifndef USE_REGIONS
-    //destroy all segments on the standby list
-    while(gc_heap::segment_standby_list != 0)
-    {
-        heap_segment* next_seg = heap_segment_next (gc_heap::segment_standby_list);
-#ifdef MULTIPLE_HEAPS
-        (gc_heap::g_heaps[0])->delete_heap_segment (gc_heap::segment_standby_list, FALSE);
-#else //MULTIPLE_HEAPS
-        pGenGCHeap->delete_heap_segment (gc_heap::segment_standby_list, FALSE);
-#endif //MULTIPLE_HEAPS
-        gc_heap::segment_standby_list = next_seg;
-    }
-#endif // USE_REGIONS
-
-#ifdef MULTIPLE_HEAPS
-
-    for (int i = 0; i < gc_heap::n_heaps; i ++)
-    {
-        //destroy pure GC stuff
-        gc_heap::destroy_gc_heap (gc_heap::g_heaps[i]);
-    }
-#else
-    gc_heap::destroy_gc_heap (pGenGCHeap);
-
-#endif //MULTIPLE_HEAPS
-    gc_heap::shutdown_gc();
-
-    return S_OK;
-}
-
 // init the instance heap
 HRESULT GCHeap::Init(size_t hn)
 {
@@ -204,11 +135,11 @@ HRESULT GCHeap::Init(size_t hn)
 HRESULT GCHeap::Initialize()
 {
 #ifndef TRACE_GC
-    STRESS_LOG_VA (1, (ThreadStressLog::gcLoggingIsOffMsg()));
+    STRESS_LOG0 (LF_GC, LL_ALWAYS, "TraceGC is not turned on");
 #endif
     HRESULT hr = S_OK;
 
-    qpf = (uint64_t)GCToOSInterface::QueryPerformanceFrequency();
+    qpf = (uint64_t)minipal_hires_tick_frequency();
     qpf_ms = 1000.0 / (double)qpf;
     qpf_us = 1000.0 * 1000.0 / (double)qpf;
 
@@ -667,10 +598,15 @@ HRESULT GCHeap::Initialize()
 #endif //USE_REGIONS
     if (hr == S_OK)
     {
+#ifdef BACKGROUND_GC
+        bool concurrent_p = gc_heap::gc_can_use_concurrent;
+#else //BACKGROUND_GC
+        bool concurrent_p = false;
+#endif //BACKGROUND_GC
 #ifdef MULTIPLE_HEAPS
-        dprintf (6666, ("conserve mem %d, concurent %d, max heap %d", gc_heap::conserve_mem_setting, gc_heap::gc_can_use_concurrent, gc_heap::n_heaps));
+        dprintf (6666, ("conserve mem %d, concurent %d, max heap %d", gc_heap::conserve_mem_setting, concurrent_p, gc_heap::n_heaps));
 #else
-        dprintf (6666, ("conserve mem %d, concurent %d, WKS", gc_heap::conserve_mem_setting, gc_heap::gc_can_use_concurrent));
+        dprintf (6666, ("conserve mem %d, concurent %d, WKS", gc_heap::conserve_mem_setting, concurrent_p));
 #endif
 
 #ifdef DYNAMIC_HEAP_COUNT
@@ -734,7 +670,7 @@ HRESULT GCHeap::Initialize()
 
             if (gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min > gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max)
             {
-                log_init_error_to_host ("DATAS min permil for gen0 growth %d is greater than max %d, it needs to be lower",
+                log_init_error_to_host ("DATAS min permil for gen0 growth %.3f is greater than max %.3f, it needs to be lower",
                     gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min, gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max);
                 return E_FAIL;
             }
@@ -743,7 +679,7 @@ HRESULT GCHeap::Initialize()
             GCConfig::SetGCDGen0GrowthPercent ((int)(gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_percent * 100.0f));
             GCConfig::SetGCDGen0GrowthMinFactor ((int)(gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min * 1000.0f));
             GCConfig::SetGCDGen0GrowthMaxFactor ((int)(gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max * 1000.0f));
-            dprintf (6666, ("DATAS gen0 growth multiplier will be adjusted by %d%%, cap %.3f-%.3f, min budget %Id, max %Id",
+            dprintf (6666, ("DATAS gen0 growth multiplier will be adjusted by %d%%, cap %.3f-%.3f, min budget %zd, max %zd",
                 (int)GCConfig::GetGCDGen0GrowthPercent(),
                 gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min, gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max,
                 gc_heap::dynamic_heap_count_data.min_gen0_new_allocation, gc_heap::dynamic_heap_count_data.max_gen0_new_allocation));
@@ -755,7 +691,7 @@ HRESULT GCHeap::Initialize()
 
         GCToEEInterface::DiagUpdateGenerationBounds();
 
-#if defined(STRESS_REGIONS) && defined(FEATURE_BASICFREEZE)
+#ifdef STRESS_REGIONS
 #ifdef MULTIPLE_HEAPS
         gc_heap* hp = gc_heap::g_heaps[0];
 #else
@@ -790,7 +726,7 @@ HRESULT GCHeap::Initialize()
                 break;
             }
         }
-#endif //STRESS_REGIONS && FEATURE_BASICFREEZE
+#endif //STRESS_REGIONS
     }
 
     return hr;
@@ -894,7 +830,6 @@ void GCHeap::SetYieldProcessorScalingFactor (float scalingFactor)
 unsigned int GCHeap::WhichGeneration (Object* object)
 {
     uint8_t* o = (uint8_t*)object;
-#ifdef FEATURE_BASICFREEZE
     if (!((o < g_gc_highest_address) && (o >= g_gc_lowest_address)))
     {
         return INT32_MAX;
@@ -907,7 +842,6 @@ unsigned int GCHeap::WhichGeneration (Object* object)
         return INT32_MAX;
     }
 #endif
-#endif //FEATURE_BASICFREEZE
     gc_heap* hp = gc_heap::heap_of (o);
     unsigned int g = hp->object_gennum (o);
     dprintf (3, ("%zx is in gen %d", (size_t)object, g));
@@ -997,7 +931,7 @@ unsigned int GCHeap::GetGenerationWithRange (Object* object, uint8_t** ppStart, 
 bool GCHeap::IsEphemeral (Object* object)
 {
     uint8_t* o = (uint8_t*)object;
-#if defined(FEATURE_BASICFREEZE) && defined(USE_REGIONS)
+#ifdef USE_REGIONS
     if (!is_in_heap_range (o))
     {
         // Objects in frozen segments are not ephemeral
@@ -1016,12 +950,6 @@ Object * GCHeap::NextObj (Object * object)
 #ifdef VERIFY_HEAP
     uint8_t* o = (uint8_t*)object;
 
-#ifndef FEATURE_BASICFREEZE
-    if (!((o < g_gc_highest_address) && (o >= g_gc_lowest_address)))
-    {
-        return NULL;
-    }
-#endif //!FEATURE_BASICFREEZE
 
     heap_segment * hs = gc_heap::find_segment (o, FALSE);
     if (!hs)
@@ -1082,10 +1010,6 @@ Object * GCHeap::NextObj (Object * object)
 bool GCHeap::IsHeapPointer (void* vpObject, bool small_heap_only)
 {
     uint8_t* object = (uint8_t*) vpObject;
-#ifndef FEATURE_BASICFREEZE
-    if (!((object < g_gc_highest_address) && (object >= g_gc_lowest_address)))
-        return FALSE;
-#endif //!FEATURE_BASICFREEZE
 
     heap_segment * hs = gc_heap::find_segment (object, small_heap_only);
     return !!hs;
@@ -2035,7 +1959,7 @@ uint64_t GCHeap::GetTotalAllocatedBytes()
 {
 #ifdef MULTIPLE_HEAPS
     uint64_t total_alloc_bytes = 0;
-    for (int i = 0; i < gc_heap::n_heaps; i++)
+    for (int i = 0; i < gc_heap::n_max_heaps; i++)
     {
         gc_heap* hp = gc_heap::g_heaps[i];
         total_alloc_bytes += hp->total_alloc_bytes_soh;
@@ -2085,7 +2009,6 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
     generation* gen = pGenGCHeap->generation_of (0);
     size_t gen0_frag = generation_free_list_space (gen) + generation_free_obj_space (gen);
     uint8_t* current_alloc_allocated = pGenGCHeap->alloc_allocated;
-    heap_segment* current_eph_seg = pGenGCHeap->ephemeral_heap_segment;
     size_t gen0_size = 0;
 #ifdef USE_REGIONS
     heap_segment* gen0_seg = generation_start_segment (gen);
@@ -2095,19 +2018,15 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
                        current_alloc_allocated : heap_segment_allocated (gen0_seg);
         gen0_size += end - heap_segment_mem (gen0_seg);
 
-        if (gen0_seg == current_eph_seg)
-        {
-            break;
-        }
-
         gen0_seg = heap_segment_next (gen0_seg);
     }
 #else //USE_REGIONS
-    // For segments ephemeral seg does not change.
-    gen0_size = current_alloc_allocated - heap_segment_mem (current_eph_seg);
+    gen0_size = current_alloc_allocated - generation_allocation_start (gen);
 #endif //USE_REGIONS
 
-    totsize = gen0_size - gen0_frag;
+    // Defense-in-depth clamp: gen0 frag counters are updated by the allocator under a different lock.
+    // This read can observe a transiently inconsistent snapshot; avoid underflow.
+    totsize = (gen0_size > gen0_frag) ? (gen0_size - gen0_frag) : 0;
 
     int stop_gen_index = max_generation;
 
@@ -2749,6 +2668,17 @@ void GCHeap::NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHan
     Ref_NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
 #else
     assert(false);
+#endif
+}
+
+uintptr_t* GCHeap::GetPendingBridgeHandles(size_t* count)
+{
+#ifdef FEATURE_JAVAMARSHAL
+    return ::GetPendingBridgeHandles(count);
+#else
+    assert(false);
+    *count = 0;
+    return nullptr;
 #endif
 }
 

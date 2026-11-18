@@ -81,7 +81,16 @@ namespace System.Security.Cryptography.Xml
             doc.PreserveWhitespace = true;
             XmlResolver resolver = ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver();
             XmlReader xmlReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI!);
-            doc.Load(xmlReader);
+            long maxDepth = LocalAppContextSwitches.CryptoXmlMaxInputDocumentDepth;
+            if (maxDepth > 0)
+            {
+                Utils.LoadXmlDocumentWithMaxDepthCheck(doc, xmlReader, maxDepth);
+            }
+            else
+            {
+                doc.Load(xmlReader);
+            }
+
             _containingDocument = doc;
             if (_containingDocument == null)
                 throw new CryptographicException(SR.Cryptography_Xml_EnvelopedSignatureRequiresContext);
@@ -185,6 +194,13 @@ namespace System.Security.Cryptography.Xml
             {
                 throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
             }
+        }
+
+        internal override void ClearState()
+        {
+            _containingDocument = null;
+            _inputNodeList = null;
+            _nsm = null;
         }
     }
 }

@@ -14,6 +14,7 @@ using Internal.TypeSystem;
 using Internal.IL;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
 
@@ -76,6 +77,8 @@ namespace ILLink.Shared.TrimAnalysis
                                     }
                                     else if (TryGetMakeGenericInstantiation(_callingMethod, argumentValues[0], out Instantiation inst, out bool isExact))
                                     {
+                                        AddDependenciesFromConstraintUse(_reflectionMarker, typeInstantiated.Instantiation);
+
                                         if (inst.Length == typeInstantiated.Instantiation.Length)
                                         {
                                             typeInstantiated = ((MetadataType)typeInstantiated).MakeInstantiatedType(inst);
@@ -108,6 +111,7 @@ namespace ILLink.Shared.TrimAnalysis
                                         // constrained to be a reference type.
                                         // MarkType will try to come up with a reference type type loader template.
                                         _reflectionMarker.MarkType(_diagnosticContext.Origin, typeInstantiated, "MakeGenericType");
+                                        AddDependenciesFromConstraintUse(_reflectionMarker, typeInstantiated.Instantiation);
                                     }
                                 }
                                 else if (value == NullValue.Instance)
@@ -149,6 +153,8 @@ namespace ILLink.Shared.TrimAnalysis
                                     else if (!methodInstantiated.OwningType.IsGenericDefinition
                                         && TryGetMakeGenericInstantiation(_callingMethod, argumentValues[0], out Instantiation inst, out bool isExact))
                                     {
+                                        AddDependenciesFromConstraintUse(_reflectionMarker, methodInstantiated.Instantiation);
+
                                         if (inst.Length == methodInstantiated.Instantiation.Length)
                                         {
                                             methodInstantiated = methodInstantiated.MakeInstantiatedMethod(inst);
@@ -167,6 +173,7 @@ namespace ILLink.Shared.TrimAnalysis
                                     else if (methodInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
                                     {
                                         // This will always succeed thanks to the runtime type loader
+                                        AddDependenciesFromConstraintUse(_reflectionMarker, methodInstantiated.Instantiation);
                                     }
                                     else
                                     {
@@ -556,6 +563,23 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
+        private static void AddDependenciesFromConstraintUse(ReflectionMarker marker, Instantiation inst)
+        {
+#if !ILTRIM
+            // Operations like MakeGeneric make use of constraints on the generic type parameter. Make sure
+            // the compiler considers all of the interfaces in constraints used.
+            // We only need to do this with interface constraints since base types are not removed (class constraints are safe).
+            foreach (GenericParameterDesc p in inst)
+            {
+                foreach (TypeDesc constraint in p.TypeConstraints)
+                {
+                    if (constraint.IsInterface)
+                        marker.Dependencies.Add(marker.Factory.ReflectedType(constraint.GetTypeDefinition()), "MakeGeneric used with a constrained type");
+                }
+            }
+#endif
+        }
+
         private static bool TryGetMakeGenericInstantiation(
             MethodDesc contextMethod,
             in MultiValue genericParametersArray,
@@ -795,13 +819,26 @@ namespace ILLink.Shared.TrimAnalysis
 
             public MakeGenericMethodSite(MethodDesc method) => _method = method;
 
-            public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation)
+            public void AddDependencies(
+                DependencySink sink,
+                NodeFactory factory,
+                Instantiation typeInstantiation,
+                Instantiation methodInstantiation,
+                bool isConcreteInstantiation,
+                DependencyNodeCore<NodeFactory>? otherReasonNode)
             {
-                var list = new DependencyList();
                 MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
                 if (instantiatedMethod.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
-                    RootingHelpers.TryGetDependenciesForReflectedMethod(ref list, factory, instantiatedMethod, "MakeGenericMethod");
-                return list;
+                {
+                    if (otherReasonNode is null)
+                    {
+                        RootingHelpers.TryAddDependenciesForReflectedMethod(sink, factory, instantiatedMethod, "MakeGenericMethod");
+                    }
+                    else
+                    {
+                        RootingHelpers.TryAddDependenciesForReflectedMethod(sink, factory, instantiatedMethod, "MakeGenericMethod", otherReasonNode);
+                    }
+                }
             }
         }
 
@@ -811,17 +848,30 @@ namespace ILLink.Shared.TrimAnalysis
 
             public MakeGenericTypeSite(TypeDesc type) => _type = type;
 
-            public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation)
+            public void AddDependencies(
+                DependencySink sink,
+                NodeFactory factory,
+                Instantiation typeInstantiation,
+                Instantiation methodInstantiation,
+                bool isConcreteInstantiation,
+                DependencyNodeCore<NodeFactory>? otherReasonNode)
             {
-                var list = new DependencyList();
                 TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
 
                 // InstantiateSignature could end up with a denormalized shape (Foo<object, __Canon>) so normalize.
                 instantiatedType = instantiatedType.NormalizeInstantiation();
 
                 if (instantiatedType.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
-                    RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, instantiatedType, "MakeGenericType");
-                return list;
+                {
+                    if (otherReasonNode is null)
+                    {
+                        RootingHelpers.TryAddDependenciesForReflectedType(sink, factory, instantiatedType, "MakeGenericType");
+                    }
+                    else
+                    {
+                        RootingHelpers.TryAddDependenciesForReflectedType(sink, factory, instantiatedType, "MakeGenericType", otherReasonNode);
+                    }
+                }
             }
         }
 

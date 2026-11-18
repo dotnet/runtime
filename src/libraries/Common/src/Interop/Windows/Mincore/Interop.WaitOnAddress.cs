@@ -8,9 +8,11 @@ internal static partial class Interop
 {
     internal static partial class Mincore
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Synch, SetLastError = true)]
         internal static unsafe partial BOOL WaitOnAddress(void* Address, void* CompareAddress, nint AddressSize, int dwMilliseconds);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Synch)]
         internal static unsafe partial void WakeByAddressSingle(void* Address);
     }

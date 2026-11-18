@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.RCWCleanupList))]
 internal sealed partial class RCWCleanupList : IData<RCWCleanupList>
 {
-    [Field] public TargetPointer FirstBucket { get; }
+    [Field] public partial TargetPointer FirstBucket { get; }
 }

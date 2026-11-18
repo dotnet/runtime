@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// Initializes a new instance of the <see cref="PhysicalFileProvider"/> class at the given root directory.
         /// </summary>
-        /// <param name="root">The root directory. This should be an absolute path.</param>
+        /// <param name="root">The root directory. This should be an absolute path. The directory isn't required to exist.</param>
         public PhysicalFileProvider(string root)
             : this(root, ExclusionFilters.Sensitive)
         {
@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// Initializes a new instance of the <see cref="PhysicalFileProvider"/> class at the given root directory.
         /// </summary>
-        /// <param name="root">The root directory. This should be an absolute path.</param>
+        /// <param name="root">The root directory. This should be an absolute path. The directory isn't required to exist.</param>
         /// <param name="filters">A bitwise combination of the enumeration values that specifies which files or directories are excluded.</param>
         public PhysicalFileProvider(string root, ExclusionFilters filters)
         {
@@ -337,8 +337,8 @@ namespace Microsoft.Extensions.FileProviders
         ///     <para>Globbing patterns are interpreted by <see cref="Microsoft.Extensions.FileSystemGlobbing.Matcher" />.</para>
         /// </summary>
         /// <param name="filter">
-        /// Filter string used to determine what files or directories to monitor. Example: **/*.cs, *.*,
-        /// subDirectory/**/*.cshtml.
+        /// A filter string used to determine what files or directories to monitor. Examples: <c>**/*.cs</c>, <c>*.*</c>,
+        /// and <c>subDirectory/**/*.cshtml</c>. The files or directories aren't required to exist when this method is called.
         /// </param>
         /// <returns>
         /// An <see cref="IChangeToken" /> that is notified when a file or directory matching <paramref name="filter" /> is added,

@@ -1442,7 +1442,7 @@ namespace System.Text.Json
 
             if (TokenType == JsonTokenType.Null)
             {
-                return text == null;
+                return text is null;
             }
 
             return TextEqualsHelper(text.AsSpan(), isPropertyName: false);
@@ -1661,7 +1661,7 @@ namespace System.Text.Json
                 case JsonTokenType.StartObject:
                     {
                         // null parent should have hit the None case
-                        Debug.Assert(_parent != null);
+                        Debug.Assert(_parent is not null);
                         return _parent.GetRawValueAsString(_idx);
                     }
                 case JsonTokenType.String:
@@ -1704,7 +1704,7 @@ namespace System.Text.Json
 
         private void CheckValidInstance()
         {
-            if (_parent == null)
+            if (_parent is null)
             {
                 throw new InvalidOperationException();
             }

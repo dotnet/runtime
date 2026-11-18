@@ -7,8 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal partial class HijackArgsAMD64 : IData<HijackArgsAMD64>
 {
     [FieldAddress]
-    public TargetPointer CalleeSavedRegisters { get; }
+    public partial TargetPointer CalleeSavedRegisters { get; }
 
     // On Windows, Rsp is present
-    [Field] public TargetPointer? Rsp { get; }
+    [Field] public partial TargetPointer? Rsp { get; }
 }

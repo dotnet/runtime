@@ -9,6 +9,24 @@ namespace System
 {
     public static partial class AppContext
     {
+        // Keep in sync with IsKnownHostProperty in src/coreclr/dlls/mscoree/exports.cpp.
+        private static bool IsKnownHostProperty(string name)
+            => name is "TRUSTED_PLATFORM_ASSEMBLIES"
+                    or "NATIVE_DLL_SEARCH_DIRECTORIES"
+                    or "PLATFORM_RESOURCE_ROOTS"
+                    or "APP_PATHS";
+
+        private static bool TryGetHostPropertyValue(string name, out string? value)
+        {
+            value = null;
+            return TryGetHostPropertyValue(name, new StringHandleOnStack(ref value));
+        }
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppContext_TryGetHostPropertyValue", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool TryGetHostPropertyValue(string name, StringHandleOnStack retValue);
+
         [UnmanagedCallersOnly]
         private static unsafe void OnProcessExit(Exception* pException)
         {
@@ -40,15 +58,15 @@ namespace System
         {
             try
             {
-                OnFirstChanceException(*pException, AppDomain.CurrentDomain);
+                OnFirstChanceException(*pException);
             }
-            catch (Exception ex)
+            catch
             {
-                *pOutException = ex;
+                // The VM does not expect exceptions to propagate out of this callback
             }
         }
 
-        internal static void SetFirstChanceExceptionHandler()
+        static partial void SetFirstChanceExceptionHandler()
             => SetFirstChanceExceptionHandlerInternal();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppContext_SetFirstChanceExceptionHandler")]

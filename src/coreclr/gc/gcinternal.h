@@ -12,7 +12,7 @@
 #include "gcdesc.h"
 #include "softwarewritewatch.h"
 #include "handletable.h"
-#include "handletable.inl"
+#include "gchandletableimpl.h"
 #include "gcenv.inl"
 #include "gceventstatus.h"
 #include <minipal/memorybarrierprocesswide.h>
@@ -226,7 +226,8 @@ enum gc_join_stage
     gc_join_disable_software_write_watch = 38,
     gc_join_merge_temp_fl = 39,
     gc_join_bridge_processing = 40,
-    gc_join_max = 41
+    gc_join_bgc_retire_alloc_contexts = 41,
+    gc_join_max = 42
 };
 
 enum gc_join_flavor
@@ -291,7 +292,7 @@ class t_join
     // remember join id and last thread to arrive so restart can use these
     int thd;
     // we want to print statistics every 10 seconds - this is to remember the start of the 10 sec interval
-    uint64_t start_tick;
+    int64_t start_tick;
     // counters for joins, in 1000's of clock cycles
     uint64_t elapsed_total[gc_join_max], wake_total[gc_join_max], seq_loss_total[gc_join_max], par_loss_total[gc_join_max], in_join_total[gc_join_max];
 #endif //JOIN_STATS
@@ -314,7 +315,7 @@ public:
                 // for an OS event on a managed thread.
                 // But we are not sure if this plays well in the hosting
                 // environment.
-                //join_struct.joined_event[i].CreateOSManualEventNoThrow(FALSE);
+                //join_struct.joined_event[i].CreateManualEventNoThrow(FALSE);
                 if (!join_struct.joined_event[i].CreateManualEventNoThrow(FALSE))
                     return FALSE;
             }
@@ -325,7 +326,7 @@ public:
         flavor = f;
 
 #ifdef JOIN_STATS
-        start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
+        start_tick = minipal_lowres_ticks();
 #endif //JOIN_STATS
 
         return TRUE;
@@ -405,7 +406,7 @@ respin:
 
                     if (dwJoinWait != WAIT_OBJECT_0)
                     {
-                        STRESS_LOG1 (LF_GC, LL_FATALERROR, "joined event wait failed with code: %zx", dwJoinWait);
+                        STRESS_LOG1 (LF_GC, LL_FATALERROR, "joined event wait failed with code: %x", dwJoinWait);
                         FATAL_GC_ERROR ();
                     }
                 }
@@ -414,7 +415,7 @@ respin:
                 if (color == join_struct.lock_color.LoadWithoutBarrier())
                 {
                     dprintf (9999, ("---h%d %d j%d %d - respin!!! (c:%d-%d)",
-                        gch->heap_number, join_id, join_struct.n_threads, color, join_struct.lock_color.LoadWithoutBarrier()));
+                        gch->heap_number, flavor, join_id, join_struct.n_threads, color, join_struct.lock_color.LoadWithoutBarrier()));
                     goto respin;
                 }
 
@@ -485,7 +486,7 @@ respin:
                 uint32_t dwJoinWait = join_struct.joined_event[first_thread_arrived].Wait(INFINITE, FALSE);
                 if (dwJoinWait != WAIT_OBJECT_0)
                 {
-                    STRESS_LOG1 (LF_GC, LL_FATALERROR, "joined event wait failed with code: %zx", dwJoinWait);
+                    STRESS_LOG1 (LF_GC, LL_FATALERROR, "joined event wait failed with code: %x", dwJoinWait);
                     FATAL_GC_ERROR ();
                 }
             }
@@ -512,7 +513,7 @@ respin:
 #ifdef JOIN_STATS
     uint64_t get_ts()
     {
-        return GCToOSInterface::QueryPerformanceCounter();
+        return minipal_hires_ticks();
     }
 
     void start_ts (gc_heap* gch)
@@ -559,7 +560,7 @@ respin:
         par_loss_total[id] += par_loss;
 
         // every 10 seconds, print a summary of the time spent in each type of join
-        if (GCToOSInterface::GetLowPrecisionTimeStamp() - start_tick > 10*1000)
+        if (minipal_lowres_ticks() - start_tick > 10*1000)
         {
             printf("**** summary *****\n");
             for (int i = 0; i < 16; i++)
@@ -573,7 +574,7 @@ respin:
                    ts_scale*in_join_total[i]);
                 elapsed_total[i] = wake_total[i] = seq_loss_total[i] = par_loss_total[i] = in_join_total[i] = 0;
             }
-            start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
+            start_tick = minipal_lowres_ticks();
         }
 #endif //JOIN_STATS
 
@@ -835,7 +836,6 @@ retry:
 };
 #endif //BACKGROUND_GC
 
-#ifdef FEATURE_BASICFREEZE
 // The array we allocate is organized as follows:
 // 0th element is the address of the last array we allocated.
 // starting from the 1st element are the segment addresses, that's
@@ -866,7 +866,6 @@ public:
     void    enqueue_old_slot(bk* sl);
     BOOL    ensure_space_for_insert();
 };
-#endif //FEATURE_BASICFREEZE
 
 #ifdef FEATURE_STRUCTALIGN
 BOOL IsStructAligned (uint8_t *ptr, int requiredAlignment);
@@ -964,11 +963,7 @@ public:
 #endif
         if (fSmallObjectHeapPtr)
         {
-#ifdef FEATURE_BASICFREEZE
             _ASSERTE(!g_theGCHeap->IsLargeObject(this) || g_theGCHeap->IsInFrozenSegment(this));
-#else
-            _ASSERTE(!g_theGCHeap->IsLargeObject(this));
-#endif
         }
     }
 
@@ -1118,7 +1113,7 @@ public:
 #endif //DOUBLY_LINKED_FL
     }
 
-    void UnsetFree()
+    void UnsetFree(size_t object_size)
     {
         size_t size = free_object_base_size - plug_skew;
 
@@ -1126,6 +1121,15 @@ public:
         PTR_PTR m = (PTR_PTR) this;
         for (size_t i = 0; i < size / sizeof(PTR_PTR); i++)
             *(m++) = 0;
+
+#ifdef DOUBLY_LINKED_FL
+        if (object_size >= min_free_list)
+        {
+            free_list_prev (this) = 0;
+        }
+#else
+        UNREFERENCED_PARAMETER(object_size);
+#endif //DOUBLY_LINKED_FL
     }
 
     BOOL IsFree () const
@@ -1282,6 +1286,14 @@ public:
         return (int) elapsed_cycles;
     }
 
+    // Mapping processors to heaps requires both the ability to query the current processor
+    // and to affinitize GC threads to the processors of their heaps. A platform that can do the former
+    // but not the latter (e.g. macOS) would get a meaningless processor-to-heap table.
+    static bool use_proc_no_for_heap_select()
+    {
+        return GCToOSInterface::CanGetCurrentProcessorNumber() && GCToOSInterface::CanSetThreadAffinity();
+    }
+
 public:
     static BOOL init(int n_heaps)
     {
@@ -1296,7 +1308,7 @@ public:
 
         memset(proc_no_to_heap_no, 0, maxCpuCount*sizeof(uint16_t));
 
-        if (!GCToOSInterface::CanGetCurrentProcessorNumber())
+        if (!use_proc_no_for_heap_select())
         {
             n_sniff_buffers = n_heaps*2+1;
             size_t n_cache_lines = 1 + n_heaps * n_sniff_buffers + 1;
@@ -1358,7 +1370,7 @@ public:
 
     static void init_cpu_mapping(int heap_number)
     {
-        if (GCToOSInterface::CanGetCurrentProcessorNumber())
+        if (use_proc_no_for_heap_select())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
             proc_no_to_heap_no[proc_no] = (uint16_t)heap_number;
@@ -1367,7 +1379,7 @@ public:
 
     static void mark_heap(int heap_number)
     {
-        if (GCToOSInterface::CanGetCurrentProcessorNumber())
+        if (use_proc_no_for_heap_select())
             return;
 
         for (unsigned sniff_index = 0; sniff_index < n_sniff_buffers; sniff_index++)
@@ -1380,7 +1392,7 @@ public:
         UNREFERENCED_PARAMETER(acontext); // only referenced by dprintf
 #endif //TRACE_GC
 
-        if (GCToOSInterface::CanGetCurrentProcessorNumber())
+        if (use_proc_no_for_heap_select())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
             int adjusted_heap = proc_no_to_heap_no[proc_no];
@@ -1432,7 +1444,7 @@ public:
 
     static bool can_find_heap_fast()
     {
-        return GCToOSInterface::CanGetCurrentProcessorNumber();
+        return use_proc_no_for_heap_select();
     }
 
     static uint16_t find_proc_no_from_heap_no(int heap_number)
@@ -1922,8 +1934,6 @@ extern const size_t low_latency_alloc;
 extern gc_reason gc_trigger_reason;
 extern double qpf_us;
 
-uint64_t RawGetHighPrecisionTimeStamp();
-
 #ifdef WRITE_WATCH
 #ifdef BACKGROUND_GC
 extern const size_t ww_reset_quantum;
@@ -2266,14 +2276,9 @@ static const ptrdiff_t UNINITIALIZED_VALUE  = 0xbaadbaadbaadbaad;
 
 inline bool is_in_heap_range (uint8_t* o)
 {
-#ifdef FEATURE_BASICFREEZE
     assert (((g_gc_lowest_address <= o) && (o < g_gc_highest_address)) ||
         (o == nullptr) || (ro_segment_lookup (o) != nullptr));
     return ((g_gc_lowest_address <= o) && (o < g_gc_highest_address));
-#else //FEATURE_BASICFREEZE
-    assert ((o == nullptr) || (g_gc_lowest_address <= o) && (o < g_gc_highest_address));
-    return (o != nullptr);
-#endif //FEATURE_BASICFREEZE
 }
 
 inline
@@ -2362,8 +2367,8 @@ void gc_heap::set_region_plan_gen_num (heap_segment* region, int plan_gen_num, b
     }
 
     planned_regions_per_gen[plan_gen_num]++;
-    dprintf (REGIONS_LOG, ("h%d g%d %zx(%zx) -> g%d (total %d region planned in g%d)",
-        heap_number, heap_segment_gen_num (region), (size_t)region, heap_segment_mem (region), plan_gen_num, planned_regions_per_gen[plan_gen_num], plan_gen_num));
+    dprintf (REGIONS_LOG, ("h%d g%d %p(%p) -> g%d (total %d region planned in g%d)",
+        heap_number, heap_segment_gen_num (region), region, heap_segment_mem (region), plan_gen_num, planned_regions_per_gen[plan_gen_num], plan_gen_num));
 
     heap_segment_plan_gen_num (region) = plan_gen_num;
 
@@ -2759,7 +2764,6 @@ void gc_heap::mark_array_clear_marked (uint8_t* add)
     mark_array [mark_word_of (add)] &= ~(1 << mark_bit_bit_of (add));
 }
 
-#ifdef FEATURE_BASICFREEZE
 inline
 void gc_heap::seg_clear_mark_array_bits_soh (heap_segment* seg)
 {
@@ -2770,7 +2774,6 @@ void gc_heap::seg_clear_mark_array_bits_soh (heap_segment* seg)
         clear_mark_array (range_beg, align_on_mark_word (range_end));
     }
 }
-#endif //FEATURE_BASICFREEZE
 #endif //BACKGROUND_GC
 
 inline
@@ -2921,7 +2924,7 @@ gc_heap::dt_high_memory_load_p()
     return ((settings.entry_memory_load >= high_memory_load_th) || g_low_memory_status);
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 #ifndef PREFETCH
 #define PREFETCH
 #endif
@@ -3049,7 +3052,7 @@ size_t gc_heap::generation_unusable_fragmentation (generation* inst, int hn)
             unusable_frag = fo_space + (condemned_allocated * generation_free_list_space (inst) / total_plan_allocated);
         }
 
-        dprintf (3, ("h%d g%d FLa: %Id, ESa: %Id, Ca: %Id | FO: %Id, FL %Id, fl effi %.3f, unusable fl is %Id",
+        dprintf (3, ("h%d g%d FLa: %zu, ESa: %zu, Ca: %zu | FO: %zu, FL %zu, fl effi %.3f, unusable fl is %zu",
             hn, inst->gen_num,
             generation_free_list_allocated (inst), generation_end_seg_allocated (inst), (size_t)condemned_allocated,
             fo_space, generation_free_list_space (inst),
@@ -3308,16 +3311,10 @@ mark* gc_heap::loh_pinned_plug_of (size_t bos)
 #ifdef USE_REGIONS
 inline bool gc_heap::is_in_gc_range (uint8_t* o)
 {
-#ifdef FEATURE_BASICFREEZE
     // we may have frozen objects in read only segments
     // outside of the reserved address range of the gc heap
     assert (((g_gc_lowest_address <= o) && (o < g_gc_highest_address)) ||
         (o == nullptr) || (ro_segment_lookup (o) != nullptr));
-#else //FEATURE_BASICFREEZE
-    // without frozen objects, every non-null pointer must be
-    // within the heap
-    assert ((o == nullptr) || (g_gc_lowest_address <= o) && (o < g_gc_highest_address));
-#endif //FEATURE_BASICFREEZE
     return ((gc_low <= o) && (o < gc_high));
 }
 #endif //USE_REGIONS
@@ -3332,7 +3329,7 @@ void gc_heap::record_mark_time (uint64_t& mark_time,
     {
         current_mark_time = GetHighPrecisionTimeStamp();
         mark_time = limit_time_to_uint32 (current_mark_time - last_mark_time);
-        dprintf (3, ("%zd - %zd = %zd",
+        dprintf (3, ("%" PRIu64 " - %" PRIu64 " = %" PRIu64,
             current_mark_time, last_mark_time, (current_mark_time - last_mark_time)));
         last_mark_time = current_mark_time;
     }
@@ -3813,7 +3810,7 @@ extern uint32_t bgc_alloc_spin;
 
 #define check_msl_status(msg, size) if (msl_status == msl_retry_different_heap) \
     { \
-        dprintf (5555, ("h%d RETRY %s(%Id)", heap_number, msg, size)); \
+        dprintf (5555, ("h%d RETRY %s(%zu)", heap_number, msg, size)); \
         return a_state_retry_allocate; \
     }
 
@@ -4340,9 +4337,7 @@ extern uint64_t qpf;
 extern double qpf_ms;
 extern double qpf_us;
 
-#ifdef FEATURE_BASICFREEZE
 heap_segment* ro_segment_lookup (uint8_t* o);
-#endif //FEATURE_BASICFREEZE
 
 struct imemory_data
 {

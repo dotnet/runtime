@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_jni.h"
+#include "pal_trust_manager.h"
 #include <pthread.h>
 
 JavaVM* gJvm;
@@ -145,7 +146,9 @@ jmethodID g_KeyStoreAliases;
 jmethodID g_KeyStoreContainsAlias;
 jmethodID g_KeyStoreDeleteEntry;
 jmethodID g_KeyStoreGetCertificate;
+jmethodID g_KeyStoreGetCertificateAlias;
 jmethodID g_KeyStoreGetEntry;
+jmethodID g_KeyStoreIsCertificateEntry;
 jmethodID g_KeyStoreLoad;
 jmethodID g_KeyStoreSetCertificateEntry;
 jmethodID g_KeyStoreSetKeyEntry;
@@ -215,11 +218,11 @@ jmethodID g_CollectionCertStoreParametersCtor;
 // java/security/cert/PKIXBuilderParameters
 jclass    g_PKIXBuilderParametersClass;
 jmethodID g_PKIXBuilderParametersCtor;
+jmethodID g_PKIXBuilderParametersCtorFromTrustAnchors;
 jmethodID g_PKIXBuilderParametersAddCertStore;
 jmethodID g_PKIXBuilderParametersAddCertPathChecker;
 jmethodID g_PKIXBuilderParametersSetDate;
 jmethodID g_PKIXBuilderParametersSetRevocationEnabled;
-jmethodID g_PKIXBuilderParametersSetTrustAnchors;
 
 // java/security/cert/PKIXCertPathBuilderResult
 jclass    g_PKIXCertPathBuilderResultClass;
@@ -481,6 +484,16 @@ jmethodID g_KeyAgreementGenerateSecret;
 // javax/net/ssl/TrustManager
 jclass g_TrustManager;
 
+// javax/net/ssl/TrustManagerFactory
+jclass    g_TrustManagerFactory;
+jmethodID g_TrustManagerFactoryGetInstance;
+jmethodID g_TrustManagerFactoryGetDefaultAlgorithm;
+jmethodID g_TrustManagerFactoryInit;
+jmethodID g_TrustManagerFactoryGetTrustManagers;
+
+// javax/net/ssl/X509TrustManager
+jclass g_X509TrustManager;
+
 // net/dot/android/crypto/DotnetProxyTrustManager
 jclass    g_DotnetProxyTrustManager;
 jmethodID g_DotnetProxyTrustManagerCtor;
@@ -675,17 +688,9 @@ JNIEnv* GetJNIEnv(void)
     return env;
 }
 
-int GetEnumAsInt(JNIEnv *env, jobject enumObj)
-{
-    int value = (*env)->CallIntMethod(env, enumObj, g_EnumOrdinal);
-    (*env)->DeleteLocalRef(env, enumObj);
-    return value;
-}
-
 jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
 {
     (void)reserved;
-    LOG_DEBUG("%s in %s", __PRETTY_FUNCTION__, __FILE__);
     gJvm = vm;
 
     JNIEnv* env = GetJNIEnv();
@@ -810,11 +815,11 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
 
     g_PKIXBuilderParametersClass =                  GetClassGRef(env, "java/security/cert/PKIXBuilderParameters");
     g_PKIXBuilderParametersCtor =                   GetMethod(env, false, g_PKIXBuilderParametersClass, "<init>", "(Ljava/security/KeyStore;Ljava/security/cert/CertSelector;)V");
+    g_PKIXBuilderParametersCtorFromTrustAnchors =    GetMethod(env, false, g_PKIXBuilderParametersClass, "<init>", "(Ljava/util/Set;Ljava/security/cert/CertSelector;)V");
     g_PKIXBuilderParametersAddCertStore =           GetMethod(env, false, g_PKIXBuilderParametersClass, "addCertStore", "(Ljava/security/cert/CertStore;)V");
     g_PKIXBuilderParametersAddCertPathChecker =     GetMethod(env, false, g_PKIXBuilderParametersClass, "addCertPathChecker", "(Ljava/security/cert/PKIXCertPathChecker;)V");
     g_PKIXBuilderParametersSetDate =                GetMethod(env, false, g_PKIXBuilderParametersClass, "setDate", "(Ljava/util/Date;)V");
     g_PKIXBuilderParametersSetRevocationEnabled =   GetMethod(env, false, g_PKIXBuilderParametersClass, "setRevocationEnabled", "(Z)V");
-    g_PKIXBuilderParametersSetTrustAnchors =        GetMethod(env, false, g_PKIXBuilderParametersClass, "setTrustAnchors", "(Ljava/util/Set;)V");
 
     g_PKIXCertPathBuilderResultClass =          GetClassGRef(env, "java/security/cert/PKIXCertPathBuilderResult");
     g_PKIXCertPathBuilderResultGetCertPath =    GetMethod(env, false, g_PKIXCertPathBuilderResultClass, "getCertPath", "()Ljava/security/cert/CertPath;");
@@ -868,7 +873,9 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
     g_KeyStoreContainsAlias =       GetMethod(env, false, g_KeyStoreClass, "containsAlias", "(Ljava/lang/String;)Z");
     g_KeyStoreDeleteEntry =         GetMethod(env, false, g_KeyStoreClass, "deleteEntry", "(Ljava/lang/String;)V");
     g_KeyStoreGetCertificate =      GetMethod(env, false, g_KeyStoreClass, "getCertificate", "(Ljava/lang/String;)Ljava/security/cert/Certificate;");
+    g_KeyStoreGetCertificateAlias = GetMethod(env, false, g_KeyStoreClass, "getCertificateAlias", "(Ljava/security/cert/Certificate;)Ljava/lang/String;");
     g_KeyStoreGetEntry =            GetMethod(env, false, g_KeyStoreClass, "getEntry", "(Ljava/lang/String;Ljava/security/KeyStore$ProtectionParameter;)Ljava/security/KeyStore$Entry;");
+    g_KeyStoreIsCertificateEntry =  GetMethod(env, false, g_KeyStoreClass, "isCertificateEntry", "(Ljava/lang/String;)Z");
     g_KeyStoreLoad =                GetMethod(env, false, g_KeyStoreClass, "load", "(Ljava/io/InputStream;[C)V");
     g_KeyStoreSetCertificateEntry = GetMethod(env, false, g_KeyStoreClass, "setCertificateEntry", "(Ljava/lang/String;Ljava/security/cert/Certificate;)V");
     g_KeyStoreSetKeyEntry =         GetMethod(env, false, g_KeyStoreClass, "setKeyEntry", "(Ljava/lang/String;Ljava/security/Key;[C[Ljava/security/cert/Certificate;)V");
@@ -1081,8 +1088,25 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
 
     g_TrustManager = GetClassGRef(env, "javax/net/ssl/TrustManager");
 
+    g_TrustManagerFactory =                   GetClassGRef(env, "javax/net/ssl/TrustManagerFactory");
+    g_TrustManagerFactoryGetInstance =        GetMethod(env, true, g_TrustManagerFactory, "getInstance", "(Ljava/lang/String;)Ljavax/net/ssl/TrustManagerFactory;");
+    g_TrustManagerFactoryGetDefaultAlgorithm = GetMethod(env, true, g_TrustManagerFactory, "getDefaultAlgorithm", "()Ljava/lang/String;");
+    g_TrustManagerFactoryInit =               GetMethod(env, false, g_TrustManagerFactory, "init", "(Ljava/security/KeyStore;)V");
+    g_TrustManagerFactoryGetTrustManagers =   GetMethod(env, false, g_TrustManagerFactory, "getTrustManagers", "()[Ljavax/net/ssl/TrustManager;");
+
+    g_X509TrustManager = GetClassGRef(env, "javax/net/ssl/X509TrustManager");
+
     g_DotnetProxyTrustManager =     GetClassGRef(env, "net/dot/android/crypto/DotnetProxyTrustManager");
-    g_DotnetProxyTrustManagerCtor = GetMethod(env, false, g_DotnetProxyTrustManager, "<init>", "(J)V");
+    g_DotnetProxyTrustManagerCtor = GetMethod(env, false, g_DotnetProxyTrustManager, "<init>", "(JLjavax/net/ssl/X509TrustManager;Ljava/lang/String;)V");
+
+    // Register native methods explicitly so the JVM does not rely on JNI naming
+    // convention symbol lookup. This is required for NativeAOT static linking,
+    // but works for all runtimes and avoids depending on exported symbol names.
+    JNINativeMethod trustManagerMethods[] = {
+        { "verifyRemoteCertificate", "(JLjava/lang/String;Ljava/security/cert/X509Certificate;)Z", (void*)Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate },
+    };
+    jint registerResult = (*env)->RegisterNatives(env, g_DotnetProxyTrustManager, trustManagerMethods, 1);
+    abort_unless(registerResult == JNI_OK, "RegisterNatives for DotnetProxyTrustManager.verifyRemoteCertificate failed (error: %d)", registerResult);
 
     g_DotnetX509KeyManager =     GetClassGRef(env, "net/dot/android/crypto/DotnetX509KeyManager");
     g_DotnetX509KeyManagerCtor = GetMethod(env, false, g_DotnetX509KeyManager, "<init>", "(Ljava/security/KeyStore$PrivateKeyEntry;)V");

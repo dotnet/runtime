@@ -256,6 +256,13 @@ namespace Mono.Linker.Steps
             if (!_context.IsOptimizationEnabled(CodeOptimizations.IPConstantPropagation, method))
                 return null;
 
+            // A library build must not decide feature switch values on behalf of the app. Even a getter
+            // with a constant body can be substituted at application publish time, so don't analyze
+            // feature switch getters when no --feature value was supplied.
+            if (_context.HasLibraryRootAssembly &&
+                _context.Annotations.MemberActions.IsFeatureSwitchWithoutSetting(method))
+                return null;
+
             var analyzer = new ConstantExpressionMethodAnalyzer(this);
             if (analyzer.Analyze(callee, callStack))
                 return new MethodResult(analyzer.Result, analyzer.SideEffectFreeResult);
@@ -1187,7 +1194,25 @@ namespace Mono.Linker.Steps
                 var reachable = new BitArray(FoldedInstructions.Count);
 
                 Stack<int>? condBranches = null;
-                bool exceptionHandlersChecked = !Body.HasExceptionHandlers;
+                BitArray? reachableExceptionHandlers = null;
+                (int Start, int End)[]? exceptionHandlerRanges = null;
+                if (Body.HasExceptionHandlers)
+                {
+                    int handlerCount = ExceptionHandlers.Count;
+                    reachableExceptionHandlers = new BitArray(handlerCount);
+                    exceptionHandlerRanges = new (int Start, int End)[handlerCount];
+
+                    // Fixed-point discovery can scan handlers multiple times, but instruction positions do not change here.
+                    Collection<Instruction> instructions = Instructions;
+                    for (int handlerIndex = 0; handlerIndex < handlerCount; handlerIndex++)
+                    {
+                        ExceptionHandler handler = ExceptionHandlers[handlerIndex];
+                        // Cecil represents the end of the method with a null TryEnd.
+                        int end = handler.TryEnd is null ? reachable.Length - 1 : instructions.IndexOf(handler.TryEnd) - 1;
+                        exceptionHandlerRanges[handlerIndex] = (instructions.IndexOf(handler.TryStart), end);
+                    }
+                }
+
                 Instruction target;
                 int i = 0;
                 while (true)
@@ -1245,23 +1270,23 @@ namespace Mono.Linker.Steps
                         continue;
                     }
 
-                    if (!exceptionHandlersChecked)
+                    if (reachableExceptionHandlers != null)
                     {
-                        exceptionHandlersChecked = true;
+                        Debug.Assert(exceptionHandlerRanges is not null);
 
-                        var instrs = Instructions;
-                        foreach (var handler in ExceptionHandlers)
+                        // Newly reachable handlers can contain protected regions for nested handlers.
+                        for (int handlerIndex = 0; handlerIndex < ExceptionHandlers.Count; handlerIndex++)
                         {
-                            int start = instrs.IndexOf(handler.TryStart);
-                            int end = instrs.IndexOf(handler.TryEnd) - 1;
-
-                            if (!HasAnyBitSet(reachable, start, end))
-                            {
-                                unreachableHandlers ??= new List<ExceptionHandler>();
-
-                                unreachableHandlers.Add(handler);
+                            if (reachableExceptionHandlers[handlerIndex])
                                 continue;
-                            }
+
+                            var handler = ExceptionHandlers[handlerIndex];
+                            (int Start, int End) range = exceptionHandlerRanges[handlerIndex];
+
+                            if (!HasAnyBitSet(reachable, range.Start, range.End))
+                                continue;
+
+                            reachableExceptionHandlers[handlerIndex] = true;
 
                             condBranches ??= new Stack<int>();
 
@@ -1288,6 +1313,15 @@ namespace Mono.Linker.Steps
                         {
                             i = condBranches.Pop();
                             continue;
+                        }
+
+                        for (int handlerIndex = 0; handlerIndex < ExceptionHandlers.Count; handlerIndex++)
+                        {
+                            if (reachableExceptionHandlers[handlerIndex])
+                                continue;
+
+                            unreachableHandlers ??= new List<ExceptionHandler>();
+                            unreachableHandlers.Add(ExceptionHandlers[handlerIndex]);
                         }
                     }
 

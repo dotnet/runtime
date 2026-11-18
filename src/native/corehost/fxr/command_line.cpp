@@ -27,8 +27,7 @@ namespace
         { _X("--runtimeconfig"), _X("<path>"), _X("Path to <application>.runtimeconfig.json file.") },
         { _X("--fx-version"), _X("<version>"), _X("Version of the installed Shared Framework to use to run the application.") },
         { _X("--roll-forward"), _X("<value>"), _X("Roll forward to framework version (LatestPatch, Minor, LatestMinor, Major, LatestMajor, Disable)") },
-        { _X("--additional-deps"), _X("<path>"), _X("Path to additional deps.json file.") },
-        { _X("--roll-forward-on-no-candidate-fx"), _X("<n>"), _X("<obsolete>") }
+        { _X("--additional-deps"), _X("<path>"), _X("Path to additional deps.json file.") }
     };
     static_assert((sizeof(KnownHostOptions) / sizeof(*KnownHostOptions)) == static_cast<size_t>(known_options::__last), "Invalid host option count");
 
@@ -44,7 +43,7 @@ namespace
         std::vector<known_options> known_opts;
         known_opts.reserve(static_cast<int>(known_options::__last));
         known_opts.push_back(known_options::additional_probing_path);
-        if (for_cli_usage || exec_mode || mode == host_mode_t::split_fx || mode == host_mode_t::apphost)
+        if (for_cli_usage || exec_mode || mode == host_mode_t::apphost)
         {
             known_opts.push_back(known_options::deps_file);
             known_opts.push_back(known_options::runtime_config);
@@ -56,12 +55,6 @@ namespace
             known_opts.push_back(known_options::fx_version);
             known_opts.push_back(known_options::roll_forward);
             known_opts.push_back(known_options::additional_deps);
-
-            if (!for_cli_usage)
-            {
-                // Intentionally leave this one out of for_cli_usage since we don't want to show it in command line help (it's deprecated).
-                known_opts.push_back(known_options::roll_forward_on_no_candidate_fx);
-            }
         }
 
         return known_opts;
@@ -229,13 +222,7 @@ int command_line::parse_args_for_mode(
 {
     int argoff = args_include_running_executable ? 1 : 0;
     int result;
-    if (mode == host_mode_t::split_fx)
-    {
-        // Invoked as corehost
-        trace::verbose(_X("--- Executing in split/FX mode..."));
-        result = parse_args(host_info, argoff, argc, argv, false, mode, new_argoff, app_candidate, opts);
-    }
-    else if (mode == host_mode_t::apphost)
+    if (mode == host_mode_t::apphost)
     {
         // Invoked from the application base.
         trace::verbose(_X("--- Executing in a native executable mode..."));

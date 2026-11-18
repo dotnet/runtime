@@ -52,7 +52,10 @@
       </ResolvedFileToPublish>
       <_AggregateExecutableShimSymbolRecursivePath Include="%(_AggregateExecutableReferencePath.ShimSymbol)/**/*"
                                              Condition="'$(_AggregateExecutable)' == 'true' and '$(CopyOutputSymbolsToPublishDirectory)' == 'true' and '$(NativeSymbolExt)' == '.dSYM' and Exists('%(_AggregateExecutableReferencePath.ShimSymbol)')">
-        <RelativePath>%(_AggregateExecutableReferencePath.AssemblyName)$(NativeSymbolExt)/%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <SymbolBundleName>%(_AggregateExecutableReferencePath.AssemblyName)$(NativeSymbolExt)</SymbolBundleName>
+      </_AggregateExecutableShimSymbolRecursivePath>
+      <_AggregateExecutableShimSymbolRecursivePath Update="@(_AggregateExecutableShimSymbolRecursivePath)">
+        <RelativePath>%(_AggregateExecutableShimSymbolRecursivePath.SymbolBundleName)/%(_AggregateExecutableShimSymbolRecursivePath.RecursiveDir)%(_AggregateExecutableShimSymbolRecursivePath.Filename)%(_AggregateExecutableShimSymbolRecursivePath.Extension)</RelativePath>
       </_AggregateExecutableShimSymbolRecursivePath>
       <ResolvedFileToPublish Include="@(_AggregateExecutableShimSymbolRecursivePath)"
                              Condition="'$(_AggregateExecutable)' == 'true' and '$(CopyOutputSymbolsToPublishDirectory)' == 'true'">

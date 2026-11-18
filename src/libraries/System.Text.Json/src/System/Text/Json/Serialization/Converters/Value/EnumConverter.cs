@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization.Converters
                 _nameCacheForReading.TryAdd(fieldInfo.JsonName, fieldInfo.Key);
             }
 
-            if (namingPolicy != null)
+            if (namingPolicy is not null)
             {
                 // Additionally populate the field index with the default names of fields that used a naming policy.
                 // This is done to preserve backward compat: default names should still be recognized by the parser.
@@ -204,7 +204,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (IsDefinedValueOrCombinationOfValues(key))
             {
-                Debug.Assert(s_isFlagsEnum || dictionaryKeyPolicy != null, "Should only be entered by flags enums or dictionary key policy.");
+                Debug.Assert(s_isFlagsEnum || dictionaryKeyPolicy is not null, "Should only be entered by flags enums or dictionary key policy.");
                 string stringValue = FormatEnumAsString(key, value, dictionaryKeyPolicy);
                 if (dictionaryKeyPolicy is null && _nameCacheForWriting.Count < NameCacheSizeSoftLimit)
                 {
@@ -285,7 +285,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
         End:
-            if (rentedBuffer != null)
+            if (rentedBuffer is not null)
             {
                 charBuffer.Clear();
                 ArrayPool<char>.Shared.Return(rentedBuffer);
@@ -434,7 +434,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                Debug.Assert(dictionaryKeyPolicy != null);
+                Debug.Assert(dictionaryKeyPolicy is not null);
 
                 foreach (EnumFieldInfo enumField in _enumFieldInfo)
                 {
@@ -530,13 +530,8 @@ namespace System.Text.Json.Serialization.Converters
 
         private static EnumFieldInfo[] ResolveEnumFields(JsonNamingPolicy? namingPolicy)
         {
-#if NET
             string[] names = Enum.GetNames<T>();
             T[] values = Enum.GetValues<T>();
-#else
-            string[] names = Enum.GetNames(typeof(T));
-            T[] values = (T[])Enum.GetValues(typeof(T));
-#endif
             Debug.Assert(names.Length == values.Length);
 
             Dictionary<string, string>? enumMemberAttributes = null;
@@ -556,14 +551,14 @@ namespace System.Text.Json.Serialization.Converters
                 ulong key = ConvertToUInt64(value);
                 EnumFieldNameKind kind;
 
-                if (enumMemberAttributes != null && enumMemberAttributes.TryGetValue(originalName, out string? attributeName))
+                if (enumMemberAttributes is not null && enumMemberAttributes.TryGetValue(originalName, out string? attributeName))
                 {
                     originalName = attributeName;
                     kind = EnumFieldNameKind.Attribute;
                 }
                 else
                 {
-                    kind = namingPolicy != null ? EnumFieldNameKind.NamingPolicy : EnumFieldNameKind.Default;
+                    kind = namingPolicy is not null ? EnumFieldNameKind.NamingPolicy : EnumFieldNameKind.Default;
                 }
 
                 string jsonName = ResolveAndValidateJsonName(originalName, namingPolicy, kind);
@@ -589,11 +584,13 @@ namespace System.Text.Json.Serialization.Converters
                 name = namingPolicy.ConvertName(name);
             }
 
-            if (string.IsNullOrEmpty(name) || char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]) ||
-                (s_isFlagsEnum && name.Contains(',')))
+            if (name is null ||
+                (name.Length > 0 && (char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]))) ||
+                (s_isFlagsEnum && (name.Length == 0 || name.Contains(','))))
             {
-                // Reject null or empty strings or strings with leading or trailing whitespace.
-                // In the case of flags additionally reject strings containing commas.
+                // Reject null strings or strings with leading or trailing whitespace.
+                // In the case of flags additionally reject empty strings or strings containing commas,
+                // both of which would introduce ambiguity in flag value parsing and formatting.
                 ThrowHelper.ThrowInvalidOperationException_UnsupportedEnumIdentifier(typeof(T), name);
             }
 
@@ -698,7 +695,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 // We want values with more bits set to come first so negate the pop count.
                 // Keep the index as a second comparand so that sorting stability is preserved.
-                indices[i] = (-PopCount(enumFields[i].Key), i);
+                indices[i] = (-(int)ulong.PopCount(enumFields[i].Key), i);
             }
 
             Array.Sort(indices);
@@ -712,21 +709,6 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             return sortedFields;
-        }
-
-        private static int PopCount(ulong value)
-        {
-#if NET
-            return (int)ulong.PopCount(value);
-#else
-            int count = 0;
-            while (value != 0)
-            {
-                value &= value - 1;
-                count++;
-            }
-            return count;
-#endif
         }
 
         private enum EnumFieldNameKind

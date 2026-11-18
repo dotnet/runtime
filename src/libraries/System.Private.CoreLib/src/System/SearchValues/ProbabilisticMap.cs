@@ -80,7 +80,7 @@ namespace System.Buffers
         [BypassReadyToRun]
         private static void SetCharBit(ref uint charMap, byte value)
         {
-            if (Sse41.IsSupported || AdvSimd.Arm64.IsSupported)
+            if (Sse41.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported)
             {
                 Unsafe.Add(ref Unsafe.As<uint, byte>(ref charMap), value & VectorizedIndexMask) |= (byte)(1u << (value >> VectorizedIndexShift));
             }
@@ -92,7 +92,7 @@ namespace System.Buffers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [BypassReadyToRun]
-        private static bool IsCharBitSet(ref uint charMap, byte value) => Sse41.IsSupported || AdvSimd.Arm64.IsSupported
+        private static bool IsCharBitSet(ref uint charMap, byte value) => Sse41.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported
             ? (Unsafe.Add(ref Unsafe.As<uint, byte>(ref charMap), value & VectorizedIndexMask) & (1u << (value >> VectorizedIndexShift))) != 0
             : (Unsafe.Add(ref charMap, value & PortableIndexMask) & (1u << (value >> PortableIndexShift))) != 0;
 
@@ -220,6 +220,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> ContainsMask16Chars(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, ref char searchSpace)
         {
             Vector128<ushort> source0 = Vector128.LoadUnsafe(ref searchSpace);
@@ -237,6 +238,13 @@ namespace System.Buffers
             {
                 sourceLower = AdvSimd.Arm64.UnzipEven(source0.AsByte(), source1.AsByte());
                 sourceUpper = AdvSimd.Arm64.UnzipOdd(source0.AsByte(), source1.AsByte());
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                sourceLower = PackedSimd.Shuffle(source0.AsByte(), source1.AsByte(),
+                    Vector128.Create((byte)0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30));
+                sourceUpper = PackedSimd.Shuffle(source0.AsByte(), source1.AsByte(),
+                    Vector128.Create((byte)1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31));
             }
             else
             {
@@ -392,7 +400,7 @@ namespace System.Buffers
         internal static int IndexOfAny<TUseFastContains>(ref char searchSpace, int searchSpaceLength, ref ProbabilisticMapState state)
             where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
-            if ((Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && searchSpaceLength >= 16)
+            if ((Sse41.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && searchSpaceLength >= 16)
             {
                 return Vector512.IsHardwareAccelerated && Avx512Vbmi.VL.IsSupported
                     ? IndexOfAnyVectorizedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, ref state)
@@ -406,7 +414,7 @@ namespace System.Buffers
         internal static int LastIndexOfAny<TUseFastContains>(ref char searchSpace, int searchSpaceLength, ref ProbabilisticMapState state)
             where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
-            if ((Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && searchSpaceLength >= 16)
+            if ((Sse41.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && searchSpaceLength >= 16)
             {
                 return Vector512.IsHardwareAccelerated && Avx512Vbmi.VL.IsSupported
                     ? LastIndexOfAnyVectorizedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, ref state)
@@ -501,10 +509,11 @@ namespace System.Buffers
 
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse41))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static int IndexOfAnyVectorized<TUseFastContains>(ref char searchSpace, int searchSpaceLength, ref ProbabilisticMapState state)
             where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
-            Debug.Assert(Sse41.IsSupported || AdvSimd.Arm64.IsSupported);
+            Debug.Assert(Sse41.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported);
             Debug.Assert(searchSpaceLength >= 16);
 
             ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
@@ -679,10 +688,11 @@ namespace System.Buffers
 
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse41))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static int LastIndexOfAnyVectorized<TUseFastContains>(ref char searchSpace, int searchSpaceLength, ref ProbabilisticMapState state)
             where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
-            Debug.Assert(Sse41.IsSupported || AdvSimd.Arm64.IsSupported);
+            Debug.Assert(Sse41.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported);
             Debug.Assert(searchSpaceLength >= 16);
 
             ref char cur = ref Unsafe.Add(ref searchSpace, searchSpaceLength);

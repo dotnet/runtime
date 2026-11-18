@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -179,6 +178,11 @@ namespace System.Runtime.CompilerServices
         internal static bool IsKnownConstant<T>(T t) where T : struct => false;
 #pragma warning restore IDE0060
 
+        // Returns true if the method being compiled is a runtime-async method.
+        // This is folded to a compile-time constant by the JIT and the interpreter.
+        [Intrinsic]
+        internal static bool IsRuntimeAsync() => false;
+
         /// <returns>true if the given type is a reference type or a value type that contains references or by-refs; otherwise, false.</returns>
         [Intrinsic]
         public static bool IsReferenceOrContainsReferences<T>() where T : allows ref struct => IsReferenceOrContainsReferences<T>();
@@ -191,5 +195,31 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         internal static void SetNextCallAsyncContinuation(object value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool AreTypesEquivalent(object a, object b)
+        {
+            Debug.Assert(a is not null);
+            Debug.Assert(b is not null);
+
+#if FEATURE_TYPEEQUIVALENCE
+            MethodTable* pMTa = GetMethodTable(a);
+            MethodTable* pMTb = GetMethodTable(b);
+
+            if (pMTa == pMTb)
+                return true;
+
+            bool ret = pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence &&
+                       // only use QCall to check the type equivalence scenario
+                       AreTypesEquivalent(pMTa, pMTb);
+
+            GC.KeepAlive(a);
+            GC.KeepAlive(b);
+
+            return ret;
+#else
+            return a.GetType() == b.GetType();
+#endif // FEATURE_TYPEEQUIVALENCE
+        }
     }
 }

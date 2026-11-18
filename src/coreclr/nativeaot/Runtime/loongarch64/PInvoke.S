@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
@@ -43,6 +42,6 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
         bnez  $t0, 0f  // TrapThreadsFlags_None = 0
         jirl  $r0, $ra, 0
 0:
-        // passing transition frame pointer in x0
+        // passing transition frame pointer in a0
         b  C_FUNC(RhpWaitForGC2)
 LEAF_END RhpPInvokeReturn, _TEXT

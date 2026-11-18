@@ -54,12 +54,16 @@ public class GCArgTable
 
             if (argOffs != 0)
             {
-                AddNewTransition(new GcTransitionPointer((int)curOffs, argOffs, argCnt - argOffs, Action.POP, _header.EbpFrame));
+                if (argOffs > argCnt)
+                    throw new BadImageFormatException($"X86 pop count {argOffs} exceeds stack depth {argCnt}.");
+                argCnt -= argOffs;
+                AddNewTransition(new GcTransitionPointer((int)curOffs, argOffs, argCnt, Action.POP, _header.EbpFrame));
             }
         }
         else
         {
-            AddNewTransition(new GcTransitionPointer((int)curOffs, argOffs, argOffs + 1, Action.PUSH, _header.EbpFrame, isThis, iptr));
+            argCnt = checked(argOffs + 1);
+            AddNewTransition(new GcTransitionPointer((int)curOffs, argOffs, argCnt, Action.PUSH, _header.EbpFrame, isThis, iptr));
             isThis = false;
             iptr = false;
         }
@@ -149,8 +153,8 @@ public class GCArgTable
                     // non-ptr arg push
 
                     curOffs += (val & 0x07);
-                    argCnt++;
-                    AddNewTransition(new GcTransitionPointer((int)curOffs, argOffs, argCnt, Action.PUSH, _header.EbpFrame, false, false, false));
+                    argCnt = checked(argCnt + 1);
+                    AddNewTransition(new GcTransitionPointer((int)curOffs, argCnt - 1, argCnt, Action.PUSH, _header.EbpFrame, false, false, false));
                 }
 
                 continue;
@@ -197,6 +201,7 @@ public class GCArgTable
     /// </summary>
     private void GetTransitionsEbpFrame(ref TargetPointer offset)
     {
+        uint curOffs = 0;
         while (true)
         {
             uint argMask = 0, byrefArgMask = 0;
@@ -207,7 +212,6 @@ public class GCArgTable
             uint argTabSize;
 
             uint val, nxt;
-            uint curOffs = 0;
 
             // Get the next byte and check for a 'special' entry
             uint encType = _target.Read<byte>(offset++);
@@ -231,19 +235,16 @@ public class GCArgTable
                         }
                         else
                         {
-                            RegMask reg;
-                            if ((val & 0x10) != 0)
-                                reg = RegMask.EDI;
-                            else if ((val & 0x20) != 0)
-                                reg = RegMask.ESI;
-                            else if ((val & 0x40) != 0)
-                                reg = RegMask.EBX;
-                            else
-                                throw new BadImageFormatException("Invalid register");
-                            transition = new GcTransitionCall((int)curOffs);
-                            transition.CallRegisters.Add(new GcTransitionCall.CallRegister(reg, false));
-                            AddNewTransition(transition);
-
+                            // "This pointer liveness encoding" (val & 0x80 == 0 && val & 0x0F == 0):
+                            // metadata for the last known callee-saved register holding 'this'.
+                            RegMask thisRegister = ((val & 0x70) >> 4) switch
+                            {
+                                0x1 => RegMask.EDI,
+                                0x2 => RegMask.ESI,
+                                0x4 => RegMask.EBX,
+                                _ => throw new BadImageFormatException("Invalid this-pointer register encoding"),
+                            };
+                            AddNewTransition(new ThisPointerRegister((int)curOffs, thisRegister));
                             continue;
                         }
                     }
@@ -296,7 +297,9 @@ public class GCArgTable
                     val = _target.Read<byte>(offset++);
                     regMask = val & 0x7;
                     byrefRegMask = val >> 4;
-                    curOffs = _target.Read<uint>(offset);
+                    // Code delta is 32-bit and is added to curOffs (mirrors `scanOffs +=` in
+                    // native gc_unwind_x86.inl scanArgRegTable case 0xFB).
+                    curOffs += _target.Read<uint>(offset);
                     offset += 4;
                     argCnt = _target.Read<uint>(offset);
                     offset += 4;
@@ -345,7 +348,7 @@ public class GCArgTable
     /// <summary>
     /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
     /// </summary>
-    private void SaveCallTransition(ref TargetPointer offset, uint val, uint curOffs, uint callRegMask, bool callPndTab, uint callPndTabCnt, uint callPndMask, uint lastSkip, ref uint imask)
+    private void SaveCallTransition(ref TargetPointer offset, uint curOffs, uint callRegMask, bool callPndTab, uint callPndTabCnt, uint callPndMask, ref uint imask)
     {
         uint iregMask, iargMask;
         iregMask = imask & 0xF;
@@ -359,12 +362,11 @@ public class GCArgTable
             for (int i = 0; i < callPndTabCnt; i++)
             {
                 uint pndOffs = _target.GCDecodeUnsigned(ref offset);
-
-                uint stkOffs = val & ~byref_OFFSET_FLAG;
-                uint lowBit = val & byref_OFFSET_FLAG;
-                Console.WriteLine($"stkOffs: {stkOffs}, lowBit: {lowBit}");
-
-                transition.PtrArgs.Add(new GcTransitionCall.PtrArg(pndOffs, 0));
+                // The low two bits are flags, not part of the offset; only bit 0 (interior) is valid.
+                uint lowBits = pndOffs & 3u;
+                if (lowBits > 1)
+                    throw new BadImageFormatException($"Invalid X86 pending argument flags {lowBits}.");
+                transition.PtrArgs.Add(new GcTransitionCall.PtrArg(pndOffs & ~3u, lowBits));
             }
         }
         else
@@ -375,15 +377,14 @@ public class GCArgTable
                 transition.IArgs = iargMask;
         }
 
-        Console.WriteLine($"lastSkip: {lastSkip}");
         imask /* = lastSkip  */ = 0;
     }
 
     private void GetTransitionsNoEbp(ref TargetPointer offset)
     {
         uint curOffs = 0;
-        uint lastSkip = 0;
         uint imask = 0;
+        uint lastSkip;
 
         for (; ; )
         {
@@ -418,7 +419,6 @@ public class GCArgTable
                         //
                         skip = _target.GCDecodeUnsigned(ref offset);
                         curOffs += skip;
-                        lastSkip = skip;
                     }
                     else
                     {
@@ -431,18 +431,16 @@ public class GCArgTable
                         {
                             AddNewTransition(new GcTransitionRegister((int)curOffs, RegMask.ESP, Action.POP, false, false, (int)popSize));
                         }
-                        else
-                            lastSkip = skip;
                     }
                 }
             }
             else
             {
-                uint callArgCnt = 0;
+                uint callArgCnt;
                 uint callRegMask;
                 bool callPndTab = false;
                 uint callPndMask = 0;
-                uint callPndTabCnt = 0, callPndTabSize = 0;
+                uint callPndTabCnt = 0;
 
                 switch ((val & 0x70) >> 4)
                 {
@@ -452,8 +450,8 @@ public class GCArgTable
                         //
                         CallPattern.DecodeCallPattern((val & 0x7f), out callArgCnt, out callRegMask, out callPndMask, out lastSkip);
                         curOffs += lastSkip;
-                        SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
-                        AddNewTransition(new StackDepthTransition((int)curOffs, (int)callArgCnt));
+                        SaveCallTransition(ref offset, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, ref imask);
+                        AddNewTransition(new StackDepthTransition((int)curOffs, -(int)callArgCnt));
                         break;
 
                     case 5:
@@ -467,8 +465,8 @@ public class GCArgTable
                         callArgCnt = (val >> 3) & 0x7;
                         lastSkip = CallPattern.CallCommonDelta[(int)(val >> 6)];
                         curOffs += lastSkip;
-                        SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
-                        AddNewTransition(new StackDepthTransition((int)curOffs, (int)callArgCnt));
+                        SaveCallTransition(ref offset, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, ref imask);
+                        AddNewTransition(new StackDepthTransition((int)curOffs, -(int)callArgCnt));
                         break;
                     case 6:
                         //
@@ -478,8 +476,8 @@ public class GCArgTable
                         callRegMask = val & 0xf;    // EBP,EBX,ESI,EDI
                         callArgCnt = _target.GCDecodeUnsigned(ref offset);
                         callPndMask = _target.GCDecodeUnsigned(ref offset);
-                        SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
-                        AddNewTransition(new StackDepthTransition((int)curOffs, (int)callArgCnt));
+                        SaveCallTransition(ref offset, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, ref imask);
+                        AddNewTransition(new StackDepthTransition((int)curOffs, -(int)callArgCnt));
                         break;
                     case 7:
                         switch (val & 0x0C)
@@ -491,7 +489,7 @@ public class GCArgTable
                                 break;
 
                             case 0x04:
-                                AddNewTransition(new CalleeSavedRegister((int)curOffs, TwoBitEncodingToRegMask((byte)(val & 0x3))));
+                                AddNewTransition(new ThisPointerRegister((int)curOffs, TwoBitEncodingToRegMask((byte)(val & 0x3))));
                                 break;
 
                             case 0x08:
@@ -505,11 +503,11 @@ public class GCArgTable
                                 offset += 4;
                                 callPndTabCnt = _target.Read<uint>(offset);
                                 offset += 4;
-                                callPndTabSize = _target.Read<uint>(offset);
+                                // Skip callPndTabSize - present in encoding but unused by the decoder.
                                 offset += 4;
                                 callPndTab = true;
-                                SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
-                                AddNewTransition(new StackDepthTransition((int)curOffs, (int)callArgCnt));
+                                SaveCallTransition(ref offset, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, ref imask);
+                                AddNewTransition(new StackDepthTransition((int)curOffs, -(int)callArgCnt));
                                 break;
                             case 0x0C:
                                 return;
@@ -518,8 +516,6 @@ public class GCArgTable
                         }
                         break;
                 }
-                Console.WriteLine($"CallArgCount: {callArgCnt}");
-                Console.WriteLine($"CallPndTabCnt: {callPndTabSize}");
             }
         }
     }

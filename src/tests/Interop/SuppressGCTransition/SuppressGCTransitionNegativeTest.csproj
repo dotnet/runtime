@@ -4,12 +4,13 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <MonoAotIncompatible>true</MonoAotIncompatible>
+    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- Expected COR_E_EXECUTIONENGINE -->
     <CLRTestExitCode>134</CLRTestExitCode>
     <CLRTestExitCode Condition="'$(TestWrapperTargetsWindows)' == 'true'">-2146233082</CLRTestExitCode>
     <CLRTestExitCode Condition="'$(TestWrapperTargetsWindows)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">-1073740286</CLRTestExitCode>
     <CLRTestPriority>1</CLRTestPriority>
-    <GCStressIncompatible>true</GCStressIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(InteropCommonDir)CheckGCMode.cs" />

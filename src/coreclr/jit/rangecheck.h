@@ -326,6 +326,19 @@ struct RangeOps
 
     static Range Add(const Range& r1, const Range& r2, bool unsignedAdd = false)
     {
+        if (unsignedAdd)
+        {
+            bool r1StraddlesZero =
+                r1.IsConstantRange() && (r1.LowerLimit().GetConstant() < 0) && (r1.UpperLimit().GetConstant() >= 0);
+            bool r2StraddlesZero =
+                r2.IsConstantRange() && (r2.LowerLimit().GetConstant() < 0) && (r2.UpperLimit().GetConstant() >= 0);
+            if (r1StraddlesZero || r2StraddlesZero)
+            {
+                // Signed intervals that straddle zero are not monotonic when interpreted as unsigned.
+                return Limit(Limit::keUnknown);
+            }
+        }
+
         return ApplyRangeOp(r1, r2, [unsignedAdd](const Limit& a, const Limit& b) {
             // For Add we support:
             //   keConstant + keConstant  => keConstant
@@ -340,7 +353,11 @@ struct RangeOps
                 }
 
                 static_assert(CheckedOps::Unsigned == true);
-                if (!CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), unsignedAdd))
+                // For unsigned adds, require both unsigned and signed endpoint sums to not overflow.
+                bool requestedAddOverflows = CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), unsignedAdd);
+                bool signedEndpointOverflows =
+                    unsignedAdd && CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), CheckedOps::Signed);
+                if (!requestedAddOverflows && !signedEndpointOverflows)
                 {
                     if (a.IsConstant() && b.IsConstant())
                     {
@@ -425,9 +442,13 @@ struct RangeOps
         // For RSZ by N >= 1, result is in [0, UINT_MAX >> N] regardless of r1's signedness.
         // When r1 isn't proven non-negative, the bound above is unsound (negative r1 reinterprets
         // as large unsigned), so override with the type-based bound.
-        if (logical && (r2.LowerLimit().GetConstant() >= 1) &&
-            !(r1.LowerLimit().IsConstant() && (r1.LowerLimit().GetConstant() >= 0)))
+        if (logical && !(r1.LowerLimit().IsConstant() && (r1.LowerLimit().GetConstant() >= 0)))
         {
+            if (r2.LowerLimit().GetConstant() == 0)
+            {
+                // A shift by 0 may preserve a negative r1, so nothing is known.
+                return Limit(Limit::keUnknown);
+            }
             result.lLimit = Limit(Limit::keConstant, 0);
             result.uLimit = Limit(Limit::keConstant, (int)(UINT32_MAX >> r2.LowerLimit().GetConstant()));
         }
@@ -743,28 +764,44 @@ struct RangeOps
         const Limit& xUpper = x.UpperLimit();
         const Limit& yUpper = y.UpperLimit();
 
+        // Computes "a - b" when both limits are constants or both are "$bnd + cns" with the same $bnd.
+        // $bnd is never negative, so "$bnd + cns" can't overflow (and is exact) when cns <= 0.
+        auto limitDiff = [](const Limit& a, const Limit& b, int64_t* diff) -> bool {
+            if ((a.IsConstant() && b.IsConstant()) || (a.IsBinOpArray() && b.IsBinOpArray() && (a.vn == b.vn) &&
+                                                       (a.GetConstant() <= 0) && (b.GetConstant() <= 0)))
+            {
+                *diff = (int64_t)a.GetConstant() - (int64_t)b.GetConstant();
+                return true;
+            }
+            return false;
+        };
+
         // For unsigned comparisons, we only support non-negative ranges.
         // NOTE: it's not applicable for EQ and NE.
         if (isUnsigned && (relop != GT_EQ) && (relop != GT_NE))
         {
-            if (!xLower.IsConstant() || !yLower.IsConstant() || (xLower.GetConstant() < 0) ||
-                (yLower.GetConstant() < 0))
+            auto isNonNegative = [](const Limit& l) {
+                return (l.IsConstant() && (l.GetConstant() >= 0)) || (l.IsBinOpArray() && (l.GetConstant() == 0));
+            };
+
+            if (!isNonNegative(xLower) || !isNonNegative(yLower))
             {
                 // Relops always return either 0 or 1.
                 return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 1));
             }
         }
 
+        int64_t diff;
         switch (relop)
         {
             case GT_GE:
             case GT_LT:
-                if (xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() >= yUpper.GetConstant()))
+                if (limitDiff(xLower, yUpper, &diff) && (diff >= 0))
                 {
                     return Range(Limit(Limit::keConstant, relop == GT_GE ? 1 : 0));
                 }
 
-                if (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() < yLower.GetConstant()))
+                if (limitDiff(xUpper, yLower, &diff) && (diff < 0))
                 {
                     return Range(Limit(Limit::keConstant, relop == GT_GE ? 0 : 1));
                 }
@@ -772,12 +809,12 @@ struct RangeOps
 
             case GT_GT:
             case GT_LE:
-                if (xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() > yUpper.GetConstant()))
+                if (limitDiff(xLower, yUpper, &diff) && (diff > 0))
                 {
                     return Range(Limit(Limit::keConstant, relop == GT_GT ? 1 : 0));
                 }
 
-                if (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() <= yLower.GetConstant()))
+                if (limitDiff(xUpper, yLower, &diff) && (diff <= 0))
                 {
                     return Range(Limit(Limit::keConstant, relop == GT_GT ? 0 : 1));
                 }
@@ -787,8 +824,8 @@ struct RangeOps
             case GT_NE:
                 // If the ranges do not overlap, then EQ is always false, NE is always true.
                 // Example: x = [6..10], y = [0..5] -> EQ is always false, NE is always true.
-                if ((xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() > yUpper.GetConstant())) ||
-                    (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() < yLower.GetConstant())))
+                if ((limitDiff(xLower, yUpper, &diff) && (diff > 0)) ||
+                    (limitDiff(xUpper, yLower, &diff) && (diff < 0)))
                 {
                     return Range(Limit(Limit::keConstant, relop == GT_EQ ? 0 : 1));
                 }
@@ -831,6 +868,7 @@ public:
 
     // Cheaper version of TryGetRange that is based only on incoming assertions.
     static Range GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_VALARG_TP assertions, int budget = 10);
+    static Range GetRangeFromAssertions(Compiler* comp, ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
 
     // Compute the range from the given type
     static Range GetRangeFromType(var_types type);
@@ -864,7 +902,7 @@ private:
 
     // Given the local variable, first find the definition of the local and find the range of the rhs.
     // Helper for GetRangeWorker.
-    Range ComputeRangeForLocalDef(BasicBlock* block, GenTreeLclVarCommon* lcl, bool monIncreasing DEBUGARG(int indent));
+    Range ComputeRangeForLocalDef(GenTreeLclVarCommon* lcl, bool monIncreasing DEBUGARG(int indent));
 
     // Compute the range, rather than retrieve a cached value. Helper for GetRangeWorker.
     Range ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
@@ -904,10 +942,13 @@ private:
 
     // The maximum possible value of the given "limit". If such a value could not be determined
     // return "false". For example: CORINFO_Array_MaxLength for array length.
-    bool GetLimitMax(Limit& limit, int* pMax);
+    bool GetLimitMax(const Limit& limit, int* pMax);
 
-    // Does the addition of the two limits overflow?
-    bool AddOverflows(Limit& limit1, Limit& limit2);
+    // The minimum possible value of the given "limit", or INT_MIN if it could not be determined.
+    static int GetLimitMin(const Limit& limit);
+
+    // Does the addition of the two ranges overflow (or underflow)?
+    bool AddOverflows(const Range& range1, const Range& range2);
 
     // Does the multiplication of the two limits overflow?
     bool MultiplyOverflows(Limit& limit1, Limit& limit2);
@@ -930,7 +971,7 @@ private:
     void Widen(BasicBlock* block, GenTree* tree, Range* pRange);
 
     // Is the binary operation increasing the value.
-    bool IsBinOpMonotonicallyIncreasing(GenTreeOp* binop);
+    bool IsBinOpMonotonicallyIncreasing(GenTreeOp* binop, bool rejectNegativeConst);
 
     // Given an expression trace its value to check if it is monotonically increasing.
     bool IsMonotonicallyIncreasing(GenTree* tree, bool rejectNegativeConst);

@@ -515,8 +515,8 @@ struct ProcessModIter
                 kIncludeLoaded | kIncludeExecution));
         }
 
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-        if (!m_assemIter.Next(pAssembly.This()))
+        CollectibleAssemblyHolder pAssembly;
+        if (!m_assemIter.Next(&pAssembly))
         {
             return NULL;
         }
@@ -1417,9 +1417,6 @@ private:
     // Read the DAC table and initialize m_dacGlobals
     HRESULT GetDacGlobalValues();
 
-    // Verify the target mscorwks.dll matches the version expected
-    HRESULT VerifyDlls();
-
     // Check whether a region of memory is fully readable.
     bool IsFullyReadable(TADDR addr, TSIZE_T size);
 
@@ -1442,13 +1439,6 @@ private:
 
     // If true, inconsistencies in the target will cause ASSERTs to be raised in DEBUG builds
     bool m_fEnableTargetConsistencyAsserts;
-
-#ifdef _DEBUG
-protected:
-    // If true, a mscorwks/mscordacwks mismatch will trigger a nice assert dialog
-    bool m_fEnableDllVerificationAsserts;
-private:
-#endif
 
 protected:
     // Populates a DacpJitCodeHeapInfo with proper information about the

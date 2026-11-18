@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -11,7 +12,6 @@ namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties to decompress data using Zstandard decompression.</summary>
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardDecoder : IDisposable
     {
         private SafeZstdDecompressHandle _context;
@@ -32,10 +32,10 @@ namespace System.IO.Compression
         }
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> class with the specified maximum window size.</summary>
-        /// <param name="maxWindowLog">The maximum window size to use for decompression, expressed as base 2 logarithm.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxWindowLog"/> is not between the minimum and maximum allowed values.</exception>
+        /// <param name="maxWindowLog2">The maximum base-2 logarithm of the window size to use for decompression.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxWindowLog2"/> is not between the minimum and maximum allowed values.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
-        public ZstandardDecoder(int maxWindowLog)
+        public ZstandardDecoder(int maxWindowLog2)
         {
             _disposed = false;
 
@@ -43,9 +43,9 @@ namespace System.IO.Compression
 
             try
             {
-                if (maxWindowLog != 0)
+                if (maxWindowLog2 != 0)
                 {
-                    SetWindowLog(maxWindowLog);
+                    SetWindowLog(maxWindowLog2);
                 }
             }
             catch
@@ -78,13 +78,44 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> class with the specified decompression options.</summary>
+        /// <param name="decompressionOptions">The options to use for Zstandard decompression.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="decompressionOptions"/> is null.</exception>
+        /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
+        public ZstandardDecoder(ZstandardDecompressionOptions decompressionOptions)
+        {
+            ArgumentNullException.ThrowIfNull(decompressionOptions);
+
+            _disposed = false;
+
+            InitializeDecoder();
+
+            try
+            {
+                if (decompressionOptions.MaxWindowLog2 != 0)
+                {
+                    SetWindowLog(decompressionOptions.MaxWindowLog2);
+                }
+
+                if (decompressionOptions.Dictionary is not null)
+                {
+                    SetDictionary(decompressionOptions.Dictionary);
+                }
+            }
+            catch
+            {
+                _context.Dispose();
+                throw;
+            }
+        }
+
         /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> class with the specified dictionary and maximum window size.</summary>
         /// <param name="dictionary">The decompression dictionary to use.</param>
-        /// <param name="maxWindowLog">The maximum window size to use for decompression, expressed as base 2 logarithm.</param>
+        /// <param name="maxWindowLog2">The maximum base-2 logarithm of the window size to use for decompression.</param>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxWindowLog"/> is not between the minimum and maximum allowed values.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxWindowLog2"/> is not between the minimum and maximum allowed values.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
-        public ZstandardDecoder(ZstandardDictionary dictionary, int maxWindowLog)
+        public ZstandardDecoder(ZstandardDictionary dictionary, int maxWindowLog2)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
 
@@ -94,9 +125,9 @@ namespace System.IO.Compression
 
             try
             {
-                if (maxWindowLog != 0)
+                if (maxWindowLog2 != 0)
                 {
-                    SetWindowLog(maxWindowLog);
+                    SetWindowLog(maxWindowLog2);
                 }
 
                 SetDictionary(dictionary);
@@ -124,6 +155,14 @@ namespace System.IO.Compression
         /// <param name="bytesConsumed">When this method returns, contains the number of bytes consumed from the source.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written to the destination.</param>
         /// <returns>An <see cref="OperationStatus"/> indicating the result of the operation.</returns>
+        /// <remarks>
+        /// The method returns <see cref="OperationStatus.Done"/> after all
+        /// contents of a single Zstandard frame are decoded and returned. However,
+        /// Zstandard data streams may consist of multiple concatenated frames
+        /// (some of which may even be empty). To allow processing further
+        /// frames on the same <see cref="ZstandardDecoder" /> instance, call
+        /// <see cref="Reset" /> before calling <see cref="Decompress" /> on the rest of the data.
+        /// </remarks>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         /// <exception cref="IOException">An error occurred during decompression.</exception>
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
@@ -312,7 +351,8 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Resets the decoder session, allowing reuse for the next decompression operation.</summary>
+        /// <summary>Resets the decoder session, allowing reuse for decompressing the next Zstandard frame.</summary>
+        /// <remarks>Clears any prefix and restores the dictionary supplied when the decoder was constructed.</remarks>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         /// <exception cref="IOException">Failed to reset the decoder session.</exception>
         public void Reset()
@@ -324,7 +364,11 @@ namespace System.IO.Compression
         }
 
         /// <summary>References a prefix for the next decompression operation.</summary>
-        /// <remarks>The prefix will be used only for the next decompression frame and will be removed when <see cref="Reset"/> is called. The referenced data must remain valid and unmodified for the duration of the decompression operation.</remarks>
+        /// <remarks>
+        /// The prefix will be used only for the next decompression frame and will be removed when <see cref="Reset"/> is called.
+        /// The prefix replaces any dictionary supplied when the decoder was constructed until <see cref="Reset"/> restores that dictionary.
+        /// The referenced data must remain valid and unmodified for the duration of the decompression operation.
+        /// </remarks>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The decoder is in an invalid state for setting a prefix.</exception>
         public void SetPrefix(ReadOnlyMemory<byte> prefix)
@@ -356,17 +400,17 @@ namespace System.IO.Compression
             ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
-        internal void SetWindowLog(int maxWindowLog)
+        internal void SetWindowLog(int maxWindowLog2)
         {
             Debug.Assert(_context != null);
 
-            if (maxWindowLog != 0)
+            if (maxWindowLog2 != 0)
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(maxWindowLog, ZstandardUtils.WindowLog_Min, nameof(maxWindowLog));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(maxWindowLog, ZstandardUtils.WindowLog_Max, nameof(maxWindowLog));
+                ArgumentOutOfRangeException.ThrowIfLessThan(maxWindowLog2, ZstandardUtils.WindowLog_Min, nameof(maxWindowLog2));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(maxWindowLog2, ZstandardUtils.WindowLog_Max, nameof(maxWindowLog2));
             }
 
-            nuint result = Interop.Zstd.ZSTD_DCtx_setParameter(_context, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindowLog);
+            nuint result = Interop.Zstd.ZSTD_DCtx_setParameter(_context, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindowLog2);
             ZstandardUtils.ThrowIfError(result);
         }
 

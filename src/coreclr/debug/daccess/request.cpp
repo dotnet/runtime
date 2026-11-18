@@ -323,7 +323,7 @@ HRESULT ClrDataAccess::GetThreadStoreData(struct DacpThreadStoreData *threadStor
         threadStoreData->fHostConfig = FALSE;
 
         // identify the "important" threads
-        threadStoreData->firstThread = HOST_CDADDR(threadStore->m_ThreadList.GetHead());
+        threadStoreData->firstThread = HOST_CDADDR(ThreadStore::GetAllThreadList(NULL, 0, 0));
         threadStoreData->finalizerThread = HOST_CDADDR(g_pFinalizerThread);
         threadStoreData->gcThread = HOST_CDADDR(g_pSuspensionThread);
     }
@@ -786,7 +786,12 @@ ClrDataAccess::GetThreadFromThinlockID(UINT thinLockId, CLRDATA_ADDRESS *pThread
 
     SOSDacEnter();
 
-    Thread *thread = g_pThinLockThreadIdDispenser->IdToThread(thinLockId);
+    Thread *thread;
+#ifdef FEATURE_MULTITHREADING
+    thread = g_pThinLockThreadIdDispenser->IdToThread(thinLockId);
+#else
+    thread = thinLockId == 1 ? ThreadStore::GetAllThreadList(NULL, 0, 0) : NULL;
+#endif // FEATURE_MULTITHREADING
     *pThread = PTR_HOST_TO_TADDR(thread);
 
     SOSDacLeave();
@@ -874,6 +879,7 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
     ZeroMemory (threadData, sizeof(DacpThreadData));
     threadData->corThreadId = thread->m_ThreadId;
     threadData->osThreadId = (DWORD)thread->m_OSThreadId;
+    threadData->state = thread->m_State;
     threadData->preemptiveGCDisabled = thread->m_fPreemptiveGCDisabled;
 
     gc_alloc_context* allocContext = thread->GetAllocContext();
@@ -911,7 +917,7 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
         threadData->lastThrownObjectHandle = TO_CDADDR(ohException);
     }
     threadData->nextThread =
-        HOST_CDADDR(ThreadStore::s_pThreadStore->m_ThreadList.GetNext(thread));
+        HOST_CDADDR(ThreadStore::GetAllThreadList(thread, 0, 0));
     if (thread->m_ExceptionState.m_pCurrentTracker)
     {
         threadData->firstNestedException = HOST_CDADDR(
@@ -925,8 +931,16 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
 #ifdef FEATURE_REJIT
 void CopyNativeCodeVersionToReJitData(NativeCodeVersion nativeCodeVersion, NativeCodeVersion activeCodeVersion, DacpReJitData * pReJitData)
 {
-    pReJitData->rejitID = nativeCodeVersion.GetILCodeVersion().GetVersionId();
     pReJitData->NativeCodeAddr = GetInterpreterCodeFromEntryPointIfPresent(nativeCodeVersion.GetNativeCode());
+
+    if (nativeCodeVersion.GetILCodeVersion().GetSource() != CodeVersionSource::kReJIT)
+    {
+        pReJitData->flags = DacpReJitData::kActive;
+        pReJitData->rejitID = 0;
+        return;
+    }
+
+    pReJitData->rejitID = nativeCodeVersion.GetILCodeVersion().GetVersionId();
 
     if (nativeCodeVersion != activeCodeVersion)
     {
@@ -2444,16 +2458,15 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
         PTR_LoaderAllocator pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         appdomainData->pHighFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
         appdomainData->pLowFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
-        appdomainData->pStubHeap = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
         appdomainData->appDomainStage = STAGE_OPEN;
 
         appdomainData->dwId = DefaultADID;
 
         AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        CollectibleAssemblyHolder pAssembly;
 
-        while (i.Next(pAssembly.This()))
+        while (i.Next(&pAssembly))
         {
             if (pAssembly->IsLoaded())
             {
@@ -2562,23 +2575,23 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
     {
         AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        CollectibleAssemblyHolder pAssembly;
 
         int n = 0;
         if (values)
         {
-            while (i.Next(pAssembly.This()) && (n < count))
+            while (i.Next(&pAssembly) && (n < count))
             {
                 if (pAssembly->IsLoaded())
                 {
                     // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-                    values[n++] = HOST_CDADDR(pAssembly.Extract());
+                    values[n++] = HOST_CDADDR(static_cast<Assembly*>(pAssembly));
                 }
             }
         }
         else
         {
-            while (i.Next(pAssembly.This()))
+            while (i.Next(&pAssembly))
                 if (pAssembly->IsLoaded())
                     n++;
         }
@@ -2882,7 +2895,15 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
 
     detailsData->alloc_allocated = (CLRDATA_ADDRESS)*g_gcDacGlobals->alloc_allocated;
     detailsData->ephemeral_heap_segment = (CLRDATA_ADDRESS)*g_gcDacGlobals->ephemeral_heap_segment;
-    detailsData->card_table = PTR_CDADDR(g_card_table);
+    if (g_gcDacGlobals->minor_version_number >= 9 &&
+        g_gcDacGlobals->card_table.IsValid())
+    {
+        detailsData->card_table = (CLRDATA_ADDRESS)*g_gcDacGlobals->card_table;
+    }
+    else
+    {
+        detailsData->card_table = PTR_CDADDR(g_card_table);
+    }
 
     if (IsRegionGCEnabled())
     {
@@ -3672,7 +3693,6 @@ static const char *LoaderAllocatorLoaderHeapNames[] =
     "LowFrequencyHeap",
     "HighFrequencyHeap",
     "StaticsHeap",
-    "StubHeap",
     "ExecutableHeap",
     "FixupPrecodeHeap",
     "NewStubPrecodeHeap",
@@ -3712,7 +3732,6 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetStaticsHeap());
-            pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetExecutableHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetFixupPrecodeHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetNewStubPrecodeHeap());
@@ -3805,7 +3824,13 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
 
                 pSyncBlockData->MonitorHeld = monitorHeld == TRUE ? 1 : 0;
                 pSyncBlockData->Recursion = recursionCount + 1; // The runtime tracks recursion count starting at 0, but diagnostics users expect it to start at 1.
+#ifdef FEATURE_MULTITHREADING
                 pSyncBlockData->HoldingThread = PTR_HOST_TO_TADDR(g_pThinLockThreadIdDispenser->IdToThread(holdingThread));
+#else
+                pSyncBlockData->HoldingThread = holdingThread == 1
+                    ? PTR_HOST_TO_TADDR(ThreadStore::GetAllThreadList(NULL, 0, 0))
+                    : 0;
+#endif // FEATURE_MULTITHREADING
                 pSyncBlockData->appDomainPtr = PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain());
 
                 // TODO: Microsoft, implement the wait list
@@ -3996,6 +4021,15 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     Dereference(g_gcDacGlobals->ephemeral_heap_segment).EnumMem();
     g_gcDacGlobals->alloc_allocated.EnumMem();
+    if (g_gcDacGlobals->minor_version_number >= 9 &&
+        g_gcDacGlobals->card_table.IsValid())
+    {
+        g_gcDacGlobals->card_table.EnumMem();
+    }
+    DacEnumMemoryRegion(g_gcDacGlobals->interesting_data_per_heap.GetAddr(), sizeof(size_t) * NUM_GC_DATA_POINTS);
+    DacEnumMemoryRegion(g_gcDacGlobals->compact_reasons_per_heap.GetAddr(), sizeof(size_t) * MAX_COMPACT_REASONS_COUNT);
+    DacEnumMemoryRegion(g_gcDacGlobals->expand_mechanisms_per_heap.GetAddr(), sizeof(size_t) * MAX_EXPAND_MECHANISMS_COUNT);
+    DacEnumMemoryRegion(g_gcDacGlobals->interesting_mechanism_bits_per_heap.GetAddr(), sizeof(size_t) * MAX_GC_MECHANISM_BITS_COUNT);
     g_gcDacGlobals->gc_structures_invalid_cnt.EnumMem();
     Dereference(g_gcDacGlobals->finalize_queue).EnumMem();
 
@@ -4677,7 +4711,7 @@ HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejit
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
     CodeVersionManager::LockHolder codeVersioningLockHolder;
     ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
-    if (ilVersion.IsNull())
+    if (ilVersion.IsNull() || ilVersion.GetSource() != CodeVersionSource::kReJIT)
     {
         hr = E_INVALIDARG;
     }
@@ -4706,7 +4740,7 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
     CodeVersionManager::LockHolder codeVersioningLockHolder;
     ILCodeVersion ilVersion = pCodeVersionManager->GetILCodeVersion(pMD, rejitId);
-    if (ilVersion.IsNull())
+    if (ilVersion.IsNull() || ilVersion.GetSource() != CodeVersionSource::kReJIT)
     {
         hr = E_INVALIDARG;
     }
@@ -4765,7 +4799,7 @@ HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDe
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
     CodeVersionManager::LockHolder codeVersioningLockHolder;
     ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
-    if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL())
+    if ((ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL()) && ilVersion.GetSource() == CodeVersionSource::kReJIT)
     {
         pILData->type = DacpProfilerILData::ReJITModified;
         pILData->rejitID = static_cast<ULONG>(pCodeVersionManager->GetActiveILCodeVersion(pMD).GetVersionId());
@@ -4817,7 +4851,7 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
 
                 TADDR pDynamicIL = pModule->GetDynamicIL(pMD->GetMemberDef());
                 ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
-                if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL() || pDynamicIL != (TADDR)NULL)
+                if ((ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL() || pDynamicIL != (TADDR)NULL) && ilVersion.GetSource() == CodeVersionSource::kReJIT)
                 {
                     methodDescs[*pcMethodDescs] = PTR_CDADDR(pMD);
                     ++(*pcMethodDescs);
@@ -5492,9 +5526,9 @@ HRESULT ClrDataAccess::GetGlobalAllocationContext(
     }
 
     SOSDacEnter();
-    gc_alloc_context global_alloc_context = ((ee_alloc_context)g_global_alloc_context).m_GCAllocContext;
-    *allocPtr = (CLRDATA_ADDRESS)global_alloc_context.alloc_ptr;
-    *allocLimit = (CLRDATA_ADDRESS)global_alloc_context.alloc_limit;
+    // The runtime does not allocate out of a global allocation context.
+    *allocPtr = (CLRDATA_ADDRESS)0;
+    *allocLimit = (CLRDATA_ADDRESS)0;
     SOSDacLeave();
     return hr;
 }

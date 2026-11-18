@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+#include "../vm/common.h"
+#endif
+
 /*****************************************************************************
  *
  * GC Information Encoding API
@@ -445,7 +449,7 @@ void GcInfoSize::Log(DWORD level, const char * header)
 #endif
 
 template <typename GcInfoEncoding> TGcInfoEncoder<GcInfoEncoding>::TGcInfoEncoder(
-            ICorJitInfo*                pCorJitInfo,
+            GcInfoJitInfo*              pCorJitInfo,
             CORINFO_METHOD_INFO*        pMethodInfo,
             IAllocator*                 pJitAllocator,
             NoMemoryFunction            pNoMem
@@ -466,7 +470,7 @@ template <typename GcInfoEncoding> TGcInfoEncoder<GcInfoEncoding>::TGcInfoEncode
     m_pNoMem = pNoMem;
 
     m_SlotTableSize = m_SlotTableInitialSize;
-    m_SlotTable = (GcSlotDesc*) m_pAllocator->Alloc( m_SlotTableSize*sizeof(GcSlotDesc) );
+    m_SlotTable = (GcEncoderSlotDesc*) m_pAllocator->Alloc( m_SlotTableSize*sizeof(GcEncoderSlotDesc) );
     m_NumSlots = 0;
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     m_pCallSites = NULL;
@@ -589,8 +593,8 @@ template <typename GcInfoEncoding> GcSlotId TGcInfoEncoder<GcInfoEncoding>::GetS
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::GrowSlotTable()
 {
     m_SlotTableSize *= 2;
-    GcSlotDesc* newSlotTable = (GcSlotDesc*) m_pAllocator->Alloc( m_SlotTableSize * sizeof(GcSlotDesc) );
-    memcpy( newSlotTable, m_SlotTable, m_NumSlots * sizeof(GcSlotDesc) );
+    GcEncoderSlotDesc* newSlotTable = (GcEncoderSlotDesc*) m_pAllocator->Alloc( m_SlotTableSize * sizeof(GcEncoderSlotDesc) );
+    memcpy( newSlotTable, m_SlotTable, m_NumSlots * sizeof(GcEncoderSlotDesc) );
 
 #ifdef MUST_CALL_JITALLOCATOR_FREE
     m_pAllocator->Free( m_SlotTable );
@@ -612,6 +616,8 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::WriteSlo
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::DefineInterruptibleRange( UINT32 startInstructionOffset, UINT32 length )
 {
+    _ASSERTE(GcInfoEncoding::HAS_INTERRUPTIBLE_RANGES);
+
     UINT32 stopInstructionOffset = startInstructionOffset + length;
 
     UINT32 normStartOffset = GcInfoEncoding::NORMALIZE_CODE_OFFSET(startInstructionOffset);
@@ -719,11 +725,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetStack
     _ASSERTE( regNum != NO_STACK_BASE_REGISTER );
     _ASSERTE(GcInfoEncoding::DENORMALIZE_STACK_BASE_REGISTER(GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(regNum)) == regNum);
     _ASSERTE( m_StackBaseRegister == NO_STACK_BASE_REGISTER || m_StackBaseRegister == regNum );
-#if defined(TARGET_LOONGARCH64)
-    assert(regNum == 3 || 22 == regNum);
-#elif defined(TARGET_RISCV64)
-    assert(regNum == 2 || 8 == regNum);
-#endif
     m_StackBaseRegister = regNum;
 }
 
@@ -774,18 +775,18 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetRever
 }
 
 
-struct GcSlotDescAndId
+struct GcEncoderSlotDescAndId
 {
-    GcSlotDesc m_SlotDesc;
+    GcEncoderSlotDesc m_SlotDesc;
     UINT32 m_SlotId;
 };
 
 struct CompareSlotDescAndIdBySlotDesc
 {
-    bool operator()(const GcSlotDescAndId& first, const GcSlotDescAndId& second)
+    bool operator()(const GcEncoderSlotDescAndId& first, const GcEncoderSlotDescAndId& second)
     {
-        const GcSlotDesc* pFirst = &first.m_SlotDesc;
-        const GcSlotDesc* pSecond = &second.m_SlotDesc;
+        const GcEncoderSlotDesc* pFirst = &first.m_SlotDesc;
+        const GcEncoderSlotDesc* pSecond = &second.m_SlotDesc;
 
         int firstFlags = pFirst->Flags ^ GC_SLOT_UNTRACKED;
         int secondFlags = pSecond->Flags ^ GC_SLOT_UNTRACKED;
@@ -924,10 +925,10 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     _ASSERTE((1 << GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2) == GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK);
 
     char methodName[256];
-    m_pCorJitInfo->printMethodName(m_pMethodInfo->ftn, methodName, sizeof(methodName));
+    m_pCorJitInfo->printMethodName(m_pMethodInfo->ftn, methodName, sizeof(methodName), nullptr);
 
     char className[256];
-    m_pCorJitInfo->printClassName(m_pCorJitInfo->getMethodClass(m_pMethodInfo->ftn), className, sizeof(className));
+    m_pCorJitInfo->printClassName(m_pCorJitInfo->getMethodClass(m_pMethodInfo->ftn), className, sizeof(className), nullptr);
 
     GCINFO_LOG( LL_INFO100,
          "Entering GcInfoEncoder::Build() for method %s:%s\n",
@@ -960,11 +961,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     {
         // Slim encoding means nothing special, partially interruptible, maybe a default frame register
         GCINFO_WRITE(m_Info1, 0, 1, FlagsSize); // Slim encoding
-#if defined(TARGET_LOONGARCH64)
-        assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
-#elif defined(TARGET_RISCV64)
-        assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister);
-#endif
         GCINFO_WRITE(m_Info1, (m_StackBaseRegister == NO_STACK_BASE_REGISTER) ? 0 : 1, 1, FlagsSize);
     }
     else
@@ -975,11 +971,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GCINFO_WRITE(m_Info1, (hasGSCookie ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, 0 /* unused - was hasPSPSymStackSlot */, 1, FlagsSize);
         GCINFO_WRITE(m_Info1, m_contextParamType, 2, FlagsSize);
-#if defined(TARGET_LOONGARCH64)
-        assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
-#elif defined(TARGET_RISCV64)
-        assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister);
-#endif
         GCINFO_WRITE(m_Info1, ((m_StackBaseRegister != NO_STACK_BASE_REGISTER) ? 1 : 0), 1, FlagsSize);
 #ifdef TARGET_AMD64
         GCINFO_WRITE(m_Info1, (m_WantsReportOnlyLeaf ? 1 : 0), 1, FlagsSize);
@@ -1059,11 +1050,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
     if(!slimHeader && (m_StackBaseRegister != NO_STACK_BASE_REGISTER))
     {
-#if defined(TARGET_LOONGARCH64)
-        assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
-#elif defined(TARGET_RISCV64)
-        assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister);
-#endif
         GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister), GcInfoEncoding::STACK_BASE_REGISTER_ENCBASE, StackBaseSize);
     }
 
@@ -1128,7 +1114,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     m_NumCallSites = numCallSites;
 #endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
-    if (slimHeader)
+    if (slimHeader || !GcInfoEncoding::HAS_INTERRUPTIBLE_RANGES)
     {
         _ASSERTE(numInterruptibleRanges == 0);
     }
@@ -1227,7 +1213,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     ///////////////////////////////////////////////////////////////////////
 
     {
-        GcSlotDescAndId* sortedSlots = (GcSlotDescAndId*) m_pAllocator->Alloc(m_NumSlots * sizeof(GcSlotDescAndId));
+        GcEncoderSlotDescAndId* sortedSlots = (GcEncoderSlotDescAndId*) m_pAllocator->Alloc(m_NumSlots * sizeof(GcEncoderSlotDescAndId));
         UINT32* sortOrder = (UINT32*) m_pAllocator->Alloc(m_NumSlots * sizeof(UINT32));
 
         for(UINT32 i = 0; i < m_NumSlots; i++)
@@ -1470,7 +1456,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
     if(numRegisters > 0)
     {
-        GcSlotDesc *pSlotDesc;
+        GcEncoderSlotDesc *pSlotDesc;
         do
         {
             _ASSERTE(currentSlot < m_NumSlots);
@@ -1514,7 +1500,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
     if(numStackSlots > 0)
     {
-        GcSlotDesc *pSlotDesc;
+        GcEncoderSlotDesc *pSlotDesc;
         do
         {
             _ASSERTE(currentSlot < m_NumSlots);
@@ -1566,7 +1552,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
     if(numUntrackedSlots > 0)
     {
-        GcSlotDesc *pSlotDesc;
+        GcEncoderSlotDesc *pSlotDesc;
         do
         {
             _ASSERTE(currentSlot < m_NumSlots);

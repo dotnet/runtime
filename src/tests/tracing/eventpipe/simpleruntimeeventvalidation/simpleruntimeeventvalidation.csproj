@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, JitOptimizationSensitive, GC.WaitForPendingFinalizers -->
+    <!-- Needed for UnloadabilityIncompatible, GC.WaitForPendingFinalizers -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- TODO: Re-enable when browser diagnostics supports self-process EventPipe collection.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <!-- Tracing tests routinely time out with jitstress and gcstress -->
-    <GCStressIncompatible>true</GCStressIncompatible>
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
 
   <ItemGroup>
