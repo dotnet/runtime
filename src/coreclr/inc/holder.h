@@ -16,7 +16,7 @@
 #include <memory>
 
 template <void (*ACQUIRE)(), void (*RELEASEF)()>
-class StateHolder
+class StateHolder final
 {
   private:
     BOOL    m_acquired;      // Have we acquired the state?
@@ -54,16 +54,6 @@ class StateHolder
             RELEASEF();
             m_acquired = FALSE;
         }
-    }
-    FORCEINLINE void Clear()
-    {
-        STATIC_CONTRACT_WRAPPER;
-        if (m_acquired)
-        {
-            RELEASEF();
-        }
-
-        m_acquired = FALSE;
     }
     FORCEINLINE void SuppressRelease()
     {
