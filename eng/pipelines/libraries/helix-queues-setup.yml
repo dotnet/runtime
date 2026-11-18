@@ -62,6 +62,7 @@ jobs:
             - (Debian.13.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64@sha256:326d4caa63e873ca6aa0e1fd9e018da1763a6739656721f29363197cf23dc98b
             - (Fedora.45.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-45-helix-amd64@sha256:c1ce0ffa6b8a437118bff749e8b3156e71b75711375456fc370d4d48244fecb0
             - (openSUSE.16.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-16.0-helix-amd64@sha256:00bd836f83c294bb1099542898598451f11104b0c505cb85378737c569779dda
+            - (Ubuntu.2610.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.10-helix-amd64@sha256:f491b002f896774231916808f958dea4fa3ebf0d7a9a97190a44221dede2213a
 
           - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
               # outerloop only CoreCLR
