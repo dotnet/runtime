@@ -17539,13 +17539,16 @@ bool emitter::IsRedundantLdStr(
 
     if ((ins == INS_ldr) && (emitLastIns->idIns() == INS_str))
     {
-        // If reg1 is of size less than 8-bytes, then eliminating the 'ldr'
-        // will not zero the upper bits of reg1.
+        // If the load doesn't define the entire register, eliminating the 'ldr' will
+        // leave the upper bits of reg1 unchanged instead of zeroing them.
 
-        // Make sure operand size is 8-bytes
+        // Make sure operand size covers the entire register
         //  str w0, [x1, #4]
         //  ldr w0, [x1, #4]  <-- can't eliminate because upper-bits of x0 won't get set.
-        if (size != EA_8BYTE)
+        //  str d0, [x1, #8]
+        //  ldr d0, [x1, #8]  <-- can't eliminate because upper-bits of v0 won't get cleared.
+        bool definesEntireReg = isVectorRegister(reg1) ? (size == EA_16BYTE) : (size == EA_8BYTE);
+        if (!definesEntireReg)
         {
             return false;
         }
@@ -17613,15 +17616,22 @@ bool emitter::OptimizeLdrStr(instruction ins,
     assert(ins == INS_ldr || ins == INS_str);
 
     // A preceding writeback changes the base used by this access.
-    if (!emitCanPeepholeLastIns() || (emitLastIns->idIns() != ins) || insOptsIndexed(emitLastIns->idInsOpt()))
+    if (!emitCanPeepholeLastIns() || insOptsIndexed(emitLastIns->idInsOpt()))
     {
         return false;
     }
 
-    // Is the ldr/str even necessary?
-    if (IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+    // Don't run IsRedundantLdStr if LastIns and ins have mismatching GC info. Uncommon, but needed for cases like
+    // 'foo(object? o) => *(nint*)&o;' where we must stop GC tracking.
+    GCtype gcType = EA_IS_GCREF(reg1Attr) ? GCT_GCREF : (EA_IS_BYREF(reg1Attr) ? GCT_BYREF : GCT_NONE);
+    if ((emitLastIns->idGCref() == gcType) && IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
     {
         return true;
+    }
+
+    if (emitLastIns->idIns() != ins)
+    {
+        return false;
     }
 
     // Register 2 needs conversion to unencoded value for following optimisation checks.
