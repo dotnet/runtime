@@ -5481,9 +5481,17 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     GCInfo::WriteBarrierForm barrierType = GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
 
     // First, analyze the value being stored
-    auto vnVisitor = [this](ValueNum vn) -> ValueNumStore::VNVisit {
+    bool needsRelease = false;
+    auto vnVisitor    = [&](ValueNum vn) -> ValueNumStore::VNVisit {
         if ((vn == ValueNumStore::VNForNull()) || vnStore->IsVNObjHandle(vn))
         {
+#ifndef TARGET_XARCH
+            // GC barrier elision must preserve publication ordering for mutable objects.
+            if (!needsRelease && !indir->IsVolatile() && (vn != ValueNumStore::VNForNull()))
+            {
+                needsRelease = !info.compCompHnd->isObjectImmutable(vnStore->ConstantObjHandle(vn));
+            }
+#endif
             // No write barrier is required for null or nongc object handles as values
             return ValueNumStore::VNVisit::Continue;
         }
@@ -5493,6 +5501,11 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     if (vnStore->VNVisitReachingVNs(optConservativeNormalVN(value), vnVisitor) == ValueNumStore::VNVisit::Continue)
     {
         barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
+        if (needsRelease)
+        {
+            indir->gtFlags |= GTF_IND_VOLATILE;
+            indir->SetHasOrderingSideEffect();
+        }
     }
     // Next, analyze the address if we haven't already determined the barrier type from the value
     else if ((indir->gtFlags & GTF_IND_TGT_HEAP) == 0)
