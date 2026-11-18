@@ -489,6 +489,36 @@ GenTree* Compiler::impSIMDPopStack()
     return tree;
 }
 
+//--------------------------------------------------------------------------------
+// SimdConstantContains:
+//   Determine whether a fixed-size integral SIMD constant contains the specified value.
+//
+// Arguments:
+//    simdBaseType - SIMD base type
+//    simdValue    - SIMD constant value
+//    simdSize     - SIMD size in bytes
+//    value        - Value to search for
+//
+// Return Value:
+//    True if any element equals value
+//
+bool SimdConstantContains(var_types simdBaseType, const simd_t& simdValue, unsigned simdSize, int64_t value)
+{
+    assert(varTypeIsIntegral(simdBaseType));
+
+    unsigned elementCount = Compiler::getSIMDVectorLength(simdSize, simdBaseType);
+
+    for (unsigned index = 0; index < elementCount; index++)
+    {
+        if (EvaluateGetElementIntegral(simdBaseType, simdValue, index) == value)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 #if defined(TARGET_ARM64)
 
 uint64_t SimdAllBitsSetForElementType(var_types baseType)

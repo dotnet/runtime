@@ -194,13 +194,10 @@ $coverletArgs = @(
     "--targetargs", "run --project $PSScriptRoot --no-build -- $FuzzerName $InputPath",
     "--output", "$OutputDir/",
     "--format", "opencover",
+    "--include-test-assembly",
     "--use-source-link",
     "--does-not-return-attribute", "DoesNotReturn"
 )
-
-if ($instrumentationTargets.DllName -contains [System.IO.Path]::GetFileName($assemblyPath)) {
-    $coverletArgs += "--include-test-assembly"
-}
 
 # Exclude files based on runtime repository defaults
 # From src/libraries/Directory.Build.props

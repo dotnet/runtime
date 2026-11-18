@@ -3,6 +3,8 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IlcExportUnmanagedEntrypoints>true</IlcExportUnmanagedEntrypoints>
+    <!-- WASI does not support looking up exports from the main executable. -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWasi)' == 'true'">true</CLRTestTargetUnsupported>
     <!--
       For some reason, this particular test hits some case in AddressSanitizer where it fails to intercept methods correctly, causing failures.
       Disable for now.

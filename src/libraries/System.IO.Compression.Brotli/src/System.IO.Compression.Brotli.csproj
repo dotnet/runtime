@@ -19,6 +19,8 @@
     <Compile Include="System\IO\Compression\enc\BrotliCompressionOptions.cs" />
     <Compile Include="System\IO\Compression\enc\BrotliStream.Compress.cs" />
     <Compile Include="System\IO\Compression\dec\BrotliStream.Decompress.cs" />
+    <Compile Include="System\IO\Compression\dec\BrotliDecompressionOptions.cs" />
+    <Compile Include="System\IO\Compression\dec\BrotliDecoderParameter.cs" />
     <Compile Include="System\IO\Compression\BrotliUtils.cs" />
     <Compile Include="System\IO\Compression\dec\BrotliDecoder.cs" />
     <Compile Include="System\IO\Compression\enc\BrotliEncoder.cs" />

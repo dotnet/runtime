@@ -859,13 +859,6 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
             useType           = TYP_UNKNOWN;
         }
     }
-#elif UNIX_X86_ABI
-    if (callConv != CorInfoCallConvExtension::Managed && !isNativePrimitiveStructType(clsHnd))
-    {
-        canReturnInRegister = false;
-        howToReturnStruct   = SPK_ByReference;
-        useType             = TYP_UNKNOWN;
-    }
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
@@ -1206,12 +1199,19 @@ void DisplayNowayAssertMap()
         }
 
         // Iterate noway assert map, create sorted table by occurrence, dump it.
-        unsigned             count = NowayAssertMap->GetCount();
-        NowayAssertCountMap* nacp  = new NowayAssertCountMap[count];
-        unsigned             i     = 0;
+        unsigned             count         = NowayAssertMap->GetCount();
+        HostAllocator        hostAllocator = HostAllocator::getHostAllocator();
+        NowayAssertCountMap* nacp          = hostAllocator.allocate<NowayAssertCountMap>(count);
+        if (nacp == nullptr)
+        {
+            throw std::bad_alloc{};
+        }
+
+        unsigned i = 0;
 
         for (FileLineToCountMap::Node* const iter : FileLineToCountMap::KeyValueIteration(NowayAssertMap))
         {
+            new (&nacp[i], jitstd::placement_t()) NowayAssertCountMap();
             nacp[i].count = iter->GetValue();
             nacp[i].fl    = iter->GetKey();
             ++i;
@@ -1237,6 +1237,8 @@ void DisplayNowayAssertMap()
             fclose(fout);
             fout = nullptr;
         }
+
+        hostAllocator.deallocate(nacp);
     }
 }
 
@@ -2900,13 +2902,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // CONFIGURABLE_ARM_ABI
 
     opts.compScopeInfo = opts.compDbgInfo;
-
-#ifdef TARGET_WASM
-    // Wasm uses virtual registers that cannot be encoded in the
-    // ICorDebugInfo register scheme, and there is no native debugger
-    // to consume scope info, so disable it entirely.
-    opts.compScopeInfo = false;
-#endif
 
 #ifdef LATE_DISASM
     codeGen->getDisAssembler().disOpenForLateDisAsm(info.compMethodName, info.compClassName,
@@ -5018,6 +5013,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Transform any strongly connected components into reducible flow.
     //
     DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
+
+    // Insert EventPipe CPU-sampling samplepoints before lowering.
+    //
+    DoPhase(this, PHASE_WASM_PROF_INSTRUMENT, &Compiler::fgWasmProfInstrument);
 #endif
 
     // Assign registers to variables, etc.
@@ -6142,6 +6141,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64SveAes() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_SveAes);
+        }
+
+        if (JitConfig.EnableArm64SvePmull128() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SvePmull128);
         }
 
         if (JitConfig.EnableArm64SveSha3() != 0)

@@ -113,7 +113,7 @@
     </MSBuild>
 
     <!-- For platform-specific TFMs, first try the exact TFM with the platform suffix stripped
-         (e.g. net11.0-windows → net11.0). This ensures the canonical matches the same version. -->
+         (e.g. netXY.0-windows → netXY.0). This ensures the canonical matches the same version. -->
     <PropertyGroup Condition="'$(TargetPlatformIdentifier)' != ''">
       <_StrippedTfm>$(TargetFramework.Substring(0, $(TargetFramework.IndexOf('-'))))</_StrippedTfm>
     </PropertyGroup>

@@ -67,33 +67,12 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: MSBuild_CMake
-            buildArgs: -c Release -msbuild
+            buildArgs: -s clr+libs+tools+host+packs -c Release -msbuild
             timeoutInMinutes: 120
             condition:
               and(or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-                eq(variables['isRollingBuild'], true)),
-                notIn(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'))
-
-      #
-      # Build with RuntimeFlavor only. This exercise code paths where only RuntimeFlavor is
-      # specified. Catches cases where we depend on Configuration also being specified
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: debug
-          platforms:
-          - linux_x64_dev_innerloop
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: RuntimeFlavor_Mono
-            buildArgs: /p:RuntimeFlavor=Mono
-            timeoutInMinutes: 120
-            condition:
-              and(or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true)),
                 notIn(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'))
 

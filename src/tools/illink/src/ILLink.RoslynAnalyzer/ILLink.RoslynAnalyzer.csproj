@@ -21,9 +21,16 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <!-- The unsafe-v2 migration analyzers do not ship; they are built in every configuration but Release. -->
+  <PropertyGroup Condition="'$(Configuration)' != 'Release'">
+    <DefineConstants>$(DefineConstants);UNSAFE_MIGRATION</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System/Index.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\Polyfills\ArrayPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Roslyn\MemorySafetyRulesPolyfills.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Buffers\SearchValuesPolyfills.cs" />
   </ItemGroup>

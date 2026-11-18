@@ -15,12 +15,13 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class CustomAttributeTests
     {
+        // TypeAttributes.ExtendedLayout is not defined in .NET 10.
+        private const TypeAttributes ExtendedLayout = (TypeAttributes)0x00000018;
 
         [Fact]
         public void CustomAttribute_HexByteBlob_ParsedCorrectly()
@@ -527,12 +528,53 @@ namespace ILAssembler.Tests
                 42);
         }
 
-        [Fact]
-        public void CustomAttribute_VerbalTypeArgumentFromUnversionedAssemblyReference_EmitsAssemblyQualifiedTypeName()
+        [Theory]
+        [InlineData(".class public '<>Mangled' { }", "'<>Mangled'", "<>Mangled")]
+        [InlineData(".class public Contoso.Target { }", "Contoso.Target", "Contoso.Target")]
+        [InlineData(".class public Outer { .class nested public Inner { } }", "Outer/Inner", "Outer+Inner")]
+        [InlineData(".class public Contoso.Outer { .class nested public Inner { } }", "Contoso.Outer/Inner", "Contoso.Outer+Inner")]
+        public void CustomAttribute_DebuggerTypeProxy_EmitsReflectionTypeName(
+            string declaration, string typeName, string expectedName)
         {
-            string source = """
+            string source = $$"""
                 .assembly extern mscorlib { }
-                .assembly extern External.Assembly { }
+                .assembly test { }
+                {{declaration}}
+                .class public Test extends [mscorlib]System.Object
+                {
+                    .custom instance void [mscorlib]System.Diagnostics.DebuggerTypeProxyAttribute::.ctor(class [mscorlib]System.Type) = {
+                        type({{typeName}})
+                    }
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            TypeDefinitionHandle testType = reader.TypeDefinitions
+                .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Test");
+            CustomAttribute attribute = reader.GetCustomAttribute(Assert.Single(reader.GetCustomAttributes(testType)));
+            BlobReader blob = reader.GetBlobReader(attribute.Value);
+
+            Assert.Equal(1, blob.ReadUInt16());
+            Assert.Equal(expectedName, blob.ReadSerializedString());
+            Assert.Equal(0, blob.ReadUInt16());
+            Assert.Equal(0, blob.RemainingBytes);
+            Assert.Equal(expectedName, Assert.Single(attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder).FixedArguments).Value);
+        }
+
+        [Theory]
+        [InlineData("Contoso.ExternalType", "", "PublicKeyToken=null")]
+        [InlineData("Contoso.ExternalType", ".publickeytoken = (B7 7A 5C 56 19 34 E0 89)", "PublicKeyToken=b77a5c561934e089")]
+        [InlineData("Contoso.ExternalType", ".publickey = (01 02 03 04)", "PublicKey=01020304")]
+        [InlineData("'<>Mangled'", "", "PublicKeyToken=null")]
+        [InlineData("'<>Mangled'", ".publickeytoken = (B7 7A 5C 56 19 34 E0 89)", "PublicKeyToken=b77a5c561934e089")]
+        [InlineData("'<>Mangled'", ".publickey = (01 02 03 04)", "PublicKey=01020304")]
+        public void CustomAttribute_VerbalTypeArgumentFromUnversionedAssemblyReference_EmitsAssemblyQualifiedTypeName(
+            string typeName, string keyDeclaration, string expectedKey)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly extern External.Assembly { {{keyDeclaration}} }
                 .assembly test { }
                 .class public auto ansi sealed TypeAttribute extends [mscorlib]System.Attribute
                 {
@@ -546,7 +588,7 @@ namespace ILAssembler.Tests
                 .class public auto ansi Test extends [mscorlib]System.Object
                 {
                     .custom instance void TypeAttribute::.ctor(class [mscorlib]System.Type) = {
-                        type([External.Assembly]Contoso.ExternalType)
+                        type([External.Assembly]{{typeName}})
                     }
                 }
                 """;
@@ -566,7 +608,7 @@ namespace ILAssembler.Tests
             var argument = Assert.Single(value.FixedArguments);
             Assert.Equal("System.Type", argument.Type);
             Assert.Equal(
-                "Contoso.ExternalType, External.Assembly, PublicKeyToken=null",
+                $"{typeName.Trim('\'')}, External.Assembly, {expectedKey}",
                 argument.Value);
             Assert.Empty(value.NamedArguments);
         }
@@ -667,6 +709,51 @@ namespace ILAssembler.Tests
             AssertCustomAttributeBlob(reader, Assert.Single(reader.GetCustomAttributes(typeHandle)));
             AssertCustomAttributeBlob(reader, Assert.Single(reader.GetCustomAttributes(fieldHandle)));
             AssertCustomAttributeBlob(reader, Assert.Single(reader.GetCustomAttributes(methodHandle)));
+        }
+
+        [Theory]
+        [InlineData("[Scope]", HandleKind.AssemblyReference, null)]
+        [InlineData("[.module Scope]", HandleKind.ModuleReference, null)]
+        [InlineData("method void [.module Scope]::Target()", HandleKind.MemberReference, "Target")]
+        [InlineData("field int32 [.module Scope]::Value", HandleKind.MemberReference, "Value")]
+        public void CustomAttribute_ScopeOnlyOwners_PreserveMetadataParent(
+            string owner,
+            HandleKind expectedParentKind,
+            string? memberName)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly extern Scope { }
+                .module extern Scope
+                .assembly test { }
+                .custom ({{owner}}) instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var attribute = reader.GetCustomAttribute(Assert.Single(reader.CustomAttributes));
+
+            Assert.Equal(expectedParentKind, attribute.Parent.Kind);
+            EntityHandle scope = attribute.Parent;
+            if (memberName is not null)
+            {
+                var member = reader.GetMemberReference((MemberReferenceHandle)scope);
+                Assert.Equal(memberName, reader.GetString(member.Name));
+                Assert.Equal(
+                    owner.StartsWith("method ", StringComparison.Ordinal) ? MemberReferenceKind.Method : MemberReferenceKind.Field,
+                    member.GetKind());
+                scope = member.Parent;
+                Assert.Equal(HandleKind.ModuleReference, scope.Kind);
+            }
+
+            string scopeName = scope.Kind switch
+            {
+                HandleKind.AssemblyReference => reader.GetString(reader.GetAssemblyReference((AssemblyReferenceHandle)scope).Name),
+                HandleKind.ModuleReference => reader.GetString(reader.GetModuleReference((ModuleReferenceHandle)scope).Name),
+                _ => throw new InvalidOperationException($"Unexpected scope: {scope.Kind}")
+            };
+            Assert.Equal("Scope", scopeName);
+            AssertCustomAttributeBlob(reader, Assert.Single(reader.CustomAttributes));
         }
 
         [Fact]
@@ -1169,7 +1256,7 @@ namespace ILAssembler.Tests
 
         [Theory]
         [InlineData("( 01 00 00 00 00 00 00 00 )", TypeAttributes.SequentialLayout)]
-        [InlineData("( 01 00 01 00 00 00 00 00 )", TypeAttributes.ExtendedLayout)]
+        [InlineData("( 01 00 01 00 00 00 00 00 )", ExtendedLayout)]
         [InlineData("( 01 00 02 00 00 00 00 00 )", TypeAttributes.ExplicitLayout)]
         [InlineData("( 01 00 03 00 00 00 00 00 )", TypeAttributes.AutoLayout)]
         public void PseudoCustomAttribute_StructLayout_SetsLayoutMask(string value, TypeAttributes expected)

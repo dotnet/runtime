@@ -44,6 +44,10 @@ namespace Internal.Reflection.Core.Execution
         protected abstract object CreateInstance(object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException);
         protected internal abstract object CreateInstance(Span<object?> arguments);
         protected internal abstract object CreateInstanceWithFewArgs(Span<object?> arguments);
+        // Only ordinary instance constructors support the trusted byref entry point.
+        [CLSCompliant(false)]
+        protected internal virtual unsafe object CreateInstanceDirectByRef(IntPtr* arguments) =>
+            throw new NotSupportedException(SR.NotSupported_Type);
         public abstract Delegate CreateDelegate(RuntimeTypeHandle delegateType, object target, bool isStatic, bool isVirtual, bool isOpen);
         protected internal abstract object? Invoke(object? thisObject, Span<object?> arguments);
         protected internal abstract object? InvokeDirectWithFewArgs(object? thisObject, Span<object?> arguments);

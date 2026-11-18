@@ -301,11 +301,7 @@ VOID ParseNativeType(Module*                     pModule,
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(INT32), sizeof(INT32));
             break;
         case MarshalInfo::MARSHAL_TYPE_GENERIC_8:
-#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
-            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(INT64), 4);
-#else
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(INT64), sizeof(INT64));
-#endif
             break;
         case MarshalInfo::MARSHAL_TYPE_ANSICHAR:
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(CHAR), sizeof(CHAR));
@@ -325,11 +321,7 @@ VOID ParseNativeType(Module*                     pModule,
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::FLOAT, sizeof(float), sizeof(float));
             break;
         case MarshalInfo::MARSHAL_TYPE_DOUBLE:
-#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
-            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::FLOAT, sizeof(double), 4);
-#else
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::FLOAT, sizeof(double), sizeof(double));
-#endif
             break;
         case MarshalInfo::MARSHAL_TYPE_CURRENCY:
             *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__CURRENCY));

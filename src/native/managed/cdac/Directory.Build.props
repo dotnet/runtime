@@ -1,6 +1,7 @@
 <Project>
     <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..\'))" />
     <PropertyGroup>
+      <LangVersion>14.0</LangVersion>
       <CDacSourceManifestRoot Condition="'$(CDacSourceManifestRoot)' == ''">$(RepoRoot)</CDacSourceManifestRoot>
     </PropertyGroup>
     <Import Project="SourceManifest.props" />

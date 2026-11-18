@@ -7,8 +7,7 @@ namespace DotnetFuzzing.Fuzzers;
 
 internal sealed class KerberosPacLogonInfoFuzzer : IFuzzer
 {
-    public string[] TargetAssemblies { get; } = ["DotnetFuzzing"];
-    public string[] TargetAssemblyPrefixes { get; } = ["System.Net.Security.KerberosPacLogonInfo"];
+    public string[] TargetAssemblies => [];
     public string[] TargetCoreLibPrefixes => [];
 
     public void FuzzTarget(ReadOnlySpan<byte> bytes)

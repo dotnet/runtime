@@ -15,9 +15,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class InstructionTests
     {
@@ -107,6 +106,55 @@ namespace ILAssembler.Tests
                 Assert.Equal(expected.Append((byte)0x2A).ToArray(),
                     DocumentCompilerTestHelpers.CompileMethodIL($"ldc.i4.s {value}\nret", new Options { Optimize = optimize }));
             }
+        }
+
+        [Theory]
+        [InlineData("-2147483648", int.MinValue)]
+        [InlineData("2147483647", int.MaxValue)]
+        [InlineData("2147483648", int.MinValue)]
+        [InlineData("4294967295", -1)]
+        [InlineData("0x7fffffff", int.MaxValue)]
+        [InlineData("0x80000000", int.MinValue)]
+        [InlineData("-0x80000000", int.MinValue)]
+        [InlineData("0xffffffff", -1)]
+        [InlineData("0x00000000000000000ffffffff", -1)]
+        [InlineData("-0x0000000000000000080000000", int.MinValue)]
+        [InlineData("017777777777", int.MaxValue)]
+        [InlineData("020000000000", int.MinValue)]
+        [InlineData("-020000000000", int.MinValue)]
+        [InlineData("037777777777", -1)]
+        [InlineData("0000000000000000000037777777777", -1)]
+        [InlineData("-0000000000000000000020000000000", int.MinValue)]
+        [InlineData("0", 0)]
+        [InlineData("-0", 0)]
+        [InlineData("-0x0", 0)]
+        public void Int32Literal_PreservesSignedValuesAndUnsignedBitPatterns(string literal, int value)
+        {
+            byte[] expected = new byte[6];
+            expected[0] = 0x20;
+            BinaryPrimitives.WriteInt32LittleEndian(expected.AsSpan(1), value);
+            expected[5] = 0x2A;
+
+            Assert.Equal(expected, DocumentCompilerTestHelpers.CompileMethodIL($"ldc.i4 {literal}\nret", new Options()));
+        }
+
+        [Theory]
+        [InlineData("4294967296", 4294967296L)]
+        [InlineData("-2147483649", -2147483649L)]
+        [InlineData("0x100000000", 4294967296L)]
+        [InlineData("040000000000", 4294967296L)]
+        [InlineData("18446744073709551615", -1L)]
+        [InlineData("-18446744073709551615", 1L)]
+        [InlineData("0x10000000000000001", 1L)]
+        [InlineData("02000000000000000000000", 0L)]
+        public void Int64Literal_PreservesExistingEncodings(string literal, long value)
+        {
+            byte[] expected = new byte[10];
+            expected[0] = 0x21;
+            BinaryPrimitives.WriteInt64LittleEndian(expected.AsSpan(1), value);
+            expected[9] = 0x2A;
+
+            Assert.Equal(expected, DocumentCompilerTestHelpers.CompileMethodIL($"ldc.i8 {literal}\nret", new Options()));
         }
 
         [Theory]
@@ -1583,6 +1631,23 @@ namespace ILAssembler.Tests
                 $"Expected explicit-this={expectedExplicitThis}, header=0x{decoded.Header.RawValue:X2}");
             Assert.Equal("void", decoded.ReturnType);
             Assert.Empty(decoded.ParameterTypes);
+        }
+
+        [Theory]
+        [InlineData("", "")]
+        [InlineData("A", "A")]
+        [InlineData("AB", "\u4241")]
+        [InlineData("ABC", "\u4241C")]
+        [InlineData("\u00E9", "\uA9C3")]
+        [InlineData("\U0001F600", "\u9FF0\u8098")]
+        public void LdstrInstruction_AnsiForm_ReinterpretsUtf8AsLittleEndianUtf16(string value, string expected)
+        {
+            string source = DocumentCompilerTestHelpers.MethodSource($"ldstr ansi(\"{value}\")\npop\nret");
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(expected, ReadLdstrValue(pe, reader, "M"));
         }
 
         [Fact]

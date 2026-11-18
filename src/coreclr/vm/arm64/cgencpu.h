@@ -71,30 +71,14 @@ extern "C" void* PacStripPtr(void* ptr);
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 16  // bytes (two int registers: x0 and x1)
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          16  // bytes (max value type size that can be passed by value)
 
-#define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
-#define CALLDESCR_RETBUFFARGREG                 1   // CallDescrWorker has RetBuffArg parameter that's separate from arg regs
+#define HAS_FLOAT_ARGUMENT_REGISTERS            1   // Calling convention has separate floating-point argument registers
+#define HAS_RETBUFF_ARGUMENT_REGISTER           1   // Calling convention has a dedicated return-buffer argument register
 
 #define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.
 #define STACKWALK_CONTROLPC_ADJUST_OFFSET 4
-
-inline
-ARG_SLOT FPSpillToR8(void* pSpillSlot)
-{
-    LIMITED_METHOD_CONTRACT;
-    return *(SIZE_T*)pSpillSlot;
-}
-
-inline
-void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
-{
-    LIMITED_METHOD_CONTRACT;
-    *(SIZE_T*)pSpillSlot = srcDoubleAsSIZE_T;
-    *((SIZE_T*)pSpillSlot + 1) = 0;
-}
 
 //**********************************************************************
 // Parameter size

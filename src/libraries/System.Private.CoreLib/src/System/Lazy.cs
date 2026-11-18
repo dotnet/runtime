@@ -256,7 +256,7 @@ namespace System
         /// class that uses <typeparamref name="T"/>'s default constructor and a specified thread-safety mode.
         /// </summary>
         /// <param name="mode">The lazy thread-safety mode</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid valuee</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid value</exception>
         public Lazy(LazyThreadSafetyMode mode) :
             this(null, mode, useDefaultConstructor: true)
         {
