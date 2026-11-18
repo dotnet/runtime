@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using Internal.NativeFormat;
 
 namespace Internal.Metadata.NativeFormat;
 
@@ -124,7 +125,10 @@ public struct SignatureReader
     {
         _reader = reader;
         _offset = reader._streamReader.DecodeUnsigned(blob.Offset, out uint length);
-        _endOffset = checked(_offset + length);
+        uint endOffset = _offset + length;
+        if (endOffset < _offset || endOffset > reader._streamReader.Size)
+            NativeReader.ThrowBadImageFormatException();
+        _endOffset = endOffset;
     }
 
     public readonly TypeSignature Position => new TypeSignature(_reader, _offset, _endOffset);

@@ -55,7 +55,7 @@ internal ref struct BlobReader(ReadOnlySpan<byte> blob)
     {
         int start = Offset;
         int value = ReadCompressedInteger();
-        int bits = Offset - start switch { 1 => 7, 2 => 14, _ => 29 };
+        int bits = (Offset - start) switch { 1 => 7, 2 => 14, _ => 29 };
         return (value >> 1) | ((value & 1) == 0 ? 0 : -1 << (bits - 1));
     }
 

@@ -100,7 +100,7 @@ internal partial class Transform<TPolicy>
                     code = SignatureTypeCode.String;
                 else if (type.IsObject)
                     code = SignatureTypeCode.Object;
-                else if (type == type.Context.GetWellKnownType(Cts.WellKnownType.TypedReference))
+                else if (type.IsTypedReference)
                     code = SignatureTypeCode.TypedReference;
                 else if (type.HasInstantiation && !type.IsGenericDefinition)
                 {
