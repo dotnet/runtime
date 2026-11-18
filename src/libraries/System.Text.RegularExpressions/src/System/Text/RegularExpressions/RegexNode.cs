@@ -15,6 +15,9 @@ namespace System.Text.RegularExpressions
         /// <summary>Arbitrary number of repetitions of the same character when we'd prefer to represent that as a repeater of that character rather than a string.</summary>
         internal const int MultiVsRepeaterLimit = 64;
 
+        /// <summary>Upper bound on the total length of a case-insensitive prefix extracted by TryGetOrdinalCaseInsensitiveString.</summary>
+        internal const int MaxCaseInsensitivePrefixLength = 1024;
+
         /// <summary>The node's children.</summary>
         /// <remarks>null if no children, a <see cref="RegexNode"/> if one child, or a <see cref="List{RegexNode}"/> if multiple children.</remarks>
         private object? Children;
@@ -3165,7 +3168,17 @@ namespace System.Text.RegularExpressions
                         break;
                     }
 
-                    vsb.Append((char)(twoChars[0] | 0x20), child.Kind is RegexNodeKind.Set ? 1 : child.M);
+                    // Limit the number of characters appended from a single fixed-count set node.
+                    // Otherwise, some patterns would allocate a string proportional to that count,
+                    // which is never a useful prefix and can OOM the process at compile time.
+                    int appendCount = child.Kind is RegexNodeKind.Set ? 1 : child.M;
+                    if (vsb.Length + appendCount > MaxCaseInsensitivePrefixLength)
+                    {
+                        break;
+                    }
+
+                    vsb.Append((char)(twoChars[0] | 0x20), appendCount);
+
                 }
                 else if (child.Kind is RegexNodeKind.Concatenate)
                 {
