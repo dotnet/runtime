@@ -1199,12 +1199,19 @@ void DisplayNowayAssertMap()
         }
 
         // Iterate noway assert map, create sorted table by occurrence, dump it.
-        unsigned             count = NowayAssertMap->GetCount();
-        NowayAssertCountMap* nacp  = new NowayAssertCountMap[count];
-        unsigned             i     = 0;
+        unsigned             count         = NowayAssertMap->GetCount();
+        HostAllocator        hostAllocator = HostAllocator::getHostAllocator();
+        NowayAssertCountMap* nacp          = hostAllocator.allocate<NowayAssertCountMap>(count);
+        if (nacp == nullptr)
+        {
+            throw std::bad_alloc{};
+        }
+
+        unsigned i = 0;
 
         for (FileLineToCountMap::Node* const iter : FileLineToCountMap::KeyValueIteration(NowayAssertMap))
         {
+            new (&nacp[i], jitstd::placement_t()) NowayAssertCountMap();
             nacp[i].count = iter->GetValue();
             nacp[i].fl    = iter->GetKey();
             ++i;
@@ -1230,6 +1237,8 @@ void DisplayNowayAssertMap()
             fclose(fout);
             fout = nullptr;
         }
+
+        hostAllocator.deallocate(nacp);
     }
 }
 

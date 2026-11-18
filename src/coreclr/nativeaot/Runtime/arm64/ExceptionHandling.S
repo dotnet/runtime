@@ -262,10 +262,14 @@ LOCAL_LABEL(NotHijacked):
 
     LEAF_ENTRY RhpResumeAfterCatch, _TEXT
 
-        INLINE_GETTHREAD x3                                     // x3 <- Thread*
+#ifdef FEATURE_EMULATED_TLS
+        GETTHREAD_ETLS_2                                        // x2 <- Thread*
+#else
+        INLINE_GETTHREAD x2                                     // x2 <- Thread*
+#endif
 
         // Clear the DoNotTriggerGc state before resuming in the managed code after the catch.
-        add         x12, x3, #OFFSETOF__Thread__m_ThreadStateFlags
+        add         x12, x2, #OFFSETOF__Thread__m_ThreadStateFlags
 LOCAL_LABEL(ResumeAfterCatch_ClearRetry):
         ldxr        w4, [x12]
         bic         w4, w4, #TSF_DoNotTriggerGc
@@ -274,7 +278,7 @@ LOCAL_LABEL(ResumeAfterCatch_ClearRetry):
 
         // We must unhijack the thread at this point because the section of stack where the hijack is applied
         // may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
-        INLINE_THREAD_UNHIJACK x3, x4, x12                      // Thread in x3, trashes x4 and x12
+        INLINE_THREAD_UNHIJACK x2, x4, x12                      // Thread in x2, trashes x4 and x12
 
         LOAD_FUNCLET_REGISTER x0, 19, x12
         LOAD_FUNCLET_REGISTER x0, 20, x12
