@@ -156,6 +156,7 @@ jobs:
       targetRid: openharmony-arm64
       platform: openharmony_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: openharmony
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
