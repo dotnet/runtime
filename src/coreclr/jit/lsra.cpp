@@ -13973,8 +13973,11 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
 
     // FREE_OR_CHEAPER_SPILL may choose eviction instead. Dispatch the remaining heuristics using that decision.
     IF_FOUND_GOTO_DONE
-    try_FREE_OR_CHEAPER_SPILL();
-    IF_FOUND_GOTO_DONE
+    if (freeCandidates != RBM_NONE)
+    {
+        try_FREE_OR_CHEAPER_SPILL();
+        IF_FOUND_GOTO_DONE
+    }
 
     if (freeCandidates != RBM_NONE)
     {
