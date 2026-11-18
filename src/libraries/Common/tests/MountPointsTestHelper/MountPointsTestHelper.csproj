@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <MountPointsTestSource Condition="'$(MountPointsTestSource)' == ''">$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.cs</MountPointsTestSource>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MountPointsTestHelper.cs" />
+    <Compile Include="$(MountPointsTestSource)"
+             Link="Common\Interop\Unix\System.Native\Interop.MountPoints.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs"
+             Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
+  </ItemGroup>
+</Project>

@@ -168,4 +168,8 @@
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'">
+    <Compile Include="Tests\Interop\MountPointsTests.cs" />
+    <ProjectReference Include="MountPointsTestHelper\MountPointsTestHelper.csproj" />
+  </ItemGroup>
 </Project>
