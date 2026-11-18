@@ -123,4 +123,30 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
 void InterpDispatchCache_ReclaimAll();
 void InterpDispatchCache_ClearForLoaderAllocator(LoaderAllocator* pLoaderAllocator);
 
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+inline bool AuxiliaryMethodState::ShouldResolveNativeCode() const
+{
+    LIMITED_METHOD_CONTRACT;
+    switch (discriminator)
+    {
+        case AuxiliaryMethodStateDiscriminator::CheckAuxiliaryModuleActivationFlag:
+            // TODO: remove the simulated download once auxiliary modules are separate
+            ReadyToRunInfo::AdvanceSimulatedAuxiliaryModuleDownload(auxiliaryModuleActivationFlag);
+            return ReadyToRunInfo::IsAuxiliaryModuleActivated(auxiliaryModuleActivationFlag);
+        case AuxiliaryMethodStateDiscriminator::CheckAuxiliaryEntryPointsEra:
+            // TODO: remove the simulated download once auxiliary EntryPoints modules are separate
+            ReadyToRunInfo::AdvanceSimulatedAuxiliaryEntryPointsDownload();
+            return ReadyToRunInfo::IsAuxiliaryEntryPointsEraStale(auxiliaryEntryPointsEra);
+        case AuxiliaryMethodStateDiscriminator::Activated:
+            return true;
+        case AuxiliaryMethodStateDiscriminator::Uninitialized:
+            return false;
+        case AuxiliaryMethodStateDiscriminator::InterpretOnly:
+            return false;
+        default:
+            return false;
+    }
+}
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
 #endif // _INTERPEXEC_H_

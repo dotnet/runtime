@@ -7,6 +7,7 @@
 #define _INTERPRETERSHARED_H_
 
 #include "intopsshared.h"
+#include "auxiliarymethods.h"
 
 #ifdef _MSC_VER
 #define INTERP_API
@@ -32,12 +33,16 @@ class MethodTable;
 
 struct CallStubHeader;
 
+
 struct InterpMethod
 {
 #if DEBUG
     InterpMethod *self;
 #endif
     COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), methodHnd);
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    AuxiliaryMethodState AuxiliaryState;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
     int32_t argsSize;
     int32_t allocaSize;
     void** pDataItems;
@@ -64,6 +69,9 @@ struct InterpMethod
         this->self = this;
 #endif
         this->methodHnd = methodHnd;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+        AuxiliaryState = AuxiliaryMethodState::InterpretOnly();
+#endif // FEATURE_AUXILIARY_R2R_MODULES
         this->argsSize = argsSize;
         this->allocaSize = allocaSize;
         this->pDataItems = pDataItems;

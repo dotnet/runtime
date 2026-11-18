@@ -1480,6 +1480,46 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
     return targetIp;
 }
 
+static InterpByteCodeStart* ResolveInterpreterCode(MethodDesc*& targetMethod, InterpMethodContextFrame* pFrame, InterpreterFrame* pInterpreterFrame, const int32_t* ip)
+{
+    InterpByteCodeStart* targetIp;
+    if (!targetMethod->IsInterpreterCodeInitialized(targetIp))
+    {
+        targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
+    }
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    // A declaration can still cache its implementation's interpreter code after the implementation's R2R
+    // code is published. Keep this check so calls through that alias reach the published code.
+    if (targetIp != nullptr
+        && targetIp->Method->AuxiliaryState.ShouldResolveNativeCode())
+    {
+        MethodDesc* pActualMethod = targetIp->Method->methodHnd;
+        if (targetIp->Method->AuxiliaryState.discriminator != AuxiliaryMethodStateDiscriminator::Activated)
+        {
+            pFrame->ip = ip;
+            pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+            {
+                GCX_PREEMP_REGION_BEGIN();
+                CallWithSEHWrapper(
+                    [pActualMethod, targetIp]() {
+                        pActualMethod->TryActivateDelayedR2RCode(targetIp->Method, CallerGCMode::Coop);
+                        return 0;
+                    });
+                GCX_PREEMP_REGION_END();
+            }
+        }
+        if (pActualMethod->GetInterpreterCode() == nullptr)
+        {
+            targetMethod = pActualMethod;
+            return nullptr;
+        }
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
+    return targetIp;
+}
+
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
 {
     CONTRACTL
@@ -3585,11 +3625,7 @@ SWITCH_OPCODE:
                             targetMethod = NonVirtualEntry2MethodDesc(actualTarget);
                         }
 
-                        PTR_InterpByteCodeStart targetIp;
-                        if (!targetMethod->IsInterpreterCodeInitialized(targetIp))
-                        {
-                            targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
-                        }
+                        PTR_InterpByteCodeStart targetIp = ResolveInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
                         if (targetIp != NULL)
                         {
                             pFrame->ip = ip;
@@ -3683,11 +3719,7 @@ CALL_INTERP_METHOD:
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
-                    InterpByteCodeStart* targetIp;
-                    if (!targetMethod->IsInterpreterCodeInitialized(targetIp))
-                    {
-                        targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
-                    }
+                    InterpByteCodeStart* targetIp = ResolveInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
                     if (targetIp == NULL)
                     {
                         // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
