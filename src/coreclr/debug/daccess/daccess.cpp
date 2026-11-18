@@ -6232,9 +6232,19 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
     // Open the MD interface on the host copy of the metadata.
     //
 
-    status = GetMDInternalInterface(mdBaseHost, mdSize, ofRead,
-                                    IID_IMDInternalImport,
-                                    (void**)&mdImport);
+    if (reflectionModule != NULL)
+    {
+        // Reflection.Emit modules capture their metadata in the uncompressed (#-) format.
+        status = GetInternalWithRWFormat(mdBaseHost, mdSize, ofRead,
+                                         IID_IMDInternalImport,
+                                         (void**)&mdImport);
+    }
+    else
+    {
+        status = GetMDInternalInterface(mdBaseHost, mdSize, ofRead,
+                                        IID_IMDInternalImport,
+                                        (void**)&mdImport);
+    }
     if (status != S_OK)
     {
         if (throwEx)

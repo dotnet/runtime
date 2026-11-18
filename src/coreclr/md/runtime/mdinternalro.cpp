@@ -36,14 +36,6 @@ HRESULT TranslateSigHelper(                 // S_OK or error.
     ULONG                   *pcbSig);       // [OUT] count of bytes in the translated signature
 #endif //!DACCESS_COMPILE
 
-__checkReturn
-HRESULT GetInternalWithRWFormat(
-    LPVOID      pData,
-    ULONG       cbData,
-    DWORD       flags,                  // [IN] MDInternal_OpenForRead or MDInternal_OpenForENC
-    REFIID      riid,                   // [in] The interface desired.
-    void        **ppIUnk);              // [out] Return interface on success.
-
 // forward declaration
 __checkReturn
 HRESULT MDApplyEditAndContinue(         // S_OK or error.

@@ -26,7 +26,6 @@ enum MAPPINGTYPE
 };
 
 
-#define SCHEMA_STREAM_A             "#Schema"
 #define STRING_POOL_STREAM_A        "#Strings"
 #define BLOB_POOL_STREAM_A          "#Blob"
 #define US_BLOB_POOL_STREAM_A       "#US"
@@ -38,7 +37,6 @@ enum MAPPINGTYPE
 #define PDB_STREAM_A                "#Pdb"
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
-#define SCHEMA_STREAM               W("#Schema")
 #define STRING_POOL_STREAM          W("#Strings")
 #define BLOB_POOL_STREAM            W("#Blob")
 #define US_BLOB_POOL_STREAM         W("#US")

@@ -15,14 +15,6 @@
 
 #include "mdinternalro.h"
 
-enum MDFileFormat
-{
-    MDFormat_ReadOnly = 0,
-    MDFormat_ReadWrite = 1,
-    MDFormat_ICR = 2,
-    MDFormat_Invalid = 3
-};
-
 STDAPI GetMDInternalInterface(
     LPVOID      pData,                  // [IN] Buffer with the metadata.
     ULONG       cbData,                 // [IN] Size of the data in the buffer.

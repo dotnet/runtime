@@ -18,34 +18,22 @@
 
 #ifdef FEATURE_METADATA_INTERNAL_APIS
 
-// forward declaration
-HRESULT GetInternalWithRWFormat(
-    LPVOID      pData,
-    ULONG       cbData,
-    DWORD       flags,                  // [IN] MDInternal_OpenForRead or MDInternal_OpenForENC
-    REFIID      riid,                   // [in] The interface desired.
-    void        **ppIUnk);              // [out] Return interface on success.
-
 //*****************************************************************************
 // CheckFileFormat
-// This function will determine if the in-memory image is a readonly, readwrite,
-// or ICR format.
+// This function verifies that the in-memory metadata uses the compressed (#~)
+// table stream. The uncompressed (#-) format is not supported for loaded images.
 //*****************************************************************************
 HRESULT
 CheckFileFormat(
     LPVOID        pData,
-    ULONG         cbData,
-    MDFileFormat *pFormat)  // [OUT] the file format
+    ULONG         cbData)
 {
     HRESULT        hr = NOERROR;
     STORAGEHEADER  sHdr;        // Header for the storage.
     PSTORAGESTREAM pStream;     // Pointer to each stream.
     int            i;
     ULONG          cbStreamBuffer;
-
-    _ASSERTE(pFormat != NULL);
-
-    *pFormat = MDFormat_Invalid;
+    bool           fFoundTables = false;
 
     // Validate the signature of the format, or it isn't ours.
     if (FAILED(hr = MDFormat::VerifySignature((PSTORAGESIGNATURE) pData, cbData)))
@@ -103,35 +91,19 @@ CheckFileFormat(
 
         if (strcmp(pStream->GetName(), COMPRESSED_MODEL_STREAM_A) == 0)
         {
-            // Validate that only one of compressed/uncompressed is present.
-            if (*pFormat != MDFormat_Invalid)
-            {   // Already found a good stream.
+            if (fFoundTables)
+            {
                 Debug_ReportError("Compressed model stream #~ is second important stream.");
                 hr = CLDB_E_FILE_CORRUPT;
                 goto ErrExit;
             }
-            // Found the compressed meta data stream.
-            *pFormat = MDFormat_ReadOnly;
+            fFoundTables = true;
         }
         else if (strcmp(pStream->GetName(), ENC_MODEL_STREAM_A) == 0)
         {
-            // Validate that only one of compressed/uncompressed is present.
-            if (*pFormat != MDFormat_Invalid)
-            {   // Already found a good stream.
-                Debug_ReportError("ENC model stream #- is second important stream.");
-                hr = CLDB_E_FILE_CORRUPT;
-                goto ErrExit;
-            }
-            // Found the ENC meta data stream.
-            *pFormat = MDFormat_ReadWrite;
-        }
-        else if (strcmp(pStream->GetName(), SCHEMA_STREAM_A) == 0)
-        {
-            // Found the uncompressed format
-            *pFormat = MDFormat_ICR;
-
-            // keep going. We may find the compressed format later.
-            // If so, we want to use the compressed format.
+            Debug_ReportError("Uncompressed model stream #- is not supported.");
+            hr = CLDB_E_FILE_CORRUPT;
+            goto ErrExit;
         }
 
         // Pick off the next stream if there is one.
@@ -139,7 +111,7 @@ CheckFileFormat(
         cbStreamBuffer = (ULONG)((LPBYTE)pData + cbData - (LPBYTE)pNext);
     }
 
-    if (*pFormat == MDFormat_Invalid)
+    if (!fFoundTables)
     {   // Didn't find a good stream.
         Debug_ReportError("Cannot find MetaData stream.");
         hr = CLDB_E_FILE_CORRUPT;
@@ -153,8 +125,8 @@ ErrExit:
 
 //*****************************************************************************
 // GetMDInternalInterface.
-// This function will check the metadata section and determine if it should
-// return an interface which implements ReadOnly or ReadWrite.
+// Returns a read-only internal interface on a metadata section that uses the
+// compressed (#~) table stream.
 //*****************************************************************************
 STDAPI GetMDInternalInterface(
     LPVOID      pData,
@@ -166,31 +138,18 @@ STDAPI GetMDInternalInterface(
     HRESULT     hr = NOERROR;
     MDInternalRO *pInternalRO = NULL;
     IMDCommon    *pInternalROMDCommon = NULL;
-    MDFileFormat format;
 
     if (ppIUnk == NULL)
         IfFailGo(E_INVALIDARG);
 
-    // Determine the file format we're trying to read.
-    IfFailGo( CheckFileFormat(pData, cbData, &format) );
+    IfFailGo( CheckFileFormat(pData, cbData) );
 
-    // Found a fully-compressed, read-only format.
-    if ( format == MDFormat_ReadOnly )
-    {
-        pInternalRO = new (nothrow) MDInternalRO;
-        IfNullGo( pInternalRO );
+    pInternalRO = new (nothrow) MDInternalRO;
+    IfNullGo( pInternalRO );
 
-        IfFailGo( pInternalRO->Init(const_cast<void*>(pData), cbData) );
+    IfFailGo( pInternalRO->Init(const_cast<void*>(pData), cbData) );
 
-        IfFailGo(pInternalRO->QueryInterface(riid, ppIUnk));
-
-    }
-    else
-    {
-        // Found a not-fully-compressed, ENC format.
-        _ASSERTE( format == MDFormat_ReadWrite );
-        IfFailGo( GetInternalWithRWFormat( pData, cbData, flags, riid, ppIUnk ) );
-    }
+    IfFailGo(pInternalRO->QueryInterface(riid, ppIUnk));
 
 ErrExit:
 
