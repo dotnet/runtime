@@ -4,9 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
-using Internal.TypeSystem.Interop;
 
 namespace ILCompiler
 {
@@ -63,23 +63,12 @@ namespace ILCompiler
             entryPoints?.Add(entry.Substring(separator + 1));
         }
 
-        /// <summary>
-        /// Gets the direct entry points of the module named exactly <paramref name="module"/>, or null
-        /// when all of them are direct.
-        /// </summary>
-        public bool TryGetEntryPoints(string module, out IReadOnlySet<string> entryPoints)
-        {
-            bool found = _entries.TryGetValue(module, out HashSet<string> set);
-            entryPoints = set;
-            return found;
-        }
-
         /// <summary>Whether every entry point of <paramref name="module"/> is direct.</summary>
         public bool ContainsModule(string module)
         {
-            foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(_target, module))
+            foreach (string variation in ModuleNameVariations(module))
             {
-                if (TryGetEntryPoints(variation, out IReadOnlySet<string> entryPoints) && entryPoints is null)
+                if (_entries.TryGetValue(variation, out HashSet<string> entryPoints) && entryPoints is null)
                     return true;
             }
 
@@ -87,21 +76,98 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Whether <paramref name="entryPoint"/> in <paramref name="module"/> is direct, without the
-        /// Windows charset suffixes <c>A</c> and <c>W</c>.
+        /// Gets the native symbol a direct call to the P/Invoke <paramref name="method"/> binds to.
+        /// Returns false when the P/Invoke is not direct.
         /// </summary>
-        public bool Contains(string module, string entryPoint)
+        public bool TryGetDirectEntryPoint(MethodDesc method, out string entryPoint)
         {
-            foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(_target, module))
+            PInvokeMetadata metadata = method.GetPInvokeMethodMetadata();
+            string entryPointMetadataName = metadata.Name ?? method.GetName();
+
+            foreach (string module in ModuleNameVariations(metadata.Module))
             {
-                if (TryGetEntryPoints(variation, out IReadOnlySet<string> entryPoints)
-                    && (entryPoints is null || entryPoints.Contains(entryPoint)))
+                if (!_entries.TryGetValue(module, out HashSet<string> entryPoints))
+                    continue;
+
+                if (entryPoints is null)
                 {
+                    entryPoint = entryPointMetadataName;
                     return true;
+                }
+
+                foreach (string variation in EntryPointNameVariations(entryPointMetadataName, metadata.Flags))
+                {
+                    if (entryPoints.Contains(variation))
+                    {
+                        entryPoint = variation;
+                        return true;
+                    }
                 }
             }
 
+            entryPoint = null;
             return false;
+        }
+
+        private IEnumerable<string> ModuleNameVariations(string name)
+        {
+            yield return name;
+
+            if (_target.IsWindows)
+            {
+                const string Suffix = ".dll";
+
+                if (name.EndsWith(Suffix, StringComparison.OrdinalIgnoreCase))
+                    yield return name.Substring(0, name.Length - Suffix.Length);
+            }
+            else
+            {
+                string suffix = _target.IsApplePlatform ? ".dylib" : ".so";
+                bool hasSharedLibraryExtension = name.EndsWith(suffix, StringComparison.Ordinal);
+                const string LibPrefix = "lib";
+                bool hasLibPrefix = name.StartsWith(LibPrefix, StringComparison.Ordinal);
+
+                if (hasSharedLibraryExtension)
+                    yield return name.Substring(0, name.Length - suffix.Length);
+                if (hasLibPrefix)
+                    yield return name.Substring(LibPrefix.Length);
+                if (hasLibPrefix && hasSharedLibraryExtension)
+                    yield return name.Substring(LibPrefix.Length, name.Length - suffix.Length - LibPrefix.Length);
+            }
+        }
+
+        private IEnumerable<string> EntryPointNameVariations(string name, PInvokeFlags flags)
+        {
+            if (_target.IsWindows && !flags.ExactSpelling)
+            {
+                // Mirror CharSet normalization from Marshaller.CreateMarshaller
+                bool isAnsi = flags.CharSet switch
+                {
+                    CharSet.Ansi => true,
+                    CharSet.Unicode => false,
+                    CharSet.Auto => false,
+                    _ => true
+                };
+
+                if (isAnsi)
+                {
+                    // For ANSI, look for the user-provided entry point name first.
+                    // If that does not exist, try the charset suffix.
+                    yield return name;
+                    yield return name + "A";
+                }
+                else
+                {
+                    // For Unicode, look for the entry point name with the charset suffix first.
+                    // The 'W' API takes precedence over the undecorated one.
+                    yield return name + "W";
+                    yield return name;
+                }
+            }
+            else
+            {
+                yield return name;
+            }
         }
     }
 }

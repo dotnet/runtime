@@ -114,13 +114,12 @@ namespace ILCompiler
                 return true;
             }
 
-            PInvokeMetadata metadata = method.GetPInvokeMethodMetadata();
-            if (metadata.Module == "QCall")
+            if (method.GetPInvokeMethodMetadata().Module == "QCall")
             {
                 return true;
             }
 
-            return _directPInvokes.Contains(metadata.Module, metadata.Name ?? method.GetName());
+            return _directPInvokes.TryGetDirectEntryPoint(method, out _);
         }
 
         public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)

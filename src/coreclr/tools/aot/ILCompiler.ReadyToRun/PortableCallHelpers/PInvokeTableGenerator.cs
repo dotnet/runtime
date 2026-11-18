@@ -59,7 +59,7 @@ namespace ILCompiler.PortableCallHelpers
                     modules.Add(pinvoke.Module);
                     log.Verbose($"Adding module {pinvoke.Module} for WasmImportLinkage");
                 }
-                else if (linked.Contains(pinvoke.Module, pinvoke.EntryPoint))
+                else if (linked.TryGetDirectEntryPoint(pinvoke.Method, out _))
                 {
                     linkedEntryPoints.Add(pinvoke);
                 }
