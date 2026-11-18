@@ -498,11 +498,6 @@ public:
 
 int GetTotalProcessorCount();
 
-//******************************************************************************
-// Returns the number of processors that a process has been configured to run on
-//******************************************************************************
-int GetCurrentProcessCpuCount();
-
 
 //*****************************************************************************
 // Return != 0 if the bit at the specified index in the array is on and 0 if

@@ -5,7 +5,8 @@ scripts in this directory regenerate the checked-in CoreCLR call-helper source f
 WebAssembly runtime. They parse their arguments and hand the work to
 `generate-coreclr-helpers.proj` next to them, which runs crossgen2 in
 `--generate-portable-callhelpers` mode over the managed framework assemblies to emit the native
-P/Invoke, reverse-P/Invoke, and interpreter-to-managed call helpers. The generator lives in
+P/Invoke, reverse-P/Invoke, and interpreter-to-managed call helpers, including the shared static
+QCall/FCall entrypoint table. The generator lives in
 [`ILCompiler.ReadyToRun/PortableCallHelpers`](../../tools/aot/ILCompiler.ReadyToRun/PortableCallHelpers) so it can use crossgen2's
 type system to compute the wasm ABI layout of the structs that cross the boundary.
 
@@ -33,13 +34,9 @@ Each run emits three files into the output directory:
 - `callhelpers-reverse.cpp`
 - `callhelpers-interp-to-managed.cpp`
 
-`callhelpers-pinvoke.cpp` also defines a separate QCall table and `QCallResolveDllImport`.
-QCalls are collected only from CoreLib in the managed assembly closure, independently of the P/Invoke module list,
-matching CoreCLR's restriction that only CoreLib can resolve QCalls.
-On WebAssembly, this replaces the full table in `qcallentrypoints.cpp`, so an app's native relink
-can discard QCall implementations that its trimmed managed assemblies no longer reference.
-Browser `memmove` and `memset` QCalls retain the bulk-memory wrappers in `qcallentrypoints.cpp`;
-WASI uses the libc entrypoints directly. Non-WebAssembly builds still use the hand-written table.
+## The shared QCall/FCall table
+
+`callhelpers-pinvoke.cpp` contains an entrypoint table for all P/Invokes in the application, as well as all [QCalls and FCalls in System.Private.CoreLib](../../../../docs/design/coreclr/botr/corelib.md#Calling-from-managed-to-native-code). A few specialized FCalls have separate internal runtime implementations that are not included in this table. The QCalls and FCalls are discovered by scanning the members of System.Private.CoreLib to find the corresponding methods.
 
 ## The P/Invoke module list
 
