@@ -832,7 +832,7 @@ public sealed class DataTypeIndexTests
     }
 
     [Fact]
-    public void GeneratedLayoutSetContractLookupIsNotAttributedToConsumer()
+    public void GeneratedTypeLayoutContractLookupIsNotAttributedToConsumer()
     {
         const string source = """
             namespace Microsoft.Diagnostics.DataContractReader
@@ -856,7 +856,7 @@ public sealed class DataTypeIndexTests
             }
             namespace Microsoft.Diagnostics.DataContractReader.Generated
             {
-                public static class LayoutSet
+                public static class TypeLayout
                 {
                     public static void Resolve(
                         Microsoft.Diagnostics.DataContractReader.ContractRegistry registry)
@@ -881,7 +881,7 @@ public sealed class DataTypeIndexTests
                     public static Widget Create(
                         Microsoft.Diagnostics.DataContractReader.ContractRegistry registry)
                     {
-                        Microsoft.Diagnostics.DataContractReader.Generated.LayoutSet.Resolve(
+                        Microsoft.Diagnostics.DataContractReader.Generated.TypeLayout.Resolve(
                             registry);
                         return new Widget();
                     }

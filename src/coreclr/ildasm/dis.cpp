@@ -39,8 +39,6 @@ extern unsigned g_uConsoleCP;
 
 extern BOOL                 g_fThisIsInstanceMethod;
 extern unsigned             g_uCodePage;
-extern HANDLE               hConsoleOut;
-extern HANDLE               hConsoleErr;
 // globals for source file info
 ULONG_PTR ulWasFileToken = 0xFFFFFFFF;
 GUID guidWasLang={0}, guidWasLangVendor={0},guidWasDoc={0};
@@ -93,7 +91,7 @@ OPCODE DecodeOpcode(const BYTE *pCode, DWORD *pdwLen)
 WCHAR* UtfToUnicode(_In_ __nullterminated const char* sz)
 {
     WCHAR* wz = wzUniBuf;
-    if (MultiByteToWideChar(CP_UTF8,0,sz,-1,wz,UNIBUF_SIZE/2) == 0)
+    if (minipal_convert_utf8_to_utf16(sz,strlen(sz)+1,(CHAR16_T*)wz,UNIBUF_SIZE/2,0) == 0)
     {
         wz[UNIBUF_SIZE/2 - 1] = 0;
     }
@@ -102,7 +100,7 @@ WCHAR* UtfToUnicode(_In_ __nullterminated const char* sz)
 char* UnicodeToAnsi(_In_ __nullterminated const WCHAR* wz)
 {
     char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
-    if (WideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,UNIBUF_SIZE,NULL,NULL) == 0)
+    if (minipal_convert_utf16_to_utf8((const CHAR16_T*)wz,u16_strlen(wz)+1,sz,UNIBUF_SIZE,0) == 0)
     {
         sz[UNIBUF_SIZE - 1] = 0;
     }
@@ -111,7 +109,7 @@ char* UnicodeToAnsi(_In_ __nullterminated const WCHAR* wz)
 WCHAR* AnsiToUnicode(_In_ __nullterminated const char* sz)
 {
     WCHAR* wz = wzUniBuf;
-    if (MultiByteToWideChar(g_uConsoleCP,0,sz,-1,wz,UNIBUF_SIZE/2) == 0)
+    if (minipal_convert_utf8_to_utf16(sz,strlen(sz)+1,(CHAR16_T*)wz,UNIBUF_SIZE/2,0) == 0)
     {
         wz[UNIBUF_SIZE/2 - 1] = 0;
     }
@@ -120,7 +118,7 @@ WCHAR* AnsiToUnicode(_In_ __nullterminated const char* sz)
 char* UnicodeToUtf(_In_ __nullterminated const WCHAR* wz)
 {
     char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
-    if (WideCharToMultiByte(CP_UTF8,0,wz,-1,sz,UNIBUF_SIZE,NULL,NULL) == 0)
+    if (minipal_convert_utf16_to_utf8((const CHAR16_T*)wz,u16_strlen(wz)+1,sz,UNIBUF_SIZE,0) == 0)
     {
         sz[UNIBUF_SIZE - 1] = 0;
     }
@@ -131,10 +129,6 @@ char* AnsiToUtf(_In_ __nullterminated const char* sz) { return UnicodeToUtf(Ansi
 static void UnicodeToConsoleOrMsgBox(_In_ __nullterminated const WCHAR* wz)
 {
     {
-        //DWORD dw;
-        //char* sz = UnicodeToAnsi(wz);
-        //WriteFile(hConsoleOut,(CONST VOID *)sz, (ULONG32)strlen(sz),&dw,NULL);
-        //WriteFile(hConsoleOut,(CONST VOID *)"\r\n", 2,&dw,NULL);
         printf("%s\n",UnicodeToAnsi(wz));
     }
 }
@@ -156,12 +150,8 @@ static void ToGUIOrFile(_In_ __nullterminated const char* sz, void* GUICookie)
 void printError(void* GUICookie, _In_ __nullterminated const char* string)
 {
     {
-        //DWORD dw;
         const char* sz = ERRORMSG(string);
         if(GUICookie) printLine(GUICookie, sz);
-        //sz = UnicodeToAnsi(UtfToUnicode(string));
-        //WriteFile(hConsoleErr,(CONST VOID *)sz, (ULONG32)strlen(sz),&dw,NULL);
-        //WriteFile(hConsoleErr,(CONST VOID *)"\r\n", 2,&dw,NULL);
         fprintf(stderr,"%s\n",UnicodeToAnsi(UtfToUnicode(string)));
     }
 }
@@ -737,7 +727,7 @@ char* DumpUnicodeString(void* GUICookie,
     szStr = new char[cbString*3 + 5];
     memset(szStr,0,cbString*3 + 5);
 
-    WideCharToMultiByte(CP_UTF8,0,pszString,cbString,&szStr[0],cbString*3,NULL,NULL);
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)pszString,cbString,&szStr[0],cbString*3,0);
     L = (unsigned)strlen(szStr);
 
     szStr[L] = 0;
@@ -1079,7 +1069,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                     {
                         wcscpy_s(wzWasFileName,2048,wzFileName);
                         memset(szFileName,0,2048);
-                        WideCharToMultiByte(CP_UTF8,0,wzFileName,-1,szFileName,2048,NULL,NULL);
+                        minipal_convert_utf16_to_utf8((const CHAR16_T*)wzFileName,u16_strlen(wzFileName)+1,szFileName,2048,0);
                         if(fShowSource)
                         {
                             if(pFile) fclose(pFile);

@@ -1,0 +1,4 @@
+{
+  "workloads/wasm-tools-net11/description": ".NET 11.0 WebAssembly derleme araçları",
+  "workloads/wasm-experimental-net11/description": ".NET 11.0 WebAssembly deneysel araçlar"
+}

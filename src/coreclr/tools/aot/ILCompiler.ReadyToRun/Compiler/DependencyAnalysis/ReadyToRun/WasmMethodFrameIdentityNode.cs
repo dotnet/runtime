@@ -12,6 +12,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly NodeFactory _factory;
         private readonly MethodWithGCInfo _method;
+        internal MethodWithGCInfo Method => _method;
 
         public WasmMethodFrameIdentityNode(NodeFactory factory, MethodWithGCInfo method)
         {
@@ -35,17 +36,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
-            return new DependencyListEntry[] { new DependencyListEntry(_method, "Method for frame identity") };
+            sink.Add(_method, "Method for frame identity");
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(
+        public override void SearchDynamicDependencies(
             List<DependencyNodeCore<NodeFactory>> markedNodes,
             int firstNode,
-            NodeFactory factory) => null;
+            DependencySink sink,
+            NodeFactory factory) { }
 
         public override int ClassCode => 1987324652;
 

@@ -918,7 +918,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(1, timeInQueueRecorder.MeasurementCount);
                 int count = timeInQueueRecorder.MeasurementCount;
 
-                if (UseVersion.Major == 2)
+                if (UseVersion.Major >= 2)
                 {
                     Measurement<double> measurement = Assert.Single(timeInQueueRecorder.GetMeasurements());
                     VerifyTimeInQueue(InstrumentNames.TimeInQueue, measurement.Value, measurement.Tags.ToArray(), uri, UseVersion);
@@ -982,6 +982,11 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public Task UseIPAddressInTargetUri_NoProxy_RecordsHostHeaderAsServerAddress(bool useTls)
         {
+            if (useTls && !PlatformDetection.IsTlsSupported)
+            {
+                throw new SkipTestException("TLS is not supported on this platform.");
+            }
+
             if (UseVersion == HttpVersion30 && !useTls)
             {
                 throw new SkipTestException("No insecure connections with HTTP/3.");
@@ -1271,7 +1276,7 @@ namespace System.Net.Http.Functional.Tests
             }, new LoopbackServer.Options() { UseSsl = true });
         }
 
-        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))] // Also implies SocketsHttpHandler is supported.
         public async Task UseIPAddressInTargetUri_ProxyTunnel_RequestMetricsRecordUriHostAsServerAddress()
         {
             using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create();

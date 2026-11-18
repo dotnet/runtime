@@ -12,7 +12,7 @@ inline gc_alloc_context* ee_alloc_context::GetGCAllocContext()
     return (gc_alloc_context*)&m_rgbAllocContextBuffer;
 }
 
-inline uint8_t* ee_alloc_context::GetCombinedLimit()
+inline uint8_t* ee_alloc_context::getCombinedLimit()
 {
     return combined_limit;
 }
@@ -24,6 +24,15 @@ struct _thread_inl_gc_alloc_context
     uint8_t* alloc_limit;
 };
 
+inline uint8_t* ee_alloc_context::getAllocPtr()
+{
+    return ((_thread_inl_gc_alloc_context*)GetGCAllocContext())->alloc_ptr;
+}
+
+inline void ee_alloc_context::setAllocPtr(uint8_t* ptr)
+{
+    ((_thread_inl_gc_alloc_context*)GetGCAllocContext())->alloc_ptr = ptr;
+}
 
 inline bool ee_alloc_context::IsRandomizedSamplingEnabled()
 {
@@ -69,13 +78,15 @@ inline double ee_alloc_context::PerThreadRandom::NextDouble()
     return value * (1.0/(UINT32_MAX+1.0));
 }
 
-// Set the m_pDeferredTransitionFrame field for GC allocation helpers that setup transition frame
-// in assembly code. Do not use anywhere else.
+// Record the managed caller's transition frame for GC allocation helpers that remain in
+// cooperative mode, so the GC can walk the managed stack. Do not use anywhere else.
 inline void Thread::SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransitionFrame)
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
     ASSERT(Thread::IsCurrentThreadInCooperativeMode());
+#ifndef FEATURE_PORTABLE_HELPERS
     ASSERT(!Thread::IsHijackTarget(pTransitionFrame->m_RIP));
+#endif // !FEATURE_PORTABLE_HELPERS
     m_pDeferredTransitionFrame = pTransitionFrame;
 }
 
@@ -91,13 +102,13 @@ inline void Thread::DeferTransitionFrame()
 
 inline bool Thread::IsWithinStackBounds(PTR_VOID p)
 {
-    ASSERT((m_pStackLow != 0) && (m_pStackHigh != 0));
+    ASSERT((m_pStackHigh != 0) && (m_pStackLow < m_pStackHigh));
     return (m_pStackLow <= p) && (p < m_pStackHigh);
 }
 
 inline void Thread::GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh)
 {
-    ASSERT((m_pStackLow != 0) && (m_pStackHigh != 0));
+    ASSERT((m_pStackHigh != 0) && (m_pStackLow < m_pStackHigh));
     *ppStackLow = m_pStackLow;
     *ppStackHigh = m_pStackHigh;
 }

@@ -110,4 +110,14 @@ EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogWaitHandleWaitStop(uint16_t 
     FireEtwWaitHandleWaitStop(ClrInstanceID);
 }
 
+EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogIncreaseMemoryPressure(uint64_t BytesAllocated)
+{
+    FireEtwIncreaseMemoryPressure(BytesAllocated, GetClrInstanceId());
+}
+
+EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogDecreaseMemoryPressure(uint64_t BytesFreed)
+{
+    FireEtwDecreaseMemoryPressure(BytesFreed, GetClrInstanceId());
+}
+
 #endif // FEATURE_PERFTRACING

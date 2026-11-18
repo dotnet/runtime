@@ -2602,7 +2602,7 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                 // For any ref/byref values which are still live at the point of a call and not consumed by the current
                 // call, spill them into pinned slots on the stack where the GC can see them so it won't move them.
                 // These cases should only be for nested calls like F(x, G()) where x is a GC ref.
-                if (!defs.empty())
+                if (!defs.empty() && IsPotentialGCSafePoint(tree))
                 {
                     if (m_wasmSpillSlots == nullptr)
                     {
@@ -2706,9 +2706,9 @@ PhaseStatus Compiler::fgWasmSpillRefs()
 
                 // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
                 // it won't be mutated between its def (here) and its use (the call that would produce a spill).
-                // If the local is NOT a gc ref wasm local candidate, then it will be assigned a pinned stack home
-                // by RA already. Otherwise, temporary reads of candidates that are live across a call still need to be
-                // spilled.
+                // Locals outside the GC-safe candidate set have pinned stack homes, including write-through
+                // candidates. Their reads need no additional spill. Temporary reads of GC-safe candidates still
+                // need protection if they are live across a call.
                 if (!dsc->IsAddressExposed() && !isRefLocalCandidate)
                 {
                     continue;
@@ -3631,6 +3631,160 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
 }
 
 //-----------------------------------------------------------------------------
+// fgWasmProfInstrument: insert EventPipe CPU-sampling samplepoints
+//
+// Returns:
+//   suitable phase status
+//
+// Notes:
+//   Mirrors the interpreter's INTOP_PROF_SAMPLEPOINT placement (see
+//   src/coreclr/interpreter/compiler.cpp): one samplepoint at method entry and
+//   one on every loop back-edge. Emitted only for methods matching the
+//   WasmPerformanceInstrumentation MethodSet filter (same key the interpreter
+//   uses, so both engines share the filter and the runtime skip counter).
+//
+//   Each samplepoint is a call to CORINFO_HELP_WASM_PROF_SAMPLEPOINT. The later
+//   fgWasmVirtualIP phase inserts its per-block Virtual IP store ahead of the
+//   samplepoint, giving the cooperative stack walk a correct Virtual IP.
+//
+PhaseStatus Compiler::fgWasmProfInstrument()
+{
+    // Codegen only supports single-threaded wasm today; the shared runtime skip
+    // counter and cooperative sampling both assume PERFTRACING_DISABLE_THREADS.
+    assert(!WASM_THREAD_SUPPORT);
+
+    if (!JitConfig.WasmPerformanceInstrumentation().contains(info.compMethodHnd, info.compClassHnd,
+                                                             &info.compMethodInfo->args))
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    auto insertSamplepoint = [this](BasicBlock* block) {
+        GenTree* samplepoint = gtNewHelperCallNode(CORINFO_HELP_WASM_PROF_SAMPLEPOINT, TYP_VOID);
+        samplepoint          = fgMorphCall(samplepoint->AsCall());
+        gtSetEvalOrder(samplepoint);
+
+        LIR::Range& range = LIR::AsRange(block);
+        if ((block == fgFirstBB) && opts.IsReversePInvoke())
+        {
+            // Sampling must run in cooperative mode, after the reverse P/Invoke transition.
+            GenTree* insertAfter = nullptr;
+            for (GenTree* node : range)
+            {
+                if (node->IsHelperCall(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
+                    node->IsHelperCall(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS))
+                {
+                    insertAfter = node;
+                    break;
+                }
+            }
+
+            noway_assert(insertAfter != nullptr);
+            range.InsertAfter(insertAfter, LIR::SeqTree(this, samplepoint));
+        }
+        else
+        {
+            range.InsertBefore(range.FirstNonCatchArgNode(), LIR::SeqTree(this, samplepoint));
+        }
+    };
+
+    unsigned samplepointsAdded = 0;
+
+    // Use the Wasm graph: EH resumptions are explicit by this phase, while modeled
+    // two-pass EH edges can form cycles that are not executable loops.
+    // Unlike fgHasCycleWithoutGCSafePoint we do NOT skip BBF_GC_SAFE_POINT blocks.
+    FgWasm                  fgWasm(this);
+    bool                    hasBlocksOnlyReachableViaEH = false;
+    FlowGraphDfsTree* const dfsTree                     = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
+    if (hasBlocksOnlyReachableViaEH)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+    BitVecTraits traits = dfsTree->PostOrderTraits();
+    BitVec       samplepointBlocks(BitVecOps::MakeEmpty(&traits));
+
+    // Method entry.
+    BitVecOps::AddElemD(&traits, samplepointBlocks, fgFirstBB->bbPostorderNum);
+
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* const source = dfsTree->GetPostOrder(i);
+        FgWasm::VisitWasmSuccs(this, source, [&](BasicBlock* target) {
+            assert(dfsTree->Contains(target));
+            if (dfsTree->IsAncestor(target, source))
+            {
+                BitVecOps::AddElemD(&traits, samplepointBlocks, target->bbPostorderNum);
+            }
+
+            return BasicBlockVisit::Continue;
+        });
+    }
+
+    BitVecOps::VisitBits(&traits, samplepointBlocks, [&](unsigned postorderNum) {
+        insertSamplepoint(dfsTree->GetPostOrder(postorderNum));
+        samplepointsAdded++;
+        return true;
+    });
+
+    JITDUMP("Added %u Wasm profiler samplepoint(s)\n", samplepointsAdded);
+    return (samplepointsAdded > 0) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-----------------------------------------------------------------------------
+// fgWasmMayEmitCall: determine if codegen may emit a call for this method
+//
+// Returns:
+//   true if any node may be emitted as a call
+//
+// Notes:
+//   Must cover every codegen path that calls ensureCurrentFuncIsUnwindable.
+//   EH and inline throw helpers (debuggable code) are not handled here;
+//   callers must exclude those cases.
+//
+bool Compiler::fgWasmMayEmitCall()
+{
+    assert(compHndBBtabCount == 0);
+    assert(fgUseThrowHelperBlocks());
+
+    for (BasicBlock* const block : Blocks())
+    {
+        for (GenTree* const node : LIR::AsRange(block))
+        {
+            switch (node->OperGet())
+            {
+                case GT_CALL:
+                case GT_LCLHEAP:
+                    return true;
+
+                case GT_STOREIND:
+                    if (codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(node->AsStoreInd()))
+                    {
+                        return true;
+                    }
+                    break;
+
+                case GT_STORE_BLK:
+                {
+                    // Only the native opcode and loop forms avoid write barrier helper calls.
+                    GenTreeBlk* const blk = node->AsBlk();
+                    if ((blk->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) &&
+                        (blk->gtBlkOpKind != GenTreeBlk::BlkOpKindLoop))
+                    {
+                        return true;
+                    }
+                    break;
+                }
+
+                default:
+                    break;
+            }
+        }
+    }
+
+    return false;
+}
+
+//-----------------------------------------------------------------------------
 // fgWasmVirtualIP: set up virtual IP mapping for EH and calls
 //
 // Returns:
@@ -3842,7 +3996,9 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             PerBlockData& data = blockData[block->bbNum];
             data.requiredVip   = virtualIP;
             data.funcIndex     = vipFuncIdx;
-            data.isRequired    = !block->isEmpty() || block->KindIs(BBJ_CALLFINALLY);
+            // Throw helpers inherit the throwing site's Virtual IP.
+            data.isRequired =
+                !block->HasFlag(BBF_THROW_HELPER) && (!block->isEmpty() || block->KindIs(BBJ_CALLFINALLY));
             if (vipFirstInFunc)
             {
                 data.isFuncEntry = true;
@@ -3900,6 +4056,39 @@ PhaseStatus Compiler::fgWasmVirtualIP()
 
         func->endVirtualIP = virtualIP;
         vipFuncIdx++;
+    }
+
+    if (!IsNativeAot() && (compHndBBtabCount == 0))
+    {
+        assert(virtualIP == 2);
+        // The only observable virtual IP is 1, so no virtual IP stores are needed.
+        //
+        // A method that makes no calls does not need a frame header.
+        // Only check for this when optimizing, to save throughput.
+        //
+        bool needsFrameHeader = false;
+        for (BasicBlock* const block : Blocks())
+        {
+            if (blockData[block->bbNum].isRequired)
+            {
+                needsFrameHeader = true;
+                break;
+            }
+        }
+
+        if (needsFrameHeader && opts.OptimizationEnabled() && !fgWasmMayEmitCall())
+        {
+            JITDUMP("Method makes no calls; omitting frame header\n");
+            needsFrameHeader = false;
+        }
+
+        if (needsFrameHeader)
+        {
+            getVirtualIPLclNum();
+        }
+
+        JITDUMP("Virtual IP is always 1; omitting frame stores\n");
+        return lvaWasmVirtualIP == BAD_VAR_NUM ? PhaseStatus::MODIFIED_NOTHING : PhaseStatus::MODIFIED_EVERYTHING;
     }
 
     // Solve the available-Virtual-IP dataflow: a block's incoming value is the meet of its

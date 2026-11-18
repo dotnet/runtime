@@ -350,56 +350,6 @@ NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
     EPILOG_BRANCH_REG  $t4
 NESTED_END PInvokeImportThunk, _TEXT
 
-#ifdef FEATURE_PREJIT
-//------------------------------------------------
-// VirtualMethodFixupStub
-//
-// In NGEN images, virtual slots inherited from cross-module dependencies
-// point to a jump thunk that calls into the following function that will
-// call into a VM helper. The VM helper is responsible for patching up
-// thunk, upon executing the precode, so that all subsequent calls go directly
-// to the actual method body.
-//
-// This is done lazily for performance reasons.
-//
-// On entry:
-//
-// $a0 = "this" pointer
-// $t2 = Address of thunk
-
-NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
-
-    // Save arguments and return address
-    //                            $fp,$ra
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
-    SAVE_ARGUMENT_REGISTERS  $sp, 32
-    SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
-
-
-    // Call the helper in the VM to perform the actual fixup
-    // and tell us where to tail call. $a0 already contains
-    // the this pointer.
-
-    // Move the thunk start address in $a1
-    ori  $a1, $t2, 0
-    bl VirtualMethodFixupWorker
-    ori  $t4,$a0,0
-
-    // On return, a0 contains the target to tailcall to
-
-    // pop the stack and restore original register state
-    RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
-    RESTORE_ARGUMENT_REGISTERS  $sp, 32
-    //                              $fp,$ra
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
-
-    PATCH_LABEL  VirtualMethodFixupPatchLabel
-
-    // and tailcall to the actual method
-    EPILOG_BRANCH_REG  $t4
-NESTED_END VirtualMethodFixupStub, _TEXT
-#endif // FEATURE_PREJIT
-
 // ------------------------------------------------------------------
 // ThePreStubPatch()
 LEAF_ENTRY ThePreStubPatch, _TEXT
@@ -407,30 +357,6 @@ LEAF_ENTRY ThePreStubPatch, _TEXT
 C_FUNC(ThePreStubPatchLabel):
     jirl  $r0, $ra, 0
 LEAF_END ThePreStubPatch, _TEXT
-
-#ifdef FEATURE_PREJIT
-// ------------------------------------------------------------------
-// void StubDispatchFixupStub(args in regs $a0-$a7 & stack, $t1:IndirectionCellAndFlags)
-//
-// The stub dispatch thunk which transfers control to StubDispatchFixupWorker.
-NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    srli.d  $a1, $t8, 2
-    slli.d  $a1, $a1, 2 // Indirection cell
-
-    addi.d $a0, $sp, __PWTB_TransitionBlock        // pTransitionBlock
-    ori  $a2, $zero, 0 // sectionIndex
-    ori  $a3, $zero, 0 // pModule
-    bl StubDispatchFixupWorker
-    ori  $t4,$a0,0
-
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL StubDispatchFixupPatchLabel
-    EPILOG_BRANCH_REG  $t4
-NESTED_END StubDispatchFixupStub, _TEXT
-#endif
 
 //
 // $t2 = UMEntryThunkData*
@@ -656,80 +582,6 @@ GenerateRedirectedHandledJITCaseStub GCStress
 #endif
 
 
-// ------------------------------------------------------------------
-// This helper enables us to call into a funclet after restoring Fp register
-NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
-    // On entry:
-    //
-    // $a0 = throwable
-    // $a1 = PC to invoke
-    // $a2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
-    // $a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-    //
-
-    //                            $fp,$ra
-    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 96, 0
-
-    // Spill callee saved registers
-    //                    $s0,$s1
-    PROLOG_SAVE_REG_PAIR   23, 24, 16
-    PROLOG_SAVE_REG_PAIR   25, 26, 32
-    PROLOG_SAVE_REG_PAIR   27, 28, 48
-    PROLOG_SAVE_REG_PAIR   29, 30, 64
-    PROLOG_SAVE_REG        31,     80
-
-    // Save the SP of this function
-    st.d  $sp, $a3, 0
-
-    ld.d  $fp, $a2, OFFSETOF__CONTEXT__Fp
-    ld.d  $s0, $a2, OFFSETOF__CONTEXT__S0
-    ld.d  $s1, $a2, OFFSETOF__CONTEXT__S0+8
-    ld.d  $s2, $a2, OFFSETOF__CONTEXT__S0+16
-    ld.d  $s3, $a2, OFFSETOF__CONTEXT__S0+24
-    ld.d  $s4, $a2, OFFSETOF__CONTEXT__S0+32
-    ld.d  $s5, $a2, OFFSETOF__CONTEXT__S0+40
-    ld.d  $s6, $a2, OFFSETOF__CONTEXT__S0+48
-    ld.d  $s7, $a2, OFFSETOF__CONTEXT__S0+56
-    ld.d  $s8, $a2, OFFSETOF__CONTEXT__S0+64
-
-    // Invoke the funclet
-    jirl $ra, $a1, 0
-
-    EPILOG_RESTORE_REG_PAIR   23, 24, 16
-    EPILOG_RESTORE_REG_PAIR   25, 26, 32
-    EPILOG_RESTORE_REG_PAIR   27, 28, 48
-    EPILOG_RESTORE_REG_PAIR   29, 30, 64
-    EPILOG_RESTORE_REG        31,     80
-    //                              $fp,$ra
-    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 96
-    EPILOG_RETURN
-
-NESTED_END CallEHFunclet, _TEXT
-
-// This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
-// frame pointer for accessing the locals in the parent method.
-NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
-    //                             $fp,$ra
-    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16, 0
-
-    // On entry:
-    //
-    // $a0 = throwable
-    // $a1 = FP of main function
-    // $a2 = PC to invoke
-    // $a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-    //
-    // Save the SP of this function
-    st.d  $sp, $a3, 0
-    // Restore frame pointer
-    move  $fp, $a1
-    // Invoke the filter funclet
-    jirl  $ra, $a2, 0
-
-    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 16
-    EPILOG_RETURN
-NESTED_END CallEHFilterFunclet, _TEXT
-
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
@@ -903,17 +755,6 @@ LEAF_ENTRY GetTLSResolverAddress, _TEXT
 LEAF_END GetTLSResolverAddress, _TEXT
 // ------------------------------------------------------------------
 
-LEAF_ENTRY JIT_PollGC, _TEXT
-        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, $t0
-        ld.w    $t0, $t0, 0
-        bne     $t0, $zero, LOCAL_LABEL(JIT_PollGCRarePath)
-        jirl $r0, $ra, 0
-LOCAL_LABEL(JIT_PollGCRarePath):
-        PREPARE_EXTERNAL_VAR g_pPollGC, $t0
-        ld.d    $t0, $t0, 0
-        EPILOG_BRANCH_REG $t0
-LEAF_END JIT_PollGC, _TEXT
-
 //a0 -This pointer
 //a1 -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
@@ -1030,6 +871,89 @@ LEAF_ENTRY Load_Stack_Ref
     addi.d $t2, $t2, 16
     jirl  $r0, $t4, 0
 LEAF_END Load_Stack_Ref
+
+// The interpreter stores 32-bit and narrower integers in 8-byte stack slots without defining the upper half,
+// while the LoongArch psABI requires them sign-extended to 64 bits in registers and stack slots.
+// $t2 points to a bitmask of the argument registers $a0..$a7 to sign-extend.
+LEAF_ENTRY SignExtend_ArgRegs
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    andi $t5, $t4, 0x01
+    beqz $t5, LOCAL_LABEL(SignExtendA1)
+    addi.w $a0, $a0, 0
+LOCAL_LABEL(SignExtendA1):
+    andi $t5, $t4, 0x02
+    beqz $t5, LOCAL_LABEL(SignExtendA2)
+    addi.w $a1, $a1, 0
+LOCAL_LABEL(SignExtendA2):
+    andi $t5, $t4, 0x04
+    beqz $t5, LOCAL_LABEL(SignExtendA3)
+    addi.w $a2, $a2, 0
+LOCAL_LABEL(SignExtendA3):
+    andi $t5, $t4, 0x08
+    beqz $t5, LOCAL_LABEL(SignExtendA4)
+    addi.w $a3, $a3, 0
+LOCAL_LABEL(SignExtendA4):
+    andi $t5, $t4, 0x10
+    beqz $t5, LOCAL_LABEL(SignExtendA5)
+    addi.w $a4, $a4, 0
+LOCAL_LABEL(SignExtendA5):
+    andi $t5, $t4, 0x20
+    beqz $t5, LOCAL_LABEL(SignExtendA6)
+    addi.w $a5, $a5, 0
+LOCAL_LABEL(SignExtendA6):
+    andi $t5, $t4, 0x40
+    beqz $t5, LOCAL_LABEL(SignExtendA7)
+    addi.w $a6, $a6, 0
+LOCAL_LABEL(SignExtendA7):
+    andi $t5, $t4, 0x80
+    beqz $t5, LOCAL_LABEL(SignExtendDone)
+    addi.w $a7, $a7, 0
+LOCAL_LABEL(SignExtendDone):
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END SignExtend_ArgRegs
+
+// $t2 points to the SP offset of a stack argument slot to sign-extend from its low 32 bits.
+LEAF_ENTRY SignExtend_Stack
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    add.d $t4, $sp, $t4
+    ld.w $t5, $t4, 0
+    st.d $t5, $t4, 0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END SignExtend_Stack
+
+// Routines moving a single field of a struct passed by the hardware floating-point calling convention, or a float,
+// between a register and the interpreter stack. $t2 points to a word holding the field offset in its low 32 bits and
+// the number of bytes to advance the interpreter stack pointer by afterwards in its high 32 bits.
+.macro FIELD_AT_OFFSET_ROUTINE Name, Insn, Reg
+LEAF_ENTRY \Name
+    ld.wu $t4, $t2, 0
+    ld.wu $t5, $t2, 4
+    addi.d $t2, $t2, 8
+    add.d $t4, $t3, $t4
+    \Insn \Reg, $t4, 0
+    add.d $t3, $t3, $t5
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END \Name
+.endm
+
+.irp i, 0, 1, 2, 3, 4, 5, 6, 7
+FIELD_AT_OFFSET_ROUTINE Load_FA\i\()_F_AtOffset, fld.s, $fa\i
+FIELD_AT_OFFSET_ROUTINE Load_FA\i\()_D_AtOffset, fld.d, $fa\i
+FIELD_AT_OFFSET_ROUTINE Load_A\i\()_W_AtOffset, ld.w, $a\i
+FIELD_AT_OFFSET_ROUTINE Load_A\i\()_D_AtOffset, ld.d, $a\i
+FIELD_AT_OFFSET_ROUTINE Store_FA\i\()_F_AtOffset, fst.s, $fa\i
+FIELD_AT_OFFSET_ROUTINE Store_FA\i\()_D_AtOffset, fst.d, $fa\i
+FIELD_AT_OFFSET_ROUTINE Store_A\i\()_W_AtOffset, st.w, $a\i
+FIELD_AT_OFFSET_ROUTINE Store_A\i\()_D_AtOffset, st.d, $a\i
+.endr
 
 LEAF_ENTRY Store_Stack_Ref
     ld.wu $t5, $t2, 0   // SP offset ($zero-extend)
@@ -1199,6 +1123,24 @@ NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetBuff, _TEXT
+
+// Same as CallJittedMethodRetBuff, for methods with a this argument, where the return buffer is the second argument
+NESTED_ENTRY CallJittedMethodRetBuffA1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, 32
+    st.d $a4, $fp, 16
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ori $a1, $a2, 0  // buffer return pointer goes in $a1
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 16
+    st.d $a2, $a4, 0
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetBuffA1, _TEXT
 
 // $a0 - routines array
 // $a1 - interpreter stack args location
@@ -1460,10 +1402,14 @@ NESTED_END CallJittedMethodRet2Float, _TEXT
 // $a2 - interpreter stack return value location
 // $a3 - stack arguments size (properly aligned)
 // $a4 - address of continuation return value
-NESTED_ENTRY CallJittedMethodRetFloatInt, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, 32
+// The returned struct is passed by the hardware floating-point calling convention. Its FpStructInRegistersInfo
+// follows the target slot in the routines array, and InterpFpStructReturnFromNative scatters $fa0, $fa1 and $a0
+// to the struct fields.
+NESTED_ENTRY CallJittedMethodRetFpStruct, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, 64
     st.d $a2, $fp, 16
     st.d $a4, $fp, 24
+    st.d $a0, $fp, 32
     sub.d $sp, $sp, $a3
     ori $t2, $a0, 0
     ori $t3, $a1, 0
@@ -1472,38 +1418,17 @@ NESTED_ENTRY CallJittedMethodRetFloatInt, _TEXT, NoHandler
     jirl  $ra, $t4, 0
     ld.d $a4, $fp, 24
     st.d $a2, $a4, 0
-    ld.d $a2, $fp, 16
-    fst.d $fa0, $a2, 0
-    st.d $a0, $a2, 8
+    fst.d $fa0, $fp, 40
+    fst.d $fa1, $fp, 48
+    st.d $a0, $fp, 56
+    addi.d $a0, $fp, 40
+    ld.d $a1, $fp, 16
+    ld.d $a2, $fp, 32
+    bl C_FUNC(InterpFpStructReturnFromNative)
     EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 64
     EPILOG_RETURN
-NESTED_END CallJittedMethodRetFloatInt, _TEXT
-
-// $a0 - routines array
-// $a1 - interpreter stack args location
-// $a2 - interpreter stack return value location
-// $a3 - stack arguments size (properly aligned)
-// $a4 - address of continuation return value
-NESTED_ENTRY CallJittedMethodRetIntFloat, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, 32
-    st.d $a2, $fp, 16
-    st.d $a4, $fp, 24
-    sub.d $sp, $sp, $a3
-    ori $t2, $a0, 0
-    ori $t3, $a1, 0
-    ld.d $t4, $t2, 0
-    addi.d $t2, $t2, 8
-    jirl  $ra, $t4, 0
-    ld.d $a4, $fp, 24
-    st.d $a2, $a4, 0
-    ld.d $a2, $fp, 16
-    st.d $a0, $a2, 0
-    fst.d $fa0, $a2, 8
-    EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
-    EPILOG_RETURN
-NESTED_END CallJittedMethodRetIntFloat, _TEXT
+NESTED_END CallJittedMethodRetFpStruct, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
@@ -1570,6 +1495,19 @@ NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END InterpreterStubRetI8, _TEXT
 
+NESTED_ENTRY InterpreterStubRetI4, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16
+    // The +16 is for the $fp, $ra above
+    addi.d $a0, $sp, __PWTB_TransitionBlock + 16
+    ori $a1, $s0, 0 // the IR bytecode pointer
+    ori $a2, $zero, 0
+    bl C_FUNC(ExecuteInterpretedMethod)
+    // Sign-extend from 32 bits as required by the psABI
+    ld.w $a0, $a0, 0
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetI4, _TEXT
+
 NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16
     // The +16 is for the $fp, $ra above
@@ -1592,6 +1530,18 @@ NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 16
     EPILOG_RETURN
 NESTED_END InterpreterStubRetBuff, _TEXT
+
+// Same as InterpreterStubRetBuff, for methods with a this argument, where the return buffer is the second argument
+NESTED_ENTRY InterpreterStubRetBuffA1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16
+    // The +16 is for the $fp, $ra above
+    ori $a2, $a1, 0        // save caller's return buffer in $a2
+    addi.d $a0, $sp, __PWTB_TransitionBlock + 16
+    ori $a1, $s0, 0        // the IR bytecode pointer
+    bl C_FUNC(ExecuteInterpretedMethod)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetBuffA1, _TEXT
 
 NESTED_ENTRY InterpreterStubRet2I8, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16
@@ -1644,32 +1594,27 @@ NESTED_ENTRY InterpreterStubRet2Float, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END InterpreterStubRet2Float, _TEXT
 
-NESTED_ENTRY InterpreterStubRetFloatInt, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16
-    // The +16 is for the $fp, $ra above
-    addi.d $a0, $sp, __PWTB_TransitionBlock + 16
+// The returned struct is passed by the hardware floating-point calling convention. $t2 points to its
+// FpStructInRegistersInfo, which follows this handler in the routines array, and InterpFpStructReturnToNative
+// gathers the struct fields into $fa0, $fa1 and $a0.
+NESTED_ENTRY InterpreterStubRetFpStruct, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 48
+    st.d $t2, $sp, 16
+    // The +48 is for the $fp, $ra and the locals above
+    addi.d $a0, $sp, __PWTB_TransitionBlock + 48
     ori $a1, $s0, 0 // the IR bytecode pointer
     ori $a2, $zero, 0
     bl C_FUNC(ExecuteInterpretedMethod)
-    fld.d $fa0, $a0, 0
-    ld.d $a0, $a0, 8
-    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1,   16
+    ori $a1, $a0, 0
+    addi.d $a0, $sp, 24
+    ld.d $a2, $sp, 16
+    bl C_FUNC(InterpFpStructReturnToNative)
+    fld.d $fa0, $sp, 24
+    fld.d $fa1, $sp, 32
+    ld.d $a0, $sp, 40
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1,   48
     EPILOG_RETURN
-NESTED_END InterpreterStubRetFloatInt, _TEXT
-
-NESTED_ENTRY InterpreterStubRetIntFloat, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16
-    // The +16 is for the $fp, $ra above
-    addi.d $a0, $sp, __PWTB_TransitionBlock + 16
-    ori $a1, $s0, 0 // the IR bytecode pointer
-    ori $a2, $zero, 0
-    bl C_FUNC(ExecuteInterpretedMethod)
-    ld.d $a1, $a0, 0
-    fld.d $fa0, $a0, 8
-    ori $a0, $a1, 0
-    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1,   16
-    EPILOG_RETURN
-NESTED_END InterpreterStubRetIntFloat, _TEXT
+NESTED_END InterpreterStubRetFpStruct, _TEXT
 
 // Copy arguments from the processor stack to the interpreter stack
 // The CPU stack slots are aligned to pointer size.

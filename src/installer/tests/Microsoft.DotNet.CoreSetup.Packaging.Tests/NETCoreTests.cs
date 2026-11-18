@@ -26,6 +26,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
                 }
 
                 tester.IsTargetingPackForPlatform();
+                tester.ContainsReferenceAssembly($"ref/{HostTestContext.Tfm}/System.Text.Encodings.Web.dll");
                 tester.HasOnlyTheseDataFiles(
                     "data/FrameworkList.xml",
                     "data/PackageOverrides.txt",

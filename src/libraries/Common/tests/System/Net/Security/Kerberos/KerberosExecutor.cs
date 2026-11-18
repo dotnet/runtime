@@ -141,6 +141,12 @@ public class KerberosExecutor : IDisposable
         _invokeHandle = RemoteExecutor.Invoke(method);
     }
 
+    public async Task Invoke(Action<string, string> method, string arg1, string arg2)
+    {
+        await PrepareInvoke();
+        _invokeHandle = RemoteExecutor.Invoke(method, arg1, arg2);
+    }
+
     public async Task Invoke(Func<Task> method)
     {
         await PrepareInvoke();

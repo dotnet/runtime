@@ -701,6 +701,8 @@ public class App
         {
             Console.WriteLine("Exception handled: " + x.ToString());
         }
+        // Do not retain Static5's large reference array during runtime shutdown.
+        App.m_alFwd20 = null;
         Console.WriteLine("Passed.");
     }
     public static byte m_byFwd1;

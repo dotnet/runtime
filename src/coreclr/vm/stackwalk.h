@@ -285,6 +285,63 @@ public:
         return pRD;
     }
 
+    void EnsureCallerContextIsValid()
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        if (!pRD->IsCallerContextValid)
+        {
+            ICodeManager *pCM = isFrameless ? GetCodeManager() : ExecutionManager::GetDefaultCodeManager();
+            pCM->EnsureCallerContextIsValid(pRD, isFrameless ? &codeInfo : NULL, codeManFlags);
+        }
+    }
+
+    PT_CONTEXT GetCallerContext()
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        EnsureCallerContextIsValid();
+        return pRD->pCallerContext;
+    }
+
+    T_KNONVOLATILE_CONTEXT_POINTERS* GetCallerContextPointers()
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        EnsureCallerContextIsValid();
+        return pRD->pCallerContextPointers;
+    }
+
+#if defined(TARGET_ARM64)
+    TADDR GetCallerContextSpForPacSign()
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        EnsureCallerContextIsValid();
+        return pRD->CallerContextSpForPacSign;
+    }
+#endif // TARGET_ARM64
+
+    TADDR GetCallerSp()
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        return GetSP(GetCallerContext());
+    }
+
+    CallerStackFrame GetCallerStackFrame()
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        return CallerStackFrame(GetCallerSp());
+    }
+
     EECodeInfo * GetCodeInfo()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -430,6 +487,7 @@ private:
     bool              fShouldParentToFuncletSkipReportingGCReferences;
     bool              fShouldCrawlframeReportGCReferences;
     bool              fShouldParentFrameUseUnwindTargetPCforGCReporting;
+    uint16_t          codeManFlags;
     EE_ILEXCEPTION_CLAUSE ehClauseForCatch;
     Thread*           pThread;
 
@@ -618,7 +676,6 @@ private:
     // then this is equal to m_pThread->GetFrame().  Otherwise this is equal to m_pStartFrame.
     INDEBUG(PTR_Frame m_pRealStartFrame);
     ULONG32               m_flags;          // StackWalkFrames flags.
-    ICodeManagerFlags     m_codeManFlags;
     ExecutionManager::ScanFlag m_scanFlag;
 
     // the following fields are used to cache information about a managed stack frame

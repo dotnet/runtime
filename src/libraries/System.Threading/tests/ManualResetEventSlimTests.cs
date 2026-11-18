@@ -9,6 +9,125 @@ namespace System.Threading.Tests
 {
     public class ManualResetEventSlimTests
     {
+        [Theory]
+        [InlineData(false, 0)]
+        [InlineData(true, 0)]
+        [InlineData(false, 2047)]
+        [InlineData(true, 2047)]
+        public static void LazyWaitHandleTracksState(bool initialState, int spinCount)
+        {
+            using ManualResetEventSlim ev = new(initialState, spinCount);
+            Assert.Equal(Environment.ProcessorCount == 1 ? 1 : spinCount, ev.SpinCount);
+            WaitHandle handle = ev.WaitHandle;
+            Assert.Same(handle, ev.WaitHandle);
+            Assert.Equal(initialState, handle.WaitOne(0));
+
+            ev.Set();
+            Assert.True(ev.IsSet);
+            Assert.True(handle.WaitOne(0));
+            ev.Reset();
+            Assert.False(ev.IsSet);
+            Assert.False(handle.WaitOne(0));
+
+            ev.Dispose();
+            ev.Set();
+            Assert.True(ev.IsSet);
+            Assert.Throws<ObjectDisposedException>(() => handle.WaitOne(0));
+            Assert.Throws<ObjectDisposedException>(() => ev.Reset());
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(false, -1)]
+        [InlineData(true, -1)]
+        [InlineData(false, 0)]
+        [InlineData(true, 0)]
+        [InlineData(false, 1)]
+        [InlineData(true, 1)]
+        [InlineData(false, 20)]
+        [InlineData(true, 20)]
+        public static void SingleThreadedWaitHonorsFiniteTimeouts(bool initialState, int millisecondsTimeout)
+        {
+            using ManualResetEventSlim ev = new(initialState);
+            if (initialState)
+            {
+                Assert.True(ev.Wait(millisecondsTimeout));
+                Assert.True(ev.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+            }
+            else if (millisecondsTimeout != Timeout.Infinite)
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                Assert.False(ev.Wait(millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                stopwatch.Restart();
+                Assert.False(ev.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => ev.Wait(millisecondsTimeout));
+                Assert.Throws<PlatformNotSupportedException>(() => ev.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+            }
+            Assert.Equal(initialState, ev.IsSet);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void SingleThreadedWaitValidationOrder()
+        {
+            using CancellationTokenSource cancellation = new();
+            cancellation.Cancel();
+            using ManualResetEventSlim ev = new(true);
+            Assert.Throws<OperationCanceledException>(() => ev.Wait(-2, cancellation.Token));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ev.Wait(-2, CancellationToken.None));
+            Assert.True(ev.Wait(0, CancellationToken.None));
+            ev.Reset();
+            Assert.False(ev.Wait(0, CancellationToken.None));
+            ev.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => ev.Wait(-2, cancellation.Token));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [InlineData(0)]
+        [InlineData(20)]
+        public static void WaitOnJSInteropThreadHonorsFiniteTimeouts(int millisecondsTimeout)
+        {
+            using ManualResetEventSlim ev = new(false, 0);
+            ThreadTestHelpers.RunWithJSInteropBlockingPolicy(() =>
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                Assert.False(ev.Wait(millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                stopwatch.Restart();
+                Assert.False(ev.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                Assert.Throws<PlatformNotSupportedException>(() => ev.Wait());
+                ev.Set();
+                ev.Wait();
+            });
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [InlineData(0)]
+        [InlineData(20)]
+        public static void TaskWaitsOnJSInteropThreadHonorFiniteTimeouts(int millisecondsTimeout)
+        {
+            Task incomplete = new TaskCompletionSource().Task;
+            ThreadTestHelpers.RunWithJSInteropBlockingPolicy(() =>
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                Assert.False(incomplete.Wait(millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                stopwatch.Restart();
+                Assert.False(Task.WaitAll([incomplete], millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                stopwatch.Restart();
+                Assert.Equal(-1, Task.WaitAny([incomplete], millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                Assert.Throws<PlatformNotSupportedException>(() => incomplete.Wait());
+                Assert.Throws<PlatformNotSupportedException>(() => Task.WaitAll([incomplete]));
+                Assert.Throws<PlatformNotSupportedException>(() => Task.WaitAny([incomplete]));
+            });
+        }
+
         // Validates init, set, reset state transitions.
         [Theory]
         [InlineData(true)]
@@ -50,7 +169,7 @@ namespace System.Threading.Tests
         }
 
         // Tests timeout on an event that is never set.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [Fact]
         public static void RunManualResetEventSlimTest2_TimeoutWait()
         {
             for (int i = 0; i < 2; i++)
@@ -79,7 +198,7 @@ namespace System.Threading.Tests
             using ManualResetEventSlim unsetEvent = new(false);
             Assert.False(unsetEvent.Wait(0));
             Assert.False(unsetEvent.Wait(TimeSpan.Zero));
-            Assert.Throws<PlatformNotSupportedException>(() => unsetEvent.Wait(1));
+            Assert.False(unsetEvent.Wait(1));
             Assert.Throws<PlatformNotSupportedException>(() => unsetEvent.Wait());
         }
 

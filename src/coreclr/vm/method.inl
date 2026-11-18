@@ -59,6 +59,24 @@ inline SigPointer MethodDesc::GetSigPointer()
     return SigPointer(pSig, cSig);
 }
 
+inline bool MethodDesc::IsStringCtor()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    // String's only instance FCalls are constructors. Startup validates this invariant
+    // so runtime paths can recognize their factory ABI without metadata access.
+    return IsFCall() && !IsStatic() && GetMethodTable()->IsString();
+}
+
+inline bool MethodDesc::IsObjectReturningCtor()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    // String and array construction returns the allocated object despite a void metadata return type.
+    return IsStringCtor() ||
+        (IsArray() && dac_cast<PTR_ArrayMethodDesc>(this)->GetArrayFuncIndex() >= ArrayMethodDesc::ARRAY_FUNC_CTOR);
+}
+
 inline PTR_DynamicResolver DynamicMethodDesc::GetResolver()
 {
     LIMITED_METHOD_CONTRACT;
@@ -158,6 +176,13 @@ inline bool MethodDesc::IsInteropStub()
     }
 }
 
+inline bool MethodDesc::IsDiagnosticsHiddenLCGMethod()
+{
+    WRAPPER_NO_CONTRACT;
+    return IsLCGMethod() &&
+        AsDynamicMethodDesc()->HasFlags(DynamicMethodDesc::FlagIsDiagnosticsHidden);
+}
+
 // This method is intended to identify methods that aren't shown in diagnostic introspection (stacktraces,
 // code viewing, stepping, etc). Partly this is a user experience consideration to preserve the
 // abstraction users would expect based on source code and assembly contents. Partly it is also a technical
@@ -177,7 +202,9 @@ inline bool MethodDesc::IsDiagnosticsHidden()
     //   tolerate if the runtime-implemented frame is missing because they can still see the managed target method.
 
     WRAPPER_NO_CONTRACT;
-    if (IsILStub())
+    if (IsILStub() ||
+        (GetClassification() == mcDynamic &&
+            AsDynamicMethodDesc()->HasFlags(DynamicMethodDesc::FlagIsDiagnosticsHidden)))
     {
         return true;
     }
@@ -236,4 +263,3 @@ inline MethodDescBackpatchInfoTracker * MethodDesc::GetBackpatchInfoTracker()
 }
 
 #endif  // _METHOD_INL_
-

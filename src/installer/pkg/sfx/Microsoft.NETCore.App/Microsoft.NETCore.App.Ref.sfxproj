@@ -40,9 +40,25 @@
                                               Condition="'%(_NetCoreAppLibrarySourceAssembly.Extension)' == '.dll' and '%(_NetCoreAppLibrarySourceAssembly.IsPrivateAssembly)' != 'true'" />
       <_NetCoreAppLibrarySourceAssemblyWithReferenceAssembly Include="@(_NetCoreAppLibraryPublicSourceAssembly)"
                                                              Condition="'%(_NetCoreAppLibraryPublicSourceAssembly.ReferenceAssembly)' != ''" />
+      <_NetCoreAppLibrarySourceAssemblyWithContractProject Include="@(_NetCoreAppLibraryPublicSourceAssembly)"
+                                                          Condition="'%(_NetCoreAppLibraryPublicSourceAssembly.ReferenceAssembly)' == '' and '%(_NetCoreAppLibraryPublicSourceAssembly.ContractProject)' != ''" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_ReferenceAssemblyTargets>GetTargetPath</_ReferenceAssemblyTargets>
+      <_ReferenceAssemblyTargets Condition="'$(BuildProjectReferences)' == 'true'">Build;GetTargetPath</_ReferenceAssemblyTargets>
+    </PropertyGroup>
+    <MSBuild Projects="@(_NetCoreAppLibrarySourceAssemblyWithContractProject->Metadata('ContractProject'))"
+             Condition="'@(_NetCoreAppLibrarySourceAssemblyWithContractProject)' != ''"
+             BuildInParallel="$(BuildInParallel)"
+             Properties="BuildAllProjects=true;Configuration=$(LibrariesConfiguration);RuntimeFlavor=$(_NetCoreAppLibrariesRuntimeFlavor);TargetFramework=$(NetCoreAppCurrent)"
+             RemoveProperties="LibrariesRuntimeFlavor;RuntimeIdentifier"
+             Targets="$(_ReferenceAssemblyTargets)">
+      <Output TaskParameter="TargetOutputs" ItemName="_NetCoreAppLibraryReferenceAssembly" />
+    </MSBuild>
+    <ItemGroup>
       <_NetCoreAppLibraryReferenceAssembly Include="@(_NetCoreAppLibrarySourceAssemblyWithReferenceAssembly->Metadata('ReferenceAssembly'))" />
       <_NetCoreAppLibraryReferenceAssembly Include="@(_NetCoreAppLibraryPublicSourceAssembly)"
-                                           Exclude="@(_NetCoreAppLibrarySourceAssemblyWithReferenceAssembly)" />
+                                           Exclude="@(_NetCoreAppLibrarySourceAssemblyWithReferenceAssembly);@(_NetCoreAppLibrarySourceAssemblyWithContractProject)" />
       <_NetCoreAppLibraryReferenceAssemblySymbols Include="@(_NetCoreAppLibraryReferenceAssembly->'%(RootDir)%(Directory)%(Filename).pdb')" />
       <_NetCoreAppLibraryReferenceAssemblySymbols Remove="@(_NetCoreAppLibraryReferenceAssemblySymbols)"
                                                   Condition="!Exists('%(_NetCoreAppLibraryReferenceAssemblySymbols.Identity)')" />

@@ -7,9 +7,16 @@
 #include "stresslog.h"
 #include "clrhost.h"
 #include "ex.h"
-#define DONOT_DEFINE_ETW_CALLBACK
+#ifndef SELF_NO_HOST
 #include "eventtracebase.h"
+#endif // !SELF_NO_HOST
 #include "minipal/time.h"
+
+#if defined(MEMORY_MAPPED_STRESSLOG) && !defined(HOST_WINDOWS)
+#include <dn-stdio.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#endif
 
  #if !defined(STRESS_LOG_READONLY)
 #ifdef HOST_WINDOWS
@@ -145,6 +152,32 @@ void StressLog::Leave(CRITSEC_COOKIE) {
     DecCantAllocCount();
 }
 
+namespace
+{
+    struct StressLogLockHolderTraits final
+    {
+        using Type = CRITSEC_COOKIE;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type cookie) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+            if (cookie != NULL)
+                StressLog::Leave(cookie);
+        }
+    };
+
+    using StressLogLockHolder = LifetimeHolder<StressLogLockHolderTraits>;
+
+    StressLogLockHolder TakeStressLogLock()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        CRITSEC_COOKIE cookie = StressLog::theLog.lock;
+        if (cookie != NULL)
+            StressLog::Enter(cookie);
+        return StressLogLockHolder(cookie);
+    }
+}
+
 void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
 {
     // if the string "{pid}" occurs in the logFilename,
@@ -185,6 +218,9 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     WCHAR logFilenameReplaced[MAX_PATH];
     ReplacePid(logFilename, logFilenameReplaced, MAX_PATH);
 
+    size_t fileSize = maxBytesTotal;
+
+#ifdef HOST_WINDOWS
     HandleHolder hFile{ WszCreateFile(logFilenameReplaced,
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ,
@@ -198,7 +234,6 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
         return nullptr;
     }
 
-    size_t fileSize = maxBytesTotal;
     HandleHolder hMap{ CreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL) };
     if (hMap == NULL)
     {
@@ -206,6 +241,26 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     }
 
     return MapViewOfFileEx(hMap, FILE_MAP_ALL_ACCESS, 0, 0, fileSize, MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS);
+#else // HOST_WINDOWS
+    FILE* stream;
+    if (u16_fopen_s(&stream, logFilenameReplaced, W("w+b")) != 0)
+    {
+        return nullptr;
+    }
+
+    void* address = nullptr;
+    if (ftruncate(fileno(stream), (off_t)fileSize) == 0)
+    {
+        address = mmap(nullptr, fileSize, PROT_READ | PROT_WRITE, MAP_SHARED, fileno(stream), 0);
+        if (address == MAP_FAILED)
+        {
+            address = nullptr;
+        }
+    }
+
+    fclose(stream);
+    return address;
+#endif // HOST_WINDOWS
 }
 #endif //MEMORY_MAPPED_STRESSLOG
 
@@ -374,9 +429,10 @@ void StressLog::Terminate(BOOL fProcessDetach) {
 
     theLog.facilitiesToLog = 0;
 
-    StressLogLockHolder lockh(theLog.lock, FALSE);
+    StressLogLockHolder lockh;
     if (!fProcessDetach) {
-        lockh.Acquire(); lockh.Release();       // The Enter() Leave() forces a memory barrier on weak memory model systems
+        lockh = TakeStressLogLock();
+        lockh.Free();            // The Enter() Leave() forces a memory barrier on weak memory model systems
                                 // we want all the other threads to notice that facilitiesToLog is now zero
 
                 // This is not strictly threadsafe, since there is no way of ensuring when all the
@@ -384,7 +440,7 @@ void StressLog::Terminate(BOOL fProcessDetach) {
                 // and there are no blocking operations in logMsg, simply sleeping will ensure
                 // that everyone gets out.
         minipal_sleep(2);
-        lockh.Acquire();
+        lockh = TakeStressLogLock();
     }
 
     // Free the log memory
@@ -397,7 +453,7 @@ void StressLog::Terminate(BOOL fProcessDetach) {
     }
 
     if (!fProcessDetach) {
-        lockh.Release();
+        lockh.Free();
     }
 
 #if !defined (STRESS_LOG_READONLY) && defined(HOST_WINDOWS)
@@ -451,7 +507,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         return NULL;
     }
 
-    StressLogLockHolder lockh(theLog.lock, FALSE);
+    StressLogLockHolder lockh;
 
     class NestedCaller
     {
@@ -478,7 +534,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         // Acquiring the lack can throw an OOM exception the first time its called on a thread. We go
         // ahead and try to provoke that now, before we've altered the list of available stress logs, and bail if
         // we fail.
-        lockh.Acquire();
+        lockh = TakeStressLogLock();
         nested.Mark();
 
         // ClrFlsSetValue can throw an OOM exception the first time its called on a thread for a given slot. We go

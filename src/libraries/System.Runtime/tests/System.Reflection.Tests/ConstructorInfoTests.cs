@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -57,30 +58,50 @@ namespace System.Reflection.Tests
             public MutableConstructorTarget(int value) => Value = value;
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134902", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134900", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public void Invoke_StringConstructorWithExistingInstance()
+        public static IEnumerable<object[]> Invoke_StringConstructorWithExistingInstance_TestData()
         {
-            ConstructorInfo constructor = typeof(string).GetConstructor(new[] { typeof(char[]) })!;
-            object target = "existing";
-            object?[] arguments = new object?[] { new[] { 'n', 'e', 'w' } };
-
-            TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(target, arguments));
-            Assert.IsType<NotSupportedException>(exception.InnerException);
+            yield return new object[] { new[] { typeof(char), typeof(int) }, new object?[] { 'n', 3 } };
+            yield return new object[] { new[] { typeof(char[]) }, new object?[] { new[] { 'n', 'e', 'w' } } };
+            yield return new object[] { new[] { typeof(char[]), typeof(int), typeof(int) }, new object?[] { new[] { 'n', 'e', 'w' }, 0, 3 } };
+            yield return new object[] { new[] { typeof(char).MakePointerType() }, new object?[] { IntPtr.Zero } };
+            yield return new object[] { new[] { typeof(char).MakePointerType(), typeof(int), typeof(int) }, new object?[] { IntPtr.Zero, 0, 0 } };
+            yield return new object[] { new[] { typeof(sbyte).MakePointerType() }, new object?[] { IntPtr.Zero } };
+            yield return new object[] { new[] { typeof(sbyte).MakePointerType(), typeof(int), typeof(int) }, new object?[] { IntPtr.Zero, 0, 0 } };
+            yield return new object[] { new[] { typeof(sbyte).MakePointerType(), typeof(int), typeof(int), typeof(Encoding) }, new object?[] { IntPtr.Zero, 0, 0, Encoding.UTF8 } };
         }
 
-        [Fact]
+        [Theory]
+        [MemberData(nameof(Invoke_StringConstructorWithExistingInstance_TestData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/134902", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134900", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public void Invoke_ArrayConstructorWithExistingInstance()
+        public void Invoke_StringConstructorWithExistingInstance(Type[] parameterTypes, object?[] arguments)
         {
-            ConstructorInfo constructor = typeof(object[]).GetConstructor(new[] { typeof(int) })!;
-            object target = new object[1];
-            object?[] arguments = new object?[] { 3 };
+            ConstructorInfo constructor = typeof(string).GetConstructor(parameterTypes)!;
+            object target = "existing";
 
             TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(target, arguments));
             Assert.IsType<NotSupportedException>(exception.InnerException);
+            Assert.Throws<NotSupportedException>(() => constructor.Invoke(target, BindingFlags.DoNotWrapExceptions, null, arguments, null));
+        }
+
+        [Theory]
+        [InlineData(typeof(object[]), new[] { 3 })]
+        [InlineData(typeof(object[][]), new[] { 2, 3 })]
+        [InlineData(typeof(object[,]), new[] { 2, 3 })]
+        [InlineData(typeof(object[,]), new[] { 0, 2, 0, 3 })]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134902", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        public void Invoke_ArrayConstructorWithExistingInstance(Type arrayType, int[] lengths)
+        {
+            Type[] parameterTypes = new Type[lengths.Length];
+            Array.Fill(parameterTypes, typeof(int));
+            ConstructorInfo constructor = arrayType.GetConstructor(parameterTypes)!;
+            object?[] arguments = new object?[lengths.Length];
+            for (int i = 0; i < lengths.Length; i++)
+                arguments[i] = lengths[i];
+            object target = constructor.Invoke(arguments);
+
+            TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(target, arguments));
+            Assert.IsType<NotSupportedException>(exception.InnerException);
+            Assert.Throws<NotSupportedException>(() => constructor.Invoke(target, BindingFlags.DoNotWrapExceptions, null, arguments, null));
         }
 
         public static IEnumerable<object[]> Invoke_ReferenceConstructors_SharedThunk_TestData()

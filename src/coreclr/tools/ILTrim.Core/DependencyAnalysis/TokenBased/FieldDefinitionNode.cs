@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -21,20 +22,18 @@ namespace ILCompiler.DependencyAnalysis
 
         private FieldDefinitionHandle Handle => (FieldDefinitionHandle)_handle;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             FieldDefinition fieldDef = _module.MetadataReader.GetFieldDefinition(Handle);
             TypeDefinitionHandle declaringType = fieldDef.GetDeclaringType();
-
-            DependencyList dependencies = new DependencyList();
 
             EcmaSignatureAnalyzer.AnalyzeFieldSignature(
                 _module,
                 _module.MetadataReader.GetBlobReader(fieldDef.Signature),
                 factory,
-                dependencies);
+                sink);
 
-            dependencies.Add(factory.TypeDefinition(_module, declaringType), "Field owning type");
+            sink.Add(factory.TypeDefinition(_module, declaringType), "Field owning type");
 
             if ((fieldDef.Attributes & FieldAttributes.Static) != 0 &&
                 (fieldDef.Attributes & FieldAttributes.Literal) == 0)
@@ -43,18 +42,16 @@ namespace ILCompiler.DependencyAnalysis
                 if (declaringTypeDesc.IsBeforeFieldInit &&
                     declaringTypeDesc.GetStaticConstructor() is EcmaMethod cctor)
                 {
-                    dependencies.Add(factory.MethodDefinition(_module, cctor.Handle), "Static field initializer");
+                    sink.Add(factory.MethodDefinition(_module, cctor.Handle), "Static field initializer");
                 }
             }
 
             if ((fieldDef.Attributes & FieldAttributes.Literal) == FieldAttributes.Literal)
             {
-                dependencies.Add(factory.Constant(_module, fieldDef.GetDefaultValue()), "Constant in field definition");
+                sink.Add(factory.Constant(_module, fieldDef.GetDefaultValue()), "Constant in field definition");
             }
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, fieldDef.GetCustomAttributes());
-
-            return dependencies;
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, factory, _module, fieldDef.GetCustomAttributes());
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

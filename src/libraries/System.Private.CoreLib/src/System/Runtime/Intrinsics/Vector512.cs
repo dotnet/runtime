@@ -28,7 +28,8 @@ namespace System.Runtime.Intrinsics
     // value instead, thus reducing the number of locals and helping prevent us from hitting
     // the internal inlining limits of the JIT.
 
-    /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operting on 512-bit vectors.</summary>
+    /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on 512-bit vectors.</summary>
+    [SuppressReadyToRunCanonicalRooting]
     public static class Vector512
     {
         internal const int Size = 64;

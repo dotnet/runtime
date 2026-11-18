@@ -36,6 +36,16 @@
 #ifndef __STGIO_H_
 #define __STGIO_H_
 
+#include "minipal.h"
+
+#ifdef HOST_WINDOWS
+typedef HANDLE STGIO_FILE;
+#define STGIO_INVALID_FILE INVALID_HANDLE_VALUE
+#else
+typedef FILE* STGIO_FILE;
+#define STGIO_INVALID_FILE nullptr
+#endif
+
 #define MAXSHMEM                    32
 
 #define STGIO_READ                  0x1
@@ -234,7 +244,7 @@ private:
     int IsBackingStore()
     { return (m_rgPageMap != 0); }
     int IsMemoryMapped()
-    { return ((m_hMapping != NULL) || (m_hModule != NULL)); }
+    { return ((m_hMapping != VMToOSInterface::InvalidMemoryMapHandle) || (m_hModule != NULL)); }
 
     void CtorInit();
     HRESULT WriteToDisk(const void *pbBuff, ULONG cbWrite, ULONG *pcbWritten);
@@ -252,8 +262,9 @@ private:
 
     // Handles.
     IStream *   m_pIStream;             // For save to stream instead of file.
-    HANDLE      m_hFile;                // The actual file with contents.
-    HANDLE      m_hMapping;             // Mapping handle.
+    STGIO_FILE  m_hFile;                // The actual file with contents.
+    VMToOSInterface::MemoryMapHandle m_hMapping; // Mapping handle.
+    SIZE_T      m_cbMapping;            // Size of the mapped view.
     HMODULE     m_hModule;              // If we load with LoadLibrary, this is the module (otherwise NULL).
     void *      m_pBaseData;            // Base address for memory mapped file.
     void *      m_pData;                // For memory mapped file read.

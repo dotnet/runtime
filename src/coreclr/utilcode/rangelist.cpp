@@ -6,8 +6,9 @@
 #include "loaderheap_shared.h"
 #include "ex.h"
 #include "pedecoder.h"
-#define DONOT_DEFINE_ETW_CALLBACK
+#ifndef SELF_NO_HOST
 #include "eventtracebase.h"
+#endif // !SELF_NO_HOST
 
 #ifndef DACCESS_COMPILE
 
@@ -270,5 +271,3 @@ RangeList::RangeListBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 
 #endif // #ifdef DACCESS_COMPILE
-
-

@@ -22,6 +22,12 @@
                                                )">true</AnnotateTargetPathWithContract>
   </PropertyGroup>
 
+  <ItemDefinitionGroup Condition="'$(HasMatchingContract)' == 'true'">
+    <TargetPathWithTargetPlatformMoniker>
+      <ContractProject>$(ContractProject)</ContractProject>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
+
   <ItemGroup Condition="'$(HasMatchingContract)' == 'true' and '$(ContractProject)' != ''">
     <ProjectReference Include="$(ContractProject)" ReferenceOutputAssembly="false" OutputItemType="ResolvedMatchingContract" />
   </ItemGroup>

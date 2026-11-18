@@ -5,3 +5,5 @@ if (CLR_CMAKE_HOST_UNIX)
 else (CLR_CMAKE_HOST_UNIX)
     add_subdirectory(Windows)
 endif (CLR_CMAKE_HOST_UNIX)
+
+target_include_directories(coreclrminipal INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
