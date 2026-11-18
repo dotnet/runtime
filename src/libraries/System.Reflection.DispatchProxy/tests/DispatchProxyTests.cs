@@ -1036,8 +1036,13 @@ namespace DispatchProxyTests
             };
 
             proxy.Echo(&value);
-            Assert.IsType<Pointer>(received);
+            Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
             Assert.Equal((nint)(&value), (nint)Pointer.Unbox(received));
+
+            long longValue = 42;
+            proxy.EchoGeneric(&longValue);
+            Assert.Equal(typeof(long*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal((nint)(&longValue), (nint)Pointer.Unbox(received));
 
             received = "Failed";
             proxy.Echo(null);
@@ -1066,9 +1071,14 @@ namespace DispatchProxyTests
             result = null;
             Assert.Equal(0, (nint)proxy.Echo(null));
 
-            // A Pointer of another pointer type is accepted: the proxy can't read its type to check it.
-            result = Pointer.Box((long*)p, typeof(long*));
+            result = Pointer.Box((uint*)p, typeof(uint*));
             Assert.Equal((nint)p, (nint)proxy.Echo(null));
+
+            result = Pointer.Box((long*)p, typeof(long*));
+            Assert.Throws<InvalidCastException>(() => { proxy.Echo(null); });
+
+            result = Pointer.Box(p, typeof(void*));
+            Assert.Throws<InvalidCastException>(() => { proxy.Echo(null); });
 
             result = 42;
             Assert.Throws<InvalidCastException>(() => { proxy.Echo(null); });
@@ -1098,6 +1108,7 @@ namespace DispatchProxyTests
             int* p = values;
             written = Pointer.Box(values + 1, typeof(int*));
             proxy.Ref(ref p);
+            Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
             Assert.Equal((nint)values, (nint)Pointer.Unbox(received));
             Assert.Equal((nint)(values + 1), (nint)p);
 
@@ -1113,10 +1124,8 @@ namespace DispatchProxyTests
             proxy.Ref(ref p);
             Assert.Null(received);
 
-            // A Pointer of another pointer type is accepted: the proxy can't read its type to check it.
             written = Pointer.Box((long*)values, typeof(long*));
-            proxy.Ref(ref p);
-            Assert.Equal((nint)values, (nint)p);
+            Assert.Throws<InvalidCastException>(() => { proxy.Ref(ref p); });
 
             written = 42;
             Assert.Throws<InvalidCastException>(() => { proxy.Ref(ref p); });
@@ -1174,15 +1183,21 @@ namespace DispatchProxyTests
 
             result = Pointer.Box(p, typeof(void*));
             Assert.Equal((nint)p, (nint)proxy.EchoVoid(p));
-            Assert.Equal((nint)p, (nint)Pointer.Unbox(Assert.IsType<Pointer>(received)));
+            Assert.Equal(typeof(void*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal((nint)p, (nint)Pointer.Unbox(received));
+
+            result = Pointer.Box(p, typeof(int*));
+            Assert.Equal((nint)p, (nint)proxy.EchoVoid(null));
 
             result = Pointer.Box(&p, typeof(int**));
             Assert.Equal((nint)(&p), (nint)proxy.EchoPointerPointer(&p));
-            Assert.Equal((nint)(&p), (nint)Pointer.Unbox(Assert.IsType<Pointer>(received)));
+            Assert.Equal(typeof(int**), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal((nint)(&p), (nint)Pointer.Unbox(received));
 
             result = null;
             proxy.In(in p);
-            Assert.Equal((nint)(&value), (nint)Pointer.Unbox(Assert.IsType<Pointer>(received)));
+            Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal((nint)(&value), (nint)Pointer.Unbox(received));
             Assert.Equal((nint)(&value), (nint)p);
         }
 
@@ -1227,6 +1242,7 @@ namespace DispatchProxyTests
                 return null;
             };
             proxy.Set(&value);
+            Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
             Assert.Equal((nint)(&value), (nint)Pointer.Unbox(received));
         }
 

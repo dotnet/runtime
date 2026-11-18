@@ -61,11 +61,22 @@ namespace System.Reflection
         private static unsafe object? BoxPointer(IntPtr pointer, Type type) =>
             pointer == IntPtr.Zero ? null : Pointer.Box((void*)pointer, type);
 
-        // A Pointer's type is not checked against the target type: Pointer exposes it only internally.
-        private static unsafe IntPtr UnboxPointer(object? value) =>
-            value is Pointer pointer ? (IntPtr)Pointer.Unbox(pointer) :
-            value is null ? IntPtr.Zero :
-            (IntPtr)value;
+        private static unsafe IntPtr UnboxPointer(object? value, Type type)
+        {
+            if (value is Pointer pointer)
+            {
+                Type pointerType = pointer.PointerType;
+                // Any pointer converts to void*, so a void* target takes a Pointer of any pointer type.
+                if (type != typeof(void*) && !pointerType.IsAssignableTo(type))
+                {
+                    throw new InvalidCastException(SR.Format(SR.InvalidCast_PointerType, pointerType, type));
+                }
+
+                return (IntPtr)pointer.Value;
+            }
+
+            return value is null ? IntPtr.Zero : (IntPtr)value;
+        }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "MakeGenericMethod is safe here because the user code invoking the generic method will reference " +
@@ -659,13 +670,13 @@ namespace System.Reflection
                 if (source.IsPointer)
                 {
                     Debug.Assert(target == typeof(object));
-                    EmitBoxPointer(assembly, il, source);
+                    EmitPointerConversion(assembly, il, source, BoxPointerMethod);
                     return;
                 }
                 if (target.IsPointer)
                 {
                     Debug.Assert(source == typeof(object));
-                    EmitUnboxPointer(assembly, il);
+                    EmitPointerConversion(assembly, il, target, UnboxPointerMethod);
                     return;
                 }
                 if (target.IsValueType)
@@ -709,18 +720,12 @@ namespace System.Reflection
 
             // The proxy assembly can call BoxPointer and UnboxPointer only through an IgnoresAccessChecksTo
             // attribute for System.Reflection.DispatchProxy, which EnsureTypeIsVisible adds.
-            private static void EmitBoxPointer(ProxyAssembly assembly, ILGenerator il, Type type)
+            private static void EmitPointerConversion(ProxyAssembly assembly, ILGenerator il, Type type, MethodInfo conversion)
             {
                 assembly.EnsureTypeIsVisible(typeof(DispatchProxyGenerator));
                 il.Emit(OpCodes.Ldtoken, type);
                 il.Emit(OpCodes.Call, s_getTypeFromHandleMethod);
-                il.Emit(OpCodes.Call, BoxPointerMethod);
-            }
-
-            private static void EmitUnboxPointer(ProxyAssembly assembly, ILGenerator il)
-            {
-                assembly.EnsureTypeIsVisible(typeof(DispatchProxyGenerator));
-                il.Emit(OpCodes.Call, UnboxPointerMethod);
+                il.Emit(OpCodes.Call, conversion);
             }
 
             private static void Ldind(ILGenerator il, Type type)
