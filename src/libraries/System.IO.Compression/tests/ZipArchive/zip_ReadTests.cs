@@ -1276,7 +1276,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
-        public async Task DecryptEntry_UpdateMode_WrongPasswordThenCorrectPassword(bool async)
+        public async Task DecryptZipCryptoEntry_UpdateMode_WrongPasswordThenCorrectPassword(bool async)
         {
             using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtected_MixedEncryptions.zip"));
             ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Update);
@@ -1294,6 +1294,29 @@ namespace System.IO.Compression.Tests
             using (StreamReader helloReader = new(helloStream))
             {
                 Assert.Equal("Hello", helloReader.ReadToEnd().TrimEnd());
+            }
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public async Task DecryptAesEntry_UpdateMode_WrongPasswordThenCorrectPassword(bool async)
+        {
+            using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtected_MixedEncryptions.zip"));
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Update);
+
+            ZipArchiveEntry entry = archive.GetEntry("goodbye.txt");
+            Assert.NotNull(entry);
+            Assert.Equal(ZipEncryptionMethod.Aes256, entry.EncryptionMethod);
+
+            await Assert.ThrowsAsync<InvalidDataException>(() => OpenEntryStream(async, entry, "PLACEHOLDER"));
+
+            using (Stream goodbyeStream = await OpenEntryStream(async, entry, "S3cur3P@ssw0rd1"))
+            using (StreamReader goodbyeReader = new(goodbyeStream))
+            {
+                Assert.Equal("Goodbye", goodbyeReader.ReadToEnd().TrimEnd());
             }
 
             await DisposeZipArchive(async, archive);

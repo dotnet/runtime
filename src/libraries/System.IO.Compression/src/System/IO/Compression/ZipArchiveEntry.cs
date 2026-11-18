@@ -1110,7 +1110,7 @@ namespace System.IO.Compression
                         await WriteZip64ExtraFieldCoreAsync<TAdapter>(zip64ExtraField, _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
                     }
 
-                    if (UseAesEncryption)
+                    if (IsAesEncrypted)
                     {
                         await WriteWinZipAesExtraFieldCoreAsync<TAdapter>(CreateAesExtraField(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
                         await WriteGenericExtraFieldsExcludingTagCoreAsync<TAdapter>(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, WinZipAesExtraField.HeaderId, cancellationToken).ConfigureAwait(false);
@@ -1370,7 +1370,7 @@ namespace System.IO.Compression
                 return;
             }
 
-            if (IsZipCryptoEncrypted)
+            if (EncryptionMethod == ZipEncryptionMethod.ZipCrypto)
             {
                 zipCryptoCheckByte = CalculateZipCryptoCheckByte();
                 zipCryptoKeys = ZipCryptoStream.CreateKey(password);
@@ -2219,7 +2219,7 @@ namespace System.IO.Compression
                         await WriteZip64ExtraFieldCoreAsync<TAdapter>(zip64ExtraField, _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
                     }
 
-                    if (UseAesEncryption)
+                    if (IsAesEncrypted)
                     {
                         await WriteWinZipAesExtraFieldCoreAsync<TAdapter>(CreateAesExtraField(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
                         await WriteGenericExtraFieldsExcludingTagCoreAsync<TAdapter>(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, WinZipAesExtraField.HeaderId, cancellationToken).ConfigureAwait(false);
