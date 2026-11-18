@@ -36,7 +36,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetsWasm Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetArchitecture)' == 'wasm64'">true</TargetsWasm>
+    <TargetsWasm Condition="'$(TargetArchitecture)' == 'wasm'">true</TargetsWasm>
     <TargetsWasm64 Condition="'$(TargetArchitecture)' == 'wasm64'">true</TargetsWasm64>
   </PropertyGroup>
 
