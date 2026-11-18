@@ -8,6 +8,7 @@
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 #include "jithost.h"
+#include "gcenv.h"
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
 #include "ebr.h"
@@ -23,7 +24,6 @@ BOOL FinalizerThread::fQuitFinalizer = FALSE;
 #include "minipal/time.h"
 #define LINUX_HEAP_DUMP_TIME_OUT 10000
 
-extern bool s_forcedGCInProgress;
 int64_t FinalizerThread::LastHeapDumpTime = 0;
 
 Volatile<BOOL> g_TriggerHeapDump = FALSE;

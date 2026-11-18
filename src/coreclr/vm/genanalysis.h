@@ -6,8 +6,6 @@
 #ifndef __GENANALYSIS_H__
 #define __GENANALYSIS_H__
 
-extern bool s_forcedGCInProgress;
-
 #ifdef FEATURE_GCGENANALYSIS
 #ifdef FEATURE_PERFTRACING
 #include "eventpipeadaptertypes.h"
