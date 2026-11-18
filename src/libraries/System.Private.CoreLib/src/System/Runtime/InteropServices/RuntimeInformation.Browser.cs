@@ -13,6 +13,11 @@ namespace System.Runtime.InteropServices
     #error
 #endif
 
-        public static Architecture OSArchitecture => Architecture.Wasm;
+        public static Architecture OSArchitecture =>
+#if TARGET_WASM64
+            Architecture.Wasm64;
+#else
+            Architecture.Wasm;
+#endif
     }
 }
