@@ -192,10 +192,8 @@ namespace System.Linq
             }
 
             TAccumulator sum = TAccumulator.Zero;
-            // Adding zero for nulls is faster for these types. Skipping nulls avoids the cost of decimal addition.
-            if ((typeof(TSource) == typeof(int) || typeof(TSource) == typeof(long) ||
-                 typeof(TSource) == typeof(float) || typeof(TSource) == typeof(double)) &&
-                source.TryGetSpan(out ReadOnlySpan<TSource?> span))
+            // Adding zero for nulls is faster for primitive types.
+            if (typeof(TSource).IsPrimitive && source.TryGetSpan(out ReadOnlySpan<TSource?> span))
             {
                 foreach (TSource? value in span)
                 {
