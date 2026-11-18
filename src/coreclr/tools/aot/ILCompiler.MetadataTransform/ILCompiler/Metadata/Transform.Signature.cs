@@ -139,6 +139,7 @@ internal partial class Transform<TPolicy>
             case Ecma.SignatureTypeCode.Pointer:
             case Ecma.SignatureTypeCode.ByReference:
             case Ecma.SignatureTypeCode.SZArray:
+            case Ecma.SignatureTypeCode.Sentinel:
                 blob.WriteByte((byte)code);
                 WriteTypeSignature(blob, module, ref reader);
                 return;
