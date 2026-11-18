@@ -8,10 +8,6 @@
 #ifndef _common_h_
 #define _common_h_
 
-#if defined(FEATURE_INTERPRETER) && !defined(FEATURE_DYNAMIC_CODE_COMPILED)
-#define FEATURE_INTERPRETER_DIRECT_CALLS
-#endif
-
 #if defined(_MSC_VER) && defined(HOST_X86) && !defined(FPO_ON)
 #pragma optimize("y", on)       // Small critical routines, don't put in EBP frame
 #define FPO_ON 1

@@ -47,8 +47,7 @@ add_library_clr(clrinterpreter_objects OBJECT ${INTERPRETER_SOURCES})
 
 target_include_directories(clrinterpreter_objects PRIVATE ../jitshared)
 
-if (NOT FEATURE_DYNAMIC_CODE_COMPILED)
-  target_compile_definitions(clrinterpreter_objects PRIVATE INTERPRETER_USE_VM_HEADERS)
+if (FEATURE_INTERPRETER_DIRECT_CALLS)
   target_include_directories(clrinterpreter_objects PRIVATE
     ../vm
     ../vm/${ARCH_SOURCES_DIR}
