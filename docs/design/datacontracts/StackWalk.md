@@ -218,6 +218,7 @@ On ARM64, the `pac` unwind opcode strips pointer authentication bits from `Lr` u
 | `ResumableFrame` | `TargetContextPtr` | `pointer` | Pointer to the Frame's Target Context |
 | `RuntimeFunction` | *(type size)* | `uint32` | Size of a runtime function entry in bytes |
 | `RuntimeFunction` | `BeginAddress` | `uint32` | Begin address of a flat runtime function; on ARM32, bit 0 is the Thumb bit. Absent on WebAssembly. |
+| `RuntimeFunction` | `UnwindData` | `uint32` | Offset to unwind info for a flat runtime function; absent on WebAssembly |
 | `SoftwareExceptionFrame` | `ReturnAddress` | `CodePointer` | Return address saved in Frame |
 | `SoftwareExceptionFrame` | `TargetContext` | `pointer` | Context object saved in Frame |
 | `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
