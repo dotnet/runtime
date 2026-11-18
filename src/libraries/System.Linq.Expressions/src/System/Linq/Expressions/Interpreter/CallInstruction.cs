@@ -25,7 +25,7 @@ namespace System.Linq.Expressions.Interpreter
         /// instantiations in trimmed and ahead-of-time compiled apps at the cost of using reflection to create them.
         /// </summary>
         [FeatureSwitchDefinition("System.Linq.Expressions.Interpreter.IsPrecompiledCallSupported")]
-        private static bool IsPrecompiledCallSupported { get; } = AppContext.TryGetSwitch("System.Linq.Expressions.Interpreter.IsPrecompiledCallSupported", out bool isEnabled) ? isEnabled : true;
+        private static bool IsPrecompiledCallSupported => true;
 
         #region Construction
 

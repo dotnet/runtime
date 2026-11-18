@@ -494,33 +494,25 @@ namespace System.Linq.Expressions.Tests
             return a + b + c + d;
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public static void InterpretedCallsWorkWithPrecompiledCallSupportSwitch(bool isPrecompiledCallSupported)
+        [Fact]
+        public static void InterpretedCallsWorkWithPrecompiledCallSupport()
         {
-            RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions.Add("System.Linq.Expressions.Interpreter.IsPrecompiledCallSupported", isPrecompiledCallSupported.ToString());
+            Expression<Func<int>> noArgs = () => Environment.ProcessorCount;
+            Assert.Equal(Environment.ProcessorCount, noArgs.Compile(preferInterpretation: true)());
 
-            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static () =>
-            {
-                Expression<Func<int>> noArgs = () => Environment.ProcessorCount;
-                Assert.Equal(Environment.ProcessorCount, noArgs.Compile(preferInterpretation: true)());
+            Expression<Func<double, double>> oneArg = a => Math.Abs(a);
+            Assert.Equal(2.5, oneArg.Compile(preferInterpretation: true)(-2.5));
 
-                Expression<Func<double, double>> oneArg = a => Math.Abs(a);
-                Assert.Equal(2.5, oneArg.Compile(preferInterpretation: true)(-2.5));
+            Expression<Func<int, int, int>> twoArgs = (a, b) => Add(a, b);
+            Assert.Equal(29, twoArgs.Compile(preferInterpretation: true)(20, 9));
 
-                Expression<Func<int, int, int>> twoArgs = (a, b) => Add(a, b);
-                Assert.Equal(29, twoArgs.Compile(preferInterpretation: true)(20, 9));
+            Expression<Func<string, char, int>> instanceCall = (s, c) => s.IndexOf(c);
+            Assert.Equal(2, instanceCall.Compile(preferInterpretation: true)("abcd", 'c'));
 
-                Expression<Func<string, char, int>> instanceCall = (s, c) => s.IndexOf(c);
-                Assert.Equal(2, instanceCall.Compile(preferInterpretation: true)("abcd", 'c'));
-
-                List<long> list = new List<long>();
-                Expression<Action<object, long>> voidCall = (l, v) => AddToList(l, v);
-                voidCall.Compile(preferInterpretation: true)(list, 42L);
-                Assert.Equal(42L, Assert.Single(list));
-            }, options);
+            List<long> list = new List<long>();
+            Expression<Action<object, long>> voidCall = (l, v) => AddToList(l, v);
+            voidCall.Compile(preferInterpretation: true)(list, 42L);
+            Assert.Equal(42L, Assert.Single(list));
         }
 
         private static void AddToList(object list, long value)
