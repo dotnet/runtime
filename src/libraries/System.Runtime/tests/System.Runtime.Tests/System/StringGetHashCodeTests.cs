@@ -59,7 +59,10 @@ namespace System.Tests
             () => { return CultureInfo.CurrentCulture.CompareInfo.GetHashCode("abc", CompareOptions.NumericOrdering); },
             () => { return CultureInfo.CurrentCulture.CompareInfo.GetHashCode("abc", CompareOptions.None); },
             () => { return CultureInfo.CurrentCulture.CompareInfo.GetHashCode("abc", CompareOptions.Ordinal); },
-            () => { return CultureInfo.CurrentCulture.CompareInfo.GetHashCode("abc", CompareOptions.OrdinalIgnoreCase); }
+            () => { return CultureInfo.CurrentCulture.CompareInfo.GetHashCode("abc", CompareOptions.OrdinalIgnoreCase); },
+            () => { return string.GetHashCodeWeak("abc"); },
+            () => { return string.GetHashCodeWeak("abc", StringComparison.Ordinal); },
+            () => { return string.GetHashCodeWeak("abc", StringComparison.OrdinalIgnoreCase); }
         };
 
         [Theory]

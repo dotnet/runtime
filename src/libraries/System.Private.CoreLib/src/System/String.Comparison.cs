@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -744,33 +744,70 @@ namespace System
         }
 
         /// <summary>
-        /// Computes a non-randomized hash code for the specified character span using an ordinal comparison.
+        /// Returns a hash code for the specified character span using an ordinal comparison and a fast, non-cryptographic algorithm.
         /// </summary>
         /// <param name="value">The character span to hash.</param>
         /// <returns>A 32-bit signed integer hash code.</returns>
-        public static int GetHashCodeWeak(ReadOnlySpan<char> value) => GetNonRandomizedHashCode(value);
+        /// <remarks>
+        /// <para>
+        /// This method is faster than <see cref="GetHashCode(ReadOnlySpan{char})"/>, but its hash codes are more likely to collide,
+        /// and it doesn't protect against inputs crafted to cause collisions. Use it only when the inputs are trusted.
+        /// </para>
+        /// <para>
+        /// The hash code for a given value can differ between processes. Don't persist it or use it outside the process that computed it.
+        /// </para>
+        /// </remarks>
+        public static int GetHashCodeWeak(ReadOnlySpan<char> value) => GetNonRandomizedHashCode(value) ^ WeakHashCodeSeed.Value;
 
         /// <summary>
-        /// Computes a non-randomized hash code for the specified character span using the specified comparison rules.
+        /// Returns a hash code for the specified character span using the specified comparison rules and a fast, non-cryptographic algorithm.
         /// </summary>
         /// <param name="value">The character span to hash.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the hash computation. Only <see cref="StringComparison.Ordinal"/> and <see cref="StringComparison.OrdinalIgnoreCase"/> are supported.</param>
         /// <returns>A 32-bit signed integer hash code.</returns>
         /// <exception cref="ArgumentException"><paramref name="comparisonType"/> is not <see cref="StringComparison.Ordinal"/> or <see cref="StringComparison.OrdinalIgnoreCase"/>.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method is faster than <see cref="GetHashCode(ReadOnlySpan{char}, StringComparison)"/>, but its hash codes are more likely to collide,
+        /// and it doesn't protect against inputs crafted to cause collisions. Use it only when the inputs are trusted.
+        /// </para>
+        /// <para>
+        /// The hash code for a given value can differ between processes. Don't persist it or use it outside the process that computed it.
+        /// </para>
+        /// </remarks>
         public static int GetHashCodeWeak(ReadOnlySpan<char> value, StringComparison comparisonType)
         {
             switch (comparisonType)
             {
                 case StringComparison.Ordinal:
-                    return GetNonRandomizedHashCode(value);
+                    return GetNonRandomizedHashCode(value) ^ WeakHashCodeSeed.Value;
 
                 case StringComparison.OrdinalIgnoreCase:
-                    return GetNonRandomizedHashCodeOrdinalIgnoreCase(value);
+                    return GetNonRandomizedHashCodeOrdinalIgnoreCase(value) ^ WeakHashCodeSeed.Value;
 
                 default:
                     ThrowHelper.ThrowArgumentException(ExceptionResource.NotSupported_StringComparison, ExceptionArgument.comparisonType);
                     Debug.Fail("Should not reach this point.");
                     return default;
+            }
+        }
+
+        /// <summary>
+        /// Holds the per-process seed for <see cref="GetHashCodeWeak(ReadOnlySpan{char})"/>, so that its hash codes aren't stable across processes.
+        /// </summary>
+        /// <remarks>
+        /// The seed is separate from <see cref="Marvin.DefaultSeed"/>, as weak hash codes may reveal it. It's in a nested class so
+        /// that it's only generated on first use, rather than when <see cref="string"/> is initialized.
+        /// </remarks>
+        private static class WeakHashCodeSeed
+        {
+            internal static readonly int Value = GenerateSeed();
+
+            private static unsafe int GenerateSeed()
+            {
+                int seed;
+                Interop.GetRandomBytes((byte*)&seed, sizeof(int));
+                return seed;
             }
         }
 
