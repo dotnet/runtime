@@ -44,7 +44,9 @@
 #endif // !defined(__NR_close_range)
 #endif // !HAVE_CLOSE_RANGE || defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 #endif // defined(__linux__)
-#if !defined(TARGET_ANDROID) && (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
+// OpenHarmony and Android never call close_range (seccomp), so none of the users of
+// this flag compile there; keep the definition off to avoid -Wunused-macros.
+#if !defined(TARGET_ANDROID) && !defined(TARGET_OPENHARMONY) && (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
 #endif
 #include <pthread.h>
