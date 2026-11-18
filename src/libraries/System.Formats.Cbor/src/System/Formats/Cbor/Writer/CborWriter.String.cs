@@ -122,7 +122,7 @@ namespace System.Formats.Cbor
         /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteTextString(ReadOnlySpan<char> value)
         {
-            Encoding utf8Encoding = _utf8Encoding;
+            Encoding utf8Encoding = _encoding;
 
             int length;
             try

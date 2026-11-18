@@ -71,10 +71,7 @@ namespace System.Formats.Cbor
             EnsureMaxDepthNotExceeded();
             WriteUnsignedInteger(CborMajorType.Map, (ulong)definiteLength);
             PushDataItem(CborMajorType.Map, definiteLength: 2 * definiteLength);
-            if (_tracksMapKeys)
-            {
-                _currentKeyOffset = _offset;
-            }
+            _currentKeyOffset = _offset;
         }
 
         private void WriteStartMapIndefiniteLength()
@@ -88,10 +85,7 @@ namespace System.Formats.Cbor
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
             PushDataItem(CborMajorType.Map, definiteLength: null);
-            if (_tracksMapKeys)
-            {
-                _currentKeyOffset = _offset;
-            }
+            _currentKeyOffset = _offset;
         }
 
         //

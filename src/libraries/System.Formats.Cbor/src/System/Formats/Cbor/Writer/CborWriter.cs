@@ -17,6 +17,13 @@ namespace System.Formats.Cbor
         private const int DefaultCapacitySentinel = -1;
         private static readonly ArrayPool<byte> s_bufferPool = ArrayPool<byte>.Create();
 
+        // Conformance-mode behaviors
+        private readonly bool _requiresUniqueKeys;
+        private readonly bool _requiresSortedKeys;
+        private readonly bool _requiresDefiniteLengthItems;
+        private readonly bool _tracksMapKeys; // map key and value offsets are only needed by the unique and sorted key checks
+        private readonly Encoding _encoding;
+
         private byte[] _buffer;
         private int _offset;
 
@@ -33,13 +40,6 @@ namespace System.Formats.Cbor
         private bool _keysRequireSorting; // tracks whether key/value pair encodings need to be sorted
         private List<KeyValuePairEncodingRange>? _keyValuePairEncodingRanges; // all key/value pair encoding ranges
         private HashSet<(int Offset, int Length)>? _keyEncodingRanges; // all key encoding ranges up to encoding equality
-
-        // Cached conformance mode checks
-        private readonly bool _requiresUniqueKeys;
-        private readonly bool _requiresSortedKeys;
-        private readonly bool _requiresDefiniteLengthItems;
-        private readonly bool _tracksMapKeys; // map key and value offsets are only needed by the unique and sorted key checks
-        private readonly Encoding _utf8Encoding;
 
         /// <summary>Gets the conformance mode used by this writer.</summary>
         /// <value>One of the enumeration values that represent the conformance mode used by this writer.</value>
@@ -96,7 +96,7 @@ namespace System.Formats.Cbor
             _requiresSortedKeys = CborConformanceModeHelpers.RequiresSortedKeys(conformanceMode);
             _requiresDefiniteLengthItems = CborConformanceModeHelpers.RequiresDefiniteLengthItems(conformanceMode);
             _tracksMapKeys = _requiresUniqueKeys || _requiresSortedKeys;
-            _utf8Encoding = CborConformanceModeHelpers.GetUtf8Encoding(conformanceMode);
+            _encoding = CborConformanceModeHelpers.GetUtf8Encoding(conformanceMode);
             ConvertIndefiniteLengthEncodings = convertIndefiniteLengthEncodings;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
             MaxDepth = maxDepth < 0 ? DefaultMaxDepth : maxDepth;
@@ -141,7 +141,7 @@ namespace System.Formats.Cbor
             _requiresSortedKeys = CborConformanceModeHelpers.RequiresSortedKeys(conformanceMode);
             _requiresDefiniteLengthItems = CborConformanceModeHelpers.RequiresDefiniteLengthItems(conformanceMode);
             _tracksMapKeys = _requiresUniqueKeys || _requiresSortedKeys;
-            _utf8Encoding = CborConformanceModeHelpers.GetUtf8Encoding(conformanceMode);
+            _encoding = CborConformanceModeHelpers.GetUtf8Encoding(conformanceMode);
             ConvertIndefiniteLengthEncodings = convertIndefiniteLengthEncodings;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
             MaxDepth = DefaultMaxDepth;
