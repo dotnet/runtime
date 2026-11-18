@@ -1000,7 +1000,12 @@ namespace Microsoft.DotNet.ILAssembler
                     typeRef.PseudoHandle = MetadataTokens.TypeReferenceHandle(_typeReferences.Count);
 
                     StringBuilder builder = new(typeRef.Namespace.Length + typeRef.Name.Length + 1);
-                    builder.AppendFormat("{0}.{1}", typeRef.Namespace, typeRef.Name);
+                    if (typeRef.Namespace.Length > 0)
+                    {
+                        builder.Append(typeRef.Namespace);
+                        builder.Append('.');
+                    }
+                    builder.Append(typeRef.Name);
                     if (resolutionContext is AssemblyReferenceEntity asmRef)
                     {
                         var assemblyNameInfo = new AssemblyNameInfo(
@@ -1906,8 +1911,11 @@ namespace Microsoft.DotNet.ILAssembler
                     while (containingTypes.Count != 0)
                     {
                         TypeDefinitionEntity containingType = containingTypes.Pop();
-                        builder.Append(containingType.Namespace);
-                        builder.Append('.');
+                        if (containingType.Namespace.Length > 0)
+                        {
+                            builder.Append(containingType.Namespace);
+                            builder.Append('.');
+                        }
                         builder.Append(containingType.Name);
                         if (containingTypes.Count > 0)
                         {
