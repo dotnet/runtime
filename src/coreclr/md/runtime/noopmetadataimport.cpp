@@ -103,6 +103,7 @@ public:
     STDMETHOD(GetClassLayout)(mdTypeDef td, DWORD* pdwPackSize, COR_FIELD_OFFSET rFieldOffset[], ULONG cMax, ULONG* pcFieldOffset, ULONG* pulClassSize) override { NOOPMD_NYI(GetClassLayout); }
     STDMETHOD(GetFieldMarshal)(mdToken tk, PCCOR_SIGNATURE* ppvNativeType, ULONG* pcbNativeType) override { NOOPMD_NYI(GetFieldMarshal); }
     STDMETHOD(GetRVA)(mdToken tk, ULONG* pulCodeRVA, DWORD* pdwImplFlags) override { NOOPMD_NYI(GetRVA); }
+    STDMETHOD(GetPermissionSetProps)(mdPermission pm, DWORD* pdwAction, void const** ppvPermission, ULONG* pcbPermission) override { NOOPMD_NYI(GetPermissionSetProps); }
     STDMETHOD(GetModuleRefProps)(mdModuleRef mur, LPWSTR szName, ULONG cchName, ULONG* pchName) override { NOOPMD_NYI(GetModuleRefProps); }
     STDMETHOD(EnumModuleRefs)(HCORENUM* phEnum, mdModuleRef rModuleRefs[], ULONG cmax, ULONG* pcModuleRefs) override { NOOPMD_NYI(EnumModuleRefs); }
     STDMETHOD(GetTypeSpecFromToken)(mdTypeSpec typespec, PCCOR_SIGNATURE* ppvSig, ULONG* pcbSig) override { NOOPMD_NYI(GetTypeSpecFromToken); }
