@@ -203,6 +203,69 @@ namespace System.IO.Compression
             _firstDeletedEntryOffset = long.MaxValue;
         }
 
+        public static async Task<ZipArchive> CreateAsync(Stream stream, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ArgumentNullException.ThrowIfNull(stream);
+
+            Stream? extraTempStream = null;
+
+            try
+            {
+                Stream? backingStream = null;
+
+                if (ValidateMode(mode, stream))
+                {
+                    backingStream = stream;
+                    extraTempStream = stream = new MemoryStream();
+                    await backingStream.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+                    stream.Seek(0, SeekOrigin.Begin);
+                }
+
+                ZipArchive zipArchive = new(mode, leaveOpen, entryNameEncoding, backingStream, DecideArchiveStream(mode, stream));
+
+                switch (mode)
+                {
+                    case ZipArchiveMode.Create:
+                        zipArchive._readEntries = true;
+                        break;
+                    case ZipArchiveMode.Read:
+                        await zipArchive.ReadEndOfCentralDirectoryAsync(cancellationToken).ConfigureAwait(false);
+                        await zipArchive.EnsureCentralDirectoryReadAsync(cancellationToken).ConfigureAwait(false);
+                        break;
+                    case ZipArchiveMode.Update:
+                    default:
+                        Debug.Assert(mode == ZipArchiveMode.Update);
+                        if (zipArchive._archiveStream.Length == 0)
+                        {
+                            zipArchive._readEntries = true;
+                        }
+                        else
+                        {
+                            await zipArchive.ReadEndOfCentralDirectoryAsync(cancellationToken).ConfigureAwait(false);
+                            await zipArchive.EnsureCentralDirectoryReadAsync(cancellationToken).ConfigureAwait(false);
+
+                            foreach (ZipArchiveEntry entry in zipArchive._entries)
+                            {
+                                await entry.ThrowIfNotOpenableAsync(needToUncompress: false, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
+                            }
+                        }
+                        break;
+                }
+
+                return zipArchive;
+            }
+            catch (Exception)
+            {
+                if (extraTempStream != null)
+                {
+                    await extraTempStream.DisposeAsync().ConfigureAwait(false);
+                }
+
+                throw;
+            }
+        }
+
         /// <summary>
         /// Gets or sets the optional archive comment.
         /// </summary>
@@ -381,6 +444,46 @@ namespace System.IO.Compression
         /// Finishes writing the archive and releases all resources used by the ZipArchive object, unless the object was constructed with leaveOpen as true. Any streams from opened entries in the ZipArchive still open will throw exceptions on subsequent writes, as the underlying streams will have been closed.
         /// </summary>
         public void Dispose() => Dispose(true);
+
+        public async ValueTask DisposeAsync() => await DisposeAsyncCore().ConfigureAwait(false);
+
+        protected virtual async ValueTask DisposeAsyncCore()
+        {
+            if (!_isDisposed)
+            {
+                try
+                {
+                    switch (_mode)
+                    {
+                        case ZipArchiveMode.Read:
+                            break;
+                        case ZipArchiveMode.Create:
+                            await WriteFileAsync().ConfigureAwait(false);
+                            break;
+                        case ZipArchiveMode.Update:
+                        default:
+                            Debug.Assert(_mode == ZipArchiveMode.Update);
+                            if (IsModified)
+                            {
+                                await WriteFileAsync().ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                foreach (ZipArchiveEntry entry in _entries)
+                                {
+                                    await entry.UnloadStreamsAsync().ConfigureAwait(false);
+                                }
+                            }
+                            break;
+                    }
+                }
+                finally
+                {
+                    await CloseStreamsAsync().ConfigureAwait(false);
+                    _isDisposed = true;
+                }
+            }
+        }
 
         /// <summary>
         /// Retrieves a wrapper for the file entry in the archive with the specified name. Names are compared using ordinal comparison. If there are multiple entries in the archive with the specified name, the first one found will be returned.
