@@ -58,8 +58,6 @@ namespace Microsoft.Win32.SafeHandles
 
             private TimerQueueTimer? _timer;
 
-            private bool _needsTimerReset;
-
             private State _state;
 
             private RegisteredWaitHandle? _registeredWaitHandle;
@@ -97,7 +95,6 @@ namespace Microsoft.Win32.SafeHandles
 
             private void RestartTimer()
             {
-                _needsTimerReset = _timeout != Timeout.UnsignedInfinite;
                 if (_timer != null)
                 {
                     _timer.Change(_timeout, Timeout.UnsignedInfinite);
@@ -146,7 +143,6 @@ namespace Microsoft.Win32.SafeHandles
             private static void OnTimeout(object? state)
             {
                 WaitCompletionPacket packet = (WaitCompletionPacket)state!;
-                Volatile.Write(ref packet._needsTimerReset, false);
                 packet.ChangeState(StateTransition.Timeout);
             }
 
@@ -240,6 +236,9 @@ namespace Microsoft.Win32.SafeHandles
                             // before finishing unregistration.
                             _state = State.UnregisteringWaitingCompletion;
                             break;
+                        case (State.Completed, StateTransition.Timeout):
+                            // A stray timer fire after the wait has completed; ignore it.
+                            return;
                         case (State.Completed, StateTransition.Unregister):
                             _state = State.Unregistered;
                             registeredWaitHandle.OnRemoveWait();
@@ -265,7 +264,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (transition is StateTransition.Unregister)
                 {
-                    if (Volatile.Read(ref _needsTimerReset) && _timer is not null)
+                    if (_timer is not null)
                     {
                         DisposeTimerBlocking(_timer);
                         _timer = null;
@@ -282,9 +281,16 @@ namespace Microsoft.Win32.SafeHandles
                     Debug.Assert(Handle is not null);
                     Handle.TryToReuse(this);
                 }
+                else if (transition is StateTransition.Timeout)
+                {
+                    // When timing out, queue the callback to the thread pool because if it calls
+                    // Unregister, we would deadlock waiting for the timer callback to finish.
+                    ThreadPool.UnsafeQueueHighPriorityWorkItemInternal(
+                        new CompleteWaitThreadPoolWorkItem(registeredWaitHandle, timedOut: true));
+                }
                 else
                 {
-                    PortableThreadPool.CompleteWait(registeredWaitHandle, timedOut: transition is StateTransition.Timeout);
+                    PortableThreadPool.CompleteWait(registeredWaitHandle, timedOut: false);
                 }
             }
 
@@ -304,7 +310,6 @@ namespace Microsoft.Win32.SafeHandles
             {
                 _registeredWaitHandle = null;
                 _state = State.Inactive;
-                _needsTimerReset = false;
 
                 // Free the overlapped.
                 if (_overlapped != null)
