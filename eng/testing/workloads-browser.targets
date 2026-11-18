@@ -98,4 +98,24 @@
 
       *******************" />
   </Target>
+
+  <PropertyGroup>
+    <NuGetConfigPackageSourceMappingsForWorkloadTesting>*</NuGetConfigPackageSourceMappingsForWorkloadTesting>
+  </PropertyGroup>
+  <Target Name="_ValidateVmrEmscriptenWorkload"
+          AfterTargets="InstallWorkloadUsingArtifacts"
+          Condition="'$(InstallWorkloadForTesting)' == 'true'">
+    <PropertyGroup>
+      <_NodeValidationSuffix Condition="$([MSBuild]::IsOSPlatform('Windows'))">.exe</_NodeValidationSuffix>
+    </PropertyGroup>
+    <ItemGroup>
+      <_NodeValidationSdk Include="@(_SdkWithWorkloadToInstall)" Condition="'%(_SdkWithWorkloadToInstall.Identity)' == 'latest'">
+        <NodeExecutable>%(_SdkWithWorkloadToInstall.InstallPath)/packs/Microsoft.NET.Runtime.Emscripten.3.1.56.Node.$(NETCoreSdkPortableRuntimeIdentifier)/10.0.16/tools/bin/node$(_NodeValidationSuffix)</NodeExecutable>
+      </_NodeValidationSdk>
+    </ItemGroup>
+    <Error Condition="'@(_NodeValidationSdk)' == ''" Text="The current workload SDK is not selected for Node validation." />
+    <Error Condition="!Exists('%(_NodeValidationSdk.NodeExecutable)')" Text="The verified Node workload pack is missing at %(_NodeValidationSdk.NodeExecutable)." />
+    <Exec Command="&quot;%(_NodeValidationSdk.NodeExecutable)&quot; &quot;$(RepoRoot)eng/testing/NodeValidation.cjs&quot; &quot;$(RepoRoot)eng/testing/NodeValidation.json&quot; workload &quot;%(_NodeValidationSdk.InstallPath)/.&quot; &quot;$(VersionBandForSdkManifestsDir)&quot;"
+          StandardOutputImportance="High" />
+  </Target>
 </Project>

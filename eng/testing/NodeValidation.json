@@ -1,0 +1,37 @@
+{
+  "node": "24.22.1",
+  "embeddedUndici": "7.30.1",
+  "npm": "11.19.1",
+  "npmUndici": "6.29.1",
+  "npmUndiciFetchSha256": "3e0b6aa3b09d5265f5cdebe5196376a809178776aed52eeba73788341df57a48",
+  "nodeCommit": "740e4b9484992cf0b6917dfc902939e8652b4041",
+  "nodePackageVersion": "10.0.0-alpha.1.26566.2",
+  "binaries": {
+    "linux-arm64": "a7b091d680999c8906bcef43fc4b8691d1cf80d7cfbb36c440c1a830deb04b8a",
+    "linux-musl-arm64": "2b84cba567949dfe8c9dbe4cae88662f72a3a6bf922910f68816140ae671331d",
+    "linux-musl-x64": "a11f1f256613600049abcdf18448ce9ea10950d985e51ea9a7b75694c1f59310",
+    "linux-x64": "6c59e797f09bb9a11e7cd6589e528f7cb4a5d216312de1a8831343ca20c92b3a",
+    "osx-arm64": "c408123d99c9c606059fc0b28b6d099b467e3bea584ac167b9890e2c73684354",
+    "osx-x64": "e00c3d8c0b15258ff3d89446754663f741c2aadd7d6ad37acc58743c705f0714",
+    "win-arm64": "39e28259405081dacd71f78534d4fb767fda04c11f0ad2d30de994f8e9b83c7c",
+    "win-x64": "f33aca1a61419fa1685c5b97cc1b1420711cd22c8b9c845f6ea4fda39289db57"
+  },
+  "workload": {
+    "vmrCommit": "01ceffb8ecf00e58755cb5f05a1a6d844beab1b9",
+    "vmrBuild": 3139456,
+    "nodePackages": {
+      "linux-arm64": "Microsoft.NET.Runtime.Emscripten.3.1.56.Node.linux-arm64",
+      "linux-musl-arm64": "Microsoft.NET.Runtime.Emscripten.3.1.56.Node.linux-musl-arm64",
+      "linux-musl-x64": "Microsoft.NET.Runtime.Emscripten.3.1.56.Node.linux-musl-x64",
+      "linux-x64": "Microsoft.NET.Runtime.Emscripten.3.1.56.Node.linux-x64",
+      "osx-arm64": "Microsoft.NET.Runtime.Emscripten.3.1.56.Node.osx-arm64",
+      "osx-x64": "Microsoft.NET.Runtime.Emscripten.3.1.56.Node.osx-x64",
+      "win-arm64": "Microsoft.NET.Runtime.Emscripten.3.1.56.Node.win-arm64",
+      "win-x64": "Microsoft.NET.Runtime.Emscripten.3.1.56.Node.win-x64"
+    },
+    "nodePackVersion": "10.0.16",
+    "manifestPackage": "Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100",
+    "manifestVersion": "10.0.116",
+    "manifestJsonSha256": "ea88229ba7156c465257b7f47ffcb98ed8fa6a20054f399745ab4b378ad97c84"
+  }
+}

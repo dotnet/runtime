@@ -1228,4 +1228,17 @@ JS_ENGINES = [NODE_JS]
   <Target Name="CleanMono">
     <RemoveDir Directories="$(MonoObjDir)" />
   </Target>
+
+  <Target Name="_ValidateNodeTransport448"
+          AfterTargets="BuildMono"
+          Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(ProvisionEmscriptenOnly)' != 'true'">
+    <PropertyGroup>
+      <_NodeValidationRoot>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)'))node/</_NodeValidationRoot>
+      <_NodeValidationExecutable>$(_NodeValidationRoot)bin/node</_NodeValidationExecutable>
+      <_NodeValidationExecutable Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(_NodeValidationExecutable).exe</_NodeValidationExecutable>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_NodeValidationExecutable)')" Text="The validation Node executable is missing at $(_NodeValidationExecutable)." />
+    <Exec Command="&quot;$(_NodeValidationExecutable)&quot; &quot;$(RepoRoot)eng/testing/NodeValidation.cjs&quot; &quot;$(RepoRoot)eng/testing/NodeValidation.json&quot; transport &quot;$(_NodeValidationRoot).&quot;"
+          StandardOutputImportance="High" />
+  </Target>
 </Project>
