@@ -36,6 +36,7 @@ namespace System.Net
         private WebHeaderCollection _webHeaderCollection = new WebHeaderCollection();
 
         private readonly Uri _requestUri = null!;
+        private Uri? _responseUri;
         private string _originVerb = HttpMethod.Get.Method;
 
         private int _continueTimeout = DefaultContinueTimeout;
@@ -344,7 +345,7 @@ namespace System.Net
         {
             get
             {
-                return _requestUri;
+                return _responseUri ?? _requestUri;
             }
         }
 
@@ -365,7 +366,8 @@ namespace System.Net
             get
             {
                 Uri hostUri = _hostUri ?? Address;
-                return (_hostUri == null || !_hostHasPort) && Address.IsDefaultPort ?
+                Uri portUri = _hostUri is null ? Address : _requestUri;
+                return (_hostUri == null || !_hostHasPort) && portUri.IsDefaultPort ?
                     hostUri.Host :
                     $"{hostUri.Host}:{hostUri.Port}";
             }
@@ -1279,6 +1281,7 @@ namespace System.Net
             try
             {
                 HttpResponseMessage responseMessage = await _sendRequestTask.ConfigureAwait(false);
+                _responseUri = responseMessage.RequestMessage!.RequestUri!;
                 HttpWebResponse response = new(responseMessage, _requestUri, _cookieContainer);
 
                 int maxSuccessStatusCode = AllowAutoRedirect ? 299 : 399;
