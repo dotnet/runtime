@@ -1,0 +1,37 @@
+{
+  "node": "24.22.1",
+  "embeddedUndici": "7.30.1",
+  "npm": "11.19.1",
+  "npmUndici": "6.29.1",
+  "npmUndiciFetchSha256": "3e0b6aa3b09d5265f5cdebe5196376a809178776aed52eeba73788341df57a48",
+  "nodeCommit": "6ef83359dbd25f47ec062b5c053c7a7b069edb8f",
+  "nodePackageVersion": "12.0.0-alpha.1.26566.1",
+  "binaries": {
+    "linux-arm64": "4eac249da37e73488f89676b592b88e2840546ceaeaf67b319105b7ea6505a79",
+    "linux-musl-arm64": "7a25c0fe0380c96c93215c4dd08aeca678cbd24f6b647f56356773c78069e6a1",
+    "linux-musl-x64": "1855e46c9f949a9ad8a24b97608a421b28f975c5c38a81b62940ae9405ae06d8",
+    "linux-x64": "f5649f540fd954d18d7288a8edc287c5759ee63c47d2925d184c563175dd2373",
+    "osx-arm64": "535c6ec1c379cd293d734a8e2238f644c51c460ad8e8e7df6f7c44b37e044a1c",
+    "osx-x64": "988fbb75a73847eaa09a1601f672fa5a72a6ffa3e5ad67bbab61e5bebff3069c",
+    "win-arm64": "8212a44cafb9869d368283c7bf729a527142f1ed3b08098794c1efe5f5bad719",
+    "win-x64": "972c75fbc5593cd22e7672a6b52757e3f1b84a48be2e169fdf03007d469ad5dd"
+  },
+  "workload": {
+    "vmrCommit": "ca43b087bb612ba56d462cee810334c2f4148ecb",
+    "vmrBuild": 3139455,
+    "nodePackages": {
+      "linux-arm64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.linux-arm64",
+      "linux-musl-arm64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.linux-musl-arm64",
+      "linux-musl-x64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.linux-musl-x64",
+      "linux-x64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.linux-x64",
+      "osx-arm64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.osx-arm64",
+      "osx-x64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.osx-x64",
+      "win-arm64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.win-arm64",
+      "win-x64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.win-x64"
+    },
+    "nodePackVersion": "12.0.0-alpha.1.26568.103",
+    "manifestPackage": "Microsoft.NET.Workload.Emscripten.Current.Manifest-12.0.100-alpha.1",
+    "manifestVersion": "12.0.100-alpha.1.26568.103",
+    "manifestJsonSha256": "964eade614213459c370975022042177346e1ec4dfe61e5e21bf1070d6a5474e"
+  }
+}
