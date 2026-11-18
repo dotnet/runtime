@@ -5272,7 +5272,9 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
                     onlyDef                            = (defNode == nullptr) || (defNode == store);
                 }
 
-                if (!varDsc->IsAddressExposed() && !varDsc->lvDoNotEnregister && !varDsc->lvIsCSE &&
+                // Keep a separate temp when the destination needs a handler-visible stack home.
+                if (!varDsc->IsAddressExposed() && !varDsc->lvDoNotEnregister &&
+                    !(varDsc->lvTracked && varDsc->IsLiveInOutOfHandler()) && !varDsc->lvIsCSE &&
                     !varTypeIsStruct(varDsc) && (varDsc->TypeGet() == genActualType(defExp->TypeGet())))
                 {
                     bool eligible = onlyDef;
@@ -5314,7 +5316,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         }
         lclDsc->lvType = cseLclVarTyp;
     }
-    lclDsc->lvIsCSE = true;
+    lclDsc->lvIsCSE      = true;
+    lclDsc->lvIsCSEReuse = reuseDef.Tree != nullptr;
 
     // Record the CSE temp
     //
