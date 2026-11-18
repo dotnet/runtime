@@ -918,7 +918,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(1, timeInQueueRecorder.MeasurementCount);
                 int count = timeInQueueRecorder.MeasurementCount;
 
-                if (UseVersion.Major == 2)
+                if (UseVersion.Major >= 2)
                 {
                     Measurement<double> measurement = Assert.Single(timeInQueueRecorder.GetMeasurements());
                     VerifyTimeInQueue(InstrumentNames.TimeInQueue, measurement.Value, measurement.Tags.ToArray(), uri, UseVersion);
