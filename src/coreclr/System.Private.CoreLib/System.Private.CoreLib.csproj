@@ -74,9 +74,8 @@
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
     <DefineConstants>$(DefineConstants);TARGET_WASM</DefineConstants>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Platform)' == 'wasm64'">
-    <DefineConstants>$(DefineConstants);TARGET_WASM;TARGET_WASM64</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGET_WASM64</DefineConstants>
   </PropertyGroup>
 
   <!-- Configuration specific properties -->
