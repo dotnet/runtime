@@ -5546,14 +5546,6 @@ void CSE_HeuristicCommon::InsertUseIntoSsa(IncrementalSsaBuilder& ssaBuilder, co
             m_compiler->vnStore->RecordCseUseRewrite(oldVNPair, lcl);
         }
     }
-
-    // If the old VN was flagged as a checked bound then propagate that to the
-    // new VN to make sure assertion prop will pay attention to this VN.
-    if ((oldConservativeVN != newConservativeVN) && m_compiler->vnStore->IsVNCheckedBound(oldConservativeVN) &&
-        !m_compiler->vnStore->IsVNConstant(newConservativeVN))
-    {
-        m_compiler->vnStore->SetVNIsCheckedBound(newConservativeVN);
-    }
 }
 
 void CSE_Heuristic::AdjustHeuristic(CSE_Candidate* successfulCandidate)

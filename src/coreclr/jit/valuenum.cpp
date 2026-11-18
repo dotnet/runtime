@@ -8158,6 +8158,22 @@ void ValueNumStore::RecordVNEquivalence(ValueNum fromVN, ValueNum toVN)
     assert(FindVNPair(m_vnEquivalences->entries, fromRoot) < 0);
     m_vnEquivalences->members.Set(fromRoot);
     m_vnEquivalences->entries.Push({fromRoot, toRoot});
+
+    // Checked-bound membership is recorded during value numbering, before CSE, so carry it
+    // to the representative rather than relying on later canonicalization. A constant needs
+    // none: assertion prop reads constants directly.
+    if (IsVNConstant(toRoot))
+    {
+        return;
+    }
+    if (IsVNCheckedBound(fromRoot))
+    {
+        SetVNIsCheckedBound(toRoot);
+    }
+    if (IsVNCheckedBoundIndex(fromRoot))
+    {
+        SetVNIsCheckedBound(toRoot, /* isIndex */ true);
+    }
 }
 
 #ifdef FEATURE_HW_INTRINSICS

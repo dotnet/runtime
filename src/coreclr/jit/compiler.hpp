@@ -5930,6 +5930,9 @@ bool Compiler::optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned lim
 template <typename TAssertVisitor>
 Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertVisitor argVisitor)
 {
+    // A number CSE rewrote may stand for a phi definition, so start from the representative.
+    vn = vnStore->VNCanonical(vn);
+
     VNPhiDef phiDef;
     if (!vnStore->GetPhiDef(vn, &phiDef))
     {
