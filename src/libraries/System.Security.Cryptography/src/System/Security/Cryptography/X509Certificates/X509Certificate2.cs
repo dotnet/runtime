@@ -2112,6 +2112,7 @@ namespace System.Security.Cryptography.X509Certificates
                 byte[] base64Buffer = CryptoPool.Rent(fields.DecodedDataLength);
                 int base64ClearSize = CryptoPool.ClearAll;
                 ArraySegment<byte>? decryptedPkcs8 = null;
+                AsymmetricAlgorithm? key;
 
                 try
                 {
@@ -2132,22 +2133,11 @@ namespace System.Security.Cryptography.X509Certificates
                         break;
                     }
 
-                    X509Certificate2? loaded = ExtractKeyFromECPrivateKeyInfo(certificate, decryptedPkcs8.Value);
-
-                    if (loaded is null)
-                    {
-                        break;
-                    }
-
-                    return loaded;
+                    key = ImportECPrivateKeyInfo(certificate, decryptedPkcs8.Value);
                 }
                 catch (CryptographicException ce)
                 {
                     throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ce);
-                }
-                catch (ArgumentException ae)
-                {
-                    throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
                 }
                 finally
                 {
@@ -2158,6 +2148,13 @@ namespace System.Security.Cryptography.X509Certificates
                         CryptoPool.Return(decryptedPkcs8.Value);
                     }
                 }
+
+                if (key is null)
+                {
+                    break;
+                }
+
+                return CopyWithECPrivateKey(certificate, key);
             }
 
             throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey);
@@ -2207,6 +2204,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 byte[] base64Buffer = CryptoPool.Rent(fields.DecodedDataLength);
                 int clearSize = CryptoPool.ClearAll;
+                AsymmetricAlgorithm? key;
 
                 try
                 {
@@ -2219,34 +2217,30 @@ namespace System.Security.Cryptography.X509Certificates
                     }
 
                     clearSize = base64Written;
-                    X509Certificate2? loaded = ExtractKeyFromECPrivateKeyInfo(certificate, base64Buffer.AsMemory(0, base64Written));
-
-                    if (loaded is null)
-                    {
-                        break;
-                    }
-
-                    return loaded;
+                    key = ImportECPrivateKeyInfo(certificate, base64Buffer.AsMemory(0, base64Written));
                 }
                 catch (CryptographicException ce)
                 {
                     throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ce);
                 }
-                catch (ArgumentException ae)
-                {
-                    throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
-                }
                 finally
                 {
                     CryptoPool.Return(base64Buffer, clearSize);
                 }
+
+                if (key is null)
+                {
+                    break;
+                }
+
+                return CopyWithECPrivateKey(certificate, key);
             }
 
             throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey);
         }
 
         [UnsupportedOSPlatform("browser")]
-        private static X509Certificate2? ExtractKeyFromECPrivateKeyInfo(
+        private static AsymmetricAlgorithm? ImportECPrivateKeyInfo(
             X509Certificate2 certificate,
             ReadOnlyMemory<byte> privateKeyInfo)
         {
@@ -2270,40 +2264,59 @@ namespace System.Security.Cryptography.X509Certificates
             // it will work for EC-DSA, too) or as EC-DH explicitly.
             if ((usages is null || (usages & ~EcdsaKeyUsageFlags) != 0) && IsECDiffieHellman(certificate))
             {
-                using (ECDiffieHellman ecdh = ECDiffieHellman.Create())
-                {
-                    ecdh.ImportPkcs8PrivateKey(privateKeyInfo.Span, out int pkcs8Read);
-
-                    if (pkcs8Read != privateKeyInfo.Length)
-                    {
-                        Debug.Fail("Unexpected trailing data in PKCS#8 buffer.");
-                        throw new CryptographicException();
-                    }
-
-                    return certificate.CopyWithPrivateKey(ecdh);
-                }
+                return ImportPkcs8PrivateKey(ECDiffieHellman.Create(), privateKeyInfo.Span);
             }
 
             // If we are here, then either the key or certificate has a key usage that requires loading it as EC-DSA.
             if (IsECDsa(certificate))
             {
-                using (ECDsa ecdsa = ECDsa.Create())
-                {
-                    ecdsa.ImportPkcs8PrivateKey(privateKeyInfo.Span, out int pkcs8Read);
-
-                    if (pkcs8Read != privateKeyInfo.Length)
-                    {
-                        Debug.Fail("Unexpected trailing data in PKCS#8 buffer.");
-                        throw new CryptographicException();
-                    }
-
-                    return certificate.CopyWithPrivateKey(ecdsa);
-                }
+                return ImportPkcs8PrivateKey(ECDsa.Create(), privateKeyInfo.Span);
             }
 
             // If we get here, the key and certificate do not agree on algorithm use (the key has digitalSignature but
             // the certificate has keyAgreement, for example). It cannot be loaded.
             return null;
+        }
+
+        private static AsymmetricAlgorithm ImportPkcs8PrivateKey(AsymmetricAlgorithm key, ReadOnlySpan<byte> privateKeyInfo)
+        {
+            try
+            {
+                key.ImportPkcs8PrivateKey(privateKeyInfo, out int pkcs8Read);
+
+                if (pkcs8Read != privateKeyInfo.Length)
+                {
+                    Debug.Fail("Unexpected trailing data in PKCS#8 buffer.");
+                    throw new CryptographicException();
+                }
+
+                return key;
+            }
+            catch
+            {
+                key.Dispose();
+                throw;
+            }
+        }
+
+        private static X509Certificate2 CopyWithECPrivateKey(X509Certificate2 certificate, AsymmetricAlgorithm key)
+        {
+            using (key)
+            {
+                try
+                {
+                    return key switch
+                    {
+                        ECDiffieHellman ecdh => certificate.CopyWithPrivateKey(ecdh),
+                        ECDsa ecdsa => certificate.CopyWithPrivateKey(ecdsa),
+                        _ => throw new UnreachableException(),
+                    };
+                }
+                catch (ArgumentException ae)
+                {
+                    throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                }
+            }
         }
 
         private static X509KeyUsageFlags? GetKeyUsageFlags(ref readonly PrivateKeyInfoAsn keyInfo)
