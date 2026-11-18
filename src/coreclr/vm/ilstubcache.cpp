@@ -97,8 +97,6 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 
     pResolver->SetStubMethodDesc(pStubMD);
 
-    pResolver->FinalizeILStub(pStubLinker);
-
     if (pAllocator->IsCollectible())
     {
         // The stub may never be compiled, so its compile-time state
@@ -107,6 +105,8 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
         CrstHolder ch(&pCache->m_crst);
         pCache->m_collectibleStubResolvers.Append(pResolver);
     }
+
+    pResolver->FinalizeILStub(pStubLinker);
 
     return pStubMD;
 }
