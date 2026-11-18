@@ -186,6 +186,7 @@ private:
     void SetBlockSequence();
     void BuildIntervals();
     void BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* funcletData);
+    void DumpIntervals();
 
     void ResolveReferences();
 
