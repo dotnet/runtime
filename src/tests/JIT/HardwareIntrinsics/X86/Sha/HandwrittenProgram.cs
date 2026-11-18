@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
+using System.Threading;
 using JIT.HardwareIntrinsics.X86;
 using Xunit;
 
@@ -149,6 +150,11 @@ namespace IntelHardwareIntrinsicTest._Sha
                 AssertEqual(ShaVerify.Sha1FourRounds(y, constant, 1), AlignedLoads.Sha1FourRoundsWithConstant(y));
                 AssertEqual(ShaVerify.Sha256TwoRounds(y, constant, k), AlignedLoads.Sha256TwoRoundsWithConstant(y, k));
                 AssertEqual(ShaVerify.Sha256TwoRounds(y, s_vectorSeed, k), Sha.Sha256TwoRounds(y, s_vectorSeed, k));
+
+                // A write to the memory operand in a later operand. The load must still see the original bytes, so it
+                // can't be folded into the instruction, which would move it after the write.
+                int first = Unsafe.ReadUnaligned<int>(p);
+                AssertEqual(ShaVerify.Sha256TwoRounds(y, x, Vector128.Create(first).AsByte()), AlignedLoads.Sha256TwoRoundsThenOverwrite(y, p, ~first));
             }
         }
 
@@ -689,6 +695,13 @@ namespace IntelHardwareIntrinsicTest._Sha
             public static Vector128<byte> Sha256TwoRoundsWithConstant(Vector128<byte> a, Vector128<byte> k)
             {
                 return Sha.Sha256TwoRounds(a, Vector128.Create((byte)0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF), k);
+            }
+
+            // The third operand replaces the first 4 bytes at p after the second operand loads them.
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+            public static Vector128<byte> Sha256TwoRoundsThenOverwrite(Vector128<byte> a, byte* p, int value)
+            {
+                return Sha.Sha256TwoRounds(a, Sse2.LoadAlignedVector128(p), Vector128.Create(Interlocked.Exchange(ref *(int*)p, value)).AsByte());
             }
         }
 

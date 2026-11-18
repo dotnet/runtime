@@ -9202,11 +9202,15 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             //
             // When optimizations are enabled, we want to contain any aligned load that is large enough for the parent's
             // requirement.
+            //
+            // Either way, containing the load moves it to the parent, so it must be safe to move it past the nodes in
+            // between, which may write the memory it reads, such as an atomic operation in a later operand.
 
-            return (supportsSIMDLoad &&
-                    (m_compiler->opts.OptimizationEnabled() ||
-                     (!m_compiler->canUseVexEncoding() && (expectedSize == genTypeSize(TYP_SIMD16)) &&
-                      !HWIntrinsicInfo::HasLegacyEncodingOnly(parentIntrinsicId))));
+            return supportsSIMDLoad &&
+                   (m_compiler->opts.OptimizationEnabled() ||
+                    (!m_compiler->canUseVexEncoding() && (expectedSize == genTypeSize(TYP_SIMD16)) &&
+                     !HWIntrinsicInfo::HasLegacyEncodingOnly(parentIntrinsicId))) &&
+                   IsSafeToContainMem(parentNode, hwintrinsic);
         }
 
         case NI_X86Base_LoadScalarVector128:
@@ -9214,7 +9218,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             // These take only pointer operands.
             assert(hwintrinsic->OperIsMemoryLoad());
 
-            return supportsSIMDScalarLoad;
+            // Containing the load moves it to the parent, see the aligned loads above.
+            return supportsSIMDScalarLoad && IsSafeToContainMem(parentNode, hwintrinsic);
         }
 
         case NI_X86Base_MoveAndDuplicate:
@@ -9282,8 +9287,10 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             assert(hwintrinsic->OperIsMemoryLoad());
             assert(varTypeIsFloating(childBaseType));
 
+            // Containing the load moves it to the parent, see the aligned loads above.
             return (parentBaseType == childBaseType) &&
-                   parentNode->isEmbeddedBroadcastCompatibleHWIntrinsic(m_compiler);
+                   parentNode->isEmbeddedBroadcastCompatibleHWIntrinsic(m_compiler) &&
+                   IsSafeToContainMem(parentNode, hwintrinsic);
         }
 
         default:
