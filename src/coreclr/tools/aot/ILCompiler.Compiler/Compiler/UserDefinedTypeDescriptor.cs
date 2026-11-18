@@ -715,13 +715,21 @@ namespace ILCompiler
 
             if (NodeFactory.Target.OperatingSystem == TargetOS.Windows)
             {
-                InsertStaticFieldRegionMember(fieldsDescs, defType, nonGcStaticFields, WindowsNodeMangler.NonGCStaticMemberName, false, false);
-                InsertStaticFieldRegionMember(fieldsDescs, defType, gcStaticFields, WindowsNodeMangler.GCStaticMemberName, isNativeAOT, false);
-                InsertStaticFieldRegionMember(fieldsDescs, defType, threadStaticFields, WindowsNodeMangler.ThreadStaticMemberName, isNativeAOT, true);
+                InsertStaticFieldRegionMember(fieldsDescs, defType, nonGcStaticFields,
+                    WindowsNodeMangler.NonGCStaticMemberName, defType.NonGCStaticFieldSize, false, false);
+                InsertStaticFieldRegionMember(fieldsDescs, defType, gcStaticFields,
+                    WindowsNodeMangler.GCStaticMemberName, defType.GCStaticFieldSize, isNativeAOT, false);
+                InsertStaticFieldRegionMember(fieldsDescs, defType, threadStaticFields,
+                    WindowsNodeMangler.ThreadStaticMemberName, defType.ThreadGcStaticFieldSize, isNativeAOT, true);
             }
             else
             {
-                EmitThreadStaticFieldRegionType(defType, threadStaticFields);
+                if (nonGcStaticFields.Count > 0)
+                    EmitStaticFieldRegionType(defType, nonGcStaticFields, nonGcStaticDataName, defType.NonGCStaticFieldSize, false);
+                if (gcStaticFields.Count > 0)
+                    EmitStaticFieldRegionType(defType, gcStaticFields, gcStaticDataName, defType.GCStaticFieldSize, isNativeAOT);
+                if (threadStaticFields.Count > 0)
+                    EmitStaticFieldRegionType(defType, threadStaticFields, threadStaticDataName, defType.ThreadGcStaticFieldSize, isNativeAOT);
             }
 
             DataFieldDescriptor[] fields = new DataFieldDescriptor[fieldsDescs.Count];
@@ -753,15 +761,19 @@ namespace ILCompiler
                 return typeIndex;
         }
 
-        private void InsertStaticFieldRegionMember(List<DataFieldDescriptor> fieldDescs, DefType defType, List<DataFieldDescriptor> staticFields, Utf8String staticFieldForm,
-                                                   bool staticDataInObject, bool isThreadStatic)
+        private void InsertStaticFieldRegionMember(
+            List<DataFieldDescriptor> fieldDescs, DefType defType, List<DataFieldDescriptor> staticFields,
+            Utf8String staticFieldForm, LayoutInt regionSize, bool staticDataInObject, bool isThreadStatic)
         {
             if (staticFields != null && (staticFields.Count > 0))
             {
+                // DbgEng can falsely resolve missing members on zero-sized storage UDTs.
+                ulong emittedRegionSize = regionSize.IsIndeterminate ? 0 : (ulong)regionSize.AsInt;
+
                 // Generate struct symbol for type describing individual fields of the statics region
                 ClassFieldsTypeDescriptor fieldsDescriptor = new ClassFieldsTypeDescriptor
                 {
-                    Size = (ulong)0,
+                    Size = emittedRegionSize,
                     FieldsCount = staticFields.Count
                 };
 
@@ -769,7 +781,8 @@ namespace ILCompiler
                 {
                     IsStruct = !staticDataInObject ? 1 : 0,
                     Name = Utf8String.Concat("__type"u8, staticFieldForm.AsSpan(), _objectWriter.GetMangledName(defType).AsSpan()),
-                    BaseClassId = 0
+                    BaseClassId = 0,
+                    InstanceSize = emittedRegionSize
                 };
 
                 if (staticDataInObject)
@@ -844,14 +857,13 @@ namespace ILCompiler
             }
         }
 
-        private void EmitThreadStaticFieldRegionType(
+        private void EmitStaticFieldRegionType(
             DefType defType,
-            List<DataFieldDescriptor> staticFields)
+            List<DataFieldDescriptor> staticFields,
+            Utf8String staticDataName,
+            LayoutInt regionSize,
+            bool staticDataInObject)
         {
-            if (staticFields.Count == 0)
-                return;
-
-            LayoutInt regionSize = defType.ThreadGcStaticFieldSize;
             ulong emittedRegionSize = regionSize.IsIndeterminate ? 0 : (ulong)regionSize.AsInt;
 
             ClassFieldsTypeDescriptor fieldsDescriptor = new ClassFieldsTypeDescriptor
@@ -862,11 +874,11 @@ namespace ILCompiler
 
             ClassTypeDescriptor classTypeDescriptor = new ClassTypeDescriptor
             {
-                IsStruct = 0,
-                Name = Utf8String.Concat(
-                    "__type"u8,
-                    NodeFactory.NameMangler.NodeMangler.ThreadStatics(defType).AsSpan()),
-                BaseClassId = GetTypeIndex(defType.Context.GetWellKnownType(WellKnownType.Object), true),
+                IsStruct = staticDataInObject ? 0 : 1,
+                Name = Utf8String.Concat("__type"u8, staticDataName.AsSpan()),
+                BaseClassId = staticDataInObject
+                    ? GetTypeIndex(defType.Context.GetWellKnownType(WellKnownType.Object), true)
+                    : 0,
                 InstanceSize = emittedRegionSize
             };
 
