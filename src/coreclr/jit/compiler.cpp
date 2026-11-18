@@ -859,13 +859,6 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
             useType           = TYP_UNKNOWN;
         }
     }
-#elif UNIX_X86_ABI
-    if (callConv != CorInfoCallConvExtension::Managed && !isNativePrimitiveStructType(clsHnd))
-    {
-        canReturnInRegister = false;
-        howToReturnStruct   = SPK_ByReference;
-        useType             = TYP_UNKNOWN;
-    }
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
@@ -1206,12 +1199,19 @@ void DisplayNowayAssertMap()
         }
 
         // Iterate noway assert map, create sorted table by occurrence, dump it.
-        unsigned             count = NowayAssertMap->GetCount();
-        NowayAssertCountMap* nacp  = new NowayAssertCountMap[count];
-        unsigned             i     = 0;
+        unsigned             count         = NowayAssertMap->GetCount();
+        HostAllocator        hostAllocator = HostAllocator::getHostAllocator();
+        NowayAssertCountMap* nacp          = hostAllocator.allocate<NowayAssertCountMap>(count);
+        if (nacp == nullptr)
+        {
+            throw std::bad_alloc{};
+        }
+
+        unsigned i = 0;
 
         for (FileLineToCountMap::Node* const iter : FileLineToCountMap::KeyValueIteration(NowayAssertMap))
         {
+            new (&nacp[i], jitstd::placement_t()) NowayAssertCountMap();
             nacp[i].count = iter->GetValue();
             nacp[i].fl    = iter->GetKey();
             ++i;
@@ -1237,6 +1237,8 @@ void DisplayNowayAssertMap()
             fclose(fout);
             fout = nullptr;
         }
+
+        hostAllocator.deallocate(nacp);
     }
 }
 

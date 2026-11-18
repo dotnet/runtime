@@ -898,12 +898,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     //
     impCheckForPInvokeCall(call->AsCall(), methHnd, sig, mflags, compCurBB);
 
-#ifdef UNIX_X86_ABI
-    // On Unix x86 we use caller-cleaned convention.
-    if ((call->gtFlags & GTF_CALL_UNMANAGED) == 0)
-        call->gtFlags |= GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
-
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {
         assert(call->IsCall());
@@ -1856,23 +1850,24 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
         return call;
     }
 
-    // Now we need to spill the addr and argName arguments in the correct order
-    // to preserve possible side effects.
-    unsigned boxedValTmp     = lvaGrabTemp(true DEBUGARG("boxedVal spilled"));
+    // This is Tier0 specific, so we create a raw indir node to access Nullable<T>.hasValue field
+    // which is the first field of Nullable<T> struct and is of type 'bool'.
+    //
+    static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    GenTree* hasValueField = gtNewIndir(TYP_UBYTE, boxHelperAddrArg);
+
+    // Boxing reads the source before valueName is evaluated, so spill the hasValue read
+    // (and its null check) and then valueName, in that order.
+    unsigned hasValueTmp     = lvaGrabTemp(true DEBUGARG("hasValue spilled"));
     unsigned boxedArgNameTmp = lvaGrabTemp(true DEBUGARG("boxedArg spilled"));
-    impStoreToTemp(boxedValTmp, boxHelperAddrArg, CHECK_SPILL_ALL);
+    impStoreToTemp(hasValueTmp, hasValueField, CHECK_SPILL_ALL);
     impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
 
     // Change arguments to 'ThrowIfNull(null, valueNameTmp)'
     call->gtArgs.GetUserArgByIndex(0)->SetEarlyNode(gtNewNull());
     call->gtArgs.GetUserArgByIndex(1)->SetEarlyNode(gtNewLclvNode(boxedArgNameTmp, valueName->TypeGet()));
 
-    // This is Tier0 specific, so we create a raw indir node to access Nullable<T>.hasValue field
-    // which is the first field of Nullable<T> struct and is of type 'bool'.
-    //
-    static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-    GenTree*   hasValueField = gtNewIndir(TYP_UBYTE, gtNewLclvNode(boxedValTmp, boxHelperAddrArg->TypeGet()));
-    GenTreeOp* cond          = gtNewOperNode(GT_NE, TYP_INT, hasValueField, gtNewIconNode(0));
+    GenTreeOp* cond = gtNewOperNode(GT_NE, TYP_INT, gtNewLclvNode(hasValueTmp, TYP_INT), gtNewIconNode(0));
 
     return gtNewQmarkNode(TYP_VOID, cond, gtNewColonNode(TYP_VOID, gtNewNothingNode(), call));
 }
@@ -2213,9 +2208,6 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
     GenTreeCall* call = gtNewIndCallNode(fptr, callRetTyp, di);
 
     call->gtFlags |= fptr->gtFlags & GTF_ALL_EFFECT;
-#ifdef UNIX_X86_ABI
-    call->gtFlags &= ~GTF_CALL_POP_ARGS;
-#endif
 
     return call;
 }
@@ -7479,10 +7471,11 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             // insert any widening or narrowing casts for backwards compatibility
             argNode = impImplicitIorI4Cast(argNode, jitSigType);
 
-            if ((compAppleArm64Abi() || TargetArchitecture::IsArm32 || TargetArchitecture::IsWasm) &&
+            if ((compAppleArm64Abi() || TargetArchitecture::IsArm32 || TargetArchitecture::IsWasm ||
+                 TargetArchitecture::IsLoongArch64) &&
                 call->IsUnmanaged() && varTypeIsSmall(jitSigType))
             {
-                // Wasm, Apple arm64 and arm32 ABIs require arguments to be zero/sign
+                // These native ABIs require arguments to be zero/sign
                 // extended up to 32 bit. The managed ABI does not require
                 // this.
                 if (fgCastNeeded(argNode, jitSigType))

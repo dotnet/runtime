@@ -16,6 +16,16 @@ using System.Text;
 
 using Internal.LowLevelLinq;
 
+namespace System
+{
+    internal sealed partial class RuntimeType
+    {
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool wrapExceptions) =>
+            ActivatorImplementation.CreateInstance(this, nonPublic: !publicOnly, wrapExceptions);
+    }
+}
+
 namespace System.Reflection.Runtime.Assemblies
 {
     internal partial class RuntimeAssemblyInfo
@@ -91,6 +101,19 @@ namespace System.Reflection.Runtime.MethodInfos
     {
         public sealed override MethodImplAttributes GetMethodImplementationFlags() => MethodImplementationFlags;
 
+        internal unsafe object InvokeDirectByRef(IntPtr* arguments) =>
+            MethodInvoker.CreateInstanceDirectByRef(arguments);
+
+        internal static void CheckCanCreateInstance(Type declaringType, bool isVarArg)
+        {
+            if (isVarArg)
+            {
+                throw new NotSupportedException(SR.NotSupported_CallToVarArg);
+            }
+
+            ActivatorImplementation.CreateInstanceCheckType(declaringType);
+        }
+
         // Partial trust doesn't exist in Aot so these legacy apis are meaningless. Will report everything as SecurityCritical by fiat.
         public sealed override bool IsSecurityCritical => true;
         public sealed override bool IsSecuritySafeCritical => false;
@@ -119,6 +142,9 @@ namespace System.Reflection
         public sealed override MethodImplAttributes GetMethodImplementationFlags() => MethodImplementationFlags;
         public sealed override ICustomAttributeProvider ReturnTypeCustomAttributes => ReturnParameter;
 
+        internal void InvokePropertySetter(object? obj, BindingFlags invokeAttr, Binder? binder, object? parameter, CultureInfo? culture)
+            => Invoke(obj, invokeAttr, binder, [parameter], culture);
+
         // Partial trust doesn't exist in Aot so these legacy apis are meaningless. Will report everything as SecurityCritical by fiat.
         public sealed override bool IsSecurityCritical => true;
         public sealed override bool IsSecuritySafeCritical => false;
@@ -141,11 +167,11 @@ namespace System.Reflection.Runtime.PropertyInfos
     internal abstract partial class RuntimePropertyInfo
     {
         public sealed override MethodInfo GetGetMethod(bool nonPublic) => Getter?.FilterAccessor(nonPublic);
-        public sealed override MethodInfo GetSetMethod(bool nonPublic) => Setter?.FilterAccessor(nonPublic);
+        public sealed override RuntimeMethodInfo? GetSetMethod(bool nonPublic) => (RuntimeMethodInfo?)Setter?.FilterAccessor(nonPublic);
         public sealed override MethodInfo[] GetAccessors(bool nonPublic)
         {
             MethodInfo getter = GetGetMethod(nonPublic);
-            MethodInfo setter = GetSetMethod(nonPublic);
+            MethodInfo? setter = GetSetMethod(nonPublic);
             int count = 0;
             if (getter != null)
                 count++;

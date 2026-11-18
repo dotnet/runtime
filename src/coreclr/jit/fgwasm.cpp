@@ -2706,9 +2706,9 @@ PhaseStatus Compiler::fgWasmSpillRefs()
 
                 // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
                 // it won't be mutated between its def (here) and its use (the call that would produce a spill).
-                // If the local is NOT a gc ref wasm local candidate, then it will be assigned a pinned stack home
-                // by RA already. Otherwise, temporary reads of candidates that are live across a call still need to be
-                // spilled.
+                // Locals outside the GC-safe candidate set have pinned stack homes, including write-through
+                // candidates. Their reads need no additional spill. Temporary reads of GC-safe candidates still
+                // need protection if they are live across a call.
                 if (!dsc->IsAddressExposed() && !isRefLocalCandidate)
                 {
                     continue;
@@ -3731,6 +3731,60 @@ PhaseStatus Compiler::fgWasmProfInstrument()
 }
 
 //-----------------------------------------------------------------------------
+// fgWasmMayEmitCall: determine if codegen may emit a call for this method
+//
+// Returns:
+//   true if any node may be emitted as a call
+//
+// Notes:
+//   Must cover every codegen path that calls ensureCurrentFuncIsUnwindable.
+//   EH and inline throw helpers (debuggable code) are not handled here;
+//   callers must exclude those cases.
+//
+bool Compiler::fgWasmMayEmitCall()
+{
+    assert(compHndBBtabCount == 0);
+    assert(fgUseThrowHelperBlocks());
+
+    for (BasicBlock* const block : Blocks())
+    {
+        for (GenTree* const node : LIR::AsRange(block))
+        {
+            switch (node->OperGet())
+            {
+                case GT_CALL:
+                case GT_LCLHEAP:
+                    return true;
+
+                case GT_STOREIND:
+                    if (codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(node->AsStoreInd()))
+                    {
+                        return true;
+                    }
+                    break;
+
+                case GT_STORE_BLK:
+                {
+                    // Only the native opcode and loop forms avoid write barrier helper calls.
+                    GenTreeBlk* const blk = node->AsBlk();
+                    if ((blk->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) &&
+                        (blk->gtBlkOpKind != GenTreeBlk::BlkOpKindLoop))
+                    {
+                        return true;
+                    }
+                    break;
+                }
+
+                default:
+                    break;
+            }
+        }
+    }
+
+    return false;
+}
+
+//-----------------------------------------------------------------------------
 // fgWasmVirtualIP: set up virtual IP mapping for EH and calls
 //
 // Returns:
@@ -3942,7 +3996,9 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             PerBlockData& data = blockData[block->bbNum];
             data.requiredVip   = virtualIP;
             data.funcIndex     = vipFuncIdx;
-            data.isRequired    = !block->isEmpty() || block->KindIs(BBJ_CALLFINALLY);
+            // Throw helpers inherit the throwing site's Virtual IP.
+            data.isRequired =
+                !block->HasFlag(BBF_THROW_HELPER) && (!block->isEmpty() || block->KindIs(BBJ_CALLFINALLY));
             if (vipFirstInFunc)
             {
                 data.isFuncEntry = true;
@@ -4000,6 +4056,39 @@ PhaseStatus Compiler::fgWasmVirtualIP()
 
         func->endVirtualIP = virtualIP;
         vipFuncIdx++;
+    }
+
+    if (!IsNativeAot() && (compHndBBtabCount == 0))
+    {
+        assert(virtualIP == 2);
+        // The only observable virtual IP is 1, so no virtual IP stores are needed.
+        //
+        // A method that makes no calls does not need a frame header.
+        // Only check for this when optimizing, to save throughput.
+        //
+        bool needsFrameHeader = false;
+        for (BasicBlock* const block : Blocks())
+        {
+            if (blockData[block->bbNum].isRequired)
+            {
+                needsFrameHeader = true;
+                break;
+            }
+        }
+
+        if (needsFrameHeader && opts.OptimizationEnabled() && !fgWasmMayEmitCall())
+        {
+            JITDUMP("Method makes no calls; omitting frame header\n");
+            needsFrameHeader = false;
+        }
+
+        if (needsFrameHeader)
+        {
+            getVirtualIPLclNum();
+        }
+
+        JITDUMP("Virtual IP is always 1; omitting frame stores\n");
+        return lvaWasmVirtualIP == BAD_VAR_NUM ? PhaseStatus::MODIFIED_NOTHING : PhaseStatus::MODIFIED_EVERYTHING;
     }
 
     // Solve the available-Virtual-IP dataflow: a block's incoming value is the meet of its

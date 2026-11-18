@@ -542,7 +542,9 @@ finally {
 	}
 }
 
-mscorlib: '.mscorlib';
+mscorlib
+@after {Actions.ProcessCoreLibraryDirective();}
+: '.mscorlib';
 
 languageDecl returns [CILParser.LanguageDirectiveValue? Value, bool HasSyntaxError]
 locals [int InitialSyntaxErrorCount]

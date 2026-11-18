@@ -19,7 +19,7 @@ using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     internal sealed partial class GrammarActions
     {
@@ -61,7 +61,7 @@ namespace ILAssembler
             ImmutableArray<ILAssemblerPEBuilder.DataLabelFixup> validatedDataLabelFixups =
                 ValidateDataLabelFixups();
             ImmutableArray<ValidatedExport> validatedExports =
-                ValidateExports(validatedVTableAssociations, machine);
+                ValidateExports(validatedVTableFixups, validatedVTableAssociations, machine);
             if (_options.PseudoAttributes)
             {
                 PseudoCustomAttributes.Lower(_entityRegistry, _diagnostics);
@@ -205,7 +205,7 @@ namespace ILAssembler
         {
             if (_vtableFixups.Count == 0)
             {
-                return ImmutableArray<ValidatedVTableFixup>.Empty;
+                return SynthesizeExportFixup(machine);
             }
 
             var builder = ImmutableArray.CreateBuilder<ValidatedVTableFixup>(_vtableFixups.Count);
@@ -315,10 +315,111 @@ namespace ILAssembler
             return builder.ToImmutable();
         }
 
+        private ImmutableArray<ValidatedVTableFixup> SynthesizeExportFixup(Machine machine)
+        {
+            EntityRegistry.MethodDefinitionEntity[] methods = GetParsedMethods()
+                .Where(method => method.ExportOrdinal >= 0)
+                .OrderBy(method => method.ExportOrdinal)
+                .ToArray();
+            if (methods.Length == 0)
+            {
+                return ImmutableArray<ValidatedVTableFixup>.Empty;
+            }
+
+            EntityRegistry.MethodDefinitionEntity[] methodsWithVTableEntry = GetParsedMethods()
+                .Where(method => _vtableEntryDirectiveContexts.ContainsKey(method))
+                .ToArray();
+            var slots = new HashSet<int>();
+            foreach (EntityRegistry.MethodDefinitionEntity method in methodsWithVTableEntry)
+            {
+                if (method.VTableEntry != 1 || method.VTableSlot <= 0)
+                {
+                    continue;
+                }
+
+                if (method.VTableSlot > ushort.MaxValue)
+                {
+                    ReportError(
+                        DiagnosticIds.InvalidVTableSlotCount,
+                        string.Format(
+                            DiagnosticMessageTemplates.InvalidVTableSlotCount,
+                            method.VTableSlot,
+                            ushort.MaxValue),
+                        _vtableEntryDirectiveContexts[method]);
+                    return ImmutableArray<ValidatedVTableFixup>.Empty;
+                }
+
+                slots.Add(method.VTableSlot);
+            }
+
+            int nextAvailableSlot = 1;
+            foreach (EntityRegistry.MethodDefinitionEntity method in methods)
+            {
+                if (!_vtableEntryDirectiveContexts.ContainsKey(method))
+                {
+                    while (slots.Contains(nextAvailableSlot))
+                    {
+                        nextAvailableSlot++;
+                    }
+
+                    if (nextAvailableSlot > ushort.MaxValue)
+                    {
+                        ReportError(
+                            DiagnosticIds.InvalidVTableSlotCount,
+                            string.Format(
+                                DiagnosticMessageTemplates.InvalidVTableSlotCount,
+                                nextAvailableSlot,
+                                ushort.MaxValue),
+                            _exportDirectiveContexts[method]);
+                        return ImmutableArray<ValidatedVTableFixup>.Empty;
+                    }
+
+                    slots.Add(nextAvailableSlot);
+                    method.VTableEntry = 1;
+                    method.VTableSlot = nextAvailableSlot;
+                    nextAvailableSlot++;
+                }
+            }
+
+            int slotCount = slots.Count;
+            if (slotCount == 0)
+            {
+                return ImmutableArray<ValidatedVTableFixup>.Empty;
+            }
+
+            for (int slot = 1; slot <= slotCount; slot++)
+            {
+                if (slots.Contains(slot))
+                {
+                    continue;
+                }
+
+                EntityRegistry.MethodDefinitionEntity method = methodsWithVTableEntry
+                    .First(method => method.VTableEntry == 1 && method.VTableSlot > slot);
+                ReportError(
+                    DiagnosticIds.UnassignedVTableSlot,
+                    string.Format(DiagnosticMessageTemplates.UnassignedVTableSlot, slot),
+                    _vtableEntryDirectiveContexts[method]);
+                return ImmutableArray<ValidatedVTableFixup>.Empty;
+            }
+
+            int slotSize = VTableFixupSupport.GetPointerSize(machine);
+            ushort flags = (ushort)(VTableFixupSupport.COR_VTABLE_FROM_UNMANAGED |
+                (slotSize == sizeof(long) ? VTableFixupSupport.COR_VTABLE_64BIT : VTableFixupSupport.COR_VTABLE_32BIT));
+            _mappedFieldData.Align(slotSize);
+            var dataLocation = new DataLocation(DataSection.Data, _mappedFieldData.Count);
+            _mappedFieldData.WriteBytes(0, checked(slotCount * slotSize));
+
+            return [new ValidatedVTableFixup(
+                1,
+                new VTableFixupSupport.VTableFixupEntry(slotCount, flags, string.Empty),
+                dataLocation)];
+        }
+
         private ImmutableArray<ValidatedVTableAssociation> ValidateVTableAssociations(
             ImmutableArray<ValidatedVTableFixup> validatedVTableFixups)
         {
-            if (_vtableFixups.Count == 0)
+            if (_vtableFixups.Count == 0 && validatedVTableFixups.IsEmpty)
             {
                 return ImmutableArray<ValidatedVTableAssociation>.Empty;
             }
@@ -335,7 +436,8 @@ namespace ILAssembler
             var builder = ImmutableArray.CreateBuilder<ValidatedVTableAssociation>();
             foreach (EntityRegistry.MethodDefinitionEntity method in GetParsedMethods())
             {
-                if (!_vtableEntryDirectiveContexts.TryGetValue(method, out ParserRuleContext? context))
+                if (!_vtableEntryDirectiveContexts.TryGetValue(method, out ParserRuleContext? context) &&
+                    (_vtableFixups.Count != 0 || !_exportDirectiveContexts.TryGetValue(method, out context)))
                 {
                     continue;
                 }
@@ -375,14 +477,10 @@ namespace ILAssembler
         }
 
         private ImmutableArray<ValidatedExport> ValidateExports(
+            ImmutableArray<ValidatedVTableFixup> validatedVTableFixups,
             ImmutableArray<ValidatedVTableAssociation> validatedVTableAssociations,
             Machine machine)
         {
-            if (_vtableFixups.Count == 0)
-            {
-                return ImmutableArray<ValidatedExport>.Empty;
-            }
-
             var associationsByMethod =
                 new Dictionary<EntityRegistry.MethodDefinitionEntity, ValidatedVTableAssociation>(
                     validatedVTableAssociations.Length);
@@ -416,7 +514,8 @@ namespace ILAssembler
                     method,
                     out ValidatedVTableAssociation association))
                 {
-                    if (!_vtableEntryDirectiveContexts.ContainsKey(method))
+                    if (!_vtableEntryDirectiveContexts.ContainsKey(method) ||
+                        (_vtableFixups.Count == 0 && validatedVTableFixups.IsEmpty))
                     {
                         ReportError(
                             DiagnosticIds.InvalidVTableExport,
@@ -974,11 +1073,11 @@ namespace ILAssembler
             };
 
             // Get reference to core library
-            var coreAsmRef = _entityRegistry.GetCoreLibAssemblyReference();
+            EntityRegistry.EntityBase coreScope = _entityRegistry.GetCoreLibraryResolutionScope();
 
             // Create reference to System.Diagnostics.DebuggableAttribute
             var debuggableAttrType = _entityRegistry.GetOrCreateTypeReference(
-                coreAsmRef,
+                coreScope,
                 new TypeName(null, "System.Diagnostics.DebuggableAttribute"));
 
             var debuggingModesType = _entityRegistry.GetOrCreateTypeReference(
@@ -1004,7 +1103,7 @@ namespace ILAssembler
             // Netmodules carry assembly attributes on this TypeRef for the assembly linker.
             customAttr.Owner = (EntityRegistry.EntityBase?)_entityRegistry.Assembly
                 ?? _entityRegistry.GetOrCreateTypeReference(
-                    coreAsmRef,
+                    coreScope,
                     new TypeName(null, "System.Runtime.CompilerServices.AssemblyAttributesGoHere"));
         }
 

@@ -114,6 +114,15 @@ jobs:
           cleanDestinationFolder: true
           overwriteExistingFiles: true
 
+    # Download JIT assemblies built in the corresponding product job.
+    - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/tests/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
+          artifactFileName: 'CoreCLRJitTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)$(archiveExtension)'
+          artifactName: CoreCLRJitTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+          displayName: JIT test assemblies for crossgen2 collection
+
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) -arch $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Core_Root

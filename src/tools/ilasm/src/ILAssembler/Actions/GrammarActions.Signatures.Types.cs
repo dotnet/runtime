@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection.Metadata;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
@@ -84,9 +84,9 @@ internal sealed partial class GrammarActions
                 break;
             case ClassElementTypeValue classType:
                 EntityRegistry.TypeEntity typeEntity = ResolveClassName(classType.ClassName);
-                if (TryGetPrimitiveTypeCode(typeEntity, classType.IsValueType) is { } primitiveTypeCode)
+                if (TryGetNormalizedTypeCode(typeEntity, classType.IsValueType) is { } normalizedTypeCode)
                 {
-                    blob.WriteByte((byte)primitiveTypeCode);
+                    blob.WriteByte((byte)normalizedTypeCode);
                 }
                 else
                 {
@@ -233,22 +233,27 @@ internal sealed partial class GrammarActions
     {
         suffix.WriteCompressedInteger(bounds.Length);
 
+        // ECMA-335 II.23.2.13: Array shapes encode sizes and lower bounds as prefixes.
+        // Include all dimensions through the last explicitly specified bound, filling gaps with zeros.
         int sizeCount = 0;
-        while (sizeCount < bounds.Length && bounds[sizeCount].Upper is not null)
+        int lowerBoundCount = 0;
+        for (int i = 0; i < bounds.Length; i++)
         {
-            sizeCount++;
+            if (bounds[i].Upper is not null)
+            {
+                sizeCount = i + 1;
+            }
+
+            if (bounds[i].Lower is not null)
+            {
+                lowerBoundCount = i + 1;
+            }
         }
 
         suffix.WriteCompressedInteger(sizeCount);
         for (int i = 0; i < sizeCount; i++)
         {
             suffix.WriteCompressedInteger(bounds[i].Upper.GetValueOrDefault());
-        }
-
-        int lowerBoundCount = 0;
-        while (lowerBoundCount < bounds.Length && bounds[lowerBoundCount].Lower is not null)
-        {
-            lowerBoundCount++;
         }
 
         suffix.WriteCompressedInteger(lowerBoundCount);
@@ -258,36 +263,15 @@ internal sealed partial class GrammarActions
         }
     }
 
-    private static SignatureTypeCode? TryGetPrimitiveTypeCode(EntityRegistry.TypeEntity typeEntity, bool isValueType)
+    private static SignatureTypeCode? TryGetNormalizedTypeCode(EntityRegistry.TypeEntity typeEntity, bool isValueType)
     {
-        if (typeEntity is not EntityRegistry.TypeReferenceEntity typeReference || typeReference.Namespace != "System")
+        // Preserve explicit valuetype encodings, including long forms disallowed by ECMA-335 II.23.2.16.
+        if (isValueType || typeEntity is not EntityRegistry.TypeReferenceEntity typeReference || typeReference.Namespace != "System")
         {
             return null;
         }
 
-        if (isValueType)
-        {
-            return typeReference.Name switch
-            {
-                "Boolean" => SignatureTypeCode.Boolean,
-                "Char" => SignatureTypeCode.Char,
-                "SByte" => SignatureTypeCode.SByte,
-                "Byte" => SignatureTypeCode.Byte,
-                "Int16" => SignatureTypeCode.Int16,
-                "UInt16" => SignatureTypeCode.UInt16,
-                "Int32" => SignatureTypeCode.Int32,
-                "UInt32" => SignatureTypeCode.UInt32,
-                "Int64" => SignatureTypeCode.Int64,
-                "UInt64" => SignatureTypeCode.UInt64,
-                "Single" => SignatureTypeCode.Single,
-                "Double" => SignatureTypeCode.Double,
-                "IntPtr" => SignatureTypeCode.IntPtr,
-                "UIntPtr" => SignatureTypeCode.UIntPtr,
-                "TypedReference" => SignatureTypeCode.TypedReference,
-                _ => null
-            };
-        }
-
+        // COMPAT: Normalize the invalid long forms for System.Object and System.String only.
         return typeReference.Name switch
         {
             "String" => SignatureTypeCode.String,

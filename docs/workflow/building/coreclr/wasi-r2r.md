@@ -40,6 +40,9 @@ of the number of function definitions; table slots may contain duplicate or non-
 references.
 Non-composite R2R and `WasmSingleFileBundle` are not supported by this path.
 
+Relaxed SIMD is a default WASI instruction set. Hosts without relaxed SIMD fail to load the composite; publish with
+`-p:PublishReadyToRunInstructionSet=-relaxed-simd` for them.
+
 ## Runtime tests
 
 The WASI runtime-test pipeline keeps separate interpreter and `R2R_CG2` jobs. The R2R job uses

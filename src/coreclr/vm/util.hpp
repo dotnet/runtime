@@ -202,9 +202,9 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 // This occurs in two principal shapes:
 //
 //   - The holder spans a transition into managed execution from which an exception can be handled
-//     by an older managed frame. Examples include CallDescrWorker, interpreter-to-managed calls,
-//     and UnmanagedCallersOnlyCaller::InvokeDirect when invoking Ex::RhThrowEx, Ex::RhThrowHwEx,
-//     or Ex::RhRethrow. The foreign tag bypasses native typed catches while unwinding toward the
+//     by an older managed frame. Examples include interpreter-to-managed calls and
+//     UnmanagedCallersOnlyCaller::InvokeDirect when invoking Ex::RhThrowEx, Ex::RhThrowHwEx, or
+//     Ex::RhRethrow. The foreign tag bypasses native typed catches while unwinding toward the
 //     managed catch continuation.
 //
 //   - The holder's scope contains a complete INSTALL/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER or
@@ -802,5 +802,10 @@ inline UINT32 FastMod(UINT32 value, UINT32 divisor, UINT64 multiplier)
     return highbits;
 }
 #endif
+
+//******************************************************************************
+// Returns the number of processors that a process has been configured to run on
+//******************************************************************************
+int GetCurrentProcessCpuCount();
 
 #endif /* _H_UTIL */

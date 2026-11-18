@@ -85,12 +85,12 @@ VOID InstallEEFunctionTable (
 
         ssTempName.Append(MAIN_DAC_MODULE_DLL_NAME_W);
 
-        NewArrayHolder<WCHAR> wzTempName(ssTempName.GetCopyOfUnicodeString());
+        WStringHolder wzTempName(ssTempName.GetCopyOfUnicodeString());
 
         // publish result
         if (InterlockedCompareExchangeT(&wszModuleName, (LPWSTR)wzTempName, nullptr) == nullptr)
         {
-            wzTempName.SuppressRelease();
+            wzTempName.Detach();
         }
     }
 

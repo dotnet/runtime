@@ -100,10 +100,10 @@ typedef enum
 //
 // Defines for current version numbers for the left and right sides
 //
-#define CorDB_LeftSideProtocolCurrent           2
-#define CorDB_LeftSideProtocolMinSupported      2
-#define CorDB_RightSideProtocolCurrent          2
-#define CorDB_RightSideProtocolMinSupported     2
+#define CorDB_LeftSideProtocolCurrent           3
+#define CorDB_LeftSideProtocolMinSupported      3
+#define CorDB_RightSideProtocolCurrent          3
+#define CorDB_RightSideProtocolMinSupported     3
 
 //
 // The remaining data structures in this file can be shared between two processes and for network transport
@@ -424,6 +424,11 @@ public:
         return CORDB_ADDRESS_TO_PTR((CORDB_ADDRESS)m_ptr);
     }
 
+    CORDB_ADDRESS GetRawAddr()
+    {
+        return (CORDB_ADDRESS)m_ptr;
+    }
+
     static LsPointer<T> NullPtr()
     {
         return MakePtr(NULL);
@@ -592,7 +597,7 @@ DEFINE_LSPTR_TYPE(class DebuggerEval,       LSPTR_DEBUGGEREVAL);
 DEFINE_LSPTR_TYPE(class DebuggerStepper,    LSPTR_STEPPER);
 
 // Need to be careful not to annoy the compiler here since DT_CONTEXT is a typedef, not a struct.
-typedef LsPointer<DT_CONTEXT> LSPTR_CONTEXT;
+typedef LsPointer<T_CONTEXT> LSPTR_CONTEXT;
 
 DEFINE_LSPTR_TYPE(struct OBJECTHANDLE__,    LSPTR_OBJECTHANDLE);
 DEFINE_LSPTR_TYPE(class TypeHandleDummyPtr, LSPTR_TYPEHANDLE); // TypeHandle in the LS is not a direct pointer.
@@ -762,11 +767,6 @@ DEFINE_VMPTR(class AppDomain,       PTR_AppDomain,      VMPTR_AppDomain);
 
 // Need to be careful not to annoy the compiler here since DT_CONTEXT is a typedef, not a struct.
 // DEFINE_VMPTR(struct _CONTEXT,       PTR_CONTEXT,        VMPTR_CONTEXT);
-#if defined(ALLOW_VMPTR_ACCESS)
-typedef VMPTR_Base<DT_CONTEXT, PTR_CONTEXT> VMPTR_CONTEXT;
-#else
-typedef VMPTR_Base<DT_CONTEXT, void > VMPTR_CONTEXT;
-#endif
 
 DEFINE_VMPTR(class Module,          PTR_Module,         VMPTR_Module);
 
@@ -959,51 +959,6 @@ struct MSLAYOUT IPCENames // We use a class/struct so that the function can rema
 
 #endif // !DACCESS_COMPILE
 
-//
-// NOTE:  CPU-specific values below!
-// DebuggerIPCE_FloatCount is the number of doubles in the processor's
-// floating point stack.
-
-#if defined(TARGET_X86)
-#define DebuggerIPCE_FloatCount 8
-#elif defined(TARGET_AMD64)
-#define DebuggerIPCE_FloatCount 16
-#elif defined(TARGET_ARM)
-#define DebuggerIPCE_FloatCount 32
-#elif defined(TARGET_ARM64)
-#define DebuggerIPCE_FloatCount 32
-#elif defined(TARGET_LOONGARCH64)
-#define DebuggerIPCE_FloatCount 32
-#elif defined(TARGET_RISCV64)
-#define DebuggerIPCE_FloatCount 32
-#else
-#define DebuggerIPCE_FloatCount 1
-#endif
-
-#if !defined(TARGET_WASM)
-inline LPVOID GetSPAddress(const DT_CONTEXT * context)
-{
-#if defined(TARGET_X86)
-    return (LPVOID)&context->Esp;
-#elif defined(TARGET_AMD64)
-    return (LPVOID)&context->Rsp;
-#else
-    return (LPVOID)&context->Sp;
-#endif
-}
-#endif // !TARGET_WASM
-
-#if !defined(TARGET_AMD64) && !defined(TARGET_ARM) && !defined(TARGET_WASM)
-inline LPVOID GetFPAddress(const DT_CONTEXT * context)
-{
-#if defined(TARGET_X86)
-    return (LPVOID)&context->Ebp;
-#else
-    return (LPVOID)&context->Fp;
-#endif
-}
-#endif // !TARGET_AMD64 && !TARGET_ARM && !TARGET_WASM
-
 
 class MSLAYOUT FramePointer
 {
@@ -1180,8 +1135,9 @@ struct MSLAYOUT DebuggerIPCE_ExpandedTypeData
 
 // DebuggerIPCE_TypeArgData is used when sending type arguments
 // across to a funceval.  It contains the DebuggerIPCE_ExpandedTypeData describing the
-// essence of the type, but the typeHandle and other
-// BasicTypeData fields should be zero and will be ignored.
+// essence of the type. Type handles are normally zero and are ignored when
+// loading types. An enregistered func-eval value-type argument includes an already-loaded
+// layout handle in its first node, for GC protection of its snapshot before any type loading.
 // The DebuggerIPCE_ExpandedTypeData is then followed
 // by the required number of type arguments, each of which
 // will be a further DebuggerIPCE_TypeArgData record in the stream of
@@ -1195,6 +1151,7 @@ struct MSLAYOUT DebuggerIPCE_TypeArgData
 //
 // Remote enregistered info used by CordbValues and for passing
 // variable homes between the left and right sides during a func eval.
+// Non-leaf register values can be registered as GC roots and updated in place during the eval.
 //
 
 enum RemoteAddressKind
