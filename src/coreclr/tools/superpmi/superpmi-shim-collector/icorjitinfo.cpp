@@ -2096,3 +2096,23 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDL
     mc->recGetSpecialCopyHelper(type, temp);
     return temp;
 }
+
+CorInfoBitwiseEquatable interceptor_ICJI::getBitwiseEquatableInfo(
+    CORINFO_CLASS_HANDLE   type,
+    CORINFO_METHOD_HANDLE* equalsMethod,
+    CORINFO_METHOD_HANDLE* comparerGetDefault,
+    CORINFO_METHOD_HANDLE* comparerEquals)
+{
+    mc->cr->AddCall("getBitwiseEquatableInfo");
+    CORINFO_METHOD_HANDLE localEqualsMethod = nullptr;
+    CORINFO_METHOD_HANDLE localComparerGetDefault = nullptr;
+    CORINFO_METHOD_HANDLE localComparerEquals = nullptr;
+    CorInfoBitwiseEquatable result = original_ICorJitInfo->getBitwiseEquatableInfo(
+        type, &localEqualsMethod, &localComparerGetDefault, &localComparerEquals);
+    mc->recGetBitwiseEquatableInfo(
+        type, &localEqualsMethod, &localComparerGetDefault, &localComparerEquals, result);
+    *equalsMethod = localEqualsMethod;
+    *comparerGetDefault = localComparerGetDefault;
+    *comparerEquals = localComparerEquals;
+    return result;
+}

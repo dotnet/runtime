@@ -195,6 +195,7 @@ struct JitInterfaceCallbacks
     uint32_t (* getJitFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORJIT_FLAGS* flags, uint32_t sizeInBytes);
     CORINFO_WASM_TYPE_SYMBOL_HANDLE (* getWasmTypeSymbol)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoWasmType* types, size_t typesSize);
     CORINFO_METHOD_HANDLE (* getSpecialCopyHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE type);
+    CorInfoBitwiseEquatable (* getBitwiseEquatableInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE* equalsMethod, CORINFO_METHOD_HANDLE* comparerGetDefault, CORINFO_METHOD_HANDLE* comparerEquals);
 
 };
 
@@ -2006,6 +2007,18 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CORINFO_METHOD_HANDLE temp = _callbacks->getSpecialCopyHelper(_thisHandle, &pException, type);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual CorInfoBitwiseEquatable getBitwiseEquatableInfo(
+          CORINFO_CLASS_HANDLE type,
+          CORINFO_METHOD_HANDLE* equalsMethod,
+          CORINFO_METHOD_HANDLE* comparerGetDefault,
+          CORINFO_METHOD_HANDLE* comparerEquals)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CorInfoBitwiseEquatable temp = _callbacks->getBitwiseEquatableInfo(_thisHandle, &pException, type, equalsMethod, comparerGetDefault, comparerEquals);
     if (pException != nullptr) throw pException;
     return temp;
 }

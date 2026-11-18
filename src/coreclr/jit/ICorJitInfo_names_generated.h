@@ -188,5 +188,6 @@ DEF_CLR_API(getExpectedTargetArchitecture)
 DEF_CLR_API(getJitFlags)
 DEF_CLR_API(getWasmTypeSymbol)
 DEF_CLR_API(getSpecialCopyHelper)
+DEF_CLR_API(getBitwiseEquatableInfo)
 
 #undef DEF_CLR_API

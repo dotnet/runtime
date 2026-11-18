@@ -143,6 +143,7 @@ CORINFO_InstructionSet,InstructionSet
 ICorJitInfo::PgoSource, PgoSource
 ICorJitInfo::PgoSource*, ref PgoSource
 GetTypeLayoutResult
+CorInfoBitwiseEquatable
 
 ; Handle types
 CORINFO_MODULE_HANDLE,CORINFO_MODULE_STRUCT_*
@@ -359,3 +360,4 @@ FUNCTIONS
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t  sizeInBytes)
     CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize)
     CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;
+    CorInfoBitwiseEquatable getBitwiseEquatableInfo(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE* equalsMethod, CORINFO_METHOD_HANDLE* comparerGetDefault, CORINFO_METHOD_HANDLE* comparerEquals) = 0;

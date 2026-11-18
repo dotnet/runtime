@@ -7164,25 +7164,6 @@ static bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
     return true;
 }
 
-bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
-{
-    if (!methodTable->IsValueType() ||
-        !CanCompareBitsOrUseFastGetHashCode(methodTable))
-    {
-        return false;
-    }
-
-    // CanCompareBitsOrUseFastGetHashCode checks for an object.Equals override.
-    // We also need to check for an IEquatable<T> implementation.
-    Instantiation inst(&typeHandle, 1);
-    if (typeHandle.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
-    {
-        return false;
-    }
-
-    return true;
-}
-
 static bool getILIntrinsicImplementationForRuntimeHelpers(
     MethodInfoWorkerContext& cxt,
     CORINFO_METHOD_INFO* methInfo,
@@ -7194,59 +7175,6 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
     _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__RUNTIME_HELPERS));
 
     mdMethodDef tk = ftn->GetMemberDef();
-
-    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__IS_BITWISE_EQUATABLE)->GetMemberDef())
-    {
-        _ASSERTE(ftn->HasMethodInstantiation());
-        Instantiation inst = ftn->GetMethodInstantiation();
-
-        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
-        TypeHandle typeHandle = inst[0];
-        MethodTable * methodTable = typeHandle.GetMethodTable();
-
-        static const BYTE returnTrue[] = { CEE_LDC_I4_1, CEE_RET };
-        static const BYTE returnFalse[] = { CEE_LDC_I4_0, CEE_RET };
-
-        // Ideally we could detect automatically whether a type is trivially equatable
-        // (i.e., its operator == could be implemented via memcmp). The best we can do
-        // for now is hardcode a list of known supported types and then also include anything
-        // that doesn't provide its own object.Equals override / IEquatable<T> implementation.
-        // n.b. This doesn't imply that the type's CompareTo method can be memcmp-implemented,
-        // as a method like CompareTo may need to take a type's signedness into account.
-
-        if (methodTable == CoreLibBinder::GetClass(CLASS__BOOLEAN)
-            || methodTable == CoreLibBinder::GetClass(CLASS__BYTE)
-            || methodTable == CoreLibBinder::GetClass(CLASS__SBYTE)
-            || methodTable == CoreLibBinder::GetClass(CLASS__CHAR)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT16)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT16)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT32)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT32)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT64)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT64)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT128)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT128)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INTPTR)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINTPTR)
-            || methodTable == CoreLibBinder::GetClass(CLASS__GUID)
-            || methodTable == CoreLibBinder::GetClass(CLASS__RUNE)
-            || methodTable->IsEnum()
-            || IsBitwiseEquatable(typeHandle, methodTable))
-        {
-            methInfo->ILCode = const_cast<BYTE*>(returnTrue);
-        }
-        else
-        {
-            methInfo->ILCode = const_cast<BYTE*>(returnFalse);
-        }
-
-        methInfo->ILCodeSize = sizeof(returnTrue);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        *localSig = {};
-        return true;
-    }
 
 #if FEATURE_IJW
     if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__COPY_CONSTRUCT)->GetMemberDef())
@@ -7908,6 +7836,49 @@ void CEEInfo::beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,
     // do nothing
 }
 
+#if defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
+// Records that 'pCaller' incorporated 'pCallee's IL -- a real inline, or the field-wise Equals scan that
+// folds RuntimeHelpers.IsBitwiseEquatable -- so that a profiler ReJIT of 'pCallee' also rejits 'pCaller'.
+static void TrackInliningForRejit(MethodDesc* pCaller, MethodDesc* pCallee)
+{
+    STANDARD_VM_CONTRACT;
+
+    pCallee->GetModule()->AddInlining(pCaller, pCallee);
+
+    if (CORProfilerEnableRejit())
+    {
+        ModuleID modId = 0;
+        mdMethodDef methodDef = mdMethodDefNil;
+        BOOL shouldCallReJIT = FALSE;
+
+        {
+            // If ReJIT is enabled, there is a chance that a race happened where the profiler
+            // requested a ReJIT on a method, but before the ReJIT occurred an inlining happened.
+            // If we end up reporting an inlining on a method with non-default IL it means the race
+            // happened and we need to manually request ReJIT for it since it was missed.
+            CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
+            ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
+            if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL())
+            {
+                shouldCallReJIT = TRUE;
+                modId = reinterpret_cast<ModuleID>(pCaller->GetModule());
+                methodDef = pCaller->GetMemberDef();
+                // Do Not call RequestReJIT inside this scope, calling RequestReJIT while holding the CodeVersionManager lock
+                // will cause deadlocks with other threads calling RequestReJIT since it tries to obtain the CodeVersionManager lock
+            }
+        }
+
+        if (shouldCallReJIT)
+        {
+            _ASSERTE(modId != 0);
+            _ASSERTE(methodDef != mdMethodDefNil);
+            ReJitManager::RequestReJIT(1, &modId, &methodDef, static_cast<COR_PRF_REJIT_FLAGS>(0));
+        }
+    }
+}
+#endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
+
 void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                                       CORINFO_METHOD_HANDLE inlineeHnd,
                                       CorInfoInline inlineResult,
@@ -8033,43 +8004,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
     {
         // We don't want to track the chain of methods, so intentionally use m_pMethodBeingCompiled
         // to just track the methods that pCallee is eventually inlined in
-        MethodDesc *pCallee = GetMethod(inlineeHnd);
-        MethodDesc *pCaller = m_pMethodBeingCompiled;
-        pCallee->GetModule()->AddInlining(pCaller, pCallee);
-
-#ifdef PROFILING_SUPPORTED
-        if (CORProfilerEnableRejit())
-        {
-            ModuleID modId = 0;
-            mdMethodDef methodDef = mdMethodDefNil;
-            BOOL shouldCallReJIT = FALSE;
-
-            {
-                // If ReJIT is enabled, there is a chance that a race happened where the profiler
-                // requested a ReJIT on a method, but before the ReJIT occurred an inlining happened.
-                // If we end up reporting an inlining on a method with non-default IL it means the race
-                // happened and we need to manually request ReJIT for it since it was missed.
-                CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
-                CodeVersionManager::LockHolder codeVersioningLockHolder;
-                ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
-                if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL())
-                {
-                    shouldCallReJIT = TRUE;
-                    modId = reinterpret_cast<ModuleID>(pCaller->GetModule());
-                    methodDef = pCaller->GetMemberDef();
-                    // Do Not call RequestReJIT inside this scope, calling RequestReJIT while holding the CodeVersionManager lock
-                    // will cause deadlocks with other threads calling RequestReJIT since it tries to obtain the CodeVersionManager lock
-                }
-            }
-
-            if (shouldCallReJIT)
-            {
-                _ASSERTE(modId != 0);
-                _ASSERTE(methodDef != mdMethodDefNil);
-                ReJitManager::RequestReJIT(1, &modId, &methodDef, static_cast<COR_PRF_REJIT_FLAGS>(0));
-            }
-        }
-#endif // PROFILING_SUPPORTED
+        TrackInliningForRejit(m_pMethodBeingCompiled, GetMethod(inlineeHnd));
     }
 #endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
 
@@ -10003,6 +9938,129 @@ CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 #else
     _ASSERTE(!"Requires IJW feature");
 #endif // FEATURE_IJW
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+CorInfoBitwiseEquatable CEEInfo::getBitwiseEquatableInfo(
+    CORINFO_CLASS_HANDLE   type,
+    CORINFO_METHOD_HANDLE* equalsMethod,
+    CORINFO_METHOD_HANDLE* comparerGetDefault,
+    CORINFO_METHOD_HANDLE* comparerEquals)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CorInfoBitwiseEquatable result = CORINFO_BITWISE_EQUATABLE_FALSE;
+    *equalsMethod = NULL;
+    *comparerGetDefault = NULL;
+    *comparerEquals = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    EX_TRY
+    {
+        TypeHandle typeHandle(type);
+        MethodTable* methodTable = typeHandle.GetMethodTable();
+
+        if (methodTable != NULL && methodTable->IsValueType())
+        {
+            Instantiation inst(&typeHandle, 1);
+            TypeHandle iequatableOfSelf =
+                TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst);
+
+            TypeHandle comparerType =
+                TypeHandle(CoreLibBinder::GetClass(CLASS__EQUALITY_COMPARER)).Instantiate(inst);
+            MethodTable* comparerMethodTable = comparerType.GetMethodTable();
+            MethodDesc* getDefault = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                CoreLibBinder::GetMethod(METHOD__EQUALITY_COMPARER__GET_DEFAULT),
+                comparerMethodTable,
+                FALSE,
+                Instantiation(),
+                FALSE);
+            MethodDesc* comparerEqualsMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                CoreLibBinder::GetMethod(METHOD__EQUALITY_COMPARER__EQUALS),
+                comparerMethodTable,
+                FALSE,
+                Instantiation(),
+                FALSE);
+
+            *comparerGetDefault = (CORINFO_METHOD_HANDLE)getDefault;
+            *comparerEquals = (CORINFO_METHOD_HANDLE)comparerEqualsMethod;
+
+            if (methodTable->IsEnum())
+            {
+                result = CORINFO_BITWISE_EQUATABLE_TRUE;
+            }
+            else if (typeHandle.CanCastTo(iequatableOfSelf))
+            {
+                MethodDesc* equals = methodTable->GetMethodDescForInterfaceMethod(
+                    iequatableOfSelf,
+                    CoreLibBinder::GetMethod(METHOD__IEQUATABLEGENERIC__EQUALS),
+                    FALSE /* throwOnConflict */);
+                if (equals != NULL && equals->IsWrapperStub())
+                {
+                    equals = equals->GetWrappedMethodDesc();
+                }
+
+                *equalsMethod = (CORINFO_METHOD_HANDLE)equals;
+
+                CorElementType elementType = methodTable->GetInternalCorElementType();
+                bool isBitwiseComparablePrimitive;
+                switch (elementType)
+                {
+                    case ELEMENT_TYPE_BOOLEAN:
+                    case ELEMENT_TYPE_CHAR:
+                    case ELEMENT_TYPE_I1:
+                    case ELEMENT_TYPE_U1:
+                    case ELEMENT_TYPE_I2:
+                    case ELEMENT_TYPE_U2:
+                    case ELEMENT_TYPE_I4:
+                    case ELEMENT_TYPE_U4:
+                    case ELEMENT_TYPE_I8:
+                    case ELEMENT_TYPE_U8:
+                    case ELEMENT_TYPE_I:
+                    case ELEMENT_TYPE_U:
+                    case ELEMENT_TYPE_PTR:
+                    case ELEMENT_TYPE_FNPTR:
+                        isBitwiseComparablePrimitive = true;
+                        break;
+
+                    default:
+                        isBitwiseComparablePrimitive = false;
+                        break;
+                }
+
+                if (isBitwiseComparablePrimitive)
+                {
+                    result = CORINFO_BITWISE_EQUATABLE_TRUE;
+                }
+                else if (equals != NULL &&
+                         !equals->GetModule()->IsEditAndContinueEnabled() &&
+                         !methodTable->ContainsGCPointers() &&
+                         methodTable->IsTightlyPacked() &&
+                         !methodTable->GetClass()->IsInlineArray())
+                {
+                    result = CORINFO_BITWISE_EQUATABLE_NEEDS_METHOD_SCAN;
+                }
+            }
+            else if (CanCompareBitsOrUseFastGetHashCode(methodTable))
+            {
+                result = CORINFO_BITWISE_EQUATABLE_TRUE;
+            }
+        }
+    }
+    EX_CATCH
+    {
+        result = CORINFO_BITWISE_EQUATABLE_FALSE;
+        RethrowTerminalExceptions();
+    }
+    EX_END_CATCH
 
     EE_TO_JIT_TRANSITION();
 

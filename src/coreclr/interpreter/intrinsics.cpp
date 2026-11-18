@@ -118,7 +118,9 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
             }
             else if (!strcmp(className, "RuntimeHelpers"))
             {
-                if (!strcmp(methodName, "IsReferenceOrContainsReferences"))
+                if (!strcmp(methodName, "IsBitwiseEquatable"))
+                    return NI_System_Runtime_CompilerServices_RuntimeHelpers_IsBitwiseEquatable;
+                else if (!strcmp(methodName, "IsReferenceOrContainsReferences"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
                 else if (!strcmp(methodName, "IsRuntimeAsync"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync;

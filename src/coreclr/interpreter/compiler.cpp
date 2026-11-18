@@ -4145,6 +4145,22 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
 
             return true;
         }
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsBitwiseEquatable:
+        {
+            CORINFO_METHOD_HANDLE equalsMethod;
+            CORINFO_METHOD_HANDLE comparerGetDefault;
+            CORINFO_METHOD_HANDLE comparerEquals;
+            CorInfoBitwiseEquatable result = m_compHnd->getBitwiseEquatableInfo(
+                sig.sigInst.methInst[0], &equalsMethod, &comparerGetDefault, &comparerEquals);
+
+            AddIns(INTOP_LDC_I4);
+            m_pLastNewIns->data[0] = result == CORINFO_BITWISE_EQUATABLE_TRUE ? 1 : 0;
+
+            PushInterpType(InterpTypeI4, nullptr);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+            return true;
+        }
         case NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference:
         {
             if (sig.sigInst.methInstCount != 1)

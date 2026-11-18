@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -317,36 +316,163 @@ namespace Internal.IL.Stubs
             return result;
         }
 
+        public static bool? GetBitwiseEquatableInfo(
+            TypeDesc type,
+            out MethodDesc equalsMethod,
+            out MethodDesc comparerGetDefault,
+            out MethodDesc comparerEquals)
+        {
+            equalsMethod = null;
+            comparerGetDefault = null;
+            comparerEquals = null;
+
+            if (IsBitwiseComparablePrimitive(type))
+            {
+                GetEqualityMethods(type, out equalsMethod, out comparerGetDefault, out comparerEquals);
+                return true;
+            }
+
+            if (type is not MetadataType mdType || !mdType.IsValueType)
+            {
+                return false;
+            }
+
+            bool? equatable = ImplementsIEquatable(mdType);
+            if (!equatable.HasValue)
+            {
+                return false;
+            }
+
+            if (!equatable.Value)
+            {
+                MethodDesc objectEquals = mdType.Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null);
+                return mdType.FindVirtualFunctionTargetMethodOnObjectType(objectEquals).OwningType != mdType
+                    && CanCompareValueTypeBits(mdType, objectEquals);
+            }
+
+            if (mdType.ContainsGCPointers || !IsTightlyPacked(mdType))
+            {
+                return false;
+            }
+
+            GetEqualityMethods(mdType, out equalsMethod, out comparerGetDefault, out comparerEquals);
+            return equalsMethod is null ? false : null;
+        }
+
+        private static bool IsTightlyPacked(MetadataType type)
+        {
+            // Mirrors the CoreCLR VM's MethodTable::IsTightlyPacked: a byte-wise compare equals comparing
+            // every field only if there is no padding anywhere. That needs the declared fields to exactly
+            // cover the instance size (no gaps, no overlap) and every nested value-type field to itself be
+            // tightly packed. The nested check makes this transitive.
+            if (type.IsInlineArray)
+                return false;
+
+            if (type.IsGenericDefinition)
+                return false;
+
+            OverlappingFieldTracker overlappingFieldTracker = new OverlappingFieldTracker(type);
+            int lastFieldEndOffset = 0;
+
+            foreach (FieldDesc field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                lastFieldEndOffset = Math.Max(lastFieldEndOffset, field.Offset.AsInt + field.FieldType.GetElementSize().AsInt);
+
+                if (!overlappingFieldTracker.TrackField(field))
+                    return false;
+
+                TypeDesc fieldType = field.FieldType;
+                if (fieldType.IsValueType && !fieldType.IsPrimitive && !fieldType.IsEnum)
+                {
+                    // Nested value type: recurse for transitive packing. Primitives, pointers, and
+                    // references are leaves whose element size already accounts for their footprint.
+                    if (fieldType is not MetadataType nestedType || !IsTightlyPacked(nestedType))
+                        return false;
+                }
+            }
+
+            if (overlappingFieldTracker.HasGapsBeforeOffset(lastFieldEndOffset))
+                return false;
+
+            return lastFieldEndOffset == type.InstanceFieldSize.AsInt;
+        }
+
+        private static MethodDesc GetIEquatableEqualsImplementation(MetadataType type)
+        {
+            MetadataType iequatableType = type.Context.SystemModule.GetKnownType("System"u8, "IEquatable`1"u8);
+            MethodDesc equalsInterfaceMethod = iequatableType.MakeInstantiatedType(type).GetMethod("Equals"u8, null);
+            if (equalsInterfaceMethod == null)
+                return null;
+
+            return type.ResolveInterfaceMethodToVirtualMethodOnType(equalsInterfaceMethod);
+        }
+
+        private static void GetEqualityMethods(
+            TypeDesc type,
+            out MethodDesc equalsMethod,
+            out MethodDesc comparerGetDefault,
+            out MethodDesc comparerEquals)
+        {
+            equalsMethod = type is MetadataType metadataType
+                ? GetIEquatableEqualsImplementation(metadataType)
+                : null;
+
+            comparerGetDefault = null;
+            comparerEquals = null;
+
+            TypeDesc comparerType = type.Context.SystemModule
+                .GetKnownType("System.Collections.Generic"u8, "EqualityComparer`1"u8)
+                .MakeInstantiatedType(type);
+
+            foreach (MethodDesc method in comparerType.GetMethods())
+            {
+                if (method.Name == "get_Default"u8 && method.Signature.IsStatic && method.Signature.Length == 0)
+                {
+                    comparerGetDefault = method;
+                }
+                else if (method.Name == "Equals"u8 && !method.Signature.IsStatic && method.Signature.Length == 2)
+                {
+                    comparerEquals = method;
+                }
+            }
+        }
+
+        private static bool IsBitwiseComparablePrimitive(TypeDesc fieldType)
+        {
+            if (fieldType.IsPrimitive || fieldType.IsEnum || fieldType.IsPointer || fieldType.IsFunctionPointer)
+            {
+                TypeFlags category = fieldType.UnderlyingType.Category;
+                return category != TypeFlags.Single && category != TypeFlags.Double;
+            }
+
+            return false;
+        }
+
         private struct OverlappingFieldTracker
         {
-            private BitArray _usedBytes;
+            private System.Collections.BitArray _usedBytes;
 
             public OverlappingFieldTracker(MetadataType type)
             {
-                _usedBytes = new BitArray(type.InstanceFieldSize.AsInt);
+                _usedBytes = new System.Collections.BitArray(type.InstanceFieldSize.AsInt);
             }
 
             public bool TrackField(FieldDesc field)
             {
                 int fieldBegin = field.Offset.AsInt;
-
                 TypeDesc fieldType = field.FieldType;
-
-                int fieldEnd;
-                if (fieldType.IsPointer || fieldType.IsFunctionPointer)
-                {
-                    fieldEnd = fieldBegin + field.Context.Target.PointerSize;
-                }
-                else
-                {
-                    Debug.Assert(fieldType.IsValueType);
-                    fieldEnd = fieldBegin + ((DefType)fieldType).InstanceFieldSize.AsInt;
-                }
+                int fieldEnd = fieldBegin + (fieldType.IsPointer || fieldType.IsFunctionPointer
+                    ? field.Context.Target.PointerSize
+                    : ((DefType)fieldType).InstanceFieldSize.AsInt);
 
                 for (int i = fieldBegin; i < fieldEnd; i++)
                 {
                     if (_usedBytes[i])
                         return false;
+
                     _usedBytes[i] = true;
                 }
 

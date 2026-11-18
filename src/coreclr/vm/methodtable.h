@@ -2007,7 +2007,7 @@ public:
     OBJECTHANDLE    GetLoaderAllocatorObjectHandle();
     NOINLINE BYTE *GetLoaderAllocatorObjectForGC();
 
-    BOOL            IsNotTightlyPacked();
+    BOOL            IsTightlyPacked();
 
     BOOL            IsAllGCPointers();
 

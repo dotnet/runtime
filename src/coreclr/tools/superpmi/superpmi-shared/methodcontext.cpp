@@ -7468,6 +7468,56 @@ CORINFO_METHOD_HANDLE MethodContext::repGetSpecialCopyHelper(CORINFO_CLASS_HANDL
     return (CORINFO_METHOD_HANDLE)value;
 }
 
+void MethodContext::recGetBitwiseEquatableInfo(
+    CORINFO_CLASS_HANDLE   type,
+    CORINFO_METHOD_HANDLE* equalsMethod,
+    CORINFO_METHOD_HANDLE* comparerGetDefault,
+    CORINFO_METHOD_HANDLE* comparerEquals,
+    CorInfoBitwiseEquatable result)
+{
+    if (GetBitwiseEquatableInfo == nullptr)
+    {
+        GetBitwiseEquatableInfo = new LightWeightMap<DWORDLONG, Agnostic_BitwiseEquatableInfo>();
+    }
+
+    DWORDLONG key = CastHandle(type);
+    Agnostic_BitwiseEquatableInfo value = {};
+    value.result = (DWORD)result;
+    value.equalsMethod = CastHandle(*equalsMethod);
+    value.comparerGetDefault = CastHandle(*comparerGetDefault);
+    value.comparerEquals = CastHandle(*comparerEquals);
+    GetBitwiseEquatableInfo->Add(key, value);
+    DEBUG_REC(dmpGetBitwiseEquatableInfo(key, value));
+}
+
+void MethodContext::dmpGetBitwiseEquatableInfo(DWORDLONG key, const Agnostic_BitwiseEquatableInfo& value)
+{
+    printf(
+        "getBitwiseEquatableInfo type %016" PRIX64 ", result %u, equals %016" PRIX64
+        ", comparer get_Default %016" PRIX64 ", comparer Equals %016" PRIX64,
+        key,
+        value.result,
+        value.equalsMethod,
+        value.comparerGetDefault,
+        value.comparerEquals);
+}
+
+CorInfoBitwiseEquatable MethodContext::repGetBitwiseEquatableInfo(
+    CORINFO_CLASS_HANDLE   type,
+    CORINFO_METHOD_HANDLE* equalsMethod,
+    CORINFO_METHOD_HANDLE* comparerGetDefault,
+    CORINFO_METHOD_HANDLE* comparerEquals)
+{
+    DWORDLONG key = CastHandle(type);
+    Agnostic_BitwiseEquatableInfo value =
+        LookupByKeyOrMiss(GetBitwiseEquatableInfo, key, ": type %016" PRIX64, key);
+    DEBUG_REP(dmpGetBitwiseEquatableInfo(key, value));
+    *equalsMethod = (CORINFO_METHOD_HANDLE)value.equalsMethod;
+    *comparerGetDefault = (CORINFO_METHOD_HANDLE)value.comparerGetDefault;
+    *comparerEquals = (CORINFO_METHOD_HANDLE)value.comparerEquals;
+    return (CorInfoBitwiseEquatable)value.result;
+}
+
 void MethodContext::recGetWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize, CORINFO_WASM_TYPE_SYMBOL_HANDLE result)
 {
     if (GetWasmTypeSymbol == nullptr)

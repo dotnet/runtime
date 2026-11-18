@@ -780,6 +780,12 @@ CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(
 CORINFO_METHOD_HANDLE getSpecialCopyHelper(
           CORINFO_CLASS_HANDLE type) override;
 
+CorInfoBitwiseEquatable getBitwiseEquatableInfo(
+          CORINFO_CLASS_HANDLE type,
+          CORINFO_METHOD_HANDLE* equalsMethod,
+          CORINFO_METHOD_HANDLE* comparerGetDefault,
+          CORINFO_METHOD_HANDLE* comparerEquals) override;
+
 /**********************************************************************************/
 // clang-format on
 /**********************************************************************************/

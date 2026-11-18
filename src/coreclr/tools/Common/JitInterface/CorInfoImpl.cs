@@ -20,6 +20,7 @@ using Internal.Runtime.CompilerServices;
 #endif
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
@@ -5352,6 +5353,59 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* getSpecialCopyHelper(CORINFO_CLASS_STRUCT_* type)
         {
             throw new NotImplementedException("getSpecialCopyHelper");
+        }
+
+        private CorInfoBitwiseEquatable getBitwiseEquatableInfo(
+            CORINFO_CLASS_STRUCT_* type,
+            CORINFO_METHOD_STRUCT_** equalsMethod,
+            CORINFO_METHOD_STRUCT_** comparerGetDefault,
+            CORINFO_METHOD_STRUCT_** comparerEquals)
+        {
+            if (equalsMethod != null)
+            {
+                *equalsMethod = null;
+            }
+            if (comparerGetDefault != null)
+            {
+                *comparerGetDefault = null;
+            }
+            if (comparerEquals != null)
+            {
+                *comparerEquals = null;
+            }
+
+            try
+            {
+                bool? result = ComparerIntrinsics.GetBitwiseEquatableInfo(
+                    HandleToObject(type),
+                    out MethodDesc equals,
+                    out MethodDesc getDefault,
+                    out MethodDesc comparerEqualsMethod);
+
+                if (equalsMethod != null)
+                {
+                    *equalsMethod = equals is null ? null : ObjectToHandle(equals);
+                }
+                if (comparerGetDefault != null)
+                {
+                    *comparerGetDefault = getDefault is null ? null : ObjectToHandle(getDefault);
+                }
+                if (comparerEquals != null)
+                {
+                    *comparerEquals = comparerEqualsMethod is null ? null : ObjectToHandle(comparerEqualsMethod);
+                }
+
+                return result switch
+                {
+                    true => CorInfoBitwiseEquatable.CORINFO_BITWISE_EQUATABLE_TRUE,
+                    false => CorInfoBitwiseEquatable.CORINFO_BITWISE_EQUATABLE_FALSE,
+                    null => CorInfoBitwiseEquatable.CORINFO_BITWISE_EQUATABLE_NEEDS_METHOD_SCAN,
+                };
+            }
+            catch (TypeSystemException)
+            {
+                return CorInfoBitwiseEquatable.CORINFO_BITWISE_EQUATABLE_FALSE;
+            }
         }
     }
 }
