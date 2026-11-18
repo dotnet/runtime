@@ -331,7 +331,7 @@ bool LC_Condition::Evaluates(bool* pResult)
 //
 // Operation:
 //      Check if both conditions are equal. If so, return just 1 of them.
-//      Reverse their operators and check if their reversed operands match. If so, return either of them.
+//      Swap the operands and relational operator to check for equivalent conditions.
 //
 // Notes:
 //      This is not a full-fledged expression optimizer, it is supposed
@@ -341,13 +341,18 @@ bool LC_Condition::Evaluates(bool* pResult)
 //      would be: "beg >= 0, end <= a.len, inc > 0"
 bool LC_Condition::Combines(const LC_Condition& cond, LC_Condition* newCond)
 {
-    if (oper == cond.oper && op1 == cond.op1 && op2 == cond.op2)
+    if (GenTree::StaticOperIs(oper, GT_LT, GT_LE, GT_GT, GT_GE) && (compareUnsigned != cond.compareUnsigned))
+    {
+        return false;
+    }
+
+    if ((oper == cond.oper) && (op1 == cond.op1) && (op2 == cond.op2))
     {
         *newCond = *this;
         return true;
     }
-    else if ((oper == GT_LT || oper == GT_LE || oper == GT_GT || oper == GT_GE) &&
-             GenTree::ReverseRelop(oper) == cond.oper && op1 == cond.op2 && op2 == cond.op1)
+    else if (GenTree::StaticOperIs(oper, GT_LT, GT_LE, GT_GT, GT_GE) && (GenTree::SwapRelop(oper) == cond.oper) &&
+             (op1 == cond.op2) && (op2 == cond.op1))
     {
         *newCond = *this;
         return true;
