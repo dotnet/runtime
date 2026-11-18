@@ -239,7 +239,8 @@
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ManagedThreadId.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ManagedThreadId.CoreCLR.Multithreading.cs" Condition="'$(FeatureMultithreading)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ManagedThreadId.CoreCLR.SingleThreading.cs" Condition="'$(FeatureMultithreading)' != 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ObjectHeader.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ObjectHeader.CoreCLR.MultiThreading.cs" Condition="'$(FeatureMultithreading)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ObjectHeader.CoreCLR.SingleThreading.cs" Condition="'$(FeatureMultithreading)' != 'true'" />
