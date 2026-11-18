@@ -56,7 +56,10 @@ namespace Wasm.Build.Tests
             PublishProject(info, config, options, isNativeBuild: true);
             await CheckCustomTimezone("02:03:00", added: false);
 
-            string objectPath = Path.Combine(GetBuildPaths(config, forPublish: true).ObjWasmDir, "timezone", "timezone-data.o");
+            string timezoneOutputDirectory = Path.Combine(GetBuildPaths(config, forPublish: true).ObjWasmDir, "timezone");
+            Assert.True(File.Exists(Path.Combine(timezoneOutputDirectory, "pal_datetime_time_zone_data-config.h")));
+            Assert.True(File.Exists(Path.Combine(timezoneOutputDirectory, "timezone-compile.rsp")));
+            string objectPath = Path.Combine(timezoneOutputDirectory, "timezone-data.o");
             Assert.True(File.Exists(objectPath), $"Expected timezone object at {objectPath}");
             DateTime timestamp = File.GetLastWriteTimeUtc(objectPath);
             PublishProject(info, config, options, isNativeBuild: true);
