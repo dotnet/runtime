@@ -30,6 +30,7 @@
     <_DotnetSdkVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportVersion)</_DotnetSdkVersion>
     <SdkVersionForWorkloadTesting Condition="$([System.String]::Compare('$(_GlobalJsonSdkVersion)', '$(_DotnetSdkVersion)')) &lt;= 0">$(_DotnetSdkVersion)</SdkVersionForWorkloadTesting>
     <SdkVersionForWorkloadTesting Condition="'$(SdkVersionForWorkloadTesting)' == ''">$(_GlobalJsonSdkVersion)</SdkVersionForWorkloadTesting>
+    <SdkVersionForWorkloadTesting>$(_GlobalJsonSdkVersion)</SdkVersionForWorkloadTesting>
     <SdkMajorVersion>$([System.String]::Copy('$(SdkVersionForWorkloadTesting)').Split('.')[0])</SdkMajorVersion>
     <SdkBandVersion>$(SdkMajorVersion).0.100</SdkBandVersion>
     <SdkPreReleaseLabel>$([System.Text.RegularExpressions.Regex]::Match($(SdkVersionForWorkloadTesting), '-(?!rtm|servicing)(.+)\.[^.]+\.[^.]+$').Groups[1].Value)</SdkPreReleaseLabel>
@@ -167,7 +168,7 @@
     <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.13</MicrosoftNativeQuicMsQuicSchannelVersion>
     <!-- emscripten workload package when testing workloads -->
     <!-- we're using MicrosoftDotNetApiCompatTaskPackageVersion since the emscripten workload package ID contains a changing version. This one uses sdk-style feature band version numbers. -->
-    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftDotNetApiCompatTaskPackageVersion)</MicrosoftNETRuntimeEmscriptenVersion>
+    <MicrosoftNETRuntimeEmscriptenVersion>11.0.102</MicrosoftNETRuntimeEmscriptenVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
     <EmsdkVersion>6.0.2</EmsdkVersion>

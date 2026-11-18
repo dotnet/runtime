@@ -1,0 +1,37 @@
+{
+  "node": "24.22.1",
+  "embeddedUndici": "7.30.1",
+  "npm": "11.19.1",
+  "npmUndici": "6.29.1",
+  "npmUndiciFetchSha256": "3e0b6aa3b09d5265f5cdebe5196376a809178776aed52eeba73788341df57a48",
+  "nodeCommit": "277a9b40d8c6ef53f9506fa1be2489facb11f77f",
+  "nodePackageVersion": "11.0.0-alpha.1.26566.3",
+  "binaries": {
+    "linux-arm64": "89e03db48e081ac44f0b51df1abe5a34b5f240aef543fe7c1c56e35de47348c3",
+    "linux-musl-arm64": "f3b84a777a1c10deeec35a1900e4d12657f1bda90c3efbcde6dd20d76269206c",
+    "linux-musl-x64": "24c66ed25505ff63a360b0f50343fdbddb15929c5c0735e8025914acee907ae5",
+    "linux-x64": "6009882f30c2ba8f0c8913b3602e75b75892fc59eab1dd886a93477fdbd3a5d3",
+    "osx-arm64": "92ba75bdb6c21695f939824299f350cd2140275331adffd92089a09be0e88be4",
+    "osx-x64": "ac9ff60575a6e458af0e2e88f2cf1914224d7cf5c2b3bd8bd701151e9eba306c",
+    "win-arm64": "0b93cf8b13f7130595a7116a891e89b50a63d0b4bf30c9d37fa5d60a186da62c",
+    "win-x64": "81490394a916b47e87b64b8a2f042d4af8d8c18b42422a6ae49e4b020998974c"
+  },
+  "workload": {
+    "vmrCommit": "9c58695cc7530fbbe07b1b863ae7816a33f4096c",
+    "vmrBuild": 3139470,
+    "nodePackages": {
+      "linux-arm64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.linux-arm64",
+      "linux-musl-arm64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.linux-musl-arm64",
+      "linux-musl-x64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.linux-musl-x64",
+      "linux-x64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.linux-x64",
+      "osx-arm64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.osx-arm64",
+      "osx-x64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.osx-x64",
+      "win-arm64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.win-arm64",
+      "win-x64": "Microsoft.NET.Runtime.Emscripten.6.0.2.Node.win-x64"
+    },
+    "nodePackVersion": "11.0.2",
+    "manifestPackage": "Microsoft.NET.Workload.Emscripten.Current.Manifest-11.0.100",
+    "manifestVersion": "11.0.102",
+    "manifestJsonSha256": "9b6ade1c7c971dc468749059ca38669640ef65cad3492fa8375f7410e8c8f56d"
+  }
+}
