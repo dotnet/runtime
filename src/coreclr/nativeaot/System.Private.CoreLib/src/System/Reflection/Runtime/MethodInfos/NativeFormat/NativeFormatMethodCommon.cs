@@ -24,16 +24,16 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
 
         public MethodBaseInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant, out Exception exception)
         {
-            return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(DeclaringType, new QMethodDefinition(Reader, MethodHandle), methodArguments, exceptionPertainant, MethodSignature.Parameters.Count, out exception);
+            return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(DeclaringType, new QMethodDefinition(Reader, MethodHandle), methodArguments, exceptionPertainant, MethodSignature.ParameterCount, out exception);
         }
 
         public QSignatureTypeHandle[] QualifiedMethodSignature
         {
             get
             {
-                MethodSignature methodSignature = this.MethodSignature;
+                MethodSignatureInfo methodSignature = this.MethodSignature.Info;
 
-                QSignatureTypeHandle[] typeSignatures = new QSignatureTypeHandle[methodSignature.Parameters.Count + 1];
+                QSignatureTypeHandle[] typeSignatures = new QSignatureTypeHandle[methodSignature.ParameterCount + 1];
                 typeSignatures[0] = new QSignatureTypeHandle(_reader, methodSignature.ReturnType);
                 int paramIndex = 1;
                 foreach (TypeSignature parameterSignature in methodSignature.Parameters)

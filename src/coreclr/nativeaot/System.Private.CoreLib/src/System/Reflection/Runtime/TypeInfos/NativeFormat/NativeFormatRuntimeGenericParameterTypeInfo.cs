@@ -71,8 +71,6 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 ArrayBuilder<QTypeDefRefOrSpec> constraints = new ArrayBuilder<QTypeDefRefOrSpec>(_genericParameter.Constraints.Count);
                 foreach (Handle constraintHandle in _genericParameter.Constraints)
                 {
-                    // Resolution skips custom modifiers in type specifications, including
-                    // the modifier used for the "unmanaged" constraint, which is not visible to reflection.
                     constraints.Add(new QTypeDefRefOrSpec(reader, constraintHandle));
                 }
                 return constraints.ToArray();

@@ -63,9 +63,9 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             }
         }
 
-        public sealed override Type[] GetOptionalCustomModifiers() => FieldTypeHandle.GetCustomModifiers(_contextTypeInfo.TypeContext, optional: true);
+        public sealed override Type[] GetOptionalCustomModifiers() => FieldTypeSignature.GetCustomModifiers(_contextTypeInfo.TypeContext, optional: true);
 
-        public sealed override Type[] GetRequiredCustomModifiers() => FieldTypeHandle.GetCustomModifiers(_contextTypeInfo.TypeContext, optional: false);
+        public sealed override Type[] GetRequiredCustomModifiers() => FieldTypeSignature.GetCustomModifiers(_contextTypeInfo.TypeContext, optional: false);
 
         public sealed override int MetadataToken
         {
@@ -148,7 +148,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             get
             {
                 TypeContext typeContext = _contextTypeInfo.TypeContext;
-                return FieldTypeHandle.Resolve(typeContext);
+                return FieldTypeSignature.Resolve(typeContext);
             }
         }
 
@@ -160,9 +160,9 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         internal sealed override int ExplicitLayoutFieldOffsetData => (int)(_field.Offset);
 
-        public sealed override Type GetModifiedFieldType() => ModifiedType.Create(FieldRuntimeType.ToType(), FieldTypeHandle);
+        public sealed override Type GetModifiedFieldType() => ModifiedType.Create(FieldRuntimeType.ToType(), FieldTypeSignature, _contextTypeInfo.TypeContext);
 
-        private TypeSignature FieldTypeHandle => _field.Signature.GetFieldSignature(_reader).Type;
+        private TypeSignature FieldTypeSignature => _field.Signature.GetFieldSignature(_reader).Type;
 
         private readonly NativeFormatRuntimeNamedTypeInfo _definingTypeInfo;
         private readonly FieldHandle _fieldHandle;

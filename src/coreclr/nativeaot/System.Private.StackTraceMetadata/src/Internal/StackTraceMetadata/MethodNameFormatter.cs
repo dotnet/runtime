@@ -7,6 +7,8 @@ using System.Text;
 
 using Internal.Metadata.NativeFormat;
 
+using CorElementType = System.Reflection.CorElementType;
+
 namespace Internal.StackTraceMetadata
 {
     internal class MethodNameFormatter
@@ -221,35 +223,38 @@ namespace Internal.StackTraceMetadata
 
         private void EmitTypeName(TypeSignature signature, Flags flags)
         {
-            if (signature.IsHandle)
-            {
-                EmitTypeName(signature.Handle, flags);
-                return;
-            }
+            SignatureReader reader = signature.GetReader();
+            EmitTypeName(ref reader, flags);
+        }
 
-            SignatureReader reader = signature.SkipCustomModifiers().GetReader();
-            SignatureTypeCode code = (SignatureTypeCode)reader.ReadByte();
-            switch (code)
+        private void EmitTypeName(ref SignatureReader reader, Flags flags)
+        {
+            TypeSignature start = reader.Position;
+            CorElementType elementType = reader.ReadElementType();
+            switch (elementType)
             {
-                case SignatureTypeCode.Class:
-                case SignatureTypeCode.ValueType:
+                case CorElementType.ELEMENT_TYPE_CLASS:
+                case CorElementType.ELEMENT_TYPE_VALUETYPE:
                     EmitTypeName(reader.ReadTypeHandle(), flags);
                     return;
-                case SignatureTypeCode.GenericTypeInstance:
+                case CorElementType.ELEMENT_TYPE_GENERICINST:
                     // Stack traces display the generic definition, not its arguments.
-                    EmitTypeName(reader.ReadType(), flags);
+                    EmitTypeName(ref reader, flags);
+                    int arguments = reader.ReadCompressedInteger();
+                    for (int i = 0; i < arguments; i++)
+                        reader.SkipType();
                     return;
-                case SignatureTypeCode.GenericTypeParameter:
-                case SignatureTypeCode.GenericMethodParameter:
-                    _typeContext.EmitVariable(this, reader.ReadCompressedInteger(), code == SignatureTypeCode.GenericMethodParameter, flags);
+                case CorElementType.ELEMENT_TYPE_VAR:
+                case CorElementType.ELEMENT_TYPE_MVAR:
+                    _typeContext.EmitVariable(this, reader.ReadCompressedInteger(), elementType == CorElementType.ELEMENT_TYPE_MVAR, flags);
                     return;
-                case SignatureTypeCode.SZArray:
-                    EmitTypeName(reader.ReadType(), flags);
+                case CorElementType.ELEMENT_TYPE_SZARRAY:
+                    EmitTypeName(ref reader, flags);
                     _outputBuilder.Append("[]");
                     return;
-                case SignatureTypeCode.Array:
-                    EmitTypeName(reader.ReadType(), flags);
-                    int rank = reader.ReadCompressedInteger();
+                case CorElementType.ELEMENT_TYPE_ARRAY:
+                    EmitTypeName(ref reader, flags);
+                    int rank = reader.ReadArrayShape();
                     _outputBuilder.Append('[');
                     if (rank > 1)
                         _outputBuilder.Append(',', rank - 1);
@@ -257,38 +262,40 @@ namespace Internal.StackTraceMetadata
                         _outputBuilder.Append('*');
                     _outputBuilder.Append(']');
                     return;
-                case SignatureTypeCode.Pointer:
-                case SignatureTypeCode.ByReference:
-                    EmitTypeName(reader.ReadType(), Flags.None);
-                    _outputBuilder.Append(code == SignatureTypeCode.Pointer ? '*' : '&');
+                case CorElementType.ELEMENT_TYPE_PTR:
+                case CorElementType.ELEMENT_TYPE_BYREF:
+                    EmitTypeName(ref reader, Flags.None);
+                    _outputBuilder.Append(elementType == CorElementType.ELEMENT_TYPE_PTR ? '*' : '&');
                     return;
-                case SignatureTypeCode.FunctionPointer:
+                case CorElementType.ELEMENT_TYPE_FNPTR:
                     // Function pointers intentionally have no textual stack-trace representation.
+                    reader = start.GetReader();
+                    reader.SkipType();
                     return;
             }
 
             if ((flags & Flags.NamespaceQualify) != 0)
                 _outputBuilder.Append("System.");
-            _outputBuilder.Append(code switch
+            _outputBuilder.Append(elementType switch
             {
-                SignatureTypeCode.Void => "Void",
-                SignatureTypeCode.Boolean => "Boolean",
-                SignatureTypeCode.Char => "Char",
-                SignatureTypeCode.SByte => "SByte",
-                SignatureTypeCode.Byte => "Byte",
-                SignatureTypeCode.Int16 => "Int16",
-                SignatureTypeCode.UInt16 => "UInt16",
-                SignatureTypeCode.Int32 => "Int32",
-                SignatureTypeCode.UInt32 => "UInt32",
-                SignatureTypeCode.Int64 => "Int64",
-                SignatureTypeCode.UInt64 => "UInt64",
-                SignatureTypeCode.Single => "Single",
-                SignatureTypeCode.Double => "Double",
-                SignatureTypeCode.String => "String",
-                SignatureTypeCode.TypedReference => "TypedReference",
-                SignatureTypeCode.IntPtr => "IntPtr",
-                SignatureTypeCode.UIntPtr => "UIntPtr",
-                SignatureTypeCode.Object => "Object",
+                CorElementType.ELEMENT_TYPE_VOID => "Void",
+                CorElementType.ELEMENT_TYPE_BOOLEAN => "Boolean",
+                CorElementType.ELEMENT_TYPE_CHAR => "Char",
+                CorElementType.ELEMENT_TYPE_I1 => "SByte",
+                CorElementType.ELEMENT_TYPE_U1 => "Byte",
+                CorElementType.ELEMENT_TYPE_I2 => "Int16",
+                CorElementType.ELEMENT_TYPE_U2 => "UInt16",
+                CorElementType.ELEMENT_TYPE_I4 => "Int32",
+                CorElementType.ELEMENT_TYPE_U4 => "UInt32",
+                CorElementType.ELEMENT_TYPE_I8 => "Int64",
+                CorElementType.ELEMENT_TYPE_U8 => "UInt64",
+                CorElementType.ELEMENT_TYPE_R4 => "Single",
+                CorElementType.ELEMENT_TYPE_R8 => "Double",
+                CorElementType.ELEMENT_TYPE_STRING => "String",
+                CorElementType.ELEMENT_TYPE_TYPEDBYREF => "TypedReference",
+                CorElementType.ELEMENT_TYPE_I => "IntPtr",
+                CorElementType.ELEMENT_TYPE_U => "UIntPtr",
+                CorElementType.ELEMENT_TYPE_OBJECT => "Object",
                 _ => "???",
             });
         }

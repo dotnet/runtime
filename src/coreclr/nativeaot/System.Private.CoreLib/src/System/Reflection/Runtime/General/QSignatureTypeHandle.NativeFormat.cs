@@ -16,23 +16,6 @@ namespace System.Reflection.Runtime.General
 {
     public partial struct QSignatureTypeHandle
     {
-        public QSignatureTypeHandle(MetadataReader reader, Handle handle, bool skipCheck = false)
-        {
-            if (!skipCheck)
-            {
-                if (!handle.IsTypeDefRefOrSpecHandle(reader))
-                    throw new BadImageFormatException();
-            }
-
-            Debug.Assert(handle.IsTypeDefRefOrSpecHandle(reader));
-            _reader = reader;
-            _signature = new TypeSignature(reader, handle);
-
-#if ECMA_METADATA_SUPPORT
-            _blobReader = default(global::System.Reflection.Metadata.BlobReader);
-#endif
-        }
-
         public QSignatureTypeHandle(MetadataReader reader, TypeSignature signature)
         {
             Debug.Assert(reader == signature.Reader);

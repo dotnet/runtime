@@ -59,82 +59,67 @@ namespace System.Reflection.Runtime.General
         //
         internal static RuntimeTypeInfo? TryResolve(this TypeSignature signature, TypeContext typeContext, ref Exception? exception)
         {
-            if (signature.IsHandle)
-                return signature.Handle.TryResolve(signature.Reader, typeContext, ref exception);
-
             SignatureReader reader = signature.GetReader();
             return TryResolveTypeSignature(ref reader, signature.Reader, typeContext, ref exception);
         }
 
         private static RuntimeTypeInfo? TryResolveTypeSignature(ref SignatureReader reader, MetadataReader metadataReader, TypeContext typeContext, ref Exception? exception)
         {
-            while (reader.TypeCode is SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier)
+            switch (reader.ReadElementType())
             {
-                reader.ReadByte();
-                reader.ReadTypeHandle();
-            }
-
-            switch ((SignatureTypeCode)reader.ReadByte())
-            {
-                case SignatureTypeCode.Void:
+                case CorElementType.ELEMENT_TYPE_VOID:
                     return typeof(void).ToRuntimeTypeInfo();
-                case SignatureTypeCode.Boolean:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return typeof(bool).ToRuntimeTypeInfo();
-                case SignatureTypeCode.Char:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     return typeof(char).ToRuntimeTypeInfo();
-                case SignatureTypeCode.SByte:
+                case CorElementType.ELEMENT_TYPE_I1:
                     return typeof(sbyte).ToRuntimeTypeInfo();
-                case SignatureTypeCode.Byte:
+                case CorElementType.ELEMENT_TYPE_U1:
                     return typeof(byte).ToRuntimeTypeInfo();
-                case SignatureTypeCode.Int16:
+                case CorElementType.ELEMENT_TYPE_I2:
                     return typeof(short).ToRuntimeTypeInfo();
-                case SignatureTypeCode.UInt16:
+                case CorElementType.ELEMENT_TYPE_U2:
                     return typeof(ushort).ToRuntimeTypeInfo();
-                case SignatureTypeCode.Int32:
+                case CorElementType.ELEMENT_TYPE_I4:
                     return typeof(int).ToRuntimeTypeInfo();
-                case SignatureTypeCode.UInt32:
+                case CorElementType.ELEMENT_TYPE_U4:
                     return typeof(uint).ToRuntimeTypeInfo();
-                case SignatureTypeCode.Int64:
+                case CorElementType.ELEMENT_TYPE_I8:
                     return typeof(long).ToRuntimeTypeInfo();
-                case SignatureTypeCode.UInt64:
+                case CorElementType.ELEMENT_TYPE_U8:
                     return typeof(ulong).ToRuntimeTypeInfo();
-                case SignatureTypeCode.Single:
+                case CorElementType.ELEMENT_TYPE_R4:
                     return typeof(float).ToRuntimeTypeInfo();
-                case SignatureTypeCode.Double:
+                case CorElementType.ELEMENT_TYPE_R8:
                     return typeof(double).ToRuntimeTypeInfo();
-                case SignatureTypeCode.String:
+                case CorElementType.ELEMENT_TYPE_STRING:
                     return typeof(string).ToRuntimeTypeInfo();
-                case SignatureTypeCode.TypedReference:
+                case CorElementType.ELEMENT_TYPE_TYPEDBYREF:
                     return typeof(TypedReference).ToRuntimeTypeInfo();
-                case SignatureTypeCode.IntPtr:
+                case CorElementType.ELEMENT_TYPE_I:
                     return typeof(IntPtr).ToRuntimeTypeInfo();
-                case SignatureTypeCode.UIntPtr:
+                case CorElementType.ELEMENT_TYPE_U:
                     return typeof(UIntPtr).ToRuntimeTypeInfo();
-                case SignatureTypeCode.Object:
+                case CorElementType.ELEMENT_TYPE_OBJECT:
                     return typeof(object).ToRuntimeTypeInfo();
 
-                case SignatureTypeCode.Class:
-                case SignatureTypeCode.ValueType:
+                case CorElementType.ELEMENT_TYPE_CLASS:
+                case CorElementType.ELEMENT_TYPE_VALUETYPE:
                     return reader.ReadTypeHandle().TryResolve(metadataReader, typeContext, ref exception);
 
-                case SignatureTypeCode.Array:
+                case CorElementType.ELEMENT_TYPE_ARRAY:
                 {
                     RuntimeTypeInfo? elementType = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
                     if (elementType is null)
                         return null;
-                    int rank = reader.ReadCompressedInteger();
+                    int rank = reader.ReadArrayShape();
                     if (rank <= 0)
                         throw new BadImageFormatException(); // Bad rank.
-                    int sizes = reader.ReadCompressedInteger();
-                    for (int i = 0; i < sizes; i++)
-                        reader.ReadCompressedInteger();
-                    int lowerBounds = reader.ReadCompressedInteger();
-                    for (int i = 0; i < lowerBounds; i++)
-                        reader.ReadCompressedSignedInteger();
                     return elementType.GetMultiDimArrayType(rank);
                 }
 
-                case SignatureTypeCode.ByReference:
+                case CorElementType.ELEMENT_TYPE_BYREF:
                 {
                     RuntimeTypeInfo? targetType = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
                     if (targetType is null)
@@ -142,10 +127,10 @@ namespace System.Reflection.Runtime.General
                     return targetType.GetByRefType();
                 }
 
-                case SignatureTypeCode.GenericMethodParameter:
+                case CorElementType.ELEMENT_TYPE_MVAR:
                     return typeContext.GenericMethodArguments[reader.ReadCompressedInteger()];
 
-                case SignatureTypeCode.Pointer:
+                case CorElementType.ELEMENT_TYPE_PTR:
                 {
                     RuntimeTypeInfo? targetType = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
                     if (targetType is null)
@@ -153,27 +138,25 @@ namespace System.Reflection.Runtime.General
                     return targetType.GetPointerType();
                 }
 
-                case SignatureTypeCode.FunctionPointer:
+                case CorElementType.ELEMENT_TYPE_FNPTR:
                 {
-                    byte header = reader.ReadMethodHeader(out _, out int count);
+                    MdSigCallingConvention header = reader.ReadMethodHeader(out _, out int count);
                     RuntimeTypeInfo? returnType = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
                     if (returnType is null)
                         return null;
                     var parameterTypes = new RuntimeTypeInfo[count];
                     for (int i = 0; i < parameterTypes.Length; i++)
                     {
-                        if (reader.TypeCode == SignatureTypeCode.Sentinel)
-                            reader.ReadByte();
                         RuntimeTypeInfo? parameterType = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
                         if (parameterType is null)
                             return null;
                         parameterTypes[i] = parameterType;
                     }
-                    bool isUnmanaged = ((Internal.Metadata.NativeFormat.SignatureCallingConvention)header & Internal.Metadata.NativeFormat.SignatureCallingConvention.UnmanagedCallingConventionMask) != 0;
+                    bool isUnmanaged = (header & MdSigCallingConvention.CallConvMask) != 0;
                     return RuntimeFunctionPointerTypeInfo.GetFunctionPointerTypeInfo(returnType, parameterTypes, isUnmanaged);
                 }
 
-                case SignatureTypeCode.SZArray:
+                case CorElementType.ELEMENT_TYPE_SZARRAY:
                 {
                     RuntimeTypeInfo? elementType = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
                     if (elementType is null)
@@ -181,7 +164,7 @@ namespace System.Reflection.Runtime.General
                     return elementType.GetArrayType();
                 }
 
-                case SignatureTypeCode.GenericTypeInstance:
+                case CorElementType.ELEMENT_TYPE_GENERICINST:
                 {
                     RuntimeTypeInfo? genericTypeDefinition = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
                     if (genericTypeDefinition is null)
@@ -198,7 +181,7 @@ namespace System.Reflection.Runtime.General
                     return genericTypeDefinition.GetConstructedGenericTypeNoConstraintCheck(genericTypeArguments);
                 }
 
-                case SignatureTypeCode.GenericTypeParameter:
+                case CorElementType.ELEMENT_TYPE_VAR:
                     return typeContext.GenericTypeArguments[reader.ReadCompressedInteger()];
 
                 default:

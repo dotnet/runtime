@@ -172,5 +172,5 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
         _signature.Reader is null ? [] : _signature.GetCustomModifiers(_typeContext, optional: true);
 
     public override Type GetModifiedParameterType() =>
-        _signature.GetModifiedType(ParameterType);
+        _signature.GetModifiedType(ParameterType, _typeContext);
 }

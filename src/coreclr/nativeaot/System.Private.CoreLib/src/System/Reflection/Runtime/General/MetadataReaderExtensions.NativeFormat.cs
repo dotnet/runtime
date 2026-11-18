@@ -45,15 +45,10 @@ namespace System.Reflection.Runtime.General
         // safe for returning to api callers.
         internal static Type[] GetCustomModifiers(this TypeSignature signature, TypeContext typeContext, bool optional)
         {
-            if (signature.IsHandle)
-                return Array.Empty<Type>();
-
             ArrayBuilder<Type> customModifiers = default;
             SignatureReader reader = signature.GetReader();
-            while (reader.TypeCode is SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier)
+            while (reader.TryReadCustomModifier(out bool isOptional, out Handle modifierType))
             {
-                bool isOptional = (SignatureTypeCode)reader.ReadByte() == SignatureTypeCode.OptionalModifier;
-                Handle modifierType = reader.ReadTypeHandle();
                 if (optional == isOptional)
                 {
                     Type customModifier = modifierType.Resolve(signature.Reader, typeContext).ToType();

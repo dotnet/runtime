@@ -6,6 +6,7 @@ using Internal.Metadata.NativeFormat.Writer;
 using Cts = Internal.TypeSystem;
 using Ecma = System.Reflection.Metadata;
 
+using MdSigCallingConvention = System.Reflection.MdSigCallingConvention;
 using MethodSemanticsAttributes = Internal.Metadata.NativeFormat.MethodSemanticsAttributes;
 
 namespace ILCompiler.Metadata
@@ -40,7 +41,7 @@ namespace ILCompiler.Metadata
             };
 
             MetadataBlob blob = result.Signature.Blob;
-            blob.WriteByte((byte)((byte)Ecma.SignatureKind.Property | (sig.IsStatic ? 0 : 0x20)));
+            blob.WriteByte((byte)(MdSigCallingConvention.Property | (sig.IsStatic ? 0 : MdSigCallingConvention.HasThis)));
             blob.WriteCompressedInteger(sig.Length);
             if (!sig.HasEmbeddedSignatureData)
             {

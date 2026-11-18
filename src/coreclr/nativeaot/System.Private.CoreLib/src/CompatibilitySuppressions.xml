@@ -499,15 +499,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Metadata.NativeFormat.MethodSignatureInfo</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Metadata.NativeFormat.SignatureReader</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Metadata.NativeFormat.SignatureTypeCode</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
@@ -516,5 +508,9 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Metadata.NativeFormat.TypeSignatureCollection</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Reflection.CorElementType</Target>
   </Suppression>
 </Suppressions>

@@ -3,9 +3,10 @@
 
 using System;
 using Internal.Metadata.NativeFormat.Writer;
+using CorElementType = System.Reflection.CorElementType;
 using Cts = Internal.TypeSystem;
 using Ecma = System.Reflection.Metadata;
-using SignatureTypeCode = Internal.Metadata.NativeFormat.SignatureTypeCode;
+using MdSigCallingConvention = System.Reflection.MdSigCallingConvention;
 
 namespace ILCompiler.Metadata;
 
@@ -32,7 +33,7 @@ internal partial class Transform<TPolicy>
 
     private static void WriteMethodHeader(MetadataBlob blob, byte convention, int arity, int count)
     {
-        blob.WriteByte((byte)(convention | (arity != 0 ? 0x10 : 0)));
+        blob.WriteByte((byte)(convention | (byte)(arity != 0 ? MdSigCallingConvention.Generic : 0)));
         if (arity != 0)
             blob.WriteCompressedInteger(arity);
         blob.WriteCompressedInteger(count);
@@ -41,34 +42,34 @@ internal partial class Transform<TPolicy>
     private void WriteTypeSignature(MetadataBlob blob, Cts.TypeDesc type)
     {
         // ECMA-335 II.23.2.12. Compound expressions are inline; only named types relocate.
-        SignatureTypeCode code;
+        CorElementType code;
         switch (type.Category)
         {
-            case Cts.TypeFlags.Void: code = SignatureTypeCode.Void; break;
-            case Cts.TypeFlags.Boolean: code = SignatureTypeCode.Boolean; break;
-            case Cts.TypeFlags.Char: code = SignatureTypeCode.Char; break;
-            case Cts.TypeFlags.SByte: code = SignatureTypeCode.SByte; break;
-            case Cts.TypeFlags.Byte: code = SignatureTypeCode.Byte; break;
-            case Cts.TypeFlags.Int16: code = SignatureTypeCode.Int16; break;
-            case Cts.TypeFlags.UInt16: code = SignatureTypeCode.UInt16; break;
-            case Cts.TypeFlags.Int32: code = SignatureTypeCode.Int32; break;
-            case Cts.TypeFlags.UInt32: code = SignatureTypeCode.UInt32; break;
-            case Cts.TypeFlags.Int64: code = SignatureTypeCode.Int64; break;
-            case Cts.TypeFlags.UInt64: code = SignatureTypeCode.UInt64; break;
-            case Cts.TypeFlags.Single: code = SignatureTypeCode.Single; break;
-            case Cts.TypeFlags.Double: code = SignatureTypeCode.Double; break;
-            case Cts.TypeFlags.IntPtr: code = SignatureTypeCode.IntPtr; break;
-            case Cts.TypeFlags.UIntPtr: code = SignatureTypeCode.UIntPtr; break;
+            case Cts.TypeFlags.Void: code = CorElementType.ELEMENT_TYPE_VOID; break;
+            case Cts.TypeFlags.Boolean: code = CorElementType.ELEMENT_TYPE_BOOLEAN; break;
+            case Cts.TypeFlags.Char: code = CorElementType.ELEMENT_TYPE_CHAR; break;
+            case Cts.TypeFlags.SByte: code = CorElementType.ELEMENT_TYPE_I1; break;
+            case Cts.TypeFlags.Byte: code = CorElementType.ELEMENT_TYPE_U1; break;
+            case Cts.TypeFlags.Int16: code = CorElementType.ELEMENT_TYPE_I2; break;
+            case Cts.TypeFlags.UInt16: code = CorElementType.ELEMENT_TYPE_U2; break;
+            case Cts.TypeFlags.Int32: code = CorElementType.ELEMENT_TYPE_I4; break;
+            case Cts.TypeFlags.UInt32: code = CorElementType.ELEMENT_TYPE_U4; break;
+            case Cts.TypeFlags.Int64: code = CorElementType.ELEMENT_TYPE_I8; break;
+            case Cts.TypeFlags.UInt64: code = CorElementType.ELEMENT_TYPE_U8; break;
+            case Cts.TypeFlags.Single: code = CorElementType.ELEMENT_TYPE_R4; break;
+            case Cts.TypeFlags.Double: code = CorElementType.ELEMENT_TYPE_R8; break;
+            case Cts.TypeFlags.IntPtr: code = CorElementType.ELEMENT_TYPE_I; break;
+            case Cts.TypeFlags.UIntPtr: code = CorElementType.ELEMENT_TYPE_U; break;
             case Cts.TypeFlags.SzArray:
             case Cts.TypeFlags.Array:
             case Cts.TypeFlags.ByRef:
             case Cts.TypeFlags.Pointer:
                 code = type.Category switch
                 {
-                    Cts.TypeFlags.SzArray => SignatureTypeCode.SZArray,
-                    Cts.TypeFlags.Array => SignatureTypeCode.Array,
-                    Cts.TypeFlags.ByRef => SignatureTypeCode.ByReference,
-                    _ => SignatureTypeCode.Pointer,
+                    Cts.TypeFlags.SzArray => CorElementType.ELEMENT_TYPE_SZARRAY,
+                    Cts.TypeFlags.Array => CorElementType.ELEMENT_TYPE_ARRAY,
+                    Cts.TypeFlags.ByRef => CorElementType.ELEMENT_TYPE_BYREF,
+                    _ => CorElementType.ELEMENT_TYPE_PTR,
                 };
                 blob.WriteByte((byte)code);
                 WriteTypeSignature(blob, ((Cts.ParameterizedType)type).ParameterType);
@@ -80,31 +81,31 @@ internal partial class Transform<TPolicy>
                 }
                 return;
             case Cts.TypeFlags.FunctionPointer:
-                blob.WriteByte((byte)SignatureTypeCode.FunctionPointer);
+                blob.WriteByte((byte)CorElementType.ELEMENT_TYPE_FNPTR);
                 WriteMethodSignature(blob, ((Cts.FunctionPointerType)type).Signature);
                 return;
             case Cts.TypeFlags.SignatureTypeVariable:
             case Cts.TypeFlags.SignatureMethodVariable:
                 blob.WriteByte((byte)(type.Category == Cts.TypeFlags.SignatureTypeVariable
-                    ? SignatureTypeCode.GenericTypeParameter : SignatureTypeCode.GenericMethodParameter));
+                    ? CorElementType.ELEMENT_TYPE_VAR : CorElementType.ELEMENT_TYPE_MVAR));
                 blob.WriteCompressedInteger(((Cts.SignatureVariable)type).Index);
                 return;
             case Cts.TypeFlags.GenericParameter:
                 Cts.GenericParameterDesc parameter = (Cts.GenericParameterDesc)type;
                 blob.WriteByte((byte)(parameter.Kind == Cts.GenericParameterKind.Type
-                    ? SignatureTypeCode.GenericTypeParameter : SignatureTypeCode.GenericMethodParameter));
+                    ? CorElementType.ELEMENT_TYPE_VAR : CorElementType.ELEMENT_TYPE_MVAR));
                 blob.WriteCompressedInteger(parameter.Index);
                 return;
             default:
                 if (type.IsString)
-                    code = SignatureTypeCode.String;
+                    code = CorElementType.ELEMENT_TYPE_STRING;
                 else if (type.IsObject)
-                    code = SignatureTypeCode.Object;
+                    code = CorElementType.ELEMENT_TYPE_OBJECT;
                 else if (type.IsTypedReference)
-                    code = SignatureTypeCode.TypedReference;
+                    code = CorElementType.ELEMENT_TYPE_TYPEDBYREF;
                 else if (type.HasInstantiation && !type.IsGenericDefinition)
                 {
-                    blob.WriteByte((byte)SignatureTypeCode.GenericTypeInstance);
+                    blob.WriteByte((byte)CorElementType.ELEMENT_TYPE_GENERICINST);
                     WriteTypeSignature(blob, type.GetTypeDefinition());
                     blob.WriteCompressedInteger(type.Instantiation.Length);
                     foreach (Cts.TypeDesc argument in type.Instantiation)
@@ -113,7 +114,7 @@ internal partial class Transform<TPolicy>
                 }
                 else
                 {
-                    blob.WriteByte((byte)(type.IsValueType ? SignatureTypeCode.ValueType : SignatureTypeCode.Class));
+                    blob.WriteByte((byte)(type.IsValueType ? CorElementType.ELEMENT_TYPE_VALUETYPE : CorElementType.ELEMENT_TYPE_CLASS));
                     blob.WriteType(HandleType(type));
                     return;
                 }

@@ -61,11 +61,11 @@ namespace System.Reflection.Runtime.General
 #endif
         }
 
-        internal Type GetModifiedType(Type unmodifiedType)
+        internal Type GetModifiedType(Type unmodifiedType, TypeContext typeContext)
         {
             return Reader is null
                 ? ModifiedType.Create(unmodifiedType)
-                : ModifiedType.Create(unmodifiedType, _signature);
+                : ModifiedType.Create(unmodifiedType, _signature, typeContext);
         }
     }
 }

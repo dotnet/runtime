@@ -3,7 +3,12 @@
 
 namespace System.Reflection
 {
-    internal enum CorElementType : byte
+#if NATIVEAOT || !SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    enum CorElementType : byte
     {
         ELEMENT_TYPE_END = 0x00,
         ELEMENT_TYPE_VOID = 0x01,

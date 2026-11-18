@@ -30,6 +30,12 @@
       <Link>Common\Internal\VersionResilientHashCode.cs</Link>
     </Compile>
     <Compile Include="$(CommonSourcePath)Internal\LowLevelLinq\LowLevelEnumerable.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Reflection\CorElementType.cs">
+      <Link>Common\System\Reflection\CorElementType.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Reflection\MdSigCallingConvention.cs">
+      <Link>Common\System\Reflection\MdSigCallingConvention.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />

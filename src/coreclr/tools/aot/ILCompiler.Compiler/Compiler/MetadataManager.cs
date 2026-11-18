@@ -33,7 +33,7 @@ using TypeReference = Internal.Metadata.NativeFormat.Writer.TypeReference;
 using Field = Internal.Metadata.NativeFormat.Writer.Field;
 using TypeSpecification = Internal.Metadata.NativeFormat.Writer.TypeSpecification;
 using ConstantStringValue = Internal.Metadata.NativeFormat.Writer.ConstantStringValue;
-using SignatureTypeCode = Internal.Metadata.NativeFormat.SignatureTypeCode;
+using CorElementType = System.Reflection.CorElementType;
 using ConstantStringArray = Internal.Metadata.NativeFormat.Writer.ConstantStringArray;
 
 namespace ILCompiler
@@ -957,14 +957,14 @@ namespace ILCompiler
                 }
 
                 TypeSpecification specification = new TypeSpecification();
-                specification.Blob.WriteByte((byte)SignatureTypeCode.GenericTypeInstance);
+                specification.Blob.WriteByte((byte)CorElementType.ELEMENT_TYPE_GENERICINST);
                 specification.Blob.WriteByte((byte)(owningTypeToGenerateMetadataFor.IsValueType
-                    ? SignatureTypeCode.ValueType : SignatureTypeCode.Class));
+                    ? CorElementType.ELEMENT_TYPE_VALUETYPE : CorElementType.ELEMENT_TYPE_CLASS));
                 specification.Blob.WriteType(owningType);
                 specification.Blob.WriteCompressedInteger(genericArgs.Count);
                 foreach (MetadataRecord argument in genericArgs)
                 {
-                    specification.Blob.WriteByte((byte)SignatureTypeCode.Class);
+                    specification.Blob.WriteByte((byte)CorElementType.ELEMENT_TYPE_CLASS);
                     specification.Blob.WriteType(argument);
                 }
                 owningType = specification;
