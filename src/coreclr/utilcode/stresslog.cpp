@@ -152,6 +152,32 @@ void StressLog::Leave(CRITSEC_COOKIE) {
     DecCantAllocCount();
 }
 
+namespace
+{
+    struct StressLogLockHolderTraits final
+    {
+        using Type = CRITSEC_COOKIE;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type cookie) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+            if (cookie != NULL)
+                StressLog::Leave(cookie);
+        }
+    };
+
+    using StressLogLockHolder = LifetimeHolder<StressLogLockHolderTraits>;
+
+    StressLogLockHolder TakeStressLogLock()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        CRITSEC_COOKIE cookie = StressLog::theLog.lock;
+        if (cookie != NULL)
+            StressLog::Enter(cookie);
+        return StressLogLockHolder(cookie);
+    }
+}
+
 void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
 {
     // if the string "{pid}" occurs in the logFilename,
@@ -403,9 +429,10 @@ void StressLog::Terminate(BOOL fProcessDetach) {
 
     theLog.facilitiesToLog = 0;
 
-    StressLogLockHolder lockh(theLog.lock, FALSE);
+    StressLogLockHolder lockh;
     if (!fProcessDetach) {
-        lockh.Acquire(); lockh.Release();       // The Enter() Leave() forces a memory barrier on weak memory model systems
+        lockh = TakeStressLogLock();
+        lockh.Free();            // The Enter() Leave() forces a memory barrier on weak memory model systems
                                 // we want all the other threads to notice that facilitiesToLog is now zero
 
                 // This is not strictly threadsafe, since there is no way of ensuring when all the
@@ -413,7 +440,7 @@ void StressLog::Terminate(BOOL fProcessDetach) {
                 // and there are no blocking operations in logMsg, simply sleeping will ensure
                 // that everyone gets out.
         minipal_sleep(2);
-        lockh.Acquire();
+        lockh = TakeStressLogLock();
     }
 
     // Free the log memory
@@ -426,7 +453,7 @@ void StressLog::Terminate(BOOL fProcessDetach) {
     }
 
     if (!fProcessDetach) {
-        lockh.Release();
+        lockh.Free();
     }
 
 #if !defined (STRESS_LOG_READONLY) && defined(HOST_WINDOWS)
@@ -480,7 +507,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         return NULL;
     }
 
-    StressLogLockHolder lockh(theLog.lock, FALSE);
+    StressLogLockHolder lockh;
 
     class NestedCaller
     {
@@ -507,7 +534,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         // Acquiring the lack can throw an OOM exception the first time its called on a thread. We go
         // ahead and try to provoke that now, before we've altered the list of available stress logs, and bail if
         // we fail.
-        lockh.Acquire();
+        lockh = TakeStressLogLock();
         nested.Mark();
 
         // ClrFlsSetValue can throw an OOM exception the first time its called on a thread for a given slot. We go

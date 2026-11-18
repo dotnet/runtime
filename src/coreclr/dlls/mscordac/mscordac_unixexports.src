@@ -23,12 +23,9 @@ nativeStringResourceTable_mscorrc
 #PAL_CatchHardwareExceptionHolderEnter
 #PAL_CatchHardwareExceptionHolderExit
 #PAL_CopyModuleData
-#PAL_GetLogicalCpuCountFromOS
-#PAL_GetTotalCpuCount
 #PAL_GetApplicationGroupId
 #PAL_GetTransportName
 #PAL_GetCurrentThread
-#PAL_GetCpuLimit
 #PAL_GetPalHostModule
 #PAL_GetSymbolModuleBase
 #PAL_GetTransportPipeName
@@ -47,7 +44,6 @@ nativeStringResourceTable_mscorrc
 #DebugBreak
 #DuplicateHandle
 #FlushInstructionCache
-#FormatMessageW
 #FreeLibrary
 #GetCurrentProcess
 #GetCurrentProcessId

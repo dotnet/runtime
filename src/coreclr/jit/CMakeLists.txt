@@ -697,8 +697,6 @@ function(add_jit jitName)
         link_natvis_sources_for_target(${jitName} PRIVATE clrjit.natvis)
     endif()
 
-    target_compile_definitions(${jitName} PRIVATE JIT_STANDALONE_BUILD)
-
     # add the install targets
     if (${jitName} MATCHES "clrjit_universal_wasm")
         install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT alljits)

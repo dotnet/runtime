@@ -454,15 +454,35 @@ OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
     return throwable;
 }
 
-
-// This is used by a holder in CreateTypeInitializationExceptionObject to
-// reset the state as appropriate.
-void ResetTypeInitializationExceptionState(BOOL isAlreadyCreating)
+class TypeInitializationExceptionStateHolder final
 {
-    LIMITED_METHOD_CONTRACT;
-    if (!isAlreadyCreating)
-        GetThread()->ResetIsCreatingTypeInitException();
-}
+    Thread* const m_pThread;
+    const BOOL m_wasAlreadyCreating;
+
+public:
+    explicit TypeInitializationExceptionStateHolder(Thread* pThread)
+        : m_pThread(pThread)
+        , m_wasAlreadyCreating(pThread->IsCreatingTypeInitException())
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+    TypeInitializationExceptionStateHolder(const TypeInitializationExceptionStateHolder&) = delete;
+    TypeInitializationExceptionStateHolder& operator=(const TypeInitializationExceptionStateHolder&) = delete;
+
+    ~TypeInitializationExceptionStateHolder() noexcept
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (!m_wasAlreadyCreating)
+            m_pThread->ResetIsCreatingTypeInitException();
+    }
+
+    BOOL WasAlreadyCreating() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_wasAlreadyCreating;
+    }
+};
 
 void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
                                              OBJECTREF *pInnerException,
@@ -486,14 +506,13 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
 
     // This will make sure to put the thread back to its original state if something
     // throws out of this function (like an OOM exception or something)
-    Holder<BOOL, DoNothing<BOOL>, ResetTypeInitializationExceptionState, FALSE, NoNull<BOOL>>
-        isAlreadyCreating(pThread->IsCreatingTypeInitException());
+    TypeInitializationExceptionStateHolder stateHolder(pThread);
 
     // If we are already in the midst of creating a TypeInitializationException object,
     // and we get here, it means there was an exception thrown while initializing the
     // TypeInitializationException type itself, or one of the types used by its class
     // constructor. In this case, we fall back to using the inner exception directly.
-    if (isAlreadyCreating.GetValue())
+    if (stateHolder.WasAlreadyCreating())
     {
         // If we ever hit one of these asserts, then it is bad
         // because we do not know what exception to return then.
@@ -531,7 +550,7 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
         // If calling the constructor fails, then we'll call ourselves again, and this time
         // through we will try and create an EEException object. If that fails, then the
         // else block of this will be executed.
-        if (!isAlreadyCreating.GetValue()) {
+        if (!stateHolder.WasAlreadyCreating()) {
             CreateTypeInitializationExceptionObject(pTypeThatFailed, pInnerException, pInitException, pThrowable);
         }
 
