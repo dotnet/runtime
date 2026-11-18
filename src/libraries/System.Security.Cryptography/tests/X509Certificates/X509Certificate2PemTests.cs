@@ -317,6 +317,59 @@ MII
             AssertExtensions.SequenceEqual(cert.SerialNumberBytes.Span, reLoaded.SerialNumberBytes.Span);
         }
 
+        [Fact]
+        public static void CreateFromPem_ECDsa_ECPrivateKey_KeyMismatch_Fail()
+        {
+            using ECDsa otherKey = ECDsa.Create();
+            otherKey.ImportFromPem(TestData.EcDhPkcs8Key);
+
+            CryptographicException ce = AssertExtensions.Throws<CryptographicException>(() =>
+                X509Certificate2.CreateFromPem(TestData.ECDsaCertificate, otherKey.ExportECPrivateKeyPem()));
+
+            Assert.IsType<ArgumentException>(ce.InnerException);
+        }
+
+        [Fact]
+        public static void CreateFromPem_ECDsa_Pkcs8_KeyMismatch_Fail()
+        {
+            CryptographicException ce = AssertExtensions.Throws<CryptographicException>(() =>
+                X509Certificate2.CreateFromPem(TestData.ECDsaCertificate, TestData.EcDhPkcs8Key));
+
+            Assert.IsType<ArgumentException>(ce.InnerException);
+        }
+
+        [Fact]
+        public static void CreateFromEncryptedPem_ECDsa_KeyMismatch_Fail()
+        {
+            using ECDsa otherKey = ECDsa.Create();
+            otherKey.ImportFromPem(TestData.EcDhPkcs8Key);
+            PbeParameters pbe = new(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA1, 32);
+            string otherKeyPem = otherKey.ExportEncryptedPkcs8PrivateKeyPem("test", pbe);
+
+            CryptographicException ce = AssertExtensions.Throws<CryptographicException>(() =>
+                X509Certificate2.CreateFromEncryptedPem(TestData.ECDsaCertificate, otherKeyPem, "test"));
+
+            Assert.IsType<ArgumentException>(ce.InnerException);
+        }
+
+        [Fact]
+        public static void CreateFromPem_ECDH_Pkcs8_KeyMismatch_Fail()
+        {
+            CryptographicException ce = AssertExtensions.Throws<CryptographicException>(() =>
+                X509Certificate2.CreateFromPem(TestData.EcDhCertificate, TestData.ECDsaPkcs8Key));
+
+            Assert.IsType<ArgumentException>(ce.InnerException);
+        }
+
+        [Fact]
+        public static void CreateFromEncryptedPem_ECDH_KeyMismatch_Fail()
+        {
+            CryptographicException ce = AssertExtensions.Throws<CryptographicException>(() =>
+                X509Certificate2.CreateFromEncryptedPem(TestData.EcDhCertificate, TestData.ECDsaEncryptedPkcs8Key, "test"));
+
+            Assert.IsType<ArgumentException>(ce.InnerException);
+        }
+
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         public static void CreateFromPem_MLKem_Pkcs8_Success()
         {
