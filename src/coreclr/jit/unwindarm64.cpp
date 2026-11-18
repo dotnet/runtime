@@ -1156,8 +1156,8 @@ void DumpUnwindInfo(Compiler*         comp,
             b3 = *pUnwindCode++;
             i += 2;
 
-            x = (DWORD)(b2 & 0x1F);
-            z = (DWORD)(b3 & 0x3F);
+            x               = (DWORD)(b2 & 0x1F);
+            z               = (DWORD)(b3 & 0x3F);
             regNumber first = (b2 & 0x40) ? (regNumber)(REG_V8 + x) : (regNumber)(REG_R19 + x);
             printf("    %02X %02X %02X    save_regp_rev%s X#%u Z#%u; stp %s, %s, [sp, #%s%u]%s\n", b1, b2, b3,
                    (b2 & 0x80) ? "_x" : "", x, z, getRegName(REG_NEXT(first)), getRegName(first),

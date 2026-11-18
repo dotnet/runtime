@@ -10195,10 +10195,10 @@ public:
 #if defined(TARGET_ARM64)
     void unwindSaveRegPairReversed(regNumber reg, int z, bool preindexed); // stp reg + 1, reg
 #endif
-    void unwindSaveNext();                                                        // unwind code: save_next
-    void unwindPacSignLR();                                                       // unwind code: pac_sign_lr
-    void unwindReturn(regNumber reg);                                             // ret lr
-#endif                                                                            // defined(TARGET_ARM64)
+    void unwindSaveNext();            // unwind code: save_next
+    void unwindPacSignLR();           // unwind code: pac_sign_lr
+    void unwindReturn(regNumber reg); // ret lr
+#endif                                // defined(TARGET_ARM64)
 
 #if defined(TARGET_LOONGARCH64)
     void unwindNop();
