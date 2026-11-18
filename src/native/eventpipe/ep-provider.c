@@ -28,7 +28,7 @@ provider_normalize_event_keywords (uint64_t keywords);
 
 static
 void
-provider_free_event_table (EventPipeProvider *provider);
+provider_reset_event_table (EventPipeProvider *provider);
 
 static
 const EventPipeProviderCallbackData *
@@ -80,13 +80,15 @@ static
 uint64_t
 provider_normalize_event_keywords (uint64_t keywords)
 {
-	// EventSources reserve bits 44-47; -1 still means all keywords.
+	// EventSources always set reserved bits 44-47. Strip them so events with no
+	// other keywords are enabled even when the session's keyword mask is zero.
+	// UINT64_MAX still means all keywords.
 	return keywords == UINT64_MAX ? keywords : keywords & ~UINT64_C (0xF00000000000);
 }
 
 static
 void
-provider_free_event_table (EventPipeProvider *provider)
+provider_reset_event_table (EventPipeProvider *provider)
 {
 	if (provider->event_table != NULL) {
 		for (uint32_t i = 0; i < provider->event_table->events_len; ++i)
@@ -287,7 +289,7 @@ ep_provider_free (EventPipeProvider * provider)
 		EP_LOCK_ENTER (section1)
 			dn_list_custom_free (provider->event_list, event_free_func);
 			provider->event_list = NULL;
-			provider_free_event_table (provider);
+			provider_reset_event_table (provider);
 		EP_LOCK_EXIT (section1)
 	}
 
@@ -565,7 +567,7 @@ provider_free (EventPipeProvider * provider)
 	ep_requires_lock_held ();
 
 	dn_list_custom_free (provider->event_list, event_free_func);
-	provider_free_event_table (provider);
+	provider_reset_event_table (provider);
 
 	ep_rt_wait_event_free (&provider->callbacks_complete_event);
 	ep_rt_utf16_string_free (provider->provider_name_utf16);

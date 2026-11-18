@@ -180,7 +180,7 @@ test_static_event_table (void)
 		test_location = 31;
 		ep_raise_error_if_nok (publication_observed && publication_valid);
 		test_location = 32;
-		ep_raise_error_if_nok (ep_rt_volatile_load_int64_t (ep_event_get_enabled_mask_cref (&events [0])) == (int64_t)mask0);
+		ep_raise_error_if_nok (ep_event_get_enabled_mask (&events [0]) == (int64_t)mask0);
 		ep_raise_error_if_nok (!ep_event_is_enabled (&events [1]));
 		test_location = 33;
 		ep_raise_error_if_nok (publication_disabled_stores != 0);
@@ -226,7 +226,7 @@ test_static_event_table (void)
 		ep_raise_error_if_nok (ep_event_is_enabled (&events [0]) == ep_event_is_enabled (dynamic_event));
 		ep_raise_error_if_nok (ep_event_is_enabled (&events [1]));
 		test_location = 8;
-		ep_raise_error_if_nok ((ep_rt_volatile_load_int64_t (ep_event_get_metadata_written_mask_cref (&events [0])) & mask0) == 0);
+		ep_raise_error_if_nok (!ep_event_was_metadata_written (&events [0], mask0));
 
 		test_location = 9;
 		// Model an old writer completing its metadata update after disable cleared the bit.

@@ -80,6 +80,14 @@ EP_DEFINE_GETTER(EventPipeEvent *, event, bool, need_stack)
 
 static
 inline
+int64_t
+ep_event_get_enabled_mask (const EventPipeEvent *ep_event)
+{
+	return ep_rt_volatile_load_int64_t (ep_event_get_enabled_mask_cref (ep_event));
+}
+
+static
+inline
 void
 ep_event_set_enabled_mask (
 	EventPipeEvent *ep_event,
@@ -93,7 +101,7 @@ inline
 bool
 ep_event_is_enabled (const EventPipeEvent *ep_event)
 {
-	return (ep_rt_volatile_load_int64_t (ep_event_get_enabled_mask_cref (ep_event)) != 0);
+	return ep_event_get_enabled_mask (ep_event) != 0;
 }
 
 static
@@ -103,7 +111,7 @@ ep_event_is_enabled_by_mask (
 	const EventPipeEvent *ep_event,
 	uint64_t session_mask)
 {
-	if ((ep_rt_volatile_load_int64_t (ep_event_get_enabled_mask_cref (ep_event)) & session_mask) == 0)
+	if ((ep_event_get_enabled_mask (ep_event) & session_mask) == 0)
 		return false;
 	EP_ASSERT (ep_event_get_provider (ep_event) != NULL);
 	return ep_provider_is_enabled_by_mask (ep_event_get_provider (ep_event), session_mask);

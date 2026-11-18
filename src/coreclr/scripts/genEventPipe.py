@@ -190,7 +190,7 @@ def generateClrEventPipeWriteEventsImpl(
     else:
         callbackExpr = eventPipeCallbackCastExpr + "(" + callbackName + ")"
     eventDefinitions = []
-    for eventNode in eventNodes:
+    for eventNode in includedEvents:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
         eventKeywords = eventNode.getAttribute('keywords')
@@ -200,9 +200,6 @@ def generateClrEventPipeWriteEventsImpl(
         eventLevel = eventNode.getAttribute('level')
         eventLevel = eventLevel.replace("win:", "EP_EVENT_LEVEL_").upper()
         taskName = eventNode.getAttribute('task')
-
-        if not includeEvent(inclusionList, providerName, eventName):
-            continue
 
         if not 0 <= int(eventVersion) <= 255:
             raise ValueError("Event version for %s must fit in uint8_t: %s" % (eventName, eventVersion))
