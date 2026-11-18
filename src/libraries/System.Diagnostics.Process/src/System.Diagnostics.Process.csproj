@@ -335,6 +335,7 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux'">
     <Compile Include="System\Diagnostics\Process.Linux.cs" />
+    <Compile Include="System\Diagnostics\ProcessInfo.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Linux.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadDir.cs"

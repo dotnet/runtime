@@ -186,6 +186,27 @@ namespace System.Diagnostics
             }
         }
 
+        partial void EnsureThreadsPopulated(ProcessInfo processInfo)
+        {
+            lock (processInfo)
+            {
+                if (!processInfo.ThreadsPopulated)
+                {
+                    // Skip reading the threads of a process that is already known to have exited, as its PID may have been
+                    // recycled. This only detects an exit that has already been observed (such as for a child process),
+                    // so it is just a cheap shortcut: PopulateThreads validates the identity of the process (its PID and
+                    // start time) itself, which is what guards against reading the threads of a different process.
+                    // Without a wait state holder no exit can have been observed, so don't allocate one just for this check.
+                    if (_haveProcessId && (_waitStateHolder == null || !GetHasExited(refresh: false)))
+                    {
+                        ProcessManager.PopulateThreads(processInfo.ProcPid, processInfo);
+                    }
+
+                    processInfo.ThreadsPopulated = true;
+                }
+            }
+        }
+
         /// <summary>
         /// Gets or sets which processors the threads in this process can be scheduled to run on.
         /// </summary>

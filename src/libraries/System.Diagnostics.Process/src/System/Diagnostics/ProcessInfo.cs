@@ -11,7 +11,7 @@ namespace System.Diagnostics
     /// structure from the process component is so that we can throw it away all at once
     /// when Refresh is called on the component.
     /// </summary>
-    internal sealed class ProcessInfo
+    internal sealed partial class ProcessInfo
     {
         internal readonly List<ThreadInfo> _threadInfoList;
         internal int BasePriority { get; set; }
