@@ -180,6 +180,12 @@ namespace System.Text.Json.Reflection
 
             if (baseTypeDefinition.IsInterface)
             {
+#if NET12_0_OR_GREATER
+                foreach (Type iface in type.GetInterfacesWithSameMetadataDefinitionAs(baseTypeDefinition))
+                {
+                    yield return iface;
+                }
+#else
                 foreach (Type iface in type.GetInterfaces())
                 {
                     if (iface.IsGenericType && iface.GetGenericTypeDefinition() == baseTypeDefinition)
@@ -187,6 +193,7 @@ namespace System.Text.Json.Reflection
                         yield return iface;
                     }
                 }
+#endif
 
                 // Note: do NOT yield break here. Type.GetInterfaces() does not include `type`
                 // itself, so when `type` IS the interface we're looking for, the fall-through
