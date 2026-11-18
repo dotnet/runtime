@@ -55,6 +55,18 @@ struct user_vfpregs_struct
 } __attribute__((__packed__));
 #endif
 
+#if defined(__aarch64__) && defined(__linux__)
+// Matches struct user_pac_mask in Linux's arch/arm64/include/uapi/asm/ptrace.h.
+// Defined locally because user_pac_mask was only added to the kernel UAPI headers in
+// Linux 5.0 and the build sysroot's headers may predate it (see the NT_ARM_PAC_MASK
+// fallback in createdump.h). The layout is part of the stable kernel ABI.
+struct UserPacMask
+{
+    uint64_t data_mask;
+    uint64_t insn_mask;
+};
+#endif
+
 #if defined(__loongarch64)
 #define user_fpregs_struct lasx_context
 #endif
@@ -68,6 +80,10 @@ private:
     pid_t m_tid;                                // thread id
     pid_t m_ppid;                               // parent process
     pid_t m_tgid;                               // thread group
+#if defined(__aarch64__) && defined(__linux__)
+    UserPacMask m_pacMask = {};
+    bool m_hasPacMask = false;
+#endif
     bool m_managed;                             // if true, thread has managed code running
     uint64_t m_exceptionObject;                 // exception object address
     std::string m_exceptionType;                // exception type
@@ -116,6 +132,11 @@ public:
     inline pid_t Tid() const { return m_tid; }
     inline pid_t Ppid() const { return m_ppid; }
     inline pid_t Tgid() const { return m_tgid; }
+
+#if defined(__aarch64__) && defined(__linux__)
+    inline bool HasPacMask() const { return m_hasPacMask; }
+    inline const UserPacMask* GetPacMask() const { return &m_pacMask; }
+#endif
 
     inline bool IsManaged() const { return m_managed; }
     inline uint64_t ManagedExceptionObject() const { return m_exceptionObject; }
