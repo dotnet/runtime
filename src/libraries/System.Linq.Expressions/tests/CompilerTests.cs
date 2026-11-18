@@ -517,10 +517,15 @@ namespace System.Linq.Expressions.Tests
                 Assert.Equal(2, instanceCall.Compile(preferInterpretation: true)("abcd", 'c'));
 
                 List<long> list = new List<long>();
-                Expression<Action<List<long>, long>> voidCall = (l, v) => l.Add(v);
+                Expression<Action<object, long>> voidCall = (l, v) => AddToList(l, v);
                 voidCall.Compile(preferInterpretation: true)(list, 42L);
                 Assert.Equal(42L, Assert.Single(list));
             }, options);
+        }
+
+        private static void AddToList(object list, long value)
+        {
+            ((List<long>)list).Add(value);
         }
     }
 
