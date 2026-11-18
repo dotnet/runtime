@@ -51,6 +51,10 @@ static const instruction INS_I_gt_u  = INS_i32_gt_u;
 void CodeGen::ensureCurrentFuncIsUnwindable()
 {
     FuncInfoDsc* const func = m_compiler->funCurrentFunc();
+
+    // The main method's frame header must have been allocated by fgWasmVirtualIP.
+    // If this fires, fgWasmMayEmitCall is missing a case.
+    assert(func->IsFunclet() || (m_compiler->lvaWasmVirtualIP != BAD_VAR_NUM));
     func->ensureUnwindableFrame(m_compiler);
 }
 
