@@ -107,6 +107,7 @@ internal sealed partial class GrammarActions
         if (context.Value switch
         {
             MemberOwnerValue { Member: TokenMemberReferenceValue token } => token.Token,
+            MemberOwnerValue { Member: MethodMemberReferenceValue { Method: TokenMethodReferenceValue token } } => token.Token,
             TypeOwnerValue { Type: ClassTypeSpecificationValue { ClassName: TokenClassNameValue token } } => token.Token,
             _ => (int?)null
         } is int rawToken)
@@ -121,6 +122,13 @@ internal sealed partial class GrammarActions
 
     private static void WriteInstructionToken(CurrentMethodContext method, EntityRegistry.EntityBase entity)
     {
+        if (entity is EntityRegistry.LiteralTokenEntity literal)
+        {
+            // IL operands can contain arbitrary values that are not valid metadata handles.
+            method.Definition.MethodBody.Token(literal.Token);
+            return;
+        }
+
         entity.RecordBlobToWriteResolvedToken(
             method.Definition.MethodBody.CodeBuilder.ReserveBytes(sizeof(int)));
     }

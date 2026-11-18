@@ -1074,6 +1074,7 @@ namespace Microsoft.DotNet.ILAssembler
         {
             private readonly List<TypeReferenceEntity>? _typeReferences;
             private readonly IReadOnlyList<EntityBase>? _typeSpecifications;
+            private Dictionary<BlobBuilder, BlobBuilder>? _rewrittenSignatures;
 
             public SignatureRewriter() { }
 
@@ -1082,6 +1083,18 @@ namespace Microsoft.DotNet.ILAssembler
                 _typeReferences = typeReferences;
                 _typeSpecifications = typeSpecifications;
             }
+
+            public BlobBuilder RewriteForComparison(BlobBuilder signature)
+            {
+                _rewrittenSignatures ??= new(new BlobBuilderContentEqualityComparer());
+                if (!_rewrittenSignatures.TryGetValue(signature, out BlobBuilder? rewritten))
+                {
+                    rewritten = RewriteSignatureBlob(signature, this);
+                    _rewrittenSignatures.Add(signature, rewritten);
+                }
+                return rewritten;
+            }
+
             public readonly struct BlobOrHandle
             {
                 public BlobOrHandle(BlobBuilder? blob)
@@ -1578,7 +1591,7 @@ namespace Microsoft.DotNet.ILAssembler
             Dictionary<(EntityHandle Parent, StringHandle Name, BlobHandle Signature), MemberReferenceHandle> handles = new();
             foreach (MemberReferenceEntity memberRef in _memberReferences)
             {
-                ResolveMemberReference(memberRef);
+                ResolveMemberReference(memberRef, rewriter);
                 if (memberRef.Handle.Kind is HandleKind.MethodDefinition or HandleKind.FieldDefinition)
                 {
                     continue;
@@ -1632,7 +1645,7 @@ namespace Microsoft.DotNet.ILAssembler
             }
         }
 
-        private void ResolveMemberReference(MemberReferenceEntity memberRef)
+        private void ResolveMemberReference(MemberReferenceEntity memberRef, SignatureRewriter rewriter)
         {
             // We need to resolve a MemberReference in a few scenarios:
             // 1. The MemberReference references a local MethodDefinition
@@ -1652,7 +1665,7 @@ namespace Microsoft.DotNet.ILAssembler
             {
                 if (header.CallingConvention == SignatureCallingConvention.VarArgs)
                 {
-                    UpdateMemberRefForVarargSignatures(memberRef, signature);
+                    UpdateMemberRefForVarargSignatures(memberRef, signature, rewriter);
                 }
                 if (TryResolveMethodReference(memberRef))
                 {
@@ -1668,7 +1681,7 @@ namespace Microsoft.DotNet.ILAssembler
             }
         }
 
-        private bool TryResolveMethodReference(MemberReferenceEntity memberRef)
+        private bool TryResolveMethodReference(MemberReferenceEntity memberRef, SignatureRewriter? rewriter = null)
         {
             switch (memberRef.Parent)
             {
@@ -1684,6 +1697,26 @@ namespace Microsoft.DotNet.ILAssembler
                             {
                                 ((IHasHandle)memberRef).SetHandle(method.Handle);
                                 return true;
+                            }
+                        }
+
+                        if (rewriter is not null)
+                        {
+                            // Rewrite only original signatures; compacted TypeSpec indices cannot be rewritten again.
+                            BlobBuilder? rewrittenSignature = null;
+                            foreach (var method in typeDef.Methods)
+                            {
+                                if (method.Name != memberRef.Name)
+                                {
+                                    continue;
+                                }
+
+                                rewrittenSignature ??= rewriter.RewriteForComparison(memberRef.Signature);
+                                if (rewrittenSignature.ContentEquals(rewriter.RewriteForComparison(method.MethodSignature!)))
+                                {
+                                    ((IHasHandle)memberRef).SetHandle(method.Handle);
+                                    return true;
+                                }
                             }
                         }
                     }
@@ -1714,7 +1747,7 @@ namespace Microsoft.DotNet.ILAssembler
             return false;
         }
 
-        private void UpdateMemberRefForVarargSignatures(MemberReferenceEntity memberRef, byte[] signature)
+        private void UpdateMemberRefForVarargSignatures(MemberReferenceEntity memberRef, byte[] signature, SignatureRewriter rewriter)
         {
             var decoder = new SignatureDecoder<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>(new SignatureRewriter(), null!, default);
             BlobBuilder methodDefSig = new();
@@ -1765,7 +1798,7 @@ namespace Microsoft.DotNet.ILAssembler
                 // Native ilasm only creates a MethodDef-parented MemberRef when the fixed
                 // signature resolves to a local method. Recording an unresolved helper
                 // MemberRef would create an unused row and shift every subsequent token.
-                if (TryResolveMethodReference(methodRef))
+                if (TryResolveMethodReference(methodRef, rewriter))
                 {
                     memberRef.SetMemberRefParent(methodRef);
                 }
@@ -1953,6 +1986,13 @@ namespace Microsoft.DotNet.ILAssembler
 
         public abstract class TypeEntity : EntityBase
         {
+        }
+
+        public sealed class LiteralTokenEntity(int token) : EntityBase
+        {
+            public int Token { get; } = token;
+
+            public override EntityHandle Handle => MetadataTokens.EntityHandle(Token);
         }
 
         public interface IHasReflectionNotation

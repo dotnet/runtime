@@ -51,6 +51,80 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         }
 
         [Theory]
+        [InlineData("class Payload", "class [test]Payload")]
+        [InlineData("class [test]Payload", "class Payload")]
+        public void LocalVarargReferences_WithEquivalentFixedSignatures_ReuseMethodDefParent(string definitionType, string equivalentType)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class Payload { }
+                .class Other { }
+                .class Test
+                {
+                    .method public static vararg void VarArg({{definitionType}}) cil managed { ret }
+                    .method public static vararg void VarArg(class Other) cil managed { ret }
+                    .method public static void A() cil managed { ldtoken method vararg void Test::VarArg({{definitionType}}, ..., string) pop ret }
+                    .method public static void B() cil managed { ldtoken method vararg void Test::VarArg({{equivalentType}}, ..., string) pop ret }
+                    .method public static void C() cil managed { ldtoken method vararg void Test::VarArg(class Other, ..., string) pop ret }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            int first = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "A", ILOpcode.ldtoken);
+            int equivalent = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "B", ILOpcode.ldtoken);
+            int distinct = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "C", ILOpcode.ldtoken);
+
+            Assert.Equal(first, equivalent);
+            Assert.NotEqual(first, distinct);
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.MemberRef));
+            Assert.Equal(MetadataTokens.MethodDefinitionHandle(1),
+                reader.GetMemberReference((MemberReferenceHandle)MetadataTokens.EntityHandle(first)).Parent);
+            Assert.Equal(MetadataTokens.MethodDefinitionHandle(2),
+                reader.GetMemberReference((MemberReferenceHandle)MetadataTokens.EntityHandle(distinct)).Parent);
+        }
+
+        [Fact]
+        public void LocalVarargReferences_CompareCompactedTypeSpecificationsOnce()
+        {
+            string source = """
+                .assembly test { }
+                .class Payload { }
+                .class Test
+                {
+                    .method public static void Prepare() cil managed
+                    {
+                        ldtoken class [test]Payload[]
+                        pop
+                        ldtoken class Payload[]
+                        pop
+                        ldtoken int32[]
+                        pop
+                        ret
+                    }
+                    .method public static vararg void VarArg(class Payload, int32 modopt(int32[])) cil managed { ret }
+                    .method public static void A() cil managed { ldtoken method vararg void Test::VarArg(class Payload, int32 modopt(int32[]), ..., string) pop ret }
+                    .method public static void B() cil managed { ldtoken method vararg void Test::VarArg(class [test]Payload, int32 modopt(int32[]), ..., string) pop ret }
+                    .method public static void C() cil managed { ldtoken method vararg void Test::VarArg(class Payload, int32 modopt(class Payload[]), ..., string) pop ret }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            int first = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "A", ILOpcode.ldtoken);
+            int equivalent = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "B", ILOpcode.ldtoken);
+            int distinct = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "C", ILOpcode.ldtoken);
+
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.TypeSpec));
+            Assert.Equal(first, equivalent);
+            Assert.NotEqual(first, distinct);
+            Assert.Equal(MetadataTokens.MethodDefinitionHandle(2),
+                reader.GetMemberReference((MemberReferenceHandle)MetadataTokens.EntityHandle(first)).Parent);
+            Assert.Equal(HandleKind.TypeDefinition,
+                reader.GetMemberReference((MemberReferenceHandle)MetadataTokens.EntityHandle(distinct)).Parent.Kind);
+        }
+
+        [Theory]
         [InlineData("int32[]", "int32[]", "int64[]")]
         [InlineData("!0", "!0", "!1")]
         [InlineData("class [test]Payload[]", "class Payload[]", "class Payload[,]")]
@@ -188,6 +262,10 @@ namespace Microsoft.DotNet.ILAssembler.Tests
                         pop
                         ldtoken mdtoken(0x2B000003)
                         pop
+                        ldtoken method mdtoken(0x2B000003)
+                        pop
+                        ldtoken method mdtoken(0x7F000003)
+                        pop
                         box mdtoken(0x1B000003)
                         pop
                         ldtoken class [test]Payload[]
@@ -201,6 +279,8 @@ namespace Microsoft.DotNet.ILAssembler.Tests
                         ldtoken method void [External]Owner::M<int32>()
                         pop
                         ldtoken method void [External]Owner::M<int64>()
+                        pop
+                        ldtoken method mdtoken(0x2B000003)
                         pop
                         ret
                     }
@@ -218,7 +298,69 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             Assert.Equal(2, reader.GetTableRowCount(TableIndex.MethodSpec));
             Assert.Equal(0x1B000003, tokens[0]);
             Assert.Equal(0x2B000003, tokens[1]);
+            Assert.Equal(0x2B000003, tokens[2]);
+            Assert.Equal(0x7F000003, tokens[3]);
+            Assert.Equal(0x2B000003, tokens[^1]);
             Assert.Equal(0x1B000003, Assert.Single(boxTokens));
+        }
+
+        [Fact]
+        public void NumericMethodTypedefs_PreserveTokensBeforeAndAfterReferencesAreRecorded()
+        {
+            string source = """
+                .assembly extern External { }
+                .assembly test { }
+                .typedef method mdtoken(0x2B000003) as Forward
+                .typedef method mdtoken(0x7F000003) as Invalid
+                .class Producer
+                {
+                    .method public static void References() cil managed
+                    {
+                        ldtoken method void [External]Owner::M<int32>()
+                        pop
+                        ldtoken method void [External]Owner::M<int32>()
+                        pop
+                        ldtoken method void [External]Owner::M<int64>()
+                        pop
+                        ret
+                    }
+                }
+                .typedef method mdtoken(0x2B000003) as Backward
+                .typedef method Forward as Chained
+                .typedef method void [External]Owner::M<int64>() as Symbolic
+                .class Consumer
+                {
+                    .method public static void Caller() cil managed
+                    {
+                        ldtoken method Forward
+                        pop
+                        ldtoken method Backward
+                        pop
+                        ldtoken method Chained
+                        pop
+                        ldtoken method Invalid
+                        pop
+                        ldtoken method Symbolic
+                        pop
+                        call Forward
+                        call Backward
+                        call Invalid
+                        call Symbolic
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            ImmutableArray<int> tokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.ldtoken);
+            ImmutableArray<int> callTokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.call);
+
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.MethodSpec));
+            Assert.Equal(new[] { 0x2B000003, 0x2B000003, 0x2B000003, 0x7F000003, 0x2B000002 }, tokens);
+            Assert.Equal(new[] { 0x2B000003, 0x2B000003, 0x7F000003, 0x2B000002 }, callTokens);
         }
 
         [Fact]
