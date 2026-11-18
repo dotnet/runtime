@@ -5,7 +5,6 @@
 #include <regdisplay.h>
 #include "UnwindHelpers.h"
 #include "unwinder.h"
-#include <alloca.h>
 
 // The unwinder looks up the function entry of the target of a jump out of the frame to tell a tail call from a
 // jump to another part of the same function. Managed code isn't split, so such a jump is always a tail call.
@@ -720,7 +719,7 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs, TADDR frameStart, TADDR frameEnd
 #endif
     uint32_t functionLength = (uint32_t)(frameEnd - frameStart) / lengthUnit;
     uint32_t unwindInfoSize = packed ? 0 : GetUnwindInfoSize(pUnwindInfo);
-    uint32_t* pCopy = (uint32_t*)alloca(unwindInfoSize + 4);
+    uint32_t* pCopy = (uint32_t*)__builtin_alloca(unwindInfoSize + 4);
     memcpy(pCopy, pUnwindInfo, unwindInfoSize);
     pCopy[0] = (pCopy[0] & ~0x3FFFFu) | functionLength;
 #if !defined(TARGET_ARM)
