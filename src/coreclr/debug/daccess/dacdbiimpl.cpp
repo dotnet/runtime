@@ -8,6 +8,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
+#include <minipal/ospagesize.h>
 
 #include "dacdbiinterface.h"
 
@@ -7180,14 +7181,7 @@ HeapData::~HeapData()
 LinearReadCache::LinearReadCache()
     : mCurrPageStart(0), mPageSize(0), mCurrPageSize(0), mPage(0)
 {
-#ifdef HOST_UNIX
-    mPageSize = (DWORD)minipal_getpagesize();
-#else
-    SYSTEM_INFO si;
-	GetSystemInfo(&si);
-
-    mPageSize = si.dwPageSize;
-#endif
+    mPageSize = minipal_getpagesize();
     mPage = new (nothrow) BYTE[mPageSize];
 }
 

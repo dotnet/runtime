@@ -1153,7 +1153,7 @@ ep_rt_thread_sleep (uint64_t ns)
 {
 #ifndef PERFTRACING_DISABLE_THREADS
 	STATIC_CONTRACT_NOTHROW;
-	minipal_sleep (static_cast<uint32_t>(ns / 1000000));
+	minipal_sleep (static_cast<uint32_t>(ns / 1'000'000));
 #endif // PERFTRACING_DISABLE_THREADS
 }
 

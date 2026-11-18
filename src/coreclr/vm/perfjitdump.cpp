@@ -187,7 +187,7 @@ struct PerfJitDumpState
         // returns nanoseconds. If this isn't true,
         // then some other method will need to be used to implement GetTimeStampNS.
         // Validate this is true once in Start here.
-        if (minipal_hires_tick_frequency() != 1000000000)
+        if (minipal_hires_tick_frequency() != 1'000'000'000)
         {
             _ASSERTE(!"minipal_hires_tick_frequency() does not return nanoseconds. Implement JITDUMP GetTimeStampNS directly for this platform.\n");
             FatalError();
