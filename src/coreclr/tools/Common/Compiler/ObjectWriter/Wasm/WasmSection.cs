@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
+using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -57,7 +58,7 @@ namespace ILCompiler.ObjectWriter
     {
         public WasmSectionType Type { get; }
 
-        protected virtual int ContentPrefixSize => 0;
+        internal virtual int ContentPrefixSize => 0;
 
         protected virtual int EncodeContentPrefix(Span<byte> destination) => 0;
 
@@ -118,16 +119,16 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
-    internal abstract class WasmCustomSection : WasmSection
+    internal class WasmCustomSection : WasmSection
     {
-        protected WasmCustomSection(Stream stream, Utf8String customSectionName, int sectionIndex)
+        public WasmCustomSection(Stream stream, Utf8String customSectionName, int sectionIndex)
             : base(WasmSectionType.Custom, stream, customSectionName, sectionIndex)
         {
             Debug.Assert(stream is not null);
             Debug.Assert(!customSectionName.IsNull);
         }
 
-        protected sealed override int ContentPrefixSize => checked(
+        internal sealed override int ContentPrefixSize => checked(
             (int)DwarfHelper.SizeOfULEB128((ulong)SectionName.Length) +
             SectionName.Length +
             CustomPayloadPrefixSize);
@@ -143,6 +144,39 @@ namespace ILCompiler.ObjectWriter
         protected virtual int CustomPayloadPrefixSize => 0;
 
         protected virtual int EncodeCustomPayloadPrefix(Span<byte> destination) => 0;
+    }
+
+    /// <summary>
+    /// A custom section containing relocations for another WebAssembly section.
+    /// </summary>
+    internal sealed class WasmRelocationSection : WasmCustomSection
+    {
+        private readonly int _targetSectionIndex;
+        private readonly int _relocationCount;
+
+        public WasmRelocationSection(
+            Stream stream,
+            Utf8String name,
+            int sectionIndex,
+            int targetSectionIndex,
+            int relocationCount)
+            : base(stream, name, sectionIndex)
+        {
+            Debug.Assert(targetSectionIndex >= 0);
+            Debug.Assert(relocationCount >= 0);
+            _targetSectionIndex = targetSectionIndex;
+            _relocationCount = relocationCount;
+        }
+
+        protected override int CustomPayloadPrefixSize => checked(
+            (int)DwarfHelper.SizeOfULEB128((ulong)_targetSectionIndex) +
+            (int)DwarfHelper.SizeOfULEB128((ulong)_relocationCount));
+
+        protected override int EncodeCustomPayloadPrefix(Span<byte> destination)
+        {
+            int written = DwarfHelper.WriteULEB128(destination, (ulong)_targetSectionIndex); // section: the index of the target section.
+            return written + DwarfHelper.WriteULEB128(destination.Slice(written), (ulong)_relocationCount); // count: count of entries to follow.
+        }
     }
 
     internal sealed class PaddingWasmSection : IWasmSection
@@ -203,7 +237,7 @@ namespace ILCompiler.ObjectWriter
     {
         public int EntryCount { get; protected set; }
 
-        protected override int ContentPrefixSize => (int)DwarfHelper.SizeOfULEB128((ulong)EntryCount);
+        internal override int ContentPrefixSize => (int)DwarfHelper.SizeOfULEB128((ulong)EntryCount);
 
         protected override int EncodeContentPrefix(Span<byte> destination) =>
             DwarfHelper.WriteULEB128(destination, (ulong)EntryCount);
@@ -278,7 +312,6 @@ namespace ILCompiler.ObjectWriter
 
         protected override void WriteEntryCore(SectionWriter writer, WasmImport entry)
         {
-            writer.EmitSymbolDefinition(new Utf8String(entry.Name));
             writer.WriteUtf8WithLength(entry.Module);
             writer.WriteUtf8WithLength(entry.Name);
             writer.WriteByte((byte)entry.Kind);
@@ -342,19 +375,38 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
-    internal sealed class WasmElementSection : WasmSection<ReadOnlyMemory<int>>
+    /// <summary>
+    /// An active <c>funcref</c> element segment targeting table 0, placed by <see cref="OffsetExpr"/>.
+    /// The engine installs it at instantiation.
+    /// </summary>
+    internal readonly struct WasmElementSegment
+    {
+        public ReadOnlyMemory<int> FunctionIndices { get; }
+        public WasmInstructionGroup OffsetExpr { get; }
+
+        public WasmElementSegment(ReadOnlyMemory<int> functionIndices, WasmInstructionGroup offsetExpr)
+        {
+            FunctionIndices = functionIndices;
+            OffsetExpr = offsetExpr;
+        }
+    }
+
+    internal sealed class WasmElementSection : WasmSection<WasmElementSegment>
     {
         public WasmElementSection(Stream stream, Utf8String name, int sectionIndex)
             : base(WasmSectionType.Element, stream, name, sectionIndex)
         {
         }
 
-        protected override void WriteEntryCore(SectionWriter writer, ReadOnlyMemory<int> entry)
+        protected override void WriteEntryCore(SectionWriter writer, WasmElementSegment entry)
         {
-            ReadOnlySpan<int> functionIndices = entry.Span;
+            ReadOnlySpan<int> functionIndices = entry.FunctionIndices.Span;
 
-            writer.WriteByte(1); // Passive element segment
-            writer.WriteByte(0); // element type: ref func
+            // Active element segment, table 0. Flag 0 implies both the table index and the
+            // funcref element type, so no element-type byte follows.
+            writer.WriteByte(0);
+            WriteEncodable(writer, entry.OffsetExpr);
+
             writer.WriteULEB128((ulong)functionIndices.Length);
             foreach (int functionIndex in functionIndices)
             {

@@ -638,6 +638,48 @@ internal static class R2RAssert
     }
 
     /// <summary>
+    /// Returns true if the CrossModuleInlineInfo entry for an inlinee matching <paramref name="inlineeMethodName"/>
+    /// has exactly <paramref name="expectedCount"/> cross-module inliners whose resolved names contain
+    /// <paramref name="inlinerMethodName"/>.
+    /// </summary>
+    public static bool HasCrossModuleInlinerCount(
+        ReadyToRunReader reader,
+        string inlineeMethodName,
+        string inlinerMethodName,
+        int expectedCount,
+        out string diagnostic)
+    {
+        if (!TryGetCrossModuleInliningInfoSection(reader, out var inliningInfo, out diagnostic))
+            return false;
+
+        foreach (var entry in inliningInfo.GetEntries())
+        {
+            string inlineeName = inliningInfo.ResolveMethodName(entry.Inlinee);
+            if (!inlineeName.Contains(inlineeMethodName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var matchingInliners = new List<string>();
+            foreach (var inliner in entry.Inliners)
+            {
+                if (!inliner.IsCrossModule)
+                    continue;
+
+                string inlinerName = inliningInfo.ResolveMethodName(inliner);
+                if (inlinerName.Contains(inlinerMethodName, StringComparison.OrdinalIgnoreCase))
+                    matchingInliners.Add(inlinerName);
+            }
+
+            diagnostic =
+                $"Inlinee '{inlineeName}': expected {expectedCount} cross-module inliner(s) matching '{inlinerMethodName}', " +
+                $"found {matchingInliners.Count}:\n  {string.Join("\n  ", matchingInliners)}";
+            return matchingInliners.Count == expectedCount;
+        }
+
+        diagnostic = $"No CrossModuleInlineInfo entry found for inlinee matching '{inlineeMethodName}'.";
+        return false;
+    }
+
+    /// <summary>
     /// Returns true if any inlining info section (CrossModuleInlineInfo or InliningInfo2) records
     /// that <paramref name="inlinerMethodName"/> inlined <paramref name="inlineeMethodName"/>.
     /// Does not check whether the encoding is cross-module or local.
@@ -897,7 +939,7 @@ internal static class R2RAssert
                 if (kind is not (ReadyToRunFixupKind.ResumptionStubEntryPoint or ReadyToRunFixupKind.StoreMultiCallableAddrOfCode))
                     continue;
 
-                int offset = reader.GetOffset(checked((int)entry.SignatureRVA)) + sizeof(byte);
+                int offset = entry.GetSignatureOffset(reader) + sizeof(byte);
                 uint targetIndex = BinaryPrimitives.ReadUInt32LittleEndian(reader.Image.AsSpan(offset, sizeof(uint)));
 
                 if (kind == ReadyToRunFixupKind.StoreMultiCallableAddrOfCode)
@@ -967,7 +1009,7 @@ internal static class R2RAssert
                 if (entry.Signature?.FixupKind != ReadyToRunFixupKind.InjectStringThunks)
                     continue;
 
-                int offset = reader.GetOffset(checked((int)entry.SignatureRVA)) + sizeof(byte);
+                int offset = entry.GetSignatureOffset(reader) + sizeof(byte);
                 while (reader.Image[offset] != 0)
                 {
                     int terminator = reader.Image.AsSpan(offset).IndexOf((byte)0);

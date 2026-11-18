@@ -59,27 +59,25 @@ const char* JitHost::getStringConfigValue(const char* name)
         return nullptr;
     }
 
-    bool allAscii;
-    DWORD length;
-    HRESULT hr = FString::Unicode_Utf8_Length(allocatedStr, &allAscii, &length);
-    if (FAILED(hr))
+    size_t sourceLength = u16_strlen(allocatedStr) + 1;
+    size_t length = minipal_get_length_utf16_to_utf8((const CHAR16_T*)allocatedStr, sourceLength, 0);
+    if (length == 0)
     {
         CLRConfig::FreeConfigString(allocatedStr);
         return nullptr;
     }
 
-    NewArrayHolder<char> utf8Result = new char[length + 1];
-    hr = FString::Unicode_Utf8(allocatedStr, allAscii, utf8Result, length);
-    utf8Result[length] = '\0';
+    AStringHolder utf8Result(new char[length]);
+    size_t converted = minipal_convert_utf16_to_utf8((const CHAR16_T*)allocatedStr, sourceLength, utf8Result, length, 0);
 
     CLRConfig::FreeConfigString(allocatedStr);
 
-    if (FAILED(hr))
+    if (converted == 0)
     {
         return nullptr;
     }
 
-    return utf8Result.Extract();
+    return utf8Result.Detach();
 }
 
 void JitHost::freeStringConfigValue(const char* value)

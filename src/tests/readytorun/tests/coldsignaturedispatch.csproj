@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestPriority>1</CLRTestPriority>
+    <Optimize>true</Optimize>
+    <!-- Exercises native virtual-dispatch stubs under GC stress. -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
+    <!-- Layout verification would load the signature-only struct before dispatch. -->
+    <CrossGen2TestExtraArguments>--verify-type-and-field-layout:false</CrossGen2TestExtraArguments>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="coldsignaturedispatch.cs" />
+    <ProjectReference Include="signaturedependency.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

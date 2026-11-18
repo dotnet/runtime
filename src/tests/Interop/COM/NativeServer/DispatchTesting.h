@@ -88,6 +88,8 @@ private:
     static const WCHAR * const Names[];
     static const int NamesCount;
 
+    int _propertySetterRegressionTest = 0;
+
 public: // IDispatch
         virtual HRESULT STDMETHODCALLTYPE GetTypeInfoCount(
             /* [out] */ __RPC__out uint32_t *pctinfo)
@@ -187,6 +189,25 @@ public: // IDispatch
             case 8:
             {
                 return Sum_IntArray_SafeArray_Proxy(pDispParams, pVarResult);
+            }
+            case 9:
+            {
+                return ModifyStaticVariantArray_Proxy(pDispParams);
+            }
+            case 10:
+            {
+                return CreateUnrelatedArrayElement_Proxy(pVarResult);
+            }
+            case 11:
+            {
+                return AcceptExpectedArray_Proxy(pDispParams, pVarResult);
+            }
+            case 12:
+            {
+                if ((wFlags & DISPATCH_PROPERTYPUT) != 0)
+                    return PropertySetterRegressionTest_Put_Proxy(pDispParams, pVarResult);
+
+                return PropertySetterRegressionTest_Get_Proxy(pVarResult);
             }
             case 1000:
             {
@@ -319,6 +340,83 @@ public: // IDispatchTesting
         }
 
         *pRetVal = result;
+        return S_OK;
+    }
+
+    virtual HRESULT STDMETHODCALLTYPE ModifyStaticVariantArray(
+        /*[in,out]*/ SAFEARRAY **values)
+    {
+        if (values == nullptr || *values == nullptr)
+            return E_POINTER;
+
+        HRESULT hr;
+        SAFEARRAY *sa = *values;
+
+        VARTYPE type;
+        RETURN_IF_FAILED(::SafeArrayGetVartype(sa, &type));
+        if (type != VT_VARIANT)
+            return E_INVALIDARG;
+
+        LONG lowerBound, upperBound;
+        RETURN_IF_FAILED(::SafeArrayGetLBound(sa, 1, &lowerBound));
+        RETURN_IF_FAILED(::SafeArrayGetUBound(sa, 1, &upperBound));
+        if (upperBound < lowerBound)
+            return E_INVALIDARG;
+
+        VARIANT *elements;
+        RETURN_IF_FAILED(::SafeArrayAccessData(sa, (void**)&elements));
+
+        if (V_VT(&elements[0]) == (VT_BYREF | VT_I4))
+        {
+            *V_I4REF(&elements[0]) = 7;
+        }
+        else
+        {
+            hr = ::VariantClear(&elements[0]);
+            if (SUCCEEDED(hr))
+            {
+                V_VT(&elements[0]) = VT_I4;
+                V_I4(&elements[0]) = 7;
+            }
+        }
+
+        HRESULT unaccessResult = ::SafeArrayUnaccessData(sa);
+        RETURN_IF_FAILED(hr);
+        return unaccessResult;
+    }
+
+    virtual HRESULT STDMETHODCALLTYPE CreateUnrelatedArrayElement(
+        /*[out,retval]*/ VARIANT *pRetVal)
+    {
+        if (pRetVal == nullptr)
+            return E_POINTER;
+
+        V_VT(pRetVal) = VT_UNKNOWN;
+        V_UNKNOWN(pRetVal) = static_cast<IEnumVARIANT *>(new Enumerator(0));
+        return S_OK;
+    }
+
+    virtual HRESULT STDMETHODCALLTYPE AcceptExpectedArray(
+        /*[in]*/ SAFEARRAY *values,
+        /*[out,retval]*/ VARIANT_BOOL *pRetVal)
+    {
+        if (values == nullptr || pRetVal == nullptr)
+            return E_POINTER;
+
+        HRESULT hr;
+        VARTYPE type;
+        RETURN_IF_FAILED(::SafeArrayGetVartype(values, &type));
+        if (type != VT_UNKNOWN)
+            return E_INVALIDARG;
+
+        LONG lowerBound, upperBound;
+        RETURN_IF_FAILED(::SafeArrayGetLBound(values, 1, &lowerBound));
+        RETURN_IF_FAILED(::SafeArrayGetUBound(values, 1, &upperBound));
+        if (upperBound < lowerBound)
+            return E_INVALIDARG;
+
+        IUnknown **elements = static_cast<IUnknown **>(values->pvData);
+        *pRetVal = elements[0] != nullptr ? VARIANT_TRUE : VARIANT_FALSE;
         return S_OK;
     }
 
@@ -602,6 +700,50 @@ private:
         return Sum_IntArray_SafeArray(sa, (int*)&V_I4(pVarResult));
     }
 
+    HRESULT ModifyStaticVariantArray_Proxy(_In_ DISPPARAMS *pDispParams)
+    {
+        HRESULT hr;
+
+        size_t expectedArgCount = 1;
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
+
+        size_t argIdx = expectedArgCount - 1;
+
+        VARIANTARG *currArg = NextArg(pDispParams->rgvarg, argIdx);
+        RETURN_IF_FAILED(VerifyValues(VARENUM(VT_BYREF | VT_ARRAY | VT_VARIANT), VARENUM(currArg->vt)));
+        return ModifyStaticVariantArray(V_ARRAYREF(currArg));
+    }
+
+    HRESULT CreateUnrelatedArrayElement_Proxy(_Inout_ VARIANT *pVarResult)
+    {
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        HRESULT hr;
+        RETURN_IF_FAILED(::VariantClear(pVarResult));
+        return CreateUnrelatedArrayElement(pVarResult);
+    }
+
+    HRESULT AcceptExpectedArray_Proxy(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
+    {
+        HRESULT hr;
+
+        size_t expectedArgCount = 1;
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
+
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        size_t argIdx = expectedArgCount - 1;
+
+        VARIANTARG *currArg = NextArg(pDispParams->rgvarg, argIdx);
+        RETURN_IF_FAILED(VerifyValues(VARENUM(VT_ARRAY | VT_UNKNOWN), VARENUM(currArg->vt)));
+
+        RETURN_IF_FAILED(::VariantClear(pVarResult));
+        V_VT(pVarResult) = VT_BOOL;
+        return AcceptExpectedArray(V_ARRAY(currArg), &V_BOOL(pVarResult));
+    }
+
     HRESULT GetDispIdAsString_Proxy(_Inout_ VARIANT *pVarResult)
     {
         if (pVarResult == nullptr)
@@ -630,6 +772,45 @@ private:
         return S_OK;
     }
 
+    HRESULT PropertySetterRegressionTest_Put_Proxy(_In_ DISPPARAMS *pDispParams, _Inout_opt_ VARIANT *pVarResult)
+    {
+        HRESULT hr;
+
+        size_t expectedArgCount = 1;
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
+
+        size_t argIdx = expectedArgCount - 1;
+
+        VARIANTARG *currArg = NextArg(pDispParams->rgvarg, argIdx);
+        RETURN_IF_FAILED(VerifyValues(VARENUM(VT_I4), VARENUM(currArg->vt)));
+
+        _propertySetterRegressionTest = V_I4(currArg);
+
+        // Automation servers may fill the return VARIANT even on a property put.
+        // Setters are void-returning, so the runtime must leave pVarResult null;
+        // if it doesn't, converting this value to System.Void fails.
+        if (pVarResult != nullptr)
+        {
+            RETURN_IF_FAILED(::VariantClear(pVarResult));
+            V_VT(pVarResult) = VT_I4;
+            V_I4(pVarResult) = _propertySetterRegressionTest;
+        }
+
+        return S_OK;
+    }
+
+    HRESULT PropertySetterRegressionTest_Get_Proxy(_Inout_ VARIANT *pVarResult)
+    {
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        HRESULT hr;
+        RETURN_IF_FAILED(::VariantClear(pVarResult));
+        V_VT(pVarResult) = VT_I4;
+        V_I4(pVarResult) = _propertySetterRegressionTest;
+        return S_OK;
+    }
+
 public: // IUnknown
     STDMETHOD(QueryInterface)(
         /* [in] */ REFIID riid,
@@ -651,7 +832,11 @@ const WCHAR * const DispatchTesting::Names[] =
     W("DoubleHVAValues"),
     W("PassThroughLCID"),
     W("ExplicitGetEnumerator"),
-    W("Sum_IntArray_SafeArray")
+    W("Sum_IntArray_SafeArray"),
+    W("ModifyStaticVariantArray"),
+    W("CreateUnrelatedArrayElement"),
+    W("AcceptExpectedArray"),
+    W("PropertySetterRegressionTest")
 };
 
 const int DispatchTesting::NamesCount = ARRAY_SIZE(DispatchTesting::Names);

@@ -17,7 +17,7 @@ namespace ILCompiler.Metadata
 
         private NamespaceDefinition HandleNamespaceDefinition(Cts.ModuleDesc parentScope, string namespaceString)
         {
-            Debug.Assert(namespaceString != null);
+            Debug.Assert(namespaceString is not null);
 
             NamespaceDefinition result;
             NamespaceKey key = new NamespaceKey(parentScope, namespaceString);
@@ -26,103 +26,34 @@ namespace ILCompiler.Metadata
                 return result;
             }
 
-            if (namespaceString.Length == 0)
+            result = new NamespaceDefinition
             {
-                var rootNamespace = new NamespaceDefinition
-                {
-                    Name = null,
-                };
-                _namespaceDefs.Add(key, rootNamespace);
-                ScopeDefinition rootScope = HandleScopeDefinition(parentScope);
-                rootScope.RootNamespaceDefinition = rootNamespace;
-                rootNamespace.ParentScopeOrNamespace = rootScope;
-                return rootNamespace;
-            }
+                Name = HandleString(namespaceString.Length == 0 ? null : namespaceString),
+            };
+            _namespaceDefs.Add(key, result);
+            result.Scope = HandleScopeDefinition(parentScope);
 
-            string currentNamespaceName = string.Empty;
-            NamespaceDefinition currentNamespace = HandleNamespaceDefinition(parentScope, currentNamespaceName);
-            foreach (var segment in namespaceString.Split('.'))
-            {
-                string nextNamespaceName = currentNamespaceName;
-                if (nextNamespaceName.Length > 0)
-                    nextNamespaceName += '.';
-                nextNamespaceName += segment;
-                NamespaceDefinition nextNamespace;
-                key = new NamespaceKey(parentScope, nextNamespaceName);
-                if (!_namespaceDefs.TryGetValue(key, out nextNamespace))
-                {
-                    nextNamespace = new NamespaceDefinition
-                    {
-                        Name = HandleString(segment.Length == 0 ? null : segment),
-                        ParentScopeOrNamespace = currentNamespace
-                    };
-
-                    _namespaceDefs.Add(key, nextNamespace);
-                    currentNamespace.NamespaceDefinitions.Add(nextNamespace);
-                }
-                currentNamespace = nextNamespace;
-                currentNamespaceName = nextNamespaceName;
-            }
-
-            return currentNamespace;
+            return result;
         }
 
         private Dictionary<NamespaceKey, NamespaceReference> _namespaceRefs = new Dictionary<NamespaceKey, NamespaceReference>();
 
         private NamespaceReference HandleNamespaceReference(Cts.ModuleDesc parentScope, string namespaceString)
         {
-            // The format represents root namespace as a namespace with null name, in contrast with ECMA-335
-            if (namespaceString.Length == 0)
-                namespaceString = null;
-
-            NamespaceReference result;
             NamespaceKey key = new NamespaceKey(parentScope, namespaceString);
-            if (_namespaceRefs.TryGetValue(key, out result))
+            if (_namespaceRefs.TryGetValue(key, out NamespaceReference result))
             {
                 return result;
             }
 
-            ScopeReference scope = HandleScopeReference(parentScope);
-            NamespaceReference rootNamespace;
-            key = new NamespaceKey(parentScope, null);
-            if (!_namespaceRefs.TryGetValue(key, out rootNamespace))
+            result = new NamespaceReference
             {
-                rootNamespace = new NamespaceReference
-                {
-                    Name = null,
-                    ParentScopeOrNamespace = scope,
-                };
-                _namespaceRefs.Add(key, rootNamespace);
-            }
+                Scope = HandleScopeReference(parentScope),
+                Name = HandleString(namespaceString.Length == 0 ? null : namespaceString),
+            };
+            _namespaceRefs.Add(key, result);
 
-            if (namespaceString == null)
-                return rootNamespace;
-
-            NamespaceReference currentNamespace = rootNamespace;
-            string currentNamespaceName = string.Empty;
-            foreach (var segment in namespaceString.Split('.'))
-            {
-                string nextNamespaceName = currentNamespaceName;
-                if (nextNamespaceName.Length > 0)
-                    nextNamespaceName += '.';
-                nextNamespaceName += segment;
-                NamespaceReference nextNamespace;
-                key = new NamespaceKey(parentScope, nextNamespaceName);
-                if (!_namespaceRefs.TryGetValue(key, out nextNamespace))
-                {
-                    nextNamespace = new NamespaceReference
-                    {
-                        Name = HandleString(segment.Length == 0 ? null : segment),
-                        ParentScopeOrNamespace = currentNamespace
-                    };
-
-                    _namespaceRefs.Add(key, nextNamespace);
-                }
-                currentNamespace = nextNamespace;
-                currentNamespaceName = nextNamespaceName;
-            }
-
-            return currentNamespace;
+            return result;
         }
     }
 

@@ -138,6 +138,38 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void Parse_WhitespaceAfterLeadingSign()
+        {
+            NumberStyles style = NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite | NumberStyles.AllowLeadingSign;
+            CultureInfo inv = CultureInfo.InvariantCulture;
+
+            Assert.Equal(new BigInteger(-123), BigInteger.Parse("- 123", style, inv));
+            Assert.Equal(new BigInteger(123), BigInteger.Parse("+ 123", style, inv));
+            Assert.Equal(new BigInteger(-123), BigInteger.Parse("  -  123  ", style, inv));
+
+            // Without AllowLeadingWhite the interior whitespace must still be rejected.
+            Assert.Throws<FormatException>(() => BigInteger.Parse("- 123", NumberStyles.AllowLeadingSign, inv));
+        }
+
+        [Fact]
+        public static void Parse_OverlappingSignsWithSpaceNormalization()
+        {
+            NumberFormatInfo nfi = new NumberFormatInfo { PositiveSign = "\u00A0", NegativeSign = " +" };
+            const NumberStyles style = NumberStyles.AllowLeadingSign;
+            const string input = " +123";
+            byte[] utf8Input = Encoding.UTF8.GetBytes(input);
+            BigInteger expected = new BigInteger(-123);
+
+            Assert.Equal(expected, BigInteger.Parse(input, style, nfi));
+            Assert.Equal(expected, BigInteger.Parse(utf8Input, style, nfi));
+
+            Assert.True(BigInteger.TryParse(input.AsSpan(), style, nfi, out BigInteger result));
+            Assert.Equal(expected, result);
+            Assert.True(BigInteger.TryParse(utf8Input.AsSpan(), style, nfi, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
         public static void ParseUtf8_EmptySubspan_Fails()
         {
             BigInteger result;

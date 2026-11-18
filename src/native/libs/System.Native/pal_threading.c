@@ -283,6 +283,14 @@ int32_t SystemNative_SchedGetCpu(void)
 {
 #if HAVE_SCHED_GETCPU
     return sched_getcpu();
+#elif HAVE_PTHREAD_CPU_NUMBER_NP
+    size_t cpu;
+    if (pthread_cpu_number_np(&cpu) != 0)
+    {
+        return -1;
+    }
+
+    return (int32_t)cpu;
 #else
     return -1;
 #endif
@@ -300,16 +308,7 @@ void SystemNative_Abort(void)
     abort();
 }
 
-// Gets a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 64-bit ID
-uint64_t SystemNative_GetUInt64OSThreadId(void)
+uint64_t SystemNative_GetCurrentThreadId(void)
 {
-    return (uint64_t)minipal_get_current_thread_id();
-}
-
-// Tries to get a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 32-bit ID.
-// Returns (uint32_t)-1 when the implementation does not know how to get the OS thread ID.
-uint32_t SystemNative_TryGetUInt32OSThreadId(void)
-{
-    uint32_t result = (uint32_t)minipal_get_current_thread_id();
-    return result == 0 ? (uint32_t)-1 : result;
+    return minipal_get_current_thread_id();
 }

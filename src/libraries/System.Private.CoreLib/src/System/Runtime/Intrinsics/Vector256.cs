@@ -29,6 +29,7 @@ namespace System.Runtime.Intrinsics
     // the internal inlining limits of the JIT.
 
     /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on 256-bit vectors.</summary>
+    [SuppressReadyToRunCanonicalRooting]
     public static class Vector256
     {
         internal const int Size = 32;
@@ -2248,11 +2249,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return VectorMath.IsEvenIntegerSingle<Vector256<float>, Vector256<uint>>(vector.AsSingle()).As<float, T>();
+                return VectorMath.IsEvenInteger<Vector256<float>, float>(vector.AsSingle()).As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return VectorMath.IsEvenIntegerDouble<Vector256<double>, Vector256<ulong>>(vector.AsDouble()).As<double, T>();
+                return VectorMath.IsEvenInteger<Vector256<double>, double>(vector.AsDouble()).As<double, T>();
             }
             return IsZero(vector & Vector256<T>.One);
         }
@@ -2292,7 +2293,7 @@ namespace System.Runtime.Intrinsics
         {
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
-                return IsFinite(vector) & Equals(vector, Truncate(vector));
+                return IsZero(vector - Truncate(vector));
             }
             return Vector256<T>.AllBitsSet;
         }
@@ -2371,11 +2372,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return VectorMath.IsOddIntegerSingle<Vector256<float>, Vector256<uint>>(vector.AsSingle()).As<float, T>();
+                return VectorMath.IsOddInteger<Vector256<float>, float>(vector.AsSingle()).As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return VectorMath.IsOddIntegerDouble<Vector256<double>, Vector256<ulong>>(vector.AsDouble()).As<double, T>();
+                return VectorMath.IsOddInteger<Vector256<double>, double>(vector.AsDouble()).As<double, T>();
             }
             return ~IsZero(vector & Vector256<T>.One);
         }

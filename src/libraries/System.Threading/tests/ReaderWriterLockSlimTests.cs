@@ -9,6 +9,66 @@ namespace System.Threading.Tests
 {
     public static class ReaderWriterLockSlimTests
     {
+        [Theory]
+        [InlineData(LockRecursionPolicy.NoRecursion)]
+        [InlineData(LockRecursionPolicy.SupportsRecursion)]
+        public static void IndependentInstancesAndUpgradeCounts(LockRecursionPolicy policy)
+        {
+            using ReaderWriterLockSlim first = new(policy);
+            using ReaderWriterLockSlim second = new(policy);
+            first.EnterUpgradeableReadLock();
+            Assert.Equal(0, first.CurrentReadCount);
+            Assert.Equal(1, first.RecursiveUpgradeCount);
+            first.EnterReadLock();
+            Assert.Equal(1, first.CurrentReadCount);
+            Assert.Equal(1, first.RecursiveReadCount);
+            second.EnterWriteLock();
+            Assert.False(second.IsReadLockHeld);
+            Assert.False(second.IsUpgradeableReadLockHeld);
+
+            first.ExitReadLock();
+            first.EnterWriteLock();
+            first.ExitUpgradeableReadLock();
+            Assert.False(first.IsUpgradeableReadLockHeld);
+            Assert.True(first.IsWriteLockHeld);
+            Assert.Equal(0, first.CurrentReadCount);
+
+            if (policy == LockRecursionPolicy.SupportsRecursion)
+            {
+                first.EnterReadLock();
+                first.EnterReadLock();
+                Assert.Equal(1, first.CurrentReadCount);
+                Assert.Equal(2, first.RecursiveReadCount);
+                first.ExitWriteLock();
+                Assert.True(first.IsReadLockHeld);
+                first.ExitReadLock();
+                first.ExitReadLock();
+            }
+            else
+            {
+                first.ExitWriteLock();
+            }
+            second.ExitWriteLock();
+            Assert.Equal(0, first.WaitingReadCount);
+            Assert.Equal(0, first.WaitingWriteCount);
+            Assert.Equal(0, first.WaitingUpgradeCount);
+        }
+
+        [Theory]
+        [InlineData(LockRecursionPolicy.NoRecursion)]
+        [InlineData(LockRecursionPolicy.SupportsRecursion)]
+        public static void UnmatchedExitsWithoutOtherThreads(LockRecursionPolicy policy)
+        {
+            using ReaderWriterLockSlim rwls = new(policy);
+            Assert.Throws<SynchronizationLockException>(() => rwls.ExitReadLock());
+            Assert.Throws<SynchronizationLockException>(() => rwls.ExitWriteLock());
+            Assert.Throws<SynchronizationLockException>(() => rwls.ExitUpgradeableReadLock());
+            rwls.EnterReadLock();
+            Assert.Throws<SynchronizationLockException>(() => rwls.ExitWriteLock());
+            Assert.Throws<SynchronizationLockException>(() => rwls.ExitUpgradeableReadLock());
+            rwls.ExitReadLock();
+        }
+
         [Fact]
         public static void Ctor()
         {

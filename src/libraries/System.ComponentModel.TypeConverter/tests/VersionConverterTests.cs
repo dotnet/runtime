@@ -64,5 +64,41 @@ namespace System.ComponentModel.Tests
             Assert.Throws<FormatException>(
                 () => VersionConverterTests.s_converter.ConvertFrom(TypeConverterTests.s_context, null, version));
         }
+
+        public static TheoryData<Version> Versions => new()
+        {
+            new Version(1, 2),
+            new Version(1, 2, 3),
+            new Version(1, 2, 3, 4),
+        };
+
+        [Theory]
+        [MemberData(nameof(Versions))]
+        public static void ConvertFrom_Version_ReturnsEqualCopy(Version version)
+        {
+            object result = s_converter.ConvertFrom(TypeConverterTests.s_context, null, version);
+            Assert.Equal(version, result);
+            Assert.NotSame(version, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Versions))]
+        public static void ConvertTo_Version_ReturnsEqualCopy(Version version)
+        {
+            object result = s_converter.ConvertTo(TypeConverterTests.s_context, null, version, typeof(Version));
+            Assert.Equal(version, result);
+            Assert.NotSame(version, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Versions))]
+        public static void ConvertTo_InstanceDescriptor_RoundTrips(Version version)
+        {
+            InstanceDescriptor descriptor = Assert.IsType<InstanceDescriptor>(
+                s_converter.ConvertTo(TypeConverterTests.s_context, null, version, typeof(InstanceDescriptor)));
+
+            Assert.Equal(version, descriptor.Invoke());
+            Assert.Equal(version, s_converter.ConvertFrom(TypeConverterTests.s_context, null, descriptor));
+        }
     }
 }

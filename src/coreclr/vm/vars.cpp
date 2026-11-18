@@ -124,11 +124,11 @@ GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
 
 #ifndef DACCESS_COMPILE
 
-// <TODO> @TODO - PROMOTE. </TODO>
 OBJECTHANDLE         g_pPreallocatedOutOfMemoryException;
 OBJECTHANDLE         g_pPreallocatedStackOverflowException;
 OBJECTHANDLE         g_pPreallocatedExecutionEngineException;
-OBJECTHANDLE         g_pPreallocatedSentinelObject;
+
+OBJECTREF            g_pPreallocatedSentinelObject = NULL;
 
 //
 //
@@ -168,9 +168,9 @@ GVAL_IMPL_INIT(DWORD, g_externalMethodFixupTraceActiveCount, 0);
 
 #endif // DEBUGGING_SUPPORTED
 
-#if defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPPORTED)
+#ifdef PROFILING_SUPPORTED_DATA
 GVAL_IMPL(ProfControlBlock, g_profControlBlock);
-#endif // defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPPORTED)
+#endif // PROFILING_SUPPORTED_DATA
 
 #ifndef DACCESS_COMPILE
 
@@ -263,4 +263,3 @@ __GlobalVal< GSCookie > s_gsCookie(&DacGlobals::dac__s_gsCookie);
 #endif //!DACCESS_COMPILE
 
 //==============================================================================
-

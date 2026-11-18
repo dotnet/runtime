@@ -63,7 +63,7 @@ namespace ILLink.Shared.TypeSystemProxy
                 builder.Add(new GenericParameterProxy((GenericParameterDesc)genericParameter));
             }
 
-            return builder.ToImmutableArray();
+            return builder.MoveToImmutable();
         }
 
         internal partial bool IsConstructor() => Method.IsConstructor;

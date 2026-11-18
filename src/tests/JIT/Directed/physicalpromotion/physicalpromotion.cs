@@ -104,6 +104,126 @@ public class PhysicalPromotion
         Consume(lcl3);
     }
 
+    [Theory]
+    [InlineData(0, 0U)]
+    [InlineData(1, 60U)]
+    [InlineData(2, 120U)]
+    [InlineData(3, 54U)]
+    [InlineData(4, 49U)]
+    [InlineData(5, 70U)]
+    [InlineData(6, 0x56781245U)]
+    [InlineData(7, 46U)]
+    public static void ReadbacksAcrossBranches(int path, uint expected)
+    {
+        S value = new S { A = 17, B = 29 };
+        Assert.Equal(expected, path is 6 ? ReadbackAfterPartialWrite(value) : ReadbacksAcrossBranchesCore(value, path));
+        Assert.Equal(path is 0 ? 0U : path is 1 ? 1U : 46U, ReadbackOnlyOnSelectedPath(value, path));
+        Assert.Equal(path switch { 0 => 29U, 1 => 63U, 2 => 80U, 3 => 70U, 4 => 120U, _ => 46U },
+            ReadbacksAtLiveJoin(value, path));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static uint ReadbacksAtLiveJoin(S value, int path)
+    {
+        if (path == 0)
+        {
+            return value.B;
+        }
+
+        uint result = 0;
+        if (path == 1)
+        {
+            result = value.A;
+        }
+        else if (path == 2)
+        {
+            result = value.A * 2;
+        }
+        else if (path == 3)
+        {
+            value.A = 41;
+        }
+        else if (path == 4)
+        {
+            value = GetReadbackValue();
+        }
+
+        return result + value.A + value.B;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static uint ReadbackAfterPartialWrite(S value)
+    {
+        value.C = 0x12345678;
+        return value.A + value.B;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static uint ReadbackOnlyOnSelectedPath(S value, int path)
+    {
+        if (path == 0)
+        {
+            return 0;
+        }
+
+        if (path == 1)
+        {
+            return 1;
+        }
+
+        return value.A + value.B;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static uint ReadbacksAcrossBranchesCore(S value, int path)
+    {
+        if (path == 0)
+        {
+            return 0;
+        }
+
+        Consume(value);
+        switch (path)
+        {
+            case 1:
+                value.A = 31;
+                break;
+            case 2:
+                value = GetReadbackValue();
+                break;
+            case 3:
+                value.B = 37;
+                break;
+            case 4:
+                for (int i = 0; i < 3; i++)
+                {
+                    value.A += (uint)i;
+                    Consume(value);
+                }
+                break;
+            case 5:
+                try
+                {
+                    value.A = 41;
+                    ThrowForReadback();
+                }
+                catch (InvalidOperationException)
+                {
+                    Consume(value);
+                }
+                break;
+        }
+
+        Consume(value);
+        return value.A + value.B;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static S GetReadbackValue() => new S { A = 73, B = 47 };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowForReadback() => throw new InvalidOperationException();
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Consume<T>(T val)
     {

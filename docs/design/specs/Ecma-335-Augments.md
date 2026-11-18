@@ -8,6 +8,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Heap sizes](#heap-sizes)
 - [Metadata merging](#metadata-merging)
 - [Metadata logical format](#metadata-logical-format)
+- [DeclSecurity binary permission-set encoding](#declsecurity-binary-permission-set-encoding)
 - [Module Initializer](#module-initializer)
 - [Default Interface Methods](#default-interface-methods)
 - [Static Interface Methods](#static-interface-methods)
@@ -26,6 +27,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Debug Interchange Format](#debug-interchange-format)
 - [Extended layout](#extended-layout)
 - [Implicit argument coercion rules](#implicit-argument-coercion-rules)
+- [Init-only static fields](#init-only-static-fields)
 
 ## Signatures
 
@@ -366,6 +368,38 @@ In addition to the TypeDef table having a special ordering constraint, the Expor
 This line should be changed.
 
 > Finally, this TypeDef _and ExportedType_ ~~table has~~ _tables have_ a special ordering constraint: the definition of an enclosing class shall precede the definition of all classes it encloses.
+
+## DeclSecurity binary permission-set encoding
+
+The binary permission-set encoding in §II.22.11 is updated as follows: The _PermissionSet_ is a 'blob' having the following format:
+
+```mermaid
+flowchart LR
+  subgraph PermissionSet["PermissionSet blob"]
+    direction LR
+    Marker["Byte: '.'"]
+    AttributeCount["Compressed unsigned integer: attribute count"]
+    AttributeSequence["Attribute[attribute count]"]
+    Marker --> AttributeCount --> AttributeSequence
+  end
+
+  subgraph Attribute["Each security attribute"]
+    direction LR
+    TypeName["SerString: type name"]
+    ArgumentsLength["Compressed unsigned integer: argument byte length"]
+    subgraph Arguments["Encoded arguments (argument byte length)"]
+      direction LR
+      NamedArgumentCount["Compressed unsigned integer: named-argument count"]
+      NamedArguments["NamedArg[named-argument count] (§II.23.3)"]
+      NamedArgumentCount --> NamedArguments
+    end
+    TypeName --> ArgumentsLength --> NamedArgumentCount
+  end
+
+  AttributeSequence -. "repeats once per attribute" .-> TypeName
+```
+
+Unlike the custom attribute format in §II.23.3, this permission-set format prefixes each attribute's named-argument block with its compressed byte length and encodes the named-argument count as a compressed integer rather than an unsigned 16-bit integer.
 
 ## Module Initializer
 
@@ -1190,3 +1224,7 @@ In section II.23.1.15, the following row is added to the table:
 ## Implict argument coercion rules
 
 Implicit argument coercion as defined in section III.1.6 does not match with existing practice in CLR runtimes. Notably, implicit argument coercion of an `int32` on the IL evaluation stack to a `native unsigned int` is a sign extending operation, not a zero-extending operation.
+
+## Init-only static fields
+
+The notes in sections "III.4.28 stfld" and "III.4.30 stsfld" are replaced with: "Changing the value of a static, init-only field outside the body of the class initializer can compromise memory integrity and type safety." Init-only instance fields are not affected.

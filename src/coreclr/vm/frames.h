@@ -73,12 +73,10 @@
 //    |   |
 //    |   +-ExternalMethodFrame  - represents a call from an ExternalMethodThunk
 //    |
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
 //    +-TailCallFrame           - padding for tailcalls
 //    |
 #endif
-//    +-ProtectValueClassFrame
-//    |
 //    +-DebuggerClassInitMarkFrame - marker frame to indicate that "class init" code is running
 //    |
 //    +-DebuggerExitFrame - marker frame to indicate control flow has left the runtime
@@ -248,7 +246,7 @@ public:
     void GcScanRoots(promote_func *fn, ScanContext* sc);
     unsigned GetFrameAttribs();
 #ifndef DACCESS_COMPILE
-    void ExceptionUnwind();
+    void ExceptionUnwind() noexcept;
 #endif
     BOOL NeedsUpdateRegDisplay();
     BOOL IsTransitionToNativeFrame();
@@ -312,7 +310,7 @@ public:
     // Performs cleanup on an exception unwind
     //------------------------------------------------------------------------
 #ifndef DACCESS_COMPILE
-    void ExceptionUnwind_Impl()
+    void ExceptionUnwind_Impl() noexcept
     {
         // Nothing to do here.
         LIMITED_METHOD_CONTRACT;
@@ -521,9 +519,9 @@ public:
 #ifndef DACCESS_COMPILE
     // Link and Unlink this frame
     VOID Push();
-    VOID Pop();
+    VOID Pop() noexcept;
     VOID Push(Thread *pThread);
-    VOID Pop(Thread *pThread);
+    VOID Pop(Thread *pThread) noexcept;
 #endif // DACCESS_COMPILE
 
 #ifdef _DEBUG_IMPL
@@ -602,9 +600,9 @@ protected:
 #endif // DACCESS_COMPILE
 
 #if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
-    ~Frame() { PopIfChained(); }
+    ~Frame() noexcept { PopIfChained(); }
 
-    void PopIfChained();
+    void PopIfChained() noexcept;
 #endif // TARGET_UNIX && !DACCESS_COMPILE
 
     friend struct ::cdac_data<Frame>;
@@ -746,7 +744,7 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
 
-    void ExceptionUnwind_Impl();
+    void ExceptionUnwind_Impl() noexcept;
 #endif
 };
 
@@ -908,6 +906,8 @@ public:
 #endif //defined (_DEBUG) && defined (DACCESS_COMPILE)
 
     // For use by classes deriving from FramedMethodFrame.
+    PTR_BYTE GetGCRefMapFromMethodDesc(ScanContext* sc);
+
     void PromoteCallerStack(promote_func* fn, ScanContext* sc);
 
     void PromoteCallerStackHelper(promote_func* fn, ScanContext* sc,
@@ -1225,10 +1225,15 @@ class FramedMethodFrame : public TransitionFrame
 protected:
     PTR_MethodDesc m_pMD;
 
+private:
+    // nullptr means unexamined; -1 means the lookup found no map.
+    PTR_BYTE m_pCachedGCRefMap;
+
 public:
 #ifndef DACCESS_COMPILE
     FramedMethodFrame(FrameIdentifier frameIdentifier, TransitionBlock * pTransitionBlock, MethodDesc * pMD)
-        : TransitionFrame(frameIdentifier), m_pTransitionBlock(dac_cast<TADDR>(pTransitionBlock)), m_pMD(pMD)
+        : TransitionFrame(frameIdentifier), m_pTransitionBlock(dac_cast<TADDR>(pTransitionBlock)), m_pMD(pMD),
+          m_pCachedGCRefMap(nullptr)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -1268,6 +1273,7 @@ public:
         }
         CONTRACTL_END;
 
+        m_pCachedGCRefMap = nullptr;
         m_pMD = pMD;
     }
 #endif
@@ -1292,6 +1298,7 @@ public:
     }
 #endif // DACCESS_COMPILE
 
+    friend class TransitionFrame;
     friend struct cdac_data<FramedMethodFrame>;
 };
 
@@ -1300,6 +1307,7 @@ struct cdac_data<FramedMethodFrame>
 {
     static constexpr size_t TransitionBlockPtr = offsetof(FramedMethodFrame, m_pTransitionBlock);
     static constexpr size_t MethodDescPtr = offsetof(FramedMethodFrame, m_pMD);
+    static constexpr size_t CachedGCRefMap = offsetof(FramedMethodFrame, m_pCachedGCRefMap);
 };
 
 // Some context-related forwards.
@@ -1508,6 +1516,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
+        SetFunction(nullptr);
         m_pRepresentativeMT = pMT;
         m_representativeSlot = representativeSlot;
     }
@@ -1788,60 +1797,6 @@ struct cdac_data<GCFrame>
 };
 
 //-----------------------------------------------------------------------------
-
-struct ValueClassInfo;
-typedef DPTR(struct ValueClassInfo) PTR_ValueClassInfo;
-
-struct ValueClassInfo
-{
-    PTR_ValueClassInfo  pNext;
-    PTR_MethodTable     pMT;
-    PTR_VOID            pData;
-
-    ValueClassInfo(PTR_VOID aData, PTR_MethodTable aMT, PTR_ValueClassInfo aNext)
-        : pNext(aNext), pMT(aMT), pData(aData)
-    {
-    }
-};
-
-//-----------------------------------------------------------------------------
-// ProtectValueClassFrame
-//-----------------------------------------------------------------------------
-
-typedef DPTR(class ProtectValueClassFrame) PTR_ProtectValueClassFrame;
-
-class ProtectValueClassFrame : public Frame
-{
-public:
-#ifndef DACCESS_COMPILE
-    ProtectValueClassFrame()
-        : Frame(FrameIdentifier::ProtectValueClassFrame), m_pVCInfo(NULL)
-    {
-        WRAPPER_NO_CONTRACT;
-        Frame::Push();
-    }
-
-    ProtectValueClassFrame(Thread *pThread, ValueClassInfo *vcInfo)
-        : Frame(FrameIdentifier::ProtectValueClassFrame), m_pVCInfo(vcInfo)
-    {
-        WRAPPER_NO_CONTRACT;
-        Frame::Push(pThread);
-    }
-#endif
-
-    void GcScanRoots_Impl(promote_func *fn, ScanContext *sc);
-
-    ValueClassInfo ** GetValueClassInfoList()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_pVCInfo;
-    }
-
-private:
-
-    ValueClassInfo *m_pVCInfo;
-};
-
 
 #ifdef _DEBUG
 BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef);
@@ -2193,13 +2148,9 @@ public:
     VOID Init();
 };
 
-// TODO [DAVBR]: For the full fix for VsWhidbey 450273, this
-// may be uncommented once isLegalManagedCodeCaller works properly
-// with non-return address inputs, and with non-DEBUG builds
-//bool isLegalManagedCodeCaller(TADDR retAddr);
 bool isRetAddr(TADDR retAddr, TADDR* whereCalled);
 
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
 //------------------------------------------------------------------------
 // This frame is used as padding for virtual stub dispatch tailcalls.
 // When A calls B via virtual stub dispatch, the stub dispatch stub resolves
@@ -2267,7 +2218,7 @@ struct cdac_data<TailCallFrame>
     static constexpr size_t ReturnAddress = offsetof(TailCallFrame, m_ReturnAddress);
 };
 
-#endif // TARGET_X86 && !UNIX_X86_ABI
+#endif // TARGET_X86
 
 //------------------------------------------------------------------------
 // ExceptionFilterFrame is a small frame whose only purpose in
@@ -2365,7 +2316,7 @@ public:
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats = false);
 #ifndef DACCESS_COMPILE
-    void ExceptionUnwind_Impl();
+    void ExceptionUnwind_Impl() noexcept;
 #endif
 
 #ifndef DACCESS_COMPILE

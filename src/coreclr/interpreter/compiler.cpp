@@ -1,8 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+#include "interpreter.h"
+#endif
 #include "gcinfoencoder.h"
 
+#ifndef FEATURE_INTERPRETER_DIRECT_CALLS
 #include "interpreter.h"
+#endif
 #include "stackmap.h"
 
 #include <algorithm>
@@ -39,7 +44,7 @@ static const InterpType g_interpTypeFromStackType[] =
 };
 
 // Used by assertAbort
-thread_local ICorJitInfo* t_InterpJitInfoTls = nullptr;
+thread_local COMP_HANDLE t_InterpJitInfoTls = nullptr;
 
 static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F ", "TP" };
 
@@ -51,6 +56,7 @@ bool InterpCompiler::s_samplingProfilerEnabled = false;
 bool InterpCompiler::s_browserProfilerEnabled = false;
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
+bool InterpCompiler::s_interpPgoEnabled = false;
 
 #if MEASURE_MEM_ALLOC
 #include <minipal/mutex.h>
@@ -2246,6 +2252,10 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
 
+    m_emitInterpPGO = s_interpPgoEnabled
+        && (InterpConfig.InterpPGOMethods().isEmpty()
+            || InterpConfig.InterpPGOMethods().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args));
+
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
                             /* includeAssembly */ false,
@@ -2347,6 +2357,9 @@ bool InterpCompiler::CompileMethod()
         PrintCode();
     }
 #endif
+
+    if (m_emitInterpPGO)
+        InstrumentBlockCounts();
 
     AllocOffsets();
     PatchInitLocals(m_methodInfo);
@@ -2464,7 +2477,7 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
         // (This is relevant for structs with very high alignment requirements,
         // where we align within struct layout, but the structs are not actually
         // aligned on the stack)
-        align = std::clamp(m_compHnd->getClassAlignmentRequirement(clsHnd), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
+        align = std::clamp(m_compHnd->getClassAlignmentRequirement(clsHnd, false), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
     }
     else
     {
@@ -3003,8 +3016,8 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
     if (target < 0 || target >= m_ILCodeSize)
         BADCODE("code jumps to outer space");
 
-    // Backwards branch, emit safepoint
-    if (ilOffset < 0)
+    // Back edge, including a branch to itself, emit safepoint
+    if (ilOffset <= 0)
     {
         AddIns(INTOP_SAFEPOINT);
 #ifdef PERFTRACING_DISABLE_THREADS
@@ -3016,6 +3029,9 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
     InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
     if (pTargetBB == NULL)
         BADCODE("code jumps to invalid offset");
+
+    if (ilOffset <= 0)
+        pTargetBB->isBackwardBranchTarget = true;
 
     EmitBranchToBB(opcode, pTargetBB);
 }
@@ -3179,6 +3195,11 @@ void InterpCompiler::EmitLeave(int32_t ilOffset, int32_t target)
     }
     InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
 
+    // Mark a backward leave target as a loop head here, while pTargetBB is still the real IL block: below it
+    // may be redirected to a finally call island, which shares its IL offset with another block.
+    if (target < ilOffset && pTargetBB != NULL)
+        pTargetBB->isBackwardBranchTarget = true;
+
     m_pStackPointer = m_pStackBase;
 
     // The leave will jump:
@@ -3206,9 +3227,12 @@ void InterpCompiler::EmitLeave(int32_t ilOffset, int32_t target)
         NO_WAY("Leave target basic block does not exist");
     }
 
-    // The leave doesn't jump out of any try region with finally, so we can just emit a branch
-    // to the target.
-    EmitBranchToBB(INTOP_BR, pTargetBB);
+    // When the first island is a catch leave island, the leave exits that catch here: INTOP_LEAVE_CATCH ends the
+    // catch funclet and the execution resumes after the catch at the island. The island is outside the catch's own
+    // try region and inside every try region that encloses it, so a thread abort raised again at the resume point
+    // reaches the handlers of the enclosing try regions. Otherwise, emit a plain branch to the island or the target.
+    bool isCatchLeave = pTargetBB->isLeaveChainIsland && !pTargetBB->isFinallyCallIsland;
+    EmitBranchToBB(isCatchLeave ? INTOP_LEAVE_CATCH : INTOP_BR, pTargetBB);
 }
 
 void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
@@ -3442,7 +3466,7 @@ int32_t InterpCompiler::GetDataForHelperFtn(CorInfoHelpFunc ftn)
 {
     // Interpreter-TODO: Find an existing data item index for this helper if possible and reuse it
     CORINFO_CONST_LOOKUP ftnLookup;
-    m_compHnd->getHelperFtn(ftn, &ftnLookup);
+    m_compHnd->getHelperFtn(ftn, &ftnLookup, nullptr);
 
 #ifdef DEBUG
     if (!PointerInNameMap(ftnLookup.addr))
@@ -5102,6 +5126,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     ContinuationContextHandling continuationContextHandling = ContinuationContextHandling::None;
     bool isValueTaskAdaptedToTask = false;
+    bool isVoidAwait = false;
+    bool discardAwaitResult = false;
 
     if (isCalli)
     {
@@ -5149,6 +5175,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             continuationContextHandling = m_currentContinuationContextHandling;
             isValueTaskAdaptedToTask = m_isValueTaskAdaptedToTask;
             m_isValueTaskAdaptedToTask = false;
+            isVoidAwait = m_isVoidAwait;
+            m_isVoidAwait = false;
         }
         else
         {
@@ -5169,6 +5197,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
+
+        discardAwaitResult = isVoidAwait && (callInfo.sig.retType != CORINFO_TYPE_VOID);
 
         if (continuationContextHandling != ContinuationContextHandling::None && !callInfo.sig.isAsyncCall())
         {
@@ -5891,6 +5921,12 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     {
         EmitSuspend(callInfo.sig.retType, continuationContextHandling, isValueTaskAdaptedToTask);
     }
+
+    if (discardAwaitResult)
+    {
+        INTERP_DUMP("Discarding unused result after folded task await\n");
+        m_pStackPointer--;
+    }
 }
 
 void InterpCompiler::EmitRet(CORINFO_METHOD_INFO* methodInfo)
@@ -6032,7 +6068,7 @@ void InterpCompiler::WrapTopOfStackInAwait()
     CORINFO_METHOD_HANDLE awaitMethod = m_compHnd->getAwaitReturnCall(m_methodHnd, &contextHandle, &instArgLookup);
 
     CORINFO_SIG_INFO awaitSig;
-    m_compHnd->getMethodSig(awaitMethod, &awaitSig);
+    m_compHnd->getMethodSig(awaitMethod, &awaitSig, nullptr);
 
     assert(awaitSig.isAsyncCall());
     assert(awaitSig.numArgs == 1);
@@ -6962,18 +6998,19 @@ void InterpCompiler::EmitStelem(InterpType interpType)
 void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)
 {
     bool isBoxedStatic  = (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0;
+    if ((pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS) != 0)
+    {
+        CORINFO_GENERICHANDLE_RESULT embedInfo;
+        m_compHnd->embedGenericHandle(pResolvedToken, true, m_methodInfo->ftn, &embedInfo);
+        EmitPushHelperCall(CORINFO_HELP_INITCLASS, embedInfo, StackTypeI, NULL);
+        m_pStackPointer--; // The InitClass helper doesn't actually return anything, so we pop the stack
+    }
+
     switch (pFieldInfo->fieldAccessor)
     {
         case CORINFO_FIELD_STATIC_ADDRESS:
         case CORINFO_FIELD_STATIC_RVA_ADDRESS:
         {
-            if ((pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS) != 0)
-            {
-                CORINFO_GENERICHANDLE_RESULT embedInfo;
-                m_compHnd->embedGenericHandle(pResolvedToken, true, m_methodInfo->ftn, &embedInfo);
-                EmitPushHelperCall(CORINFO_HELP_INITCLASS, embedInfo, StackTypeI, NULL);
-                m_pStackPointer--; // The InitClass helper doesn't actually return anything, so we pop the stack
-            }
             // const field address
             assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
             AddIns(INTOP_LDPTR);
@@ -6989,11 +7026,13 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             switch (pFieldInfo->helper)
             {
                 case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+                case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
                 case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
                 case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
                     helperArg = (void*)(size_t)m_compHnd->getThreadLocalFieldInfo(pResolvedToken->hField, false);
                     break;
                 case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+                case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
                     helperArg = (void*)(size_t)m_compHnd->getThreadLocalFieldInfo(pResolvedToken->hField, true);
                     break;
                 case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
@@ -7049,6 +7088,7 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             break;
         }
+        case CORINFO_FIELD_STATIC_TLS:
         case CORINFO_FIELD_STATIC_ADDR_HELPER:
         {
             AddIns(INTOP_CALL_HELPER_P_P);
@@ -7535,10 +7575,24 @@ int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElem
     return -1;
 }
 
-bool InterpCompiler::ResolveAsyncCallToken(const uint8_t* ip)
+bool InterpCompiler::ResolveAsyncCallToken(const uint8_t* ip, const CORINFO_RESOLVED_TOKEN* awaitToken)
 {
     ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
-    return m_resolvedAsyncCallToken.hMethod != NULL;
+    if (m_resolvedAsyncCallToken.hMethod == NULL)
+    {
+        return false;
+    }
+
+    // In normal cases a Task<T>-returning function is followed by 'T AsyncHelpers.Await(Task<T>)'.
+    // However, it is also legal IL to follow it up with 'void AsyncHelpers.Await(Task)'. Such IL may occur
+    // in C# code like `await (Task)Foo()`.
+    // In the latter case, the IL does not expect a pushed IL entry, but we are going to push one as part
+    // of handling the call.
+    // To differentiate the cases we can look for a MethodSpec token since that unequivocally means
+    // 'T AsyncHelpers.Await(Task<T>)'; if not seen then this is the void overload and we know to discard
+    // the additional IL entry.
+    m_isVoidAwait = (awaitToken != NULL) && (TypeFromToken(awaitToken->token) != mdtMethodSpec);
+    return true;
 }
 
 bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -7551,7 +7605,7 @@ bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pa
         return false;
     }
 
-    if (!ResolveAsyncCallToken(ip))
+    if (!ResolveAsyncCallToken(ip, &awaitResolvedToken))
     {
         return false;
     }
@@ -7595,7 +7649,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, Opc
         return false;
     }
 
-    return ResolveAsyncCallToken(ip);
+    return ResolveAsyncCallToken(ip, &awaitResolvedToken);
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -7673,7 +7727,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const u
         return false;
     }
 
-    return ResolveAsyncCallToken(ip);
+    return ResolveAsyncCallToken(ip, &awaitResolvedToken);
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -7744,7 +7798,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip
         return false;
     }
 
-    return ResolveAsyncCallToken(ip);
+    return ResolveAsyncCallToken(ip, &awaitResolvedToken);
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallRetOrJmpInAsyncVersion(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -7786,7 +7840,7 @@ bool InterpCompiler::IsRuntimeAsyncCallNewobjRetInAsyncVersion(const uint8_t* ip
     }
 
     CORINFO_SIG_INFO sig;
-    m_compHnd->getMethodSig(ctorResolvedToken.hMethod, &sig);
+    m_compHnd->getMethodSig(ctorResolvedToken.hMethod, &sig, nullptr);
 
     if (sig.numArgs != 1)
     {
@@ -8685,7 +8739,7 @@ void InterpCompiler::CreateSynchronizedRetValVar()
         CORINFO_CONTEXT_HANDLE contextHandle;
         CORINFO_METHOD_HANDLE awaitCall = m_compHnd->getAwaitReturnCall(m_methodHnd, &contextHandle, &instArg);
         CORINFO_SIG_INFO awaitCallSig;
-        m_compHnd->getMethodSig(awaitCall, &awaitCallSig);
+        m_compHnd->getMethodSig(awaitCall, &awaitCallSig, nullptr);
 
         CORINFO_CLASS_HANDLE vcTypeRet;
         CorInfoType paramType = strip(m_compHnd->getArgType(&awaitCallSig, awaitCallSig.args, &vcTypeRet));
@@ -8703,6 +8757,64 @@ void InterpCompiler::CreateSynchronizedRetValVar()
     m_synchronizedOrAsyncRetValVarIndex = m_pStackPointer[-1].var;
     m_pStackPointer--;
     INTERP_DUMP("Created ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
+}
+
+// Instrument the method entry and loop heads with block-count PGO probes. The counters are allocated by
+// allocPgoInstrumentationBySchema (native PgoManager memory), so they persist independently of
+// EventPipe session lifetime; the accumulated profile is flushed to the trace as
+// JitInstrumentationDataVerbose events, which dotnet-pgo consumes to build an .mibc.
+void InterpCompiler::InstrumentBlockCounts()
+{
+    // Probe the same points as the sampling profiler - method entry and loop heads (targets of backward
+    // branches) - but with an exact counter rather than a sample. This yields exact method invocation and
+    // loop trip counts; acyclic branch structure is deliberately not profiled here, since mapping the
+    // interpreter's blocks onto the JIT's is approximate at best (#130517).
+    // Clones (funclet / leave-chain islands) and blocks removed by optimization are skipped, so every schema
+    // entry carries a unique IL offset, matching what getPgoInstrumentationResults and dotnet-pgo expect.
+    TArray<InterpBasicBlock*, MemPoolAllocator> blocks(GetMemPoolAllocator(IMK_DataItem));
+    for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
+    {
+        if (bb->ilOffset < 0 || bb->ilOffset >= m_ILCodeSizeFromILHeader || m_ppOffsetToBB[bb->ilOffset] != bb)
+            continue;
+        if (bb->ilOffset == 0 || bb->isBackwardBranchTarget)
+            blocks.Add(bb);
+    }
+
+    int32_t numBlocks = blocks.GetSize();
+    if (numBlocks == 0)
+        return;
+
+    // One 4-byte block counter per block.
+    TArray<ICorJitInfo::PgoInstrumentationSchema, MemPoolAllocator> schema(GetMemPoolAllocator(IMK_DataItem));
+    for (int32_t i = 0; i < numBlocks; i++)
+    {
+        ICorJitInfo::PgoInstrumentationSchema schemaElem;
+        schemaElem.Offset = 0;
+        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
+        schemaElem.ILOffset = blocks.Get(i)->ilOffset;
+        schemaElem.Count = 1;
+        schemaElem.Other = 0;
+        schema.Add(schemaElem);
+    }
+
+    ICorJitInfo::PgoInstrumentationSchema *pSchema = schema.GetUnderlyingArray();
+    uint8_t *pInstrumentationData = NULL;
+    HRESULT hr = m_compHnd->allocPgoInstrumentationBySchema(m_methodHnd, pSchema, (uint32_t)numBlocks, &pInstrumentationData);
+    if (FAILED(hr) || pInstrumentationData == NULL)
+    {
+        INTERP_DUMP("InstrumentBlockCounts: allocPgoInstrumentationBySchema failed (hr=0x%08x)\n", hr);
+        return;
+    }
+
+    // Insert an INTOP_PGO_COUNT probe at the start of each block, pointing at its counter.
+    for (int32_t i = 0; i < numBlocks; i++)
+    {
+        uint32_t *pCounter = (uint32_t*)(pInstrumentationData + pSchema[i].Offset);
+        InterpInst *ins = InsertInsBB(blocks.Get(i), NULL, INTOP_PGO_COUNT);
+        // Probe is a pure counter increment with no IL mapping; keep it out of the debug maps.
+        ins->ilOffset = -1;
+        ins->data[0] = GetDataItemIndex((void*)pCounter);
+    }
 }
 
 void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
@@ -10271,6 +10383,10 @@ retry_emit:
                     uint32_t target = (uint32_t)(nextIp - m_pILCode + offset);
                     InterpBasicBlock *targetBB = m_ppOffsetToBB[target];
                     assert(targetBB);
+                    // Offsets are relative to the instruction after the switch, so a negative one is a
+                    // backward branch, i.e. a loop head.
+                    if (offset < 0)
+                        targetBB->isBackwardBranchTarget = true;
                     targetOffsets[i] = target;
                     targetBBTable[i] = targetBB;
                     m_ip += 4;
@@ -11893,18 +12009,21 @@ InterpBasicBlock *InterpCompiler::GenerateCodeForLeaveChainIslands(InterpBasicBl
                 m_pLastNewIns->ilOffset = -1;
             }
 
-            InterpOpcode branchOpcode = pLeaveChainIslandBB->isFinallyCallIsland ? INTOP_BR : INTOP_LEAVE_CATCH;
+            // A catch leave island is where the execution resumes after its catch, which ends with the
+            // INTOP_LEAVE_CATCH to the island. So the branch out of an island is a plain INTOP_BR, unless it goes
+            // into the catch leave island of an outer catch that the leave also exits.
 
             // Try to get the next finally call (for an outer try's finally) / catch leave island block (for an outer catch)
             if (pLeaveChainIslandBB->pLeaveChainIslandBB)
             {
-                // Branch to the next finally call island (at an outer try block)
-                EmitBranchToBB(branchOpcode, pLeaveChainIslandBB->pLeaveChainIslandBB);
+                // Branch to the next finally call island (at an outer try block) / catch leave island (for an outer catch)
+                InterpBasicBlock *pNextIslandBB = pLeaveChainIslandBB->pLeaveChainIslandBB;
+                EmitBranchToBB(pNextIslandBB->isFinallyCallIsland ? INTOP_BR : INTOP_LEAVE_CATCH, pNextIslandBB);
             }
             else
             {
                 // This is the last finally call / catch leave island, so we need to emit a branch to the leave target
-                EmitBranchToBB(branchOpcode, pLeaveChainIslandBB->pLeaveTargetBB);
+                EmitBranchToBB(INTOP_BR, pLeaveChainIslandBB->pLeaveTargetBB);
             }
             m_pLastNewIns->ilOffset = -1;
             m_pCBB->emitState = BBStateEmitted;
@@ -11997,7 +12116,7 @@ bool InterpreterRetryData::GetOverrideILMergePointStackType(int32_t ilOffset, ui
 static void DumpClassName(CORINFO_CLASS_HANDLE cls, COMP_HANDLE compHnd)
 {
     char className[100];
-    compHnd->printClassName(cls, className, 100);
+    compHnd->printClassName(cls, className, 100, nullptr);
     printf("%s", className);
 }
 

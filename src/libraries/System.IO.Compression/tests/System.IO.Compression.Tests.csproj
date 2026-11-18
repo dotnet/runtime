@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StringResourcesPath>$(MSBuildProjectDirectory)\..\src\Resources\Strings.resx</StringResourcesPath>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
 
@@ -67,8 +68,8 @@
     <PackageReference Include="System.IO.Compression.TestData" Version="$(SystemIOCompressionTestDataVersion)" />
   </ItemGroup>
 
-  <!-- Zstandard tests (not supported on browser/wasi) -->
-  <ItemGroup Condition="'$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'">
+  <!-- Zstandard tests (not supported on browser) -->
+  <ItemGroup Condition="'$(TargetOS)' != 'browser'">
     <Compile Include="Zstandard\CompressionStreamUnitTests.Zstandard.cs" />
     <Compile Include="Zstandard\ZstandardCompressionOptionsTests.cs" />
     <Compile Include="Zstandard\ZstandardDictionaryTests.cs" />

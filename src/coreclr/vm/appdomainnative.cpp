@@ -13,6 +13,7 @@
 #include "../binder/inc/defaultassemblybinder.h"
 #include "../binder/inc/applicationcontext.hpp"
 #include <corehost/host_runtime_contract.h>
+#include "hostinformation.h"
 #include "stringarraylist.h"
 
 // static
@@ -73,9 +74,9 @@ extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandle
         //  loaded into this appdomain, on another thread.
         AppDomain::AssemblyIterator i = pApp->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        CollectibleAssemblyHolder pAssembly;
 
-        while (i.Next(pAssembly.This()) && (numAssemblies < nArrayElems))
+        while (i.Next(&pAssembly) && (numAssemblies < nArrayElems))
         {
             // Do not change this code.  This is done this way to
             //  prevent a GC hole in the SetObjectReference() call.  The compiler
@@ -165,12 +166,27 @@ extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall
             BINDER_SPACE::SimpleNameToFileNameMap::Iterator end = pMap->End();
             while (i != end)
             {
+                SString path;
                 if (i->m_wszILFileName != NULL)
+                {
+                    path.Set(i->m_wszILFileName);
+                }
+                else
+                {
+                    HostInformation::ResolveAssemblyToPath(i->m_wszSimpleName, path);
+                    if (path.IsEmpty())
+                    {
+                        ++i;
+                        continue;
+                    }
+                }
+
+                if (!path.IsEmpty())
                 {
                     if (!result.IsEmpty())
                         result.Append(PATH_SEPARATOR_CHAR_W);
 
-                    result.Append(i->m_wszILFileName);
+                    result.Append(path);
                 }
 
                 ++i;

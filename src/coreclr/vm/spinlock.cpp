@@ -73,7 +73,7 @@ void SpinLock::Init(LOCK_TYPE type, bool RequireCoopGC)
         }
         else
         {
-            __SwitchToThread(10, CALLER_LIMITS_SPINNING);
+            minipal_sleep(10);
         }
     }
 
@@ -247,7 +247,7 @@ SpinLock::SpinToAcquire()
         }
 
         //backoff
-        __SwitchToThread(0, backoffs++);
+        minipal_switch_to_thread(backoffs++);
     }
 
 #ifdef _DEBUG

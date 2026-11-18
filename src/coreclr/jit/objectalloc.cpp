@@ -1176,7 +1176,7 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
         *reason = "[runtime disallows]";
         return false;
     }
-    if (allocType == OAT_NEWARR)
+    if ((allocType == OAT_NEWARR) || (allocType == OAT_NEWARR_R2R))
     {
         if (!enableArrays)
         {
@@ -1285,10 +1285,22 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
         const bool isValueClass = m_compiler->info.compCompHnd->isValueClass(clsHnd);
         bool const canBeOnStack = isValueClass || m_compiler->info.compCompHnd->canAllocateOnStack(clsHnd);
         allocType               = canBeOnStack ? OAT_NEWOBJ : OAT_NEWOBJ_HEAP;
+
+        if (canBeOnStack)
+        {
+            JITDUMP("Checking if we can stack allocate object [%06u] (%s)\n", m_compiler->dspTreeID(tree),
+                    m_compiler->eeGetClassName(clsHnd));
+        }
+        else
+        {
+            JITDUMP("Object [%06u] must be allocated on the heap (%s)\n", m_compiler->dspTreeID(tree),
+                    m_compiler->eeGetClassName(clsHnd));
+        }
     }
-    else if (!m_isR2R && tree->IsHelperCall())
+    else if (tree->IsHelperCall())
     {
         GenTreeCall* const call = tree->AsCall();
+
         switch (call->GetHelperNum())
         {
             case CORINFO_HELP_NEWARR_1_VC:
@@ -1299,6 +1311,26 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
                 if ((call->gtArgs.CountUserArgs() == 2) && call->gtArgs.GetUserArgByIndex(1)->GetNode()->IsCnsIntOrI())
                 {
                     allocType = OAT_NEWARR;
+                    JITDUMP("Checking if we can stack allocate array [%06u]\n", m_compiler->dspTreeID(call));
+                }
+                else
+                {
+                    JITDUMP("Can't handle unknown length newarr [%06u]\n", m_compiler->dspTreeID(call));
+                }
+                break;
+            }
+
+            case CORINFO_HELP_READYTORUN_NEWARR_1:
+            {
+                assert(m_isR2R);
+                if ((call->gtArgs.CountUserArgs() == 1) && call->gtArgs.GetUserArgByIndex(0)->GetNode()->IsCnsIntOrI())
+                {
+                    allocType = OAT_NEWARR_R2R;
+                    JITDUMP("Checking if we can stack allocate array [%06u]\n", m_compiler->dspTreeID(call));
+                }
+                else
+                {
+                    JITDUMP("Can't handle unknown length newarr [%06u]\n", m_compiler->dspTreeID(call));
                 }
                 break;
             }
@@ -1534,6 +1566,7 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
     switch (candidate.m_allocType)
     {
         case OAT_NEWARR:
+        case OAT_NEWARR_R2R:
             return MorphAllocObjNodeHelperArr(candidate);
         case OAT_NEWOBJ:
             return MorphAllocObjNodeHelperObj(candidate);
@@ -1558,14 +1591,7 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
 bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
 {
     assert(candidate.m_block->HasFlag(BBF_HAS_NEWARR));
-
-    // R2R not yet supported
-    //
-    if (m_isR2R)
-    {
-        candidate.m_onHeapReason = "[R2R array not yet supported]";
-        return false;
-    }
+    assert((candidate.m_allocType == OAT_NEWARR) || (candidate.m_allocType == OAT_NEWARR_R2R));
 
     GenTree* const data = candidate.m_tree->AsLclVar()->Data();
 
@@ -1587,7 +1613,8 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
     bool                 isExact   = false;
     bool                 isNonNull = false;
     CORINFO_CLASS_HANDLE clsHnd    = m_compiler->gtGetHelperCallClassHandle(data->AsCall(), &isExact, &isNonNull);
-    GenTree* const       len       = data->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
+    GenTreeCall* const   call      = data->AsCall();
+    GenTree* const       len       = call->gtArgs.GetUserArgByIndex(call->gtArgs.CountUserArgs() - 1)->GetNode();
 
     assert(len != nullptr);
 
@@ -1615,7 +1642,7 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
 
     JITDUMP("Allocating V%02u on the stack\n", candidate.m_lclNum);
     const unsigned int stackLclNum =
-        MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd, (unsigned int)len->AsIntCon()->IconValue(), blockSize,
+        MorphNewArrNodeIntoStackAlloc(call, clsHnd, (unsigned int)len->AsIntCon()->IconValue(), blockSize,
                                       candidate.m_block, candidate.m_statement);
 
     // Keep track of this new local for later type updates.
@@ -1729,6 +1756,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     if (helperHasSideEffects)
     {
         helperCall->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
+        helperCall->gtFlags |= GTF_GLOB_REF;
     }
 
 #ifdef FEATURE_READYTORUN
@@ -1777,10 +1805,23 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     assert(newArr->IsHelperCall());
     assert(newArr->GetHelperNum() != CORINFO_HELP_NEWARR_1_MAYBEFROZEN);
 
-    const bool         shortLifetime = false;
-    const bool         alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
-    const unsigned int lclNum        = m_compiler->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
-    LclVarDsc* const   lclDsc        = m_compiler->lvaGetDesc(lclNum);
+    const bool shortLifetime = false;
+    bool       alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
+#ifdef FEATURE_64BIT_ALIGNMENT
+    if (!alignTo8)
+    {
+        CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
+        var_types elemType = JITtype2varType(m_compiler->info.compCompHnd->getChildType(clsHnd, &elemClsHnd));
+        alignTo8           = (elemType == TYP_LONG) || (elemType == TYP_DOUBLE);
+        if (elemType == TYP_STRUCT)
+        {
+            assert(elemClsHnd != NO_CLASS_HANDLE);
+            alignTo8 = m_compiler->info.compCompHnd->getClassAlignmentRequirement(elemClsHnd) == 8;
+        }
+    }
+#endif
+    const unsigned int lclNum = m_compiler->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
+    LclVarDsc* const   lclDsc = m_compiler->lvaGetDesc(lclNum);
 
     if (alignTo8)
     {
@@ -1822,7 +1863,6 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     //
     GenTree* const stackLocalAddr = m_compiler->gtNewLclAddrNode(lclNum, 0);
     newArr->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(stackLocalAddr).WellKnown(WellKnownArg::StackArrayLocal));
-    newArr->gtCallMoreFlags |= GTF_CALL_M_STACK_ARRAY;
 
     // Retype the call result as an unmanaged pointer
     //
@@ -2340,7 +2380,8 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 }
                 else if (call->IsDelegateInvoke())
                 {
-                    if (tree == call->gtArgs.GetThisArg()->GetNode())
+                    // Explicit tail calls may use helpers that need the delegate after this frame returns.
+                    if (!call->IsTailPrefixedCall() && (tree == call->gtArgs.GetThisArg()->GetNode()))
                     {
                         JITDUMP("Delegate invoke this...\n");
                         canLclVarEscapeViaParentStack = false;
@@ -2391,6 +2432,31 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
 }
 
 //------------------------------------------------------------------------
+// UpdateStoreType: Update the type of a GC store whose data may point to the stack.
+//
+// Arguments:
+//    store   - Store node
+//    newType - New type of the store data
+//
+void ObjectAllocator::UpdateStoreType(GenTree* store, var_types newType)
+{
+    assert(varTypeIsGC(store->TypeGet()));
+
+    StoreInfo* const info = m_StoreAddressToIndexMap.LookupPointer(store);
+    if (info != nullptr)
+    {
+        unsigned const addressIndex = info->m_index;
+        if ((addressIndex != BAD_VAR_NUM) && !DoesIndexPointToStack(addressIndex))
+        {
+            store->ChangeType(TYP_BYREF);
+            return;
+        }
+    }
+
+    store->ChangeType(newType);
+}
+
+//------------------------------------------------------------------------
 // UpdateAncestorTypes: Update types of some ancestor nodes of a possibly-stack-pointing
 //                      tree from TYP_REF to TYP_BYREF or TYP_I_IMPL.
 //
@@ -2436,6 +2502,28 @@ void ObjectAllocator::UpdateAncestorTypes(
                     {
                         parent->ChangeType(newType);
                     }
+                }
+                break;
+            }
+
+            case GT_STORE_LCL_FLD:
+            {
+                assert(tree == parent->AsLclVarCommon()->Data());
+
+                if (parent->TypeIs(TYP_STRUCT))
+                {
+                    assert(retypeFields);
+                    GenTreeLclFld* const store     = parent->AsLclFld();
+                    ClassLayout* const   oldLayout = store->GetLayout();
+
+                    if (oldLayout->HasGCPtr())
+                    {
+                        store->SetLayout(GetRetypedLayout(oldLayout, newLayout));
+                    }
+                }
+                else if (varTypeIsGC(parent->TypeGet()))
+                {
+                    UpdateStoreType(parent, newType);
                 }
                 break;
             }
@@ -2578,27 +2666,7 @@ void ObjectAllocator::UpdateAncestorTypes(
                     if (varTypeIsGC(parent->TypeGet()))
                     {
                         // We are storing a non-struct value, possibly to a struct field.
-                        //
-                        // See if we can figure out the field type from the address.
-                        // It might be TYP_BYREF even if the value we are storing is TYP_I_IMPL.
-                        //
-                        StoreInfo* const info       = m_StoreAddressToIndexMap.LookupPointer(parent);
-                        bool             wasRetyped = false;
-
-                        if (info != nullptr)
-                        {
-                            unsigned const addressIndex = info->m_index;
-                            if ((addressIndex != BAD_VAR_NUM) && !DoesIndexPointToStack(addressIndex))
-                            {
-                                parent->ChangeType(TYP_BYREF);
-                                wasRetyped = true;
-                            }
-                        }
-
-                        if (!wasRetyped)
-                        {
-                            parent->ChangeType(newType);
-                        }
+                        UpdateStoreType(parent, newType);
                     }
                     else if (retypeFields && parent->OperIs(GT_STORE_BLK))
                     {
@@ -2607,25 +2675,7 @@ void ObjectAllocator::UpdateAncestorTypes(
 
                         if (oldLayout->HasGCPtr())
                         {
-                            if (newLayout->GetSize() == oldLayout->GetSize())
-                            {
-                                block->SetLayout(newLayout);
-                            }
-                            else
-                            {
-                                // We must be storing just a portion of the original local
-                                //
-                                assert(newLayout->GetSize() > oldLayout->GetSize());
-
-                                if (newLayout->HasGCPtr())
-                                {
-                                    block->SetLayout(GetByrefLayout(oldLayout));
-                                }
-                                else
-                                {
-                                    block->SetLayout(GetNonGCLayout(oldLayout));
-                                }
-                            }
+                            block->SetLayout(GetRetypedLayout(oldLayout, newLayout));
                         }
                     }
                 }
@@ -2653,26 +2703,7 @@ void ObjectAllocator::UpdateAncestorTypes(
 
                         if (oldLayout->HasGCPtr())
                         {
-                            if (newLayout->GetSize() == oldLayout->GetSize())
-                            {
-                                block->SetLayout(newLayout);
-                            }
-                            else
-                            {
-                                // We must be loading just a portion of the original local
-                                //
-                                assert(newLayout->GetSize() > oldLayout->GetSize());
-
-                                if (newLayout->HasGCPtr())
-                                {
-                                    block->SetLayout(GetByrefLayout(oldLayout));
-                                }
-                                else
-                                {
-                                    block->SetLayout(GetNonGCLayout(oldLayout));
-                                }
-                            }
-
+                            block->SetLayout(GetRetypedLayout(oldLayout, newLayout));
                             didRetype = true;
                         }
                     }
@@ -3598,6 +3629,30 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
                     // they are properly disjoint and things will work out just fine.
                     //
                     JITDUMP("Looks like enumerator var re-use (multiple defining GDVs)\n");
+
+                    // Since we are walking in RPO, all appearances assigned to
+                    // earlier candidates have already been seen. The partition
+                    // is unsafe if this definition may reach those appearances
+                    // through a backedge, or if it is on a sibling flow path.
+                    //
+                    for (CloneInfo* const previousInfo : CloneMap::ValueIteration(&m_CloneMap))
+                    {
+                        if (previousInfo->m_local != enumeratorLocal)
+                        {
+                            continue;
+                        }
+
+                        EnumeratorVar* previousEnumeratorVar = nullptr;
+                        bool const     hasDominatingDef =
+                            previousInfo->m_appearanceMap->Lookup(enumeratorLocal, &previousEnumeratorVar) &&
+                            (previousEnumeratorVar->m_def != nullptr) &&
+                            m_compiler->m_domTree->Dominates(previousEnumeratorVar->m_def->m_block, block);
+
+                        if (block->HasFlag(BBF_BACKWARD_JUMP) || !hasDominatingDef)
+                        {
+                            previousInfo->m_hasConflictingRedefinition = true;
+                        }
+                    }
                 }
 
                 // We will query this info if we see CALL(enumeratorLocal)
@@ -3987,6 +4042,12 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     JITDUMP("** Seeing if we can clone to guarantee non-escape under V%02u\n", info->m_local);
     BasicBlock* const allocBlock = info->m_allocBlock;
 
+    if (info->m_hasConflictingRedefinition)
+    {
+        JITDUMP("V%02u has a later definition that may reach its guarded uses\n", info->m_local);
+        return false;
+    }
+
     // Cloning redirects the allocation block's sole outgoing edge to the fast path,
     // so the allocation block must be a block kind that has a single target.
     //
@@ -4225,13 +4286,13 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
 
         for (EnumeratorVarAppearance* const a : *(ev->m_appearances))
         {
-            // If this is a use, see if it's part of a GDV guard.
+            // If this is a use, see if it's part of a GDV guard for this allocation's type.
             //
             if (!a->m_isDef && (a->m_stmt == a->m_block->lastStmt()))
             {
                 GuardInfo      tempInfo;
                 GenTree* const guardingRelop = IsGuard(a->m_block, &tempInfo);
-                a->m_isGuard                 = (guardingRelop != nullptr);
+                a->m_isGuard                 = (guardingRelop != nullptr) && (tempInfo.m_type == info->m_type);
             }
 
             // If this is V, we're done
@@ -4971,6 +5032,29 @@ ClassLayout* ObjectAllocator::GetBoxedLayout(ClassLayout* layout)
 #endif
 
     return m_compiler->typGetCustomLayout(b);
+}
+
+//------------------------------------------------------------------------------
+// GetRetypedLayout: get the retyped layout for a struct use.
+//
+// Arguments:
+//   oldLayout - layout of the struct use
+//   newLayout - retyped layout of the containing local
+//
+ClassLayout* ObjectAllocator::GetRetypedLayout(ClassLayout* oldLayout, ClassLayout* newLayout)
+{
+    assert(oldLayout->HasGCPtr());
+
+    if (newLayout->GetSize() == oldLayout->GetSize())
+    {
+        return newLayout;
+    }
+
+    // The use refers to just a portion of the retyped local.
+    //
+    assert(newLayout->GetSize() > oldLayout->GetSize());
+
+    return newLayout->HasGCPtr() ? GetByrefLayout(oldLayout) : GetNonGCLayout(oldLayout);
 }
 
 //------------------------------------------------------------------------------

@@ -659,6 +659,12 @@ bool GCToOSInterface::CanGetCurrentProcessorNumber()
     return true;
 }
 
+// Check if the OS supports setting thread affinity
+bool GCToOSInterface::CanSetThreadAffinity()
+{
+    return true;
+}
+
 // Break into a debugger
 void GCToOSInterface::DebugBreak()
 {
@@ -670,8 +676,7 @@ void GCToOSInterface::DebugBreak()
 //  sleepMSec   - time to sleep before switching to another thread
 void GCToOSInterface::Sleep(uint32_t sleepMSec)
 {
-    // TODO(segilles) CLR implementation of __SwitchToThread spins for short sleep durations
-    // to avoid context switches - is that interesting or useful here?
+    // TODO: Consider spinning for short sleep durations to avoid context switches.
     if (sleepMSec > 0)
     {
         minipal_sleep(sleepMSec);

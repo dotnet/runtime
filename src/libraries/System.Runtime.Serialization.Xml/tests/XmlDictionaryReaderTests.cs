@@ -3,8 +3,10 @@
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
@@ -90,6 +92,151 @@ namespace System.Runtime.Serialization.Xml.Tests
             }
 
             Assert.Equal(testString, returnedString);
+        }
+
+        [Theory]
+        [InlineData(64, 128, false)]
+        [InlineData(64, 128, true)]
+        [InlineData(119, 128, false)]
+        [InlineData(119, 128, true)]
+        [InlineData(122, 131, false)]
+        [InlineData(122, 131, true)]
+        [InlineData(125, 256, false)]
+        [InlineData(125, 256, true)]
+        public static void BinaryXml_ReadPartialBinaryText_BufferCapacity(int maxBytesPerRead, int expectedCapacity, bool withEndElement)
+        {
+            byte[] payload = Enumerable.Range(0, 513).Select(i => unchecked((byte)i)).ToArray();
+            byte[] document = CreateBinaryTextDocument(XmlBinaryNodeType.Bytes32Text, payload, withEndElement);
+            using var stream = new MemoryStream(document);
+            var quotas = new XmlDictionaryReaderQuotas { MaxBytesPerRead = maxBytesPerRead };
+            using XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(stream, quotas);
+
+            Assert.True(reader.Read());
+            Assert.Equal(XmlNodeType.Element, reader.NodeType);
+            Assert.Equal("ab", reader.LocalName);
+            byte[] initialBuffer = GetBinaryReaderBuffer(reader);
+            Assert.Equal(128, initialBuffer.Length);
+
+            Assert.True(reader.Read());
+            Assert.Equal(XmlNodeType.Text, reader.NodeType);
+            byte[] buffer = GetBinaryReaderBuffer(reader);
+            Assert.Equal(expectedCapacity, buffer.Length);
+            if (expectedCapacity == initialBuffer.Length)
+            {
+                Assert.Same(initialBuffer, buffer);
+            }
+            else
+            {
+                Assert.NotSame(initialBuffer, buffer);
+            }
+
+            int chunkLength = maxBytesPerRead - 5;
+            chunkLength -= chunkLength % 3;
+            Assert.Equal(Convert.ToBase64String(payload, 0, chunkLength), reader.Value);
+            // Four bytes for the element header and five for the original text header.
+            ReadOnlySpan<byte> insertedHeader = buffer.AsSpan(9 + chunkLength, 5);
+            Assert.Equal((byte)(withEndElement ? XmlBinaryNodeType.Bytes32TextWithEndElement : XmlBinaryNodeType.Bytes32Text), insertedHeader[0]);
+            Assert.Equal(payload.Length - chunkLength, BinaryPrimitives.ReadInt32LittleEndian(insertedHeader.Slice(1)));
+
+            Assert.Equal(payload, reader.ReadContentAsBase64());
+            Assert.Same(buffer, GetBinaryReaderBuffer(reader));
+            Assert.Equal(XmlNodeType.EndElement, reader.NodeType);
+            Assert.Equal("ab", reader.LocalName);
+            Assert.False(reader.Read());
+            Assert.Equal(stream.Length, stream.Position);
+        }
+
+        [Theory]
+        [InlineData(0, false)]
+        [InlineData(0, true)]
+        [InlineData(59, false)]
+        [InlineData(59, true)]
+        [InlineData(60, false)]
+        [InlineData(60, true)]
+        [InlineData(513, false)]
+        [InlineData(513, true)]
+        public static void BinaryXml_ReadPartialBinaryText(int payloadLength, bool withEndElement)
+        {
+            byte[] expected = Enumerable.Range(0, payloadLength).Select(i => unchecked((byte)i)).ToArray();
+            byte[] document = CreateBinaryTextDocument(XmlBinaryNodeType.Bytes32Text, expected, withEndElement);
+            using var stream = new MemoryStream(document);
+            var quotas = new XmlDictionaryReaderQuotas { MaxBytesPerRead = 64 };
+            using XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(stream, quotas);
+
+            Assert.True(reader.Read());
+            Assert.Equal("ab", reader.LocalName);
+            Assert.Equal(expected, reader.ReadElementContentAsBase64());
+            Assert.Equal(XmlNodeType.None, reader.NodeType);
+            Assert.True(reader.EOF);
+            Assert.Equal(stream.Length, stream.Position);
+        }
+
+        [Theory]
+        [InlineData(false, false, 64)]
+        [InlineData(false, true, 64)]
+        [InlineData(true, false, 64)]
+        [InlineData(true, true, 64)]
+        [InlineData(false, false, 125)]
+        [InlineData(false, true, 125)]
+        [InlineData(true, false, 125)]
+        [InlineData(true, true, 125)]
+        public static void BinaryXml_ReadPartialText(bool unicode, bool withEndElement, int maxBytesPerRead)
+        {
+            string expected = string.Concat(Enumerable.Repeat("a\u00E9\uD83D\uDE00", 129));
+            Encoding encoding = unicode ? Encoding.Unicode : Encoding.UTF8;
+            XmlBinaryNodeType nodeType = unicode ? XmlBinaryNodeType.UnicodeChars32Text : XmlBinaryNodeType.Chars32Text;
+            byte[] document = CreateBinaryTextDocument(nodeType, encoding.GetBytes(expected), withEndElement);
+            using var stream = new MemoryStream(document);
+            var quotas = new XmlDictionaryReaderQuotas { MaxBytesPerRead = maxBytesPerRead };
+            using XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(stream, quotas);
+
+            Assert.True(reader.Read());
+            Assert.Equal("ab", reader.LocalName);
+            Assert.Equal(expected, reader.ReadElementContentAsString());
+            Assert.Equal(XmlNodeType.None, reader.NodeType);
+            Assert.True(reader.EOF);
+            Assert.Equal(stream.Length, stream.Position);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void BinaryXml_ReadPartialBinaryText_Truncated(bool withEndElement)
+        {
+            byte[] document = CreateBinaryTextDocument(XmlBinaryNodeType.Bytes32Text, new byte[513], withEndElement);
+            Array.Resize(ref document, document.Length - (withEndElement ? 1 : 2));
+            using var stream = new MemoryStream(document);
+            var quotas = new XmlDictionaryReaderQuotas { MaxBytesPerRead = 64 };
+            using XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(stream, quotas);
+
+            reader.ReadStartElement("ab");
+            Assert.Throws<XmlException>(() => reader.ReadContentAsBase64());
+        }
+
+        [DynamicDependency("_bufferReader", "System.Xml.XmlBaseReader", "System.Private.DataContractSerialization")]
+        [DynamicDependency("get_Buffer", "System.Xml.XmlBufferReader", "System.Private.DataContractSerialization")]
+        private static byte[] GetBinaryReaderBuffer(XmlDictionaryReader reader)
+        {
+            object bufferReader = reader.GetType().BaseType.GetField("_bufferReader", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(reader);
+            return (byte[])bufferReader.GetType().GetProperty("Buffer").GetValue(bufferReader);
+        }
+
+        private static byte[] CreateBinaryTextDocument(XmlBinaryNodeType nodeType, ReadOnlySpan<byte> payload, bool withEndElement)
+        {
+            using var stream = new MemoryStream();
+            stream.WriteByte((byte)XmlBinaryNodeType.ShortElement);
+            stream.WriteByte(2);
+            stream.Write("ab"u8);
+            stream.WriteByte((byte)(withEndElement ? nodeType | XmlBinaryNodeType.EndElement : nodeType));
+            Span<byte> length = stackalloc byte[sizeof(int)];
+            BinaryPrimitives.WriteInt32LittleEndian(length, payload.Length);
+            stream.Write(length);
+            stream.Write(payload);
+            if (!withEndElement)
+            {
+                stream.WriteByte((byte)XmlBinaryNodeType.EndElement);
+            }
+            return stream.ToArray();
         }
 
         [Fact]

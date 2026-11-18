@@ -10,7 +10,6 @@ namespace System.Runtime.InteropServices.Tests
     public class StructureToPtrTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15102", TestRuntimes.Mono)]
         public void StructureToPtr_ByValBoolArray_Success()
         {
             var structure1 = new StructWithBoolArray()
@@ -169,7 +168,6 @@ namespace System.Runtime.InteropServices.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        [ActiveIssue("https://github.com/mono/mono/issues/15104", TestRuntimes.Mono)]
         public void StructureToPtr_InvalidLengthByValArrayInStruct_ThrowsArgumentException()
         {
             var structure = new StructWithByValArray

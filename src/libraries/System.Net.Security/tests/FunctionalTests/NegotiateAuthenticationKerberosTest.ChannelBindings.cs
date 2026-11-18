@@ -22,6 +22,26 @@ namespace System.Net.Security.Tests
         [ConditionalFact(typeof(ExtendedProtectionPolicy), nameof(ExtendedProtectionPolicy.OSSupportsExtendedProtection))]
         public Task ChannelBindings_Mismatched_Unique_FailsWithBadBinding() => RunMismatchTest(ChannelBindingKind.Unique);
 
+        [ConditionalTheory(typeof(ExtendedProtectionPolicy), nameof(ExtendedProtectionPolicy.OSSupportsExtendedProtection))]
+        [InlineData(ChannelBindingKind.Endpoint)]
+        [InlineData(ChannelBindingKind.Unique)]
+        public async Task ChannelBindings_PolicyEnforcement(ChannelBindingKind kind)
+        {
+            using var kerberosExecutor = new KerberosExecutor(_testOutputHelper, "LINUX.CONTOSO.COM");
+
+            kerberosExecutor.AddService("HTTP/linux.contoso.com");
+            kerberosExecutor.AddUser("user");
+
+            if (kind == ChannelBindingKind.Endpoint)
+            {
+                await kerberosExecutor.Invoke(static () => RunPolicyEnforcement(ChannelBindingKind.Endpoint));
+            }
+            else
+            {
+                await kerberosExecutor.Invoke(static () => RunPolicyEnforcement(ChannelBindingKind.Unique));
+            }
+        }
+
         private async Task RunMatchingTest(ChannelBindingKind kind)
         {
             using var kerberosExecutor = new KerberosExecutor(_testOutputHelper, "LINUX.CONTOSO.COM");
@@ -56,7 +76,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        private static void RunMatching(ChannelBindingKind kind)
+        private static void RunMatching(ChannelBindingKind kind, PolicyEnforcement? policyEnforcement = null)
         {
             using SafeChannelBindingHandle clientBinding = CreateChannelBinding(kind, hashSeed: 0x42);
             using SafeChannelBindingHandle serverBinding = CreateChannelBinding(kind, hashSeed: 0x42);
@@ -70,15 +90,18 @@ namespace System.Net.Security.Tests
             using NegotiateAuthentication server = new(new NegotiateAuthenticationServerOptions
             {
                 Binding = serverBinding,
+                Policy = policyEnforcement.HasValue ? new ExtendedProtectionPolicy(policyEnforcement.Value) : null,
             });
 
             RunExchange(client, server, expectAuthenticated: true, out NegotiateAuthenticationStatusCode lastClientStatus, out NegotiateAuthenticationStatusCode lastServerStatus);
 
             Assert.Equal(NegotiateAuthenticationStatusCode.Completed, lastClientStatus);
             Assert.Equal(NegotiateAuthenticationStatusCode.Completed, lastServerStatus);
+            Assert.True(client.IsAuthenticated);
+            Assert.True(server.IsAuthenticated);
         }
 
-        private static void RunMismatch(ChannelBindingKind kind)
+        private static void RunMismatch(ChannelBindingKind kind, PolicyEnforcement? policyEnforcement = null)
         {
             using SafeChannelBindingHandle clientBinding = CreateChannelBinding(kind, hashSeed: 0x42);
             using SafeChannelBindingHandle serverBinding = CreateChannelBinding(kind, hashSeed: 0x99);
@@ -92,19 +115,58 @@ namespace System.Net.Security.Tests
             using NegotiateAuthentication server = new(new NegotiateAuthenticationServerOptions
             {
                 Binding = serverBinding,
+                Policy = policyEnforcement.HasValue ? new ExtendedProtectionPolicy(policyEnforcement.Value) : null,
             });
 
             RunExchange(client, server, expectAuthenticated: false, out _, out NegotiateAuthenticationStatusCode lastServerStatus);
 
             Assert.Equal(NegotiateAuthenticationStatusCode.BadBinding, lastServerStatus);
+            Assert.False(server.IsAuthenticated);
+        }
+
+        private static void RunPolicyEnforcement(ChannelBindingKind kind)
+        {
+            foreach (PolicyEnforcement? policyEnforcement in new PolicyEnforcement?[] { null, PolicyEnforcement.Never, PolicyEnforcement.WhenSupported, PolicyEnforcement.Always })
+            {
+                RunMatching(kind, policyEnforcement);
+                RunMismatch(kind, policyEnforcement);
+                RunMissingClientBinding(kind, policyEnforcement);
+            }
+        }
+
+        private static void RunMissingClientBinding(ChannelBindingKind kind, PolicyEnforcement? policyEnforcement)
+        {
+            using SafeChannelBindingHandle serverBinding = CreateChannelBinding(kind, hashSeed: 0x42);
+
+            using NegotiateAuthentication client = new(new NegotiateAuthenticationClientOptions
+            {
+                Credential = new NetworkCredential("user", KerberosExecutor.DefaultUserPassword, "LINUX.CONTOSO.COM"),
+                TargetName = "HTTP/linux.contoso.com",
+                Binding = null,
+            });
+            using NegotiateAuthentication server = new(new NegotiateAuthenticationServerOptions
+            {
+                Binding = serverBinding,
+                Policy = policyEnforcement.HasValue ? new ExtendedProtectionPolicy(policyEnforcement.Value) : null,
+            });
+
+            bool expectAuthenticated = policyEnforcement != PolicyEnforcement.Always;
+            RunExchange(client, server, expectAuthenticated, out NegotiateAuthenticationStatusCode lastClientStatus, out NegotiateAuthenticationStatusCode lastServerStatus);
+
+            Assert.Equal(expectAuthenticated ? NegotiateAuthenticationStatusCode.Completed : NegotiateAuthenticationStatusCode.BadBinding, lastServerStatus);
+            Assert.Equal(expectAuthenticated, server.IsAuthenticated);
+            if (expectAuthenticated)
+            {
+                Assert.Equal(NegotiateAuthenticationStatusCode.Completed, lastClientStatus);
+                Assert.True(client.IsAuthenticated);
+            }
         }
 
         private static SafeChannelBindingHandle CreateChannelBinding(ChannelBindingKind kind, byte hashSeed)
         {
             const int HashLength = 32;
             SafeChannelBindingHandle handle = new SafeChannelBindingHandle(kind);
-            byte[] hash = new byte[HashLength];
-            Array.Fill(hash, hashSeed);
+            byte[] hash = Array.CreateFilled(HashLength, hashSeed);
             handle.SetCertHash(hash);
             return handle;
         }

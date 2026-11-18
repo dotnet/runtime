@@ -14,12 +14,59 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class PropertyTests
     {
+        [Theory]
+        [InlineData("", new byte[] { 0x08, 0x00, 0x08 })]
+        [InlineData("...", new byte[] { 0x08, 0x00, 0x08, 0x41 })]
+        [InlineData("..., int32", new byte[] { 0x08, 0x01, 0x08, 0x41, 0x08 })]
+        [InlineData("int32, ...", new byte[] { 0x08, 0x01, 0x08, 0x08, 0x41 })]
+        [InlineData("int32, ..., string", new byte[] { 0x08, 0x02, 0x08, 0x08, 0x41, 0x0e })]
+        [InlineData("..., ..., int32, ...", new byte[] { 0x08, 0x01, 0x08, 0x41, 0x41, 0x08, 0x41 })]
+        public void PropertySignature_SentinelsDoNotCountAsParameters(string parameters, byte[] expectedSignature)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public A
+                {
+                    .method public static int32 get_Goo() { ldnull throw }
+                    .property int32 Goo({{parameters}}) { .get int32 A::get_Goo() }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            PropertyDefinition property = reader.GetPropertyDefinition(Assert.Single(reader.PropertyDefinitions));
+
+            Assert.Equal(expectedSignature, reader.GetBlobBytes(property.Signature));
+            Assert.Equal("get_Goo", reader.GetString(reader.GetMethodDefinition(property.GetAccessors().Getter).Name));
+        }
+
+        [Theory]
+        [InlineData("", "", new byte[] { 0x28, 0x01, 0x12, 0x0c, 0x12, 0x0c })]
+        [InlineData("..., ", "", new byte[] { 0x28, 0x01, 0x12, 0x0c, 0x41, 0x12, 0x0c })]
+        [InlineData("", ", ...", new byte[] { 0x28, 0x01, 0x12, 0x0c, 0x12, 0x0c, 0x41 })]
+        public void PropertySignature_SentinelPreservedWhenRewritingLocalTypes(string prefix, string suffix, byte[] expectedSignature)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public Test
+                {
+                    .property instance class A Goo({{prefix}}class A{{suffix}}) { }
+                }
+                .class public A { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            PropertyDefinition property = reader.GetPropertyDefinition(Assert.Single(reader.PropertyDefinitions));
+
+            Assert.Equal(expectedSignature, reader.GetBlobBytes(property.Signature));
+        }
+
         [Fact]
         public void Property_BasicProperty_IsEmitted()
         {
@@ -45,8 +92,8 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var sourceText = new ILAssembler.SourceText(source, "test.il");
-            var compiler = new ILAssembler.DocumentCompiler();
+            var sourceText = new Microsoft.DotNet.ILAssembler.SourceText(source, "test.il");
+            var compiler = new Microsoft.DotNet.ILAssembler.DocumentCompiler();
             var (diagnostics, result) = compiler.Compile(sourceText, _ => default!, _ => default!, new Options());
 
             // Check for diagnostics
@@ -65,6 +112,46 @@ namespace ILAssembler.Tests
             var propCount = reader.GetTableRowCount(TableIndex.Property);
             Assert.True(propCount > 0, $"Expected at least 1 property, got {propCount}");
         }
+
+        [Fact]
+        public void PropertyAttributesOtherAccessorAndCustomAttribute_EmitMetadata()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public specialname instance int32 get_Value() cil managed { ldc.i4.0 ret }
+                    .method public specialname instance void set_Value(int32 'value') cil managed { ret }
+                    .method public specialname instance void other_Value() cil managed { ret }
+
+                    .property specialname rtspecialname instance int32 Value()
+                    {
+                        .get instance int32 Test::get_Value()
+                        .set instance void Test::set_Value(int32)
+                        .other instance void Test::other_Value()
+                        .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var propertyHandle = Assert.Single(reader.PropertyDefinitions);
+            var property = reader.GetPropertyDefinition(propertyHandle);
+            var accessors = property.GetAccessors();
+
+            Assert.True(property.Attributes.HasFlag(PropertyAttributes.SpecialName));
+            Assert.Equal("get_Value", reader.GetString(reader.GetMethodDefinition(accessors.Getter).Name));
+            Assert.Equal("set_Value", reader.GetString(reader.GetMethodDefinition(accessors.Setter).Name));
+            Assert.Equal(
+                "other_Value",
+                reader.GetString(reader.GetMethodDefinition(Assert.Single(accessors.Others)).Name));
+            Assert.Equal(
+                [0x01, 0x00, 0x00, 0x00],
+                reader.GetBlobBytes(reader.GetCustomAttribute(Assert.Single(reader.GetCustomAttributes(propertyHandle))).Value));
+        }
+
 
         [Fact]
         public void PropertyInitOpt_WithConstantValue_CreatesConstantEntry()
@@ -91,8 +178,8 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var sourceText = new ILAssembler.SourceText(source, "test.il");
-            var compiler = new ILAssembler.DocumentCompiler();
+            var sourceText = new Microsoft.DotNet.ILAssembler.SourceText(source, "test.il");
+            var compiler = new Microsoft.DotNet.ILAssembler.DocumentCompiler();
             var (diagnostics, result) = compiler.Compile(sourceText, _ => default!, _ => default!, new Options());
 
             foreach (var d in diagnostics)
@@ -147,8 +234,8 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var sourceText = new ILAssembler.SourceText(source, "test.il");
-            var compiler = new ILAssembler.DocumentCompiler();
+            var sourceText = new Microsoft.DotNet.ILAssembler.SourceText(source, "test.il");
+            var compiler = new Microsoft.DotNet.ILAssembler.DocumentCompiler();
             var (diagnostics, result) = compiler.Compile(sourceText, _ => default!, _ => default!, new Options());
 
             foreach (var d in diagnostics)
@@ -216,6 +303,50 @@ namespace ILAssembler.Tests
             // The property should have a custom attribute (ObsoleteAttribute)
             var attrs = reader.GetCustomAttributes(propHandle);
             Assert.True(attrs.Count >= 1, $"Property should have at least 1 custom attribute, got {attrs.Count}");
+        }
+
+        [Fact]
+        public void IndexedProperty_EmitsSignatureAndAccessorMetadata()
+        {
+            string source = """
+                .assembly test { }
+                .assembly extern mscorlib { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .property instance int32 Item(int32)
+                    {
+                        .get instance int32 Test::get_Item(int32)
+                        .set instance void Test::set_Item(int32, int32)
+                    }
+
+                    .method public hidebysig specialname instance int32 get_Item(int32 index) cil managed
+                    {
+                        ldarg.1
+                        ret
+                    }
+
+                    .method public hidebysig specialname instance void set_Item(int32 index, int32 'value') cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var propertyHandle = reader.PropertyDefinitions.Single();
+            var property = reader.GetPropertyDefinition(propertyHandle);
+            var accessors = property.GetAccessors();
+            MethodSignature<string> signature =
+                property.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null);
+
+            Assert.Equal("Item", reader.GetString(property.Name));
+            Assert.Equal("get_Item", reader.GetString(reader.GetMethodDefinition(accessors.Getter).Name));
+            Assert.Equal("set_Item", reader.GetString(reader.GetMethodDefinition(accessors.Setter).Name));
+            Assert.True(signature.Header.IsInstance);
+            Assert.Equal("int32", signature.ReturnType);
+            Assert.Equal(new[] { "int32" }, signature.ParameterTypes);
         }
     }
 }

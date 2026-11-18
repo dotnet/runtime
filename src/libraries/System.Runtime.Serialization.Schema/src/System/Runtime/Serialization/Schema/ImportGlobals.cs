@@ -87,11 +87,6 @@ namespace System.Runtime.Serialization
         internal static Uri DataContractXsdBaseNamespaceUri => field ??= new Uri(DataContractXsdBaseNamespace);
         internal static XmlQualifiedName IdQualifiedName => field ??= new XmlQualifiedName(ImportGlobals.IdLocalName, ImportGlobals.SerializationNamespace);
         internal static XmlQualifiedName RefQualifiedName => field ??= new XmlQualifiedName(ImportGlobals.RefLocalName, ImportGlobals.SerializationNamespace);
-        internal static Type TypeOfXmlElement => field ??= typeof(XmlElement);
-        internal static Type TypeOfXmlNodeArray => field ??= typeof(XmlNode[]);
-        internal static Type TypeOfXmlQualifiedName => field ??= typeof(XmlQualifiedName);
-        internal static Type TypeOfXmlSchemaProviderAttribute => field ??= typeof(XmlSchemaProviderAttribute);
-        internal static Type TypeOfXmlSchemaType => field ??= typeof(XmlSchemaType);
 
         public const string SerializationSchema = @"<?xml version='1.0' encoding='utf-8'?>
 <xs:schema elementFormDefault='qualified' attributeFormDefault='qualified' xmlns:tns='http://schemas.microsoft.com/2003/10/Serialization/' targetNamespace='http://schemas.microsoft.com/2003/10/Serialization/' xmlns:xs='http://www.w3.org/2001/XMLSchema'>

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.DirectoryServices.Protocols
@@ -55,7 +56,7 @@ namespace System.DirectoryServices.Protocols
             // Connect explicitly to the server.
             var timeout = new LDAP_TIMEVAL()
             {
-                tv_sec = (int)(_connectionTimeOut.Ticks / TimeSpan.TicksPerSecond)
+                tv_sec = new CLong((int)(_connectionTimeOut.Ticks / TimeSpan.TicksPerSecond))
             };
             Debug.Assert(!_ldapHandle.IsInvalid);
             return Interop.Ldap.ldap_connect(_ldapHandle, timeout);

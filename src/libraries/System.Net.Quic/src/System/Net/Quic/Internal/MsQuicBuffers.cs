@@ -11,9 +11,9 @@ namespace System.Net.Quic;
 /// <summary>
 /// Helper class to convert managed data into QUIC_BUFFER* consumable by MsQuic.
 /// It also allows reuse with repeated Reset/Initialize calls, e.g. new, Initialize, (use), Reset, Initialize, (use), Reset, Initialize, (use), Dispose.
-/// Note that since this is struct and there's no finalizer, Dispose must be always called to release the unmanaged memory allocated by this struct.
+/// Dispose must always be called to release the unmanaged memory allocated by this class.
 /// </summary>
-internal unsafe struct MsQuicBuffers : IDisposable
+internal sealed unsafe class MsQuicBuffers : IDisposable
 {
     // Native memory block which holds the pinned memory pointers from _handles and can be passed to MsQuic as QUIC_BUFFER*.
     private QUIC_BUFFER* _buffers;
@@ -60,7 +60,7 @@ internal unsafe struct MsQuicBuffers : IDisposable
 
     /// <summary>
     /// Initializes QUIC_BUFFER* with data from inputs, converted via toBuffer.
-    /// Note that the struct either needs to be freshly created via new or previously cleaned up with Reset.
+    /// The instance either needs to be freshly created or previously cleaned up with Reset.
     /// </summary>
     /// <param name="inputs">Inputs to get their byte array, copy them to be passed to MsQuic as QUIC_BUFFER*.</param>
     /// <param name="toBuffer">Method extracting byte array from the inputs, e.g. applicationProtocol.Protocol.</param>
@@ -76,7 +76,7 @@ internal unsafe struct MsQuicBuffers : IDisposable
 
     /// <summary>
     /// Initializes QUIC_BUFFER* with the provided buffer.
-    /// Note that the struct either needs to be freshly created via new or previously cleaned up with Reset.
+    /// The instance either needs to be freshly created or previously cleaned up with Reset.
     /// </summary>
     /// <param name="buffer">Buffer to be passed to MsQuic as QUIC_BUFFER*.</param>
     public void Initialize(ReadOnlyMemory<byte> buffer)
@@ -86,7 +86,7 @@ internal unsafe struct MsQuicBuffers : IDisposable
     }
 
     /// <summary>
-    /// Release the native memory of individual buffers and allows reuse of this struct.
+    /// Releases the native memory of individual buffers and allows reuse of this instance.
     /// </summary>
     public void Reset()
     {

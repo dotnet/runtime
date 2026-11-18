@@ -123,6 +123,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         Call = 0x10,
         CallIndirect = 0x11,
         ReturnCall = 0x12,
+        ReturnCallIndirect = 0x13,
         LocalGet = 0x20,
         LocalSet = 0x21,
         LocalTee = 0x22,
@@ -901,6 +902,26 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         {
             return new WasmMemoryInitExpr(dataSegmentIndex, memoryIndex);
         }
+
+        public static WasmExpr Load(WasmValueType type, ulong offset) => type switch
+        {
+            WasmValueType.I32 => I32.Load(offset),
+            WasmValueType.I64 => I64.Load(offset),
+            WasmValueType.F32 => F32.Load(offset),
+            WasmValueType.F64 => F64.Load(offset),
+            WasmValueType.V128 => V128.Load(offset),
+            _ => throw new UnreachableException(),
+        };
+
+        public static WasmExpr Store(WasmValueType type, ulong offset) => type switch
+        {
+            WasmValueType.I32 => I32.Store(offset),
+            WasmValueType.I64 => I64.Store(offset),
+            WasmValueType.F32 => F32.Store(offset),
+            WasmValueType.F64 => F64.Store(offset),
+            WasmValueType.V128 => V128.Store(offset),
+            _ => throw new UnreachableException(),
+        };
     }
     internal static class ControlFlow
     {

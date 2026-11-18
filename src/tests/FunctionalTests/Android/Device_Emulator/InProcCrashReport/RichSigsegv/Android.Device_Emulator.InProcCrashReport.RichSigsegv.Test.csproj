@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Rich SIGSEGV: a managed NullReferenceException crash thread with interleaved
+       managed/native frames and generic-instantiation method names, plus extra
+       background threads. Exercises the multithreaded, interleaved-stack, generics
+       and managed-exception format branches in a single report. -->
+  <PropertyGroup>
+    <AssemblyName>Android.Device_Emulator.InProcCrashReport.RichSigsegv.Test</AssemblyName>
+    <MainLibraryFileName>Android.Device_Emulator.InProcCrashReport.RichSigsegv.Test.dll</MainLibraryFileName>
+    <DefineConstants>$(DefineConstants);INPROC_SCENARIO_RICHSIGSEGV</DefineConstants>
+  </PropertyGroup>
+  <Import Project="../Shared/InProcCrashReport.Common.props" />
+</Project>

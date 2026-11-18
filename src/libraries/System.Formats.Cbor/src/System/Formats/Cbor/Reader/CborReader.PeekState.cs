@@ -62,6 +62,12 @@ namespace System.Formats.Cbor
 
                 if (_currentMajorType is null && _definiteLength is null)
                 {
+                    if (_isTagContext)
+                    {
+                        // the sequence of root-level values ends with a tag that is not followed by a data item
+                        throw new CborContentException(SR.Cbor_Reader_InvalidCbor_TagNotFollowedByValue);
+                    }
+
                     // is at the end of a well-defined sequence of root-level values
                     return CborReaderState.Finished;
                 }

@@ -590,13 +590,15 @@ private:
 
 enum class ExceptionSetFlags : uint32_t
 {
-    None                     = 0x0,
-    OverflowException        = 0x1,
-    DivideByZeroException    = 0x2,
-    ArithmeticException      = 0x4,
-    NullReferenceException   = 0x8,
-    IndexOutOfRangeException = 0x10,
-    UnknownException         = 0x20,
+    None                        = 0x0,
+    OverflowException           = 0x1,
+    DivideByZeroException       = 0x2,
+    ArithmeticException         = 0x4,
+    NullReferenceException      = 0x8,
+    IndexOutOfRangeException    = 0x10,
+    ArgumentException           = 0x20,
+    ArgumentOutOfRangeException = 0x40,
+    UnknownException            = 0x80,
 };
 
 class HelperCallProperties
@@ -604,6 +606,7 @@ class HelperCallProperties
 private:
     bool              m_isPure[CORINFO_HELP_COUNT];
     ExceptionSetFlags m_exceptions[CORINFO_HELP_COUNT];
+    ExceptionSetFlags m_nativeAotExceptions[CORINFO_HELP_COUNT];
     bool              m_alwaysThrow[CORINFO_HELP_COUNT];
     bool              m_nonNullReturn[CORINFO_HELP_COUNT];
     bool              m_isAllocator[CORINFO_HELP_COUNT];
@@ -627,18 +630,16 @@ public:
         return m_isPure[helperId];
     }
 
-    bool NoThrow(CorInfoHelpFunc helperId)
+    bool NoThrow(CorInfoHelpFunc helperId, bool isNativeAot)
     {
-        assert(helperId > CORINFO_HELP_UNDEF);
-        assert(helperId < CORINFO_HELP_COUNT);
-        return (m_exceptions[helperId] == ExceptionSetFlags::None);
+        return ThrownExceptions(helperId, isNativeAot) == ExceptionSetFlags::None;
     }
 
-    ExceptionSetFlags ThrownExceptions(CorInfoHelpFunc helperId)
+    ExceptionSetFlags ThrownExceptions(CorInfoHelpFunc helperId, bool isNativeAot)
     {
         assert(helperId > CORINFO_HELP_UNDEF);
         assert(helperId < CORINFO_HELP_COUNT);
-        return m_exceptions[helperId];
+        return isNativeAot ? m_nativeAotExceptions[helperId] : m_exceptions[helperId];
     }
 
     bool AlwaysThrow(CorInfoHelpFunc helperId)
@@ -868,8 +869,6 @@ public:
 
     static double infinite_double();
 
-    static float infinite_float();
-
     static bool isAllBitsSet(float val);
 
     static bool isAllBitsSet(double val);
@@ -892,33 +891,17 @@ public:
 
     static double maximum(double val1, double val2);
 
-    static double maximumMagnitude(double val1, double val2);
-
-    static double maximumMagnitudeNumber(double val1, double val2);
-
     static double maximumNumber(double val1, double val2);
 
     static float maximum(float val1, float val2);
-
-    static float maximumMagnitude(float val1, float val2);
-
-    static float maximumMagnitudeNumber(float val1, float val2);
 
     static float maximumNumber(float val1, float val2);
 
     static double minimum(double val1, double val2);
 
-    static double minimumMagnitude(double val1, double val2);
-
-    static double minimumMagnitudeNumber(double val1, double val2);
-
     static double minimumNumber(double val1, double val2);
 
     static float minimum(float val1, float val2);
-
-    static float minimumMagnitude(float val1, float val2);
-
-    static float minimumMagnitudeNumber(float val1, float val2);
 
     static float minimumNumber(float val1, float val2);
 

@@ -1,14 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: DispatchInfo.h
-//
 
+// File: DispatchInfo.h
 //
 // Definition of helpers used to expose IDispatch
 // and IDispatchEx to COM.
-//
-
 
 #ifndef _DISPATCHINFO_H
 #define _DISPATCHINFO_H
@@ -280,12 +276,6 @@ public:
                                                int*                  pManagedMethodParamIndexMap,
                                                VARIANT**             aByrefArgOleVariant);
 
-    // Methods to retrieve the cached MD's
-    static MethodDesc*      GetFieldInfoMD(BinderMethodID Method, TypeHandle hndFieldInfoType);
-    static MethodDesc*      GetPropertyInfoMD(BinderMethodID Method, TypeHandle hndPropInfoType);
-    static MethodDesc*      GetMethodInfoMD(BinderMethodID Method, TypeHandle hndMethodInfoType);
-    static MethodDesc*      GetCustomAttrProviderMD(TypeHandle hndCustomAttrProvider);
-
     // This method synchronizes the DispatchInfo's members with the ones in managed world.
     // The return value will be set to TRUE if the object was out of synch and members where
     // added and it will be set to FALSE otherwise.
@@ -322,9 +312,6 @@ protected:
     virtual PTRARRAYREF     RetrievePropList();
     virtual PTRARRAYREF     RetrieveFieldList();
     virtual PTRARRAYREF     RetrieveMethList();
-
-    // Virtual method to retrieve the InvokeMember method desc.
-    virtual MethodDesc*     GetInvokeMemberMD();
 
     // Virtual method to retrieve the reflection object associated with the DispatchInfo.
     virtual OBJECTREF       GetReflectionObject();
@@ -380,17 +367,11 @@ public:
     DispatchMemberInfo*     GetFirstMember();
     DispatchMemberInfo*     GetNextMember(DISPID CurrMemberDispID);
 
-    // Methods to retrieve the cached MD's
-    MethodDesc*             GetIReflectMD(BinderMethodID Method);
-
 private:
     // Helper methods called from SynchWithManagedView() to retrieve the lists of members.
     virtual PTRARRAYREF     RetrievePropList();
     virtual PTRARRAYREF     RetrieveFieldList();
     virtual PTRARRAYREF     RetrieveMethList();
-
-    // Virtual method to retrieve the InvokeMember method desc.
-    virtual MethodDesc*     GetInvokeMemberMD();
 
     // Virtual method to retrieve the reflection object associated with the DispatchInfo.
     virtual OBJECTREF       GetReflectionObject();

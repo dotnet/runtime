@@ -97,6 +97,7 @@ public class OVFTest
     }
 
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsNotWindows))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134949", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsReadyToRunCompiled))]
     [Fact]
     public static void TestEntryPoint()
     {

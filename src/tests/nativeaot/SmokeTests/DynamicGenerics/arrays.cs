@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+using System.Runtime.InteropServices;
 #if INTERNAL_CONTRACTS
 using Internal.Runtime.Augments;
 #endif
@@ -98,6 +99,16 @@ namespace ArrayTests
 
     public class ArrayTests
     {
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MixedGCLayout<T>
+        {
+            public nint Leading;
+            public T First;
+            public nint Middle;
+            public T Second;
+            public nint Trailing;
+        }
+
         static void TestForEach(object[] array)
         {
             foreach(var item1 in array)
@@ -248,6 +259,47 @@ namespace ArrayTests
         [TestMethod]
         public static void TestMDArrays()
         {
+            string first = new string('a', 10);
+            string second = new string('b', 10);
+            var mixed = new MixedGCLayout<(string, string)>
+            {
+                Leading = 1,
+                First = (first, second),
+                Middle = 2,
+                Second = (second, first),
+                Trailing = 3,
+            };
+            object[] values =
+            {
+                42,
+                first,
+                new GenericStruct<string>(first),
+                (first, second),
+                mixed,
+                new MixedGCLayout<MixedGCLayout<(string, string)>> { First = mixed, Second = mixed },
+            };
+            foreach (object value in values)
+            {
+                Assert.IsTrue(value.GetType().MakeArrayType(1).TypeHandle.Value != IntPtr.Zero);
+                foreach (int rank in new[] { 2, 3, 32 })
+                {
+                    int[] lengths = new int[rank];
+                    int[] indices = new int[rank];
+                    Array.Fill(lengths, 1);
+                    lengths[rank - 1] = 2;
+                    Array mdArray = Array.CreateInstance(value.GetType(), lengths);
+                    mdArray.SetValue(value, indices);
+                    indices[rank - 1] = 1;
+                    mdArray.SetValue(value, indices);
+
+                    GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+
+                    Assert.AreEqual(value, mdArray.GetValue(indices));
+                    indices[rank - 1] = 0;
+                    Assert.AreEqual(value, mdArray.GetValue(indices));
+                }
+            }
+
 #if UNIVERSAL_GENERICS
             int[,,] array = new int[1, 2, 3];
             int value = 1;
