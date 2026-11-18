@@ -137,7 +137,7 @@ namespace Microsoft.Interop.JavaScript
                     writer.WriteLine("static void __Register_()");
                     using (writer.WriteBlock())
                     {
-                        writer.WriteLine($"if (initialized || {Constants.OSArchitectureGlobal} != {Constants.ArchitectureWasmGlobal})");
+                        writer.WriteLine($"if (initialized || {Constants.OSArchitectureGlobal} is not ({Constants.ArchitectureWasmGlobal} or {Constants.ArchitectureWasm64Global}))");
                         writer.Indent++;
                         writer.WriteLine("return;");
                         writer.Indent--;

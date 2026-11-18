@@ -174,7 +174,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [DynamicDependency("get_PromiseHolderCount", typeof(JSFunctionBinding))]
         public static JSFunctionBinding BindJSFunction(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
-            if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
+            if (RuntimeInformation.OSArchitecture is not (Architecture.Wasm or Architecture.Wasm64))
                 throw new PlatformNotSupportedException();
 
             return BindJSImportImpl(functionName, moduleName, signatures);
@@ -191,7 +191,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <exception cref="PlatformNotSupportedException">The method is executed on architecture other than WebAssembly.</exception>
         public static JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
         {
-            if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
+            if (RuntimeInformation.OSArchitecture is not (Architecture.Wasm or Architecture.Wasm64))
                 throw new PlatformNotSupportedException();
 
             // this could be called by assembly module initializer from Net7 code-gen
