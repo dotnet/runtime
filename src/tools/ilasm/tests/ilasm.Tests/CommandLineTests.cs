@@ -5,6 +5,7 @@ using System;
 using System.CommandLine;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -12,6 +13,44 @@ namespace Microsoft.DotNet.ILAssembler.Tests;
 
 public class CommandLineTests
 {
+    [Theory]
+    [InlineData("", Machine.I386, PEMagic.PE32)]
+    [InlineData("--arch x86", Machine.I386, PEMagic.PE32)]
+    [InlineData("--arch x64", Machine.Amd64, PEMagic.PE32Plus)]
+    [InlineData("--arch arm64", Machine.Arm64, PEMagic.PE32Plus)]
+    [InlineData("-PE64", Machine.Amd64, PEMagic.PE32Plus)]
+    [InlineData("-X64", Machine.Amd64, PEMagic.PE32Plus)]
+    [InlineData("-ARM64", Machine.Arm64, PEMagic.PE32Plus)]
+    [InlineData("-PE64 -ARM64", Machine.Arm64, PEMagic.PE32Plus)]
+    [InlineData("-ARM64 -PE64", Machine.Arm64, PEMagic.PE32Plus)]
+    [InlineData("-PE64 -X64", Machine.Amd64, PEMagic.PE32Plus)]
+    [InlineData("-X64 -PE64", Machine.Amd64, PEMagic.PE32Plus)]
+    [InlineData("-X64 -ARM64", Machine.Arm64, PEMagic.PE32Plus)]
+    [InlineData("-ARM64 -X64", Machine.Amd64, PEMagic.PE32Plus)]
+    public void TargetOptions_EmitRequestedArchitecture(string options, Machine machine, PEMagic magic)
+    {
+        string directory = Directory.CreateTempSubdirectory("ilasm-architecture-").FullName;
+        try
+        {
+            string input = Path.Combine(directory, "input.il");
+            string output = Path.Combine(directory, "output.dll");
+            File.WriteAllText(input, ".assembly Test {}");
+            string[] args = ["-DLL", "-NOLOGO", "-QUIET", $"-OUTPUT={output}", .. options.Split(' ', StringSplitOptions.RemoveEmptyEntries), input];
+            var command = new IlasmRootCommand();
+            ParseResult result = command.Parse(NativeCommandLine.Normalize(args, command));
+
+            Assert.Empty(result.Errors);
+            Assert.Equal(0, new Program(command, result).Run());
+            using var pe = new PEReader(File.OpenRead(output));
+            Assert.Equal(machine, pe.PEHeaders.CoffHeader.Machine);
+            Assert.Equal(magic, pe.PEHeaders.PEHeader!.Magic);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData("", 0, "input.il(1,1)")]
     [InlineData("abc", 0, "input.il(1,1)")]
@@ -189,10 +228,8 @@ public class CommandLineTests
         { "NOL", "--nologo" },
         { "OPT", "--optimize" },
         { "PDB", "--pdb" },
-        { "PE6", "--pe64" },
         { "QUI", "--quiet" },
         { "STR", "--stripreloc" },
-        { "X64", "--x64" },
     };
 
     public static TheoryData<string, string> NativeValueOptions { get; } = new()
@@ -425,15 +462,39 @@ public class CommandLineTests
     }
 
     [Theory]
-    [InlineData("-arm64", "--arm64")]
-    [InlineData("-ARM64Anything", "--arm64")]
-    [InlineData("-ARM64=value", "--arm64")]
-    [InlineData("/ARM64Anything:value", "--arm64")]
-    public void ArmOptions_UseNativeDisambiguation(string argument, string expectedOption)
+    [InlineData("-arm64", "arm64")]
+    [InlineData("-ARM64Anything", "arm64")]
+    [InlineData("-ARM64=value", "arm64")]
+    [InlineData("/ARM64Anything:value", "arm64")]
+    public void ArmOptions_UseNativeDisambiguation(string argument, string expectedArchitecture)
     {
         Assert.Equal(
-            [expectedOption],
+            ["--arch", expectedArchitecture],
             NativeCommandLine.Normalize([argument], allowSlashOptions: argument[0] == '/'));
+    }
+
+    [Theory]
+    [InlineData("-PE64 -DLL input.il", "--dll input.il --arch x64")]
+    [InlineData("-x64anything -DLL", "--dll --arch x64")]
+    [InlineData("-DLL -PE64 -ARM64 input.il", "--dll input.il --arch arm64")]
+    [InlineData("-ARM64 -DLL -PE64", "--dll --arch arm64")]
+    [InlineData("-X64 -ARM64 -DLL", "--dll --arch arm64")]
+    [InlineData("-ARM64 -PE64 -X64", "--arch x64")]
+    [InlineData("-PE64 -- -X64", "--arch x64 -- -X64")]
+    public void NativeArchitectureOptions_LastMachineWins(string arguments, string expected)
+    {
+        Assert.Equal(
+            expected.Split(' '),
+            NativeCommandLine.Normalize(arguments.Split(' '), allowSlashOptions: false));
+    }
+
+    [Theory]
+    [InlineData("--arch arm")]
+    [InlineData("--arch pe64")]
+    public void ArchitectureOption_RejectsUnsupportedValue(string options)
+    {
+        var command = new IlasmRootCommand();
+        Assert.NotEmpty(command.Parse([.. options.Split(' '), "input.il"]).Errors);
     }
 
     [Theory]
