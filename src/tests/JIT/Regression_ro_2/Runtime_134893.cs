@@ -19,12 +19,23 @@ public class Runtime_134893
         public long Index;
     }
 
+    [StructLayout(LayoutKind.Explicit)]
+    private struct OverlappingShortLocals
+    {
+        [FieldOffset(0)]
+        public Vector256<short> Vector;
+
+        [FieldOffset(16)]
+        public long Index;
+    }
+
     [Fact]
     [SkipOnMono("CoreCLR JIT regression test")]
     public static void TestEntryPoint()
     {
         Assert.Equal(Vector128.Create(0, 1, 0, 0), WithElement(Vector128<int>.Zero, 1));
         Assert.Equal(Vector256.Create((byte)16), Shuffle(Vector256.Create((byte)16)));
+        Assert.Equal(Vector256.Create((short)8), Shuffle(Vector256.Create((short)8)));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
@@ -38,5 +49,14 @@ public class Runtime_134893
         locals.Vector = vector;
         return Vector256.Shuffle(
             locals.Vector, Vector256.Create((byte)Interlocked.Exchange(ref locals.Index, -1)));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static Vector256<short> Shuffle(Vector256<short> vector)
+    {
+        OverlappingShortLocals locals = default;
+        locals.Vector = vector;
+        return Vector256.Shuffle(
+            locals.Vector, Vector256.Create((short)Interlocked.Exchange(ref locals.Index, -1)));
     }
 }

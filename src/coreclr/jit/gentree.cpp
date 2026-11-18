@@ -29290,10 +29290,23 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     size_t elementCount = simdSize / elementSize;
 
 #if defined(TARGET_XARCH)
-    // The AVX2 byte-shuffle fallback uses op1 multiple times; preserve its value in a temp if op2 can modify it.
-    GenTree* op1Store = nullptr;
-    if ((simdSize == 32) && (elementSize == 1) &&
-        !compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative) && !gtCanReorderWithoutTemp(op1, op2))
+    // The AVX2 fallbacks for 256-bit byte and short shuffles use op1 multiple times; preserve its value in a temp
+    // if op2 can modify it.
+    GenTree* op1Store    = nullptr;
+    bool     op1MultiUse = false;
+    if ((simdSize == 32) && !gtCanReorderWithoutTemp(op1, op2))
+    {
+        if (elementSize == 1)
+        {
+            op1MultiUse = !compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative);
+        }
+        else if (elementSize == 2)
+        {
+            op1MultiUse = !compOpportunisticallyDependsOn(InstructionSet_AVX512, isShuffleNative);
+        }
+    }
+
+    if (op1MultiUse)
     {
         TempInfo temp = fgMakeTemp(op1);
         op1           = temp.load;
