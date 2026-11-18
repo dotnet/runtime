@@ -2316,6 +2316,10 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
                 }
+                catch (CryptographicException ce)
+                {
+                    throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ce);
+                }
             }
         }
 
