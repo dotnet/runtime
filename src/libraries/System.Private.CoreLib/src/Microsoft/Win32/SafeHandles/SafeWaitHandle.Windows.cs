@@ -16,10 +16,22 @@ namespace Microsoft.Win32.SafeHandles
             return Interop.Kernel32.CloseHandle(handle);
         }
 
-        internal WaitCompletionPacket GetWaitCompletionPacket() => Interlocked.Exchange(ref _reusableWaitCompletionPacket, null) ?? new(this);
+        internal WaitCompletionPacket GetWaitCompletionPacket()
+        {
+            WaitCompletionPacket? packet = Interlocked.Exchange(ref _reusableWaitCompletionPacket, null);
+            if (packet is null)
+            {
+                return new WaitCompletionPacket(this);
+            }
+            packet.Handle = this;
+            return packet;
+        }
 
         internal void TryToReuse(WaitCompletionPacket packet)
         {
+            // The cached packet is rooted by its PreAllocatedOverlapped (until it's disposed by ReleaseHandle),
+            // so it must not reference this handle. Otherwise, the handle could never be finalized.
+            packet.Handle = null;
             if (Interlocked.CompareExchange(ref _reusableWaitCompletionPacket, packet, null) is not null)
             {
                 packet.Dispose();
@@ -56,7 +68,7 @@ namespace Microsoft.Win32.SafeHandles
 
             private bool _repeating;
 
-            internal SafeWaitHandle Handle { get; }
+            internal SafeWaitHandle? Handle { get; set; } // null while the instance is cached for reuse
 
             internal WaitCompletionPacket(SafeWaitHandle handle)
             {
@@ -108,6 +120,7 @@ namespace Microsoft.Win32.SafeHandles
                 _overlapped = _preAllocatedOverlapped.AllocateNativeOverlappedPortableUnbound();
                 _state = State.Pending;
 
+                Debug.Assert(Handle is not null);
                 uint status = Interop.NtDll.NtAssociateWaitCompletionPacket(
                     _completionPacketHandle,
                     PortableThreadPool.ThreadPoolInstance.SelectIOCompletionPortForRegister(),
@@ -177,7 +190,7 @@ namespace Microsoft.Win32.SafeHandles
                     switch (_state, transition)
                     {
                         case (State.Unregistered, StateTransition.Timeout):
-                            // This is the only event we are waiting for in Unregistered state, which may when the
+                            // This is the only event we are waiting for in Unregistered state, which may happen when the
                             // unregistering thread has left the lock and is waiting for the timer callbacks to finish.
                             return;
                         case (State.Pending, StateTransition.Timeout):
@@ -266,6 +279,7 @@ namespace Microsoft.Win32.SafeHandles
                         registeredWaitHandle.WaitForRemoval();
                     }
                     ReleaseResources();
+                    Debug.Assert(Handle is not null);
                     Handle.TryToReuse(this);
                 }
                 else
