@@ -49,6 +49,13 @@ namespace System.Diagnostics
                 return Process.BootTimeToDateTime(Process.TicksToTimeSpan(GetStat().starttime));
             }
 
+            if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsOpenBSD())
+            {
+                // kinfo_proc has one entry per thread but the start time is the same for
+                // all threads e.g. reflects process start.
+                throw new PlatformNotSupportedException();
+            }
+
             if (ProcessManager.IsSunOS())
             {
                 Interop.procfs.ThreadInfo threadInfo = GetThreadInfo();
@@ -61,8 +68,6 @@ namespace System.Diagnostics
                 return startTime.ToLocalTime();
             }
 
-            // On FreeBSD and OpenBSD, kinfo_proc has one entry per thread but the start time is
-            // the same for all threads e.g. reflects process start.
             throw new PlatformNotSupportedException();
         }
 

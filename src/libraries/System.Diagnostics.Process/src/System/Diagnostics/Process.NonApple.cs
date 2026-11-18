@@ -7,22 +7,26 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
+        /// <summary>Whether the processor times of the current process are taken from <see cref="Environment.CpuUsage"/>.</summary>
+        private static bool UsesEnvironmentCpuUsage =>
+            OperatingSystem.IsLinux() || OperatingSystem.IsAndroid() || OperatingSystem.IsFreeBSD() || OperatingSystem.IsOpenBSD();
+
         public partial TimeSpan PrivilegedProcessorTime
         {
             get
             {
+                if (UsesEnvironmentCpuUsage && IsCurrentProcess)
+                {
+                    return Environment.CpuUsage.PrivilegedTime;
+                }
+
                 if (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid())
                 {
-                    return IsCurrentProcess ? Environment.CpuUsage.PrivilegedTime : TicksToTimeSpan(GetStat().stime);
+                    return TicksToTimeSpan(GetStat().stime);
                 }
 
                 if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsOpenBSD())
                 {
-                    if (IsCurrentProcess)
-                    {
-                        return Environment.CpuUsage.PrivilegedTime;
-                    }
-
                     EnsureState(State.HaveNonExitedId);
                     return TicksToTimeSpan(Interop.Process.GetThreadInfo(_processId, 0).systemTime);
                 }
@@ -42,24 +46,19 @@ namespace System.Diagnostics
         {
             get
             {
+                if (UsesEnvironmentCpuUsage && IsCurrentProcess)
+                {
+                    return Environment.CpuUsage.TotalTime;
+                }
+
                 if (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid())
                 {
-                    if (IsCurrentProcess)
-                    {
-                        return Environment.CpuUsage.TotalTime;
-                    }
-
                     Interop.procfs.ParsedStat stat = GetStat();
                     return TicksToTimeSpan(stat.utime + stat.stime);
                 }
 
                 if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsOpenBSD())
                 {
-                    if (IsCurrentProcess)
-                    {
-                        return Environment.CpuUsage.TotalTime;
-                    }
-
                     EnsureState(State.HaveNonExitedId);
                     Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, 0);
                     return TicksToTimeSpan(stat.userTime + stat.systemTime);
@@ -78,18 +77,18 @@ namespace System.Diagnostics
         {
             get
             {
+                if (UsesEnvironmentCpuUsage && IsCurrentProcess)
+                {
+                    return Environment.CpuUsage.UserTime;
+                }
+
                 if (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid())
                 {
-                    return IsCurrentProcess ? Environment.CpuUsage.UserTime : TicksToTimeSpan(GetStat().utime);
+                    return TicksToTimeSpan(GetStat().utime);
                 }
 
                 if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsOpenBSD())
                 {
-                    if (IsCurrentProcess)
-                    {
-                        return Environment.CpuUsage.UserTime;
-                    }
-
                     EnsureState(State.HaveNonExitedId);
                     return TicksToTimeSpan(Interop.Process.GetThreadInfo(_processId, 0).userTime);
                 }
