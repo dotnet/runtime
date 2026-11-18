@@ -293,7 +293,8 @@ namespace System.Buffers.Text.Tests
             string input = new string('A', trailingWhitespace ? 40 : 45) + (trailingWhitespace ? "     " : "");
             byte[] utf8Source = Encoding.ASCII.GetBytes(input);
             char[] charSource = input.ToCharArray();
-            byte[] destination = new byte[32];
+            // decodedLength - 2 bytes followed by a no-access page catches an overlong AVX2 store.
+            using BoundedMemory<byte> destination = BoundedMemory.Allocate<byte>(31, PoisonPagePlacement.After);
 
             OperationStatus status = default;
             int consumed = 0;
@@ -301,25 +302,21 @@ namespace System.Buffers.Text.Tests
 
             for (int iteration = 0; iteration < 10_000; iteration++)
             {
-                destination[31] = 1;
-                status = Base64Url.DecodeFromUtf8(utf8Source, destination.AsSpan(0, 31), out consumed, out written);
+                status = Base64Url.DecodeFromUtf8(utf8Source, destination.Span, out consumed, out written);
             }
 
             Assert.Equal(expectedStatus, status);
             Assert.Equal(expectedConsumed, consumed);
             Assert.Equal(30, written);
-            Assert.Equal(1, destination[31]);
 
             for (int iteration = 0; iteration < 10_000; iteration++)
             {
-                destination[31] = 1;
-                status = Base64Url.DecodeFromChars(charSource, destination.AsSpan(0, 31), out consumed, out written);
+                status = Base64Url.DecodeFromChars(charSource, destination.Span, out consumed, out written);
             }
 
             Assert.Equal(expectedStatus, status);
             Assert.Equal(expectedConsumed, consumed);
             Assert.Equal(30, written);
-            Assert.Equal(1, destination[31]);
         }
 
         [Fact]
@@ -332,7 +329,8 @@ namespace System.Buffers.Text.Tests
 
             byte[] utf8Source = Enumerable.Repeat((byte)'A', 66).ToArray();
             char[] charSource = new string('A', 66).ToCharArray();
-            byte[] destination = new byte[48];
+            // decodedLength - 2 bytes followed by a no-access page catches an overlong AdvSimd store.
+            using BoundedMemory<byte> destination = BoundedMemory.Allocate<byte>(47, PoisonPagePlacement.After);
 
             OperationStatus status = default;
             int consumed = 0;
@@ -340,25 +338,21 @@ namespace System.Buffers.Text.Tests
 
             for (int iteration = 0; iteration < 10_000; iteration++)
             {
-                destination[47] = 1;
-                status = Base64Url.DecodeFromUtf8(utf8Source, destination.AsSpan(0, 47), out consumed, out written);
+                status = Base64Url.DecodeFromUtf8(utf8Source, destination.Span, out consumed, out written);
             }
 
             Assert.Equal(OperationStatus.DestinationTooSmall, status);
             Assert.Equal(60, consumed);
             Assert.Equal(45, written);
-            Assert.Equal(1, destination[47]);
 
             for (int iteration = 0; iteration < 10_000; iteration++)
             {
-                destination[47] = 1;
-                status = Base64Url.DecodeFromChars(charSource, destination.AsSpan(0, 47), out consumed, out written);
+                status = Base64Url.DecodeFromChars(charSource, destination.Span, out consumed, out written);
             }
 
             Assert.Equal(OperationStatus.DestinationTooSmall, status);
             Assert.Equal(60, consumed);
             Assert.Equal(45, written);
-            Assert.Equal(1, destination[47]);
         }
 #endif
 
