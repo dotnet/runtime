@@ -75,10 +75,16 @@ struct VirtualRegReferences
 
 struct Interval
 {
-    int           start;
-    int           end;
-    regNumber     virtReg;
-    WasmValueType type;
+    int       start;
+    int       end;
+    regNumber virtReg;
+
+    Interval(regNumber virtReg)
+        : start(INT_MAX)
+        , end(INT_MIN)
+        , virtReg(virtReg)
+    {
+    }
 };
 
 class WasmRegAlloc : public RegAllocInterface
@@ -146,6 +152,7 @@ public:
 #endif // TRACK_LSRA_STATS
 
     bool isRegCandidate(LclVarDsc* varDsc);
+    bool isIntervalCandidate(LclVarDsc* varDsc, PerFuncletData* funcletData);
     bool isContainableMemoryOp(GenTree* node);
     void checkForDNER(unsigned lclNum, LclVarDsc* varDsc);
 

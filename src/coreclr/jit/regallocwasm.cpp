@@ -1094,7 +1094,7 @@ GenTree* getNonContainedUser(GenTree* node, LIR::Range& blockRange)
 {
     GenTree* useNode = node;
     LIR::Use treeUse;
-    bool foundUse;
+    bool     foundUse;
     do
     {
         foundUse = blockRange.TryGetUse(useNode, &treeUse);
@@ -1105,6 +1105,19 @@ GenTree* getNonContainedUser(GenTree* node, LIR::Range& blockRange)
     return useNode;
 }
 
+bool WasmRegAlloc::isIntervalCandidate(LclVarDsc* varDsc, PerFuncletData* funcletData)
+{
+    if (varDsc->lvIsRegCandidate())
+    {
+        // Don't permit params or SP/FP locals to be tracked interval candidates;
+        regNumber reg = varDsc->GetRegNum();
+        assert(genIsValidReg(reg));
+        return !varDsc->lvIsParam && !varDsc->lvIsParamRegTarget && reg != funcletData->m_fpReg &&
+               reg != funcletData->m_spReg;
+    }
+    return false;
+}
+
 void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* funcletData)
 {
     struct PendingLclUse
@@ -1113,29 +1126,14 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
         unsigned int trackedLcl;
     };
 
-    auto isIntervalCandidate = [&](LclVarDsc* varDsc) {
-        if (varDsc->lvIsRegCandidate())
-        {
-            // Don't permit params or SP/FP locals to be tracked interval candidates;
-            regNumber reg = varDsc->GetRegNum();
-            assert(genIsValidReg(reg));
-            return !varDsc->lvIsParam && reg != funcletData->m_fpReg && reg != funcletData->m_spReg;
-        }
-        return false;
-    };
-
     for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
     {
-        LclVarDsc* varDsc = m_compiler->lvaGetDescByTrackedIndex(i);
-
-        Interval* interval = nullptr;
-        if (isIntervalCandidate(varDsc))
+        LclVarDsc* varDsc   = m_compiler->lvaGetDescByTrackedIndex(i);
+        Interval*  interval = nullptr;
+        if (isIntervalCandidate(varDsc, funcletData))
         {
             regNumber virtReg = varDsc->GetRegNum();
-            interval          = new (m_compiler->getAllocator(CMK_LSRA)) Interval();
-            interval->start   = INT_MAX;
-            interval->end     = INT_MIN;
-            interval->virtReg = virtReg;
+            interval          = new (m_compiler->getAllocator(CMK_LSRA_Interval)) Interval(virtReg);
         }
         funcletData->m_intervals[i] = interval;
     }
@@ -1144,11 +1142,12 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
         Interval* interval = funcletData->m_intervals[trackedIdx];
         if (interval != nullptr)
         {
-            int prev = interval->start;
+            int prev        = interval->start;
             interval->start = min(interval->start, static_cast<int>(pos));
             if (interval->start != prev)
             {
-                JITDUMP("V%02u  start: %d -> %d\n", m_compiler->lvaTrackedIndexToLclNum(trackedIdx), prev, interval->start);
+                JITDUMP("V%02u  start: %d -> %d\n", m_compiler->lvaTrackedIndexToLclNum(trackedIdx), prev,
+                        interval->start);
             }
         }
     };
@@ -1157,7 +1156,7 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
         Interval* interval = funcletData->m_intervals[trackedIdx];
         if (interval != nullptr)
         {
-            int prev = interval->end;
+            int prev      = interval->end;
             interval->end = max(interval->end, static_cast<int>(pos));
             if (interval->end != prev)
             {
@@ -1168,7 +1167,7 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
 
     auto updateIntervalStarts = [&](VARSET_TP toUpdate, unsigned pos) {
         VarSetOps::Iter iter(m_compiler, toUpdate);
-        unsigned trackedIdx;
+        unsigned        trackedIdx;
         while (iter.NextElem(&trackedIdx))
         {
             updateIntervalStart(trackedIdx, pos);
@@ -1177,7 +1176,7 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
 
     auto updateIntervalEnds = [&](VARSET_TP toUpdate, unsigned pos) {
         VarSetOps::Iter iter(m_compiler, toUpdate);
-        unsigned trackedIdx;
+        unsigned        trackedIdx;
         while (iter.NextElem(&trackedIdx))
         {
             updateIntervalEnd(trackedIdx, pos);
@@ -1196,7 +1195,7 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
 
         JITDUMPEXEC(block->dspBlockHeader());
         JITDUMP("liveIn=");
-        dumpConvertedVarSet(m_compiler, block->bbLiveIn);
+        JITDUMPEXEC(dumpConvertedVarSet(m_compiler, block->bbLiveIn));
         JITDUMP("\n");
 
         // Potentially update the start points of any intervals live at block entry.
@@ -1211,21 +1210,16 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
             // that consumes it, since it won't get a separate temp.
             while (!pendingMultipleUse.Empty() && tree == pendingMultipleUse.TopRef().UserNode)
             {
-
-                if (tree->isContained())
-                {
-                    JITDUMP("TREE IS CONTAINED\n");
-                }
                 PendingLclUse pendingUse = pendingMultipleUse.Pop();
                 updateIntervalEnd(pendingUse.trackedLcl, pos);
             }
 
-            if (tree->OperIsLocal()) 
+            if (tree->OperIsLocal())
             {
                 GenTreeLclVarCommon* lcl = tree->AsLclVarCommon();
-                LclVarDsc* dsc = m_compiler->lvaGetDesc(lcl->GetLclNum());
+                LclVarDsc*           dsc = m_compiler->lvaGetDesc(lcl->GetLclNum());
 
-                if (isIntervalCandidate(dsc))
+                if (isIntervalCandidate(dsc, funcletData))
                 {
                     assert(dsc->lvIsInReg());
                     assert(tree->OperIs(GT_STORE_LCL_VAR, GT_LCL_VAR));
@@ -1235,7 +1229,8 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
                     {
                         updateIntervalStart(dsc->lvVarIndex, pos);
                         // Update the interval end here too, in case this is a dead store
-                        // and we never have a use (TODO: could we check flags to determine if it's a dead store?)
+                        // and we never have a use
+                        // TODO: could we check flags to determine if it's a dead store?
                         updateIntervalEnd(dsc->lvVarIndex, pos);
                     }
                     else if (tree->OperIs(GT_LCL_VAR))
@@ -1256,10 +1251,25 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
 
             if (tree == CurrentRange().LastNode())
             {
+                JITDUMP("liveOut=");
+                JITDUMPEXEC(dumpConvertedVarSet(m_compiler, block->bbLiveOut))
+                JITDUMP("\n");
+                // Extend interval ends to the end of the block for live-out locals
                 updateIntervalEnds(block->bbLiveOut, pos);
             }
 
             pos++;
+        }
+    }
+
+    // Remove empty intervals which correspond to virtual registers that were never used in this funclet.
+    for (int i = 0; i < funcletData->m_intervals.size(); i++)
+    {
+        Interval* interval = funcletData->m_intervals[i];
+        if (interval != nullptr && interval->start > interval->end)
+        {
+            assert(interval->start == INT_MAX && interval->end == INT_MIN);
+            funcletData->m_intervals[i] = nullptr;
         }
     }
 }
@@ -1273,14 +1283,18 @@ void WasmRegAlloc::DumpIntervals()
         JITDUMP("Funclet %u:\n", funcInfo->GetFuncletIdx(m_compiler));
         for (unsigned trackedIdx = 0; trackedIdx < funcletData->m_intervals.size(); trackedIdx++)
         {
-            Interval* interval = funcletData->m_intervals[trackedIdx];
+            unsigned         lclNum   = m_compiler->lvaTrackedIndexToLclNum(trackedIdx);
+            const LclVarDsc* varDsc   = m_compiler->lvaGetDesc(lclNum);
+            Interval*        interval = funcletData->m_intervals[trackedIdx];
             if (interval == nullptr)
             {
                 continue;
             }
 
-            JITDUMP("V%02u: [%d, %d]\n",
-                    m_compiler->lvaTrackedIndexToLclNum(trackedIdx), interval->start, interval->end);
+            JITDUMP("Interval %2u: (V%02u) %s range:[%d, %d] virtReg:$%u:%s%s\n", trackedIdx, lclNum,
+                    varTypeName(varDsc->TypeGet()), interval->start, interval->end, WasmRegToIndex(interval->virtReg),
+                    WasmValueTypeName(WasmRegToType(interval->virtReg)),
+                    varDsc->lvWasmGCWriteThru ? " (GCWriteThru)" : "");
         }
     }
 }
