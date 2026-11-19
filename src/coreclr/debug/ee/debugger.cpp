@@ -5403,6 +5403,9 @@ void Debugger::ClearModuleDebuggerState()
     _ASSERTE(ThreadHoldsLock());
     _ASSERTE(HasDebuggerDataLock());
 
+    // Explicitly clear the class-load callbacks flag and the JMC status flags. This isn't
+    // necessarily required, but doing so ensures that the class loader and the JIT don't
+    // do a bunch of work to then determine halfway through that there's no debugger session.
     ForEachRuntimeModule([this](Module *pModule)
     {
         pModule->EnableClassLoadCallbacks(false, m_debuggerSessionGeneration);

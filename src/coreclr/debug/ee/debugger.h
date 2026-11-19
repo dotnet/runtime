@@ -2760,6 +2760,9 @@ private:
     BOOL                  m_launchingDebugger;
     BOOL                  m_LoggingEnabled;
 
+    // Debugger session is one attach/detach cycle. This counter is used
+    // to automatically reset JMC state and debugger class load callbacks
+    // for newly started debugger session.
     // Written with both debugger locks; either lock protects reads.
     uint64_t              m_debuggerSessionGeneration{1};
 
