@@ -125,12 +125,6 @@ namespace ILCompiler.DependencyAnalysis
         public bool UsesAuxiliaryModules => OptimizationFlags.AuxiliaryModules;
 
         /// <summary>
-        /// Returns whether the code for <paramref name="method"/> is placed in an auxiliary module rather than the primary module.
-        /// The answer is frozen before the compiled methods are first sorted, since table layout and emission all depend on it.
-        /// </summary>
-        public bool IsAuxiliaryMethod(MethodWithGCInfo method) => method.IsAuxiliary;
-
-        /// <summary>
         /// Returns whether <paramref name="method"/> is placed in an auxiliary module. Methods that are cold according to
         /// the input profile are candidates; without profile data every method stays in the primary module.
         /// </summary>

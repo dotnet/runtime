@@ -92,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             MethodWithGCInfo firstAuxiliaryMethod = null;
             foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods())
             {
-                if (factory.IsAuxiliaryMethod(method))
+                if (method.IsAuxiliary)
                 {
                     Debug.Assert(method.ColdCodeNode is null);
                     firstAuxiliaryMethod ??= method;

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -113,15 +115,13 @@ namespace ILCompiler.ObjectWriter
 
         private sealed class AuxiliaryPartition : IDisposable
         {
-            public WasmExternallyCountedSection PrimaryFunctionSection;
-            public WasmExternallyCountedSection PrimaryCodeSection;
-            public WasmExternallyCountedSection AuxiliaryFunctionEntries;
-            public WasmExternallyCountedSection AuxiliaryCode;
-            public WasmExternallyCountedSection AuxiliaryExportSection;
-#nullable enable annotations
+            public required WasmExternallyCountedSection PrimaryFunctionSection;
+            public required WasmExternallyCountedSection PrimaryCodeSection;
+            public required WasmExternallyCountedSection AuxiliaryFunctionEntries;
+            public required WasmExternallyCountedSection AuxiliaryCode;
+            public required WasmExternallyCountedSection AuxiliaryExportSection;
             public WasmNameSection? AuxiliaryNameSection;
-#nullable restore annotations
-            public Dictionary<ulong, ulong> PrimaryCodeOffsetMap;
+            public Dictionary<ulong, ulong>? PrimaryCodeOffsetMap;
 
             public void Dispose()
             {
@@ -155,7 +155,7 @@ namespace ILCompiler.ObjectWriter
             // which is correct for both modules as long as no direct call crosses modules.
             int codeSectionIndex = _sections.GetSectionIndex(ObjectNodeSection.WasmCodeSection.Name);
             Stream originalCode = _sections[codeSectionIndex].ContentReadStream;
-            List<SymbolicRelocation> codeRelocations = _resolvableRelocations.TryGetValue(codeSectionIndex, out List<SymbolicRelocation> relocations)
+            List<SymbolicRelocation> codeRelocations = _resolvableRelocations.TryGetValue(codeSectionIndex, out List<SymbolicRelocation>? relocations)
                 ? relocations
                 : new List<SymbolicRelocation>();
             originalCode.Position = 0;
@@ -173,7 +173,7 @@ namespace ILCompiler.ObjectWriter
             int metadataRva = checked((int)ResolveSymbolRVA(webcilSections,
                 _definedSymbols[GetMangledName(_nodeFactory.AuxiliaryModuleMetadata)]));
 
-            Dictionary<ulong, ulong> codeOffsetMap = null;
+            Dictionary<ulong, ulong>? codeOffsetMap = null;
             if (_outputInfoBuilder is not null)
             {
                 codeOffsetMap = new(_codeOffsetMap.Count);
@@ -227,7 +227,7 @@ namespace ILCompiler.ObjectWriter
             WasmExternallyCountedSection auxiliaryExportSection = new(WasmSectionType.Export, auxiliaryExports, default, sectionIndex: -1);
             auxiliaryExportSection.SetEntryCount(1);
 
-            WasmNameSection auxiliaryNameSection = null;
+            WasmNameSection? auxiliaryNameSection = null;
             if (_emitNameSection)
             {
                 List<WasmSymbol> names = new(GetPartitionedFunctionNames(auxiliary: true));
@@ -257,7 +257,7 @@ namespace ILCompiler.ObjectWriter
 
             int[] tableFunctions = GetTableSlotFunctionIndices();
             string auxiliaryPath = Path.Combine(
-                Path.GetDirectoryName(primaryFile.Name),
+                Path.GetDirectoryName(primaryFile.Name)!,
                 AuxiliaryModuleMetadataNode.GetAuxiliaryModuleFileName(primaryFile.Name, 0));
             using FileStream auxiliaryOutput = new FileStream(auxiliaryPath, FileMode.Create);
 

@@ -617,6 +617,7 @@ namespace ILCompiler.ObjectWriter
             paddingSection.EmitToStream(outputFileStream);
             dataSection.EmitToStream(outputFileStream);
         }
+
         public void EmitSymbolMap(string path)
         {
             Console.WriteLine($"Emitting WebAssembly symbol map: {path}");

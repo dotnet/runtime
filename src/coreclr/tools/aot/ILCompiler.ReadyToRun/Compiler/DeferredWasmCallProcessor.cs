@@ -16,13 +16,12 @@ using Internal.TypeSystem;
 
 namespace ILCompiler;
 
-internal readonly struct DeferredWasmMethodFinalizationInfo(int level, bool isEager = false, MethodWithGCInfo method = null)
+internal readonly struct DeferredWasmMethodFinalizationInfo(int level, bool isEager = false, bool isAuxiliary = false)
 {
     public int Level { get; } = level;
     public bool IsEager { get; } = isEager;
 
-    // Read through the node because eager-closure pinning can still move the method to the primary module.
-    public bool IsAuxiliary => method?.IsAuxiliary == true;
+    public bool IsAuxiliary { get; } = isAuxiliary;
 }
 
 // #DeferredWasmCallFinalization
@@ -268,7 +267,7 @@ internal sealed class DeferredWasmCallProcessor
                     if (!method.IsEmpty)
                     {
                         finalizedMethods.Add(method.Method);
-                        _finalizedMethods.Add(method.Method, new DeferredWasmMethodFinalizationInfo(level, isEager, method));
+                        _finalizedMethods.Add(method.Method, new DeferredWasmMethodFinalizationInfo(level, isEager, method.IsAuxiliary));
                         finalizedCount++;
                     }
                 }
