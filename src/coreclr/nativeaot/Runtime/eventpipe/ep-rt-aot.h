@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #endif
 
+#include <minipal/cpucount.h>
 #include <minipal/utf8.h>
 #include <minipal/time.h>
 
@@ -897,14 +898,7 @@ uint32_t
 ep_rt_processors_get_count (void)
 {
     STATIC_CONTRACT_NOTHROW;
-#ifdef HOST_WINDOWS
-    SYSTEM_INFO sys_info = {};
-    GetSystemInfo (&sys_info);
-    return static_cast<uint32_t>(sys_info.dwNumberOfProcessors);
-#else
-    // PalDebugBreak();
-    return 0xffff;
-#endif
+    return static_cast<uint32_t>(minipal_get_cpu_affinity_count ());
 }
 
 static

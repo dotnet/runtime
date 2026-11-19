@@ -2,13 +2,55 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <minipalconfig.h>
+#include "cpucount.h"
+
+#ifdef HOST_WINDOWS
+
+#include <Windows.h>
+
+int minipal_get_cpu_max_possible_count(void)
+{
+    return (int)GetMaximumProcessorCount(ALL_PROCESSOR_GROUPS);
+}
+
+int minipal_get_cpu_present_count(void)
+{
+    DWORD count = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+    return count == 0 ? -1 : (int)count;
+}
+
+int minipal_get_cpu_total_count(void)
+{
+    DWORD count = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+    return count < 1 ? 1 : (int)count;
+}
+
+int minipal_get_cpu_affinity_count(void)
+{
+    DWORD_PTR processMask;
+    DWORD_PTR systemMask;
+
+    // The masks are zero when the threads of the process are in more than one processor group.
+    if (GetProcessAffinityMask(GetCurrentProcess(), &processMask, &systemMask) && processMask != 0)
+    {
+        int count = 0;
+        for (; processMask != 0; processMask &= processMask - 1)
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    return minipal_get_cpu_total_count();
+}
+
+#else // HOST_WINDOWS
 
 #if HAVE_SCHED_GETAFFINITY && defined(__linux__) && !defined(_GNU_SOURCE)
 // glibc declares CPU_ALLOC and friends only when _GNU_SOURCE is defined before any system header.
 #define _GNU_SOURCE
 #endif
-
-#include "cpucount.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -155,3 +197,5 @@ int minipal_get_cpu_affinity_count(void)
 
     return count < 1 ? minipal_get_cpu_total_count() : count;
 }
+
+#endif // HOST_WINDOWS

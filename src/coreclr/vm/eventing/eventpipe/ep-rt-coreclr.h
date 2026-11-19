@@ -1191,13 +1191,7 @@ ep_rt_processors_get_count (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-#ifdef TARGET_UNIX
 	return static_cast<uint32_t>(minipal_get_cpu_affinity_count ());
-#else
-	SYSTEM_INFO sys_info = {};
-	GetSystemInfo (&sys_info);
-	return static_cast<uint32_t>(sys_info.dwNumberOfProcessors);
-#endif
 }
 
 static

@@ -41,6 +41,11 @@ extern "C"
     // Return system time in Windows FILETIME precision (100ns since 01 January 1601).
     uint64_t minipal_get_system_time(void);
 
+    // Gets the CPU time consumed by the current thread, in CPU cycles on Windows and in nanoseconds
+    // elsewhere. Only the difference between two values is meaningful.
+    // Returns false if the thread CPU time is not available.
+    bool minipal_get_thread_cycles(uint64_t* cycles);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

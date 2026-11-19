@@ -19,6 +19,7 @@
 #include "methodstatsemitter.h"
 #include "spmiutil.h"
 #include "fileio.h"
+#include <minipal/ospagesize.h>
 
 extern int doParallelSuperPMI(CommandLine::Options& o);
 extern int doStreamingSuperPMI(CommandLine::Options& o);
@@ -251,14 +252,11 @@ int __cdecl main(int argc, char* argv[])
 
 #ifdef SuperPMI_ChewMemory
     // Chew up the base 2gb of memory on x86... helpful in finding any places where classhandles etc are de-ref'd
-    SYSTEM_INFO sSysInfo;
-    GetSystemInfo(&sSysInfo);
-
     LPVOID lpvAddr;
 #undef VirtualAlloc
     do
     {
-        lpvAddr = VirtualAlloc(NULL, sSysInfo.dwPageSize, MEM_RESERVE | MEM_COMMIT, PAGE_NOACCESS);
+        lpvAddr = VirtualAlloc(NULL, minipal_getpagesize(), MEM_RESERVE | MEM_COMMIT, PAGE_NOACCESS);
     } while ((size_t)lpvAddr < SuperPMI_ChewMemory);
 #endif
 
