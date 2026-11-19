@@ -856,6 +856,18 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
         if (treatLikeCall)
         {
+#if defined(TARGET_WASM)
+            // Wasm pushes arguments onto the operand stack in signature order, so an argument
+            // containing a call can be evaluated in place, after the preceding arguments, without
+            // a temp. Values on the operand stack are not reported to the GC, so this is only
+            // safe if none of the preceding arguments can be a GC reference.
+            if (!arg.m_needTmp && !m_hasStackArgs && CanEvaluateWasmCallArgInPlace(&arg))
+            {
+                JITDUMP("Evaluating call-containing arg [%06u] in place\n", Compiler::dspTreeID(argx));
+                continue;
+            }
+#endif // TARGET_WASM
+
             if (canEvalToTemp)
             {
                 if (argCount > 1) // If this is not the only argument
@@ -1595,6 +1607,45 @@ void CallArgs::SetNeedsTemp(CallArg* arg)
     arg->m_needTmp = true;
     m_needsTemps   = true;
 }
+
+#if defined(TARGET_WASM)
+//------------------------------------------------------------------------------
+// CanEvaluateWasmCallArgInPlace: Check whether an argument containing a call
+//   can be evaluated in place, rather than into a temp.
+//
+// Arguments:
+//    arg - The argument containing a call
+//
+// Return Value:
+//    True if no preceding argument can leave a GC reference on the Wasm
+//    operand stack while the call in "arg" executes.
+//
+bool CallArgs::CanEvaluateWasmCallArgInPlace(CallArg* arg)
+{
+    for (CallArg& prevArg : Args())
+    {
+        if (&prevArg == arg)
+        {
+            return true;
+        }
+
+        GenTree* const prevNode = prevArg.GetEarlyNode();
+
+        if ((prevNode == nullptr) || !prevNode->IsValue())
+        {
+            return false;
+        }
+
+        // Addresses of locals refer to the shadow stack frame and need not be reported.
+        if (!varTypeIsArithmetic(prevNode) && !prevNode->OperIs(GT_LCL_ADDR))
+        {
+            return false;
+        }
+    }
+
+    unreached();
+}
+#endif // TARGET_WASM
 
 //------------------------------------------------------------------------------
 // fgMakeTemp: Make a temp variable and store 'value' into it.

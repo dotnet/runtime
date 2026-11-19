@@ -5009,6 +5009,9 @@ public:
     void ArgsComplete(Compiler* comp, GenTreeCall* call);
     void EvalArgsToTemps(Compiler* comp, GenTreeCall* call);
     void SetNeedsTemp(CallArg* arg);
+#if defined(TARGET_WASM)
+    bool CanEvaluateWasmCallArgInPlace(CallArg* arg);
+#endif
     bool IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg);
 
     // clang-format off
