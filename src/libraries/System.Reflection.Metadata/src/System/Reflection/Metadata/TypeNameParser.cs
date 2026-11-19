@@ -30,19 +30,6 @@ namespace System.Reflection.Metadata
 
         internal static TypeName? Parse(ReadOnlySpan<char> typeName, bool throwOnError, TypeNameParseOptions? options = default)
         {
-#if SYSTEM_REFLECTION_METADATA
-            int nullIndex = typeName.IndexOf('\0');
-            if (nullIndex >= 0)
-            {
-                if (throwOnError)
-                {
-                    ThrowArgumentException_InvalidTypeName(nullIndex);
-                }
-
-                return null;
-            }
-#endif
-
             ReadOnlySpan<char> trimmedName = typeName.TrimStart(); // whitespaces at beginning are always OK
             if (trimmedName.IsEmpty)
             {

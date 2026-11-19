@@ -16,7 +16,8 @@ namespace System.Reflection.Metadata
         internal const int ByRef = -3;
         private const char EscapeCharacter = '\\';
 
-        private static readonly SearchValues<char> s_endOfFullTypeNameDelimiterChars = SearchValues.Create("[]&*,+\\");
+        private static readonly SearchValues<char> s_charsToEscape = SearchValues.Create("[]&*,+\\");
+        private static readonly SearchValues<char> s_endOfFullTypeNameDelimiterChars = SearchValues.Create("[]&*,+\\\0");
 
         /// <returns>Positive length or negative value for invalid name</returns>
         internal static int GetFullTypeNameLength(ReadOnlySpan<char> input, out bool isNestedType)
@@ -59,7 +60,7 @@ namespace System.Reflection.Metadata
                         offset++; // skip the escaped char
 
                         if (offset == input.Length || // invalid name that ends with escape character
-                            !s_endOfFullTypeNameDelimiterChars.Contains(input[offset])) // invalid name, escapes a char that does not need escaping
+                            !s_charsToEscape.Contains(input[offset])) // invalid name, escapes a char that does not need escaping
                         {
                             return -1;
                         }
@@ -433,7 +434,7 @@ namespace System.Reflection.Metadata
 #if SYSTEM_REFLECTION_METADATA
         internal static string Escape(string name)
         {
-            int indexOfCharToEscape = name.AsSpan().IndexOfAny(s_endOfFullTypeNameDelimiterChars);
+            int indexOfCharToEscape = name.AsSpan().IndexOfAny(s_charsToEscape);
             if (indexOfCharToEscape < 0)
             {
                 return name;
@@ -446,7 +447,7 @@ namespace System.Reflection.Metadata
             for (int i = indexOfCharToEscape; i < name.Length; i++)
             {
                 char c = name[i];
-                if (s_endOfFullTypeNameDelimiterChars.Contains(c))
+                if (s_charsToEscape.Contains(c))
                 {
                     sb.Append(EscapeCharacter);
                 }
