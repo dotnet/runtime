@@ -94,8 +94,6 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSectionsAndLayout()
         {
-            base.EmitSectionsAndLayout();
-
             if (_options.HasFlag(ObjectWritingOptions.GenerateUnwindInfo))
             {
                 _pdataSectionWriter.WriteLittleEndian<uint>(_nextVirtualIP);
@@ -345,24 +343,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private static void WriteULEB128(Stream stream, ulong value)
-        {
-            Span<byte> buffer = stackalloc byte[10];
-            int size = DwarfHelper.WriteULEB128(buffer, value);
-            stream.Write(buffer.Slice(0, size));
-        }
-
         private static void WriteSLEB128(Stream stream, long value)
         {
             Span<byte> buffer = stackalloc byte[10];
             int size = DwarfHelper.WriteSLEB128(buffer, value);
             stream.Write(buffer.Slice(0, size));
-        }
-
-        private static void WriteName(Stream stream, Utf8String name)
-        {
-            WriteULEB128(stream, (ulong)name.Length); // name_len: the length of name_data in bytes.
-            stream.Write(name.AsSpan()); // name_data: UTF-8 encoding of the name.
         }
 
         private static void WriteSubsection(Stream stream, byte kind, MemoryStream payload)

@@ -11,27 +11,22 @@
     <MacOSPackageDescription>The .NET Shared Framework</MacOSPackageDescription>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))">
-    <ProjectReference Include="$(RepoRoot)src\tasks\WasmAppBuilder\WasmAppBuilder.csproj"
-                      ReferenceOutputAssembly="false" />
-  </ItemGroup>
+  <Import Project="$(RepoRoot)src\mono\browser\build\WasmProducersSource.targets" />
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmEmitProducersSource"
-             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
-             TaskFactory="TaskHostFactory"
-             Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))" />
-
-  <Target Name="GenerateBrowserWasmProducersSource"
-          BeforeTargets="AddRuntimeFilesToPackage"
-          DependsOnTargets="ResolveProjectReferences"
+  <Target Name="_ConfigureBrowserWasmProducersSource"
           Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))">
     <PropertyGroup>
       <_BrowserWasmProducersSource>$(IntermediateOutputPath)dotnet-producers.s</_BrowserWasmProducersSource>
+      <_WasmProducersSourcePath>$(_BrowserWasmProducersSource)</_WasmProducersSourcePath>
+      <_WasmProducersSourceRuntimeName>$(RuntimeFlavor)</_WasmProducersSourceRuntimeName>
+      <_WasmProducersSourceVersion>$(Version)</_WasmProducersSourceVersion>
     </PropertyGroup>
-    <WasmEmitProducersSource
-        OutputPath="$(_BrowserWasmProducersSource)"
-        RuntimeName="$(RuntimeFlavor)"
-        ProductVersion="$(Version)" />
+  </Target>
+
+  <Target Name="GenerateBrowserWasmProducersSource"
+          BeforeTargets="AddRuntimeFilesToPackage"
+          DependsOnTargets="_ConfigureBrowserWasmProducersSource;_WriteWasmProducersSource"
+          Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))">
     <ItemGroup>
       <RuntimeFiles Include="$(_BrowserWasmProducersSource)" IsNative="true" />
       <FileWrites Include="$(_BrowserWasmProducersSource)" />

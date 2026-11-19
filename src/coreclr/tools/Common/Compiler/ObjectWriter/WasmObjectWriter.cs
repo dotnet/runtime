@@ -133,13 +133,13 @@ namespace ILCompiler.ObjectWriter
         {
             MemoryStream payload = new();
             WriteULEB128(payload, 2);
-            WriteProducerField(payload, "processed-by", WasmProducerName);
-            WriteProducerField(payload, "sdk", ".NET");
+            WriteProducerField(payload, new Utf8String("processed-by"), new Utf8String(WasmProducerName));
+            WriteProducerField(payload, new Utf8String("sdk"), new Utf8String(".NET"));
             payload.Position = 0;
             return payload;
         }
 
-        private static void WriteProducerField(Stream output, string field, string name)
+        private static void WriteProducerField(Stream output, Utf8String field, Utf8String name)
         {
             WriteName(output, field);
             WriteULEB128(output, 1);
@@ -147,14 +147,13 @@ namespace ILCompiler.ObjectWriter
             WriteULEB128(output, 0);
         }
 
-        private static void WriteName(Stream output, string value)
+        private protected static void WriteName(Stream output, Utf8String value)
         {
-            Utf8String utf8 = new(value);
-            WriteULEB128(output, (ulong)utf8.Length);
-            output.Write(utf8.AsSpan());
+            WriteULEB128(output, (ulong)value.Length);
+            output.Write(value.AsSpan());
         }
 
-        private static void WriteULEB128(Stream output, ulong value)
+        private protected static void WriteULEB128(Stream output, ulong value)
         {
             Span<byte> buffer = stackalloc byte[(int)DwarfHelper.SizeOfULEB128(value)];
             int written = DwarfHelper.WriteULEB128(buffer, value);

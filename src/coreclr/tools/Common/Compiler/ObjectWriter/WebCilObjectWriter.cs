@@ -259,8 +259,6 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSectionsAndLayout()
         {
-            base.EmitSectionsAndLayout();
-
 #if READYTORUN
             int expectedTableSlot = -1;
             foreach (ILCompiler.DependencyAnalysis.ReadyToRun.MethodWithGCInfo method in _nodeFactory.EnumerateCompiledMethods())
@@ -555,11 +553,10 @@ namespace ILCompiler.ObjectWriter
                 nameSection.EmitToStream(outputFileStream);
             }
 
-#if READYTORUN
-            byte[] webcilBuildId = ComputeModuleHash(outputFileStream);
+            Span<byte> webcilBuildId = stackalloc byte[SHA256.HashSizeInBytes];
+            ComputeModuleHash(outputFileStream, webcilBuildId);
             EmitProducersSection(outputFileStream);
             EmitBuildIdSection(outputFileStream, webcilBuildId);
-#endif
 
             if (_outputInfoBuilder is not null)
             {
@@ -581,40 +578,22 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-#if READYTORUN
-        private static byte[] ComputeModuleHash(Stream outputFileStream)
+        private static void ComputeModuleHash(Stream outputFileStream, Span<byte> hash)
         {
             long end = outputFileStream.Position;
             outputFileStream.Position = 0;
-            using var sha = SHA256.Create();
-            byte[] hash = sha.ComputeHash(outputFileStream);
+            SHA256.HashData(outputFileStream, hash);
             outputFileStream.Position = end;
-            return hash;
         }
 
-        private static void EmitBuildIdSection(Stream outputFileStream, byte[] buildId)
+        private static void EmitBuildIdSection(Stream outputFileStream, ReadOnlySpan<byte> buildId)
         {
             using var payload = new MemoryStream();
-            WriteULEB128(payload, checked((uint)buildId.Length));
+            WriteULEB128(payload, checked((ulong)buildId.Length));
             payload.Write(buildId);
 
             var section = new WasmCustomSection(payload, new Utf8String("build_id"), sectionIndex: -1);
             section.EmitToStream(outputFileStream);
-        }
-#endif
-
-        private static void WriteULEB128(Stream stream, uint value)
-        {
-            do
-            {
-                byte current = (byte)(value & 0x7F);
-                value >>= 7;
-                if (value != 0)
-                {
-                    current |= 0x80;
-                }
-                stream.WriteByte(current);
-            } while (value != 0);
         }
 
         public void EmitSymbolMap(string path)
