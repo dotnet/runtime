@@ -137,7 +137,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (MethodImplRecord methodImpl in typeDefinition.VirtualMethodImplsForType)
                 {
-                    if (methodImpl.Body.HasInstantiation)
+                    if (methodImpl.Body.HasInstantiation && !methodImpl.Body.IsAbstract)
                     {
                         result |= VirtualMethodAnalysisFlags.InterestingForDynamicDependencies;
                         break;
