@@ -11,8 +11,8 @@ list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
   ${NATIVEAOT_RUNTIME_DIR}/disabledruntimeeventinternal.cpp
 )
 
-if(NOT CLR_DOTNET_HOST_PATH)
-  # The eventing sources cannot be generated, so both libraries are the disabled implementation.
+if(CLR_CMAKE_SKIP_DOTNET)
+  # Built without eventing, so both libraries are the disabled implementation.
   set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
   include(${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
   include_directories(${EP_GENERATED_HEADER_PATH})

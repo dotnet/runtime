@@ -5,14 +5,16 @@ set(EVENT_DATA_GENERATOR ${CMAKE_CURRENT_LIST_DIR}/scripts/EventDataGenerator.cs
 set(EVENT_MANIFEST ${CMAKE_CURRENT_LIST_DIR}/vm/ClrEtwAll.man)
 set(EVENT_EXCLUSIONS ${CMAKE_CURRENT_LIST_DIR}/vm/ClrEtwAllMeta.lst)
 
-if(NOT CLR_DOTNET_HOST_PATH)
-  # build-runtime.sh/.cmd invoked directly does not pass the host, so the eventing sources cannot be generated.
-  # CoreCLR is built without eventing and NativeAOT ships its disabled EventPipe as both eventpipe-enabled
-  # and eventpipe-disabled.
-  message(STATUS "CLR_DOTNET_HOST_PATH is not set; building without eventing")
+if(CLR_CMAKE_SKIP_DOTNET)
+  # build-runtime.sh/.cmd -skipdotnet: CoreCLR is built without eventing and NativeAOT ships its disabled
+  # EventPipe as both eventpipe-enabled and eventpipe-disabled.
+  message(STATUS "Building without eventing (-skipdotnet)")
   set(FEATURE_EVENT_TRACE 0)
   set(FEATURE_PERFTRACING 0)
   set(FEATURE_EVENTSOURCE_XPLAT 0)
+elseif(NOT CLR_DOTNET_HOST_PATH)
+  message(FATAL_ERROR "CLR_DOTNET_HOST_PATH is required to generate the eventing sources. Build with "
+    "build.sh/build.cmd or build-runtime.sh/.cmd, which pass it, or pass -skipdotnet to build-runtime.sh/.cmd.")
 endif()
 
 function(_get_event_data_command FLAVOR OUTPUT_DIR INCLUSION_LIST COMMAND_VAR)

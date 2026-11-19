@@ -5,6 +5,7 @@ usage_list+=("-pgoinstrument: generate instrumented code for profile guided opti
 usage_list+=("-staticanalyzer: use scan_build static analyzer.")
 usage_list+=("-component: Build individual components instead of the full project. Available options are 'hosts', 'jit', 'runtime', 'paltests', 'alljits', 'alljitscommunity', 'iltools', 'nativeaot', and 'spmi'. Can be specified multiple times.")
 usage_list+=("-subdir: Append a directory with the provided name to the obj and bin paths.")
+usage_list+=("-skipdotnet: skip the components that need .NET to build (currently eventing), when no .NET SDK is restored.")
 
 setup_dirs_local()
 {
@@ -39,6 +40,10 @@ handle_arguments_local() {
         subdir|-subdir)
             __SubDir="$2"
             __ShiftArgs=1
+            ;;
+
+        skipdotnet|-skipdotnet)
+            __SkipDotNet=1
             ;;
 
         *)
@@ -83,6 +88,7 @@ __StaticAnalyzer=0
 __UnprocessedBuildArgs=
 __VerboseBuild=0
 __CMakeArgs=""
+__SkipDotNet=0
 __RequestedBuildComponents=""
 __SubDir=""
 
@@ -135,8 +141,19 @@ export MSBUILDDEBUGPATH
 # Check prereqs.
 check_prereqs
 
+# Some components, such as eventing, generate sources with .NET while building. build.sh passes its .NET host;
+# when this script is run directly, use the repo's .NET SDK unless -skipdotnet was passed.
+if [[ "$__SkipConfigure" == 0 && "$__SkipDotNet" == 0 && "$__CMakeArgs" != *"-DCLR_DOTNET_HOST_PATH="* ]]; then
+    if [[ -x "$__RepoRootDir/.dotnet/dotnet" ]]; then
+        __CMakeArgs="-DCLR_DOTNET_HOST_PATH=$__RepoRootDir/.dotnet/dotnet $__CMakeArgs"
+    else
+        echo "ERROR: No .NET SDK found in $__RepoRootDir/.dotnet. Restore it by running ./dotnet.sh --version, or pass -skipdotnet to skip the components that need it." 1>&2
+        exit 1
+    fi
+fi
+
 # Build the coreclr (native) components.
-__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize -DCLI_CMAKE_FALLBACK_OS=\"$__HostFallbackOS\" $__CMakeArgs"
+__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize -DCLI_CMAKE_FALLBACK_OS=\"$__HostFallbackOS\" -DCLR_CMAKE_SKIP_DOTNET=$__SkipDotNet $__CMakeArgs"
 
 if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
     __CMakeArgs="-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 $__CMakeArgs"
