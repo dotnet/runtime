@@ -395,6 +395,21 @@ public:
     }
 };
 
+struct UMEntryThunkDataHolderTraits final
+{
+    using Type = UMEntryThunkData*;
+    static constexpr Type Default() { return NULL; }
+
+    static void Free(Type thunk) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (thunk != NULL)
+            UMEntryThunkData::FreeUMEntryThunk(thunk);
+    }
+};
+
+using UMEntryThunkDataHolder = LifetimeHolder<UMEntryThunkDataHolderTraits>;
+
 // Cache to hold UMEntryThunk/UMThunkMarshInfo instances associated with MethodDescs.
 // All UMEntryThunk/UMThunkMarshInfo instances are destroyed when the cache goes away.
 class UMEntryThunkCache
@@ -415,11 +430,18 @@ private:
         static count_t Hash(key_t k)           { LIMITED_METHOD_CONTRACT; return (count_t)(size_t)k; }
     };
 
-    static void DestroyMarshInfo(UMThunkMarshInfo *pMarshInfo)
+    struct MarshInfoHolderTraits final
     {
-        WRAPPER_NO_CONTRACT;
-        pMarshInfo->UMThunkMarshInfo::~UMThunkMarshInfo();
-    }
+        using Type = UMThunkMarshInfo*;
+        static constexpr Type Default() { return NULL; }
+
+        static void Free(Type pMarshInfo) noexcept
+        {
+            WRAPPER_NO_CONTRACT;
+            if (pMarshInfo != NULL)
+                pMarshInfo->UMThunkMarshInfo::~UMThunkMarshInfo();
+        }
+    };
 
     SHash<ThunkSHashTraits> m_hash;
     Crst       m_crst;
