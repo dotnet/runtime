@@ -477,10 +477,6 @@ HRESULT EEConfig::sync()
 
 #if defined(FEATURE_READYTORUN)
     fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
-#ifdef TARGET_WASM64
-    // Keep the interpreter as the default until the wasm64 ReadyToRun path is fully supported.
-    fReadyToRun = fReadyToRun && CLRConfig::IsConfigOptionSpecified(W("ReadyToRun"));
-#endif
 #if defined(FEATURE_INTERPRETER)
     if (fReadyToRun && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) >= 2)
     {

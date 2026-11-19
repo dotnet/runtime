@@ -24,7 +24,6 @@
     <_CoreCLRBrowserArchitecture>wasm</_CoreCLRBrowserArchitecture>
     <_CoreCLRBrowserArchitecture Condition="'$(RuntimeIdentifier)' == 'browser-wasm64' or '$(RuntimeIdentifiers)' == 'browser-wasm64' or '$(TargetArchitecture)' == 'wasm64'">wasm64</_CoreCLRBrowserArchitecture>
     <InvariantGlobalization Condition="'$(_CoreCLRBrowserArchitecture)' == 'wasm64' and '$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
-    <WasmEnableWebcil Condition="'$(_CoreCLRBrowserArchitecture)' == 'wasm64' and '$(WasmEnableWebcil)' == ''">false</WasmEnableWebcil>
 
     <!-- Ensure TargetsBrowser is set so native.wasm.targets populates exported functions/methods -->
     <TargetsBrowser Condition="'$(TargetsBrowser)' == '' and '$(IsBrowserWasmProject)' == 'true'">true</TargetsBrowser>

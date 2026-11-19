@@ -86,10 +86,6 @@ fi
 
 # CrossGen2 Script
 if [ ! -z ${RunCrossGen2+x} ]%3B then
-  if [ "$(TargetOS)" == "browser" ] && [ "$(TargetArchitecture)" == "wasm64" ]; then
-    export CROSSGEN2_EXPERIMENTAL_WASM64=1
-    export DOTNET_ReadyToRun="${DOTNET_ReadyToRun:-1}"
-  fi
   export TEST_READY_TO_RUN_MODE=1
   if [ "$(TargetOS)" == "wasi" ]; then
     # WASI loads R2R code from a single composite spliced into the host.

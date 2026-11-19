@@ -41,23 +41,19 @@ CoreLib and its managed framework closure. The output goes to `browser-wasm64/`
 and does not replace the browser wasm32 tables. Build the browser crossgen2
 host tool first with `./build.sh clr.tools -os browser -arch wasm -c Release`.
 This helper build uses crossgen2 only for signature lowering and helper
-generation. The browser SDK still publishes raw IL by default.
+generation.
 
-For local ReadyToRun experiments, build the host
-cross-JIT with `CLR_CROSS_COMPONENTS_BUILD=1` and
-`CLR_CMAKE_TARGET_ARCH=wasm64`, then pass the resulting
-`clrjit_universal_wasm64_<host-arch>` library to crossgen2 via `--jitpath`.
-Set `CROSSGEN2_EXPERIMENTAL_WASM64=1` and use `--targetos browser
---targetarch wasm64 --obj-format wasm`; add `--composite` for a composite
-image, which may include CoreLib. Add
-`--singlemethodtypename` and `--singlemethodname` to compile only one method.
-Place the `.wasm` alongside the IL
-assembly and run CoreRun with `DOTNET_ReadyToRun=1`. Keep matching IL CoreLib
-and framework assemblies in the CoreRun search path. With ReadyToRun disabled
-or unset, CoreRun uses the IL. A small app works with all its methods compiled,
-and with just one method compiled that calls an interpreted static method
-with a native-integer byref. Shared generic class and method dictionary
-lookups also work with interpreted CoreLib. Crossgen2 recognizes the same
+The browser-wasm64 build follows browser-wasm: `./build.sh -os browser -arch wasm64`
+builds the `clrjit_universal_wasm64_<host-arch>` cross-JIT and crossgen2, compiles a
+ReadyToRun `System.Private.CoreLib.wasm`, and adds ReadyToRun images for the shared
+framework to the runtime pack under `native/r2r`. ReadyToRun is enabled by default,
+as on wasm32; set `DOTNET_ReadyToRun=0` to run CoreLib and the framework in the
+interpreter. NativeAOT does not support wasm64, so the build skips it.
+To compile by hand, use `--targetos browser --targetarch wasm64 --obj-format wasm`
+and pass the cross-JIT via `--jitpath`; add `--composite` for a composite image,
+which may include CoreLib. Add `--singlemethodtypename` and `--singlemethodname`
+to compile only one method. ReadyToRun code outside CoreLib requires a ReadyToRun
+CoreLib. Crossgen2 recognizes the same
 baseline Wasm intrinsics on browser-wasm and browser-wasm64: Packed SIMD is
 available to compiled code, while relaxed SIMD is not enabled by default.
 A non-composite ReadyToRun CoreLib starts under both Node/CoreRun and Chrome.
@@ -87,15 +83,10 @@ when running CoreRun. The build does not use `browser-wasm` ICU archives as
 a fallback.
 
 The experimental CoreCLR `browser-wasm64` app host defaults to invariant
-globalization and requires a memory64-capable browser. The in-tree Wasm SDK
-publishes raw IL by default. To opt in to non-composite ReadyToRun, set
-`CROSSGEN2_EXPERIMENTAL_WASM64=1` and add `-p:PublishReadyToRun=true
--p:PublishReadyToRunComposite=false -p:Crossgen2InBuildDir=<directory>` to the
-publish command below. Use a matching crossgen2 and wasm64 cross-JIT in the
-same directory, and a runtime pack containing the memory64 WebCIL loader.
-The SDK stages compiled images with their payload and table sizes and sets
-`DOTNET_ReadyToRun=1` in the generated boot configuration. Assemblies without
-compiled images remain raw IL.
+globalization and requires a memory64-capable browser. Otherwise the in-tree
+Wasm SDK treats browser-wasm64 like browser-wasm: assemblies are staged as
+Webcil, using a wrapper that imports an i64 memory and `__memory_base`, and
+`PublishReadyToRun` (including composite) selects the same ReadyToRun images.
 
 In Chrome, an SDK-published compiled caller invoked an interpreted method in
 an excluded IL assembly with a native-integer byref. A Wasm-only change to the
@@ -125,8 +116,9 @@ Two additional in-tree publishes ran the sample in Chrome with ReadyToRun:
 
 Stock SDK RID and pack registration, distribution of the wasm64 crossgen2
 toolchain, and browser diagnostics are not validated. WASI is outside this
-experiment. Composite ReadyToRun is validated with the CoreRun runtime tests,
-not in browser apps.
+experiment. Composite ReadyToRun of the app assemblies passes the JavaScript
+interop library tests in V8; CoreRun runtime tests also cover whole-program
+composite images.
 
 To test browser ICU, use a wasm64 runtime pack
 containing the `browser-wasm64` ICU archives and data, and relink with

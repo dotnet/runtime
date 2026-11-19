@@ -301,7 +301,7 @@
     <value>--generate-portable-callhelpers requires --targetarch wasm with --targetos browser or wasi, or --targetarch wasm64 with --targetos browser</value>
   </data>
   <data name="Wasm64ReadyToRunUnsupported" xml:space="preserve">
-    <value>ReadyToRun compilation for wasm64 is experimental and limited to browser Wasm output. Set CROSSGEN2_EXPERIMENTAL_WASM64=1 and specify --targetos browser --obj-format wasm, or use --generate-portable-callhelpers to generate interpreter call helpers.</value>
+    <value>ReadyToRun compilation for wasm64 is limited to browser Wasm output. Specify --targetos browser --obj-format wasm, or use --generate-portable-callhelpers to generate interpreter call helpers.</value>
   </data>
   <data name="TargetOSUnsupported" xml:space="preserve">
     <value>Target OS is not supported</value>
