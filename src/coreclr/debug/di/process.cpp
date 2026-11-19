@@ -4349,6 +4349,27 @@ void CordbProcess::GetAssembliesInLoadOrder(
 }
 
 //---------------------------------------------------------------------------------------
+// Callback for code:ShimProcess::QueueFakeAssemblyAndModuleEvent.
+// Return Value: The assembly's module, or NULL if it isn't loaded yet.
+//
+CordbModule * CordbProcess::GetLoadedModuleForShim(ICorDebugAssembly * pAssembly)
+{
+    PUBLIC_API_ENTRY_FOR_SHIM(this);
+    RSLockHolder lockHolder(GetProcessLock());
+
+    CordbAssembly * pAssemblyInternal = static_cast<CordbAssembly *>(pAssembly);
+    VMPTR_Assembly vmAssembly = pAssemblyInternal->GetAssemblyPtr();
+    VMPTR_Module vmModule = VMPTR_Module::NullPtr();
+    BOOL isModuleLoaded = FALSE;
+    IfFailThrow(GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule, &isModuleLoaded));
+    if (!isModuleLoaded)
+    {
+        return NULL;
+    }
+    return pAssemblyInternal->GetAppDomain()->LookupOrCreateModule(vmAssembly, vmModule);
+}
+
+//---------------------------------------------------------------------------------------
 // Callback to count the number of enumerations in a process.
 //
 // Arguments:
