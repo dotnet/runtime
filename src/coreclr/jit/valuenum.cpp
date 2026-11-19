@@ -7000,10 +7000,22 @@ bool Compiler::fgValueNumberFieldStore(
         !storeNode->AsIndir()->IsVolatile() && ((storeNode->gtFlags & GTF_IND_NONFAULTING) != 0) &&
         (((storeNode->AsIndir()->Addr()->gtFlags | storeNode->Data()->gtFlags) & GTF_ALL_EFFECT) == 0))
     {
-        // The proof reads the current memory state, a use that liveness does not see.
-        // Memory SSA phis are pruned where the kind is dead into a block, so the entry
-        // state is only the true reaching state where the consulted kind is live in.
-        // Under matching states the shared SSA is keyed on ByrefExposed liveness.
+        // The proof reads memory states, uses that liveness does not see. Memory SSA
+        // phis are pruned where the kind is dead into a block, so the entry state is
+        // only the true reaching state where the consulted kind is live in. Audit of
+        // every consulted state:
+        //  - previousField and previousValue project fgCurMemoryVN[GcHeap]. Under
+        //    matching states the shared SSA is pruned by the ByrefExposed liveness
+        //    bit, under split states by the GcHeap bit, so gcHeapStateReliable keys
+        //    on the bit that gated the consulted SSA. Projections are computed
+        //    unconditionally but conclusions are drawn only under the gate.
+        //  - The byref path compares against fgCurMemoryVN[ByrefExposed], consumed
+        //    only under byrefStateReliable.
+        //  - The stale state projection additionally consults loadMemoryVN, the state
+        //    the load itself captured. That state is reliable because it was captured
+        //    at a real, tracked memory use through normal VN processing, either the
+        //    entry state of a block the use keeps live or a state built by in-block
+        //    definitions, never the pruned entry state of a dead region.
         const bool gcHeapStateReliable =
             (compCurBB->bbMemoryLiveIn &
              memoryKindSet(byrefStatesMatchGcHeapStates ? ByrefExposed : GcHeap)) != 0;
