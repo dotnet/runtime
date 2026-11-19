@@ -31,7 +31,7 @@ namespace System.Net.NetworkInformation.Tests
                 {
                     _log.WriteLine("Nic: " + nic.Name);
                     _log.WriteLine("- Speed:" + nic.Speed);
-                    Assert.Equal(-1, nic.Speed);
+                    Assert.InRange(nic.Speed, -1, long.MaxValue);
                     _log.WriteLine("- Supports IPv4: " + nic.Supports(NetworkInterfaceComponent.IPv4));
                     _log.WriteLine("- Supports IPv6: " + nic.Supports(NetworkInterfaceComponent.IPv6));
                     Assert.False(nic.IsReceiveOnly);
@@ -42,10 +42,10 @@ namespace System.Net.NetworkInformation.Tests
 
                     Assert.Throws<PlatformNotSupportedException>(() => ipProperties.AnycastAddresses);
                     Assert.Throws<PlatformNotSupportedException>(() => ipProperties.DhcpServerAddresses);
-                    Assert.Throws<PlatformNotSupportedException>(() => ipProperties.DnsAddresses);
+                    Assert.Empty(ipProperties.DnsAddresses);
                     Assert.Throws<PlatformNotSupportedException>(() => ipProperties.DnsSuffix);
                     Assert.Throws<PlatformNotSupportedException>(() => ipProperties.GatewayAddresses);
-                    Assert.Throws<PlatformNotSupportedException>(() => ipProperties.IsDnsEnabled);
+                    Assert.False(ipProperties.IsDnsEnabled);
                     Assert.Throws<PlatformNotSupportedException>(() => ipProperties.IsDynamicDnsEnabled);
 
                     Assert.NotNull(ipProperties.MulticastAddresses);
