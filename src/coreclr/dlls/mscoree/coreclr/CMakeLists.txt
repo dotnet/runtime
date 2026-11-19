@@ -67,6 +67,11 @@ if (CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
 
+set(LIB_GLOBALIZATION System.Globalization.Native-Static)
+if(CLR_CMAKE_TARGET_BROWSER AND CLR_CMAKE_TARGET_ARCH STREQUAL wasm64 AND NOT TARGET System.Globalization.Native-Static)
+    set(LIB_GLOBALIZATION "")
+endif()
+
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
@@ -83,7 +88,7 @@ set(CORECLR_LIBRARIES
     corguids
     utilcode
     v3binder
-    System.Globalization.Native-Static
+    ${LIB_GLOBALIZATION}
     ${LIB_INTEROP}
     coreclrminipal
     gc_pal
