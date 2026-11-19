@@ -23,7 +23,7 @@ All Classes and Methods in C:\test\hello.dll Verified.
 
 Note that `ILVerify` requires all dependencies of assembly that is being verified to be explicitly specified on the command line.
 
-`--validation-only` is in progress. It is meant to report IL that is not valid and to skip rules that only verifiable IL must follow. At present it skips only rules that are not about managed-reference types, such as the blanket `Unverifiable` error for `localloc`, `calli`, `jmp`, `cpblk` and `initblk`, and the `InitLocals` error for methods without `localsinit`. The validity checks of those instructions remain.
+With `--validation-only`, ILVerify reports invalid IL. It accepts valid IL that is unverifiable because it uses unmanaged pointers, `localloc`, `calli` or other instructions that are never verifiable. Managed references are still checked for type safety, except in patterns that the C# compiler emits in unsafe code. Where ILVerify cannot tell whether IL is valid, it still reports it: for example, any managed pointer passed in a tail call.
 
 ## Other tools
 Historically on .NET Framework IL generators used PEVerify to make sure that they generated correct IL. PEVerify has some major limitations (e.g. it is tied to the .NET Framework, it cannot verify mscorlib.dll, etc.), which initiated this project.

@@ -56,7 +56,7 @@
     }
 
     // Correct CIL, but verification requires a managed pointer.
-    .method public hidebysig static void Mkrefany.NativeIntPointer_Invalid_StackByRef() cil managed
+    .method public hidebysig static void Mkrefany.NativeIntPointer_Invalid_StackByRef_Validation_Valid() cil managed
     {
         ldc.i4.0
         conv.i

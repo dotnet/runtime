@@ -630,6 +630,12 @@ namespace Internal.IL
             }
         }
 
+        // An unmanaged pointer (native int) is valid where verification requires a managed pointer (III.1.1.5.1).
+        bool AcceptsUnmanagedPointer(StackValue value)
+        {
+            return ValidationOnly && value.Kind == StackValueKind.NativeInt;
+        }
+
         void CheckIsNumeric(StackValue value)
         {
             if (!Check(StackValueKind.Int32 <= value.Kind && value.Kind <= StackValueKind.Float,
@@ -674,10 +680,35 @@ namespace Internal.IL
             }
         }
 
-        void CheckIsAssignable(StackValue src, StackValue dst, VerifierError error = VerifierError.StackUnexpected)
+        // Which mismatches of a value and its destination validation-only mode accepts.
+        enum ValidAssignment
         {
-            if (!IsAssignable(src, dst))
+            // A native int where a managed pointer is expected (III.1.6), as C# emits for ref *p.
+            UnmanagedPointer,
+            // Also a managed pointer for a native int argument, which C# emits for u8 literals.
+            Argument,
+            // None: every mismatch verification reports.
+            Verifiable,
+        }
+
+        void CheckIsAssignable(StackValue src, StackValue dst, VerifierError error = VerifierError.StackUnexpected,
+            ValidAssignment valid = ValidAssignment.UnmanagedPointer)
+        {
+            if (!IsAssignable(src, dst) && !(ValidationOnly && IsValidAssignment(src, dst, valid)))
                 VerificationError(error, src, dst);
+        }
+
+        static bool IsValidAssignment(StackValue src, StackValue dst, ValidAssignment valid)
+        {
+            if (valid == ValidAssignment.Verifiable)
+                return false;
+
+            if (src.Kind == StackValueKind.NativeInt && dst.Kind == StackValueKind.ByRef)
+                return true;
+
+            // A controlled-mutability managed pointer cannot be used as an ordinary one (III.1.8.1.2.2).
+            return valid == ValidAssignment.Argument && src.Kind == StackValueKind.ByRef && !src.IsReadOnly &&
+                dst.Kind == StackValueKind.NativeInt;
         }
 
         private void CheckIsValidLeaveTarget(BasicBlock src, BasicBlock target)
@@ -1137,7 +1168,7 @@ namespace Internal.IL
         private void CheckIsNotPointer(TypeDesc type)
         {
             if (type.IsPointer)
-                VerificationError(VerifierError.UnmanagedPointer);
+                UnverifiableError(VerifierError.UnmanagedPointer);
         }
 
         void CheckIsComparable(StackValue a, StackValue b, ILOpcode op)
@@ -1238,7 +1269,8 @@ namespace Internal.IL
             if (isOpenDelegate)
             {
                 // If we're looking at an open delegate but the caller has provided a target it's not a match.
-                if (firstArg.Type != null)
+                // An object reference of unknown class may be a target.
+                if (firstArg.Type != null || firstArg.IsUnknownClass)
                     return false;
 
                 consumedArgs++;
@@ -1246,7 +1278,8 @@ namespace Internal.IL
             else
             {
                 // If we're looking at a closed delegate but the caller has not provided a target it's not a match.
-                if (firstArg.Type == null)
+                // An object reference of unknown class (validation-only mode) is a target.
+                if (firstArg.Type == null && !firstArg.IsUnknownClass)
                     return false;
             }
 
@@ -1719,11 +1752,11 @@ namespace Internal.IL
                     var actual = Pop(allowUninitThis: true);
                     var declared = StackValue.CreateFromType(sig[i]);
 
-                    CheckIsAssignable(actual, declared);
+                    CheckIsAssignable(actual, declared, valid: ValidAssignment.Argument);
 
                     // check that the argument is not a byref for tailcalls
                     if (tailCall)
-                        Check(!IsByRefLike(declared), VerifierError.TailByRef, declared);
+                        CheckTailCallArgument(actual, declared);
                 }
             }
 
@@ -1775,11 +1808,15 @@ namespace Internal.IL
 
                 if (constrained != null)
                 {
-                    Check(actualThis.Kind == StackValueKind.ByRef, VerifierError.ConstrainedCallWithNonByRefThis);
+                    // An unmanaged pointer is valid as 'this' (III.1.1.5.1), as C# emits for p->ToString(), and has no type.
+                    if (!AcceptsUnmanagedPointer(actualThis))
+                    {
+                        Check(actualThis.Kind == StackValueKind.ByRef, VerifierError.ConstrainedCallWithNonByRefThis);
 
-                    // We just dereference this and test for equality
-                    //todo: improve error - "this type mismatch with constrained type operand"
-                    Check(actualThis.Type == constrained, VerifierError.StackUnexpected);
+                        // We just dereference this and test for equality
+                        //todo: improve error - "this type mismatch with constrained type operand"
+                        Check(actualThis.Type == constrained, VerifierError.StackUnexpected);
+                    }
 
                     // Now pretend the this type is the boxed constrained type, for the sake of subsequent checks
                     actualThis = StackValue.CreateObjRef(constrained);
@@ -1875,6 +1912,13 @@ namespace Internal.IL
             }
         }
 
+        // A tail call may pass no managed pointer, even as a native int: ILVerify cannot tell its frame (III.2.4).
+        void CheckTailCallArgument(StackValue actual, StackValue declared)
+        {
+            if (Check(!IsByRefLike(declared), VerifierError.TailByRef, declared) && ValidationOnly)
+                Check(!IsByRefLike(actual), VerifierError.TailByRef, actual);
+        }
+
         void CheckTailCallReturn(TypeDesc returnType)
         {
             TypeDesc callerReturnType = _methodSignature.ReturnType;
@@ -1929,10 +1973,10 @@ namespace Internal.IL
             for (int i = 0; i < sig.Length; i++)
             {
                 var declared = StackValue.CreateFromType(sig[i]);
-                CheckIsAssignable(args[firstParameter + i], declared);
+                CheckIsAssignable(args[firstParameter + i], declared, valid: ValidAssignment.Argument);
 
                 if (tailCall)
-                    Check(!IsByRefLike(declared), VerifierError.TailByRef, declared);
+                    CheckTailCallArgument(args[firstParameter + i], declared);
             }
 
             if (implicitThis && tailCall)
@@ -2219,6 +2263,28 @@ namespace Internal.IL
                 for (int i = 0; i < entryStack.Length; i++)
                 {
                     // TODO: Do we need to allow conversions?
+                    if (ValidationOnly && IsNativeIntAndByRef(entryStack[i], _stack[i]))
+                    {
+                        // A native int and a managed pointer merge to a native int, as for C#'s c ? ref x : ref *p.
+                        if (entryStack[i].Kind != StackValueKind.NativeInt)
+                        {
+                            entryStack[i] = StackValue.CreatePrimitive(StackValueKind.NativeInt);
+                            if (next.ErrorCount == 0 && next.State != BasicBlock.ImportState.IsPending)
+                                next.State = BasicBlock.ImportState.Unmarked; // Make sure block is reverified
+                        }
+                        continue;
+                    }
+
+                    // Null joined with an object reference of unknown class keeps the unknown class, which can be a
+                    // delegate target. Like null, it merges with a known class to that class.
+                    if (entryStack[i].IsNullReference && !entryStack[i].IsUnknownClass && _stack[i].IsUnknownClass)
+                    {
+                        entryStack[i] = _stack[i];
+                        if (next.ErrorCount == 0 && next.State != BasicBlock.ImportState.IsPending)
+                            next.State = BasicBlock.ImportState.Unmarked; // Make sure block is reverified
+                        continue;
+                    }
+
                     FatalCheck(entryStack[i].Kind == _stack[i].Kind, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
 
                     if (entryStack[i].Type != _stack[i].Type)
@@ -2254,10 +2320,23 @@ namespace Internal.IL
             MarkBasicBlock(next);
         }
 
+        // A controlled-mutability managed pointer cannot become a native int (III.1.8.1.2.2).
+        static bool IsNativeIntAndByRef(StackValue a, StackValue b)
+        {
+            return (a.Kind == StackValueKind.NativeInt && b.Kind == StackValueKind.ByRef && !b.IsReadOnly) ||
+                (a.Kind == StackValueKind.ByRef && !a.IsReadOnly && b.Kind == StackValueKind.NativeInt);
+        }
+
         void ImportBinaryOperation(ILOpcode opcode)
         {
             var op1 = Pop();
             var op2 = Pop();
+
+            if (ValidationOnly && IsValidPointerArithmetic(opcode, op2, op1, out StackValue pointerResult))
+            {
+                Push(pointerResult);
+                return;
+            }
 
             switch (opcode)
             {
@@ -2303,6 +2382,21 @@ namespace Internal.IL
             Push(result);
         }
 
+        // A managed pointer plus an integer is valid but not verifiable (Table III.2); C# emits it to index a
+        // fixed-size buffer. value1 is the operand pushed first.
+        static bool IsValidPointerArithmetic(ILOpcode opcode, StackValue value1, StackValue value2, out StackValue result)
+        {
+            result = default;
+
+            // Arithmetic is not one of the uses of a controlled-mutability managed pointer (III.1.8.1.2.2).
+            if (opcode != ILOpcode.add || value1.Kind != StackValueKind.ByRef || value1.IsReadOnly ||
+                value2.Kind is not (StackValueKind.Int32 or StackValueKind.NativeInt))
+                return false;
+
+            result = StackValue.CreateByRef(value1.Type);
+            return true;
+        }
+
         void ImportShiftOperation(ILOpcode opcode)
         {
             var shiftBy = Pop();
@@ -2327,6 +2421,16 @@ namespace Internal.IL
         void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
         {
             var value = Pop();
+
+            // Converting a & or an object reference to native int is valid but not verifiable (Table III.8);
+            // C# emits it in fixed statements.
+            if (ValidationOnly && !value.IsReadOnly &&
+                value.Kind is StackValueKind.ByRef or StackValueKind.ObjRef &&
+                wellKnownType is WellKnownType.IntPtr or WellKnownType.UIntPtr)
+            {
+                Push(StackValue.CreateFromType(GetWellKnownType(wellKnownType)));
+                return;
+            }
 
             CheckIsNumeric(value);
 
@@ -2375,6 +2479,7 @@ namespace Internal.IL
         {
             var field = ResolveFieldToken(token);
             bool isPermanentHome = false;
+            bool throughUnmanagedPointer = false;
 
             TypeDesc instance;
             if (isStatic)
@@ -2402,6 +2507,9 @@ namespace Internal.IL
 
                 CheckIsAssignable(actualThis, declaredThis);
 
+                // Through an unmanaged pointer, the result is an unmanaged pointer (III.4.11).
+                throughUnmanagedPointer = AcceptsUnmanagedPointer(actualThis);
+
                 isPermanentHome = actualThis.Kind == StackValueKind.ObjRef || actualThis.IsPermanentHome;
                 instance = actualThis.Type;
 
@@ -2412,7 +2520,8 @@ namespace Internal.IL
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
 
-            Push(StackValue.CreateByRef(field.FieldType, false, isPermanentHome));
+            Push(throughUnmanagedPointer ? StackValue.CreatePrimitive(StackValueKind.NativeInt) :
+                StackValue.CreateByRef(field.FieldType, false, isPermanentHome));
         }
 
         void ImportStoreField(int token, bool isStatic)
@@ -2475,6 +2584,14 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Volatile);
 
             var address = Pop();
+
+            // ldind.ref through an unmanaged pointer pushes an object reference of unknown class, as for C#'s *(object*)p.
+            if (AcceptsUnmanagedPointer(address))
+            {
+                Push(type == null ? StackValue.CreateObjRefOfUnknownClass() : StackValue.CreateFromType(type));
+                return;
+            }
+
             CheckIsByRef(address);
 
             if (type == null)
@@ -2504,6 +2621,16 @@ namespace Internal.IL
 
             Check(!address.IsReadOnly, VerifierError.ReadOnlyIllegalWrite);
 
+            // addr can be an unmanaged pointer, which carries no type (III.4.29), so only the value is checked.
+            if (AcceptsUnmanagedPointer(address))
+            {
+                if (type == null)
+                    CheckIsObjRef(value);
+                else
+                    CheckIsAssignable(value, StackValue.CreateFromType(type));
+                return;
+            }
+
             CheckIsByRef(address);
 
             if (type == null)
@@ -2512,8 +2639,9 @@ namespace Internal.IL
             var typeVal = StackValue.CreateFromType(type);
             var addressVal = StackValue.CreateFromType(address.Type);
 
-            CheckIsAssignable(typeVal, addressVal);
-            CheckIsAssignable(value, typeVal);
+            // A location that holds a managed pointer does not take a native int.
+            CheckIsAssignable(typeVal, addressVal, valid: ValidAssignment.Verifiable);
+            CheckIsAssignable(value, typeVal, valid: ValidAssignment.Verifiable);
         }
 
         void ImportThrow()
@@ -2544,6 +2672,10 @@ namespace Internal.IL
             var type = ResolveTypeToken(token);
 
             var value = Pop();
+
+            // dest can be an unmanaged pointer, which is valid but not verifiable (III.4.5), as for C#'s *p = default.
+            if (AcceptsUnmanagedPointer(value))
+                return;
 
             Check(value.Kind == StackValueKind.ByRef, VerifierError.StackByRef, value);
 
@@ -2671,8 +2803,9 @@ namespace Internal.IL
                 }
             }
 
-            // ldelem.ref on a null array has no element type; the result is a null reference
-            Push(elementType != null ? StackValue.CreateFromType(elementType) : StackValue.CreateObjRef(null));
+            // Without an element type the result is a null reference, or of unknown class for an array of unknown class
+            Push(elementType != null ? StackValue.CreateFromType(elementType) :
+                array.IsUnknownClass ? StackValue.CreateObjRefOfUnknownClass() : StackValue.CreateObjRef(null));
         }
 
         void ImportStoreElement(int token)
@@ -2702,6 +2835,11 @@ namespace Internal.IL
                     elementType = actualElementType;
                     CheckIsObjRef(elementType);
                 }
+            }
+            else if (elementType == null && ValidationOnly)
+            {
+                // stelem.ref stores an object reference (III.4.26), also into an array of unknown class.
+                CheckIsObjRef(value);
             }
 
             if (elementType != null)
@@ -2769,8 +2907,10 @@ namespace Internal.IL
             var src = Pop();
             var dst = Pop();
 
-            Check(src.Kind == StackValueKind.ByRef, VerifierError.StackByRef, src);
-            Check(dst.Kind == StackValueKind.ByRef, VerifierError.StackByRef, dst);
+            if (!AcceptsUnmanagedPointer(src))
+                Check(src.Kind == StackValueKind.ByRef, VerifierError.StackByRef, src);
+            if (!AcceptsUnmanagedPointer(dst))
+                Check(dst.Kind == StackValueKind.ByRef, VerifierError.StackByRef, dst);
 
             // TODO !!!
             // CheckIsAssignable(src.Type, type);
@@ -3087,7 +3227,8 @@ namespace Internal.IL
 
             // ECMA-335 III.4.19: verification requires a managed pointer to an instance of the class.
             // The class may be byref-like: the ECMA-335 augments allow a managed pointer to a byref-like type.
-            if (Check(ptr.Kind == StackValueKind.ByRef, VerifierError.StackByRef, ptr))
+            // An unmanaged pointer is valid, as for C#'s __makeref(*p), and does not carry the type it points to.
+            if (!AcceptsUnmanagedPointer(ptr) && Check(ptr.Kind == StackValueKind.ByRef, VerifierError.StackByRef, ptr))
             {
                 // III.1.8.1.2.2: a controlled-mutability managed pointer cannot be used with mkrefany.
                 Check(!ptr.IsReadOnly, VerifierError.ReadOnlyInMkrefany);
