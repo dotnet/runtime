@@ -1233,11 +1233,12 @@ namespace DispatchProxyTests
         {
             EchoPointerThroughProxy(useGenericCreate);
 
-            // Each new load context gets its own proxy assembly, which needs its own access to BoxPointer and
-            // UnboxPointer. One proxy here only boxes a pointer and the other only unboxes one, so each conversion
-            // must add that access by itself.
+            // Each new load context gets its own proxy assembly. Of the three proxies below, the first only
+            // boxes a pointer, which needs no access to UnboxPointer; the second unboxes only a returned pointer
+            // and the third only a ref pointer written back, so each must add that access to its own assembly.
             InvokeInNewAssemblyLoadContext(nameof(PassPointerThroughProxy), useGenericCreate);
             InvokeInNewAssemblyLoadContext(nameof(ReturnPointerThroughProxy), useGenericCreate);
+            InvokeInNewAssemblyLoadContext(nameof(WriteBackPointerThroughProxy), useGenericCreate);
         }
 
         private static void InvokeInNewAssemblyLoadContext(string methodName, bool useGenericCreate) =>
@@ -1277,6 +1278,21 @@ namespace DispatchProxyTests
             TestType_IPointerReturnService proxy = CreateHelper<TestType_IPointerReturnService, TestDispatchProxy>(useGenericCreate);
             ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) => result;
             Assert.Equal((nint)(&value), (nint)proxy.Get());
+        }
+
+        private static unsafe void WriteBackPointerThroughProxy(bool useGenericCreate)
+        {
+            int value = 42;
+            int* p = null;
+            object written = Pointer.Box(&value, typeof(int*));
+            TestType_IPointerRefService proxy = CreateHelper<TestType_IPointerRefService, TestDispatchProxy>(useGenericCreate);
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                args[0] = written;
+                return null;
+            };
+            proxy.Ref(ref p);
+            Assert.Equal((nint)(&value), (nint)p);
         }
 
         private static TestType_IHelloService CreateTestHelloProxy(bool useGenericCreate) =>

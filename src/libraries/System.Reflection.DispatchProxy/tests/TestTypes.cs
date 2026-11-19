@@ -174,6 +174,11 @@ public unsafe interface TestType_IPointerArgumentService
     void Set(int* p);
 }
 
+public unsafe interface TestType_IPointerRefService
+{
+    void Ref(ref int* p);
+}
+
 // Negative -- demonstrates trying to use a class for the interface type for the proxy
 public class TestType_ConcreteClass
 {
