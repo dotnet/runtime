@@ -701,7 +701,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 var matcher = new Matcher();
                 matcher.AddInclude(pattern);
 
-                foreach (string file in new[] { rootDir, ".", "" })
+                string rootDirWithSeparator = rootDir.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                foreach (string file in new[] { rootDir, rootDirWithSeparator, ".", "./", "" })
                 {
                     PatternMatchingResult result = matcher.Match(rootDir, file);
 
@@ -730,6 +731,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             [
                 rootDir,
                 ".",
+                "./",
                 "",
                 Path.Combine(rootDir, "a"),
                 Path.Combine(rootDir, "b", "MyFile.txt")
@@ -738,6 +740,22 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
 
             Assert.True(result.HasMatches);
             Assert.Equal(new[] { "a", "b/MyFile.txt" }, result.Files.Select(file => file.Path).OrderBy(path => path, StringComparer.Ordinal));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(@"\\?\C:\project")]
+        [InlineData(@"\\?\C:\project\")]
+        public void RootDir_ExtendedPathWithRepeatedSeparators_WithInMemory(string rootDir)
+        {
+            string rootWithRepeatedSeparators = @"\\?\C:\project\\";
+            var directory = new InMemoryDirectoryInfo(rootDir, [rootWithRepeatedSeparators, rootWithRepeatedSeparators + "a"]);
+
+            // Check the immediate child before recursive matching so a regression fails without recursing.
+            Assert.IsAssignableFrom<FileInfoBase>(Assert.Single(directory.EnumerateFileSystemInfos()));
+
+            var matcher = new Matcher();
+            matcher.AddInclude("**/*");
+            Assert.Equal("a", Assert.Single(matcher.Execute(directory).Files).Path);
         }
 
         [Theory]
