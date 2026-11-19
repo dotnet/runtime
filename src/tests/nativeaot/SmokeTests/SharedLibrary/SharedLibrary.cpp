@@ -9,10 +9,16 @@
 #include "stdio.h"
 #include "string.h"
 
-#ifdef __linux__
+#ifdef __ELF__
 #include <elf.h>
-#include <link.h>
 #include <stdlib.h>
+
+// ElfW() is not available on all ELF platforms (e.g. OpenBSD)
+#if defined(__LP64__) || defined(_LP64)
+#define ELF_TYPE(type) Elf64_##type
+#else
+#define ELF_TYPE(type) Elf32_##type
+#endif
 #endif
 
 #ifndef TARGET_WINDOWS
@@ -20,7 +26,7 @@
 #define __cdecl
 #endif
 
-#ifdef __linux__
+#ifdef __ELF__
 // Returns true if the ELF shared library at the given path has a DT_SONAME equal to the expected value.
 static bool HasSoname(const char* path, const char* expected)
 {
@@ -36,15 +42,15 @@ static bool HasSoname(const char* path, const char* expected)
         data = (char*)malloc(size);
         if (data && fread(data, 1, size, file) == (size_t)size)
         {
-            ElfW(Ehdr)* ehdr = (ElfW(Ehdr)*)data;
-            ElfW(Shdr)* shdrs = (ElfW(Shdr)*)(data + ehdr->e_shoff);
+            ELF_TYPE(Ehdr)* ehdr = (ELF_TYPE(Ehdr)*)data;
+            ELF_TYPE(Shdr)* shdrs = (ELF_TYPE(Shdr)*)(data + ehdr->e_shoff);
             for (int i = 0; i < ehdr->e_shnum; i++)
             {
                 if (shdrs[i].sh_type != SHT_DYNAMIC)
                     continue;
 
                 const char* strtab = data + shdrs[shdrs[i].sh_link].sh_offset;
-                for (ElfW(Dyn)* dyn = (ElfW(Dyn)*)(data + shdrs[i].sh_offset); dyn->d_tag != DT_NULL; dyn++)
+                for (ELF_TYPE(Dyn)* dyn = (ELF_TYPE(Dyn)*)(data + shdrs[i].sh_offset); dyn->d_tag != DT_NULL; dyn++)
                 {
                     if (dyn->d_tag == DT_SONAME)
                         result = strcmp(strtab + dyn->d_un.d_val, expected) == 0;
@@ -126,7 +132,7 @@ int main(int argc, char* argv[])
     if (checkSimpleExceptionHandling() != 100)
         return 5;
 
-#ifdef __linux__
+#ifdef __ELF__
     // argv[0] has been suffixed with ".so" above
     if (!HasSoname(argv[0], "SharedLibrary.so"))
         return 7;
