@@ -31,6 +31,35 @@ public class WasmSelect
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int SelectCompare(int left, int right, int x, int y) => left > right ? x + 7 : y - 9;
 
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(2, 1)]
+    [InlineData(4, 1)]
+    [InlineData(6, 1)]
+    public static void NormalizeComparisonResult(int value, int expected) =>
+        Assert.Equal(expected, SelectBooleanValue(value));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int SelectBooleanValue(int value)
+    {
+        const int Mask = 6;
+        int result;
+        if ((value & Mask) != 0)
+        {
+            result = 1;
+        }
+        else
+        {
+            result = 0;
+        }
+
+        // Keep both assignments as stores to the same local until if-conversion.
+        return ReadResult(ref result);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReadResult(ref int result) => result;
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static long SelectLong(bool condition, long x, long y) => condition ? x + 7 : y - 9;
 

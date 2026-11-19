@@ -685,6 +685,11 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
 #endif
     }
+    else
+    {
+        // The comparison may now produce a value that must be normalized to 0 or 1.
+        m_cond->gtFlags &= ~GTF_RELOP_JMP_USED;
+    }
 
     // Use the SELECT as the source of the Then STORE/RETURN.
     m_thenOperation.node->AddAllEffectsFlags(select);
