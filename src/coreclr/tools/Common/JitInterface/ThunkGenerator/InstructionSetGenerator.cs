@@ -121,8 +121,8 @@ namespace Thunkerator
                 return "AMD64";
             if (arch == "RiscV64")
                 return "RISCV64";
-            if (arch == "Wasm32")
-                return "WASM";
+            if (arch is "Wasm32" or "Wasm64")
+                return arch.ToUpperInvariant();
             return arch;
         }
 

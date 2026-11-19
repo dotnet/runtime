@@ -10978,7 +10978,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
         return true;
     }
 
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) && !defined(TARGET_WASM)
     // Jit64 compat:
     if (callerRetType == TYP_VOID)
     {
@@ -11008,7 +11008,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
     {
         return (varTypeIsIntegral(calleeRetType) || isCalleeRetTypMBEnreg) && (callerRetTypeSize == calleeRetTypeSize);
     }
-#endif // TARGET_64BIT
+#endif // defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
     return false;
 }

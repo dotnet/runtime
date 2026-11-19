@@ -244,7 +244,7 @@
 #error Cannot define both TARGET_RISCV64 and TARGET_WASM32
 #endif
 
-#elif defined(TARGET_WASM32)
+#elif defined(TARGET_WASM)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_WASM32 and TARGET_X86
 #endif

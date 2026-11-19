@@ -14619,8 +14619,8 @@ GenTree* Compiler::fgInitThisClass()
             {
                 GenTree* methHndTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
                 methHndTree->gtFlags |= GTF_VAR_CONTEXT;
-                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, HelperInitClassRetType, gtNewIconNode(0),
-                                           methHndTree);
+                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, HelperInitClassRetType,
+                                           gtNewIconNode(0, TYP_I_IMPL), methHndTree);
             }
 
             default:
