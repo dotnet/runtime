@@ -444,8 +444,8 @@ namespace System.Buffers
 
             return new SingleStringSearchValuesThreeChars<TValueLength, TCaseSensitivity>(uniqueValues, value, ch2Offset, ch3Offset);
 
-            // Unlike with PackedSpanHelpers (Sse2 only), we are also using this approach on ARM64.
-            // We use PackUnsignedSaturate on X86 and UnzipEven on ARM, so the set of allowed characters differs slightly (we can't use it for \0 and \xFF on X86).
+            // Unlike with PackedSpanHelpers (Sse2 and PackedSimd only), we are also using this approach on ARM64.
+            // We use saturating packing on X86 and WASM and UnzipEven on ARM, so the set of allowed characters differs slightly (we can't use it for \0 and \xFF on X86 and WASM).
             static bool CanUsePackedImpl(char c) =>
                 PackedSpanHelpers.PackedIndexOfIsSupported ? PackedSpanHelpers.CanUsePackedIndexOf(c) :
                 (AdvSimd.Arm64.IsSupported && c <= byte.MaxValue);

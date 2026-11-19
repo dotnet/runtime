@@ -31,6 +31,9 @@ environment: copilot-pat-pool
 
 engine:
   id: copilot
+  harness:
+    # Log fetches can be quiet while the scan continues after its first issue output.
+    watchdog-timeout: 600
   env:
     # GPT-6.1 requires Responses in the firewall's offline/BYOK mode.
     COPILOT_PROVIDER_WIRE_API: responses
@@ -38,18 +41,6 @@ engine:
 
 model: gpt-6.1-sol
 max-ai-credits: 2500
-
-# gpt-6.1-sol is not yet in the built-in gh-aw v0.86.2 pricing table.
-models:
-  providers:
-    github-copilot:
-      models:
-        gpt-6.1-sol:
-          cost:
-            input: "2e-06"
-            output: "1e-05"
-            cache_read: "1e-07"
-            cache_write: "2.5e-06"
 
 concurrency:
   group: "ci-failure-scan"
@@ -65,7 +56,8 @@ tools:
     allowed-repos: [dotnet/runtime]
     min-integrity: approved
   edit:
-  bash: ["dotnet", "git", "find", "ls", "cat", "grep", "head", "tail", "wc", "curl", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "bash", "sh", "chmod"]
+  # read consumes lines in loops; : is Bash's no-op for an empty loop body.
+  bash: ["dotnet", "git", "find", "ls", "cat", "grep", "head", "tail", "wc", "curl", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "bash", "sh", "chmod", "read", ":"]
 
 mcp-scripts:
   search-kbe-issues:

@@ -4,10 +4,10 @@
 import type { LoaderConfig } from "./types";
 
 export const loaderCallbacks: {
-    configLoaded?: (config: LoaderConfig) => void | Promise<void>;
+    configLoaded: ((config: LoaderConfig) => void | Promise<void>)[];
     dotnetReady?: () => void | Promise<void>;
     downloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
-} = {};
+} = { configLoaded: [] };
 
 type LegacyModuleCallbacks = {
     onConfigLoaded?: (config: LoaderConfig) => void | Promise<void>;
@@ -27,7 +27,7 @@ export function extractLegacyModuleCallbacks<T extends object>(moduleConfig: T):
 
     const { onConfigLoaded, onDotnetReady, onDownloadResourceProgress, ...rest } = moduleConfig as T & LegacyModuleCallbacks;
     if (onConfigLoaded !== undefined) {
-        loaderCallbacks.configLoaded = onConfigLoaded;
+        loaderCallbacks.configLoaded = [onConfigLoaded];
     }
     if (onDotnetReady !== undefined) {
         loaderCallbacks.dotnetReady = onDotnetReady;

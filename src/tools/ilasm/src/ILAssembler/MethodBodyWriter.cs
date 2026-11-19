@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed class MethodBodyWriter
 {
@@ -56,6 +56,8 @@ internal sealed class MethodBodyWriter
     }
 
     public void Token(EntityHandle handle) => CodeBuilder.WriteInt32(MetadataTokens.GetToken(handle));
+
+    public void Token(int token) => CodeBuilder.WriteInt32(token);
 
     public void LoadString(UserStringHandle handle)
     {

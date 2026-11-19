@@ -180,12 +180,41 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
+        [MemberData(nameof(ReservedSimpleValueInputs))]
+        public static void ReadSimpleValue_ReservedAdditionalInfo_ShouldThrowCborContentException(CborConformanceMode conformanceMode, bool isFinalBlock, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, new CborReaderOptions { ConformanceMode = conformanceMode }, isFinalBlock);
+
+            Assert.Throws<CborContentException>(() => reader.ReadSimpleValue());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.CurrentDepth);
+        }
+
+        [Fact]
+        public static void ReadSimpleValue_EndOfIndefiniteLengthArray_ShouldThrowInvalidOperationException()
+        {
+            var reader = new CborReader("9fff".HexToByteArray());
+            reader.ReadStartArray();
+
+            Assert.Throws<InvalidOperationException>(() => reader.ReadSimpleValue());
+            Assert.Equal(1, reader.BytesRemaining);
+            Assert.Equal(CborReaderState.EndArray, reader.PeekState());
+
+            reader.ReadEndArray();
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Theory]
         [InlineData("01")] // integer
         [InlineData("40")] // empty text string
         [InlineData("60")] // empty byte string
         [InlineData("80")] // []
         [InlineData("a0")] // {}
         [InlineData("c202")] // tagged value
+        [InlineData("f93c00")] // half-precision float
+        [InlineData("fa3f800000")] // single-precision float
+        [InlineData("fb3ff0000000000000")] // double-precision float
         public static void ReadSimpleValue_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();

@@ -66,8 +66,10 @@ namespace System.Diagnostics.Metrics
             string? description = default,
             IEnumerable<KeyValuePair<string, object?>>? tags = default)
         {
-            Meter = meter ?? throw new ArgumentNullException(nameof(meter));
-            Name = name ?? throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(meter);
+            Meter = meter;
+            ArgumentNullException.ThrowIfNull(name);
+            Name = name;
             Description = description;
             Unit = unit;
             if (tags is not null)

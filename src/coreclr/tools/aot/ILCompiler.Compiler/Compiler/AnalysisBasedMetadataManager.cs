@@ -266,14 +266,8 @@ namespace ILCompiler
                 // (Multi-module or .NET Native style shared library.)
                 // We are currently missing type forwarders pointing to the other blobs.
                 var targetType = (MetadataType)module.GetObject(exportedTypeHandle, NotFoundBehavior.ReturnNull);
-                if (targetType == null)
-                {
-                    // No harm in generating a forwarder that didn't resolve.
-                    // We'll get matching behavior at runtime.
-                    return true;
-                }
 
-                return GeneratesMetadata(targetType);
+                return targetType is not null && GeneratesMetadata(targetType);
             }
 
             public bool GeneratesInterfaceImpl(MetadataType typeDef, MetadataType interfaceImpl)

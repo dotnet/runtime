@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
@@ -267,7 +268,8 @@ namespace System.Net.Sockets
             {
                 // Zero byte read is performed to know when data is available.
                 // We don't have to call receive, our caller is interested in the event.
-                if (Buffer.Length == 0 && Flags == SocketFlags.None && SocketAddress.Length == 0)
+                // WASI poll events don't identify the ready direction, so readiness is checked by TryCompleteReceive.
+                if (!OperatingSystem.IsWasi() && Buffer.Length == 0 && Flags == SocketFlags.None && SocketAddress.Length == 0)
                 {
                     BytesTransferred = 0;
                     ReceivedFlags = SocketFlags.None;
@@ -609,16 +611,23 @@ namespace System.Net.Sockets
 
             if (_isHandleNonBlocking)
             {
-                if (Interop.Sys.Fcntl.SetIsNonBlocking(_socket, 0) == 0)
+                try
                 {
-                    _isHandleNonBlocking = false;
+                    if (Interop.Sys.Fcntl.SetIsNonBlocking(_socket, 0) == 0)
+                    {
+                        _isHandleNonBlocking = false;
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Concurrent disposal is allowed; restoring blocking mode is only an optimization.
                 }
             }
         }
 
         private void PerformSyncOperation(AsyncOperation operation, bool isRead, int timeout, int observedSequenceNumber)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             SyncResult result =
@@ -713,7 +722,7 @@ namespace System.Net.Sockets
 
         public SocketError Connect(Memory<byte> socketAddress)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             Debug.Assert(socketAddress.Length > 0, $"Unexpected socketAddressLen: {socketAddress.Length}");
             // Connect is different than the usual "readiness" pattern of other operations.
@@ -827,7 +836,7 @@ namespace System.Net.Sockets
 
         public SocketError ReceiveFrom(Memory<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -860,7 +869,7 @@ namespace System.Net.Sockets
 
         public unsafe SocketError ReceiveFrom(Span<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             SocketFlags receivedFlags;
             SocketError errorCode;
@@ -976,7 +985,7 @@ namespace System.Net.Sockets
 
         public SocketError ReceiveFrom(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1047,7 +1056,7 @@ namespace System.Net.Sockets
         public SocketError ReceiveMessageFrom(
             Memory<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1084,7 +1093,7 @@ namespace System.Net.Sockets
         public unsafe SocketError ReceiveMessageFrom(
             Span<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1179,7 +1188,7 @@ namespace System.Net.Sockets
 
         public SocketError SendTo(byte[] buffer, int offset, int count, SocketFlags flags, Memory<byte> socketAddress, int timeout, out int bytesSent)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1211,7 +1220,7 @@ namespace System.Net.Sockets
 
         public unsafe SocketError SendTo(ReadOnlySpan<byte> buffer, SocketFlags flags, Memory<byte> socketAddress, int timeout, out int bytesSent)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1292,7 +1301,7 @@ namespace System.Net.Sockets
 
         public SocketError SendTo(IList<ArraySegment<byte>> buffers, SocketFlags flags, Memory<byte> socketAddress, int timeout, out int bytesSent)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1364,7 +1373,7 @@ namespace System.Net.Sockets
 
         public SocketError SendFile(SafeFileHandle fileHandle, long offset, long count, int timeout, out long bytesSent)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 

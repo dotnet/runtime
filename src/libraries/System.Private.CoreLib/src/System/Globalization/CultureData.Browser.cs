@@ -27,7 +27,7 @@ namespace System.Globalization
             else
             {
                 // English locale info
-                (_sEnglishLanguage, _sEnglishCountry) = JSGetLocaleInfo("en-US", localeName);
+                (_sEnglishLanguage, _sEnglishCountry) = JSGetLocaleInfo(localeName, "en-US");
                 _sEnglishDisplayName = string.IsNullOrEmpty(_sEnglishCountry) ?
                     _sEnglishLanguage :
                     $"{_sEnglishLanguage} ({_sEnglishCountry})";
@@ -39,15 +39,16 @@ namespace System.Globalization
             }
         }
 
-        private unsafe (string, string) JSGetLocaleInfo(string cultureName, string localeName)
+        // Returns the language and region names of localeName, localized into the language of cultureName.
+        private unsafe (string, string) JSGetLocaleInfo(string localeName, string cultureName)
         {
-            ReadOnlySpan<char> cultureNameSpan = cultureName.AsSpan();
             ReadOnlySpan<char> localeNameSpan = localeName.AsSpan();
-            fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
+            ReadOnlySpan<char> cultureNameSpan = cultureName.AsSpan();
             fixed (char* pLocaleName = &MemoryMarshal.GetReference(localeNameSpan))
+            fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
             {
                 char* buffer = stackalloc char[LOCALE_INFO_BUFFER_LEN];
-                nint exceptionPtr = Interop.JsGlobalization.GetLocaleInfo(pCultureName, cultureNameSpan.Length, pLocaleName, localeNameSpan.Length, buffer, LOCALE_INFO_BUFFER_LEN, out int resultLength);
+                nint exceptionPtr = Interop.JsGlobalization.GetLocaleInfo(pLocaleName, localeNameSpan.Length, pCultureName, cultureNameSpan.Length, buffer, LOCALE_INFO_BUFFER_LEN, out int resultLength);
                 Helper.MarshalAndThrowIfException(exceptionPtr);
                 string result = new string(buffer, 0, resultLength);
                 string[] subresults = result.Split("##");

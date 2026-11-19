@@ -8,6 +8,7 @@ add_library_clr(clrjit_static
     ${JIT_ARCH_SOURCES}
     ${JITSHARED_SOURCES}
 )
+set_target_properties(clrjit_static PROPERTIES IGNORE_FEATURE_INTERPRETER_DIRECT_CALLS TRUE)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_dependencies(clrjit_static coreclrpal gcinfo)

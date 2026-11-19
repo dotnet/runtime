@@ -339,10 +339,11 @@ WANT_WRITE and the retry, so the address comparison is meaningless for us.
 PALEXPORT void CryptoNative_SslSetAcceptMovingWriteBuffer(SSL* ssl);
 
 /*
-Raw SSL_do_handshake wrapper for fd-bound SSL objects (SSL_set_fd path).
+SSL_do_handshake wrapper for fd-bound SSL objects (SSL_set_fd path).
+When processPeer is nonzero, SSL_peek first processes incoming post-handshake messages.
 Returns the SSL_do_handshake return value; errorCode receives SSL_get_error.
 */
-PALEXPORT int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode);
+PALEXPORT int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode, int32_t processPeer);
 
 /*
 Performs SSL_do_handshake with the input/output BIO windows set up

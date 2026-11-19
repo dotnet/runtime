@@ -198,6 +198,8 @@ public readonly struct DebugVarInfo
 IEnumerable<DebugVarInfo> GetMethodVarInfo(TargetCodePointer pCode, out uint codeOffset);
 ```
 
+`codeOffset` is `pCode` minus the method's code start. The code start is the entry point of the native code version containing `pCode` (`ICodeVersions.GetNativeCode`), mapped by `IExecutionManager.GetDiagnosticCodeStartFromEntryPoint`: to the interpreter bytecode for an interpreted method, and on portable-entrypoint targets to the R2R virtual IP. Native `ClrDataAccess::GetMethodVarInfo` maps only interpreter entry points (`GetInterpreterCodeFromEntryPointIfPresent`); the R2R portable-entrypoint mapping follows the runtime's `GetDiagnosticCodeStartFromEntryPoint`.
+
 ### Vars Data Encoding
 
 Each variable entry in the Vars section is nibble-encoded as follows:
@@ -222,6 +224,59 @@ Each variable entry in the Vars section is nibble-encoded as follows:
 | `VLT_FIXED_VA` | offset (encoded unsigned) |
 
 Signed integers are encoded using the same unsigned scheme, with the sign bit stored in bit 0 (`value = unsigned >> 1`, negate if `unsigned & 1`). On x86, stack offsets are DWORD-aligned and stored divided by `sizeof(DWORD)`.
+
+### WebAssembly Variable Register Encoding
+
+WASM has no physical registers. Every register field in the Vars stream holds a WebAssembly local
+index biased past the reserved register numbers:
+
+```text
+register = localIndex + WASM_LOCAL_REGNUM_BASE
+```
+
+`WASM_LOCAL_REGNUM_BASE` is `3`, one past `REGNUM_AMBIENT_SP`. Values `0` through `2` remain
+`REGNUM_PC`, `REGNUM_COUNT`, and `REGNUM_AMBIENT_SP`. As on other targets, the value type is not
+encoded: it is implied by the variable's type and by the local's declaration in the WebAssembly
+function.
+
+`WASM_LOCAL_REGNUM_BASE` (`3`) and the stack base register (`2`, described below) are fixed
+constants of DebugInfo contract version `c1`; readers hardcode them. Changing either requires a new
+DebugInfo contract version. Because ReadyToRun images persist this encoding, it also requires a
+ReadyToRun format version change so static readers such as R2RDump do not misdecode older images.
+
+### WebAssembly Stack Base Encoding
+
+On WebAssembly, base register `2` in `VLT_STK` and `VLT_STK2` records is a sentinel meaning
+"logical frame base." It is not a WebAssembly local; the stack offset is relative to the method's
+logical frame. `REG_FPBASE`, `REG_SPBASE`, and `REGNUM_AMBIENT_SP` all have the value `2` on this
+target, which is why the JIT emits it.
+
+The absolute logical frame address is reconstructed by the runtime stack-walk and unwind
+protocol from shadow-stack linear memory. The engine's current per-function SP/FP local allocation
+is a separate code-generation detail:
+
+* Frame access allocates an FP value when a method has frame locals, uses `localloc`, or has
+  funclets.
+* Without `localloc`, the root function's FP aliases its SP, including methods that make calls.
+* `localloc` gives the root a distinct FP so later SP movement does not change frame-relative
+  addresses.
+* Funclets receive a distinct parent establishing FP; with `localloc`, that remains the root's
+  pre-adjustment frame base.
+
+The numeric WebAssembly local indices holding those values can vary with function parameters and
+compiler-created locals and are not part of this debug-info format. Readers must not infer the
+logical frame address from a hardcoded `$varN`, and the producer does not advertise SP/FP engine
+local indices. A future producer that changes stack records away from base `2` requires a
+coordinated, fail-loud reader update.
+
+### WebAssembly Variable Locations
+
+`GetMethodVarInfo` reports WASM variable locations with the same kinds and register numbers as
+the Vars stream; a consumer that needs a WASM local index subtracts `WASM_LOCAL_REGNUM_BASE`.
+WASM local index spaces are per function, and a method's funclets are separate WASM functions from
+its root (`WasmRegAlloc` in `src/coreclr/jit/regallocwasm.cpp`), so a consumer must establish which
+WASM function a frame is in before using a local index. The JIT never emits `VLT_REG_FP` or
+`VLT_FPSTK` on WASM; `f32` and `f64` locals are reported as `VLT_REG`.
 
 ### Async Suspension Point APIs
 

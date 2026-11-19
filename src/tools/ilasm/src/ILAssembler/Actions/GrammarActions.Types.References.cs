@@ -7,7 +7,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Antlr4.Runtime;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
@@ -116,7 +116,7 @@ internal sealed partial class GrammarActions
             return typedef;
         }
 
-        if (typeName.ContainingTypeName is null)
+        if (!_entityRegistry.IsCoreLibrary && typeName.ContainingTypeName is null)
         {
             (string ns, string name) = NameHelpers.SplitDottedNameToNamespaceAndName(typeName.DottedName);
             if (ns == "System" && name is "String" or "Object" or "ValueType" or "Enum"

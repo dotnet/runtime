@@ -153,6 +153,8 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 static size_t streaming_loop_tick(EventPipeSession *const session) {
 	bool events_written = false;
 	bool ok;
+	if (!ep_session_has_started (session))
+		ep_rt_volatile_store_uint32_t (&session->started, 1);
 	if (!ep_session_get_streaming_enabled (session)){
 		ep_session_dec_ref (session);
 		return 1; // done
@@ -161,8 +163,8 @@ static size_t streaming_loop_tick(EventPipeSession *const session) {
 	ok = ep_session_write_all_buffers_to_file (session, &events_written);
 	EP_GCX_PREEMP_EXIT
 	if (!ok) {
+		// Keep the job so the next tick sees streaming disabled and releases its reference.
 		ep_disable ((EventPipeSessionID)session);
-		return 1; // done
 	}
 	return 0; // continue
 }
@@ -189,8 +191,10 @@ session_create_streaming_thread (EventPipeSession *session)
 		EP_UNREACHABLE ("Unable to create streaming thread.");
 #else
 	ep_session_inc_ref (session);
-	ep_rt_volatile_store_uint32_t (&session->started, 1);
-	ep_rt_queue_job ((void *)streaming_loop_tick, (void *)session);
+	if (!ep_rt_queue_job ((void *)streaming_loop_tick, (void *)session)) {
+		// The session's own reference keeps it alive, so this only drops the job's reference.
+		ep_session_dec_ref (session);
+	}
 #endif
 }
 
@@ -400,10 +404,11 @@ ep_session_dec_ref (EventPipeSession *session)
 {
 	ep_return_void_if_nok (session != NULL);
 
-	EP_ASSERT (!ep_session_get_streaming_enabled (session));
-
-	if (ep_rt_atomic_dec_uint32_t (&session->ref_count) == 0)
+	if (ep_rt_atomic_dec_uint32_t (&session->ref_count) == 0) {
+		// Streaming must be stopped before the last reference goes away.
+		EP_ASSERT (!ep_session_get_streaming_enabled (session));
 		session_free (session);
+	}
 }
 
 static

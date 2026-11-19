@@ -157,12 +157,23 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            return reEncodeParameters is not null ?
-                ReEncryptAndSealPkcs12(pbEncoded, password, reEncodeParameters) :
-                pbEncoded;
+            // PFXExportCertStoreEx when called with a NULL destination tells you how large of a buffer is needed for
+            // the export, but it over-reports in some scenarios. We need to resize the buffer to be actual exported
+            // length, as it isn't guaranteed the size is the same between the two calls.
+            int finalLength = checked((int)dataBlob.cbData);
+
+            if (reEncodeParameters is not null)
+            {
+                return ReEncryptAndSealPkcs12(pbEncoded.AsMemory(0, finalLength), password, reEncodeParameters);
+            }
+            else
+            {
+                Array.Resize(ref pbEncoded, finalLength);
+                return pbEncoded;
+            }
         }
 
-        private static byte[] ReEncryptAndSealPkcs12(byte[] pkcs12, SafePasswordHandle password, PbeParameters newPbeParameters)
+        private static byte[] ReEncryptAndSealPkcs12(ReadOnlyMemory<byte> pkcs12, SafePasswordHandle password, PbeParameters newPbeParameters)
         {
             bool addedRef = false;
 

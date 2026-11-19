@@ -4,7 +4,7 @@
 using System;
 using System.Text;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 /// <summary>
 /// Helper methods for parsing IL string literals.

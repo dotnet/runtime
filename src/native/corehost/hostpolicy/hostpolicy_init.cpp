@@ -40,8 +40,6 @@ bool hostpolicy_init_t::init(const host_interface_t* input, hostpolicy_init_t* i
 
         make_palstr_arr(input->probe_paths.len, input->probe_paths.arr, &init->probe_paths);
 
-        init->patch_roll_forward = input->patch_roll_forward;
-        init->prerelease_roll_forward = input->prerelease_roll_forward;
         init->host_mode = static_cast<host_mode_t>(input->host_mode);
     }
     else

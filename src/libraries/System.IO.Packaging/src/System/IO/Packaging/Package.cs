@@ -214,11 +214,9 @@ namespace System.IO.Packaging
             ThrowIfObjectDisposed();
             ThrowIfReadOnly();
 
-            if (partUri == null)
-                throw new ArgumentNullException(nameof(partUri));
+            ArgumentNullException.ThrowIfNull(partUri);
 
-            if (contentType == null)
-                throw new ArgumentNullException(nameof(contentType));
+            ArgumentNullException.ThrowIfNull(contentType);
 
             ThrowIfCompressionOptionInvalid(compressionOption);
 
@@ -283,8 +281,7 @@ namespace System.IO.Packaging
         {
             ThrowIfObjectDisposed();
 
-            if (partUri == null)
-                throw new ArgumentNullException(nameof(partUri));
+            ArgumentNullException.ThrowIfNull(partUri);
 
             PackUriHelper.ValidatedPartUri validatePartUri = PackUriHelper.ValidatePartUri(partUri);
 
@@ -309,8 +306,7 @@ namespace System.IO.Packaging
             ThrowIfObjectDisposed();
             ThrowIfReadOnly();
 
-            if (partUri == null)
-                throw new ArgumentNullException(nameof(partUri));
+            ArgumentNullException.ThrowIfNull(partUri);
 
             PackUriHelper.ValidatedPartUri validatedPartUri = (PackUriHelper.ValidatedPartUri)PackUriHelper.ValidatePartUri(partUri);
 
@@ -623,8 +619,7 @@ namespace System.IO.Packaging
             ThrowIfObjectDisposed();
             ThrowIfReadOnly();
 
-            if (id == null)
-                throw new ArgumentNullException(nameof(id));
+            ArgumentNullException.ThrowIfNull(id);
 
             InternalRelationshipCollection.ThrowIfInvalidXsdId(id);
 
@@ -664,8 +659,7 @@ namespace System.IO.Packaging
             ThrowIfObjectDisposed();
             ThrowIfWriteOnly();
 
-            if (relationshipType == null)
-                throw new ArgumentNullException(nameof(relationshipType));
+            ArgumentNullException.ThrowIfNull(relationshipType);
 
             InternalRelationshipCollection.ThrowIfInvalidRelationshipType(relationshipType);
 
@@ -1136,8 +1130,7 @@ namespace System.IO.Packaging
             ThrowIfObjectDisposed();
             ThrowIfWriteOnly();
 
-            if (partUri == null)
-                throw new ArgumentNullException(nameof(partUri));
+            ArgumentNullException.ThrowIfNull(partUri);
 
             PackUriHelper.ValidatedPartUri validatePartUri = PackUriHelper.ValidatePartUri(partUri);
 
@@ -1175,8 +1168,7 @@ namespace System.IO.Packaging
             ThrowIfObjectDisposed();
             ThrowIfWriteOnly();
 
-            if (id == null)
-                throw new ArgumentNullException(nameof(id));
+            ArgumentNullException.ThrowIfNull(id);
 
             InternalRelationshipCollection.ThrowIfInvalidXsdId(id);
 

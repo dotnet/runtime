@@ -180,12 +180,6 @@ public:
     virtual MethodDesc *FindLoadedMethodRefOrDef(Module* pModule,
                                                    mdMemberRef memberRef) = 0;
 
-    virtual MethodDesc *LoadMethodDef(Module* pModule,
-                                      mdMethodDef methodDef,
-                                      DWORD numGenericArgs = 0,
-                                      TypeHandle *pGenericArgs = NULL,
-                                      TypeHandle *pOwnerType = NULL) = 0;
-
     // These will lookup a type, and if it's not loaded, return the null TypeHandle
     virtual TypeHandle FindLoadedClass(Module *pModule,
                                      mdTypeDef classToken) = 0;

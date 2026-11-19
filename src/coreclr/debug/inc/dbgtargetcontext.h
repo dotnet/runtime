@@ -238,12 +238,6 @@ typedef struct DECLSPEC_ALIGN(16) {
     DWORD64 LastExceptionFromRip;
 } DT_CONTEXT;
 
-#if !defined(CROSS_COMPILE) && !defined(TARGET_WINDOWS)
-static_assert(sizeof(DT_CONTEXT) == offsetof(T_CONTEXT, XStateFeaturesMask), "DT_CONTEXT must not include the XSTATE registers on AMD64");
-#else
-static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size on AMD64");
-#endif
-
 #elif defined(DTCONTEXT_IS_ARM)
 
 #define DT_CONTEXT_ARM 0x00200000L
@@ -324,8 +318,6 @@ typedef DECLSPEC_ALIGN(8) struct {
     DWORD Padding2[2];
 
 } DT_CONTEXT;
-
-static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size on ARM32");
 
 #elif defined(DTCONTEXT_IS_ARM64)
 
@@ -418,13 +410,6 @@ typedef DECLSPEC_ALIGN(16) struct {
 
 } DT_CONTEXT;
 
-
-#if !defined(CROSS_COMPILE) && !defined(TARGET_WINDOWS)
-static_assert(sizeof(DT_CONTEXT) == offsetof(T_CONTEXT, XStateFeaturesMask), "DT_CONTEXT must not include the SVE registers on ARM64");
-#else
-static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size on ARM64");
-#endif
-
 #elif defined(DTCONTEXT_IS_LOONGARCH64)
 
 #define DT_CONTEXT_LOONGARCH64 0x00800000L
@@ -489,7 +474,6 @@ typedef struct DECLSPEC_ALIGN(16) {
     DWORD Fcsr;
 } DT_CONTEXT;
 
-static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size");
 
 #elif defined(DTCONTEXT_IS_RISCV64)
 
@@ -553,8 +537,6 @@ typedef struct DECLSPEC_ALIGN(16) {
     ULONGLONG F[32];
     DWORD Fcsr;
 } DT_CONTEXT;
-
-static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size");
 
 #elif defined(DTCONTEXT_IS_WASM)
 // no context for wasm

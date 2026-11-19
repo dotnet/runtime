@@ -21,13 +21,14 @@ namespace ILCompiler.PortableCallHelpers
     /// </summary>
     internal sealed class PInvokeTableGenerator(InteropLogger log)
     {
-        public void EmitPInvokeTable(TextWriter w, TargetDetails target, IEnumerable<string> pinvokeModules, List<PInvokeInfo> pinvokes)
+        public void EmitPInvokeTable(TextWriter w, TargetDetails target, ModuleDesc systemModule, IEnumerable<string> pinvokeModules, List<PInvokeInfo> pinvokes)
         {
             // Modules an unresolved P/Invoke has already been reported for, so each is logged once.
             // Only the logging is suppressed: a module a later P/Invoke does resolve - through
             // [WasmImportLinkage], say - still has to make it into the table.
             var skippedModules = new HashSet<string>(StringComparer.Ordinal);
             var modules = new SortedSet<string>(StringComparer.Ordinal);
+            var qcallImports = new List<PInvokeInfo>();
 
             // Normalize what gets linked separately from the exact managed module names emitted into
             // the table. Runtime lookup uses the latter, while availability accepts the same prefix
@@ -43,6 +44,13 @@ namespace ILCompiler.PortableCallHelpers
 
             foreach (PInvokeInfo pinvoke in pinvokes)
             {
+                if (pinvoke.Module == "QCall")
+                {
+                    if (pinvoke.Method.Module == systemModule)
+                        qcallImports.Add(pinvoke);
+                    continue;
+                }
+
                 if (modules.Contains(pinvoke.Module))
                     continue;
 
@@ -76,7 +84,7 @@ namespace ILCompiler.PortableCallHelpers
                     modules.Add(pinvoke.Module);
                     log.Verbose($"Adding module {pinvoke.Module} for static linking");
                 }
-                else if (pinvoke.Module != "QCall")
+                else
                 {
                     // Unresolved module: not statically linked, [WasmImportLinkage], "*" or QCall.
                     // Skip it and throw at runtime if it is ever called, which is what Mono does too.
@@ -202,6 +210,8 @@ namespace ILCompiler.PortableCallHelpers
 
                 """);
 
+            EmitQCallTable(w, target, qcallImports);
+
             static bool ShouldTreatAsVariadic(PInvokeInfo[] candidates)
             {
                 if (candidates.Length < 2)
@@ -223,6 +233,80 @@ namespace ILCompiler.PortableCallHelpers
                 => string.Join(", ", l.Select(c => ((EcmaAssembly)c.Method.Module).GetName().Name).Distinct().OrderBy(n => n, StringComparer.Ordinal));
         }
 
+        private void EmitQCallTable(TextWriter w, TargetDetails target, List<PInvokeInfo> qcallImports)
+        {
+            var identities = new Dictionary<string, PInvokeInfo>(StringComparer.Ordinal);
+            foreach (PInvokeInfo entry in qcallImports)
+            {
+                if (identities.TryGetValue(entry.EntryPoint, out PInvokeInfo previous)
+                    && (entry.Method.IsInternalCall || previous.Method.IsInternalCall)
+                    && entry.Method != previous.Method)
+                {
+                    throw new LogAsErrorException(
+                        $"Native entrypoint '{entry.EntryPoint}' conflicts between '{previous.Method}' and '{entry.Method}'.");
+                }
+                identities[entry.EntryPoint] = entry;
+            }
+
+            var qcalls = qcallImports
+                .OrderBy(p => p.EntryPoint, StringComparer.Ordinal)
+                .DistinctBy(p => p.EntryPoint, StringComparer.Ordinal)
+                .ToArray();
+
+            if (qcalls.Length == 0)
+            {
+                w.WriteLine(
+                    """
+                    const void* ResolveRuntimeHelperEntrypoint(const char* name)
+                    {
+                        return nullptr;
+                    }
+                    """);
+                return;
+            }
+
+            w.WriteLine("extern \"C\" {");
+            foreach (PInvokeInfo qcall in qcalls)
+            {
+                // string.h already declares the libc functions. Browser uses bulk-memory wrappers instead.
+                if (qcall.EntryPoint is "memmove" or "memset")
+                {
+                    if (target.OperatingSystem == TargetOS.Browser)
+                    {
+                        w.WriteLine(qcall.EntryPoint == "memmove"
+                            ? "    void* RuntimeHelper_memmove(void* dest, const void* src, size_t len) __asm__(\"QCall_memmove\");"
+                            : "    void* RuntimeHelper_memset(void* dest, int value, size_t len) __asm__(\"QCall_memset\");");
+                    }
+                    continue;
+                }
+
+                // common.h can already declare runtime helpers with VM types. Use a separate C identifier
+                // with the same linker symbol for the metadata-derived ABI declaration.
+                w.WriteLine(GenPInvokeDecl(qcall, $"RuntimeHelper_{CEntryPoint(qcall)}"));
+            }
+            w.WriteLine("} // extern \"C\"");
+            w.WriteLine();
+            w.WriteLine("static const Entry s_RuntimeHelpers[] = {");
+            foreach (PInvokeInfo qcall in qcalls)
+            {
+                if (target.OperatingSystem == TargetOS.Browser && qcall.EntryPoint is "memmove" or "memset")
+                    w.WriteLine($"    {{ \"{qcall.EntryPoint}\", (void*)&RuntimeHelper_{qcall.EntryPoint} }},");
+                else if (qcall.EntryPoint is "memmove" or "memset")
+                    w.WriteLine($"    DllImportEntry({qcall.EntryPoint})");
+                else
+                    w.WriteLine($"    {{ \"{EscapeLiteral(qcall.EntryPoint)}\", (void*)&RuntimeHelper_{CEntryPoint(qcall)} }},");
+            }
+            w.WriteLine(
+                """
+                };
+
+                const void* ResolveRuntimeHelperEntrypoint(const char* name)
+                {
+                    return minipal_resolve_dllimport(s_RuntimeHelpers, sizeof(s_RuntimeHelpers) / sizeof(s_RuntimeHelpers[0]), name);
+                }
+                """);
+        }
+
         public void EmitNativeToInterp(TextWriter w, List<PInvokeCallback> callbacks)
         {
             // Generate the native->interpreter entry functions. Native code calls these directly, so
@@ -231,7 +315,9 @@ namespace ILCompiler.PortableCallHelpers
             // supported.
             //
             // Each wrapper caches the MethodDesc it dispatches to in a static and hands the arguments to
-            // ExecuteInterpretedMethodFromUnmanaged. The g_ReverseThunks table emitted at the end maps
+            // ExecuteInterpretedMethodFromUnmanaged. If the method has switched to native code since the
+            // wrapper was handed out, that call returns the native entrypoint instead of running the
+            // method, and the wrapper calls it with its native signature. The g_ReverseThunks table emitted at the end maps
             // the runtime's key for a method to its wrapper, and the runtime fills that static in as it
             // hands the wrapper out. An export is not handed out that way, so it resolves the static
             // itself, by name, on the first call.
@@ -254,7 +340,7 @@ namespace ILCompiler.PortableCallHelpers
                 // WASM-TODO: The method lookup would ideally be fully qualified assembly and then methodDef token.
                 // The current approach has limitations with overloaded methods.
                 extern "C" void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
-                extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);{{r2rExtern}}
+                extern "C" void* ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);{{r2rExtern}}
 
                 """);
 
@@ -318,19 +404,24 @@ namespace ILCompiler.PortableCallHelpers
                 // when the method has no native code -- so the dispatch would be dead code there.
                 string paramTypesOnly = string.Join(", ",
                     (returnsViaBuffer ? ["void *"] : Array.Empty<string>()).Concat(parameterCTypes));
-                string r2rDispatch = hasResult
-                    ? $"return (({returnCType}(*)({paramTypesOnly}))r2r)({arguments});"
-                    : $"((void(*)({paramTypesOnly}))r2r)({arguments});{w.NewLine}        return;";
+                string NativeDispatch(string target) => hasResult
+                    ? $"return (({returnCType}(*)({paramTypesOnly})){target})({arguments});"
+                    : $"((void(*)({paramTypesOnly})){target})({arguments});{w.NewLine}        return;";
+                string r2rDispatch = NativeDispatch("r2r");
                 // Cache the resolved entrypoint in a per-callback static, published with acquire/release
                 // atomics: these are native entry points that can be entered concurrently, and the value is
                 // computed identically on every call, so the racing read/write is benign but must not tear.
                 string r2rStaticDecl = cb.IsExport
                     ? $"{w.NewLine}static void* R2RCode_{cb.EntrySymbol} = (void*)(intptr_t)-1;"
                     : string.Empty;
+                string nativeCacheUpdate = cb.IsExport
+                    ? $"{w.NewLine}        __atomic_store_n(&R2RCode_{cb.EntrySymbol}, nativeCode, __ATOMIC_RELEASE);"
+                    : string.Empty;
                 string r2rSection = cb.IsExport
                     ? w.NewLine + $$"""
                             // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-                            // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+                            // Resolve once and cache; if the method gains native code later, the interpreter
+                            // fallback below reports it and refreshes the cache.
                             void* r2r = __atomic_load_n(&R2RCode_{{cb.EntrySymbol}}, __ATOMIC_ACQUIRE);
                             if (r2r == (void*)(intptr_t)-1)
                             {
@@ -365,7 +456,11 @@ namespace ILCompiler.PortableCallHelpers
                             LookupUnmanagedCallersOnlyMethodByName("{{cb.TypeFullName}}, {{cb.AssemblyName}}", "{{cb.MethodName}}", &MD_{{cb.EntrySymbol}});
                         }{{r2rSection}}{{argsDeclaration}}{{
                         (hasResult ? $"{w.NewLine}    {returnCType} result;" : "")}}
-                        ExecuteInterpretedMethodFromUnmanaged(MD_{{cb.EntrySymbol}}, {{argsArgs}}, {{retArg}}, (PCODE)&Call_{{cb.EntrySymbol}});{{
+                        void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_{{cb.EntrySymbol}}, {{argsArgs}}, {{retArg}}, (PCODE)&Call_{{cb.EntrySymbol}});
+                        if (nativeCode != nullptr)
+                        {{{nativeCacheUpdate}}
+                            {{NativeDispatch("nativeCode")}}
+                        }{{
                         (hasResult ? $"{w.NewLine}    return result;" : "")}}
                     }{{exportFunction}}
 
@@ -452,13 +547,21 @@ namespace ILCompiler.PortableCallHelpers
             return FixupSymbolName(pinvoke.EntryPoint);
         }
 
-        private string GenPInvokeDecl(PInvokeInfo pinvoke)
+        private string GenPInvokeDecl(PInvokeInfo pinvoke, string symbolName = null)
         {
             MethodSignature signature = pinvoke.Method.Signature;
             TypeDesc returnType = signature.ReturnType;
             List<string> parameterTypes = [];
             foreach (TypeDesc parameter in ParameterTypes(signature))
                 parameterTypes.Add(MapType(parameter));
+
+            if (pinvoke.Method.IsInternalCall)
+            {
+                if (!signature.IsStatic)
+                    parameterTypes.Insert(0, "void *");
+                parameterTypes.Insert(0, "uintptr_t");
+                parameterTypes.Add("uintptr_t");
+            }
 
             if (IsPassedByReference(returnType))
             {
@@ -471,7 +574,9 @@ namespace ILCompiler.PortableCallHelpers
                 : "";
             string externKeyword = pinvoke.WasmLinkage ? "extern " : "";
 
-            return $"    {importAttributes}{externKeyword}{MapType(returnType)} {CEntryPoint(pinvoke)} ({string.Join(", ", parameterTypes)});";
+            string nativeSymbol = CEntryPoint(pinvoke);
+            string symbolAlias = symbolName is null ? "" : $" __asm__(\"{EscapeLiteral(nativeSymbol)}\")";
+            return $"    {importAttributes}{externKeyword}{MapType(returnType)} {symbolName ?? nativeSymbol} ({string.Join(", ", parameterTypes)}){symbolAlias};";
         }
 
         private string FixedSymbolName(PInvokeCallback cb)

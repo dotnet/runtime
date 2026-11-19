@@ -9,7 +9,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public enum RejitState
 {
     Requested,
-    Active
+    Active,
+    Unknown,
 }
 
 public interface IReJIT : IContract

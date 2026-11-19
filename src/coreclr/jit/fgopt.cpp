@@ -129,6 +129,8 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
             changed |= block->NumSucc() > 0;
 
             block->RemoveFlags(BBF_REMOVED | BBF_INTERNAL);
+            // The block's code is gone, so it no longer needs a GC poll.
+            block->RemoveFlags(BBF_NEEDS_GCPOLL);
             block->SetFlags(BBF_IMPORTED);
             block->SetKindAndTargetEdge(BBJ_THROW);
             block->bbSetRunRarely();
@@ -1251,13 +1253,17 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 
     // Update bbRefs and bbPreds for this block's successors
     bool profileInconsistent = false;
+
+    // A self-edge can change the block weight as we visit its successors.
+    weight_t const blockWeight = block->bbWeight;
+
     for (BasicBlock* const succBlock : block->Succs())
     {
         FlowEdge* const succEdge = fgRemoveAllRefPreds(succBlock, block);
 
         if (block->hasProfileWeight() && succBlock->hasProfileWeight())
         {
-            succBlock->decreaseBBProfileWeight(succEdge->getLikelyWeight());
+            succBlock->decreaseBBProfileWeight(succEdge->getLikelihood() * blockWeight);
             profileInconsistent |= (succBlock->NumSucc() > 0);
         }
     }
@@ -4808,6 +4814,18 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
             if (fgCanCompactBlock(block))
             {
+                // Removing an empty source can avoid repeatedly moving a shared target's predecessor list.
+                // Compaction only needs to redirect the target's other incoming edges.
+                BasicBlock* const target = block->GetTarget();
+                if ((target->countOfInEdges() > 1) && (block->countOfInEdges() < (target->countOfInEdges() - 1)) &&
+                    !block->HasFlag(BBF_DONT_REMOVE) && fgOptimizeEmptyBlock(block))
+                {
+                    assert(block->HasFlag(BBF_REMOVED));
+                    change   = true;
+                    modified = true;
+                    continue;
+                }
+
                 fgCompactBlock(block);
 
                 // we compacted two blocks - goto REPEAT to catch similar cases
@@ -4967,6 +4985,10 @@ PhaseStatus Compiler::fgDfsBlocksAndRemove()
 // Returns:
 //    True if any block was removed.
 //
+// Notes:
+//    This may recompute the DFS tree, in which case the annotations derived
+//    from the old tree are invalidated (see fgInvalidateDfsTree).
+//
 bool Compiler::fgRemoveBlocksOutsideDfsTree()
 {
     if (m_dfsTree->GetPostOrderCount() == fgBBcount)
@@ -5012,6 +5034,13 @@ bool Compiler::fgRemoveBlocksOutsideDfsTree()
             break;
         }
 
+        // The old DFS tree is about to be replaced, so drop the annotations
+        // derived from it. Callers can have some of them live here: lowering
+        // computes loops for the store-to-load forwarding check before calling
+        // us, and would otherwise be left with a FlowGraphNaturalLoops built
+        // over the old tree.
+        //
+        fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
     }
 
@@ -6005,7 +6034,10 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
     }
     if ((tree2Flags & GTF_ORDER_SIDEEFF) != 0)
     {
-        if ((tree1Flags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0)
+        // A non-faulting head can depend on a check in the terminator. Invariant
+        // loads can perform that check without GTF_GLOB_REF. Moving ahead of it
+        // can also change which exception is raised first.
+        if ((tree1Flags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF | GTF_EXCEPT)) != 0)
         {
             JITDUMP("  cannot reorder ordering side effect\n");
             return false;

@@ -65,6 +65,33 @@ namespace ILCompiler.ObjectWriter
         }
         private protected virtual bool UsesSubsectionsViaSymbols => false;
 
+        /// <summary>
+        /// Whether the linker for this format places range-extension thunks between sections, so that
+        /// code larger than <see cref="GetCodeSectionSplitSize"/> can be emitted as several sections of
+        /// the same name.
+        /// </summary>
+        private protected virtual bool LinkerPlacesRangeExtensionThunks => false;
+
+        /// <summary>
+        /// The size beyond which a code section is split, or 0 when it is not. Half the reach of the
+        /// target's direct call: a call within one section always fits, and every call site is within
+        /// reach of a thunk the linker places at a section boundary.
+        /// </summary>
+        private long GetCodeSectionSplitSize()
+        {
+            if (!LinkerPlacesRangeExtensionThunks)
+                return 0;
+
+            long directCallReach = _nodeFactory.Target.Architecture switch
+            {
+                TargetArchitecture.ARM64 => 128 * 1024 * 1024,
+                TargetArchitecture.LoongArch64 => 128 * 1024 * 1024,
+                TargetArchitecture.ARM => 16 * 1024 * 1024,
+                _ => 0,
+            };
+            return directCallReach / 2;
+        }
+
         private protected abstract void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream);
 
         protected internal abstract void UpdateSectionAlignment(int sectionIndex, int alignment);
@@ -126,6 +153,16 @@ namespace ILCompiler.ObjectWriter
                 this,
                 sectionIndex,
                 sectionData);
+        }
+
+        /// <summary>
+        /// Creates a new non-COMDAT section with the name of <paramref name="section"/>.
+        /// Later requests for that name return the new section.
+        /// </summary>
+        private SectionWriter StartNewSection(ObjectNodeSection section)
+        {
+            _sectionNameToSectionIndex.Remove(GetEmitSection(section).Name);
+            return GetOrCreateSection(section);
         }
 
         private protected bool ShouldShareSymbol(ObjectNode node)
@@ -194,7 +231,8 @@ namespace ILCompiler.ObjectWriter
                     adjustedAddend += Relocation.ReadValue(relocType, (void*)pData);
                     adjustedAddend -= offset;
 
-                    if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && !Relocation.FitsInThumb2BlRel24((int)adjustedAddend))
+                    if ((relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && !Relocation.FitsInThumb2BlRel24((int)adjustedAddend)) ||
+                        (relocType is IMAGE_REL_BASED_ARM64_BRANCH26 && !Relocation.FitsInArm64Rel28(adjustedAddend)))
                     {
                         EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
                     }
@@ -357,6 +395,7 @@ namespace ILCompiler.ObjectWriter
                 progressReporter = new ProgressReporter(logger, count);
             }
 
+            long codeSectionSplitSize = GetCodeSectionSplitSize();
             List<ISymbolRangeNode> symbolRangeNodes = [];
             List<BlockToRelocate> blocksToRelocate = [];
             List<ChecksumsToCalculate> checksumRelocations = [];
@@ -407,19 +446,6 @@ namespace ILCompiler.ObjectWriter
                     currentSymbolName = GetMangledName(symbolNode);
                 }
 
-                ObjectNodeSection section = node.GetSection(_nodeFactory);
-                SectionWriter sectionWriter = ShouldShareSymbol(node, section) ?
-                    GetOrCreateSection(section, currentSymbolName, currentSymbolName) :
-                    GetOrCreateSection(section);
-
-                if (section.NeedsAlignment)
-                {
-                    sectionWriter.EmitAlignment(nodeContents.Alignment);
-                }
-
-                bool isMethod = node is IPCodeSymbolNode;
-                long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
-
                 if (node is WasmTypeNode signature)
                 {
                     RecordMethodSignature(signature);
@@ -431,6 +457,34 @@ namespace ILCompiler.ObjectWriter
 
                     RecordMethodDefinition(codeNode);
                 }
+
+                if (TryRecordFoldedObjectNode(node, nodeContents, currentSymbolName))
+                {
+                    continue;
+                }
+
+                ObjectNodeSection section = node.GetSection(_nodeFactory);
+                bool shareSymbol = ShouldShareSymbol(node, section);
+                SectionWriter sectionWriter = shareSymbol ?
+                    GetOrCreateSection(section, currentSymbolName, currentSymbolName) :
+                    GetOrCreateSection(section);
+
+                if (!shareSymbol &&
+                    codeSectionSplitSize > 0 &&
+                    section.Type == SectionType.Executable &&
+                    sectionWriter.Position > 0 &&
+                    sectionWriter.Position + nodeContents.Data.Length > codeSectionSplitSize)
+                {
+                    sectionWriter = StartNewSection(section);
+                }
+
+                if (section.NeedsAlignment)
+                {
+                    sectionWriter.EmitAlignment(nodeContents.Alignment);
+                }
+
+                bool isMethod = node is IPCodeSymbolNode;
+                long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
@@ -523,6 +577,8 @@ namespace ILCompiler.ObjectWriter
                 // Note that this has to be done last as not to advance the section writer position.
                 sectionWriter.EmitData(nodeContents.Data);
             }
+
+            RecordFoldedSymbolDefinitions(_definedSymbols);
 
             foreach (ISymbolRangeNode range in symbolRangeNodes)
             {
@@ -639,6 +695,16 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }
 
+        private protected virtual bool TryRecordFoldedObjectNode(
+            ObjectNode node,
+            ObjectData nodeContents,
+            Utf8String currentSymbolName) => false;
+
+        private protected virtual void RecordFoldedSymbolDefinitions(
+            IDictionary<Utf8String, SymbolDefinition> definedSymbols)
+        {
+        }
+
         private protected virtual void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)
         {
         }
@@ -658,7 +724,7 @@ namespace ILCompiler.ObjectWriter
             EmitSymbolDefinition(startSymbol.SectionIndex, rangeNodeName, startSymbol.Value, checked((int)(endSymbol.Value - startSymbol.Value + endSymbol.Size)));
         }
 
-        private static string GetNodeTypeName(Type nodeType)
+        private protected static string GetNodeTypeName(Type nodeType)
         {
             string name = nodeType.ToString();
             int firstGeneric = name.IndexOf('[');

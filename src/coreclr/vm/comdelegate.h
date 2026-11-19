@@ -41,10 +41,6 @@ public:
     // One time init.
     static void Init();
 
-    // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
-    FCDECL1(static PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
-    FCDECL1(static MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
-
     // Marshals a delegate to a unmanaged callback.
     static LPVOID ConvertToCallback(OBJECTREF pDelegate);
 
@@ -91,6 +87,13 @@ public:
                              QCall::ObjectHandleOnStack targetParameter,
                              BindToMethodDetails *pBindToMethodDetails);
 };
+
+extern "C"
+{
+    // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
+    FCDECL1(PCODE, Delegate_GetMulticastInvoke, MethodTable* pDelegateMT);
+    FCDECL1(MethodDesc*, Delegate_GetInvokeMethod, MethodTable* pDelegateMT);
+}
 
 extern "C" void QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTable* pTargetMT, PCODE method, BindToMethodDetails *pBindToMethodDetails, QCallExceptionStatus* qcallError);
 

@@ -301,6 +301,34 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public void ImportParameters_MismatchedKeyPair_Throws(bool explicitCurve)
+        {
+            if (explicitCurve)
+            {
+                SkipTestException.ThrowUnless(ECDiffieHellmanFactory.ExplicitCurvesSupported);
+            }
+
+            if (PlatformDetection.IsWindows)
+            {
+                SkipTestException.ThrowUnless(PlatformDetection.IsWindows10Version22000OrGreater);
+            }
+
+            ECParameters parameters = explicitCurve ?
+                EccTestData.GetNistP256ReferenceKeyExplicit() :
+                EccTestData.GetNistP256ReferenceKey();
+
+            parameters.D[0] ^= 1;
+
+            using (ECDiffieHellman ec = ECDiffieHellmanFactory.Create())
+            {
+                Assert.ThrowsAny<CryptographicException>(() => ec.ImportParameters(parameters));
+            }
+        }
+
         [Fact]
         public void TestGeneralExportWithExplicitParameters()
         {

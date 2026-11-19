@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
@@ -12,6 +13,108 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessHandlesTests
     {
+        [DllImport("libc", SetLastError = true)]
+        private static extern int dup2(int oldfd, int newfd);
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int close(int fd);
+
+        // Regression test for a bug where SetCloexecForAllFdsFallback() (the fallback used when
+        // close_range()/fdwalk() are unavailable, in pal_process.c) bounded its cleanup loop by the
+        // *current* RLIMIT_NOFILE soft limit. If a high-numbered fd was opened and RLIMIT_NOFILE was
+        // subsequently lowered below it (which does not close the already-open fd, only future opens),
+        // the loop would stop short of that fd, leaving FD_CLOEXEC unset on it and leaking it into
+        // child processes even though it wasn't in the InheritedHandles allow-list.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void HighNumberedFd_NotLeakedAfterLoweringRLimit()
+        {
+            // Everything below -- including the RLIMIT_NOFILE change -- runs inside a RemoteExecutor-invoked
+            // process, so that lowering the fd limit does not affect other tests running concurrently
+            // in this test process.
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                // Use System.Native rather than P/Invoking getrlimit/setrlimit directly: the width of rlim_t
+                // differs between C libraries on 32-bit platforms (musl's is 64 bits on every architecture),
+                // and System.Native converts to and from the platform's struct rlimit.
+                if (Interop.Sys.GetRLimit(Interop.Sys.RlimitResources.RLIMIT_NOFILE, out Interop.Sys.RLimit limit) != 0)
+                {
+                    throw new Win32Exception(Marshal.GetLastPInvokeError());
+                }
+
+                // Need enough headroom to safely carve out a high fd and then lower the limit below it,
+                // while leaving plenty of room for fds this process (and Process.Start machinery) still need.
+                const ulong MinRequiredLimit = 512;
+                if (limit.CurrentLimit == Interop.Sys.RLIM_INFINITY || limit.CurrentLimit < MinRequiredLimit)
+                {
+                    return; // Cannot safely construct the scenario on this machine; skip.
+                }
+
+                string path = Path.GetTempFileName();
+                try
+                {
+                    using SafeFileHandle fileHandle = File.OpenHandle(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None, FileOptions.None);
+                    string id = GetSafeFileHandleId(fileHandle);
+
+                    // Duplicate the handle to a high fd number, just below the current soft limit.
+                    // dup2() always clears FD_CLOEXEC on the new fd, so it starts out inheritable,
+                    // exactly like a raw fd a user opened and wants to keep alive across the limit change.
+                    int highFd = (int)(limit.CurrentLimit - 10);
+                    if (dup2((int)fileHandle.DangerousGetHandle(), highFd) < 0)
+                    {
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                    }
+
+                    try
+                    {
+                        // Lower RLIMIT_NOFILE below highFd. This does not close the already-open highFd,
+                        // it only restricts future opens above the new limit.
+                        Interop.Sys.RLimit newLimit = limit;
+                        newLimit.CurrentLimit = (ulong)highFd - 5;
+                        if (Interop.Sys.SetRLimit(Interop.Sys.RlimitResources.RLIMIT_NOFILE, ref newLimit) != 0)
+                        {
+                            throw new Win32Exception(Marshal.GetLastPInvokeError());
+                        }
+
+                        RemoteInvokeOptions options = new() { CheckExitCode = true };
+                        options.StartInfo.InheritedHandles = []; // restrict all handle inheritance
+
+                        using RemoteInvokeHandle grandchildHandle = RemoteExecutor.Invoke(
+                            static (string fdStr, string fileId) =>
+                            {
+                                int fd = int.Parse(fdStr);
+                                using SafeFileHandle handle = new SafeFileHandle((nint)fd, ownsHandle: false);
+
+                                string? childId;
+                                try
+                                {
+                                    childId = GetSafeFileHandleId(handle);
+                                }
+                                catch (Win32Exception)
+                                {
+                                    // Not a valid fd in the grandchild process: not leaked, as expected.
+                                    return RemoteExecutor.SuccessExitCode;
+                                }
+
+                                Assert.NotEqual(fileId, childId);
+                                return RemoteExecutor.SuccessExitCode;
+                            },
+                            highFd.ToString(),
+                            id,
+                            options);
+                    }
+                    finally
+                    {
+                        close(highFd);
+                    }
+                }
+                finally
+                {
+                    File.Delete(path);
+                }
+            });
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public unsafe void StartWithCallback_PosixSpawn_CanRedirectOutput()
         {

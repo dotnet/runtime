@@ -48,7 +48,8 @@ gateway-only failures. The toolset checks cover this configuration dependency;
 they are not an end-to-end gateway test.
 
 The focused tests also require the scanner and feedback workflows to select the
-Responses API in both their source and compiled Copilot execution steps.
+Responses API in their source and in both the compiled agent and threat-detection
+execution steps. The compiled steps are identified by their IDs, not display names.
 Production's firewall runs the CLI in offline/BYOK mode, where GPT-6.1 needs
 `COPILOT_PROVIDER_WIRE_API: responses`; the native Copilot SDK eval does not
 exercise that inference routing.
@@ -104,6 +105,19 @@ token for on the eval step. Live runs are non-deterministic and depend on what
 is failing at eval time.
 
 ## Run locally
+
+The deterministic breaking-change documentation tests need Node, but no
+dependencies, credentials, or network access:
+
+```bash
+node --test .github/workflows/evals/breaking-change-doc.test.mjs
+```
+
+They execute the actual inline validator from both the workflow source and its
+compiled lock file. Fixtures cover valid publication, noops, dry runs, invalid
+drafts and targets, and a valid comment combined with each canonical diagnostic
+(`report_missing_tool`, `report_missing_data`, and `report_incomplete`). These
+are validator tests, not an end-to-end agent or safe-output collector run.
 
 The deterministic scanner tests need Node, but no credentials or network access:
 
