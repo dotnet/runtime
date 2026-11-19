@@ -22,12 +22,6 @@ namespace Microsoft.Interop
     /// </remarks>
     internal static class MemorySafetyRules
     {
-        /// <summary>
-        /// The compiler feature flag that opts an assembly into the updated memory safety rules, mirroring
-        /// Roslyn's own <c>Feature.UpdatedMemorySafetyRules</c>.
-        /// </summary>
-        internal const string UpdatedMemorySafetyRulesFeature = "updated-memory-safety-rules";
-
         private static readonly SyntaxKind s_safeKeyword = SyntaxFacts.GetContextualKeywordKind("safe");
 
         extension(SyntaxKind)

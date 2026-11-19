@@ -996,6 +996,7 @@ DEFINE_METHOD(DEBUGGER,             INVOKE_FUNCTION,        InvokeFunction,     
 DEFINE_METHOD(DEBUGGER,             USERBREAKPOINT,         UserBreakpoint,     SM_RetVoid)
 
 #if defined(DEBUGGING_SUPPORTED)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Diagnostics.Debugger.IsSupported, true, true)
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+Context, DebuggerFuncEvalContext)
 DEFINE_FIELD_U(Evaluation,        DebuggerFuncEvalContext, pEval)
 DEFINE_FIELD_U(Arguments,         DebuggerFuncEvalContext, pArguments)
@@ -1017,6 +1018,7 @@ DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeArgument, Debugger
 DEFINE_FIELD_U(Literal,         DebuggerFuncEvalArgument, pLiteral)
 DEFINE_FIELD_U(ElementType,     DebuggerFuncEvalArgument, elementType)
 DEFINE_FIELD_U(Flags,           DebuggerFuncEvalArgument, flags)
+END_ILLINK_FEATURE_SWITCH()
 #endif // DEBUGGING_SUPPORTED
 
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
@@ -1379,7 +1381,9 @@ DEFINE_FIELD_U(dictionaryIndexAndSlot, GenericHandleArgs, dictionaryIndexAndSlot
 
 DEFINE_CLASS(EH, Runtime, EH)
 DEFINE_METHOD(EH, RH_THROW_EX, RhThrowEx, SM_PtrObj_PtrExInfo_RetVoid)
+#ifndef TARGET_WASM
 DEFINE_METHOD(EH, RH_THROWHW_EX, RhThrowHwEx, SM_UInt_PtrExInfo_RetVoid)
+#endif // !TARGET_WASM
 DEFINE_METHOD(EH, RH_RETHROW, RhRethrow, SM_PtrExInfo_PtrExInfo_RetVoid)
 DEFINE_CLASS(EXCEPTIONSERVICES_INTERNALCALLS, ExceptionServices, InternalCalls)
 DEFINE_CLASS(STACKFRAMEITERATOR, Runtime, StackFrameIterator)

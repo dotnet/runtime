@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Caching.Configuration;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
 
@@ -30,7 +29,7 @@ namespace System.Runtime.Caching
         private int _lastTrimPercent;
         private DateTime _lastTrimTime;
         private int _pollingInterval;
-        private GCHandleRef<Timer> _timerHandleRef;
+        private GCHandleRef<Timer>? _timerHandleRef;
         private readonly object _timerLock;
         private long _totalCountBeforeTrim;
 
@@ -38,19 +37,12 @@ namespace System.Runtime.Caching
         private readonly MemoryCache _memoryCache;
         private readonly PhysicalMemoryMonitor _physicalMemoryMonitor;
 #if NET
-        [UnsupportedOSPlatformGuard("wasi")]
-        [UnsupportedOSPlatformGuard("browser")]
-        private static bool _configSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
+        private static bool ConfigSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
-        private static bool _configSupported => true;
+        private static bool ConfigSupported => true;
 #endif
 
         // private
-
-        private MemoryCacheStatistics()
-        {
-            //hide default ctor
-        }
 
         private void AdjustTimer()
         {
@@ -98,7 +90,7 @@ namespace System.Runtime.Caching
         }
 
         // timer callback
-        private void CacheManagerTimerCallback(object state)
+        private void CacheManagerTimerCallback(object? state)
         {
             CacheManagerThread(0);
         }
@@ -122,19 +114,19 @@ namespace System.Runtime.Caching
             }
         }
 
-        private void InitializeConfiguration(NameValueCollection config)
+        private void InitializeConfiguration(NameValueCollection? config)
         {
-            MemoryCacheElement element = null;
-            if (!_memoryCache.ConfigLess && _configSupported)
+            MemoryCacheElement? element = null;
+            if (!_memoryCache.ConfigLess && ConfigSupported)
             {
-                MemoryCacheSection section = ConfigurationManager.GetSection("system.runtime.caching/memoryCache") as MemoryCacheSection;
+                MemoryCacheSection? section = ConfigurationManager.GetSection("system.runtime.caching/memoryCache") as MemoryCacheSection;
                 if (section != null)
                 {
                     element = section.NamedCaches[_memoryCache.Name];
                 }
             }
 
-            if (element != null && _configSupported)
+            if (element != null && ConfigSupported)
             {
                 _configCacheMemoryLimitMegabytes = element.CacheMemoryLimitMegabytes;
                 _configPhysicalMemoryLimitPercentage = element.PhysicalMemoryLimitPercentage;
@@ -162,6 +154,7 @@ namespace System.Runtime.Caching
 #endif
         }
 
+        [MemberNotNull(nameof(_cacheMemoryMonitor))]
         private void InitDisposableMembers()
         {
             bool dispose = true;
@@ -254,7 +247,7 @@ namespace System.Runtime.Caching
             }
         }
 
-        internal MemoryCacheStatistics(MemoryCache memoryCache, NameValueCollection config)
+        internal MemoryCacheStatistics(MemoryCache memoryCache, NameValueCollection? config)
         {
             _memoryCache = memoryCache;
             _lastTrimGen2Count = -1;
@@ -338,7 +331,7 @@ namespace System.Runtime.Caching
             {
                 lock (_timerLock)
                 {
-                    GCHandleRef<Timer> timerHandleRef = _timerHandleRef;
+                    GCHandleRef<Timer>? timerHandleRef = _timerHandleRef;
                     if (timerHandleRef != null && Interlocked.CompareExchange(ref _timerHandleRef, null, timerHandleRef) == timerHandleRef)
                     {
                         timerHandleRef.Dispose();

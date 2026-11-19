@@ -52,6 +52,8 @@ INST(return_call,          "return_call",          0, IF_FUNCIDX,       0x12)
 INST(return_call_indirect, "return_call_indirect", 0, IF_CALL_INDIRECT, 0x13)
 // Pseudo-instructions for relocations
 INST(call_funclet,         "call.funclet",         0, IF_FUNCLETIDX,    0x10)
+INST(deferred_call,        "deferred.call",        0, IF_DEFERRED_CALL, 0x10)
+INST(deferred_return_call, "deferred.return_call", 0, IF_DEFERRED_CALL, 0x12)
 
 INST(drop,        "drop",        0, IF_OPCODE,  0x1A)
 INST(try_table,   "try_table",   0, IF_TRY_TABLE,   0x1F)

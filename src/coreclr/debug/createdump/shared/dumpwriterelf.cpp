@@ -118,6 +118,20 @@ DumpWriter::WriteThread(const ThreadSnapshot& thread)
     }
 #endif
 
+#if defined(__aarch64__) && defined(__linux__)
+    if (thread.HasPacMask())
+    {
+        nhdr.n_namesz = 6;
+        nhdr.n_descsz = sizeof(UserPacMask);
+        nhdr.n_type = NT_ARM_PAC_MASK;
+        if (!WriteData(&nhdr, sizeof(nhdr)) ||
+            !WriteData("LINUX\0\0\0", 8) ||
+            !WriteData(thread.GetPacMask(), sizeof(UserPacMask))) {
+            return false;
+        }
+    }
+#endif
+
     if (siginfo != nullptr)
     {
         TRACE("Writing NT_SIGINFO tid %04x signo %d (%04x) code %04x errno %04x addr %p\n",

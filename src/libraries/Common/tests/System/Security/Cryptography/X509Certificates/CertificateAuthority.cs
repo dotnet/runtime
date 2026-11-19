@@ -156,30 +156,45 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         internal X509Certificate2 CreateSubordinateCA(
             string subject,
             PublicKey publicKey,
-            int? depthLimit = null)
+            int? depthLimit = null,
+            IEnumerable<X509Extension> extraExtensions = null)
         {
             return CreateSubordinateCA(
                 new X500DistinguishedName(subject),
                 publicKey,
-                depthLimit);
+                depthLimit,
+                extraExtensions);
         }
 
         internal X509Certificate2 CreateSubordinateCA(
             X500DistinguishedName subject,
             PublicKey publicKey,
-            int? depthLimit = null)
+            int? depthLimit = null,
+            IEnumerable<X509Extension> extraExtensions = null)
         {
+            X509ExtensionCollection extensions = new X509ExtensionCollection
+            {
+                new X509BasicConstraintsExtension(
+                    certificateAuthority: true,
+                    depthLimit.HasValue,
+                    depthLimit.GetValueOrDefault(),
+                    critical: true),
+                s_caKeyUsage,
+            };
+
+            if (extraExtensions is not null)
+            {
+                foreach (X509Extension extension in extraExtensions)
+                {
+                    extensions.Add(extension);
+                }
+            }
+
             return CreateCertificate(
                 subject,
                 publicKey,
                 TimeSpan.FromMinutes(1),
-                new X509ExtensionCollection() {
-                    new X509BasicConstraintsExtension(
-                        certificateAuthority: true,
-                        depthLimit.HasValue,
-                        depthLimit.GetValueOrDefault(),
-                        critical: true),
-                    s_caKeyUsage });
+                extensions);
         }
 
         internal X509Certificate2 CreateEndEntity(
@@ -844,7 +859,8 @@ SingleResponse ::= SEQUENCE {
             string subjectName = null,
             KeyFactory keyFactory = null,
             bool forTls = false,
-            X509ExtensionCollection extensions = null)
+            X509ExtensionCollection extensions = null,
+            IEnumerable<X509Extension>[] intermediateExtensions = null)
         {
             BuildPrivatePkiCore(
                 pkiOptions,
@@ -854,6 +870,7 @@ SingleResponse ::= SEQUENCE {
                 out endEntityCert,
                 BuildSubject("A Revocation Test Root", testName, pkiOptions, pkiOptionsInSubject),
                 index => BuildSubject($"A Revocation Test CA {index}", testName, pkiOptions, pkiOptionsInSubject),
+                index => intermediateExtensions?[index],
                 intermediateAuthorityCount,
                 BuildSubject(subjectName ?? "A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
                 keyFactoryHashSubjectName: subjectName,
@@ -877,7 +894,8 @@ SingleResponse ::= SEQUENCE {
             bool registerAuthorities = true,
             KeyFactory keyFactory = null,
             bool forTls = false,
-            X509ExtensionCollection extensions = null)
+            X509ExtensionCollection extensions = null,
+            IEnumerable<X509Extension>[] intermediateExtensions = null)
         {
             BuildPrivatePkiCore(
                 pkiOptions,
@@ -887,6 +905,7 @@ SingleResponse ::= SEQUENCE {
                 out endEntityCert,
                 rootName,
                 index => intermediateNames[index],
+                index => intermediateExtensions?[index],
                 intermediateNames.Length,
                 endEntityName: endEntityName,
                 keyFactoryHashSubjectName: null,
@@ -905,6 +924,7 @@ SingleResponse ::= SEQUENCE {
             out X509Certificate2 endEntityCert,
             X500DistinguishedName rootName,
             Func<int, X500DistinguishedName> intermediateAuthorityNameFactory,
+            Func<int, IEnumerable<X509Extension>> intermediateAuthorityExtensionsFactory,
             int intermediateAuthorityCount,
             X500DistinguishedName endEntityName,
             string keyFactoryHashSubjectName,
@@ -1000,7 +1020,8 @@ SingleResponse ::= SEQUENCE {
                     {
                         X509Certificate2 intermedPub = issuingAuthority.CreateSubordinateCA(
                             intermediateAuthorityNameFactory(intermediateIndex),
-                            intermediateKey.ToPublicKey());
+                            intermediateKey.ToPublicKey(),
+                            extraExtensions: intermediateAuthorityExtensionsFactory(intermediateIndex));
                         intermedCert = intermediateKey.OntoCertificate(intermedPub);
                         intermedPub.Dispose();
                     }
@@ -1055,7 +1076,8 @@ SingleResponse ::= SEQUENCE {
             string subjectName = null,
             KeyFactory keyFactory = null,
             bool forTls = false,
-            X509ExtensionCollection extensions = null)
+            X509ExtensionCollection extensions = null,
+            IEnumerable<X509Extension> intermediateExtensions = null)
         {
             BuildPrivatePki(
                 pkiOptions,
@@ -1070,7 +1092,8 @@ SingleResponse ::= SEQUENCE {
                 subjectName: subjectName,
                 keyFactory: keyFactory,
                 forTls: forTls,
-                extensions: extensions);
+                extensions: extensions,
+                intermediateExtensions: intermediateExtensions is null ? null : new[] { intermediateExtensions });
 
             intermediateAuthority = intermediateAuthorities.Single();
         }

@@ -5887,7 +5887,7 @@ struct GenTreeCall final : public GenTree
 
     CorInfoHelpFunc GetHelperNum() const;
 
-    ExceptionSetFlags CallExceptions() const;
+    ExceptionSetFlags CallExceptions(Compiler* comp) const;
 
     bool AreArgsComplete() const;
 

@@ -249,7 +249,9 @@ class StubManagerIterator
 
     SMI_State               m_state;
     PTR_StubManager m_pCurMgr;
+#ifndef DACCESS_COMPILE
     SimpleReadLockHolder    m_lh;
+#endif // DACCESS_COMPILE
 };
 
 //-----------------------------------------------------------
@@ -290,7 +292,7 @@ BOOL StubManagerIterator::Next()
         GC_NOTRIGGER;
         MODE_ANY;
 #ifndef DACCESS_COMPILE
-        CAN_TAKE_LOCK;         // because of m_lh.Assign()
+        CAN_TAKE_LOCK;         // because of SimpleRWLock::TakeReadLock()
 #else
         CANNOT_TAKE_LOCK;
 #endif
@@ -316,16 +318,16 @@ BOOL StubManagerIterator::Next()
                 VirtualCallStubManagerManager *pVCSMMgr = VirtualCallStubManagerManager::GlobalManager();
                 m_pCurMgr = PTR_StubManager(pVCSMMgr);
 #ifndef DACCESS_COMPILE
-                m_lh.Assign(&pVCSMMgr->m_RWLock);
-#endif
+                m_lh = SimpleRWLock::TakeReadLock(&pVCSMMgr->m_RWLock);
+#endif // DACCESS_COMPILE
             }
         }
         else if (m_state == SMI_VIRTUALCALLSTUBMANAGER) {
             m_state = SMI_END;
             m_pCurMgr = NULL;
 #ifndef DACCESS_COMPILE
-            m_lh.Clear();
-#endif
+            m_lh.Free();
+#endif // DACCESS_COMPILE
         }
     } while (m_state != SMI_END && m_pCurMgr == NULL);
 
@@ -2261,7 +2263,7 @@ BOOL AsyncThunkStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 
     MethodDesc *pMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
 
-    return (pMD != NULL) && (pMD->IsAsyncThunkMethod());
+    return (pMD != NULL) && pMD->IsAsyncThunkMethod() && !pMD->SupportsAsyncVersionCodegen();
 }
 
 BOOL AsyncThunkStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *trace)
