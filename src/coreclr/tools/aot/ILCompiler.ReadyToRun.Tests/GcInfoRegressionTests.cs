@@ -14,6 +14,55 @@ namespace ILCompiler.ReadyToRun.Tests;
 public class GcInfoRegressionTests
 {
     [Theory]
+    [InlineData(Machine.Amd64, 3, 5u, "RBP", 1)]
+    [InlineData(Machine.Amd64, 5, 5u, "RBP", 1)]
+    [InlineData(Machine.ArmThumb2, 5, 11u, "R11", 2)]
+    [InlineData(Machine.Arm64, 5, 29u, "X29", 4)]
+    [InlineData(Machine.LoongArch64, 5, 22u, "Fp", 4)]
+    [InlineData(Machine.RiscV64, 5, 8u, "Fp", 2)]
+    [InlineData(WasmMachine.Wasm32, 5, 0u, "0", 1)]
+    public void SlimHeaderDenormalizesFrameRegister(
+        Machine machine, int version, uint expectedRegister, string registerName, int instructionSize)
+    {
+        int codeLengthEncoding = machine switch
+        {
+            Machine.ArmThumb2 => 7,
+            WasmMachine.Wasm32 => 6,
+            _ => 8,
+        };
+        int safePointCountEncoding = machine switch
+        {
+            Machine.Amd64 => 2,
+            WasmMachine.Wasm32 => 4,
+            _ => 3,
+        };
+
+        foreach (bool hasStackBaseRegister in new[] { false, true })
+        {
+            BitWriter writer = new();
+            writer.Write(0, 1);
+            writer.Write(hasStackBaseRegister ? 1 : 0, 1);
+            if (version is 2 or 3)
+                writer.Write(0, 2);
+            writer.WriteUnsigned(8, codeLengthEncoding);
+            writer.WriteUnsigned(1, safePointCountEncoding);
+            writer.Write(3, 3);
+            writer.Write(0, 2);
+
+            GcInfo info = Decode(writer, machine, version);
+            Assert.Equal(hasStackBaseRegister ? expectedRegister : uint.MaxValue, info.StackBaseRegister);
+            Assert.Equal(8 * instructionSize, info.CodeLength);
+            Assert.Equal((uint)(3 * instructionSize), Assert.Single(info.SafePointOffsets).Value);
+            Assert.Empty(info.SlotTable.GcSlots);
+            Assert.Equal(writer.ByteCount, info.Size);
+            if (hasStackBaseRegister)
+                Assert.Contains($"StackBaseRegister: {registerName}", info.ToString());
+            else
+                Assert.DoesNotContain("StackBaseRegister:", info.ToString());
+        }
+    }
+
+    [Theory]
     [InlineData(Machine.LoongArch64, 0, 22u)]
     [InlineData(Machine.LoongArch64, 1, 3u)]
     [InlineData(Machine.RiscV64, 0, 8u)]
@@ -186,11 +235,11 @@ public class GcInfoRegressionTests
         writer.WriteUnsigned(codeLength, machine == Machine.ArmThumb2 ? 7 : 8);
     }
 
-    private static GcInfo Decode(BitWriter writer, Machine machine)
+    private static GcInfo Decode(BitWriter writer, Machine machine, int version = 5)
     {
         using MemoryStream stream = new(writer.ToArray());
 
-        return new GcInfo(new NativeReader(stream), 0, machine, 5);
+        return new GcInfo(new NativeReader(stream), 0, machine, version);
     }
 
     private sealed class BitWriter

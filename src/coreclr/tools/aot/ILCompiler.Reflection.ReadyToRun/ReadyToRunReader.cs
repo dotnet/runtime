@@ -87,6 +87,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         public const int GuidByteSize = 16;
 
         private const string SystemModuleName = "System.Private.CoreLib";
+        private const int WasmRuntimeFunctionGroupSize = 128;
 
         /// <summary>
         /// MetadataReader for the system module (normally System.Private.CoreLib)
@@ -846,16 +847,27 @@ namespace ILCompiler.Reflection.ReadyToRun
             return 2 * sizeof(int);
         }
 
+        internal static int GetWasmRuntimeFunctionCount(ReadyToRunSection section)
+        {
+            if (section.Size < 0 || section.Size % WasmRuntimeFunctionGroupSize != 0)
+            {
+                throw new BadImageFormatException($"Invalid Wasm runtime function section size: {section.Size}.");
+            }
+
+            return section.Size / sizeof(int);
+        }
+
         internal bool TryReadWasmRuntimeFunction(int ordinal, out int beginAddress, out int unwindRva, out bool isFunclet)
         {
             ReadyToRunSection section = ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
-            if ((section.Size & 127) != 0 || ordinal < 0 || ordinal >= section.Size / sizeof(int))
+            int count = GetWasmRuntimeFunctionCount(section);
+            if (ordinal < 0 || ordinal >= count)
             {
-                throw new BadImageFormatException("Invalid Wasm runtime function ordinal or group size.");
+                throw new BadImageFormatException($"Invalid Wasm runtime function ordinal: {ordinal}.");
             }
 
-            int groupOffset = checked(CompositeReader.GetOffset(section.RelativeVirtualAddress) + (ordinal / 32) * 128);
-            ReadOnlySpan<byte> group = Image.AsSpan(groupOffset, 128);
+            int groupOffset = checked(CompositeReader.GetOffset(section.RelativeVirtualAddress) + (ordinal / 32) * WasmRuntimeFunctionGroupSize);
+            ReadOnlySpan<byte> group = Image.AsSpan(groupOffset, WasmRuntimeFunctionGroupSize);
             int index = ordinal & 31;
             beginAddress = 0;
             unwindRva = 0;

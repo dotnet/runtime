@@ -1463,11 +1463,38 @@ public class R2RTestSuites
                 .ToArray();
             Assert.Contains(Enumerable.Range(1, ordinals.Length - 1), index => ordinals[index] > ordinals[index - 1] + 1);
             WasmR2RAssert.AssertRuntimeFunctionGroups(reader);
+            WasmR2RAssert.AssertRuntimeFunctionDump(reader);
         }
         finally
         {
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void WasmSectionContentsDump(bool composite, bool noMethods)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(WasmSectionContentsDump),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmSectionContentsDump),
+            [
+                new(nameof(WasmSectionContentsDump), [new CrossgenAssembly(input)])
+                {
+                    Options = composite ? [Crossgen2Option.Composite] : [],
+                    AdditionalArgs = noMethods ? ["--compile-no-methods"] : [],
+                    OutputFileExtension = ".wasm",
+                    Validate = noMethods ? WasmR2RAssert.AssertEmptyRuntimeFunctionDump : WasmR2RAssert.AssertGCInfoDump,
+                },
+            ]));
     }
 
     [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
