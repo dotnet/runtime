@@ -6,6 +6,6 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="DeletedMetadataRejected.cs" />
+    <Compile Include="DeletedMetadataFlags.cs" />
   </ItemGroup>
 </Project>

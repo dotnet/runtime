@@ -11,30 +11,30 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 using Xunit;
 
-public class DeletedMetadataRejected
+public class DeletedMetadataFlags
 {
     private const byte DeltaOnly = 0x20;
     private const byte HasDelete = 0x80;
     private const byte HasDeleteAndDeltaOnly = HasDelete | DeltaOnly;
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public static void MetadataWithoutDeleteFlagLoads(bool uncompressed)
+    [InlineData(false, 0)]
+    [InlineData(true, 0)]
+    [InlineData(false, HasDelete)]
+    [InlineData(true, HasDelete)]
+    public static void MetadataLoadsWithOrWithoutReservedDeleteFlag(bool uncompressed, byte heapSizes)
     {
-        Assembly assembly = Assembly.Load(BuildImage(uncompressed, heapSizes: 0));
+        Assembly assembly = Assembly.Load(BuildImage(uncompressed, heapSizes));
         Assert.NotNull(assembly.ManifestModule.GetField("Live"));
         Assert.NotNull(assembly.ManifestModule.GetField("_Deleted"));
     }
 
     [Theory]
-    [InlineData(false, HasDelete)]
-    [InlineData(true, HasDelete)]
     [InlineData(false, HasDeleteAndDeltaOnly)]
     [InlineData(true, HasDeleteAndDeltaOnly)]
     [InlineData(false, DeltaOnly)]
     [InlineData(true, DeltaOnly)]
-    public static void MetadataWithDeleteOrDeltaFlagIsRejected(bool uncompressed, byte heapSizes)
+    public static void MetadataWithDeltaOnlyFlagIsRejected(bool uncompressed, byte heapSizes)
     {
         Assert.Throws<BadImageFormatException>(() => Assembly.Load(BuildImage(uncompressed, heapSizes)));
     }
@@ -52,10 +52,10 @@ public class DeletedMetadataRejected
         }
 
         int moduleTypeName = AddString("<Module>");
-        int moduleName = AddString("DeletedMetadataRejected.Generated.dll");
+        int moduleName = AddString("DeletedMetadataFlags.Generated.dll");
         int liveName = AddString("Live");
         int deletedName = AddString("_Deleted");
-        int assemblyName = AddString("DeletedMetadataRejected.Generated");
+        int assemblyName = AddString("DeletedMetadataFlags.Generated");
 
         // Blob heap: empty blob followed by the field signature FIELD I4.
         byte[] blob = [0x00, 0x02, 0x06, 0x08];

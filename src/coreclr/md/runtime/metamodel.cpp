@@ -555,8 +555,8 @@ CMiniMdBase::SchemaPopulate(
         }
     }
 
-    // Delta-only metadata and deleted records are valid only when loading a delta for application.
-    if (!fIsDelta && (m_Schema.m_heaps & (CMiniMdSchema::HAS_DELETE | CMiniMdSchema::DELTA_ONLY)) != 0)
+    // Delta-only metadata is valid only when loading a delta for application.
+    if (!fIsDelta && (m_Schema.m_heaps & CMiniMdSchema::DELTA_ONLY) != 0)
     {
         Debug_ReportError("EnC delta metadata is not supported outside of delta application.");
         return PostError(CLDB_E_FILE_CORRUPT);

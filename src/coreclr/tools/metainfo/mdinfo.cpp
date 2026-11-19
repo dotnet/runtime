@@ -252,8 +252,6 @@ MDInfo::MDInfo(IMetaDataImport2 *pImport, IMetaDataAssemblyImport *pAssemblyImpo
 MDInfo::MDInfo(IMetaDataDispenserEx *pDispenser, LPCWSTR szScope, strPassBackFn inPBFn, ULONG DumpFilter)
 {
     HRESULT     hr = S_OK;
-    VARIANT     value;
-
     _ASSERTE(pDispenser != NULL && inPBFn != NULL);
     _ASSERTE(ARRAY_SIZE(g_szMapElementType) == ARRAY_SIZE(g_szMapUndecorateType));
     _ASSERTE(ARRAY_SIZE(g_szMapElementType) == ELEMENT_TYPE_MAX);
@@ -261,11 +259,6 @@ MDInfo::MDInfo(IMetaDataDispenserEx *pDispenser, LPCWSTR szScope, strPassBackFn 
     Init(inPBFn, (DUMP_FILTER)DumpFilter);
 
     // Attempt to open scope on given file
-    V_VT(&value) = VT_UI4;
-    V_UI4(&value) = MDImportOptionAll;
-    if (FAILED(hr = pDispenser->SetOption(MetaDataImportOption, &value)))
-            Error("SetOption failed.", hr);
-
     hr = pDispenser->OpenScope(szScope, ofNoTransform, IID_IMetaDataImport2, (IUnknown**)&m_pImport);
     if (FAILED(hr))
         Error("OpenScope failed", hr);
@@ -291,11 +284,6 @@ MDInfo::MDInfo(IMetaDataDispenserEx *pDispenser, PBYTE pbMetaData, DWORD dwSize,
     // overloaded until we remove LM -a assemblies, at which point this
     // constructor should probably be removed too).
     HRESULT hr;
-    VARIANT     value;
-    V_VT(&value) = VT_UI4;
-    V_UI4(&value) = MDImportOptionAll;
-    if (FAILED(hr = pDispenser->SetOption(MetaDataImportOption, &value)))
-            Error("SetOption failed.", hr);
     if (SUCCEEDED(hr = pDispenser->OpenScopeOnMemory(pbMetaData, dwSize, ofNoTransform,
                             IID_IMetaDataImport2, (IUnknown**)&m_pImport)))
     {
