@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>true</Optimize>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <CrossGen2TestMethodLayout>DefaultSort</CrossGen2TestMethodLayout>
+    <!-- Strip the hot test method's IL so this cannot pass by interpreting the entire image. -->
+    <CrossGen2TestExtraArguments>$(CrossGen2TestExtraArguments) --auxiliary-modules --strip-il-bodies --wasm-debug-info:name --mibc:SplitModule.mibc</CrossGen2TestExtraArguments>
+    <CrossGenTestSkipR2RDump>true</CrossGenTestSkipR2RDump>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'browser' or '$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SplitModule.cs" />
+  </ItemGroup>
+  <Target Name="GenerateSplitModuleProfile"
+          AfterTargets="Build"
+          Condition="'$(_WillCLRTestProjectBuild)' == 'true' and '$(CLRTestBuildAllTargets)' != 'allTargets'"
+          Inputs="$(TargetPath);$(MSBuildProjectFullPath);$(MSBuildProjectDirectory)/methods.json;$(CoreCLRArtifactsPath)dotnet-pgo/dotnet-pgo.dll;$(CoreCLRArtifactsPath)System.Private.CoreLib.dll;$(LibrariesSharedFrameworkBinArtifactsPath)System.Runtime.dll"
+          Outputs="$(TargetDir)SplitModule.mibc">
+    <Exec Command="&quot;$(DOTNET_HOST_PATH)&quot; &quot;$(CoreCLRArtifactsPath)dotnet-pgo/dotnet-pgo.dll&quot; create-mibc-from-method-list --method-list &quot;$(MSBuildProjectDirectory)/methods.json&quot; --reference &quot;$(CoreCLRArtifactsPath)System.Private.CoreLib.dll&quot; --reference &quot;$(LibrariesSharedFrameworkBinArtifactsPath)System.Runtime.dll&quot; --reference &quot;$(TargetPath)&quot; --output &quot;$(TargetDir)SplitModule.mibc&quot;" />
+  </Target>
+</Project>

@@ -1,0 +1,8 @@
+{
+  "runtime": "CoreCLR",
+  "os": "browser",
+  "architecture": "wasm",
+  "methods": [
+    { "type": "SplitModule, SplitModule", "name": "RunBeforeActivation" }
+  ]
+}
