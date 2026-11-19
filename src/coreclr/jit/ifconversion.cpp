@@ -47,6 +47,8 @@ private:
 
     genTreeOps m_mainOper = GT_COUNT; // The main oper of the if conversion.
 
+    bool m_onlyArithmeticSelect = false; // Only if-convert into a compare or arithmetic.
+
     bool IfConvertCheck();
     bool IfConvertCheckFlow();
     bool IfConvertCheckStmts(BasicBlock* block, IfConvertOperation* foundOperation);
@@ -56,6 +58,8 @@ private:
     GenTree* TrySelectToCnsOpCond(GenTreeConditional* select);
     GenTree* TrySelectToLclOpCond(GenTreeConditional* select);
     GenTree* TrySelectToCondOpLcl(GenTreeConditional* select);
+    void     TryForwardToArithmeticUse();
+    bool     IsCarryCompare(GenTree* cond, var_types type);
 
 #ifdef DEBUG
     void IfConvertDump();
@@ -224,7 +228,11 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* block, IfConvertOperati
             // for some common cases that we know are always side effect free.
             if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !op1->IsInvariant() && !op1->OperIsLocal())
             {
-                return false;
+                if ((op1->gtFlags & GTF_ALL_EFFECT) != 0)
+                {
+                    return false;
+                }
+                m_onlyArithmeticSelect = true;
             }
 
             found                 = true;
@@ -554,23 +562,24 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 
     if (!m_compiler->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
     {
-        // Don't optimise the block if it is inside a loop. Loop-carried
-        // dependencies can cause significant stalls if if-converted.
+        // Inside a loop, only convert into a compare or arithmetic. Loop-carried
+        // dependencies can cause significant stalls if if-converted into a SELECT.
         // Detect via the block weight as that will be high when inside a loop.
-
-        if (m_startBlock->getBBWeight(m_compiler) > BB_UNITY_WEIGHT * 1.05)
-        {
-            JITDUMP("Skipping if-conversion inside loop (via weight)\n");
-            return false;
-        }
+        bool const isHeavyBlock = m_startBlock->getBBWeight(m_compiler) > BB_UNITY_WEIGHT * 1.05;
 
         // We may be inside an unnatural loop, so do the expensive check.
         Compiler::ReachabilityResult reachability =
-            m_compiler->optReachableWithBudget(m_finalBlock, m_startBlock, nullptr, pReachabilityBudget);
+            isHeavyBlock ? Compiler::ReachabilityResult::Reachable
+                         : m_compiler->optReachableWithBudget(m_finalBlock, m_startBlock, nullptr, pReachabilityBudget);
         if (reachability == Compiler::ReachabilityResult::Reachable)
         {
-            JITDUMP("Skipping if-conversion inside loop (via reachability)\n");
+#ifdef TARGET_X86
+            // Branch-free code in loops causes spills with the few x86 registers.
+            JITDUMP("Skipping if-conversion inside loop\n");
             return false;
+#else
+            m_onlyArithmeticSelect = true;
+#endif
         }
         else if (reachability == Compiler::ReachabilityResult::BudgetExceeded)
         {
@@ -635,6 +644,15 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 
     if (select->OperIs(GT_SELECT))
     {
+        GenTree* const op1 = select->AsConditional()->gtOp1;
+        GenTree* const op2 = select->AsConditional()->gtOp2;
+        if (m_onlyArithmeticSelect && !(op1->IsIntegralConst(0) && op2->IsIntegralConst(1)) &&
+            !(op1->IsIntegralConst(1) && op2->IsIntegralConst(0)))
+        {
+            JITDUMP("Skipping if-conversion that would not become a compare or arithmetic\n");
+            return true;
+        }
+
         if (varTypeIsFloating(select))
         {
             JITDUMP("Abort: SELECT of type float\n");
@@ -737,6 +755,11 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         {
             m_compiler->fgRemoveStmt(m_startBlock, m_elseOperation.stmt);
         }
+    }
+
+    if (m_mainOper == GT_STORE_LCL_VAR)
+    {
+        TryForwardToArithmeticUse();
     }
 
 #ifdef DEBUG
@@ -843,6 +866,42 @@ static IntConstSelectOper MatchIntConstSelectValues(int64_t trueVal, int64_t fal
 }
 #endif // TARGET_RISCV64
 
+#ifndef TARGET_RISCV64
+//-----------------------------------------------------------------------------
+// IsCarryCompare: Check if lowering can add the compare to or subtract it from a
+// value of the given type without materializing it (see TryLowerAddSubOfCompare).
+//
+bool OptIfConversionDsc::IsCarryCompare(GenTree* cond, var_types type)
+{
+    if (!cond->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT) || !varTypeIsIntegral(cond->gtGetOp1()))
+    {
+        return false;
+    }
+
+#ifndef TARGET_64BIT
+    // Long compares and adds are decomposed.
+    if (varTypeIsLong(cond->gtGetOp1()) || varTypeIsLong(type))
+    {
+        return false;
+    }
+#endif
+
+    // HW intrinsic compares are lowered to flag checks like "ptest" that need a setcc.
+    if (m_onlyArithmeticSelect && cond->gtGetOp1()->OperIsHWIntrinsic())
+    {
+        return false;
+    }
+
+    // "(x & m) == 0" is lowered to a test, which does not produce a carry.
+    if (cond->OperIs(GT_EQ, GT_NE))
+    {
+        return cond->gtGetOp2()->IsIntegralConst(0) && !cond->gtGetOp1()->OperIsBinary();
+    }
+
+    return cond->IsUnsigned();
+}
+#endif // !TARGET_RISCV64
+
 //-----------------------------------------------------------------------------
 // TrySelectToCnsOpCond: Try to optimize:
 // SELECT(cond,   0,   1) ->         cond
@@ -904,7 +963,33 @@ GenTree* OptIfConversionDsc::TrySelectToCnsOpCond(GenTreeConditional* select)
         }
         return m_compiler->gtNewOperNode(selectOper.oper, selectOper.type, left, right);
     }
-#endif // TARGET_RISCV64
+#else // !TARGET_RISCV64
+    if (IsCarryCompare(cond, select->TypeGet()))
+    {
+        bool const isInt         = select->TypeIs(TYP_INT);
+        auto       isIncrementOf = [isInt](int64_t a, int64_t b) {
+            return isInt ? ((b != INT32_MAX) && (a == b + 1)) : ((b != INT64_MAX) && (a == b + 1));
+        };
+        bool const isCondReversed = isIncrementOf(falseVal, trueVal);
+
+        bool const isConvertible = isCondReversed || isIncrementOf(trueVal, falseVal);
+#ifdef TARGET_XARCH
+        // "setcc; movzx; add r, imm32" is larger than "mov; mov; cmovcc".
+        if (isConvertible && FitsIn<int8_t>(isCondReversed ? trueVal : falseVal))
+#else
+        if (isConvertible)
+#endif
+        {
+            GenTree* base = isCondReversed ? trueInput : falseInput;
+            GenTree* inc  = isCondReversed ? m_compiler->gtReverseCond(cond) : cond;
+            if (genActualType(inc) != genActualType(select))
+            {
+                inc = m_compiler->gtNewCastNode(select->TypeGet(), inc, true, select->TypeGet());
+            }
+            return m_compiler->gtNewOperNode(GT_ADD, select->TypeGet(), base, inc);
+        }
+    }
+#endif // !TARGET_RISCV64
 
     return nullptr;
 }
@@ -961,8 +1046,75 @@ GenTree* OptIfConversionDsc::TrySelectToLclOpCond(GenTreeConditional* select)
             }
         }
     }
-#endif // TARGET_RISCV64
     return nullptr;
+#else // !TARGET_RISCV64
+    // SELECT(cond, x +/- 1, x) -> x +/- cond
+    GenTree* cond = select->gtCond;
+    GenTree* oper = select->gtOp1;
+    GenTree* lcl  = select->gtOp2;
+
+    if (!IsCarryCompare(cond, select->TypeGet()) || !varTypeIsIntegral(select))
+    {
+        return nullptr;
+    }
+
+#ifdef TARGET_X86
+    // "test; jcc; inc" with the 1-byte inc/dec is smaller than "cmp a, 1; adc".
+    if (cond->OperIs(GT_EQ, GT_NE))
+    {
+        return nullptr;
+    }
+#endif
+
+    bool const isCondReversed = !lcl->OperIs(GT_LCL_VAR);
+    if (isCondReversed)
+    {
+        std::swap(oper, lcl);
+    }
+
+    if (!lcl->OperIs(GT_LCL_VAR) || !oper->OperIs(GT_ADD) || oper->gtOverflow() ||
+        (genActualType(oper) != genActualType(select)))
+    {
+        return nullptr;
+    }
+
+    GenTree* lcl2 = oper->gtGetOp1();
+    GenTree* one  = oper->gtGetOp2();
+    if (!one->IsIntegralConst())
+    {
+        std::swap(lcl2, one);
+    }
+
+    bool const isDecrement = one->IsIntegralConst(-1);
+    if ((!one->IsIntegralConst(1) && !isDecrement) || !lcl2->OperIs(GT_LCL_VAR) ||
+        (lcl2->AsLclVar()->GetLclNum() != lcl->AsLclVar()->GetLclNum()))
+    {
+        return nullptr;
+    }
+
+    // The compare may modify the local, e.g. by a call taking its address, so evaluate it first.
+    bool const condMayStore = (cond->gtFlags & (GTF_ASG | GTF_CALL)) != 0;
+    if (condMayStore && isDecrement)
+    {
+        return nullptr;
+    }
+
+    GenTree* inc = isCondReversed ? m_compiler->gtReverseCond(cond) : cond;
+    if (genActualType(inc) != genActualType(oper))
+    {
+        inc = m_compiler->gtNewCastNode(oper->TypeGet(), inc, true, oper->TypeGet());
+    }
+
+    oper->AsOp()->gtOp1 = condMayStore ? inc : lcl2;
+    oper->AsOp()->gtOp2 = condMayStore ? lcl2 : inc;
+    if (isDecrement)
+    {
+        oper->ChangeOper(GT_SUB);
+    }
+
+    oper->gtFlags |= cond->gtFlags & GTF_ALL_EFFECT;
+    return oper;
+#endif // !TARGET_RISCV64
 }
 
 //-----------------------------------------------------------------------------
@@ -1012,6 +1164,103 @@ GenTree* OptIfConversionDsc::TrySelectToCondOpLcl(GenTreeConditional* select)
     return nullptr;
 }
 
+//-----------------------------------------------------------------------------
+// TryForwardToArithmeticUse: Forward "tmp = cond" or "tmp = k + cond" into its single
+// use in "x + tmp" or "x - tmp", so that lowering can combine the compare with the add.
+//
+void OptIfConversionDsc::TryForwardToArithmeticUse()
+{
+    GenTreeLclVar* const store   = m_thenOperation.node->AsLclVar();
+    Statement* const     defStmt = m_thenOperation.stmt;
+    GenTree* const       value   = store->Data();
+    unsigned const       lclNum  = store->GetLclNum();
+    LclVarDsc* const     varDsc  = m_compiler->lvaGetDesc(lclNum);
+
+    if (!varTypeIsIntegral(value) || ((value->gtFlags & GTF_ALL_EFFECT) != 0) || varDsc->lvIsParam ||
+        varDsc->lvIsStructField || varDsc->IsAddressExposed() || varDsc->lvPinned || varTypeIsSmall(varDsc) ||
+        (genActualType(varDsc) != genActualType(value)))
+    {
+        return;
+    }
+
+    GenTree* cond = value;
+    if (cond->OperIs(GT_ADD) && (cond->gtGetOp1()->IsCnsIntOrI() || cond->gtGetOp2()->IsCnsIntOrI()))
+    {
+        cond = cond->gtGetOp1()->IsCnsIntOrI() ? cond->gtGetOp2() : cond->gtGetOp1();
+    }
+
+    if (cond->OperIs(GT_CAST))
+    {
+        cond = cond->AsCast()->CastOp();
+    }
+
+    if (!cond->OperIsCompare() || (m_finalBlock == nullptr) ||
+        (m_finalBlock->GetUniquePred(m_compiler) != m_startBlock) ||
+        !BasicBlock::sameEHRegion(m_startBlock, m_finalBlock) || (m_startBlock->lastStmt() != defStmt) ||
+        (m_finalBlock->firstStmt() == nullptr))
+    {
+        return;
+    }
+
+    // Embedded stores could modify the locals read by the value before the use.
+    Statement* const useStmt = m_finalBlock->firstStmt();
+    GenTree*         use     = nullptr;
+    for (GenTree* const node : useStmt->TreeList())
+    {
+        if (node->OperIsAnyLocal() && (node->AsLclVarCommon()->GetLclNum() == lclNum))
+        {
+            if ((use != nullptr) || !node->OperIs(GT_LCL_VAR))
+            {
+                return;
+            }
+            use = node;
+        }
+        else if ((node != useStmt->GetRootNode()) && node->OperIsStore())
+        {
+            return;
+        }
+    }
+
+    if (use == nullptr)
+    {
+        return;
+    }
+
+    Compiler::FindLinkData const link = m_compiler->gtFindLink(useStmt, use);
+    GenTree* const               user = link.parent;
+    if ((user == nullptr) || !user->OperIs(GT_ADD, GT_SUB) || !varTypeIsIntegral(user) || user->gtOverflow() ||
+        (user->OperIs(GT_SUB) && (user->gtGetOp2() != use)))
+    {
+        return;
+    }
+
+    for (BasicBlock* const block : m_compiler->Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            if (stmt == useStmt)
+            {
+                continue;
+            }
+
+            for (GenTree* const node : stmt->TreeList())
+            {
+                if ((node != store) && node->OperIsAnyLocal() && (node->AsLclVarCommon()->GetLclNum() == lclNum))
+                {
+                    return;
+                }
+            }
+        }
+    }
+
+    JITDUMP("Forwarding V%02u into its use in " FMT_STMT "\n", lclNum, useStmt->GetID());
+
+    *link.result = value;
+    m_compiler->fgRemoveStmt(m_startBlock, defStmt);
+    m_compiler->gtUpdateStmtSideEffects(useStmt);
+    m_compiler->gtSetEvalOrder(useStmt->GetRootNode());
+    m_compiler->fgSetStmtSeq(useStmt);
+}
 //-----------------------------------------------------------------------------
 // optIfConversion: If conversion
 //

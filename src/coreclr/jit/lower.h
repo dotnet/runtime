@@ -97,7 +97,8 @@ private:
     bool      TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode);
 #endif
 #if defined(TARGET_ARM64)
-    bool TryLowerAndRshToBFX(GenTreeOp* tree, GenTree** next);
+    bool     TryLowerAndRshToBFX(GenTreeOp* tree, GenTree** next);
+    GenTree* TryLowerAddOfCompareToCinc(GenTreeOp* node);
 #endif
 #ifdef TARGET_RISCV64
     bool TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next);
@@ -445,6 +446,10 @@ private:
 #ifdef TARGET_XARCH
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
+
+    GenTree* FindAddSubCompareOperand(GenTreeOp* node, GenTree** other, GenTree** condOp, GenTree** addCns);
+    GenTree* TryLowerAddSubOfCompare(GenTreeOp* node);
+    bool     TryGetCarryOp(bool isAdd, bool borrowIsCond, ssize_t k, genTreeOps* carryOper, ssize_t* imm);
 
 #ifdef TARGET_WASM
     static void      SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));

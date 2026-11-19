@@ -1266,6 +1266,9 @@ public:
     // Returns "true" iff "vnf" is a comparison (and thus binary) operator.
     static bool VNFuncIsComparison(VNFunc vnf);
 
+    // Returns "true" iff "vn" is known to be 0 or 1.
+    bool IsVNZeroOrOne(ValueNum vn, int budget = 4);
+
     // Returns "true" iff "vnf" is a signed comparison (and thus binary) operator.
     static bool VNFuncIsSignedComparison(VNFunc vnf);
 
