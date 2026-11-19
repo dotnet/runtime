@@ -423,7 +423,7 @@ namespace System.Threading.Tests
                 new Mutex(
                     initiallyOwned: false,
                     name,
-                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                    new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly },
                     out bool createdNew))
             {
                 Assert.True(createdNew);
