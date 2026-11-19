@@ -74,6 +74,20 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("EscapeNonSpecialChar\\a")]
         [InlineData("EscapeNonSpecialChar\\0")]
         [InlineData("DoubleNestingChar++Bla")]
+        [InlineData("\0")]
+        [InlineData("\0System.Int32")]
+        [InlineData("System.In\0t32")]
+        [InlineData("System.Int32\0")]
+        [InlineData("System.Int32\0junk")]
+        [InlineData("System.Environment\0x+SpecialFolder")]
+        [InlineData("System.Environment+SpecialFolder\0x")]
+        [InlineData("System.Collections.Generic.List`1[System.Int32\0zz]")]
+        [InlineData("System.Collections.Generic.List`1[[System.Int32\0zz]]")]
+        [InlineData("System.Collections.Generic.List`1[[System.Int32\0zz, System.Private.CoreLib]]")]
+        [InlineData("System.Diagnostics.Process\0x, System.Diagnostics.Process")]
+        [InlineData("System.Int32, System.Private.CoreLib\0x")]
+        [InlineData("Escaped\\+Name\0junk")]
+        [InlineData("Escaped\\\0Name")]
         public void InvalidTypeNamesAreNotAllowed(string input)
         {
             Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan()));
