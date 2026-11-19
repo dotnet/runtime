@@ -802,24 +802,30 @@ public:
     // off to the jit, which will include it in probes injected for
     // debuggable code.
     // This means we need the dword at the time a function is jitted.
-    // The Debugger has its own module structure, but those aren't created
-    // if a debugger isn't attached.
-    // We put it here instead of in the debugger's module because:
-    // 1) we need a module structure that's around even when the debugger
-    // isn't attached... so we use the EE's module.
-    // 2) Needs to be here for ngen
+    // The field must be available even when a debugger isn't attached and
+    // must also work for ngen.
     DWORD                   m_dwDebuggerJMCProbeCount;
 
+protected:
+    // Incremented each time a module's metadata is updated.
+    // Indicates update to out-of-process readers.
+    uint32_t m_dwMetadataGeneration;
+
+public:
     bool IsFullModule() const final { return true; }
     // We can skip the JMC probes if we know that a module has no JMC stuff
     // inside. So keep a strict count of all functions inside us.
-    bool HasAnyJMCFunctions();
+    bool HasAnyJMCFunctions(uint64_t debuggerSession);
     void IncJMCFuncCount();
     void DecJMCFuncCount();
 
     // Get and set the default JMC status of this module.
-    bool GetJMCStatus();
-    void SetJMCStatus(bool fStatus);
+    bool GetJMCStatus(uint64_t debuggerSession);
+    void SetJMCStatus(bool fStatus, uint64_t debuggerSession);
+
+    bool ClassLoadCallbacksEnabled(uint64_t debuggerSession) const;
+    bool MayHaveClassLoadCallbacks() const;
+    void EnableClassLoadCallbacks(bool enabled, uint64_t debuggerSession);
 
 #ifdef FEATURE_METADATA_PERSISTENCE
     // If this is a dynamic module, eagerly serialize the metadata so that it is available for DAC.
@@ -1653,6 +1659,10 @@ protected:
 
 private:
 
+    // Session-state writes require both debugger locks. Callback reads require
+    // the main lock and JMC reads require the debugger data lock.
+    void PrepareDebuggerSession(uint64_t debuggerSession);
+
     // This struct stores the data used by the managed debugging infrastructure.  If it turns out that
     // the debugger is increasing the size of the Module class by too much, we can consider allocating
     // this struct lazily on demand.
@@ -1674,6 +1684,8 @@ private:
         // The default JMC status for methods in this module.
         // Individual methods can be overridden.
         bool    m_fDefaultJMCStatus;
+
+        Volatile<bool> m_enableClassLoadCallbacks{false};
     };
 
     DebuggerSpecificData  m_debuggerSpecificData;
@@ -1703,9 +1715,8 @@ private:
 protected:
     TADDR m_pDynamicMetadata;
 
-    // Incremented each time a module's metadata is updated.
-    // Indicates update to out-of-process readers.
-    uint32_t m_dwMetadataGeneration;
+    // Zero means no debugger session has initialized this module's state.
+    uint64_t m_debuggerSessionGeneration{0};
 
 public:
 #if !defined(DACCESS_COMPILE)

@@ -610,8 +610,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
                     DebuggerEval *  pDE  = pFEF->GetDebuggerEval();
 
                     frameData.stubFrame.funcMetadataToken = pDE->m_methodToken;
-                    frameData.stubFrame.vmAssembly.SetHostPtr(
-                        pDE->m_debuggerModule ? pDE->m_debuggerModule->GetAssembly() : NULL);
+                    frameData.stubFrame.vmAssembly.SetDacTargetPtr(dac_cast<TADDR>(pDE->m_pAssembly));
                     frameData.stubFrame.vmMethodDesc = VMPTR_MethodDesc::NullPtr();
                 }
                 else
