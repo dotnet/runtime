@@ -891,6 +891,8 @@ namespace ILLink.Tasks.Tests
             tracker.Complete();
             Assert.NotEmpty(errors);
             Assert.All(errors, error => Assert.Contains("corelib.h", error));
+            if (source.StartsWith("#if ", StringComparison.Ordinal))
+                Assert.Contains(errors, error => error.Contains("Unsupported preprocessor condition", StringComparison.Ordinal));
         }
 
         [Theory]
