@@ -37,4 +37,11 @@ The following [repository variables](../../settings/variables/actions) can be co
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `ISSUE_LABELER_PREDICTION_THRESHOLD` | The minimum prediction confidence threshold for applying an area label. Predictions below this threshold will apply the `DEFAULT_LABEL` instead. | `0.05` |
+| `ISSUE_LABELER_PREDICTION_THRESHOLD` | The minimum prediction confidence threshold for issues, used by issue prediction and model testing. | `0.15` |
+| `PR_LABELER_PREDICTION_THRESHOLD` | The minimum prediction confidence threshold for pull requests, used by PR prediction and model testing. | `0.13` |
+
+Unset or empty variables use the defaults above. Predictions below the effective threshold apply `DEFAULT_LABEL` instead.
+
+`ISSUE_LABELER_PREDICTION_THRESHOLD` still overrides the issue threshold, but no longer affects pull requests. To override the PR threshold, set `PR_LABELER_PREDICTION_THRESHOLD`.
+
+These are coverage-first starting values informed by the evaluation in [#137023](https://github.com/dotnet/runtime/pull/137023), not previously measured exact cutoffs. The earlier precision and coverage results do not establish results at `0.15` or `0.13`.
