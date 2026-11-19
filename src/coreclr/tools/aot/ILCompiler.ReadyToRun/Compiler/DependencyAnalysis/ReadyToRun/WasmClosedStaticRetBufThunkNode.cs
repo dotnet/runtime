@@ -65,7 +65,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter instructionEncoder, bool relocsOnly)
         {
-            Debug.Assert(!instructionEncoder.Is64Bit);
             Debug.Assert(_signature.SignatureString[0] == 'S');
             Debug.Assert(!_signature.SignatureString.Contains('a'));
 
