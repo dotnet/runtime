@@ -774,6 +774,12 @@ STDMETHODIMP RegMeta::EnumPermissionSets(     // S_OK, S_FALSE, or error.
     ULONG       cMax,                   // [IN] Max Permissions to put.
     ULONG       *pcTokens)              // [OUT] Put # put here.
 {
+#ifndef FEATURE_METADATA_PERMISSION_SETS
+    // Declarative security is not used by the runtime; behave as if there are no permission sets.
+    if (pcTokens)
+        *pcTokens = 0;
+    return S_FALSE;
+#else // FEATURE_METADATA_PERMISSION_SETS
     HRESULT             hr = NOERROR;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
@@ -870,6 +876,7 @@ ErrExit:
     HENUMInternal::DestroyEnum(pEnum);
 
     return hr;
+#endif // FEATURE_METADATA_PERMISSION_SETS
 } // STDMETHODIMP RegMeta::EnumPermissionSets()
 
 
@@ -1775,6 +1782,9 @@ STDMETHODIMP RegMeta::GetPermissionSetProps(
     void const  **ppvPermission,        // [OUT] permission blob.
     ULONG       *pcbPermission)         // [OUT] count of bytes of pvPermission.
 {
+#ifndef FEATURE_METADATA_PERMISSION_SETS
+    return E_NOTIMPL;
+#else // FEATURE_METADATA_PERMISSION_SETS
     HRESULT             hr = S_OK;
 
     CMiniMdRW           *pMiniMd = NULL;
@@ -1800,6 +1810,7 @@ STDMETHODIMP RegMeta::GetPermissionSetProps(
 
 ErrExit:
     return hr;
+#endif // FEATURE_METADATA_PERMISSION_SETS
 } // STDMETHODIMP RegMeta::GetPermissionSetProps()
 
 

@@ -29,7 +29,9 @@ using std::nothrow;
 #include "clrhost.h"
 #include "dn_xxhash.h"
 #include "debugmacros.h"
+#ifndef JIT_BUILD
 #include "corhlprpriv.h"
+#endif // !JIT_BUILD
 #include "check.h"
 #include "safemath.h"
 
@@ -498,6 +500,10 @@ public:
 
 int GetTotalProcessorCount();
 
+// Copies the system message for a Win32 error code or HRESULT_FROM_WIN32 value into buffer.
+// On Unix, only the messages for the error codes used by the runtime are available.
+// Returns false on failure, for example if the buffer is too small.
+bool GetSystemErrorMessage(DWORD code, WCHAR *buffer, size_t cchBuffer);
 
 //*****************************************************************************
 // Return != 0 if the bit at the specified index in the array is on and 0 if
