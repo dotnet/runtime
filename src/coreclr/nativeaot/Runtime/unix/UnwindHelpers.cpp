@@ -1359,20 +1359,21 @@ static bool FindFdeOffsetInDwarfIndex(PCODE pc, const UnwindInfoSections &uwInfo
 bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSections, unw_proc_info_t *procInfo)
 {
 #if defined(TARGET_AMD64)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_x86_64> uc(_addressSpace);
+    using NativeRegisters = Registers_x86_64;
 #elif defined(TARGET_ARM)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm> uc(_addressSpace);
+    using NativeRegisters = Registers_arm;
 #elif defined(TARGET_ARM64)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm64> uc(_addressSpace);
+    using NativeRegisters = Registers_arm64;
 #elif defined(HOST_X86)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_x86> uc(_addressSpace);
+    using NativeRegisters = Registers_x86;
 #elif defined(HOST_LOONGARCH64)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_loongarch> uc(_addressSpace);
+    using NativeRegisters = Registers_loongarch;
 #elif defined(HOST_RISCV64)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_riscv> uc(_addressSpace);
+    using NativeRegisters = Registers_riscv;
 #else
     #error "Unwinding is not implemented for this architecture yet."
 #endif
+    libunwind::UnwindCursor<LocalAddressSpace, NativeRegisters> uc(_addressSpace);
 
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
     uint32_t dwarfOffsetHint = 0;
