@@ -107,6 +107,58 @@ public class GcInfoRegressionTests
         Assert.Equal(writer.ByteCount, info.Size);
     }
 
+    [Theory]
+    [InlineData(Machine.Amd64, false, 8)]
+    [InlineData(Machine.Amd64, true, 8)]
+    [InlineData(Machine.ArmThumb2, false, 4)]
+    [InlineData(Machine.ArmThumb2, true, 4)]
+    public void StackSlotDeltasAreUnsigned(Machine machine, bool untracked, int slotSize)
+    {
+        const int SlotCount = 4;
+        BitWriter writer = new();
+        writer.Write(0, 1);
+        writer.Write(1, 1);
+        writer.WriteUnsigned(32, machine == Machine.ArmThumb2 ? 7 : 8);
+        writer.WriteUnsigned(1, machine == Machine.Amd64 ? 2 : 3);
+        writer.Write(3, 5);
+        writer.Write(0, 1);
+        writer.Write(1, 1);
+        writer.WriteUnsigned(untracked ? 0 : SlotCount, machine == Machine.ArmThumb2 ? 3 : 2);
+        writer.WriteUnsigned(untracked ? SlotCount : 0, machine == Machine.ArmThumb2 ? 3 : 1);
+        writer.Write((int)GcStackSlotBase.GC_FRAMEREG_REL, 2);
+        writer.WriteSigned(-16, 6);
+        writer.Write(0, 2);
+        foreach (int delta in new[] { 7, 8, 128 })
+        {
+            writer.Write((int)GcStackSlotBase.GC_FRAMEREG_REL, 2);
+            writer.WriteUnsigned(delta, 4);
+        }
+        if (!untracked)
+        {
+            writer.Write(0, 1);
+            writer.Write(0b1111, SlotCount);
+        }
+
+        GcInfo info = Decode(writer, machine);
+        Assert.Equal(SlotCount, info.SlotTable.GcSlots.Count);
+        int[] normalizedOffsets = [-16, -9, -1, 127];
+        for (int i = 0; i < SlotCount; i++)
+        {
+            GcSlotTable.GcSlot slot = info.SlotTable.GcSlots[i];
+            Assert.Equal(normalizedOffsets[i] * slotSize, slot.StackSlot.SpOffset);
+            Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, slot.StackSlot.Base);
+            Assert.Equal(untracked ? GcSlotFlags.GC_SLOT_UNTRACKED : GcSlotFlags.GC_SLOT_BASE, slot.Flags);
+        }
+        if (!untracked)
+        {
+            List<BaseGcSlot> liveSlots = Assert.Single(info.LiveSlotsAtSafepoints);
+            Assert.Equal(SlotCount, liveSlots.Count);
+            for (int i = 0; i < SlotCount; i++)
+                Assert.Same(info.SlotTable.GcSlots[i], liveSlots[i]);
+        }
+        Assert.Equal(writer.ByteCount, info.Size);
+    }
+
     public static IEnumerable<object[]> TransitionCases()
     {
         foreach ((Machine machine, int instructionSize) in new[]
@@ -267,6 +319,19 @@ public class GcInfoRegressionTests
                 value >>>= encodingBase;
                 Write(chunk | (value == 0 ? 0 : 1 << encodingBase), encodingBase + 1);
             } while (value != 0);
+        }
+
+        public void WriteSigned(int value, int encodingBase)
+        {
+            while (true)
+            {
+                int chunk = value & ((1 << encodingBase) - 1);
+                value >>= encodingBase;
+                bool last = value == ((chunk & (1 << (encodingBase - 1))) == 0 ? 0 : -1);
+                Write(chunk | (last ? 0 : 1 << encodingBase), encodingBase + 1);
+                if (last)
+                    return;
+            }
         }
 
         public void Align()

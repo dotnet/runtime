@@ -195,7 +195,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 }
                 else
                 {
-                    int normSpOffsetDelta = imageReader.DecodeVarLengthSigned(gcInfoTypes.STACK_SLOT_DELTA_ENCBASE, ref bitOffset);
+                    int normSpOffsetDelta = (int)imageReader.DecodeVarLengthUnsigned(gcInfoTypes.STACK_SLOT_DELTA_ENCBASE, ref bitOffset);
                     normSpOffset += normSpOffsetDelta;
                     spOffset = gcInfoTypes.DenormalizeStackSlot(normSpOffset);
                 }
