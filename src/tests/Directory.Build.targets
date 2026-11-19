@@ -468,9 +468,6 @@
       <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).IlasmRoundTripIncompatible" Condition="'$(IlasmRoundTripIncompatible)' == 'true'">
         <Type>IlasmRoundTripIncompatible</Type>
       </MarkerFile>
-      <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).NativeIldasmRoundTripIncompatible" Condition="'$(NativeIldasmRoundTripIncompatible)' == 'true'">
-        <Type>NativeIldasmRoundTripIncompatible</Type>
-      </MarkerFile>
       <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot" Condition="'$(MonoAotIncompatible)' == 'true'">
         <Type>NoMonoAot</Type>
       </MarkerFile>

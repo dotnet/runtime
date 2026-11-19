@@ -43,6 +43,11 @@ internal sealed partial class Dasm
             if (type == 112) // ReadyToRunSectionType.ManifestMetadata
             {
                 _r2rBlock = pe.GetSectionData(rva);
+                if (size <= 0 || size > _r2rBlock.Length)
+                {
+                    throw new InvalidOperationException("This R2R file has an invalid R2R manifest metadata size");
+                }
+
                 unsafe
                 {
                     return new MetadataReader(_r2rBlock.Pointer, size);

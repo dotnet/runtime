@@ -208,6 +208,12 @@ internal sealed partial class Dasm
                     l--;
                 }
 
+                // Do not split a UTF-8 sequence across the chunks.
+                while (l > 0 && (bytes[p + l] & 0xC0) == 0x80)
+                {
+                    l--;
+                }
+
                 if (l == 0)
                 {
                     l = (uMaxLen + 1) & ~1;

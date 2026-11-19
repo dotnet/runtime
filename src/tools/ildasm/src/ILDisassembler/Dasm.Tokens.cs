@@ -227,7 +227,11 @@ internal sealed partial class Dasm
                 for (int pch = 0; pch < pComma; pch++)
                 {
                     char c = tail[pch];
-                    if (c == '\'')
+                    if (c == '\\' && j != 0)
+                    {
+                        pch++; // skip the escaped character in a quoted name
+                    }
+                    else if (c == '\'')
                     {
                         j = 1 - j;
                     }

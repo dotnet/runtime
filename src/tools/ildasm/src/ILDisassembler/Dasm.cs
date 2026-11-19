@@ -88,8 +88,21 @@ internal sealed partial class Dasm
     {
         _newLine = newLine;
         _pe = pe;
-        _md = options.R2RNativeMetadata ? GetR2RManifestReader(pe) : pe.GetMetadataReader(MetadataReaderOptions.None);
-        _metadataBlock = options.R2RNativeMetadata ? _r2rBlock : pe.GetMetadata();
+        // A PE file without metadata is only accepted for /HEADERS; DumpFile stops after the headers without using metadata.
+        if (options.R2RNativeMetadata)
+        {
+            _md = GetR2RManifestReader(pe);
+            _metadataBlock = _r2rBlock;
+        }
+        else if (pe.HasMetadata)
+        {
+            _md = pe.GetMetadataReader(MetadataReaderOptions.None);
+            _metadataBlock = pe.GetMetadata();
+        }
+        else
+        {
+            _md = null!;
+        }
         _options = options;
         _out = output;
         _error = error;
@@ -700,6 +713,20 @@ internal sealed partial class Dasm
     // ---------------------------------------------------------------- the whole file
 
     public bool DumpFile(string inputFileName)
+    {
+        try
+        {
+            return DumpFileCore(inputFileName);
+        }
+        finally
+        {
+            _pdbProvider?.Dispose();
+            _pdbProvider = null;
+            _pdb = null;
+        }
+    }
+
+    private bool DumpFileCore(string inputFileName)
     {
         if (_html)
         {

@@ -330,7 +330,7 @@ internal sealed partial class Dasm
                 int i = _asmRefs.FindIndex(a => a.Tok == tkImpl);
                 if (i >= 0)
                 {
-                    sb.Append(Indent).Append(KEYWORD(".assembly extern")).Append(' ').Append(JUMPPT(ProperName(_asmRefs[i].Name), tkImpl));
+                    sb.Append(Indent).Append(KEYWORD(".assembly extern")).Append(' ').Append(JUMPPT(ProperName(_asmRefNames[i] ?? _asmRefs[i].Name), tkImpl));
                     if (_options.ShowTokens)
                     {
                         sb.Append(COMMENT($" /*{tkImpl:X8}*/ "));

@@ -437,7 +437,7 @@ internal sealed partial class Dasm
                                 throw new CABlobException();
                             }
 
-                            out_.Append(UnquotedProperName(Utf8Z(data, dp, l))).Append('\'');
+                            out_.Append(UnquotedProperName(CAString(data, dp, l))).Append('\'');
                             dp += l;
                         }
                     }
@@ -533,6 +533,27 @@ internal sealed partial class Dasm
         if (closeParenthesis)
         {
             out_.Append(')');
+        }
+    }
+
+    private static readonly UTF8Encoding s_strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    // CAString: decodes a SerString value, falling back to the raw blob when the string cannot be written losslessly
+    // (embedded NULs or invalid UTF-8).
+    private static string CAString(byte[] b, int start, int len)
+    {
+        if (Array.IndexOf(b, (byte)0, start, len) >= 0)
+        {
+            throw new CABlobException();
+        }
+
+        try
+        {
+            return s_strictUtf8.GetString(b, start, len);
+        }
+        catch (DecoderFallbackException)
+        {
+            throw new CABlobException();
         }
     }
 

@@ -4,7 +4,7 @@
 #:property Configuration=Release
 #:property ImportDirectoryBuildProps=false
 #:property ImportDirectoryBuildTargets=false
-#:property TargetFramework=$(NetCoreAppToolCurrent)
+#:property TargetFramework=$(BundledNETCoreAppTargetFramework)
 #:property GenerateDependencyFile=true
 #:property GenerateRuntimeConfigurationFiles=true
 #:property SelfContained=false

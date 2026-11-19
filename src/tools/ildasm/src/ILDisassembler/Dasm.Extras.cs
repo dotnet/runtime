@@ -553,6 +553,8 @@ internal sealed partial class Dasm
                     headerSize += (uint)((n.Name.Length + 1) * 2 - 4);
                 }
 
+                // The header size includes the padding that aligns the header to a DWORD boundary.
+                headerSize = (headerSize + 3) & ~3u;
                 w.Write(n.DataSize);
                 w.Write(headerSize);
                 uint filler = 0;

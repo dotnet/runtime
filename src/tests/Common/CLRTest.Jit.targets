@@ -358,11 +358,6 @@ for inputAssemblyName in glob.glob("*.dll"):
       print("Skipping ILASM round trip for " + inputAssemblyName)
       continue
 
-  native_ildasm_incompatible_marker = assemblyNameWithoutExtension + ".NativeIldasmRoundTripIncompatible"
-  if not use_managed_ildasm and os.path.isfile(native_ildasm_incompatible_marker):
-      print("Skipping ILASM round trip with the native ildasm for " + inputAssemblyName)
-      continue
-
   if is_managed_assembly(inputAssemblyName):
       print("ILASM RoundTrip for " + inputAssemblyName)
 
