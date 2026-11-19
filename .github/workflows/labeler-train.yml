@@ -52,8 +52,8 @@ env:
   REPOSITORY: ${{ github.repository }}
   LABEL_PREFIX: "area-"
   DEFAULT_EXCLUDED_LABELS: "area-crossgen2-coreclr,area-AssemblyLoader-coreclr"
-  THRESHOLD_ISSUES: ${{ vars.ISSUE_LABELER_PREDICTION_THRESHOLD_ISSUES || vars.ISSUE_LABELER_PREDICTION_THRESHOLD || '0.15' }}
-  THRESHOLD_PULLS: ${{ vars.ISSUE_LABELER_PREDICTION_THRESHOLD_PULLS || vars.ISSUE_LABELER_PREDICTION_THRESHOLD || '0.13' }}
+  ISSUE_THRESHOLD: ${{ vars.ISSUE_LABELER_PREDICTION_THRESHOLD || '0.15' }}
+  PR_THRESHOLD: ${{ vars.PR_LABELER_PREDICTION_THRESHOLD || '0.13' }}
   LIMIT: ${{ inputs.limit }}
   PAGE_SIZE: ${{ inputs.page_size }}
   PAGE_LIMIT: ${{ inputs.page_limit }}
@@ -140,7 +140,7 @@ jobs:
           repository: ${{ env.REPOSITORY }}
           label_prefix: ${{ env.LABEL_PREFIX }}
           excluded_labels: ${{ format('{0}{1}', env.DEFAULT_EXCLUDED_LABELS, inputs.excluded_labels && format(',{0}', inputs.excluded_labels) || '') }}
-          threshold: ${{ env.THRESHOLD_ISSUES }}
+          threshold: ${{ env.ISSUE_THRESHOLD }}
           limit: ${{ env.LIMIT }}
           page_size: ${{ env.PAGE_SIZE }}
           page_limit: ${{ env.PAGE_LIMIT }}
@@ -162,7 +162,7 @@ jobs:
           repository: ${{ env.REPOSITORY }}
           label_prefix: ${{ env.LABEL_PREFIX }}
           excluded_labels: ${{ format('{0}{1}', env.DEFAULT_EXCLUDED_LABELS, inputs.excluded_labels && format(',{0}', inputs.excluded_labels) || '') }}
-          threshold: ${{ env.THRESHOLD_PULLS }}
+          threshold: ${{ env.PR_THRESHOLD }}
           limit: ${{ env.LIMIT }}
           page_size: ${{ env.PAGE_SIZE }}
           page_limit: ${{ env.PAGE_LIMIT }}

@@ -37,8 +37,7 @@ The following [repository variables](../../settings/variables/actions) can be co
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `ISSUE_LABELER_PREDICTION_THRESHOLD_ISSUES` | The minimum prediction confidence threshold for issues, used by issue prediction and model testing. | `0.15` |
-| `ISSUE_LABELER_PREDICTION_THRESHOLD_PULLS` | The minimum prediction confidence threshold for pull requests, used by PR prediction and model testing. | `0.13` |
-| `ISSUE_LABELER_PREDICTION_THRESHOLD` | Shared fallback when the corresponding type-specific variable is unset or empty. | Unset |
+| `ISSUE_LABELER_PREDICTION_THRESHOLD` | The minimum prediction confidence threshold for issues, used by issue prediction and model testing. | `0.15` |
+| `PR_LABELER_PREDICTION_THRESHOLD` | The minimum prediction confidence threshold for pull requests, used by PR prediction and model testing. | `0.13` |
 
-Type-specific variables take precedence over the shared fallback. If both are unset or empty, the type-specific default above applies. Predictions below the effective threshold apply `DEFAULT_LABEL` instead.
+Unset or empty variables use the defaults above. Predictions below the effective threshold apply `DEFAULT_LABEL` instead.
