@@ -1075,7 +1075,14 @@ void ShimProcess::QueueFakeAssemblyAndModuleEvent(ICorDebugAssembly * pAssembly)
     GetShimCallback()->LoadAssembly(pAppDomain, pAssembly);
     AddDuplicateCreationEvent(pAssembly);
 
-    CordbModule * pModule = static_cast<CordbProcess *>(m_pProcess)->GetLoadedModuleForShim(pAssembly);
+    CordbModule * pModule = NULL;
+    EX_TRY
+    {
+        pModule = m_pProcess->GetLoadedModuleForShim(pAssembly);
+    }
+    EX_CATCH_HRESULT(hr);
+    SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
+
     if (pModule != NULL)
     {
         GetShimCallback()->FakeLoadModule(pAppDomain, pModule);
