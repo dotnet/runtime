@@ -83,17 +83,8 @@ internal partial class StackWalk_1 : IStackWalk
         // set IsInterrupted when transitioning to a managed frame.
         public FrameType? LastProcessedFrameType { get; set; }
 
-        public IPlatformAgnosticContext GetCallerContext(Target target)
-        {
-            if (_callerContext is null)
-            {
-                IPlatformAgnosticContext context = Context.Clone();
-                context.Unwind(target);
-                _callerContext = context;
-            }
-
-            return _callerContext;
-        }
+        public IPlatformAgnosticContext GetCallerContext(StackWalk_1 stackWalk)
+            => _callerContext ??= stackWalk.GetCallerContext(Context);
 
         public void Unwind(Target target)
         {
@@ -1066,7 +1057,7 @@ internal partial class StackWalk_1 : IStackWalk
         }
 
         // get the caller context
-        IPlatformAgnosticContext parentContext = handle.GetCallerContext(_target);
+        IPlatformAgnosticContext parentContext = handle.GetCallerContext(this);
 
         return handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value;
     }

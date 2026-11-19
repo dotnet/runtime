@@ -191,7 +191,7 @@ On ARM64, the `pac` unwind opcode strips pointer authentication bits from `Lr` u
 | `InterpMethodContextFrame` | `NextPtr` | `pointer` | Pointer to the next InterpMethodContextFrame toward the top of the stack |
 | `InterpMethodContextFrame` | `ParentPtr` | `pointer` | Pointer to the parent InterpMethodContextFrame in the call chain (null for outermost frame) |
 | `InterpMethodContextFrame` | `Stack` | `pointer` | Pointer to the stack base for this interpreted method, used as the frame pointer when interpreter GC info uses a stack-base register |
-| `InterpreterFrame` | `Continuation` | `pointer` | Runtime-async continuation object held by the frame; its address is reported as a GC root |
+| `InterpreterFrame` | `Continuation` | `pointer` | Optional runtime-async continuation object held by the frame; its address is reported as a GC root. Not present on all runtimes that support StackWalk version 1 |
 | `InterpreterFrame` | `IsFaulting` | `uint8` | Boolean indicating whether the topmost interpreted frame has thrown an exception. When set, the context for the top interpreted frame must include CONTEXT_EXCEPTION_ACTIVE so exception unwinders treat the IP as a faulting instruction rather than a return-from-call |
 | `InterpreterFrame` | `TopInterpMethodContextFrame` | `pointer` | Pointer to the InterpreterFrame's top InterpMethodContextFrame |
 | `MethodDesc` | `CodeData` | `pointer` | Pointer to per-method code data containing entry-point and code-versioning state |
@@ -846,7 +846,7 @@ At each frame yielded by `Filter`, the walk determines whether to scan for GC re
 - **StubDispatchFrame / ExternalMethodFrame**: Resolve GCRefMap via `FindGCRefMap` using the frame's `Indirection` pointer, otherwise fall back to signature-based scanning.
 - **DynamicHelperFrame**: Use flag-based scanning (`DynamicHelperFrameFlags`).
 - **PrestubMethodFrame / CallCountingHelperFrame**: Read `MethodDesc.CodeData` from the frame's `MethodDescPtr`, then use `MethodDescCodeData.GCRefMap` if both pointers are non-null. If no map is available, use signature-based scanning.
-- **InterpreterFrame**: Report the address of the frame's `Continuation` field.
+- **InterpreterFrame**: Report the address of the frame's `Continuation` field. If the target's data descriptor has no `InterpreterFrame.Continuation` field, nothing is reported for the frame, so the continuation root is missed on those runtimes.
 - Other frame types: No GC roots to report.
 
 See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path. The signature-based scanning fallback (`PromoteCallerStack`) uses `CallingConvention.TryComputeArgGCRefMapBlob`. If the target data does not provide enough signature layout information, the frame is marked as deferred.

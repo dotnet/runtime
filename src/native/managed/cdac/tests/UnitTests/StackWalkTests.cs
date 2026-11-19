@@ -2246,6 +2246,75 @@ public unsafe class StackWalkTests
         Assert.Equal(icfAddr, stackWalk.GetFrameAddress(frames[^1]).Value);
     }
 
+    // InterpreterFrame.Continuation is absent from the data descriptor of older runtimes that
+    // support StackWalk version 1; scanning must then report nothing instead of failing.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void InterpreterFrame_ReportsContinuationOnlyWhenDescriptorHasField(bool hasContinuationField)
+    {
+        const ulong ContinuationObject = 0x0123_4560;
+        ulong interpreterFrameAddr = 0;
+        int continuationOffset = 0;
+        MockFrameBuilder? frames = null;
+        TestPlaceholderTarget target = CreateTarget(
+            new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true },
+            _ => { },
+            frameBuilder => frames = frameBuilder,
+            configureTarget: targetBuilder =>
+            {
+                TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+                int pointerSize = helpers.PointerSize;
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_1000);
+
+                Layout<MockFramedMethodFrame> fmfLayout = frames!.FramedMethodFrameLayout;
+                int topOffset = fmfLayout.Size;
+                int isFaultingOffset = topOffset + pointerSize;
+                continuationOffset = isFaultingOffset + pointerSize;
+                Dictionary<string, Target.FieldInfo> interpreterFrameFields = new(TargetTestHelpers.CreateTypeInfo(fmfLayout).Fields)
+                {
+                    [nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)] = new() { Offset = topOffset },
+                    [nameof(Data.InterpreterFrame.IsFaulting)] = new() { Offset = isFaultingOffset },
+                };
+                if (hasContinuationField)
+                    interpreterFrameFields["Continuation"] = new() { Offset = continuationOffset };
+
+                uint size = (uint)(continuationOffset + pointerSize);
+                MockMemorySpace.HeapFragment interpreterFrame = allocator.Allocate(size, "InterpreterFrame");
+                MockFramedMethodFrame fmf = fmfLayout.Create(interpreterFrame);
+                fmf.Identifier = MockFrameBuilder.InterpreterFrameIdentifierValue;
+                helpers.WritePointer(interpreterFrame.Data.AsSpan(continuationOffset, pointerSize), ContinuationObject);
+                interpreterFrameAddr = interpreterFrame.Address;
+
+                targetBuilder
+                    .AddMockContract(Mock.Of<IGC>())
+                    .AddMockContract(Mock.Of<IRuntimeTypeSystem>())
+                    .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                    {
+                        [DataType.InterpreterFrame] = new() { Fields = interpreterFrameFields, Size = size },
+                        [DataType.Array] = InterpGcTypeInfo(nameof(Data.Array.NumComponents)),
+                        [DataType.String] = InterpGcTypeInfo(nameof(Data.String.StringLength)),
+                        [DataType.Object] = InterpGcTypeInfo(nameof(Data.Object.MethodTable)),
+                    })
+                    .AddGlobals((Constants.Globals.ObjectToMethodTableUnmask, 0));
+            });
+
+        GcScanContext scanContext = new(target, resolveInteriorPointers: false);
+        new GcScanner(target).GcScanRoots(new TargetPointer(interpreterFrameAddr), scanContext);
+
+        if (hasContinuationField)
+        {
+            StackRefData reference = Assert.Single(scanContext.StackRefs);
+            Assert.Equal(interpreterFrameAddr + (ulong)continuationOffset, reference.Address.Value);
+            Assert.Equal(ContinuationObject, reference.Object.Value);
+            Assert.Equal(GcScanFlags.None, reference.Flags);
+        }
+        else
+        {
+            Assert.Empty(scanContext.StackRefs);
+        }
+    }
+
     // An interpreted P/Invoke pushes an active InlinedCallFrame whose CallSiteSP is the top
     // InterpMethodContextFrame of the owning InterpreterFrame that follows it. Like native
     // InlinedCallFrame::IsInInterpreter handling, the walk must move from that ICF to the

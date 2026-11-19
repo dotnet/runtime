@@ -605,6 +605,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     // ENREGISTERED_PARAMTYPE_MAXSIZE on RISC-V and LoongArch64.
     private const uint FpStructMaxSize = 16;
+    // Reader-side guard against corrupted target data; native FlattenFields has no such limit.
     private const int FpStructMaxNestingDepth = 16;
 
     public bool TryGetFpStructInRegistersClassification(ITypeHandle typeHandle, out FpStructInRegistersClassification classification)

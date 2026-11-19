@@ -207,8 +207,11 @@ internal class GcScanner
 
             case FrameType.InterpreterFrame:
             {
+                // Runtimes without the InterpreterFrame.Continuation descriptor entry do not expose the
+                // continuation slot, so its root is not reported for them.
                 Data.InterpreterFrame interpreterFrame = _target.ProcessedData.GetOrAdd<Data.InterpreterFrame>(frameAddress);
-                scanContext.GCReportCallback(interpreterFrame.ContinuationAddress, GcScanFlags.None);
+                if (interpreterFrame.ContinuationAddress is TargetPointer continuationAddress)
+                    scanContext.GCReportCallback(continuationAddress, GcScanFlags.None);
                 break;
             }
 
