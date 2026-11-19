@@ -20,7 +20,11 @@
   <!-- ======================== Properties ======================== -->
   <PropertyGroup>
     <!-- Set IsBrowserWasmProject for browser-wasm targets -->
-    <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == '' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifiers)' == 'browser-wasm')">true</IsBrowserWasmProject>
+    <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == '' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifiers)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'browser-wasm64' or '$(RuntimeIdentifiers)' == 'browser-wasm64')">true</IsBrowserWasmProject>
+    <_CoreCLRBrowserArchitecture>wasm</_CoreCLRBrowserArchitecture>
+    <_CoreCLRBrowserArchitecture Condition="'$(RuntimeIdentifier)' == 'browser-wasm64' or '$(RuntimeIdentifiers)' == 'browser-wasm64' or '$(TargetArchitecture)' == 'wasm64'">wasm64</_CoreCLRBrowserArchitecture>
+    <InvariantGlobalization Condition="'$(_CoreCLRBrowserArchitecture)' == 'wasm64' and '$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
+    <WasmEnableWebcil Condition="'$(_CoreCLRBrowserArchitecture)' == 'wasm64' and '$(WasmEnableWebcil)' == ''">false</WasmEnableWebcil>
 
     <!-- Ensure TargetsBrowser is set so native.wasm.targets populates exported functions/methods -->
     <TargetsBrowser Condition="'$(TargetsBrowser)' == '' and '$(IsBrowserWasmProject)' == 'true'">true</TargetsBrowser>
@@ -609,6 +613,7 @@
       <_EmccCommonFlags Include="-fwasm-exceptions" />
       <_EmccCommonFlags Include="-sWASM_LEGACY_EXCEPTIONS=0" />
       <_EmccCommonFlags Include="-msimd128" />
+      <_EmccCommonFlags Condition="'$(_CoreCLRBrowserArchitecture)' == 'wasm64'" Include="-m64" />
     </ItemGroup>
 
     <!-- Re-encoding without any pass grows the module, so default to -Oz unless the project's
@@ -661,6 +666,7 @@
     </PropertyGroup>
     <ItemGroup>
       <_EmccCFlagsGenerated Include="@(_EmccCFlags)" />
+      <_EmccCFlagsGenerated Condition="'$(_CoreCLRBrowserArchitecture)' == 'wasm64' and '$(InvariantGlobalization)' != 'true'" Include="-DFEATURE_WASM64_ICU" />
       <_EmccCFlagsGenerated Include="-include &quot;$(MSBuildThisFileDirectory)coreclr_compat.h&quot;" />
       <_EmccCFlagsGenerated Include="-I&quot;$(_VmWasmIncludeDir.TrimEnd('\/'))&quot;" />
       <_EmccCFlagsGenerated Include="-I&quot;$(_MinipalIncludeRoot.TrimEnd('\/'))&quot;" />
@@ -775,7 +781,7 @@
 
     <ItemGroup>
       <_Crossgen2GeneratorArg Include="--targetos:browser" />
-      <_Crossgen2GeneratorArg Include="--targetarch:wasm" />
+      <_Crossgen2GeneratorArg Include="--targetarch:$(_CoreCLRBrowserArchitecture)" />
       <_Crossgen2GeneratorArg Include="--generate-portable-callhelpers:$(_WasmIntermediateOutputPath)" />
       <_Crossgen2GeneratorArg Include="@(_WasmPInvokeModules->'--directpinvoke:%(Identity)')" />
       <_Crossgen2GeneratorArg Include="@(_WasmManagedAssemblies->'%(FullPath)')" />
@@ -922,6 +928,7 @@
       <_EmccLinkStepArgs Include="-s GROWABLE_ARRAYBUFFERS=0" />
       <_EmccLinkStepArgs Include="-s STACK_SIZE=$(EmccStackSize)" />
       <_EmccLinkStepArgs Include="-s WASM_BIGINT=1" />
+      <_EmccLinkStepArgs Condition="'$(_CoreCLRBrowserArchitecture)' == 'wasm64'" Include="-sSIGNATURE_CONVERSIONS=BrowserHost_CreateHostContract:p,BrowserHost_InitializeDotnet:__pp,BrowserHost_ExecuteAssembly:_p_p,wasm_load_icu_data:_p,SystemInteropJS_GetManagedStackTrace:_p,SystemInteropJS_CallDelegate:_p,SystemInteropJS_CompleteTask:_p,SystemInteropJS_ReleaseJSOwnedObjectByGCHandle:_p,SystemInteropJS_BindAssemblyExports:_p,SystemInteropJS_CallJSExport:__p" />
 
       <!-- Module configuration -->
       <_EmccLinkStepArgs Include="-s MODULARIZE=1" />

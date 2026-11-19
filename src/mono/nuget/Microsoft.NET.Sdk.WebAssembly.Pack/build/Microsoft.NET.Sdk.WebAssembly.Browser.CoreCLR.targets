@@ -11,6 +11,25 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project>
 
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm64'">
+    <WasmEnableWebcil Condition="'$(WasmEnableWebcil)' == '' and '$(PublishReadyToRun)' == 'true'">true</WasmEnableWebcil>
+    <WasmEnableWebcil Condition="'$(WasmEnableWebcil)' == ''">false</WasmEnableWebcil>
+    <_WasmStageOnlyReadyToRunWebcil>true</_WasmStageOnlyReadyToRunWebcil>
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <Target Name="_WasmCoreClrValidateWasm64"
+          Condition="'$(RuntimeIdentifier)' == 'browser-wasm64'"
+          BeforeTargets="_ResolveWasmConfiguration;_CreateR2RImages">
+    <Error Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmEnableWebcil)' != 'true'"
+           Text="CoreCLR browser-wasm64 ReadyToRun requires WasmEnableWebcil=true to stage the compiled images." />
+    <Error Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true'"
+           Text="CoreCLR browser-wasm64 does not support composite ReadyToRun. Set PublishReadyToRunComposite=false." />
+    <ItemGroup Condition="'$(PublishReadyToRun)' == 'true' and '@(WasmEnvironmentVariable->WithMetadataValue('Identity', 'DOTNET_ReadyToRun'))' == ''">
+      <WasmEnvironmentVariable Include="DOTNET_ReadyToRun" Value="1" />
+    </ItemGroup>
+  </Target>
+
   <!-- Compute build-only selection before defaulting PublishReadyToRun so its explicit overrides
        remain effective without introducing a separate public build setting. -->
   <PropertyGroup>
@@ -312,7 +331,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunStateFile);@(_ReadyToRunCompileList);@(_ReadyToRunAssembliesToReference);@(_ReadyToRunCompositeBuildReferences);@(_ReadyToRunCompositeUnrootedBuildInput)" />
       <!-- crossgen2 itself, not just the JIT: an updated compiler with an unchanged JIT must still invalidate. -->
-      <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)crossgen2*;$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
+      <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)crossgen2*;$(_WasmResolvedCrossgen2Dir)*clrjit_universal_$(_WasmR2RTargetArch)_*"
                                  Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
       <FileWrites Include="$(_WasmReadyToRunStateFile)" />
     </ItemGroup>
