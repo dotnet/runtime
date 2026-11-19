@@ -1313,7 +1313,7 @@ ClrDataFrame::ValueFromDebugInfo(MetaSig* sig,
 {
     HRESULT status;
     ULONG32 numVarInfo;
-    NewArrayHolder<ICorDebugInfo::NativeVarInfo> varInfo(NULL);
+    NewArrayHolder<ICorDebugInfo::NativeVarInfo> varInfo;
     ULONG32 codeOffset;
     ULONG32 valueFlags;
     ULONG32 i;

@@ -1,15 +1,25 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Numerics;
+
 namespace Internal.TypeSystem
 {
     // Extension to TargetDetails related to code generation
     public partial class TargetDetails
     {
-        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS, TargetAbi abi, SimdVectorLength simdVectorLength)
+        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS, TargetAbi abi, SimdVectorLength simdVectorLength, int? optimumFunctionAlignment = null)
             : this(architecture, targetOS, abi)
         {
             MaximumSimdVectorLength = simdVectorLength;
+            if (optimumFunctionAlignment.HasValue)
+            {
+                int alignment = optimumFunctionAlignment.Value;
+                if (!BitOperations.IsPow2(alignment) || alignment < MinimumFunctionAlignment)
+                    throw new ArgumentOutOfRangeException(nameof(optimumFunctionAlignment));
+                OptimumFunctionAlignment = alignment;
+            }
         }
 
         /// <summary>

@@ -102,6 +102,7 @@ public enum AsyncMethodFlags : uint
     IsAsyncVariant = 0x2,
     Thunk = 0x4,
     ReturnDroppingThunk = 0x8,
+    CovariantForwardingThunk = 0x10,
 }
 
 public enum WellKnownMethodTable

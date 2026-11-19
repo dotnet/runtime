@@ -2269,14 +2269,62 @@ private:
         c->DoNotCallDirectlyPrivateUnlock();
     }
 #else // DACCESS_COMPILE
-    static void AcquireDebuggerLock(Debugger *c);
-    static void ReleaseDebuggerLock(Debugger *c);
+    static void AcquireDebuggerLock(Debugger *c) { SUPPORTS_DAC; }
+    static void ReleaseDebuggerLock(Debugger *c) { SUPPORTS_DAC; }
 #endif // DACCESS_COMPILE
 
 
+    struct DebuggerLockHolderTraits final
+    {
+        using Type = Debugger*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type debugger) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+#ifndef DACCESS_COMPILE
+            if (debugger != NULL)
+                ReleaseDebuggerLock(debugger);
+#endif // !DACCESS_COMPILE
+        }
+    };
+
 public:
-    // define type for DebuggerLockHolder
-    typedef DacHolder<Debugger *, Debugger::AcquireDebuggerLock, Debugger::ReleaseDebuggerLock> DebuggerLockHolder;
+    class DebuggerLockHolder final
+    {
+        Debugger* const m_debugger;
+        LifetimeHolder<DebuggerLockHolderTraits> m_lock;
+
+    public:
+        DebuggerLockHolder(Debugger* debugger, BOOL acquire = TRUE)
+            : m_debugger(debugger)
+        {
+            WRAPPER_NO_CONTRACT;
+            SUPPORTS_DAC;
+            if (acquire)
+                Acquire();
+        }
+
+        void Acquire()
+        {
+            WRAPPER_NO_CONTRACT;
+            SUPPORTS_DAC;
+            _ASSERTE(static_cast<Debugger*>(m_lock) == NULL);
+            if (m_debugger != NULL)
+            {
+                AcquireDebuggerLock(m_debugger);
+                m_lock = m_debugger;
+            }
+        }
+
+        void Release()
+        {
+            WRAPPER_NO_CONTRACT;
+            m_lock.Free();
+        }
+
+        DebuggerLockHolder(const DebuggerLockHolder&) = delete;
+        DebuggerLockHolder& operator=(const DebuggerLockHolder&) = delete;
+    };
 
     void LockForEventSending(DebuggerLockHolder *dbgLockHolder);
     void UnlockFromEventSending(DebuggerLockHolder *dbgLockHolder);
@@ -2467,7 +2515,7 @@ public:
     virtual BOOL ReadFuncEvalPrimitiveRegister(
         DebuggerEval* pDE, UINT32 index, UINT64* pValue);
     virtual void WriteFuncEvalRegister(
-        DebuggerEval* pDE, UINT32 index, UINT64 value);
+        DebuggerEval* pDE, UINT32 index, const void* pValue, UINT32 size);
     virtual void SetFuncEvalResultType(DebuggerEval* pDE, TypeHandle resultType);
 #endif // !DACCESS_COMPILE
 
@@ -2509,8 +2557,32 @@ public:
 
 #endif // DACCESS_COMPILE
 
-    // define type for DebuggerDataLockHolder
-    typedef DacHolder<Debugger *, Debugger::AcquireDebuggerDataLock, Debugger::ReleaseDebuggerDataLock> DebuggerDataLockHolder;
+private:
+    struct DebuggerDataLockHolderTraits final
+    {
+        using Type = Debugger*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type debugger) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+#ifndef DACCESS_COMPILE
+            if (debugger != NULL)
+                ReleaseDebuggerDataLock(debugger);
+#endif // !DACCESS_COMPILE
+        }
+    };
+
+public:
+    using DebuggerDataLockHolder = LifetimeHolder<DebuggerDataLockHolderTraits>;
+
+    static DebuggerDataLockHolder TakeDebuggerDataLock(Debugger* debugger)
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+        if (debugger != NULL)
+            AcquireDebuggerDataLock(debugger);
+        return DebuggerDataLockHolder(debugger);
+    }
 
 #ifdef _DEBUG
     // Use for asserts
@@ -3169,8 +3241,20 @@ private:
 };
 
 
-typedef Wrapper<DebuggerExternalMemoryOwner*, DoNothing<DebuggerExternalMemoryOwner*>,
-    DeleteInteropSafe<DebuggerExternalMemoryOwner>> DebuggerExternalMemoryOwnerHolder;
+template<class T>
+struct DebuggerInteropSafeDeleteTraits final
+{
+    using Type = T*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value) noexcept
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (value != NULL)
+            DeleteInteropSafe(value);
+    }
+};
+
+using DebuggerExternalMemoryOwnerHolder = LifetimeHolder<DebuggerInteropSafeDeleteTraits<DebuggerExternalMemoryOwner>>;
 
 // Persistent roots for a raw byref result, owned by DebuggerEval through cleanup.
 class DebuggerFuncEvalResult
@@ -3186,8 +3270,7 @@ private:
     ExternalMemoryHandle* m_resultHandle;
 };
 
-typedef Wrapper<DebuggerFuncEvalResult*, DoNothing<DebuggerFuncEvalResult*>,
-    DeleteInteropSafe<DebuggerFuncEvalResult>> DebuggerFuncEvalResultHolder;
+using DebuggerFuncEvalResultHolder = LifetimeHolder<DebuggerInteropSafeDeleteTraits<DebuggerFuncEvalResult>>;
 
 class DebuggerEval
 {

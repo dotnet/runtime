@@ -918,8 +918,10 @@ void Debugger::InitDebugEventCounting()
     if (wstrValue != NULL)
     {
         LPSTR   strValue;
-        int     cbReq;
-        cbReq = WideCharToMultiByte(CP_UTF8, 0, wstrValue,-1, 0,0, 0,0);
+        size_t  cbReq;
+        const CHAR16_T* wszValue = (const CHAR16_T*)(LPWSTR)wstrValue;
+        size_t  cchValue = u16_strlen(wstrValue) + 1;
+        cbReq = minipal_get_length_utf16_to_utf8(wszValue, cchValue, 0);
 
         strValue = new (nothrow) char[cbReq+1];
         // This is a debug only thingy, if it fails, not worth taking
@@ -929,7 +931,7 @@ void Debugger::InitDebugEventCounting()
 
 
         // now translate the unicode to ansi string
-        WideCharToMultiByte(CP_UTF8, 0, wstrValue, -1, strValue, cbReq+1, 0,0);
+        minipal_convert_utf16_to_utf8(wszValue, cchValue, strValue, cbReq+1, 0);
         char *szEnd = (char *)strchr(strValue, ';');
         char *szStart = strValue;
         while (szEnd != NULL)
@@ -2615,7 +2617,7 @@ DebuggerMethodInfo *Debugger::GetOrCreateMethodInfo(Module *pModule, mdMethodDef
     // nor would it be useful for anything.
     ALLOW_DATATARGET_MISSING_MEMORY(
         // In case we don't have already, take it now.
-        DebuggerDataLockHolder debuggerDataLockHolder(this);
+        DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
     );
 
     if (m_pMethodInfos != NULL)
@@ -2866,11 +2868,11 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     ULONG32 cMap = min((ULONG32)cMapMax, pDJI->GetSequenceMapCount());
     DebuggerILToNativeMap * rgMapInt = pDJI->GetSequenceMap();
 
-    NewArrayHolder<UINT> rguiILOffsetTemp = new (nothrow) UINT[cMap];
+    NewArrayHolder<UINT> rguiILOffsetTemp(new (nothrow) UINT[cMap]);
     if (rguiILOffsetTemp == NULL)
         return E_OUTOFMEMORY;
 
-    NewArrayHolder<UINT> rguiNativeOffsetTemp = new (nothrow) UINT[cMap];
+    NewArrayHolder<UINT> rguiNativeOffsetTemp(new (nothrow) UINT[cMap]);
     if (rguiNativeOffsetTemp == NULL)
         return E_OUTOFMEMORY;
 
@@ -2884,8 +2886,8 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     // then cMap must fit in a USHORT as well
     _ASSERTE(FitsIn<USHORT>(cMap));
     *pcMap = (USHORT) cMap;
-    *prguiILOffset = rguiILOffsetTemp.Extract();
-    *prguiNativeOffset = rguiNativeOffsetTemp.Extract();
+    *prguiILOffset = rguiILOffsetTemp.Detach();
+    *prguiNativeOffset = rguiNativeOffsetTemp.Detach();
 
     return S_OK;
 }
@@ -3024,15 +3026,15 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
                     // instrumented IL map if one exists.
                     if (dmi->HasInstrumentedILMap())
                     {
-                        InstrumentedILOffsetMapping mapping =
-                            dmi->GetRuntimeModule()->GetInstrumentedILOffsetMapping(dmi->m_token);
+                        InstrumentedILOffsetMappingHolder mapping(
+                            dmi->GetRuntimeModule()->GetInstrumentedILOffsetMapping(dmi->m_token));
 
                         for (SIZE_T i = 0; i < n; i++)
                         {
                             int origOffset = *p;
 
                             *p = dmi->TranslateToInstIL(
-                                                  &mapping,
+                                                  &mapping.Get(),
                                                   origOffset,
                                                   bOriginalToInstrumented);
 
@@ -5358,11 +5360,11 @@ static void ForEachRuntimeModule(Callback callback)
     CrstHolder assemblyListLock(pDomain->GetAssemblyListLock());
     AppDomain::AssemblyIterator iterator = pDomain->IterateAssembliesEx(
         (AssemblyIterationFlags)(kIncludeExecution | kIncludeLoaded | kIncludeLoading | kIncludeFailedToLoad | kIncludeCollected));
-    CollectibleAssemblyHolder<Assembly *> assembly;
+    CollectibleAssemblyHolder assembly;
 
     // The list lock protects these assemblies without taking a temporary
     // collectible-allocator reference that could become the last reference.
-    while (iterator.Next_Unlocked(assembly.This(), true))
+    while (iterator.Next_Unlocked(&assembly, true))
     {
         callback(assembly->GetModule());
     }
@@ -5470,7 +5472,7 @@ void Debugger::SetModuleDefaultJMCStatus(Module * pRuntimeModule, bool fStatus)
     // All new DMIs can lookup their status from us.
     // This should also update the module count of active JMC DMI's.
     _ASSERTE(ThreadHoldsLock());
-    DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+    DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(g_pDebugger);
     DebuggerMethodInfoTable * pTable = g_pDebugger->GetMethodInfoTable();
 
     if (pTable != NULL)
@@ -9251,7 +9253,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
         // want to change the JMC behavior of the module in other domains.
         LOG((LF_CORDB, LL_EVERYTHING, "Setting all JMC methods to false:\n"));
         {
-            DebuggerDataLockHolder debuggerDataLockHolder(this);
+            DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
             DebuggerMethodInfoTable * pTable = GetMethodInfoTable();
             if (pTable != NULL)
             {
@@ -9337,7 +9339,7 @@ void Debugger::RemoveModuleReferences( Module* pModule )
 
         if (SUCCEEDED(hr))
         {
-            DebuggerDataLockHolder debuggerDataLockHolder(this);
+            DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
 
             m_pMethodInfos->ClearMethodsOfModule(pModule);
 
@@ -9607,7 +9609,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)pResult;
     ipce->FuncEvalComplete.vmAppDomain.SetRawPtr(pDomain);
     ipce->FuncEvalComplete.vmObjectHandle = pDE->m_vmObjectHandle;
-    ipce->FuncEvalComplete.vmExternalMemoryOwner.SetRawPtr(pDE->m_externalMemoryOwner.GetValue());
+    ipce->FuncEvalComplete.vmExternalMemoryOwner.SetRawPtr(static_cast<DebuggerExternalMemoryOwner *>(pDE->m_externalMemoryOwner));
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: TypeHandle is %p\n", pDE->m_resultType.AsPtr()));
 
@@ -9628,7 +9630,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
         (CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr))));
 
     IfFailThrow(m_pRCThread->SendIPCEvent());
-    pDE->m_externalMemoryOwner.SuppressRelease();
+    pDE->m_externalMemoryOwner.Detach();
 
 #endif
 }
@@ -10382,7 +10384,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                  (pEvent->SetClassLoad.flag ? "true" : "false"),
                  pModule));
 
-            DebuggerDataLockHolder debuggerDataLockHolder(this);
+            DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
             pModule->EnableClassLoadCallbacks(pEvent->SetClassLoad.flag, m_debuggerSessionGeneration);
         }
         break;
@@ -10481,7 +10483,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         // Clear debugger-session state before another debugger can attach.
         {
             LOG((LF_CORDB, LL_EVERYTHING, "Setting all JMC methods to false:\n"));
-            DebuggerDataLockHolder debuggerDataLockHolder(this);
+            DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
             if (++m_debuggerSessionGeneration == 0)
             {
                 ++m_debuggerSessionGeneration;
@@ -10751,7 +10753,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             }
             else
             {
-                DebuggerDataLockHolder debuggerDataLockHolder(this);
+                DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
                 // This may be called on an unjitted method, so we may
                 // have to create the MethodInfo.
                 DebuggerMethodInfo * pMethodInfo = GetOrCreateMethodInfo(pModule, token);
@@ -11823,9 +11825,9 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
 
     // Now deoptimize anything that has inlined it in a R2R method
     AppDomain::AssemblyIterator assemblyIterator = SystemDomain::System()->DefaultDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
+    CollectibleAssemblyHolder pAssembly;
     NativeImageInliningIterator inlinerIter;
-    while (assemblyIterator.Next(pAssembly.This()))
+    while (assemblyIterator.Next(&pAssembly))
     {
         Module *pCandidateModule = pAssembly->GetModule();
         if (pCandidateModule->HasReadyToRunInlineTrackingMap())
@@ -12593,7 +12595,7 @@ HRESULT Debugger::AddFunction(MethodDesc* pMD, SIZE_T encVersion)
     }
     CONTRACTL_END;
 
-    DebuggerDataLockHolder debuggerDataLockHolder(this);
+    DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
 
     LOG((LF_CORDB, LL_INFO10000, "D::AF: adding "
          "%s::%s to version %zu\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, encVersion));
@@ -13079,7 +13081,7 @@ VOID Debugger::M2UHandoffHijackWorker(CONTEXT *pContext,
 
     //win32 has a weird property where EIP points after the BP in the debug event
     //so we are adjusting it to point at the BP
-    CORDbgAdjustPCForBreakInstruction((DT_CONTEXT*)pContext);
+    CORDbgAdjustPCForBreakInstruction(pContext);
     LOG((LF_CORDB, LL_INFO1000, "D::M2UHHW: Context ip set to 0x%p\n", GetIP(pContext)));
 
     _ASSERTE(!ISREDIRECTEDTHREAD(pEEThread));
@@ -13195,7 +13197,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
         Thread *pEEThread = debuggerBreakInThread ? NULL : g_pEEInterface->GetThread();
 
         // Hook up the memory so RS can get to it
-        fcd.pLeftSideContext.Set((DT_CONTEXT*)pContext);
+        fcd.pLeftSideContext.Set((T_CONTEXT*)pContext);
         fcd.action = HIJACK_ACTION_EXIT_UNHANDLED;
         fcd.debugCounter = 0;
 
@@ -14703,7 +14705,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx)
     if (success)
     {
         // Check single-step flag
-        if (IsSSFlagEnabled(reinterpret_cast<DT_CONTEXT *>(pCtx) ARM_ARG(pThread) ARM64_ARG(pThread) RISCV64_ARG(pThread) LOONGARCH64_ARG(pThread)))
+        if (IsSSFlagEnabled(pCtx ARM_ARG(pThread) ARM64_ARG(pThread) RISCV64_ARG(pThread) LOONGARCH64_ARG(pThread)))
         {
             // Can't hijack a thread whose SS-flag is set. This could lead to races
             // with the thread taking the SS-exception.

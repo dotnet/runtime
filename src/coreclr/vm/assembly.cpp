@@ -101,12 +101,20 @@ namespace
         return;
     }
 
-    void RemoveFailedDynamicAssembly(Assembly* pAssembly)
+    struct FailedDynamicAssemblyHolderTraits final
     {
-        WRAPPER_NO_CONTRACT;
+        using Type = Assembly*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            WRAPPER_NO_CONTRACT;
 
-        AppDomain::GetCurrentDomain()->RemoveAssembly(pAssembly);
-    }
+            if (value != NULL)
+            {
+                AppDomain::GetCurrentDomain()->RemoveAssembly(value);
+            }
+        }
+    };
 }
 
 void Assembly::Initialize()
@@ -338,7 +346,7 @@ Assembly * Assembly::Create(
     // Validate the assembly about to be created is suitable for execution.
     pPEAssembly->ValidateForExecution();
 
-    NewHolder<Assembly> pAssembly (new Assembly(pPEAssembly, pLoaderAllocator));
+    NewHolder<Assembly> pAssembly{ new Assembly(pPEAssembly, pLoaderAllocator) };
 
 #ifdef PROFILING_SUPPORTED
     {
@@ -367,9 +375,7 @@ Assembly * Assembly::Create(
     }
     EX_END_HOOK;
 #endif
-    pAssembly.SuppressRelease();
-
-    return pAssembly;
+    return pAssembly.Detach();
 } // Assembly::Create
 
 Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, LOADERALLOCATORREF* pKeepAlive)
@@ -383,10 +389,11 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     }
     CONTRACTL_END;
 
-    // This must be before creation of the AllocMemTracker so that the destructor for the AllocMemTracker happens before the destructor for pLoaderAllocator.
+    // This must be before creation of the AllocMemTracker so that the destructor for the AllocMemTracker happens before the destructor for loaderAllocatorHolder.
     // That is necessary as the allocation of Assembly objects and other related details is done on top of heaps located in
     // the loader allocator objects.
-    NewHolder<LoaderAllocator> pLoaderAllocator;
+    NewHolder<LoaderAllocator> loaderAllocatorHolder;
+    LoaderAllocator* pLoaderAllocator = NULL;
 
     AllocMemTracker amTracker;
     AllocMemTracker *pamTracker = &amTracker;
@@ -443,7 +450,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     AppDomain* pDomain = ::GetAppDomain();
 
     Assembly* pAssem;
-    Holder<Assembly*, DoNothing, RemoveFailedDynamicAssembly> removeOnFailure;
+    LifetimeHolder<FailedDynamicAssemblyHolderTraits> removeOnFailure;
     BOOL                      createdNewAssemblyLoaderAllocator = FALSE;
 
     {
@@ -459,6 +466,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         if ((access & ASSEMBLY_ACCESS_COLLECT) != 0)
         {
             AssemblyLoaderAllocator *pCollectibleLoaderAllocator = new AssemblyLoaderAllocator();
+            loaderAllocatorHolder = pCollectibleLoaderAllocator;
             pLoaderAllocator = pCollectibleLoaderAllocator;
 
             // Some of the initialization functions are not virtual. Call through the derived class
@@ -479,11 +487,6 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         else
         {
             pLoaderAllocator = pBinderLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pBinderLoaderAllocator;
-        }
-
-        if (!createdNewAssemblyLoaderAllocator)
-        {
-            pLoaderAllocator.SuppressRelease();
         }
 
         // Create the assembly
@@ -507,7 +510,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         // Finish loading process
         // <TODO> would be REALLY nice to unify this with main loading loop </TODO>
         pAssem->Begin();
-        removeOnFailure.Assign(pAssem);
+        removeOnFailure = pAssem;
         pAssem->BeforeTypeLoad();
         pAssem->DeliverSyncEvents();
         pAssem->DeliverAsyncEvents();
@@ -534,12 +537,12 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         {
             // Atomically transfer ownership to the managed heap
             pLoaderAllocator->ActivateManagedTracking();
-            pLoaderAllocator.SuppressRelease();
+            loaderAllocatorHolder.Detach();
         }
 
         // Set the assembly module to be tenured now that we know it won't be deleted
         pAssem->SetIsTenured();
-        removeOnFailure.SuppressRelease();
+        removeOnFailure.Detach();
         pRetVal = pAssem;
     }
 
@@ -2223,7 +2226,7 @@ void Assembly::Begin()
     STANDARD_VM_CONTRACT;
 
     {
-        AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
+        AppDomain::LoadLockHolder lock = AppDomain::GetCurrentDomain()->TakeLoadLock();
         AppDomain::GetCurrentDomain()->AddAssembly(this);
     }
     // Make it possible to find this Assembly object from associated BINDER_SPACE::Assembly.
@@ -2571,7 +2574,7 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
             if (count == 1)
             {
                 pFriendAssemblies->AddSubjectAssembly(pFriendAssemblyName);
-                pFriendAssemblyName.SuppressRelease();
+                pFriendAssemblyName.Detach();
                 // Below checks are unnecessary for IgnoresAccessChecks
                 continue;
             }
@@ -2581,7 +2584,7 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
 
             pFriendAssemblies->AddFriendAssembly(pFriendAssemblyName);
 
-            pFriendAssemblyName.SuppressRelease();
+            pFriendAssemblyName.Detach();
         }
     }
 

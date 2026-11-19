@@ -49,6 +49,11 @@ public class BootJsonData
     public bool? cacheBootResources { get; set; }
 
     /// <summary>
+    /// Gets or sets whether to disable integrity checks when fetching resources.
+    /// </summary>
+    public bool? disableIntegrityCheck { get; set; }
+
+    /// <summary>
     /// Gets a value that determines if this is a debug build.
     /// </summary>
     public bool? debugBuild { get; set; }
@@ -361,6 +366,9 @@ public class AssetsData
 
     [DataMember(EmitDefaultValue = false)]
     public List<VfsAsset> vfs { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<AppSettings> appsettings { get; set; }
 }
 
 [DataContract]
@@ -433,6 +441,12 @@ public class VfsAsset
     public string hash { get; set; }
     public string resolvedUrl { get; set; }
     public string cache { get; set; }
+}
+
+[DataContract]
+public class AppSettings : VfsAsset
+{
+    public bool loadIntoVfs { get; set; }
 }
 
 public enum GlobalizationMode : int

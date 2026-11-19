@@ -162,6 +162,9 @@ namespace ILCompiler.ObjectWriter
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
         {
             Debug.Assert(alignment > 0 && BitOperations.IsPow2((uint)alignment));
+            if (alignment > 8192)
+                throw new NotSupportedException($"Section alignment of {alignment} bytes exceeds the COFF maximum of 8192 bytes");
+
             int minimumAlignment = (BitOperations.Log2((uint)alignment) + 1) << 20;
             int currentAlignment = (int)(_sections[sectionIndex].Header.SectionCharacteristics & SectionCharacteristics.AlignMask);
 

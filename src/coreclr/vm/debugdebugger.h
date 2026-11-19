@@ -28,13 +28,35 @@ struct DebuggerFuncEvalArgument;
 void ValidateFuncEvalConstructorType(MethodTable* pMT);
 HRESULT ValidateObject(Object* objPtr);
 
+struct DebuggerFuncEvalCapturedArgument
+{
+#if BIGENDIAN
+    SIZE_T high;
+    SIZE_T low;
+#else
+    SIZE_T low;
+    SIZE_T high;
+#endif
+
+    BYTE* GetAddress(UINT32 size)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(size <= sizeof(*this));
+        BYTE* address = reinterpret_cast<BYTE*>(this);
+#if BIGENDIAN
+        address += sizeof(*this) - size;
+#endif
+        return address;
+    }
+};
+
 struct DebuggerFuncEvalContext
 {
     DebuggerEval* pEval;
     DebuggerFuncEvalArgument* pArguments;
     void** pInteriors;
     void** pHomes;
-    INT64* pCapturedArguments;
+    DebuggerFuncEvalCapturedArgument* pCapturedArguments;
     ExternalMemoryHandle* pTemporaryResult;
     void** pResultByRefs;
     void* pResultData;

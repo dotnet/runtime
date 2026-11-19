@@ -68,8 +68,8 @@ bool DebuggerControllerPatch::IsSafeForStackTrace()
 }
 
 // Determines whether a breakpoint patch should be bound to a given MethodDesc.
-// When pMethodDescFilter is NULL, the default filtering policy is applied which
-// excludes async thunk methods (they should not have user breakpoints bound to them).
+// When pMethodDescFilter is NULL, the default filtering policy excludes synthetic
+// async thunks, but permits async variants compiled from the original method's IL.
 // When pMethodDescFilter is non-NULL, the patch is explicitly targeting that specific
 // MethodDesc and no default filtering is applied.
 bool ShouldBindPatchToMethodDesc(MethodDesc* pMD, MethodDesc* pMethodDescFilter)
@@ -82,9 +82,8 @@ bool ShouldBindPatchToMethodDesc(MethodDesc* pMD, MethodDesc* pMethodDescFilter)
         return pMD == pMethodDescFilter;
     }
 
-    // Default filtering policy: exclude async thunk methods
-    // User breakpoints should bind to the actual async implementation, not the thunk
-    if (pMD->IsAsyncThunkMethod())
+    // Exclude synthetic thunks, but bind to async versions of user methods.
+    if (pMD->IsAsyncThunkMethod() && !pMD->SupportsAsyncVersionCodegen())
     {
         return false;
     }
@@ -1601,7 +1600,6 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
         //
         // !!! IL patch logic assumes reference insruction encoding
         //
-#ifndef TARGET_UNIX
         DWORD oldProt;
 
         if (!VirtualProtect((void *) patch->address, 2,
@@ -1614,13 +1612,6 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
                 return false;
             }
         }
-#else // TARGET_UNIX
-        if (!MakePatchMemoryWritable((void*)patch->address, 2))
-        {
-            _ASSERTE(!"ProtectMemory of code page failed");
-            return false;
-        }
-#endif // TARGET_UNIX
 
         patch->opcode =
           (unsigned int) *(unsigned short*)(patch->address+1);
@@ -1630,15 +1621,11 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
         ExecutableWriterHolder<BYTE> breakpointWriterHolder((BYTE*)patch->address, 2);
         *(unsigned short *) (breakpointWriterHolder.GetRW()+1) = CEE_BREAK;
 
-#ifndef TARGET_UNIX
         if (!VirtualProtect((void *) patch->address, 2, oldProt, &oldProt))
         {
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
-#else // TARGET_UNIX
-        // No oldProt to restore to on Unix; see MakePatchMemoryWritable comment above.
-#endif // TARGET_UNIX
     }
 #endif //TARGET_X86
 
@@ -3610,7 +3597,7 @@ void DebuggerController::ApplyTraceFlag(Thread *thread)
     g_pEEInterface->MarkThreadForDebugStepping(thread, true);
     LOG((LF_CORDB,LL_INFO1000, "DC::ApplyTraceFlag marked thread for debug stepping\n"));
 
-    SetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread) LOONGARCH64_ARG(thread));
+    SetSSFlag(context ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread) LOONGARCH64_ARG(thread));
 }
 
 //
@@ -3660,7 +3647,7 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
 
     // Always need to unmark for stepping
     g_pEEInterface->MarkThreadForDebugStepping(thread, false);
-    UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread) LOONGARCH64_ARG(thread));
+    UnsetSSFlag(context ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread) LOONGARCH64_ARG(thread));
 }
 
 void DebuggerController::EnableExceptionHook()
@@ -4177,7 +4164,7 @@ void DebuggerController::EnableMethodEnter()
     CONTRACTL_END;
 
     ControllerLockHolder chController;
-    Debugger::DebuggerDataLockHolder chInfo(g_pDebugger);
+    Debugger::DebuggerDataLockHolder chInfo = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
     // Both JMC + Traditional steppers may use MethodEnter.
     // For JMC, it's a core part of functionality. For Traditional steppers, we use it as a backstop
@@ -4209,7 +4196,7 @@ void DebuggerController::DisableMethodEnter()
     CONTRACTL_END;
 
     ControllerLockHolder chController;
-    Debugger::DebuggerDataLockHolder chInfo(g_pDebugger);
+    Debugger::DebuggerDataLockHolder chInfo = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
     if (m_fEnableMethodEnter)
     {
@@ -7024,9 +7011,10 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                  "DS::TSO: CallTailCallTarget frame.\n"));
             continue;
         }
-        else if (info->m_activeFrame.md != nullptr && info->m_activeFrame.md->IsAsyncThunkMethod())
+        else if (info->m_activeFrame.md != nullptr && info->m_activeFrame.md->IsAsyncThunkMethod() &&
+                 !info->m_activeFrame.md->SupportsAsyncVersionCodegen())
         {
-            // Async thunks are not interesting frames to step out into.
+            // Synthetic async thunks are not interesting frames to step out into.
             LOG((LF_CORDB, LL_INFO10000,
                  "DS::TSO: skipping async thunk method frame.\n"));
             continue;
@@ -8409,9 +8397,9 @@ void DebuggerStepper::PrepareForSendEvent(StackTraceTicket ticket)
         {
             // If we're at either a patch or SS, we'll have a context.
             CONTEXT *context = g_pEEInterface->GetThreadFilterContext(GetThread());
-            if (context == NULL)
+            if (context != NULL)
             {
-                void * pIP = CORDbgGetIP(reinterpret_cast<DT_CONTEXT *>(context));
+                void * pIP = CORDbgGetIP(context);
 
                 DebuggerJitInfo * dji = g_pDebugger->GetJitInfoFromAddr((TADDR) pIP);
                 DebuggerMethodInfo * dmi = NULL;
@@ -9337,8 +9325,8 @@ TP_RESULT DebuggerFuncEvalComplete::TriggerPatch(DebuggerControllerPatch *patch,
     #error Not supported
 #endif
 #endif
-    CORDbgCopyThreadContext(reinterpret_cast<DT_CONTEXT *>(pCtx),
-                            reinterpret_cast<DT_CONTEXT *>(&(m_pDE->m_context)));
+    CORDbgCopyThreadContext(reinterpret_cast<BYTE *>(pCtx), sizeof(T_CONTEXT),
+                            reinterpret_cast<const BYTE *>(&(m_pDE->m_context)), sizeof(T_CONTEXT));
 
     // We've hit our patch, so simply disable all (which removes the
     // patch) and trigger the event.
@@ -9517,7 +9505,7 @@ TP_RESULT DebuggerEnCBreakpoint::TriggerPatch(DebuggerControllerPatch *patch,
     EditAndContinueModule *pModule = (EditAndContinueModule*)module;
 
     // Release the controller lock for the rest of this method
-    CrstBase::UnsafeCrstInverseHolder inverseLock(&g_criticalSection);
+    CrstBase::UnsafeCrstInverseHolder inverseLock = CrstBase::ReleaseForScope(&g_criticalSection);
 
     // resumeIL is the IL offset in the new version of the method the debugger wants
     // to resume to.  We'll pass the address of this variable over to the right-side
@@ -9636,7 +9624,7 @@ TP_RESULT DebuggerEnCBreakpoint::HandleRemapComplete(DebuggerControllerPatch *pa
     LOG((LF_ENC, LL_ALWAYS, "DEnCBP::HRC: unlocking controller\n"));
 
     // Unlock the controller lock and dispatch the remap complete event
-    CrstBase::UnsafeCrstInverseHolder inverseLock(&g_criticalSection);
+    CrstBase::UnsafeCrstInverseHolder inverseLock = CrstBase::ReleaseForScope(&g_criticalSection);
 
     LOG((LF_ENC, LL_ALWAYS, "DEnCBP::HRC: sending RemapCompleteEvent\n"));
 

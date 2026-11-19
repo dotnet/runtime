@@ -10,13 +10,17 @@ being generated.
     manifests for `wasm-tools*`, but does not have the workload installed.
     Typically installed in `artifacts/bin/dotnet-none`.
 
-- On CI, both workload, and no-workload cases are tested, for both the Mono and
-  the CoreCLR runtime flavor. The `wasm-tools` workload supports both flavors, so
-  the two flavors run the same two lanes; only the set of test classes differs.
-  That set is discovered from the built test assembly (see the `GenerateHelixJobsList`
-  target in `Wasm.Build.Tests.csproj`), and classes or test methods marked
-  `[TestCategory("mono")]` or `[TestCategory("coreclr")]` are left out of the other
-  flavor's runs.
+- On CI, workload and no-workload cases run against CoreCLR on Linux and Windows.
+  The manual `runtime-wasm` and `runtime-wasm-non-libtests` entry points also run
+  these jobs.
+
+  The current-band browser test workloads install WebAssembly build tooling,
+  Emscripten, and templates. The .NET SDK resolves runtime and Crossgen2 packages
+  separately from the local package feed.
+
+  Test classes are discovered from the built test assembly (see the
+  `GenerateHelixJobsList` target in `Wasm.Build.Tests.csproj`). Test categories
+  control which classes and methods are included in each run.
 
 - Running:
 
@@ -66,6 +70,54 @@ For this, the builds get cached using `ProjectInfo` as the key.
 
 - `SHOW_BUILD_OUTPUT` - will show the build output to the console
 - `SKIP_PROJECT_CLEANUP` - won't remove the temporary project directories generated for the tests
+
+## Appsettings coverage
+
+`AppSettingsTests` covers environment selection for build and publish, including
+MSBuild and JavaScript overrides. It also exercises the internal appsettings APIs
+on both CoreCLR and Mono:
+
+- `INTERNAL.getAppSettingsFiles()` returns the manifest-listed VFS filenames for
+  the resolved application environment, with base settings before
+  environment-specific settings and no duplicates.
+- On CoreCLR, `INTERNAL.getAppSettingsBytes(fileName)` returns the downloaded
+  `Uint8Array` retained in JavaScript memory, or `undefined` for an unloaded file.
+  The returned array must be treated as read-only. Managed interop copies it into
+  a managed byte array. Later VFS writes do not change the retained bytes.
+- On Mono, byte access continues to read the current VFS contents.
+
+For CoreCLR applications targeting .NET 12 or later, the manifest contains
+`resources.appsettings` assets with a `loadIntoVfs` flag.
+`_WasmFilesystemUsageDetected` defaults to `true`, preserving existing VFS
+placement, including Blazor versions that read configuration through managed file
+APIs. Explicitly setting it to `false` makes settings available only through the
+internal APIs, unless `WasmFilesToIncludeInFileSystem` items exist: those force the
+flag to `true`. The default can become `false` once IL trimming provides better
+filesystem usage detection. This does not disable filesystem support for other uses.
+
+Older target frameworks and Mono retain the top-level appsettings list.
+CoreCLR also accepts legacy manifests and continues installing those settings
+into VFS while retaining their downloaded bytes.
+
+`AppSettingsWithoutFilesystem` runs in the CoreCLR no-workload lane. Its .NET 12
+browser fixture consumes the generated asset schema and checks the
+filesystem-detection value reported by the real build/publish targets.
+It covers both placement modes, explicit overrides, custom resource loaders, and
+download-before-create. The legacy case converts the generated asset list to
+the old manifest representation before startup.
+
+Manifest-generation theories invoke the task directly to verify .NET 12+ assets,
+the .NET 11 compatibility boundary, and unchanged Mono output. CoreCLR browser
+tests additionally cover .NET 12 project-to-browser manifest generation and
+loading end to end.
+
+The flag-only incremental publish case disables trimming to isolate filesystem
+detection from incremental trimmed assembly staging; fresh-publish cases
+retain trimming. `Blazor.AppsettingsTests` checks that default settings remain
+available through managed VFS access on the template's target framework.
+`Blazor.CurrentRuntimeAppsettingsTests` checks the internal APIs against the
+locally built current runtime, not a released runtime from an older template.
+Managed JSON parsing remains the consumer's responsibility.
 
 ## How to add tests
 

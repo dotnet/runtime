@@ -107,11 +107,6 @@ DataTargetAdapter::GetPlatform(
     switch(ulMachineType)
     {
 #ifdef TARGET_UNIX
-    case IMAGE_FILE_MACHINE_I386:
-        ulExpectedPointerSize = 4;
-        platform = CORDB_PLATFORM_POSIX_X86;
-        break;
-
     case IMAGE_FILE_MACHINE_AMD64:
         ulExpectedPointerSize = 8;
         platform = CORDB_PLATFORM_POSIX_AMD64;

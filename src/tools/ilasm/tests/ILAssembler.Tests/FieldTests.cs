@@ -34,6 +34,49 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             """;
 
         [Theory]
+        [InlineData("")]
+        [InlineData("&")]
+        public void FixedBufferAttribute_PreservesElementTypeIdentityAndFieldSignature(string byRef)
+        {
+            string source = $$"""
+                .assembly test { }
+                .assembly extern mscorlib
+                {
+                    .publickeytoken = (B7 7A 5C 56 19 34 E0 89)
+                    .ver 4:0:0:0
+                }
+                .class public sealed S extends [mscorlib]System.ValueType
+                {
+                    .custom instance void [mscorlib]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (01 00 00 00)
+                    .class sequential nested public sealed FixedBuffer extends [mscorlib]System.ValueType
+                    {
+                        .pack 0
+                        .size 12
+                        .field public int32 FixedElementField
+                    }
+                    .field public valuetype S/FixedBuffer{{byRef}} F
+                    .custom instance void [mscorlib]System.Runtime.CompilerServices.FixedBufferAttribute::.ctor(class [mscorlib]System.Type, int32) = { type([mscorlib]System.Int32) int32(3) }
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            FieldDefinition field = reader.FieldDefinitions.Select(reader.GetFieldDefinition)
+                .Single(field => reader.GetString(field.Name) == "F");
+            string signature = field.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null);
+            Assert.Equal("S/FixedBuffer" + byRef, signature);
+
+            CustomAttribute attribute = reader.GetCustomAttribute(Assert.Single(field.GetCustomAttributes()));
+            CustomAttributeValue<string> value = attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder);
+            Assert.Equal(2, value.FixedArguments.Length);
+            Assert.Equal("System.Type", value.FixedArguments[0].Type);
+            Assert.Equal("System.Int32, mscorlib, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089", value.FixedArguments[0].Value);
+            Assert.Equal("int32", value.FixedArguments[1].Type);
+            Assert.Equal(3, value.FixedArguments[1].Value);
+            Assert.Empty(value.NamedArguments);
+        }
+
+        [Theory]
         [InlineData("", "", "")]
         [InlineData(".class public Test {", "", "}")]
         [InlineData(".class public Outer { .class nested public Inner {", "", "} }")]

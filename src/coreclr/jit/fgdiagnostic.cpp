@@ -3365,6 +3365,12 @@ void Compiler::fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block)
         expectedFlags |= GTF_CALL;
     }
 
+    // Global morph establishes GTF_GLOB_REF for address-exposed locals and their accesses.
+    if (fgGlobalMorphDone && tree->OperRequiresGlobRefFlag(this))
+    {
+        expectedFlags |= GTF_GLOB_REF;
+    }
+
     if ((tree->gtFlags & GTF_REVERSE_OPS) != 0)
     {
         assert(tree->OperSupportsReverseOpEvalOrder(this));
@@ -3859,7 +3865,7 @@ void Compiler::fgDebugCheckLinkedLocals()
                     return GenTree::VisitResult::Continue;
                 };
 
-                node->VisitPhysicalLocalDefNodes(m_compiler, linkDefs);
+                node->AsCall()->VisitCallLocalDefNodes(m_compiler, linkDefs);
             }
 
             return WALK_CONTINUE;
@@ -3870,7 +3876,7 @@ void Compiler::fgDebugCheckLinkedLocals()
             auto defIsNode = [=](GenTree* def) {
                 return node == def ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
             };
-            return call->VisitPhysicalLocalDefNodes(m_compiler, defIsNode) == GenTree::VisitResult::Abort;
+            return call->VisitCallLocalDefNodes(m_compiler, defIsNode) == GenTree::VisitResult::Abort;
         }
     };
 

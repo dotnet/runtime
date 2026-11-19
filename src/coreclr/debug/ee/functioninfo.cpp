@@ -894,7 +894,7 @@ void DebuggerJitInfo::LazyInitBounds()
         LOG((LF_CORDB,LL_EVERYTHING, "DJI::LazyInitBounds: this=%p GetBoundariesAndVars success=%s\n",
             this, (fSuccess ? "true" : "false")));
 
-        Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+        Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
         if (!m_fAttemptInit)
         {
@@ -1025,7 +1025,9 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     // Pick a unique initial value (-10) so that the 1st doesn't accidentally match.
     int ilPrevOld = -10;
 
+    // mapping views either the borrowed ReJIT map or the copy that loadTimeMapping owns.
     InstrumentedILOffsetMapping mapping;
+    InstrumentedILOffsetMappingHolder loadTimeMapping;
 
 #ifdef FEATURE_CODE_VERSIONING
     ILCodeVersion ilVersion = m_nativeCodeVersion.GetILCodeVersion();
@@ -1052,7 +1054,8 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     if (m_methodInfo->HasInstrumentedILMap())
     {
         // If a ReJIT hasn't happened, check for a profiler provided map.
-        mapping = m_methodInfo->GetRuntimeModule()->GetInstrumentedILOffsetMapping(m_methodInfo->m_token);
+        loadTimeMapping = m_methodInfo->GetRuntimeModule()->GetInstrumentedILOffsetMapping(m_methodInfo->m_token);
+        mapping = loadTimeMapping.Get();
     }
 
 
@@ -1598,7 +1601,7 @@ DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(NativeCodeVersion n
     //<TODO>@TODO : _ASSERTE(EnC);</TODO>
     //
     {
-        Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+        Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
         // We need to ensure that another thread didn't go in and add this exact same DJI?
         {
@@ -1669,7 +1672,7 @@ void DebuggerMethodInfo::DeleteJitInfo(DebuggerJitInfo *dji)
     }
     CONTRACTL_END;
 
-    Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+    Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
     LOG((LF_CORDB,LL_INFO10000,"DMI:DJI: dji:0x%p\n", dji));
 
@@ -1723,7 +1726,7 @@ void DebuggerMethodInfo::DeleteJitInfoList(void)
     }
     CONTRACTL_END;
 
-    Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+    Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
     while(m_latestJitInfo != NULL)
     {
@@ -1944,22 +1947,31 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Method
         // This also handles the possibility of getting the same methoddesc back from the iterator.
         // It also lets EnC + generics play nice together (including if an generic method was EnC-ed)
         LoadedMethodDescIterator it(pAppDomain, m_module, m_token);
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-        while (it.Next(pAssembly.This()))
+        CollectibleAssemblyHolder pAssembly;
+        while (it.Next(&pAssembly))
         {
             MethodDesc * pDesc = it.Current();
-            if (!pDesc->HasNativeCode())
-            {
-                continue;
-            }
-
             Module * pLoaderModule = pDesc->GetLoaderModule();
 
             // Skip modules that are unloaded but still hanging around.
             if (pLoaderModule->GetLoaderAllocator()->IsUnloaded())
                 continue;
 
-            CreateDJIsForMethodDesc(pDesc);
+            if (pDesc->HasNativeCode())
+            {
+                CreateDJIsForMethodDesc(pDesc);
+            }
+
+            // A non-generic method's async variant may have been jitted before attach,
+            // even when its ordinary variant has no native code.
+            if (!pDesc->IsAsyncVariantMethod() && pDesc->ReturnsTaskOrValueTask())
+            {
+                MethodDesc * pAsyncVariant = pDesc->GetAsyncVariantNoCreate();
+                if (pAsyncVariant != nullptr && pAsyncVariant->HasNativeCode())
+                {
+                    CreateDJIsForMethodDesc(pAsyncVariant);
+                }
+            }
         }
     }
 }
