@@ -3970,6 +3970,11 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext:
         {
             CHECK_STACK(1);
+#ifdef TARGET_64BIT
+            // nint and int32 can be used interchangeably. Add implicit conversions.
+            if (m_pStackPointer[-1].GetStackType() == StackTypeI4)
+                EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
             m_pStackPointer--;
             m_nextCallGenericContextVar = m_pStackPointer[0].var;
             return true;
@@ -5151,6 +5156,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
         CheckForPInvokeThisCallWithNoArgs(&callInfo.sig, NULL);
 
+#ifdef TARGET_64BIT
+        // nint and int32 can be used interchangeably. Add implicit conversions.
+        if (m_pStackPointer[-1].GetStackType() == StackTypeI4)
+            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
