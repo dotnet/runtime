@@ -11,7 +11,7 @@
 #include <minipal/debugger.h>
 #include "CLREventBase.h"
 #include <minipal/time.h>
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
 #include <fcntl.h>
 #include <semaphore.h>
 #include "processdescriptor.h"
