@@ -699,9 +699,15 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
             return;
         }
 
-        // Unix specifies write sharing at map time (i.e. MAP_PRIVATE implies writecopy).
-        ApplyBaseRelocations(/* relocationMustWriteCopy*/ false);
-        SetRelocated();
+        // AllowR2RForImage is false on iOS, tvOS and Mac Catalyst, where native code in an image mapped here can't
+        // run (on an iOS device its pages are not executable). Leave the image unrelocated there, so that
+        // ReadyToRunInfo::Initialize ignores its native code. Component assemblies of a composite image are not affected.
+        if (AllowR2RForImage(pOwner))
+        {
+            // Unix specifies write sharing at map time (i.e. MAP_PRIVATE implies writecopy).
+            ApplyBaseRelocations(/* relocationMustWriteCopy*/ false);
+            SetRelocated();
+        }
     }
 #endif
 }
