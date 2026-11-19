@@ -391,7 +391,7 @@ namespace ILCompiler
 
             bool deferredWasmCalls = false;
             if (_enableDeferredWasmCalls &&
-                _context.Target.Architecture == TargetArchitecture.Wasm32 && _optimizationMode != OptimizationMode.None)
+                _context.Target.IsWasm && _optimizationMode != OptimizationMode.None)
             {
                 foreach (EcmaModule compilationModule in inputModules)
                 {

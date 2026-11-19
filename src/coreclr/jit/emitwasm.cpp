@@ -1074,7 +1074,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // signature occupies one pending slot until the function-index callback consumes it,
             // so another deferred call must not interleave these callbacks.
             // See #DeferredWasmCallRewriting for direct-call selection and indirect expansion.
-            dst += emitOutputOpcode(dst, INS_i32_const);
+            // The identity occupies the pointer-sized PEP parameter; on wasm64 its padded SLEB
+            // is sign-extended by i64.const, as for the method's own frame identity.
+            dst += emitOutputOpcode(dst, TARGET_POINTER_SIZE == 8 ? INS_i64_const : INS_i32_const);
             emitRecordRelocation(dst, reinterpret_cast<void*>(emitGetInsSC(id)),
                                  CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
             dst += emitOutputPaddedReloc(dst);

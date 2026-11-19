@@ -142,7 +142,7 @@ internal sealed class DeferredWasmCallProcessor
     internal bool CanUseDirectCall(MethodDesc method, out DeferredWasmMethodFinalizationInfo finalizationInfo)
     {
         finalizationInfo = default;
-        return NodeFactory.Target.Architecture == TargetArchitecture.Wasm32 &&
+        return NodeFactory.Target.IsWasm &&
             _finalizedMethods.TryGetValue(method, out finalizationInfo) &&
             (finalizationInfo.IsEager || _finalizingEagerMethods ||
                 (!method.IsNoInlining && !method.IsNoOptimization &&

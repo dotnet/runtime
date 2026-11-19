@@ -3435,7 +3435,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // must still include it. See #DeferredWasmCallRelocationProtocol.
         assert(!call->IsHelperCall() && !call->IsUnmanaged());
         assert(call->gtArgs.FindWellKnownArg(WellKnownArg::WasmPortableEntryPoint) == nullptr);
-        typeStack.Push(CORINFO_WASM_TYPE_I32);
+        typeStack.Push(TARGET_POINTER_SIZE == 8 ? CORINFO_WASM_TYPE_I64 : CORINFO_WASM_TYPE_I32);
     }
 
     // Report managed call signatures to the R2R compiler for thunk generation.
