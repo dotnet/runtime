@@ -173,69 +173,69 @@ extern "C" FCDECL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 // Math helpers implemented in runtime/MathHelpers.cpp
 EXTERN_C FCDECL1_D(uint64_t, RhpDbl2ULng, double val);
 EXTERN_C FCDECL1_D(int64_t, RhpDbl2Lng, double val);
-EXTERN_C FCDECL2_DD(double, Rhp_fmod, double x, double y);
-EXTERN_C FCDECL2_FF(float, Rhp_fmodf, float x, float y);
+EXTERN_C FCDECL2_DD(double, Math_FMod, double x, double y);
+EXTERN_C FCDECL2_FF(float, MathF_FMod, float x, float y);
 
-EXTERN_C FCDECL1_D(double, Rhp_acos, double x);
-EXTERN_C FCDECL1_F(float, Rhp_acosf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_acosh, double x);
-EXTERN_C FCDECL1_F(float, Rhp_acoshf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_asin, double x);
-EXTERN_C FCDECL1_F(float, Rhp_asinf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_asinh, double x);
-EXTERN_C FCDECL1_F(float, Rhp_asinhf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_atan, double x);
-EXTERN_C FCDECL1_F(float, Rhp_atanf, float x);
-EXTERN_C FCDECL2_DD(double, Rhp_atan2, double y, double x);
-EXTERN_C FCDECL2_FF(float, Rhp_atan2f, float y, float x);
-EXTERN_C FCDECL1_D(double, Rhp_atanh, double x);
-EXTERN_C FCDECL1_F(float, Rhp_atanhf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_cbrt, double x);
-EXTERN_C FCDECL1_F(float, Rhp_cbrtf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_ceil, double x);
-EXTERN_C FCDECL1_F(float, Rhp_ceilf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_cos, double x);
-EXTERN_C FCDECL1_F(float, Rhp_cosf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_cosh, double x);
-EXTERN_C FCDECL1_F(float, Rhp_coshf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_exp, double x);
-EXTERN_C FCDECL1_F(float, Rhp_expf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_floor, double x);
-EXTERN_C FCDECL1_F(float, Rhp_floorf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_log, double x);
-EXTERN_C FCDECL1_F(float, Rhp_logf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_log2, double x);
-EXTERN_C FCDECL1_F(float, Rhp_log2f, float x);
-EXTERN_C FCDECL1_D(double, Rhp_log10, double x);
-EXTERN_C FCDECL1_F(float, Rhp_log10f, float x);
-EXTERN_C FCDECL2_DD(double, Rhp_pow, double x, double y);
-EXTERN_C FCDECL2_FF(float, Rhp_powf, float x, float y);
-EXTERN_C FCDECL1_D(double, Rhp_sin, double x);
-EXTERN_C FCDECL1_F(float, Rhp_sinf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_sinh, double x);
-EXTERN_C FCDECL1_F(float, Rhp_sinhf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_sqrt, double x);
-EXTERN_C FCDECL1_F(float, Rhp_sqrtf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_tan, double x);
-EXTERN_C FCDECL1_F(float, Rhp_tanf, float x);
-EXTERN_C FCDECL1_D(double, Rhp_tanh, double x);
-EXTERN_C FCDECL1_F(float, Rhp_tanhf, float x);
-EXTERN_C FCDECL3_DDD(double, Rhp_fma, double x, double y, double z);
-EXTERN_C FCDECL3_FFF(float, Rhp_fmaf, float x, float y, float z);
-EXTERN_C FCDECL2_DI(double, Rhp_modf, double x, double* intptr);
-EXTERN_C FCDECL2_FI(float, Rhp_modff, float x, float* intptr);
-EXTERN_C FCDECL3_DII(void, Rhp_sincos, double x, double* pSin, double* pCos);
-EXTERN_C FCDECL3_FII(void, Rhp_sincosf, float x, float* pSin, float* pCos);
+EXTERN_C FCDECL1_D(double, Math_Acos, double x);
+EXTERN_C FCDECL1_F(float, MathF_Acos, float x);
+EXTERN_C FCDECL1_D(double, Math_Acosh, double x);
+EXTERN_C FCDECL1_F(float, MathF_Acosh, float x);
+EXTERN_C FCDECL1_D(double, Math_Asin, double x);
+EXTERN_C FCDECL1_F(float, MathF_Asin, float x);
+EXTERN_C FCDECL1_D(double, Math_Asinh, double x);
+EXTERN_C FCDECL1_F(float, MathF_Asinh, float x);
+EXTERN_C FCDECL1_D(double, Math_Atan, double x);
+EXTERN_C FCDECL1_F(float, MathF_Atan, float x);
+EXTERN_C FCDECL2_DD(double, Math_Atan2, double y, double x);
+EXTERN_C FCDECL2_FF(float, MathF_Atan2, float y, float x);
+EXTERN_C FCDECL1_D(double, Math_Atanh, double x);
+EXTERN_C FCDECL1_F(float, MathF_Atanh, float x);
+EXTERN_C FCDECL1_D(double, Math_Cbrt, double x);
+EXTERN_C FCDECL1_F(float, MathF_Cbrt, float x);
+EXTERN_C FCDECL1_D(double, Math_Ceiling, double x);
+EXTERN_C FCDECL1_F(float, MathF_Ceiling, float x);
+EXTERN_C FCDECL1_D(double, Math_Cos, double x);
+EXTERN_C FCDECL1_F(float, MathF_Cos, float x);
+EXTERN_C FCDECL1_D(double, Math_Cosh, double x);
+EXTERN_C FCDECL1_F(float, MathF_Cosh, float x);
+EXTERN_C FCDECL1_D(double, Math_Exp, double x);
+EXTERN_C FCDECL1_F(float, MathF_Exp, float x);
+EXTERN_C FCDECL1_D(double, Math_Floor, double x);
+EXTERN_C FCDECL1_F(float, MathF_Floor, float x);
+EXTERN_C FCDECL1_D(double, Math_Log, double x);
+EXTERN_C FCDECL1_F(float, MathF_Log, float x);
+EXTERN_C FCDECL1_D(double, Math_Log2, double x);
+EXTERN_C FCDECL1_F(float, MathF_Log2, float x);
+EXTERN_C FCDECL1_D(double, Math_Log10, double x);
+EXTERN_C FCDECL1_F(float, MathF_Log10, float x);
+EXTERN_C FCDECL2_DD(double, Math_Pow, double x, double y);
+EXTERN_C FCDECL2_FF(float, MathF_Pow, float x, float y);
+EXTERN_C FCDECL1_D(double, Math_Sin, double x);
+EXTERN_C FCDECL1_F(float, MathF_Sin, float x);
+EXTERN_C FCDECL1_D(double, Math_Sinh, double x);
+EXTERN_C FCDECL1_F(float, MathF_Sinh, float x);
+EXTERN_C FCDECL1_D(double, Math_Sqrt, double x);
+EXTERN_C FCDECL1_F(float, MathF_Sqrt, float x);
+EXTERN_C FCDECL1_D(double, Math_Tan, double x);
+EXTERN_C FCDECL1_F(float, MathF_Tan, float x);
+EXTERN_C FCDECL1_D(double, Math_Tanh, double x);
+EXTERN_C FCDECL1_F(float, MathF_Tanh, float x);
+EXTERN_C FCDECL3_DDD(double, Math_FusedMultiplyAdd, double x, double y, double z);
+EXTERN_C FCDECL3_FFF(float, MathF_FusedMultiplyAdd, float x, float y, float z);
+EXTERN_C FCDECL2_DI(double, Math_ModF, double x, double* intptr);
+EXTERN_C FCDECL2_FI(float, MathF_ModF, float x, float* intptr);
+EXTERN_C FCDECL3_DII(void, Math_SinCos, double x, double* pSin, double* pCos);
+EXTERN_C FCDECL3_FII(void, MathF_SinCos, float x, float* pSin, float* pCos);
 
 #ifdef TARGET_32BIT
-EXTERN_C FCDECL2_LL(int64_t, DivInt64Internal, int64_t i, int64_t j);
-EXTERN_C FCDECL2_LL(uint64_t, DivUInt64Internal, uint64_t i, uint64_t j);
-EXTERN_C FCDECL2_LL(int64_t, ModInt64Internal, int64_t i, int64_t j);
-EXTERN_C FCDECL2_LL(uint64_t, ModUInt64Internal, uint64_t i, uint64_t j);
-EXTERN_C FCDECL2(int32_t, DivInt32Internal, int32_t i, int32_t j);
-EXTERN_C FCDECL2(uint32_t, DivUInt32Internal, uint32_t i, uint32_t j);
-EXTERN_C FCDECL2(int32_t, ModInt32Internal, int32_t i, int32_t j);
-EXTERN_C FCDECL2(uint32_t, ModUInt32Internal, uint32_t i, uint32_t j);
+EXTERN_C FCDECL2_LL(int64_t, Math_DivInt64Internal, int64_t i, int64_t j);
+EXTERN_C FCDECL2_LL(uint64_t, Math_DivUInt64Internal, uint64_t i, uint64_t j);
+EXTERN_C FCDECL2_LL(int64_t, Math_ModInt64Internal, int64_t i, int64_t j);
+EXTERN_C FCDECL2_LL(uint64_t, Math_ModUInt64Internal, uint64_t i, uint64_t j);
+EXTERN_C FCDECL2(int32_t, Math_DivInt32Internal, int32_t i, int32_t j);
+EXTERN_C FCDECL2(uint32_t, Math_DivUInt32Internal, uint32_t i, uint32_t j);
+EXTERN_C FCDECL2(int32_t, Math_ModInt32Internal, int32_t i, int32_t j);
+EXTERN_C FCDECL2(uint32_t, Math_ModUInt32Internal, uint32_t i, uint32_t j);
 
 EXTERN_C FCDECL1_L(double, RhpLng2Dbl, int64_t val);
 EXTERN_C FCDECL1_L(double, RhpULng2Dbl, uint64_t val);
@@ -417,7 +417,7 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
 
-    virtual ~CEEInfo()
+    CORINFO_VIRTUAL ~CEEInfo()
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -527,14 +527,7 @@ public:
             MODE_ANY;
         } CONTRACTL_END;
 
-        if (m_CodeHeaderRW != m_CodeHeader)
-            freeArrayInternal(m_CodeHeaderRW);
-
-        if (m_pOffsetMapping != NULL)
-            freeArrayInternal(m_pOffsetMapping);
-
-        if (m_pNativeVarInfo != NULL)
-            freeArrayInternal(m_pNativeVarInfo);
+        CEECodeGenInfo::ResetForJitRetry();
 
 #ifdef FEATURE_PGO
         if (m_foundPgoData != NULL)
@@ -550,7 +543,7 @@ public:
 #endif
     }
 
-    virtual void ResetForJitRetry()
+    CORINFO_VIRTUAL void ResetForJitRetry()
     {
         CONTRACTL {
             NOTHROW;
@@ -598,20 +591,20 @@ public:
 
     // ICorDebugInfo stuff.
     void getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
-                 bool *extendOthers) override final;
+                 bool *extendOthers) CORINFO_OVERRIDE_FINAL;
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
-                       ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
+                       ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) CORINFO_OVERRIDE_FINAL;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
-                 ICorDebugInfo::NativeVarInfo *vars) override final;
+                 ICorDebugInfo::NativeVarInfo *vars) CORINFO_OVERRIDE_FINAL;
     void CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nativeCodeVersion);
-    virtual void SetDebugInfo(PTR_BYTE pDebugInfo) = 0;
+    CORINFO_VIRTUAL void SetDebugInfo(PTR_BYTE pDebugInfo) CORINFO_PURE;
 
-    virtual PatchpointInfo* GetPatchpointInfo()
+    CORINFO_VIRTUAL PatchpointInfo* GetPatchpointInfo()
     {
         return NULL;
     }
 
-    virtual BOOL JitAgain()
+    CORINFO_VIRTUAL BOOL JitAgain()
     {
         return FALSE;
     }
@@ -620,26 +613,26 @@ public:
         ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
         uint32_t                          numInlineTreeNodes,
         ICorDebugInfo::RichOffsetMapping* mappings,
-        uint32_t                          numMappings) override final;
+        uint32_t                          numMappings) CORINFO_OVERRIDE_FINAL;
 
     void reportAsyncDebugInfo(
         ICorDebugInfo::AsyncInfo*             asyncInfo,
         ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
         ICorDebugInfo::AsyncContinuationVarInfo* vars,
-        uint32_t                              numVars) override final;
+        uint32_t                              numVars) CORINFO_OVERRIDE_FINAL;
 
-    void reportMetadata(const char* key, const void* value, size_t length) override final;
+    void reportMetadata(const char* key, const void* value, size_t length) CORINFO_OVERRIDE_FINAL;
 
-    virtual void WriteCode(EECodeGenManager * jitMgr) = 0;
+    CORINFO_VIRTUAL void WriteCode(EECodeGenManager * jitMgr) CORINFO_PURE;
 
     void getHelperFtn(CorInfoHelpFunc         tnNum,                     /* IN  */
                       CORINFO_CONST_LOOKUP *  pNativeEntrypoint,         /* OUT */
-                      CORINFO_METHOD_HANDLE * pMethodHandle) override;   /* OUT */
+                      CORINFO_METHOD_HANDLE * pMethodHandle) CORINFO_OVERRIDE;   /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
 
-    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override;
-    InfoAccessType emptyStringLiteral(void ** ppValue) override;
-    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
+    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) CORINFO_OVERRIDE;
+    InfoAccessType emptyStringLiteral(void ** ppValue) CORINFO_OVERRIDE;
+    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) CORINFO_OVERRIDE;
 
     CORINFO_METHOD_INFO* getMethodInfoInternal();
     CORJIT_FLAGS* getJitFlagsInternal();
@@ -649,7 +642,7 @@ public:
             PgoInstrumentationSchema* pSchema, /* IN/OUT */
             uint32_t countSchemaItems, /* IN */
             uint8_t** pInstrumentationData /* OUT */
-            ) override;
+            ) CORINFO_OVERRIDE;
 
     HRESULT getPgoInstrumentationResults(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
@@ -658,7 +651,7 @@ public:
             uint8_t**pInstrumentationData, /* OUT */
             PgoSource *pPgoSource, /* OUT */
             bool* pDynamicPgo /* OUT */
-            ) override;
+            ) CORINFO_OVERRIDE;
 
 protected:
 
@@ -671,12 +664,14 @@ protected:
     template<class TCodeHeader>
     void NibbleMapSet();
 
+public:
     void getEHinfo(
                     CORINFO_METHOD_HANDLE ftn,              /* IN  */
                     unsigned      EHnumber,                 /* IN */
                     CORINFO_EH_CLAUSE* clause               /* OUT */
-                  ) override final;
+                  ) CORINFO_OVERRIDE_FINAL;
 
+protected:
     void setEHinfoWorker(
                           EE_ILEXCEPTION* pEHInfo,
                           unsigned      EHnumber,
@@ -757,18 +752,18 @@ class CEEJitInfo final : public CEECodeGenInfo
 public:
     // ICorJitInfo stuff
 
-    void allocMem (AllocMemArgs *pArgs) override;
-    void * allocGCInfo(size_t  size) override;
-    void setEHcount (unsigned cEH) override;
+    void allocMem (AllocMemArgs *pArgs) CORINFO_OVERRIDE;
+    void * allocGCInfo(size_t  size) CORINFO_OVERRIDE;
+    void setEHcount (unsigned cEH) CORINFO_OVERRIDE;
     void setEHinfo (
         unsigned      EHnumber,
         const CORINFO_EH_CLAUSE* clause
-       ) override;
+       ) CORINFO_OVERRIDE;
 
     void WriteCodeBytes();
-    void WriteCode(EECodeGenManager * jitMgr) override;
+    void WriteCode(EECodeGenManager * jitMgr) CORINFO_OVERRIDE;
 
-    void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override;
+    void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) CORINFO_OVERRIDE;
 
     void allocUnwindInfo (
             uint8_t * pHotCode,              /* IN */
@@ -778,26 +773,26 @@ public:
             uint32_t  unwindSize,            /* IN */
             uint8_t * pUnwindBlock,          /* IN */
             CorJitFuncKind funcKind       /* IN */
-            ) override;
+            ) CORINFO_OVERRIDE;
 
     void recordCallSite(
             uint32_t                     instrOffset,  /* IN */
             CORINFO_SIG_INFO *        callSig,      /* IN */
             CORINFO_METHOD_HANDLE     methodHandle  /* IN */
-            ) override;
+            ) CORINFO_OVERRIDE;
 
     void recordRelocation(
             void                    *location,
             void                    *locationRW,
             void                    *target,
             CorInfoReloc             fRelocType,
-            int32_t                  addlDelta) override;
+            int32_t                  addlDelta) CORINFO_OVERRIDE;
 
-    CorInfoReloc getRelocTypeHint(void * target) override;
+    CorInfoReloc getRelocTypeHint(void * target) CORINFO_OVERRIDE;
 
-    void SetDebugInfo(PTR_BYTE pDebugInfo) override;
+    void SetDebugInfo(PTR_BYTE pDebugInfo) CORINFO_OVERRIDE;
 
-    void ResetForJitRetry() override
+    void ResetForJitRetry() CORINFO_OVERRIDE
     {
         CONTRACTL {
             NOTHROW;
@@ -842,7 +837,7 @@ public:
         return m_fJumpStubOverflow;
     }
 
-    BOOL JitAgain() override
+    BOOL JitAgain() CORINFO_OVERRIDE
     {
         LIMITED_METHOD_CONTRACT;
         return m_fJumpStubOverflow;
@@ -860,7 +855,7 @@ public:
         m_reserveForJumpStubs = value;
     }
 
-    PatchpointInfo* GetPatchpointInfo() override
+    PatchpointInfo* GetPatchpointInfo() CORINFO_OVERRIDE
     {
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         return m_pPatchpointInfoFromJit;
@@ -870,7 +865,7 @@ public:
     }
 
 #else
-    BOOL JitAgain() override
+    BOOL JitAgain() CORINFO_OVERRIDE
     {
         LIMITED_METHOD_CONTRACT;
         return FALSE;
@@ -951,12 +946,12 @@ public:
                     bool                      *pbHookFunction,
                     void                     **pProfilerHandle,
                     bool                      *pbIndirectedHandles
-                    ) override;
+                    ) CORINFO_OVERRIDE;
 
-    void setPatchpointInfo(PatchpointInfo* patchpointInfo) override;
-    PatchpointInfo* getOSRInfo(unsigned* ilOffset) override;
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo) CORINFO_OVERRIDE;
+    PatchpointInfo* getOSRInfo(unsigned* ilOffset) CORINFO_OVERRIDE;
 
-    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
+    CORINFO_VIRTUAL CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) CORINFO_OVERRIDE_FINAL;
 
 protected :
 
@@ -1003,22 +998,22 @@ public:
         } CONTRACTL_END;
     }
 
-    void allocMem(AllocMemArgs *pArgs) override;
-    void * allocGCInfo(size_t  size) override;
-    void setEHcount (unsigned cEH) override;
+    void allocMem(AllocMemArgs *pArgs) CORINFO_OVERRIDE;
+    void * allocGCInfo(size_t  size) CORINFO_OVERRIDE;
+    void setEHcount (unsigned cEH) CORINFO_OVERRIDE;
     void setEHinfo (
         unsigned      EHnumber,
         const CORINFO_EH_CLAUSE* clause
-       ) override;
+       ) CORINFO_OVERRIDE;
 
     void WriteCodeBytes();
-    void WriteCode(EECodeGenManager * jitMgr) override;
+    void WriteCode(EECodeGenManager * jitMgr) CORINFO_OVERRIDE;
 
-    void SetDebugInfo(PTR_BYTE pDebugInfo) override;
+    void SetDebugInfo(PTR_BYTE pDebugInfo) CORINFO_OVERRIDE;
 
-    LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override;
+    LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) CORINFO_OVERRIDE;
 
-    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
+    CORINFO_VIRTUAL CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) CORINFO_OVERRIDE_FINAL;
 };
 #endif // FEATURE_INTERPRETER
 
@@ -1139,8 +1134,11 @@ extern thread_local int64_t t_cbILJittedForThread;
 extern thread_local int64_t t_cMethodsJittedForThread;
 extern thread_local int64_t t_c100nsTicksInJitForThread;
 
-FCDECL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread);
-FCDECL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread);
-FCDECL1(INT64, GetCompilationTimeInTicks, FC_BOOL_ARG currentThread);
+extern "C"
+{
+    FCDECL1(INT64, JitInfo_GetCompiledILBytes, FC_BOOL_ARG currentThread);
+    FCDECL1(INT64, JitInfo_GetCompiledMethodCount, FC_BOOL_ARG currentThread);
+    FCDECL1(INT64, JitInfo_GetCompilationTimeInTicks, FC_BOOL_ARG currentThread);
+}
 
 #endif // JITINTERFACE_H

@@ -256,6 +256,13 @@ namespace Mono.Linker.Steps
             if (!_context.IsOptimizationEnabled(CodeOptimizations.IPConstantPropagation, method))
                 return null;
 
+            // A library build must not decide feature switch values on behalf of the app. Even a getter
+            // with a constant body can be substituted at application publish time, so don't analyze
+            // feature switch getters when no --feature value was supplied.
+            if (_context.HasLibraryRootAssembly &&
+                _context.Annotations.MemberActions.IsFeatureSwitchWithoutSetting(method))
+                return null;
+
             var analyzer = new ConstantExpressionMethodAnalyzer(this);
             if (analyzer.Analyze(callee, callStack))
                 return new MethodResult(analyzer.Result, analyzer.SideEffectFreeResult);
@@ -1200,7 +1207,9 @@ namespace Mono.Linker.Steps
                     for (int handlerIndex = 0; handlerIndex < handlerCount; handlerIndex++)
                     {
                         ExceptionHandler handler = ExceptionHandlers[handlerIndex];
-                        exceptionHandlerRanges[handlerIndex] = (instructions.IndexOf(handler.TryStart), instructions.IndexOf(handler.TryEnd) - 1);
+                        // Cecil represents the end of the method with a null TryEnd.
+                        int end = handler.TryEnd is null ? reachable.Length - 1 : instructions.IndexOf(handler.TryEnd) - 1;
+                        exceptionHandlerRanges[handlerIndex] = (instructions.IndexOf(handler.TryStart), end);
                     }
                 }
 

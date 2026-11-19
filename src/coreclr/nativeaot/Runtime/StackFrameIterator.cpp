@@ -37,14 +37,8 @@ EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionTailCall;
 EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionGuardedTailCall;
 #endif
 
-#ifdef TARGET_64BIT
 EXTERN_C CODE_LOCATION CallEHFunclet2;
 EXTERN_C CODE_LOCATION CallEHFilterFunclet2;
-#else
-EXTERN_C CODE_LOCATION RhpCallCatchFunclet2;
-EXTERN_C CODE_LOCATION RhpCallFinallyFunclet2;
-EXTERN_C CODE_LOCATION RhpCallFilterFunclet2;
-#endif
 EXTERN_C CODE_LOCATION RhpThrowImpl2;
 EXTERN_C CODE_LOCATION RhpThrowHwEx2;
 EXTERN_C CODE_LOCATION RhpRethrow2;
@@ -1086,11 +1080,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 #else // FEATURE_PORTABLE_HELPERS
     PTR_uintptr_t SP;
 
-#ifdef TARGET_64BIT
     bool isFilterInvoke = EQUALS_RETURN_ADDRESS(m_ControlPC, CallEHFilterFunclet2);
-#else
-    bool isFilterInvoke = EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
-#endif
 
 #if defined(UNIX_AMD64_ABI)
     SP = (PTR_uintptr_t)(m_RegDisplay.SP);
@@ -1166,7 +1156,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 #endif
 
 #elif defined(TARGET_X86)
-    SP = (PTR_uintptr_t)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
+    SP = (PTR_uintptr_t)(m_RegDisplay.SP);
 
     if (!isFilterInvoke)
     {
@@ -1177,25 +1167,16 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
     }
 
-    SP++; // local / stack alignment
     m_RegDisplay.pRdi = SP++;
     m_RegDisplay.pRsi = SP++;
     m_RegDisplay.pRbx = SP++;
     m_RegDisplay.pRbp = SP++;
+
+    m_RegDisplay.SetIP(PCODEToPINSTR(*SP++));
+
+    SP += 2; // the stack arguments popped by the helper
 #elif defined(TARGET_ARM)
-
-    PTR_uint64_t d = (PTR_uint64_t)(m_RegDisplay.SP);
-
-    for (int i = 0; i < 8; i++)
-    {
-        m_RegDisplay.D[i] = *d++;
-    }
-
-    SP = (PTR_uintptr_t)d;
-
-    // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
-    // thunks, but we don't need to know what they are here, so we just skip them.
-    SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 3 : 1;
+    SP = (PTR_uintptr_t)(m_RegDisplay.SP);
 
     if (!isFilterInvoke)
     {
@@ -1209,6 +1190,17 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pR10 = m_RegDisplay.pR10;
         m_funcletPtrs.pR11 = m_RegDisplay.pR11;
     }
+
+    SP += 2 + 1; // 2 locals and stack alignment
+
+    PTR_uint64_t d = (PTR_uint64_t)SP;
+
+    for (int i = 0; i < 8; i++)
+    {
+        m_RegDisplay.D[i] = *d++;
+    }
+
+    SP = (PTR_uintptr_t)d;
 
     m_RegDisplay.pR4 = SP++;
     m_RegDisplay.pR5 = SP++;
@@ -1360,7 +1352,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif
 
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM)
     m_RegDisplay.SetIP(PCODEToPINSTR(*SP++));
 #endif
 
@@ -2393,7 +2385,6 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
         return InThrowSiteThunk;
     }
 
-#ifdef TARGET_64BIT
     if (EQUALS_RETURN_ADDRESS(returnAddress, CallEHFunclet2))
     {
         return InFuncletInvokeThunk;
@@ -2403,18 +2394,6 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
     {
         return InFilterFuncletInvokeThunk;
     }
-#else
-    if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallCatchFunclet2) ||
-        EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFinallyFunclet2))
-    {
-        return InFuncletInvokeThunk;
-    }
-
-    if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFilterFunclet2))
-    {
-        return InFilterFuncletInvokeThunk;
-    }
-#endif
     return InManagedCode;
 #endif // defined(FEATURE_PORTABLE_HELPERS)
 }

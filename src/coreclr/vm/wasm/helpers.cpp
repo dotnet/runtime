@@ -14,6 +14,20 @@
 #define WASM_STRINGIFY_HELPER(value) #value
 #define WASM_STRINGIFY(value) WASM_STRINGIFY_HELPER(value)
 
+#ifdef TARGET_BROWSER
+// emscripten libc before 6.0.10 implements overlapping memmove and memset with scalar loops.
+// Compiling these wrappers with -mbulk-memory lowers the builtins to memory.copy and memory.fill.
+// TODO: Remove once emsdk is 6.0.10 or later (https://github.com/dotnet/runtime/issues/136012).
+extern "C" void* QCall_memmove(void* dest, const void* src, size_t len)
+{
+    return __builtin_memmove(dest, src, len);
+}
+
+extern "C" void* QCall_memset(void* dest, int value, size_t len)
+{
+    return __builtin_memset(dest, value, len);
+}
+#endif // TARGET_BROWSER
 
 extern "C" void STDCALL CallCountingStubCode()
 {
@@ -275,7 +289,7 @@ VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD Ex
 // They set up a new stack frame for calling a function which provides the TERMINATE_R2R_STACK_WALK flag so that unwinds from the funclet terminate correctly.
 // then invoke the new funclet with SP pointing to the top of the new frame.
 // There are two versions of the function, one for funclets that need to pass a Throwable (catch/filter), and one for those that do not (finally/fault)
-__attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP)
+static __attribute__((naked)) UINT_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP)
 {
     asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
          "local.get       3\n"               // Get pFuncletCallerSP address to store the new stack pointer for the caller of the funclet
@@ -304,7 +318,7 @@ __attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInv
 }
 
 // Finally/fault version of the CallFunclet function which does not need to pass a Throwable
-__attribute__((naked)) DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP)
+static __attribute__((naked)) UINT_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP)
 {
     asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
          "local.get       2\n"               // Get pFuncletCallerSP address to store the new stack pointer for the caller of the funclet
@@ -329,6 +343,27 @@ __attribute__((naked)) DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletTo
          "i32.const       0\n"
          "return\n"
           ::);
+}
+
+EXTERN_C UINT_PTR CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP)
+{
+    TADDR fp = GetFP(pContext);
+    _ASSERTE(fp != 0);
+
+    if (pThrowable != NULL)
+    {
+        return CallFuncletWithThrowable(pFuncletToInvoke, fp, pThrowable, pFuncletCallerSP);
+    }
+
+    return CallFuncletWithoutThrowable(pFuncletToInvoke, fp, pFuncletCallerSP);
+}
+
+EXTERN_C int CallEHFilterFunclet(Object *pThrowable, CONTEXT *pContext, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP)
+{
+    TADDR fp = GetFP(pContext);
+    _ASSERTE(fp != 0);
+
+    return (int)CallFuncletWithThrowable(pFuncletToInvoke, fp, pThrowable, pFuncletCallerSP);
 }
 
 extern "C" void TheUMEntryPrestub(void)
@@ -1914,28 +1949,30 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
     }
     else
     {
-        uint32_t functionLocalVirtualIP = (*(uint32_t*)(fp + WASM_STACKFRAME_VIRTUALIP_OFFSET)) * 2;
         TADDR establishingFrame = GetWasmEstablishingFramePointer(fp);
         UINT_PTR identity = *reinterpret_cast<UINT_PTR*>(establishingFrame + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET);
         TADDR baseVirtualIP;
+        bool hasSingleVirtualIP;
         if ((identity & 1) == 0)
         {
             _ASSERTE(identity != STACK_WALK_INDIRECT_TO_FRAMEPOINTER);
             DWORD functionIndex = static_cast<DWORD>(reinterpret_cast<UINT_PTR>(PortableEntryPoint::GetActualCode(identity)));
-            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(functionIndex);
+            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(functionIndex, &hasSingleVirtualIP);
         }
         else if (static_cast<INT_PTR>(identity) < 0)
         {
             DWORD functionIndex = static_cast<DWORD>((~identity) >> 1);
-            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(functionIndex);
+            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(functionIndex, &hasSingleVirtualIP);
         }
         else
         {
             _ASSERTE(identity != TERMINATE_R2R_STACK_WALK);
-            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(static_cast<DWORD>(identity >> 1));
+            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(static_cast<DWORD>(identity >> 1), &hasSingleVirtualIP);
         }
         if (baseVirtualIP == 0)
             return 0;
+        uint32_t functionLocalVirtualIP = hasSingleVirtualIP ? 2 :
+            (*reinterpret_cast<uint32_t*>(fp + WASM_STACKFRAME_VIRTUALIP_OFFSET)) * 2;
         return baseVirtualIP + functionLocalVirtualIP;
     }
 }
