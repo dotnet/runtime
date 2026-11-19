@@ -805,6 +805,90 @@ LEAF_ENTRY Load_Stack_Ref
     jr t4
 LEAF_END Load_Stack_Ref
 
+// The interpreter stores 32-bit and narrower integers in 8-byte stack slots without defining the upper half,
+// while the RISC-V psABI requires them sign-extended to 64 bits in registers and stack slots.
+// t2 points to a bitmask of the argument registers a0..a7 to sign-extend.
+LEAF_ENTRY SignExtend_ArgRegs
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    andi t5, t4, 0x01
+    beqz t5, LOCAL_LABEL(SignExtendA1)
+    sext.w a0, a0
+LOCAL_LABEL(SignExtendA1):
+    andi t5, t4, 0x02
+    beqz t5, LOCAL_LABEL(SignExtendA2)
+    sext.w a1, a1
+LOCAL_LABEL(SignExtendA2):
+    andi t5, t4, 0x04
+    beqz t5, LOCAL_LABEL(SignExtendA3)
+    sext.w a2, a2
+LOCAL_LABEL(SignExtendA3):
+    andi t5, t4, 0x08
+    beqz t5, LOCAL_LABEL(SignExtendA4)
+    sext.w a3, a3
+LOCAL_LABEL(SignExtendA4):
+    andi t5, t4, 0x10
+    beqz t5, LOCAL_LABEL(SignExtendA5)
+    sext.w a4, a4
+LOCAL_LABEL(SignExtendA5):
+    andi t5, t4, 0x20
+    beqz t5, LOCAL_LABEL(SignExtendA6)
+    sext.w a5, a5
+LOCAL_LABEL(SignExtendA6):
+    andi t5, t4, 0x40
+    beqz t5, LOCAL_LABEL(SignExtendA7)
+    sext.w a6, a6
+LOCAL_LABEL(SignExtendA7):
+    andi t5, t4, 0x80
+    beqz t5, LOCAL_LABEL(SignExtendDone)
+    sext.w a7, a7
+LOCAL_LABEL(SignExtendDone):
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END SignExtend_ArgRegs
+
+// t2 points to the SP offset of a stack argument slot to sign-extend from its low 32 bits.
+LEAF_ENTRY SignExtend_Stack
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    add t4, sp, t4
+    lw t5, 0(t4)
+    sd t5, 0(t4)
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END SignExtend_Stack
+
+// Routines moving a single field of a struct passed by the hardware floating-point calling convention, or a float,
+// between a register and the interpreter stack. t2 points to a word holding the field offset in its low 32 bits and
+// the number of bytes to advance the interpreter stack pointer by afterwards in its high 32 bits.
+// flw also NaN-boxes the float, as required for single-precision values in the 64-bit FP registers.
+.macro FIELD_AT_OFFSET_ROUTINE Name, Insn, Reg
+LEAF_ENTRY \Name
+    lwu t4, 0(t2)
+    lwu t5, 4(t2)
+    addi t2, t2, 8
+    add t4, t3, t4
+    \Insn \Reg, 0(t4)
+    add t3, t3, t5
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END \Name
+.endm
+
+.irp i, 0, 1, 2, 3, 4, 5, 6, 7
+FIELD_AT_OFFSET_ROUTINE Load_FA\i\()_F_AtOffset, flw, fa\i
+FIELD_AT_OFFSET_ROUTINE Load_FA\i\()_D_AtOffset, fld, fa\i
+FIELD_AT_OFFSET_ROUTINE Load_A\i\()_W_AtOffset, lw, a\i
+FIELD_AT_OFFSET_ROUTINE Load_A\i\()_D_AtOffset, ld, a\i
+FIELD_AT_OFFSET_ROUTINE Store_FA\i\()_F_AtOffset, fsw, fa\i
+FIELD_AT_OFFSET_ROUTINE Store_FA\i\()_D_AtOffset, fsd, fa\i
+FIELD_AT_OFFSET_ROUTINE Store_A\i\()_W_AtOffset, sw, a\i
+FIELD_AT_OFFSET_ROUTINE Store_A\i\()_D_AtOffset, sd, a\i
+.endr
+
 LEAF_ENTRY Store_Stack_Ref
     lwu t5, 0(t2)   // SP offset (zero-extend)
     lwu t4, 4(t2)   // size of the value type (zero-extend)
@@ -970,6 +1054,24 @@ NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetBuff, _TEXT
+
+// Same as CallJittedMethodRetBuff, for methods with a this argument, where the return buffer is the second argument
+NESTED_ENTRY CallJittedMethodRetBuffA1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
+    sd a4, 16(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    mv a1, a2  // buffer return pointer goes in a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 16(fp)
+    sd a2, 0(a4)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetBuffA1, _TEXT
 
 // a0 - routines array
 // a1 - interpreter stack args location
@@ -1227,10 +1329,14 @@ NESTED_END CallJittedMethodRet2Float, _TEXT
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
-NESTED_ENTRY CallJittedMethodRetFloatInt, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
+// The returned struct is passed by the hardware floating-point calling convention. Its FpStructInRegistersInfo
+// follows the target slot in the routines array, and InterpFpStructReturnFromNative scatters fa0, fa1 and a0
+// to the struct fields.
+NESTED_ENTRY CallJittedMethodRetFpStruct, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 64
     sd a2, 16(fp)
     sd a4, 24(fp)
+    sd a0, 32(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
@@ -1239,38 +1345,17 @@ NESTED_ENTRY CallJittedMethodRetFloatInt, _TEXT, NoHandler
     jalr t4
     ld a4, 24(fp)
     sd a2, 0(a4)
-    ld a2, 16(fp)
-    fsd fa0, 0(a2)
-    sd a0, 8(a2)
+    fsd fa0, 40(fp)
+    fsd fa1, 48(fp)
+    sd a0, 56(fp)
+    addi a0, fp, 40
+    ld a1, 16(fp)
+    ld a2, 32(fp)
+    call C_FUNC(InterpFpStructReturnFromNative)
     EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 64
     EPILOG_RETURN
-NESTED_END CallJittedMethodRetFloatInt, _TEXT
-
-// a0 - routines array
-// a1 - interpreter stack args location
-// a2 - interpreter stack return value location
-// a3 - stack arguments size (properly aligned)
-// a4 - address of continuation return value
-NESTED_ENTRY CallJittedMethodRetIntFloat, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
-    sd a2, 16(fp)
-    sd a4, 24(fp)
-    sub sp, sp, a3
-    mv t2, a0
-    mv t3, a1
-    ld t4, 0(t2)
-    addi t2, t2, 8
-    jalr t4
-    ld a4, 24(fp)
-    sd a2, 0(a4)
-    ld a2, 16(fp)
-    sd a0, 0(a2)
-    fsd fa0, 8(a2)
-    EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
-    EPILOG_RETURN
-NESTED_END CallJittedMethodRetIntFloat, _TEXT
+NESTED_END CallJittedMethodRetFpStruct, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
@@ -1338,6 +1423,19 @@ NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END InterpreterStubRetI8, _TEXT
 
+NESTED_ENTRY InterpreterStubRetI4, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
+    // The +16 is for the fp, ra above
+    addi a0, sp, __PWTB_TransitionBlock + 16
+    mv a1, s1 // the IR bytecode pointer
+    mv a2, zero
+    call C_FUNC(ExecuteInterpretedMethod)
+    // Sign-extend from 32 bits as required by the psABI
+    lw a0, 0(a0)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetI4, _TEXT
+
 NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
@@ -1360,6 +1458,18 @@ NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
     EPILOG_RETURN
 NESTED_END InterpreterStubRetBuff, _TEXT
+
+// Same as InterpreterStubRetBuff, for methods with a this argument, where the return buffer is the second argument
+NESTED_ENTRY InterpreterStubRetBuffA1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
+    // The +16 is for the fp, ra above
+    mv   a2, a1        // save caller's return buffer in a2
+    addi a0, sp, __PWTB_TransitionBlock + 16
+    mv   a1, s1        // the IR bytecode pointer
+    call C_FUNC(ExecuteInterpretedMethod)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetBuffA1, _TEXT
 
 NESTED_ENTRY InterpreterStubRet2I8, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
@@ -1412,32 +1522,27 @@ NESTED_ENTRY InterpreterStubRet2Float, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END InterpreterStubRet2Float, _TEXT
 
-NESTED_ENTRY InterpreterStubRetFloatInt, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
-    // The +16 is for the fp, ra above
-    addi a0, sp, __PWTB_TransitionBlock + 16
+// The returned struct is passed by the hardware floating-point calling convention. t2 points to its
+// FpStructInRegistersInfo, which follows this handler in the routines array, and InterpFpStructReturnToNative
+// gathers the struct fields into fa0, fa1 and a0.
+NESTED_ENTRY InterpreterStubRetFpStruct, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 48
+    sd t2, 16(sp)
+    // The +48 is for the fp, ra and the locals above
+    addi a0, sp, __PWTB_TransitionBlock + 48
     mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
-    fld fa0, 0(a0)
-    ld a0, 8(a0)
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
+    mv a1, a0
+    addi a0, sp, 24
+    ld a2, 16(sp)
+    call C_FUNC(InterpFpStructReturnToNative)
+    fld fa0, 24(sp)
+    fld fa1, 32(sp)
+    ld a0, 40(sp)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   48
     EPILOG_RETURN
-NESTED_END InterpreterStubRetFloatInt, _TEXT
-
-NESTED_ENTRY InterpreterStubRetIntFloat, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
-    // The +16 is for the fp, ra above
-    addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, s1 // the IR bytecode pointer
-    mv a2, zero
-    call C_FUNC(ExecuteInterpretedMethod)
-    ld a1, 0(a0)
-    fld fa0, 8(a0)
-    mv a0, a1
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
-    EPILOG_RETURN
-NESTED_END InterpreterStubRetIntFloat, _TEXT
+NESTED_END InterpreterStubRetFpStruct, _TEXT
 
 // Copy arguments from the processor stack to the interpreter stack
 // The CPU stack slots are aligned to pointer size.
