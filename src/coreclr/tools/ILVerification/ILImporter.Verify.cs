@@ -216,6 +216,9 @@ namespace Internal.IL
 
         public bool SanityChecks { set; private get; }
 
+        // Report the rules that valid IL must follow, and not some rules only for verifiable IL (ECMA-335 III.1.8).
+        public bool ValidationOnly { set; private get; }
+
         public void Verify()
         {
             // Check code size before any other processing
@@ -589,6 +592,12 @@ namespace Internal.IL
             if (!cond)
                 VerificationError(error, found, expected);
             return cond;
+        }
+
+        void UnverifiableError(VerifierError error)
+        {
+            if (!ValidationOnly)
+                VerificationError(error);
         }
 
         void CheckIsNumeric(StackValue value)
@@ -2769,7 +2778,8 @@ namespace Internal.IL
 
         void ImportLocalAlloc()
         {
-            Unverifiable();
+            // localloc is never verifiable (III.3.47); the size and empty-stack checks below are validity rules.
+            UnverifiableError(VerifierError.Unverifiable);
 
             var size = Pop();
 
