@@ -524,12 +524,12 @@ RtlVirtualUnwind(
 PEXCEPTION_ROUTINE
 RtlVirtualUnwind (
     _In_ DWORD HandlerType,
-    _In_ DWORD ImageBase,
-    _In_ DWORD ControlPc,
+    _In_ UINT_PTR ImageBase,
+    _In_ UINT_PTR ControlPc,
     _In_ PRUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
     _Out_ PVOID *HandlerData,
-    _Out_ PDWORD EstablisherFrame,
+    _Out_ UINT_PTR *EstablisherFrame,
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
 

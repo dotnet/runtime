@@ -64,6 +64,17 @@ extern "C" void DynamicHelper_GenericDictionaryLookup_Method_UseHelper();
 extern "C" PCODE g_pMethodWithSlotAndModule;
 extern "C" PCODE g_pClassWithSlotAndModule;
 
+#ifdef TARGET_WASM64
+// Have LLVM codegen emit the table64 indirect call; its assembler type-checks
+// handwritten call_indirect as a table32 instruction.
+extern "C" TADDR CallDictionaryLookupHelper(TADDR stackPointer, TADDR context, GenericHandleArgs* args, PCODE entryPoint)
+{
+    using LookupHelper = TADDR (*)(TADDR, TADDR, GenericHandleArgs*, PCODE);
+    PCODE target = *reinterpret_cast<PCODE*>(entryPoint);
+    return reinterpret_cast<LookupHelper>(target)(stackPointer, context, args, entryPoint);
+}
+#endif
+
 PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator, CORINFO_RUNTIME_LOOKUP * pLookup, DWORD dictionaryIndexAndSlot, Module * pModule)
 {
     STANDARD_VM_CONTRACT;
@@ -72,7 +83,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
     PCODE helperAddress = GetDictionaryLookupHelper(pLookup->helper);
 
-    WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
+    UINT32 slotOffset = (dictionaryIndexAndSlot & 0xFFFF) * sizeof(DictionaryEntry);
 
     // It's available only via the run-time helper function
     PCODE helper = (PCODE)NULL;

@@ -392,7 +392,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     // Add TrackAllocation, HeapList and very conservative padding to make sure we have enough for the allocation
     ReserveBlockSize += sizeof(TrackAllocation) + HOST_CODEHEAP_SIZE_ALIGN + 0x100;
 
-#if defined(TARGET_64BIT)
+#if defined(TARGET_64BIT) && !defined(TARGET_WASM)
     ReserveBlockSize += JUMP_ALLOCATE_SIZE;
 #endif
 
@@ -425,7 +425,9 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     TrackAllocation *pTracker = NULL;
 
-#if defined(TARGET_64BIT)
+#if defined(TARGET_WASM64)
+    pHp->CLRPersonalityRoutine = nullptr;
+#elif defined(TARGET_64BIT)
 #ifdef FEATURE_INTERPRETER
     if (pInfo->IsInterpreted())
     {
@@ -462,7 +464,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     pHp->maxCodeHeapSize = m_TotalBytesAvailable - (pTracker ? pTracker->size : 0);
 
-#if defined(TARGET_64BIT)
+#if defined(TARGET_64BIT) && !defined(TARGET_WASM)
     if (pHp->CLRPersonalityRoutine != NULL)
     {
         ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);

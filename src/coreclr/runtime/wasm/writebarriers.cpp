@@ -21,6 +21,23 @@
 #error The current assembly implementation of write barriers does not implement card bundles
 #endif
 
+#if defined(TARGET_WASM64) && !defined(FEATURE_NATIVEAOT)
+// Wasm64 currently only uses the interpreter and does not need a stackless entrypoint.
+EXTERN_C FCDECL2_RAW(void, RhpAssignRef, Object **dst, Object *ref)
+{
+    *dst = ref;
+    if (reinterpret_cast<BYTE *>(ref) >= g_ephemeral_low && reinterpret_cast<BYTE *>(ref) < g_ephemeral_high)
+        reinterpret_cast<BYTE *>(g_card_table)[reinterpret_cast<uintptr_t>(dst) >> card_byte_shift] = 0xff;
+}
+
+EXTERN_C FCDECL2_RAW(void, RhpCheckedAssignRef, Object **dst, Object *ref)
+{
+    if (reinterpret_cast<BYTE *>(dst) >= g_lowest_address && reinterpret_cast<BYTE *>(dst) < g_highest_address)
+        RhpAssignRef(dst, ref);
+    else
+        *dst = ref;
+}
+#else
 // To simplify integration with the rest of the codebase and avoid complicating the build
 // system, Wasm write barriers are implemented using inline assembly inside C functions, below.
 // These write barriers use the Wasm-specific FCDECL2_RAW for a native calling convention instead
@@ -81,7 +98,6 @@ ASM_HELPER_2(void, RhpAssignRef, Object **dst, Object *ref)
         "return\n"
     );
 }
-
 EXTERN_C FCDECL2_RAW(void, RhpCheckedAssignRef, Object **dst, Object *ref);
 ASM_HELPER_2(void, RhpCheckedAssignRef, Object **dst, Object *ref)
 {
@@ -128,3 +144,4 @@ ASM_HELPER_2(void, RhpCheckedAssignRef, Object **dst, Object *ref)
         "return\n"
     );
 }
+#endif // defined(TARGET_WASM64) && !defined(FEATURE_NATIVEAOT)
