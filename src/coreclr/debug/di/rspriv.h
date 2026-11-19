@@ -876,9 +876,75 @@ protected:
 
 #endif // #if debug
 
+private:
+    struct LockHolderTraits final
+    {
+        using Type = RSLock*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type lock) noexcept
+        {
+            if (lock != NULL)
+                HolderLeave(lock);
+        }
+    };
+
+    struct InverseLockHolderTraits final
+    {
+        using Type = RSLock*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type lock) noexcept
+        {
+            if (lock != NULL)
+                HolderEnter(lock);
+        }
+    };
+
 public:
-    typedef Holder<RSLock *, RSLock::HolderEnter, RSLock::HolderLeave> RSLockHolder;
-    typedef Holder<RSLock *, RSLock::HolderLeave, RSLock::HolderEnter> RSInverseLockHolder;
+    class RSLockHolder final
+    {
+        RSLock* const m_rsLock;
+        LifetimeHolder<LockHolderTraits> m_lock;
+
+    public:
+        RSLockHolder(RSLock* lock, BOOL acquire = TRUE)
+            : m_rsLock(lock)
+        {
+            if (acquire)
+                Acquire();
+        }
+
+        void Acquire()
+        {
+            _ASSERTE(static_cast<RSLock*>(m_lock) == NULL);
+            if (m_rsLock != NULL)
+            {
+                HolderEnter(m_rsLock);
+                m_lock = m_rsLock;
+            }
+        }
+
+        void Release()
+        {
+            m_lock.Free();
+        }
+
+        BOOL IsNull() const
+        {
+            return m_rsLock == NULL;
+        }
+
+        RSLockHolder(const RSLockHolder&) = delete;
+        RSLockHolder& operator=(const RSLockHolder&) = delete;
+    };
+
+    using RSInverseLockHolder = LifetimeHolder<InverseLockHolderTraits>;
+
+    static RSInverseLockHolder ReleaseForScope(RSLock* lock)
+    {
+        if (lock != NULL)
+            HolderLeave(lock);
+        return RSInverseLockHolder(lock);
+    }
 
 };
 

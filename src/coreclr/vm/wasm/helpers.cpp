@@ -1949,28 +1949,30 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
     }
     else
     {
-        uint32_t functionLocalVirtualIP = (*(uint32_t*)(fp + WASM_STACKFRAME_VIRTUALIP_OFFSET)) * 2;
         TADDR establishingFrame = GetWasmEstablishingFramePointer(fp);
         UINT_PTR identity = *reinterpret_cast<UINT_PTR*>(establishingFrame + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET);
         TADDR baseVirtualIP;
+        bool hasSingleVirtualIP;
         if ((identity & 1) == 0)
         {
             _ASSERTE(identity != STACK_WALK_INDIRECT_TO_FRAMEPOINTER);
             DWORD functionIndex = static_cast<DWORD>(reinterpret_cast<UINT_PTR>(PortableEntryPoint::GetActualCode(identity)));
-            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(functionIndex);
+            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(functionIndex, &hasSingleVirtualIP);
         }
         else if (static_cast<INT_PTR>(identity) < 0)
         {
             DWORD functionIndex = static_cast<DWORD>((~identity) >> 1);
-            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(functionIndex);
+            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(functionIndex, &hasSingleVirtualIP);
         }
         else
         {
             _ASSERTE(identity != TERMINATE_R2R_STACK_WALK);
-            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(static_cast<DWORD>(identity >> 1));
+            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(static_cast<DWORD>(identity >> 1), &hasSingleVirtualIP);
         }
         if (baseVirtualIP == 0)
             return 0;
+        uint32_t functionLocalVirtualIP = hasSingleVirtualIP ? 2 :
+            (*reinterpret_cast<uint32_t*>(fp + WASM_STACKFRAME_VIRTUALIP_OFFSET)) * 2;
         return baseVirtualIP + functionLocalVirtualIP;
     }
 }
