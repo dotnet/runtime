@@ -60,8 +60,10 @@ For ReadyToRun, the layout needs the host-native Crossgen2, jitinterface,
 wasm64 cross-JIT, and R2RDump. If Crossgen2 and its native libraries were built
 outside the usual CoreCLR output directory, pass
 `/p:Crossgen2InBuildDir=/absolute/path/to/crossgen2` when generating the layout.
-The wrapper enables experimental non-composite wasm64 compilation and runs
-R2RDump validation before running the test. This is a Node/CoreRun workflow,
+The wrapper enables experimental wasm64 compilation, non-composite by default,
+and runs R2RDump validation before running the test. Set `CompositeBuildMode=1`
+for a composite of the test assemblies, or `WholeProgramCompositeBuildMode=1` to
+include CoreLib, as on wasm32. This is a Node/CoreRun workflow,
 not a Chrome or Helix test leg.
 
 Tests with their own native library also need the memory64 test-native build and a

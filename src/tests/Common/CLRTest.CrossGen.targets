@@ -70,10 +70,7 @@ fi
 
 if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
     export RunCrossGen2=1
-    # wasm64 ReadyToRun only supports non-composite images.
-    if [ "$(TargetArchitecture)" != "wasm64" ]; then
-        export CompositeBuildMode=1
-    fi
+    export CompositeBuildMode=1
 fi
 
 crossgen2OutputDirectory="IL-CG2"
@@ -90,10 +87,6 @@ fi
 # CrossGen2 Script
 if [ ! -z ${RunCrossGen2+x} ]%3B then
   if [ "$(TargetOS)" == "browser" ] && [ "$(TargetArchitecture)" == "wasm64" ]; then
-    if [ -n "${CompositeBuildMode+x}" ]; then
-      echo "CoreRun wasm64 tests support non-composite ReadyToRun only." >&2
-      exit 1
-    fi
     export CROSSGEN2_EXPERIMENTAL_WASM64=1
     export DOTNET_ReadyToRun="${DOTNET_ReadyToRun:-1}"
   fi
