@@ -9389,7 +9389,8 @@ public:
     {
         return optAssertionCount;
     }
-    ASSERT_TP* bbJtrueAssertionOut;
+    struct KnownBitsPhiCache* optKnownBitsPhiCache = nullptr; // the known bits of PHIs, see KnownBitsAnalysis
+    ASSERT_TP*                bbJtrueAssertionOut;
 
     // Assertion prop helpers.
     ASSERT_TP&          GetAssertionDep(unsigned lclNum, bool mustExist = false);
