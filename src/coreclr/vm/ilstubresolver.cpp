@@ -324,7 +324,8 @@ ILStubResolver::ILStubResolver() :
     m_pCompileTimeState(dac_cast<PTR_CompileTimeState>(ILNotYetGenerated)),
     m_pStubMD(dac_cast<PTR_MethodDesc>(nullptr)),
     m_pStubTargetMD(dac_cast<PTR_MethodDesc>(nullptr)),
-    m_jitFlags()
+    m_jitFlags(),
+    m_pNextCollectibleResolver(dac_cast<PTR_ILStubResolver>(nullptr))
 {
     LIMITED_METHOD_CONTRACT;
 }
