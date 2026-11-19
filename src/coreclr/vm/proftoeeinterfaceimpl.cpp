@@ -119,6 +119,7 @@
 #include "threadsuspend.h"
 #include "inlinetracking.h"
 #include "frozenobjectheap.h"
+#include "gcenv.h"
 
 #ifdef PROFILING_SUPPORTED
 #include "profilinghelper.h"
@@ -1147,8 +1148,6 @@ bool SaveContainedObjectRef(Object * pBO, void * context)
 //      TRUE=continue
 //      FALSE=stop
 //
-extern bool s_forcedGCInProgress;
-
 bool HeapWalkHelper(Object * pBO, void * pvContext)
 {
     CONTRACTL
