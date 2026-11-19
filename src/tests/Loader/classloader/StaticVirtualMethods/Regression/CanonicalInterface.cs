@@ -111,6 +111,26 @@ public class CanonicalInterface
         public static Type GetArgument<TArg>((object, int) value) => typeof(TArg);
     }
 
+    private interface IGenericDefaultFunc : IGenericFunc<(object, int)>
+    {
+        Type IGenericFunc<(object, int)>.GetInstanceArgument<TArg>((object, int) value) => typeof(TArg);
+        static Type IGenericFunc<(object, int)>.GetArgument<TArg>((object, int) value) => typeof(TArg);
+    }
+
+    private interface IStatefulGenericDefaultFunc<T> : IGenericFunc<(object, int)>
+    {
+        Type IGenericFunc<(object, int)>.GetInstanceArgument<TArg>((object, int) value) => typeof((T, TArg));
+        static Type IGenericFunc<(object, int)>.GetArgument<TArg>((object, int) value) => typeof((T, TArg));
+    }
+
+    private interface IInheritedGenericDefault<T, U> : IStatefulGenericDefaultFunc<U> { }
+    private interface IClosedGenericDefault : IInheritedGenericDefault<object, string> { }
+
+    private interface IReimplementedGenericDefault<T> : IStatefulGenericDefaultFunc<T>
+    {
+        static Type IGenericFunc<(object, int)>.GetArgument<TArg>((object, int) value) => typeof((TArg, T));
+    }
+
     private sealed class GenericClassFunc : IGenericFunc<(object, int)>
     {
         public Type GetInstanceArgument<TArg>((object, int) value) => typeof(TArg);
@@ -183,6 +203,30 @@ public class CanonicalInterface
     private static int CallOther<TFunc, T>(T value) where TFunc : struct, IFunc<T>
         => TFunc.Invoke(value);
 
+    // Inlining exposes an interface, rather than a class or struct, as the constrained type.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type CallInterfaceGeneric<TArg>((object, int) value)
+        => CallClassGeneric<IGenericDefaultFunc, (object, int), TArg>(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Func<(object, int), Type> GetInterfaceGenericDelegate<TArg>()
+        => GetClassGenericDelegate<IGenericDefaultFunc, (object, int), TArg>();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Func<T, Type> GetClassGenericDelegate<TFunc, T, TArg>() where TFunc : class, IGenericFunc<T>
+        => TFunc.GetArgument<TArg>;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CheckInterfaceInstantiations<T>((object, int) value)
+    {
+        Assert.Equal(typeof((string, int)), CallClassGeneric<IClosedGenericDefault, (object, int), int>(value));
+        Assert.Equal(typeof((string, string)), GetClassGenericDelegate<IClosedGenericDefault, (object, int), string>()(value));
+        Assert.Equal(typeof((int, T)), CallClassGeneric<IReimplementedGenericDefault<T>, (object, int), int>(value));
+        Assert.Equal(typeof((string, T)), CallClassGeneric<IReimplementedGenericDefault<T>, (object, int), string>(value));
+        Assert.Equal(typeof((int, T)), GetClassGenericDelegate<IReimplementedGenericDefault<T>, (object, int), int>()(value));
+        Assert.Equal(typeof((string, T)), GetClassGenericDelegate<IReimplementedGenericDefault<T>, (object, int), string>()(value));
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int CallInstanceOther<TFunc, T>(TFunc func, T value) where TFunc : struct, IFunc<T>
         => func.InvokeInstance(value);
@@ -227,6 +271,16 @@ public class CanonicalInterface
     {
         (object, int) objectState = (new object(), value);
         (string, int) stringState = ("state", value);
+
+        CheckInterfaceInstantiations<object>(objectState);
+        CheckInterfaceInstantiations<string>(objectState);
+
+        Assert.Equal(typeof(int), CallInterfaceGeneric<int>(objectState));
+        Assert.Equal(typeof(object), CallInterfaceGeneric<object>(objectState));
+        Assert.Equal(typeof(string), CallInterfaceGeneric<string>(objectState));
+        Assert.Equal(typeof(int), GetInterfaceGenericDelegate<int>()(objectState));
+        Assert.Equal(typeof(object), GetInterfaceGenericDelegate<object>()(objectState));
+        Assert.Equal(typeof(string), GetInterfaceGenericDelegate<string>()(objectState));
 
         Assert.Equal(value + 10, CallClass<ClassFunc, (object, int)>(objectState));
         Assert.Equal(value + 10, CallClass<InheritedClassFunc, (object, int)>(objectState));

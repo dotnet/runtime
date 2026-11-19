@@ -8645,8 +8645,9 @@ MethodTable::TryResolveConstraintMethodApprox(
     }
 
     // Preserve static default-interface and reference-type hierarchy resolution when
-    // the interface scan could not identify an implementation.
-    if (isStatic && pMD == NULL)
+    // the interface scan could not identify a class implementation. Interface-owned
+    // candidates also need the resolver to apply the method instantiation.
+    if (isStatic && (pMD == NULL || pMD->GetMethodTable()->IsInterface()))
     {
         _ASSERTE(!thInterfaceType.IsTypeDesc());
         _ASSERTE(thInterfaceType.IsInterface());
