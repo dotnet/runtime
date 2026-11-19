@@ -97,7 +97,7 @@ namespace {Namespace}._{Isa}
                 int sizeOfoutArray = outArray.Length * sizeof({RetBaseType});
                 int sizeOfmaskArray = maskArray.Length * sizeof({Op1BaseType});
 
-                if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray || (alignment * 2) < sizeOfmaskArray)
+                if (!int.IsPow2(alignment) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray || (alignment * 2) < sizeOfmaskArray)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }
@@ -157,14 +157,14 @@ namespace {Namespace}._{Isa}
                 for (var i = 0; i < MaskElementCount; i++) { _maskData[i] = ({Op1BaseType})(Helpers.getMask{Op1BaseType}()); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector<{Op1BaseType}>, byte>(ref testStruct._storeMask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskData[0]), (uint)sizeof(Vector<{Op1BaseType}>));
 
-                ulong alignment  = (ulong)LargestVectorSize;
+                ulong alignment  = (ulong)VectorAlignment;
                 byte[] _outArray = new byte[alignment * 2];
                 testStruct._outHandle = GCHandle.Alloc(_outArray, GCHandleType.Pinned);
 
                 return testStruct;
             }
 
-            public void* _outArrayPtr => DataTable.Align((byte*)(_outHandle.AddrOfPinnedObject().ToPointer()), (ulong)LargestVectorSize);
+            public void* _outArrayPtr => DataTable.Align((byte*)(_outHandle.AddrOfPinnedObject().ToPointer()), (ulong)VectorAlignment);
 
             public void Dispose()
             {
@@ -262,7 +262,7 @@ namespace {Namespace}._{Isa}
             ValidateConditionalSelectResult_FalseValue(mask, op1, op2, trueOp, _dataTable.outArrayPtr);
         }
 
-        private static readonly int LargestVectorSize = 64;
+        private static readonly int VectorAlignment = (int)BitOperations.RoundUpToPowerOf2((uint)Vector<byte>.Count);
 
         private static readonly int Op1ElementCount  = sizeof(Vector<{Op1BaseType}>) / sizeof({Op1BaseType});
         private static readonly int Op2ElementCount  = sizeof(Vector<{Op2BaseType}>) / sizeof({Op2BaseType});
@@ -292,7 +292,7 @@ namespace {Namespace}._{Isa}
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector<{Op1BaseType}>, byte>(ref _mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskData[0]), (uint)sizeof(Vector<{Op1BaseType}>));
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector<{RetBaseType}>, byte>(ref _falseFld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)sizeof(Vector<{Op1BaseType}>));
 
-            _dataTable = new DataTable(_data1, _data2, new {RetBaseType}[RetElementCount], _maskData, LargestVectorSize);
+            _dataTable = new DataTable(_data1, _data2, new {RetBaseType}[RetElementCount], _maskData, VectorAlignment);
         }
 
         public bool IsSupported => {Isa}.IsSupported;

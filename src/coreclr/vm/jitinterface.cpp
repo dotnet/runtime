@@ -58,6 +58,18 @@
 #include "tailcallhelp.h"
 #include "patchpointinfo.h"
 
+#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+using RuntimeCodeGenInfo = CInterpreterJitInfo;
+static_assert(!std::is_polymorphic<ICorStaticInfo>::value);
+static_assert(!std::is_polymorphic<ICorDynamicInfo>::value);
+static_assert(!std::is_polymorphic<ICorJitInfo>::value);
+static_assert(!std::is_polymorphic<CInterpreterJitInfo>::value);
+#else
+using RuntimeCodeGenInfo = CEECodeGenInfo;
+static_assert(std::is_polymorphic<ICorJitInfo>::value);
+static_assert(std::is_polymorphic<CEECodeGenInfo>::value);
+#endif
+
 #if defined(FEATURE_INTERPRETER) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
 void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
 #endif
@@ -105,7 +117,7 @@ int64_t AtomicLoad64WithoutTearing(int64_t volatile *valueRef)
 #endif // TARGET_64BIT
 }
 
-FCIMPL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompiledILBytes, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -113,7 +125,7 @@ FCIMPL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread)
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompiledMethodCount, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -121,7 +133,7 @@ FCIMPL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread)
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompilationTimeInTicks, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompilationTimeInTicks, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -6306,9 +6318,19 @@ bool CEEInfo::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
 
     // ECMA augment III.1.7.7 allows making this escaping assumption based on
     // RefSafetyRules and UnscopedRef attributes.
-    if (pMD->GetModule()->OptsIntoRefSafetyRulesV11())
+    Module* pModule = pMD->GetModule();
+    if (pModule->OptsIntoRefSafetyRulesV11())
     {
-        result = (pMD->GetCustomAttribute(WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+        mdMethodDef md = pMD->GetMemberDef();
+        result = (pModule->GetCustomAttribute(md, WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+
+        // C# emits [UnscopedRef] for properties on the property rather than on its accessors.
+        mdProperty pd;
+        if (!result && IsMdSpecialName(pMD->GetAttrs()) &&
+            (pModule->GetMDImport()->GetPropertyInfoForMethodDef(md, &pd, NULL, NULL) == S_OK))
+        {
+            result = (pModule->GetCustomAttribute(pd, WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+        }
     }
 
     EE_TO_JIT_TRANSITION();
@@ -9090,7 +9112,15 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     MethodDesc * pMD = GetMethod(ftn);
 
     if (isUnsafeFunctionPointer)
+    {
         pMD->PrepareForUseAsAFunctionPointer();
+    }
+    else
+    {
+        // Delegate targets can be called from precompiled code without a call-site signature
+        // load, so the target must be ready for prestub stack walks before it is published.
+        pMD->PrepareForUseAsACallTargetOfANativeImage();
+    }
 
     pResult->accessType = IAT_VALUE;
     pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
@@ -11644,7 +11674,11 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
             &m_dbgAsyncInfo, m_dbgAsyncSuspensionPoints, m_dbgAsyncContinuationVars, m_numAsyncContinuationVars,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
+#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+        static_cast<CInterpreterJitInfo*>(this)->SetDebugInfo(pDebugInfo);
+#else
         SetDebugInfo(pDebugInfo);
+#endif
     }
     EX_CATCH
     {
@@ -12489,7 +12523,8 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
     _ASSERTE(objRef != NULL);
 
     // TODO: support types containing GC pointers
-    if (bufferSize + valueOffset <= (int)objRef->GetSize())
+    size_t objSize = objRef->GetSize();
+    if ((size_t)bufferSize <= objSize && (size_t)valueOffset <= objSize - (size_t)bufferSize)
     {
         Object* obj = OBJECTREFToObject(objRef);
         PTR_MethodTable type = obj->GetMethodTable();
@@ -12995,7 +13030,7 @@ void CEECodeGenInfo::getEHinfo(
 }
 
 static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
-                                       CEECodeGenInfo *comp,
+                                       RuntimeCodeGenInfo *comp,
                                        BYTE **nativeEntry,
                                        uint32_t *nativeSizeOfCode,
                                        NativeCodeVersion nativeCodeVersion)
@@ -13203,7 +13238,7 @@ void ThrowExceptionForJit(HRESULT res)
 
 static TADDR UnsafeJitFunctionWorker(
     EECodeGenManager *pJitMgr,
-    CEECodeGenInfo *pJitInfo,
+    RuntimeCodeGenInfo *pJitInfo,
     NativeCodeVersion nativeCodeVersion,
     _Out_ ULONG* pSizeOfCode)
 {
@@ -13531,6 +13566,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         if (ret)
         {
             sizeOfILCode = interpreterJitInfo.getMethodInfoInternal()->ILCodeSize;
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+            // Passing auxiliary state through the JIT-EE interface would allow direct
+            // emission. Backpatch before publication to avoid extending that interface.
+            reinterpret_cast<InterpByteCodeStart*>(ret)->InitializeAuxiliaryEntry(config->GetAuxiliaryActivationFlag());
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
@@ -14637,6 +14678,15 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 DWORD instructionSetEncoded = CorSigUncompressData(pBlob);
                 bool mustInstructionSetBeSupported = !!(instructionSetEncoded & 1);
                 ReadyToRunInstructionSet instructionSet = (ReadyToRunInstructionSet)(instructionSetEncoded >> 1);
+#ifdef TARGET_WASM
+                // Other images must match the instruction sets CoreLib was compiled for.
+                if (mustInstructionSetBeSupported && currentModule->IsSystem())
+                {
+                    ExecutionManager::GetEEJitManager()->SetInstructionSetFromCoreLib(InstructionSetFromR2RInstructionSet(instructionSet));
+                    corjitFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
+                    continue;
+                }
+#endif // TARGET_WASM
                 if (IsInstructionSetSupported(corjitFlags, instructionSet) != mustInstructionSetBeSupported)
                 {
                     return FALSE;
@@ -15623,6 +15673,15 @@ NativeCodeVersion EECodeInfo::GetNativeCodeVersion() const
     {
         return NativeCodeVersion();
     }
+
+#if defined(HAVE_GCCOVER) && defined(FEATURE_READYTORUN)
+    // R2R code is the default version, even when its entry point was registered
+    // by a different instantiation or by diagnostic enumeration before publication.
+    if (m_pJM == ExecutionManager::GetReadyToRunJitManager())
+    {
+        return NativeCodeVersion(pMD);
+    }
+#endif // HAVE_GCCOVER && FEATURE_READYTORUN
 
 #ifdef FEATURE_CODE_VERSIONING
     if (pMD->IsVersionable())

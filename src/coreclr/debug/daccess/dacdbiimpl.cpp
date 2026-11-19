@@ -4485,9 +4485,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(VM
 
         // Pass the magical flags to the loader enumerator to get all Execution-only assemblies.
         iterator = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        CollectibleAssemblyHolder pAssembly;
 
-        while (iterator.Next(pAssembly.This()))
+        while (iterator.Next(&pAssembly))
         {
             VMPTR_Assembly vmAssembly = VMPTR_Assembly::NullPtr();
             vmAssembly.SetHostPtr(pAssembly);
@@ -6330,6 +6330,23 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CompareControlRegisters(
     return S_OK;
 }
 
+// DT_CONTEXT has no XSTATE area, so size these buffers by DT_CONTEXT rather than by
+// ContextSizeForFlags, which sizes T_CONTEXT and requires the XSTATE area when CONTEXT_XSTATE is set.
+static bool DTContextSizeForFlagsSufficient(ULONG32 size, ULONG32 contextFlags)
+{
+#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
+    if ((contextFlags & DT_CONTEXT_EXTENDED_REGISTERS) != DT_CONTEXT_EXTENDED_REGISTERS)
+        return size >= offsetof(DT_CONTEXT, ExtendedRegisters);
+#endif
+    return size >= sizeof(DT_CONTEXT);
+}
+
+static bool DTContextBufferSufficient(ContextBuffer context)
+{
+    return DTContextSizeForFlagsSufficient(context.contextSize,
+        reinterpret_cast<const DT_CONTEXT *>(context.pContextBytes)->ContextFlags);
+}
+
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CopyContext(
     IN ContextBuffer destinationContext,
     IN ContextBuffer sourceContext,
@@ -6343,7 +6360,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CopyContext(
 
     // The chunk-wise copy below only touches the CONTEXT regions selected by the
     // ContextFlags.
-    if (!CheckContextSizeForBuffer(sourceContext.contextSize, sourceContext.pContextBytes))
+    if (!DTContextBufferSufficient(sourceContext))
         return E_INVALIDARG;
     if (copyMode != kCopyContextUseExplicitFlags && flags != 0)
         return E_INVALIDARG;
@@ -6351,26 +6368,26 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CopyContext(
     switch (copyMode)
     {
         case kCopyContextPreserveDestinationFlags:
-            if (!CheckContextSizeForBuffer(destinationContext.contextSize, destinationContext.pContextBytes))
+            if (!DTContextBufferSufficient(destinationContext))
                 return E_INVALIDARG;
             break;
 
         case kCopyContextMergeSourceFlags:
         {
-            if (!CheckContextSizeForBuffer(destinationContext.contextSize, destinationContext.pContextBytes))
+            if (!DTContextBufferSufficient(destinationContext))
                 return E_INVALIDARG;
 
             DT_CONTEXT * pDestination = reinterpret_cast<DT_CONTEXT *>(destinationContext.pContextBytes);
             const DT_CONTEXT * pSource = reinterpret_cast<const DT_CONTEXT *>(sourceContext.pContextBytes);
             DWORD mergedFlags = pDestination->ContextFlags | pSource->ContextFlags;
-            if (!CheckContextSizeForFlags(destinationContext.contextSize, mergedFlags))
+            if (!DTContextSizeForFlagsSufficient(destinationContext.contextSize, mergedFlags))
                 return E_INVALIDARG;
             pDestination->ContextFlags = mergedFlags;
             break;
         }
 
         case kCopyContextUseExplicitFlags:
-            if (!CheckContextSizeForFlags(destinationContext.contextSize, flags))
+            if (!DTContextSizeForFlagsSufficient(destinationContext.contextSize, flags))
                 return E_INVALIDARG;
             reinterpret_cast<DT_CONTEXT *>(destinationContext.pContextBytes)->ContextFlags = flags;
             break;

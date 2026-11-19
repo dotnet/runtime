@@ -43,7 +43,6 @@ namespace Wasm.Build.Tests
             { "<EnableDiagnostics>true</EnableDiagnostics>", false },
             { "<EventSourceSupport>false</EventSourceSupport>", false },
             { "<EventSourceSupport>true</EventSourceSupport>", false },
-            { "<WasmEnableRelaxedSimd>false</WasmEnableRelaxedSimd>", false },
             // property left unset -> no relink
             { "", false },
             // casing must not matter, MSBuild string comparison is case-insensitive
@@ -51,7 +50,6 @@ namespace Wasm.Build.Tests
             // property differing from the runtime pack -> relink
             { "<InvariantGlobalization>true</InvariantGlobalization>", true },
             { "<InvariantTimezone>true</InvariantTimezone>", true },
-            { "<WasmEnableRelaxedSimd>true</WasmEnableRelaxedSimd>", true },
             { "<WasmInitialHeapSize>67108864</WasmInitialHeapSize>", true },
             // EmccInitialHeapSize is the documented browser property and EmccTotalMemory its legacy
             // alias; both must be normalized into WasmInitialHeapSize before the registry compares.

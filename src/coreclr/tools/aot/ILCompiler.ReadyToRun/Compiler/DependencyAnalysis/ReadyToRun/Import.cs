@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysisFramework;
@@ -14,19 +15,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public class Import : EmbeddedObjectNode, ISymbolDefinitionNode, ISortableSymbolNode, IObjectNodeWithAlignment
     {
-        public readonly ImportSectionNode Table;
+        public ImportSectionNode Table { get; private set; }
 
         internal readonly SignatureEmbeddedPointerIndirectionNode ImportSignature;
 
         internal readonly MethodDesc CallingMethod;
 
         private readonly bool _sortLast;
+        private readonly ImportSectionNode _originalTable;
+        private bool _placementDeferred;
 
         public Signature Signature => ImportSignature.Target;
 
         public Import(ImportSectionNode tableNode, Signature importSignature, MethodDesc callingMethod = null, bool sortLast = false)
         {
             Table = tableNode;
+            _originalTable = tableNode;
             CallingMethod = callingMethod;
             _sortLast = sortLast;
             ImportSignature = new SignatureEmbeddedPointerIndirectionNode(this, importSignature);
@@ -34,7 +38,29 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void OnMarked(NodeFactory factory)
         {
+            if (factory.DeferredImportPlacement is List<Import> imports)
+            {
+                _placementDeferred = true;
+                imports.Add(this);
+                return;
+            }
             Table.AddImport(factory, this);
+        }
+
+        internal void CompleteDeferredPlacement(NodeFactory factory)
+        {
+            Debug.Assert(_placementDeferred);
+            _placementDeferred = false;
+            Table.AddImport(factory, this);
+        }
+
+        internal void PromoteToEager(ImportSectionNode table)
+        {
+            // Placement, including the signature pointer, must wait until promotion is decided.
+            Debug.Assert(!Marked || _placementDeferred);
+            Debug.Assert(table.IsEager && !table.EmitPrecode);
+            Debug.Assert(Table.EntrySize == table.EntrySize);
+            Table = table;
         }
 
         protected override string GetName(NodeFactory factory)
@@ -62,7 +88,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(Table.Name);
+            // Promotion changes placement, not identity; an eager cell may share this signature.
+            sb.Append(_originalTable.Name);
             sb.Append("->"u8);
             ImportSignature.AppendMangledName(nameMangler, sb);
         }
@@ -74,6 +101,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sink.Add(ImportSignature, "Signature for ready-to-run fixup import");
         }
 
+        // Eager promotion mixes import subclasses and cells from different original sections.
+        // Concrete subclasses need distinct class codes, and the original table must break ties
+        // when promoted cells otherwise share their current section and signature. Signature
+        // pointers compare through their imports, keeping separately sorted cell/signature arrays paired.
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             Import otherNode = (Import)other;
@@ -89,7 +120,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            return Table.CompareToImpl(otherNode.Table, comparer);
+            result = Table.CompareToImpl(otherNode.Table, comparer);
+            if (result != 0)
+                return result;
+
+            return _originalTable.CompareToImpl(otherNode._originalTable, comparer);
         }
 
         public override bool RepresentsIndirectionCell => true;

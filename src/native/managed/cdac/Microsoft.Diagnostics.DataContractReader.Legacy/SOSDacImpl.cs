@@ -34,7 +34,7 @@ public sealed unsafe partial class SOSDacImpl
     : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
       ISOSDacInterface6, ISOSDacInterface7, ISOSDacInterface8, ISOSDacInterface9, ISOSDacInterface10,
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15,
-      ISOSDacInterface16, ISOSDacInterface17
+      ISOSDacInterface16, ISOSDacInterface17, ISOSDacInterface18, ISOSDacInterface19
 {
     private const uint DefaultAppDomainId = 1;
 
@@ -7606,4 +7606,327 @@ public sealed unsafe partial class SOSDacImpl
     }
 
     #endregion ISOSDacInterface17
+
+    int ISOSDacInterface18.GetGCInfoHeader(ClrDataAddress ip, SOSGCInfoHeader* header)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (header is null)
+                return HResults.E_POINTER;
+            if (header->SizeOf < (uint)sizeof(SOSGCInfoHeader))
+                return HResults.E_INVALIDARG;
+
+            *header = new SOSGCInfoHeader { SizeOf = (uint)sizeof(SOSGCInfoHeader) };
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            GCInfoHeader info = gcInfo.GetHeader(handle);
+            if (info.PSPSym is { Base: not SpecialSlotBase.CallerStackPointer }
+                || info.GenericsInstContext is { Base: not SpecialSlotBase.CallerStackPointer })
+                return HResults.E_NOTIMPL;
+
+            // Interface18 special slots are caller-SP-relative; other GS cookie bases are reported through Interface19.
+            SpecialSlot? gsCookie = info.GSCookie is { Base: SpecialSlotBase.CallerStackPointer } ? info.GSCookie : null;
+            *header = new SOSGCInfoHeader
+            {
+                SizeOf = (uint)sizeof(SOSGCInfoHeader),
+                GcInfoVersion = info.Version,
+                CodeSize = info.CodeSize,
+                PrologSize = info.PrologSize,
+                StackBaseRegister = info.StackBaseRegister,
+                SizeOfStackParameterArea = info.SizeOfStackParameterArea,
+                IsVarArg = info.IsVarArg ? 1 : 0,
+                WantsReportOnlyLeaf = info.WantsReportOnlyLeaf ? 1 : 0,
+                HasTailCalls = info.HasTailCalls ? 1 : 0,
+                GSCookieIsPresent = gsCookie.HasValue ? 1 : 0,
+                GSCookieStackSlot = gsCookie?.SpOffset ?? 0,
+                GSCookieValidRangeStart = gsCookie.HasValue ? info.GSCookieValidRangeStart : 0,
+                GSCookieValidRangeEnd = gsCookie.HasValue ? info.GSCookieValidRangeEnd : 0,
+                PSPSymIsPresent = info.PSPSym.HasValue ? 1 : 0,
+                PSPSymStackSlot = info.PSPSym?.SpOffset ?? 0,
+                GenericsInstContextIsPresent = info.GenericsInstContext.HasValue ? 1 : 0,
+                GenericsInstContextStackSlot = info.GenericsInstContext?.SpOffset ?? 0,
+                GenericsInstContextKind = info.GenericsInstContextKind switch
+                {
+                    GenericsContextKind.MethodDesc => 1,
+                    GenericsContextKind.MethodHandle => 2,
+                    _ => 0,
+                },
+            };
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface18.GetGCInfoInterruptibleRanges(
+        ClrDataAddress ip, uint count, SOSCodeRange[]? ranges, uint* pNeeded)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+            *pNeeded = 0;
+            if (count > (uint)(ranges?.Length ?? 0))
+                return HResults.E_INVALIDARG;
+
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            IReadOnlyList<InterruptibleRange> info = gcInfo.GetInterruptibleRanges(handle);
+            // The X86 contract also exposes call-site ranges for stack walking.
+            // Interface18 has a separate safe-point table; those are not interruptible regions.
+            if (handle is Contracts.GCInfoHelpers.X86.X86GCInfo { Header.Interruptible: false })
+                info = Array.Empty<InterruptibleRange>();
+            *pNeeded = (uint)info.Count;
+            if (count < *pNeeded)
+                return HResults.S_FALSE;
+
+            Span<SOSCodeRange> output = ranges.AsSpan();
+            for (int i = 0; i < info.Count; i++)
+            {
+                InterruptibleRange range = info[i];
+                output[i] = new SOSCodeRange
+                {
+                    BeginOffset = range.StartOffset,
+                    EndOffset = range.EndOffset,
+                };
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface18.GetGCInfoSafePoints(
+        ClrDataAddress ip, uint count, uint[]? offsets, uint* pNeeded)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+            *pNeeded = 0;
+            if (count > (uint)(offsets?.Length ?? 0))
+                return HResults.E_INVALIDARG;
+
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            IReadOnlyList<uint> info = gcInfo.GetSafePoints(handle);
+            *pNeeded = (uint)info.Count;
+            if (count < *pNeeded)
+                return HResults.S_FALSE;
+
+            Span<uint> output = offsets.AsSpan();
+            for (int i = 0; i < info.Count; i++)
+            {
+                output[i] = info[i];
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface18.GetGCInfoSlotLifetimes(
+        ClrDataAddress ip, uint count, SOSGCSlotLifetime[]? lifetimes, uint* pNeeded)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+            *pNeeded = 0;
+            if (count > (uint)(lifetimes?.Length ?? 0))
+                return HResults.E_INVALIDARG;
+
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            IReadOnlyList<GCSlotLifetime> info = gcInfo.GetSlotLifetimes(handle);
+            *pNeeded = (uint)info.Count;
+            if (count < *pNeeded)
+                return HResults.S_FALSE;
+
+            Span<SOSGCSlotLifetime> output = lifetimes.AsSpan();
+            for (int i = 0; i < info.Count; i++)
+            {
+                GCSlotLifetime slot = info[i];
+                output[i] = new SOSGCSlotLifetime
+                {
+                    BeginOffset = slot.BeginOffset,
+                    EndOffset = slot.EndOffset,
+                    IsRegister = slot.IsRegister ? 1 : 0,
+                    RegisterNumber = slot.RegisterNumber,
+                    SpOffset = slot.SpOffset,
+                    // Contract caller-SP/SP/frame bases (0/1/2) map to Interface18's 2/0/1.
+                    BaseRegister = slot.IsRegister ? 0u : slot.BaseRegister switch
+                    {
+                        0 => 2u,
+                        1 => 0u,
+                        2 => 1u,
+                        _ => throw new InvalidOperationException($"Unexpected GC stack slot base {slot.BaseRegister}."),
+                    },
+                    GcFlags = slot.GcFlags,
+                };
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface19.GetGCInfoX86Header(ClrDataAddress ip, SOSGCInfoX86Header* header)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        try
+        {
+            if (header is null)
+                return HResults.E_POINTER;
+            if (header->SizeOf < (uint)sizeof(SOSGCInfoX86Header))
+                return HResults.E_INVALIDARG;
+            *header = new() { SizeOf = (uint)sizeof(SOSGCInfoX86Header) };
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            X86GCInfoHeader info = gcInfo.GetX86Header(handle);
+            GCInfoHeader commonInfo = gcInfo.GetHeader(handle);
+            SpecialSlot? gsCookie = commonInfo.GSCookie;
+            *header = new()
+            {
+                SizeOf = (uint)sizeof(SOSGCInfoX86Header),
+                EpilogSize = info.EpilogSize,
+                EpilogCount = info.EpilogCount,
+                SavedRegisters = info.SavedRegisters,
+                Flags = info.Flags,
+                ArgumentSize = info.ArgumentSize,
+                FrameSize = info.FrameSize,
+                UntrackedCount = info.UntrackedCount,
+                VarPtrTableSize = info.VarPtrTableSize,
+                SyncStartOffset = info.SyncStartOffset,
+                SyncEndOffset = info.SyncEndOffset,
+                NoGCRegionCount = info.NoGCRegionCount,
+                ArgumentTableOffset = info.ArgumentTableOffset,
+                ReturnKind = info.ReturnKind,
+                ReversePInvokeOffset = info.ReversePInvokeOffset,
+                GSCookieBase = gsCookie?.Base switch
+                {
+                    null => 0u,
+                    SpecialSlotBase.CallerStackPointer => 1u,
+                    SpecialSlotBase.InitialStackPointer => 2u,
+                    SpecialSlotBase slotBase => throw new InvalidOperationException($"Unexpected GS cookie base {slotBase}."),
+                },
+                GSCookieOffset = gsCookie?.SpOffset ?? 0,
+                GSCookieValidRangeStart = gsCookie.HasValue ? commonInfo.GSCookieValidRangeStart : 0,
+                GSCookieValidRangeEnd = gsCookie.HasValue ? commonInfo.GSCookieValidRangeEnd : 0,
+            };
+            return HResults.S_OK;
+        }
+        catch (PlatformNotSupportedException)
+        {
+            return HResults.E_NOTIMPL;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
+
+    int ISOSDacInterface19.GetGCInfoX86Epilogs(ClrDataAddress ip, uint count, uint[]? offsets, uint* pNeeded)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+            *pNeeded = 0;
+            if (count > (uint)(offsets?.Length ?? 0))
+                return HResults.E_INVALIDARG;
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            IReadOnlyList<uint> info = gcInfo.GetX86Epilogs(handle);
+            *pNeeded = (uint)info.Count;
+            if (count < *pNeeded)
+                return HResults.S_FALSE;
+            Span<uint> output = offsets.AsSpan();
+            for (int i = 0; i < info.Count; i++)
+                output[i] = info[i];
+            return HResults.S_OK;
+        }
+        catch (PlatformNotSupportedException)
+        {
+            return HResults.E_NOTIMPL;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
+
+    int ISOSDacInterface19.GetGCInfoX86Transitions(
+        ClrDataAddress ip, uint count, SOSGCInfoX86Transition[]? transitions, uint* pNeeded)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+            *pNeeded = 0;
+            if (count > (uint)(transitions?.Length ?? 0))
+                return HResults.E_INVALIDARG;
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            IReadOnlyList<X86GCTransition> info = gcInfo.GetX86Transitions(handle);
+            *pNeeded = (uint)info.Count;
+            if (count < *pNeeded)
+                return HResults.S_FALSE;
+            Span<SOSGCInfoX86Transition> output = transitions.AsSpan();
+            for (int i = 0; i < info.Count; i++)
+            {
+                X86GCTransition transition = info[i];
+                output[i] = new()
+                {
+                    CodeOffset = transition.CodeOffset,
+                    Kind = (uint)transition.Kind,
+                    StackDepthChange = transition.StackDepthChange,
+                    RegisterNumber = transition.RegisterNumber,
+                    ArgumentOffset = transition.ArgumentOffset,
+                    Count = transition.Count,
+                    Flags = transition.Flags,
+                };
+            }
+            return HResults.S_OK;
+        }
+        catch (PlatformNotSupportedException)
+        {
+            return HResults.E_NOTIMPL;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
+
+    private (IGCInfo Contract, IGCInfoHandle Handle) GetGCInfoForAddress(ClrDataAddress ip)
+    {
+        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+        TargetCodePointer codePointer = ip.ToTargetCodePointer(_target);
+        if (ip == 0 || executionManager.GetCodeBlockHandle(codePointer) is not CodeBlockHandle codeBlock)
+            throw new ArgumentException("The instruction pointer must refer to managed code.", nameof(ip));
+
+        executionManager.GetGCInfo(codeBlock, out TargetPointer address, out uint version);
+        IGCInfo gcInfo = _target.Contracts.GCInfo;
+        IGCInfoHandle handle = executionManager.GetCodeKind(codePointer) == Contracts.CodeKind.Interpreter
+            ? gcInfo.DecodeInterpreterGCInfo(address, version)
+            : gcInfo.DecodePlatformSpecificGCInfo(address, version);
+
+        return (gcInfo, handle);
+    }
 }

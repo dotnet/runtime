@@ -38,7 +38,6 @@ check_include_files("sys/param.h;sys/types.h;machine/npx.h" HAVE_MACHINE_NPX_H)
 check_include_files("sys/param.h;sys/cdefs.h;machine/reg.h" HAVE_MACHINE_REG_H)
 check_include_files(machine/vmparam.h HAVE_MACHINE_VMPARAM_H)
 check_include_files(procfs.h HAVE_PROCFS_H)
-check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 check_include_files(sys/time.h HAVE_SYS_TIME_H)
 check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
 check_include_files(sys/membarrier.h HAVE_SYS_MEMBARRIER_H)
@@ -289,9 +288,6 @@ int main(int argc, char **argv)
         return 0;
 }" UNWIND_CONTEXT_IS_UCONTEXT_T)
 
-check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
-check_symbol_exists(unw_get_proc_info_in_range libunwind.h HAVE_GET_PROC_INFO_IN_RANGE)
-
 check_cxx_source_compiles("
 #include <libunwind.h>
 
@@ -329,7 +325,6 @@ int main(int argc, char **argv)
 }" HAVE_PR_SET_PTRACER)
 
 if(CLR_CMAKE_TARGET_APPLE)
-  set(HAVE__NSGETENVIRON 1)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 

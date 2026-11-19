@@ -100,7 +100,6 @@ if(NOT CLR_CROSS_COMPONENTS_BUILD)
   set(STATIC_LIBS_ONLY 1)
   if(CLR_CMAKE_TARGET_BROWSER)
     set(GEN_PINVOKE 1)
-    set(BUILD_LIBS_NATIVE_BROWSER 1)
     set(STATIC_LIB_DESTINATION ${CMAKE_BINARY_DIR}/libs-native)
     set(CORERUN_LIBS_ONLY 1)
   endif()
@@ -135,10 +134,6 @@ if(CLR_CMAKE_HOST_UNIX)
     endif()
 
     add_subdirectory(pal)
-else()
-    if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
-        add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
-    endif()
 endif()
 
 #----------------------------------------------------
