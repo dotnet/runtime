@@ -108,7 +108,6 @@ class WasmRegAlloc : public RegAllocInterface
             , m_virtualRegRefs(nullptr)
             , m_physicalRegAssignments(comp->lvaTrackedCount, REG_STK, comp->getAllocator(CMK_LSRA))
             , m_intervals(comp->lvaTrackedCount, nullptr, comp->getAllocator(CMK_LSRA))
-            , m_blockOrder(comp->getAllocator(CMK_LSRA))
         {
         }
 
@@ -133,9 +132,6 @@ class WasmRegAlloc : public RegAllocInterface
 
         // Map from local tracked index to live interval for this local, in this funclet
         jitstd::vector<Interval*> m_intervals;
-
-        // Block iteration order for this funclet (initialized later)
-        jitstd::vector<BasicBlock*> m_blockOrder;
     };
 
     jitstd::vector<PerFuncletData*> m_perFuncletData;
@@ -190,7 +186,6 @@ private:
     regNumber RequestInternalRegister(GenTree* node, var_types type);
     void      ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const char* reason));
 
-    void SetBlockSequence();
     void BuildIntervals();
     void BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* funcletData);
     void DumpIntervals();
