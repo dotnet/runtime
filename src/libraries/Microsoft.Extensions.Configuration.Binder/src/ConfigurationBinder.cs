@@ -1176,7 +1176,15 @@ namespace Microsoft.Extensions.Configuration
             return propertyBindingPoint.Value;
         }
 
-        private static bool IsIgnoredProperty(PropertyInfo property) => property.IsDefined(typeof(ConfigurationIgnoreAttribute));
+        private static bool IsIgnoredProperty(PropertyInfo property)
+        {
+            return CanInheritFromBase(property.GetMethod) || CanInheritFromBase(property.SetMethod)
+                ? property.IsDefined(typeof(ConfigurationIgnoreAttribute))
+                : property.IsDefined(typeof(ConfigurationIgnoreAttribute), inherit: false);
+
+            static bool CanInheritFromBase(MethodInfo? accessor) => accessor is not null &&
+                (accessor.Attributes & (MethodAttributes.Virtual | MethodAttributes.NewSlot)) == MethodAttributes.Virtual;
+        }
 
         private static string GetPropertyName(PropertyInfo property)
         {
