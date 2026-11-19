@@ -248,8 +248,10 @@
                                                    $(LibrariesNativeArtifactsPath)libSystem.Globalization.Native.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.IO.Compression.Native.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Native.Browser.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.Native.TimeZoneData.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.Native.TimeZoneData.Invariant.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Runtime.InteropServices.JavaScript.Native.a;
                                                    $(LibrariesNativeArtifactsPath)libz.a" />
       <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)*.dat;
