@@ -44,7 +44,6 @@ namespace ILCompiler.DependencyAnalysis
         public TypeGVMEntriesNode(TypeDesc associatedType)
         {
             Debug.Assert(associatedType.IsTypeDefinition);
-            Debug.Assert(!associatedType.IsInterface);
             _associatedType = associatedType;
         }
 
@@ -64,11 +63,14 @@ namespace ILCompiler.DependencyAnalysis
                 GenericVirtualMethodTableNode.AddGenericVirtualMethodImplementationDependencies(sink, context, entry.CallingMethod, entry.ImplementationMethod);
 
             foreach (var entry in ScanForInterfaceGenericVirtualMethodEntries())
-                InterfaceGenericVirtualMethodTableNode.AddGenericVirtualMethodImplementationDependencies(sink, context, entry.CallingMethod, entry.ImplementationType, entry.ImplementationMethod);
+                InterfaceGenericVirtualMethodTableNode.AddGenericVirtualMethodImplementationDependencies(sink, context, entry.CallingMethod, entry.ImplementationMethod);
         }
 
         public IEnumerable<TypeGVMEntryInfo> ScanForGenericVirtualMethodEntries()
         {
+            if (_associatedType.IsInterface)
+                yield break;
+
             foreach (MethodDesc decl in _associatedType.EnumAllVirtualSlots())
             {
                 // Non-Generic virtual methods are tracked by an orthogonal mechanism.
@@ -89,11 +91,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEnumerable<InterfaceGVMEntryInfo> ScanForInterfaceGenericVirtualMethodEntries()
         {
-            foreach (var iface in _associatedType.RuntimeInterfaces)
+            DefType[] interfaces = _associatedType.RuntimeInterfaces;
+            // An interface can also be the constrained type for its own static defaults.
+            int count = interfaces.Length + (_associatedType.IsInterface ? 1 : 0);
+            for (int i = 0; i < count; i++)
             {
+                TypeDesc iface = i < interfaces.Length ? interfaces[i] : _associatedType.InstantiateAsOpen();
                 foreach (var method in iface.GetVirtualMethods())
                 {
-                    if (!method.HasInstantiation)
+                    if (!method.HasInstantiation || (_associatedType.IsInterface && !method.Signature.IsStatic))
                         continue;
 
                     // We don't need to emit async variants since this is just a copy

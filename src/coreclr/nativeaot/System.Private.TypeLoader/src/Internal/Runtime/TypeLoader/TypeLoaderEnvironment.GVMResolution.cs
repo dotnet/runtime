@@ -292,6 +292,11 @@ namespace Internal.Runtime.TypeLoader
                                     while (!interfaceImplType.GetTypeDefinition().RuntimeTypeHandle.Equals(targetTypeHandle))
                                         interfaceImplType = (DefType)interfaceImplType.BaseType;
                                 }
+                                else if (targetType.GetTypeDefinition().RuntimeTypeHandle.Equals(targetTypeHandle))
+                                {
+                                    // The constrained interface declares the default implementation itself.
+                                    interfaceImplType = targetType;
+                                }
                                 else if (currentIfaceType.HasInstantiation && currentIfaceType.GetTypeDefinition().RuntimeTypeHandle.Equals(targetTypeHandle))
                                 {
                                     // Default interface method implemented on the same type that declared the slot.

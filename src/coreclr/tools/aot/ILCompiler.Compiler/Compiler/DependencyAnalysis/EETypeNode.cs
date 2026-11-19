@@ -103,10 +103,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             var result = VirtualMethodAnalysisFlags.None;
 
-            // Interface EETypes not relevant to virtual method analysis at this time.
-            if (type.IsInterface)
-                return result;
-
             DefType defType = type.GetClosestDefType();
 
             foreach (MethodDesc method in defType.GetAllVirtualMethods())
@@ -114,12 +110,12 @@ namespace ILCompiler.DependencyAnalysis
                 // First, check if this type has any GVM that overrides a GVM on a parent type. If that's the case, this makes
                 // the current type interesting for GVM analysis (i.e. instantiate its overriding GVMs for existing GVMDependenciesNodes
                 // of the instantiated GVM on the parent types).
-                if (method.HasInstantiation)
+                if (method.HasInstantiation && (!type.IsInterface || method.Signature.IsStatic))
                 {
                     result |= VirtualMethodAnalysisFlags.NeedsGvmEntries;
 
                     MethodDesc slotDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
-                    if (slotDecl != method)
+                    if (type.IsInterface || slotDecl != method)
                         result |= VirtualMethodAnalysisFlags.InterestingForDynamicDependencies;
                 }
 
@@ -144,7 +140,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (MethodDesc method in interfaceImpl.EnumAllVirtualSlots())
                 {
-                    if (!method.HasInstantiation)
+                    if (!method.HasInstantiation || (type.IsInterface && !method.Signature.IsStatic))
                         continue;
 
                     // We found a GVM on one of the implemented interfaces. Find if the type implements this method.
@@ -160,7 +156,7 @@ namespace ILCompiler.DependencyAnalysis
                         // We need to limit the number of types that are interesting for GVM analysis at all costs since
                         // these all will be looked at for every unique generic virtual method call in the program.
                         // Having a long list of interesting types affects the compilation throughput heavily.
-                        if (slotDecl.OwningType == defType ||
+                        if (type.IsInterface || slotDecl.OwningType == defType ||
                             (method.Signature.IsStatic
                                 ? defType.BaseType.ResolveInterfaceMethodToStaticVirtualMethodOnType(method)
                                 : defType.BaseType.ResolveInterfaceMethodTarget(method)) != slotDecl)
