@@ -211,7 +211,6 @@ else()
     ${RUNTIME_DIR}/unix/CLREventBase.cpp
     unix/PalUnix.cpp
     unix/PalCreateDump.cpp
-    unix/cgroupcpu.cpp
     ${GC_DIR}/unix/events.cpp
   )
 
@@ -229,7 +228,6 @@ else()
     list(APPEND COMMON_RUNTIME_SOURCES
       ${GC_DIR}/unix/gcenv.unix.cpp
       ${GC_DIR}/unix/numasupport.cpp
-      ${GC_DIR}/unix/cgroup.cpp
     )
   endif()
 

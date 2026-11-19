@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
@@ -9,8 +10,23 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
+        // Protects starting the thread and setting its priority
+        private Lock _lock = new Lock(useTrivialWaits: true);
+
+        // so far the only place we initialize it is `WaitForForegroundThreads`
+        // and only in the case when there are running foreground threads
+        // by the moment of `StartupCodeHelpers.Shutdown()` invocation
+        private static ManualResetEvent s_allDone;
+
+        private static int s_foregroundRunningCount;
+
         private StartHelper? _startHelper;
         private Exception? _startException;
+
+        static unsafe partial void RegisterThreadExitCallback()
+        {
+            RuntimeImports.RhSetThreadExitCallback(&OnThreadExit);
+        }
 
         partial void StartCore()
         {
@@ -109,6 +125,56 @@ namespace System.Threading
             {
                 thread.SetThreadStateBit(ThreadState.Stopped);
             }
+        }
+
+        private static void StopThread(Thread thread)
+        {
+            if ((thread._threadState & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
+            {
+                thread.SetThreadStateBit(ThreadState.Stopped);
+            }
+
+            int state = thread.ClearThreadStateBit(ThreadState.Background);
+            if ((state & (int)ThreadState.Background) == 0)
+            {
+                DecrementRunningForeground();
+            }
+        }
+
+        static partial void IncrementRunningForeground()
+        {
+            Interlocked.Increment(ref s_foregroundRunningCount);
+        }
+
+        static partial void DecrementRunningForeground()
+        {
+            if (Interlocked.Decrement(ref s_foregroundRunningCount) == 0)
+            {
+                // Interlocked.Decrement issues full memory barrier
+                // so most recent write to s_allDone should be visible here
+                s_allDone?.Set();
+            }
+        }
+
+        internal static void WaitForForegroundThreads()
+        {
+            Thread.CurrentThread.IsBackground = true;
+            // last read/write inside `IsBackground` issues full barrier no matter of logic flow
+            // so we can just read `s_foregroundRunningCount`
+            if (s_foregroundRunningCount == 0)
+            {
+                // current thread is the last foreground thread, so let the runtime finish
+                return;
+            }
+            Volatile.Write(ref s_allDone, new ManualResetEvent(false));
+            // other foreground threads could have their job finished meanwhile
+            // Volatile.Write above issues release barrier
+            // but we need acquire barrier to observe most recent write to s_foregroundRunningCount
+            if (Volatile.Read(ref s_foregroundRunningCount) == 0)
+            {
+                return;
+            }
+            s_allDone.WaitOne();
         }
     }
 }

@@ -590,13 +590,15 @@ private:
 
 enum class ExceptionSetFlags : uint32_t
 {
-    None                     = 0x0,
-    OverflowException        = 0x1,
-    DivideByZeroException    = 0x2,
-    ArithmeticException      = 0x4,
-    NullReferenceException   = 0x8,
-    IndexOutOfRangeException = 0x10,
-    UnknownException         = 0x20,
+    None                        = 0x0,
+    OverflowException           = 0x1,
+    DivideByZeroException       = 0x2,
+    ArithmeticException         = 0x4,
+    NullReferenceException      = 0x8,
+    IndexOutOfRangeException    = 0x10,
+    ArgumentException           = 0x20,
+    ArgumentOutOfRangeException = 0x40,
+    UnknownException            = 0x80,
 };
 
 class HelperCallProperties
