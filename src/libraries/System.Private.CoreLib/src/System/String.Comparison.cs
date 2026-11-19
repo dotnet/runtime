@@ -757,7 +757,7 @@ namespace System
         /// The hash code for a given value can differ between processes. Don't persist it or use it outside the process that computed it.
         /// </para>
         /// </remarks>
-        public static int GetHashCodeWeak(ReadOnlySpan<char> value) => GetNonRandomizedHashCode(value) ^ WeakHashCodeSeed.Value;
+        public static int GetHashCodeWeak(ReadOnlySpan<char> value) => GetNonRandomizedHashCode(value, WeakHashCodeSeed.Value);
 
         /// <summary>
         /// Returns a hash code for the specified character span using the specified comparison rules and a fast, non-cryptographic algorithm.
@@ -780,14 +780,13 @@ namespace System
             switch (comparisonType)
             {
                 case StringComparison.Ordinal:
-                    return GetNonRandomizedHashCode(value) ^ WeakHashCodeSeed.Value;
+                    return GetNonRandomizedHashCode(value, WeakHashCodeSeed.Value);
 
                 case StringComparison.OrdinalIgnoreCase:
-                    return GetNonRandomizedHashCodeOrdinalIgnoreCase(value) ^ WeakHashCodeSeed.Value;
+                    return GetNonRandomizedHashCodeOrdinalIgnoreCase(value, WeakHashCodeSeed.Value);
 
                 default:
                     ThrowHelper.ThrowArgumentException(ExceptionResource.NotSupported_StringComparison, ExceptionArgument.comparisonType);
-                    Debug.Fail("Should not reach this point.");
                     return default;
             }
         }
@@ -801,12 +800,12 @@ namespace System
         /// </remarks>
         private static class WeakHashCodeSeed
         {
-            internal static readonly int Value = GenerateSeed();
+            internal static readonly uint Value = GenerateSeed();
 
-            private static unsafe int GenerateSeed()
+            private static unsafe uint GenerateSeed()
             {
-                int seed;
-                Interop.GetRandomBytes((byte*)&seed, sizeof(int));
+                uint seed;
+                Interop.GetRandomBytes((byte*)&seed, sizeof(uint));
                 return seed;
             }
         }
@@ -863,9 +862,13 @@ namespace System
             }
         }
 
-        internal static unsafe int GetNonRandomizedHashCode(ReadOnlySpan<char> span)
+        private const uint NonRandomizedHashCodeSeed = (5381 << 16) + 5381;
+
+        internal static int GetNonRandomizedHashCode(ReadOnlySpan<char> span) => GetNonRandomizedHashCode(span, NonRandomizedHashCodeSeed);
+
+        private static unsafe int GetNonRandomizedHashCode(ReadOnlySpan<char> span, uint seed)
         {
-            uint hash1 = (5381 << 16) + 5381;
+            uint hash1 = seed;
             uint hash2 = hash1;
 
             int length = span.Length;
@@ -972,9 +975,11 @@ namespace System
             return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(hash1, hash2, this.AsSpan(Length - length));
         }
 
-        internal static unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> span)
+        internal static int GetNonRandomizedHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> span) => GetNonRandomizedHashCodeOrdinalIgnoreCase(span, NonRandomizedHashCodeSeed);
+
+        private static unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> span, uint seed)
         {
-            uint hash1 = (5381 << 16) + 5381;
+            uint hash1 = seed;
             uint hash2 = hash1;
 
             uint p0, p1;
