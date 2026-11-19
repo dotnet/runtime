@@ -622,12 +622,12 @@ extern "C" {
     void RuntimeHelper_AssemblyName_InitializeAssemblySpec (void *, void *, void *) __asm__("AssemblyName_InitializeAssemblySpec");
     void RuntimeHelper_AssemblyNative_ApplyUpdate (void *, void *, int32_t, void *, int32_t, void *, int32_t, void *) __asm__("AssemblyNative_ApplyUpdate");
     uint32_t RuntimeHelper_AssemblyNative_GetAssemblyCount () __asm__("AssemblyNative_GetAssemblyCount");
+    void RuntimeHelper_AssemblyNative_GetAssemblyFromHandle (void *, void *, void *) __asm__("AssemblyNative_GetAssemblyFromHandle");
     int32_t RuntimeHelper_AssemblyNative_GetCodeBase (void *, void *, void *) __asm__("AssemblyNative_GetCodeBase");
     void RuntimeHelper_AssemblyNative_GetEntryAssembly (void *, void *) __asm__("AssemblyNative_GetEntryAssembly");
     void RuntimeHelper_AssemblyNative_GetEntryPoint (void *, void *, void *) __asm__("AssemblyNative_GetEntryPoint");
     void RuntimeHelper_AssemblyNative_GetExecutingAssembly (void *, void *, void *) __asm__("AssemblyNative_GetExecutingAssembly");
     void RuntimeHelper_AssemblyNative_GetExportedTypes (void *, void *, void *) __asm__("AssemblyNative_GetExportedTypes");
-    void RuntimeHelper_AssemblyNative_GetExposedObject (void *, void *, void *) __asm__("AssemblyNative_GetExposedObject");
     int32_t RuntimeHelper_AssemblyNative_GetFlags (void *, void *) __asm__("AssemblyNative_GetFlags");
     void RuntimeHelper_AssemblyNative_GetForwardedType (void *, int32_t, void *, void *) __asm__("AssemblyNative_GetForwardedType");
     void RuntimeHelper_AssemblyNative_GetFullName (void *, void *, void *) __asm__("AssemblyNative_GetFullName");
@@ -1130,12 +1130,12 @@ static const Entry s_RuntimeHelpers[] = {
     { "AssemblyName_InitializeAssemblySpec", (void*)&RuntimeHelper_AssemblyName_InitializeAssemblySpec },
     { "AssemblyNative_ApplyUpdate", (void*)&RuntimeHelper_AssemblyNative_ApplyUpdate },
     { "AssemblyNative_GetAssemblyCount", (void*)&RuntimeHelper_AssemblyNative_GetAssemblyCount },
+    { "AssemblyNative_GetAssemblyFromHandle", (void*)&RuntimeHelper_AssemblyNative_GetAssemblyFromHandle },
     { "AssemblyNative_GetCodeBase", (void*)&RuntimeHelper_AssemblyNative_GetCodeBase },
     { "AssemblyNative_GetEntryAssembly", (void*)&RuntimeHelper_AssemblyNative_GetEntryAssembly },
     { "AssemblyNative_GetEntryPoint", (void*)&RuntimeHelper_AssemblyNative_GetEntryPoint },
     { "AssemblyNative_GetExecutingAssembly", (void*)&RuntimeHelper_AssemblyNative_GetExecutingAssembly },
     { "AssemblyNative_GetExportedTypes", (void*)&RuntimeHelper_AssemblyNative_GetExportedTypes },
-    { "AssemblyNative_GetExposedObject", (void*)&RuntimeHelper_AssemblyNative_GetExposedObject },
     { "AssemblyNative_GetFlags", (void*)&RuntimeHelper_AssemblyNative_GetFlags },
     { "AssemblyNative_GetForwardedType", (void*)&RuntimeHelper_AssemblyNative_GetForwardedType },
     { "AssemblyNative_GetFullName", (void*)&RuntimeHelper_AssemblyNative_GetFullName },

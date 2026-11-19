@@ -36,17 +36,17 @@ namespace System.Reflection
 
         internal IntPtr GetUnderlyingNativeHandle() =>  m_assembly;
 
-        internal static RuntimeAssembly GetExposedObject(nint nativeAssembly)
+        internal static RuntimeAssembly GetAssemblyFromHandle(nint nativeAssembly)
         {
             RuntimeAssembly? assembly = null;
-            GetExposedObject(nativeAssembly, ObjectHandleOnStack.Create(ref assembly));
+            GetAssemblyFromHandle(nativeAssembly, ObjectHandleOnStack.Create(ref assembly));
             Debug.Assert(assembly is not null);
             return assembly;
         }
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExposedObject")]
-        private static partial void GetExposedObject(nint nativeAssembly, ObjectHandleOnStack assembly);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetAssemblyFromHandle")]
+        private static partial void GetAssemblyFromHandle(nint nativeAssembly, ObjectHandleOnStack assembly);
 
         private sealed class ManifestResourceStream : UnmanagedMemoryStream
         {

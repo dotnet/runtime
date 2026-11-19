@@ -78,14 +78,14 @@ public static partial class Debugger
         {
             if (typeData.Length % sizeof(NativeTypeArgument) != 0)
             {
-                throw new ArgumentException(SR.Argument_InvalidGenericArg);
+                throw new ArgumentException();
             }
 
             TypeDataWalk walk = new(MemoryMarshal.Cast<byte, NativeTypeArgument>(typeData));
             RuntimeType[] types = walk.ReadTypeHandles(count);
             if (!walk.IsFinished)
             {
-                throw new ArgumentException(SR.Argument_InvalidGenericArg);
+                throw new ArgumentException();
             }
 
             return types;
@@ -98,21 +98,23 @@ public static partial class Debugger
         {
             if (nativeAssembly == 0)
             {
-                throw new ArgumentException(SR.Argument_InvalidGenericArg);
+                throw new ArgumentException();
             }
 
-            return (RuntimeModule)RuntimeAssembly.GetExposedObject(nativeAssembly).ManifestModule;
+            return (RuntimeModule)RuntimeAssembly.GetAssemblyFromHandle(nativeAssembly).ManifestModule;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The debugger supplies tokens from the target's actual loaded metadata.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "The debugger supplies the target's actual runtime generic arguments.")]
         private static RuntimeType ReadInstantiation(
             RuntimeModule module, int token, RuntimeType[] arguments, bool allowUninstantiated = false)
         {
             RuntimeType type = (RuntimeType)module.ResolveType(token);
-            if (!allowUninstantiated || arguments.Length != 0)
+            if (arguments.Length != 0 || (!allowUninstantiated && type.IsGenericTypeDefinition))
             {
-                type = type.TypeHandle.Instantiate(arguments);
+                type = (RuntimeType)type.MakeGenericType(arguments);
             }
 
             return type;
@@ -134,7 +136,7 @@ public static partial class Debugger
             {
                 if ((uint)count > (uint)_remaining.Length)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidGenericArg);
+                    throw new ArgumentException();
                 }
 
                 RuntimeType[] types = count == 0 ? [] : new RuntimeType[count];
@@ -150,7 +152,7 @@ public static partial class Debugger
             {
                 if (_remaining.IsEmpty)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidGenericArg);
+                    throw new ArgumentException();
                 }
 
                 NativeTypeArgument node = _remaining[0];
@@ -170,14 +172,14 @@ public static partial class Debugger
                 uint elementValue = node.Data.ElementType;
                 if (elementValue > byte.MaxValue)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidGenericArg);
+                    throw new ArgumentException();
                 }
 
                 CorElementType elementType = (CorElementType)elementValue;
                 uint childCount = node.ChildCount;
                 if (childCount > (uint)_remaining.Length)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidGenericArg);
+                    throw new ArgumentException();
                 }
 
                 switch (elementType)
@@ -188,15 +190,13 @@ public static partial class Debugger
                     case CorElementType.ELEMENT_TYPE_BYREF:
                         if (childCount != 1)
                         {
-                            throw new ArgumentException(SR.Argument_InvalidGenericArg);
+                            throw new ArgumentException();
                         }
 
                         RuntimeType element = ReadTypeHandle();
                         return elementType switch
                         {
-                            CorElementType.ELEMENT_TYPE_ARRAY when node.Data.TypeData.ArrayTypeData.ArrayRank == 0 =>
-                                throw new BadImageFormatException(SR.Arg_BadImageFormatException),
-                            CorElementType.ELEMENT_TYPE_ARRAY => element.TypeHandle.MakeArray(
+                            CorElementType.ELEMENT_TYPE_ARRAY => (RuntimeType)element.MakeArrayType(
                                 unchecked((int)node.Data.TypeData.ArrayTypeData.ArrayRank)),
                             CorElementType.ELEMENT_TYPE_SZARRAY => (RuntimeType)element.MakeArrayType(),
                             CorElementType.ELEMENT_TYPE_PTR => (RuntimeType)element.MakePointerType(),
@@ -213,7 +213,7 @@ public static partial class Debugger
                     case CorElementType.ELEMENT_TYPE_FNPTR:
                         if (childCount == 0)
                         {
-                            throw new ArgumentException(SR.Argument_InvalidGenericArg);
+                            throw new ArgumentException();
                         }
 
                         RuntimeType[] signature = ReadTypeHandles((int)childCount);
@@ -222,7 +222,7 @@ public static partial class Debugger
                     default:
                         if (childCount != 0)
                         {
-                            throw new ArgumentException(SR.Argument_InvalidGenericArg);
+                            throw new ArgumentException();
                         }
 
                         return (RuntimeType)(elementType switch
@@ -245,7 +245,7 @@ public static partial class Debugger
                             CorElementType.ELEMENT_TYPE_I => typeof(nint),
                             CorElementType.ELEMENT_TYPE_U => typeof(nuint),
                             CorElementType.ELEMENT_TYPE_OBJECT => typeof(object),
-                            _ => throw new ArgumentException(SR.Argument_InvalidGenericArg),
+                            _ => throw new ArgumentException(),
                         });
                 }
             }

@@ -1134,7 +1134,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetFullName(QCall::AssemblyHandle pAsse
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetExposedObject(Assembly* pAssembly, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError)
+extern "C" void QCALLTYPE AssemblyNative_GetAssemblyFromHandle(Assembly* pAssembly, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

@@ -282,6 +282,8 @@ namespace System.Diagnostics
             [DebuggerHidden]
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "The debugger supplies the MethodDef token and runtime generic arguments from the target's loaded metadata.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+                Justification = "The debugger supplies the target's actual runtime generic arguments.")]
             private static MethodBase GetMethod(Context* context, RuntimeType[] typeArguments, out RuntimeType declaringType)
             {
                 RuntimeModule module = GetModule((nint)context->Assembly);
@@ -297,7 +299,7 @@ namespace System.Diagnostics
 
                 if (classArgumentCount != 0)
                 {
-                    declaringType = declaringType.TypeHandle.Instantiate(typeArguments[..classArgumentCount]);
+                    declaringType = (RuntimeType)declaringType.MakeGenericType(typeArguments[..classArgumentCount]);
                 }
                 if (methodArgumentCount != 0)
                 {
