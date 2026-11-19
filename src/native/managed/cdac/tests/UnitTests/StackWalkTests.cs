@@ -1798,7 +1798,8 @@ public unsafe class StackWalkTests
         Action<MockFrameBuilder>? configureFrames = null,
         RuntimeInfoArchitecture? runtimeArchitecture = null,
         Action<TestPlaceholderTarget.Builder>? configureTarget = null,
-        IExecutionManager? executionManager = null)
+        IExecutionManager? executionManager = null,
+        IGCInfo? gcInfo = null)
     {
         TestPlaceholderTarget.Builder targetBuilder = new(arch);
         MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder);
@@ -1856,7 +1857,7 @@ public unsafe class StackWalkTests
             // IsExceptionHandlingHelperInlinedCallFrame / GetDebuggerEvalData, none of which
             // invoke ExecutionManager or GCInfo, so empty mocks satisfy construction.
             .AddMockContract(executionManager ?? Mock.Of<IExecutionManager>())
-            .AddMockContract(Mock.Of<IGCInfo>())
+            .AddMockContract(gcInfo ?? Mock.Of<IGCInfo>())
             .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
     }
@@ -3113,5 +3114,139 @@ public unsafe class StackWalkTests
 
         StackWalk_1 stackWalk = new(target);
         Assert.Equal(root, stackWalk.CallerStackPointer(context).Value);
+    }
+
+    // EnumGcRefsForManagedFrame on an interpreted frame mirrors TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot
+    // (gcinfodecoder.cpp): the GC info is decoded with the interpreter encoding, stack slots are relative to the frame
+    // pointer (the InterpMethodContextFrame's pStack), and slots at or above the pStack of an active callee
+    // (pNext with a non-null ip) belong to the callee's argument area and are not reported by the caller.
+    private const ulong InterpGcBytecodeIp = 0x0005_1020;
+    private const ulong InterpGcStack = 0x0006_1000;
+    private const uint InterpGcStackBaseRegister = 8;
+
+    private static readonly LiveSlot[] InterpreterGcSlots =
+    [
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 0, SpBase: 2, GcFlags: 0),
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 8, SpBase: 2, GcFlags: 0),
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 16, SpBase: 2, GcFlags: 0x3), // conservatively reported argument slot
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 24, SpBase: 2, GcFlags: 0x3),
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 32, SpBase: 1, GcFlags: 0), // SP-relative: invalid for interpreter frames
+    ];
+
+    private static ulong InterpGcObject(int spOffset) => 0x0009_0000 + (ulong)spOffset;
+
+    // calleeIp: null for no callee (pNext == NULL); otherwise the ip of the callee InterpMethodContextFrame.
+    private static List<StackRefData> EnumerateInterpreterFrameGcRefs(ulong? calleeIp, ulong calleeStack, out Mock<IGCInfo> gcInfo)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        CodeBlockHandle cbh = new(new TargetPointer(0x0007_0000));
+        TargetPointer gcInfoAddress = new(0x0008_0000);
+        const uint GcVersion = 4;
+        const uint RelativeOffset = 0x20;
+
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeKind(new TargetCodePointer(InterpGcBytecodeIp))).Returns(CodeKind.Interpreter);
+        executionManager.Setup(e => e.GetRelativeOffset(cbh)).Returns(new TargetNUInt(RelativeOffset));
+        TargetPointer outGcInfo = gcInfoAddress;
+        uint outVersion = GcVersion;
+        executionManager.Setup(e => e.GetGCInfo(cbh, out outGcInfo, out outVersion));
+
+        IGCInfoHandle handle = Mock.Of<IGCInfoHandle>();
+        gcInfo = new();
+        gcInfo.Setup(g => g.DecodeInterpreterGCInfo(gcInfoAddress, GcVersion)).Returns(handle);
+        gcInfo.Setup(g => g.GetHeader(handle)).Returns(default(GCInfoHeader) with { StackBaseRegister = InterpGcStackBaseRegister });
+        gcInfo.Setup(g => g.EnumerateLiveSlots(handle, RelativeOffset, It.IsAny<GcSlotEnumerationOptions>())).Returns(InterpreterGcSlots);
+
+        ulong frame = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                MockInterpMethodContextFrame current = frameBuilder.AddInterpMethodContextFrame(parentPtr: 0, ip: InterpGcBytecodeIp, stack: InterpGcStack);
+                if (calleeIp is ulong ip)
+                {
+                    MockInterpMethodContextFrame callee = frameBuilder.AddInterpMethodContextFrame(parentPtr: current.Address, ip: ip, stack: calleeStack);
+                    current.NextPtr = callee.Address;
+                }
+                frame = current.Address;
+            },
+            configureTarget: targetBuilder =>
+            {
+                // The interpreter stack holding the slots, each pointing at a distinct object.
+                MockMemorySpace.HeapFragment stack = new()
+                {
+                    Name = "Interpreter stack",
+                    Address = InterpGcStack,
+                    Data = new byte[48],
+                };
+                for (int offset = 0; offset < stack.Data.Length; offset += 8)
+                    targetBuilder.MemoryBuilder.TargetTestHelpers.WritePointer(stack.Data.AsSpan(offset, 8), InterpGcObject(offset));
+                targetBuilder.MemoryBuilder.AddHeapFragment(stack);
+                // GcScanContext's interior pointer resolver; not used since interior pointers are not resolved.
+                targetBuilder.AddMockContract(Mock.Of<IGC>());
+                targetBuilder.AddMockContract(Mock.Of<IRuntimeTypeSystem>());
+                targetBuilder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                {
+                    [DataType.Array] = InterpGcTypeInfo(nameof(Data.Array.NumComponents)),
+                    [DataType.String] = InterpGcTypeInfo(nameof(Data.String.StringLength)),
+                    [DataType.Object] = InterpGcTypeInfo(nameof(Data.Object.MethodTable)),
+                });
+                targetBuilder.AddGlobals((Constants.Globals.ObjectToMethodTableUnmask, 0));
+            },
+            executionManager: executionManager.Object,
+            gcInfo: gcInfo.Object);
+
+        ContextHolder<RISCV64Context> context = new();
+        context.InstructionPointer = new TargetCodePointer(InterpGcBytecodeIp);
+        context.StackPointer = new TargetPointer(frame);
+        context.FramePointer = new TargetPointer(InterpGcStack);
+
+        GcScanContext scanContext = new(target, resolveInteriorPointers: false);
+        new GcScanner(target).EnumGcRefsForManagedFrame(context, cbh, new GcSlotEnumerationOptions { IsActiveFrame = false }, scanContext);
+        return scanContext.StackRefs;
+    }
+
+    private static Target.TypeInfo InterpGcTypeInfo(string field)
+        => new() { Fields = new Dictionary<string, Target.FieldInfo> { [field] = new Target.FieldInfo { Offset = 0 } } };
+
+    private static void AssertInterpreterSlots(List<StackRefData> refs, params int[] expectedOffsets)
+    {
+        Assert.Equal(expectedOffsets, refs.Select(r => r.Offset));
+        foreach (StackRefData r in refs)
+        {
+            Assert.Equal(InterpGcStack + (ulong)r.Offset, r.Address.Value);
+            Assert.Equal(InterpGcObject(r.Offset), r.Object.Value);
+            Assert.Equal((int)InterpGcStackBaseRegister, r.Register);
+        }
+    }
+
+    [Fact]
+    public void EnumGcRefs_InterpretedFrame_ReportsFrameRelativeSlots()
+    {
+        List<StackRefData> refs = EnumerateInterpreterFrameGcRefs(calleeIp: null, calleeStack: 0, out Mock<IGCInfo> gcInfo);
+
+        AssertInterpreterSlots(refs, 0, 8, 16, 24);
+        Assert.Equal(GcScanFlags.GC_CALL_INTERIOR | GcScanFlags.GC_CALL_PINNED, refs[2].Flags);
+        gcInfo.Verify(g => g.DecodeInterpreterGCInfo(It.IsAny<TargetPointer>(), It.IsAny<uint>()), Times.Once);
+        gcInfo.Verify(g => g.DecodePlatformSpecificGCInfo(It.IsAny<TargetPointer>(), It.IsAny<uint>()), Times.Never);
+    }
+
+    [Fact]
+    public void EnumGcRefs_InterpretedFrameWithActiveCallee_ExcludesCalleeArgumentArea()
+    {
+        List<StackRefData> refs = EnumerateInterpreterFrameGcRefs(calleeIp: 0x0005_2000, calleeStack: InterpGcStack + 16, out _);
+
+        AssertInterpreterSlots(refs, 0, 8);
+    }
+
+    [Fact]
+    public void EnumGcRefs_InterpretedFrameWithInactiveCallee_KeepsAllSlots()
+    {
+        // A callee InterpMethodContextFrame with a null ip is not executing (it is kept for reuse), so the
+        // caller still reports the slots above its pStack.
+        List<StackRefData> refs = EnumerateInterpreterFrameGcRefs(calleeIp: 0, calleeStack: InterpGcStack + 16, out _);
+
+        AssertInterpreterSlots(refs, 0, 8, 16, 24);
     }
 }
