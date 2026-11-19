@@ -81,7 +81,12 @@ namespace ILCompiler
             if (Get(_command.NoAotWarn))
                 suppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
 
-            ILProvider ilProvider = new NativeAotILProvider();
+            // Relative pointers make the interface maps smaller, unless the data is dehydrated (which
+            // encodes full and relative pointers in the same space). The code to read them is only
+            // needed if there can be any, which a multifile compilation can't tell as its modules are
+            // compiled separately.
+            bool relativeInterfaceMaps = _command.OptimizationMode == OptimizationMode.PreferSize && !Get(_command.Dehydrate);
+            ILProvider ilProvider = new NativeAotILProvider(mayHaveRelativeInterfaceMaps: relativeInterfaceMaps || Get(_command.MultiFile));
 
             Dictionary<int, bool> warningsAsErrors = new Dictionary<int, bool>();
             foreach (int warning in ProcessWarningCodes(Get(_command.WarningsAsErrorsEnable)))
@@ -630,6 +635,7 @@ namespace ILCompiler
                 .UseSecurityMitigationOptions(securityMitigationOptions)
                 .UseDebugInfoProvider(debugInfoProvider)
                 .UseDwarf5(Get(_command.UseDwarf5))
+                .UseRelativeInterfaceMaps(relativeInterfaceMaps)
                 .UseResilience(resilient);
 
             ICompilation compilation = builder.ToCompilation();

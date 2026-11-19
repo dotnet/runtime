@@ -68,6 +68,7 @@ public class Interfaces
         TestRuntime109496Regression.Run();
         TestRuntime113664Regression.Run();
         TestRuntime125577Regression.Run();
+        TestInterfaceMapLookup.Run();
 
         return Pass;
     }
@@ -2072,6 +2073,117 @@ public class Interfaces
         static string Frob<T, U, V>() where T : class, IFoo<U> where U : class where V : class
         {
             return T.Frob<V>();
+        }
+    }
+
+    class TestInterfaceMapLookup
+    {
+        interface I0 { }
+        interface I1 { }
+        interface I2 { }
+        interface I3 { }
+        interface I4 { }
+        interface I5 { }
+        interface I6 { }
+        interface I7 { }
+        interface I8 { }
+        interface I9 { }
+
+        class C0 { }
+        class C1 : I0 { }
+        class C2 : I0, I1 { }
+        class C3 : I0, I1, I2 { }
+        class C4 : I0, I1, I2, I3 { }
+        class C5 : I0, I1, I2, I3, I4 { }
+        class C7 : I0, I1, I2, I3, I4, I5, I6 { }
+        class C8 : I0, I1, I2, I3, I4, I5, I6, I7 { }
+        class C9 : I0, I1, I2, I3, I4, I5, I6, I7, I8 { }
+
+        class Gen<T> : I0, I1, I2, I3, I4, I5, I6, I7, I8 { }
+
+        class Unseen { }
+
+        static readonly Func<object, object>[] s_casts =
+        {
+            o => (I0)o, o => (I1)o, o => (I2)o, o => (I3)o, o => (I4)o,
+            o => (I5)o, o => (I6)o, o => (I7)o, o => (I8)o, o => (I9)o,
+        };
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int IsMask(object o)
+        {
+            int mask = 0;
+            if (o is I0) mask |= 1 << 0;
+            if (o is I1) mask |= 1 << 1;
+            if (o is I2) mask |= 1 << 2;
+            if (o is I3) mask |= 1 << 3;
+            if (o is I4) mask |= 1 << 4;
+            if (o is I5) mask |= 1 << 5;
+            if (o is I6) mask |= 1 << 6;
+            if (o is I7) mask |= 1 << 7;
+            if (o is I8) mask |= 1 << 8;
+            if (o is I9) mask |= 1 << 9;
+            return mask;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int CastMask(object o)
+        {
+            int mask = 0;
+            for (int i = 0; i < s_casts.Length; i++)
+            {
+                try
+                {
+                    s_casts[i](o);
+                    mask |= 1 << i;
+                }
+                catch (InvalidCastException)
+                {
+                }
+            }
+            return mask;
+        }
+
+        static void Check(object o, int expectedMask)
+        {
+            if (IsMask(o) != expectedMask || CastMask(o) != expectedMask)
+                throw new Exception($"{o.GetType()}: expected {expectedMask:x}, is {IsMask(o):x}, cast {CastMask(o):x}");
+        }
+
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
+        public static void Run()
+        {
+            Check(new C0(), 0);
+            Check(new C1(), 0x1);
+            Check(new C2(), 0x3);
+            Check(new C3(), 0x7);
+            Check(new C4(), 0xF);
+            Check(new C5(), 0x1F);
+            Check(new C7(), 0x7F);
+            Check(new C8(), 0xFF);
+            Check(new C9(), 0x1FF);
+            Check(new Gen<object>(), 0x1FF);
+            Check(new Gen<string>(), 0x1FF);
+
+            // Instantiations that cannot be precompiled (nesting depth is only known at run time),
+            // so the MethodTables are created by the type loader and have full pointer interface maps.
+            Type t = GetUnseen();
+            for (int i = 0; i < DynamicDepth(); i++)
+            {
+                t = typeof(Gen<>).MakeGenericType(t);
+                Check(Activator.CreateInstance(t), 0x1FF);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetUnseen() => typeof(Unseen);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static int DynamicDepth() => 12;
+
+            // Array covariance goes through the interface map of the element type
+            object arr = new Gen<object>[1];
+            if (arr is not IList<Gen<object>> || arr is not IReadOnlyList<I0> || arr is not IEnumerable<object>)
+                throw new Exception();
         }
     }
 

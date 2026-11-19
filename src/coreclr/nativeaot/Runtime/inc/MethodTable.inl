@@ -45,7 +45,7 @@ FORCEINLINE uint32_t MethodTable::GetFieldOffset(EETypeField eField)
     uint32_t cbOffset = offsetof(MethodTable, m_VTable) + (sizeof(UIntTarget) * m_usNumVtableSlots);
 
     // Followed by interface list
-    cbOffset += sizeof(MethodTable*) * GetNumInterfaces();
+    cbOffset += (HasRelativeInterfaceMap() ? sizeof(uint32_t) : sizeof(UIntTarget)) * GetNumInterfaces();
 
     const uint32_t relativeOrFullPointerOffset =
 #if FEATURE_PORTABLE_HELPERS

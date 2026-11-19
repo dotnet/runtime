@@ -103,10 +103,10 @@ namespace System.Runtime
             if (obj != null)
             {
                 MethodTable* mt = obj.GetMethodTable();
-                nint interfaceCount = mt->NumInterfaces;
-                if (interfaceCount != 0)
+                nint interfaceCount = mt->SignedNumInterfaces;
+                if (interfaceCount > 0)
                 {
-                    MethodTable** interfaceMap = mt->InterfaceMap;
+                    MethodTable** interfaceMap = mt->FullPointerInterfaceMap;
                     if (interfaceCount < unrollSize)
                     {
                         // If not enough for unrolled, jmp straight to small loop
@@ -147,9 +147,16 @@ namespace System.Runtime
                         interfaceCount--;
                     } while (interfaceCount > 0);
                 }
+                else if (MethodTable.MayHaveRelativeInterfaceMaps && interfaceCount < 0)
+                {
+                    if (RelativeInterfaceMapContains(mt, pTargetType))
+                    {
+                        goto done;
+                    }
+                }
 
             extra:
-                // NOTE: this check is outside the `if (interfaceCount != 0)` check because
+                // NOTE: this check is outside the `if (interfaceCount > 0)` check because
                 // we could have devirtualized and inlined all uses of IDynamicInterfaceCastable
                 // (and optimized the interface MethodTable away) and still have a type that
                 // is legitimately marked IDynamicInterfaceCastable (without having the MethodTable
@@ -312,13 +319,19 @@ namespace System.Runtime
             if (obj != null)
             {
                 MethodTable* mt = obj.GetMethodTable();
-                nint interfaceCount = mt->NumInterfaces;
-                if (interfaceCount == 0)
+                nint interfaceCount = mt->SignedNumInterfaces;
+                if (interfaceCount <= 0)
                 {
+                    if (MethodTable.MayHaveRelativeInterfaceMaps && interfaceCount < 0
+                        && RelativeInterfaceMapContains(mt, pTargetType))
+                    {
+                        goto done;
+                    }
+
                     goto slowPath;
                 }
 
-                MethodTable** interfaceMap = mt->InterfaceMap;
+                MethodTable** interfaceMap = mt->FullPointerInterfaceMap;
                 if (interfaceCount < unrollSize)
                 {
                     // If not enough for unrolled, jmp straight to small loop
@@ -369,6 +382,38 @@ namespace System.Runtime
         slowPath:
 
             return CheckCastInterface_Helper(pTargetType, obj);
+        }
+
+        // Scans an interface map with relative pointers, which only exists in types compiled with size optimizations.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe bool RelativeInterfaceMapContains(MethodTable* mt, MethodTable* pTargetType)
+        {
+            const int unrollSize = 4;
+
+            RelativePointer<MethodTable>* interfaceMap = mt->RelativeInterfaceMap;
+            nint interfaceCount = -mt->SignedNumInterfaces;
+
+            while (interfaceCount >= unrollSize)
+            {
+                if (interfaceMap[0].Value == pTargetType ||
+                    interfaceMap[1].Value == pTargetType ||
+                    interfaceMap[2].Value == pTargetType ||
+                    interfaceMap[3].Value == pTargetType)
+                {
+                    return true;
+                }
+
+                interfaceMap += unrollSize;
+                interfaceCount -= unrollSize;
+            }
+
+            for (; interfaceCount > 0; interfaceCount--, interfaceMap++)
+            {
+                if (interfaceMap->Value == pTargetType)
+                    return true;
+            }
+
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -506,10 +551,9 @@ namespace System.Runtime
             Debug.Assert(pTargetType->IsInterface, "IsInstanceOfInterface called with non-interface MethodTable");
 
             int numInterfaces = pObjType->NumInterfaces;
-            MethodTable** interfaceMap = pObjType->InterfaceMap;
             for (int i = 0; i < numInterfaces; i++)
             {
-                MethodTable* pInterfaceType = interfaceMap[i];
+                MethodTable* pInterfaceType = pObjType->GetInterface(i);
                 if (pInterfaceType == pTargetType)
                 {
                     return true;
@@ -537,7 +581,7 @@ namespace System.Runtime
 
                 for (int i = 0; i < numInterfaces; i++)
                 {
-                    MethodTable* pInterfaceType = interfaceMap[i];
+                    MethodTable* pInterfaceType = pObjType->GetInterface(i);
 
                     // We can ignore interfaces which are not also marked as having generic variance
                     // unless we're dealing with array covariance.

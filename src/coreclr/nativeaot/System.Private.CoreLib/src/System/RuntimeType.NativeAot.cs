@@ -376,7 +376,7 @@ namespace System
                 Type[] result = new Type[count];
                 for (int i = 0; i < result.Length; i++)
                 {
-                    result[i] = GetTypeFromMethodTable(pEEType->InterfaceMap[i]);
+                    result[i] = GetTypeFromMethodTable(pEEType->GetInterface(i));
                 }
                 return result;
             }

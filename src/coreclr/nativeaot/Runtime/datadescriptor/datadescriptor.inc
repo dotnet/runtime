@@ -76,6 +76,7 @@ CDAC_TYPE_FIELD(MethodTable, T_UINT32, Flags, cdac_data<MethodTable>::Flags)
 CDAC_TYPE_FIELD(MethodTable, T_UINT32, BaseSize, cdac_data<MethodTable>::BaseSize)
 CDAC_TYPE_FIELD(MethodTable, T_POINTER, RelatedType, cdac_data<MethodTable>::RelatedType)
 CDAC_TYPE_FIELD(MethodTable, T_UINT16, NumVtableSlots, cdac_data<MethodTable>::NumVtableSlots)
+// NumInterfaces is negated if the entries of the interface map are 32-bit relative pointers instead of full pointers
 CDAC_TYPE_FIELD(MethodTable, T_UINT16, NumInterfaces, cdac_data<MethodTable>::NumInterfaces)
 CDAC_TYPE_FIELD(MethodTable, T_UINT32, HashCode, cdac_data<MethodTable>::HashCode)
 CDAC_TYPE_FIELD(MethodTable, T_POINTER, VTable, cdac_data<MethodTable>::VTable)

@@ -73,10 +73,9 @@ namespace System.Runtime.InteropServices
                 throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_MissingImplementationAttribute, Type.GetTypeFromMethodTable(resolvedImplType), nameof(DynamicInterfaceCastableImplementationAttribute)));
 
             bool implementsInterface = false;
-            var interfaces = resolvedImplType->InterfaceMap;
             for (int i = 0; i < resolvedImplType->NumInterfaces; i++)
             {
-                if (interfaces[i] == interfaceType)
+                if (resolvedImplType->GetInterface(i) == interfaceType)
                 {
                     implementsInterface = true;
                     break;

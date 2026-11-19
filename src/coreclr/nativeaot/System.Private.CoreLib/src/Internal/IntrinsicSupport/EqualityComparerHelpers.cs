@@ -26,7 +26,7 @@ namespace Internal.IntrinsicSupport
             int interfaceCount = objectType->NumInterfaces;
             for (int i = 0; i < interfaceCount; i++)
             {
-                MethodTable* interfaceType = objectType->InterfaceMap[i];
+                MethodTable* interfaceType = objectType->GetInterface(i);
 
                 if (!interfaceType->IsGeneric)
                     continue;

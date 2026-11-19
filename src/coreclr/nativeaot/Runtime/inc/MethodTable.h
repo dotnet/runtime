@@ -116,10 +116,10 @@ private:
 
     TgtPTR_Void         m_VTable[];  // make this explicit so the binder gets the right alignment
 
-    // after the m_usNumVtableSlots vtable slots, we have m_usNumInterfaces slots of
-    // MethodTable*, and after that a couple of additional pointers based on whether the type is
-    // finalizable (the address of the finalizer code) or has optional fields (pointer to the compacted
-    // fields).
+    // after the m_usNumVtableSlots vtable slots, we have abs(m_usNumInterfaces) slots of
+    // MethodTable* (32-bit relative pointers if m_usNumInterfaces is negative), and after that a couple
+    // of additional pointers based on whether the type is finalizable (the address of the finalizer code)
+    // or has optional fields (pointer to the compacted fields).
 
     enum Flags
     {
@@ -288,7 +288,11 @@ public:
 
     // How many entries are in the interface map after the vtable slots?
     uint16_t GetNumInterfaces()
-        { return m_usNumInterfaces; }
+        { int16_t count = (int16_t)m_usNumInterfaces; return (uint16_t)(count < 0 ? -count : count); }
+
+    // Are the entries of the interface map 32-bit relative pointers instead of full pointers?
+    bool HasRelativeInterfaceMap()
+        { return (int16_t)m_usNumInterfaces < 0; }
 
     TypeManagerHandle* GetTypeManagerPtr();
 
