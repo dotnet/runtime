@@ -1041,10 +1041,12 @@ void MorphCopyBlockHelper::TryPrimitiveCopy()
     // A retyped small-typed source local that normalizes on load (e.g. a parameter) may still
     // have undefined upper bits. A scalar destination that normalizes on store needs those bits
     // normalized, so insert the cast here; see CopyFieldByField for the analogous promoted-field
-    // case.
+    // case. Retype the local to TYP_INT before wrapping it, matching the invariant
+    // fgMorphLeafLocal establishes for a normalize-on-load local under a normalizing cast.
     if (m_store->OperIs(GT_STORE_LCL_VAR) && !m_dstVarDsc->lvNormalizeOnLoad() && m_src->OperIs(GT_LCL_VAR) &&
         m_srcVarDsc->lvNormalizeOnLoad())
     {
+        m_src->gtType               = TYP_INT;
         m_store->AsLclVar()->Data() = m_compiler->gtNewCastNode(TYP_INT, m_src, false, storeType);
     }
 
@@ -1294,11 +1296,16 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             LclVarDsc* srcFieldVarDsc = m_compiler->lvaGetDesc(srcFieldLclNum);
 
             srcFld = m_compiler->gtNewLclVarNode(srcFieldLclNum, srcFieldVarDsc->TypeGet());
-            // A scalar destination that normalizes on store needs a normalized value.
+            // A scalar destination that normalizes on store needs a normalized value. Retype the
+            // local to TYP_INT before wrapping it, matching the invariant fgMorphLeafLocal
+            // establishes for a normalize-on-load local under a normalizing cast; otherwise a later
+            // re-morph could see the small-typed LCL_VAR, treat it as already in range (via
+            // IntegralRange::ForNode), and strip the cast.
             if (m_dstSingleStoreLclVar && srcFieldVarDsc->lvNormalizeOnLoad() &&
                 m_compiler->lvaGetDesc(m_dstLclNum)->lvNormalizeOnStore())
             {
-                srcFld = m_compiler->gtNewCastNode(TYP_INT, srcFld, false, srcFieldVarDsc->TypeGet());
+                srcFld->gtType = TYP_INT;
+                srcFld         = m_compiler->gtNewCastNode(TYP_INT, srcFld, false, srcFieldVarDsc->TypeGet());
             }
         }
         else
