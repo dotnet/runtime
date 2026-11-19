@@ -130,7 +130,6 @@
     <!-- Cross-architecture crossgen2 JIT libraries -->
     <PropertyGroup>
       <_Crossgen2Dir Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRArtifactsPath)$(BuildArchitecture)/crossgen2</_Crossgen2Dir>
-      <_Crossgen2Dir Condition="'$(TargetArchitecture)' == 'wasm64' and '$(Crossgen2InBuildDir)' != ''">$(Crossgen2InBuildDir)</_Crossgen2Dir>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_Crossgen2Dir)' != ''">

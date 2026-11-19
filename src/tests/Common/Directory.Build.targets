@@ -54,10 +54,6 @@
 
     <ItemGroup Condition="('$(TargetArchitecture)' == 'wasm' or '$(TargetArchitecture)' == 'wasm64') and '$(TestBuildMode)' != 'nativeaot'">
         <RunTimeDependencyCopyLocal
-          Include="@(RuntimeFiles->WithMetadataValue('Filename', 'System.Private.CoreLib')->WithMetadataValue('Extension', '.dll'))"
-          Condition="'$(TargetArchitecture)' == 'wasm64'" />
-
-        <RunTimeDependencyCopyLocal
           Include="@(RuntimeFiles)"
           TargetDir="runtimepack/native/"/>
 
