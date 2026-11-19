@@ -124,6 +124,22 @@ namespace ILCompiler
 
             foreach (ManagedHelperInfo helper in s_managedHelpers)
             {
+                if (context.TargetIsSingleThreaded && helper.Helper is
+                    CorInfoHelpFunc.CORINFO_HELP_GET_GCTHREADSTATIC_BASE or
+                    CorInfoHelpFunc.CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE or
+                    CorInfoHelpFunc.CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE or
+                    CorInfoHelpFunc.CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE or
+                    CorInfoHelpFunc.CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR or
+                    CorInfoHelpFunc.CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR or
+                    CorInfoHelpFunc.CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR or
+                    CorInfoHelpFunc.CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR or
+                    CorInfoHelpFunc.CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED or
+                    CorInfoHelpFunc.CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+                {
+                    // Single-threaded targets lay out thread statics as regular statics.
+                    continue;
+                }
+
                 MethodDesc method = GetManagedHelper(context, helper);
                 if (method is not null && rootedMethods.Add(method))
                 {

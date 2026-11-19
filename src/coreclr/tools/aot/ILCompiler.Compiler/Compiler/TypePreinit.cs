@@ -12,8 +12,10 @@ using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+using CombinedDependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler
 {
@@ -2233,7 +2235,7 @@ namespace ILCompiler
             TypeDesc Type { get; }
             void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory);
             bool HasConditionalDependencies { get; }
-            void GetConditionalDependencies(ref CombinedDependencyList dependencies, NodeFactory factory);
+            void AddConditionalDependencies(DependencySink dependencies, NodeFactory factory);
             bool IsKnownImmutable { get; }
             int ArrayLength { get; }
         }
@@ -3250,7 +3252,7 @@ namespace ILCompiler
 
             public virtual bool HasConditionalDependencies => false;
 
-            public virtual void GetConditionalDependencies(ref CombinedDependencyList dependencies, NodeFactory factory)
+            public virtual void AddConditionalDependencies(DependencySink dependencies, NodeFactory factory)
             {
             }
         }
@@ -3277,14 +3279,13 @@ namespace ILCompiler
 
             public override bool HasConditionalDependencies => true;
 
-            public override void GetConditionalDependencies(ref CombinedDependencyList dependencies, NodeFactory factory)
+            public override void AddConditionalDependencies(DependencySink dependencies, NodeFactory factory)
             {
-                dependencies ??= new CombinedDependencyList();
 
                 DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
 
                 MethodDesc targetMethod = creationInfo.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, creationInfo.DelegateType, targetMethod);
+                factory.MetadataManager.GetConditionalDependenciesDueToDelegateCreation(dependencies, factory, creationInfo.DelegateType, targetMethod);
             }
 
             public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)

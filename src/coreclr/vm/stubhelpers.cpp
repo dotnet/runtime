@@ -13,7 +13,6 @@
 #include "fieldmarshaler.h"
 #include "comdelegate.h"
 #include "eventtrace.h"
-#include "comdatetime.h"
 #include "gcheaputilities.h"
 #include "interoputil.h"
 #include "../debug/ee/debugger.h"
@@ -275,7 +274,7 @@ FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* 
 #include <optsmallperfcritical.h>
 
 // This helper can handle any CLR->COM call.
-FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodTable* pInterfaceMT, INT32 comSlot, void** ppTarget)
+FCIMPL4(IUnknown*, StubHelpers_GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodTable* pInterfaceMT, INT32 comSlot, void** ppTarget)
 {
     CONTRACTL
     {
@@ -322,7 +321,7 @@ extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHand
     *pfNeedsRelease = FALSE;
 
     // This snippet exists to enable OLE TLS data creation that isn't possible on the fast path.
-    // It is practically identical to the StubHelpers::GetCOMIPFromRCW FCALL, but in the event the OLE TLS
+    // It is practically identical to the StubHelpers_GetCOMIPFromRCW FCALL, but in the event the OLE TLS
     // data on this thread hasn't occurred yet, we will create it. Since this is the slow path, trying the
     // cache again isn't a problem.
     SOleTlsData* pOleTlsData = GetOrCreateOleTlsData(); // Ensure OLE TLS data is created.
@@ -493,7 +492,7 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ValidateComVisibilityForIUnknown(IU
 
 #endif // FEATURE_COMINTEROP
 
-FCIMPL0(void, StubHelpers::ClearLastError)
+FCIMPL0(void, StubHelpers_ClearLastError)
 {
     FCALL_CONTRACT;
 
@@ -661,7 +660,7 @@ extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pM
     END_QCALL;
 }
 
-FCIMPL2(void, StubHelpers::LogPinnedArgument, MethodDesc *target, Object *pinnedArg)
+FCIMPL2(void, StubHelpers_LogPinnedArgument, MethodDesc *target, Object *pinnedArg)
 {
     FCALL_CONTRACT;
 
@@ -685,7 +684,7 @@ FCIMPL2(void, StubHelpers::LogPinnedArgument, MethodDesc *target, Object *pinned
 FCIMPLEND
 
 #ifdef FEATURE_VARARGS
-FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
+FCIMPL1(DWORD, StubHelpers_CalcVaListSize, VARARGS *varargs)
 {
     FCALL_CONTRACT;
 

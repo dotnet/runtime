@@ -446,18 +446,6 @@ void CompileResult::dmpMessageLog(DWORD key, DWORD value)
     printf("MessageLog NYI");
 }
 
-void CompileResult::recClassMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
-{
-    if (ClassMustBeLoadedBeforeCodeIsRun == nullptr)
-        ClassMustBeLoadedBeforeCodeIsRun = new DenseLightWeightMap<DWORDLONG>();
-
-    ClassMustBeLoadedBeforeCodeIsRun->Append(CastHandle(cls));
-}
-void CompileResult::dmpClassMustBeLoadedBeforeCodeIsRun(DWORD key, DWORDLONG value)
-{
-    printf("ClassMustBeLoadedBeforeCodeIsRun key %u, value cls-%016" PRIX64, key, value);
-}
-
 void CompileResult::recReportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd,
                                               CORINFO_METHOD_HANDLE inlineeHnd,
                                               CorInfoInline         inlineResult,
@@ -608,18 +596,6 @@ CorInfoMethodRuntimeFlags CompileResult::repSetMethodAttribs(CORINFO_METHOD_HAND
 
     CorInfoMethodRuntimeFlags result = (CorInfoMethodRuntimeFlags)SetMethodAttribs->GetItem(index);
     return result;
-}
-
-void CompileResult::recMethodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method)
-{
-    if (MethodMustBeLoadedBeforeCodeIsRun == nullptr)
-        MethodMustBeLoadedBeforeCodeIsRun = new DenseLightWeightMap<DWORDLONG>();
-
-    MethodMustBeLoadedBeforeCodeIsRun->Append(CastHandle(method));
-}
-void CompileResult::dmpMethodMustBeLoadedBeforeCodeIsRun(DWORD key, DWORDLONG value)
-{
-    printf("MethodMustBeLoadedBeforeCodeIsRun key %u, value ftn-%016" PRIX64, key, value);
 }
 
 void CompileResult::recReportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd,

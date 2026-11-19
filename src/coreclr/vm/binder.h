@@ -332,6 +332,7 @@ FORCEINLINE PTR_MethodTable CoreLibBinder::GetClass(BinderClassID id)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
 
         PRECONDITION(id != CLASS__NIL);
         PRECONDITION((&g_CoreLib)->m_cClasses > 0);  // Make sure CoreLib has been loaded.
@@ -354,6 +355,7 @@ FORCEINLINE MethodDesc * CoreLibBinder::GetMethod(BinderMethodID id)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
 
         PRECONDITION(id != METHOD__NIL);
         PRECONDITION(id <= (&g_CoreLib)->m_cMethods);
@@ -375,6 +377,7 @@ FORCEINLINE FieldDesc * CoreLibBinder::GetField(BinderFieldID id)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
 
         PRECONDITION(id != FIELD__NIL);
         PRECONDITION(id <= (&g_CoreLib)->m_cFields);

@@ -157,7 +157,6 @@ public unsafe class Program
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/133219", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasmReadyToRun))]
     public static int TestEntryPoint()
     {
         foreach (var method in typeof(Program)

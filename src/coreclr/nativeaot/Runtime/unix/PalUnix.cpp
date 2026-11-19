@@ -20,7 +20,6 @@
 #include "NativeContext.h"
 #include "HardwareExceptions.h"
 #include "PalCreateDump.h"
-#include "cgroupcpu.h"
 #include "threadstore.h"
 #include "thread.h"
 #include "threadstore.inl"
@@ -29,7 +28,9 @@
 #include "RhConfig.h"
 
 #include <unistd.h>
+#include <minipal/cgroup.h>
 #include <minipal/cpucount.h>
+#include "ProcessEnvironment.h"
 #include <sched.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -43,7 +44,13 @@
 #include <cstdarg>
 #include <signal.h>
 #include <minipal/memorybarrierprocesswide.h>
+#include <minipal/ospagesize.h>
 #include <minipal/thread.h>
+
+#ifdef TARGET_WASI
+extern "C" char __stack_low;
+extern "C" char __stack_high;
+#endif
 
 #ifdef TARGET_LINUX
 #include <sys/syscall.h>
@@ -215,75 +222,22 @@ void InitializeCurrentProcessCpuCount()
     uint32_t count = 0;
 
     // If the configuration value has been set, it takes precedence. Otherwise, take into account
-    // process affinity and CPU quota limit, except for Android (explained below).
+    // process affinity and CPU quota limit.
 
     const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
     uint64_t configValue;
-    int cpuPresentCount;
 
     if (g_pRhConfig->ReadConfigValue("PROCESSOR_COUNT", &configValue, true /* decimal */) &&
         0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
         count = configValue;
     }
-#ifdef HOST_ANDROID
-    // Android tries really hard to save power by powering off CPUs on SMP phones which
-    // means the normal way to query cpu count can underestimate the number of available CPUs.
-    else if ((cpuPresentCount = minipal_get_cpu_present_count()) > 0)
-    {
-        count = cpuPresentCount;
-
-        uint32_t cpuLimit;
-        if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
-            count = cpuLimit;
-    }
-#endif
     else
     {
-#if HAVE_SCHED_GETAFFINITY
-
-        int configuredCpuCount = minipal_get_cpu_max_possible_count();
-        if (configuredCpuCount == -1)
-        {
-            // In the unlikely event that minipal_get_cpu_max_possible_count() fails, just assume a reasonable default maximum number of CPUs to avoid failing.
-            configuredCpuCount = CPU_SETSIZE;
-        }
-
-        int cpusToAllocate = std::max(configuredCpuCount, CPU_SETSIZE);
-        cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
-        if (pCpuSet != nullptr)
-        {
-            size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
-            CPU_ZERO_S(cpuSetSize, pCpuSet);
-
-            int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
-            if (st == 0)
-            {
-                count = (uint32_t)CPU_COUNT_S(cpuSetSize, pCpuSet);
-            }
-            else
-            {
-                _ASSERTE(!"sched_getaffinity failed");
-            }
-
-            CPU_FREE(pCpuSet);
-        }
-        else
-        {
-            ASSERT("CPU_ALLOC failed!\n");
-        }
-
-        if (count == 0)
-        {
-            // If we failed to get the number of CPUs from sched_getaffinity, fall back to getting the total number of CPUs in the system.
-            count = GCToOSInterface::GetTotalProcessorCount();
-        }
-#else // HAVE_SCHED_GETAFFINITY
-        count = GCToOSInterface::GetTotalProcessorCount();
-#endif // HAVE_SCHED_GETAFFINITY
+        count = minipal_get_cpu_affinity_count();
 
         uint32_t cpuLimit;
-        if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
+        if (minipal_cgroup_get_cpu_limit(&cpuLimit) && cpuLimit < count)
             count = cpuLimit;
     }
 
@@ -291,9 +245,9 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-#if defined(TARGET_LINUX)
+#if defined(FEATURE_MULTITHREADING) && defined(TARGET_LINUX)
 static pthread_key_t key;
-#endif
+#endif // FEATURE_MULTITHREADING && TARGET_LINUX
 
 #ifdef FEATURE_HIJACK
 bool InitializeSignalHandling();
@@ -324,8 +278,6 @@ bool PalInit()
         return false;
     }
 
-    InitializeCpuCGroup();
-
     InitializeCurrentProcessCpuCount();
 
 #ifdef FEATURE_HIJACK
@@ -335,17 +287,17 @@ bool PalInit()
     }
 #endif
 
-#if defined(TARGET_LINUX)
+#if defined(FEATURE_MULTITHREADING) && defined(TARGET_LINUX)
     if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
     {
         return false;
     }
-#endif
+#endif // FEATURE_MULTITHREADING && TARGET_LINUX
 
     return true;
 }
 
-#if !defined(TARGET_LINUX)
+#if defined(FEATURE_MULTITHREADING) && !defined(TARGET_LINUX)
 struct TlsDestructionMonitor
 {
     void* m_thread = nullptr;
@@ -367,7 +319,7 @@ struct TlsDestructionMonitor
 // This thread local object is used to detect thread shutdown. Its destructor
 // is called when a thread is being shut down.
 thread_local TlsDestructionMonitor tls_destructionMonitor;
-#endif
+#endif // FEATURE_MULTITHREADING && !TARGET_LINUX
 
 // Register the thread with OS to be notified when thread is about to be destroyed
 // It fails fast if a different thread was already registered.
@@ -375,6 +327,7 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 //  thread        - thread to attach
 void PalAttachThread(void* thread)
 {
+#ifdef FEATURE_MULTITHREADING
 #if defined(TARGET_LINUX)
     if (pthread_setspecific(key, thread) != 0)
     {
@@ -384,6 +337,7 @@ void PalAttachThread(void* thread)
 #else
     tls_destructionMonitor.SetThread(thread);
 #endif
+#endif // FEATURE_MULTITHREADING
 
 #ifdef FEATURE_HIJACK
     UnmaskActivationSignal();
@@ -674,8 +628,9 @@ UInt32_BOOL PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect
     int unixProtect = W32toUnixAccessControl(protect);
 
     // mprotect expects the address to be page-aligned
-    uint8_t* pPageStart = ALIGN_DOWN((uint8_t*)pAddress, OS_PAGE_SIZE);
-    size_t memSize = ALIGN_UP((uint8_t*)pAddress + size, OS_PAGE_SIZE) - pPageStart;
+    size_t pageSize = minipal_getpagesize();
+    uint8_t* pPageStart = ALIGN_DOWN((uint8_t*)pAddress, pageSize);
+    size_t memSize = ALIGN_UP((uint8_t*)pAddress + size, pageSize) - pPageStart;
 
     return mprotect(pPageStart, memSize, unixProtect) == 0;
 }
@@ -719,21 +674,7 @@ uint32_t PalGetCurrentProcessId()
 
 uint32_t PalGetEnvironmentVariable(const char * name, char * buffer, uint32_t size)
 {
-    const char* value = getenv(name);
-    if (value == NULL)
-    {
-        return 0;
-    }
-
-    size_t valueLen = strlen(value);
-    if (valueLen < size)
-    {
-        strcpy(buffer, value);
-        return valueLen;
-    }
-
-    // return required size including the null character or 0 if the size doesn't fit into uint32_t
-    return (valueLen < UINT32_MAX) ? (valueLen + 1) : 0;
+    return ProcessEnvironment_GetVariableUtf8(name, buffer, size);
 }
 
 uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4)
@@ -864,12 +805,17 @@ void PalHijack(Thread* pThreadToHijack)
 
     if (status != 0)
     {
+        // Failure to send the signal is fatal. Sending the signal can fail if the signal ID
+        // is invalid, if the thread doesn't exist anymore, or if the environment denies
+        // sending signals to threads of this process (e.g. a restrictive AppArmor/seccomp
+        // policy returning EACCES or EPERM). Report the reason, since the resulting abort
+        // is otherwise very hard to diagnose.
+        fprintf(stderr, "Failed to inject activation signal %d into thread: %s (%d)\n",
+            INJECT_ACTIVATION_SIGNAL, strerror(status), status);
+
         // Causes creation of a crash dump if enabled
         PalCreateCrashDumpIfEnabled();
 
-        // Failure to send the signal is fatal. There are only two cases when sending
-        // the signal can fail. First, if the signal ID is invalid and second,
-        // if the thread doesn't exist anymore.
         abort();
     }
 }
@@ -884,7 +830,7 @@ HANDLE PalCreateLowMemoryResourceNotification()
 extern "C" void _mm_pause()
 // Defined for implementing PalYieldProcessor in Pal.h
 {
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
   __asm__ volatile ("pause");
 #endif
 }
@@ -911,7 +857,10 @@ bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHi
     void* pStackHighOut = NULL;
     void* pStackLowOut = NULL;
 
-#ifdef __APPLE__
+#ifdef TARGET_WASI
+    pStackLowOut = &__stack_low;
+    pStackHighOut = &__stack_high;
+#elif defined(__APPLE__)
     // This is a Mac specific method
     pStackHighOut = pthread_get_stackaddr_np(pthread_self());
     pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));

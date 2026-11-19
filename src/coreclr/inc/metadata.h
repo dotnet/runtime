@@ -125,9 +125,7 @@ struct HENUMInternal
         HENUMInternal   *pEnum)
     {
         // we use this to avoid the memset that will happen otherwise.
-        // this should be inlined in its caller. we are seeing a large
-        // number of calls to memset from MDInternalRO::EnumPermissionSetsInit
-        // on x64 which we can eliminate with this code.
+        // this should be inlined in its caller.
         pEnum->m_tkKind = 0;
         pEnum->m_ulCount = 0;
         pEnum->m_EnumType =  MDSimpleEnum;
@@ -794,17 +792,6 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         ULONG       cAssociateRec) PURE;    // [IN] size of the buffer
 
 
-    //**********************************
-    // Get info about a PermissionSet.
-    //**********************************
-    // returned void in v1.0/v1.1
-    __checkReturn
-    STDMETHOD(GetPermissionSetProps)(
-        mdPermission pm,                    // [IN] the permission token.
-        DWORD       *pdwAction,             // [OUT] CorDeclSecurity.
-        void const  **ppvPermission,        // [OUT] permission blob.
-        ULONG       *pcbPermission) PURE;   // [OUT] count of bytes of pvPermission.
-
     //****************************************
     // Get the String given the String token.
     // Returns a pointer to the string, or NULL in case of error.
@@ -929,12 +916,8 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
 
     __checkReturn
     STDMETHOD(TranslateSigWithScope)(
-        IMDInternalImport *pAssemImport,    // [IN] import assembly scope.
-        const void  *pbHashValue,           // [IN] hash value for the import assembly.
-        ULONG       cbHashValue,            // [IN] count of bytes in the hash value.
         PCCOR_SIGNATURE pbSigBlob,          // [IN] signature in the importing scope
         ULONG       cbSigBlob,              // [IN] count of bytes of signature
-        IMDInternalEmit *pAssemEmit,        // [IN] assembly emit scope.
         IMDInternalEmit *emit,              // [IN] emit interface
         CQuickBytes *pqkSigEmit,            // [OUT] buffer to hold translated signature
         ULONG       *pcbSig) PURE;          // [OUT] count of bytes in the translated signature

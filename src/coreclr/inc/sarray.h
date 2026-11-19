@@ -59,6 +59,12 @@ class SArray
         WRAPPER_NO_CONTRACT;
 
         COUNT_T count = GetCount();
+        if (BITWISE_COPY && count < GetAllocation())
+        {
+            SetCount(count + 1);
+            return Iterator(this, count);
+        }
+
         if ( GetAllocation() == count )
             Preallocate( 2 * count );
 

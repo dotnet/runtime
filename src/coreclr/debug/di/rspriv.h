@@ -1709,48 +1709,42 @@ typedef CordbEnumerator<RSSmartPtr<CordbVariableHome>,
 //   explicitly associate w/ an optional RSLock and assert that lock is held on access.
 // ----------------------------------------------------------------------------
 
-struct CordbHashEntry
+class EMPTY_BASES CordbHashTraits : public NonDacAwareSHashTraits<DefaultSHashTraits<CordbBase *>>
 {
-    FREEHASHENTRY entry;
-    CordbBase *pBase;
+public:
+    typedef ULONG_PTR key_t;
+    static const bool s_DestructPerEntryCleanupAction = true;
+    static void OnDestructPerEntryCleanupAction(CordbBase *element) { element->InternalRelease(); }
+    static key_t GetKey(CordbBase *const &element) { return element->m_id; }
+    static BOOL Equals(key_t left, key_t right) { return left == right; }
+    static count_t Hash(key_t key)
+    {
+        count_t hash = static_cast<count_t>(key);
+#ifdef HOST_64BIT
+        hash = HashCOUNT_T(hash, static_cast<count_t>(key >> 32));
+#endif
+        return hash;
+    }
 };
 
-class CordbHashTable : private CHashTableAndData<CNewDataNoThrow>
+class CordbHashTable
 {
 private:
-    bool    m_initialized;
-    SIZE_T  m_count;
-
-    BOOL Cmp(SIZE_T k1, const HASHENTRY * pc2)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return ((ULONG_PTR)k1) != (reinterpret_cast<const CordbHashEntry *>(pc2))->pBase->m_id;
-    }
-
-    ULONG HASH(ULONG_PTR id)
-    {
-        return (ULONG)(id);
-    }
-
-    SIZE_T KEY(UINT_PTR id)
-    {
-        return (SIZE_T)id;
-    }
+    SHash<CordbHashTraits> m_table;
 
 public:
+    typedef SHash<CordbHashTraits>::Iterator Iterator;
+
     bool IsInitialized();
 
 #ifndef DACCESS_COMPILE
-    CordbHashTable(ULONG size)
-    : CHashTableAndData<CNewDataNoThrow>(size), m_initialized(false), m_count(0)
+    CordbHashTable()
     {
 #ifdef _DEBUG
     m_pDbgLock = NULL;
-    m_dbgChangeCount = 0;
 #endif
     }
-    virtual ~CordbHashTable();
+    virtual ~CordbHashTable() = default;
 
 #ifdef _DEBUG
     // CordbHashTables may be protected by a lock. For debug-builds, we can associate
@@ -1759,19 +1753,13 @@ public:
     {
         m_pDbgLock = pLock;
     }
-    int GetChangeCount() { return m_dbgChangeCount; }
 private:
     void AssertIsProtected();
 
-    // Increment the Change count. This can be used to check if the hashtable changes while being enumerated.
-    void DbgIncChangeCount() { m_dbgChangeCount++; }
-
-    int m_dbgChangeCount;
     RSLock * m_pDbgLock;
 #else
     // RSLock association is a no-op on free builds.
     void AssertIsProtected() { };
-    void DbgIncChangeCount() { };
 #endif // _DEBUG
 
 public:
@@ -1781,7 +1769,7 @@ public:
 
     ULONG32 GetCount()
     {
-        return ((ULONG32)m_count);
+        return m_table.GetCount();
     }
 
     // These operators are unsafe b/c they have no typesafety.
@@ -1791,13 +1779,8 @@ public:
     CordbBase *UnsafeGetBase(ULONG_PTR id, BOOL fFab = TRUE);
     CordbBase *UnsafeRemoveBase(ULONG_PTR id);
 
-    CordbBase *UnsafeFindFirst(HASHFIND *find);
-    CordbBase *UnsafeFindNext(HASHFIND *find);
-
-    // Unlocked versions don't assert that the lock us held.
-    CordbBase *UnsafeUnlockedFindFirst(HASHFIND *find);
-    CordbBase *UnsafeUnlockedFindNext(HASHFIND *find);
-
+    Iterator Begin();
+    Iterator End();
 };
 
 
@@ -1811,9 +1794,7 @@ class CordbSafeHashTable : public CordbHashTable
 {
 public:
 #ifndef DACCESS_COMPILE
-    CordbSafeHashTable<T>(ULONG size) : CordbHashTable(size)
-    {
-    }
+    CordbSafeHashTable() = default;
 #endif
     // Typesafe wrappers
     HRESULT AddBase(T * pBase) { return UnsafeAddBase(pBase); }
@@ -1830,9 +1811,6 @@ public:
     T* GetBaseOrThrow(ULONG_PTR id, BOOL fFab = TRUE);
 
     T* RemoveBase(ULONG_PTR id) { return static_cast<T*>(UnsafeRemoveBase(id)); }
-
-    T* FindFirst(HASHFIND *find) { return static_cast<T*>(UnsafeFindFirst(find)); }
-    T* FindNext(HASHFIND *find)  { return static_cast<T*>(UnsafeFindNext(find)); }
 
     // Neuter all items and clear
     void NeuterAndClear(RSLock * pLock);
@@ -1855,7 +1833,6 @@ public ICorDebugAssemblyEnum
     CordbHashTableEnum(
         CordbBase * pOwnerObj,
         NeuterList * pOwnerList,
-        CordbHashTable *table,
         const GUID &id);
 
 public:
@@ -2007,38 +1984,15 @@ private:
     NeuterList *    m_pOwnerNeuterList;
 
 
-    CordbHashTable *m_table;
-    bool            m_started;
-    bool            m_done;
-    HASHFIND        m_hashfind;
+    RSPtrArray<CordbBase> m_items;
     REFIID          m_guid;
     ULONG           m_iCurElt;
-    ULONG           m_count;
-    BOOL            m_fCountInit;
 
 #ifdef _DEBUG
-    // timestampt of hashtable when we start enumerating it. Useful for detecting if the table
-    // changes underneath us.
-    int             m_DbgChangeCount;
     void AssertValid();
 #else
     void AssertValid() { }
 #endif
-
-private:
-    //These factor code between Next & Skip
-    HRESULT PrepForEnum(CordbBase **pBase);
-
-    // Note that the set of types advanced by Pre & by Post are disjoint, and
-    // that the union of these two sets are all possible types enuerated by
-    // the CordbHashTableEnum.
-    HRESULT AdvancePreAssign(CordbBase **pBase);
-    HRESULT AdvancePostAssign(CordbBase **pBase,
-                              CordbBase     **b,
-                              CordbBase   **bEnd);
-
-    // This factors some code that initializes the module enumerator.
-    HRESULT SetupModuleEnum();
 
 };
 
@@ -2862,6 +2816,8 @@ public:
 
     virtual bool IsThreadSuspendedOrHijacked(ICorDebugThread * pThread) = 0;
 
+    virtual HRESULT GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo) = 0;
+
 #ifdef FEATURE_INTEROP_DEBUGGING
     virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread) = 0;
 #endif
@@ -3341,8 +3297,6 @@ public:
 
     void MarkAllThreadsDirty();
 
-    bool CheckIfLSExited();
-
     void Lock()
     {
         // Lock Hierarchy - shouldn't have List lock when taking/release the process lock.
@@ -3585,8 +3539,9 @@ public:
     void AddToLeftSideResourceCleanupList(CordbBase * pObject);
 
     // Routines to read and write thread context records between the processes safely.
-    HRESULT SafeReadThreadContext(LSPTR_CONTEXT pRemoteContext, DT_CONTEXT * pCtx);
-    HRESULT SafeWriteThreadContext(LSPTR_CONTEXT pRemoteContext, const DT_CONTEXT * pCtx);
+    HRESULT SafeReadThreadContext(CORDB_ADDRESS remoteContextAddr, ContextBuffer contextBuffer);
+    HRESULT SafeWriteThreadContext(CORDB_ADDRESS remoteContextAddr, ContextBuffer contextBuffer);
+    HRESULT SafeWriteThreadContext(CORDB_ADDRESS remoteContextAddr, T_CONTEXT * pCtx);
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Record a win32 event for debugging purposes.
@@ -3599,6 +3554,11 @@ public:
 
     // Get the DAC interface.
     IDacDbiInterface * GetDAC();
+
+    HRESULT ConvertJitRegNumToCorDebugRegister(ULONG32 jitRegNum, CorDebugRegister * pReg, BOOL * pIsAmbientSP = NULL);
+    HRESULT GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo);
+
+    HRESULT GetStackwalkControlPCAdjustOffset(ULONG32 * pcbOffset);
 
     // Get the data-target, which provides access to the debuggee.
     ICorDebugDataTarget * GetDataTarget();
@@ -3968,7 +3928,7 @@ public:
     PRD_TYPE             *m_rgUncommittedOpcode;
 
     // CORDB_ADDRESS's are UINT_PTR's (64 bit under HOST_64BIT, 32 bit otherwise)
-#if defined(TARGET_64BIT)
+#if defined(HOST_64BIT)
 #define MAX_ADDRESS     (UINT64_MAX)
 #else
 #define MAX_ADDRESS     (UINT32_MAX)
@@ -3977,13 +3937,9 @@ public:
     CORDB_ADDRESS       m_minPatchAddr; //smallest patch in table
     CORDB_ADDRESS       m_maxPatchAddr;
 
-    // <TODO>@todo port : if slots of CHashTable change, so should these</TODO>
 #define DPT_TERMINATING_INDEX (UINT32_MAX)
     // Index into m_pPatchTable of the first patch (first used entry).
     ULONG                  m_iFirstPatch;
-
-    // Initializes the DAC
-    void InitDac();
 
     // copy new data from LS DCB to RS buffer
     void UpdateRightSideDCB();
@@ -4010,6 +3966,7 @@ public:
 #endif // FEATURE_INTEROP_DEBUGGING
 
     bool  IsBreakOpcodeAtAddress(const void * address);
+    ULONG32 GetTargetContextSize();
 
 private:
     //
@@ -4095,6 +4052,9 @@ private:
     // Keeps the native fallback DAC alive until the managed cDAC has been released.
     IUnknown *           m_pLegacyDac;
 
+    IDacDbiInterface::TargetInfo m_cachedTargetInfo;
+    bool                m_fHasCachedTargetInfo;
+
     IEventChannel *     m_pEventChannel;
 
     // If true, then we'll ASSERT if we detect the target is corrupt or inconsistent
@@ -4106,6 +4066,7 @@ private:
 
     // controls how metadata updated in the target is handled
     WriteableMetadataUpdateMode m_writableMetadataUpdateMode;
+    ULONG32 m_ctxSize;
 
     COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue **pObject);
 
@@ -4438,69 +4399,57 @@ private:
 };
 
 
-struct CordbHangingField
+class EMPTY_BASES CordbHangingFieldTraits : public NonDacAwareSHashTraits<DefaultSHashTraits<FieldData>>
 {
-    FREEHASHENTRY   entry;
-    FieldData data;
+public:
+    typedef mdFieldDef key_t;
+    static key_t GetKey(const FieldData &element) { return element.m_fldMetadataToken; }
+    static BOOL Equals(key_t left, key_t right) { return left == right; }
+    static count_t Hash(key_t key) { return key; }
+    static FieldData Null() { return {}; }
+    static FieldData Deleted()
+    {
+        FieldData element = {};
+        element.m_fldMetadataToken = static_cast<mdFieldDef>(-1);
+        return element;
+    }
+    static bool IsNull(const FieldData &element) { return element.m_fldMetadataToken == 0; }
+    static bool IsDeleted(const FieldData &element) { return element.m_fldMetadataToken == static_cast<mdFieldDef>(-1); }
 };
 
 // A hashtable for storing EnC hanging field information
 // FieldData.m_fldMetadataToken is the key
-class CordbHangingFieldTable : public CHashTableAndData<CNewDataNoThrow>
+class CordbHangingFieldTable
 {
-  private:
-
-    BOOL Cmp(SIZE_T k1, const HASHENTRY *pc2)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (ULONG)(UINT_PTR)(k1) !=
-               (reinterpret_cast<const CordbHangingField *>(pc2))->data.m_fldMetadataToken;
-    }
-
-    ULONG HASH(mdFieldDef fldToken)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return fldToken;
-    }
-
-    SIZE_T KEY(mdFieldDef fldToken)
-    {
-        return (SIZE_T)fldToken;
-    }
+    SHash<CordbHangingFieldTraits> m_table;
 
   public:
 
 #ifndef DACCESS_COMPILE
 
-    CordbHangingFieldTable() : CHashTableAndData<CNewDataNoThrow>(11)
+    void Clear()
     {
-        NewInit(11, sizeof(CordbHangingField), 11);
+        m_table.RemoveAll();
     }
 
-    FieldData * AddFieldInfo(FieldData * pInfo)
+    const FieldData * AddFieldInfo(const FieldData * pInfo)
     {
         _ASSERTE(pInfo != NULL);
 
-        CordbHangingField *pEntry = (CordbHangingField *)Add(HASH(pInfo->m_fldMetadataToken));
-        pEntry->data = *pInfo; // copy everything over
-
-        // Return a pointer to the data
-        return &(pEntry->data);
+        m_table.Add(*pInfo);
+        return GetFieldInfo(pInfo->m_fldMetadataToken);
     }
 
     void RemoveFieldInfo(mdFieldDef fldToken)
     {
-        CordbHangingField *entry = (CordbHangingField*)Find(HASH(fldToken), KEY(fldToken));
-        _ASSERTE(entry != NULL);
-        Delete(HASH(fldToken), (HASHENTRY*)entry);
+        m_table.Remove(fldToken);
    }
 
 #endif // #ifndef DACCESS_COMPILE
 
-    FieldData * GetFieldInfo(mdFieldDef fldToken)
+    const FieldData * GetFieldInfo(mdFieldDef fldToken) const
     {
-        CordbHangingField * entry = (CordbHangingField *)Find(HASH(fldToken), KEY(fldToken));
-        return (entry!=NULL?&(entry->data):NULL);
+        return m_table.LookupPtr(fldToken);
     }
 };
 
@@ -4770,7 +4719,7 @@ public:
 
     // These are available after Init() has been called....
     HRESULT GetUnboxedObjectSize(ULONG32 *res);
-    HRESULT GetFieldInfo(mdFieldDef fldToken, FieldData ** ppFieldData);
+    HRESULT GetFieldInfo(mdFieldDef fldToken, const FieldData ** ppFieldData);
 
     CordbAppDomain *GetAppDomain() { return m_appdomain; }
 
@@ -4779,11 +4728,9 @@ public:
     // Is this type a GC-root.
     bool IsGCRoot();
 
-#ifdef FEATURE_64BIT_ALIGNMENT
     // checks if the type requires 8-byte alignment.
     // this is not exposed via ICorDebug at present.
     HRESULT RequiresAlign8(BOOL* isRequired);
-#endif
 
     //-----------------------------------------------------------
     // Data members
@@ -5000,10 +4947,10 @@ public:
                                    DacDbiArrayList<FieldData> * pFieldList,
                                    mdTypeDef                    classToken,
                                    mdFieldDef                   fldToken,
-                                   FieldData **                 ppFieldData);
+                                   const FieldData **           ppFieldData);
 
     static HRESULT GetStaticFieldValue2(CordbModule *         pModule,
-                                        FieldData *           pFieldData,
+                                        const FieldData *     pFieldData,
                                         BOOL                  fEnCHangingField,
                                         const Instantiation * pInst,
                                         ICorDebugFrame *      pFrame,
@@ -5015,12 +4962,12 @@ public:
 
     // Get information about a field that was added by EnC
     HRESULT GetEnCHangingField(mdFieldDef         fldToken,
-                               FieldData **       ppFieldData,
+                               const FieldData ** ppFieldData,
                                CordbObjectValue * pObject);
 
 private:
     // Get information via the DAC about a field added with Edit and Continue.
-    FieldData * GetEnCFieldFromDac(BOOL               fStatic,
+    const FieldData * GetEnCFieldFromDac(BOOL               fStatic,
                                    CordbObjectValue * pObject,
                                    mdFieldDef         fieldToken);
 
@@ -5034,7 +4981,7 @@ private:
 
 public:
 
-    HRESULT GetFieldInfo(mdFieldDef fldToken, FieldData ** ppFieldData);
+    HRESULT GetFieldInfo(mdFieldDef fldToken, const FieldData ** ppFieldData);
 
     // If you want to force the init to happen even if we think the class
     // is up to date, set fForceInit to TRUE
@@ -6085,21 +6032,6 @@ public:
     void MarkStackFramesDirty();
 
 
-#if defined(TARGET_X86)
-    // Converts the values in the floating point register area of the context to real number values.
-    void Get32bitFPRegisters(CONTEXT * pContext);
-
-#elif defined(TARGET_AMD64) ||  defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-    // Converts the values in the floating point register area of the context to real number values.
-    void Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int start, int nRegisters);
-
-#endif // TARGET_X86
-
-   // Initializes the float state members of this instance of CordbThread. This function gets the context and
-   // converts the floating point values from their context representation to real number values.
-   void LoadFloatState();
-
-
     HRESULT SetIP(  bool fCanSetIPOnly,
                     CordbNativeCode * pNativeCode,
                     SIZE_T offset,
@@ -6142,8 +6074,8 @@ public:
     //
     //
     //////////////////////////////////////////////////////////////////////////
-    HRESULT GetManagedContext( DT_CONTEXT ** ppContext );
-    HRESULT SetManagedContext( DT_CONTEXT * pContext );
+    HRESULT GetManagedContext(ContextBuffer * pContextBuffer);
+    HRESULT SetManagedContext(ContextBuffer contextBuffer);
 
     // API to retrieve the thread handle from the LS.
     void InternalGetHandle(HANDLE * phThread);
@@ -6186,7 +6118,7 @@ public:
     BOOL IsThreadExceptionManaged();
 
     // This is a private hook for the shim to create a CordbRegisterSet for a ShimChain.
-   void CreateCordbRegisterSet(DT_CONTEXT *            pContext,
+   void CreateCordbRegisterSet(ContextBuffer           contextBuffer,
                                BOOL                    fActive,
                                CorDebugChainReason     reason,
                                ICorDebugRegisterSet ** ppRegSet);
@@ -6202,15 +6134,14 @@ public:
 
 public:
     // RS Cache for LS context.
-    // NULL if we haven't allocated memory for a Right side context
-    DT_CONTEXT *          m_pContext;
+    NewArrayHolder<BYTE>  m_pContext;
 
     // Set to the CONTEXT pointer in the LS if this LS thread is
     // stopped in managed code. This may be either stopped for execution control
     // (breakpoint / single-step exception) or hijacked w/ a redirected frame because
     // another thread synced the LS.
     // This context is used by the RS to set enregistered vars.
-    VMPTR_CONTEXT         m_vmLeftSideContext;
+    CORDB_ADDRESS         m_vmLeftSideContext;
 
     // indicates whether m_pContext is up-to-date
     bool                  m_fContextFresh;
@@ -6241,10 +6172,6 @@ public:
     //  We don't clear the cache in CleanupStack() because we don't refresh the cache every time we stop.
     //  Instead, we mark m_fFramesFresh in CleanupStack() and clear the cache only when it is used next time.
     CDynArray<CordbFrame *> m_stackFrames;
-
-    bool                  m_fFloatStateValid;
-    unsigned int          m_floatStackTop;
-    double                m_floatValues[DebuggerIPCE_FloatCount];
 
 private:
     // True for the window after an Exception callback, but before it's been continued.
@@ -6377,14 +6304,15 @@ private:
     // unwind the frame and update m_context with the new context
     BOOL UnwindStackFrame();
 
+    ContextBuffer GetContextBuffer() const { return { m_pContextBuffer, GetProcess()->GetTargetContextSize() }; }
+
     // the thread on which this CordbStackWalk is created
     CordbThread * m_pCordbThread;
 
     // This is the same iterator used by the runtime itself.
     IDacDbiInterface::StackWalkHandle m_pSFIHandle;
 
-    // buffers used for stackwalking
-    DT_CONTEXT m_context;
+    NewArrayHolder<BYTE> m_pContextBuffer;
 
     //  Used to figure out if we have to refresh any reference objects
     //  on the left side.  We set it to CordbProcess::m_flushCounter on
@@ -6483,7 +6411,14 @@ public:
     // This is basically a complicated cast function.  We are casting from an ICorDebugFrame to a CordbFrame.
     static CordbFrame* GetCordbFrameFromInterface(ICorDebugFrame *pFrame);
 
-    virtual const DT_CONTEXT * GetContext() const { return NULL; }
+    virtual const ContextBuffer GetContext() const { return ContextBuffer{}; }
+
+    // Reads an integer register from this frame's CONTEXT buffer via the DAC.
+    HRESULT ReadContextRegister(CorDebugRegister reg, TADDR * pValue) const;
+
+    // Reads a floating-point / SIMD register's scalar value (as a double bit
+    // pattern) from this frame's CONTEXT buffer via the DAC.
+    HRESULT ReadFloatContextRegister(CorDebugRegister reg, double * pValue) const;
 
 public:
     // this represents the IL offset for a CordbJITILFrame, the native offset for a CordbNativeFrame,
@@ -6680,7 +6615,7 @@ public:
     CordbRuntimeUnwindableFrame(CordbThread *    pThread,
                                 FramePointer     fp,
                                 CordbAppDomain * pCurrentAppDomain,
-                                DT_CONTEXT *     pContext);
+                                ContextBuffer    contextBuffer);
 
     virtual void Neuter();
 
@@ -6762,10 +6697,11 @@ public:
         return NULL;
     }
 
-    virtual const DT_CONTEXT * GetContext() const;
+    virtual const ContextBuffer GetContext() const;
 
 private:
-    DT_CONTEXT m_context;
+    NewArrayHolder<BYTE> m_pContextBuffer;
+
 };
 
 // Function signature for retrieving a value at a specific index
@@ -6852,7 +6788,7 @@ public:
                      TADDR                addrAmbientESP,
                      CordbAppDomain *     pCurrentAppDomain,
                      CordbMiscFrame *     pMisc = NULL,
-                     DT_CONTEXT *         pContext = NULL);
+                     ContextBuffer        contextBuffer = {});
     virtual ~CordbNativeFrame();
     virtual void Neuter();
 
@@ -6963,7 +6899,7 @@ public:
 
     CordbFunction * GetFunction();
     CordbNativeCode * GetNativeCode();
-    virtual const DT_CONTEXT * GetContext() const;
+    virtual const ContextBuffer GetContext() const;
 
     // Given the native variable information of a variable, return its value.
     // This function assumes that the value is either in a register or on the stack
@@ -6991,7 +6927,6 @@ public:
                                            CorDebugRegister lowWordRegister,
                                            CordbType * pType,
                                            ICorDebugValue **ppValue);
-    UINT_PTR * GetAddressOfRegister(CorDebugRegister regNum) const;
     CORDB_ADDRESS GetLeftSideAddressOfRegister(CorDebugRegister regNum) const;
     HRESULT GetLocalFloatingPointValue(DWORD index,
                                             CordbType * pType,
@@ -7009,6 +6944,12 @@ public:
                                             bool highIsFloat,
                                             CordbType * pType,
                                             ICorDebugValue **ppValue);
+
+    HRESULT ReadJitRegFromContext(ULONG32 jitRegNum, TADDR * pValue) const;
+
+    CorDebugRegister ConvertJitRegToCorDebugRegister(ULONG32 jitRegNum) const;
+
+    CORDB_ADDRESS GetStackPointer() const;
 
 
     CORDB_ADDRESS GetLSStackAddress(ICorDebugInfo::RegNum regNum, signed offset);
@@ -7029,7 +6970,6 @@ public:
     SIZE_T    GetParentIP();
 
     TADDR GetAmbientESP() { return m_taAmbientESP; }
-    TADDR GetReturnRegisterValue();
 
     // accessor for the shim private hook code:CordbThread::ConvertFrameForILMethodWithoutMetadata
     BOOL ConvertNativeFrameForILMethodWithoutMetadata(ICorDebugInternalFrame2 ** ppInternalFrame2);
@@ -7039,7 +6979,6 @@ public:
     //-----------------------------------------------------------
 
 public:
-
     // each CordbNativeFrame corresponds to exactly one CordbJITILFrame and one CordbNativeCode
     RSSmartPtr<CordbJITILFrame> m_JITILFrame;
     RSSmartPtr<CordbNativeCode> m_nativeCode;
@@ -7051,8 +6990,7 @@ private:
     // the ambient SP value only used on x86 to retrieve sp-relative local variables
     // (most likely in a frameless method)
     TADDR    m_taAmbientESP;
-
-    DT_CONTEXT  m_context;
+    NewArrayHolder<BYTE> m_pContextBuffer;
 };
 
 
@@ -7074,10 +7012,11 @@ private:
 class CordbRegisterSet : public CordbBase, public ICorDebugRegisterSet, public ICorDebugRegisterSet2
 {
 public:
-    CordbRegisterSet(CordbThread *        pThread,
-                     DT_CONTEXT *         pContext,
+    CordbRegisterSet(ContextBuffer         contextBuffer,
+                     CordbThread *        pThread,
                      bool fActive,
-                     bool fQuickUnwind);
+                     bool fQuickUnwind,
+                     bool fTakeOwnershipOfContext = false);
 
 
     ~CordbRegisterSet();
@@ -7173,15 +7112,12 @@ public:
     }
 
 protected:
-
-    // Adapters to impl v2.0 interfaces on top of v1.0 interfaces.
-    HRESULT GetRegistersAvailableAdapter(ULONG32 regCount, BYTE pAvailable[]);
-    HRESULT GetRegistersAdapter(ULONG32 maskCount, BYTE mask[], ULONG32 regCount, CORDB_REGISTER regBuffer[]);
-
-    DT_CONTEXT          m_context;
+    ContextBuffer       m_contextBuffer;
     CordbThread         *m_thread;
     bool                m_active; // true if we're the leafmost register set.
     bool                m_quickUnwind;
+
+    bool                m_fOwnsContext;
 } ;
 
 
@@ -7728,7 +7664,7 @@ public:
     // set a remote enregistered location to a new value
     // Arguments:
     //     input:  pNewValue - buffer containing the new value along with its size
-    //             pContext  - context from which the value comes
+    //             contextBuffer - context from which the value comes
     //             fIsSigned - indicates whether the value is signed or not. The value provided may be smaller than
     //                         a register, in which case we'll need to extend it to a full register width. To do this
     //                         correctly, we need to know whether to sign extend or zero extend. Currently, only
@@ -7738,7 +7674,7 @@ public:
     // Note: Throws E_FAIL for invalid input or various HRESULTs from an
     //                         unsuccessful call to WriteProcessMemory
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned) = 0;
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned) = 0;
 
     // Gets an enregistered value and returns it to the caller
     // Arguments:
@@ -7790,7 +7726,7 @@ public:
         EnregisteredValueHome(pFrame),
         m_reg1Info(regNum,
                    pFrame->GetLeftSideAddressOfRegister(regNum),
-                   *(pFrame->GetAddressOfRegister(regNum)))
+                   ReadFrameRegister(pFrame, regNum))
     {};
 
     // copy constructor
@@ -7807,14 +7743,13 @@ public:
     virtual
     RegValueHome * Clone() const { return new RegValueHome(*this); };
 
-    // updates a register in a given context, and in the regdisplay of a given frame.
-    void SetContextRegister(DT_CONTEXT *     pContext,
+    void SetContextRegister(ContextBuffer    contextBuffer,
                             CorDebugRegister regNum,
                             SIZE_T           newVal);
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -7823,6 +7758,15 @@ public:
     // instance of a derived class of RegValueHome
     virtual
     void CopyToIPCEType(RemoteAddress * pRegAddr);
+
+protected:
+    static SIZE_T ReadFrameRegister(const CordbNativeFrame * pFrame, CorDebugRegister regNum)
+    {
+        TADDR v = 0;
+        HRESULT hr = pFrame->ReadContextRegister(regNum, &v);
+        IfFailThrow(hr);
+        return (SIZE_T)v;
+    }
 
     //-------------------------------------
     // data members
@@ -7855,7 +7799,7 @@ public:
         RegValueHome(pFrame, reg1Num),
         m_reg2Info(reg2Num,
                    pFrame->GetLeftSideAddressOfRegister(reg2Num),
-                   *(pFrame->GetAddressOfRegister(reg2Num)))
+                   ReadFrameRegister(pFrame, reg2Num))
     {};
 
     // copy constructor
@@ -7874,7 +7818,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -7897,7 +7841,7 @@ protected:
 // EnregisteredValueHome for a value that lives in two registers where at least one is a
 // floating-point register (e.g. a 16-byte struct returned in XMM0+XMM1 on Unix x64, or a
 // mixed int/fp multi-register return).
-// Floating-point register contents are not reachable through the integer register display, so
+// Floating-point register contents are stored separately from the frame's integer context, so
 // rather than referencing live registers this home captures a snapshot of the 16-byte value
 // (low 8 bytes followed by high 8 bytes) when it is created. The snapshot is used to populate
 // the value's local object copy and is cloned for field access. Writing back to a
@@ -7934,7 +7878,7 @@ public:
 
     // writing back to a multi-register return value is not supported
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned)
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned)
     {
         ThrowHR(CORDBG_E_SET_VALUE_NOT_ALLOWED_ON_NONLEAF_FRAME);
     };
@@ -7996,7 +7940,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * DT_pContext, bool fIsSigned) = 0;
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned) = 0;
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -8054,7 +7998,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -8104,7 +8048,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -8126,11 +8070,14 @@ public:
     // Arguments:
     //     input:  pFrame - frame to which the value belongs
     //             index  - index into the floating point stack where the value resides
+    //             regNum - CorDebugRegister naming the fp / SIMD register
     //     output: no out parameters, but the instance has been initialized
     FloatRegValueHome(const CordbNativeFrame *      pFrame,
-                      DWORD                         index):
+                      DWORD                         index,
+                      CorDebugRegister              regNum):
         EnregisteredValueHome(pFrame),
-        m_floatIndex(index)
+        m_floatIndex(index),
+        m_regNum(regNum)
     {};
 
     // copy constructor
@@ -8140,7 +8087,8 @@ public:
     //     output: no out parameters, but the instance has been initialized
     FloatRegValueHome(const FloatRegValueHome * pRemoteRegAddr):
         EnregisteredValueHome(pRemoteRegAddr->m_pFrame),
-        m_floatIndex(pRemoteRegAddr->m_floatIndex)
+        m_floatIndex(pRemoteRegAddr->m_floatIndex),
+        m_regNum(pRemoteRegAddr->m_regNum)
     {};
 
     // make a copy of this instance of FloatRegValueHome
@@ -8149,7 +8097,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -8167,6 +8115,10 @@ public:
 protected:
     // index into the FP registers for the register in which the floating point value resides
     const DWORD            m_floatIndex;
+
+    // CorDebugRegister naming the fp / SIMD register, used to write the value
+    // back into the target CONTEXT via the DAC.
+    const CorDebugRegister m_regNum;
  }; // class FloatRegValueHome
 
 // ----------------------------------------------------------------------------
@@ -8247,7 +8199,8 @@ public:
                              CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
-                             ICorDebugValue ** ppValue) = 0;
+                             ICorDebugValue ** ppValue,
+                             CordbValue *      pExternalMemoryParent = nullptr) = 0;
 
     // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
     // Arguments
@@ -8311,7 +8264,8 @@ public:
                                 CORDB_ADDRESS     offset,
                                 void *            localAddress,
                                 ULONG32           size,
-                                ICorDebugValue ** ppValue);
+                                ICorDebugValue ** ppValue,
+                                CordbValue *      pExternalMemoryParent = nullptr);
 
     // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
     virtual
@@ -8364,7 +8318,8 @@ public:
                              CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
-                             ICorDebugValue ** ppValue);
+                             ICorDebugValue ** ppValue,
+                             CordbValue *      pExternalMemoryParent = nullptr);
 
     // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
     virtual
@@ -8431,7 +8386,8 @@ public:
                              CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
-                             ICorDebugValue ** ppValue);
+                             ICorDebugValue ** ppValue,
+                             CordbValue *      pExternalMemoryParent = nullptr);
 
     // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
     virtual
@@ -8678,7 +8634,8 @@ public:
                             TargetBuffer                   remoteValue,
                             MemoryRange                    localValue,
                             EnregisteredValueHomeHolder *  ppRemoteRegAddr,
-                            ICorDebugValue**               ppValue);
+                            ICorDebugValue**               ppValue,
+                            CordbValue*                    pExternalMemoryParent);
 
     // Helper for code:CordbValue::CreateValueByType. Create a new instance of CordbVCObjectValue or
     // CordbReferenceValue
@@ -8690,7 +8647,8 @@ public:
                                MemoryRange                    localValue,
                                EnregisteredValueHomeHolder *  ppRemoteRegAddr,
                                VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner,
-                               ICorDebugValue**               ppValue);
+                               ICorDebugValue**               ppValue,
+                               CordbValue*                    pExternalMemoryParent);
 
     // Create the proper ICDValue instance based on the given element type.
     static void CreateValueByType(CordbAppDomain *               appdomain,
@@ -8700,7 +8658,8 @@ public:
                                   MemoryRange                    localValue,
                                   EnregisteredValueHomeHolder *  ppRemoteRegAddr,
                                   VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner,
-                                  ICorDebugValue**               ppValue);
+                                  ICorDebugValue**               ppValue,
+                                  CordbValue*                    pExternalMemoryParent = nullptr);
 
     // Create the proper ICDValue instance based on the given remote heap object
     static ICorDebugValue* CreateHeapValue(CordbAppDomain* pAppDomain,
@@ -8740,6 +8699,10 @@ public:
 
     // true if the value is a RS fabrication.
     bool                        m_isLiteral;
+
+private:
+    // A field's remote home remains valid only while its external-memory parent is alive.
+    RSExtSmartPtr<CordbValue> m_pExternalMemoryParent;
 
 };
 
@@ -9433,6 +9396,8 @@ public:
 
 private:
 
+    void RefreshObjectCopy();
+
     // local cached copy of the value class
     BYTE *   m_pObjectCopy;
 
@@ -9440,6 +9405,7 @@ private:
     ValueHome * m_pValueHome;
 
     VMPTR_DebuggerExternalMemoryOwner m_vmExternalMemoryOwner;
+    bool m_isExternalMemory;
 };
 
 
@@ -10384,17 +10350,13 @@ enum CordbUnmanagedThreadState
     CUTS_None                        = 0x0000,
     CUTS_Deleted                     = 0x0001,
     CUTS_FirstChanceHijacked         = 0x0002,
-    // Set when interop debugging needs the SS flag to be enabled
-    // regardless of what the user wants it to be
-    CUTS_IsSSFlagNeeded              = 0x0004,
+    // unused                        = 0x0004,
     CUTS_GenericHijacked             = 0x0008,
-    // when the m_raiseExceptionEntryContext is valid
-    CUTS_HasRaiseExceptionEntryCtx   = 0x0010,
+    // unused                        = 0x0010,
     CUTS_BlockingForSync             = 0x0020,
     CUTS_Suspended                   = 0x0040,
     CUTS_IsSpecialDebuggerThread     = 0x0080,
-    // when the thread is re-executing RaiseException to retrigger an exception
-    CUTS_IsRaiseExceptionHijacked    = 0x0100,
+    // unused                        = 0x0100,
     CUTS_HasIBEvent                  = 0x0200,
     CUTS_HasOOBEvent                 = 0x0400,
     CUTS_HasSpecialStackOverflowCase = 0x0800,
@@ -10403,9 +10365,7 @@ enum CordbUnmanagedThreadState
 #endif
     CUTS_SkippingNativePatch         = 0x2000,
     CUTS_HasContextSet               = 0x4000,
-    // Set when interop debugging is making use of the single step flag
-    // but the user has not set it
-    CUTS_IsSSFlagHidden              = 0x8000
+    // unused                        = 0x8000,
 
 };
 
@@ -10453,16 +10413,12 @@ public:
 
     // These are wrappers for the OS calls which hide
     // the effects of hijacking and internal SS flag usage
-    HRESULT GetThreadContext(DT_CONTEXT * pContext);
-    HRESULT SetThreadContext(DT_CONTEXT * pContext);
-
-    // Turns on and off the internal usage of the SS flag
-    VOID BeginStepping();
-    VOID EndStepping();
+    HRESULT GetThreadContext(T_CONTEXT * pContext);
+    HRESULT SetThreadContext(T_CONTEXT * pContext);
 
     // An accessor for &m_context, this value generally stores
     // a context we may need to restore after a hijack completes
-    DT_CONTEXT * GetHijackCtx();
+    T_CONTEXT * GetHijackCtx();
 
 private:
     CORDB_ADDRESS m_stackBase;
@@ -10485,10 +10441,6 @@ public:
 #endif
     BOOL IsSkippingNativePatch() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_SkippingNativePatch; }
     BOOL IsContextSet() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_HasContextSet; }
-    BOOL IsSSFlagNeeded() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_IsSSFlagNeeded; }
-    BOOL IsSSFlagHidden() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_IsSSFlagHidden; }
-    BOOL HasRaiseExceptionEntryCtx() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_HasRaiseExceptionEntryCtx; }
-    BOOL IsRaiseExceptionHijacked() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_IsRaiseExceptionHijacked; }
 
     void SetState(CordbUnmanagedThreadState state)
     {
@@ -10499,12 +10451,6 @@ public:
     }
     void ClearState(CordbUnmanagedThreadState state) {LIMITED_METHOD_CONTRACT;  m_state = (CordbUnmanagedThreadState)(m_state & ~state); }
 
-    void HijackToRaiseException();
-    void RestoreFromRaiseExceptionHijack();
-    void SaveRaiseExceptionEntryContext();
-    void ClearRaiseExceptionEntryContext();
-    BOOL IsExceptionFromLastRaiseException(const EXCEPTION_RECORD* pExceptionRecord);
-
     CordbUnmanagedEvent *IBEvent()  {LIMITED_METHOD_CONTRACT;  return &m_IBEvent; }
     CordbUnmanagedEvent *IBEvent2() {LIMITED_METHOD_CONTRACT;  return &m_IBEvent2; }
     CordbUnmanagedEvent *OOBEvent() { return &m_OOBEvent; }
@@ -10514,15 +10460,10 @@ public:
         return (DWORD) this->m_id;
     }
 
-#ifdef TARGET_X86
     // Stores the thread's current leaf SEH handler
     HRESULT SaveCurrentLeafSeh();
     // Restores the thread's leaf SEH handler from the previously saved value
     HRESULT RestoreLeafSeh();
-#endif
-
-    // Logs basic data about a context to the debugging log
-    static VOID LogContext(DT_CONTEXT* pContext);
 
 public:
     HANDLE                     m_handle;
@@ -10551,21 +10492,10 @@ public:
 private:
     // Spare context used for various purposes.
     // See CordbUnmanagedThread::GetThreadContext for details
-    DT_CONTEXT                 m_context;
+    T_CONTEXT                  m_context;
 
-    // The context of the thread the last time it called into kernel32!RaiseException
-    DT_CONTEXT                 m_raiseExceptionEntryContext;
-
-    DWORD                      m_raiseExceptionExceptionCode;
-    DWORD                      m_raiseExceptionExceptionFlags;
-    DWORD                      m_raiseExceptionNumberParameters;
-    ULONG_PTR                  m_raiseExceptionExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
-
-
-#ifdef TARGET_X86
     // the SEH handler which was the leaf when SaveCurrentSeh was called (prior to hijack)
     REMOTE_PTR                 m_pSavedLeafSeh;
-#endif
 
     HRESULT EnableSSAfterBP();
 
@@ -10587,7 +10517,6 @@ public:
 
     bool GetEEPGCDisabled();
     void GetEEState(bool *threadStepping, bool *specialManagedException);
-    bool GetEEFrame();
 };
 #endif // FEATURE_INTEROP_DEBUGGING
 
@@ -11404,17 +11333,11 @@ inline void ValidateOrThrow(const void * p)
 // aligns argBase on platforms that require it else it's a no-op
 inline void AlignAddressForType(CordbType* pArgType, CORDB_ADDRESS& argBase)
 {
-#ifdef TARGET_ARM
-// TODO: review the following
-#ifdef FEATURE_64BIT_ALIGNMENT
     BOOL align = FALSE;
-    HRESULT hr = pArgType->RequiresAlign8(&align);
-    _ASSERTE(SUCCEEDED(hr));
+    pArgType->RequiresAlign8(&align);
 
     if (align)
         argBase = ALIGN_ADDRESS(argBase, 8);
-#endif // FEATURE_64BIT_ALIGNMENT
-#endif // TARGET_ARM
 }
 
 //-----------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-ARG VARIANT="8.0-noble"
+ARG VARIANT="11.0-resolute"
 FROM mcr.microsoft.com/devcontainers/dotnet:${VARIANT}
 
 # Set up machine requirements to build the repo

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Hosting.WindowsServices
@@ -25,15 +24,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
 
         private static bool GetIsWindowsService()
         {
-            if (
-#if NETFRAMEWORK
-                Environment.OSVersion.Platform != PlatformID.Win32NT
-#elif NET
-                !OperatingSystem.IsWindows()
-#else
-                !RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-#endif
-                )
+            if (!OperatingSystem.IsWindows())
             {
                 return false;
             }
