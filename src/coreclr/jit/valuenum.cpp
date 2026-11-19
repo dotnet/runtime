@@ -13159,9 +13159,47 @@ void Compiler::fgValueNumberStore(GenTree* store)
             else
             {
                 assert(!store->HasAnyLocalDefs(this));
-                if (store->OperIs(GT_STOREIND) && IsByrefStoreForwardingType(store->TypeGet()) &&
-                    (value->TypeGet() == store->TypeGet()) && !store->AsIndir()->IsVolatile() &&
+                // A destination without field metadata can still have an exact address.
+                // A reference loaded from this address at the current memory state and
+                // written back is redundant under the same proof as the field path.
+                // This covers generic ref T helpers after inlining.
+                if (store->OperIs(GT_STOREIND) && store->TypeIs(TYP_REF) && !store->AsIndir()->IsVolatile() &&
+                    ((store->gtFlags & GTF_IND_NONFAULTING) != 0) &&
+                    (((addr->gtFlags | store->Data()->gtFlags) & GTF_ALL_EFFECT) == 0) &&
                     !(addrIsVNFunc && funcApp.FuncIs(VNF_PtrToLoc)))
+                {
+                    VNFuncApp source;
+                    ValueNum  storeValueVN = valueVNPair.GetLiberal();
+                    if (vnStore->GetVNFunc(storeValueVN, &source) && source.FuncIs(VNF_ByrefExposedLoad) &&
+                        (source.GetArg(0) == vnStore->VNForIntCon(TYP_REF)) &&
+                        (source.GetArg(2) == fgCurMemoryVN[ByrefExposed]))
+                    {
+                        ValueNum       sourceAddress = source.GetArg(1);
+                        ValueNum       targetAddress = vnStore->VNNormalValue(addrVN);
+                        target_ssize_t sourceOffset;
+                        target_ssize_t targetOffset;
+                        vnStore->PeelOffsets(&sourceAddress, &sourceOffset);
+                        vnStore->PeelOffsets(&targetAddress, &targetOffset);
+                        if ((sourceAddress == targetAddress) && (sourceOffset == targetOffset))
+                        {
+                            JITDUMP("REFSTORE [%06u] byref addr " FMT_VN " value=" FMT_VN " equal=1\n",
+                                    dspTreeID(store), targetAddress, storeValueVN);
+                            // The store disappears, so its memory SSA definition carries
+                            // the incoming state.
+                            fgValueNumberRecordMemorySsa(GcHeap, store);
+                            if (!byrefStatesMatchGcHeapStates)
+                                fgValueNumberRecordMemorySsa(ByrefExposed, store);
+                            redundantReferenceStore = true;
+                        }
+                    }
+                }
+                if (redundantReferenceStore)
+                {
+                    // The memory state stays as it was, there is no store to record.
+                }
+                else if (store->OperIs(GT_STOREIND) && IsByrefStoreForwardingType(store->TypeGet()) &&
+                         (value->TypeGet() == store->TypeGet()) && !store->AsIndir()->IsVolatile() &&
+                         !(addrIsVNFunc && funcApp.FuncIs(VNF_PtrToLoc)))
                 {
                     // Keep the rest of memory opaque; only an exact, same-type load can reuse this value.
                     ValueNum memoryVN =
