@@ -740,11 +740,7 @@ if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
 if (CLR_CMAKE_TARGET_ARCH_WASM)
-  if (CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH STREQUAL "wasm64")
-    create_standalone_jit(TARGET clrjit_universal_wasm64_${ARCH_HOST_NAME} OS universal ARCH wasm64)
-  else()
-    create_standalone_jit(TARGET clrjit_universal_wasm_${ARCH_HOST_NAME} OS universal ARCH wasm)
-  endif()
+  create_standalone_jit(TARGET clrjit_universal_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} OS universal ARCH ${ARCH_TARGET_NAME})
 endif (CLR_CMAKE_TARGET_ARCH_WASM)
 
 if (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
