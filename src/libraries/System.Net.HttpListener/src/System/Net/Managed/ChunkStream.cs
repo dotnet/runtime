@@ -142,46 +142,49 @@ namespace System.Net
 
         private void InternalWrite(byte[] buffer, ref int offset, int size)
         {
-            if (_state == State.None || _state == State.PartialSize)
+            while (true)
             {
-                _state = GetChunkSize(buffer, ref offset, size);
-                if (_state == State.PartialSize)
+                if (_state == State.None || _state == State.PartialSize)
+                {
+                    _state = GetChunkSize(buffer, ref offset, size);
+                    if (_state == State.PartialSize)
+                        return;
+
+                    _saved.Length = 0;
+                    _sawCR = false;
+                    _gotit = false;
+                }
+
+                if (_state == State.Body && offset < size)
+                {
+                    _state = ReadBody(buffer, ref offset, size);
+                    if (_state == State.Body)
+                        return;
+                }
+
+                if (_state == State.BodyFinished && offset < size)
+                {
+                    _state = ReadCRLF(buffer, ref offset, size);
+                    if (_state == State.BodyFinished)
+                        return;
+
+                    _sawCR = false;
+                }
+
+                if (_state == State.Trailer && offset < size)
+                {
+                    _state = ReadTrailer(buffer, ref offset, size);
+                    if (_state == State.Trailer)
+                        return;
+
+                    _saved.Length = 0;
+                    _sawCR = false;
+                    _gotit = false;
+                }
+
+                if (offset >= size)
                     return;
-
-                _saved.Length = 0;
-                _sawCR = false;
-                _gotit = false;
             }
-
-            if (_state == State.Body && offset < size)
-            {
-                _state = ReadBody(buffer, ref offset, size);
-                if (_state == State.Body)
-                    return;
-            }
-
-            if (_state == State.BodyFinished && offset < size)
-            {
-                _state = ReadCRLF(buffer, ref offset, size);
-                if (_state == State.BodyFinished)
-                    return;
-
-                _sawCR = false;
-            }
-
-            if (_state == State.Trailer && offset < size)
-            {
-                _state = ReadTrailer(buffer, ref offset, size);
-                if (_state == State.Trailer)
-                    return;
-
-                _saved.Length = 0;
-                _sawCR = false;
-                _gotit = false;
-            }
-
-            if (offset < size)
-                InternalWrite(buffer, ref offset, size);
         }
 
         public bool WantMore
