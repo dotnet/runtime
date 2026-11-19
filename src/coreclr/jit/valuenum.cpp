@@ -7000,9 +7000,18 @@ bool Compiler::fgValueNumberFieldStore(
         !storeNode->AsIndir()->IsVolatile() && ((storeNode->gtFlags & GTF_IND_NONFAULTING) != 0) &&
         (((storeNode->AsIndir()->Addr()->gtFlags | storeNode->Data()->gtFlags) & GTF_ALL_EFFECT) == 0))
     {
+        // The proof reads the current memory state, a use that liveness does not see.
+        // Memory SSA phis are pruned where the kind is dead into a block, so the entry
+        // state is only the true reaching state where the consulted kind is live in.
+        // Under matching states the shared SSA is keyed on ByrefExposed liveness.
+        const bool gcHeapStateReliable =
+            (compCurBB->bbMemoryLiveIn &
+             memoryKindSet(byrefStatesMatchGcHeapStates ? ByrefExposed : GcHeap)) != 0;
+        const bool byrefStateReliable = (compCurBB->bbMemoryLiveIn & memoryKindSet(ByrefExposed)) != 0;
+
         ValueNum  previousField = vnStore->VNForMapSelect(VNK_Liberal, fieldType, fieldMapVN, fieldValueSelectorVN);
         ValueNum  previousValue = vnStore->VNForLoad(VNK_Liberal, previousField, fieldSize, TYP_REF, offset, storeSize);
-        bool      unchanged     = previousValue == value;
+        bool      unchanged     = gcHeapStateReliable && (previousValue == value);
         VNFuncApp source;
         if (!unchanged && vnStore->GetVNFunc(value, &source) && source.FuncIs(VNF_ByrefExposedLoad) &&
             (source.GetArg(0) == vnStore->VNForIntCon(TYP_REF)))
@@ -7019,9 +7028,9 @@ bool Compiler::fgValueNumberFieldStore(
                 ValueNum loadMemoryVN = source.GetArg(2);
                 if (loadMemoryVN == fgCurMemoryVN[ByrefExposed])
                 {
-                    unchanged = true;
+                    unchanged = byrefStateReliable;
                 }
-                else if (byrefStatesMatchGcHeapStates)
+                else if (byrefStatesMatchGcHeapStates && byrefStateReliable)
                 {
                     // The load saw an older memory state. Both models share def points
                     // and value numbers here, so the captured memory VN is the heap
@@ -13162,8 +13171,12 @@ void Compiler::fgValueNumberStore(GenTree* store)
                 // A destination without field metadata can still have an exact address.
                 // A reference loaded from this address at the current memory state and
                 // written back is redundant under the same proof as the field path.
-                // This covers generic ref T helpers after inlining.
+                // This covers generic ref T helpers after inlining. The proof consults
+                // the ByrefExposed state, a use liveness does not see, so it is only
+                // meaningful where that kind is live into the block (memory SSA phis
+                // are pruned where it is dead).
                 if (store->OperIs(GT_STOREIND) && store->TypeIs(TYP_REF) && !store->AsIndir()->IsVolatile() &&
+                    ((compCurBB->bbMemoryLiveIn & memoryKindSet(ByrefExposed)) != 0) &&
                     ((store->gtFlags & GTF_IND_NONFAULTING) != 0) &&
                     (((addr->gtFlags | store->Data()->gtFlags) & GTF_ALL_EFFECT) == 0) &&
                     !(addrIsVNFunc && funcApp.FuncIs(VNF_PtrToLoc)))
