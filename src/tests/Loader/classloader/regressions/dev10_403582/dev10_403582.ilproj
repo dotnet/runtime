@@ -5,7 +5,8 @@
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Testing various TypeLoadExceptions -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
-    <!-- ildasm crashes on genmeth.dll. See https://github.com/dotnet/runtime/issues/127576 -->
+    <!-- genmeth.dll does not round-trip: the native ildasm crashes on it (https://github.com/dotnet/runtime/issues/127576)
+         and its deliberately invalid metadata only assembles with -ERR. -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>

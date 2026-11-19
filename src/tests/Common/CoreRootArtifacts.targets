@@ -110,6 +110,11 @@
       <RunTimeArtifactsIncludeFolders Include="managed-ilasm/" TargetDir="managed-ilasm/">
         <IncludeSubFolders>True</IncludeSubFolders>
       </RunTimeArtifactsIncludeFolders>
+
+      <!-- Managed ildasm for testing (built by the tools.ildasm subset) -->
+      <RunTimeArtifactsIncludeFolders Include="managed-ildasm/" TargetDir="managed-ildasm/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
     </ItemGroup>
 
     <!-- Glob CoreCLR artifacts into _CoreRootArtifactSource items -->

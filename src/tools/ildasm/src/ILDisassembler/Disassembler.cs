@@ -3,37 +3,27 @@
 
 using System;
 using System.IO;
-using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Text;
 
 namespace ILDisassembler;
 
 /// <summary>
-/// Main entry point for IL disassembly.
-/// Reads a PE file and outputs IL assembly syntax.
+/// Disassembles a PE file into IL assembler source that ilasm can reassemble.
+/// The output follows the format of the native ildasm.
 /// </summary>
 public sealed class Disassembler : IDisposable
 {
     private readonly PEReader _peReader;
-    private readonly MetadataReader _metadataReader;
     private readonly string _filePath;
     private readonly Options _options;
 
     public Disassembler(string filePath, Options? options = null)
     {
         _filePath = filePath;
-        // TODO: Wire up options to control disassembly behavior (ShowBytes, ShowTokens, etc.)
         _options = options ?? new Options();
-        var stream = File.OpenRead(filePath);
-        // PEReader takes ownership of the stream and will dispose it when PEReader is disposed
-        _peReader = new PEReader(stream);
-
-        if (!_peReader.HasMetadata)
-        {
-            throw new InvalidOperationException("PE file does not contain metadata");
-        }
-
-        _metadataReader = _peReader.GetMetadataReader();
+        // PEReader takes ownership of the stream and disposes it.
+        _peReader = new PEReader(File.OpenRead(filePath));
     }
 
     public Disassembler(Stream stream, Options? options = null)
@@ -41,110 +31,44 @@ public sealed class Disassembler : IDisposable
         _filePath = "<stream>";
         _options = options ?? new Options();
         _peReader = new PEReader(stream);
-
-        if (!_peReader.HasMetadata)
-        {
-            throw new InvalidOperationException("PE file does not contain metadata");
-        }
-
-        _metadataReader = _peReader.GetMetadataReader();
     }
 
     /// <summary>
-    /// Disassembles the PE file to the specified output.
+    /// Disassembles the PE file to the specified output, as the native ildasm does for console output.
     /// </summary>
-    public void Disassemble(TextWriter output)
+    /// <returns>true on success.</returns>
+    public bool Disassemble(TextWriter output) => Disassemble(output, Console.Error, outputFilePath: null);
+
+    /// <summary>
+    /// Disassembles the PE file. When <paramref name="outputFilePath"/> is set, the output is treated as going
+    /// to that file: HTML/RTF formatting applies and embedded managed resources are saved next to it.
+    /// </summary>
+    /// <returns>true on success.</returns>
+    public bool Disassemble(TextWriter output, TextWriter error, string? outputFilePath)
     {
-        var writer = new ILWriter(output);
-
-        // Write header comment
-        writer.WriteComment($".NET IL Disassembler.  Version {typeof(Disassembler).Assembly.GetName().Version}");
-        writer.WriteLine();
-        writer.WriteComment($"Metadata version: {_metadataReader.MetadataVersion}");
-
-        // TODO: Support --headers option to output PE headers (.imagebase, .file alignment, .stackreserve, .corflags, .subsystem)
-        // TODO: Support --html option to wrap output in HTML tags
-        // TODO: Support --rtf option to wrap output in RTF format
-
-        // Disassemble in order:
-        // 1. Assembly extern references
-        WriteAssemblyRefs(writer);
-
-        // 2. Assembly definition
-        WriteAssemblyDef(writer);
-
-        // 3. Module definition
-        WriteModuleDef(writer);
-
-        // TODO: Output manifest resources (.mresource)
-        // TODO: Output file references (.file)
-        // TODO: Output exported types (.class extern)
-
-        // 4. Type definitions (classes, interfaces, etc.)
-        WriteTypeDefs(writer);
-    }
-
-    private void WriteAssemblyRefs(ILWriter writer)
-    {
-        foreach (var handle in _metadataReader.AssemblyReferences)
+        if (!_peReader.HasMetadata && !_options.Headers)
         {
-            var assemblyRef = _metadataReader.GetAssemblyReference(handle);
-            var name = _metadataReader.GetString(assemblyRef.Name);
-            var version = assemblyRef.Version;
-
-            writer.WriteLine($".assembly extern {name}");
-            writer.WriteLine("{");
-            // TODO: Output .publickeytoken if present
-            // TODO: Output .culture if present
-            // TODO: Output .hash if present
-            writer.WriteLine($"  .ver {version.Major}:{version.Minor}:{version.Build}:{version.Revision}");
-            writer.WriteLine("}");
-        }
-    }
-
-    private void WriteAssemblyDef(ILWriter writer)
-    {
-        if (!_metadataReader.IsAssembly)
-        {
-            return;
+            output.Write("\n" + "//  .NET IL Disassembler.  Version " + Dasm.ProductVersion + "\n\n");
+            error.WriteLine($"error : '{_filePath}' has no valid CLR header and cannot be disassembled");
+            return false;
         }
 
-        var assemblyDef = _metadataReader.GetAssemblyDefinition();
-        var name = _metadataReader.GetString(assemblyDef.Name);
-        var version = assemblyDef.Version;
-
-        writer.WriteLine($".assembly {name}");
-        writer.WriteLine("{");
-        // TODO: Output .publickey if present
-        // TODO: Output .culture if present
-        // TODO: Output .hash algorithm if present
-        // TODO: Output custom attributes on assembly
-        writer.WriteLine($"  .ver {version.Major}:{version.Minor}:{version.Build}:{version.Revision}");
-        writer.WriteLine("}");
+        Dasm dasm = new(_peReader, _options, output, error, outputFilePath is not null, outputFilePath ?? "",
+            newLine: outputFilePath is not null && _options.Unicode ? "\r\n" : "\n");
+        return dasm.DumpFile(_filePath);
     }
 
-    private void WriteModuleDef(ILWriter writer)
+    /// <summary>
+    /// Disassembles the PE file into the file at <paramref name="outputFilePath"/>, using the encoding selected by the options.
+    /// </summary>
+    /// <returns>true on success.</returns>
+    public bool Disassemble(string outputFilePath, TextWriter? error = null)
     {
-        var moduleDef = _metadataReader.GetModuleDefinition();
-        var name = _metadataReader.GetString(moduleDef.Name);
-
-        writer.WriteLine($".module {name}");
-        writer.WriteComment($"MVID: {{{_metadataReader.GetGuid(moduleDef.Mvid)}}}");
-        // TODO: Output custom attributes on module
-    }
-
-    private void WriteTypeDefs(ILWriter writer)
-    {
-        // TODO: Support --typelist option to output full type list for round-trip
-        // TODO: Support --classlist option to output class list
-        // TODO: Support --visibility/--pubonly options to filter types
-        // TODO: Support --item option to disassemble specific item only
-        foreach (var handle in _metadataReader.TypeDefinitions)
-        {
-            var typeDef = _metadataReader.GetTypeDefinition(handle);
-            var typeWriter = new TypeDisassembler(_metadataReader, _peReader, typeDef);
-            typeWriter.Write(writer);
-        }
+        Encoding encoding = _options.Unicode
+            ? new UnicodeEncoding(bigEndian: false, byteOrderMark: true)
+            : new UTF8Encoding(encoderShouldEmitUTF8Identifier: _options.Utf8);
+        using StreamWriter writer = new(outputFilePath, append: false, encoding);
+        return Disassemble(writer, error ?? Console.Error, outputFilePath);
     }
 
     public void Dispose()

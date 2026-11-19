@@ -58,7 +58,8 @@ The test is skipped during SuperPMI collection runs. The skip check is per-proce
 
 ### 9. Project sets `<IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>`
 
-`IlasmRoundTripIncompatible` skips the test during IL round-trip validation runs. Runnable
+`IlasmRoundTripIncompatible` skips the test during IL round-trip validation runs, and
+`NativeIldasmRoundTripIncompatible` during those that disassemble with the native ildasm. Runnable
 tests need process isolation because their skip checks are per-process. Shared-library
 projects do not need process isolation; merged runners skip their marked assemblies
 individually.
@@ -207,6 +208,7 @@ If the project file contains **any** of the following MSBuild properties or item
 | `JitOptimizationSensitive` | Per-process skip check |
 | `SuperPMICollectIncompatible` | Per-process skip check |
 | `IlasmRoundTripIncompatible` | Per-process skip check |
+| `NativeIldasmRoundTripIncompatible` | Per-process skip check |
 | `UnloadabilityIncompatible` | Per-process skip check |
 | `IsLongRunningGCTest` | Per-process skip pre-command |
 | `CLRTestExecutionArguments` (non-empty) | Per-process invocation arguments |

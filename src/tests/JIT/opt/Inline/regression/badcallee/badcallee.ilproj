@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Needed for IlasmRoundTripIncompatible -->
+    <!-- Needed for NativeIldasmRoundTripIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- Test is not expected to work with ilasm round-tripping due to invalid IL: https://github.com/dotnet/runtime/issues/38507 -->
-    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <!-- The native ildasm labels a branch target past the end of the code: https://github.com/dotnet/runtime/issues/38507 -->
+    <NativeIldasmRoundTripIncompatible>true</NativeIldasmRoundTripIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

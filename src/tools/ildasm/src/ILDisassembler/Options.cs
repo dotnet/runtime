@@ -24,12 +24,14 @@ public sealed class Options
     public bool ShowTokens { get; set; }
 
     /// <summary>
-    /// Show original source lines as comments (requires PDB).
+    /// Show original source lines as comments. Accepted for compatibility: like the native ildasm on .NET,
+    /// which has no symbol reader, this has no effect on the output.
     /// </summary>
     public bool ShowSource { get; set; }
 
     /// <summary>
-    /// Include references to original source lines.
+    /// Include references to original source lines (.line directives) from the portable PDB, when one is found:
+    /// embedded, at the path in the debug directory, or next to the input file.
     /// </summary>
     public bool ShowLineNumbers { get; set; }
 
@@ -120,9 +122,9 @@ public sealed class Options
     public bool Rtf { get; set; }
 
     /// <summary>
-    /// Use UTF-8 encoding for output (default).
+    /// Use UTF-8 encoding with a byte order mark for file output (by default UTF-8 is written without one).
     /// </summary>
-    public bool Utf8 { get; set; } = true;
+    public bool Utf8 { get; set; }
 
     /// <summary>
     /// Use Unicode encoding for output.

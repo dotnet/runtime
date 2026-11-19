@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Needed for IlasmRoundTripIncompatible -->
+    <!-- Needed for NativeIldasmRoundTripIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- ildasm cannot support field RVAs precisely -->
-    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <!-- The native ildasm truncates the RVA field data of structs with padding -->
+    <NativeIldasmRoundTripIncompatible>true</NativeIldasmRoundTripIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

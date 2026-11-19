@@ -4,6 +4,7 @@
 using System;
 using System.CommandLine;
 using System.IO;
+using System.Text;
 
 namespace ILDisassembler;
 
@@ -20,14 +21,7 @@ internal sealed class Program
 
     public int Run()
     {
-        bool quiet = Get(_command.Quiet);
-
-        if (!Get(_command.NoLogo) && !quiet)
-        {
-            Console.WriteLine(IldasmRootCommand.ProductName);
-            Console.WriteLine();
-        }
-
+        // Like the native ildasm, nothing but the disassembly goes to the console; there is no logo or progress output.
         string? inputFile = Get(_command.InputFilePath);
         if (string.IsNullOrEmpty(inputFile))
         {
@@ -37,11 +31,22 @@ internal sealed class Program
 
         if (!File.Exists(inputFile))
         {
-            Console.Error.WriteLine($"Error: Input file not found: {inputFile}");
+            Console.Error.WriteLine($"error : File '{inputFile}' not found or not a PE file");
             return 1;
         }
 
+        if (Get(_command.ShowSource))
+        {
+            // Matches the native ildasm on CoreCLR, which has no symbol reader for source lines.
+            Console.WriteLine("Warning: 'SOURCE' option is ignored for ildasm on CoreCLR.");
+        }
+
         string? outputFile = Get(_command.OutputFilePath);
+        if (outputFile is not null && outputFile.Equals("con", StringComparison.OrdinalIgnoreCase))
+        {
+            outputFile = null;
+        }
+
         string[] metadataFilters = Get(_command.MetadataFilters) ?? [];
 
         var options = new Options
@@ -64,7 +69,7 @@ internal sealed class Program
             Item = Get(_command.Item),
             Stats = Get(_command.Stats),
             ClassList = Get(_command.ClassList),
-            Metadata = Get(_command.Metadata) || metadataFilters.Length > 0,
+            Metadata = Get(_command.Metadata) || metadataFilters.Length > 0 || Get(_command.R2RNativeMetadata),
             MetadataFilters = metadataFilters,
             Html = Get(_command.Html),
             Rtf = Get(_command.Rtf),
@@ -84,33 +89,26 @@ internal sealed class Program
         try
         {
             using var disassembler = new Disassembler(inputFile, options);
-
-            TextWriter output = outputFile is not null
-                ? new StreamWriter(outputFile)
-                : Console.Out;
-
-            try
+            bool ok;
+            if (outputFile is not null)
             {
-                disassembler.Disassemble(output);
-
-                if (!quiet)
-                {
-                    Console.WriteLine("// Disassembly complete");
-                }
+                ok = disassembler.Disassemble(outputFile, Console.Error);
             }
-            finally
+            else
             {
-                if (outputFile is not null)
-                {
-                    output.Dispose();
-                }
+                using var stdout = new StreamWriter(Console.OpenStandardOutput(), new UTF8Encoding(false)) { AutoFlush = false };
+                ok = disassembler.Disassemble(stdout);
             }
 
-            return 0;
+            return ok ? 0 : 1;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is BadImageFormatException or IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            Console.Error.WriteLine($"Error: {ex.Message}");
+            Console.Error.WriteLine($"error : File '{inputFile}' not found or not a PE file ({ex.Message})");
+            if (Environment.GetEnvironmentVariable("ILDASM_DEBUG") == "1")
+            {
+                Console.Error.WriteLine(ex);
+            }
             return 1;
         }
     }
