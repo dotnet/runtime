@@ -4,7 +4,25 @@
 #include "standardpch.h"
 #include "cycletimer.h"
 
-#include <minipal/time.h>
+#include <time.h> // For CLOCK_THREAD_CPUTIME_ID
+
+static BOOL GetThreadCycles(uint64_t* cycles)
+{
+#ifdef HOST_UNIX
+#ifdef CLOCK_THREAD_CPUTIME_ID
+    struct timespec ts;
+    if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) != 0)
+        return FALSE;
+
+    *cycles = (uint64_t)ts.tv_sec * 1000000000 + (uint64_t)ts.tv_nsec;
+    return TRUE;
+#else // CLOCK_THREAD_CPUTIME_ID
+    return FALSE;
+#endif // CLOCK_THREAD_CPUTIME_ID
+#else // HOST_UNIX
+    return QueryThreadCycleTime(GetCurrentThread(), cycles);
+#endif // HOST_UNIX
+}
 
 CycleTimer::CycleTimer()
 {
@@ -19,7 +37,9 @@ CycleTimer::~CycleTimer()
 
 void CycleTimer::Start()
 {
-    if (!minipal_get_thread_cycles(&start))
+    BOOL retVal = GetThreadCycles(&start);
+
+    if (retVal == FALSE)
     {
         LogError("CycleTimer::Start unable to QPC. error was 0x%08x", ::GetLastError());
         DEBUG_BREAK;
@@ -28,7 +48,9 @@ void CycleTimer::Start()
 
 void CycleTimer::Stop()
 {
-    if (!minipal_get_thread_cycles(&stop))
+    BOOL retVal = GetThreadCycles(&stop);
+
+    if (retVal == FALSE)
     {
         LogError("CycleTimer::Stop unable to QPC. error was 0x%08x", ::GetLastError());
         DEBUG_BREAK;
@@ -48,8 +70,8 @@ uint64_t CycleTimer::QueryOverhead()
     const int        N = 1000;
     for (int i = 0; i < N; i++)
     {
-        minipal_get_thread_cycles(&startCycles);
-        minipal_get_thread_cycles(&endCycles);
+        GetThreadCycles(&startCycles);
+        GetThreadCycles(&endCycles);
         tot += (endCycles - startCycles);
     }
     return tot / N;

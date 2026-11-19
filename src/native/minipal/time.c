@@ -51,16 +51,6 @@ uint64_t minipal_get_system_time()
     return ((uint64_t)filetime.dwHighDateTime << 32) | filetime.dwLowDateTime;
 }
 
-bool minipal_get_thread_cycles(uint64_t* cycles)
-{
-    ULONG64 value;
-    if (!QueryThreadCycleTime(GetCurrentThread(), &value))
-        return false;
-
-    *cycles = value;
-    return true;
-}
-
 #else // HOST_WINDOWS
 
 #include "minipalconfig.h"
@@ -159,21 +149,6 @@ uint64_t minipal_get_system_time(void)
 
     const uint64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
     return ((uint64_t)(ts.tv_sec) + SECS_BETWEEN_1601_AND_1970_EPOCHS) * tccSecondsTo100NS + (ts.tv_nsec / 100);
-}
-
-bool minipal_get_thread_cycles(uint64_t* cycles)
-{
-#ifdef CLOCK_THREAD_CPUTIME_ID
-    struct timespec ts;
-    if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) != 0)
-        return false;
-
-    *cycles = (uint64_t)ts.tv_sec * tccSecondsToNanoSeconds + (uint64_t)ts.tv_nsec;
-    return true;
-#else
-    (void)cycles;
-    return false;
-#endif
 }
 
 #endif // HOST_WINDOWS
