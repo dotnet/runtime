@@ -10,6 +10,7 @@
 #include <crst.h>
 #endif // !RIGHT_SIDE_COMPILE
 
+#include <minipal/debugger.h>
 #include <minipal/mutex.h>
 #include <minipal/conditionvariable.h>
 #include <minipal/guid.h>
@@ -168,7 +169,7 @@ inline void DbgTransportLog(DbgTransportLogClass eClass, const char *szFormat, .
 
         char szDebugOutput[512];
         sprintf_s(szDebugOutput, sizeof(szDebugOutput), "%s: %s\n", DBG_TRANSPORT_LOG_PREFIX, szOutput);
-        OutputDebugStringA(szDebugOutput);
+        minipal_output_debug_string(szDebugOutput);
     }
 #endif // _DEBUG
 }

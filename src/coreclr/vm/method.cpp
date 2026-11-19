@@ -10,6 +10,9 @@
 //
 
 #include "common.h"
+#ifndef TARGET_WINDOWS
+#include <dlfcn.h>
+#endif
 #include "excep.h"
 #include "dbginterface.h"
 #include "ecall.h"
@@ -3930,7 +3933,7 @@ LPVOID PInvokeMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod)
     char const * funcName = GetEntrypointName();
 
 #ifndef TARGET_WINDOWS
-    return reinterpret_cast<LPVOID>(PAL_GetProcAddressDirect(hMod, funcName));
+    return dlsym(hMod, funcName);
 #else
     // Handle ordinals.
     if (funcName[0] == '#')

@@ -32,6 +32,7 @@
 #include <minipal/strings.h>
 #include <minipal/time.h>
 #include <minipal.h>
+#include <minipal/thread.h>
 
 #ifdef TARGET_UNIX
 #include <sys/time.h>
@@ -1163,7 +1164,11 @@ uint32_t
 ep_rt_current_process_get_id (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return static_cast<uint32_t>(GetCurrentProcessId ());
+#ifdef TARGET_UNIX
+	return static_cast<uint32_t>(getpid());
+#else
+	return static_cast<uint32_t>(GetCurrentProcessId());
+#endif
 }
 
 static
@@ -1208,7 +1213,7 @@ ep_rt_current_thread_get_id (void)
 	STATIC_CONTRACT_NOTHROW;
 
 #ifdef TARGET_UNIX
-	return static_cast<ep_rt_thread_id_t>(::PAL_GetCurrentOSThreadId ());
+	return static_cast<ep_rt_thread_id_t>(minipal_get_current_thread_id ());
 #else
 	return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
 #endif

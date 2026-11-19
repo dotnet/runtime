@@ -32,6 +32,15 @@ void CreateCrashDumpIfEnabled(bool stackoverflow = false);
 // Global state counter to implement SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE.
 Volatile<LONG> g_DbgSuppressAllocationAsserts = 0;
 
+static DWORD GetPid()
+{
+#ifdef HOST_UNIX
+    return getpid();
+#else
+    return GetCurrentProcessId();
+#endif
+}
+
 static void GetExecutableFileNameUtf8(SString& value)
 {
     CONTRACTL
@@ -185,8 +194,8 @@ VOID LogAssert(
     LOG((LF_ASSERT,
          LL_FATALERROR,
          "FAILED ASSERT(PID %d [0x%08x], Thread: %d [0x%x]) (%d/%d/%d: %02d:%02d:%02d %s): File: %s, Line %d : %s\n",
-         GetCurrentProcessId(),
-         GetCurrentProcessId(),
+         GetPid(),
+         GetPid(),
          GetCurrentThreadId(),
          GetCurrentThreadId(),
          local.tm_mon,
@@ -254,7 +263,7 @@ bool _DbgBreakCheck(
                 "\nAssert failure(PID %d [0x%08x], Thread: %d [0x%04x]): %s\n"
                 "    File: %s:%d\n"
                 "    Image: %s\n\n",
-                GetCurrentProcessId(), GetCurrentProcessId(),
+                GetPid(), GetPid(),
                 GetCurrentThreadId(), GetCurrentThreadId(),
                 szExpr, szFile, iLine, modulePath.GetUTF8());
 
@@ -492,7 +501,7 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
     SString buffer;
     buffer.Printf("CLR: Assert failure(PID %d [0x%08x], Thread: %d [0x%x]): %s\n"
                 "    File: %s:%d Image:\n%s\n",
-                GetCurrentProcessId(), GetCurrentProcessId(),
+                GetPid(), GetPid(),
                 GetCurrentThreadId(), GetCurrentThreadId(),
                 szExpr, szFile, iLine, modulePath.GetUTF8());
     OutputDebugStringUtf8(buffer.GetUTF8());

@@ -22,16 +22,10 @@ nativeStringResourceTable_mscorrc
 ; All the # exports are prefixed with DAC_
 #PAL_CatchHardwareExceptionHolderEnter
 #PAL_CatchHardwareExceptionHolderExit
-#PAL_CopyModuleData
-#PAL_GetApplicationGroupId
-#PAL_GetTransportName
 #PAL_GetCurrentThread
 #PAL_GetPalHostModule
-#PAL_GetSymbolModuleBase
-#PAL_GetTransportPipeName
 #PAL_InitializeDLL
 #PAL_TerminateEx
-#PAL_ProbeMemory
 #sprintf_s
 #vsprintf_s
 #_snprintf_s
@@ -43,24 +37,19 @@ nativeStringResourceTable_mscorrc
 #CloseHandle
 #DebugBreak
 #DuplicateHandle
-#FlushInstructionCache
 #FreeLibrary
 #GetCurrentProcess
-#GetCurrentProcessId
 #GetCurrentThreadId
 #GetLastError
 #GetModuleFileNameW
 #GetProcAddress
 #LoadLibraryExA
 #LoadLibraryExW
-#OutputDebugStringW
-#OutputDebugStringA
 #RaiseException
 #RaiseFailFastException
 #ResumeThread
 #SetLastError
 #SetThreadDescription
-#SwitchToThread
 #TerminateProcess
 
 #GUID_NULL

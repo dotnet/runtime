@@ -74,7 +74,11 @@ public:
     void Init()
     {
         LIMITED_METHOD_CONTRACT;
+#ifdef HOST_UNIX
+        Init((int)minipal_hires_ticks() ^ GetCurrentThreadId() ^ getpid());
+#else
         Init((int)minipal_hires_ticks() ^ GetCurrentThreadId() ^ GetCurrentProcessId());
+#endif
     }
 
     void Init(int Seed)

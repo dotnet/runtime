@@ -7,6 +7,7 @@
 
 #include "common.h"
 #include <minipal/time.h>
+#include <minipal/thread.h>
 #include "eepolicy.h"
 #include "corhost.h"
 #include "dbginterface.h"
@@ -431,7 +432,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
 #ifndef TARGET_UNIX
     currentThreadID = GetCurrentThreadId();
 #else
-    currentThreadID = PAL_GetCurrentOSThreadId();
+    currentThreadID = minipal_get_current_thread_id();
 #endif
 
     size_t previousThreadID = InterlockedCompareExchangeT<size_t>(&s_pCrashingThreadID, currentThreadID, 0);

@@ -209,6 +209,7 @@ if (CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_C
         PRIVATE
         coreclrminipal_objects
         coreclrpal_objects
+        coreclrsafecrt_objects
         eventprovider_objects
         gcinfo
         libunwind

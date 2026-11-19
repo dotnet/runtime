@@ -13,6 +13,7 @@ set(SOURCES
     mutex.c
     ospagesize.c
     guid.c
+    instructioncache.c
     random.c
     rwlock.c
     debugger.c

@@ -15,6 +15,7 @@
 #define __cgencpu_h__
 
 #include "xmmintrin.h"
+#include <minipal/instructioncache.h>
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to lend somewhere in a call instruction.
@@ -516,7 +517,7 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 {
     if (hasCodeExecutedBefore)
     {
-        FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
+        minipal_flush_instruction_cache(pCodeAddr, sizeOfCode);
     }
     else
     {

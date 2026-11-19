@@ -5512,7 +5512,13 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
     }
 
     if (pProcessId)
+    {
+#ifdef TARGET_UNIX
+        *pProcessId = (ProcessID) getpid();
+#else
         *pProcessId = (ProcessID) GetCurrentProcessId();
+#endif
+    }
 
     return hr;
 }

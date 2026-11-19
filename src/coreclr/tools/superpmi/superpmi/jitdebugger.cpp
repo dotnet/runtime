@@ -25,11 +25,16 @@
 
 int DbgBreakCheck(const char* szFile, int iLine, const char* szExpr)
 {
+#ifdef HOST_UNIX
+    DWORD pid = getpid();
+#else
+    DWORD pid = GetCurrentProcessId();
+#endif
     LogError("SuperPMI: Assert Failure (PID %d, Thread %d/%x)\n"
              "%s\n"
              "\n"
              "%s, Line: %d\n",
-             GetCurrentProcessId(), GetCurrentThreadId(), GetCurrentThreadId(), szExpr, szFile, iLine);
+             pid, GetCurrentThreadId(), GetCurrentThreadId(), szExpr, szFile, iLine);
 
     return 1;
 }

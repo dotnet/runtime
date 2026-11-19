@@ -34,13 +34,6 @@ RaiseException(
 //
 
 #ifdef _DEBUG
-DWORD
-PALAPI
-GetCurrentProcessId()
-{
-    return getpid();
-}
-
 VOID
 PALAPI
 DebugBreak()

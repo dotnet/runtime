@@ -11,6 +11,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #include "jitpch.h"
+#include <minipal/debugger.h>
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -342,7 +343,7 @@ int vflogf(FILE* file, const char* fmt, va_list args)
 
     if (JitConfig.JitDumpToDebugger())
     {
-        OutputDebugStringA(buffer);
+        minipal_output_debug_string(buffer);
     }
 
     if (file == procstdout())

@@ -175,6 +175,11 @@ AppDomain* GetAppDomain();
 
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
 
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
+// Returns true if the whole range is readable (and writable, if requested) without faulting.
+bool ProbeMemory(const void *start, size_t len, bool writeAccess);
+#endif
+
 FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len)
 {
     WRAPPER_NO_CONTRACT;

@@ -177,7 +177,11 @@ void VirtualCallStubManager::StartupLogging()
     EX_TRY
     {
         SString str;
+#ifdef TARGET_UNIX
+        str.Printf("StubLog_%d.log", getpid());
+#else
         str.Printf("StubLog_%d.log", GetCurrentProcessId());
+#endif
         if (fopen_lp(&g_hStubLogFile, str.GetUnicode(), W("wb")) != 0)
             g_hStubLogFile = NULL;
     }

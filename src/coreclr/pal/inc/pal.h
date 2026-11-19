@@ -298,38 +298,6 @@ PAL_GenerateCoreDump(
     INT cbErrorMessageBuffer);
 
 PALIMPORT
-BOOL
-PALAPI
-PAL_NotifyRuntimeStarted();
-
-PALIMPORT
-LPCSTR
-PALAPI
-PAL_GetApplicationGroupId();
-
-static const unsigned int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = MAX_PATH;
-
-PALIMPORT
-VOID
-PALAPI
-PAL_GetTransportName(
-    const unsigned int MAX_TRANSPORT_NAME_LENGTH,
-    OUT char *name,
-    IN const char *prefix,
-    IN DWORD id,
-    IN const char *applicationGroupId,
-    IN const char *suffix);
-
-PALIMPORT
-VOID
-PALAPI
-PAL_GetTransportPipeName(
-    OUT char *name,
-    IN DWORD id,
-    IN const char *applicationGroupId,
-    IN const char *suffix);
-
-PALIMPORT
 void
 PALAPI
 PAL_IgnoreProfileSignal(int signalNum);
@@ -345,14 +313,6 @@ VOID
 PALAPI
 PAL_UnregisterModule(
     IN HINSTANCE hInstance);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_ProbeMemory(
-    PVOID pBuffer,
-    DWORD cbBuffer,
-    BOOL fWriteAccess);
 
 /******************* winuser.h Entrypoints *******************************/
 
@@ -410,11 +370,6 @@ typedef struct _OVERLAPPED {
 #define STD_ERROR_HANDLE         ((DWORD)-12)
 
 PALIMPORT
-DWORD
-PALAPI
-GetCurrentProcessId();
-
-PALIMPORT
 HANDLE
 PALAPI
 GetCurrentProcess();
@@ -423,11 +378,6 @@ PALIMPORT
 DWORD
 PALAPI
 GetCurrentThreadId();
-
-PALIMPORT
-size_t
-PALAPI
-PAL_GetCurrentOSThreadId();
 
 // To work around multiply-defined symbols in the Carbon framework.
 #define GetCurrentThread PAL_GetCurrentThread
@@ -479,11 +429,6 @@ DuplicateHandle(
         IN DWORD dwDesiredAccess,
         IN BOOL bInheritHandle,
         IN DWORD dwOptions);
-
-PALIMPORT
-BOOL
-PALAPI
-SwitchToThread();
 
 #define CREATE_SUSPENDED                  0x00000004
 #define STACK_SIZE_PARAM_IS_A_RESERVATION 0x00010000
@@ -1865,22 +1810,9 @@ PAL_LoadLibraryDirect(
         IN LPCWSTR lpLibFileName);
 
 PALIMPORT
-BOOL
-PALAPI
-PAL_FreeLibraryDirect(
-        IN NATIVE_LIBRARY_HANDLE dl_handle);
-
-PALIMPORT
 HMODULE
 PALAPI
 PAL_GetPalHostModule();
-
-PALIMPORT
-FARPROC
-PALAPI
-PAL_GetProcAddressDirect(
-        IN NATIVE_LIBRARY_HANDLE dl_handle,
-        IN LPCSTR lpProcName);
 
 PALIMPORT
 FARPROC
@@ -1909,40 +1841,12 @@ GetModuleFileNameW(
     OUT LPWSTR lpFileName,
     IN DWORD nSize);
 
-#ifdef UNICODE
 #define GetModuleFileName GetModuleFileNameW
-#else
-#define GetModuleFileName GetModuleFileNameA
-#endif
-
-// Get base address of the module containing a given symbol
-PALIMPORT
-LPCVOID
-PALAPI
-PAL_GetSymbolModuleBase(PVOID symbol);
-
-PALIMPORT
-int
-PALAPI
-PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd);;
-
-PALIMPORT
-LPCSTR
-PALAPI
-PAL_GetLoadLibraryError();
 
 #define MoveMemory memmove
 #define CopyMemory memcpy
 #define FillMemory(Destination,Length,Fill) memset((Destination),(Fill),(Length))
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
-
-PALIMPORT
-BOOL
-PALAPI
-FlushInstructionCache(
-              IN HANDLE hProcess,
-              IN LPCVOID lpBaseAddress,
-              IN SIZE_T dwSize);
 
 #define EXCEPTION_NONCONTINUABLE 0x1
 #define EXCEPTION_UNWINDING 0x2
@@ -1999,23 +1903,6 @@ typedef struct _RUNTIME_FUNCTION {
 
 #define SYNCHRONIZE               (0x00100000L)
 
-PALIMPORT
-VOID
-PALAPI
-OutputDebugStringA(
-    IN LPCSTR lpOutputString);
-
-PALIMPORT
-VOID
-PALAPI
-OutputDebugStringW(
-    IN LPCWSTR lpOutputStrig);
-
-#ifdef UNICODE
-#define OutputDebugString OutputDebugStringW
-#else
-#define OutputDebugString OutputDebugStringA
-#endif
 
 PALIMPORT
 VOID
@@ -2609,7 +2496,6 @@ PALIMPORT DLLEXPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list
 PALIMPORT DLLEXPORT int __cdecl sprintf_s(char *, size_t, const char *, ... );
 PALIMPORT DLLEXPORT int __cdecl sscanf_s(const char *, const char *, ...);
 
-PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
 
 inline int _stricmp(const char* a, const char* b)
 {

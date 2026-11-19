@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <minipal/debugger.h>
+#include <minipal/strings.h>
+#include <minipal/utf8.h>
+
+#include <stdio.h>
 
 #include <fcntl.h>
 #include <string.h>
@@ -158,5 +162,57 @@ bool minipal_is_native_debugger_present(void)
 
 #else
     return false;
+#endif
+}
+
+void minipal_output_debug_string(const char* message)
+{
+#if defined(_WIN32)
+    OutputDebugStringA(message);
+#elif defined(__wasi__)
+    if (message != NULL)
+    {
+        fputs(message, stderr);
+    }
+#else
+    if (message != NULL && getenv("PAL_OUTPUTDEBUGSTRING") != NULL)
+    {
+        fprintf(stderr, "%s", message);
+    }
+#endif
+}
+
+void minipal_output_debug_string_utf16(const CHAR16_T* message)
+{
+#if defined(_WIN32)
+    OutputDebugStringW(message);
+#elif defined(__wasi__)
+    (void)message;
+#else
+    if (message == NULL)
+    {
+        minipal_output_debug_string("");
+        return;
+    }
+
+    size_t length = minipal_u16_strlen(message) + 1;
+    size_t utf8Length = minipal_get_length_utf16_to_utf8(message, length, 0);
+    if (utf8Length == 0)
+    {
+        return;
+    }
+
+    char* utf8Message = (char*)malloc(utf8Length);
+    if (utf8Message == NULL)
+    {
+        return;
+    }
+
+    if (minipal_convert_utf16_to_utf8(message, length, utf8Message, utf8Length, 0) != 0)
+    {
+        minipal_output_debug_string(utf8Message);
+    }
+
+    free(utf8Message);
 #endif
 }

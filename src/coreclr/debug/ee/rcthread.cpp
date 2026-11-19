@@ -506,7 +506,11 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
 #if defined(_DEBUG)
     DebuggerIPCEvent *event = ((DebugFilterParam *)pv)->event;
 
+#ifdef TARGET_UNIX
+    DWORD pid = getpid();
+#else
     DWORD pid = GetCurrentProcessId();
+#endif
     DWORD tid = GetCurrentThreadId();
 
     DebuggerIPCEventType type = (DebuggerIPCEventType) (event->type & DB_IPCE_TYPE_MASK);

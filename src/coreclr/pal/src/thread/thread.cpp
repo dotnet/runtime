@@ -222,33 +222,6 @@ GetCurrentThreadId(
 
 /*++
 Function:
-  PAL_GetCurrentOSThreadId
-
-Returns the current thread's OS thread ID.
-This API is functionally equivalent to GetCurrentThreadId, but does not truncate the return value to 32-bits.
-This is needed to ensure that we can provide the correct OS thread ID on platforms such as OSX that have a 64-bit thread ID.
---*/
-size_t
-PALAPI
-PAL_GetCurrentOSThreadId(
-            VOID)
-{
-    size_t threadId;
-
-    PERF_ENTRY(PAL_GetCurrentOSThreadId);
-    ENTRY("PAL_GetCurrentOSThreadId()\n");
-
-    threadId = THREADSilentGetCurrentThreadId();
-
-    LOGEXIT("PAL_GetCurrentOSThreadId returns %p\n", threadId);
-    PERF_EXIT(GetCurrentThreadId);
-
-    return threadId;
-}
-
-
-/*++
-Function:
   GetCurrentThread
 
 See MSDN doc.
@@ -266,32 +239,6 @@ PAL_GetCurrentThread(
 
     /* return a pseudo handle */
     return (HANDLE) hPseudoCurrentThread;
-}
-
-/*++
-Function:
-  SwitchToThread
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-SwitchToThread(
-    VOID)
-{
-    BOOL ret;
-
-    PERF_ENTRY(SwitchToThread);
-    ENTRY("SwitchToThread(VOID)\n");
-
-    /* sched_yield yields to another thread in the current process. This implementation
-       won't work well for cross-process synchronization. */
-    ret = (sched_yield() == 0);
-
-    LOGEXIT("SwitchToThread returns BOOL %d\n", ret);
-    PERF_EXIT(SwitchToThread);
-
-    return ret;
 }
 
 /*++

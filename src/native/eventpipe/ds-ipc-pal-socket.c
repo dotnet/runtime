@@ -727,14 +727,14 @@ ipc_transport_get_default_name (
 #elif defined (EP_NO_RT_DEPENDENCY) && defined (FEATURE_CORECLR)
 	// generate the default socket name in TMP Path
 	const ProcessDescriptor pd = ProcessDescriptor::FromCurrentProcess();
-	PAL_GetTransportName(
+	GetTransportName(
 		name_len,
 		name,
 		"dotnet-diagnostic",
 		pd.m_Pid,
 		pd.m_ApplicationGroupId,
 		"socket");
-	// PAL_GetTransportName returns void, but sets name[0] to '\0' when it fails to generate a name.
+	// GetTransportName returns void, but sets name[0] to '\0' when it fails to generate a name.
 	return name [0] != '\0';
 #else
 	return false;

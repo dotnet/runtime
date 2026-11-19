@@ -3613,7 +3613,7 @@ void Thread::PrepareApartmentAndContext()
     STANDARD_VM_CONTRACT;
 
 #ifdef TARGET_UNIX
-    m_OSThreadId = ::PAL_GetCurrentOSThreadId();
+    m_OSThreadId = minipal_get_current_thread_id();
 #else
     m_OSThreadId = ::GetCurrentThreadId();
 #endif

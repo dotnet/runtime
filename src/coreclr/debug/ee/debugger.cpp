@@ -8,8 +8,14 @@
 //*****************************************************************************
 
 #include "stdafx.h"
+#include <minipal/debugger.h>
 #include "CLREventBase.h"
 #include <minipal/time.h>
+#ifdef TARGET_UNIX
+#include <fcntl.h>
+#include <semaphore.h>
+#include "processdescriptor.h"
+#endif
 #include <minipal.h>
 #include "debugdebugger.h"
 #include "../inc/common.h"
@@ -823,7 +829,11 @@ Debugger::Debugger()
     InitDebugEventCounting();
 #endif
 
+#ifdef TARGET_UNIX
+    m_processId = getpid();
+#else
     m_processId = GetCurrentProcessId();
+#endif
 
     m_pForceCatchHandlerFoundEventsTable = new ForceCatchHandlerFoundTable();
     m_pCustomNotificationTable = new CustomNotificationTable();
@@ -1362,7 +1372,7 @@ DWORD WINAPI DbgInteropStressProc(void * lpParameter)
         else
         {
             // Generate the occasional oob-event.
-            OutputDebugString(W("Ping from DbgInteropStressProc"));
+            minipal_output_debug_string_utf16((const CHAR16_T*)W("Ping from DbgInteropStressProc"));
         }
 
         // This helps parallelize if we have a lot of threads, and keeps us from
@@ -1412,7 +1422,7 @@ DWORD WINAPI DbgInteropOOBStressProc(void * lpParameter)
         else
         {
             // Generate the occasional oob-event.
-            OutputDebugString(W("OOB ping from "));
+            minipal_output_debug_string_utf16((const CHAR16_T*)W("OOB ping from "));
         }
 
         minipal_sleep(3000);
@@ -1755,6 +1765,319 @@ void DebuggerStartUp::RaiseStartupNotification()
 #endif // !FEATURE_DBGIPC_TRANSPORT_VM
 }
 
+#ifdef TARGET_UNIX
+
+#ifdef __APPLE__
+// On macOS 26, sem_open fails if debugger and debugee are signed with different team ids.
+// Use fifos instead of semaphores to avoid this issue, https://github.com/dotnet/runtime/issues/116545
+#define ENABLE_RUNTIME_EVENTS_OVER_PIPES
+#endif // __APPLE__
+
+// The lowest common supported semaphore length, including null character
+// NetBSD-7.99.25: 15 characters
+// MacOSX 10.11: 31 -- Core 1.0 RC2 compatibility
+#if defined(__NetBSD__)
+#define CLR_SEM_MAX_NAMELEN 15
+#elif defined(__APPLE__)
+#define CLR_SEM_MAX_NAMELEN 31
+#elif defined(NAME_MAX)
+#define CLR_SEM_MAX_NAMELEN (NAME_MAX - 4)
+#else
+// On Solaris, MAXNAMLEN is 512, which is higher than MAX_PATH defined by pal.h
+#define CLR_SEM_MAX_NAMELEN MAX_PATH
+#endif
+
+static_assert(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
+
+// Build the semaphore names using the PID and a value that can be used for distinguishing
+// between processes with the same PID (which ran at different times). This is to avoid
+// cases where a prior process with the same PID exited abnormally without having a chance
+// to clean up its semaphore. These names must match the ones dbgshim creates.
+// Note to anyone modifying these names in the future: Semaphore names on OS X are limited
+// to SEM_NAME_LEN characters, including null. SEM_NAME_LEN is 31 (at least on OS X 10.11).
+// NetBSD limits semaphore names to 15 characters, including null (at least up to 7.99.25).
+// Keep 31 length for Core 1.0 RC2 compatibility
+static const char* RuntimeStartupSemaphoreName = "st";
+static const char* RuntimeContinueSemaphoreName = "co";
+
+static void CreateSemaphoreName(char semName[CLR_SEM_MAX_NAMELEN], const char *semaphoreName, DWORD pid, UINT64 disambiguationKey)
+{
+#if defined(__NetBSD__)
+    int length = snprintf(semName, CLR_SEM_MAX_NAMELEN, "/clr%s%08llx", semaphoreName, (unsigned long long)((pid ^ disambiguationKey) & 0xffffffff));
+#else
+    int length = snprintf(semName, CLR_SEM_MAX_NAMELEN, "/clr%s%08x%016llx", semaphoreName, pid, (unsigned long long)disambiguationKey);
+#endif
+    _ASSERTE(length > 0 && length < CLR_SEM_MAX_NAMELEN);
+}
+
+#ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
+static const char* RuntimeStartupPipeName = "st";
+static const char* RuntimeContinuePipeName = "co";
+
+#define PIPE_OPEN_RETRY_DELAY_MS 500
+
+typedef enum
+{
+    RuntimeEventsOverPipes_Disabled = 0,
+    RuntimeEventsOverPipes_Succeeded = 1,
+    RuntimeEventsOverPipes_Failed = 2,
+} RuntimeEventsOverPipes;
+
+typedef enum
+{
+    RuntimeEvent_Unknown = 0,
+    RuntimeEvent_Started = 1,
+    RuntimeEvent_Continue = 2,
+} RuntimeEvent;
+
+static int OpenPipe(const char* name, int mode)
+{
+    int fd = -1;
+    int flags = mode | O_NONBLOCK;
+
+#if defined(FD_CLOEXEC)
+    flags |= O_CLOEXEC;
+#endif
+
+    while (fd == -1)
+    {
+        fd = open(name, flags);
+        if (fd == -1)
+        {
+            if (mode == O_WRONLY && errno == ENXIO)
+            {
+                minipal_sleep(PIPE_OPEN_RETRY_DELAY_MS);
+                continue;
+            }
+            else if (errno == EINTR)
+            {
+                continue;
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
+    if (fd != -1)
+    {
+        flags = fcntl(fd, F_GETFL);
+        if (flags != -1)
+        {
+            flags &= ~O_NONBLOCK;
+            if (fcntl(fd, F_SETFL, flags) == -1)
+            {
+                close(fd);
+                fd = -1;
+            }
+        }
+        else
+        {
+            close(fd);
+            fd = -1;
+        }
+    }
+
+    return fd;
+}
+
+static void ClosePipe(int fd)
+{
+    if (fd != -1)
+    {
+        while (close(fd) < 0 && errno == EINTR);
+    }
+}
+
+static RuntimeEventsOverPipes NotifyRuntimeUsingPipes()
+{
+    RuntimeEventsOverPipes result = RuntimeEventsOverPipes_Disabled;
+    char startupPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+    char continuePipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+    int startupPipeFd = -1;
+    int continuePipeFd = -1;
+    size_t offset = 0;
+    DWORD pid = (DWORD)getpid();
+
+    GetTransportPipeName(continuePipeName, pid, nullptr, RuntimeContinuePipeName);
+
+    continuePipeFd = OpenPipe(continuePipeName, O_RDONLY);
+    if (continuePipeFd == -1)
+    {
+        // ENOENT or EACCES means that no debugger is waiting, so runtime events over pipes are disabled.
+        if (errno != ENOENT && errno != EACCES)
+        {
+            result = RuntimeEventsOverPipes_Failed;
+        }
+
+        goto exit;
+    }
+
+    GetTransportPipeName(startupPipeName, pid, nullptr, RuntimeStartupPipeName);
+
+    startupPipeFd = OpenPipe(startupPipeName, O_WRONLY);
+    if (startupPipeFd == -1)
+    {
+        if (errno != ENOENT && errno != EACCES)
+        {
+            result = RuntimeEventsOverPipes_Failed;
+        }
+
+        goto exit;
+    }
+
+    {
+        unsigned char event = (unsigned char)RuntimeEvent_Started;
+        unsigned char *buffer = &event;
+        int bytesToWrite = sizeof(event);
+        int bytesWritten = 0;
+
+        do
+        {
+            bytesWritten = write(startupPipeFd, buffer + offset, bytesToWrite - offset);
+            if (bytesWritten > 0)
+            {
+                offset += bytesWritten;
+            }
+        }
+        while ((bytesWritten > 0 && offset < bytesToWrite) || (bytesWritten == -1 && errno == EINTR));
+
+        if (offset != bytesToWrite)
+        {
+            goto exit;
+        }
+    }
+
+    {
+        unsigned char event = (unsigned char)RuntimeEvent_Unknown;
+        unsigned char *buffer = &event;
+        int bytesToRead = sizeof(event);
+        int bytesRead = 0;
+
+        offset = 0;
+        do
+        {
+            bytesRead = read(continuePipeFd, buffer + offset, bytesToRead - offset);
+            if (bytesRead > 0)
+            {
+                offset += bytesRead;
+            }
+        }
+        while ((bytesRead > 0 && offset < bytesToRead) || (bytesRead == -1 && errno == EINTR));
+
+        if (offset != bytesToRead || event != (unsigned char)RuntimeEvent_Continue)
+        {
+            goto exit;
+        }
+    }
+
+    result = RuntimeEventsOverPipes_Succeeded;
+
+exit:
+
+    if (startupPipeFd != -1)
+    {
+        ClosePipe(startupPipeFd);
+    }
+
+    if (continuePipeFd != -1)
+    {
+        ClosePipe(continuePipeFd);
+    }
+
+    return result;
+}
+#endif // ENABLE_RUNTIME_EVENTS_OVER_PIPES
+
+static bool NotifyRuntimeUsingSemaphores()
+{
+    char startupSemName[CLR_SEM_MAX_NAMELEN];
+    char continueSemName[CLR_SEM_MAX_NAMELEN];
+    sem_t *startupSem = SEM_FAILED;
+    sem_t *continueSem = SEM_FAILED;
+    bool launched = false;
+    DWORD pid = (DWORD)getpid();
+
+    UINT64 processIdDisambiguationKey = 0;
+    bool ret = GetProcessIdDisambiguationKey(pid, &processIdDisambiguationKey);
+
+    // If GetProcessIdDisambiguationKey failed for some reason, it should set the value
+    // to 0. We expect that anyone else making the semaphore name will also fail and thus
+    // will also try to use 0 as the value.
+    _ASSERTE(ret || processIdDisambiguationKey == 0);
+
+    CreateSemaphoreName(startupSemName, RuntimeStartupSemaphoreName, pid, processIdDisambiguationKey);
+    CreateSemaphoreName(continueSemName, RuntimeContinueSemaphoreName, pid, processIdDisambiguationKey);
+
+    // Open the debugger startup semaphore. If it doesn't exists, then we do nothing and return
+    startupSem = sem_open(startupSemName, 0);
+    if (startupSem == SEM_FAILED)
+    {
+        goto exit;
+    }
+
+    continueSem = sem_open(continueSemName, 0);
+    if (continueSem == SEM_FAILED)
+    {
+        _ASSERTE(!"sem_open(continueSemName) failed");
+        goto exit;
+    }
+
+    // Wake up the debugger waiting for startup
+    if (sem_post(startupSem) != 0)
+    {
+        _ASSERTE(!"sem_post(startupSem) failed");
+        goto exit;
+    }
+
+    // Now wait until the debugger's runtime startup notification is finished
+    while (sem_wait(continueSem) != 0)
+    {
+        if (EINTR == errno)
+        {
+            continue;
+        }
+        _ASSERTE(!"sem_wait(continueSem) failed");
+        goto exit;
+    }
+
+    // Returns that the runtime was successfully launched for debugging
+    launched = true;
+
+exit:
+    if (startupSem != SEM_FAILED)
+    {
+        sem_close(startupSem);
+    }
+    if (continueSem != SEM_FAILED)
+    {
+        sem_close(continueSem);
+    }
+    return launched;
+}
+
+static bool NotifyRuntimeStarted()
+{
+#ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
+    // Test pipes as runtime event transport.
+    switch (NotifyRuntimeUsingPipes())
+    {
+    case RuntimeEventsOverPipes_Disabled:
+        return NotifyRuntimeUsingSemaphores();
+    case RuntimeEventsOverPipes_Succeeded:
+        return true;
+    case RuntimeEventsOverPipes_Failed:
+    default:
+        return false;
+    }
+#else
+    return NotifyRuntimeUsingSemaphores();
+#endif // ENABLE_RUNTIME_EVENTS_OVER_PIPES
+}
+
+#endif // TARGET_UNIX
+
 void DebuggerStartUp::WaitForContinueNotification()
 {
     STANDARD_VM_CONTRACT;
@@ -1763,7 +2086,7 @@ void DebuggerStartUp::WaitForContinueNotification()
     // Signal the debugger (via dbgshim) and wait until it is ready for us to
     // continue. This needs to be outside the lock and after the transport is
     // initialized.
-    if (PAL_NotifyRuntimeStarted())
+    if (NotifyRuntimeStarted())
     {
         // The runtime was successfully launched and attached so mark it now
         // so no notifications are missed especially the initial module load
@@ -8467,7 +8790,11 @@ int Debugger::NotifyUserOfFault(bool userBreakpoint, DebuggerLaunchSetting dls)
         DWORD pid;
         DWORD tid;
 
+#ifdef TARGET_UNIX
+        pid = getpid();
+#else
         pid = GetCurrentProcessId();
+#endif
         tid = GetCurrentThreadId();
 
         DWORD flags = 0;

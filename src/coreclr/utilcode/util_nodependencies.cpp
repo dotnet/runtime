@@ -11,6 +11,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
+#include <minipal/debugger.h>
 #include "utilcode.h"
 #include "ex.h"
 
@@ -666,12 +667,12 @@ void TrimWhiteSpace(_Outptr_result_buffer_(*pcch)  LPCWSTR *pwsz, __inout LPDWOR
 void OutputDebugStringUtf8(LPCUTF8 utf8DebugMsg)
 {
 #ifdef TARGET_UNIX
-    OutputDebugStringA(utf8DebugMsg);
+    minipal_output_debug_string(utf8DebugMsg);
 #else
     if (utf8DebugMsg == NULL)
         utf8DebugMsg = "";
 
     MAKE_WIDEPTR_FROMUTF8_NOTHROW(wideDebugMsg, utf8DebugMsg);
-    OutputDebugStringW(wideDebugMsg);
+    minipal_output_debug_string_utf16((const CHAR16_T*)wideDebugMsg);
 #endif // !TARGET_UNIX
 }

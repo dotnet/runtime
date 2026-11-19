@@ -260,10 +260,16 @@ void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SS
     StackSString supplementaryInformationUtf8;
     supplementaryInformation.ConvertToUTF8(supplementaryInformationUtf8);
 
+#ifdef TARGET_UNIX
+    DWORD pid = getpid();
+#else
+    DWORD pid = GetCurrentProcessId();
+#endif
+
     pString->AppendUTF8("  ");
     pString->AppendPrintf(
         supplementaryInformationUtf8.GetUTF8(),
-        GetCurrentProcessId(),
+        pid,
         iStringResource);
 }
 

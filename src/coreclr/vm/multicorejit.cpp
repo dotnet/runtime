@@ -10,6 +10,7 @@
 //
 
 #include "common.h"
+#include <minipal/debugger.h>
 #include "CLREventBase.h"
 #include "vars.hpp"
 #include "eeconfig.h"
@@ -122,7 +123,7 @@ void _MulticoreJitTrace(const char * format, ...)
     len += _vsnprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, format, args);
     len +=  sprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, ", (time=%d ms)\r\n", (unsigned)minipal_lowres_ticks() - s_startTick);
 
-    OutputDebugStringA(buffer);
+    minipal_output_debug_string(buffer);
 #endif
 
     va_end(args);

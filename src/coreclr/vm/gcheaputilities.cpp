@@ -4,6 +4,9 @@
 #include "common.h"
 #include "configuration.h"
 #include "gcheaputilities.h"
+#ifdef TARGET_UNIX
+#include <dlfcn.h>
+#endif
 #include "appdomain.hpp"
 #include "hostinformation.h"
 
@@ -310,7 +313,12 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGCName, LPCWSTR standaloneGCPath)
 #if TARGET_WINDOWS
         pGcModuleBase = (PTR_VOID)hMod;
 #else
-        pGcModuleBase = (PTR_VOID)PAL_GetSymbolModuleBase((PVOID)initFunc);
+#ifdef HOST_WASI // WASI has no dladdr
+        pGcModuleBase = NULL;
+#else
+        Dl_info info;
+        pGcModuleBase = dladdr((void*)initFunc, &info) != 0 ? (PTR_VOID)info.dli_fbase : NULL;
+#endif
 #endif
 
         FinalizeLoad(heap, manager, pGcModuleBase);

@@ -3,6 +3,9 @@
 
 #include "common.h"
 #include "nativelibrary.h"
+#ifdef TARGET_UNIX
+#include <dlfcn.h>
+#endif
 
 #include "clr/fs/path.h"
 using namespace clr::fs;
@@ -63,7 +66,7 @@ namespace
             DWORD priority;
 
 #ifdef TARGET_UNIX
-            SetMessage(PAL_GetLoadLibraryError());
+            SetMessage(dlerror());
 #else
             DWORD dwLastError = GetLastError();
 

@@ -1197,7 +1197,7 @@ HRESULT DbgTransportSession::CheckBufferAccess(_In_reads_(cbBuffer) PBYTE pbBuff
     }
     while (cbBuffer > 0);
 #else
-    if (!PAL_ProbeMemory(pbBuffer, cbBuffer, fWriteAccess))
+    if (!ProbeMemory(pbBuffer, cbBuffer, fWriteAccess))
     {
         return HRESULT_FROM_WIN32(ERROR_INVALID_ADDRESS);
     }

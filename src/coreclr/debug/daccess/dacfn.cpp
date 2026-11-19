@@ -10,6 +10,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
+#include <minipal/debugger.h>
 
 #include <encee.h>
 #include <virtualcallstub.h>
@@ -81,7 +82,7 @@ DacWarning(_In_ char* format, ...)
     _vsnprintf_s(text, sizeof(text), _TRUNCATE, format, args);
     text[sizeof(text) - 1] = 0;
     va_end(args);
-    OutputDebugStringA(text);
+    minipal_output_debug_string(text);
 }
 
 void

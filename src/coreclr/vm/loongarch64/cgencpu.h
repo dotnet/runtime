@@ -10,6 +10,7 @@
 
 #define INSTRFMT_K64
 #include <stublink.h>
+#include <minipal/instructioncache.h>
 
 #ifndef TARGET_UNIX
 #define USE_REDIRECT_FOR_GCSTRESS
@@ -265,7 +266,7 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
 
 inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
-    return FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
+    return minipal_flush_instruction_cache(pCodeAddr, sizeOfCode);
 }
 
 //------------------------------------------------------------------------

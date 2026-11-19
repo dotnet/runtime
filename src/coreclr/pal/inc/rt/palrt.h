@@ -567,7 +567,6 @@ typedef unsigned int ALG_ID;
 #define _SAFECRT_USE_INLINES 1
 #define _SAFECRT_SET_ERRNO 0
 #define _SAFECRT_DEFINE_MBS_FUNCTIONS 0
-#define _SAFECRT_DEFINE_TCS_MACROS 1
 #include "safecrt.h"
 #include "specstrings.h"
 

@@ -11,6 +11,7 @@
 // cause the code,etc, to be silently ignored
 
 #include "stdafx.h"
+#include <minipal/instructioncache.h>
 #include "openum.h"
 #include "../inc/common.h"
 #include "eeconfig.h"
@@ -270,7 +271,7 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::GetOrCreateSharedPatchBypassBu
     // Since we just created a new buffer of code, but the CPU caches code and may
     // not be aware of our changes. This should force the CPU to dump any cached
     // instructions it has in this region and load the new ones from memory
-    FlushInstructionCache(GetCurrentProcess(), patchBypassRW + CORDbg_BREAK_INSTRUCTION_SIZE,
+    minipal_flush_instruction_cache(patchBypassRW + CORDbg_BREAK_INSTRUCTION_SIZE,
     MAX_INSTRUCTION_LENGTH - CORDbg_BREAK_INSTRUCTION_SIZE);
 
     return m_pSharedPatchBypassBuffer;

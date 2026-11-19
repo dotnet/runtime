@@ -566,9 +566,6 @@ static const Entry s_RuntimeHelpers[] =
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ObjectToComWeakRef)
 #endif // FEATURE_COMINTEROP
-#ifdef TARGET_UNIX
-    DllImportEntry(OutputDebugStringW)
-#endif // TARGET_UNIX
     DllImportEntry(QCall_FreeGCHandleForTypeHandle)
     DllImportEntry(QCall_GetGCHandleForTypeHandle)
     DllImportEntry(ReflectionInvocation_CompileMethod)
