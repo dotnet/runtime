@@ -115,9 +115,6 @@
       *******************" />
   </Target>
 
-  <PropertyGroup>
-    <NuGetConfigPackageSourceMappingsForWorkloadTesting>*</NuGetConfigPackageSourceMappingsForWorkloadTesting>
-  </PropertyGroup>
   <Target Name="_ValidateVmrEmscriptenWorkload"
           AfterTargets="InstallWorkloadUsingArtifacts"
           Condition="'$(InstallWorkloadForTesting)' == 'true'">
