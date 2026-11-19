@@ -14,6 +14,7 @@
 #include "inlinetracking.h"
 #include "wellknownattributes.h"
 #include "nativeimage.h"
+#include "interpretershared.h"
 
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
@@ -114,6 +115,46 @@ public:
     bool IsGeneric(mdMethodDef input, bool *foundResult) const;
 };
 
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+// Activation flags are read with VolatileLoad for explicit ordering. Although the
+// current browser-WASM runtime is single-threaded and does not need it for thread
+// synchronization, these loads do not emit a hardware memory fence on WASM.
+struct ReadyToRun_AuxiliaryModuleMetadataEntry
+{
+public:
+    const uint32_t FileNameRVA;
+    const uint32_t RelativeTableBase;
+    const uint32_t MethodCount;
+    uint32_t ActivationStatus;
+
+    uint32_t* GetActivationFlag()
+    {
+        return &ActivationStatus;
+    }
+};
+
+class ReadyToRun_AuxiliaryModuleMetadata
+{
+public:
+    const uint32_t EntryPointsFilenameRVA;
+    const uint32_t InstanceMethodEntryPointsRVA;
+    const uint32_t MethodDefEntryPointsInfoRVA;
+    uint32_t EntryPointsModuleActivationStatus;
+    const uint32_t PrimaryModuleMethodCount;
+    const uint32_t AuxiliaryModuleCount;
+
+    ReadyToRun_AuxiliaryModuleMetadataEntry* GetAuxiliaryModuleMetadataEntries()
+    {
+        return reinterpret_cast<ReadyToRun_AuxiliaryModuleMetadataEntry*>(this + 1);
+    }
+
+    uint32_t GetAuxiliaryModuleMetadataEntriesCount()
+    {
+        return AuxiliaryModuleCount;
+    }
+};
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
 struct StringWithLength
 {
     LPCUTF8 str;
@@ -201,6 +242,10 @@ class ReadyToRunInfo
 
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
     TADDR                           m_pLoadedImageBase;
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    ReadyToRun_AuxiliaryModuleMetadata* m_pAuxiliaryModuleMetadata = nullptr;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
 public:
     ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker);
@@ -354,6 +399,14 @@ public:
     }
 
     PTR_BYTE GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction);
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    // Returns the AuxiliaryModuleMetadata section if available.
+    ReadyToRun_AuxiliaryModuleMetadata* GetAuxiliaryModuleMetadata() const
+    {
+        return m_pAuxiliaryModuleMetadata;
+    }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
     class MethodIterator
     {

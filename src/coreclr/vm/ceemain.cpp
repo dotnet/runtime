@@ -164,6 +164,7 @@
 #include "pgo.h"
 #include "pendingload.h"
 #include "cdacplatformmetadata.hpp"
+#include "minipal/cpucount.h"
 #include "minipal/time.h"
 #include "minipal/random.h"
 #include <minipal.h>
@@ -639,7 +640,12 @@ void EEStartupHelper()
 
 
         // We cache the SystemInfo for anyone to use throughout the life of the EE.
+#ifdef TARGET_UNIX
+        g_SystemInfo.dwNumberOfProcessors = minipal_get_cpu_affinity_count();
+        g_SystemInfo.dwAllocationGranularity = (DWORD)minipal_getpagesize();
+#else
         GetSystemInfo(&g_SystemInfo);
+#endif
         CDacPlatformMetadata::Init();
 
 #ifndef TARGET_UNIX
@@ -1001,7 +1007,9 @@ void EEStartupHelper()
         // EventPipe initialization, so this is done after the GC has been fully initialized.
         EventPipeAdapter::FinishInitialize();
 #endif // FEATURE_PERFTRACING
+#ifdef FEATURE_GCGENANALYSIS
         GenAnalysis::Initialize();
+#endif // FEATURE_GCGENANALYSIS
 
         // Now we really have fully initialized the garbage collector
         SetGarbageCollectorFullyInitialized();

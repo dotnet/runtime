@@ -6318,9 +6318,19 @@ bool CEEInfo::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
 
     // ECMA augment III.1.7.7 allows making this escaping assumption based on
     // RefSafetyRules and UnscopedRef attributes.
-    if (pMD->GetModule()->OptsIntoRefSafetyRulesV11())
+    Module* pModule = pMD->GetModule();
+    if (pModule->OptsIntoRefSafetyRulesV11())
     {
-        result = (pMD->GetCustomAttribute(WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+        mdMethodDef md = pMD->GetMemberDef();
+        result = (pModule->GetCustomAttribute(md, WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+
+        // C# emits [UnscopedRef] for properties on the property rather than on its accessors.
+        mdProperty pd;
+        if (!result && IsMdSpecialName(pMD->GetAttrs()) &&
+            (pModule->GetMDImport()->GetPropertyInfoForMethodDef(md, &pd, NULL, NULL) == S_OK))
+        {
+            result = (pModule->GetCustomAttribute(pd, WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+        }
     }
 
     EE_TO_JIT_TRANSITION();
@@ -13559,6 +13569,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         if (ret)
         {
             sizeOfILCode = interpreterJitInfo.getMethodInfoInternal()->ILCodeSize;
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+            // Passing auxiliary state through the JIT-EE interface would allow direct
+            // emission. Backpatch before publication to avoid extending that interface.
+            reinterpret_cast<InterpByteCodeStart*>(ret)->InitializeAuxiliaryEntry(config->GetAuxiliaryActivationFlag());
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             PCODE portableEntryPoint = ftn->GetPortableEntryPoint();

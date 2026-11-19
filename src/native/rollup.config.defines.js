@@ -19,7 +19,7 @@ export const configuration = process.env.Configuration !== "Release" && process.
 export const runtimeFlavor = process.env.RuntimeFlavor || "CoreCLR";
 export const productVersion = process.env.ProductVersion;
 export const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
-export const staticLibDestination = process.env.StaticLibDestination || `../../artifacts/obj/native/net${productVersion}-browser-${configuration}-wasm/lib`;
+export const staticLibDestination = process.env.StaticLibDestination || `../../artifacts/obj/native/net${productVersion}-browser-${configuration}-wasm`;
 
 console.log(`Rollup configuration: Configuration=${configuration}, RuntimeFlavor=${runtimeFlavor}, ProductVersion=${productVersion}, ContinuousIntegrationBuild=${isContinuousIntegrationBuild}`);
 

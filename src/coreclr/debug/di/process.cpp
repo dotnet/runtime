@@ -4495,7 +4495,7 @@ void CordbProcess::DispatchRCEvent()
 
                     {
                         // Release lock around the dispatch of the event
-                        RSInverseLockHolder inverseLockHolder(GetProcessLock());
+                        RSInverseLockHolder inverseLockHolder = RSLock::ReleaseForScope(GetProcessLock());
 
                         EX_TRY
                         {
@@ -9540,7 +9540,7 @@ void CordbRCEventThread::FlushQueuedEvents(CordbProcess* process)
 
     // Release lock before we call out to shim to Queue fake events.
     {
-        RSInverseLockHolder inverseLockHolder(process->GetProcessLock());
+        RSInverseLockHolder inverseLockHolder = RSLock::ReleaseForScope(process->GetProcessLock());
         {
             PUBLIC_CALLBACK_IN_THIS_SCOPE0_NO_LOCK(pProcess);
 
