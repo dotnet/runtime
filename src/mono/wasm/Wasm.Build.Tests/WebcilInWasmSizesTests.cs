@@ -361,6 +361,26 @@ public class WebcilInWasmSizesTests
         Assert.Equal(0, tableSize);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WasmComponentSymbols_StripsFirstCoreModuleSymbols(bool writeSymbolMap)
+    {
+        using var directory = new TempDirectory();
+        string inputPath = Path.Combine(directory.Path, "corerun");
+        string outputPath = Path.Combine(directory.Path, "corerun.stripped");
+        string symbolMapPath = Path.Combine(directory.Path, "corerun.symbols");
+        File.WriteAllBytes(inputPath, BuildComponentWithSymbols(firstModuleSymbols: true));
+
+        int functionCount = WasmComponentSymbols.StripFirstCoreModule(inputPath, outputPath, writeSymbolMap ? symbolMapPath : null);
+
+        Assert.Equal(3, functionCount);
+        Assert.Equal(BuildComponentWithSymbols(firstModuleSymbols: false), File.ReadAllBytes(outputPath));
+        Assert.Equal(writeSymbolMap, File.Exists(symbolMapPath));
+        if (writeSymbolMap)
+            Assert.Equal("0:imported\n1:first\n300:caf\u00e9\n", File.ReadAllText(symbolMapPath));
+    }
+
     private const byte SectionCustom = 0x00;
     private const byte SectionType = 0x01;
     private const byte SectionFunction = 0x03;
@@ -465,6 +485,65 @@ public class WebcilInWasmSizesTests
 
         return module.ToArray();
     }
+
+    // Builds a component whose first core module optionally carries a name section (module, function and local
+    // names, including a multibyte LEB128 function index) and DWARF, surrounded by sections the strip must keep:
+    // a component custom section before, the module's producers section, and a second core module with its own
+    // name section after.
+    private static byte[] BuildComponentWithSymbols(bool firstModuleSymbols)
+    {
+        var firstModule = new List<byte> { 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00 };
+        AddSection(firstModule, SectionType, [0x01, 0x60, 0x00, 0x00]);
+        var producers = new List<byte>();
+        WriteName(producers, "producers");
+        producers.AddRange([0x00]);
+        AddSection(firstModule, SectionCustom, producers);
+        if (firstModuleSymbols)
+        {
+            var debugInfo = new List<byte>();
+            WriteName(debugInfo, ".debug_info");
+            debugInfo.AddRange(new byte[200]);
+            AddSection(firstModule, SectionCustom, debugInfo);
+            AddSection(firstModule, SectionCustom, BuildNameSection(
+                ("imported", 0u), ("first", 1u), ("caf\u00e9", 300u)));
+        }
+
+        var secondModule = new List<byte> { 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00 };
+        AddSection(secondModule, SectionCustom, BuildNameSection(("adapter", 0u)));
+
+        var component = new List<byte> { 0x00, 0x61, 0x73, 0x6d, 0x0d, 0x00, 0x01, 0x00 };
+        var componentCustom = new List<byte>();
+        WriteName(componentCustom, "component-type");
+        componentCustom.AddRange([0x01, 0x02, 0x03]);
+        AddSection(component, SectionCustom, componentCustom);
+        AddSection(component, ComponentCoreModuleSection, firstModule);
+        AddSection(component, ComponentCoreModuleSection, secondModule);
+        return component.ToArray();
+    }
+
+    private static List<byte> BuildNameSection(params (string Name, uint Index)[] functions)
+    {
+        var section = new List<byte>();
+        WriteName(section, "name");
+
+        var moduleName = new List<byte>();
+        WriteName(moduleName, "module");
+        AddSection(section, 0x00, moduleName);
+
+        var functionNames = new List<byte>();
+        WriteULEB(functionNames, (uint)functions.Length);
+        foreach ((string name, uint index) in functions)
+        {
+            WriteULEB(functionNames, index);
+            WriteName(functionNames, name);
+        }
+        AddSection(section, 0x01, functionNames);
+
+        AddSection(section, 0x02, [0x00]); // no local names
+        return section;
+    }
+
+    private const byte ComponentCoreModuleSection = 0x01;
 
     private static void AddSection(List<byte> module, byte sectionCode, List<byte> sectionBody)
     {
