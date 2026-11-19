@@ -431,7 +431,7 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 
 //------------------------------------------------------------------------------
 // IsConstantRangeTest: Does the given compare node represent a constant range test? E.g.
-//    "X relop CNS" or "CNS relop X" where relop is [<, <=, >, >=]
+//    "X relop CNS" or "CNS relop X" where relop is [<, <=, >, >=, ==, !=]
 //
 // Arguments:
 //    tree - compare node
@@ -445,7 +445,7 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 //
 bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cnsNode, genTreeOps* cmp)
 {
-    if (tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT))
+    if (tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT, GT_EQ, GT_NE))
     {
         GenTree* op1 = tree->gtGetOp1();
         GenTree* op2 = tree->gtGetOp2();
@@ -507,6 +507,38 @@ static GenTreeIntCon* NewRangeConstant(Compiler* comp, target_size_t bits, var_t
     return comp->gtNewIconNode(value, type);
 }
 
+// Cost of materializing a range-fold constant when the consuming instruction cannot encode it.
+static unsigned RangeConstantCost(GenTree* constant, bool forCcmp)
+{
+#ifdef TARGET_ARM64
+    if (constant->IsCnsIntOrI() && !constant->IsIconHandle())
+    {
+        INT64 const    value = constant->AsIntCon()->IconValue();
+        emitAttr const size  = emitActualTypeSize(constant);
+        if (forCcmp ? emitter::emitIns_valid_imm_for_ccmp(value) : emitter::emitIns_valid_imm_for_add(value, size))
+        {
+            return 0;
+        }
+        if (emitter::emitIns_valid_imm_for_mov(value, size))
+        {
+            return 1;
+        }
+
+        // Count movz/movn followed by movk for the remaining halfwords.
+        unsigned movzCount = 0;
+        unsigned movnCount = 0;
+        for (unsigned shift = 0; shift < ((size == EA_8BYTE) ? 64u : 32u); shift += 16)
+        {
+            unsigned const halfword = static_cast<unsigned>(value >> shift) & 0xFFFF;
+            movzCount += (halfword != 0);
+            movnCount += (halfword != 0xFFFF);
+        }
+        return min(movzCount, movnCount);
+    }
+#endif
+    return constant->GetCostEx();
+}
+
 //------------------------------------------------------------------------------
 // FoldComparisons: Fold two comparisons of the same local into one.
 //    Each comparison becomes the range of values that satisfy it. The ranges are intersected
@@ -552,22 +584,6 @@ static GenTree* FoldComparisons(
         op2    = cmp2IsReversed ? GenTree::ReverseRelop(op2) : op2;
         second = ModularRange::FromComparison(op2, static_cast<target_size_t>(bound2->IconValue()), cmp2->IsUnsigned(),
                                               mask, offset2);
-
-        // Keep this conversion free of new folds. Like the previous constant range fold, only
-        // accept two tests of the same signedness that enclose a range of nonnegative values
-        // from both sides, where the second operand is a plain local rather than one behind
-        // an effect-free COMMA. The remaining shapes are enabled separately.
-        bool lowerBound1 = (op1 == GT_GE) || (op1 == GT_GT);
-        bool lowerBound2 = (op2 == GT_GE) || (op2 == GT_GT);
-        if ((cmp1->IsUnsigned() != cmp2->IsUnsigned()) || !value2->OperIs(GT_LCL_VAR) || (offset1 != 0) ||
-            (offset2 != 0) || (lowerBound1 == lowerBound2))
-        {
-            return nullptr;
-        }
-        if ((bound1->IconValue() < 0) || (bound2->IconValue() < 0))
-        {
-            return nullptr;
-        }
     }
     else
     {
@@ -592,12 +608,6 @@ static GenTree* FoldComparisons(
         {
             // The fold makes the bound evaluate unconditionally, so it must be safe to speculate.
             // GTF_ORDER_SIDEEFF covers e.g. "a[X]" whose bounds check was removed via "X >= 0".
-            return nullptr;
-        }
-
-        // Like the previous never-negative fold, only combine "X >= 0" with the symbolic bound.
-        if ((op1 != GT_GE) || (bound1->IconValue() != 0) || cmp1->IsUnsigned())
-        {
             return nullptr;
         }
     }
@@ -632,13 +642,6 @@ static GenTree* FoldComparisons(
         {
             return nullptr;
         }
-    }
-
-    if ((symbolicBound == nullptr) && (range.IsEmpty() || range.IsFull(mask) || (range.Lower() == range.Upper())))
-    {
-        // The previous fold required a range of at least two values. Constant results and
-        // single values are enabled separately.
-        return nullptr;
     }
 
     GenTree*   value = base1;
@@ -698,14 +701,92 @@ static GenTree* FoldComparisons(
         }
         else
         {
-            value      = comp->gtNewOperNode(GT_SUB, type, value, NewRangeConstant(comp, lower, type));
-            constant   = range.Width(mask);
-            isUnsigned = constant != signBit - 1;
-            oper       = isUnsigned ? GT_LE : GT_GE;
-            if (!isUnsigned)
+            // Four tests describe the interval through "(X - offset) relop bound": the unsigned test of
+            // the interval or of its complement, and the signed test of either, which starts the interval
+            // at the minimum value. They differ only in their constants, so take the one whose constants
+            // cost least to materialize; an interval of exactly half the ring is a sign test.
+            target_size_t const width      = range.Width(mask);
+            target_size_t const complLower = (upper + 1) & mask;
+            target_size_t const complWidth = mask - width - 1;
+
+            struct Encoding
             {
-                constant = 0;
+                target_size_t offset;
+                target_size_t bound;
+                genTreeOps    oper;
+                bool          isUnsigned;
+            };
+            Encoding encodings[] = {
+                {lower, width, GT_LE, true},
+                {complLower, complWidth, GT_GT, true},
+                {(lower + signBit) & mask, (width + 1 - signBit) & mask, GT_LT, false},
+                {(complLower + signBit) & mask, (complWidth + 1 - signBit) & mask, GT_GE, false},
+            };
+            if (width == signBit - 1)
+            {
+                encodings[0] = {lower, 0, GT_GE, false};
             }
+            if (complWidth == signBit - 1)
+            {
+                encodings[1] = {complLower, 0, GT_LT, false};
+            }
+
+            // Among equally priced constants the smallest wins, since it fits the most immediate forms,
+            // such as the five bits of a ccmp that a later chain may need.
+            auto magnitude = [type](target_size_t bits) {
+                ssize_t const       value = (type == TYP_INT) ? static_cast<int32_t>(bits) : static_cast<ssize_t>(bits);
+                target_size_t const unsignedValue = static_cast<target_size_t>(value);
+                return (value < 0) ? (0 - unsignedValue) : unsignedValue;
+            };
+
+            Encoding*     best          = nullptr;
+            unsigned      bestCost      = UINT_MAX;
+            unsigned      bestSize      = UINT_MAX;
+            target_size_t bestMagnitude = ~static_cast<target_size_t>(0);
+            for (Encoding& encoding : encodings)
+            {
+                unsigned            cost = 0;
+                unsigned            size = 0;
+                target_size_t const mag  = max(magnitude(encoding.offset), magnitude(encoding.bound));
+                if (encoding.offset != 0)
+                {
+                    GenTree* const offsetNode = NewRangeConstant(comp, encoding.offset, type);
+                    comp->gtSetEvalOrder(offsetNode);
+                    cost += RangeConstantCost(offsetNode, false);
+                    size += offsetNode->GetCostSz();
+                }
+                GenTree* const boundNode = NewRangeConstant(comp, encoding.bound, type);
+                comp->gtSetEvalOrder(boundNode);
+                cost += RangeConstantCost(boundNode, false);
+                size += boundNode->GetCostSz();
+                if ((cost < bestCost) || ((cost == bestCost) && (size < bestSize)) ||
+                    ((cost == bestCost) && (size == bestSize) && (mag < bestMagnitude)))
+                {
+                    best          = &encoding;
+                    bestCost      = cost;
+                    bestSize      = size;
+                    bestMagnitude = mag;
+                }
+            }
+
+#ifdef TARGET_ARM64
+            // A cmp/ccmp pair competes with the folded sub/cmp on constant materialization cost.
+            // Prefer the fold on a tie.
+            if ((symbolicBound == nullptr) && value1->gtEffectiveVal()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+                value2->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+                (bestCost > (RangeConstantCost(bound1, false) + RangeConstantCost(bound2, true))))
+            {
+                return nullptr;
+            }
+#endif
+
+            if (best->offset != 0)
+            {
+                value = comp->gtNewOperNode(GT_SUB, type, value, NewRangeConstant(comp, best->offset, type));
+            }
+            constant   = best->bound;
+            oper       = best->oper;
+            isUnsigned = best->isUnsigned;
         }
 
         newBound = NewRangeConstant(comp, constant, type);
