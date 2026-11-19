@@ -42,14 +42,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripDebugInfo)' == 'true' and !$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--strip-debug-info'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
     <!-- Compile every assembly into one shared (large) version bubble. -->
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
-    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--instruction-set:relaxed-simd</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
-    <RuntimeHostConfigurationOption Include="System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported"
-                                    Value="true"
-                                    Trim="true" />
-  </ItemGroup>
 
   <!-- Prebuilt R2R probe directory for ConvertDllsToWebcil. PublishTrimmed is deliberately not consulted:
        publish always crossgens the whole closure, so framework and app R2R both come from obj/R2R. Only the
@@ -260,7 +253,10 @@ Copyright (c) .NET Foundation. All rights reserved.
            is not populated, so the trimmed framework assemblies drop out of ResolvedFileToPublish and are
            omitted from the served bundle (empty coreAssembly, non-bootable). The linked dir holds exactly
            the trimmed closure, so this is equivalent on a full build and correct on an incremental one. -->
-      <_WasmReadyToRunCompileInput Include="$(IntermediateLinkDir)*.dll" />
+      <_WasmLinkedClosureFile Include="$(IntermediateLinkDir)*.dll" />
+      <!-- Respell like ILLink's items; a glob rewrites unnormalized paths, which would escape publish Removes. -->
+      <_WasmReadyToRunCompileInput Include="@(_WasmLinkedClosureFile->'$(IntermediateLinkDir)%(Filename)%(Extension)')" />
+      <_WasmLinkedClosureFile Remove="@(_WasmLinkedClosureFile)" />
       <ResolvedFileToPublish Include="@(_WasmReadyToRunCompileInput)"
                              PostprocessAssembly="true"
                              RelativePath="%(FileName)%(Extension)"

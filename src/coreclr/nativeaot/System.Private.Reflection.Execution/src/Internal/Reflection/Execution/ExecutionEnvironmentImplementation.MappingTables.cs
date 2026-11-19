@@ -494,15 +494,6 @@ namespace Internal.Reflection.Execution
         internal bool TryGetMethodForOriginalLdFtnResult(IntPtr originalLdFtnResult, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
             GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(originalLdFtnResult, out IntPtr canonOriginalLdFtnResult, out IntPtr instantiationArgument);
-
-            if (instantiationArgument != IntPtr.Zero)
-            {
-                // Search TemplateMethodMap
-                if (TryGetMethodForOriginalLdFtnResult_GenericMethodWithInstantiationArgument(instantiationArgument, ref declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
-                    return true;
-            }
-
-            // Search InvokeMap
             foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetReverseLookups_InvokeMap(isFunctionPointer: true))
             {
                 int startIndex;
@@ -701,22 +692,6 @@ namespace Internal.Reflection.Execution
             methodHandle = new QMethodDefinition(qTypeDefinition.NativeFormatReader, nativeFormatMethodHandle);
 
             return true;
-        }
-
-        private static unsafe bool TryGetMethodForOriginalLdFtnResult_GenericMethodWithInstantiationArgument(IntPtr instantiationArgument, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
-        {
-            MethodNameAndSignature nameAndSig;
-            bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(instantiationArgument, out declaringTypeHandle, out nameAndSig, out genericMethodTypeArgumentHandles, out bool isAsyncVariant);
-            Debug.Assert(!isAsyncVariant, "Async variants should not be visible to reflection");
-            if (success)
-            {
-                methodHandle = new QMethodDefinition(nameAndSig.Reader, nameAndSig.Handle);
-                return true;
-            }
-
-            methodHandle = default(QMethodDefinition);
-
-            return false;
         }
 
         public sealed override FieldAccessor TryGetFieldAccessor(

@@ -28,6 +28,12 @@ namespace System.Net.Http.Functional.Tests
                 // We don't actually want to do DNS lookup on the IDNA host name in the URL.
                 // So instead, configure the loopback server as a proxy so we will send to it.
                 HttpClientHandler handler = CreateHttpClientHandler();
+                if (!handler.SupportsProxy)
+                {
+                    handler.Dispose();
+                    return;
+                }
+
                 handler.UseProxy = true;
                 handler.Proxy = new WebProxy(serverUrl.ToString());
 

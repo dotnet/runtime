@@ -57,6 +57,8 @@ internal sealed class MethodBodyWriter
 
     public void Token(EntityHandle handle) => CodeBuilder.WriteInt32(MetadataTokens.GetToken(handle));
 
+    public void Token(int token) => CodeBuilder.WriteInt32(token);
+
     public void LoadString(UserStringHandle handle)
     {
         OpCode(ILOpCode.Ldstr);

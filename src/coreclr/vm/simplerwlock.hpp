@@ -147,7 +147,11 @@ public:
         } CONTRACTL_END;
 
         m_RWLock = 0;
+#ifndef DACCESS_COMPILE
         m_spinCount = (GetCurrentProcessCpuCount() == 1) ? 0 : 4000;
+#else
+        m_spinCount = 0;
+#endif
         m_WriterWaiting = FALSE;
 
 #ifdef _DEBUG
@@ -201,8 +205,14 @@ public:
 
 #endif // DACCESS_COMPILE
 
-    typedef DacHolder<SimpleRWLock *, SimpleRWLock::AcquireReadLock, SimpleRWLock::ReleaseReadLock> SimpleReadLockHolder;
-    typedef DacHolder<SimpleRWLock *, SimpleRWLock::AcquireWriteLock, SimpleRWLock::ReleaseWriteLock> SimpleWriteLockHolder;
+#ifndef DACCESS_COMPILE
+    typedef Holder<SimpleRWLock *, SimpleRWLock::AcquireReadLock, SimpleRWLock::ReleaseReadLock> SimpleReadLockHolder;
+    typedef Holder<SimpleRWLock *, SimpleRWLock::AcquireWriteLock, SimpleRWLock::ReleaseWriteLock> SimpleWriteLockHolder;
+#else // DACCESS_COMPILE
+    // DAC acquisition may validate target state, but cleanup must not touch the target.
+    typedef Holder<SimpleRWLock *, SimpleRWLock::AcquireReadLock, DoNothing<SimpleRWLock *>> SimpleReadLockHolder;
+    typedef Holder<SimpleRWLock *, SimpleRWLock::AcquireWriteLock, DoNothing<SimpleRWLock *>> SimpleWriteLockHolder;
+#endif // !DACCESS_COMPILE
 
 #ifdef _DEBUG
     BOOL LockTaken ()

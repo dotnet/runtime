@@ -593,6 +593,19 @@ static void DeleteThread(Thread* pThread)
     }
 }
 
+struct SetupThreadHolderTraits final
+{
+    using Type = Thread*;
+    static constexpr Type Default() { return NULL; }
+
+    static void Free(Type pThread) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (pThread != NULL)
+            DeleteThread(pThread);
+    }
+};
+
 static void EnsurePreemptive()
 {
     WRAPPER_NO_CONTRACT;
@@ -676,30 +689,30 @@ Thread* SetupThread()
     // First time we've seen this thread in the runtime:
     pThread = new Thread();
 
-// What state are we in here? COOP???
+    {
+        LifetimeHolder<SetupThreadHolderTraits> threadHolder(pThread);
 
-    Holder<Thread*,DoNothing<Thread*>,DeleteThread> threadHolder(pThread);
+        SetupTLSForThread();
+        pThread->InitThread();
+        pThread->PrepareApartmentAndContext();
 
-    SetupTLSForThread();
-    pThread->InitThread();
-    pThread->PrepareApartmentAndContext();
+        // reset any unstarted bits on the thread object
+        pThread->ResetThreadState(Thread::TS_Unstarted);
 
-    // reset any unstarted bits on the thread object
-    pThread->ResetThreadState(Thread::TS_Unstarted);
+        ThreadStore::AddThread(pThread);
 
-    ThreadStore::AddThread(pThread);
-
-    SetThread(pThread);
+        SetThread(pThread);
 
 #ifdef FEATURE_INTEROP_DEBUGGING
-    // Ensure that debugger word slot is allocated
-    TlsSetValue(g_debuggerWordTLSIndex, 0);
+        // Ensure that debugger word slot is allocated
+        TlsSetValue(g_debuggerWordTLSIndex, 0);
 #endif
 
-    // We now have a Thread object visable to the RS. unmark special status.
-    hCantStop.Release();
+        // We now have a Thread object visable to the RS. unmark special status.
+        hCantStop.Release();
 
-    threadHolder.SuppressRelease();
+        threadHolder.Detach();
+    }
 
     pThread->SetThreadState(Thread::TS_FullyInitialized);
 
@@ -1514,8 +1527,8 @@ Thread::Thread()
     // of accessing a partially constructed Thread via Thread Id lookup.
     //
 
-    exposedObjectHolder.SuppressRelease();
-    strongHndToExposedObjectHolder.SuppressRelease();
+    exposedObjectHolder.Detach();
+    strongHndToExposedObjectHolder.Detach();
     contextHolder.Detach();
 
 #ifdef FEATURE_COMINTEROP
@@ -3209,8 +3222,8 @@ OBJECTREF Thread::GetExposedObject()
                 // Initialize the native-backed properties of the runtime-created wrapper.
                 attempt->InitExisting();
 
-                exposedHolder.SuppressRelease();
-                strongHolder.SuppressRelease();
+                exposedHolder.Detach();
+                strongHolder.Detach();
             }
         }
 
