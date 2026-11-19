@@ -139,7 +139,7 @@ internal sealed partial class GrammarActions
             _entityRegistry.CreateLazilyRecordedMemberReference(owner, methodReference.Name, signature);
         return methodSpecificationSignature is null
             ? memberReference
-            : _entityRegistry.GetOrCreateMethodSpecification(memberReference, methodSpecificationSignature);
+            : _entityRegistry.CreateMethodSpecification(memberReference, methodSpecificationSignature);
     }
 
     private EntityRegistry.EntityBase MaterializeFieldReference(FieldReferenceValue fieldReference)

@@ -284,7 +284,6 @@ public static class Entrypoints
         // so, unlike the native DAC export, they are not required.
         if (pTarget == IntPtr.Zero
             || runtimeBase == 0
-            || contractDescriptorAddress == 0
             || iface == null
             || legacyDac == null)
         {
@@ -293,6 +292,10 @@ public static class Entrypoints
 
         *iface = null;
         *legacyDac = null;
+
+        // The DBI passes 0 when it could not resolve the runtime's contract descriptor.
+        if (contractDescriptorAddress == 0)
+            return CdacHResults.CDAC_E_DESCRIPTOR_NOT_FOUND;
 
         ComObject? dataTargetComObject = null;
         try

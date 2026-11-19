@@ -2652,6 +2652,12 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
 
     unsigned indLcl = arrBndsChk->GetIndex()->AsLclVarCommon()->GetLclNum();
 
+    // The index may be a narrowed use of a wider local; the guards recreate the full local.
+    if (!genActualTypeIsInt(lvaGetDesc(indLcl)))
+    {
+        return false;
+    }
+
     if (lhsNum == BAD_VAR_NUM)
     {
         result->arrLcl  = arrLcl;
@@ -2701,8 +2707,14 @@ bool Compiler::optExtractSpanIndex(GenTree* tree, SpanIndex* result)
         return false;
     }
 
+    unsigned indLcl = arrBndsChk->GetIndex()->AsLclVarCommon()->GetLclNum();
+    if (!genActualTypeIsInt(lvaGetDesc(indLcl)))
+    {
+        return false;
+    }
+
     result->lenLcl   = arrBndsChk->GetArrayLength()->AsLclVarCommon()->GetLclNum();
-    result->indLcl   = arrBndsChk->GetIndex()->AsLclVarCommon()->GetLclNum();
+    result->indLcl   = indLcl;
     result->bndsChk  = tree;
     result->useBlock = compCurBB;
     return true;
