@@ -447,12 +447,7 @@ namespace System.Reflection.Metadata
             for (int i = indexOfCharToEscape; i < metadataName.Length; i++)
             {
                 char c = metadataName[i];
-                if (c == '\0')
-                {
-                    sb.Dispose();
-                    throw new ArgumentException(SR.Argument_InvalidTypeName, nameof(metadataName));
-                }
-                if (s_endOfFullTypeNameDelimiterChars.Contains(c))
+                if (c != '\0' && s_endOfFullTypeNameDelimiterChars.Contains(c))
                 {
                     sb.Append(EscapeCharacter);
                 }

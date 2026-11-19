@@ -877,21 +877,26 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Theory]
-        [InlineData("\0")]
-        [InlineData("\0Name")]
-        [InlineData("Na\0me")]
-        [InlineData("Name\0")]
-        [InlineData("Name+\0")]
-        [InlineData("Name\\\0")]
-        [InlineData("\0+Name")]
-        public void CreateSimpleTypeName_ThrowsForNullCharacter(string metadataName)
+        [InlineData("\0", "\0")]
+        [InlineData("\0Name", "\0Name")]
+        [InlineData("Na\0me", "Na\0me")]
+        [InlineData("Name\0", "Name\0")]
+        [InlineData("Name+\0", "Name\\+\0")]
+        [InlineData("Name\\\0", "Name\\\\\0")]
+        [InlineData("\0+Name", "\0\\+Name")]
+        public void CreateSimpleTypeName_PreservesNullCharacter(string metadataName, string expectedFullName)
         {
             TypeName declaringType = TypeName.CreateSimpleTypeName("Declaring");
             foreach (string prefix in new[] { "", new string('a', 128) })
             {
                 string name = prefix + metadataName;
-                AssertExtensions.Throws<ArgumentException>("metadataName", () => TypeName.CreateSimpleTypeName(name));
-                AssertExtensions.Throws<ArgumentException>("metadataName", () => TypeName.CreateSimpleTypeName(name, declaringType));
+                TypeName created = TypeName.CreateSimpleTypeName(name);
+                Assert.Equal(prefix + expectedFullName, created.FullName);
+                Assert.Equal(name, TypeName.Unescape(created.FullName));
+
+                TypeName nested = TypeName.CreateSimpleTypeName(name, declaringType);
+                Assert.Equal("Declaring+" + prefix + expectedFullName, nested.FullName);
+                Assert.Same(declaringType, nested.DeclaringType);
             }
         }
 
