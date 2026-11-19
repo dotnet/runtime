@@ -1011,74 +1011,8 @@ regNumber WasmRegAlloc::RequestInternalRegister(GenTree* node, var_types type)
     return reg;
 }
 
-//------------------------------------------------------------------------
-// SetBlockSequence: set the block sequence partitioned by funclet.
-//
-// The result will be stored in each funclet's m_blockOrder. Each funclet's block order
-// follows a (relative) loop-aware reverse postorder.
-//
-void WasmRegAlloc::SetBlockSequence()
-{
-    FgWasm fgWasm(m_compiler);
-
-    bool              hasBlocksOnlyReachableViaEH;
-    FlowGraphDfsTree* dfsTree = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
-    assert(!hasBlocksOnlyReachableViaEH); // fgWasmEHFlow should have handled blocks only reachable via EH
-
-    BitVecTraits visitedTraits(m_compiler->fgBBNumMax + 1, m_compiler);
-    BitVec       visited    = BitVecOps::MakeEmpty(&visitedTraits);
-    auto         visitBlock = [&](BasicBlock* block) {
-        if (BitVecOps::IsMember(&visitedTraits, visited, block->bbNum))
-        {
-            return;
-        }
-
-        int                   funcletIdx  = m_compiler->bbFuncletRegionOf(block);
-        PerFuncletData* const funcletData = m_perFuncletData[funcletIdx];
-        funcletData->m_blockOrder.push_back(block);
-
-        BitVecOps::AddElemD(&visitedTraits, visited, block->bbNum);
-    };
-
-    FlowGraphNaturalLoops* loops = FlowGraphNaturalLoops::Find(dfsTree);
-    m_compiler->fgVisitBlocksInLoopAwareRPO(dfsTree, loops, visitBlock);
-
-    // Ensure we visit any blocks not reached by the loop-aware RPO traversal.
-    for (BasicBlock* block : m_compiler->Blocks())
-    {
-        visitBlock(block);
-    }
-
-    JITDUMP("Block order:\n");
-    for (const FuncInfoDsc* const funcInfo : m_compiler->Funcs())
-    {
-        JITDUMP("Funclet %u:\n", funcInfo->GetFuncletIdx(m_compiler));
-        unsigned count = 0;
-        for (BasicBlock* block : funcInfo->Blocks(m_compiler))
-        {
-            count++;
-        }
-        const auto& blockOrder = m_perFuncletData[funcInfo->GetFuncletIdx(m_compiler)]->m_blockOrder;
-        assert(count == blockOrder.size());
-
-        BitVecTraits traits(m_compiler->fgBBNumMax + 1, m_compiler);
-        BitVec       funcBlocks = BitVecOps::MakeEmpty(&traits);
-        for (BasicBlock* block : funcInfo->Blocks(m_compiler))
-        {
-            BitVecOps::AddElemD(&traits, funcBlocks, block->bbNum);
-        }
-
-        for (unsigned i = 0; i < count; i++)
-        {
-            assert(BitVecOps::IsMember(&traits, funcBlocks, blockOrder[i]->bbNum));
-            JITDUMP("  BB%02u\n", blockOrder[i]->bbNum);
-        }
-    }
-}
-
 void WasmRegAlloc::BuildIntervals()
 {
-    SetBlockSequence();
     for (FuncInfoDsc* const funcInfo : m_compiler->Funcs())
     {
         m_currentFunclet                  = funcInfo->GetFuncletIdx(m_compiler);
@@ -1188,14 +1122,19 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
     JITDUMP("----------------------------------------\n");
     ArrayStack<PendingLclUse> pendingMultipleUse(m_compiler->getAllocator(CMK_LSRA));
 
+    // Note: This phase should run after fgWasmControlFlow, so can expect each funclet's blocks to be ordered in
+    // a Wasm-compatible loop-aware RPO
     unsigned pos = 0;
-    for (BasicBlock* const block : funcletData->m_blockOrder)
+    for (BasicBlock* const block : funcInfo->Blocks(m_compiler))
     {
         m_currentBlock = block;
 
         JITDUMPEXEC(block->dspBlockHeader());
         JITDUMP("liveIn=");
         JITDUMPEXEC(dumpConvertedVarSet(m_compiler, block->bbLiveIn));
+        JITDUMP(" ");
+        JITDUMP("liveOut=");
+        JITDUMPEXEC(dumpConvertedVarSet(m_compiler, block->bbLiveOut));
         JITDUMP("\n");
 
         // Potentially update the start points of any intervals live at block entry.
@@ -1205,9 +1144,9 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
         {
             JITDUMP("%10u: ", pos);
             DISPNODE(tree);
-            // Check for and consume any multiple-use local reads used by this node;
-            // if a read of a reg candidate is MultiplyUsed its underlying local lifetime must extend through the node
-            // that consumes it, since it won't get a separate temp.
+            // Consume any multiple-use local reads used by this node;
+            // if a read of a reg candidate is MultiplyUsed, its underlying local lifetime must extend through the node
+            // that consumes it since it won't get a separate temp.
             while (!pendingMultipleUse.Empty() && tree == pendingMultipleUse.TopRef().UserNode)
             {
                 PendingLclUse pendingUse = pendingMultipleUse.Pop();
@@ -1251,9 +1190,6 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
 
             if (tree == CurrentRange().LastNode())
             {
-                JITDUMP("liveOut=");
-                JITDUMPEXEC(dumpConvertedVarSet(m_compiler, block->bbLiveOut))
-                JITDUMP("\n");
                 // Extend interval ends to the end of the block for live-out locals
                 updateIntervalEnds(block->bbLiveOut, pos);
             }
@@ -1268,6 +1204,7 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
         Interval* interval = funcletData->m_intervals[i];
         if (interval != nullptr && interval->start > interval->end)
         {
+            // An empty interval should always be one that was never set
             assert(interval->start == INT_MAX && interval->end == INT_MIN);
             funcletData->m_intervals[i] = nullptr;
         }
