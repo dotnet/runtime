@@ -41,9 +41,20 @@ namespace ILCompiler.ObjectWriter
             : index;
 
         /// <summary>
-        /// Computes the auxiliary table-slot range and the per-module function index remapping.
-        /// Returns false when no method was placed in an auxiliary module.
+        /// Computes the range of the function pointer table allotted to the auxiliary module,
+        /// as well as the range of entries in the Code and Function section that belong to the
+        /// auxiliary module.
         /// </summary>
+        /// <param name="tableFunctions">
+        /// Maps each module-relative function-table slot to its WebAssembly function index.
+        /// </param>
+        /// <returns>
+        /// True if any methods were placed in the auxiliary module; otherwise, false.
+        /// </returns>
+        /// <remarks>
+        /// Auxiliary methods must come after all primary methods in the function pointer table
+        /// and the Code and Function sections.
+        /// </remarks>
         private bool PrepareAuxiliaryPartition(int[] tableFunctions)
         {
             if (_nodeFactory.AuxiliaryModuleMetadata is null)
@@ -104,20 +115,27 @@ namespace ILCompiler.ObjectWriter
         {
             public WasmExternallyCountedSection PrimaryFunctionSection;
             public WasmExternallyCountedSection PrimaryCodeSection;
-            public ReadOnlyMemory<byte> AuxiliaryFunctionEntries;
-            // Auxiliary function bodies: a slice of the resolved code buffer that PrimaryCodeSection also views.
-            public ReadOnlyMemory<byte> AuxiliaryCode;
-            public int AuxiliaryFunctionCount;
+            public WasmExternallyCountedSection AuxiliaryFunctionEntries;
+            public WasmExternallyCountedSection AuxiliaryCode;
+            public WasmExternallyCountedSection AuxiliaryExportSection;
+#nullable enable annotations
+            public WasmNameSection? AuxiliaryNameSection;
+#nullable restore annotations
             public Dictionary<ulong, ulong> PrimaryCodeOffsetMap;
-            public int ActivationStatusRva;
 
             public void Dispose()
             {
                 PrimaryFunctionSection.ContentReadStream.Dispose();
                 PrimaryCodeSection.ContentReadStream.Dispose();
+                AuxiliaryFunctionEntries.ContentReadStream.Dispose();
+                AuxiliaryCode.ContentReadStream.Dispose();
+                AuxiliaryExportSection.ContentReadStream.Dispose();
             }
         }
 
+        /// <summary>
+        /// Splits the Code and Function sections into primary and auxiliary partitions based on the indices calculated in <see cref="PrepareAuxiliaryPartition"/>.
+        /// </summary>
         private AuxiliaryPartition PreparePartitionedSections(WebcilSection[] webcilSections)
         {
             int functionImports = _wasmSymbolManager.GetImportCount(WasmIndexSpace.Function);
@@ -163,24 +181,69 @@ namespace ILCompiler.ObjectWriter
                     codeOffsetMap[entry.Key] = Math.Min(entry.Value, (ulong)codeBoundary);
             }
 
-            MemoryStream primaryTypes = new(functionEntries, 0, functionBoundary, writable: false);
-            MemoryStream primaryCode = new(resolvedCode.GetBuffer(), 0, codeBoundary, writable: false);
-            WasmExternallyCountedSection primaryFunctionSection = new(WasmSectionType.Function, primaryTypes,
-                _sections[functionSectionIndex].SectionName, functionSectionIndex);
+            // Create WASM section structures for the primary Function and Code sections
+            MemoryStream primaryFunctionSectionData = new(functionEntries, 0, functionBoundary, writable: false);
+            MemoryStream primaryCodeSectionData = new(resolvedCode.GetBuffer(), 0, codeBoundary, writable: false);
+            WasmExternallyCountedSection primaryFunctionSection = new(
+                WasmSectionType.Function,
+                primaryFunctionSectionData,
+                _sections[functionSectionIndex].SectionName,
+                functionSectionIndex);
             primaryFunctionSection.SetEntryCount(primaryFunctionCount);
-            WasmExternallyCountedSection primaryCodeSection = new(WasmSectionType.Code, primaryCode,
-                _sections[codeSectionIndex].SectionName, codeSectionIndex);
+            WasmExternallyCountedSection primaryCodeSection = new(
+                WasmSectionType.Code,
+                primaryCodeSectionData,
+                _sections[codeSectionIndex].SectionName,
+                codeSectionIndex);
             primaryCodeSection.SetEntryCount(primaryFunctionCount);
+
+            // Copy existing Function section entries, and add the signature for ActivateModule () -> ()
+            int activationSignature = RegisterSignature(RtlRestoreContextTagSignature);
+            MemoryStream auxiliaryTypes = new();
+            auxiliaryTypes.Write(functionEntries.AsSpan(functionBoundary));
+            WriteUnsigned(auxiliaryTypes, activationSignature);
+
+            // Copy existing method bodies and append the ActivateModule() method body
+            MemoryStream auxiliaryCode = new();
+            int auxiliaryCodeLength = checked((int)(resolvedCode.Length - codeBoundary));
+            auxiliaryCode.Write(resolvedCode.GetBuffer().AsSpan(codeBoundary, auxiliaryCodeLength));
+            // Write the ActivateModule method into the auxiliary code section
+            int activationStatusRva = metadataRva
+                + AuxiliaryModuleMetadataNode.GetActivationStatusOffset(0);
+            WriteFunctionBody(auxiliaryCode, CreateActivateModuleBody(activationStatusRva));
+
+            // Create the sections
+            WasmExternallyCountedSection auxiliaryFunctionSection = new(WasmSectionType.Function, auxiliaryTypes,
+                _sections[functionSectionIndex].SectionName, functionSectionIndex);
+            auxiliaryFunctionSection.SetEntryCount(functionCount - primaryFunctionCount + 1 /* ActivateModule() */);
+            WasmExternallyCountedSection auxiliaryCodeSection = new(WasmSectionType.Code, auxiliaryCode,
+                _sections[codeSectionIndex].SectionName, codeSectionIndex);
+            auxiliaryCodeSection.SetEntryCount(functionCount - primaryFunctionCount + 1 /* ActivateModule() */);
+
+            // Both modules use the same function imports, and ActivateModule is the last definition.
+            int activationFunctionIndex = functionImports + auxiliaryCodeSection.EntryCount - 1;
+            MemoryStream auxiliaryExports = new();
+            WriteExport(auxiliaryExports, ActivateModuleExportName, WasmExportKind.Function, activationFunctionIndex);
+            WasmExternallyCountedSection auxiliaryExportSection = new(WasmSectionType.Export, auxiliaryExports, default, sectionIndex: -1);
+            auxiliaryExportSection.SetEntryCount(1);
+
+            WasmNameSection auxiliaryNameSection = null;
+            if (_emitNameSection)
+            {
+                List<WasmSymbol> names = new(GetPartitionedFunctionNames(auxiliary: true));
+                names.Add(new WasmSymbol(new Utf8String(ActivateModuleExportName), WasmIndexSpace.Function, activationFunctionIndex, IsImport: false, HasExplicitName: false));
+                auxiliaryNameSection = new WasmNameSection(names);
+            }
 
             return new AuxiliaryPartition
             {
                 PrimaryFunctionSection = primaryFunctionSection,
                 PrimaryCodeSection = primaryCodeSection,
-                AuxiliaryFunctionEntries = functionEntries.AsMemory(functionBoundary),
-                AuxiliaryCode = resolvedCode.GetBuffer().AsMemory(codeBoundary, checked((int)resolvedCode.Length) - codeBoundary),
-                AuxiliaryFunctionCount = functionCount - primaryFunctionCount,
+                AuxiliaryFunctionEntries = auxiliaryFunctionSection,
+                AuxiliaryCode = auxiliaryCodeSection,
+                AuxiliaryExportSection = auxiliaryExportSection,
+                AuxiliaryNameSection = auxiliaryNameSection,
                 PrimaryCodeOffsetMap = codeOffsetMap,
-                ActivationStatusRva = metadataRva + AuxiliaryModuleMetadataNode.GetActivationStatusOffset(0),
             };
 
             static int GetEntryStart(CodeBlob blob) =>
@@ -198,24 +261,15 @@ namespace ILCompiler.ObjectWriter
                 AuxiliaryModuleMetadataNode.GetAuxiliaryModuleFileName(primaryFile.Name, 0));
             using FileStream auxiliaryOutput = new FileStream(auxiliaryPath, FileMode.Create);
 
-            int activationSignature = RegisterSignature(RtlRestoreContextTagSignature);
-            int activationFunctionIndex = _wasmSymbolManager.GetImportCount(WasmIndexSpace.Function) + partition.AuxiliaryFunctionCount;
-
             EmitWasmHeader(auxiliaryOutput);
             // Type and Import sections are exact duplicates of the primary module's sections.
-            _sections.GetSection<WasmExternallyCountedSection>(ObjectNodeSection.WasmTypeSection.Name).EmitToStream(auxiliaryOutput);
-            _sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EmitToStream(auxiliaryOutput);
+            _sections.GetSection<WasmExternallyCountedSection>(ObjectNodeSection.WasmTypeSection.Name)
+                .EmitToStream(auxiliaryOutput);
+            _sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name)
+                .EmitToStream(auxiliaryOutput);
 
-            using MemoryStream functionContent = new();
-            functionContent.Write(partition.AuxiliaryFunctionEntries.Span);
-            WriteUnsigned(functionContent, activationSignature);
-            EmitCountedSection(auxiliaryOutput, WasmSectionType.Function, functionContent, partition.AuxiliaryFunctionCount + 1);
-
-            WriteRawSection(auxiliaryOutput, WasmSectionType.Export, content =>
-            {
-                WriteUnsigned(content, 1);
-                WriteExport(content, ActivateModuleExportName, WasmExportKind.Function, activationFunctionIndex);
-            });
+            partition.AuxiliaryFunctionEntries.EmitToStream(auxiliaryOutput);
+            partition.AuxiliaryExportSection.EmitToStream(auxiliaryOutput);
 
             WriteRawSection(auxiliaryOutput, WasmSectionType.Element, content =>
             {
@@ -223,17 +277,8 @@ namespace ILCompiler.ObjectWriter
                 WritePassiveElementSegment(content, tableFunctions, _auxiliarySlotStart, _auxiliarySlotCount);
             });
 
-            using MemoryStream codeContent = new();
-            codeContent.Write(partition.AuxiliaryCode.Span);
-            WriteFunctionBody(codeContent, CreateActivateModuleBody(partition.ActivationStatusRva));
-            EmitCountedSection(auxiliaryOutput, WasmSectionType.Code, codeContent, partition.AuxiliaryFunctionCount + 1);
-
-            if (_emitNameSection)
-            {
-                List<WasmSymbol> names = new(GetPartitionedFunctionNames(auxiliary: true));
-                names.Add(new WasmSymbol(new Utf8String(ActivateModuleExportName), WasmIndexSpace.Function, activationFunctionIndex, IsImport: false, HasExplicitName: false));
-                new WasmNameSection(names).EmitToStream(auxiliaryOutput);
-            }
+            partition.AuxiliaryCode.EmitToStream(auxiliaryOutput);
+            partition.AuxiliaryNameSection?.EmitToStream(auxiliaryOutput);
         }
 
         /// <summary>
@@ -321,13 +366,6 @@ namespace ILCompiler.ObjectWriter
             stream.Write(bytes);
             stream.WriteByte((byte)kind);
             WriteUnsigned(stream, index);
-        }
-
-        private static void EmitCountedSection(Stream output, WasmSectionType type, MemoryStream content, int entryCount)
-        {
-            WasmExternallyCountedSection section = new(type, content, default, sectionIndex: -1);
-            section.SetEntryCount(entryCount);
-            section.EmitToStream(output);
         }
 
         private static void WriteRawSection(Stream output, WasmSectionType type, Action<MemoryStream> emit)
