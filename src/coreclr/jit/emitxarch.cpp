@@ -1205,7 +1205,7 @@ bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
                 case INS_call:
                     return PEEPHOLE_ABORT;
 
-                // cmpxchg writes the accumulator only when the comparison fails.
+                // cmpxchg writes RAX only when the comparison fails.
                 case INS_cmpxchg:
                     return PEEPHOLE_ABORT;
 
