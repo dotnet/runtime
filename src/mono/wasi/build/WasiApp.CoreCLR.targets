@@ -29,7 +29,7 @@
     </PropertyGroup>
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasiReadyToRunPInvokeManifest)'))" />
     <WriteLinesToFile File="$(_WasiReadyToRunPInvokeManifest)"
-                      Lines="@(_WasiReadyToRunPInvokeModule)"
+                      Lines="@(_WasiReadyToRunPInvokeModule);@(DirectPInvokeList->'%(FullPath)')"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
     <ItemGroup>

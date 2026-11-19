@@ -109,19 +109,24 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, false })]
-        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, false })]
-        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, true })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, "entry" })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "entry" })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "list" })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "module" })]
         [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
-        public async Task DirectPInvokeBindsListedEntryPoints(Configuration config, bool aot, bool readyToRun, bool useList)
+        public async Task DirectPInvokeBindsListedEntryPoints(Configuration config, bool aot, bool readyToRun, string form)
         {
             const string ListFileName = "direct-pinvokes.txt";
-            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"directpinvoke_{readyToRun}_{useList}",
-                extraProperties: $"<PublishReadyToRun>{readyToRun}</PublishReadyToRun><AllowUnsafeBlocks>true</AllowUnsafeBlocks>",
-                extraItems: useList
-                    ? $"<DirectPInvokeList Include=\"{ListFileName}\" />"
-                    : "<DirectPInvoke Include=\"libc!strlen\" />");
-            if (useList)
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"directpinvoke_{readyToRun}_{form}",
+                extraProperties: $"<PublishReadyToRun>{readyToRun}</PublishReadyToRun><AllowUnsafeBlocks>true</AllowUnsafeBlocks>" +
+                    (form == "module" ? "<DefineConstants>$(DefineConstants);DIRECT_PINVOKE_WHOLE_MODULE</DefineConstants>" : ""),
+                extraItems: form switch
+                {
+                    "list" => $"<DirectPInvokeList Include=\"{ListFileName}\" />",
+                    "module" => "<DirectPInvoke Include=\"libc\" />",
+                    _ => "<DirectPInvoke Include=\"libc!strlen\" />",
+                });
+            if (form == "list")
                 File.WriteAllText(Path.Combine(_projectDir, ListFileName), "# Bound statically\nlibc!strlen\n");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DirectPInvoke.cs"));
             ReplaceMainJsWithMinimalRunMain();

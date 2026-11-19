@@ -95,7 +95,7 @@ namespace ILCompiler.PortableCallHelpers
                 extern "C" {
                 """);
 
-            var linkedEntryPointDecls = new List<string>();
+            var linkedDecls = new List<string>();
             var globalNames = new HashSet<string>(StringComparer.Ordinal);
             var pinvokesGroupedByEntryPoint = emitted
                                                 .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
@@ -124,17 +124,17 @@ namespace ILCompiler.PortableCallHelpers
                                                   $" Managed DllImports: {Environment.NewLine}{ListImports(candidates)}");
                 }
 
-                // The table holds one address per entry point, so declare it once per path.
-                PInvokeInfo plain = candidates.FirstOrDefault(c => !linkedEntryPoints.Contains(c));
-                if (plain is not null)
+                // The table holds one address per entry point, so declare it once per linkage.
+                PInvokeInfo imported = candidates.FirstOrDefault(c => c.WasmLinkage);
+                if (imported is not null)
                 {
-                    w.WriteLine(GenPInvokeDecl(plain));
-                    globalNames.Add(CEntryPoint(plain));
+                    w.WriteLine(GenPInvokeDecl(imported));
+                    globalNames.Add(CEntryPoint(imported));
                 }
 
-                PInvokeInfo linkedEntryPoint = candidates.FirstOrDefault(linkedEntryPoints.Contains);
+                PInvokeInfo linkedEntryPoint = candidates.FirstOrDefault(c => !c.WasmLinkage);
                 if (linkedEntryPoint is not null)
-                    linkedEntryPointDecls.Add(GenPInvokeDecl(linkedEntryPoint, CEntryPoint(linkedEntryPoint)));
+                    linkedDecls.Add(GenPInvokeDecl(linkedEntryPoint, CEntryPoint(linkedEntryPoint)));
             }
 
             w.Write(
@@ -143,19 +143,19 @@ namespace ILCompiler.PortableCallHelpers
 
                 """);
 
-            // Individually listed entry points, such as libc!strlen, are declared with C++ linkage in a
+            // Statically linked entry points, such as libc!strlen, are declared with C++ linkage in a
             // namespace and bound by asm label, so they can't conflict with header declarations or with
-            // the extern "C" declarations above, whose names the namespace avoids.
-            string linkedEntryPointNamespace = "direct_pinvoke";
-            while (globalNames.Contains(linkedEntryPointNamespace))
-                linkedEntryPointNamespace += "_";
+            // the [WasmImportLinkage] declarations above, whose names the namespace avoids.
+            string linkedNamespace = "direct_pinvoke";
+            while (globalNames.Contains(linkedNamespace))
+                linkedNamespace += "_";
 
-            if (linkedEntryPointDecls.Count > 0)
+            if (linkedDecls.Count > 0)
             {
-                w.WriteLine($"namespace {linkedEntryPointNamespace} {{");
-                foreach (string decl in linkedEntryPointDecls)
+                w.WriteLine($"namespace {linkedNamespace} {{");
+                foreach (string decl in linkedDecls)
                     w.WriteLine(decl);
-                w.WriteLine($"}} // namespace {linkedEntryPointNamespace}");
+                w.WriteLine($"}} // namespace {linkedNamespace}");
             }
 
             var moduleImports = new Dictionary<string, List<string>>();
@@ -169,15 +169,10 @@ namespace ILCompiler.PortableCallHelpers
                     .Select(l =>
                     {
                         PInvokeInfo p = l.First();
-                        // Runtime resolver looks up by managed EntryPoint.
-                        // [WasmImportLinkage] mangles the C symbol per module,
-                        // so emit the entry-point string explicitly rather than
-                        // stringifying the mangled name via DllImportEntry.
-                        if (p.WasmLinkage)
-                            return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{CEntryPoint(p)} }}, // {ListRefs(l)}{w.NewLine}";
-                        if (linkedEntryPoints.Contains(p))
-                            return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{linkedEntryPointNamespace}::{CEntryPoint(p)} }}, // {ListRefs(l)}{w.NewLine}";
-                        return $"    DllImportEntry({CEntryPoint(p)}) // {ListRefs(l)}{w.NewLine}";
+                        // The runtime resolver looks up by managed EntryPoint, which can differ from the
+                        // C symbol: [WasmImportLinkage] mangles it per module.
+                        string address = p.WasmLinkage ? CEntryPoint(p) : $"{linkedNamespace}::{CEntryPoint(p)}";
+                        return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{address} }}, // {ListRefs(l)}{w.NewLine}";
                     })
                     .ToList();
 
@@ -236,10 +231,12 @@ namespace ILCompiler.PortableCallHelpers
                 if (candidates.Length < 2)
                     return false;
 
-                string firstSignature = InteropSignature.GetMethodSignature(candidates[0].Method, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly);
+                // Compare the native function types: the richer interpreter signature also records
+                // struct sizes that don't change how the struct is passed.
+                WasmFuncType first = WasmLowering.GetSignature(candidates[0].Method.Signature, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly).FuncType;
                 for (int i = 1; i < candidates.Length; i++)
                 {
-                    if (InteropSignature.GetMethodSignature(candidates[i].Method, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly) != firstSignature)
+                    if (!WasmLowering.GetSignature(candidates[i].Method.Signature, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly).FuncType.Equals(first))
                         return true;
                 }
 

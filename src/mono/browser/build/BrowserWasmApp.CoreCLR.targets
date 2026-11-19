@@ -169,7 +169,7 @@
     </PropertyGroup>
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasmReadyToRunPInvokeManifest)'))" />
     <WriteLinesToFile File="$(_WasmReadyToRunPInvokeManifest)"
-                      Lines="@(_WasmReadyToRunPInvokeModule)"
+                      Lines="@(_WasmReadyToRunPInvokeModule);@(_WasmReadyToRunPInvokeList->'%(FullPath)')"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
     <ItemGroup>

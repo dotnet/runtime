@@ -20,6 +20,11 @@ unsafe
     }
 }
 
+// A struct with more than one field is passed by reference, which also lowers to (i32) -> i32.
+if (Imports.StrLenStruct(new Chars { Low = BitConverter.ToInt32("hell"u8), High = BitConverter.ToInt32("o\0\0\0"u8) }) != 5)
+    return 5;
+
+#if !DIRECT_PINVOKE_WHOLE_MODULE
 try
 {
     Imports.NotListed();
@@ -28,6 +33,7 @@ try
 catch (DllNotFoundException)
 {
 }
+#endif
 
 #if DIRECT_PINVOKE_CONFLICT
 // One native function declared with signatures that lower to different wasm types.
@@ -37,6 +43,12 @@ Imports.LLAbsInt32(-1);
 
 Console.WriteLine("TestOutput -> DirectPInvoke sample passed");
 return 42;
+
+struct Chars
+{
+    public int Low;
+    public int High;
+}
 
 static class Imports
 {
@@ -49,6 +61,9 @@ static class Imports
     [DllImport("libc", EntryPoint = "strlen")]
     public static extern nuint StrLenAddress(int value);
 
+    [DllImport("libc", EntryPoint = "strlen")]
+    public static extern nuint StrLenStruct(Chars value);
+
 #if DIRECT_PINVOKE_CONFLICT
     [DllImport("libc", EntryPoint = "llabs")]
     public static extern long LLAbs(long value);
@@ -57,7 +72,9 @@ static class Imports
     public static extern int LLAbsInt32(int value);
 #endif
 
+#if !DIRECT_PINVOKE_WHOLE_MODULE
     // Not listed in DirectPInvoke, so it stays unbound and fails only when called.
     [DllImport("libc", EntryPoint = "definitely_not_in_libc")]
     public static extern int NotListed();
+#endif
 }
