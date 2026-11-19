@@ -56,13 +56,31 @@ bool ThreadSnapshot::GetRegistersWithPTrace()
     }
     assert(sizeof(m_fpRegisters) == fpRegsVec.iov_len);
 
-#if defined(__i386__)
-    if (ptrace((__ptrace_request)PTRACE_GETFPXREGS, m_tid, nullptr, &m_fpxRegisters) == -1)
+#if defined(__aarch64__) && defined(__linux__)
+    m_hasPacMask = false;
+    struct iovec pacMaskVec = { &m_pacMask, sizeof(m_pacMask) };
+    if (ptrace((__ptrace_request)PTRACE_GETREGSET, m_tid, NT_ARM_PAC_MASK, &pacMaskVec) == -1)
     {
-        printf_error("ptrace(GETFPXREGS, %d) FAILED %s (%d)\n", m_tid, strerror(errno), errno);
-        return false;
+        if (errno == EINVAL)
+        {
+            TRACE_VERBOSE("ptrace(PTRACE_GETREGSET, %d, NT_ARM_PAC_MASK) unavailable\n", m_tid);
+        }
+        else
+        {
+            printf_error("ptrace(PTRACE_GETREGSET, %d, NT_ARM_PAC_MASK) FAILED %s (%d)\n", m_tid, strerror(errno), errno);
+        }
     }
-#elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
+    else if (pacMaskVec.iov_len != sizeof(m_pacMask))
+    {
+        printf_error("ptrace(PTRACE_GETREGSET, %d, NT_ARM_PAC_MASK) returned %zu bytes, expected %zu\n", m_tid, pacMaskVec.iov_len, sizeof(m_pacMask));
+    }
+    else
+    {
+        m_hasPacMask = true;
+    }
+#endif
+
+#if defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
 
 #if defined(ARM_VFPREGS_SIZE)
     assert(sizeof(m_vfpRegisters) == ARM_VFPREGS_SIZE);

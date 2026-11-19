@@ -4542,7 +4542,7 @@ mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error)
 
 		static gboolean inited;
 		if (!inited) {
-			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "FirstChanceException", NULL);
+			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "s_firstChanceException", NULL);
 			inited = TRUE;
 		}
 
@@ -4600,7 +4600,7 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 
 		static gboolean inited;
 		if (!inited) {
-			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "UnhandledException", NULL);
+			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "s_unhandledException", NULL);
 			inited = TRUE;
 		}
 

@@ -66,6 +66,26 @@ void MethodDesc::Init()
     m_GCCoverCrst.Init(CrstGCCover);
 }
 
+#ifdef FEATURE_READYTORUN
+void MethodDesc::SetupGcCoverageForPrecompiledCode(PCODE pCode)
+{
+    STANDARD_VM_CONTRACT;
+
+    // Image-backed code may not be patchable under Apple's write/execute restrictions.
+#ifndef HOST_APPLE
+    if (GCStress<cfg_instr_ngen>::IsEnabled())
+    {
+        CrstHolder gcCoverLock(&m_GCCoverCrst);
+        EECodeInfo codeInfo(pCode);
+        _ASSERTE(codeInfo.IsValid());
+
+        // Shared R2R code must use the same MethodDesc as the interrupt handler.
+        SetupGcCoverage(NativeCodeVersion(codeInfo.GetMethodDesc()), (BYTE*)pCode);
+    }
+#endif // !HOST_APPLE
+}
+#endif // FEATURE_READYTORUN
+
 #endif
 
 #define LOG_USING_R2R_CODE(method)  LOG((LF_ZAP, LL_INFO10000,                                                            \
@@ -553,6 +573,33 @@ bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+// Retry R2R code lookup part of the prestub
+uint32_t* MethodDesc::TryActivateDelayedR2RCode(CallerGCMode callerGCMode)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+    PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
+    config.SetCallerGCMode(callerGCMode);
+    PCODE code = GetPrecompiledCode(&config, false);
+    if (code != (PCODE)NULL)
+    {
+        SetCodeEntryPoint(code);
+        PoisonInterpreterCode();
+        PerfMap::LogPreCompiledMethod(this, code);
+        DACNotifyCompilationFinished(this, code);
+        return nullptr;
+    }
+
+    return config.GetAuxiliaryActivationFlag();
+}
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
 PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0)
 {
     STANDARD_VM_CONTRACT;
@@ -616,7 +663,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
     PCODE pCode = (PCODE)NULL;
     {
         // Enter the global lock which protects the list of all functions being JITd
-        JitListLock::LockHolder pJitLock(AppDomain::GetCurrentDomain()->GetJitLock());
+        JitListLock::LockHolder pJitLock = AppDomain::GetCurrentDomain()->GetJitLock()->TakeLock();
 
         // It is possible that another thread stepped in before we entered the global lock for the first time.
         if ((pCode = pConfig->IsJitCancellationRequested()))
@@ -632,13 +679,13 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
             pJitLock, version, description));
 
         // We have an entry now, we can release the global lock
-        pJitLock.Release();
+        pJitLock.Free();
 
         // Take the entry lock
         {
-            JitListLockEntry::LockHolder pEntryLock(pEntry, FALSE);
+            JitListLockEntry::LockHolder pEntryLock;
 
-            if (pEntryLock.DeadlockAwareAcquire())
+            if (pEntryLock.DeadlockAwareAcquire(pEntry))
             {
                 if (pEntry->m_hrResultCode == S_FALSE)
                 {
@@ -713,7 +760,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
                 }
             }
 
-            return JitCompileCodeLockedEventWrapper(pConfig, pEntryLock);
+            return JitCompileCodeLockedEventWrapper(pConfig, pEntry);
         }
     }
 }
@@ -2337,7 +2384,9 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoin
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp)
+// Returns NULL after interpreting the method. Otherwise the method now runs native code and nothing was
+// executed; the caller must call the returned entrypoint with its native signature instead.
+extern "C" void* ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp)
 {
     _ASSERTE(pMD != NULL);
 
@@ -2346,17 +2395,33 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
     // protection for the arguments, but since this from an unmanaged caller, no protection is needed.
 
     InterpByteCodeStart* targetIp = pMD->GetInterpreterCode();
-    if (targetIp == NULL)
+    if (targetIp == NULL && !pMD->IsInterpreterCodePoisoned())
     {
         (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Preemptive);
         targetIp = pMD->GetInterpreterCode();
     }
-    // The g_ReverseThunks reverse thunk is only used for UnmanagedCallersOnly methods that are executed
-    // by the interpreter. Methods compiled to native (R2R) code are dispatched directly to their R2R
-    // entrypoint by GetUnmanagedCallersOnlyThunk and never reach this path, so the interpreter byte code
-    // must exist here.
-    _ASSERTE(targetIp != NULL);
+
+    if (targetIp == NULL)
+    {
+        // The g_ReverseThunks reverse thunk is handed out for UnmanagedCallersOnly methods that are executed
+        // by the interpreter. Native code may keep calling it after the method switches to native code, for
+        // example when delayed R2R code is activated and the interpreter code is poisoned.
+#ifdef TARGET_WASM
+        void* nativeCode = GetR2RNativeCodeForUnmanagedCallersOnly(pMD);
+        if (nativeCode == nullptr)
+        {
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE,
+                W("Unmanaged callback has neither interpreter nor native code."));
+        }
+        return nativeCode;
+#else
+        _ASSERTE(!"ExecuteInterpretedMethodFromUnmanaged: method has no interpreter code");
+        return NULL;
+#endif // TARGET_WASM
+    }
+
     (void)ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argSize, ret, callerIp);
+    return NULL;
 }
 #endif // FEATURE_INTERPRETER
 
@@ -3661,8 +3726,10 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
 
     PCCOR_SIGNATURE pBlob = (BYTE *)pNativeImage->GetRvaData(pSignatures[index]);
+    PTR_BYTE pGCRefMap = nullptr;
     if ((pImportSection->Flags & ReadyToRunImportSectionFlags::GCRefMap) != ReadyToRunImportSectionFlags::None)
     {
+        pGCRefMap = dac_cast<PTR_BYTE>(pBlob);
         pBlob = GCRefMapDecoder::Skip(pBlob);
     }
     PCCOR_SIGNATURE pBlobStart = pBlob;
@@ -3729,7 +3796,21 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     case READYTORUN_FIXUP_DelegateCtor:
         {
             pMD = ZapSig::DecodeMethod(pModule, pInfoModule, pBlob, &th);
-            pMD->PrepareForUseAsADependencyOfANativeImage();
+            if (kind == READYTORUN_FIXUP_DelegateCtor && pGCRefMap != nullptr && !pMD->RequiresInstArg())
+            {
+                // The map describes the target's own call frame, so signature layouts need not be loaded.
+                pMD->PrepareForUseAsACallTargetOfANativeImage(pGCRefMap);
+#ifdef _DEBUG
+                if (!pMD->IsWrapperStub())
+                {
+                    _ASSERTE(CheckGCRefMapEqual(pGCRefMap, pMD, false));
+                }
+#endif // _DEBUG
+            }
+            else
+            {
+                pMD->PrepareForUseAsADependencyOfANativeImage();
+            }
             if (pMD->RequiresInstArg())
             {
                 pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,

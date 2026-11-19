@@ -74,6 +74,7 @@ else(CLR_CMAKE_HOST_WIN32)
         threadinfo.cpp
         datatarget.cpp
         crashreportwriter.cpp
+        remoteunwind.cpp
         ${CREATEDUMP_SHARED_SOURCES}
     )
 
@@ -103,6 +104,27 @@ else()
 endif(CLR_CMAKE_HOST_OSX)
 target_link_libraries(createdump_static PRIVATE minipal)
 
+if(CLR_CMAKE_HOST_APPLE OR NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+    target_include_directories(createdump_static PRIVATE
+        ${CLR_SRC_NATIVE_DIR}/external/libunwind/include
+        ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep
+        ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include
+        ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep
+    )
+endif()
+
+if(CLR_CMAKE_HOST_APPLE)
+    # The OS libunwind has no remote unwinding support, so link the remote-only build of the bundled one.
+    target_sources(createdump_static PRIVATE $<TARGET_OBJECTS:libunwind_dac>)
+    target_compile_definitions(createdump_static PRIVATE UNW_REMOTE_ONLY)
+elseif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+    find_unwind_libs(UNWIND_LIBS)
+    target_compile_definitions(createdump_static PRIVATE FEATURE_USE_SYSTEM_LIBUNWIND)
+    target_link_libraries(createdump_static PUBLIC ${UNWIND_LIBS})
+else()
+    target_sources(createdump_static PRIVATE $<TARGET_OBJECTS:libunwind>)
+endif()
+
     add_executable_clr(createdump
         main.cpp
         createdumppal.cpp
@@ -112,7 +134,6 @@ target_link_libraries(createdump_static PRIVATE minipal)
         PRIVATE
         createdump_static
         corguids
-        coreclrpal_dac
         dbgutil
         ${CMAKE_DL_LIBS}
     )

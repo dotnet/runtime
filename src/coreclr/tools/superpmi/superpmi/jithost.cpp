@@ -8,6 +8,8 @@
 #include "jithost.h"
 
 #include <clrconfignocache.h>
+#include <minipal/environ.h>
+#include <minipal/utf8.h>
 
 WCHAR* GetPrefixedEnvironmentVariable(const WCHAR* prefix, size_t prefixLen, const WCHAR* key, JitInstance& jitInstance)
 {
@@ -20,7 +22,7 @@ WCHAR* GetPrefixedEnvironmentVariable(const WCHAR* prefix, size_t prefixLen, con
     wcscpy_s(&keyBuffer[prefixLen], keyLen + 1, key);
 
     // Look up the environment variable
-    DWORD valueLen = GetEnvironmentVariableW(keyBuffer, nullptr, 0);
+    DWORD valueLen = minipal_environ_get_variable_u16((const CHAR16_T*)keyBuffer, nullptr, 0);
     if (valueLen == 0)
     {
         jitInstance.freeArray(keyBuffer);
@@ -29,7 +31,7 @@ WCHAR* GetPrefixedEnvironmentVariable(const WCHAR* prefix, size_t prefixLen, con
 
     // Note this value must live as long as the jit instance does.
     WCHAR* value       = reinterpret_cast<WCHAR*>(jitInstance.allocateLongLivedArray(sizeof(WCHAR) * valueLen));
-    DWORD    newValueLen = GetEnvironmentVariableW(keyBuffer, value, valueLen);
+    DWORD    newValueLen = minipal_environ_get_variable_u16((const CHAR16_T*)keyBuffer, (CHAR16_T*)value, valueLen);
 
     jitInstance.freeArray(keyBuffer);
     if (valueLen < newValueLen)
@@ -46,18 +48,11 @@ WCHAR* GetPrefixedEnvironmentVariable(const WCHAR* prefix, size_t prefixLen, con
 // the returned value must be freed with jitInstance.freeLongLivedArray(value).
 char* GetConfigFromEnvironmentVariable(const char* key, JitInstance& jitInstance)
 {
-    int keyLen = MultiByteToWideChar(CP_UTF8, 0, key, -1, nullptr, 0);
-    if (keyLen == 0)
-    {
-        return nullptr;
-    }
+    size_t keyLength = strlen(key) + 1;
+    size_t keyLen    = minipal_get_length_utf8_to_utf16(key, keyLength, 0);
 
     WCHAR* keyUtf8 = new WCHAR[keyLen];
-    if (MultiByteToWideChar(CP_UTF8, 0, key, -1, keyUtf8, keyLen) == 0)
-    {
-        delete[] keyUtf8;
-        return nullptr;
-    }
+    minipal_convert_utf8_to_utf16(key, keyLength, (CHAR16_T*)keyUtf8, keyLen, 0);
 
     WCHAR* result = GetPrefixedEnvironmentVariable(DOTNET_PREFIX, LEN_OF_DOTNET_PREFIX, keyUtf8, jitInstance);
     if (result == nullptr)
@@ -72,21 +67,11 @@ char* GetConfigFromEnvironmentVariable(const char* key, JitInstance& jitInstance
         return nullptr;
     }
 
-    int resultLen = WideCharToMultiByte(CP_UTF8, 0, result, -1, nullptr, 0, nullptr, nullptr);
-    if (resultLen == 0)
-    {
-        jitInstance.freeLongLivedArray(result);
-        return nullptr;
-    }
+    size_t resultLength = u16_strlen(result) + 1;
+    size_t resultLen    = minipal_get_length_utf16_to_utf8((const CHAR16_T*)result, resultLength, 0);
 
-    char* resultUtf8 = (char*)jitInstance.allocateLongLivedArray((size_t)resultLen);
-
-    if (WideCharToMultiByte(CP_UTF8, 0, result, -1, resultUtf8, resultLen, nullptr, nullptr) == 0)
-    {
-        jitInstance.freeLongLivedArray(result);
-        jitInstance.freeLongLivedArray(resultUtf8);
-        return nullptr;
-    }
+    char* resultUtf8 = (char*)jitInstance.allocateLongLivedArray(resultLen);
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)result, resultLength, resultUtf8, resultLen, 0);
 
     jitInstance.freeLongLivedArray(result);
 

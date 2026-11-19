@@ -164,13 +164,13 @@ BOOL ShimStackWalk::ShouldTrackUMChain(StackWalkInfo * pswInfo)
     if (m_pProcess->IsThreadSuspendedOrHijacked(m_pThread))
         return FALSE;
 
-    // In the case the thread is throwing a managed exception, 
-    // TS_DebugSyncSuspended might not yet be set, resulting in IsThreadSuspendedOrHijacked 
+    // In the case the thread is throwing a managed exception,
+    // TS_DebugSyncSuspended might not yet be set, resulting in IsThreadSuspendedOrHijacked
     // returning false above. We need to check the exception state to make sure we don't
-    // track the chain in this case. Since we know the type of Frame we are dealing with, 
+    // track the chain in this case. Since we know the type of Frame we are dealing with,
     // we can make a more accurate determination of whether we should track the chain.
     // However if we are interop debugging and the thread is hijacked, we should track the chain.
-    if (!pswInfo->ExhaustedAllInternalFrames() && !m_pProcess->IsUnmanagedThreadHijacked(m_pThread) && GetInternalFrameType(pswInfo->GetCurrentInternalFrame()) == STUBFRAME_EXCEPTION) 
+    if (!pswInfo->ExhaustedAllInternalFrames() && !m_pProcess->IsUnmanagedThreadHijacked(m_pThread) && GetInternalFrameType(pswInfo->GetCurrentInternalFrame()) == STUBFRAME_EXCEPTION)
         return FALSE;
 
     return TRUE;
@@ -225,7 +225,6 @@ void ShimStackWalk::Populate()
             swInfo.m_ppInternalFrame2.Assign(i, pTmpArray[i]);
             pTmpArray[i]->Release();
         }
-        pTmpArray.Clear();
     }
 
     //
@@ -800,7 +799,7 @@ void ShimStackWalk::EnumerateChains(ICorDebugChainEnum ** ppChainEnum)
     (*ppChainEnum)->AddRef();
     AddChainEnum(pChainEnum);
 
-    pChainEnum.SuppressRelease();
+    pChainEnum.Detach();
 }
 
 // This is the shim implementation of ICDThread::GetActiveChain().
@@ -1013,8 +1012,8 @@ CorDebugInternalFrameType ShimStackWalk::GetInternalFrameType(ICorDebugInternalF
 
 void ShimStackWalk::AppendFrame(ICorDebugFrame * pFrame, StackWalkInfo * pStackWalkInfo)
 {
-    // We've detected we're in a stackwalk where we have an exception and no further managed frames 
-    // are on top of this frame. To ensure our IP points to the user line that threw the exception, 
+    // We've detected we're in a stackwalk where we have an exception and no further managed frames
+    // are on top of this frame. To ensure our IP points to the user line that threw the exception,
     // we ask the frame to adjust the IP to the call instruction as currently it points to the instruction after it.
     if (pStackWalkInfo->m_fHasException && pStackWalkInfo->m_cFrame == 0)
     {
@@ -1024,7 +1023,7 @@ void ShimStackWalk::AppendFrame(ICorDebugFrame * pFrame, StackWalkInfo * pStackW
         {
             CordbJITILFrame* JITILFrameToAdjustIP = (static_cast<CordbJITILFrame*>(pNFrame3.GetValue()));
             JITILFrameToAdjustIP->AdjustIPAfterException();
-            pStackWalkInfo->m_fHasException = false;                                    
+            pStackWalkInfo->m_fHasException = false;
         }
     }
     // grow the
@@ -1093,7 +1092,7 @@ void ShimStackWalk::AppendChainWorker(StackWalkInfo *     pStackWalkInfo,
     pStackWalkInfo->m_firstFrameInChain = pStackWalkInfo->m_cFrame;
 
     // If all goes well, suppress the release so that the ShimChain won't go away.
-    pChain.SuppressRelease();
+    pChain.Detach();
 }
 
 // ----------------------------------------------------------------------------
@@ -1831,7 +1830,7 @@ HRESULT ShimChain::EnumerateFrames(ICorDebugFrameEnum ** ppFrames)
         // link the new ShimFramEnum into the list on the ShimStackWalk
         pSW->AddFrameEnum(pFrameEnum);
 
-        pFrameEnum.SuppressRelease();
+        pFrameEnum.Detach();
     }
     EX_CATCH_HRESULT(hr);
 
@@ -2022,7 +2021,7 @@ HRESULT ShimChainEnum::Clone(ICorDebugEnum ** ppEnum)
         (*ppEnum)->AddRef();
         m_pStackWalk->AddChainEnum(pChainEnum);
 
-        pChainEnum.SuppressRelease();
+        pChainEnum.Detach();
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -2236,7 +2235,7 @@ HRESULT ShimFrameEnum::Clone(ICorDebugEnum ** ppEnum)
         (*ppEnum)->AddRef();
         m_pStackWalk->AddFrameEnum(pFrameEnum);
 
-        pFrameEnum.SuppressRelease();
+        pFrameEnum.Detach();
     }
     EX_CATCH_HRESULT(hr);
 

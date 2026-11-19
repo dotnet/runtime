@@ -554,11 +554,9 @@ HRESULT EEToProfInterfaceImpl::Init(
 
     m_csGCRefDataFreeList = csGCRefDataFreeList.Detach();
 
-    m_pFunctionIDHashTable = pFunctionIDHashTable.Extract();
-    pFunctionIDHashTable = NULL;
+    m_pFunctionIDHashTable = pFunctionIDHashTable.Detach();
 
-    m_pFunctionIDHashTableRWLock = pFunctionIDHashTableRWLock.Extract();
-    pFunctionIDHashTableRWLock = NULL;
+    m_pFunctionIDHashTableRWLock = pFunctionIDHashTableRWLock.Detach();
 
     return S_OK;
 }
@@ -1132,7 +1130,7 @@ EEToProfInterfaceImpl::GCReferencesData * EEToProfInterfaceImpl::AllocateMovedRe
 
     // SCOPE: Lock m_csGCRefDataFreeList for access to the free list
     {
-        CRITSEC_Holder csh(m_csGCRefDataFreeList);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_csGCRefDataFreeList);
 
         // Anything on the free list for us to grab?
         if (m_pGCRefDataFreeList != NULL)
@@ -1191,7 +1189,7 @@ void EEToProfInterfaceImpl::FreeMovedReferencesData(GCReferencesData * pData)
 
     // SCOPE: Lock m_csGCRefDataFreeList for access to the free list
     {
-        CRITSEC_Holder csh(m_csGCRefDataFreeList);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_csGCRefDataFreeList);
         pData->pNext = m_pGCRefDataFreeList;
         m_pGCRefDataFreeList = pData;
     }
@@ -1343,7 +1341,7 @@ HRESULT EEToProfInterfaceImpl::EndMovedReferences(void * pHeapId)
     // Now we're done with the data block, we can shove it onto the free list
     // SCOPE: Lock m_csGCRefDataFreeList for access to the free list
     {
-        CRITSEC_Holder csh(m_csGCRefDataFreeList);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_csGCRefDataFreeList);
         pData->pNext = m_pGCRefDataFreeList;
         m_pGCRefDataFreeList = pData;
     }

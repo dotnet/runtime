@@ -248,8 +248,10 @@
                                                    $(LibrariesNativeArtifactsPath)libSystem.Globalization.Native.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.IO.Compression.Native.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Native.Browser.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.Native.TimeZoneData.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.Native.TimeZoneData.Invariant.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Runtime.InteropServices.JavaScript.Native.a;
                                                    $(LibrariesNativeArtifactsPath)libz.a" />
       <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)*.dat;
@@ -259,6 +261,7 @@
         $(LibrariesNativeArtifactsPath)*.so;
         $(LibrariesNativeArtifactsPath)*.dbg;
         $(LibrariesNativeArtifactsPath)*.dwarf;
+        $(LibrariesNativeArtifactsPath)*.wit;
         $(LibrariesNativeArtifactsPath)*.pdb"
         IsNative="true"
         Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
@@ -360,7 +363,6 @@
       <LibrariesRuntimeFiles
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
-        $(LibrariesNativeArtifactsPath)*.wit;
         $(LibrariesNativeArtifactsPath)*.dat;"
         IsNative="true" />
 

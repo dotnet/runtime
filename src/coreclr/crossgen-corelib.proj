@@ -133,6 +133,16 @@
           DependsOnTargets="ResolveProjectReferences;MergeMibcFiles" />
 
   <Target Name="PrepareInvokeCrossgen2" DependsOnTargets="ResolveProjectReferences;CreateMergedMibcFile">
+    <PropertyGroup>
+      <_CoreLibInstructionSetStampFile>$(IntermediatesDir)System.Private.CoreLib.instruction-set.stamp</_CoreLibInstructionSetStampFile>
+    </PropertyGroup>
+    <!-- Recompile CoreLib when the instruction sets change. -->
+    <MakeDir Directories="$(IntermediatesDir)" />
+    <WriteLinesToFile File="$(_CoreLibInstructionSetStampFile)"
+                      Lines="$(PublishReadyToRunInstructionSet)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+
     <ItemGroup>
       <Crossgen2Inputs Include="@(CoreLib)" />
       <Crossgen2Inputs Include="$(MergedMibcPath)" />
@@ -140,6 +150,7 @@
       <Crossgen2Inputs Include="$(WasmCoreClrFrameworkPInvokeModuleListFile)"
                        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
       <Crossgen2Inputs Include="$(Crossgen2TasksAssembly)" />
+      <Crossgen2Inputs Include="$(_CoreLibInstructionSetStampFile)" />
     </ItemGroup>
 
     <ItemGroup>
@@ -202,6 +213,8 @@
       <!-- wasm: enable cross-module inlining/optimization across the whole shared framework (the -r IL closure). -->
       <_CoreLibCrossgen2ExtraArgs Include="--opt-cross-module:*"
         Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
+      <_CoreLibCrossgen2ExtraArgs Include="--instruction-set:$(PublishReadyToRunInstructionSet)"
+        Condition="'$(PublishReadyToRunInstructionSet)' != ''" />
       <_CoreLibCrossgen2ExtraArgs Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)')"
         Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'browser'" />
       <_CoreLibCrossgen2ExtraArgs Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)')"

@@ -5,6 +5,11 @@ namespace ILCompiler.ObjectWriter
 {
     internal static class DwarfNative
     {
+        public const byte DW_LLE_end_of_list = 0x00;
+        public const byte DW_LLE_start_end = 0x07;
+        public const byte DW_RLE_end_of_list = 0x00;
+        public const byte DW_RLE_start_end = 0x06;
+
         public const byte DW_EH_PE_absptr = 0x00;
         public const byte DW_EH_PE_omit = 0xFF;
         public const byte DW_EH_PE_ptr = 0x00;

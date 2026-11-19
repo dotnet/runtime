@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Xunit;
@@ -103,6 +104,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             .EnsureSuccessful();
 
         AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+        AddWasmOptProjectProperties(ref extraProperties);
 
         string projectFilePath = Path.Combine(_projectDir, $"{projectName}.csproj");
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
@@ -140,6 +142,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
 
         AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+        AddWasmOptProjectProperties(ref extraProperties);
 
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
@@ -151,6 +154,12 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (runAnalyzers)
             extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
         AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
+    }
+
+    protected static void AddWasmOptProjectProperties(ref string extraProperties)
+    {
+        if (EnvironmentVariables.UseWasmOpt)
+            extraProperties += "<WasmRunWasmOpt>true</WasmRunWasmOpt>";
     }
 
     protected static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
@@ -615,6 +624,33 @@ public class WasmTemplateTestsBase : BuildTestBase
             runOptions.OnErrorMessage?.Invoke(msg);
         }
     }
+
+	protected void AssertWasmEndpointIntegrity(Configuration config, bool publish)
+	{
+		string manifestPath = Path.Combine(GetObjDir(config), $"staticwebassets.{(publish ? "publish" : "build")}.endpoints.json");
+		using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(manifestPath));
+		JsonElement[] endpoints = manifest.RootElement.GetProperty("Endpoints").EnumerateArray()
+			.Where(endpoint => endpoint.GetProperty("Selectors").GetArrayLength() == 0)
+			.ToArray();
+		JsonElement[] wasmEndpoints = endpoints.Where(endpoint =>
+		{
+			string route = Assert.IsType<string>(endpoint.GetProperty("Route").GetString());
+			return route.StartsWith("_framework/", StringComparison.Ordinal);
+		}).ToArray();
+		Assert.NotEmpty(wasmEndpoints);
+		Assert.All(wasmEndpoints, endpoint =>
+		{
+			Assert.Contains(endpoint.GetProperty("EndpointProperties").EnumerateArray(),
+				property => property.GetProperty("Name").GetString() == "integrity"
+					&& property.GetProperty("Value").GetString() is string hash
+					&& hash.StartsWith("sha256-", StringComparison.Ordinal));
+			Assert.Contains(endpoint.GetProperty("ResponseHeaders").EnumerateArray(),
+				header => string.Equals(header.GetProperty("Name").GetString(), "ETag", StringComparison.OrdinalIgnoreCase));
+		});
+		JsonElement mainScript = Assert.Single(endpoints.Where(endpoint => endpoint.GetProperty("Route").GetString() == "main.js"));
+		Assert.Contains(mainScript.GetProperty("EndpointProperties").EnumerateArray(),
+			property => property.GetProperty("Name").GetString() == "integrity");
+	}
 
     public string GetBinFrameworkDir(Configuration config, bool forPublish, string? framework = null, string? projectDir = null) =>
         _provider.GetBinFrameworkDir(config, forPublish, framework ?? DefaultTargetFramework, projectDir);

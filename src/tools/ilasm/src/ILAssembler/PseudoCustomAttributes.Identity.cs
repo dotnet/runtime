@@ -54,6 +54,9 @@ internal static partial class PseudoCustomAttributes
     {
         switch (owner)
         {
+            case EntityRegistry.LiteralTokenEntity literal:
+                return ResolveOwner(registry, registry.ResolveHandleToEntity(literal.Handle));
+
             case EntityRegistry.TypeReferenceEntity typeReference:
                 return registry.FindLocalTypeDefinition(typeReference) ?? owner;
 

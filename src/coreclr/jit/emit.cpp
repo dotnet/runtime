@@ -4402,9 +4402,9 @@ void emitter::emitDispJumpList()
 #endif // TARGET_XARCH
 
 #if defined(TARGET_AMD64)
-            if (jmp->idjIsAfterCallBeforeEpilog)
+            if (jmp->idjIsAfterCall)
             {
-                printf(" ; after call before epilog");
+                printf(" ; after call");
             }
 #endif // TARGET_AMD64
         }
@@ -4799,21 +4799,12 @@ void emitter::emitRemoveJumpToNextInst()
                 jmp->idCodeSize(0);
 
 #ifdef TARGET_AMD64
-                // If the removed jump is after a call and before an OS epilog, it needs to be replaced by a nop
-                if (jmp->idjIsAfterCallBeforeEpilog)
+                // Preserve the call's return PC in its EH region and keep its GC state distinct
+                // from the branch target's state. This also separates the call from an OS epilog.
+                if (jmp->idjIsAfterCall)
                 {
-                    if ((targetGroup->igFlags & IGF_EPILOG) != 0)
-                    {
-                        // This jump will become a nop, so set its size now to ensure below calculations are correct
-                        jmp->idCodeSize(1);
-                        codeSize--;
-                    }
-                    else
-                    {
-                        // We don't need a nop if the removed jump isn't before an OS epilog,
-                        // so zero jmp->idjIsAfterCallBeforeEpilog to avoid emitting a nop
-                        jmp->idjIsAfterCallBeforeEpilog = 0;
-                    }
+                    jmp->idCodeSize(1);
+                    codeSize--;
                 }
 #endif // TARGET_AMD64
 

@@ -56,6 +56,18 @@ struct user_vfpregs_struct
 } __attribute__((__packed__));
 #endif
 
+#if defined(__aarch64__) && defined(__linux__)
+// Matches struct user_pac_mask in Linux's arch/arm64/include/uapi/asm/ptrace.h.
+// Defined locally because user_pac_mask was only added to the kernel UAPI headers in
+// Linux 5.0 and the build sysroot's headers may predate it (see the NT_ARM_PAC_MASK
+// fallback in createdumpcore.h). The layout is part of the stable kernel ABI.
+struct UserPacMask
+{
+    uint64_t data_mask;
+    uint64_t insn_mask;
+};
+#endif
+
 #if defined(__loongarch64)
 #define user_fpregs_struct lasx_context
 #endif
@@ -72,6 +84,11 @@ private:
     pid_t m_ppid;                               // parent process
     pid_t m_tgid;                               // thread group
 
+#if defined(__aarch64__) && defined(__linux__)
+    UserPacMask m_pacMask = {};
+    bool m_hasPacMask = false;
+#endif
+
 #ifdef __APPLE__
     mach_port_t m_port;                         // MacOS thread port
 #if defined(__x86_64__)
@@ -84,9 +101,7 @@ private:
 #else // __APPLE__
     struct user_regs_struct m_gpRegisters;      // general purpose registers
     struct user_fpregs_struct m_fpRegisters;    // floating point registers
-#if defined(__i386__)
-    struct user_fpxregs_struct m_fpxRegisters;  // x86 floating point registers
-#elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
+#if defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
     struct user_vfpregs_struct m_vfpRegisters;  // ARM VFP/NEON registers
 #endif
 #endif // __APPLE__
@@ -118,6 +133,11 @@ public:
     inline pid_t Ppid() const { return m_ppid; }
     inline pid_t Tgid() const { return m_tgid; }
 
+#if defined(__aarch64__) && defined(__linux__)
+    inline bool HasPacMask() const { return m_hasPacMask; }
+    inline const UserPacMask* GetPacMask() const { return &m_pacMask; }
+#endif
+
 #ifdef __APPLE__
 #if defined(__x86_64__)
     inline const x86_thread_state64_t* GPRegisters() const { return &m_gpRegisters; }
@@ -135,9 +155,7 @@ public:
 #else // __APPLE__
     inline const user_regs_struct* GPRegisters() const { return &m_gpRegisters; }
     inline const user_fpregs_struct* FPRegisters() const { return &m_fpRegisters; }
-#if defined(__i386__)
-    inline const user_fpxregs_struct* FPXRegisters() const { return &m_fpxRegisters; }
-#elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
+#if defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
     inline const user_vfpregs_struct* VFPRegisters() const { return &m_vfpRegisters; }
 #endif
 #if defined(__x86_64__)

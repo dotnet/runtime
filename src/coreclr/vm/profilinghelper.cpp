@@ -154,7 +154,7 @@ void CurrentProfilerStatus::Set(ProfilerStatus newProfStatus)
         // profiler in one thread could request a detach, while the CLR in another
         // thread is transitioning the profiler from kProfStatusInitializing* to
         // kProfStatusActive
-        CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
+        CRITSEC_Holder csh = ClrTakeCriticalSection(ProfilingAPIUtility::GetStatusCrst());
 
         // Based on what the old status is, verify the new status is a legal transition.
         switch(m_profStatus)
@@ -627,8 +627,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
 
     fProfEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_ENABLE_PROFILING);
 
-    NewArrayHolder<WCHAR> wszClsid(NULL);
-    NewArrayHolder<WCHAR> wszProfilerDLL(NULL);
+    WStringHolder wszClsid;
+    WStringHolder wszProfilerDLL;
     CLSID clsid;
 
     if (fProfEnabled == 0)
@@ -934,7 +934,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
     _ASSERTE(s_csStatus != NULL);
 
     ProfilerCompatibilityFlag profilerCompatibilityFlag = kDisableV2Profiler;
-    NewArrayHolder<WCHAR> wszProfilerCompatibilitySetting(NULL);
+    WStringHolder wszProfilerCompatibilitySetting;
 
     if (loadType == kStartupLoad)
     {
@@ -957,7 +957,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
                  "Profiler will not be loaded.\n"));
 
             MAKE_UTF8PTR_FROMWIDE(szEnvVarName, CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting.name);
-            MAKE_UTF8PTR_FROMWIDE(szEnvVarValue, wszProfilerCompatibilitySetting.GetValue());
+            MAKE_UTF8PTR_FROMWIDE(szEnvVarValue, static_cast<WCHAR*>(wszProfilerCompatibilitySetting));
             LogProfInfo(IDS_PROF_PROFILER_DISABLED,
                         szEnvVarName,
                         szEnvVarValue,
@@ -1016,12 +1016,8 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
         return hr;
     }
 
-    // EEToProfInterfaceImpl::Init takes over the ownership of pProfEE when Init succeeds, and
-    // EEToProfInterfaceImpl::~EEToProfInterfaceImpl is responsible for releasing the resource pointed
-    // by pProfEE.  Calling SuppressRelease here is necessary to avoid double release that
-    // the resource pointed by pProfEE are released by both pProfEE and pEEProf's destructor.
-    pProfEE.SuppressRelease();
-    pProfEE = NULL;
+    // EEToProfInterfaceImpl owns pProfEE after successful initialization.
+    pProfEE.Detach();
 
     if (loadType == kAttachLoad)  // V4 profiler from attach
     {
@@ -1049,7 +1045,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
              "The configured V2 profiler is going to be initialized.\n"));
 
         MAKE_UTF8PTR_FROMWIDE(szEnvVarName, CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting.name);
-        MAKE_UTF8PTR_FROMWIDE(szEnvVarValue, wszProfilerCompatibilitySetting.GetValue());
+        MAKE_UTF8PTR_FROMWIDE(szEnvVarValue, static_cast<WCHAR*>(wszProfilerCompatibilitySetting));
         LogProfInfo(IDS_PROF_V2PROFILER_ENABLED,
                     szEnvVarName,
                     szEnvVarValue,
@@ -1173,9 +1169,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
         // callback (which we do immediately below), and have it successfully call
         // back into us via the Info interface (ProfToEEInterfaceImpl) to perform its
         // initialization.
-        profilerInfo.pProfInterface = pEEProf.GetValue();
-        pEEProf.SuppressRelease();
-        pEEProf = NULL;
+        profilerInfo.pProfInterface = pEEProf.Detach();
 
         // Set global status to reflect the proper type of Init we're doing (attach vs
         // startup)
@@ -1189,7 +1183,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
     {
         // Now we register the profiler, from this point on we need to worry about
         // synchronization
-        CRITSEC_Holder csh(s_csStatus);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(s_csStatus);
 
         // Check if this profiler is notification only and load as appropriate
         BOOL notificationOnly = FALSE;
@@ -1562,7 +1556,7 @@ void ProfilingAPIUtility::TerminateProfiling(ProfilerInfo *pProfilerInfo)
     {
         // We're modifying status and possibly unloading the profiler DLL below, so
         // serialize this code with any other loading / unloading / detaching code.
-        CRITSEC_Holder csh(s_csStatus);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(s_csStatus);
 
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
