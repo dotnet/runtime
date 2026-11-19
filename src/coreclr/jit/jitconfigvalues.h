@@ -587,6 +587,8 @@ OPT_CONFIG_INTEGER(JitDoLoopInversion, "JitDoLoopInversion", 1) // Perform loop 
 RELEASE_CONFIG_INTEGER(JitLoopInversionSizeLimit, "JitLoopInversionSizeLimit", 100) // limit inversion to loops with no
                                                                                     // more than this many tree nodes
 OPT_CONFIG_INTEGER(JitDoRangeAnalysis, "JitDoRangeAnalysis", 1)                     // Perform range check analysis
+OPT_CONFIG_INTEGER(JitElideUnchangedRefStores, "JitElideUnchangedRefStores", 1) // Prototype: omit unchanged reference
+                                                                                // stores
 OPT_CONFIG_INTEGER(JitDoVNBasedDeadStoreRemoval, "JitDoVNBasedDeadStoreRemoval", 1) // Perform VN-based dead store
                                                                                     // removal
 OPT_CONFIG_INTEGER(JitDoRedundantBranchOpts, "JitDoRedundantBranchOpts", 1) // Perform redundant branch optimizations

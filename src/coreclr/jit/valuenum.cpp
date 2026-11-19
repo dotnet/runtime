@@ -6960,7 +6960,10 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
 //    storeSize - The number of bytes being stored
 //    value     - The value being stored
 //
-void Compiler::fgValueNumberFieldStore(
+// Returns:
+//    True when the reference store is redundant and can be removed.
+//
+bool Compiler::fgValueNumberFieldStore(
     GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, ValueSize storeSize, ValueNum value)
 {
     noway_assert(fieldSeq != nullptr);
@@ -6989,6 +6992,40 @@ void Compiler::fgValueNumberFieldStore(
     }
 
     ValueNum newFieldValueVN = ValueNumStore::NoVN;
+    if ((JitConfig.JitElideUnchangedRefStores() != 0) && storeNode->OperIs(GT_STOREIND) && storeNode->TypeIs(TYP_REF) &&
+        (fieldType == TYP_STRUCT) && fieldSize.IsExact() && storeSize.IsExact() && (offset >= 0) &&
+        (offset <= fieldSize.GetExact()) &&
+        (storeSize.GetExact() <= fieldSize.GetExact() - static_cast<unsigned>(offset)) &&
+        !storeNode->AsIndir()->IsVolatile() && ((storeNode->gtFlags & GTF_IND_NONFAULTING) != 0) &&
+        (((storeNode->AsIndir()->Addr()->gtFlags | storeNode->Data()->gtFlags) & GTF_ALL_EFFECT) == 0))
+    {
+        ValueNum  previousField = vnStore->VNForMapSelect(VNK_Liberal, fieldType, fieldMapVN, fieldValueSelectorVN);
+        ValueNum  previousValue = vnStore->VNForLoad(VNK_Liberal, previousField, fieldSize, TYP_REF, offset, storeSize);
+        bool      unchanged     = previousValue == value;
+        VNFuncApp source;
+        if (!unchanged && vnStore->GetVNFunc(value, &source) && source.FuncIs(VNF_ByrefExposedLoad) &&
+            (source.GetArg(0) == vnStore->VNForIntCon(TYP_REF)) && (source.GetArg(2) == fgCurMemoryVN[ByrefExposed]))
+        {
+            ValueNum sourceAddress = source.GetArg(1);
+            ValueNum targetAddress = vnStore->VNLiberalNormalValue(storeNode->AsIndir()->Addr()->gtVNPair);
+            // Promotion can spell the read as (base + field) + offset and the store as base + total.
+            target_ssize_t sourceOffset;
+            target_ssize_t targetOffset;
+            vnStore->PeelOffsets(&sourceAddress, &sourceOffset);
+            vnStore->PeelOffsets(&targetAddress, &targetOffset);
+            unchanged = (sourceAddress == targetAddress) && (sourceOffset == targetOffset);
+        }
+        JITDUMP("REFSTORE [%06u] offset=%zd field=" FMT_VN " value=" FMT_VN " equal=%d\n", dspTreeID(storeNode), offset,
+                previousValue, value, unchanged);
+        if (unchanged)
+        {
+            // The store disappears, so its memory SSA definition carries the incoming state.
+            fgValueNumberRecordMemorySsa(GcHeap, storeNode);
+            if (!byrefStatesMatchGcHeapStates)
+                fgValueNumberRecordMemorySsa(ByrefExposed, storeNode);
+            return true;
+        }
+    }
     if (vnStore->LoadStoreIsEntire(fieldSize, offset, storeSize))
     {
         // For memory locations (as opposed to locals), we do not normalize types.
@@ -7023,6 +7060,7 @@ void Compiler::fgValueNumberFieldStore(
         // For out-of-bounds stores, the heap has to be invalidated as other fields may be affected.
         fgMutateGcHeap(storeNode DEBUGARG("out-of-bounds store to a field"));
     }
+    return false;
 }
 
 ValueNum Compiler::fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN)
@@ -11834,6 +11872,8 @@ class ValueNumberState
     BitVec       m_provenUnreachableBlocks;
 
 public:
+    bool statementChanged = false;
+
     ValueNumberState(Compiler* comp)
         : m_compiler(comp)
         , m_blockTraits(comp->fgBBNumMax + 1, comp)
@@ -12292,12 +12332,18 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         }
 #endif
 
+        vnState->statementChanged = false;
         for (GenTree* const tree : stmt->TreeList())
         {
             // Set up ambient var referring to current tree.
             compCurTree = tree;
             fgValueNumberTree(tree);
             compCurTree = nullptr;
+        }
+        if (vnState->statementChanged)
+        {
+            gtSetStmtInfo(stmt);
+            fgSetStmtSeq(stmt);
         }
 
 #ifdef DEBUG
@@ -13025,6 +13071,8 @@ void Compiler::fgValueNumberStore(GenTree* store)
         }
     }
 
+    bool redundantReferenceStore = false;
+
     // Now, record the new VN for the store (performing the indicated "state update").
     switch (store->OperGet())
     {
@@ -13066,7 +13114,8 @@ void Compiler::fgValueNumberStore(GenTree* store)
                 fldSeq   = vnStore->FieldSeqVNToFieldSeq(funcApp.GetArg(1));
                 offset   = vnStore->ConstantValue<ssize_t>(funcApp.GetArg(2));
 
-                fgValueNumberFieldStore(store, baseAddr, fldSeq, offset, storeSize, valueVNPair.GetLiberal());
+                redundantReferenceStore =
+                    fgValueNumberFieldStore(store, baseAddr, fldSeq, offset, storeSize, valueVNPair.GetLiberal());
             }
             else if (addrIsVNFunc && (funcApp.FuncIs(VNF_PtrToArrElem)))
             {
@@ -13075,7 +13124,8 @@ void Compiler::fgValueNumberStore(GenTree* store)
             else if (addr->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
             {
                 assert(fldSeq != nullptr);
-                fgValueNumberFieldStore(store, baseAddr, fldSeq, offset, storeSize, valueVNPair.GetLiberal());
+                redundantReferenceStore =
+                    fgValueNumberFieldStore(store, baseAddr, fldSeq, offset, storeSize, valueVNPair.GetLiberal());
             }
             else
             {
@@ -13116,6 +13166,14 @@ void Compiler::fgValueNumberStore(GenTree* store)
         storeExcSet = vnStore->VNPUnionExcSet(store->AsIndir()->Addr()->gtVNPair, storeExcSet);
     }
     store->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), storeExcSet);
+    if (redundantReferenceStore)
+    {
+        JITDUMP("Removing unchanged reference store [%06u]\n", dspTreeID(store));
+        store->gtBashToNOP();
+        store->gtVNPair = vnStore->VNPForVoid();
+        gtUpdateTreeAncestorsSideEffects(store);
+        vnState->statementChanged = true;
+    }
 }
 
 //------------------------------------------------------------------------
