@@ -209,13 +209,13 @@ Read once at start:
 
 ### Step 2 — Walk pipelines
 
-In the rules below, JIT pipelines are definitions 109, 110, 111, 115, 116, 117, 118, 119, 137, 138, 144, 145, 150, 153, 155, 159, 160, 230, and 235.
+In the rules below, JIT pipelines are definitions 109, 110, 111, 115, 116, 117, 118, 119, 137, 138, 144, 145, 150, 153, 155, 159, 160, 230, and 235. This covers both daily (109, 138, 144, 150) and weekend or weekly schedules; scan and triage every JIT pipeline on every run regardless of schedule.
 
 For each row in the pipeline table below:
 
 1. Pre-bind the build-list URL to a shell variable, then `curl -s "$url" | tee /tmp/gh-aw/agent/builds_<id>.json`. Fetch at least 25 builds.
 2. Pick `source` = most recent COMPLETED build with `result in {failed, partiallySucceeded}` that has at least one COMPLETED build with a strictly later `finishTime`. For JIT pipelines, waive the later-build requirement and select the latest completed failed or partially successful build instead. That later build, when available, is the `follow_up` anchor for Step 3.5. (The dnceng-public build-list is sorted DESC by `queueTime`; "later in time" refers to wall-clock, not array position.)
-3. Skip reasons: `source.finishTime > 14d` -> `pipeline-skipped: stale build window (>14d)`. For non-JIT pipelines, no `follow_up` -> `pipeline-skipped: no follow-up build yet — defer to next run`, and no qualifying build in 7 days -> `pipeline-skipped: stale`. JIT pipelines use the 14-day window to accommodate weekly-or-longer schedules.
+3. Skip reasons: `source.finishTime > 14d` -> `pipeline-skipped: stale build window (>14d)`. For non-JIT pipelines, no `follow_up` -> `pipeline-skipped: no follow-up build yet — defer to next run`, and no qualifying build in 7 days -> `pipeline-skipped: stale`. JIT pipelines use only the 14-day window so that daily and weekend or weekly schedules are all triaged.
 4. Otherwise pass `source`'s failed timeline records to Step 3.
 
 | Pipeline | Definition ID | Notes |
