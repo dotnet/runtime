@@ -140,7 +140,8 @@ namespace ILCompiler.DependencyAnalysis
                     if (methodImpl.Body.HasInstantiation && !methodImpl.Body.IsAbstract)
                     {
                         result |= VirtualMethodAnalysisFlags.InterestingForDynamicDependencies;
-                        break;
+                        Debug.Assert((result & VirtualMethodAnalysisFlags.AllFlags) == VirtualMethodAnalysisFlags.AllFlags);
+                        return result;
                     }
                 }
             }
