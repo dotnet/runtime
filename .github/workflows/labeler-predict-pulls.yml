@@ -46,7 +46,7 @@ env:
   ALLOW_FAILURE: ${{ github.event_name == 'workflow_dispatch' }}
 
   LABEL_PREFIX: "area-"
-  THRESHOLD: ${{ vars.ISSUE_LABELER_PREDICTION_THRESHOLD || '0.05' }}
+  THRESHOLD: ${{ vars.PR_LABELER_PREDICTION_THRESHOLD || '0.13' }}
   DEFAULT_LABEL: "needs-area-label"
 
 jobs:
