@@ -6992,9 +6992,8 @@ bool Compiler::fgValueNumberFieldStore(
     }
 
     ValueNum newFieldValueVN = ValueNumStore::NoVN;
-    if ((JitConfig.JitElideUnchangedRefStores() != 0) && storeNode->OperIs(GT_STOREIND) && storeNode->TypeIs(TYP_REF) &&
-        (fieldType == TYP_STRUCT) && fieldSize.IsExact() && storeSize.IsExact() && (offset >= 0) &&
-        (offset <= fieldSize.GetExact()) &&
+    if (storeNode->OperIs(GT_STOREIND) && storeNode->TypeIs(TYP_REF) && (fieldType == TYP_STRUCT) &&
+        fieldSize.IsExact() && storeSize.IsExact() && (offset >= 0) && (offset <= fieldSize.GetExact()) &&
         (storeSize.GetExact() <= fieldSize.GetExact() - static_cast<unsigned>(offset)) &&
         !storeNode->AsIndir()->IsVolatile() && ((storeNode->gtFlags & GTF_IND_NONFAULTING) != 0) &&
         (((storeNode->AsIndir()->Addr()->gtFlags | storeNode->Data()->gtFlags) & GTF_ALL_EFFECT) == 0))
