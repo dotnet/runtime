@@ -26,7 +26,7 @@ public class RuntimeAsyncDiagnosticIPStackTrace
         int firstFrame = stackTrace.IndexOf(callerFrame, StringComparison.Ordinal);
         Assert.True(firstFrame >= 0, stackTrace);
         Assert.Equal(-1, stackTrace.IndexOf(callerFrame, firstFrame + callerFrame.Length, StringComparison.Ordinal));
-        // NativeAOT's extra EDI boundaries are tracked by https://github.com/dotnet/runtime/issues/129155.
+        // NativeAOT's extra EDI boundaries are tracked by https://github.com/dotnet/runtime/issues/137617.
         if (!Utilities.IsNativeAot)
         {
             Assert.False(stackTrace.Contains("--- End of stack trace from previous location ---", StringComparison.Ordinal), stackTrace);
@@ -110,7 +110,8 @@ public class RuntimeAsyncDiagnosticIPStackTrace
                 nameof(Level1),
             ];
 
-            // A non-async forwarder has no suspended frame on NativeAOT.
+            // NativeAOT currently omits the non-async forwarder frame.
+            // https://github.com/dotnet/runtime/issues/137619
             if (!Utilities.IsNativeAot)
             {
                 expectedMethods.Insert(3, nameof(NoInlineForwarder));
