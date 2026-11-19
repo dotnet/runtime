@@ -1675,6 +1675,16 @@ class Generics
             public override string GetObject<T>() => Record("GenericDerivedOnly<" + typeof(X).Name + ">.GetObject<" + typeof(T).Name + ">");
         }
 
+        abstract class AbstractCovariantOnly : BaseOnly
+        {
+            public abstract override IEnumerable<char> GetObject<T>();
+        }
+
+        class DerivedFromAbstractCovariantOnly : AbstractCovariantOnly
+        {
+            public override string GetObject<T>() => Record("DerivedFromAbstractCovariantOnly<" + typeof(T).Name + ">");
+        }
+
         class GenericBaseOnly<X>
         {
             public virtual object GetObject<T>() => Record("GenericBaseOnly");
@@ -1782,6 +1792,10 @@ class Generics
             BaseOnly gbo = Opaque<BaseOnly>(new GenericDerivedOnly<Atom>());
             Check("BaseOnly(GenericDerivedOnly).GetObject<int>", "GenericDerivedOnly<Atom>.GetObject<Int32>", gbo.GetObject<int>());
             Check("BaseOnly(GenericDerivedOnly).GetObject<Atom>", "GenericDerivedOnly<Atom>.GetObject<Atom>", gbo.GetObject<Atom>());
+
+            BaseOnly abo = Opaque<BaseOnly>(new DerivedFromAbstractCovariantOnly());
+            Check("BaseOnly(DerivedFromAbstractCovariantOnly).GetObject<int>", "DerivedFromAbstractCovariantOnly<Int32>", abo.GetObject<int>());
+            Check("BaseOnly(DerivedFromAbstractCovariantOnly).GetObject<Atom>", "DerivedFromAbstractCovariantOnly<Atom>", abo.GetObject<Atom>());
 
             GenericBaseOnly<string> gb = Opaque<GenericBaseOnly<string>>(new DerivedFromGenericBaseOnly());
             Check("GenericBaseOnly.GetObject<int>", "DerivedFromGenericBaseOnly<Int32>", gb.GetObject<int>());
