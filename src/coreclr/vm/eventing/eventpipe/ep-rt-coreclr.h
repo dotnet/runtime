@@ -1484,7 +1484,7 @@ ep_rt_lock_acquire (ep_rt_lock_handle_t *lock)
 	{
 		if (lock) {
 			CrstBase::CrstHolderWithState holder (lock->lock);
-			holder.SuppressRelease ();
+			holder.Detach ();
 		}
 	}
 	EX_CATCH
@@ -1506,8 +1506,8 @@ ep_rt_lock_release (ep_rt_lock_handle_t *lock)
 	EX_TRY
 	{
 		if (lock) {
-			CrstBase::UnsafeCrstInverseHolder holder (lock->lock);
-			holder.SuppressRelease ();
+			CrstBase::UnsafeCrstInverseHolder holder = CrstBase::ReleaseForScope (lock->lock);
+			holder.SuppressAcquire ();
 		}
 	}
 	EX_CATCH
