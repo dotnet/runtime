@@ -399,7 +399,58 @@ public class WasmInterpreterTransitions
         S8 openStaticRetBufResult = openStaticRetBufDelegate(A);
         Assert.Equal(A, openStaticRetBufResult.A);
         Assert.Equal(B, openStaticRetBufResult.B);
+
+        // String constructors run as static factories that return the new string, so their thunks are
+        // keyed on that lowered signature rather than on the instance constructor's (for example liip
+        // for string(char, int) on wasm64 and iiip on wasm32). A compiled caller reaches an interpreted
+        // CoreLib constructor and an interpreted caller reaches a compiled one, depending on whether
+        // CoreLib itself was compiled.
+        AssertStringConstructors();
     }
+
+    private static readonly string[] s_expectedStrings = ["xxx", "wasm", "as", "sm", "wasm", "wa", "64", "6", "64"];
+
+    private static unsafe void AssertStringConstructors()
+    {
+        char[] chars = ['w', 'a', 's', 'm'];
+        sbyte* ascii = stackalloc sbyte[] { (sbyte)'6', (sbyte)'4', 0 };
+        fixed (char* p = chars)
+        {
+            Assert.Equal(s_expectedStrings, ConstructStringsR2R(chars, p, ascii));
+            Assert.Equal(s_expectedStrings, ConstructStringsInterpreted(chars, p, ascii));
+        }
+    }
+
+    // ConstructStringsR2R and ConstructStringsInterpreted must stay identical apart from where they run:
+    // every string constructor shape, called from each side of the R2R/interpreter boundary.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe string[] ConstructStringsR2R(char[] chars, char* p, sbyte* ascii) =>
+    [
+        new string('x', 3),
+        new string(chars),
+        new string(chars, 1, 2),
+        new string(new ReadOnlySpan<char>(chars, 2, 2)),
+        new string(p),
+        new string(p, 0, 2),
+        new string(ascii),
+        new string(ascii, 0, 1),
+        new string(ascii, 0, 2, System.Text.Encoding.ASCII),
+    ];
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe string[] ConstructStringsInterpreted(char[] chars, char* p, sbyte* ascii) =>
+    [
+        new string('x', 3),
+        new string(chars),
+        new string(chars, 1, 2),
+        new string(new ReadOnlySpan<char>(chars, 2, 2)),
+        new string(p),
+        new string(p, 0, 2),
+        new string(ascii),
+        new string(ascii, 0, 1),
+        new string(ascii, 0, 2, System.Text.Encoding.ASCII),
+    ];
 
     private static int s_sideEffect;
 
