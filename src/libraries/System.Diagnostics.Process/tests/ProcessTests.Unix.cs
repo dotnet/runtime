@@ -160,7 +160,13 @@ namespace System.Diagnostics.Tests
                     Assert.NotNull(px);
                     if (!OperatingSystem.IsMacOS()) // on OSX, process name is dotnet for some reason. Refer to https://github.com/dotnet/runtime/issues/23525
                     {
-                        Assert.Equal(programToOpen, px.ProcessName);
+                        // ProcessName may transiently reflect the parent's thread name immediately
+                        // after Process.Start if execve() hasn't finished updating it yet, so retry briefly.
+                        RetryHelper.Execute(() =>
+                        {
+                            px.Refresh();
+                            Assert.Equal(programToOpen, px.ProcessName);
+                        });
                     }
                     px.Kill();
                     px.WaitForExit();
@@ -170,9 +176,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.MacCatalyst, "On OSX, ProcessName returns the script interpreter.")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/13757")]
+        [PlatformSpecific(TestPlatforms.Linux)] // test reads /proc/<pid>/stat and /proc/<pid>/cmdline
         public void ProcessNameMatchesScriptName()
         {
             string scriptName = GetTestFileName();
@@ -190,12 +194,18 @@ namespace System.Diagnostics.Tests
             {
                 try
                 {
-                    string stat = File.ReadAllText($"/proc/{process.Id}/stat");
-                    Assert.Contains($"({scriptName.Substring(0, 15)})", stat);
-                    string cmdline = File.ReadAllText($"/proc/{process.Id}/cmdline");
-                    Assert.Equal($"/bin/sh\0{filename}\0", cmdline);
+                    // The child's procfs state and ProcessName may transiently reflect the parent
+                    // immediately after Process.Start if execve() hasn't finished updating them yet, so retry briefly.
+                    RetryHelper.Execute(() =>
+                    {
+                        string stat = File.ReadAllText($"/proc/{process.Id}/stat");
+                        Assert.Contains($"({scriptName.Substring(0, 15)})", stat);
+                        string cmdline = File.ReadAllText($"/proc/{process.Id}/cmdline");
+                        Assert.Equal($"/bin/sh\0{filename}\0", cmdline);
 
-                    Assert.Equal(scriptName, process.ProcessName);
+                        process.Refresh();
+                        Assert.Equal(scriptName, process.ProcessName);
+                    });
                 }
                 finally
                 {

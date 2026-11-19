@@ -1,0 +1,7 @@
+<Project>
+
+  <Target Name="GetTargetPath"
+          DependsOnTargets="_GetRuntimePackCoreLibFiles"
+          Returns="@(RuntimePackCoreLibFile)" />
+
+</Project>

@@ -265,7 +265,7 @@ def clone_repo(url, branch, commit, destination):
             print(f"The clone in {destination} is at {head or 'an unknown commit'}, re-cloning ...")
         shutil.rmtree(destination, ignore_errors=True)
         # Cloning a single commit needs it to be fetched explicitly; cloning the branch works anywhere.
-        run_command(["git", "clone", "--quiet", "--branch", branch, url, destination], retries=2)
+        run_command(["git", "clone", "--quiet", "--config", "core.longpaths=true", "--branch", branch, url, destination], retries=2)
         run_command(["git", "checkout", "--quiet", commit], cwd=destination)
 
     # Also on a reused clone: a previous run may have been interrupted half way through this.

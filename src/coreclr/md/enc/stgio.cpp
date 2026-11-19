@@ -46,6 +46,7 @@
 #endif
 #include "pedecoder.inl"
 #include <minipal.h>
+#include <minipal/ospagesize.h>
 
 //********** Types. ***********************************************************
 #define SMALL_ALLOC_MAP_SIZE (64 * 1024) // 64 kb is the minimum size of virtual
@@ -203,11 +204,7 @@ StgIO::StgIO(
     // If the system page size has not been queried, do so now.
     if (m_iPageSize == 0)
     {
-        SYSTEM_INFO sInfo;              // Some O/S information.
-
-        // Query the system page size.
-        GetSystemInfo(&sInfo);
-        m_iPageSize = sInfo.dwPageSize;
+        m_iPageSize = minipal_getpagesize();
         m_iCacheSize = ((MIN_WRITE_CACHE_BYTES - 1) & ~(m_iPageSize - 1)) + m_iPageSize;
     }
 }

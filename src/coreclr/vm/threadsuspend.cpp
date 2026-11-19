@@ -1083,7 +1083,7 @@ void Thread::SetAbortEndTime(ULONGLONG endTime, BOOL fRudeAbort)
     LIMITED_METHOD_CONTRACT;
 
     {
-        AbortRequestLockHolder lh(this);
+        AbortRequestLockHolder lh = TakeAbortRequestLock();
         if (fRudeAbort)
         {
             if (endTime < m_RudeAbortEndTime)
@@ -1127,7 +1127,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 
     BOOL fHoldingThreadStoreLock = ThreadStore::HoldingThreadStore();
 
-    AbortControlHolder AbortController(this);
+    AbortControlHolder AbortController = TakeAbortControl();
 
     // Swap in timeout
     if (timeout != INFINITE)
@@ -1637,7 +1637,7 @@ void Thread::MarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType)
     }
     CONTRACTL_END;
 
-    AbortRequestLockHolder lh(this);
+    AbortRequestLockHolder lh = TakeAbortRequestLock();
 
 #ifdef _DEBUG
     if (abortType == EEPolicy::TA_Rude)
@@ -1724,7 +1724,7 @@ void Thread::UnmarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType /* = EEPo
     }
     CONTRACTL_END;
 
-    AbortRequestLockHolder lh(this);
+    AbortRequestLockHolder lh = TakeAbortRequestLock();
 
     if (m_AbortType > (DWORD)abortType)
     {
