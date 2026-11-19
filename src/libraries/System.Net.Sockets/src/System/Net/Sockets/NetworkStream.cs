@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -226,7 +227,7 @@ namespace System.Net.Sockets
         //     Number of bytes we read, or 0 if the socket is closed.
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
@@ -247,7 +248,7 @@ namespace System.Net.Sockets
 
         public override int Read(Span<byte> buffer)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             if (GetType() != typeof(NetworkStream))
             {
@@ -270,12 +271,10 @@ namespace System.Net.Sockets
             }
         }
 
-        public override unsafe int ReadByte()
+        public override int ReadByte()
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
-            byte b;
-            return Read(new Span<byte>(&b, 1)) == 0 ? -1 : b;
+            byte b = 0;
+            return Read(new Span<byte>(ref b)) == 0 ? -1 : b;
         }
 
         // Write - provide core Write functionality.
@@ -296,7 +295,7 @@ namespace System.Net.Sockets
         //     way to indicate an error.
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
@@ -319,7 +318,7 @@ namespace System.Net.Sockets
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             if (GetType() != typeof(NetworkStream))
             {
@@ -432,8 +431,6 @@ namespace System.Net.Sockets
         //     An IASyncResult, representing the read.
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
             if (!CanRead)
@@ -467,8 +464,6 @@ namespace System.Net.Sockets
         //     The number of bytes read. May throw an exception.
         public override int EndRead(IAsyncResult asyncResult)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(asyncResult);
 
@@ -498,8 +493,6 @@ namespace System.Net.Sockets
         //     An IASyncResult, representing the write.
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
             if (!CanWrite)
@@ -530,8 +523,6 @@ namespace System.Net.Sockets
         // Returns:  The number of bytes read. May throw an exception.
         public override void EndWrite(IAsyncResult asyncResult)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(asyncResult);
 

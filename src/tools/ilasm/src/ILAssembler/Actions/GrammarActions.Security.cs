@@ -169,9 +169,14 @@ internal sealed partial class GrammarActions
 
     private static BlobBuilder CreateStringPermissionSet(string value)
     {
+        int terminator = value.IndexOf('\0');
+        if (terminator >= 0)
+        {
+            value = value.Substring(0, terminator);
+        }
+
         BlobBuilder blob = new();
         blob.WriteUTF16(value);
-        blob.WriteUTF16("\0");
         return blob;
     }
 
@@ -198,9 +203,19 @@ internal sealed partial class GrammarActions
             attributeName = reflectionNotation.ReflectionNotation;
         }
 
+        // See the DeclSecurity binary permission-set encoding in
+        // docs/design/specs/Ecma-335-Augments.md#declsecurity-binary-permission-set-encoding.
+        BlobBuilder arguments = new();
+        arguments.WriteCompressedInteger(attribute.Arguments.Length);
+        foreach (CustomAttributeNamedArgumentValue argument in attribute.Arguments)
+        {
+            WriteCustomBlobNamedArgument(arguments, argument);
+        }
+
         BlobBuilder blob = new();
         blob.WriteSerializedString(attributeName);
-        WriteCustomBlobNamedArguments(blob, attribute.Arguments);
+        blob.WriteCompressedInteger(arguments.Count);
+        arguments.WriteContentTo(blob);
         return blob;
     }
 

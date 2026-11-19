@@ -39,11 +39,9 @@
     <_CoreCLRInvalidSIMD Condition="'$(WasmEnableSIMD)' != '' and '$(WasmEnableSIMD)' != 'true'">true</_CoreCLRInvalidSIMD>
     <WasmEnableExceptionHandling>true</WasmEnableExceptionHandling>
     <WasmEnableSIMD>true</WasmEnableSIMD>
-    <WasmEnableRelaxedSimd Condition="'$(WasmEnableRelaxedSimd)' == ''">false</WasmEnableRelaxedSimd>
     <WasmClang>emcc</WasmClang>
 
     <_WasmDefaultFlags>-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128</_WasmDefaultFlags>
-    <_WasmDefaultFlags Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(_WasmDefaultFlags) -mrelaxed-simd</_WasmDefaultFlags>
 
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Build</WasmBuildAppAfterThisTarget>
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(WasmTriggerPublishAppAfterThisTarget)' == ''">Publish</WasmTriggerPublishAppAfterThisTarget>
@@ -73,12 +71,6 @@
     <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
-    <RuntimeHostConfigurationOption Include="System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported"
-                                    Value="true"
-                                    Trim="true" />
-  </ItemGroup>
 
   <!-- EmccInitialHeapSize is the documented browser property (src/mono/browser/README.md) and
        EmccTotalMemory is its legacy alias; the Mono path collapses both into WasmInitialHeapSize
@@ -133,11 +125,12 @@
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props"
           Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
 
-  <!-- Wasm features for wasm-opt over the relinked dotnet.native.wasm: the shared baseline from
-       native.wasm.targets plus CoreCLR's optional features. -->
+  <!-- Wasm features for wasm-opt over the relinked dotnet.native.wasm and ReadyToRun images: the shared
+       baseline from native.wasm.targets plus relaxed SIMD, which ReadyToRun images use when
+       PublishReadyToRunInstructionSet enables it. Enabling a feature only allows its instructions. -->
   <ItemGroup>
     <_WasmOptFeatureFlag Include="@(_WasmOptBaselineFeatureFlag)" />
-    <_WasmOptFeatureFlag Include="--enable-relaxed-simd" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
+    <_WasmOptFeatureFlag Include="--enable-relaxed-simd" />
   </ItemGroup>
 
   <!-- Allow running/debugging from VS -->
@@ -561,8 +554,6 @@
       <EmscriptenEnvVars Include="EM_FROZEN_CACHE=0" Condition="'$(WasmCachePath)' != '' and '$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=1" />
-      <EmscriptenEnvVars Include="WASM_ENABLE_RELAXED_SIMD=1" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
-      <EmscriptenEnvVars Include="WASM_ENABLE_RELAXED_SIMD=0" Condition="'$(WasmEnableRelaxedSimd)' != 'true'" />
     </ItemGroup>
   </Target>
 
@@ -621,7 +612,6 @@
       <_EmccCommonFlags Include="-fwasm-exceptions" />
       <_EmccCommonFlags Include="-sWASM_LEGACY_EXCEPTIONS=0" />
       <_EmccCommonFlags Include="-msimd128" />
-      <_EmccCommonFlags Include="-mrelaxed-simd" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
     </ItemGroup>
 
     <!-- Re-encoding without any pass grows the module, so default to -Oz unless the project's

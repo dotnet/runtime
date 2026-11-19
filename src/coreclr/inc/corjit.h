@@ -161,9 +161,9 @@ class ICorJitInfo : public ICorDynamicInfo
 {
 public:
     // get a block of memory for the code, readonly data, and read-write data
-    virtual void allocMem (
+    CORINFO_VIRTUAL void allocMem (
             AllocMemArgs *pArgs
-            ) = 0;
+            ) CORINFO_PURE;
 
     // Reserve memory for the method/funclet's unwind information.
     // Note that this must be called before allocMem. It should be
@@ -176,11 +176,11 @@ public:
     // For prejitted code we split up the unwinding information into
     // separate sections .rdata and .pdata.
     //
-    virtual void reserveUnwindInfo (
+    CORINFO_VIRTUAL void reserveUnwindInfo (
             bool                isFunclet,             /* IN */
             bool                isColdCode,            /* IN */
             uint32_t            unwindSize             /* IN */
-            ) = 0;
+            ) CORINFO_PURE;
 
     // Allocate and initialize the .rdata and .pdata for this method or
     // funclet, and get the block of memory needed for the machine-specific
@@ -199,7 +199,7 @@ public:
     //    pUnwindBlock    pointer to unwind info
     //    funcKind        type of funclet (main method code, handler, filter)
     //
-    virtual void allocUnwindInfo (
+    CORINFO_VIRTUAL void allocUnwindInfo (
             uint8_t *               pHotCode,              /* IN */
             uint8_t *               pColdCode,             /* IN */
             uint32_t                startOffset,           /* IN */
@@ -207,42 +207,42 @@ public:
             uint32_t                unwindSize,            /* IN */
             uint8_t *               pUnwindBlock,          /* IN */
             CorJitFuncKind          funcKind               /* IN */
-            ) = 0;
+            ) CORINFO_PURE;
 
     // Get a block of memory needed for the code manager information,
     // (the info for enumerating the GC pointers while crawling the
     // stack frame). Note that allocMem must be called first.
-    virtual void * allocGCInfo (
+    CORINFO_VIRTUAL void * allocGCInfo (
             size_t                  size        /* IN */
-            ) = 0;
+            ) CORINFO_PURE;
 
     // Indicate how many exception handler blocks are to be returned.
     // This is guaranteed to be called before any 'setEHinfo' call.
     // Note that allocMem must be called before this method can be called.
-    virtual void setEHcount (
+    CORINFO_VIRTUAL void setEHcount (
             unsigned                cEH         /* IN */
-            ) = 0;
+            ) CORINFO_PURE;
 
     // Set the values for one particular exception handler block.
     //
     // Handler regions should be lexically contiguous.
     // This is because FinallyIsUnwinding() uses lexicality to
     // determine if a "finally" clause is executing.
-    virtual void setEHinfo (
+    CORINFO_VIRTUAL void setEHinfo (
             unsigned                 EHnumber,   /* IN  */
             const CORINFO_EH_CLAUSE* clause      /* IN */
-            ) = 0;
+            ) CORINFO_PURE;
 
     // Level -> fatalError, Level 2 -> Error, Level 3 -> Warning
     // Level 4 means happens 10 times in a run, level 5 means 100, level 6 means 1000 ...
     // returns non-zero if the logging succeeded
-    virtual bool logMsg(unsigned level, const char* fmt, va_list args) = 0;
+    CORINFO_VIRTUAL bool logMsg(unsigned level, const char* fmt, va_list args) CORINFO_PURE;
 
     // do an assert.  will return true if the code should retry (DebugBreak)
     // returns false, if the assert should be ignored.
-    virtual int doAssert(const char* szFile, int iLine, const char* szExpr) = 0;
+    CORINFO_VIRTUAL int doAssert(const char* szFile, int iLine, const char* szExpr) CORINFO_PURE;
 
-    virtual void reportFatalError(CorJitResult result) = 0;
+    CORINFO_VIRTUAL void reportFatalError(CorJitResult result) CORINFO_PURE;
 
     struct BlockCounts  // Also defined by:  CORBBTPROF_BLOCK_DATA
     {
@@ -374,7 +374,7 @@ public:
 
     // get profile information to be used for optimizing a current method.  The format
     // of the buffer is the same as the format the JIT passes to allocPgoInstrumentationBySchema.
-    virtual JITINTERFACE_HRESULT getPgoInstrumentationResults(
+    CORINFO_VIRTUAL JITINTERFACE_HRESULT getPgoInstrumentationResults(
             CORINFO_METHOD_HANDLE      ftnHnd,
             PgoInstrumentationSchema **pSchema,                    // OUT: pointer to the schema table (array) which describes the instrumentation results
                                                                    // (pointer will not remain valid after jit completes).
@@ -383,7 +383,7 @@ public:
                                                                    // (pointer will not remain valid after jit completes).
             PgoSource *                pPgoSource,                 // OUT: value describing source of pgo data
             bool *                     pDynamicPgo                 // OUT: dynamic PGO is enabled (valid even when return value is failure)
-            ) = 0;
+            ) CORINFO_PURE;
 
     // Allocate a profile buffer for use in the current process
     // The JIT shall call this api with the schema entries other than Offset filled in.
@@ -396,62 +396,62 @@ public:
     //
     //  The intention here is that it becomes possible to describe a C data structure with the alignment for ease of use with
     //  instrumentation helper functions
-    virtual JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
+    CORINFO_VIRTUAL JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE     ftnHnd,
             PgoInstrumentationSchema *pSchema,                     // IN OUT: pointer to the schema table (array) which describes the instrumentation results. `Offset` field
                                                                    // is filled in by VM; other fields are set and passed in by caller.
             uint32_t                  countSchemaItems,            // IN: count of schema items in `pSchema` array.
             uint8_t **                pInstrumentationData         // OUT: `*pInstrumentationData` is set to the address of the instrumentation data.
-            ) = 0;
+            ) CORINFO_PURE;
 
     // Associates a native call site, identified by its offset in the native code stream, with
     // the signature information and method handle the JIT used to lay out the call site. If
     // the call site has no signature information (e.g. a helper call) or has no method handle
     // (e.g. a CALLI P/Invoke), then null should be passed instead.
-    virtual void recordCallSite(
+    CORINFO_VIRTUAL void recordCallSite(
             uint32_t                instrOffset,  /* IN */
             CORINFO_SIG_INFO *      callSig,      /* IN */
             CORINFO_METHOD_HANDLE   methodHandle  /* IN */
-            ) = 0;
+            ) CORINFO_PURE;
 
     // Records the signature of a managed call site for Wasm R2R thunk generation.
     // This is a no-op on all targets except ReadyToRun Wasm compilation.
-    virtual void recordWasmManagedCallSig(
+    CORINFO_VIRTUAL void recordWasmManagedCallSig(
             CORINFO_SIG_INFO *      callSig       /* IN */
-            ) = 0;
+            ) CORINFO_PURE;
 
     // Records the method of a CORINFO_HELP_VIRTUAL_FUNC_PTR helper call that survived to lowering.
     // This is a no-op on all targets except ReadyToRun Wasm compilation.
-    virtual void recordWasmVirtualFunctionPointerLookup(
+    CORINFO_VIRTUAL void recordWasmVirtualFunctionPointerLookup(
             CORINFO_METHOD_HANDLE   method        /* IN */
-            ) = 0;
+            ) CORINFO_PURE;
 
     // A relocation is recorded if we are pre-jitting.
     // A jump thunk may be inserted if we are jitting
-    virtual void recordRelocation(
+    CORINFO_VIRTUAL void recordRelocation(
             void *                  location,     /* IN  */
             void *                  locationRW,   /* IN  */
             void *                  target,       /* IN  */
             CorInfoReloc            fRelocType,   /* IN  */
             int32_t                 addlDelta = 0 /* IN  */
-            ) = 0;
+            ) CORINFO_PURE;
 
-    virtual CorInfoReloc getRelocTypeHint(void * target) = 0;
+    CORINFO_VIRTUAL CorInfoReloc getRelocTypeHint(void * target) CORINFO_PURE;
 
     // For what machine does the VM expect the JIT to generate code? The VM
     // returns one of the CorInfoArch values. Note that if the VM is cross
     // compiling (such as the case for crossgen), it will return a different
     // value than if it was compiling for the host architecture.
     //
-    virtual uint32_t getExpectedTargetArchitecture() = 0;
+    CORINFO_VIRTUAL uint32_t getExpectedTargetArchitecture() CORINFO_PURE;
 
     // Fetches extended flags for a particular compilation instance. Returns
     // the number of bytes written to the provided buffer.
-    virtual uint32_t getJitFlags(
+    CORINFO_VIRTUAL uint32_t getJitFlags(
         CORJIT_FLAGS*   flags,       /* IN: Points to a buffer that will hold the extended flags. */
         uint32_t        sizeInBytes  /* IN: The size of the buffer. Note that this is effectively a
                                             version number for the CORJIT_FLAGS value. */
-        ) = 0;
+        ) CORINFO_PURE;
 };
 
 /**********************************************************************************/
