@@ -891,15 +891,23 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
     }
 }
 
-static void ReleaseFuncEvalArgumentHandles(ExternalMemoryHandle** pHandles)
+struct FuncEvalArgumentHandlesHolderTraits final
 {
-    WRAPPER_NO_CONTRACT;
+    using Type = ExternalMemoryHandle**;
+    static constexpr Type Default() { return nullptr; }
 
-    for (; *pHandles != nullptr; pHandles++)
+    static void Free(Type pHandles) noexcept
     {
-        ReleaseDebuggerExternalMemoryHandle(*pHandles);
+        WRAPPER_NO_CONTRACT;
+        if (pHandles == nullptr)
+            return;
+
+        for (; *pHandles != nullptr; pHandles++)
+        {
+            ReleaseDebuggerExternalMemoryHandle(*pHandles);
+        }
     }
-}
+};
 
 static bool HasNonLeafFuncEvalRegister(DebuggerIPCE_FuncEvalArgData* pArg)
 {
@@ -1286,18 +1294,23 @@ DebuggerFuncEvalResult::~DebuggerFuncEvalResult()
     ReleaseDebuggerExternalMemoryHandle(m_resultHandle);
 }
 
-static void FreeFuncEvalTemporaryResult(DebuggerFuncEvalContext* pContext)
+struct FuncEvalTemporaryResultHolderTraits final
 {
-    WRAPPER_NO_CONTRACT;
+    using Type = DebuggerFuncEvalContext*;
+    static constexpr Type Default() { return nullptr; }
 
-    if (pContext->pTemporaryResult != nullptr)
+    static void Free(Type pContext) noexcept
     {
-        ExternalMemoryHandle::Remove(pContext->pTemporaryResult DEBUG_ARG(false));
-        pContext->pTemporaryResult = nullptr;
-        delete[] static_cast<BYTE*>(pContext->pResultData);
-        pContext->pResultData = nullptr;
+        WRAPPER_NO_CONTRACT;
+        if (pContext != nullptr && pContext->pTemporaryResult != nullptr)
+        {
+            ExternalMemoryHandle::Remove(pContext->pTemporaryResult DEBUG_ARG(false));
+            pContext->pTemporaryResult = nullptr;
+            delete[] static_cast<BYTE*>(pContext->pResultData);
+            pContext->pResultData = nullptr;
+        }
     }
-}
+};
 
 static void ValidateFuncEvalArgumentCount(DebuggerEval* pDE)
 {
@@ -1473,10 +1486,8 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     context.flags = pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT ? FuncEvalNewObject : 0;
     context.methodToken = pDE->m_methodToken;
     context.genericArgsCount = pDE->m_genericArgsCount;
-    Holder<ExternalMemoryHandle**, DoNothing<ExternalMemoryHandle**>, ReleaseFuncEvalArgumentHandles>
-        argumentHandles(pArgumentHandles);
-    Holder<DebuggerFuncEvalContext*, DoNothing<DebuggerFuncEvalContext*>, FreeFuncEvalTemporaryResult>
-        temporaryResultHolder(&context);
+    LifetimeHolder<FuncEvalArgumentHandlesHolderTraits> argumentHandles(pArgumentHandles);
+    LifetimeHolder<FuncEvalTemporaryResultHolderTraits> temporaryResultHolder(&context);
 
     // Wrap everything in a EX_TRY so we catch any exceptions that could be thrown.
     // Note that we don't let any thrown exceptions cross the AppDomain boundary because we don't
@@ -1515,7 +1526,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     {
         // If we allocated a temporary memory handle for a value-type result,
         // we can release that handle and the memory here.
-        temporaryResultHolder.Release();
+        temporaryResultHolder.Free();
 
         // Managed code can create the result handle immediately before an abort reaches
         // the UCO boundary. Destroy it unless the successful path transferred ownership
@@ -1535,8 +1546,8 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     // the funceval.  If a ThreadAbort occurred other than for a funcEval abort, we'll re-throw it manually.
     EX_END_CATCH
 
-    temporaryResultHolder.Release();
-    argumentHandles.Release();
+    temporaryResultHolder.Free();
+    argumentHandles.Free();
     GCPROTECT_END();    // pByRefMaybeInteriorPtrArray
     GCPROTECT_END();    // pMaybeInteriorPtrArray
     LOG((LF_CORDB, LL_EVERYTHING, "Managed func-eval: returning...\n"));

@@ -202,7 +202,7 @@ See also [Cache-Control on MDN](https://developer.mozilla.org/en-US/docs/Web/HTT
 
 See also [ETag header on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag)
 
-In order to make sure that the application resources are consistent with each other, the .NET runtime will use `integrity` hashes for most the downloaded resources.
+In .NET 12, opt in to integrity checks for resources fetched by the runtime loader with `<WasmEnableIntegrityCheck>true</WasmEnableIntegrityCheck>`. This does not affect integrity checks in HTML preloads or import maps.
 
 See also [fetch integrity on MDN](https://developer.mozilla.org/en-US/docs/Web/API/Request/integrity)
 
@@ -469,7 +469,7 @@ It does not substitute uninstrumented prebuilt framework images. The build rejec
 Mono, other runtime identifiers, threads, disabled diagnostics, non-ReadyToRun
 publishing, and development builds with this property set. Use a wasm-capable
 crossgen2 matching the runtime. Instrumented ReadyToRun images carry their counter
-schemas in section 128, using format 34.1.
+schemas in section 129, using format 34.2.
 
 Run the published app in Chrome (or another supported browser), exercise representative
 workloads, and call:

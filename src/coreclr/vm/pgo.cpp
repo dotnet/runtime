@@ -191,12 +191,20 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-void CallFClose(FILE* file)
+struct FILEHolderTraits final
 {
-    fclose(file);
-}
+    using Type = FILE*;
+    static constexpr Type Default() { return NULL; }
 
-typedef Holder<FILE*, DoNothing, CallFClose> FILEHolder;
+    static void Free(Type file) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (file != NULL)
+            fclose(file);
+    }
+};
+
+using FILEHolder = LifetimeHolder<FILEHolderTraits>;
 
 #if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
 static void ThrowIncompatiblePgoSchemas(MethodDesc* method)
@@ -537,7 +545,7 @@ void PgoManager::ReadPgoData()
     {
         return;
     }
-    
+
     FILE* pgoDataFile = NULL;
 
     if (fopen_lp(&pgoDataFile, fileName,  W("wb")) != 0)
@@ -843,7 +851,7 @@ BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, Meth
         directory->Size > image->GetVirtualSize() - directory->VirtualAddress || directory->Size < 12)
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
 
-    // V34.1 schema table offsets are relative to this owning image's section, not the method's module.
+    // Schema table offsets are relative to this owning image's section, not the method's module.
     const BYTE* section = reinterpret_cast<const BYTE*>(image->GetDirectoryData(directory));
     UINT32 schemaCount = ReadPgoSchemaUInt32(section + 4);
     if (ReadPgoSchemaUInt32(section) != 1 || schemaCount > (directory->Size - 12) / 4 || schemaIndex >= schemaCount)

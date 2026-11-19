@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class Process
+    internal static partial class OpenBSDProcess
     {
         // Constants from sys/sysctl.h
         private const int CTL_KERN = 1;

@@ -1,8 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+#include "interpreter.h"
+#endif
 #include "gcinfoencoder.h"
 
+#ifndef FEATURE_INTERPRETER_DIRECT_CALLS
 #include "interpreter.h"
+#endif
 #include "stackmap.h"
 
 #include <algorithm>
@@ -39,7 +44,7 @@ static const InterpType g_interpTypeFromStackType[] =
 };
 
 // Used by assertAbort
-thread_local ICorJitInfo* t_InterpJitInfoTls = nullptr;
+thread_local COMP_HANDLE t_InterpJitInfoTls = nullptr;
 
 static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F ", "TP" };
 
@@ -2064,6 +2069,10 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
     new (pMethodRW) InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems,
                                   m_initLocals, m_unmanagedCallersOnly, m_publishSecretStubParam,
                                   m_methodCodeSize);
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    assert(m_pEntrySafepointIns != nullptr);
+    pMethodRW->auxiliaryEntryOpcodeIndex = m_pEntrySafepointIns->nativeOffset;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
     // Copy async suspend data and fix up pointers
     uint32_t currentAsyncOffset = asyncSuspendDataOffset;
@@ -2484,7 +2493,7 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
         // (This is relevant for structs with very high alignment requirements,
         // where we align within struct layout, but the structs are not actually
         // aligned on the stack)
-        align = std::clamp(m_compHnd->getClassAlignmentRequirement(clsHnd), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
+        align = std::clamp(m_compHnd->getClassAlignmentRequirement(clsHnd, false), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
     }
     else
     {
@@ -3473,7 +3482,7 @@ int32_t InterpCompiler::GetDataForHelperFtn(CorInfoHelpFunc ftn)
 {
     // Interpreter-TODO: Find an existing data item index for this helper if possible and reuse it
     CORINFO_CONST_LOOKUP ftnLookup;
-    m_compHnd->getHelperFtn(ftn, &ftnLookup);
+    m_compHnd->getHelperFtn(ftn, &ftnLookup, nullptr);
 
 #ifdef DEBUG
     if (!PointerInNameMap(ftnLookup.addr))
@@ -6075,7 +6084,7 @@ void InterpCompiler::WrapTopOfStackInAwait()
     CORINFO_METHOD_HANDLE awaitMethod = m_compHnd->getAwaitReturnCall(m_methodHnd, &contextHandle, &instArgLookup);
 
     CORINFO_SIG_INFO awaitSig;
-    m_compHnd->getMethodSig(awaitMethod, &awaitSig);
+    m_compHnd->getMethodSig(awaitMethod, &awaitSig, nullptr);
 
     assert(awaitSig.isAsyncCall());
     assert(awaitSig.numArgs == 1);
@@ -7847,7 +7856,7 @@ bool InterpCompiler::IsRuntimeAsyncCallNewobjRetInAsyncVersion(const uint8_t* ip
     }
 
     CORINFO_SIG_INFO sig;
-    m_compHnd->getMethodSig(ctorResolvedToken.hMethod, &sig);
+    m_compHnd->getMethodSig(ctorResolvedToken.hMethod, &sig, nullptr);
 
     if (sig.numArgs != 1)
     {
@@ -8746,7 +8755,7 @@ void InterpCompiler::CreateSynchronizedRetValVar()
         CORINFO_CONTEXT_HANDLE contextHandle;
         CORINFO_METHOD_HANDLE awaitCall = m_compHnd->getAwaitReturnCall(m_methodHnd, &contextHandle, &instArg);
         CORINFO_SIG_INFO awaitCallSig;
-        m_compHnd->getMethodSig(awaitCall, &awaitCallSig);
+        m_compHnd->getMethodSig(awaitCall, &awaitCallSig, nullptr);
 
         CORINFO_CLASS_HANDLE vcTypeRet;
         CorInfoType paramType = strip(m_compHnd->getArgType(&awaitCallSig, awaitCallSig.args, &vcTypeRet));
@@ -8975,7 +8984,13 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
     // Safepoint at each method entry. This could be done as part of a call, rather than
     // adding an opcode.
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    // Reserve a second word so methods with an auxiliary activation flag can be patched before publication.
+    m_pEntrySafepointIns = AddIns(INTOP_SAFEPOINT_AND_SKIP);
+    m_pEntrySafepointIns->data[0] = 0;
+#else
     AddIns(INTOP_SAFEPOINT);
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 #ifdef PERFTRACING_DISABLE_THREADS
     if (m_emitSamplingProfiler)
         AddIns(INTOP_PROF_SAMPLEPOINT);
@@ -12132,7 +12147,7 @@ bool InterpreterRetryData::GetOverrideILMergePointStackType(int32_t ilOffset, ui
 static void DumpClassName(CORINFO_CLASS_HANDLE cls, COMP_HANDLE compHnd)
 {
     char className[100];
-    compHnd->printClassName(cls, className, 100);
+    compHnd->printClassName(cls, className, 100, nullptr);
     printf("%s", className);
 }
 

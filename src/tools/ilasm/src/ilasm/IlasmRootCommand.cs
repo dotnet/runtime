@@ -94,8 +94,8 @@ internal sealed class IlasmRootCommand : RootCommand
     public Option<string> MetadataVersion { get; } =
         new("--mdv") { Description = "Set Metadata version string" };
 
-    public Option<bool> Pe64 { get; } =
-        new("--pe64") { Description = "Create a 64bit image (PE32+)" };
+    public Option<TargetArchitecture?> Architecture { get; } =
+        new("--arch") { Description = "Target architecture: 'x86' (PE32, default), 'x64' or 'arm64' (PE32+)" };
 
     public Option<bool> HighEntropyVa { get; } =
         new("--highentropyva") { Description = "Set High Entropy Virtual Address capable PE32+ images (default for /APPCONTAINER)" };
@@ -106,12 +106,6 @@ internal sealed class IlasmRootCommand : RootCommand
 
     public Option<bool> StripReloc { get; } =
         new("--stripreloc") { Description = "Indicate that no base relocations are needed" };
-
-    public Option<bool> TargetX64 { get; } =
-        new("--x64") { Description = "Target processor: 64bit AMD processor" };
-
-    public Option<bool> TargetArm64 { get; } =
-        new("--arm64") { Description = "Target processor: ARM64 (AArch64) processor" };
 
     public Option<bool> Prefer32Bit { get; } =
         new("--32bitpreferred") { Description = "Create a 32BitPreferred image (PE32)" };
@@ -152,13 +146,18 @@ internal sealed class IlasmRootCommand : RootCommand
         Options.Add(ImageBase);
         Options.Add(StackReserve);
         Options.Add(MetadataVersion);
-        Options.Add(Pe64);
+        Options.Add(Architecture);
         Options.Add(HighEntropyVa);
         Options.Add(NoCorStub);
         Options.Add(StripReloc);
-        Options.Add(TargetX64);
-        Options.Add(TargetArm64);
         Options.Add(Prefer32Bit);
         Options.Add(WaitForDebugger);
     }
+}
+
+internal enum TargetArchitecture
+{
+    X86,
+    X64,
+    Arm64,
 }

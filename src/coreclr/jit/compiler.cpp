@@ -1199,12 +1199,19 @@ void DisplayNowayAssertMap()
         }
 
         // Iterate noway assert map, create sorted table by occurrence, dump it.
-        unsigned             count = NowayAssertMap->GetCount();
-        NowayAssertCountMap* nacp  = new NowayAssertCountMap[count];
-        unsigned             i     = 0;
+        unsigned             count         = NowayAssertMap->GetCount();
+        HostAllocator        hostAllocator = HostAllocator::getHostAllocator();
+        NowayAssertCountMap* nacp          = hostAllocator.allocate<NowayAssertCountMap>(count);
+        if (nacp == nullptr)
+        {
+            throw std::bad_alloc{};
+        }
+
+        unsigned i = 0;
 
         for (FileLineToCountMap::Node* const iter : FileLineToCountMap::KeyValueIteration(NowayAssertMap))
         {
+            new (&nacp[i], jitstd::placement_t()) NowayAssertCountMap();
             nacp[i].count = iter->GetValue();
             nacp[i].fl    = iter->GetKey();
             ++i;
@@ -1230,6 +1237,8 @@ void DisplayNowayAssertMap()
             fclose(fout);
             fout = nullptr;
         }
+
+        hostAllocator.deallocate(nacp);
     }
 }
 
@@ -5048,6 +5057,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_LCLVARLIVENESS, &Compiler::fgLateLiveness);
 
 #ifdef TARGET_WASM
+    // Forward single-use local copies recorded by lowering, using the
+    // ref counts and last-use flags computed by late liveness.
+    //
+    DoPhase(this, PHASE_WASM_FORWARD_LOCAL_COPIES, &Compiler::fgWasmForwardLocalCopies);
+
     // Determine if a Virtual IP is needed and add code as needed to
     // keep the Virtual IP updated.
     //

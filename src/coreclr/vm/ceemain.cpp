@@ -299,7 +299,7 @@ HRESULT EnsureEEStarted()
         BOOL bStarted=FALSE;
 
         {
-            DangerousNonHostedSpinLockHolder lockHolder(&g_EEStartupLock);
+            DangerousNonHostedSpinLockHolder lockHolder = g_EEStartupLock.TakeLock();
 
             // Now that we've acquired the lock, check again to make sure we aren't in
             // the process of starting the CLR or that it hasn't already been fully started.
@@ -351,7 +351,7 @@ HRESULT EnsureEEStarted()
         //
         if (g_EEStartupLock.IsHeld() && g_dwStartupThreadId != GetCurrentThreadId())
         {
-            DangerousNonHostedSpinLockHolder lockHolder(&g_EEStartupLock);
+            DangerousNonHostedSpinLockHolder lockHolder = g_EEStartupLock.TakeLock();
         }
 
         hr = g_EEStartupStatus;
@@ -1001,7 +1001,9 @@ void EEStartupHelper()
         // EventPipe initialization, so this is done after the GC has been fully initialized.
         EventPipeAdapter::FinishInitialize();
 #endif // FEATURE_PERFTRACING
+#ifdef FEATURE_GCGENANALYSIS
         GenAnalysis::Initialize();
+#endif // FEATURE_GCGENANALYSIS
 
         // Now we really have fully initialized the garbage collector
         SetGarbageCollectorFullyInitialized();

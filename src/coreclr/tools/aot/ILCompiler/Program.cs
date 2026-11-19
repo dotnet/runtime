@@ -122,7 +122,7 @@ namespace ILCompiler
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
             var simdVectorLength = instructionSetSupport.GetVectorTSimdVector();
-            var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, simdVectorLength);
+            var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, simdVectorLength, Get(_command.FunctionAlignment));
             CompilerTypeSystemContext typeSystemContext =
                 new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0,
                     genericCycleDepthCutoff: Get(_command.MaxGenericCycleDepth),

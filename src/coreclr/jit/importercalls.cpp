@@ -1897,23 +1897,24 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
         return call;
     }
 
-    // Now we need to spill the addr and argName arguments in the correct order
-    // to preserve possible side effects.
-    unsigned boxedValTmp     = lvaGrabTemp(true DEBUGARG("boxedVal spilled"));
+    // This is Tier0 specific, so we create a raw indir node to access Nullable<T>.hasValue field
+    // which is the first field of Nullable<T> struct and is of type 'bool'.
+    //
+    static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    GenTree* hasValueField = gtNewIndir(TYP_UBYTE, boxHelperAddrArg);
+
+    // Boxing reads the source before valueName is evaluated, so spill the hasValue read
+    // (and its null check) and then valueName, in that order.
+    unsigned hasValueTmp     = lvaGrabTemp(true DEBUGARG("hasValue spilled"));
     unsigned boxedArgNameTmp = lvaGrabTemp(true DEBUGARG("boxedArg spilled"));
-    impStoreToTemp(boxedValTmp, boxHelperAddrArg, CHECK_SPILL_ALL);
+    impStoreToTemp(hasValueTmp, hasValueField, CHECK_SPILL_ALL);
     impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
 
     // Change arguments to 'ThrowIfNull(null, valueNameTmp)'
     call->gtArgs.GetUserArgByIndex(0)->SetEarlyNode(gtNewNull());
     call->gtArgs.GetUserArgByIndex(1)->SetEarlyNode(gtNewLclvNode(boxedArgNameTmp, valueName->TypeGet()));
 
-    // This is Tier0 specific, so we create a raw indir node to access Nullable<T>.hasValue field
-    // which is the first field of Nullable<T> struct and is of type 'bool'.
-    //
-    static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-    GenTree*   hasValueField = gtNewIndir(TYP_UBYTE, gtNewLclvNode(boxedValTmp, boxHelperAddrArg->TypeGet()));
-    GenTreeOp* cond          = gtNewOperNode(GT_NE, TYP_INT, hasValueField, gtNewIconNode(0));
+    GenTreeOp* cond = gtNewOperNode(GT_NE, TYP_INT, gtNewLclvNode(hasValueTmp, TYP_INT), gtNewIconNode(0));
 
     return gtNewQmarkNode(TYP_VOID, cond, gtNewColonNode(TYP_VOID, gtNewNothingNode(), call));
 }

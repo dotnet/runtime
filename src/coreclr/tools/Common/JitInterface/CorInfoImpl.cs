@@ -1180,7 +1180,18 @@ namespace Internal.JitInterface
             if (!ModuleOptsIntoRefSafetyRules(ecmaMethod.Module, 11))
                 return true;
 
-            return ecmaMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "UnscopedRefAttribute");
+            if (ecmaMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "UnscopedRefAttribute"))
+                return true;
+
+            // C# emits [UnscopedRef] for properties on the property rather than on its accessors.
+            if (ecmaMethod.GetPropertyForAccessor() is PropertyPseudoDesc property)
+            {
+                MetadataReader reader = ecmaMethod.MetadataReader;
+                return !reader.GetCustomAttributeHandle(property.GetCustomAttributes,
+                    "System.Diagnostics.CodeAnalysis", "UnscopedRefAttribute").IsNil;
+            }
+
+            return false;
         }
 
         private static bool ModuleOptsIntoRefSafetyRules(EcmaModule module, int minVersion)

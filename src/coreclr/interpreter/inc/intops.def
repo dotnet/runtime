@@ -80,6 +80,10 @@ OPDEF(INTOP_LDLOCA, "ldloca", 3, 1, 0, InterpOpInt)
 OPDEF(INTOP_SWITCH, "switch", 0, 0, 1, InterpOpSwitch)
 
 OPDEF(INTOP_SAFEPOINT, "safepoint", 1, 0, 0, InterpOpNoArgs)
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+OPDEF(INTOP_SAFEPOINT_AND_SKIP, "safepoint.and.skip", 2, 0, 0, InterpOpInt)
+OPDEF(INTOP_SAFEPOINT_TRY_ACTIVATE, "safepoint.try.activate", 2, 0, 0, InterpOpInt)
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
 #ifdef PERFTRACING_DISABLE_THREADS
 OPDEF(INTOP_PROF_SAMPLEPOINT, "prof.samplepoint", 1, 0, 0, InterpOpNoArgs)

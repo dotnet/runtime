@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 34
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MINOR_VERSION 0x0002
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 34
 
@@ -89,6 +89,8 @@
 // R2R Version 34 changes the ABI for funclets on other architectures to match AMD64: funclets save
 //                only the return address, and the runtime preserves the callee-saved registers around the
 //                funclets that it calls
+// R2R Version 34.1 adds AuxiliaryModuleMetadata sections
+// R2R Version 34.2 adds PgoInstrumentationSchemas sections and indexed counter-storage fixups
 
 struct READYTORUN_CORE_HEADER
 {
@@ -163,7 +165,8 @@ enum class ReadyToRunSectionType : uint32_t
     ProxyTypeMaps               = 125, // Added in V18.3
     TypeMapAssemblyTargets      = 126, // Added in V18.3
     WasmAsyncResumeInfo         = 127, // Added in V29
-    PgoInstrumentationSchemas   = 128, // Added in V34.1
+    AuxiliaryModuleMetadata     = 128, // Added in V34.1
+    PgoInstrumentationSchemas   = 129, // Added in V34.2
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail

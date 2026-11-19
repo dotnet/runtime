@@ -2261,7 +2261,7 @@ BOOL AsyncThunkStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 
     MethodDesc *pMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
 
-    return (pMD != NULL) && (pMD->IsAsyncThunkMethod());
+    return (pMD != NULL) && pMD->IsAsyncThunkMethod() && !pMD->SupportsAsyncVersionCodegen();
 }
 
 BOOL AsyncThunkStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *trace)
