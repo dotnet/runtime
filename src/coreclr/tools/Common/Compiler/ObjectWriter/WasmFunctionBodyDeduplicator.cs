@@ -21,7 +21,7 @@ namespace ILCompiler.ObjectWriter
             IReadOnlyCollection<DependencyNode> nodes,
             NodeFactory factory,
             Func<ObjectNode, bool> shouldSkip,
-            Func<ObjectNode, ObjectNode, bool> areEquivalent = null)
+            Func<ObjectNode, ObjectNode, bool> canDeduplicateIdenticalBodies = null)
         {
             foreach (DependencyNode dependency in nodes)
             {
@@ -54,7 +54,7 @@ namespace ILCompiler.ObjectWriter
                 foreach (ObjectNode candidate in candidates)
                 {
                     if (AreEquivalent(factory, node, signatureNode, data, candidate)
-                        && (areEquivalent is null || areEquivalent(node, candidate)))
+                        && (canDeduplicateIdenticalBodies is null || canDeduplicateIdenticalBodies(node, candidate)))
                     {
                         canonical = candidate;
                         break;

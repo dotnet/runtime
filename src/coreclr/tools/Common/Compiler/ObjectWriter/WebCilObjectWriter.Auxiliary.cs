@@ -29,7 +29,7 @@ namespace ILCompiler.ObjectWriter
         private int _auxiliarySlotStart;
         private int _auxiliarySlotCount;
 
-        private protected override bool AreFunctionBodiesEquivalent(ObjectNode left, ObjectNode right) =>
+        private protected override bool CanIdenticalMethodBodiesBeDeduplicated(ObjectNode left, ObjectNode right) =>
             (left is MethodWithGCInfo { IsAuxiliary: true }) ==
             (right is MethodWithGCInfo { IsAuxiliary: true });
 
