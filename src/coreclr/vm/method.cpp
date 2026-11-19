@@ -10,7 +10,7 @@
 //
 
 #include "common.h"
-#ifndef TARGET_WINDOWS
+#ifdef HOST_UNIX
 #include <dlfcn.h>
 #endif
 #include "excep.h"

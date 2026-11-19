@@ -4,7 +4,7 @@
 #include "common.h"
 #include "configuration.h"
 #include "gcheaputilities.h"
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
 #include <dlfcn.h>
 #endif
 #include "appdomain.hpp"

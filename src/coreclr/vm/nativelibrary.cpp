@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "nativelibrary.h"
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
 #include <dlfcn.h>
 #endif
 
