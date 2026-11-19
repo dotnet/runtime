@@ -140,6 +140,8 @@ internal sealed class DeferredWasmCallProcessor
             (method, signature), static (key, fallback) => new DeferredWasmCallNode(fallback, key.Signature), import);
     }
 
+    internal static bool IsDirectCallerCandidate(MethodWithGCInfo caller) => !caller.IsAuxiliary;
+
     // Require finalized activation guarantees and bound non-eager activation
     // depth. Eager methods are prepared at module startup instead.
     // Direct calls never cross between the primary and auxiliary Wasm modules.
@@ -149,7 +151,7 @@ internal sealed class DeferredWasmCallProcessor
         return NodeFactory.Target.Architecture == TargetArchitecture.Wasm32 &&
             _finalizedMethods.TryGetValue(callee, out calleeFinalizationInfo) &&
             // Direct calls stay within the primary module, so auxiliary bodies are only reached through indirect calls.
-            !caller.IsAuxiliary && !calleeFinalizationInfo.IsAuxiliary &&
+            IsDirectCallerCandidate(caller) && !calleeFinalizationInfo.IsAuxiliary &&
             (calleeFinalizationInfo.IsEager || _finalizingEagerMethods ||
                 (!callee.IsNoInlining && !callee.IsNoOptimization &&
                     // Include the caller and the level-zero leaf in the activation depth.

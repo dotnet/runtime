@@ -534,7 +534,7 @@ namespace ILCompiler.ObjectWriter
             WriteFunctionEntry(signatureIndex);
         }
 
-        private protected void InsertWasmStub(Utf8String name, WasmFunctionBody body)
+        private protected void InsertWasmStub(Utf8String name, WasmFunctionBody body, bool needsTableSlot)
         {
             SectionWriter codeWriter = GetOrCreateSection(ObjectNodeSection.WasmCodeSection);
 
@@ -546,7 +546,8 @@ namespace ILCompiler.ObjectWriter
             codeWriter.EmitData(data);
 
             RegisterFunctionSymbol(name);
-            RegisterTableSlot(name, name);
+            if (needsTableSlot)
+                RegisterTableSlot(name, name);
             RegisterStubIndexAndSignature(body.Signature);
             _wasmStubNames.Add(name);
         }

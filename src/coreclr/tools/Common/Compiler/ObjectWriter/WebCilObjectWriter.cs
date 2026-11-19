@@ -11,6 +11,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.ObjectWriter.WasmInstructions;
@@ -252,6 +253,30 @@ namespace ILCompiler.ObjectWriter
         private static WasmInstructionGroup TableBaseOffsetExpr =>
             new WasmInstructionGroup([Global.Get(TableBaseGlobalIndex)]);
 
+        private protected override void RecordMethodDefinition(INodeWithTypeSignature node)
+        {
+            // Type nodes have already been emitted. Insert the exports before any compiled body.
+            if (_nodeFactory.AuxiliaryModuleMetadata is not null && _wasmStubNames.Count == 0)
+                InsertWebcilStubs();
+
+            // Thunks and stubs must precede every compiled method so that compiled methods occupy a
+            // contiguous table-slot range. Thunk nodes enforce this through CustomSort.
+            if (node is MethodWithGCInfo)
+                _seenCompiledMethod = true;
+            else
+                Debug.Assert(!_seenCompiledMethod, $"Stub {node} was emitted after a compiled method");
+
+            base.RecordMethodDefinition(node);
+        }
+
+        private bool _seenCompiledMethod;
+
+        private void InsertWebcilStubs()
+        {
+            InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize, needsTableSlot: false);
+            InsertWasmStub(new Utf8String("patchWebcilHeader"), PatchWebcilHeader, needsTableSlot: false);
+        }
+
         private protected override void EmitSectionsAndLayout()
         {
             int expectedTableSlot = -1;
@@ -269,16 +294,8 @@ namespace ILCompiler.ObjectWriter
                     $"R2R method {method.Method} has wasm table slot {tableSlot}, expected {expectedTableSlot}");
                 expectedTableSlot += method.FrameInfos.Length;
             }
-            // Every image - composite, single-assembly, or component forwarding stub - installs its payload
-            // and function table via active segments, so the only stub the host calls beyond
-            // getWebcilSize is patchWebcilHeader: the header's tableBase field is read from linear memory
-            // and cannot come from a segment.
-            const int stubCount = 2;
-            int totalMethodCount = MethodCount + stubCount;
-            InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
-            InsertWasmStub(new Utf8String("patchWebcilHeader"), PatchWebcilHeader);
-
-            Debug.Assert(MethodCount == totalMethodCount);
+            if (_wasmStubNames.Count == 0)
+                InsertWebcilStubs();
 
             WriteDataCountSection();
         }
@@ -495,11 +512,9 @@ namespace ILCompiler.ObjectWriter
             WriteMemoryImport((ulong)webcilPayloadSegment.ContentSize);
             FinalizeSectionEntryCounts();
 
-            if (PrepareAuxiliaryPartition())
-            {
-                EmitPartitionedObjectFile(outputFileStream, webcilPayloadSegment, webcilSections);
-                return;
-            }
+            using AuxiliaryPartition partition = _firstAuxiliaryFunctionIndex >= 0
+                ? PreparePartitionedSections(webcilSections)
+                : null;
 
            /*********************************************************************
            * Write Wasm Sections, Excluding Data
@@ -513,7 +528,15 @@ namespace ILCompiler.ObjectWriter
             foreach (int index in SectionEmitOrder)
             {
                 SectionDataEmitter section = _sections[index];
-                if (_resolvableRelocations.TryGetValue(index, out List<SymbolicRelocation> relocations) &&
+                if (partition is not null && index == partition.PrimaryFunctionSection.SectionIndex)
+                {
+                    section = partition.PrimaryFunctionSection;
+                }
+                else if (partition is not null && index == codeSectionIndex)
+                {
+                    section = partition.PrimaryCodeSection;
+                }
+                else if (_resolvableRelocations.TryGetValue(index, out List<SymbolicRelocation> relocations) &&
                     section is WasmSection)
                 {
                     using (Stream originalStream = section.ContentReadStream)
@@ -542,7 +565,9 @@ namespace ILCompiler.ObjectWriter
                 // The name section goes last, after the data section, as tooling expects. It is the only
                 // in-image record of function names now that they are no longer carried by the export table,
                 // and wasm-merge -g synthesizes the merged module's names from it.
-                WasmNameSection nameSection = new WasmNameSection(_wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function));
+                WasmNameSection nameSection = new WasmNameSection(partition is not null
+                    ? GetPartitionedFunctionNames(auxiliary: false)
+                    : _wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function));
                 nameSection.EmitToStream(outputFileStream);
             }
 
@@ -553,7 +578,9 @@ namespace ILCompiler.ObjectWriter
                 // code section (which holds the method bodies) needs a real file offset for the perfmap.
                 for (int i = 0; i < _sections.Count; i++)
                 {
-                    SectionDataEmitter emittedSection = _sections[i];
+                    SectionDataEmitter emittedSection = partition is not null && i == codeSectionIndex
+                        ? partition.PrimaryCodeSection
+                        : _sections[i];
                     ulong fileOffset = (i == codeSectionIndex) ? (ulong)codeContentFileOffset : 0;
                     _outputSectionLayout.Add(new OutputSection(
                         emittedSection.SectionName.ToString(), fileOffset, fileOffset, (ulong)emittedSection.ContentReadStream.Length));
@@ -561,9 +588,12 @@ namespace ILCompiler.ObjectWriter
 
                 if (codeSectionIndex >= 0)
                 {
-                    _outputInfoBuilder.RemapMethodNodeOffsets(codeSectionIndex, _codeOffsetMap);
+                    _outputInfoBuilder.RemapMethodNodeOffsets(codeSectionIndex, partition?.PrimaryCodeOffsetMap ?? _codeOffsetMap);
                 }
             }
+
+            if (partition is not null)
+                EmitAuxiliaryModule(outputFileStream, partition);
         }
 
         /// <summary>
@@ -576,7 +606,9 @@ namespace ILCompiler.ObjectWriter
             // allocation, so it must stay passive in both image shapes.
             byte[] lengthBuffer = new byte[sizeof(uint) * 2];
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)webcilPayloadSegment.ContentSize);
-            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)MethodCount);
+            // The SDK and browser host use a positive table size to identify ReadyToRun.
+            // Reserve one uninitialized slot for images with no table entries, such as composite forwarders.
+            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)Math.Max(MethodCount, 1));
             WasmByteArrayDataSegment webcilSizeSegment = new WasmByteArrayDataSegment(lengthBuffer, new Utf8String("webcilCount"), fileAlignment: 1);
 
             // Create combined data section and emit
@@ -1162,7 +1194,14 @@ namespace ILCompiler.ObjectWriter
         {
             // Table slots preserve R2R runtime-function order even when multiple slots refer to one function body.
             // The table slice is installed by an active segment at the host-supplied table base.
-            WriteElementSegment(GetTableSlotFunctionIndices(), TableBaseOffsetExpr);
+            int[] functions = GetTableSlotFunctionIndices();
+            if (!PrepareAuxiliaryPartition(functions))
+            {
+                WriteElementSegment(functions, TableBaseOffsetExpr);
+                return;
+            }
+
+            WriteElementSegment(functions.AsMemory(0, _auxiliarySlotStart), GetImageFunctionPointerBaseOffset(0));
         }
     }
 }

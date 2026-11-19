@@ -25,25 +25,26 @@ namespace ILCompiler.ObjectWriter
     {
         private const string ActivateModuleExportName = "ActivateModule";
 
-        // Maps each function index of the combined module to its index in the module that owns it, or null when
-        // all functions stay in the primary module.
-        private int[] _partitionedFunctionIndices;
-        private bool[] _isAuxiliaryFunction;
+        private int _firstAuxiliaryFunctionIndex = -1;
         private int _auxiliarySlotStart;
-        private int _auxiliarySlotEnd;
+        private int _auxiliarySlotCount;
 
         private protected override bool AreFunctionBodiesEquivalent(ObjectNode left, ObjectNode right) =>
             (left is MethodWithGCInfo { IsAuxiliary: true }) ==
             (right is MethodWithGCInfo { IsAuxiliary: true });
 
-        private long GetPartitionedFunctionIndex(int index) =>
-            _partitionedFunctionIndices is null ? index : _partitionedFunctionIndices[index];
+        private bool IsAuxiliaryFunctionIndex(int index) =>
+            _firstAuxiliaryFunctionIndex >= 0 && index >= _firstAuxiliaryFunctionIndex;
+
+        private int GetPartitionedFunctionIndex(int index) => IsAuxiliaryFunctionIndex(index)
+            ? index - _firstAuxiliaryFunctionIndex + _wasmSymbolManager.GetImportCount(WasmIndexSpace.Function)
+            : index;
 
         /// <summary>
         /// Computes the auxiliary table-slot range and the per-module function index remapping.
         /// Returns false when no method was placed in an auxiliary module.
         /// </summary>
-        private bool PrepareAuxiliaryPartition()
+        private bool PrepareAuxiliaryPartition(int[] tableFunctions)
         {
             if (_nodeFactory.AuxiliaryModuleMetadata is null)
                 return false;
@@ -65,59 +66,72 @@ namespace ILCompiler.ObjectWriter
             if (slotCount == 0)
                 return false;
 
-            if (slotEnd - slotStart != slotCount)
-                throw new InvalidDataException("Auxiliary methods must occupy a contiguous range of the WebAssembly function table.");
+            if (slotEnd != tableFunctions.Length || slotEnd - slotStart != slotCount)
+                throw new InvalidDataException("Auxiliary methods must occupy a contiguous suffix of the WebAssembly function table.");
 
             int functionImports = _wasmSymbolManager.GetImportCount(WasmIndexSpace.Function);
             int functionCount = functionImports + _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Function);
-            int[] tableFunctions = GetTableSlotFunctionIndices();
-
             bool[] isAuxiliaryFunction = new bool[functionCount];
+            int firstAuxiliaryFunctionIndex = functionCount;
             for (int slot = slotStart; slot < slotEnd; slot++)
-                isAuxiliaryFunction[tableFunctions[slot]] = true;
-
-            for (int slot = 0; slot < tableFunctions.Length; slot++)
             {
-                if ((slot < slotStart || slot >= slotEnd) && isAuxiliaryFunction[tableFunctions[slot]])
+                int index = tableFunctions[slot];
+                isAuxiliaryFunction[index] = true;
+                firstAuxiliaryFunctionIndex = Math.Min(firstAuxiliaryFunctionIndex, index);
+            }
+
+            for (int slot = 0; slot < slotStart; slot++)
+            {
+                if (tableFunctions[slot] >= firstAuxiliaryFunctionIndex)
                     throw new InvalidDataException("A WebAssembly function is referenced by both primary and auxiliary table slots.");
             }
 
-            int[] partitionedIndices = new int[functionCount];
-            int primaryOrdinal = 0;
-            int auxiliaryOrdinal = 0;
-            for (int index = 0; index < functionCount; index++)
+            if (firstAuxiliaryFunctionIndex < functionImports)
+                throw new InvalidDataException("An auxiliary slot points to an imported function.");
+            for (int index = firstAuxiliaryFunctionIndex; index < functionCount; index++)
             {
-                if (index < functionImports)
-                    partitionedIndices[index] = index;
-                else if (isAuxiliaryFunction[index])
-                    partitionedIndices[index] = functionImports + auxiliaryOrdinal++;
-                else
-                    partitionedIndices[index] = functionImports + primaryOrdinal++;
+                if (!isAuxiliaryFunction[index])
+                    throw new InvalidDataException("Auxiliary methods must occupy a contiguous suffix of WebAssembly function definitions.");
             }
 
             _auxiliarySlotStart = slotStart;
-            _auxiliarySlotEnd = slotEnd;
-            _isAuxiliaryFunction = isAuxiliaryFunction;
-            _partitionedFunctionIndices = partitionedIndices;
+            _auxiliarySlotCount = slotCount;
+            _firstAuxiliaryFunctionIndex = firstAuxiliaryFunctionIndex;
             return true;
         }
 
-        private void EmitPartitionedObjectFile(Stream primaryOutput, WebcilPayloadDataSegment payloadSegment, WebcilSection[] webcilSections)
+        private sealed class AuxiliaryPartition : IDisposable
         {
-            if (primaryOutput is not FileStream primaryFile)
-                throw new InvalidOperationException("Auxiliary WebAssembly modules require a file output stream.");
+            public WasmExternallyCountedSection PrimaryFunctionSection;
+            public WasmExternallyCountedSection PrimaryCodeSection;
+            public ReadOnlyMemory<byte> AuxiliaryFunctionEntries;
+            // Auxiliary function bodies: a slice of the resolved code buffer that PrimaryCodeSection also views.
+            public ReadOnlyMemory<byte> AuxiliaryCode;
+            public int AuxiliaryFunctionCount;
+            public Dictionary<ulong, ulong> PrimaryCodeOffsetMap;
+            public int ActivationStatusRva;
 
+            public void Dispose()
+            {
+                PrimaryFunctionSection.ContentReadStream.Dispose();
+                PrimaryCodeSection.ContentReadStream.Dispose();
+            }
+        }
+
+        private AuxiliaryPartition PreparePartitionedSections(WebcilSection[] webcilSections)
+        {
             int functionImports = _wasmSymbolManager.GetImportCount(WasmIndexSpace.Function);
-            List<WasmSymbol> functions = new();
-            foreach (WasmSymbol symbol in _wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function))
-                functions.Add(symbol);
-
-            List<int> functionTypes = new();
-            Stream functionSection = _sections.GetSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection.Name).ContentReadStream;
+            int functionCount = _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Function);
+            int primaryFunctionCount = _firstAuxiliaryFunctionIndex - functionImports;
+            int functionSectionIndex = _sections.GetSectionIndex(WasmObjectNodeSection.FunctionSection.Name);
+            Stream functionSection = _sections[functionSectionIndex].ContentReadStream;
             functionSection.Position = 0;
-            while (functionSection.Position < functionSection.Length)
-                functionTypes.Add(checked((int)DwarfHelper.ReadULEB128(functionSection, out _).Value));
-            Debug.Assert(functionTypes.Count == functions.Count);
+            for (int i = 0; i < primaryFunctionCount; i++)
+                DwarfHelper.ReadULEB128(functionSection, out _);
+            int functionBoundary = checked((int)functionSection.Position);
+            byte[] functionEntries = new byte[checked((int)functionSection.Length)];
+            functionSection.Position = 0;
+            functionSection.ReadExactly(functionEntries);
 
             // Resolve the code section once: function index relocations resolve to the index in the owning module,
             // which is correct for both modules as long as no direct call crosses modules.
@@ -134,179 +148,91 @@ namespace ILCompiler.ObjectWriter
             ResolveRelocations(codeSectionIndex, originalCode, resolvedCode, codeRelocations, sectionStart: 0, shrink: true);
             resolvedCode.Position = 0;
             List<CodeBlob> codeBlobs = ParseCodeBlobs(resolvedCode);
-            if (codeBlobs.Count != functions.Count)
+            if (codeBlobs.Count != functionCount)
                 throw new InvalidDataException("The WebAssembly code section does not match the function index space.");
+            int codeBoundary = GetEntryStart(codeBlobs[primaryFunctionCount]);
 
-            List<int> primaryOrdinals = new();
-            List<int> auxiliaryOrdinals = new();
-            for (int ordinal = 0; ordinal < functions.Count; ordinal++)
-                (_isAuxiliaryFunction[functions[ordinal].Index] ? auxiliaryOrdinals : primaryOrdinals).Add(ordinal);
-
-            int[] tableFunctions = GetTableSlotFunctionIndices();
             int metadataRva = checked((int)ResolveSymbolRVA(webcilSections,
                 _definedSymbols[GetMangledName(_nodeFactory.AuxiliaryModuleMetadata)]));
 
-            /*********************************************************************
-             * Primary module
-             *********************************************************************/
-
-            EmitWasmHeader(primaryOutput);
-            long codeContentFileOffset = 0;
-            Dictionary<ulong, ulong> primaryCodeOffsets = new();
-            foreach (int index in SectionEmitOrder)
-            {
-                SectionDataEmitter section = _sections[index];
-                string name = section.SectionName.ToString();
-                if (name == WasmObjectNodeSection.FunctionSection.Name)
-                {
-                    WriteRawSection(primaryOutput, WasmSectionType.Function, content =>
-                    {
-                        WriteUnsigned(content, primaryOrdinals.Count);
-                        foreach (int ordinal in primaryOrdinals)
-                            WriteUnsigned(content, functionTypes[ordinal]);
-                    });
-                }
-                else if (name == WasmObjectNodeSection.ExportSection.Name)
-                {
-                    WriteRawSection(primaryOutput, WasmSectionType.Export, content =>
-                    {
-                        WriteUnsigned(content, _wasmStubNames.Count + 2);
-                        WriteExport(content, "table", WasmExportKind.Table, 0);
-                        WriteExport(content, "webcilVersion", WasmExportKind.Global, _definedGlobals["webcilVersion"].Index);
-                        foreach (Utf8String stubName in _wasmStubNames)
-                        {
-                            int stubIndex = _wasmSymbolManager.GetSymbol(stubName).Index;
-                            WriteExport(content, stubName.ToString(), WasmExportKind.Function, _partitionedFunctionIndices[stubIndex]);
-                        }
-                    });
-                }
-                else if (name == WasmObjectNodeSection.ElementSection.Name)
-                {
-                    WriteRawSection(primaryOutput, WasmSectionType.Element, content =>
-                    {
-                        bool hasLeadingSegment = _auxiliarySlotStart > 0;
-                        bool hasTrailingSegment = _auxiliarySlotEnd < tableFunctions.Length;
-                        WriteUnsigned(content, (hasLeadingSegment ? 1 : 0) + (hasTrailingSegment ? 1 : 0));
-                        if (hasLeadingSegment)
-                            WriteElementSegment(content, tableFunctions, 0, _auxiliarySlotStart, passive: false);
-                        if (hasTrailingSegment)
-                            WriteElementSegment(content, tableFunctions, _auxiliarySlotEnd, tableFunctions.Length - _auxiliarySlotEnd, passive: false);
-                    });
-                }
-                else if (index == codeSectionIndex)
-                {
-                    WriteRawSection(primaryOutput, WasmSectionType.Code, content =>
-                    {
-                        WriteUnsigned(content, primaryOrdinals.Count);
-                        codeContentFileOffset = primaryOutput.Position + 1 + DwarfHelper.SizeOfULEB128((ulong)ComputeCodeContentSize(primaryOrdinals)) + content.Length;
-                        long contentStart = content.Length;
-                        int primaryCursor = 0;
-                        for (int ordinal = 0; ordinal < codeBlobs.Count; ordinal++)
-                        {
-                            CodeBlob blob = codeBlobs[ordinal];
-                            long entryStart = blob.Start - DwarfHelper.SizeOfULEB128((ulong)blob.Size);
-                            primaryCodeOffsets[(ulong)entryStart] = (ulong)(content.Length - contentStart);
-                            if (primaryCursor < primaryOrdinals.Count && primaryOrdinals[primaryCursor] == ordinal)
-                            {
-                                WriteCodeBlob(content, resolvedCode, blob);
-                                primaryCursor++;
-                            }
-                        }
-                        primaryCodeOffsets[(ulong)resolvedCode.Length] = (ulong)(content.Length - contentStart);
-                    });
-                }
-                else
-                {
-                    if (_resolvableRelocations.TryGetValue(index, out List<SymbolicRelocation> sectionRelocations) &&
-                        section is WasmSection)
-                    {
-                        using Stream originalStream = section.ContentReadStream;
-                        MemoryStream destStream = new MemoryStream((int)originalStream.Length);
-                        originalStream.Position = 0;
-                        ResolveRelocations(index, originalStream, destStream, sectionRelocations, sectionStart: 0, shrink: true);
-                        section.ContentReadStream = destStream;
-                    }
-
-                    section.EmitToStream(primaryOutput);
-                }
-            }
-
-            EmitWebcilDataSection(primaryOutput, payloadSegment);
-
-            if (_emitNameSection)
-                new WasmNameSection(GetPartitionedFunctionNames(functions, primaryOrdinals)).EmitToStream(primaryOutput);
-
+            Dictionary<ulong, ulong> codeOffsetMap = null;
             if (_outputInfoBuilder is not null)
             {
-                // Only the primary module's code is described: auxiliary method nodes resolve to the position
-                // where their bodies were removed from the primary code section.
-                for (int i = 0; i < _sections.Count; i++)
-                {
-                    SectionDataEmitter emittedSection = _sections[i];
-                    ulong fileOffset = (i == codeSectionIndex) ? (ulong)codeContentFileOffset : 0;
-                    _outputSectionLayout.Add(new OutputSection(
-                        emittedSection.SectionName.ToString(), fileOffset, fileOffset, (ulong)emittedSection.ContentReadStream.Length));
-                }
-
-                Dictionary<ulong, ulong> codeOffsetMap = new();
+                codeOffsetMap = new(_codeOffsetMap.Count);
                 foreach (KeyValuePair<ulong, ulong> entry in _codeOffsetMap)
-                    codeOffsetMap[entry.Key] = primaryCodeOffsets[entry.Value];
-                _outputInfoBuilder.RemapMethodNodeOffsets(codeSectionIndex, codeOffsetMap);
+                    codeOffsetMap[entry.Key] = Math.Min(entry.Value, (ulong)codeBoundary);
             }
 
-            /*********************************************************************
-             * Auxiliary module
-             *********************************************************************/
+            MemoryStream primaryTypes = new(functionEntries, 0, functionBoundary, writable: false);
+            MemoryStream primaryCode = new(resolvedCode.GetBuffer(), 0, codeBoundary, writable: false);
+            WasmExternallyCountedSection primaryFunctionSection = new(WasmSectionType.Function, primaryTypes,
+                _sections[functionSectionIndex].SectionName, functionSectionIndex);
+            primaryFunctionSection.SetEntryCount(primaryFunctionCount);
+            WasmExternallyCountedSection primaryCodeSection = new(WasmSectionType.Code, primaryCode,
+                _sections[codeSectionIndex].SectionName, codeSectionIndex);
+            primaryCodeSection.SetEntryCount(primaryFunctionCount);
 
+            return new AuxiliaryPartition
+            {
+                PrimaryFunctionSection = primaryFunctionSection,
+                PrimaryCodeSection = primaryCodeSection,
+                AuxiliaryFunctionEntries = functionEntries.AsMemory(functionBoundary),
+                AuxiliaryCode = resolvedCode.GetBuffer().AsMemory(codeBoundary, checked((int)resolvedCode.Length) - codeBoundary),
+                AuxiliaryFunctionCount = functionCount - primaryFunctionCount,
+                PrimaryCodeOffsetMap = codeOffsetMap,
+                ActivationStatusRva = metadataRva + AuxiliaryModuleMetadataNode.GetActivationStatusOffset(0),
+            };
+
+            static int GetEntryStart(CodeBlob blob) =>
+                checked((int)(blob.Start - DwarfHelper.SizeOfULEB128((ulong)blob.Size)));
+        }
+
+        private void EmitAuxiliaryModule(Stream primaryOutput, AuxiliaryPartition partition)
+        {
+            if (primaryOutput is not FileStream primaryFile)
+                throw new InvalidOperationException("Auxiliary WebAssembly modules require a file output stream.");
+
+            int[] tableFunctions = GetTableSlotFunctionIndices();
             string auxiliaryPath = Path.Combine(
                 Path.GetDirectoryName(primaryFile.Name),
                 AuxiliaryModuleMetadataNode.GetAuxiliaryModuleFileName(primaryFile.Name, 0));
             using FileStream auxiliaryOutput = new FileStream(auxiliaryPath, FileMode.Create);
 
             int activationSignature = RegisterSignature(RtlRestoreContextTagSignature);
-            int activationFunctionIndex = functionImports + auxiliaryOrdinals.Count;
+            int activationFunctionIndex = _wasmSymbolManager.GetImportCount(WasmIndexSpace.Function) + partition.AuxiliaryFunctionCount;
 
             EmitWasmHeader(auxiliaryOutput);
+            // Type and Import sections are exact duplicates of the primary module's sections.
             _sections.GetSection<WasmExternallyCountedSection>(ObjectNodeSection.WasmTypeSection.Name).EmitToStream(auxiliaryOutput);
             _sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EmitToStream(auxiliaryOutput);
-            WriteRawSection(auxiliaryOutput, WasmSectionType.Function, content =>
-            {
-                WriteUnsigned(content, auxiliaryOrdinals.Count + 1);
-                foreach (int ordinal in auxiliaryOrdinals)
-                    WriteUnsigned(content, functionTypes[ordinal]);
-                WriteUnsigned(content, activationSignature);
-            });
+
+            using MemoryStream functionContent = new();
+            functionContent.Write(partition.AuxiliaryFunctionEntries.Span);
+            WriteUnsigned(functionContent, activationSignature);
+            EmitCountedSection(auxiliaryOutput, WasmSectionType.Function, functionContent, partition.AuxiliaryFunctionCount + 1);
+
             WriteRawSection(auxiliaryOutput, WasmSectionType.Export, content =>
             {
                 WriteUnsigned(content, 1);
                 WriteExport(content, ActivateModuleExportName, WasmExportKind.Function, activationFunctionIndex);
             });
+
             WriteRawSection(auxiliaryOutput, WasmSectionType.Element, content =>
             {
                 WriteUnsigned(content, 1);
-                WriteElementSegment(content, tableFunctions, _auxiliarySlotStart, _auxiliarySlotEnd - _auxiliarySlotStart, passive: true);
+                WritePassiveElementSegment(content, tableFunctions, _auxiliarySlotStart, _auxiliarySlotCount);
             });
-            WriteRawSection(auxiliaryOutput, WasmSectionType.Code, content =>
-            {
-                WriteUnsigned(content, auxiliaryOrdinals.Count + 1);
-                foreach (int ordinal in auxiliaryOrdinals)
-                    WriteCodeBlob(content, resolvedCode, codeBlobs[ordinal]);
-                WriteFunctionBody(content, CreateActivateModuleBody(metadataRva + AuxiliaryModuleMetadataNode.GetActivationStatusOffset(0)));
-            });
+
+            using MemoryStream codeContent = new();
+            codeContent.Write(partition.AuxiliaryCode.Span);
+            WriteFunctionBody(codeContent, CreateActivateModuleBody(partition.ActivationStatusRva));
+            EmitCountedSection(auxiliaryOutput, WasmSectionType.Code, codeContent, partition.AuxiliaryFunctionCount + 1);
 
             if (_emitNameSection)
             {
-                List<WasmSymbol> names = GetPartitionedFunctionNames(functions, auxiliaryOrdinals);
+                List<WasmSymbol> names = new(GetPartitionedFunctionNames(auxiliary: true));
                 names.Add(new WasmSymbol(new Utf8String(ActivateModuleExportName), WasmIndexSpace.Function, activationFunctionIndex, IsImport: false, HasExplicitName: false));
                 new WasmNameSection(names).EmitToStream(auxiliaryOutput);
-            }
-
-            long ComputeCodeContentSize(List<int> ordinals)
-            {
-                long size = DwarfHelper.SizeOfULEB128((ulong)ordinals.Count);
-                foreach (int ordinal in ordinals)
-                    size += DwarfHelper.SizeOfULEB128((ulong)codeBlobs[ordinal].Size) + codeBlobs[ordinal].Size;
-                return size;
             }
         }
 
@@ -326,12 +252,12 @@ namespace ILCompiler.ObjectWriter
                 if (ordinal >= blobs.Count)
                     break;
 
-                bool callerIsAuxiliary = _isAuxiliaryFunction[functionImports + ordinal];
+                bool callerIsAuxiliary = IsAuxiliaryFunctionIndex(functionImports + ordinal);
                 switch (relocation.Type)
                 {
                     case RelocType.WASM_FUNCTION_INDEX_LEB:
                         WasmSymbol target = _wasmSymbolManager.GetSymbol(relocation.SymbolName);
-                        if (_isAuxiliaryFunction[target.Index] != callerIsAuxiliary)
+                        if (IsAuxiliaryFunctionIndex(target.Index) != callerIsAuxiliary)
                             throw new InvalidDataException($"Direct WebAssembly call to '{target.Name}' crosses an auxiliary module boundary.");
                         break;
                     case RelocType.WASM_GLOBAL_INDEX_LEB:
@@ -357,7 +283,7 @@ namespace ILCompiler.ObjectWriter
                 I32.Const(_auxiliarySlotStart),
                 I32.Add,
                 I32.Const(0),
-                I32.Const(_auxiliarySlotEnd - _auxiliarySlotStart),
+                I32.Const(_auxiliarySlotCount),
                 Table.Init(0),
                 Global.Get(ImageBaseGlobalIndex),
                 I32.Const(1),
@@ -365,44 +291,20 @@ namespace ILCompiler.ObjectWriter
                 Block.End,
             ]);
 
-        private List<WasmSymbol> GetPartitionedFunctionNames(List<WasmSymbol> functions, List<int> ordinals)
+        private IEnumerable<WasmSymbol> GetPartitionedFunctionNames(bool auxiliary)
         {
-            List<WasmSymbol> names = new(ordinals.Count);
-            foreach (int ordinal in ordinals)
-            {
-                WasmSymbol symbol = functions[ordinal];
-                names.Add(symbol with { Index = _partitionedFunctionIndices[symbol.Index] });
-            }
-            return names;
+            foreach (WasmSymbol symbol in _wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function))
+                if (IsAuxiliaryFunctionIndex(symbol.Index) == auxiliary)
+                    yield return symbol with { Index = GetPartitionedFunctionIndex(symbol.Index) };
         }
 
-        private void WriteElementSegment(Stream stream, int[] tableFunctions, int start, int count, bool passive)
+        private void WritePassiveElementSegment(Stream stream, int[] tableFunctions, int start, int count)
         {
-            if (passive)
-            {
-                stream.WriteByte(1); // passive, elemkind
-                stream.WriteByte(0); // funcref
-            }
-            else
-            {
-                stream.WriteByte(0); // active, table 0, offset expression
-                stream.WriteByte((byte)WasmExprKind.GlobalGet);
-                WriteUnsigned(stream, TableBaseGlobalIndex);
-                stream.WriteByte((byte)WasmExprKind.I32Const);
-                WriteSigned(stream, start);
-                stream.WriteByte((byte)WasmExprKind.I32Add);
-                stream.WriteByte((byte)WasmExprKind.End);
-            }
-
+            stream.WriteByte(1); // passive, elemkind
+            stream.WriteByte(0); // funcref
             WriteUnsigned(stream, count);
             for (int slot = start; slot < start + count; slot++)
-                WriteUnsigned(stream, _partitionedFunctionIndices[tableFunctions[slot]]);
-        }
-
-        private static void WriteCodeBlob(Stream stream, MemoryStream code, CodeBlob blob)
-        {
-            WriteUnsigned(stream, checked((int)blob.Size));
-            stream.Write(code.GetBuffer().AsSpan(checked((int)blob.Start), checked((int)blob.Size)));
+                WriteUnsigned(stream, GetPartitionedFunctionIndex(tableFunctions[slot]));
         }
 
         private static void WriteFunctionBody(Stream stream, WasmFunctionBody body)
@@ -421,6 +323,13 @@ namespace ILCompiler.ObjectWriter
             WriteUnsigned(stream, index);
         }
 
+        private static void EmitCountedSection(Stream output, WasmSectionType type, MemoryStream content, int entryCount)
+        {
+            WasmExternallyCountedSection section = new(type, content, default, sectionIndex: -1);
+            section.SetEntryCount(entryCount);
+            section.EmitToStream(output);
+        }
+
         private static void WriteRawSection(Stream output, WasmSectionType type, Action<MemoryStream> emit)
         {
             using MemoryStream content = new();
@@ -435,13 +344,6 @@ namespace ILCompiler.ObjectWriter
         {
             Span<byte> bytes = stackalloc byte[10];
             int length = DwarfHelper.WriteULEB128(bytes, checked((ulong)value));
-            stream.Write(bytes.Slice(0, length));
-        }
-
-        private static void WriteSigned(Stream stream, int value)
-        {
-            Span<byte> bytes = stackalloc byte[10];
-            int length = DwarfHelper.WriteSLEB128(bytes, value);
             stream.Write(bytes.Slice(0, length));
         }
     }

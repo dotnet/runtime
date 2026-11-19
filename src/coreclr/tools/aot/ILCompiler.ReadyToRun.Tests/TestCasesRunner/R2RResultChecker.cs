@@ -950,7 +950,7 @@ internal static class R2RAssert
 
                 foundResumptionStub = true;
                 resumptionStubTargets.Add(targetIndex);
-                uint expectedIndex = checked((uint)(method.EntryPointRuntimeFunctionId + method.RuntimeFunctionCount - 1));
+                uint expectedIndex = checked(reader.WasmMinFunctionTableIndex + (uint)(method.EntryPointRuntimeFunctionId + method.RuntimeFunctionCount - 1));
                 if (targetIndex != expectedIndex)
                 {
                     failures.Add(

@@ -33,6 +33,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         public WasmImportThunk(NodeFactory factory, WasmSignature wasmSignature, ReadyToRunHelper helperId, bool useJumpableStub)
         {
+            // Lay thunks out ahead of the compiled-method range (see StringDiscoverableAssemblyStubNode).
+            CustomSort = int.MinValue;
             _context = factory.TypeSystemContext;
             _wasmSignature = wasmSignature;
             _typeNode = factory.WasmTypeNode(wasmSignature);

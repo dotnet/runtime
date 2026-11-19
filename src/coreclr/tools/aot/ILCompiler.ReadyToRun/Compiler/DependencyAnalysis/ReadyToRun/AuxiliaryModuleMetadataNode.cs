@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (relocsOnly)
                 return new ObjectData([], [], 1, [this]);
 
-            (int primaryMethodCount, int[] auxiliaryMethodCounts) = CountMethods(factory);
+            (int primaryMethodCount, int[] auxiliaryMethodCounts, MethodWithGCInfo firstAuxiliaryMethod) = CountMethods(factory);
 
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.RequireInitialAlignment(sizeof(uint));
@@ -60,15 +60,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             byte[][] fileNames = new byte[auxiliaryMethodCounts.Length][];
             int fileNameOffset = HeaderSize + (auxiliaryMethodCounts.Length * EntrySize);
-            int relativeTableBase = primaryMethodCount;
             for (int i = 0; i < auxiliaryMethodCounts.Length; i++)
             {
                 fileNames[i] = Encoding.UTF8.GetBytes(GetAuxiliaryModuleFileName(_primaryModuleFileName, i));
                 builder.EmitReloc(this, RelocType.IMAGE_REL_BASED_ADDR32NB, fileNameOffset); // FilenameRVA
-                builder.EmitInt(relativeTableBase); // RelativeTableBase
+                Debug.Assert(i == 0, "Crossgen2 currently emits at most one auxiliary module.");
+                builder.EmitReloc(firstAuxiliaryMethod, RelocType.WASM_TABLE_INDEX_REL_I32); // RelativeTableBase
                 builder.EmitInt(auxiliaryMethodCounts[i]); // MethodCount
                 builder.EmitInt(0); // ActivationStatus
-                relativeTableBase += auxiliaryMethodCounts[i];
                 fileNameOffset += fileNames[i].Length + 1;
             }
 
@@ -85,16 +84,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// Counts RuntimeFunctions entries (including funclets) for the primary module and each auxiliary module.
         /// Each module must occupy a contiguous range of the RuntimeFunctions table, with the primary module first.
         /// </summary>
-        private static (int PrimaryMethodCount, int[] AuxiliaryMethodCounts) CountMethods(NodeFactory factory)
+        private static (int PrimaryMethodCount, int[] AuxiliaryMethodCounts, MethodWithGCInfo FirstAuxiliaryMethod) CountMethods(NodeFactory factory)
         {
             int primaryMethodCount = 0;
             int primaryColdMethodCount = 0;
             int auxiliaryMethodCount = 0;
+            MethodWithGCInfo firstAuxiliaryMethod = null;
             foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods())
             {
                 if (factory.IsAuxiliaryMethod(method))
                 {
                     Debug.Assert(method.ColdCodeNode is null);
+                    firstAuxiliaryMethod ??= method;
                     auxiliaryMethodCount = checked(auxiliaryMethodCount + method.FrameInfos.Length);
                 }
                 else
@@ -113,7 +114,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             primaryMethodCount = checked(primaryMethodCount + primaryColdMethodCount);
 
             int[] auxiliaryMethodCounts = auxiliaryMethodCount == 0 ? [] : [auxiliaryMethodCount];
-            return (primaryMethodCount, auxiliaryMethodCounts);
+            return (primaryMethodCount, auxiliaryMethodCounts, firstAuxiliaryMethod);
         }
 
         public override int ClassCode => 193275842;

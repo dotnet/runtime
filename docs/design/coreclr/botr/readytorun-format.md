@@ -943,11 +943,13 @@ Each of the `AuxiliaryModuleCount` entries that follow has four 32-bit fields:
 | Field | Meaning |
 |---|---|
 | `FilenameRVA` | RVA of the auxiliary module's name. |
-| `RelativeTableBase` | Index of the auxiliary module's first function-table slot, relative to the primary module. |
+| `RelativeTableBase` | Index of the auxiliary module's first function-table slot, relative to the primary module's WebCIL table base. This includes any primary thunk slots before the compiled method range. |
 | `MethodCount` | Number of function-table slots (including funclets) assigned to the auxiliary module. |
 | `ActivationStatus` | Nonzero once the auxiliary module has been activated and its code can execute. |
 
-The primary module's methods come first in `RuntimeFunctions`, and each auxiliary module occupies a contiguous range after them. Crossgen2 currently places every method in the primary module, so it emits only the header, with `AuxiliaryModuleCount` set to zero, zero RVAs, and `EntryPointsModuleActivationStatus` set to 1.
+The primary module's methods come first in `RuntimeFunctions`, and each auxiliary module occupies a contiguous range after them. If Crossgen2 places every method in the primary module, it emits only the header, with `AuxiliaryModuleCount` set to zero, zero RVAs, and `EntryPointsModuleActivationStatus` set to 1.
+
+The host-facing exports `getWebcilSize` and `patchWebcilHeader` do not occupy shared function-table slots. When auxiliary module metadata is enabled, they are the first defined WebAssembly functions. In a split image, primary thunks precede compiled methods; auxiliary functions form a contiguous suffix of the function definitions and of the shared table slots. The `RuntimeFunctions` sentinel separately identifies the first compiled method's slot. A ReadyToRun image with no table entries, such as a composite forwarding image, advertises one reserved but uninitialized slot so the browser loader can distinguish it from an IL-only image.
 
 # Native Format
 

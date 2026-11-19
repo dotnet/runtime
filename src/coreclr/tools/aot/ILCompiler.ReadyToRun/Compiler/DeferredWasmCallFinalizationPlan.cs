@@ -141,15 +141,9 @@ namespace ILCompiler
             var calleeIndices = new HashSet<int>();
             for (int i = 0; i < methods.Length; i++)
             {
-                // Calls involving auxiliary bodies stay indirect and do not require eager body activation.
-                if (methodNodes[i].IsAuxiliary)
-                {
-                    adjacency[i] = Array.Empty<int>();
-                    continue;
-                }
-
+                MethodWithGCInfo caller = methodNodes[i];
                 calleeIndices.Clear();
-                foreach (Relocation relocation in methodNodes[i].GetData(factory, relocsOnly: false).Relocs.AsSpan())
+                foreach (Relocation relocation in caller.GetData(factory, relocsOnly: false).Relocs.AsSpan())
                 {
                     if (relocation.RelocType != RelocType.WASM_FUNCTION_INDEX_LEB)
                     {
@@ -162,7 +156,9 @@ namespace ILCompiler
                         MethodWithGCInfo method => method,
                         _ => null,
                     };
-                    if (target is { IsAuxiliary: false } && methodIndices.TryGetValue(target.Method, out int calleeIndex))
+                    // The eager closure starts in the primary module and must not reach auxiliary bodies.
+                    if (target is not null && (caller.IsAuxiliary || !target.IsAuxiliary) &&
+                        methodIndices.TryGetValue(target.Method, out int calleeIndex))
                     {
                         calleeIndices.Add(calleeIndex);
                     }
