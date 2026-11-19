@@ -66,6 +66,7 @@
     <_CoreCLRPropertyThatTriggersRelinking Include="InvariantTimezone" RuntimePackValue="$(BrowserHostInvariantTimezone)" />
     <_CoreCLRPropertyThatTriggersRelinking Include="EnableDiagnostics" RuntimePackValue="$(BrowserHostEnableDiagnostics)" />
     <_CoreCLRPropertyThatTriggersRelinking Include="WasmEnableRelaxedSimd" RuntimePackValue="$(BrowserHostEnableRelaxedSimd)" />
+    <_CoreCLRPropertyThatTriggersRelinking Include="WasmCustomTimezoneDataDirectory" />
     <_CoreCLRPropertyThatTriggersRelinking Include="WasmInitialHeapSize" RuntimePackValue="$(BrowserHostInitialHeapSize)" />
     <_CoreCLRPropertyThatTriggersRelinking Include="EmccMaximumHeapSize" RuntimePackValue="$(BrowserHostMaximumHeapSize)" />
     <_CoreCLRPropertyThatTriggersRelinking Include="EmccStackSize" RuntimePackValue="$(BrowserHostStackSize)" />
