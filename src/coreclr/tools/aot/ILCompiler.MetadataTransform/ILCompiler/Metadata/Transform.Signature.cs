@@ -14,7 +14,7 @@ internal partial class Transform<TPolicy>
 {
     private void WriteMethodSignature(MetadataBlob blob, Cts.MethodSignature signature)
     {
-        WriteMethodHeader(blob, (byte)GetSignatureCallingConvention(signature), signature.GenericParameterCount, signature.Length);
+        WriteMethodHeader(blob, GetSignatureCallingConvention(signature), signature.GenericParameterCount, signature.Length);
         WriteTypeSignature(blob, signature.ReturnType);
         for (int i = 0; i < signature.Length; i++)
             WriteTypeSignature(blob, signature[i]);
@@ -25,15 +25,15 @@ internal partial class Transform<TPolicy>
         Ecma.SignatureHeader header = reader.ReadSignatureHeader();
         int arity = header.IsGeneric ? reader.ReadCompressedInteger() : 0;
         int count = reader.ReadCompressedInteger();
-        WriteMethodHeader(blob, (byte)GetSignatureCallingConvention(header), arity, count);
+        WriteMethodHeader(blob, GetSignatureCallingConvention(header), arity, count);
         WriteTypeSignature(blob, module, ref reader);
         for (int i = 0; i < count; i++)
             WriteTypeSignature(blob, module, ref reader);
     }
 
-    private static void WriteMethodHeader(MetadataBlob blob, byte convention, int arity, int count)
+    private static void WriteMethodHeader(MetadataBlob blob, MdSigCallingConvention convention, int arity, int count)
     {
-        blob.WriteByte((byte)(convention | (byte)(arity != 0 ? MdSigCallingConvention.Generic : 0)));
+        blob.WriteByte((byte)(convention | (arity != 0 ? MdSigCallingConvention.Generic : 0)));
         if (arity != 0)
             blob.WriteCompressedInteger(arity);
         blob.WriteCompressedInteger(count);

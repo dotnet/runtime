@@ -15,7 +15,7 @@ namespace Internal.Metadata.NativeFormat;
 // NativeFormat handles. The reader mirrors CoreCLR's SigParser so that signature parsing can be shared with
 // CoreCLR's System.Private.CoreLib.
 
-// A position within a signature blob, equivalent to the (Signature, offset) pairs used by CoreCLR's reflection.
+// A position within a signature blob, equivalent to CoreCLR's SigPointer.
 #if SYSTEM_PRIVATE_CORELIB
 [CLSCompliant(false)]
 #endif
@@ -42,50 +42,6 @@ public readonly struct TypeSignature
         reader.SkipType();
         int count = reader.ReadCompressedInteger();
         return new TypeSignatureCollection(reader.Position, count);
-    }
-
-    // Equivalent of CoreCLR's Signature.GetTypeParameterOffset. Index 0 of a function pointer is its return type.
-    internal TypeSignature GetTypeParameter(int index)
-    {
-        SignatureReader reader = GetReader();
-        switch (reader.ReadElementType())
-        {
-            case CorElementType.ELEMENT_TYPE_FNPTR:
-                reader.ReadMethodHeader(out _, out int parameterCount);
-                Debug.Assert((uint)index <= (uint)parameterCount);
-                break;
-            case CorElementType.ELEMENT_TYPE_GENERICINST:
-                reader.SkipType();
-                int argumentCount = reader.ReadCompressedInteger();
-                Debug.Assert((uint)index < (uint)argumentCount);
-                break;
-            case CorElementType.ELEMENT_TYPE_ARRAY:
-            case CorElementType.ELEMENT_TYPE_SZARRAY:
-            case CorElementType.ELEMENT_TYPE_BYREF:
-            case CorElementType.ELEMENT_TYPE_PTR:
-                Debug.Assert(index == 0);
-                break;
-            case CorElementType.ELEMENT_TYPE_VAR:
-            case CorElementType.ELEMENT_TYPE_MVAR:
-                // The signature of a substituted generic variable doesn't describe the substituted type's components.
-                return default;
-            default:
-                Debug.Fail("Unexpected element type");
-                return default;
-        }
-
-        for (int i = 0; i < index; i++)
-            reader.SkipType();
-        return reader.Position;
-    }
-
-    // Equivalent of CoreCLR's Signature.GetCallingConventionFromFunctionPointerAtOffset.
-    internal MdSigCallingConvention GetCallingConventionFromFunctionPointer()
-    {
-        SignatureReader reader = GetReader();
-        CorElementType elementType = reader.ReadElementType();
-        Debug.Assert(elementType == CorElementType.ELEMENT_TYPE_FNPTR);
-        return reader.ReadMethodHeader(out _, out _) & MdSigCallingConvention.CallConvMask;
     }
 }
 
@@ -117,10 +73,14 @@ public struct SignatureReader
     public readonly TypeSignature Position => new TypeSignature(_reader, _offset, _endOffset);
 
     // Like SigParser::PeekElemType and SigParser::GetElemType, these skip a vararg sentinel and custom modifiers.
+    // Like SigParser::PeekElemType, PeekElementType reports STRING and OBJECT as CLASS.
     public readonly CorElementType PeekElementType()
     {
         SignatureReader reader = this;
-        return reader.ReadElementType();
+        CorElementType elementType = reader.ReadElementType();
+        return elementType is CorElementType.ELEMENT_TYPE_STRING or CorElementType.ELEMENT_TYPE_OBJECT
+            ? CorElementType.ELEMENT_TYPE_CLASS
+            : elementType;
     }
 
     public CorElementType ReadElementType()
@@ -129,19 +89,24 @@ public struct SignatureReader
         return (CorElementType)ReadByte();
     }
 
+    // ECMA-335 II.23.2.2.
+    public void SkipAnyVASentinel()
+    {
+        if (PeekByte() == (byte)CorElementType.ELEMENT_TYPE_SENTINEL)
+            _offset++;
+    }
+
     public void SkipCustomModifiers()
     {
+        SkipAnyVASentinel();
         while (TryReadCustomModifier(out _, out _))
         {
         }
     }
 
-    // ECMA-335 II.23.2.7. Skips a vararg sentinel (II.23.2.2) preceding the modifiers.
+    // ECMA-335 II.23.2.7.
     public bool TryReadCustomModifier(out bool isOptional, out Handle modifierType)
     {
-        if (PeekByte() == (byte)CorElementType.ELEMENT_TYPE_SENTINEL)
-            _offset++;
-
         CorElementType elementType = (CorElementType)PeekByte();
         if (elementType is not (CorElementType.ELEMENT_TYPE_CMOD_REQD or CorElementType.ELEMENT_TYPE_CMOD_OPT))
         {
@@ -259,10 +224,13 @@ public struct SignatureReader
         return rank;
     }
 
+    // Equivalent of SigParser::GetCallingConvInfo.
+    internal MdSigCallingConvention ReadCallingConventionInfo() => (MdSigCallingConvention)ReadByte();
+
     // ECMA-335 II.23.2.1-3. The return type follows.
     internal MdSigCallingConvention ReadMethodHeader(out int genericParameterCount, out int parameterCount)
     {
-        MdSigCallingConvention header = (MdSigCallingConvention)ReadByte();
+        MdSigCallingConvention header = ReadCallingConventionInfo();
         genericParameterCount = (header & MdSigCallingConvention.Generic) != 0 ? ReadCompressedInteger() : 0;
         parameterCount = ReadCompressedInteger();
         return header;
@@ -271,7 +239,7 @@ public struct SignatureReader
     // ECMA-335 II.23.2.4. The field type follows.
     internal void ReadFieldHeader()
     {
-        if ((MdSigCallingConvention)ReadByte() != MdSigCallingConvention.Field)
+        if (ReadCallingConventionInfo() != MdSigCallingConvention.Field)
             ThrowBadImageFormatException();
     }
 
@@ -333,12 +301,10 @@ public readonly struct TypeSignatureCollection
 
 internal readonly struct MethodSignatureInfo
 {
-    private readonly MdSigCallingConvention _header;
+    public MdSigCallingConvention CallingConvention { get; }
     public int GenericParameterCount { get; }
     public int ParameterCount { get; }
     public TypeSignature ReturnType { get; }
-
-    public SignatureCallingConvention CallingConvention => (SignatureCallingConvention)(_header & ~MdSigCallingConvention.Generic);
 
     public TypeSignatureCollection Parameters
     {
@@ -352,7 +318,7 @@ internal readonly struct MethodSignatureInfo
 
     public MethodSignatureInfo(SignatureReader reader)
     {
-        _header = reader.ReadMethodHeader(out int genericParameterCount, out int parameterCount);
+        CallingConvention = reader.ReadMethodHeader(out int genericParameterCount, out int parameterCount);
         GenericParameterCount = genericParameterCount;
         ParameterCount = parameterCount;
         ReturnType = reader.Position;
@@ -362,7 +328,7 @@ internal readonly struct MethodSignatureInfo
 public readonly partial struct MethodSignature
 {
     internal MethodSignatureInfo Info => new MethodSignatureInfo(new SignatureReader(_reader, Blob));
-    public SignatureCallingConvention CallingConvention => Info.CallingConvention;
+    internal MdSigCallingConvention CallingConvention => Info.CallingConvention;
     public int GenericParameterCount => Info.GenericParameterCount;
     public int ParameterCount => Info.ParameterCount;
     public TypeSignature ReturnType => Info.ReturnType;

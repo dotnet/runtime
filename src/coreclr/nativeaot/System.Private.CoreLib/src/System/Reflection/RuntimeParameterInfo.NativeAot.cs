@@ -14,8 +14,7 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
 {
     private readonly ParameterHandle _tkParamDef;
     private readonly MetadataReader? _scope;
-    private readonly QSignatureTypeHandle _signature;
-    private readonly TypeContext _typeContext;
+    private readonly Signature? _signature;
 
     internal static RuntimeParameterInfo[] GetParameters<TRuntimeMethodCommon>(
         ref TRuntimeMethodCommon method, MethodBase member, RuntimeTypeInfo[] methodTypeArguments)
@@ -40,11 +39,10 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
     {
         TypeContext typeContext = member.DeclaringType.ToRuntimeTypeInfo().TypeContext;
         typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
-        QSignatureTypeHandle[] sig = method.QualifiedMethodSignature;
-        Debug.Assert(sig.Length > 0);
+        Signature sig = method.GetSignature(typeContext);
 
         returnParameter = null;
-        int sigArgCount = sig.Length - 1;
+        int sigArgCount = sig.ArgumentCount;
         RuntimeParameterInfo[] args =
             fetchReturnParameter ? null! :
             sigArgCount == 0 ? [] :
@@ -66,26 +64,26 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
                 if (returnParameter is not null)
                     throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
 
-                returnParameter = new RuntimeParameterInfo(sig[0], typeContext, scope, parameterHandle, position, parameter.Flags, member);
+                returnParameter = new RuntimeParameterInfo(sig, scope, parameterHandle, position, parameter.Flags, member);
             }
             else if (!fetchReturnParameter && position >= 0)
             {
                 if (position >= sigArgCount)
                     throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
 
-                args[position] = new RuntimeParameterInfo(sig[position + 1], typeContext, scope, parameterHandle, position, parameter.Flags, member);
+                args[position] = new RuntimeParameterInfo(sig, scope, parameterHandle, position, parameter.Flags, member);
             }
         }
 
         if (fetchReturnParameter)
         {
-            returnParameter ??= new RuntimeParameterInfo(sig[0], typeContext, null, default, -1, ParameterAttributes.None, member);
+            returnParameter ??= new RuntimeParameterInfo(sig, null, default, -1, ParameterAttributes.None, member);
         }
         else if (cParamDefs < args.Length + 1)
         {
             for (int i = 0; i < args.Length; i++)
             {
-                args[i] ??= new RuntimeParameterInfo(sig[i + 1], typeContext, null, default, i, ParameterAttributes.None, member);
+                args[i] ??= new RuntimeParameterInfo(sig, null, default, i, ParameterAttributes.None, member);
             }
         }
 
@@ -93,7 +91,7 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
     }
 
     private RuntimeParameterInfo(
-        QSignatureTypeHandle signature, TypeContext typeContext, MetadataReader? scope, ParameterHandle parameterHandle,
+        Signature signature, MetadataReader? scope, ParameterHandle parameterHandle,
         int position, ParameterAttributes attributes, MemberInfo member)
     {
         Debug.Assert(parameterHandle.IsNil == (scope is null));
@@ -101,7 +99,6 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
         PositionImpl = position;
         MemberImpl = member;
         _signature = signature;
-        _typeContext = typeContext;
         _tkParamDef = parameterHandle;
         _scope = scope;
         AttrsImpl = attributes;
@@ -166,11 +163,11 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
         : throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
 
     public override Type[] GetRequiredCustomModifiers() =>
-        _signature.Reader is null ? [] : _signature.GetCustomModifiers(_typeContext, optional: false);
+        _signature is null ? [] : _signature.GetCustomModifiers(PositionImpl + 1, isOptional: false);
 
     public override Type[] GetOptionalCustomModifiers() =>
-        _signature.Reader is null ? [] : _signature.GetCustomModifiers(_typeContext, optional: true);
+        _signature is null ? [] : _signature.GetCustomModifiers(PositionImpl + 1, isOptional: true);
 
     public override Type GetModifiedParameterType() =>
-        _signature.GetModifiedType(ParameterType, _typeContext);
+        ModifiedType.Create(unmodifiedType: ParameterType, _signature, parameterIndex: PositionImpl + 1);
 }

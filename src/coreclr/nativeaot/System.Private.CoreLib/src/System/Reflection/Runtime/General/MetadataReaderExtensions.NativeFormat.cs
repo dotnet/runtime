@@ -40,26 +40,6 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        // Return any custom modifiers modifying the passed-in type and whose required/optional bit matches the passed in boolean.
-        // Because this is intended to service the GetCustomModifiers() apis, this helper will always return a freshly allocated array
-        // safe for returning to api callers.
-        internal static Type[] GetCustomModifiers(this TypeSignature signature, TypeContext typeContext, bool optional)
-        {
-            ArrayBuilder<Type> customModifiers = default;
-            SignatureReader reader = signature.GetReader();
-            while (reader.TryReadCustomModifier(out bool isOptional, out Handle modifierType))
-            {
-                if (optional == isOptional)
-                {
-                    Type customModifier = modifierType.Resolve(signature.Reader, typeContext).ToType();
-                    customModifiers.Add(customModifier);
-                }
-            }
-            // Match CoreCLR's reverse metadata order for custom modifiers.
-            customModifiers.AsSpan().Reverse();
-            return customModifiers.ToArray();
-        }
-
         public static MethodSignature ParseMethodSignature(this Handle handle, MetadataReader reader)
         {
             return handle.ToMethodSignatureHandle(reader).GetMethodSignature(reader);

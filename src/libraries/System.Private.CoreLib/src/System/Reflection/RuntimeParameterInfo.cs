@@ -45,11 +45,7 @@ namespace System.Reflection
         internal RuntimeParameterInfo(RuntimeParameterInfo accessor, RuntimePropertyInfo property)
             : this(accessor, (MemberInfo)property)
         {
-#if NATIVEAOT
-            _signature = property.GetParameterTypeHandle(PositionImpl);
-#else
             _signature = property.Signature;
-#endif
         }
 
         private RuntimeParameterInfo(RuntimeParameterInfo accessor, MemberInfo member)
@@ -73,7 +69,6 @@ namespace System.Reflection
             // However we need this to make ca's work... oh well...
 #if NATIVEAOT
             _tkParamDef = accessor._tkParamDef;
-            _typeContext = accessor._typeContext;
 #else
             _tkParamDef = MdToken.IsNullToken(accessor.MetadataToken) ? (int)MetadataTokenType.ParamDef : accessor.MetadataToken;
 #endif
@@ -95,11 +90,11 @@ namespace System.Reflection
                 // only instance of ParameterInfo has ClassImpl, all its subclasses don't
                 if (ClassImpl == null)
                 {
-#if NATIVEAOT
-                    ClassImpl = _signature.Resolve(_typeContext).ToType();
-#else
                     Debug.Assert(_signature != null);
 
+#if NATIVEAOT
+                    ClassImpl = _signature.GetParameterType(PositionImpl + 1).ToType();
+#else
                     RuntimeType parameterType;
                     if (PositionImpl == -1)
                         parameterType = _signature.ReturnType;

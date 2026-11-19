@@ -12,7 +12,7 @@ using Ecma = System.Reflection.Metadata;
 using Debug = System.Diagnostics.Debug;
 using MethodAttributes = System.Reflection.MethodAttributes;
 using MethodImplAttributes = System.Reflection.MethodImplAttributes;
-using SignatureCallingConvention = Internal.Metadata.NativeFormat.SignatureCallingConvention;
+using MdSigCallingConvention = System.Reflection.MdSigCallingConvention;
 
 namespace ILCompiler.Metadata
 {
@@ -202,32 +202,32 @@ namespace ILCompiler.Metadata
                 throw new NotImplementedException();
         }
 
-        private static SignatureCallingConvention GetSignatureCallingConvention(Cts.MethodSignature signature)
+        private static MdSigCallingConvention GetSignatureCallingConvention(Cts.MethodSignature signature)
         {
-            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)SignatureCallingConvention.Cdecl);
-            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)SignatureCallingConvention.ThisCall);
-            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionMask == (int)SignatureCallingConvention.UnmanagedCallingConventionMask);
-            SignatureCallingConvention callingConvention = (SignatureCallingConvention)(signature.Flags & Cts.MethodSignatureFlags.UnmanagedCallingConventionMask);
+            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)MdSigCallingConvention.C);
+            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)MdSigCallingConvention.ThisCall);
+            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionMask == (int)MdSigCallingConvention.CallConvMask);
+            MdSigCallingConvention callingConvention = (MdSigCallingConvention)(signature.Flags & Cts.MethodSignatureFlags.UnmanagedCallingConventionMask);
             if ((signature.Flags & Cts.MethodSignatureFlags.Static) == 0)
             {
-                callingConvention |= SignatureCallingConvention.HasThis;
+                callingConvention |= MdSigCallingConvention.HasThis;
             }
             if ((signature.Flags & Cts.MethodSignatureFlags.ExplicitThis) != 0)
             {
-                callingConvention |= SignatureCallingConvention.ExplicitThis;
+                callingConvention |= MdSigCallingConvention.ExplicitThis;
             }
             return callingConvention;
         }
 
-        private static SignatureCallingConvention GetSignatureCallingConvention(Ecma.SignatureHeader signature)
+        private static MdSigCallingConvention GetSignatureCallingConvention(Ecma.SignatureHeader signature)
         {
-            Debug.Assert((int)Ecma.SignatureCallingConvention.CDecl == (int)SignatureCallingConvention.Cdecl);
-            Debug.Assert((int)Ecma.SignatureCallingConvention.ThisCall == (int)SignatureCallingConvention.ThisCall);
-            Debug.Assert((int)Ecma.SignatureCallingConvention.Unmanaged == (int)SignatureCallingConvention.Unmanaged);
-            SignatureCallingConvention callingConvention = (SignatureCallingConvention)(signature.CallingConvention);
+            Debug.Assert((int)Ecma.SignatureCallingConvention.CDecl == (int)MdSigCallingConvention.C);
+            Debug.Assert((int)Ecma.SignatureCallingConvention.ThisCall == (int)MdSigCallingConvention.ThisCall);
+            Debug.Assert((int)Ecma.SignatureCallingConvention.Unmanaged == (int)MdSigCallingConvention.Unmanaged);
+            MdSigCallingConvention callingConvention = (MdSigCallingConvention)(signature.CallingConvention);
             if (signature.IsInstance)
             {
-                callingConvention |= SignatureCallingConvention.HasThis;
+                callingConvention |= MdSigCallingConvention.HasThis;
             }
             return callingConvention;
         }

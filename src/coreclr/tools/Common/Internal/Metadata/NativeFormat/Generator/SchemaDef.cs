@@ -200,7 +200,6 @@ internal sealed class SchemaDef
         new EnumType("AssemblyFlags", "uint"),
         new EnumType("CallingConventions", "ushort"),
         new EnumType("ConstantTypeCode", "byte"),
-        new EnumType("SignatureCallingConvention", "byte"),
         new EnumType("EventAttributes", "ushort"),
         new EnumType("FieldAttributes", "ushort"),
         new EnumType("GenericParameterAttributes", "ushort"),
@@ -264,23 +263,6 @@ internal sealed class SchemaDef
             members: new MemberDef[] {
                 new MemberDef(name: "GenericTypeParameter", value: "0x0", comment: "Represents a type parameter for a generic type."),
                 new MemberDef(name: "GenericMethodParameter", value: "0x1", comment: "Represents a type parameter from a generic method."),
-            }
-        ),
-        new RecordDef(
-            name: "SignatureCallingConvention",
-            baseTypeName: "byte",
-            flags: RecordDefFlags.Enum,
-            members: new MemberDef[] {
-                new MemberDef(name: "HasThis", value: "0x20"),
-                new MemberDef(name: "ExplicitThis", value: "0x40"),
-                new MemberDef(name: "Default", value: "0x00"),
-                new MemberDef(name: "Vararg", value: "0x05"),
-                new MemberDef(name: "Cdecl", value: "0x01"),
-                new MemberDef(name: "StdCall", value: "0x02"),
-                new MemberDef(name: "ThisCall", value: "0x03"),
-                new MemberDef(name: "FastCall", value: "0x04"),
-                new MemberDef(name: "Unmanaged", value: "0x09"),
-                new MemberDef(name: "UnmanagedCallingConventionMask", value: "0x0F"),
             }
         ),
     }

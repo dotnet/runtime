@@ -195,6 +195,7 @@
     <Compile Include="System\IO\FileLoadException.NativeAot.cs" />
     <Compile Include="System\IO\Stream.NativeAot.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
+    <Compile Include="System\Signature.NativeAot.cs" />
     <Compile Include="System\Diagnostics\Debug.NativeAot.cs" />
     <Compile Include="System\Diagnostics\Debugger.cs" />
     <Compile Include="System\Diagnostics\DebuggerGuidedStepThroughAttribute.cs" />
@@ -433,8 +434,6 @@
     <Compile Include="System\Reflection\Runtime\General\TypeUnifier.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\QHandles.cs" />
     <Compile Include="System\Reflection\Runtime\General\QHandles.NativeFormat.cs" />
-    <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.cs" />
-    <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\NativeFormat\NativeFormatMethodCommon.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodInvoker.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodInvokerAction.cs" />

@@ -69,10 +69,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 
         internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _property.CustomAttributes;
 
-        public override Type GetModifiedPropertyType()
-        {
-            return ModifiedType.Create(PropertyType, _reader.GetPropertySignature(_property.Signature).Type, ContextTypeInfo.TypeContext);
-        }
+        public override Type GetModifiedPropertyType() => ModifiedType.Create(PropertyType, Signature);
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
@@ -117,24 +114,8 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
         }
 
-        protected sealed override QSignatureTypeHandle PropertyTypeHandle
-        {
-            get
-            {
-                return new QSignatureTypeHandle(_reader, _property.Signature.GetPropertySignature(_reader).Type);
-            }
-        }
-
-        internal override QSignatureTypeHandle GetParameterTypeHandle(int position)
-        {
-            foreach (TypeSignature parameterType in _property.Signature.GetPropertySignature(_reader).Parameters)
-            {
-                if (position-- == 0)
-                    return new QSignatureTypeHandle(_reader, parameterType);
-            }
-
-            throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
-        }
+        internal sealed override Signature Signature =>
+            _lazySignature ??= new Signature(_reader, _property.Signature.GetPropertySignature(_reader).Blob, ContextTypeInfo.TypeContext);
 
         protected sealed override bool GetDefaultValueIfAny(bool raw, out object? defaultValue)
         {
@@ -202,5 +183,6 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 
         private readonly MetadataReader _reader;
         private readonly Property _property;
+        private Signature? _lazySignature;
     }
 }

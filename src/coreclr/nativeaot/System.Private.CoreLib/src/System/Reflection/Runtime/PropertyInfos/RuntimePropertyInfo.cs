@@ -117,9 +117,9 @@ namespace System.Reflection.Runtime.PropertyInfos
             }
         }
 
-        public sealed override Type[] GetOptionalCustomModifiers() => PropertyTypeHandle.GetCustomModifiers(ContextTypeInfo.TypeContext, optional: true);
+        public sealed override Type[] GetOptionalCustomModifiers() => Signature.GetCustomModifiers(0, isOptional: true);
 
-        public sealed override Type[] GetRequiredCustomModifiers() => PropertyTypeHandle.GetCustomModifiers(ContextTypeInfo.TypeContext, optional: false);
+        public sealed override Type[] GetRequiredCustomModifiers() => Signature.GetCustomModifiers(0, isOptional: false);
 
         public sealed override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo culture)
         {
@@ -159,8 +159,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                 Type propertyType = _lazyPropertyType;
                 if (propertyType == null)
                 {
-                    TypeContext typeContext = ContextTypeInfo.TypeContext;
-                    _lazyPropertyType = propertyType = PropertyTypeHandle.Resolve(typeContext).ToType();
+                    _lazyPropertyType = propertyType = Signature.GetParameterType(0).ToType();
                 }
 
                 return propertyType;
@@ -321,11 +320,9 @@ namespace System.Reflection.Runtime.PropertyInfos
         protected abstract bool GetDefaultValueIfAny(bool raw, out object defaultValue);
 
         /// <summary>
-        /// Return a qualified handle that can be used to get the type of the property.
+        /// Return the property signature, resolved in the context of <see cref="ContextTypeInfo"/>.
         /// </summary>
-        protected abstract QSignatureTypeHandle PropertyTypeHandle { get; }
-
-        internal abstract QSignatureTypeHandle GetParameterTypeHandle(int position);
+        internal abstract Signature Signature { get; }
 
         protected enum PropertyMethodSemantics
         {
