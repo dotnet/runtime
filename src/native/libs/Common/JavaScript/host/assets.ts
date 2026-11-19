@@ -4,7 +4,8 @@
 import type { CharPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "../types";
 import { _ems_ } from "../ems-ambient";
 
-import { browserVirtualAppBase, sizeOfPtr } from "../per-module";
+import { browserVirtualAppBase } from "../per-module";
+import { pointerSize, readPointer, writePointer } from "./pointers";
 
 const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
@@ -14,13 +15,13 @@ const webcilWrapperVersion = 2;
 export function registerPdbBytes(bytes: Uint8Array, virtualPath: string, shortName: string) {
     const sp = _ems_.stackSave();
     try {
-        const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
+        const ptrPtr = _ems_.stackAlloc(pointerSize());
         if (_ems_._posix_memalign(ptrPtr as any, 16, bytes.length)) {
             throw new Error("posix_memalign failed for PDB");
         }
 
-        const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
-        _ems_.HEAPU8.set(bytes, ptr >>> 0);
+        const ptr = readPointer(ptrPtr as any);
+        _ems_.HEAPU8.set(bytes, ptr);
 
         _ems_.dotnetLogger.debug(`Registered PDB '${virtualPath}' (shortName: '${shortName}') at ${ptr.toString(16)} length ${bytes.length}`);
         loadedAssemblies.set(virtualPath, { ptr, length: bytes.length });
@@ -33,13 +34,13 @@ export function registerPdbBytes(bytes: Uint8Array, virtualPath: string, shortNa
 export function registerDllBytes(bytes: Uint8Array, virtualPath: string, shortName: string) {
     const sp = _ems_.stackSave();
     try {
-        const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
+        const ptrPtr = _ems_.stackAlloc(pointerSize());
         if (_ems_._posix_memalign(ptrPtr as any, 16, bytes.length)) {
             throw new Error("posix_memalign failed");
         }
 
-        const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
-        _ems_.HEAPU8.set(bytes, ptr >>> 0);
+        const ptr = readPointer(ptrPtr as any);
+        _ems_.HEAPU8.set(bytes, ptr);
 
         _ems_.dotnetLogger.debug(`Registered assembly '${virtualPath}' (shortName: '${shortName}') at ${ptr.toString(16)} length ${bytes.length}`);
         loadedAssemblies.set(virtualPath, { ptr, length: bytes.length });
@@ -95,11 +96,11 @@ async function checkWebcilResponse(webcilPromise: Promise<Response>, virtualPath
 function allocWebcilPayload(payloadSize: number): number {
     const sp = _ems_.stackSave();
     try {
-        const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
+        const ptrPtr = _ems_.stackAlloc(pointerSize());
         if (_ems_._posix_memalign(ptrPtr as any, 16, payloadSize)) {
             throw new Error("posix_memalign failed for Webcil payload");
         }
-        return _ems_.HEAPU32[ptrPtr as any >>> 2];
+        return readPointer(ptrPtr as any);
     } finally {
         _ems_.stackRestore(sp);
     }
@@ -115,9 +116,11 @@ function allocWebcilPayload(payloadSize: number): number {
 // (src/coreclr/hosts/corerun/wasm/libCorerun.js, BrowserHost_ExternalAssemblyProbe). The browser
 // loader receives payloadSize/tableSize from boot config rather than parsing the wrapper.
 function buildWebcilImports(memory: WebAssembly.Memory, payloadPtr: number, tableSize: number): Record<string, WebAssembly.ImportValue> {
+    const isWasm64 = pointerSize() === 8;
+    const addressType = isWasm64 ? "i64" : "i32";
     const webcilImports: Record<string, WebAssembly.ImportValue> = {
         memory,
-        __memory_base: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr),
+        __memory_base: new WebAssembly.Global({ value: addressType, mutable: false }, isWasm64 ? BigInt(payloadPtr) : payloadPtr),
     };
     if (tableSize > 0) {
         const stackPointer = _ems_.wasmExports?.__stack_pointer;
@@ -132,13 +135,16 @@ function buildWebcilImports(memory: WebAssembly.Memory, payloadPtr: number, tabl
         if (!asyncContinuation) {
             throw new Error("__async_continuation was not preserved by the linker or optimizer");
         }
-        const tableStartIndex = _ems_.wasmTable.length;
-        _ems_.wasmTable.grow(tableSize);
+        const table = _ems_.wasmTable;
+        // TypeScript's WebAssembly declarations do not yet describe table64.
+        const tableStartIndex = isWasm64
+            ? (table.grow as unknown as (delta: bigint) => bigint)(BigInt(tableSize))
+            : table.grow(tableSize);
         webcilImports.__stack_pointer = stackPointer;
         webcilImports.__coreclr_wasm_rtlrestorecontext_tag = rtlRestoreContextTag as unknown as WebAssembly.ImportValue;
         webcilImports.__async_continuation = asyncContinuation as unknown as WebAssembly.ImportValue;
-        webcilImports.__indirect_function_table = _ems_.wasmTable;
-        webcilImports.__table_base = new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex);
+        webcilImports.__indirect_function_table = table;
+        webcilImports.__table_base = new WebAssembly.Global({ value: addressType, mutable: false }, tableStartIndex);
     }
     return webcilImports;
 }
@@ -154,11 +160,12 @@ function finishWebcilInstance(instance: WebAssembly.Instance, payloadPtr: number
 
     if (tableSize > 0) {
         // The header's tableBase field lives in linear memory, so no segment can supply it.
-        const patchWebcilHeader = instance.exports.patchWebcilHeader as ((ptr: number, size: number) => void) | undefined;
+        const patchWebcilHeader = instance.exports.patchWebcilHeader;
         if (typeof patchWebcilHeader !== "function") {
             throw new Error(`Webcil R2R asset '${virtualPath}' does not export patchWebcilHeader.`);
         }
-        patchWebcilHeader(payloadPtr, payloadSize);
+        // The payload size is i32 even for a memory64 wrapper.
+        patchWebcilHeader(pointerSize() === 8 ? BigInt(payloadPtr) : payloadPtr, payloadSize);
     }
 
     const name = virtualPath.startsWith(browserVirtualAppBase)
@@ -179,29 +186,26 @@ export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStart
         }
     }
     if (assembly) {
-        _ems_.HEAPU32[outDataStartPtr as any >>> 2] = assembly.ptr;
-        // int64_t target
-        _ems_.HEAPU32[outSize as any >>> 2] = assembly.length;
-        _ems_.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
+        writePointer(outDataStartPtr as any, assembly.ptr);
+        _ems_.HEAP64[Math.floor(Number(outSize) / 8)] = BigInt(assembly.length);
         return true;
     }
     _ems_.dotnetLogger.debug(`Assembly not found: '${path}'`);
-    _ems_.HEAPU32[outDataStartPtr as any >>> 2] = 0;
-    _ems_.HEAPU32[outSize as any >>> 2] = 0;
-    _ems_.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
+    writePointer(outDataStartPtr as any, 0);
+    _ems_.HEAP64[Math.floor(Number(outSize) / 8)] = 0n;
     return false;
 }
 
 export function loadIcuData(bytes: Uint8Array) {
     const sp = _ems_.stackSave();
     try {
-        const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
+        const ptrPtr = _ems_.stackAlloc(pointerSize());
         if (_ems_._posix_memalign(ptrPtr as any, 16, bytes.length)) {
             throw new Error("posix_memalign failed for ICU data");
         }
 
-        const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
-        _ems_.HEAPU8.set(bytes, ptr >>> 0);
+        const ptr = readPointer(ptrPtr as any);
+        _ems_.HEAPU8.set(bytes, ptr);
 
         const result = _ems_._wasm_load_icu_data(ptr as unknown as VoidPtr);
         if (!result) {

@@ -3,7 +3,8 @@
 
 import type { AssetEntryInternal, CharPtrPtr, VoidPtr } from "../types";
 import { _ems_ } from "../ems-ambient";
-import { browserVirtualAppBase, sizeOfPtr } from "../per-module";
+import { browserVirtualAppBase } from "../per-module";
+import { pointerSize, writePointer } from "./pointers";
 
 const HOST_PROPERTY_RUNTIME_CONTRACT = "HOST_RUNTIME_CONTRACT";
 const HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
@@ -14,6 +15,8 @@ const APP_CONTEXT_BASE_DIRECTORY = "APP_CONTEXT_BASE_DIRECTORY";
 const RUNTIME_IDENTIFIER = "RUNTIME_IDENTIFIER";
 
 export function initializeCoreCLR(): number {
+    const sizeOfPtr = pointerSize();
+    (_ems_.dotnetApi.Module as typeof _ems_).dotnetWasm64 = sizeOfPtr === 8;
     const loaderConfig = _ems_.dotnetApi.getConfig();
     const hostContractPtr = _ems_._BrowserHost_CreateHostContract();
     const runtimeConfigProperties = new Map<string, string>();
@@ -33,7 +36,7 @@ export function initializeCoreCLR(): number {
     runtimeConfigProperties.set(HOST_PROPERTY_APP_PATHS, loaderConfig.virtualWorkingDirectory!);
     runtimeConfigProperties.set(HOST_PROPERTY_ENTRY_ASSEMBLY_NAME, loaderConfig.mainAssemblyName!);
     runtimeConfigProperties.set(APP_CONTEXT_BASE_DIRECTORY, browserVirtualAppBase);
-    runtimeConfigProperties.set(RUNTIME_IDENTIFIER, "browser-wasm");
+    runtimeConfigProperties.set(RUNTIME_IDENTIFIER, sizeOfPtr === 8 ? "browser-wasm64" : "browser-wasm");
     runtimeConfigProperties.set(HOST_PROPERTY_RUNTIME_CONTRACT, `0x${(hostContractPtr as unknown as number).toString(16)}`);
 
     const buffers: VoidPtr[] = [];
@@ -46,8 +49,8 @@ export function initializeCoreCLR(): number {
     for (const [key, value] of runtimeConfigProperties.entries()) {
         const keyPtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(key);
         const valuePtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(value);
-        _ems_.dotnetApi.setHeapU32((appctx_keys as any) + (propertyCount * sizeOfPtr), keyPtr);
-        _ems_.dotnetApi.setHeapU32((appctx_values as any) + (propertyCount * sizeOfPtr), valuePtr);
+        writePointer((appctx_keys as any) + (propertyCount * sizeOfPtr), keyPtr as any);
+        writePointer((appctx_values as any) + (propertyCount * sizeOfPtr), valuePtr as any);
         propertyCount++;
         buffers.push(keyPtr as any);
         buffers.push(valuePtr as any);
@@ -74,6 +77,7 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
         args ??= [];
 
         const sp = _ems_.stackSave();
+        const sizeOfPtr = pointerSize();
         const argsvPtr: number = _ems_.stackAlloc((args.length + 1) * sizeOfPtr) as any;
         const ptrs: VoidPtr[] = [];
         try {
@@ -81,7 +85,7 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
             for (let i = 0; i < args.length; i++) {
                 const ptr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(args[i]) as any;
                 ptrs.push(ptr);
-                _ems_.HEAPU32[(argsvPtr >>> 2) + i] = ptr;
+                writePointer(argsvPtr + i * sizeOfPtr, ptr);
             }
             _ems_.EXITSTATUS = _ems_._BrowserHost_ExecuteAssembly(mainAssemblyNamePtr, args.length, argsvPtr);
             for (const ptr of ptrs) {

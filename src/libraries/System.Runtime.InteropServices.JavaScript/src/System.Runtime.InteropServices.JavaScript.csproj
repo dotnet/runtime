@@ -17,6 +17,7 @@
     <DefineConstants Condition="'$(WasmEnableJsInteropByValue)' == 'true'">$(DefineConstants);ENABLE_JS_INTEROP_BY_VALUE</DefineConstants>
     <DefineConstants Condition="'$(RuntimeFlavor)' == 'Mono'">$(DefineConstants);MONO</DefineConstants>
     <DefineConstants Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(DefineConstants);CORECLR</DefineConstants>
+    <DefineConstants Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetArchitecture)' == 'wasm64'">$(DefineConstants);TARGET_WASM64</DefineConstants>
     <EmitCompilerGeneratedFiles Condition="'$(Configuration)' == 'Debug' and '$(TargetPlatformIdentifier)' == 'browser'">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 

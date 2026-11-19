@@ -18,7 +18,8 @@ export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): n
         return -1;
     }
 
-    bufferPtr = bufferPtr >>> 0;
+    if (bufferPtr < 0)
+        bufferPtr = bufferPtr >>> 0;
     const memoryView = _ems_.dotnetApi.localHeapViewU8();
     const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
 

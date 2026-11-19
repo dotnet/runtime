@@ -119,6 +119,7 @@ export const enum MeasuredBlock {
 }
 
 export const JavaScriptMarshalerArgSize = 32;
+export const JavaScriptMarshalerArgSize64 = 56;
 // keep in sync with JSMarshalerArgumentImpl offsets
 export const enum JSMarshalerArgumentOffsets {
     /* eslint-disable @typescript-eslint/no-duplicate-enum-values */

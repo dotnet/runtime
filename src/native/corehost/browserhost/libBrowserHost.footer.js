@@ -57,8 +57,15 @@ function libBrowserHostFactory() {
     for (const exportName of Reflect.ownKeys(exports)) {
         const name = String(exportName);
         if (name === "dotnetInitializeModule") continue;
-        mergeBrowserHost[name] = () => "dummy";
-        assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
+        if (name === "BrowserHost_ExternalAssemblyProbe") {
+            mergeBrowserHost[name] = function (path, data, size) {
+                return BROWSER_HOST.externalAssemblyProbe(path, data, size);
+            };
+            assignExportsBuilder += `BROWSER_HOST.externalAssemblyProbe = exports.${name};\n`;
+        } else {
+            mergeBrowserHost[name] = () => "dummy";
+            assignExportsBuilder += `_${name} = exports.${name};\n`;
+        }
     }
     for (const importName of explicitDeps) {
         explicitImportsBuilder += `_${importName}();\n`;
@@ -67,6 +74,7 @@ function libBrowserHostFactory() {
     mergeBrowserHost.$BROWSER_HOST.explicitImports = new Function(explicitImportsBuilder);
 
     autoAddDeps(mergeBrowserHost, "$BROWSER_HOST");
+    mergeBrowserHost.BrowserHost_ExternalAssemblyProbe__sig = "ippp";
     addToLibrary(mergeBrowserHost);
 }
 

@@ -7,8 +7,12 @@ import { dotnetAssert, dotnetLoaderExports } from "./cross-module";
 import { jsInteropState } from "./marshal";
 import { ENVIRONMENT_IS_WEB } from "./per-module";
 
-export function fixupPointer(signature: any, shiftAmount: number): any {
-    return ((signature as any) >>> shiftAmount) as any;
+export function fixupPointer(pointer: unknown, shiftAmount: number): any {
+    const address = Number(pointer);
+    if (!Number.isSafeInteger(address) || (typeof pointer === "bigint" && address < 0)) {
+        throw new RangeError(`Invalid Wasm address: ${pointer}`);
+    }
+    return Math.floor((address < 0 ? address >>> 0 : address) / (2 ** shiftAmount));
 }
 
 export function isRuntimeRunning(): boolean {

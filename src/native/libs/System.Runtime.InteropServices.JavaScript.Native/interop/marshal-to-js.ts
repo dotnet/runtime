@@ -6,7 +6,8 @@ import BuildConfiguration from "consts:configuration";
 import { dotnetBrowserUtilsExports, dotnetLoaderExports, dotnetApi, dotnetAssert, dotnetLogger, Module } from "./cross-module";
 
 import type { BoundMarshalerToJs, JSHandle, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, TypedArray } from "./types";
-import { GCHandleNull, JavaScriptMarshalerArgSize, MarshalerType } from "./types";
+import { GCHandleNull, MarshalerType } from "./types";
+import { marshalerArgSize } from "./marshal";
 import {
     arrayElementSize, csToJsMarshalers, jsinteropDoc, getMarshalerToCsByType,
     getArg, getArgBool, getArgDate, getArgElementType, getArgF32, getArgF64, getArgGcHandle, getArgI16, getArgI32, getArgI52, getArgI64Big, getArgIntptr,
@@ -78,7 +79,7 @@ export function bindArgMarshalToJs(sig: JSMarshalerType, marshalerType: Marshale
     const converter = getMarshalerToJsByType(marshalerType)!;
     const elementType = getSignatureArg1Type(sig);
 
-    const argOffset = index * JavaScriptMarshalerArgSize;
+    const argOffset = index * marshalerArgSize();
     return (args: JSMarshalerArguments) => {
         return converter(<any>args + argOffset, elementType, resMarshaler, arg1Marshaler, arg2Marshaler, arg3Marshaler);
     };

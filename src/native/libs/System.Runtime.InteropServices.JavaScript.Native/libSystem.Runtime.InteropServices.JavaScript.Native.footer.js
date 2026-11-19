@@ -48,6 +48,10 @@ function libDotnetInteropFactory() {
     }
 
     autoAddDeps(mergeDotnetInterop, "$DOTNET_INTEROP");
+    mergeDotnetInterop.SystemInteropJS_BindJSImportST__sig = "pp";
+    mergeDotnetInterop.SystemInteropJS_InvokeJSImportST__sig = "vip";
+    mergeDotnetInterop.SystemInteropJS_ResolveOrRejectPromise__sig = "vp";
+    mergeDotnetInterop.SystemInteropJS_InvokeJSFunction__sig = "vip";
     addToLibrary(mergeDotnetInterop);
 }
 

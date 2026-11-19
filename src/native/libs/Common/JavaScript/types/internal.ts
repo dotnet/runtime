@@ -42,6 +42,7 @@ export type EmscriptenInternals = {
 };
 
 export type EmscriptenModuleInternal = EmscriptenModule & {
+    dotnetWasm64?: boolean;
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
     print(message: string): void;
