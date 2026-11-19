@@ -109,12 +109,13 @@ public class GcInfoRegressionTests
                 InputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["System.Private.CoreLib"] = TestPaths.SystemPrivateCoreLibPath,
-                    ["GCLayout"] = assemblyPath,
                 },
                 ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
             };
             context.SetSystemModule((EcmaModule)context.GetModuleForSimpleName("System.Private.CoreLib"));
-            EcmaModule module = (EcmaModule)context.GetModuleForSimpleName("GCLayout");
+            using MemoryStream assemblyStream = new(File.ReadAllBytes(assemblyPath));
+            using PEReader peReader = new(assemblyStream);
+            EcmaModule module = EcmaModule.Create(context, peReader, containingAssembly: null);
             context.SetCompilationGroup(new ReadyToRunSingleAssemblyCompilationModuleGroup(new ReadyToRunCompilationModuleGroupConfig
             {
                 Context = context,
