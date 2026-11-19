@@ -132,6 +132,9 @@
 
     <Warning Condition="@(NativeFileReference->Count()) > 0"
       Text="%40(NativeFileReference) is not empty, but the native references won't be linked in, because neither %24(WasmBuildNative), nor %24(RunAOTCompilation) are 'true'. NativeFileReference=@(NativeFileReference)" />
+
+    <Warning Condition="'$(UseMonoRuntime)' == 'false' and (@(DirectPInvoke->Count()) > 0 or @(DirectPInvokeList->Count()) > 0)"
+      Text="%40(DirectPInvoke) or %40(DirectPInvokeList) is not empty, but the P/Invokes won't be bound statically, because the wasm-tools workload, required for native relinking, is not installed. DirectPInvoke=@(DirectPInvoke) DirectPInvokeList=@(DirectPInvokeList)" />
   </Target>
 
   <Target Name="_ErrorWorkloadDisabledForTFMLessThan6" Condition="'$(_BrowserWorkloadNotSupportedForTFM)' == 'true'" BeforeTargets="Build">

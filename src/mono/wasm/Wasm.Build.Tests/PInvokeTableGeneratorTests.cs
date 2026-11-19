@@ -561,12 +561,12 @@ namespace Wasm.Build.Tests
             // Verify that the invoke is in the pinvoke table. Under various circumstances we will silently skip it,
             //  for example if the module isn't found
             string pinvokeTableEntry = IsCoreClrRuntime
-                ? "DllImportEntry(accept_double_struct_and_return_float_struct)"
+                ? "{ \"accept_double_struct_and_return_float_struct\", (void*)&direct_pinvoke::accept_double_struct_and_return_float_struct }"
                 : "\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct";
             Assert.Contains(pinvokeTableEntry, pinvokeTable);
             // Verify the signature of the C function prototype. Wasm ABI specifies that the structs should both decompose into scalars.
-            Assert.Contains("float accept_double_struct_and_return_float_struct (double);", pinvokeTable);
-            Assert.Contains("int64_t accept_and_return_i64_struct (int64_t);", pinvokeTable);
+            Assert.Contains("float accept_double_struct_and_return_float_struct (double)", pinvokeTable);
+            Assert.Contains("int64_t accept_and_return_i64_struct (int64_t)", pinvokeTable);
 
             var runOptions = new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 3);
             RunResult result = isPublish ? await RunForPublishWithWebServer(runOptions) : await RunForBuildWithDotnetRun(runOptions);
@@ -637,12 +637,12 @@ namespace Wasm.Build.Tests
             string pinvokeTable = File.ReadAllText(Path.Combine(objDir, pinvokeTableFileName));
 
             string includedPInvokeTableEntry = IsCoreClrRuntime
-                ? "DllImportEntry(versioned_browser_add)"
+                ? "{ \"versioned_browser_add\", (void*)&direct_pinvoke::versioned_browser_add }"
                 : "\"versioned_browser_add\", versioned_browser_add";
             Assert.Contains(includedPInvokeTableEntry, pinvokeTable);
 
             string excludedPInvokeTableEntry = IsCoreClrRuntime
-                ? "DllImportEntry(versioned_windows_add)"
+                ? "\"versioned_windows_add\""
                 : "\"versioned_windows_add\", versioned_windows_add";
             Assert.DoesNotContain(excludedPInvokeTableEntry, pinvokeTable);
 

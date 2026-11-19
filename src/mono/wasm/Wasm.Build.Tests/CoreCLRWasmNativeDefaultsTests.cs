@@ -128,6 +128,21 @@ namespace Wasm.Build.Tests
             Assert.Contains("Stopping after validating CoreCLR WebCIL version", output);
         }
 
+        [Fact, TestCategory("no-workload")]
+        public void DirectPInvokeWithoutWorkloadWarns()
+        {
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_directpinvoke_noworkload",
+                extraItems: "<DirectPInvoke Include=\"libc!strlen\" />");
+
+            (string _, string output) = BuildProject(info, Configuration.Debug, new BuildOptions());
+
+            Assert.Contains("the P/Invokes won't be bound statically, because the wasm-tools workload", output);
+        }
+
         // Mirrors the Mono path's WithNativeReference test: a project that references a native
         // object file always needs a relink to embed it, regardless of whether any tracked
         // property differs from the runtime pack.
