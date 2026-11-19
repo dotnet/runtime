@@ -36,6 +36,7 @@ set(COMMON_RUNTIME_SOURCES
     rhassert.cpp
     ${RUNTIME_DIR}/MathHelpers.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
+    ${RUNTIME_DIR}/ProcessEnvironment.cpp
     Crst.cpp
     MethodTable.cpp
     EHHelpers.cpp
@@ -210,7 +211,6 @@ else()
     ${RUNTIME_DIR}/unix/CLREventBase.cpp
     unix/PalUnix.cpp
     unix/PalCreateDump.cpp
-    unix/cgroupcpu.cpp
     ${GC_DIR}/unix/events.cpp
   )
 
@@ -228,7 +228,6 @@ else()
     list(APPEND COMMON_RUNTIME_SOURCES
       ${GC_DIR}/unix/gcenv.unix.cpp
       ${GC_DIR}/unix/numasupport.cpp
-      ${GC_DIR}/unix/cgroup.cpp
     )
   endif()
 

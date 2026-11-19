@@ -51,6 +51,10 @@ static const instruction INS_I_gt_u  = INS_i32_gt_u;
 void CodeGen::ensureCurrentFuncIsUnwindable()
 {
     FuncInfoDsc* const func = m_compiler->funCurrentFunc();
+
+    // The main method's frame header must have been allocated by fgWasmVirtualIP.
+    // If this fires, fgWasmMayEmitCall is missing a case.
+    assert(func->IsFunclet() || (m_compiler->lvaWasmVirtualIP != BAD_VAR_NUM));
     func->ensureUnwindableFrame(m_compiler);
 }
 
@@ -422,7 +426,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             return;
         }
 
-        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
+        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsAlwaysAliveInMemory()))
         {
             var_types storeType = sourceType;
             if (!varDsc->TypeIs(TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
@@ -2999,7 +3003,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         unsigned  wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
         bool      isLastUse    = varDsc->lvTracked && ((tree->gtFlags & GTF_VAR_DEATH) != 0) &&
                          ((tree->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None);
-        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(type), wasmLclIndex, isLastUse);
+        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(type), wasmLclIndex, isLastUse, tree->GetLclNum());
         // In this case, the resulting tree type may be different from the local var type where the value originates,
         // and so we need an explicit conversion since we can't "load"
         // the value with a different type like we can if the value is on the shadow stack.
@@ -3031,7 +3035,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     var_types  type      = varDsc->GetRegisterType(tree);
     assert(genIsValidReg(targetReg) && varDsc->lvIsRegCandidate());
 
-    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(type), WasmRegToIndex(targetReg));
+    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(type), WasmRegToIndex(targetReg), false, tree->GetLclNum());
     genUpdateLifeStore(tree, targetReg, varDsc);
 }
 

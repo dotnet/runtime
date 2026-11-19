@@ -803,4 +803,9 @@ inline UINT32 FastMod(UINT32 value, UINT32 divisor, UINT64 multiplier)
 }
 #endif
 
+//******************************************************************************
+// Returns the number of processors that a process has been configured to run on
+//******************************************************************************
+int GetCurrentProcessCpuCount();
+
 #endif /* _H_UTIL */

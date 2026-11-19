@@ -1245,33 +1245,43 @@ sealed class EventDataGenerator
         string providerName = Attr(providerNode, "name");
         string prettyName = ProviderPrettyName(providerName);
         string externC = Extern ? "extern \"C\" " : "";
-        List<XElement> eventNodes = ElementsByTagName(providerNode, "event").ToList();
+        List<XElement> includedEvents = ElementsByTagName(providerNode, "event")
+            .Where(eventNode => IncludeEvent(providerName, Attr(eventNode, "symbol")))
+            .ToList();
         var sb = new StringBuilder();
 
-        foreach (XElement eventNode in eventNodes)
+        // The events live in a static table that the provider prepares when a session first enables it.
+        if (includedEvents.Count > 0)
         {
-            string eventName = Attr(eventNode, "symbol");
-            if (IncludeEvent(providerName, eventName))
-            {
-                sb.Append($"EventPipeEvent *EventPipeEvent{eventName} = nullptr;\n");
-            }
+            sb.Append($"static EventPipeEvent EventPipeEvents{prettyName}[{includedEvents.Count}];\n");
         }
 
         sb.Append('\n');
 
         string isEnabledFunc = _nativeAot ? "ep_event_is_enabled" : "EventPipeAdapter::EventIsEnabled";
-        foreach (XElement eventNode in eventNodes)
+        for (int eventIndex = 0; eventIndex < includedEvents.Count; eventIndex++)
         {
+            XElement eventNode = includedEvents[eventIndex];
             string eventName = Attr(eventNode, "symbol");
-            if (!IncludeEvent(providerName, eventName))
+            string eventExpr = $"&EventPipeEvents{prettyName}[{eventIndex}]";
+
+            if (!_nativeAot && eventName == "JitInstrumentationDataVerbose")
             {
-                continue;
+                // The PGO flush needs this event outside the generated provider.
+                sb.Append($$"""
+                    EventPipeEvent *EventPipeGetEvent{{eventName}}(void)
+                    {
+                        return {{eventExpr}};
+                    }
+
+
+                    """);
             }
 
             sb.Append($$"""
                 {{EventPipeTypes["BOOL"]}} EventPipeEventEnabled{{eventName}}(void)
                 {
-                    return {{isEnabledFunc}}(EventPipeEvent{{eventName}});
+                    return {{isEnabledFunc}}({{eventExpr}});
                 }
 
 
@@ -1289,14 +1299,14 @@ sealed class EventDataGenerator
 
             if (template is not null)
             {
-                sb.Append(GenerateEventPipeWriteEventBody(template, eventName));
+                sb.Append(GenerateEventPipeWriteEventBody(template, eventExpr));
                 sb.Append("}\n\n");
             }
             else
             {
                 sb.Append(_nativeAot
-                    ? $"    ep_write_event (EventPipeEvent{eventName}, (uint8_t *) NULL, 0, (const uint8_t *)ActivityId, (const uint8_t *)RelatedActivityId);\n"
-                    : $"    EventPipeAdapter::WriteEvent(EventPipeEvent{eventName}, (BYTE*) nullptr, 0, ActivityId, RelatedActivityId);\n");
+                    ? $"    ep_write_event ({eventExpr}, (uint8_t *) NULL, 0, (const uint8_t *)ActivityId, (const uint8_t *)RelatedActivityId);\n"
+                    : $"    EventPipeAdapter::WriteEvent({eventExpr}, (BYTE*) nullptr, 0, ActivityId, RelatedActivityId);\n");
                 sb.Append("""
 
                         return ERROR_SUCCESS;
@@ -1320,35 +1330,56 @@ sealed class EventDataGenerator
                 {{Indent}}
                 """;
         string createProviderFunc = _nativeAot ? "create_provider" : "EventPipeAdapter::CreateProvider";
-        string addEventFunc = _nativeAot ? "ep_provider_add_event" : "EventPipeAdapter::AddEvent";
 
         sb.Append($$"""
             {{externC}}void Init{{prettyName}}(void);
 
             {{externC}}void Init{{prettyName}}(void)
             {
-                EventPipeProvider{{prettyName}} = {{createProviderFunc}}({{prettyName}}Name, {{callbackExpr}});
 
             """);
-        foreach (XElement eventNode in eventNodes)
+
+        string tableExpr = "nullptr";
+        if (includedEvents.Count > 0)
         {
-            string eventName = Attr(eventNode, "symbol");
-            ulong keywordsMask = 0;
-            foreach (string keyword in Attr(eventNode, "keywords").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+            sb.Append("""
+
+                    static const EventPipeEventDefinition definitions[] =
+                    {
+
+                """);
+            foreach (XElement eventNode in includedEvents)
             {
-                keywordsMask |= keywordMap[keyword];
+                string eventName = Attr(eventNode, "symbol");
+                ulong keywordsMask = 0;
+                foreach (string keyword in Attr(eventNode, "keywords").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    keywordsMask |= keywordMap[keyword];
+                }
+
+                string version = Attr(eventNode, "version");
+                if (!int.TryParse(version, out int versionValue) || versionValue is < 0 or > 255)
+                {
+                    throw new InvalidOperationException($"Event version for {eventName} must fit in uint8_t: {version}");
+                }
+
+                string level = Attr(eventNode, "level").Replace("win:", "EP_EVENT_LEVEL_").ToUpperInvariant();
+                bool needStack = !_exclusions.NoStack.Any(entry => entry.Split(':')[2] == eventName);
+                sb.Append($"        {{ {keywordsMask}, {Attr(eventNode, "value")}, {version}, {level}, {(needStack ? "true" : "false")} }},\n");
             }
 
-            if (!IncludeEvent(providerName, eventName))
-            {
-                continue;
-            }
+            sb.Append($$"""
+                    };
+                    static const EventPipeEventTable eventTable =
+                    {
+                        definitions, EventPipeEvents{{prettyName}}, {{includedEvents.Count}}
+                    };
 
-            string level = Attr(eventNode, "level").Replace("win:", "EP_EVENT_LEVEL_").ToUpperInvariant();
-            bool needStack = !_exclusions.NoStack.Any(entry => entry.Split(':')[2] == eventName);
-            sb.Append($"    EventPipeEvent{eventName} = {addEventFunc}(EventPipeProvider{prettyName},{Attr(eventNode, "value")},{keywordsMask},{Attr(eventNode, "version")},{level},{(needStack ? "true" : "false")}{(_nativeAot ? ",NULL,0" : "")});\n");
+                """);
+            tableExpr = "&eventTable";
         }
 
+        sb.Append($"    EventPipeProvider{prettyName} = {createProviderFunc}({prettyName}Name, {callbackExpr}, nullptr, {tableExpr});\n");
         sb.Append('}');
         return sb.ToString();
     }
@@ -1389,7 +1420,7 @@ sealed class EventDataGenerator
         return packList;
     }
 
-    private string GenerateEventPipeWriteEventBody(Template template, string eventName)
+    private string GenerateEventPipeWriteEventBody(Template template, string eventExpr)
     {
         List<string> packList = [];
 
@@ -1434,8 +1465,8 @@ sealed class EventDataGenerator
         }
 
         sb.Append(_nativeAot
-            ? $"    ep_write_event (EventPipeEvent{eventName}, (uint8_t *)buffer, (uint32_t)offset, reinterpret_cast<const uint8_t*>(ActivityId), reinterpret_cast<const uint8_t*>(RelatedActivityId));\n"
-            : $"    EventPipeAdapter::WriteEvent(EventPipeEvent{eventName}, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);\n");
+            ? $"    ep_write_event ({eventExpr}, (uint8_t *)buffer, (uint32_t)offset, reinterpret_cast<const uint8_t*>(ActivityId), reinterpret_cast<const uint8_t*>(RelatedActivityId));\n"
+            : $"    EventPipeAdapter::WriteEvent({eventExpr}, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);\n");
         if (emittedWriteToBuffer)
         {
             sb.Append(FreeBuffer).Append('\n');
@@ -2156,10 +2187,10 @@ static class Templates
 
         {{WriteAnsiStringToBuffer}}
 
-        EventPipeProvider * create_provider(const WCHAR* providerName, EventPipeCallback callback, void* pCallbackContext = nullptr)
+        EventPipeProvider * create_provider(const WCHAR* providerName, EventPipeCallback callback, void* pCallbackContext = nullptr, const EventPipeEventTable *eventTable = nullptr)
         {
             ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
-            EventPipeProvider * provider = ep_create_provider (providerNameUTF8, callback, pCallbackContext);
+            EventPipeProvider * provider = ep_create_provider_with_events (providerNameUTF8, callback, pCallbackContext, eventTable);
             ep_rt_utf8_string_free (providerNameUTF8);
             return provider;
         }
@@ -2208,7 +2239,7 @@ static class Templates
         bool WriteToBuffer(const WCHAR* str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
         bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
 
-        EventPipeProvider * create_provider(const WCHAR*, EventPipeCallback, void* pCallbackContext = nullptr);
+        EventPipeProvider * create_provider(const WCHAR*, EventPipeCallback, void* pCallbackContext = nullptr, const EventPipeEventTable *eventTable = nullptr);
 
         {{WriteValueToBuffer}}
 

@@ -113,29 +113,7 @@ add_executable_clr(paltests
   loader/LoadLibraryW/test5/loadlibraryw.cpp
   miscellaneous/CloseHandle/test2/test.cpp
   miscellaneous/FlushInstructionCache/test1/test1.cpp
-  miscellaneous/FormatMessageW/test1/test.cpp
-  miscellaneous/FormatMessageW/test2/test.cpp
-  miscellaneous/FormatMessageW/test3/test.cpp
-  miscellaneous/FormatMessageW/test4/test.cpp
-  miscellaneous/FormatMessageW/test5/test.cpp
-  miscellaneous/FormatMessageW/test6/test.cpp
-  miscellaneous/FreeEnvironmentStringsW/test1/test.cpp
-  miscellaneous/FreeEnvironmentStringsW/test2/test.cpp
-  miscellaneous/GetEnvironmentStringsW/test1/test.cpp
-  miscellaneous/GetEnvironmentVariableA/test1/test.cpp
-  miscellaneous/GetEnvironmentVariableA/test2/test.cpp
-  miscellaneous/GetEnvironmentVariableA/test3/test.cpp
-  miscellaneous/GetEnvironmentVariableA/test4/test.cpp
-  miscellaneous/GetEnvironmentVariableA/test5/test5.cpp
-  miscellaneous/GetEnvironmentVariableA/test6/test6.cpp
-  miscellaneous/GetEnvironmentVariableW/test1/test.cpp
-  miscellaneous/GetEnvironmentVariableW/test2/test.cpp
-  miscellaneous/GetEnvironmentVariableW/test3/test.cpp
-  miscellaneous/GetEnvironmentVariableW/test4/test.cpp
-  miscellaneous/GetEnvironmentVariableW/test5/test5.cpp
-  miscellaneous/GetEnvironmentVariableW/test6/test6.cpp
   miscellaneous/GetLastError/test1/test.cpp
-  miscellaneous/GetSystemInfo/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test2/test.cpp
   miscellaneous/InterlockedCompareExchange64/test1/test.cpp
@@ -153,14 +131,6 @@ add_executable_clr(paltests
   miscellaneous/InterlockedIncrement/test2/test.cpp
   miscellaneous/InterlockedIncrement64/test1/test.cpp
   miscellaneous/InterlockedIncrement64/test2/test.cpp
-  miscellaneous/SetEnvironmentVariableA/test1/test1.cpp
-  miscellaneous/SetEnvironmentVariableA/test2/test2.cpp
-  miscellaneous/SetEnvironmentVariableA/test3/test3.cpp
-  miscellaneous/SetEnvironmentVariableA/test4/test4.cpp
-  miscellaneous/SetEnvironmentVariableW/test1/test.cpp
-  miscellaneous/SetEnvironmentVariableW/test2/test.cpp
-  miscellaneous/SetEnvironmentVariableW/test3/test3.cpp
-  miscellaneous/SetEnvironmentVariableW/test4/test4.cpp
   miscellaneous/SetLastError/test1/test.cpp
   pal_specific/PAL_Initialize_Terminate/test1/PAL_Initialize_Terminate.cpp
   pal_specific/PAL_Initialize_Terminate/test2/pal_initialize_twice.cpp
@@ -181,7 +151,6 @@ add_executable_clr(paltests
   threading/GetCurrentThread/test1/thread.cpp
   threading/GetCurrentThread/test2/test2.cpp
   threading/GetCurrentThreadId/test1/threadId.cpp
-  threading/QueryThreadCycleTime/test1/test1.cpp
   threading/ResumeThread/test1/test1.cpp
   threading/RuntimeEvent/test1/test1.cpp
   threading/SwitchToThread/test1/test1.cpp
