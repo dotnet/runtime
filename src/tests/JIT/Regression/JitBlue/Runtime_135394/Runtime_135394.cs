@@ -20,6 +20,8 @@ public class Runtime_135394
         Assert.Equal(2 * sbyte.MinValue, TestFieldCopy(new SByteField { Value = sbyte.MinValue }));
         Assert.Equal(-2, TestScalarCopy((short)-1));
         Assert.Equal(-2, TestScalarCopy((sbyte)-1));
+        Assert.Equal(-1, InvokeShortPrimitiveCopyWithDirtyBits());
+        Assert.Equal(-1, InvokeSBytePrimitiveCopyWithDirtyBits());
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
@@ -64,6 +66,42 @@ public class Runtime_135394
     {
         SByteField result = Unsafe.As<sbyte, SByteField>(ref value);
         return Test(result) + result.Value;
+    }
+
+    // Non-promoted, non-struct-field locals are normalized on load, so the JIT may read them
+    // with undefined upper bits. A plain call always sign/zero-extends the argument, so this
+    // path needs an irregular, mismatched-signature call to expose unnormalized bits in the
+    // argument register, the way a native caller legally could.
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static int TestPrimitiveCopy(short value)
+    {
+        short result = 0;
+        Unsafe.As<short, ShortField>(ref result) = Unsafe.As<short, ShortField>(ref value);
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static int TestPrimitiveCopy(sbyte value)
+    {
+        sbyte result = 0;
+        Unsafe.As<sbyte, SByteField>(ref result) = Unsafe.As<sbyte, SByteField>(ref value);
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe int InvokeShortPrimitiveCopyWithDirtyBits()
+    {
+        delegate*<short, int> typed = &TestPrimitiveCopy;
+        delegate*<int, int> dirty = (delegate*<int, int>)typed;
+        return dirty(0x1FFFF);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe int InvokeSBytePrimitiveCopyWithDirtyBits()
+    {
+        delegate*<sbyte, int> typed = &TestPrimitiveCopy;
+        delegate*<int, int> dirty = (delegate*<int, int>)typed;
+        return dirty(0x1FF);
     }
 
     private struct ShortField

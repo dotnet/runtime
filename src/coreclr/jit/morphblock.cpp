@@ -1038,6 +1038,16 @@ void MorphCopyBlockHelper::TryPrimitiveCopy()
     doRetypeNode(m_store, m_dstVarDsc, /* isUse */ false);
     doRetypeNode(m_src, m_srcVarDsc, /* isUse */ true);
 
+    // A retyped small-typed source local that normalizes on load (e.g. a parameter) may still
+    // have undefined upper bits. A scalar destination that normalizes on store needs those bits
+    // normalized, so insert the cast here; see CopyFieldByField for the analogous promoted-field
+    // case.
+    if (m_store->OperIs(GT_STORE_LCL_VAR) && !m_dstVarDsc->lvNormalizeOnLoad() && m_src->OperIs(GT_LCL_VAR) &&
+        m_srcVarDsc->lvNormalizeOnLoad())
+    {
+        m_store->AsLclVar()->Data() = m_compiler->gtNewCastNode(TYP_INT, m_src, false, storeType);
+    }
+
     m_result                 = m_store;
     m_transformationDecision = BlockTransformation::OneStoreBlock;
 }
