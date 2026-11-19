@@ -5,7 +5,6 @@ using System;
 using System.Collections.Specialized;
 using System.Configuration;
 using System.Runtime.Caching.Resources;
-using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching.Configuration
 {
@@ -21,9 +20,6 @@ namespace System.Runtime.Caching.Configuration
        </system.caching>
     */
 
-#if NET
-    [UnsupportedOSPlatform("browser")]
-#endif
     internal sealed class MemoryCacheSection : ConfigurationSection
     {
         private static readonly ConfigurationProperty s_propNamedCaches = new ConfigurationProperty("namedCaches",

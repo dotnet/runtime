@@ -157,6 +157,22 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
         verifyLclFldDoNotEnregister(storeLoc->GetLclNum());
     }
 
+    // Record blocks with local-to-local copies for fgWasmForwardLocalCopies.
+    if (m_compiler->opts.OptimizationEnabled() && storeLoc->OperIs(GT_STORE_LCL_VAR) &&
+        storeLoc->Data()->OperIs(GT_LCL_VAR))
+    {
+        ArrayStack<BasicBlock*>*& copyBlocks = m_compiler->m_wasmLocalCopyBlocks;
+        if (copyBlocks == nullptr)
+        {
+            copyBlocks = new (m_compiler, CMK_Lower) ArrayStack<BasicBlock*>(m_compiler->getAllocator(CMK_Lower));
+        }
+
+        if (copyBlocks->Empty() || (copyBlocks->Top() != m_block))
+        {
+            copyBlocks->Push(m_block);
+        }
+    }
+
     ContainCheckStoreLoc(storeLoc);
     return storeLoc->gtNext;
 }
