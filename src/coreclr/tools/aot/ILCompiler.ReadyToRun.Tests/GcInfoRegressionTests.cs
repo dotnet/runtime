@@ -1,18 +1,168 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+extern alias crossgen2;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
+using crossgen2::ILCompiler;
+using crossgen2::ILCompiler.DependencyAnalysis;
+using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
+using crossgen2::Internal.JitInterface;
 using ILCompiler.Reflection.ReadyToRun;
 using ILCompiler.Reflection.ReadyToRun.Amd64;
+using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 using Xunit;
 
 namespace ILCompiler.ReadyToRun.Tests;
 
 public class GcInfoRegressionTests
 {
+    private unsafe delegate int GatherLayout(MetadataType type, byte* gcPtrs);
+
+    [Theory]
+    [InlineData(TargetArchitecture.X86, "ReferenceArray", "RRR")]
+    [InlineData(TargetArchitecture.X64, "ReferenceArray", "RRR")]
+    [InlineData(TargetArchitecture.X86, "FirstOverlap", "RRR")]
+    [InlineData(TargetArchitecture.X64, "FirstOverlap", "RRR")]
+    [InlineData(TargetArchitecture.X86, "LastOverlap", "RRR")]
+    [InlineData(TargetArchitecture.X64, "LastOverlap", "RRR")]
+    [InlineData(TargetArchitecture.X86, "ReversedOverlap", "RRR")]
+    [InlineData(TargetArchitecture.X64, "ReversedOverlap", "RRR")]
+    [InlineData(TargetArchitecture.X86, "ArrayOverlap", "RRR")]
+    [InlineData(TargetArchitecture.X64, "ArrayOverlap", "RRR")]
+    [InlineData(TargetArchitecture.X86, "NestedOverlap", "RNRNRN")]
+    [InlineData(TargetArchitecture.X64, "NestedOverlap", "RNRNRN")]
+    public unsafe void InlineArrayGCLayoutCountsOverlappingSlotsOnce(
+        TargetArchitecture architecture, string typeName, string expectedLayout)
+    {
+        TargetDetails target = new(architecture, TargetOS.Linux, TargetAbi.NativeAot);
+        string source = $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+
+            namespace Tests
+            {
+                [InlineArray(3)]
+                public struct ReferenceArray { public object Element; }
+
+                public struct Element { public object Reference; public nint Scalar; }
+
+                [InlineArray(3)]
+                public struct NestedArray { public Element Element; }
+
+                [StructLayout(LayoutKind.Explicit)]
+                public struct FirstOverlap
+                {
+                    [FieldOffset(0)] public object Reference;
+                    [FieldOffset(0)] public ReferenceArray Array;
+                }
+
+                [StructLayout(LayoutKind.Explicit)]
+                public struct LastOverlap
+                {
+                    [FieldOffset({{2 * target.PointerSize}})] public object Reference;
+                    [FieldOffset(0)] public ReferenceArray Array;
+                }
+
+                [StructLayout(LayoutKind.Explicit)]
+                public struct ReversedOverlap
+                {
+                    [FieldOffset(0)] public ReferenceArray Array;
+                    [FieldOffset(0)] public object Reference;
+                }
+
+                [StructLayout(LayoutKind.Explicit)]
+                public struct ArrayOverlap
+                {
+                    [FieldOffset(0)] public ReferenceArray First;
+                    [FieldOffset(0)] public ReferenceArray Second;
+                }
+
+                [StructLayout(LayoutKind.Explicit)]
+                public struct NestedOverlap
+                {
+                    [FieldOffset(0)] public object Reference;
+                    [FieldOffset(0)] public NestedArray Array;
+                }
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            string assemblyPath = Path.Combine(workingDirectory, "GCLayout.dll");
+            R2RTestCaseCompiler compiler = new([TestPaths.SystemPrivateCoreLibPath]);
+            compiler.CompileAssembly("GCLayout", [source], assemblyPath);
+            InstructionSetSupport instructionSets = new(default, default, architecture);
+            ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes,
+                bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: true, targetIsSingleThreaded: false,
+                instructionSets, oldTypeSystemContext: null)
+            {
+                InputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["System.Private.CoreLib"] = TestPaths.SystemPrivateCoreLibPath,
+                    ["GCLayout"] = assemblyPath,
+                },
+                ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+            };
+            context.SetSystemModule((EcmaModule)context.GetModuleForSimpleName("System.Private.CoreLib"));
+            EcmaModule module = (EcmaModule)context.GetModuleForSimpleName("GCLayout");
+            context.SetCompilationGroup(new ReadyToRunSingleAssemblyCompilationModuleGroup(new ReadyToRunCompilationModuleGroupConfig
+            {
+                Context = context,
+                IsInputBubble = true,
+                CompilationModuleSet = [module],
+                VersionBubbleModuleSet = [context.SystemModule, module],
+                CrossModuleInlineable = [],
+                InstructionSetSupport = instructionSets,
+            }));
+
+            NodeFactory factory = (NodeFactory)RuntimeHelpers.GetUninitializedObject(typeof(NodeFactory));
+            SetField(factory, "<TypeSystemContext>k__BackingField", context);
+            ReadyToRunCodegenCompilation compilation = (ReadyToRunCodegenCompilation)RuntimeHelpers.GetUninitializedObject(
+                typeof(ReadyToRunCodegenCompilation));
+            SetField(compilation, "_nodeFactory", factory);
+            CorInfoImpl corInfo = (CorInfoImpl)RuntimeHelpers.GetUninitializedObject(typeof(CorInfoImpl));
+            SetField(corInfo, "_compilation", compilation);
+            GatherLayout gather = typeof(CorInfoImpl).GetMethod("GatherClassGCLayout", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .CreateDelegate<GatherLayout>(corInfo);
+
+            MetadataType type = module.GetType("Tests"u8, System.Text.Encoding.UTF8.GetBytes(typeName));
+            byte[] layout = new byte[type.GetElementSize().AsInt / target.PointerSize];
+            byte[] expected = new byte[expectedLayout.Length];
+            int expectedCount = 0;
+            for (int i = 0; i < expected.Length; i++)
+            {
+                if (expectedLayout[i] == 'R')
+                {
+                    expected[i] = (byte)CorInfoGCType.TYPE_GC_REF;
+                    expectedCount++;
+                }
+            }
+            fixed (byte* gcPtrs = layout)
+            {
+                int count = gather(type, gcPtrs);
+                Assert.Equal(expected, layout);
+                Assert.Equal(expectedCount, count);
+            }
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+
+        static void SetField(object instance, string name, object value) =>
+            instance.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(instance, value);
+    }
+
     [Theory]
     [InlineData(Machine.LoongArch64, 0, 22u)]
     [InlineData(Machine.LoongArch64, 1, 3u)]
