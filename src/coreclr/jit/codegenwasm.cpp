@@ -4740,11 +4740,10 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
         maxVirtualIP = max(maxVirtualIP, func->endVirtualIP);
     }
 
-    // CoreCLR doubles virtual IPs to preserve the low-bit tag on virtual code addresses.
-    // NativeAOT uses unscaled virtual IPs.
+    // The runtimes double virtual IPs to preserve the low-bit tag on virtual code addresses.
     // Use 1 as the prolog size.
     //
-    codeSize   = m_compiler->IsNativeAot() ? maxVirtualIP : 2 * maxVirtualIP;
+    codeSize   = 2 * maxVirtualIP;
     prologSize = 1;
 
     // Wasm GC info has an implicit frame register even when there is no linear-memory frame.

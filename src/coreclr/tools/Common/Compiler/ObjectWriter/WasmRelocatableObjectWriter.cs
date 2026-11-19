@@ -654,6 +654,7 @@ namespace ILCompiler.ObjectWriter
             {
                 FrameInfo frame = frames[i];
                 // The JIT interleaves frame size / 16 and virtual IP span / 2 in one ULEB128.
+                // As in CoreCLR, the runtime doubles JIT virtual IPs, so method starts stay odd.
                 ulong encoded = DwarfHelper.ReadULEB128(frame.BlobData);
                 uint frameSize = (uint)((encoded & 0xF) | (((encoded >> 8) & 0xF) << 4) |
                                         (((encoded >> 16) & 0xFFFF) << 8)) * 16;
