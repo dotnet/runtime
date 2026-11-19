@@ -26,4 +26,7 @@ mono_unsafe_accessor_find_ctor (MonoClass *in_class, MonoMethodSignature *sig, M
 MonoMethod*
 mono_unsafe_accessor_find_method (MonoClass *in_class, const char *name, MonoMethodSignature *sig, MonoClass *from_class, MonoError *error);
 
+gboolean
+mono_unsafe_accessor_verify_constraints (MonoMethod *accessor_method, MonoClass *target_class, MonoMethod *target_method, MonoError *error);
+
 #endif /* __MONO_METADATA_UNSAFE_ACCESSOR_H__ */
