@@ -368,7 +368,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 
     <ItemGroup>
       <_Crossgen2GeneratorArg Include="--targetos:$(TargetOS)" />
-      <_Crossgen2GeneratorArg Include="--targetarch:wasm" />
+      <_Crossgen2GeneratorArg Include="--targetarch:$(TargetArchitecture)" />
       <_Crossgen2GeneratorArg Include="--generate-portable-callhelpers:$(_WasmCorerunDir)" />
       <_Crossgen2GeneratorArg Include="@(_WasmCorerunPInvokeModule->'--directpinvoke:%(Identity)')" />
       <_Crossgen2GeneratorArg Include="@(_WasmCorerunManagedAssembly->'%(FullPath)')" />

@@ -11,7 +11,7 @@ function print_usage {
     echo 'Optional arguments:'
     echo '  -h|--help                        : Show usage information.'
     echo '  -v, --verbose                    : Show output from each test.'
-    echo '  <arch>                           : One of x64, x86, arm, arm64, loongarch64, riscv64, wasm. Defaults to current architecture.'
+    echo '  <arch>                           : One of x64, x86, arm, arm64, loongarch64, riscv64, wasm, wasm64. Defaults to current architecture.'
     echo '  <build configuration>            : One of debug, checked, release. Defaults to debug.'
     echo '  android                          : Set build OS to Android.'
     echo '  wasi                             : Set build OS to WASI.'
@@ -114,8 +114,8 @@ do
         riscv64)
             buildArch="riscv64"
             ;;
-        wasm)
-            buildArch="wasm"
+        wasm|wasm64)
+            buildArch="$1"
             ;;
         android)
             buildOS="android"
@@ -231,7 +231,7 @@ do
 done
 
 # Set default for RunWithNodeJS when using wasm architecture
-if [ "$buildArch" = "wasm" ] && [ -z "$RunWithNodeJS" ]; then
+if [[ "$buildArch" == wasm || "$buildArch" == wasm64 ]] && [ -z "$RunWithNodeJS" ]; then
     export RunWithNodeJS=1
 fi
 
@@ -244,7 +244,7 @@ runtestArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}")
 echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"
 
-if [ "$buildArch" = "wasm" -a -z "$buildOS" ]; then
+if [[ "$buildArch" == wasm || "$buildArch" == wasm64 ]] && [ -z "$buildOS" ]; then
     buildOS="browser"
 fi
 

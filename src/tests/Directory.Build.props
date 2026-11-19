@@ -196,6 +196,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <CLRTestMSBuildArgs>/p:MSBuildEnableWorkloadResolver=false /p:Configuration=$(Configuration)</CLRTestMSBuildArgs>
+    <RuntimeIdentifierGraphPath Condition="'$(TargetArchitecture)' == 'wasm64'">$(RepoRoot)src/libraries/Microsoft.NETCore.Platforms/src/PortableRuntimeIdentifierGraph.json</RuntimeIdentifierGraphPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
