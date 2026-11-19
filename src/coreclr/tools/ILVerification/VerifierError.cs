@@ -145,5 +145,6 @@ namespace ILVerify
         ExpectedSignatureToken, // Expected signature token.
         ReadOnlyInMkrefany, // A readonly ByRef cannot be used with mkrefany.
         LocallocInHandler, // localloc cannot be used in an exception filter or handler.
+        JmpInsideER, // The jmp instruction cannot be used to transfer control out of an exception handling region or a synchronized method.
     }
 }

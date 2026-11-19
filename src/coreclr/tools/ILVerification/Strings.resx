@@ -267,6 +267,9 @@
   <data name="InitOnly" xml:space="preserve">
     <value>Cannot change initonly field outside its .ctor.</value>
   </data>
+  <data name="JmpInsideER" xml:space="preserve">
+    <value>The jmp instruction cannot be used to transfer control out of a try, filter, catch, fault or finally block, or out of a synchronized method.</value>
+  </data>
   <data name="LdftnCtor" xml:space="preserve">
     <value>ldftn/ldvirtftn not allowed on .ctor.</value>
   </data>
