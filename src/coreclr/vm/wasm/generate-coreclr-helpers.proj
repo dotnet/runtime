@@ -19,6 +19,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <CallHelperTargetArchitecture Condition="'$(CallHelperTargetArchitecture)' == ''">wasm</CallHelperTargetArchitecture>
   </PropertyGroup>
 
   <!-- The framework P/Invoke modules, shared with the runtime tests' corerun relink so the
@@ -36,10 +37,13 @@
 
   <ItemGroup>
     <_WasmCallHelperTarget Include="browser" Condition="'$(CallHelperTargetOS)' == '' or '$(CallHelperTargetOS)' == 'browser'">
+      <OutputFlavor Condition="'$(CallHelperTargetArchitecture)' == 'wasm64'">browser-wasm64</OutputFlavor>
+      <OutputFlavor Condition="'$(CallHelperTargetArchitecture)' == 'wasm'">browser</OutputFlavor>
       <ScanPath Condition="'$(BrowserScanPath)' != ''">$([MSBuild]::EnsureTrailingSlash('$(BrowserScanPath)'))</ScanPath>
-      <ScanPath Condition="'$(BrowserScanPath)' == ''">$(_TesthostDir)$(NetCoreAppCurrent)-browser-$(Configuration)-wasm/shared/Microsoft.NETCore.App/$(_FrameworkVersion)/</ScanPath>
+      <ScanPath Condition="'$(BrowserScanPath)' == ''">$(_TesthostDir)$(NetCoreAppCurrent)-browser-$(Configuration)-$(CallHelperTargetArchitecture)/shared/Microsoft.NETCore.App/$(_FrameworkVersion)/</ScanPath>
     </_WasmCallHelperTarget>
     <_WasmCallHelperTarget Include="wasi" Condition="'$(CallHelperTargetOS)' == '' or '$(CallHelperTargetOS)' == 'wasi'">
+      <OutputFlavor>wasi</OutputFlavor>
       <ScanPath Condition="'$(WasiScanPath)' != ''">$([MSBuild]::EnsureTrailingSlash('$(WasiScanPath)'))</ScanPath>
       <ScanPath Condition="'$(WasiScanPath)' == ''">$(_TesthostDir)$(NetCoreAppCurrent)-wasi-$(Configuration)-wasm/shared/Microsoft.NETCore.App/$(_FrameworkVersion)/</ScanPath>
     </_WasmCallHelperTarget>
@@ -88,6 +92,8 @@
   <Target Name="_ValidateCallHelperTargetOS">
     <Error Condition="'@(_WasmCallHelperTarget)' == ''"
            Text="Unknown CallHelperTargetOS '$(CallHelperTargetOS)'. Expected browser or wasi." />
+    <Error Condition="'$(CallHelperTargetArchitecture)' != 'wasm' and ('$(CallHelperTargetArchitecture)' != 'wasm64' or '$(CallHelperTargetOS)' != 'browser')"
+           Text="CallHelperTargetArchitecture must be wasm, or wasm64 with CallHelperTargetOS=browser." />
   </Target>
 
   <!-- Batched over _WasmCallHelperTarget: one crossgen2 run per wasm flavor. -->
@@ -98,8 +104,9 @@
       <!-- The self-contained crossgen2 from the same per-flavor build output that produced the
            scan path. -->
       <_Crossgen2Path>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'coreclr', '$(_TargetOS).wasm.$(Configuration)', '$(BuildArchitecture)', 'crossgen2', 'crossgen2$(ExeSuffix)'))</_Crossgen2Path>
-      <_OutputDir>$(MSBuildThisFileDirectory)$(_TargetOS)/</_OutputDir>
-      <_ResponseFileDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'wasm-callhelpers', '$(_TargetOS)'))</_ResponseFileDir>
+      <_OutputFlavor>%(_WasmCallHelperTarget.OutputFlavor)</_OutputFlavor>
+      <_OutputDir>$(MSBuildThisFileDirectory)$(_OutputFlavor)/</_OutputDir>
+      <_ResponseFileDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'wasm-callhelpers', '$(_OutputFlavor)'))</_ResponseFileDir>
       <_ResponseFile>$(_ResponseFileDir)generate-coreclr-helpers.rsp</_ResponseFile>
       <_StagingDir>$(_ResponseFileDir)generated/</_StagingDir>
     </PropertyGroup>
@@ -133,7 +140,7 @@
                             Condition="'$(_TargetOS)' == 'wasi'" />
       <_GeneratorArg Remove="@(_GeneratorArg)" />
       <_GeneratorArg Include="--targetos:$(_TargetOS)" />
-      <_GeneratorArg Include="--targetarch:wasm" />
+      <_GeneratorArg Include="--targetarch:$(CallHelperTargetArchitecture)" />
       <_GeneratorArg Include="--generate-portable-callhelpers:$(_StagingDir)" />
       <_GeneratorArg Include="@(_TargetPInvokeModule->'--directpinvoke:%(Identity)')" />
       <_GeneratorArg Include="@(_ScanAssembly->'%(FullPath)')" />

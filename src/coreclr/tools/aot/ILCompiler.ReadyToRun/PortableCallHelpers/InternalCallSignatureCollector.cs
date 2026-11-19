@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -73,13 +74,10 @@ namespace ILCompiler.PortableCallHelpers
                     _entrypoints.Add(new PInvokeInfo(name, "QCall", (EcmaMethod)method, wasmLinkage: false));
                 }
 
-                // String constructors never reach a signature-derived thunk. They are compiled as static
-                // factories ("String Ctor(args)", see WasmLowering.GetStringCtorActualSignature), and the
-                // runtime special-cases them in both directions with hardcoded keys before it consults
-                // this table: GetCookieForCalliSig and GetPortableEntryPointToInterpreterThunk in
-                // src/coreclr/vm/wasm/helpers.cpp. Emitting the declared "void .ctor(this, args)" shape
-                // here would only add entries nothing can look up.
-                if (method.IsConstructor && method.OwningType.IsWellKnownType(WellKnownType.String))
+                // String constructors are keyed on their static factory signature. The checked-in wasm32
+                // tables already contain those signatures, so only generate them for wasm64.
+                bool isStringConstructor = method.IsConstructor && method.OwningType.IsWellKnownType(WellKnownType.String);
+                if (isStringConstructor && method.Context.Target.PointerSize == 4)
                     continue;
 
                 // A generic has no single signature to generate a thunk from, so the interpreter
@@ -95,7 +93,9 @@ namespace ILCompiler.PortableCallHelpers
                 {
                     // A managed signature: the lowering adds the 'T' for an instance method and the
                     // trailing 'p' for the portable entry point parameter.
-                    string signature = InteropSignature.GetMethodSignature(method);
+                    string signature = isStringConstructor
+                        ? WasmLowering.GetSignature(WasmLowering.GetStringCtorActualSignature(method.Signature), WasmLowering.LoweringFlags.None).SignatureString
+                        : InteropSignature.GetMethodSignature(method);
                     if (_signatures.TryAdd(signature, method))
                         log.Verbose($"Adding InternalCall signature {signature} for method '{type}.{method.Name.ToString()}'");
                 }

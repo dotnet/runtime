@@ -132,7 +132,7 @@ namespace ILCompiler.PortableCallHelpers
                 signatures.TryAdd(internalCall.Key, internalCall.Value);
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, InterpToNativeFileName), log,
-                w => InterpToNativeGenerator.Emit(w, signatures));
+                w => InterpToNativeGenerator.Emit(w, signatures, context.Target.PointerSize));
         }
 
         /// <summary>

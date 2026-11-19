@@ -150,6 +150,9 @@ namespace ILCompiler.PortableCallHelpers
                 """);
 
             var moduleImports = new Dictionary<string, List<string>>();
+            const string GlobalizationModule = "libSystem.Globalization.Native";
+            bool optionalIcu = target.Architecture == TargetArchitecture.Wasm64 &&
+                target.OperatingSystem == TargetOS.Browser && modules.Contains(GlobalizationModule);
             foreach (string module in modules)
             {
                 // the order here is not important, because we use hash tables, we want it to be stable though
@@ -171,6 +174,9 @@ namespace ILCompiler.PortableCallHelpers
                     .ToList();
 
                 moduleImports[module] = imports;
+                bool guardModule = optionalIcu && module == GlobalizationModule;
+                if (guardModule)
+                    w.WriteLine("#ifdef FEATURE_WASM64_ICU");
                 w.Write(
                     $$"""
 
@@ -178,6 +184,21 @@ namespace ILCompiler.PortableCallHelpers
                     {{string.Concat(imports)}}};
 
                     """);
+                if (guardModule)
+                    w.WriteLine("#endif");
+            }
+
+            string FormatModule(string module) =>
+                $"{{\"{EscapeLiteral(module)}\", s_{FixupSymbolName(module)}, {moduleImports[module].Count}}}";
+
+            string moduleRows = string.Join($",{w.NewLine}    ",
+                modules.Where(m => !optionalIcu || m != GlobalizationModule).Select(FormatModule));
+            if (optionalIcu)
+            {
+                // One generated table must work on builders both with and without memory64 ICU.
+                moduleRows += (moduleRows.Length == 0 ? "" : ",") + w.NewLine +
+                    "#ifdef FEATURE_WASM64_ICU" + w.NewLine +
+                    $"    {FormatModule(GlobalizationModule)}" + w.NewLine + "#endif";
             }
 
             w.Write(
@@ -190,7 +211,7 @@ namespace ILCompiler.PortableCallHelpers
                 } PInvokeTable;
 
                 static PInvokeTable s_PInvokeTables[] = {
-                    {{string.Join($",{w.NewLine}    ", modules.Select(m => $"{{\"{EscapeLiteral(m)}\", s_{FixupSymbolName(m)}, {moduleImports[m].Count}}}"))}}
+                    {{moduleRows}}
                 };
                 const size_t s_PInvokeTablesCount = sizeof(s_PInvokeTables) / sizeof(s_PInvokeTables[0]);
 
