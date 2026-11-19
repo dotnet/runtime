@@ -406,6 +406,42 @@ public class WasmInterpreterTransitions
         // CoreLib constructor and an interpreted caller reaches a compiled one, depending on whether
         // CoreLib itself was compiled.
         AssertStringConstructors();
+
+        // Interface calls on a boxed value type enter through an unboxing stub that skips the
+        // MethodTable pointer and, for shared code, passes the generic context: U for exact code,
+        // UG for a MethodTable context (with and without a return buffer), and UM for a MethodDesc
+        // context. The stub reads its target from the pointer-sized fields before its entry point.
+        AssertUnboxingStubs();
+    }
+
+    private static void AssertUnboxingStubs()
+    {
+        Assert.Equal(s_expectedUnboxingResults, CallUnboxingStubsR2R(new UnboxNormal { Value = 5 }, new UnboxShared<string> { Value = 7 }, new UnboxGenericMethod { Value = 9 }));
+        Assert.Equal(s_expectedUnboxingResults, CallUnboxingStubsInterpreted(new UnboxNormal { Value = 5 }, new UnboxShared<string> { Value = 7 }, new UnboxGenericMethod { Value = 9 }));
+    }
+
+    private static readonly string[] s_expectedUnboxingResults = ["0x100000014", "7", "7", "String7", "7:3", "String9"];
+
+    // CallUnboxingStubsR2R and CallUnboxingStubsInterpreted must stay identical apart from where they run.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string[] CallUnboxingStubsR2R(IUnboxNormal normal, IUnboxShared<string> shared, IUnboxGenericMethod genericMethod)
+    {
+        string combined = "0x" + normal.Combine(0x100000000L, 15).ToString("x");
+        normal.Increment();
+        string incremented = normal.Increment().ToString();
+        S16 pair = shared.GetPair(3);
+        return [combined, incremented, shared.GetValue().ToString(), shared.Describe(), $"{pair.A}:{pair.B}", genericMethod.Describe<string>()];
+    }
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string[] CallUnboxingStubsInterpreted(IUnboxNormal normal, IUnboxShared<string> shared, IUnboxGenericMethod genericMethod)
+    {
+        string combined = "0x" + normal.Combine(0x100000000L, 15).ToString("x");
+        normal.Increment();
+        string incremented = normal.Increment().ToString();
+        S16 pair = shared.GetPair(3);
+        return [combined, incremented, shared.GetValue().ToString(), shared.Describe(), $"{pair.A}:{pair.B}", genericMethod.Describe<string>()];
     }
 
     private static readonly string[] s_expectedStrings = ["xxx", "wasm", "as", "sm", "wasm", "wa", "64", "6", "64"];
@@ -1066,4 +1102,49 @@ public static class ObjectPairTargetExtensions
 public static class GenericObjectPairTarget<T>
 {
     public static ObjectPair GetPair(ObjectPairTarget target) => target.Pair;
+}
+
+public interface IUnboxNormal
+{
+    long Combine(long high, int low);
+    int Increment();
+}
+
+public struct UnboxNormal : IUnboxNormal
+{
+    public int Value;
+
+    public long Combine(long high, int low) => high + low + Value;
+
+    public int Increment() => ++Value;
+}
+
+public interface IUnboxShared<T>
+{
+    int GetValue();
+    string Describe();
+    WasmInterpreterTransitions.S16 GetPair(int b);
+}
+
+public struct UnboxShared<T> : IUnboxShared<T> where T : class
+{
+    public int Value;
+
+    public int GetValue() => Value;
+
+    public string Describe() => typeof(T).Name + Value;
+
+    public WasmInterpreterTransitions.S16 GetPair(int b) => new WasmInterpreterTransitions.S16 { A = Value, B = b };
+}
+
+public interface IUnboxGenericMethod
+{
+    string Describe<T>();
+}
+
+public struct UnboxGenericMethod : IUnboxGenericMethod
+{
+    public int Value;
+
+    public string Describe<T>() => typeof(T).Name + Value;
 }
