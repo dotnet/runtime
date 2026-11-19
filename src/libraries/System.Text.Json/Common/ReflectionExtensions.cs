@@ -69,13 +69,6 @@ namespace System.Text.Json.Reflection
             return null;
         }
 
-#if !BUILDING_SOURCE_GENERATOR
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The 'interfaceType' must exist and so trimmer kept it. In which case " +
-                "It also kept it on any type which implements it. The below call to GetInterfaces " +
-                "may return fewer results when trimmed but it will return the 'interfaceType' " +
-                "if the type implemented it, even after trimming.")]
-#endif
         public static Type? GetCompatibleGenericInterface(this Type type, Type? interfaceType)
         {
             if (interfaceType is null)
@@ -99,24 +92,10 @@ namespace System.Text.Json.Reflection
                 return type;
             }
 
-#if NET12_0_OR_GREATER
             foreach (Type typeToCheck in type.GetInterfacesWithSameMetadataDefinitionAs(interfaceType))
             {
                 return typeToCheck;
             }
-#else
-            foreach (Type typeToCheck in type.GetInterfaces())
-            {
-                if (typeToCheck.IsGenericType)
-                {
-                    Type genericInterfaceToCheck = typeToCheck.GetGenericTypeDefinition();
-                    if (genericInterfaceToCheck == interfaceType)
-                    {
-                        return typeToCheck;
-                    }
-                }
-            }
-#endif
 
             return null;
         }

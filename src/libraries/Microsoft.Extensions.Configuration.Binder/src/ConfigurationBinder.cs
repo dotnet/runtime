@@ -1167,21 +1167,8 @@ namespace Microsoft.Extensions.Configuration
                 return actual;
             }
 
-#if NET12_0_OR_GREATER
             Type[] interfaces = actual.GetInterfacesWithSameMetadataDefinitionAs(expected);
             return interfaces.Length > 0 ? interfaces[0] : null;
-#else
-            Type[] interfaces = actual.GetInterfaces();
-            foreach (Type interfaceType in interfaces)
-            {
-                if (interfaceType.IsGenericType &&
-                    interfaceType.GetGenericTypeDefinition() == expected)
-                {
-                    return interfaceType;
-                }
-            }
-            return null;
-#endif
         }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]

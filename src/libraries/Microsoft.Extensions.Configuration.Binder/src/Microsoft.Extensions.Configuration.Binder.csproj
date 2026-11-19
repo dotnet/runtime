@@ -41,6 +41,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Compile Include="$(CommonPath)Polyfills\TypePolyfills.GetInterfacesWithSameMetadataDefinitionAs.cs" Link="Common\Polyfills\TypePolyfills.GetInterfacesWithSameMetadataDefinitionAs.cs" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
   </ItemGroup>
 

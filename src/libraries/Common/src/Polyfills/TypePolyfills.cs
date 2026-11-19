@@ -4,7 +4,7 @@
 namespace System;
 
 /// <summary>Provides downlevel polyfills for instance members on <see cref="Type"/>.</summary>
-internal static class TypePolyfills
+internal static partial class TypePolyfills
 {
     extension(Type type)
     {
