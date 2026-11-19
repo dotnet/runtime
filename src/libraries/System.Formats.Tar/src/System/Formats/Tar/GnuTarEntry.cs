@@ -51,18 +51,16 @@ namespace System.Formats.Tar
             : base(other, TarEntryFormat.Gnu)
         {
             // Some tools don't accept Gnu entries that have an atime/ctime.
-            // We only copy atime/ctime and the remaining GNU-specific header bytes for round-tripping between GnuTarEntries and clear them for other formats.
+            // We only copy atime/ctime for round-tripping between GnuTarEntries and clear it for other formats.
             if (other is GnuTarEntry gnuOther)
             {
                 _header._aTime = gnuOther.AccessTime;
                 _header._cTime = gnuOther.ChangeTime;
-                _header._gnuUnusedBytes = gnuOther._header._gnuUnusedBytes;
             }
             else
             {
                 Debug.Assert(_header._aTime == default);
                 Debug.Assert(_header._cTime == default);
-                Debug.Assert(_header._gnuUnusedBytes is null);
             }
         }
 

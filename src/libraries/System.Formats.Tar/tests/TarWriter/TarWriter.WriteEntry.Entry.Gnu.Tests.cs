@@ -110,7 +110,8 @@ namespace System.Formats.Tar.Tests
         }
 
         // The GNU header fields 'offset', 'longnames', 'unused', 'sparse', 'isextended' and 'realsize'
-        // are not exposed publicly, but they must be preserved when an entry is written into another GNU archive.
+        // are not exposed publicly. They must be preserved when a multi-volume entry is written into another GNU archive,
+        // and cleared for entry types that GNU tar never sets them for.
         private const int GnuUnusedFieldsOffset = 369;
         private const int GnuUnusedFieldsLength = 126;
 
@@ -121,11 +122,13 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryType.RegularFile, true, true)]
         [InlineData(TarEntryType.MultiVolume, false, false)]
         [InlineData(TarEntryType.MultiVolume, false, true)]
-        public async Task Write_PreservesUnusedGnuFields(TarEntryType entryType, bool convertWithConstructor, bool async)
+        public async Task Write_UnusedGnuFields(TarEntryType entryType, bool convertWithConstructor, bool async)
         {
             byte[] content = "Hello, GNU!"u8.ToArray();
             byte[] sourceArchive = BuildRawGnuArchiveWithUnusedFields(entryType, content);
-            byte[] expectedUnusedFields = sourceArchive.AsSpan(GnuUnusedFieldsOffset, GnuUnusedFieldsLength).ToArray();
+            byte[] expectedUnusedFields = entryType is TarEntryType.MultiVolume
+                ? sourceArchive.AsSpan(GnuUnusedFieldsOffset, GnuUnusedFieldsLength).ToArray()
+                : new byte[GnuUnusedFieldsLength];
 
             using MemoryStream destination = new MemoryStream();
             await using (TarReaderHolder readerHolder = CreateTarReader(new MemoryStream(sourceArchive), async, leaveOpen: false))
@@ -148,6 +151,7 @@ namespace System.Formats.Tar.Tests
 
             byte[] destinationArchive = destination.ToArray();
             Assert.Equal(expectedUnusedFields, destinationArchive.AsSpan(GnuUnusedFieldsOffset, GnuUnusedFieldsLength).ToArray());
+            Assert.False(destinationArchive.AsSpan(GnuUnusedFieldsOffset + GnuUnusedFieldsLength, 512 - GnuUnusedFieldsOffset - GnuUnusedFieldsLength).ContainsAnyExcept((byte)0));
 
             // The checksum must account for the preserved bytes, so the archive must be readable.
             destination.Position = 0;
@@ -192,6 +196,7 @@ namespace System.Formats.Tar.Tests
             }
             header[482] = 1; // isextended
             WriteRawOctalField(header, 483, 12, 4096); // realsize
+            header[494] = 0x80; // last byte of realsize: set to verify the whole range is preserved
 
             WriteHeaderChecksum(header);
 

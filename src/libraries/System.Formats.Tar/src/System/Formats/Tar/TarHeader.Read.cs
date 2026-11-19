@@ -623,8 +623,13 @@ namespace System.Formats.Tar
             _cTime = ParseAsTimestamp(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
 
             // Preserve the raw bytes of the GNU fields that are not exposed publicly, so they can be written back into another GNU archive.
+            // GNU tar only sets them for multi-volume and old GNU sparse entries, while other readers (e.g. libarchive) interpret them
+            // for any entry type, so they are dropped for other entry types. Sparse entries followed by extension blocks are excluded
+            // because those blocks are not round-tripped.
             ReadOnlySpan<byte> unusedBytes = buffer.Slice(FieldLocations.GnuUnused, FieldLengths.AllGnuUnused);
-            if (unusedBytes.ContainsAnyExcept((byte)0))
+            if ((_typeFlag is TarEntryType.MultiVolume ||
+                 (_typeFlag is TarEntryType.SparseFile && buffer[FieldLocations.IsExtended] == 0)) &&
+                unusedBytes.ContainsAnyExcept((byte)0))
             {
                 _gnuUnusedBytes = unusedBytes.ToArray();
             }

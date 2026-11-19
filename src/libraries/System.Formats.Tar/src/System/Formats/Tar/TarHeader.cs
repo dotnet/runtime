@@ -107,8 +107,8 @@ namespace System.Formats.Tar
         internal DateTimeOffset _cTime;
 
         // Raw bytes of the GNU fields that are not exposed publicly: offset, longnames, unused, sparse, isextended and realsize.
-        // They are preserved so that an entry read from a GNU archive writes them back unchanged into another GNU archive.
-        // Null when all of these bytes are zero.
+        // They are preserved for multi-volume and old GNU sparse entries read from a GNU archive, so they are written back unchanged into another GNU archive.
+        // Null when all of these bytes are zero or the entry type doesn't use them.
         internal byte[]? _gnuUnusedBytes;
 
         // Constructor called when creating an entry with default common fields.
