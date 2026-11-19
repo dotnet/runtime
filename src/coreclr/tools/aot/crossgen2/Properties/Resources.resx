@@ -303,6 +303,9 @@
   <data name="AuxiliaryModulesRequiresBrowserWasmTarget" xml:space="preserve">
     <value>--auxiliary-modules requires --targetarch wasm together with --targetos browser</value>
   </data>
+  <data name="AuxiliaryModulesRequiresDefaultMethodLayout" xml:space="preserve">
+    <value>--auxiliary-modules requires the default method layout. Omit --method-layout or use --method-layout DefaultSort.</value>
+  </data>
   <data name="TargetOSUnsupported" xml:space="preserve">
     <value>Target OS is not supported</value>
   </data>

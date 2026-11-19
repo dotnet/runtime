@@ -88,10 +88,13 @@ namespace ILCompiler
                 throw new CommandLineException(SR.GeneratePortableCallHelpersRequiresWasmTarget);
             }
 
-            if (Get(_command.AuxiliaryModules)
-                && (targetArchitecture != TargetArchitecture.Wasm32 || targetOS != TargetOS.Browser))
+            if (Get(_command.AuxiliaryModules))
             {
-                throw new CommandLineException(SR.AuxiliaryModulesRequiresBrowserWasmTarget);
+                if (targetArchitecture != TargetArchitecture.Wasm32 || targetOS != TargetOS.Browser)
+                    throw new CommandLineException(SR.AuxiliaryModulesRequiresBrowserWasmTarget);
+
+                if (Get(_command.MethodLayout) != MethodLayoutAlgorithm.DefaultSort)
+                    throw new CommandLineException(SR.AuxiliaryModulesRequiresDefaultMethodLayout);
             }
             bool targetAllowsRuntimeCodeGeneration = Get(_command.TargetAllowsRuntimeCodeGeneration)
                 ?? GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);

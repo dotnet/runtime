@@ -927,7 +927,7 @@ Each type or module fixup is encoded as an import section index followed by a fi
 
 ## ReadyToRunSectionType.AuxiliaryModuleMetadata (v34.1+)
 
-This optional browser-wasm section describes the auxiliary modules that hold part of the image's compiled code. Crossgen2 emits it only when `--auxiliary-modules` is passed. The section starts with a header of six 32-bit fields:
+This optional browser-wasm section describes the auxiliary modules that hold part of the image's compiled code. Crossgen2 emits it only when `--auxiliary-modules` is passed. This option requires the default method layout so primary methods precede auxiliary methods. The section starts with a header of six 32-bit fields:
 
 | Field | Meaning |
 |---|---|
