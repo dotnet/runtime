@@ -101,6 +101,13 @@ static Range GetRange(Compiler*        comp,
 //
 static Range GetBoundMinusXRange(Compiler* comp, GenTree* tree, BasicBlock* block, ValueNum bndVN)
 {
+    // A phi bound can denote a different value on each iteration, so it cannot be used as a stable
+    // symbolic limit while walking the induction variable's SSA cycle.
+    if (comp->vnStore->IsPhiDef(bndVN))
+    {
+        return Limit(Limit::keUnknown);
+    }
+
     // Walk through local copies, e.g. CSE uses "tmp = cse" and defs "tmp = COMMA(STORE(cse, Bnd - X), cse)".
     // SSA copy chains are acyclic (they end at a PHI or a non-local value), so this terminates.
     tree = tree->gtEffectiveVal();
