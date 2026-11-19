@@ -5,7 +5,6 @@ import { dotnetBrowserUtilsExports, dotnetApi, dotnetAssert, Module } from "./cr
 
 import type { GCHandle, JSFunctionSignature, JSHandle, JSMarshalerType, JSMarshalerArgument, JSMarshalerArguments, MarshalerToCs, MarshalerToJs, VoidPtr, PThreadPtr } from "./types";
 import { JavaScriptMarshalerArgSize, JavaScriptMarshalerArgSize64, JSBindingHeaderOffsets, JSBindingTypeOffsets, JSMarshalerArgumentOffsets, JSMarshalerSignatureHeaderSize, JSMarshalerTypeSize, MarshalerType } from "./types";
-import { fixupPointer } from "./utils";
 
 export function marshalerArgSize(): number {
     return Module.dotnetWasm64 ? JavaScriptMarshalerArgSize64 : JavaScriptMarshalerArgSize;
@@ -223,7 +222,15 @@ export function getArgI32(arg: JSMarshalerArgument): number {
 
 export function getArgIntptr(arg: JSMarshalerArgument): number {
     dotnetAssert.check(arg, "Null arg");
-    return Module.dotnetWasm64 ? fixupPointer(BigInt.asUintN(64, dotnetApi.getHeapI64Big(<any>arg)), 0) : dotnetApi.getHeapU32(<any>arg);
+    if (Module.dotnetWasm64) {
+        // An IntPtr is not necessarily an address; it crosses as a number, which is exact up to 2^53.
+        const value = BigInt.asUintN(64, dotnetApi.getHeapI64Big(<any>arg));
+        if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
+            throw new RangeError(`IntPtr value ${value} cannot be represented exactly as a JavaScript number`);
+        }
+        return Number(value);
+    }
+    return dotnetApi.getHeapU32(<any>arg);
 }
 
 export function getArgI52(arg: JSMarshalerArgument): number {
@@ -283,7 +290,11 @@ export function setArgI32(arg: JSMarshalerArgument, value: number): void {
 export function setArgIntptr(arg: JSMarshalerArgument, value: VoidPtr): void {
     dotnetAssert.check(arg, "Null arg");
     if (Module.dotnetWasm64) {
-        dotnetApi.setHeapI64Big(<any>arg, BigInt(fixupPointer(value, 0)));
+        const number = Number(value);
+        if (!Number.isSafeInteger(number)) {
+            throw new RangeError(`Value ${value} cannot be marshaled as an IntPtr: it is not a safe integer`);
+        }
+        dotnetApi.setHeapI64Big(<any>arg, BigInt(number));
     } else {
         dotnetApi.setHeapU32(<any>arg, <any>value);
     }
