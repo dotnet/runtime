@@ -16,7 +16,6 @@ namespace System.Reflection.Metadata
         internal const int ByRef = -3;
         private const char EscapeCharacter = '\\';
 
-        private static readonly SearchValues<char> s_charsToEscape = SearchValues.Create("[]&*,+\\");
         private static readonly SearchValues<char> s_endOfFullTypeNameDelimiterChars = SearchValues.Create("[]&*,+\\\0");
 
         /// <returns>Positive length or negative value for invalid name</returns>
@@ -60,7 +59,8 @@ namespace System.Reflection.Metadata
                         offset++; // skip the escaped char
 
                         if (offset == input.Length || // invalid name that ends with escape character
-                            !s_charsToEscape.Contains(input[offset])) // invalid name, escapes a char that does not need escaping
+                            input[offset] == '\0' ||
+                            !s_endOfFullTypeNameDelimiterChars.Contains(input[offset])) // invalid name, escapes a char that does not need escaping
                         {
                             return -1;
                         }
@@ -432,22 +432,27 @@ namespace System.Reflection.Metadata
         }
 
 #if SYSTEM_REFLECTION_METADATA
-        internal static string Escape(string name)
+        internal static string Escape(string metadataName)
         {
-            int indexOfCharToEscape = name.AsSpan().IndexOfAny(s_charsToEscape);
+            int indexOfCharToEscape = metadataName.AsSpan().IndexOfAny(s_endOfFullTypeNameDelimiterChars);
             if (indexOfCharToEscape < 0)
             {
-                return name;
+                return metadataName;
             }
 
             var sb = new ValueStringBuilder(stackalloc char[64]);
-            sb.EnsureCapacity(name.Length + 1);
-            sb.Append(name.AsSpan(0, indexOfCharToEscape));
+            sb.EnsureCapacity(metadataName.Length + 1);
+            sb.Append(metadataName.AsSpan(0, indexOfCharToEscape));
 
-            for (int i = indexOfCharToEscape; i < name.Length; i++)
+            for (int i = indexOfCharToEscape; i < metadataName.Length; i++)
             {
-                char c = name[i];
-                if (s_charsToEscape.Contains(c))
+                char c = metadataName[i];
+                if (c == '\0')
+                {
+                    sb.Dispose();
+                    throw new ArgumentException(SR.Argument_InvalidTypeName, nameof(metadataName));
+                }
+                if (s_endOfFullTypeNameDelimiterChars.Contains(c))
                 {
                     sb.Append(EscapeCharacter);
                 }

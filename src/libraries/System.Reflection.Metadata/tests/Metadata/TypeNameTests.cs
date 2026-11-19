@@ -877,6 +877,25 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Theory]
+        [InlineData("\0")]
+        [InlineData("\0Name")]
+        [InlineData("Na\0me")]
+        [InlineData("Name\0")]
+        [InlineData("Name+\0")]
+        [InlineData("Name\\\0")]
+        [InlineData("\0+Name")]
+        public void CreateSimpleTypeName_ThrowsForNullCharacter(string metadataName)
+        {
+            TypeName declaringType = TypeName.CreateSimpleTypeName("Declaring");
+            foreach (string prefix in new[] { "", new string('a', 128) })
+            {
+                string name = prefix + metadataName;
+                AssertExtensions.Throws<ArgumentException>("metadataName", () => TypeName.CreateSimpleTypeName(name));
+                AssertExtensions.Throws<ArgumentException>("metadataName", () => TypeName.CreateSimpleTypeName(name, declaringType));
+            }
+        }
+
+        [Theory]
         [InlineData(typeof(NestedNonGeneric_0.NestedGeneric_1<int>))]
         [InlineData(typeof(NestedGeneric_0<int>))]
         [InlineData(typeof(NestedGeneric_0<int>.NestedNonGeneric_1))]

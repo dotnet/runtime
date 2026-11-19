@@ -635,7 +635,7 @@ namespace System.Reflection.Metadata
         /// <param name="assemblyInfo">The assembly name, or null. A nested type has the assembly name of its declaring type, so this must be null when <paramref name="declaringType"/> is specified.</param>
         /// <returns>Created simple name.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="metadataName"/> is null.</exception>
-        /// <exception cref="ArgumentException"><paramref name="metadataName"/> is empty, <paramref name="declaringType"/> is not a simple type name,
+        /// <exception cref="ArgumentException"><paramref name="metadataName"/> is empty or contains a null character, <paramref name="declaringType"/> is not a simple type name,
         /// or both <paramref name="declaringType"/> and <paramref name="assemblyInfo"/> are specified.</exception>
         public static TypeName CreateSimpleTypeName(string metadataName, TypeName? declaringType = null, AssemblyNameInfo? assemblyInfo = null)
         {
