@@ -50,7 +50,7 @@ void* GetCurrentModuleBase()
     // dladdr is typically a hash lookup through symbols. It should be fairly fast, however it
     // may take a loader lock, so we will cache the result.
     void* pRet = VolatileLoadWithoutBarrier(&pImageBase);
-#ifndef HOST_WASI // WASI has no dladdr
+#ifndef __wasi__ // WASI has no dladdr
     if (!pRet)
     {
         Dl_info info;
@@ -59,7 +59,7 @@ void* GetCurrentModuleBase()
             pImageBase = pRet = info.dli_fbase;
         }
     }
-#endif // !HOST_WASI
+#endif // !__wasi__
 
     return pRet;
 #endif // HOST_WINDOWS

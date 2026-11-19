@@ -313,7 +313,7 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGCName, LPCWSTR standaloneGCPath)
 #if TARGET_WINDOWS
         pGcModuleBase = (PTR_VOID)hMod;
 #else
-#ifdef HOST_WASI // WASI has no dladdr
+#ifdef __wasi__ // WASI has no dladdr
         pGcModuleBase = NULL;
 #else
         Dl_info info;
