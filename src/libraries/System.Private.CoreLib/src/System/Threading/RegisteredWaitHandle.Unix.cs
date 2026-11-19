@@ -62,8 +62,6 @@ namespace System.Threading
         /// </summary>
         internal PortableThreadPool.WaitThread? WaitThread { get; set; }
 
-        private void InitializePortableCore() { }
-
         internal void RegisterWaitPortableCore()
         {
             PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(this);

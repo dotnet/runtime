@@ -70,6 +70,8 @@ namespace System.Threading
 #endif
         }
 
+        partial void InitializePortableCore();
+
         private static AutoResetEvent RentEvent() =>
             Interlocked.Exchange(ref s_cachedEvent, null) ??
             new AutoResetEvent(false);

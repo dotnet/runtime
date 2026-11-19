@@ -59,7 +59,7 @@ namespace System.Threading
             get => _repeating;
         }
 
-        private void InitializePortableCore()
+        partial void InitializePortableCore()
         {
             _waitCompletionPacket = Handle.GetWaitCompletionPacket();
         }
