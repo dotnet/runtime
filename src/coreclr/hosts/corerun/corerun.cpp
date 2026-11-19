@@ -478,6 +478,10 @@ static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
 extern "C" int corerun_shutdown(int exit_code);
 static pal::mod_t coreclr_mod;
 
+#ifdef FEATURE_WASM64_ICU
+extern "C" int32_t GlobalizationNative_LoadICUData(const char* path);
+#endif
+
 static int run(const configuration& config)
 {
     platform_specific_actions actions;
@@ -487,6 +491,24 @@ static int run(const configuration& config)
         wait_for_debugger();
 
     config.dotenv_configuration.load_into_current_process();
+
+#if defined(TARGET_BROWSER) && defined(TARGET_WASM64)
+    string_t icu_data_path = pal::getenv(W("DOTNET_ICU_DATA_PATH"));
+    if (!icu_data_path.empty())
+    {
+#ifdef FEATURE_WASM64_ICU
+        if (!GlobalizationNative_LoadICUData(icu_data_path.c_str()))
+        {
+            pal::fprintf(stderr, W("Could not load ICU data from '%s'.\n"), icu_data_path.c_str());
+            return EXIT_FAILURE;
+        }
+        pal::setenv(W("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"), W("false"));
+#else
+        pal::fprintf(stderr, W("DOTNET_ICU_DATA_PATH requires a CoreRun build with wasm64 ICU support.\n"));
+        return EXIT_FAILURE;
+#endif // FEATURE_WASM64_ICU
+    }
+#endif // defined(TARGET_BROWSER) && defined(TARGET_WASM64)
 
     string_t exe_path = pal::get_exe_path();
 
