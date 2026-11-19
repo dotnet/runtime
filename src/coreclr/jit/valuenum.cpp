@@ -6994,8 +6994,7 @@ bool Compiler::fgValueNumberFieldStore(
     ValueNum newFieldValueVN = ValueNumStore::NoVN;
     if (storeNode->OperIs(GT_STOREIND) && storeNode->TypeIs(TYP_REF) &&
         ((fieldType == TYP_STRUCT) || (fieldType == TYP_REF)) && fieldSize.IsExact() && storeSize.IsExact() &&
-        (offset >= 0) &&
-        (static_cast<size_t>(offset) <= fieldSize.GetExact()) &&
+        (offset >= 0) && (static_cast<size_t>(offset) <= fieldSize.GetExact()) &&
         (storeSize.GetExact() <= fieldSize.GetExact() - static_cast<unsigned>(offset)) &&
         !storeNode->AsIndir()->IsVolatile() && ((storeNode->gtFlags & GTF_IND_NONFAULTING) != 0) &&
         (((storeNode->AsIndir()->Addr()->gtFlags | storeNode->Data()->gtFlags) & GTF_ALL_EFFECT) == 0))
@@ -7017,8 +7016,7 @@ bool Compiler::fgValueNumberFieldStore(
         //    entry state of a block the use keeps live or a state built by in-block
         //    definitions, never the pruned entry state of a dead region.
         const bool gcHeapStateReliable =
-            (compCurBB->bbMemoryLiveIn &
-             memoryKindSet(byrefStatesMatchGcHeapStates ? ByrefExposed : GcHeap)) != 0;
+            (compCurBB->bbMemoryLiveIn & memoryKindSet(byrefStatesMatchGcHeapStates ? ByrefExposed : GcHeap)) != 0;
         const bool byrefStateReliable = (compCurBB->bbMemoryLiveIn & memoryKindSet(ByrefExposed)) != 0;
 
         ValueNum  previousField = vnStore->VNForMapSelect(VNK_Liberal, fieldType, fieldMapVN, fieldValueSelectorVN);
