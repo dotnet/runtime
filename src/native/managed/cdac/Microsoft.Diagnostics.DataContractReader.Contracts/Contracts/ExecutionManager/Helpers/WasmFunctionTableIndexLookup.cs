@@ -14,7 +14,8 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 /// </summary>
 internal sealed class WasmFunctionTableIndexLookup
 {
-    private const ulong WasmInitialVirtualIP = 0x8000_0001;
+    // ExecutionManager::WasmInitialVirtualIP: (1 << (sizeof(TADDR) * 8 - 1)) | 1.
+    private ulong WasmInitialVirtualIP => _target.PointerSize == sizeof(ulong) ? 0x8000_0000_0000_0001ul : 0x8000_0001ul;
 
     // Reader resource budget, not a limit imposed by native range registration.
     private const int MaxFunctionTableIndexRangeNodes = 65_536;

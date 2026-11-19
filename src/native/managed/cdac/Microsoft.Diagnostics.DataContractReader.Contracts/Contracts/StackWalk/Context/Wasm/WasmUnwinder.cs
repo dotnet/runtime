@@ -17,7 +17,7 @@ internal interface IWasmR2RInfo
     /// Returns the base virtual IP represented by a frame identity. Returns false, or a base of 0,
     /// when the identity does not map to a known R2R function. Also returns its unwind blob.
     /// </summary>
-    bool TryGetVirtualIPBase(uint frameIdentity, out ulong baseVirtualIP, out TargetPointer unwindDataAddress);
+    bool TryGetVirtualIPBase(ulong frameIdentity, out ulong baseVirtualIP, out TargetPointer unwindDataAddress);
 
     /// <summary>
     /// Returns the address of the WASM unwind blob for the function containing
@@ -33,8 +33,9 @@ internal interface IWasmR2RInfo
 /// convention is documented in <c>docs/design/coreclr/botr/clr-abi.md</c>.
 /// </summary>
 /// <remarks>
-/// Each R2R frame base stores its frame identity at offset 0 and its function-local virtual IP
-/// (divided by 2) at offset 4, unless its unwind extent implies the sole IP is 1.
+/// Each R2R frame base stores its pointer-sized frame identity at offset 0 and its 32-bit
+/// function-local virtual IP (divided by 2) in the next pointer-sized slot, unless its unwind
+/// extent implies the sole IP is 1.
 /// A frame whose first word is
 /// <see cref="StackWalkIndirectToFramePointer"/> is a <c>localloc</c> frame whose real base
 /// pointer is stored one pointer-sized slot later. A frame whose first word is
@@ -47,11 +48,9 @@ internal sealed class WasmUnwinder
     // Sp values at or below the lowest linear-memory page carry nothing meaningful.
     private const ulong LinearStackFloor = 0x1000;
 
-    // WASM_STACKFRAME_FUNCTION_INDEX_OFFSET: tagged frame identity (32-bit).
+    // WASM_STACKFRAME_FUNCTION_INDEX_OFFSET: tagged frame identity (UINT_PTR). The sentinels below
+    // are compared as the 32-bit word native reads (int32_t).
     private const ulong FrameIdentityOffset = 0;
-
-    // WASM_STACKFRAME_VIRTUALIP_OFFSET: function-local virtual IP / 2 (always 32-bit).
-    private const ulong VirtualIpOffset = 4;
 
     // STACK_WALK_INDIRECT_TO_FRAMEPOINTER: this slot is not the frame base; the real base
     // pointer follows one pointer-sized slot later (localloc frames).
@@ -73,6 +72,42 @@ internal sealed class WasmUnwinder
         _target = target;
         _r2rInfo = r2rInfo;
         _pointerSize = (ulong)target.PointerSize;
+    }
+
+    // WASM_STACKFRAME_VIRTUALIP_OFFSET (TARGET_POINTER_SIZE): function-local virtual IP / 2 (always 32-bit).
+    private ulong VirtualIpOffset => _pointerSize;
+
+    private ulong ReadFrameIdentity(ulong frame) => _target.ReadPointer(frame + FrameIdentityOffset).Value;
+
+    // Native tests a UINT_PTR identity with static_cast<INT_PTR>.
+    private bool IsNegativeIdentity(ulong frameIdentity)
+        => _pointerSize == sizeof(ulong) ? (long)frameIdentity < 0 : (int)(uint)frameIdentity < 0;
+
+    /// <summary>
+    /// Advances a WASM context by one ReadyToRun frame over the managed linear stack. When the caller
+    /// is not R2R code (an interpreter transition, native code above a reverse P/Invoke, or the stack
+    /// top), StackPointer is the caller's SP and the IP and FP are null; the walker continues through
+    /// the explicit Frame chain / interpreter frame chain.
+    /// </summary>
+    internal void UnwindContext<TContext>(ref TContext context) where TContext : struct, IPlatformContext
+    {
+        TargetPointer sp = context.StackPointer;
+        if (TryUnwindOneFrame(ref sp, context.InstructionPointer, out TargetCodePointer ip))
+        {
+            context.StackPointer = sp;
+            context.InstructionPointer = ip;
+            // Native WasmUnwindStackFrame recomputes the caller's frame pointer from its stack pointer;
+            // funclets report the establishing method's frame base (GetWasmFramePointerFromStackPointer).
+            context.FramePointer = ip != TargetCodePointer.Null && TryGetLogicalFramePointer(sp, out TargetPointer fp)
+                ? fp
+                : TargetPointer.Null;
+        }
+        else
+        {
+            context.StackPointer = TargetPointer.Null;
+            context.InstructionPointer = TargetCodePointer.Null;
+            context.FramePointer = TargetPointer.Null;
+        }
     }
 
     /// <summary>
@@ -112,7 +147,7 @@ internal sealed class WasmUnwinder
         establishingFrame = frameBase;
         for (int i = 0; i < MaxEstablishingFrameDepth; i++)
         {
-            uint identity = _target.Read<uint>(establishingFrame.Value + FrameIdentityOffset);
+            ulong identity = ReadFrameIdentity(establishingFrame.Value);
             if ((identity & FrameIdentityTagMask) != EstablishingFrameTag)
                 return true;
 
@@ -143,7 +178,7 @@ internal sealed class WasmUnwinder
         if (!TryGetEstablishingFramePointer(frameBase, out TargetPointer establishingFrame))
             return TargetCodePointer.Null;
 
-        uint frameIdentity = _target.Read<uint>(establishingFrame.Value + FrameIdentityOffset);
+        ulong frameIdentity = ReadFrameIdentity(establishingFrame.Value);
         if (!_r2rInfo.TryGetVirtualIPBase(frameIdentity, out ulong baseVirtualIP, out TargetPointer unwindData) || baseVirtualIP == 0)
             return TargetCodePointer.Null;
 
@@ -178,7 +213,7 @@ internal sealed class WasmUnwinder
             return false;
         }
 
-        uint frameIdentity = _target.Read<uint>(frameBase.Value + FrameIdentityOffset);
+        ulong frameIdentity = ReadFrameIdentity(frameBase.Value);
         ulong address = unwindData.Value;
         uint frameSize = DecodeULEB128(ref address);
         if (frameSize == 0)
@@ -189,7 +224,7 @@ internal sealed class WasmUnwinder
         }
 
         sp = new TargetPointer(frameBase.Value + frameSize);
-        if ((frameIdentity & 1) != 0 && (int)frameIdentity > 0)
+        if ((frameIdentity & 1) != 0 && !IsNegativeIdentity(frameIdentity))
         {
             // Positive odd identities are reverse P/Invoke roots. Their caller is native, so
             // preserve the caller SP for the Frame-chain walk but do not interpret it as an R2R

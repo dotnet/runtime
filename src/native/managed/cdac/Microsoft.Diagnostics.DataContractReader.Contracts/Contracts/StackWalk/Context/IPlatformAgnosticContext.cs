@@ -67,7 +67,11 @@ public interface IPlatformAgnosticContext
             return new ContextHolder<RISCV64Context>();
 
         if (TargetArchitectureSupport.IsWasmSupported && architecture == RuntimeInfoArchitecture.Wasm)
-            return new ContextHolder<WasmContext>();
+        {
+            return target.PointerSize == sizeof(ulong)
+                ? new ContextHolder<Wasm64Context>()
+                : new ContextHolder<WasmContext>();
+        }
 
         throw new InvalidOperationException(
             architecture == RuntimeInfoArchitecture.Unknown

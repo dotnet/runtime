@@ -28,10 +28,10 @@ internal sealed class WasmR2RInfo : IWasmR2RInfo
         _lookup = new WasmFunctionTableIndexLookup(target);
     }
 
-    public bool TryGetVirtualIPBase(uint frameIdentity, out ulong baseVirtualIP)
+    public bool TryGetVirtualIPBase(ulong frameIdentity, out ulong baseVirtualIP)
         => TryGetVirtualIPBase(frameIdentity, out baseVirtualIP, out _);
 
-    public bool TryGetVirtualIPBase(uint frameIdentity, out ulong baseVirtualIP, out TargetPointer unwindDataAddress)
+    public bool TryGetVirtualIPBase(ulong frameIdentity, out ulong baseVirtualIP, out TargetPointer unwindDataAddress)
     {
         if ((frameIdentity & 1) == 0)
         {
@@ -40,13 +40,17 @@ internal sealed class WasmR2RInfo : IWasmR2RInfo
             return _lookup.TryGetVirtualIPBase((uint)portableEntryPoint.ActualCode.Value, out baseVirtualIP, out unwindDataAddress);
         }
 
-        if ((int)frameIdentity < 0)
+        // Native tests the UINT_PTR identity with static_cast<INT_PTR> and complements it at pointer
+        // width; the indices it encodes are DWORDs.
+        bool is64Bit = _target.PointerSize == sizeof(ulong);
+        if (is64Bit ? (long)frameIdentity < 0 : (int)(uint)frameIdentity < 0)
         {
-            uint runtimeFunctionIndex = (~frameIdentity) >> 1;
+            ulong complement = is64Bit ? ~frameIdentity : ~(uint)frameIdentity;
+            uint runtimeFunctionIndex = (uint)(complement >> 1);
             return _lookup.TryGetCoreLibVirtualIPBase(runtimeFunctionIndex, out baseVirtualIP, out unwindDataAddress);
         }
 
-        return _lookup.TryGetVirtualIPBase(frameIdentity >> 1, out baseVirtualIP, out unwindDataAddress);
+        return _lookup.TryGetVirtualIPBase((uint)(frameIdentity >> 1), out baseVirtualIP, out unwindDataAddress);
     }
 
     public bool TryGetUnwindData(TargetCodePointer controlPC, out TargetPointer unwindDataAddress)
