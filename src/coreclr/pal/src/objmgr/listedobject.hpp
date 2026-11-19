@@ -75,8 +75,7 @@ namespace CorUnix
         virtual
         PAL_ERROR
         Initialize(
-            CPalThread *pthr,
-            CObjectAttributes *poa
+            CPalThread *pthr
             );
 
         void
