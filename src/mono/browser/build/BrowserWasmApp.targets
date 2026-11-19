@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.Timezone.targets" />
 
   <PropertyGroup>
     <PrepareForWasmBuildNativeDependsOn>
@@ -336,6 +337,7 @@
       <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(EnableDiagnostics)' == 'true'" />
       <_MonoRuntimeComponentDontLink Include="libSystem.Native.TimeZoneData.Invariant.a" Condition="'$(InvariantTimezone)' != 'true'" />
       <_MonoRuntimeComponentDontLink Include="libSystem.Native.TimeZoneData.a" Condition="'$(InvariantTimezone)' == 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libSystem.Native.TimeZoneData.a;libSystem.Native.TimeZoneData.Invariant.a" Condition="'$(WasmCustomTimezoneDataDirectory)' != ''" />
     </ItemGroup>
 
     <ItemGroup>

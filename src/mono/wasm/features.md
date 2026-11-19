@@ -276,6 +276,20 @@ Browsers do not offer a way to access the contents of their time zone database, 
 
 This requires that you have the [wasm-tools workload](#wasm-tools-workload) installed.
 
+On browser, the `TZDIR` environment variable is ignored; when enabled, time zone data comes from the bundled database.
+
+To replace the bundled database for a browser application, set `WasmCustomTimezoneDataDirectory` to a directory containing compiled TZif files and a `zone.tab` file:
+
+```xml
+<PropertyGroup>
+  <WasmCustomTimezoneDataDirectory>timezone-data</WasmCustomTimezoneDataDirectory>
+</PropertyGroup>
+```
+
+Relative paths are resolved against the project directory. Install the [wasm-tools workload](#wasm-tools-workload) before building. This property requires native relinking and enables it automatically for both Mono and CoreCLR; it cannot be combined with `WasmBuildNative=false` or `InvariantTimezone=true`. The directory replaces the entire database, so include every time zone the application needs and list enumerable zones in `zone.tab`. IANA source files and Android's combined `tzdata` file are not supported inputs.
+
+The files are embedded at build time, not read from the filesystem at runtime. Changing the directory or its contents requires rebuilding. Removing the property restores the bundled database. This property does not change WASI's `TZDIR` support.
+
 ## Resources consumed on the target device
 When you deploy a .NET application to the browser, many necessary components and databases are included:
 - The .NET runtime, including a garbage collector, interpreter, and JIT compiler

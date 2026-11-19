@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi</TargetFrameworks>
+    <TestRuntime>true</TestRuntime>
+    <WasmXHarnessMonoArgs Condition="'$(TargetOS)' == 'browser'">$(WasmXHarnessMonoArgs) --setenv=TZDIR=nonexistent-time-zone-directory --setenv=TZ=Asia/Tokyo</WasmXHarnessMonoArgs>
+    <WasmXHarnessMonoArgs Condition="'$(TargetOS)' == 'wasi'">$(WasmXHarnessMonoArgs) --env=TZDIR=nonexistent-time-zone-directory --env=TZ=Asia/Tokyo</WasmXHarnessMonoArgs>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TimeZoneDirectoryTests.cs" />
+  </ItemGroup>
+</Project>

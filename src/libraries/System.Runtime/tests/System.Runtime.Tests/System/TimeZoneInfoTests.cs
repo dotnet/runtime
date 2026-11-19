@@ -3118,6 +3118,53 @@ namespace System.Tests
             }
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [PlatformSpecific(TestPlatforms.Browser)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TimeZoneDirectoryEnvironmentVariableIsIgnored(bool trailingSeparator)
+        {
+            string originalTZ = Environment.GetEnvironmentVariable("TZ");
+            string originalTZDIR = Environment.GetEnvironmentVariable("TZDIR");
+            string directory = Path.Combine("/usr/share/zoneinfo", Path.GetRandomFileName());
+
+            // Initialize TimeZoneInfo before changing TZDIR.
+            _ = TimeZoneInfo.Utc;
+
+            try
+            {
+                Directory.CreateDirectory(Path.Combine(directory, "Asia"));
+                File.WriteAllBytes(Path.Combine(directory, "Asia", "Tokyo"), s_timeZoneFileContents);
+                File.WriteAllBytes(Path.Combine(directory, "CustomZone"), s_timeZoneFileContents);
+                File.WriteAllText(Path.Combine(directory, "zone.tab"), "ZZ\t+0000+00000\tCustomZone\n");
+
+                Environment.SetEnvironmentVariable("TZDIR", trailingSeparator ? directory + "/" : directory);
+                Environment.SetEnvironmentVariable("TZ", "Asia/Tokyo");
+                TimeZoneInfo.ClearCachedData();
+
+                Assert.Equal("Asia/Tokyo", TimeZoneInfo.Local.Id);
+                Assert.Equal(TimeSpan.FromHours(9), TimeZoneInfo.Local.BaseUtcOffset);
+                Assert.Equal(TimeSpan.FromHours(9), TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo").BaseUtcOffset);
+                Assert.False(TimeZoneInfo.TryFindSystemTimeZoneById("CustomZone", out _));
+                Assert.Contains(TimeZoneInfo.GetSystemTimeZones(), zone => zone.Id == "Asia/Tokyo");
+                Assert.DoesNotContain(TimeZoneInfo.GetSystemTimeZones(), zone => zone.Id == "CustomZone");
+
+                Environment.SetEnvironmentVariable("TZ", Path.Combine(directory, "CustomZone"));
+                TimeZoneInfo.ClearCachedData();
+                Assert.Equal(TimeZoneInfo.Utc, TimeZoneInfo.Local);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("TZ", originalTZ);
+                Environment.SetEnvironmentVariable("TZDIR", originalTZDIR);
+                TimeZoneInfo.ClearCachedData();
+                if (Directory.Exists(directory))
+                {
+                    Directory.Delete(directory, recursive: true);
+                }
+            }
+        }
+
         [Fact]
         public static void FijiTimeZoneTest()
         {
