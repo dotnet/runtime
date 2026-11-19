@@ -3061,7 +3061,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
     bool leftUpper         = false;
     bool rightUpper        = false;
 
-#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
+#if defined(TARGET_ARM64)
     auto vectorFirstArgMatchesSimdSize = [this, sig, simdSize]() {
         // Vector2/3/4 and the fixed-size Vector64/128 helpers share some method names. Make sure this importer
         // only handles the generic Vector64<T>/Vector128<T> methods whose first argument has the expected SIMD size.
@@ -3081,11 +3081,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
         return varTypeIsSIMD(argType) && (genTypeSize(argType) == simdSize);
     };
-#else
-    auto vectorFirstArgMatchesSimdSize = []() {
-        return false;
-    };
-#endif
 
     auto vectorValueEqualsMask = [this, simdSize](GenTree* vector, GenTree* value, var_types simdBaseType) -> GenTree* {
         var_types      simdType     = getSIMDTypeForSize(simdSize);
@@ -3107,61 +3102,24 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
     };
 
     auto vectorExtractMostSignificantBits = [this, simdSize](GenTree* mask, var_types maskBaseType) -> GenTree* {
-#if defined(TARGET_XARCH)
-        NamedIntrinsic extractIntrinsic;
-
-        switch (maskBaseType)
-        {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-                extractIntrinsic = (simdSize == 32) ? NI_AVX2_MoveMask : NI_X86Base_MoveMask;
-                break;
-
-            case TYP_SHORT:
-            case TYP_USHORT:
-                return gtNewSimdHWIntrinsicNode(TYP_INT, mask, NI_Vector_ExtractMostSignificantBits, maskBaseType,
-                                                simdSize);
-
-            case TYP_INT:
-            case TYP_UINT:
-            case TYP_FLOAT:
-                maskBaseType     = TYP_FLOAT;
-                extractIntrinsic = (simdSize == 32) ? NI_AVX_MoveMask : NI_X86Base_MoveMask;
-                break;
-
-            default:
-                unreached();
-        }
-
-        return gtNewSimdHWIntrinsicNode(TYP_INT, mask, extractIntrinsic, maskBaseType, simdSize);
-#else
         return gtNewSimdHWIntrinsicNode(TYP_INT, mask, NI_Vector_ExtractMostSignificantBits, maskBaseType, simdSize);
-#endif
     };
 
     auto vectorCountFromMask = [this, &vectorExtractMostSignificantBits](GenTree*  mask,
                                                                          var_types maskBaseType) -> GenTree* {
         // Count/IndexOf/LastIndexOf are expressed in terms of a vector compare mask followed by
-        // ExtractMostSignificantBits. Xarch imports this as MoveMask, while the existing Arm64 rationalization
-        // recognizes the full pattern and chooses the best mask-count/index sequence.
+        // ExtractMostSignificantBits. The existing Arm64 rationalization recognizes the full pattern
+        // and chooses the best mask-count/index sequence.
         GenTree* extract = vectorExtractMostSignificantBits(mask, maskBaseType);
-#if defined(TARGET_XARCH)
-        return gtNewScalarHWIntrinsicNode(TYP_INT, extract, NI_X86Base_PopCount);
-#else
         return new (this, GT_INTRINSIC)
             GenTreeIntrinsic(TYP_INT, extract, NI_PRIMITIVE_PopCount, nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
-#endif
     };
 
     auto vectorIndexOfFromMask = [this, &vectorExtractMostSignificantBits](GenTree*  mask,
                                                                            var_types maskBaseType) -> GenTree* {
         GenTree* extract = vectorExtractMostSignificantBits(mask, maskBaseType);
-#if defined(TARGET_XARCH)
-        GenTree* tzcnt = gtNewScalarHWIntrinsicNode(TYP_INT, extract, NI_AVX2_TrailingZeroCount);
-#else
-        GenTree* tzcnt = new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_INT, extract, NI_PRIMITIVE_TrailingZeroCount,
-                                                                   nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
-#endif
+        GenTree* tzcnt   = new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_INT, extract, NI_PRIMITIVE_TrailingZeroCount,
+                                                                     nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
 
         // TrailingZeroCount returns 32 for a zero mask. The managed helper returns -1 when no element matched.
         unsigned tzcntTmp = lvaGrabTemp(true DEBUGARG("Vector IndexOf result"));
@@ -3180,19 +3138,14 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
     auto vectorLastIndexOfFromMask = [this, &vectorExtractMostSignificantBits](GenTree*  mask,
                                                                                var_types maskBaseType) -> GenTree* {
         GenTree* extract = vectorExtractMostSignificantBits(mask, maskBaseType);
-#if defined(TARGET_ARM64)
-        GenTree* lzcnt = gtNewScalarHWIntrinsicNode(TYP_INT, extract, NI_ArmBase_LeadingZeroCount);
-#elif defined(TARGET_XARCH)
-        GenTree* lzcnt = gtNewScalarHWIntrinsicNode(TYP_INT, extract, NI_AVX2_LeadingZeroCount);
-#else
-        GenTree* lzcnt = new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_INT, extract, NI_PRIMITIVE_LeadingZeroCount,
-                                                                   nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
-#endif
+        GenTree* lzcnt   = gtNewScalarHWIntrinsicNode(TYP_INT, extract, NI_ArmBase_LeadingZeroCount);
         return gtNewOperNode(GT_SUB, TYP_INT, gtNewIconNode(31), lzcnt);
     };
+#endif // TARGET_ARM64
 
     switch (intrinsic)
     {
+#if defined(TARGET_ARM64)
         case NI_Vector_All:
         {
             assert(sig->numArgs == 2);
@@ -3324,13 +3277,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if defined(TARGET_XARCH)
-            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             // Floating-point equality has different semantics from the integer mask comparisons used below.
             // Leave those cases on the managed fallback path for now.
             if (varTypeIsFloating(simdBaseType))
@@ -3363,13 +3309,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if defined(TARGET_XARCH)
-            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             if (genTypeSize(getUnsignedSimdBaseType(simdBaseType)) > 4)
             {
                 // ExtractMostSignificantBits encodes the mask in a 32-bit integer, so leave larger element
@@ -3392,13 +3331,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             {
                 break;
             }
-
-#if defined(TARGET_XARCH)
-            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
 
             // Floating-point equality has different semantics from the integer mask comparisons used below.
             // Leave those cases on the managed fallback path for now.
@@ -3431,13 +3363,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             {
                 break;
             }
-
-#if defined(TARGET_XARCH)
-            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
 
             if (genTypeSize(getUnsignedSimdBaseType(simdBaseType)) > 4)
             {
@@ -3492,6 +3417,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             retNode = gtNewOperNode(GT_EQ, retType, any, gtNewZeroConNode(retType));
             break;
         }
+#endif // TARGET_ARM64
 
         case NI_Vector_Abs:
         {
