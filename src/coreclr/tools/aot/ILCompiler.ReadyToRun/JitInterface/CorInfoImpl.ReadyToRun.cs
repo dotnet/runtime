@@ -1810,6 +1810,13 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramDefault);
             }
 
+            // The runtime doesn't finalize value types, even when boxed.
+            if (type.IsValueType)
+            {
+                pHasSideEffects = false;
+                return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
+            }
+
             pHasSideEffects = type.HasFinalizer;
 
             // A type or any of its base types outside the version bubble could gain a finalizer.
