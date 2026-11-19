@@ -1810,7 +1810,7 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramDefault);
             }
 
-            // The runtime doesn't finalize value types, even when boxed.
+            // ValuesTypes are not treated as being capable of having finalizers in the runtime.
             if (type.IsValueType)
             {
                 pHasSideEffects = false;
