@@ -29311,6 +29311,31 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     size_t elementSize  = genTypeSize(simdBaseType);
     size_t elementCount = simdSize / elementSize;
 
+#if defined(TARGET_XARCH)
+    // The AVX2 fallbacks for 256-bit byte and short shuffles use op1 multiple times; preserve its value in a temp
+    // if op2 can modify it.
+    GenTree* op1Store    = nullptr;
+    bool     op1MultiUse = false;
+    if ((simdSize == 32) && !gtCanReorderWithoutTemp(op1, op2))
+    {
+        if (elementSize == 1)
+        {
+            op1MultiUse = !compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative);
+        }
+        else if (elementSize == 2)
+        {
+            op1MultiUse = !compOpportunisticallyDependsOn(InstructionSet_AVX512, isShuffleNative);
+        }
+    }
+
+    if (op1MultiUse)
+    {
+        TempInfo temp = fgMakeTemp(op1);
+        op1           = temp.load;
+        op1Store      = temp.store;
+    }
+#endif
+
     // duplicate operand 2 for non-ShuffleNative implementation later
     // (also, on arm64, byte ShuffleNative is same as Shuffle)
     GenTree* op2DupSafe = nullptr;
@@ -29934,6 +29959,13 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     {
         assert(op2DupSafe == nullptr);
     }
+
+#if defined(TARGET_XARCH)
+    if (op1Store != nullptr)
+    {
+        retNode = gtNewOperNode(GT_COMMA, type, op1Store, retNode);
+    }
+#endif
 
     return retNode;
 }
@@ -31829,7 +31861,8 @@ GenTree* Compiler::gtNewSimdWithElementNode(
     if (rangeCheckNeeded)
     {
         // Evaluate op3's side effects before validating the index.
-        GenTree* index = fgMakeMultiUse(&op2);
+        GenTree* index =
+            (op3->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0 ? fgInsertCommaFormTemp(&op2) : fgMakeMultiUse(&op2);
         GenTree* value = gtTreeHasSideEffects(op3, GTF_OBS_EFFECT) ? fgMakeMultiUse(&op3) : op3;
         index          = addRangeCheckForHWIntrinsic(index, 0, immUpperBound);
         value          = gtWrapWithSideEffects(value, index, GTF_OBS_EFFECT);
