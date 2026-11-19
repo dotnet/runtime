@@ -14,8 +14,8 @@
        data, READMEs) would pollute the app's Content items causing VFS/StaticWebAssets
        validation failures. -->
   <ItemGroup Condition="'$(IsBrowserWasmProject)' != 'true'">
-    <PackageReference Condition="'$(TargetsWasm)' == 'true' or ('$(TargetsBrowser)' == 'true' and '$(TargetArchitecture)' == 'wasm64')" Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
-    <PackageReference Condition="'$(TargetsWasm)' == 'true' or '$(TargetArchitecture)' == 'wasm64'" Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(TargetsWasm)' == 'true' or '$(TargetsWasm64)' == 'true'" Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(TargetsWasm)' == 'true' or '$(TargetsWasm64)' == 'true'" Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -23,14 +23,12 @@
     <_RuntimeVariant Condition="'$(WasmEnableThreads)' == 'true'">-threads</_RuntimeVariant>
     <FeatureMultithreading Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(WasmEnableThreads)' == 'true'">true</FeatureMultithreading>
 
-    <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != '' and '$(TargetsWasm)' == 'true'">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
-    <_BrowserWasm64IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm64/native</_BrowserWasm64IcuDir>
-    <_IcuDir Condition="'$(TargetsBrowser)' == 'true' and '$(TargetArchitecture)' == 'wasm64' and '$(WasmEnableThreads)' != 'true' and '$(_BrowserWasm64IcuDir)' != '' and Exists('$(_BrowserWasm64IcuDir)')">$(_BrowserWasm64IcuDir)</_IcuDir>
-    <_TzdDir Condition="'$(PkgSystem_Runtime_TimeZoneData)' != '' and ('$(TargetsWasm)' == 'true' or '$(TargetArchitecture)' == 'wasm64')">$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_TzdDir>
+    <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != '' and ('$(TargetsWasm)' == 'true' or '$(TargetsWasm64)' == 'true')">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
+    <_TzdDir Condition="'$(PkgSystem_Runtime_TimeZoneData)' != '' and ('$(TargetsWasm)' == 'true' or '$(TargetsWasm64)' == 'true')">$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_TzdDir>
   </PropertyGroup>
 
   <ItemGroup>
-      <NativeCMakeArg Condition="'$(_IcuDir)' != '' or ('$(TargetsBrowser)' == 'true' and '$(TargetArchitecture)' == 'wasm64')" Include="-cmakeargs &quot;-DCMAKE_ICU_DIR=$(_IcuDir)&quot;" />
+      <NativeCMakeArg Condition="'$(_IcuDir)' != ''" Include="-cmakeargs &quot;-DCMAKE_ICU_DIR=$(_IcuDir)&quot;" />
       <NativeCMakeArg Condition="'$(_TzdDir)' != ''" Include="-cmakeargs &quot;-DCMAKE_TZD_DIR=$(_TzdDir)&quot;" />
       <NativeCMakeArg Condition="'$(RuntimeFlavor)' == 'Mono'" Include="-cmakeargs &quot;-DCLR_CMAKE_RUNTIME_MONO=1&quot;" />
       <NativeCMakeArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="-cmakeargs &quot;-DCLR_CMAKE_RUNTIME_CORECLR=1&quot;" />
@@ -57,7 +55,6 @@
        the CoreCLR app relink registry below, so keep the BrowserHost names distinct from the
        app-facing properties they are compared against. -->
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
-    <BrowserHostInvariantGlobalization Condition="'$(BrowserHostInvariantGlobalization)' == '' and ('$(TargetArchitecture)' == 'wasm64' or '$(RuntimeIdentifier)' == 'browser-wasm64')">true</BrowserHostInvariantGlobalization>
     <BrowserHostInvariantGlobalization Condition="'$(BrowserHostInvariantGlobalization)' == ''">false</BrowserHostInvariantGlobalization>
     <BrowserHostInvariantTimezone Condition="'$(BrowserHostInvariantTimezone)' == ''">false</BrowserHostInvariantTimezone>
     <BrowserHostEnableDiagnostics Condition="'$(BrowserHostEnableDiagnostics)' == ''">false</BrowserHostEnableDiagnostics>

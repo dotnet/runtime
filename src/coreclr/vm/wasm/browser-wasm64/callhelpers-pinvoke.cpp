@@ -149,7 +149,6 @@ extern "C" {
     int32_t SystemNative_WriteToNonblocking (void *, void *, int32_t);
     int64_t SystemNative_WriteV (void *, void *, int32_t);
 } // extern "C"
-#ifdef FEATURE_WASM64_ICU
 
 static const Entry s_libSystem_Globalization_Native [] = {
     DllImportEntry(GlobalizationNative_ChangeCase) // System.Private.CoreLib
@@ -187,7 +186,6 @@ static const Entry s_libSystem_Globalization_Native [] = {
     DllImportEntry(GlobalizationNative_ToAscii) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_ToUnicode) // System.Private.CoreLib
 };
-#endif
 
 static const Entry s_libSystem_IO_Compression_Native [] = {
     DllImportEntry(CompressionNative_Crc32) // System.IO.Compression
@@ -311,13 +309,11 @@ typedef struct PInvokeTable {
 } PInvokeTable;
 
 static PInvokeTable s_PInvokeTables[] = {
+    {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
     {"libSystem.Native", s_libSystem_Native, 87},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
-    {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6},
-#ifdef FEATURE_WASM64_ICU
-    {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34}
-#endif
+    {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
 };
 const size_t s_PInvokeTablesCount = sizeof(s_PInvokeTables) / sizeof(s_PInvokeTables[0]);
 

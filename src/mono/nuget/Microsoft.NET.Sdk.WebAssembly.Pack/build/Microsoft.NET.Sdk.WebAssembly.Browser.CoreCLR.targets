@@ -11,10 +11,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project>
 
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm64'">
-    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
-  </PropertyGroup>
-
   <!-- Compute build-only selection before defaulting PublishReadyToRun so its explicit overrides
        remain effective without introducing a separate public build setting. -->
   <PropertyGroup>

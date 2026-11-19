@@ -23,7 +23,6 @@
     <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == '' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifiers)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'browser-wasm64' or '$(RuntimeIdentifiers)' == 'browser-wasm64')">true</IsBrowserWasmProject>
     <_CoreCLRBrowserArchitecture>wasm</_CoreCLRBrowserArchitecture>
     <_CoreCLRBrowserArchitecture Condition="'$(RuntimeIdentifier)' == 'browser-wasm64' or '$(RuntimeIdentifiers)' == 'browser-wasm64' or '$(TargetArchitecture)' == 'wasm64'">wasm64</_CoreCLRBrowserArchitecture>
-    <InvariantGlobalization Condition="'$(_CoreCLRBrowserArchitecture)' == 'wasm64' and '$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
 
     <!-- Ensure TargetsBrowser is set so native.wasm.targets populates exported functions/methods -->
     <TargetsBrowser Condition="'$(TargetsBrowser)' == '' and '$(IsBrowserWasmProject)' == 'true'">true</TargetsBrowser>
@@ -665,7 +664,6 @@
     </PropertyGroup>
     <ItemGroup>
       <_EmccCFlagsGenerated Include="@(_EmccCFlags)" />
-      <_EmccCFlagsGenerated Condition="'$(_CoreCLRBrowserArchitecture)' == 'wasm64' and '$(InvariantGlobalization)' != 'true'" Include="-DFEATURE_WASM64_ICU" />
       <_EmccCFlagsGenerated Include="-include &quot;$(MSBuildThisFileDirectory)coreclr_compat.h&quot;" />
       <_EmccCFlagsGenerated Include="-I&quot;$(_VmWasmIncludeDir.TrimEnd('\/'))&quot;" />
       <_EmccCFlagsGenerated Include="-I&quot;$(_MinipalIncludeRoot.TrimEnd('\/'))&quot;" />

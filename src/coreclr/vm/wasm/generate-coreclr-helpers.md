@@ -76,15 +76,16 @@ direct calls after code generation (`DeferredWasmCallProcessor`); on wasm64 the
 frame identity that a direct call passes in the entry-point parameter is an
 `i64.const`, and fallback calls load the entry point with 64-bit loads.
 
-The Node CoreRun host uses invariant globalization by default. To test ICU,
-build against the ICU transport package's `runtimes/browser-wasm64/native`
-assets and set `DOTNET_ICU_DATA_PATH` to an `icudt.dat` from that same package
-when running CoreRun. The build does not use `browser-wasm` ICU archives as
-a fallback.
+The build links ICU from the ICU transport package's
+`runtimes/browser-wasm64/native` assets, as browser-wasm uses
+`runtimes/browser-wasm/native`. Like the wasm32 one, the Node CoreRun host
+uses invariant globalization by default; on wasm64, set `DOTNET_ICU_DATA_PATH`
+to an `icudt.dat` from the same package to run CoreRun with ICU.
 
-The experimental CoreCLR `browser-wasm64` app host defaults to invariant
-globalization and requires a memory64-capable browser. Otherwise the in-tree
-Wasm SDK treats browser-wasm64 like browser-wasm: assemblies are staged as
+The experimental CoreCLR `browser-wasm64` app host requires a
+memory64-capable browser. Otherwise the in-tree Wasm SDK treats
+browser-wasm64 like browser-wasm, including its globalization defaults:
+assemblies are staged as
 Webcil, using a wrapper that imports an i64 memory and `__memory_base`, and
 `PublishReadyToRun` (including composite) selects the same ReadyToRun images.
 
@@ -119,11 +120,6 @@ toolchain, and browser diagnostics are not validated. WASI is outside this
 experiment. Composite ReadyToRun of the app assemblies passes the JavaScript
 interop library tests in V8; CoreRun runtime tests also cover whole-program
 composite images.
-
-To test browser ICU, use a wasm64 runtime pack
-containing the `browser-wasm64` ICU archives and data, and relink with
-`InvariantGlobalization=false`. This is an in-tree configuration; public
-workload publishing is not yet validated.
 
 With the wasm64 runtime pack built, publish the in-tree browser sample with:
 

@@ -21,7 +21,6 @@
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <UseMonoRuntime>false</UseMonoRuntime>
-    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm64'">true</InvariantGlobalization>
     <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120226 (CoreCLR on wasm defaults) -->
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
   </PropertyGroup>

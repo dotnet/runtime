@@ -111,10 +111,6 @@ if(NOT CLR_CROSS_COMPONENTS_BUILD)
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
 endif()
 
-if(CLR_CMAKE_TARGET_BROWSER AND CLR_CMAKE_TARGET_ARCH STREQUAL wasm64 AND TARGET System.Globalization.Native-Static)
-  add_compile_definitions(FEATURE_WASM64_ICU)
-endif()
-
 #-----------------------------------------
 # Add Projects
 #     - project which require platform header not clr's
