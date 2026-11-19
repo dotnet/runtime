@@ -534,7 +534,7 @@ namespace ILCompiler.ObjectWriter
                     // Pointer relocs should be aligned at pointer boundaries within the image.
                     // Processing misaligned relocs (especially relocs that straddle page boundaries) can be
                     // expensive on Windows. But: we can't guarantee this on x86, and Wasm doesn't have reloc pointer alignment requirements.
-                    if (_nodeFactory.Target.Architecture is not TargetArchitecture.X86 and not TargetArchitecture.Wasm32)
+                    if (_nodeFactory.Target.Architecture is not TargetArchitecture.X86 && !_nodeFactory.Target.IsWasm)
                     {
                         bool hasPointerRelocs = false;
                         foreach (Relocation reloc in nodeContents.Relocs)

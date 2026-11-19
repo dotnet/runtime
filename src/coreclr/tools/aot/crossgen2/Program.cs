@@ -88,7 +88,11 @@ namespace ILCompiler
             {
                 throw new CommandLineException(SR.GeneratePortableCallHelpersRequiresWasmTarget);
             }
-            if (targetArchitecture == TargetArchitecture.Wasm64 && _generatePortableCallHelpers is null)
+            if (targetArchitecture == TargetArchitecture.Wasm64 && _generatePortableCallHelpers is null &&
+                (targetOS != TargetOS.Browser ||
+                 Environment.GetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_WASM64") != "1" ||
+                 Get(_command.Composite) ||
+                 Get(_command.OutputFormat) != ReadyToRunContainerFormat.Wasm))
             {
                 throw new CommandLineException(SR.Wasm64ReadyToRunUnsupported);
             }

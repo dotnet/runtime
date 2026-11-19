@@ -1522,7 +1522,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #endif
 #ifdef TARGET_WASM
     void* actualEntryPoint;
-    actualEntryPoint = (void*)(GetMinFunctionTableIndex() + id);
+    actualEntryPoint = reinterpret_cast<void *>(static_cast<uintptr_t>(GetMinFunctionTableIndex()) + id);
     PCODE virtualEntrypointIP;
     virtualEntrypointIP = R2RRelativeFunctionIndexToVirtualIP(id);
     pEntryPoint = pMD->GetTemporaryEntryPoint();

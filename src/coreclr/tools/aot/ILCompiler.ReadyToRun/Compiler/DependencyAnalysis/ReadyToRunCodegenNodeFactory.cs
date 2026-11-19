@@ -1265,7 +1265,7 @@ namespace ILCompiler.DependencyAnalysis
             // as a dependency of any StringDiscoverableAssemblyStubNode that gets marked.
             InjectStringThunksImport = new Import(EagerImports, new InjectStringThunksSignature());
 
-            if ((Target.Architecture != TargetArchitecture.X86) && (Target.Architecture != TargetArchitecture.Wasm32))
+            if (Target.Architecture != TargetArchitecture.X86 && !Target.IsWasm)
             {
                 Import personalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
                     ReadyToRunHelper.PersonalityRoutine));
