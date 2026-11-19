@@ -209,7 +209,7 @@ Read once at start:
 
 ### Step 2 — Walk pipelines
 
-In the rules below, JIT pipelines are definitions 109, 110, 111, 115, 116, 117, 118, 119, 137, 138, 144, 145, 150, 153, 155, 159, 160, 230, and 235. This covers both daily (109, 138, 144, 150) and weekend or weekly schedules; scan and triage every JIT pipeline on every run regardless of schedule.
+In the rules below, JIT pipelines are definitions 109, 110, 111, 112, 113, 115, 116, 117, 118, 119, 137, 138, 140, 144, 145, 150, 153, 155, 159, 160, 230, and 235. This covers both daily (109, 138, 144, 150) and weekend or weekly schedules; scan and triage every JIT pipeline on every run regardless of schedule.
 
 For each row in the pipeline table below:
 
