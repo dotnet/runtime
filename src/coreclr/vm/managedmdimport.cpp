@@ -79,7 +79,7 @@ extern "C" BOOL QCALLTYPE MetadataImport_GetMarshalAs(
     return TRUE;
 }
 
-FCIMPL1(IMDInternalImport*, MetaDataImport::GetMetadataImport, ReflectModuleBaseObject * pModuleUNSAFE)
+FCIMPL1(IMDInternalImport*, MetadataImport_GetMetadataImport, ReflectModuleBaseObject * pModuleUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -89,7 +89,7 @@ FCIMPL1(IMDInternalImport*, MetaDataImport::GetMetadataImport, ReflectModuleBase
 }
 FCIMPLEND
 
-FCIMPL6(HRESULT, MetaDataImport::GetDefaultValue, IMDInternalImport* pScope, mdToken tk, INT64* pDefaultValue, LPCWSTR* pStringValue, INT32* pLength, INT32* pCorElementType)
+FCIMPL6(HRESULT, MetadataImport_GetDefaultValue, IMDInternalImport* pScope, mdToken tk, INT64* pDefaultValue, LPCWSTR* pStringValue, INT32* pLength, INT32* pCorElementType)
 {
     FCALL_CONTRACT;
 
@@ -117,7 +117,7 @@ ErrExit:
 }
 FCIMPLEND
 
-FCIMPL4(HRESULT, MetaDataImport::GetCustomAttributeProps, IMDInternalImport* pScope, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob)
+FCIMPL4(HRESULT, MetadataImport_GetCustomAttributeProps, IMDInternalImport* pScope, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob)
 {
     FCALL_CONTRACT;
 
@@ -133,7 +133,7 @@ FCIMPLEND
 #pragma optimize("y", on)   // Small critical routines, don't put in EBP frame
 #endif
 
-FCIMPL2(FC_BOOL_RET, MetaDataImport::IsValidToken, IMDInternalImport* pScope, mdToken tk)
+FCIMPL2(FC_BOOL_RET, MetadataImport_IsValidToken, IMDInternalImport* pScope, mdToken tk)
 {
     FCALL_CONTRACT;
 
@@ -141,7 +141,7 @@ FCIMPL2(FC_BOOL_RET, MetaDataImport::IsValidToken, IMDInternalImport* pScope, md
 }
 FCIMPLEND
 
-FCIMPL4(HRESULT, MetaDataImport::GetClassLayout, IMDInternalImport* pScope, mdTypeDef td, DWORD* pdwPackSize, ULONG* pulClassSize)
+FCIMPL4(HRESULT, MetadataImport_GetClassLayout, IMDInternalImport* pScope, mdTypeDef td, DWORD* pdwPackSize, ULONG* pulClassSize)
 {
     FCALL_CONTRACT;
 
@@ -173,7 +173,7 @@ ErrExit:
 }
 FCIMPLEND
 
-FCIMPL5(HRESULT, MetaDataImport::GetFieldOffset, IMDInternalImport* pScope, mdTypeDef td, mdFieldDef target, DWORD* pdwFieldOffset, CLR_BOOL* found)
+FCIMPL5(HRESULT, MetadataImport_GetFieldOffset, IMDInternalImport* pScope, mdTypeDef td, mdFieldDef target, DWORD* pdwFieldOffset, CLR_BOOL* found)
 {
     FCALL_CONTRACT;
 
@@ -204,7 +204,7 @@ ErrExit:
 }
 FCIMPLEND
 
-FCIMPL4(HRESULT, MetaDataImport::GetUserString, IMDInternalImport* pScope, mdToken tk, LPCWSTR* pszName, ULONG* pCount)
+FCIMPL4(HRESULT, MetadataImport_GetUserString, IMDInternalImport* pScope, mdToken tk, LPCWSTR* pszName, ULONG* pCount)
 {
     FCALL_CONTRACT;
 
@@ -212,7 +212,7 @@ FCIMPL4(HRESULT, MetaDataImport::GetUserString, IMDInternalImport* pScope, mdTok
 }
 FCIMPLEND
 
-FCIMPL3(HRESULT, MetaDataImport::GetName, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName)
+FCIMPL3(HRESULT, MetadataImport_GetName, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName)
 {
     FCALL_CONTRACT;
 
@@ -258,7 +258,7 @@ FCIMPL3(HRESULT, MetaDataImport::GetName, IMDInternalImport* pScope, mdToken tk,
 }
 FCIMPLEND
 
-FCIMPL3(HRESULT, MetaDataImport::GetNamespace, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName)
+FCIMPL3(HRESULT, MetadataImport_GetNamespace, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName)
 {
     FCALL_CONTRACT;
 
@@ -267,7 +267,7 @@ FCIMPL3(HRESULT, MetaDataImport::GetNamespace, IMDInternalImport* pScope, mdToke
 }
 FCIMPLEND
 
-FCIMPL3(HRESULT, MetaDataImport::GetGenericParamProps, IMDInternalImport* pScope, mdToken tk, DWORD* pAttributes)
+FCIMPL3(HRESULT, MetadataImport_GetGenericParamProps, IMDInternalImport* pScope, mdToken tk, DWORD* pAttributes)
 {
     FCALL_CONTRACT;
 
@@ -275,7 +275,7 @@ FCIMPL3(HRESULT, MetaDataImport::GetGenericParamProps, IMDInternalImport* pScope
 }
 FCIMPLEND
 
-FCIMPL4(HRESULT, MetaDataImport::GetEventProps, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName, INT32 *pdwEventFlags)
+FCIMPL4(HRESULT, MetadataImport_GetEventProps, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName, INT32 *pdwEventFlags)
 {
     FCALL_CONTRACT;
 
@@ -283,7 +283,7 @@ FCIMPL4(HRESULT, MetaDataImport::GetEventProps, IMDInternalImport* pScope, mdTok
 }
 FCIMPLEND
 
-FCIMPL5(HRESULT, MetaDataImport::GetPInvokeMap, IMDInternalImport* pScope, mdToken tk, DWORD* pMappingFlags, LPCSTR* pszImportName, LPCSTR* pszImportDll)
+FCIMPL5(HRESULT, MetadataImport_GetPInvokeMap, IMDInternalImport* pScope, mdToken tk, DWORD* pMappingFlags, LPCSTR* pszImportName, LPCSTR* pszImportDll)
 {
     FCALL_CONTRACT;
 
@@ -306,7 +306,7 @@ FCIMPL5(HRESULT, MetaDataImport::GetPInvokeMap, IMDInternalImport* pScope, mdTok
 }
 FCIMPLEND
 
-FCIMPL4(HRESULT, MetaDataImport::GetParamDefProps, IMDInternalImport* pScope, mdToken tk, INT32* pSequence, INT32* pAttributes)
+FCIMPL4(HRESULT, MetadataImport_GetParamDefProps, IMDInternalImport* pScope, mdToken tk, INT32* pSequence, INT32* pAttributes)
 {
     FCALL_CONTRACT;
 
@@ -330,7 +330,7 @@ FCIMPL4(HRESULT, MetaDataImport::GetParamDefProps, IMDInternalImport* pScope, md
 }
 FCIMPLEND
 
-FCIMPL3(HRESULT, MetaDataImport::GetFieldDefProps, IMDInternalImport* pScope, mdToken tk, INT32 *pdwFieldFlags)
+FCIMPL3(HRESULT, MetadataImport_GetFieldDefProps, IMDInternalImport* pScope, mdToken tk, INT32 *pdwFieldFlags)
 {
     FCALL_CONTRACT;
 
@@ -338,7 +338,7 @@ FCIMPL3(HRESULT, MetaDataImport::GetFieldDefProps, IMDInternalImport* pScope, md
 }
 FCIMPLEND
 
-FCIMPL5(HRESULT, MetaDataImport::GetPropertyProps, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName, INT32 *pdwPropertyFlags, ConstArray* ppValue)
+FCIMPL5(HRESULT, MetadataImport_GetPropertyProps, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName, INT32 *pdwPropertyFlags, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
@@ -346,7 +346,7 @@ FCIMPL5(HRESULT, MetaDataImport::GetPropertyProps, IMDInternalImport* pScope, md
  }
  FCIMPLEND
 
-FCIMPL3(HRESULT, MetaDataImport::GetFieldMarshal, IMDInternalImport* pScope, mdToken tk, ConstArray* ppValue)
+FCIMPL3(HRESULT, MetadataImport_GetFieldMarshal, IMDInternalImport* pScope, mdToken tk, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
@@ -364,7 +364,7 @@ FCIMPL3(HRESULT, MetaDataImport::GetFieldMarshal, IMDInternalImport* pScope, mdT
 }
 FCIMPLEND
 
-FCIMPL3(HRESULT, MetaDataImport::GetSigOfMethodDef, IMDInternalImport* pScope, mdToken tk, ConstArray* ppValue)
+FCIMPL3(HRESULT, MetadataImport_GetSigOfMethodDef, IMDInternalImport* pScope, mdToken tk, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
@@ -372,7 +372,7 @@ FCIMPL3(HRESULT, MetaDataImport::GetSigOfMethodDef, IMDInternalImport* pScope, m
 }
 FCIMPLEND
 
-FCIMPL3(HRESULT, MetaDataImport::GetSignatureFromToken, IMDInternalImport* pScope, mdToken tk, ConstArray* ppValue)
+FCIMPL3(HRESULT, MetadataImport_GetSignatureFromToken, IMDInternalImport* pScope, mdToken tk, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
@@ -380,7 +380,7 @@ FCIMPL3(HRESULT, MetaDataImport::GetSignatureFromToken, IMDInternalImport* pScop
 }
 FCIMPLEND
 
-FCIMPL3(HRESULT, MetaDataImport::GetSigOfFieldDef, IMDInternalImport* pScope, mdToken tk, ConstArray* ppValue)
+FCIMPL3(HRESULT, MetadataImport_GetSigOfFieldDef, IMDInternalImport* pScope, mdToken tk, ConstArray* ppValue)
 {
     FCALL_CONTRACT;
 
@@ -388,7 +388,7 @@ FCIMPL3(HRESULT, MetaDataImport::GetSigOfFieldDef, IMDInternalImport* pScope, md
 }
 FCIMPLEND
 
-FCIMPL3(HRESULT, MetaDataImport::GetParentToken, IMDInternalImport* pScope, mdToken tk, mdToken* ptk)
+FCIMPL3(HRESULT, MetadataImport_GetParentToken, IMDInternalImport* pScope, mdToken tk, mdToken* ptk)
 {
     FCALL_CONTRACT;
 
@@ -429,7 +429,7 @@ FCIMPL3(HRESULT, MetaDataImport::GetParentToken, IMDInternalImport* pScope, mdTo
 }
 FCIMPLEND
 
-FCIMPL2(HRESULT, MetaDataImport::GetScopeProps, IMDInternalImport* pScope, GUID* pmvid)
+FCIMPL2(HRESULT, MetadataImport_GetScopeProps, IMDInternalImport* pScope, GUID* pmvid)
 {
     FCALL_CONTRACT;
 
@@ -439,7 +439,7 @@ FCIMPL2(HRESULT, MetaDataImport::GetScopeProps, IMDInternalImport* pScope, GUID*
 FCIMPLEND
 
 
-FCIMPL3(HRESULT, MetaDataImport::GetMemberRefProps,
+FCIMPL3(HRESULT, MetadataImport_GetMemberRefProps,
     IMDInternalImport* pScope,
     mdMemberRef mr,
     ConstArray* ppvSigBlob)

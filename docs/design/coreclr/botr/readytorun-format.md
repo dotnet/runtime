@@ -524,8 +524,8 @@ The largest representable frame size is `2^28 - 16` bytes; the largest virtual I
 `2^25 - 2`. The encoded value requires at most seven bytes, and one byte when the frame size
 is below 256 bytes and the virtual IP count is below 16.
 
-ReadyToRun format 34.0 uses this packed unwind data and the compact Wasm GC encoding described
-below. The runtime requires ReadyToRun format 34.0 or later on every architecture and only
+ReadyToRun format 35.0 uses this packed unwind data and the compact Wasm GC encoding described
+below. The runtime requires ReadyToRun format 35.0 or later on every architecture and only
 decodes GCInfo v6. Earlier images must be regenerated. Inspection tools retain older non-Wasm
 format support, but reject earlier Wasm images before interpreting their unwind or GC metadata.
 
@@ -536,7 +536,7 @@ IPs or PortableEntryPoint structures.
 
 ### GC info
 
-ReadyToRun format 34.0 uses GCInfo v6. On non-Wasm platforms using the shared GCInfo encoding,
+ReadyToRun format 35.0 uses GCInfo v6. On non-Wasm platforms using the shared GCInfo encoding,
 tracked and untracked stack slots are each sorted in descending flag order:
 pinned interior pointers, pinned object references, interior pointers, then ordinary object
 references.

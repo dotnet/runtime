@@ -25,6 +25,7 @@
 
 #include "readonlydatatargetfacade.h"
 #include "metahost.h"
+#include <minipal/environ.h>
 
 // Defined in dbgutil; resolves a runtime export address from the data target.
 extern "C" bool TryGetSymbol(
@@ -454,16 +455,13 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebuggerForSingleFile(
 
     ULONG32 cchLocalImagePath = MAX_LONGPATH;
     ULONG32 cchLocalImagePathRequired;
-    NewArrayHolder<WCHAR> pwszLocalFilePath = NULL;
+    WStringHolder pwszLocalFilePath;
     IMDInternalImport * pMDII = NULL;
 
     const HRESULT E_NSF_BUFFER = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
     HRESULT hr = E_NSF_BUFFER;
     for(unsigned i=0; i<2 && hr == E_NSF_BUFFER; i++)
     {
-        if (pwszLocalFilePath != NULL)
-            pwszLocalFilePath.Release();
-
         if (NULL == (pwszLocalFilePath = new (nothrow) WCHAR[cchLocalImagePath+1]))
             ThrowHR(E_OUTOFMEMORY);
 
@@ -2272,7 +2270,7 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
                 {
                     hr = pNewObjectValue->QueryInterface(__uuidof(ICorDebugObjectValue), (void**)pObject);
                     if (SUCCEEDED(hr))
-                        pNewObjectValue.SuppressRelease();
+                        pNewObjectValue.Detach();
                 }
             }
         }
@@ -5002,7 +5000,7 @@ void CordbProcess::RawDispatchEvent(
                 IfFailThrow(E_UNEXPECTED);
             }
 
-            NewArrayHolder<WCHAR> wszCategory(new WCHAR[cchCategory + 1]);
+            WStringHolder wszCategory(new WCHAR[cchCategory + 1]);
             ULONG32 cbRead;
             ULONG32 cbExpected = cchCategory * sizeof(WCHAR);
             IfFailThrow(m_pDACDataTarget->ReadVirtual(
@@ -5012,7 +5010,7 @@ void CordbProcess::RawDispatchEvent(
                 &cbRead));
             wszCategory[cchCategory] = W('\0');
 
-            NewArrayHolder<WCHAR> wszContent(new WCHAR[cchContent + 1]);
+            WStringHolder wszContent(new WCHAR[cchContent + 1]);
             cbExpected = cchContent * sizeof(WCHAR);
             IfFailThrow(m_pDACDataTarget->ReadVirtual(
                 pEvent->FirstLogMessage.szContent,
@@ -7137,7 +7135,7 @@ void CordbProcess::VerifyControlBlock()
 
 #ifdef _DEBUG
     char buf[MAX_LONGPATH];
-    DWORD len = GetEnvironmentVariableA("CORDBG_NotCompatibleTest", buf, sizeof(buf));
+    DWORD len = minipal_environ_get_variable("CORDBG_NotCompatibleTest", buf, sizeof(buf));
     _ASSERTE(len < sizeof(buf));
 
     if (len > 0)
@@ -10672,39 +10670,11 @@ HRESULT CordbProcess::EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurT
     {
         return E_INVALIDARG;
     }
-    HANDLE hProcess = UnsafeGetProcessHandle();
-    LPVOID baseAddress = (LPVOID)(patchSkipAddr);
-    DWORD oldProt;
 
-    if (!VirtualProtectEx(hProcess,
-                        baseAddress,
-                        CORDbg_BREAK_INSTRUCTION_SIZE,
-                        PAGE_EXECUTE_READWRITE, &oldProt))
-    {
-        // we may be seeing unwriteable directly mapped executable memory.
-        // let's try copy-on-write instead,
-        if (!VirtualProtectEx(hProcess,
-            baseAddress,
-            CORDbg_BREAK_INSTRUCTION_SIZE,
-            PAGE_EXECUTE_WRITECOPY, &oldProt))
-        {
-            _ASSERTE(!"VirtualProtect of code page failed");
-            return HRESULT_FROM_GetLastError();
-        }
-    }
-
+    // RemoveRemotePatch makes the code page temporarily writable if needed.
     LOG((LF_CORDB, LL_INFO10000, "RS EnableInPlaceSingleStepping - address=0x%p opcode=0x%x\n", patchSkipAddr, opcode));
     HRESULT hr = RemoveRemotePatch(this, (void*)patchSkipAddr, opcode);
     IfFailRet(hr);
-
-    if (!VirtualProtectEx(hProcess,
-                baseAddress,
-                CORDbg_BREAK_INSTRUCTION_SIZE,
-                oldProt, &oldProt))
-    {
-        _ASSERTE(!"VirtualProtect of code page failed");
-        return HRESULT_FROM_GetLastError();
-    }
 
     pCurThread->SetPatchSkipAddress(patchSkipAddr);
 
@@ -10734,39 +10704,15 @@ bool CordbProcess::HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAdd
         curThread->GetThreadId() == dwThreadId &&
         curThread->IsInPlaceStepping())
     {
-        // this is an in-place step, so place the breakpoint instruction back to the patch location
-
-        HANDLE hProcess = UnsafeGetProcessHandle();
-        LPVOID baseAddress = (LPVOID)(curThread->GetPatchSkipAddress());
-        DWORD oldProt;
-
-        if (!VirtualProtectEx(hProcess,
-                            baseAddress,
-                            CORDbg_BREAK_INSTRUCTION_SIZE,
-                            PAGE_EXECUTE_READWRITE, &oldProt))
-        {
-            // we may be seeing unwriteable directly mapped executable memory.
-            // let's try copy-on-write instead,
-            if (!VirtualProtectEx(hProcess,
-                baseAddress,
-                CORDbg_BREAK_INSTRUCTION_SIZE,
-                PAGE_EXECUTE_WRITECOPY, &oldProt))
-            {
-                _ASSERTE(!"VirtualProtect of code page failed");
-                ThrowHR(HRESULT_FROM_GetLastError());
-            }
-        }
-
+        // this is an in-place step, so place the breakpoint instruction back to the patch location.
+        // ApplyRemotePatch makes the code page temporarily writable if needed. If it fails, still
+        // finish the step and resume the other threads so the process isn't left hung.
         HRESULT hr = ApplyRemotePatch(this, curThread->GetPatchSkipAddress());
-        IfFailThrow(hr);
-
-        if (!VirtualProtectEx(hProcess,
-            baseAddress,
-            CORDbg_BREAK_INSTRUCTION_SIZE,
-            oldProt, &oldProt))
+        if (FAILED(hr))
         {
-            _ASSERTE(!"VirtualProtect of code page failed");
-            ThrowHR(HRESULT_FROM_GetLastError());
+            STRESS_LOG2(LF_CORDB, LL_ERROR, "RS HandleInPlaceSingleStep - failed to reapply patch at %p, hr=0x%x\n",
+                curThread->GetPatchSkipAddress(), hr);
+            _ASSERTE(!"RS HandleInPlaceSingleStep - failed to reapply patch");
         }
 
         curThread->ClearPatchSkipAddress();
@@ -11046,7 +10992,7 @@ HRESULT CordbProcess::Filter(
             //    fired before the thread is created.
             //
             NewArrayHolder<BYTE> pManagedEventBuffer(new BYTE[CorDBIPC_BUFFER_SIZE]);
-            DebuggerIPCEvent * pManagedEvent = reinterpret_cast<DebuggerIPCEvent *>(pManagedEventBuffer.GetValue());
+            DebuggerIPCEvent * pManagedEvent = reinterpret_cast<DebuggerIPCEvent *>(static_cast<BYTE*>(pManagedEventBuffer));
 
             bool fOwner = CopyManagedEventFromTarget(pRecord, pManagedEvent);
             if (fOwner)

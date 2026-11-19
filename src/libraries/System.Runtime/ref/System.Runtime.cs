@@ -4966,6 +4966,11 @@ namespace System
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool IsAndroid() { throw null; }
         public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("macos")]
+        [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("ios")]
+        [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("maccatalyst")]
+        public static bool IsApplePlatform() { throw null; }
         public static bool IsBrowser() { throw null; }
         public static bool IsFreeBSD() { throw null; }
         public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
@@ -13929,6 +13934,8 @@ namespace System.Reflection
     public sealed partial class Pointer : System.Runtime.Serialization.ISerializable
     {
         internal Pointer() { }
+        public System.Type PointerType { get { throw null; } }
+        public unsafe void* Value { get { throw null; } }
         public unsafe static object Box(void* ptr, System.Type type) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }

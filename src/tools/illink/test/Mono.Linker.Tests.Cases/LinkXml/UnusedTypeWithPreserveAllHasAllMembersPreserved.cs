@@ -11,8 +11,9 @@ namespace Mono.Linker.Tests.Cases.LinkXml
         }
 
         [Kept]
+        [KeptBaseType(typeof(Base))]
         [KeptMember(".ctor()")]
-        class Unused
+        class Unused : Base
         {
             [Kept]
             public int Field1;
@@ -84,6 +85,42 @@ namespace Mono.Linker.Tests.Cases.LinkXml
             [Kept]
             internal static void Method6()
             {
+            }
+
+            [Kept]
+            public event System.Action Event { [Kept] add { } [Kept] remove { } }
+
+            public class PublicNested
+            {
+                public void Method() { }
+            }
+
+            private class PrivateNested
+            {
+                public class NestedAgain
+                {
+                    public void Method() { }
+                }
+            }
+        }
+
+        [Kept]
+        [KeptMember(".ctor()")]
+        class Base
+        {
+            public int PublicField;
+            private int PrivateField;
+
+            public void PublicMethod() { }
+            protected void ProtectedMethod() { }
+            private void PrivateMethod() { }
+
+            public int Property { get; set; }
+            public event System.Action BaseEvent { add { } remove { } }
+
+            public class Nested
+            {
+                public void Method() { }
             }
         }
     }

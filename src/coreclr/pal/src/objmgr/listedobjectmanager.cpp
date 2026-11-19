@@ -374,7 +374,7 @@ CListedObjectManager::LocateObject(
     _ASSERTE(NULL != pthr);
     _ASSERTE(NULL != psObjectToLocate);
     _ASSERTE(NULL != psObjectToLocate->GetString());
-    _ASSERTE(PAL_wcslen(psObjectToLocate->GetString()) == psObjectToLocate->GetStringLength());
+    _ASSERTE(minipal_u16_strlen((const CHAR16_T*)psObjectToLocate->GetString()) == psObjectToLocate->GetStringLength());
     _ASSERTE(NULL != ppobj);
 
     ENTRY("CListedObjectManager::LocateObject "
@@ -411,7 +411,8 @@ CListedObjectManager::LocateObject(
             continue;
         }
 
-        if (0 != PAL_wcscmp(poa->sObjectName.GetString(), psObjectToLocate->GetString()))
+        if (0 != memcmp(poa->sObjectName.GetString(), psObjectToLocate->GetString(),
+                        psObjectToLocate->GetStringLength() * sizeof(WCHAR)))
         {
             continue;
         }

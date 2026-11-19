@@ -1025,7 +1025,9 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     // Pick a unique initial value (-10) so that the 1st doesn't accidentally match.
     int ilPrevOld = -10;
 
+    // mapping views either the borrowed ReJIT map or the copy that loadTimeMapping owns.
     InstrumentedILOffsetMapping mapping;
+    InstrumentedILOffsetMappingHolder loadTimeMapping;
 
 #ifdef FEATURE_CODE_VERSIONING
     ILCodeVersion ilVersion = m_nativeCodeVersion.GetILCodeVersion();
@@ -1052,7 +1054,8 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     if (m_methodInfo->HasInstrumentedILMap())
     {
         // If a ReJIT hasn't happened, check for a profiler provided map.
-        mapping = m_methodInfo->GetRuntimeModule()->GetInstrumentedILOffsetMapping(m_methodInfo->m_token);
+        loadTimeMapping = m_methodInfo->GetRuntimeModule()->GetInstrumentedILOffsetMapping(m_methodInfo->m_token);
+        mapping = loadTimeMapping.Get();
     }
 
 
@@ -1991,15 +1994,10 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Method
         // This also handles the possibility of getting the same methoddesc back from the iterator.
         // It also lets EnC + generics play nice together (including if an generic method was EnC-ed)
         LoadedMethodDescIterator it(pAppDomain, m_module, m_token);
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-        while (it.Next(pAssembly.This()))
+        CollectibleAssemblyHolder pAssembly;
+        while (it.Next(&pAssembly))
         {
             MethodDesc * pDesc = it.Current();
-            if (!pDesc->HasNativeCode())
-            {
-                continue;
-            }
-
             Module * pLoaderModule = pDesc->GetLoaderModule();
 
             // Skip modules that are unloaded, but still hanging around. Note that we can't use DebuggerModule for this check
@@ -2007,7 +2005,21 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Method
             if (pLoaderModule->GetLoaderAllocator()->IsUnloaded())
                 continue;
 
-            CreateDJIsForMethodDesc(pDesc);
+            if (pDesc->HasNativeCode())
+            {
+                CreateDJIsForMethodDesc(pDesc);
+            }
+
+            // A non-generic method's async variant may have been jitted before attach,
+            // even when its ordinary variant has no native code.
+            if (!pDesc->IsAsyncVariantMethod() && pDesc->ReturnsTaskOrValueTask())
+            {
+                MethodDesc * pAsyncVariant = pDesc->GetAsyncVariantNoCreate();
+                if (pAsyncVariant != nullptr && pAsyncVariant->HasNativeCode())
+                {
+                    CreateDJIsForMethodDesc(pAsyncVariant);
+                }
+            }
         }
     }
 }

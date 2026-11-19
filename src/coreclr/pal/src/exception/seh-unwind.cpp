@@ -98,14 +98,6 @@ enum
     ASSIGN_REG(R13)        \
     ASSIGN_REG(R14)        \
     ASSIGN_REG(R15)
-#elif (defined(HOST_UNIX) && defined(HOST_X86)) || (defined(HOST_WINDOWS) && defined(TARGET_X86))
-#define ASSIGN_UNWIND_REGS \
-    ASSIGN_REG(Eip)        \
-    ASSIGN_REG(Esp)        \
-    ASSIGN_REG(Ebp)        \
-    ASSIGN_REG(Ebx)        \
-    ASSIGN_REG(Esi)        \
-    ASSIGN_REG(Edi)
 #elif (defined(HOST_UNIX) && defined(HOST_S390X))
 #define ASSIGN_UNWIND_REGS \
     ASSIGN_REG(PSWAddr)    \
@@ -287,13 +279,6 @@ static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
     unw_set_reg(cursor, UNW_X86_64_R13, winContext->R13);
     unw_set_reg(cursor, UNW_X86_64_R14, winContext->R14);
     unw_set_reg(cursor, UNW_X86_64_R15, winContext->R15);
-#elif (defined(HOST_UNIX) && defined(HOST_X86)) || (defined(HOST_WINDOWS) && defined(TARGET_X86))
-    unw_set_reg(cursor, UNW_REG_IP, winContext->Eip);
-    unw_set_reg(cursor, UNW_REG_SP, winContext->Esp);
-    unw_set_reg(cursor, UNW_X86_EBP, winContext->Ebp);
-    unw_set_reg(cursor, UNW_X86_EBX, winContext->Ebx);
-    unw_set_reg(cursor, UNW_X86_ESI, winContext->Esi);
-    unw_set_reg(cursor, UNW_X86_EDI, winContext->Edi);
 #elif defined(HOST_ARM64) && defined(__APPLE__)
     // unw_cursor_t is an opaque data structure on macOS
     // As noted in WinContextToUnwindContext this didn't work for Linux
@@ -351,13 +336,6 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_X86_64_R13, (unw_word_t *) &winContext->R13);
     unw_get_reg(cursor, UNW_X86_64_R14, (unw_word_t *) &winContext->R14);
     unw_get_reg(cursor, UNW_X86_64_R15, (unw_word_t *) &winContext->R15);
-#elif (defined(HOST_UNIX) && defined(HOST_X86)) || (defined(HOST_WINDOWS) && defined(TARGET_X86))
-    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Eip);
-    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Esp);
-    unw_get_reg(cursor, UNW_X86_EBP, (unw_word_t *) &winContext->Ebp);
-    unw_get_reg(cursor, UNW_X86_EBX, (unw_word_t *) &winContext->Ebx);
-    unw_get_reg(cursor, UNW_X86_ESI, (unw_word_t *) &winContext->Esi);
-    unw_get_reg(cursor, UNW_X86_EDI, (unw_word_t *) &winContext->Edi);
 #elif (defined(HOST_UNIX) && defined(HOST_ARM)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM))
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
@@ -724,15 +702,6 @@ Function:
 
 Parameters:
     ExceptionRecord - the Windows exception record to throw
-
-Note:
-    The name of this function and the name of the ExceptionRecord
-    parameter is used in the sos lldb plugin code to read the exception
-    record. See coreclr\tools\SOS\lldbplugin\services.cpp.
-
-    This function must not be inlined or optimized so the below PAL_VirtualUnwind
-    calls end up with RaiseException caller's context and so the above debugger
-    code finds the function and ExceptionRecord parameter.
 --*/
 PAL_NORETURN
 __attribute__((noinline))
@@ -789,7 +758,7 @@ RaiseException(IN DWORD dwExceptionCode,
     exceptionRecord->ExceptionCode = dwExceptionCode;
     exceptionRecord->ExceptionFlags = dwExceptionFlags;
     exceptionRecord->ExceptionRecord = NULL;
-    exceptionRecord->ExceptionAddress = NULL; // will be set by RtlpRaiseException
+    exceptionRecord->ExceptionAddress = NULL;
     exceptionRecord->NumberParameters = nNumberOfArguments;
     if (nNumberOfArguments)
     {
@@ -797,18 +766,7 @@ RaiseException(IN DWORD dwExceptionCode,
                    nNumberOfArguments * sizeof(ULONG_PTR));
     }
 
-    // Capture the context of RaiseException.
     ZeroMemory(contextRecord, sizeof(CONTEXT));
-    // WASM-TODO: reconsider this
-#ifndef TARGET_WASM
-    contextRecord->ContextFlags = CONTEXT_FULL;
-    CONTEXT_CaptureContext(contextRecord);
-
-    // We have to unwind one level to get the actual context user code could be resumed at.
-    PAL_VirtualUnwind(contextRecord);
-#endif // !TARGET_WASM
-
-    exceptionRecord->ExceptionAddress = (void *)CONTEXTGetPC(contextRecord);
 
     RtlpRaiseException(exceptionRecord, contextRecord);
 

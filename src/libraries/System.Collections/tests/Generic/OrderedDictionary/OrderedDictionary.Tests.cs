@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -92,6 +93,36 @@ namespace System.Collections.Tests
             Assert.Equal(new[] { 7, 9, 8 }, d.Keys);
             Assert.Equal(new[] { 7, 9, 8 }, d.Values);
             Assert.Equal(new[] { KeyValuePair.Create(7, 7), KeyValuePair.Create(9, 9), KeyValuePair.Create(8, 8) }, d);
+        }
+
+        #endregion
+
+        #region RemoveAt
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void RemoveAt_DoesNotExposeRemovedEntries(int index)
+        {
+            var comparer = EqualityComparer<int>.Create((x, y) => x == y, x => x % 2);
+            var dictionary = new OrderedDictionary<int, int>(comparer) { { 1, 11 }, { 2, 22 }, { 3, 33 } };
+            var expected = dictionary.ToList();
+            int removedKey = expected[index].Key;
+
+            dictionary.RemoveAt(index);
+            expected.RemoveAt(index);
+            Assert.Equal(expected, dictionary);
+            Assert.False(dictionary.ContainsKey(removedKey));
+
+            dictionary.Insert(index, 4, 44);
+            expected.Insert(index, KeyValuePair.Create(4, 44));
+            Assert.Equal(expected, dictionary);
+            foreach (var entry in expected)
+            {
+                Assert.Equal(entry.Value, dictionary[entry.Key]);
+            }
+            Assert.False(dictionary.ContainsKey(removedKey));
         }
 
         #endregion

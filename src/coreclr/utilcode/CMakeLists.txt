@@ -5,10 +5,10 @@ set(UTILCODE_COMMON_SOURCES
   clrhost_nodependencies.cpp
   ccomprc.cpp
   cxxexception.cpp
+  errorstrings.cpp
   ex.cpp
   sbuffer.cpp
   sstring_com.cpp
-  fstring.cpp
   namespaceutil.cpp
   makepath.cpp
   splitpath.cpp

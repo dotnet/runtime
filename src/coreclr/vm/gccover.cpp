@@ -8,7 +8,7 @@
 
 /* This file holds code that is designed to test GC pointer tracking in
    fully interruptible code.  We basically do a GC everywhere we can in
-   jitted code
+   managed code
  */
 /****************************************************************************/
 
@@ -32,6 +32,18 @@
 #include <minipal.h>
 
 /****************************************************************************/
+
+GCStressCodeWriter::GCStressCodeWriter(BYTE* address, size_t size)
+    : m_addressRW(address)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (!ExecutionManager::IsReadyToRunCode(PINSTRToPCODE((TADDR)address)))
+    {
+        m_writer.AssignExecutableWriterHolder(address, size);
+        m_addressRW = m_writer.GetRW();
+    }
+}
 
 bool IsGcCoverageInterruptInstruction(PBYTE instrPtr)
 {
@@ -94,9 +106,6 @@ void SetupAndSprinkleBreakpoints(
 {
     _ASSERTE(!nativeCodeVersion.IsNull());
 
-    // CONSIDER: does anyone call this with fZapped == true ? are there plans?
-    _ASSERTE(!fZapped);
-
     // Allocate room for the GCCoverageInfo and copy of the method instructions
     MethodDesc *pMD = nativeCodeVersion.GetMethodDesc();
     size_t memSize = sizeof(GCCoverageInfo) + methodRegionInfo.hotSize + methodRegionInfo.coldSize;
@@ -131,7 +140,7 @@ void SetupAndSprinkleBreakpoints(
     nativeCodeVersion.SetGCCoverageInfo(gcCover);
 }
 
-void SetupAndSprinkleBreakpointsForJittedMethod(NativeCodeVersion               nativeCodeVersion,
+void SetupAndSprinkleBreakpointsForMethod(NativeCodeVersion                     nativeCodeVersion,
                                                 PCODE                           codeStart
                                                )
 {
@@ -152,12 +161,12 @@ void SetupAndSprinkleBreakpointsForJittedMethod(NativeCodeVersion               
     SetupAndSprinkleBreakpoints(nativeCodeVersion,
                                 &codeInfo,
                                 methodRegionInfo,
-                                FALSE
+                                ExecutionManager::IsReadyToRunCode(codeStart)
                                );
 }
 
 /****************************************************************************/
-/* called when a method is first jitted when GCStress level 4 or 8 is on */
+/* called before publishing a method when GCStress level 4 or 8 is on */
 
 void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* methodStartPtr)
 {
@@ -193,7 +202,7 @@ void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* methodStartPtr)
     }
 
     PCODE codeStart = (PCODE) methodStartPtr;
-    SetupAndSprinkleBreakpointsForJittedMethod(nativeCodeVersion, codeStart);
+    SetupAndSprinkleBreakpointsForMethod(nativeCodeVersion, codeStart);
 }
 
 // There are some code path in DoGcStress to return without doing a GC but
@@ -374,11 +383,19 @@ static PBYTE getTargetOfCall(PBYTE instrPtr, PCONTEXT regs, PBYTE* nextInstr) {
 
 // There is a call target instruction, try to find the MethodDesc for where target points to.
 // Returns nullptr if it can't find it.
-static MethodDesc* getTargetMethodDesc(PCODE target)
+static MethodDesc* getTargetMethodDesc(PCODE target, PCONTEXT regs)
 {
     MethodDesc* targetMD = ExecutionManager::GetCodeMethodDesc(target);
     if (targetMD != nullptr)
     {
+        // Interior targets such as callfinally do not follow the parent's return convention
+        // and can return into a no-GC region.
+        EECodeInfo targetCodeInfo(target);
+        if (targetCodeInfo.IsValid() && targetCodeInfo.GetRelOffset() != 0)
+        {
+            return nullptr;
+        }
+
         // It is JIT/NGened call.
         return targetMD;
     }
@@ -396,6 +413,19 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
             // It is a VSD stub manager.
             DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pVSDStubManager, target, stubKind));
             _ASSERTE(token.IsValid());
+            if (token.IsThisToken())
+            {
+                // Class tokens encode only a slot. The receiver is available in ECX at the call,
+                // but not while sprinkling breakpoints, and null receivers must fault in the stub.
+                if (regs == nullptr || regs->Ecx == 0)
+                {
+                    return nullptr;
+                }
+
+                Object* receiver = reinterpret_cast<Object*>(regs->Ecx);
+                return VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, receiver->GetMethodTable());
+            }
+
             return VirtualCallStubManager::GetInterfaceMethodDescFromToken(token);
         }
     }
@@ -486,7 +516,8 @@ void GCCoverageInfo::SprinkleBreakpoints(
     // For prejitted code we have to remove the write-protect on the code page
     if (fZapped)
     {
-        VMToOSInterface::ProtectMemory(codeStart, codeSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite);
+        if (!VMToOSInterface::ProtectMemory(codeStart, codeSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite))
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to change code protection for GC stress"));
         writeableOffset = 0;
     }
     else
@@ -559,7 +590,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
 
                 if (target != 0)
                 {
-                    targetMD = getTargetMethodDesc((PCODE)target);
+                    targetMD = getTargetMethodDesc((PCODE)target, nullptr);
                 }
             }
             break;
@@ -813,7 +844,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         PBYTE target = getTargetOfCall((BYTE*) instrPtr, regs, (BYTE**)&nextInstr);
         if (target != 0)
         {
-            ExecutableWriterHolder<BYTE> nextInstrWriterHolder(nextInstr, sizeof(DWORD));
+            GCStressCodeWriter nextInstrWriterHolder(nextInstr, sizeof(DWORD));
             if (!pThread->PreemptiveGCDisabled())
             {
                 // We are in preemptive mode in JITTed code. This implies that we are into IL stub
@@ -822,7 +853,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
             }
             else
             {
-                MethodDesc* targetMD = getTargetMethodDesc((PCODE)target);
+                MethodDesc* targetMD = getTargetMethodDesc((PCODE)target, regs);
 
                 if (targetMD != 0)
                 {
@@ -956,7 +987,7 @@ void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32
     // The instruction about to be replaced cannot already be a gcstress instruction
     _ASSERTE(!IsGcCoverageInterruptInstruction(instrPtr));
 
-    ExecutableWriterHolder<BYTE> instrPtrWriterHolder(instrPtr, sizeof(DWORD));
+    GCStressCodeWriter instrPtrWriterHolder(instrPtr, sizeof(DWORD));
 #if defined(TARGET_ARM)
     size_t instrLen = GetARMInstructionLength(instrPtr);
 
@@ -1031,7 +1062,7 @@ bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 sto
     // Need to do two iterations if interruptible range spans across hot & cold region
     while(acrossHotRegion--)
     {
-        ExecutableWriterHolder<BYTE> instrPtrWriterHolder(rangeStart, rangeStop - rangeStart);
+        GCStressCodeWriter instrPtrWriterHolder(rangeStart, rangeStop - rangeStart);
         PBYTE instrPtrRW =  instrPtrWriterHolder.GetRW();
         PBYTE rangeStopRW = instrPtrRW + (rangeStop - rangeStart);
         while(instrPtrRW < rangeStopRW)
@@ -1098,11 +1129,13 @@ void GCCoverageInfo::SprinkleBreakpoints(
     // For prejitted code we have to remove the write-protect on the code page
     if (fZapped)
     {
-        VMToOSInterface::ProtectMemory((BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite);
+        if (!VMToOSInterface::ProtectMemory((BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite))
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to change code protection for GC stress"));
 
         if (methodRegion.coldSize > 0)
         {
-            VMToOSInterface::ProtectMemory((BYTE*)methodRegion.coldStartAddress, methodRegion.coldSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite);
+            if (!VMToOSInterface::ProtectMemory((BYTE*)methodRegion.coldStartAddress, methodRegion.coldSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite))
+                EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to change code protection for GC stress"));
         }
     }
 
@@ -1257,7 +1290,7 @@ bool IsGcCoverageInterrupt(LPVOID ip)
 
 void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageInfo* gcCover, DWORD offset)
 {
-    ExecutableWriterHolder<void> instrPtrWriterHolder((void*)instrPtr, 4);
+    GCStressCodeWriter instrPtrWriterHolder((BYTE*)instrPtr, 4);
 #ifdef TARGET_ARM
     if (GetARMInstructionLength(savedInstrPtr) == 2)
         *(WORD *)instrPtrWriterHolder.GetRW()  = *(WORD *)savedInstrPtr;

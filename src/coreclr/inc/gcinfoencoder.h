@@ -96,6 +96,14 @@
 #ifndef __GCINFOENCODER_H__
 #define __GCINFOENCODER_H__
 
+#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+class CInterpreterJitInfo;
+using GcInfoJitInfo = CInterpreterJitInfo;
+#else
+class ICorJitInfo;
+using GcInfoJitInfo = ICorJitInfo;
+#endif
+
 #ifdef STANDALONE_BUILD
 #include <wchar.h>
 #include <stdio.h>
@@ -168,7 +176,7 @@ struct GcInfoSize
 };
 #endif
 
-struct GcSlotDesc
+struct GcEncoderSlotDesc
 {
     union
     {
@@ -345,7 +353,7 @@ public:
     typedef void (*NoMemoryFunction)(void);
 
     TGcInfoEncoder(
-            ICorJitInfo*                pCorJitInfo,
+            GcInfoJitInfo*              pCorJitInfo,
             CORINFO_METHOD_INFO*        pMethodInfo,
             IAllocator*                 pJitAllocator,
             NoMemoryFunction            pNoMem = ::ThrowOutOfMemory
@@ -470,7 +478,7 @@ private:
         UINT32 NormStopOffset;
     };
 
-    ICorJitInfo*                m_pCorJitInfo;
+    GcInfoJitInfo*              m_pCorJitInfo;
     CORINFO_METHOD_INFO*        m_pMethodInfo;
     IAllocator*                 m_pAllocator;
     NoMemoryFunction            m_pNoMem;
@@ -523,7 +531,7 @@ private:
     static const UINT32 m_SlotTableInitialSize = 32;
     UINT32 m_SlotTableSize;
     UINT32 m_NumSlots;
-    GcSlotDesc *m_SlotTable;
+    GcEncoderSlotDesc *m_SlotTable;
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     UINT32* m_pCallSites;

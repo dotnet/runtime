@@ -131,6 +131,7 @@
 
 #ifdef FEATURE_PERFTRACING
 #include "eventpipeadapter.h"
+#include "ProcessEnvironment.h"
 #endif // FEATURE_PERFTRACING
 
 //---------------------------------------------------------------------------------------
@@ -4916,18 +4917,24 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
             PCODE pCodeStart = (PCODE)NULL;
 #ifdef FEATURE_CODE_VERSIONING
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
-            ILCodeVersion ilCodeVersion = NULL;
-            {
-                pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
+            ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
 
+            // A null IL version would also enumerate the default native version.
+            if (!ilCodeVersion.IsNull())
+            {
                 NativeCodeVersionCollection nativeCodeVersions = ilCodeVersion.GetNativeCodeVersions(pMD);
                 for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
                 {
                     // Now that tiered compilation can create more than one jitted code version for the same rejit id
-                    // we are arbitrarily choosing the first one to return.  To address a specific version of native code
+                    // we are arbitrarily choosing the first one with code to return.  To address a specific version of native code
                     // use GetILToNativeMapping3.
                     pCodeStart = iter->GetNativeCode();
-                    break;
+                    if (pCodeStart != (PCODE)NULL)
+                    {
+                        // Interpreted code is identified by its byte code, not by its precode entry point.
+                        pCodeStart = (PCODE)GetDiagnosticCodeStartFromEntryPoint(pMD, (TADDR)pCodeStart);
+                        break;
+                    }
                 }
             }
 #endif // FEATURE_CODE_VERSIONING
@@ -6443,7 +6450,8 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
 
                 if (codeStart != (PCODE)NULL)
                 {
-                    addresses.Append(codeStart);
+                    // Interpreted code is identified by its byte code, not by its precode entry point.
+                    addresses.Append((PCODE)GetDiagnosticCodeStartFromEntryPoint(pMD, (TADDR)codeStart));
                     ++trueLen;
                 }
             }
@@ -6906,7 +6914,7 @@ HRESULT ProfToEEInterfaceImpl::GetEnvironmentVariable(
 
     if ((pcchValue != nullptr) || (szValue != nullptr))
     {
-        DWORD trueLen = ::GetEnvironmentVariable(szName, szValue, cchValue);
+        uint32_t trueLen = ProcessEnvironment_GetVariable((const CHAR16_T*)szName, (CHAR16_T*)szValue, cchValue);
         if (trueLen == 0)
         {
             hr = HRESULT_FROM_WIN32(GetLastError());
@@ -6950,7 +6958,8 @@ HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const
         return E_INVALIDARG;
     }
 
-    return ::SetEnvironmentVariable(szName, szValue) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+    uint32_t error = ProcessEnvironment_SetVariable((const CHAR16_T*)szName, (const CHAR16_T*)szValue);
+    return HRESULT_FROM_WIN32(error);
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
@@ -7513,7 +7522,7 @@ HRESULT ProfToEEInterfaceImpl::EnumerateNonGCObjects(ICorProfilerObjectEnum** pp
         return E_OUTOFMEMORY;
     }
 
-    *ppEnum = (ICorProfilerObjectEnum*)pEnum.Extract();
+    *ppEnum = (ICorProfilerObjectEnum*)pEnum.Detach();
 
     return hr;
 }
@@ -8598,8 +8607,8 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
 
     // We must make sure no other thread tries to hijack the thread we're about to walk
     // Hijacking means Thread::HijackThread, i.e. bashing return addresses which would break the stack walk
-    Thread::HijackLockHolder hijackLockHolder(pThreadToSnapshot);
-    if (!hijackLockHolder.Acquired())
+    Thread::HijackLockHolder hijackLockHolder;
+    if (!pThreadToSnapshot->TryAcquireHijackLock(hijackLockHolder))
     {
         // Returning directly as there is nothing to cleanup yet, and can't skip gcholder ctor
         return CORPROF_E_STACKSNAPSHOT_UNSAFE;
@@ -9447,7 +9456,7 @@ HRESULT ProfToEEInterfaceImpl::EnumJITedFunctions(ICorProfilerFunctionEnum ** pp
     }
 
     // Ownership transferred to [out] param.  Caller must Release() when done with this.
-    *ppEnum = (ICorProfilerFunctionEnum *)pJitEnum.Extract();
+    *ppEnum = (ICorProfilerFunctionEnum *)pJitEnum.Detach();
 
     return S_OK;
 }
@@ -9503,7 +9512,7 @@ HRESULT ProfToEEInterfaceImpl::EnumJITedFunctions2(ICorProfilerFunctionEnum ** p
     }
 
     // Ownership transferred to [out] param.  Caller must Release() when done with this.
-    *ppEnum = (ICorProfilerFunctionEnum *)pJitEnum.Extract();
+    *ppEnum = (ICorProfilerFunctionEnum *)pJitEnum.Detach();
 
     return S_OK;
 }
@@ -9569,7 +9578,7 @@ HRESULT ProfToEEInterfaceImpl::EnumModules(ICorProfilerModuleEnum ** ppEnum)
     }
 
     // Ownership transferred to [out] param.  Caller must Release() when done with this.
-    *ppEnum = (ICorProfilerModuleEnum *) pModuleEnum.Extract();
+    *ppEnum = (ICorProfilerModuleEnum *) pModuleEnum.Detach();
 
     return S_OK;
 }
@@ -10266,7 +10275,7 @@ HRESULT ProfToEEInterfaceImpl::EnumThreads(
     }
 
     // Ownership transferred to [out] param.  Caller must Release() when done with this.
-    *ppEnum = (ICorProfilerThreadEnum *) pThreadEnum.Extract();
+    *ppEnum = (ICorProfilerThreadEnum *) pThreadEnum.Detach();
 
     return S_OK;
 }

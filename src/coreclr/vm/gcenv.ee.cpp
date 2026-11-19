@@ -191,9 +191,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     else
 #endif
     {
-        unsigned flagsStackWalk = ALLOW_ASYNC_STACK_WALK | ALLOW_INVALID_OBJECTS;
-
-        flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
+        unsigned flagsStackWalk = ALLOW_ASYNC_STACK_WALK | ALLOW_INVALID_OBJECTS | GC_FUNCLET_REFERENCE_REPORTING | GC_ROOT_SCAN;
 
         gcctx.pScannedSlots = NULL;
         pThread->StackWalkFrames( GcStackCrawlCallBack, &gcctx, flagsStackWalk);
@@ -1285,7 +1283,7 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
     }
 
     WCHAR configKey[MaxConfigKeyLength];
-    if (MultiByteToWideChar(CP_ACP, 0, privateKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+    if (minipal_convert_utf8_to_utf16(privateKey, strlen(privateKey) + 1, (CHAR16_T*)configKey, MaxConfigKeyLength, 0) == 0)
     {
         // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
         return false;
@@ -1300,7 +1298,7 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
     }
     else if (publicKey != NULL)
     {
-        if (MultiByteToWideChar(CP_ACP, 0, publicKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+        if (minipal_convert_utf8_to_utf16(publicKey, strlen(publicKey) + 1, (CHAR16_T*)configKey, MaxConfigKeyLength, 0) == 0)
         {
             // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
             return false;
@@ -1335,7 +1333,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     }
 
     WCHAR configKey[MaxConfigKeyLength];
-    if (MultiByteToWideChar(CP_ACP, 0, privateKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+    if (minipal_convert_utf8_to_utf16(privateKey, strlen(privateKey) + 1, (CHAR16_T*)configKey, MaxConfigKeyLength, 0) == 0)
     {
         // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
         return false;
@@ -1372,7 +1370,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     }
     else if (publicKey != NULL)
     {
-        if (MultiByteToWideChar(CP_ACP, 0, publicKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+        if (minipal_convert_utf8_to_utf16(publicKey, strlen(publicKey) + 1, (CHAR16_T*)configKey, MaxConfigKeyLength, 0) == 0)
         {
             // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
             return false;
@@ -1395,7 +1393,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
     } CONTRACTL_END;
 
     WCHAR configKey[MaxConfigKeyLength];
-    if (MultiByteToWideChar(CP_ACP, 0, privateKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+    if (minipal_convert_utf8_to_utf16(privateKey, strlen(privateKey) + 1, (CHAR16_T*)configKey, MaxConfigKeyLength, 0) == 0)
     {
         // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
         return false;
@@ -1408,20 +1406,22 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
     {
         if (publicKey != NULL)
         {
-            if (MultiByteToWideChar(CP_ACP, 0, publicKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+            if (minipal_convert_utf8_to_utf16(publicKey, strlen(publicKey) + 1, (CHAR16_T*)configKey, MaxConfigKeyLength, 0) == 0)
             {
                 // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
                 return false;
             }
             out =  Configuration::GetKnobStringValue(configKey);
-            if (out == NULL)
-            {
-                return false;
-            }
         }
     }
 
-    int charCount = WideCharToMultiByte(CP_ACP, 0, out, -1 /* out is null-terminated */, NULL, 0, nullptr, nullptr);
+    if (out == NULL)
+    {
+        return false;
+    }
+
+    size_t cchOut = u16_strlen(out) + 1;
+    size_t charCount = minipal_get_length_utf16_to_utf8((const CHAR16_T*)out, cchOut, 0);
     if (charCount == 0)
     {
         // this should only happen if the config subsystem gives us a string that's not valid
@@ -1434,7 +1434,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
     }
 
     // not allocated on the stack since it escapes this function
-    AStringHolder configResult = new (nothrow) char[charCount];
+    AStringHolder configResult(new (nothrow) char[charCount]);
     if (!configResult)
     {
         if (fromClrConfig)
@@ -1444,10 +1444,9 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
         return false;
     }
 
-    if (WideCharToMultiByte(CP_ACP, 0, out, -1 /* out is null-terminated */,
-          configResult.GetValue(), charCount, nullptr, nullptr) == 0)
+    if (minipal_convert_utf16_to_utf8((const CHAR16_T*)out, cchOut, configResult, charCount, 0) == 0)
     {
-        // this should never happen, the previous call to WideCharToMultiByte that computed the charCount should
+        // this should never happen, the previous call that computed the charCount should
         // have caught all issues.
         assert(false);
         if (fromClrConfig)
@@ -1457,7 +1456,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
         return false;
     }
 
-    *value = configResult.Extract();
+    *value = configResult.Detach();
     if (fromClrConfig)
     {
         CLRConfig::FreeConfigString(fromClrConfig);

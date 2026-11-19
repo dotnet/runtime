@@ -3,36 +3,11 @@ include(CheckIncludeFiles)
 include(CheckSymbolExists)
 include(CMakePushCheckState)
 
-if(CLR_CMAKE_HOST_WIN32)
-    # Our posix abstraction layer will provide these headers
-    set(HAVE_ELF_H 1)
-    set(HAVE_ENDIAN_H 1)
+check_include_files(elf.h HAVE_ELF_H)
+check_include_files(sys/elf.h HAVE_SYS_ELF_H)
 
-    # MSVC compiler is currently missing C11 stdalign.h header
-    # Fake it until support is added
-    check_include_files(stdalign.h HAVE_STDALIGN_H)
-    if (NOT HAVE_STDALIGN_H)
-        configure_file(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/win/fakestdalign.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdalign.h COPYONLY)
-    endif (NOT HAVE_STDALIGN_H)
-
-    # MSVC compiler is currently missing C11 stdatomic.h header
-    check_c_source_compiles("#include <stdatomic.h> void main() { _Atomic int a; }" HAVE_STDATOMIC_H)
-    if (NOT HAVE_STDATOMIC_H)
-        configure_file(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/win/fakestdatomic.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdatomic.h COPYONLY)
-    endif (NOT HAVE_STDATOMIC_H)
-
-    # MSVC compiler is currently missing C11 _Thread_local
-    check_c_source_compiles("void main() { _Thread_local int a; }"  HAVE_THREAD_LOCAL)
-    if (NOT HAVE_THREAD_LOCAL)
-        add_definitions(-D_Thread_local=)
-    endif (NOT HAVE_THREAD_LOCAL)
-else(CLR_CMAKE_HOST_WIN32)
-    check_include_files(elf.h HAVE_ELF_H)
-    check_include_files(sys/elf.h HAVE_SYS_ELF_H)
-
-    check_include_files(endian.h HAVE_ENDIAN_H)
-    check_include_files(sys/endian.h HAVE_SYS_ENDIAN_H)
-endif(CLR_CMAKE_HOST_WIN32)
+check_include_files(endian.h HAVE_ENDIAN_H)
+check_include_files(sys/endian.h HAVE_SYS_ENDIAN_H)
 
 check_include_files(link.h HAVE_LINK_H)
 check_include_files(sys/link.h HAVE_SYS_LINK_H)

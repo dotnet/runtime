@@ -270,7 +270,7 @@ virtual-IP ranges bypass native thunk classification.
 | `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | `pointer` | Pointer to an `ImageDataDirectory` for the delay load method call thunks; absent on WebAssembly |
 | `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
 | `ReadyToRunInfo` | `HotColdMap` | `pointer` | Pointer to an array of 32-bit integers; present only with `FEATURE_COLD_R2R_CODE` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
-| `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
+| `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image; unset for component assemblies of a composite image, so it is read from the `CompositeInfo` |
 | `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base virtual IP assigned to the ReadyToRun module on WebAssembly |
 | `ReadyToRunInfo` | `NumHotColdMap` | `uint32` | Number of entries in the `HotColdMap`; absent without `FEATURE_COLD_R2R_CODE`, meaning no hot/cold mapping |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
@@ -398,7 +398,7 @@ bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddre
     // Find the relative address that we are looking for
     TargetCodePointer addr = /* code pointer from jittedCodeAddress using PlatformMetadata.GetCodePointerFlags */
     TargetPointer codeBase = /* RangeSection.RangeBegin, or ReadyToRunInfo.MinVirtualIP on WebAssembly */;
-    TargetPointer loadedImageBase = /* ReadyToRunInfo.LoadedImageBase on WebAssembly, otherwise codeBase */;
+    TargetPointer loadedImageBase = /* LoadedImageBase of r2rInfo.CompositeInfo on WebAssembly, otherwise codeBase */;
     TargetPointer relativeAddr = addr - codeBase;
 
     TargetPointer runtimeFunctions = Target.ReadPointer(r2rInfo + /* ReadyToRunInfo::RuntimeFunctions offset */);
@@ -638,8 +638,8 @@ For R2R images, `hasFlagByte` is always `false`.
     * The `GCInfoVersion` of R2R code is mapped from the R2R MajorVersion and MinorVersion which is read from the ReadyToRunHeader which itself is read from the ReadyToRunInfo (can be found as in GetMethodInfo). The current GCInfoVersion mapping is:
         * MajorVersion < 11 => 3
         * MajorVersion >= 11 and MajorVersion < 21 => 4
-        * MajorVersion >= 21 and MajorVersion < 34 => 5
-        * MajorVersion >= 34 => 6
+        * MajorVersion >= 21 and MajorVersion < 35 => 5
+        * MajorVersion >= 35 => 6
 
 * For interpreted code (`InterpreterJitManager`), a pointer to the `GCInfo` is stored on the `InterpreterRealCodeHeader`, accessed via nibble map lookup as with the EE JitManager. The `GCInfoVersion` is defined by the runtime global `GCInfoVersion`. The GC info is decoded using interpreter-specific decoding (`DecodeInterpreterGCInfo`).
 

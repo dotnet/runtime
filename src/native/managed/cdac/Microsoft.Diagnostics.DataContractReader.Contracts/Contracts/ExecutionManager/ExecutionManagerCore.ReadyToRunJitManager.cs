@@ -200,7 +200,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             // Retain historical mappings for older target dumps; see readytorun.h for versioning details.
             return header.MajorVersion switch
             {
-                >= 34 => 6,
+                >= 35 => 6,
                 >= 21 => 5,
                 >= 11 => 4,
                  < 11 => 3,

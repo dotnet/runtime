@@ -9,10 +9,10 @@ namespace System.Runtime.Caching
     {
         private readonly string _key;
         private readonly CacheEntryRemovedReason _reason;
-        private readonly string _regionName;
+        private readonly string? _regionName;
         private readonly ObjectCache _source;
-        private CacheItem _updatedCacheItem;
-        private CacheItemPolicy _updatedCacheItemPolicy;
+        private CacheItem? _updatedCacheItem;
+        private CacheItemPolicy? _updatedCacheItemPolicy;
 
         public string Key
         {
@@ -24,7 +24,7 @@ namespace System.Runtime.Caching
             get { return _reason; }
         }
 
-        public string RegionName
+        public string? RegionName
         {
             get { return _regionName; }
         }
@@ -34,19 +34,19 @@ namespace System.Runtime.Caching
             get { return _source; }
         }
 
-        public CacheItem UpdatedCacheItem
+        public CacheItem? UpdatedCacheItem
         {
             get { return _updatedCacheItem; }
             set { _updatedCacheItem = value; }
         }
 
-        public CacheItemPolicy UpdatedCacheItemPolicy
+        public CacheItemPolicy? UpdatedCacheItemPolicy
         {
             get { return _updatedCacheItemPolicy; }
             set { _updatedCacheItemPolicy = value; }
         }
 
-        public CacheEntryUpdateArguments(ObjectCache source, CacheEntryRemovedReason reason, string key, string regionName)
+        public CacheEntryUpdateArguments(ObjectCache source, CacheEntryRemovedReason reason, string key, string? regionName)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(key);

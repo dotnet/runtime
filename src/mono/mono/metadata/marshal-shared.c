@@ -1091,6 +1091,15 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
+		// Validate that the source array has the expected marshalling size
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
+		mono_mb_emit_byte (mb, CEE_LDLEN);
+		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
+		guint32 length_ok = mono_mb_emit_branch (mb, CEE_BGE_UN);
+		mono_mb_emit_exception (mb, "ArgumentException", g_strdup ("Array length must be at least the SizeConst value."));
+		mono_mb_patch_branch (mb, length_ok);
+
 		if (m_class_is_blittable (eklass)) {
 			mono_mb_emit_ldloc (mb, 1);
 			mono_mb_emit_ldloc (mb, 0);
@@ -1129,8 +1138,7 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 			/* Loop header */
 			label2 = mono_mb_get_label (mb);
 			mono_mb_emit_ldloc (mb, index_var);
-			mono_mb_emit_ldloc (mb, array_var);
-			mono_mb_emit_byte (mb, CEE_LDLEN);
+			mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
 			label3 = mono_mb_emit_branch (mb, CEE_BGE);
 
 			/* Set src */

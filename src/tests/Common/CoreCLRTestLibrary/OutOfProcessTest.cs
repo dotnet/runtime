@@ -82,7 +82,7 @@ namespace TestLibrary
         {
             if (IsUsingPrecomputedResults)
             {
-                ImportPrecomputedResult(assemblyPath, testPathPrefix);
+                ImportPrecomputedResult(assemblyPath);
                 return;
             }
 
@@ -224,7 +224,7 @@ namespace TestLibrary
             return Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), testAssemblyPath)) + OutOfProcessResultFileSuffix;
         }
 
-        private static void ImportPrecomputedResult(string assemblyPath, string testPathPrefix)
+        private static void ImportPrecomputedResult(string testAssemblyPath)
         {
             string resultToken = Environment.GetEnvironmentVariable(OutOfProcessResultTokenEnvironmentVariable);
             if (String.IsNullOrEmpty(resultToken))
@@ -232,12 +232,7 @@ namespace TestLibrary
                 Assert.Fail($"Test Infrastructure Failure: Environment variable '{OutOfProcessResultTokenEnvironmentVariable}' is not set.");
             }
 
-            string testAssemblyPath = assemblyPath;
-            if (testPathPrefix != null)
-            {
-                testAssemblyPath = Path.Combine(testPathPrefix, testAssemblyPath);
-            }
-
+            // Results are keyed by the paths in the plan, relative to the runner's working directory.
             if (!OperatingSystem.IsWindows())
             {
                 testAssemblyPath = testAssemblyPath.Replace("\\", "/");
