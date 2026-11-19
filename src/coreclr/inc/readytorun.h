@@ -89,6 +89,7 @@
 // R2R Version 34 changes the ABI for funclets on other architectures to match AMD64: funclets save
 //                only the return address, and the runtime preserves the callee-saved registers around the
 //                funclets that it calls
+// R2R Version 34.1 adds AuxiliaryModuleMetadata sections
 // R2R Version 35 uses GCInfo v6, with shrinking slot flag bits and offsets relative within flags/base groups.
 //     Wasm also compacts stack slot offsets and packs scaled unwind frame sizes and virtual IP counts into one ULEB128.
 //     Wasm images from earlier versions must be regenerated.
@@ -166,6 +167,7 @@ enum class ReadyToRunSectionType : uint32_t
     ProxyTypeMaps               = 125, // Added in V18.3
     TypeMapAssemblyTargets      = 126, // Added in V18.3
     WasmAsyncResumeInfo         = 127, // Added in V29
+    AuxiliaryModuleMetadata     = 128, // Added in V34.1
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail

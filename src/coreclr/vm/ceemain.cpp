@@ -1001,7 +1001,9 @@ void EEStartupHelper()
         // EventPipe initialization, so this is done after the GC has been fully initialized.
         EventPipeAdapter::FinishInitialize();
 #endif // FEATURE_PERFTRACING
+#ifdef FEATURE_GCGENANALYSIS
         GenAnalysis::Initialize();
+#endif // FEATURE_GCGENANALYSIS
 
         // Now we really have fully initialized the garbage collector
         SetGarbageCollectorFullyInitialized();
