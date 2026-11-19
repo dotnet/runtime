@@ -63,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
                 GenericVirtualMethodTableNode.AddGenericVirtualMethodImplementationDependencies(sink, context, entry.CallingMethod, entry.ImplementationMethod);
 
             foreach (var entry in ScanForInterfaceGenericVirtualMethodEntries())
-                InterfaceGenericVirtualMethodTableNode.AddGenericVirtualMethodImplementationDependencies(sink, context, entry.CallingMethod, entry.ImplementationMethod);
+                InterfaceGenericVirtualMethodTableNode.AddGenericVirtualMethodImplementationDependencies(sink, context, entry.CallingMethod, entry.ImplementationType, entry.ImplementationMethod);
         }
 
         public IEnumerable<TypeGVMEntryInfo> ScanForGenericVirtualMethodEntries()

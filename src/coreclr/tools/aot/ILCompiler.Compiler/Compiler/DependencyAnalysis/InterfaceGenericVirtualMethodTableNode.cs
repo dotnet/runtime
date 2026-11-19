@@ -46,13 +46,14 @@ namespace ILCompiler.DependencyAnalysis
         /// The dependencies returned from this function will be reported as static dependencies of the TypeGVMEntriesNode,
         /// which we create for each type that has generic virtual methods.
         /// </summary>
-        public static void AddGenericVirtualMethodImplementationDependencies(DependencySink dependencies, NodeFactory factory, MethodDesc callingMethod, MethodDesc implementationMethod)
+        public static void AddGenericVirtualMethodImplementationDependencies(DependencySink dependencies, NodeFactory factory, MethodDesc callingMethod, TypeDesc implementationType, MethodDesc implementationMethod)
         {
             Debug.Assert(callingMethod.OwningType.IsInterface);
 
             // Compute the open method signatures
             MethodDesc openCallingMethod = callingMethod.GetTypicalMethodDefinition();
 
+            dependencies.Add(factory.NecessaryTypeSymbol(implementationType.GetTypeDefinition()), "Interface GVM implementation type");
             factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, openCallingMethod);
 
             // Implementation could be null if this is a default interface method reabstraction or diamond. We need to record those.
