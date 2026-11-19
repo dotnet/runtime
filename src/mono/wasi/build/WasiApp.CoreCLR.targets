@@ -101,14 +101,6 @@
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
-    <!-- Mirror browser: keep the R2R debug and inlining info only for Debug or DebuggerSupport. This target
-         file is imported after Microsoft.NET.CrossGen.targets, so add the arguments here when the SDK hasn't. -->
-    <PublishReadyToRunStripInliningInfo Condition="'$(PublishReadyToRunStripInliningInfo)' == '' and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">false</PublishReadyToRunStripInliningInfo>
-    <PublishReadyToRunStripDebugInfo Condition="'$(PublishReadyToRunStripDebugInfo)' == '' and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">false</PublishReadyToRunStripDebugInfo>
-    <PublishReadyToRunStripInliningInfo Condition="'$(PublishReadyToRunStripInliningInfo)' == ''">true</PublishReadyToRunStripInliningInfo>
-    <PublishReadyToRunStripDebugInfo Condition="'$(PublishReadyToRunStripDebugInfo)' == ''">true</PublishReadyToRunStripDebugInfo>
-    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripInliningInfo)' == 'true' and !$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--strip-inlining-info'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-inlining-info</PublishReadyToRunCrossgen2ExtraArgs>
-    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripDebugInfo)' == 'true' and !$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--strip-debug-info'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
     <!-- The composition merges the composite's name section into the host, so its function names follow the
          host's: kept in the host, moved to corerun.symbols, or dropped. crossgen2's own symbol-map sidecar
          numbers functions within the composite, which doesn't match the merged host, so it isn't used. -->
