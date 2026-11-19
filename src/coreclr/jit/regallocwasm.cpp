@@ -1179,9 +1179,9 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
                             GenTree* user = getNonContainedUser(tree, CurrentRange());
                             pendingMultipleUse.Push({user, dsc->lvVarIndex});
                         }
-                        else if ((tree->gtFlags & GTF_VAR_DEATH) != 0)
+                        else
                         {
-                            // Last use; extend the var's interval to end here;
+                            // Ordinary single-use local var read; extend the var's interval to potentially end here
                             updateIntervalEnd(dsc->lvVarIndex, pos);
                         }
                     }
@@ -1213,7 +1213,8 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
 
 void WasmRegAlloc::DumpIntervals()
 {
-    JITDUMP("Final intervals:\n")
+    JITDUMP("Final intervals:\n");
+    JITDUMP("----------------\n")
     for (FuncInfoDsc* const funcInfo : m_compiler->Funcs())
     {
         PerFuncletData* funcletData = m_perFuncletData[funcInfo->GetFuncletIdx(m_compiler)];
