@@ -113,6 +113,16 @@ attribute's source-code targets are unchanged.
 CoreLib's own library-build trim also receives the generated annotations explicitly,
 because that pass ignores embedded link attributes.
 
+Stream's APM methods and `IAsyncResult`, which their native binder signatures reference,
+are conditional on `Stream.HasOverriddenSlow`. Native signature resolution still uses
+strict binder lookups when this override check is reached.
+
+`ICustomMarshaler` is optional, and the `MngdRefCustomMarshaler` stub helpers are
+conditional on it. Any custom-marshaled signature retains the interface, as does the
+Windows COM interop helper for implicitly marshaled `IEnumerator` parameters.
+`ICustomAdapter` is a required binder class only when `FEATURE_COMINTEROP` is enabled,
+matching the strict lookup used during COM interface dispatch.
+
 `DEFINE_METHOD_OPTIONAL` registers a recognition-only binder identity without rooting
 the method or any overload, even if its declaring type survives. It can also serve as a
 conditional dependency trigger. Native intrinsic recognition uses `IsMethod`, which
@@ -133,13 +143,16 @@ and Interlocked's emitted CompareExchange targets remain required. CompareExchan
 descriptor roots still match by name, so those required overloads conservatively
 retain the generic recognition overload too.
 
-Reflection caller classification separates required invocation types, which can be
-preloaded, from optional invocation types, which are compared without loading them.
+Reflection caller classification uses one table of invocation types, caching and
+comparing only already loaded types without forcing any type to load.
 MethodBase, ConstructorInfo, EventInfo, TypeDelegator, MethodBaseInvoker, and
-IntrinsicInvokeHelper have optional binder registrations because their only native
-use is classifying already executing frames. Managed dependencies can independently
-retain them. MethodInfo, FieldInfo, and PropertyInfo remain required for native
-signatures; InitHelpers and StaticsHelpers remain required for emitted helpers.
+IntrinsicInvokeHelper, along with RuntimeConstructorInfo and RuntimeEventInfo, have
+optional binder registrations because their only native use is classifying already
+executing frames. RuntimeConstructorInfo's field-layout obligations apply whenever
+the type survives. Managed dependencies can independently retain these types.
+MethodInfo, FieldInfo, and PropertyInfo remain required for native signatures;
+InitHelpers and StaticsHelpers remain required for emitted helpers. These signatures
+and helper declarations reference the class IDs through macros.
 
 Applications using these CoreLib annotations must also use the matching linker build.
 Rebuilding runtime packs does not replace the SDK-selected linker. When testing local

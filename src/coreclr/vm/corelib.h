@@ -168,8 +168,6 @@ DEFINE_CLASS(ASYNCCALLBACK,         System,                 AsyncCallback)
 
 DEFINE_CLASS_U(System,              Signature,          SignatureNative)
 
-DEFINE_CLASS(BINDER,                Reflection,             Binder)
-
 DEFINE_CLASS_U(System,                 RuntimeType,            ReflectClassBaseObject)
 DEFINE_FIELD_U(m_cache,                ReflectClassBaseObject,        m_cache)
 DEFINE_FIELD_U(m_handle,               ReflectClassBaseObject,        m_typeHandle)
@@ -186,17 +184,14 @@ DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeM
 
 BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
+DEFINE_CLASS(BINDER,                Reflection,             Binder)
 DEFINE_CLASS(BSTR_WRAPPER,          Interop,                BStrWrapper)
 DEFINE_CLASS(CURRENCY_WRAPPER,      Interop,                CurrencyWrapper)
 DEFINE_CLASS(DISPATCH_WRAPPER,      Interop,                DispatchWrapper)
 DEFINE_CLASS(ERROR_WRAPPER,         Interop,                ErrorWrapper)
 DEFINE_CLASS(UNKNOWN_WRAPPER,       Interop,                UnknownWrapper)
 DEFINE_CLASS(VARIANT_WRAPPER,       Interop,                VariantWrapper)
-#endif // FEATURE_COMINTEROP
-END_ILLINK_FEATURE_SWITCH()
 
-BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
-#ifdef FEATURE_COMINTEROP
 DEFINE_CLASS_U(System,                 __ComObject,            ComObject)
 DEFINE_FIELD_U(m_ObjectToDataMap,      ComObject,              m_ObjectToDataMap)
 DEFINE_CLASS(COM_OBJECT,            System,                 __ComObject)
@@ -220,9 +215,9 @@ DEFINE_CLASS_OPTIONAL(HANDLE_REF,   Interop,                HandleRef)
 DEFINE_FIELD(HANDLE_REF,            WRAPPER,                _wrapper)
 DEFINE_FIELD(HANDLE_REF,            HANDLE,                 _handle)
 
-DEFINE_CLASS_U(Reflection,             RuntimeConstructorInfo,  NoClass)
+DEFINE_CLASS_U_OPTIONAL(Reflection,    RuntimeConstructorInfo,  NoClass)
 DEFINE_FIELD_U(m_handle,                   ReflectMethodObject, m_pMD)
-DEFINE_CLASS(CONSTRUCTOR,           Reflection,             RuntimeConstructorInfo)
+DEFINE_CLASS_OPTIONAL(CONSTRUCTOR,  Reflection,             RuntimeConstructorInfo)
 
 DEFINE_CLASS_U(System,                 RuntimeMethodInfoStub,     ReflectMethodObject)
 DEFINE_FIELD_U(m_value,                   ReflectMethodObject, m_pMD)
@@ -320,7 +315,7 @@ DEFINE_METHOD(ENVIRONMENT,       INITIALIZE_COMMAND_LINE_ARGS, InitializeCommand
 DEFINE_METHOD(ENVIRONMENT,       CALL_ENTRY_POINT, CallEntryPoint, SM_IntPtr_PtrArrStr_PtrInt_Bool_PtrException_RetVoid)
 DEFINE_METHOD(ENVIRONMENT,       EXECUTE_IN_DEFAULT_APP_DOMAIN, ExecuteInDefaultAppDomain, SM_IntPtr_PtrChar_PtrException_RetInt)
 
-DEFINE_CLASS(EVENT,                 Reflection,             RuntimeEventInfo)
+DEFINE_CLASS_OPTIONAL(EVENT,        Reflection,             RuntimeEventInfo)
 
 DEFINE_CLASS_OPTIONAL(EVENT_INFO,   Reflection,             EventInfo)
 
@@ -418,11 +413,13 @@ DEFINE_METHOD(VARIANT,              CONVERT_VARIANT_TO_OBJECT, MarshalHelperConv
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
 
-DEFINE_CLASS(IASYNCRESULT,          System,                 IAsyncResult)
+DEFINE_CLASS_CONDITIONAL(IASYNCRESULT, System, IAsyncResult, METHOD, STREAM__HAS_OVERRIDDEN_SLOW)
 
-DEFINE_CLASS(ICUSTOM_MARSHALER,     Interop,                ICustomMarshaler)
+DEFINE_CLASS_OPTIONAL(ICUSTOM_MARSHALER, Interop,                ICustomMarshaler)
 
+#ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(ICUSTOMADAPTER,    Interop,    ICustomAdapter)
+#endif // FEATURE_COMINTEROP
 
 DEFINE_CLASS(IDYNAMICINTERFACECASTABLE,         Interop,   IDynamicInterfaceCastable)
 DEFINE_CLASS(DYNAMICINTERFACECASTABLEHELPERS,   Interop,   DynamicInterfaceCastableHelpers)
@@ -1211,16 +1208,15 @@ DEFINE_METHOD(VBBYVALSTRMARSHALER,  CONVERT_TO_NATIVE,      ConvertToNative,    
 DEFINE_METHOD(VBBYVALSTRMARSHALER,  CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtr_Int_RetStr)
 DEFINE_METHOD(VBBYVALSTRMARSHALER,  CLEAR_NATIVE,           ClearNative,                SM_IntPtr_RetVoid)
 
-DEFINE_CLASS(MNGD_REF_CUSTOM_MARSHALER,  StubHelpers,                 MngdRefCustomMarshaler)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE,  ConvertContentsToNative,    SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED, ConvertContentsToManaged,   SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_NATIVE,                ClearNative,                SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED,               ClearManaged,               SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE_UCO,  ConvertContentsToNative,    SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED_UCO, ConvertContentsToManaged,   SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED_UCO,               ClearManaged,               SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, GET_CUSTOM_MARSHALER_INSTANCE,    GetCustomMarshalerInstance,  SM_PtrVoid_PtrByte_Int_PtrObj_PtrException_RetVoid)
-
+DEFINE_CLASS_CONDITIONAL(MNGD_REF_CUSTOM_MARSHALER,  StubHelpers,          MngdRefCustomMarshaler, CLASS, ICUSTOM_MARSHALER)
+DEFINE_METHOD_CONDITIONAL(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE,  ConvertContentsToNative,    SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid, CLASS, ICUSTOM_MARSHALER)
+DEFINE_METHOD_CONDITIONAL(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED, ConvertContentsToManaged,   SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid, CLASS, ICUSTOM_MARSHALER)
+DEFINE_METHOD_CONDITIONAL(MNGD_REF_CUSTOM_MARSHALER, CLEAR_NATIVE,                ClearNative,                SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid, CLASS, ICUSTOM_MARSHALER)
+DEFINE_METHOD_CONDITIONAL(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED,               ClearManaged,               SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid, CLASS, ICUSTOM_MARSHALER)
+DEFINE_METHOD_CONDITIONAL(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE_UCO,  ConvertContentsToNative,    SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid, CLASS, ICUSTOM_MARSHALER)
+DEFINE_METHOD_CONDITIONAL(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED_UCO, ConvertContentsToManaged,   SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid, CLASS, ICUSTOM_MARSHALER)
+DEFINE_METHOD_CONDITIONAL(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED_UCO,               ClearManaged,               SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid, CLASS, ICUSTOM_MARSHALER)
+DEFINE_METHOD_CONDITIONAL(MNGD_REF_CUSTOM_MARSHALER, GET_CUSTOM_MARSHALER_INSTANCE,    GetCustomMarshalerInstance,  SM_PtrVoid_PtrByte_Int_PtrObj_PtrException_RetVoid, CLASS, ICUSTOM_MARSHALER)
 DEFINE_CLASS(ASANY_MARSHALER,            StubHelpers,                 AsAnyMarshaler)
 DEFINE_METHOD(ASANY_MARSHALER,           CTOR,                        .ctor,                      IM_Obj_Int_RetVoid)
 DEFINE_METHOD(ASANY_MARSHALER,           CONVERT_TO_NATIVE,           ConvertToNative,            IM_Obj_Int_RetIntPtr)

@@ -1189,7 +1189,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         return strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0;
     }
 
-    // Required invocation types can be preloaded for faster caller classification.
     static const BinderClassID reflectionInvocationTypes[] = {
         CLASS__METHOD,
         CLASS__METHOD_INFO,
@@ -1212,9 +1211,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__DELEGATE,
         CLASS__INITHELPERS,
         CLASS__STATICSHELPERS,
-    };
-
-    static const BinderClassID optionalReflectionInvocationTypes[] = {
         CLASS__DYNAMICMETHOD,
         CLASS__ACTIVATOR,
         CLASS__INSTANCE_CALLI_HELPER,
@@ -1230,10 +1226,11 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
 
     if (!VolatileLoad(&fInited))
     {
-        // Make sure all types are loaded so that we can use faster GetExistingClass()
+        // Cache already loaded types without requiring optional invocation types to survive trimming.
+        GCX_PREEMP();
         for (unsigned i = 0; i < ARRAY_SIZE(reflectionInvocationTypes); i++)
         {
-            CoreLibBinder::GetClass(reflectionInvocationTypes[i]);
+            CoreLibBinder::GetClassIfExist(reflectionInvocationTypes[i]);
         }
 
         VolatileStore(&fInited, true);
@@ -1241,21 +1238,12 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
 
     if (!pCaller->HasInstantiation())
     {
+        // A non-loading lookup can still acquire loader locks.
+        GCX_PREEMP();
         for (unsigned i = 0; i < ARRAY_SIZE(reflectionInvocationTypes); i++)
         {
-            if (CoreLibBinder::GetExistingClass(reflectionInvocationTypes[i]) == pCaller)
+            if (CoreLibBinder::IsClassIfExist(pCaller, reflectionInvocationTypes[i]))
                 return true;
-        }
-
-        // A frame on an optional invocation type implies the type has already been loaded.
-        {
-            // A non-loading lookup can still acquire loader locks.
-            GCX_PREEMP();
-            for (unsigned i = 0; i < ARRAY_SIZE(optionalReflectionInvocationTypes); i++)
-            {
-                if (CoreLibBinder::IsClassIfExist(pCaller, optionalReflectionInvocationTypes[i]))
-                    return true;
-            }
         }
     }
 

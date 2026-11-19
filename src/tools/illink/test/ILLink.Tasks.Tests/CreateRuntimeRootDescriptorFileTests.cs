@@ -711,28 +711,44 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void RuntimeHeaderEmitsConditionalNativeDependencies(bool varargs)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void RuntimeHeaderEmitsConditionalNativeDependencies(bool varargs, bool comInterop)
         {
             using var test = new DescriptorTest();
             string inputs = Path.Combine(AppContext.BaseDirectory, "RuntimeRoots");
+            List<string> defines = new() { "FOR_ILLINK" };
+            if (varargs)
+                defines.Add("FEATURE_VARARGS");
+            if (comInterop)
+                defines.Add("FEATURE_COMINTEROP");
             XDocument descriptor = test.Generate(
                 File.ReadAllLines(Path.Combine(inputs, "corelib.h")),
                 namespaces: File.ReadAllText(Path.Combine(inputs, "namespace.h")),
-                defines: varargs ? new[] { "FOR_ILLINK", "FEATURE_VARARGS" } : new[] { "FOR_ILLINK" });
+                defines: defines.ToArray());
             XElement assembly = descriptor.Root.Element("assembly");
             XDocument attributes = XDocument.Load(test.AttributesPath);
-            foreach (string name in new[] { "System.Runtime.CompilerServices.Unsafe",
+            foreach (string name in new[] { "System.IAsyncResult", "System.Runtime.CompilerServices.Unsafe",
                 "System.Reflection.InstanceCalliHelper", "System.Text.Rune",
                 "System.Reflection.MethodBase", "System.Reflection.ConstructorInfo",
+                "System.Reflection.RuntimeConstructorInfo", "System.Reflection.RuntimeEventInfo",
                 "System.Reflection.EventInfo", "System.Reflection.TypeDelegator",
-                "System.Reflection.MethodBaseInvoker", "System.Reflection.IntrinsicInvokeHelper" })
+                "System.Reflection.MethodBaseInvoker", "System.Reflection.IntrinsicInvokeHelper",
+                "System.Runtime.InteropServices.ICustomMarshaler", "System.StubHelpers.MngdRefCustomMarshaler" })
             {
                 XElement type = GetType(name);
                 Assert.Equal("false", (string)type.Attribute("required"));
                 Assert.Empty(type.Elements("method"));
             }
+            IEnumerable<XElement> customAdapterTypes = descriptor.Descendants("type")
+                .Where(t => (string)t.Attribute("fullname") == "System.Runtime.InteropServices.ICustomAdapter");
+            if (comInterop)
+                Assert.Null(Assert.Single(customAdapterTypes).Attribute("required"));
+            else
+                Assert.Empty(customAdapterTypes);
+            Assert.Equal("fields", (string)GetType("System.Reflection.RuntimeConstructorInfo").Attribute("preserve"));
             foreach (string name in new[] { "System.Reflection.MethodInfo", "System.Reflection.FieldInfo",
                 "System.Reflection.PropertyInfo", "System.Runtime.CompilerServices.InitHelpers",
                 "System.Runtime.CompilerServices.StaticsHelpers" })
@@ -754,6 +770,7 @@ namespace ILLink.Tasks.Tests
             AssertDependency("System.RuntimeMethodHandle", "GetMethodBody", "None", "System.Reflection.RuntimeLocalVariableInfo");
             AssertDependency("System.RuntimeMethodHandle", "GetMethodBody", "GetMethodBody", "System.RuntimeMethodHandle");
             AssertDependency("System.IO.Stream", "HasOverriddenSlow", "HasOverriddenSlow", "System.IO.Stream");
+            AssertDependency("System.IO.Stream", "HasOverriddenSlow", "None", "System.IAsyncResult");
             foreach (string method in new[] { "BeginRead", "EndRead", "BeginWrite", "EndWrite" })
                 AssertDependency("System.IO.Stream", "HasOverriddenSlow", method, "System.IO.Stream");
             foreach (string name in new[] { "GenericComparer`1", "ObjectComparer`1", "EnumComparer`1", "NullableComparer`1" })
@@ -761,6 +778,9 @@ namespace ILLink.Tasks.Tests
             foreach (string name in new[] { "StringEqualityComparer", "EnumEqualityComparer`1", "NullableEqualityComparer`1", "GenericEqualityComparer`1", "ObjectEqualityComparer`1" })
                 AssertDependency("System.Collections.Generic.EqualityComparer`1", null, "None", "System.Collections.Generic." + name);
             AssertDependency("System.Text.StringBuilder", null, "None", "System.StubHelpers.UTF8BufferMarshaler");
+            AssertDependency("System.Runtime.InteropServices.ICustomMarshaler", null, "None", "System.StubHelpers.MngdRefCustomMarshaler");
+            foreach (string method in new[] { "ConvertContentsToNative", "ConvertContentsToManaged", "ClearNative", "ClearManaged", "GetCustomMarshalerInstance" })
+                AssertDependency("System.Runtime.InteropServices.ICustomMarshaler", null, method, "System.StubHelpers.MngdRefCustomMarshaler");
             foreach (string name in new[] { "System.Reflection.RuntimeExceptionHandlingClause", "System.Reflection.RuntimeLocalVariableInfo" })
             {
                 XElement type = GetType(name);
