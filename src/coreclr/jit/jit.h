@@ -312,6 +312,8 @@ typedef ptrdiff_t ssize_t;
 
 #include "utilcode.h" // this defines assert as _ASSERTE
 
+// Include before host.h so its assert.h cannot overwrite the JIT's assert definition.
+#include "corhlpr.h"
 #include <new>
 
 // Shared headers can use the global allocator. Diagnose uses in the JIT.
