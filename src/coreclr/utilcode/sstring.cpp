@@ -1793,6 +1793,64 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
                            arg5.GetUnicode(), arg6.GetUnicode(), arg7.GetUnicode(), arg8.GetUnicode(),
                            arg9.GetUnicode(), arg10.GetUnicode()};
 
+#ifdef HOST_UNIX
+    SString result;
+
+    if (dwFlags & FORMAT_MESSAGE_FROM_SYSTEM)
+    {
+        WCHAR message[256];
+        if (!GetSystemErrorMessage(dwMessageId, message, ARRAY_SIZE(message)))
+        {
+            _ASSERTE(!"System error message does not fit in the buffer");
+            return FALSE;
+        }
+
+        result.Set(message);
+    }
+    else
+    {
+        _ASSERTE((dwFlags & FORMAT_MESSAGE_FROM_STRING) && lpSource != NULL);
+
+        for (const WCHAR *p = (const WCHAR *)lpSource; *p != W('\0'); p++)
+        {
+            if (*p != W('%'))
+            {
+                result.Append(*p);
+                continue;
+            }
+
+            // Runtime messages only use inserts (%1 to %10).
+            p++;
+            if (*p < W('1') || *p > W('9'))
+            {
+                _ASSERTE(!"Unsupported escape sequence in message");
+                return FALSE;
+            }
+
+            COUNT_T index = *p - W('0');
+            if (p[1] >= W('0') && p[1] <= W('9'))
+            {
+                p++;
+                index = index * 10 + (*p - W('0'));
+            }
+
+            if (index > ARRAY_SIZE(args) || p[1] == W('!'))
+            {
+                _ASSERTE(!"Unsupported insert in message");
+                return FALSE;
+            }
+
+            result.Append(args[index - 1]);
+        }
+    }
+
+    COUNT_T count = result.GetCount();
+    if (count > 0 && result.GetUnicode()[count - 1] == W(' '))
+        result.Truncate(result.End() - 1);
+
+    Set(result);
+    return TRUE;
+#else // HOST_UNIX
     if (GetRawCount() > 0)
     {
         // First, try to use our existing buffer to hold the result.
@@ -1833,6 +1891,7 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
 
     Set(stringRaw);
     return TRUE;
+#endif // HOST_UNIX
 }
 
 #if 1
