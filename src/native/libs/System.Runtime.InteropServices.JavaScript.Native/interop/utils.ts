@@ -6,13 +6,17 @@ import type { TimeStamp } from "./types";
 import { dotnetAssert, dotnetLoaderExports } from "./cross-module";
 import { jsInteropState } from "./marshal";
 import { ENVIRONMENT_IS_WEB } from "./per-module";
+import Wasm64 from "consts:wasm64";
 
-export function fixupPointer(pointer: unknown, shiftAmount: number): any {
-    const address = Number(pointer);
-    if (!Number.isSafeInteger(address) || (typeof pointer === "bigint" && address < 0)) {
-        throw new RangeError(`Invalid Wasm address: ${pointer}`);
+export function fixupPointer(pointer: any, shiftAmount: number): any {
+    if (!Wasm64) {
+        return ((pointer as any) >>> shiftAmount) as any;
     }
-    return Math.floor((address < 0 ? address >>> 0 : address) / (2 ** shiftAmount));
+    const address = Number(pointer);
+    if (!Number.isSafeInteger(address) || address < 0) {
+        throw new RangeError("Invalid Wasm address: " + pointer);
+    }
+    return Math.floor(address / (2 ** shiftAmount));
 }
 
 export function isRuntimeRunning(): boolean {

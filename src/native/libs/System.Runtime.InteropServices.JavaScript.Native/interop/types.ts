@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { NativePointer, JSMarshalerArguments, CSFnHandle } from "../types";
+import Wasm64 from "consts:wasm64";
 
 export interface JSFunctionSignature extends NativePointer {
     __brand: "JSFunctionSignatures"
@@ -118,8 +119,7 @@ export const enum MeasuredBlock {
     callCsFunction = "clr.callCsFunction:",
 }
 
-export const JavaScriptMarshalerArgSize = 32;
-export const JavaScriptMarshalerArgSize64 = 56;
+export const JavaScriptMarshalerArgSize = Wasm64 ? 56 : 32;
 // keep in sync with JSMarshalerArgumentImpl offsets
 export const enum JSMarshalerArgumentOffsets {
     /* eslint-disable @typescript-eslint/no-duplicate-enum-values */

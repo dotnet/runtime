@@ -4,6 +4,7 @@
 import type { CharPtr, VoidPtr } from "../types";
 import { dotnetApi } from "../utils/cross-module";
 import { getU16Local, arrayBufferNeedsCopy, setU16Local, unsignedHeapOffset, viewOrCopy, zeroRegion } from "./memory";
+import Wasm64 from "consts:wasm64";
 import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
 let textDecoderUtf16: TextDecoder | undefined = undefined;
@@ -35,8 +36,8 @@ export function stringsInit(): void {
 }
 
 export function stringToUTF16(dstPtr: number, endPtr: number, text: string) {
-    dstPtr = unsignedHeapOffset(dstPtr);
-    endPtr = unsignedHeapOffset(endPtr);
+    dstPtr = Wasm64 ? unsignedHeapOffset(dstPtr) : dstPtr >>> 0;
+    endPtr = Wasm64 ? unsignedHeapOffset(endPtr) : endPtr >>> 0;
     const heapI16 = dotnetApi.localHeapViewU16();
     const len = text.length;
     for (let i = 0; i < len; i++) {
@@ -72,8 +73,8 @@ export function stringToUTF8(str: string): Uint8Array {
 }
 
 export function utf16ToString(startPtr: number, endPtr: number): string {
-    startPtr = unsignedHeapOffset(startPtr);
-    endPtr = unsignedHeapOffset(endPtr);
+    startPtr = Wasm64 ? unsignedHeapOffset(startPtr) : startPtr >>> 0;
+    endPtr = Wasm64 ? unsignedHeapOffset(endPtr) : endPtr >>> 0;
     if (textDecoderUtf16) {
         const subArray = viewOrCopy(dotnetApi.localHeapViewU8(), startPtr as any, endPtr as any);
         // SharedArrayBuffer or resizable, we must make a copy of the array first.
@@ -86,8 +87,8 @@ export function utf16ToString(startPtr: number, endPtr: number): string {
 
 // V8 does not provide TextDecoder
 export function utf16ToStringLoop(startPtr: number, endPtr: number): string {
-    startPtr = unsignedHeapOffset(startPtr);
-    endPtr = unsignedHeapOffset(endPtr);
+    startPtr = Wasm64 ? unsignedHeapOffset(startPtr) : startPtr >>> 0;
+    endPtr = Wasm64 ? unsignedHeapOffset(endPtr) : endPtr >>> 0;
     let str = "";
     const heapU16 = dotnetApi.localHeapViewU16();
     for (let i = startPtr; i < endPtr; i += 2) {

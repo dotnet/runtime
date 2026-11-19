@@ -4,13 +4,14 @@
 import type { CharPtr, MemOffset, NumberOrPointer, VoidPtr } from "./types";
 import { dotnetAssert, dotnetLogger } from "./cross-module";
 import { _ems_ } from "../../Common/JavaScript/ems-ambient";
+import Wasm64 from "consts:wasm64";
 
 const max_int64_big = BigInt("9223372036854775807");
 const min_int64_big = BigInt("-9223372036854775808");
 const sharedArrayBufferDefined = typeof SharedArrayBuffer !== "undefined";
 
-// Emscripten converts pointer arguments to safe JS numbers. Negative values
-// can still be signed wasm32 pointers; positive memory64 offsets must not wrap.
+// wasm64 pointers arrive as JS numbers that can exceed 32 bits, so they cannot be
+// indexed with ">>>". Negative values can still be signed wasm32 pointers.
 export function unsignedHeapOffset(offset: MemOffset | CharPtr): number {
     const address = Number(offset);
     return address < 0 ? address >>> 0 : address;
@@ -26,64 +27,64 @@ export function setHeapB32(offset: MemOffset, value: number | boolean): void {
     const boolValue = !!value;
     if (typeof (value) === "number")
         assertIntInRange(value, 0, 1);
-    _ems_.HEAP32[Math.floor(unsignedHeapOffset(offset) / 4)] = boolValue ? 1 : 0;
+    _ems_.HEAP32[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 4) : <any>offset >>> 2] = boolValue ? 1 : 0;
 }
 
 export function setHeapB8(offset: MemOffset, value: number | boolean): void {
     const boolValue = !!value;
     if (typeof (value) === "number")
         assertIntInRange(value, 0, 1);
-    _ems_.HEAPU8[unsignedHeapOffset(offset)] = boolValue ? 1 : 0;
+    _ems_.HEAPU8[Wasm64 ? unsignedHeapOffset(offset) : <any>offset >>> 0] = boolValue ? 1 : 0;
 }
 
 export function setHeapU8(offset: MemOffset, value: number): void {
     assertIntInRange(value, 0, 0xFF);
-    _ems_.HEAPU8[unsignedHeapOffset(offset)] = value;
+    _ems_.HEAPU8[Wasm64 ? unsignedHeapOffset(offset) : <any>offset >>> 0] = value;
 }
 
 export function setHeapU16(offset: MemOffset, value: number): void {
     assertIntInRange(value, 0, 0xFFFF);
-    _ems_.HEAPU16[Math.floor(unsignedHeapOffset(offset) / 2)] = value;
+    _ems_.HEAPU16[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 2) : <any>offset >>> 1] = value;
 }
 
 // does not check for growable heap
 export function setHeapU16_local(localView: Uint16Array, offset: MemOffset, value: number): void {
     assertIntInRange(value, 0, 0xFFFF);
-    localView[Math.floor(unsignedHeapOffset(offset) / 2)] = value;
+    localView[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 2) : <any>offset >>> 1] = value;
 }
 
 // does not check for overflow nor growable heap
 export function setHeapU16_unchecked(offset: MemOffset, value: number): void {
-    _ems_.HEAPU16[Math.floor(unsignedHeapOffset(offset) / 2)] = value;
+    _ems_.HEAPU16[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 2) : <any>offset >>> 1] = value;
 }
 
 // does not check for overflow nor growable heap
 export function setHeapU32_unchecked(offset: MemOffset, value: NumberOrPointer): void {
-    _ems_.HEAPU32[Math.floor(unsignedHeapOffset(offset) / 4)] = <number><any>value;
+    _ems_.HEAPU32[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 4) : <any>offset >>> 2] = <number><any>value;
 }
 
 export function setHeapU32(offset: MemOffset, value: NumberOrPointer): void {
     assertIntInRange(<any>value, 0, 0xFFFF_FFFF);
-    _ems_.HEAPU32[Math.floor(unsignedHeapOffset(offset) / 4)] = <number><any>value;
+    _ems_.HEAPU32[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 4) : <any>offset >>> 2] = <number><any>value;
 }
 
 export function setHeapI8(offset: MemOffset, value: number): void {
     assertIntInRange(value, -0x80, 0x7F);
-    _ems_.HEAP8[unsignedHeapOffset(offset)] = value;
+    _ems_.HEAP8[Wasm64 ? unsignedHeapOffset(offset) : <any>offset >>> 0] = value;
 }
 
 export function setHeapI16(offset: MemOffset, value: number): void {
     assertIntInRange(value, -0x8000, 0x7FFF);
-    _ems_.HEAP16[Math.floor(unsignedHeapOffset(offset) / 2)] = value;
+    _ems_.HEAP16[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 2) : <any>offset >>> 1] = value;
 }
 
 export function setHeapI32_unchecked(offset: MemOffset, value: number): void {
-    _ems_.HEAP32[Math.floor(unsignedHeapOffset(offset) / 4)] = value;
+    _ems_.HEAP32[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 4) : <any>offset >>> 2] = value;
 }
 
 export function setHeapI32(offset: MemOffset, value: number): void {
     assertIntInRange(<any>value, -0x8000_0000, 0x7FFF_FFFF);
-    _ems_.HEAP32[Math.floor(unsignedHeapOffset(offset) / 4)] = value;
+    _ems_.HEAP32[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 4) : <any>offset >>> 2] = value;
 }
 
 /**
@@ -107,21 +108,21 @@ export function setHeapI64Big(offset: MemOffset, value: bigint): void {
     dotnetAssert.fastCheck(typeof value === "bigint", () => `Value is not an bigint: ${value} (${typeof (value)})`);
     dotnetAssert.fastCheck(value >= min_int64_big && value <= max_int64_big, () => `Overflow: value ${value} is out of ${min_int64_big} ${max_int64_big} range`);
 
-    _ems_.HEAP64[Math.floor(unsignedHeapOffset(offset) / 8)] = value;
+    _ems_.HEAP64[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 8) : <any>offset >>> 3] = value;
 }
 
 export function setHeapF32(offset: MemOffset, value: number): void {
     dotnetAssert.fastCheck(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
-    _ems_.HEAPF32[Math.floor(unsignedHeapOffset(offset) / 4)] = value;
+    _ems_.HEAPF32[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 4) : <any>offset >>> 2] = value;
 }
 
 export function setHeapF64(offset: MemOffset, value: number): void {
     dotnetAssert.fastCheck(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
-    _ems_.HEAPF64[Math.floor(unsignedHeapOffset(offset) / 8)] = value;
+    _ems_.HEAPF64[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 8) : <any>offset >>> 3] = value;
 }
 
 export function getHeapB32(offset: MemOffset): boolean {
-    const value = (_ems_.HEAPU32[Math.floor(unsignedHeapOffset(offset) / 4)]);
+    const value = (_ems_.HEAPU32[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 4) : <any>offset >>> 2]);
     if (value > 1 && !(getHeapB32 as any).warnDirtyBool) {
         (getHeapB32 as any).warnDirtyBool = true;
         dotnetLogger.warn(`getB32: value at ${offset} is not a boolean, but a number: ${value}`);
@@ -130,51 +131,51 @@ export function getHeapB32(offset: MemOffset): boolean {
 }
 
 export function getHeapB8(offset: MemOffset): boolean {
-    return !!(_ems_.HEAPU8[unsignedHeapOffset(offset)]);
+    return !!(_ems_.HEAPU8[Wasm64 ? unsignedHeapOffset(offset) : <any>offset >>> 0]);
 }
 
 export function getHeapU8(offset: MemOffset): number {
-    return _ems_.HEAPU8[unsignedHeapOffset(offset)];
+    return _ems_.HEAPU8[Wasm64 ? unsignedHeapOffset(offset) : <any>offset >>> 0];
 }
 
 export function getHeapU16(offset: MemOffset): number {
-    return _ems_.HEAPU16[Math.floor(unsignedHeapOffset(offset) / 2)];
+    return _ems_.HEAPU16[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 2) : <any>offset >>> 1];
 }
 
 // does not check for growable heap
 export function getHeapU16_local(localView: Uint16Array, offset: MemOffset): number {
-    return localView[Math.floor(unsignedHeapOffset(offset) / 2)];
+    return localView[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 2) : <any>offset >>> 1];
 }
 
 export function getHeapU32(offset: MemOffset): number {
-    return _ems_.HEAPU32[Math.floor(unsignedHeapOffset(offset) / 4)] >>> 0;
+    return _ems_.HEAPU32[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 4) : <any>offset >>> 2] >>> 0;
 }
 
 // does not check for growable heap
 export function getHeapU32_local(localView: Uint32Array, offset: MemOffset): number {
-    return localView[Math.floor(unsignedHeapOffset(offset) / 4)] >>> 0;
+    return localView[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 4) : <any>offset >>> 2] >>> 0;
 }
 
 export function getHeapI8(offset: MemOffset): number {
-    return _ems_.HEAP8[unsignedHeapOffset(offset)];
+    return _ems_.HEAP8[Wasm64 ? unsignedHeapOffset(offset) : <any>offset >>> 0];
 }
 
 export function getHeapI16(offset: MemOffset): number {
-    return _ems_.HEAP16[Math.floor(unsignedHeapOffset(offset) / 2)];
+    return _ems_.HEAP16[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 2) : <any>offset >>> 1];
 }
 
 // does not check for growable heap
 export function getHeapI16_local(localView: Int16Array, offset: MemOffset): number {
-    return localView[Math.floor(unsignedHeapOffset(offset) / 2)];
+    return localView[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 2) : <any>offset >>> 1];
 }
 
 export function getHeapI32(offset: MemOffset): number {
-    return _ems_.HEAP32[Math.floor(unsignedHeapOffset(offset) / 4)];
+    return _ems_.HEAP32[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 4) : <any>offset >>> 2];
 }
 
 // does not check for growable heap
 export function getHeapI32_local(localView: Int32Array, offset: MemOffset): number {
-    return localView[Math.floor(unsignedHeapOffset(offset) / 4)];
+    return localView[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 4) : <any>offset >>> 2];
 }
 
 /**
@@ -194,15 +195,15 @@ export function getHeapU52(offset: MemOffset): number {
 }
 
 export function getHeapI64Big(offset: MemOffset): bigint {
-    return _ems_.HEAP64[Math.floor(unsignedHeapOffset(offset) / 8)];
+    return _ems_.HEAP64[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 8) : <any>offset >>> 3];
 }
 
 export function getHeapF32(offset: MemOffset): number {
-    return _ems_.HEAPF32[Math.floor(unsignedHeapOffset(offset) / 4)];
+    return _ems_.HEAPF32[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 4) : <any>offset >>> 2];
 }
 
 export function getHeapF64(offset: MemOffset): number {
-    return _ems_.HEAPF64[Math.floor(unsignedHeapOffset(offset) / 8)];
+    return _ems_.HEAPF64[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 8) : <any>offset >>> 3];
 }
 
 // returns memory view which is valid within current synchronous call stack
@@ -252,7 +253,7 @@ export function localHeapViewF64(): Float64Array {
 
 export function copyBytes(srcPtr: VoidPtr, dstPtr: VoidPtr, bytes: number): void {
     const heap = localHeapViewU8();
-    heap.copyWithin(unsignedHeapOffset(dstPtr), unsignedHeapOffset(srcPtr), (unsignedHeapOffset(srcPtr)) + bytes);
+    heap.copyWithin((Wasm64 ? unsignedHeapOffset(dstPtr) : dstPtr as any >>> 0), (Wasm64 ? unsignedHeapOffset(srcPtr) : srcPtr as any >>> 0), ((Wasm64 ? unsignedHeapOffset(srcPtr) : srcPtr as any >>> 0)) + bytes);
 }
 
 export function arrayBufferNeedsCopy(buffer: any): boolean {
@@ -264,13 +265,13 @@ export function arrayBufferNeedsCopy(buffer: any): boolean {
 
 // does not check for growable heap
 export function getU16Local(localView: Uint16Array, offset: MemOffset): number {
-    return localView[Math.floor(unsignedHeapOffset(offset) / 2)];
+    return localView[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 2) : <any>offset >>> 1];
 }
 
 // does not check for growable heap
 export function setU16Local(localView: Uint16Array, offset: MemOffset, value: number): void {
     assertIntInRange(value, 0, 0xFFFF);
-    localView[Math.floor(unsignedHeapOffset(offset) / 2)] = value;
+    localView[Wasm64 ? Math.floor(unsignedHeapOffset(offset) / 2) : <any>offset >>> 1] = value;
 }
 
 // When threading is enabled, TextDecoder does not accept a view of a
@@ -279,11 +280,10 @@ export function setU16Local(localView: Uint16Array, offset: MemOffset, value: nu
 export function viewOrCopy(view: Uint8Array, start: CharPtr, end: CharPtr): Uint8Array {
     const needsCopy = arrayBufferNeedsCopy(view.buffer);
     return needsCopy
-        ? view.slice(unsignedHeapOffset(start), unsignedHeapOffset(end))
-        : view.subarray(unsignedHeapOffset(start), unsignedHeapOffset(end));
+        ? view.slice((Wasm64 ? unsignedHeapOffset(start) : <any>start >>> 0), (Wasm64 ? unsignedHeapOffset(end) : <any>end >>> 0))
+        : view.subarray((Wasm64 ? unsignedHeapOffset(start) : <any>start >>> 0), (Wasm64 ? unsignedHeapOffset(end) : <any>end >>> 0));
 }
 
 export function zeroRegion(byteOffset: VoidPtr, sizeBytes: number): void {
-    const start = unsignedHeapOffset(byteOffset);
-    localHeapViewU8().fill(0, start, start + sizeBytes);
+    localHeapViewU8().fill(0, (Wasm64 ? unsignedHeapOffset(byteOffset) : <any>byteOffset >>> 0), ((Wasm64 ? unsignedHeapOffset(byteOffset) : <any>byteOffset >>> 0)) + sizeBytes);
 }

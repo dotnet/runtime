@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
+import Wasm64 from "consts:wasm64";
 
 import { dotnetBrowserUtilsExports, dotnetApi, dotnetAssert, Module } from "./cross-module";
 
 import type { BoundMarshalerToCs, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, TypedArray } from "./types";
-import { MarshalerType } from "./types";
+import { JavaScriptMarshalerArgSize, MarshalerType } from "./types";
 import {
-    arrayElementSize, getArg, getSignatureArg1Type, getSignatureArg2Type, getSignatureArg3Type, getSignatureResType, marshalerArgSize,
+    arrayElementSize, getArg, getSignatureArg1Type, getSignatureArg2Type, getSignatureArg3Type, getSignatureResType,
     getArgType, getArgGcHandle, getMarshalerToJsByType,
     jsToCsMarshalers, jsInteropState,
     setArgBool, setArgDate, setArgElementType, setArgF32, setArgF64, setArgI16, setArgI32, setArgI52, setArgI64Big, setArgIntptr, setArgLength, setArgProxyContext,
@@ -76,7 +77,7 @@ export function bindArgMarshalToCs(sig: JSMarshalerType, marshalerType: Marshale
     const converter = getMarshalerToCsByType(marshalerType)!;
     const elementType = getSignatureArg1Type(sig);
 
-    const argOffset = index * marshalerArgSize();
+    const argOffset = index * JavaScriptMarshalerArgSize;
     return (args: JSMarshalerArguments, value: any) => {
         converter(<any>args + argOffset, value, elementType, resMarshaler, arg1Marshaler, arg2Marshaler, arg3Marshaler);
     };
@@ -430,7 +431,7 @@ export function marshalArrayToCsImpl(arg: JSMarshalerArgument, value: Array<any>
         dotnetAssert.fastCheck(elementSize != -1, () => `Element type ${elementType} not supported`);
         // A non-array value has no length; the element type checks below report it. Keep the
         // allocation size an integer: wasm64 converts it to a BigInt, which rejects NaN.
-        const length = typeof value.length === "number" ? value.length : 0;
+        const length = Wasm64 && typeof value.length !== "number" ? 0 : value.length;
         const bufferLength = elementSize * length;
         const bufferPtr = Module._malloc(bufferLength) as any;
         if (elementType == MarshalerType.String) {
