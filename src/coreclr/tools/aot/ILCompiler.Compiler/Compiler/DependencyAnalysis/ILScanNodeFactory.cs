@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Internal.IL;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -12,10 +13,33 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public sealed class ILScanNodeFactory : NodeFactory
     {
-        public ILScanNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager, InteropStubManager interopStubManager, NameMangler nameMangler, PreinitializationManager preinitManager, TypeMapManager typeMapManager)
+        private NodeCache<FieldDesc, DelegateFieldReadNode> _delegateFieldReads;
+        private NodeCache<MethodDesc, DelegateReturnObservedNode> _delegateReturnObserved;
+        private NodeCache<(MethodDesc, MethodDesc), DelegateCreationSiteNode> _delegateCreationSites;
+        private NodeCache<(MethodDesc, MethodDesc), DelegateCreationSiteUseNode> _delegateCreationSiteUses;
+
+        // Only available for single-file compilations: the analysis relies on seeing all the code that can read a field.
+        internal DelegateFlowAnalysis DelegateFlow { get; }
+
+        public ILScanNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager, InteropStubManager interopStubManager, NameMangler nameMangler, PreinitializationManager preinitManager, TypeMapManager typeMapManager, ILProvider ilProvider)
             : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), new LazyVTableSliceProvider(), new LazyDictionaryLayoutProvider(), new InlinedThreadStatics(), new ExternSymbolsImportedNodeProvider(), preinitManager, new DevirtualizationManager(), ObjectDataInterner.Null, typeMapManager)
         {
+            if (compilationModuleGroup.IsSingleFileCompilation)
+                DelegateFlow = new DelegateFlowAnalysis(ilProvider);
+
+            _delegateFieldReads = new NodeCache<FieldDesc, DelegateFieldReadNode>(field => new DelegateFieldReadNode(field));
+            _delegateReturnObserved = new NodeCache<MethodDesc, DelegateReturnObservedNode>(method => new DelegateReturnObservedNode(method));
+            _delegateCreationSites = new NodeCache<(MethodDesc, MethodDesc), DelegateCreationSiteNode>(key => new DelegateCreationSiteNode(key.Item1, key.Item2));
+            _delegateCreationSiteUses = new NodeCache<(MethodDesc, MethodDesc), DelegateCreationSiteUseNode>(key => new DelegateCreationSiteUseNode(key.Item1, key.Item2));
         }
+
+        internal DelegateFieldReadNode DelegateFieldRead(FieldDesc typicalField) => _delegateFieldReads.GetOrAdd(typicalField);
+
+        internal DelegateReturnObservedNode DelegateReturnObserved(MethodDesc typicalMethod) => _delegateReturnObserved.GetOrAdd(typicalMethod);
+
+        internal DelegateCreationSiteNode DelegateCreationSite(MethodDesc typicalOwner, MethodDesc typicalTarget) => _delegateCreationSites.GetOrAdd((typicalOwner, typicalTarget));
+
+        internal DelegateCreationSiteUseNode DelegateCreationSiteUse(MethodDesc typicalOwner, MethodDesc typicalTarget) => _delegateCreationSiteUses.GetOrAdd((typicalOwner, typicalTarget));
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {

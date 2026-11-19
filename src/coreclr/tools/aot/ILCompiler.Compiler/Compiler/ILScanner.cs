@@ -284,6 +284,26 @@ namespace ILCompiler
             }
         }
 
+        /// <summary>
+        /// Gets the delegate creation sites (identified by the method containing the site and the target of the delegate)
+        /// that create delegates the program never observes.
+        /// </summary>
+        public HashSet<(MethodDesc Owner, MethodDesc Target)> GetDeadDelegateCreationSites()
+        {
+            var seen = new HashSet<(MethodDesc Owner, MethodDesc Target)>();
+            var used = new HashSet<(MethodDesc Owner, MethodDesc Target)>();
+            foreach (DependencyNodeCore<NodeFactory> n in MarkedNodes)
+            {
+                if (n is DelegateCreationSiteNode site)
+                    seen.Add((site.Owner, site.Target));
+                else if (n is DelegateCreationSiteUseNode use)
+                    used.Add((use.Owner, use.Target));
+            }
+
+            seen.ExceptWith(used);
+            return seen;
+        }
+
         private sealed class ScannedVTableProvider : VTableSliceProvider
         {
             private readonly Dictionary<TypeDesc, MethodDesc[]> _vtableSlices = new Dictionary<TypeDesc, MethodDesc[]>();
