@@ -7005,7 +7005,7 @@ bool Compiler::fgValueNumberFieldStore(
         bool      unchanged     = previousValue == value;
         VNFuncApp source;
         if (!unchanged && vnStore->GetVNFunc(value, &source) && source.FuncIs(VNF_ByrefExposedLoad) &&
-            (source.GetArg(0) == vnStore->VNForIntCon(TYP_REF)) && (source.GetArg(2) == fgCurMemoryVN[ByrefExposed]))
+            (source.GetArg(0) == vnStore->VNForIntCon(TYP_REF)))
         {
             ValueNum sourceAddress = source.GetArg(1);
             ValueNum targetAddress = vnStore->VNLiberalNormalValue(storeNode->AsIndir()->Addr()->gtVNPair);
@@ -7014,7 +7014,35 @@ bool Compiler::fgValueNumberFieldStore(
             target_ssize_t targetOffset;
             vnStore->PeelOffsets(&sourceAddress, &sourceOffset);
             vnStore->PeelOffsets(&targetAddress, &targetOffset);
-            unchanged = (sourceAddress == targetAddress) && (sourceOffset == targetOffset);
+            if ((sourceAddress == targetAddress) && (sourceOffset == targetOffset))
+            {
+                ValueNum loadMemoryVN = source.GetArg(2);
+                if (loadMemoryVN == fgCurMemoryVN[ByrefExposed])
+                {
+                    unchanged = true;
+                }
+                else if (byrefStatesMatchGcHeapStates)
+                {
+                    // The load saw an older memory state. Both models share def points
+                    // and value numbers here, so the captured memory VN is the heap
+                    // field map state at the load point. Project the slot through the
+                    // field maps at that state and compare against the current one. The
+                    // map select machinery peels intervening stores to other fields and
+                    // to disjoint ranges of this field, which tolerates sibling member
+                    // writes of a struct recreation, while an opaque mutation such as a
+                    // call keeps the projections distinct.
+                    assert(fgCurMemoryVN[ByrefExposed] == fgCurMemoryVN[GcHeap]);
+                    ValueNum loadFieldMapVN =
+                        (baseAddr != nullptr)
+                            ? vnStore->VNForMapSelect(VNK_Liberal, TYP_MEM, loadMemoryVN, fieldSelectorVN)
+                            : loadMemoryVN;
+                    ValueNum loadField =
+                        vnStore->VNForMapSelect(VNK_Liberal, fieldType, loadFieldMapVN, fieldValueSelectorVN);
+                    ValueNum loadValue =
+                        vnStore->VNForLoad(VNK_Liberal, loadField, fieldSize, TYP_REF, offset, storeSize);
+                    unchanged = loadValue == previousValue;
+                }
+            }
         }
         JITDUMP("REFSTORE [%06u] offset=%zd field=" FMT_VN " value=" FMT_VN " equal=%d\n", dspTreeID(storeNode), offset,
                 previousValue, value, unchanged);
