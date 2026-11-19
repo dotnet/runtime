@@ -16,6 +16,7 @@ namespace Internal.NativeFormat
     {
         public static void ThrowBadImageFormatException()
         {
+            Debug.Assert(false);
             throw new BadImageFormatException();
         }
 
