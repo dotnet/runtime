@@ -132,7 +132,7 @@ namespace Internal.StackTraceMetadata
             }
 
             Method method = methodHandle.GetMethod(_metadataReader);
-            TypeSignatureCollection typeVector = method.Signature.GetMethodSignature(_metadataReader).Parameters;
+            SigPointerCollection typeVector = method.Signature.GetMethodSignature(_metadataReader).Parameters;
             ParameterHandleCollection.Enumerator parameters = method.Parameters.GetEnumerator();
 
             bool hasParameter = TryGetNextParameter(ref parameters, out Parameter parameter);
@@ -142,7 +142,7 @@ namespace Internal.StackTraceMetadata
             }
 
             uint typeIndex = 0;
-            foreach (TypeSignature type in typeVector)
+            foreach (SigPointer type in typeVector)
             {
                 if (typeIndex != 0)
                 {
@@ -169,10 +169,10 @@ namespace Internal.StackTraceMetadata
         /// Emit comma-separated list of type names into the output string builder.
         /// </summary>
         /// <param name="typeVector">Enumeration of type handles to output</param>
-        private void EmitTypeVector(TypeSignatureCollection typeVector)
+        private void EmitTypeVector(SigPointerCollection typeVector)
         {
             bool first = true;
-            foreach (TypeSignature handle in typeVector)
+            foreach (SigPointer handle in typeVector)
             {
                 if (first)
                 {
@@ -221,32 +221,32 @@ namespace Internal.StackTraceMetadata
             }
         }
 
-        private void EmitTypeName(TypeSignature signature, Flags flags)
+        private void EmitTypeName(SigPointer signature, Flags flags)
         {
-            SignatureReader reader = signature.GetReader();
+            SigParser reader = new SigParser(signature);
             EmitTypeName(ref reader, flags);
         }
 
-        private void EmitTypeName(ref SignatureReader reader, Flags flags)
+        private void EmitTypeName(ref SigParser reader, Flags flags)
         {
-            TypeSignature start = reader.Position;
-            CorElementType elementType = reader.ReadElementType();
+            SigParser start = reader;
+            CorElementType elementType = reader.GetElemType();
             switch (elementType)
             {
                 case CorElementType.ELEMENT_TYPE_CLASS:
                 case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                    EmitTypeName(reader.ReadTypeHandle(), flags);
+                    EmitTypeName(reader.GetToken(), flags);
                     return;
                 case CorElementType.ELEMENT_TYPE_GENERICINST:
                     // Stack traces display the generic definition, not its arguments.
                     EmitTypeName(ref reader, flags);
-                    int arguments = reader.ReadCompressedInteger();
+                    int arguments = reader.GetData();
                     for (int i = 0; i < arguments; i++)
-                        reader.SkipType();
+                        reader.SkipExactlyOne();
                     return;
                 case CorElementType.ELEMENT_TYPE_VAR:
                 case CorElementType.ELEMENT_TYPE_MVAR:
-                    _typeContext.EmitVariable(this, reader.ReadCompressedInteger(), elementType == CorElementType.ELEMENT_TYPE_MVAR, flags);
+                    _typeContext.EmitVariable(this, reader.GetData(), elementType == CorElementType.ELEMENT_TYPE_MVAR, flags);
                     return;
                 case CorElementType.ELEMENT_TYPE_SZARRAY:
                     EmitTypeName(ref reader, flags);
@@ -254,7 +254,7 @@ namespace Internal.StackTraceMetadata
                     return;
                 case CorElementType.ELEMENT_TYPE_ARRAY:
                     EmitTypeName(ref reader, flags);
-                    int rank = reader.ReadArrayShape();
+                    int rank = reader.GetArrayShape();
                     _outputBuilder.Append('[');
                     if (rank > 1)
                         _outputBuilder.Append(',', rank - 1);
@@ -269,8 +269,8 @@ namespace Internal.StackTraceMetadata
                     return;
                 case CorElementType.ELEMENT_TYPE_FNPTR:
                     // Function pointers intentionally have no textual stack-trace representation.
-                    reader = start.GetReader();
-                    reader.SkipType();
+                    reader = start;
+                    reader.SkipExactlyOne();
                     return;
             }
 
@@ -399,14 +399,20 @@ namespace Internal.StackTraceMetadata
             public void EmitVariable(MethodNameFormatter formatter, int index, bool method, Flags flags)
             {
                 object context = method ? _methodContext : _typeContext;
-                if (context is TypeSignatureCollection types)
+                if (context is SigPointer genericInstantiation)
                 {
-                    foreach (TypeSignature type in types)
-                        if (index-- == 0)
+                    SigParser sp = new SigParser(genericInstantiation);
+                    if (sp.GetElemType() == CorElementType.ELEMENT_TYPE_GENERICINST)
+                    {
+                        sp.SkipExactlyOne(); // generic type definition
+                        if ((uint)index < (uint)sp.GetData())
                         {
-                            formatter.EmitTypeName(type, flags);
+                            for (int i = 0; i < index; i++)
+                                sp.SkipExactlyOne();
+                            formatter.EmitTypeName(sp.GetSigPointer(), flags);
                             return;
                         }
+                    }
                 }
                 else if (context is GenericParameterHandleCollection parameters)
                 {
@@ -451,7 +457,7 @@ namespace Internal.StackTraceMetadata
 
                     case HandleType.TypeSpecification:
                         TypeSpecification typeSpec = handle.ToTypeSpecificationHandle(metadataReader).GetTypeSpecification(metadataReader);
-                        return typeSpec.Signature.GetGenericArguments();
+                        return typeSpec.Signature;
 
                     default:
                         Debug.Assert(false);

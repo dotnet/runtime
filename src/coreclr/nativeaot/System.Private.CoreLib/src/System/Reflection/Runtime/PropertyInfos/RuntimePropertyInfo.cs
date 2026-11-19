@@ -121,6 +121,8 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         public sealed override Type[] GetRequiredCustomModifiers() => Signature.GetCustomModifiers(0, isOptional: false);
 
+        public sealed override Type GetModifiedPropertyType() => ModifiedType.Create(PropertyType, Signature);
+
         public sealed override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo culture)
         {
             if (_lazyGetterInvoker == null)
@@ -152,19 +154,7 @@ namespace System.Reflection.Runtime.PropertyInfos
             }
         }
 
-        public sealed override Type PropertyType
-        {
-            get
-            {
-                Type propertyType = _lazyPropertyType;
-                if (propertyType == null)
-                {
-                    _lazyPropertyType = propertyType = Signature.GetParameterType(0).ToType();
-                }
-
-                return propertyType;
-            }
-        }
+        public sealed override Type PropertyType => Signature.ReturnType;
 
         public sealed override Type ReflectedType
         {
@@ -367,8 +357,6 @@ namespace System.Reflection.Runtime.PropertyInfos
         private volatile RuntimeNamedMethodInfo _lazySetter;
 
         private volatile ParameterInfo[] _lazyIndexParameters;
-
-        private volatile Type _lazyPropertyType;
 
 #if DEBUG
         private string _debugName;

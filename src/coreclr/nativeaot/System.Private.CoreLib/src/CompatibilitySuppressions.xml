@@ -491,15 +491,15 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Metadata.NativeFormat.SignatureReader</Target>
+    <Target>T:Internal.Metadata.NativeFormat.SigParser</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Metadata.NativeFormat.TypeSignature</Target>
+    <Target>T:Internal.Metadata.NativeFormat.SigPointer</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Metadata.NativeFormat.TypeSignatureCollection</Target>
+    <Target>T:Internal.Metadata.NativeFormat.SigPointerCollection</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>

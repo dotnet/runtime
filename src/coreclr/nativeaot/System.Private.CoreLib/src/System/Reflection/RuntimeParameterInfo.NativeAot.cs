@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
-using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Metadata.NativeFormat;
 
@@ -14,35 +13,30 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
 {
     private readonly ParameterHandle _tkParamDef;
     private readonly MetadataReader? _scope;
-    private readonly Signature? _signature;
 
     internal static RuntimeParameterInfo[] GetParameters<TRuntimeMethodCommon>(
-        ref TRuntimeMethodCommon method, MethodBase member, RuntimeTypeInfo[] methodTypeArguments)
+        ref TRuntimeMethodCommon method, MethodBase member, Signature sig)
         where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
     {
-        return GetParameters(ref method, member, methodTypeArguments, out _, fetchReturnParameter: false);
+        return GetParameters(ref method, member, sig, out _, fetchReturnParameter: false);
     }
 
     internal static RuntimeParameterInfo GetReturnParameter<TRuntimeMethodCommon>(
-        ref TRuntimeMethodCommon method, MethodBase member, RuntimeTypeInfo[] methodTypeArguments)
+        ref TRuntimeMethodCommon method, MethodBase member, Signature sig)
         where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
     {
-        GetParameters(ref method, member, methodTypeArguments, out RuntimeParameterInfo? returnParameter, fetchReturnParameter: true);
+        GetParameters(ref method, member, sig, out RuntimeParameterInfo? returnParameter, fetchReturnParameter: true);
         Debug.Assert(returnParameter is not null);
         return returnParameter;
     }
 
     private static RuntimeParameterInfo[] GetParameters<TRuntimeMethodCommon>(
-        ref TRuntimeMethodCommon method, MethodBase member, RuntimeTypeInfo[] methodTypeArguments,
+        ref TRuntimeMethodCommon method, MethodBase member, Signature sig,
         out RuntimeParameterInfo? returnParameter, bool fetchReturnParameter)
         where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
     {
-        TypeContext typeContext = member.DeclaringType.ToRuntimeTypeInfo().TypeContext;
-        typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
-        Signature sig = method.GetSignature(typeContext);
-
         returnParameter = null;
-        int sigArgCount = sig.ArgumentCount;
+        int sigArgCount = sig.Arguments.Length;
         RuntimeParameterInfo[] args =
             fetchReturnParameter ? null! :
             sigArgCount == 0 ? [] :
@@ -161,13 +155,4 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
     public override int MetadataToken => _tkParamDef.IsNil
         ? base.MetadataToken
         : throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
-
-    public override Type[] GetRequiredCustomModifiers() =>
-        _signature is null ? [] : _signature.GetCustomModifiers(PositionImpl + 1, isOptional: false);
-
-    public override Type[] GetOptionalCustomModifiers() =>
-        _signature is null ? [] : _signature.GetCustomModifiers(PositionImpl + 1, isOptional: true);
-
-    public override Type GetModifiedParameterType() =>
-        ModifiedType.Create(unmodifiedType: ParameterType, _signature, parameterIndex: PositionImpl + 1);
 }

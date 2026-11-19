@@ -27,7 +27,8 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
             return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(DeclaringType, new QMethodDefinition(Reader, MethodHandle), methodArguments, exceptionPertainant, MethodSignature.ParameterCount, out exception);
         }
 
-        public Signature GetSignature(TypeContext typeContext) => new Signature(_reader, MethodSignature.Blob, typeContext);
+        public Signature GetSignature(RuntimeTypeInfo[] methodTypeArguments) =>
+            new Signature(_reader, MethodSignature.Blob, new TypeContext(DeclaringType.TypeContext.GenericTypeArguments, methodTypeArguments));
 
         public NativeFormatMethodCommon RuntimeMethodCommonOfUninstantiatedMethod
         {

@@ -143,7 +143,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             return ReflectionCoreExecution.ExecutionEnvironment.TryGetFieldAccessor(this._reader, this.DeclaringType.TypeHandle, this.FieldType.TypeHandle, _fieldHandle);
         }
 
-        protected sealed override RuntimeTypeInfo FieldRuntimeType => GetSignature().GetParameterType(0);
+        protected sealed override RuntimeTypeInfo FieldRuntimeType => GetSignature().FieldType.GetRuntimeTypeInfo();
 
         protected sealed override RuntimeTypeInfo DefiningType { get { return _definingTypeInfo; } }
 
@@ -153,7 +153,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         internal sealed override int ExplicitLayoutFieldOffsetData => (int)(_field.Offset);
 
-        public sealed override Type GetModifiedFieldType() => ModifiedType.Create(FieldRuntimeType.ToType(), GetSignature());
+        public sealed override Type GetModifiedFieldType() => ModifiedType.Create(FieldType, GetSignature());
 
         private Signature GetSignature() =>
             _lazySignature ??= new Signature(_reader, _field.Signature.GetFieldSignature(_reader).Blob, _contextTypeInfo.TypeContext);
@@ -163,6 +163,6 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         private readonly MetadataReader _reader;
         private readonly Field _field;
-        private Signature? _lazySignature;
+        private volatile Signature? _lazySignature;
     }
 }

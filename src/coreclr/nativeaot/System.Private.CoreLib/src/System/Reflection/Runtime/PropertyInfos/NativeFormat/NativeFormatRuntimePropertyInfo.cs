@@ -69,8 +69,6 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 
         internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _property.CustomAttributes;
 
-        public override Type GetModifiedPropertyType() => ModifiedType.Create(PropertyType, Signature);
-
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
             ArgumentNullException.ThrowIfNull(other);
@@ -183,6 +181,6 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 
         private readonly MetadataReader _reader;
         private readonly Property _property;
-        private Signature? _lazySignature;
+        private volatile Signature? _lazySignature;
     }
 }

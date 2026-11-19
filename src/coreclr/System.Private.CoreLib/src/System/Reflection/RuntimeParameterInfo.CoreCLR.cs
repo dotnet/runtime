@@ -10,7 +10,6 @@ namespace System.Reflection
     {
         private readonly int _tkParamDef;
         private readonly MetadataImport _scope;
-        private readonly Signature? _signature;
 
         internal static ParameterInfo[] GetParameters(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
         {
@@ -155,18 +154,5 @@ namespace System.Reflection
         }
 
         public override int MetadataToken => _tkParamDef;
-
-        public override Type[] GetRequiredCustomModifiers()
-        {
-            return _signature is null ? [] : _signature.GetCustomModifiers(PositionImpl + 1, isOptional: false);
-        }
-
-        public override Type[] GetOptionalCustomModifiers()
-        {
-            return _signature is null ? [] : _signature.GetCustomModifiers(PositionImpl + 1, isOptional: true);
-        }
-
-        public override Type GetModifiedParameterType() =>
-            ModifiedType.Create(unmodifiedType: ParameterType, _signature, parameterIndex: PositionImpl + 1);
     }
 }

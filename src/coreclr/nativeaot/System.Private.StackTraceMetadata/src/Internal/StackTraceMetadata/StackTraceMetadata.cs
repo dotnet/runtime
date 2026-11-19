@@ -259,11 +259,11 @@ namespace Internal.StackTraceMetadata
                     return FormatAssemblyName(reader, typeRef.NamespaceOrEnclosingType);
                 case HandleType.TypeSpecification:
                     TypeSpecification typeSpec = reader.GetTypeSpecification(handle.ToTypeSpecificationHandle(reader));
-                    SignatureReader signature = typeSpec.Signature.GetReader();
-                    if (signature.ReadElementType() == CorElementType.ELEMENT_TYPE_GENERICINST
-                        && signature.ReadElementType() is CorElementType.ELEMENT_TYPE_CLASS or CorElementType.ELEMENT_TYPE_VALUETYPE)
+                    SigParser signature = new SigParser(typeSpec.Signature);
+                    if (signature.GetElemType() == CorElementType.ELEMENT_TYPE_GENERICINST
+                        && signature.GetElemType() is CorElementType.ELEMENT_TYPE_CLASS or CorElementType.ELEMENT_TYPE_VALUETYPE)
                     {
-                        return FormatAssemblyName(reader, signature.ReadTypeHandle());
+                        return FormatAssemblyName(reader, signature.GetToken());
                     }
                     return "<unknown>";
                 case HandleType.NamespaceDefinition:

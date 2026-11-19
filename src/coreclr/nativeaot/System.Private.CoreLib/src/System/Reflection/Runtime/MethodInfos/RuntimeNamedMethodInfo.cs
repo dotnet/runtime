@@ -20,6 +20,7 @@ namespace System.Reflection.Runtime.MethodInfos
         protected internal abstract string ComputeToString(RuntimeMethodInfo contextMethod);
         internal abstract MethodBaseInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant);
         internal abstract RuntimeMethodHandle GetRuntimeMethodHandle(Type[] methodArguments);
+        internal abstract Signature CreateSignature(RuntimeTypeInfo[] methodTypeArguments);
     }
 
     //
@@ -217,7 +218,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         protected internal sealed override string ComputeToString(RuntimeMethodInfo contextMethod)
         {
-            return RuntimeMethodHelpers.ComputeToString(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
+            return RuntimeMethodHelpers.ComputeToString(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters, GetSignature(contextMethod));
         }
 
         internal sealed override RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters
@@ -230,12 +231,26 @@ namespace System.Reflection.Runtime.MethodInfos
 
         internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod)
         {
-            return RuntimeParameterInfo.GetParameters(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
+            return RuntimeParameterInfo.GetParameters(ref _common, contextMethod, GetSignature(contextMethod));
         }
 
         internal sealed override RuntimeParameterInfo GetRuntimeReturnParameter(RuntimeMethodInfo contextMethod)
         {
-            return RuntimeParameterInfo.GetReturnParameter(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
+            return RuntimeParameterInfo.GetReturnParameter(ref _common, contextMethod, GetSignature(contextMethod));
+        }
+
+        internal sealed override Signature CreateSignature(RuntimeTypeInfo[] methodTypeArguments) => _common.GetSignature(methodTypeArguments);
+
+        internal Signature Signature => _lazySignature ??= CreateSignature(GenericTypeParameters);
+
+        // The context method is either this method or an instantiation of it.
+        private Signature GetSignature(RuntimeMethodInfo contextMethod)
+        {
+            if (contextMethod is RuntimeConstructedGenericMethodInfo constructedMethod)
+                return constructedMethod.Signature;
+
+            Debug.Assert(ReferenceEquals(contextMethod, this));
+            return Signature;
         }
 
         internal sealed override RuntimeTypeInfo RuntimeDeclaringType
@@ -315,5 +330,6 @@ namespace System.Reflection.Runtime.MethodInfos
 
         private TRuntimeMethodCommon _common;
         private readonly RuntimeTypeInfo _reflectedType;
+        private volatile Signature _lazySignature;
     }
 }

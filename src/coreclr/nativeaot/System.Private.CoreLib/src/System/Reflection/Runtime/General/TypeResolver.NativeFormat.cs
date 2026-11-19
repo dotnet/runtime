@@ -32,15 +32,22 @@ namespace System.Reflection.Runtime.General
             else if (handleType == HandleType.TypeReference)
                 return typeDefRefOrSpec.ToTypeReferenceHandle(reader).TryResolveTypeReference(reader, ref exception);
             else if (handleType == HandleType.TypeSpecification)
-                return typeDefRefOrSpec.ToTypeSpecificationHandle(reader).GetTypeSpecification(reader).Signature.TryResolve(typeContext, ref exception);
+                return typeDefRefOrSpec.ToTypeSpecificationHandle(reader).GetTypeSpecification(reader).Signature.TryResolve(reader, typeContext, ref exception);
             else
                 throw new BadImageFormatException();  // Expected TypeRef, Def or Spec.
         }
 
-        internal static RuntimeTypeInfo Resolve(this TypeSignature signature, TypeContext typeContext)
+        internal static RuntimeTypeInfo Resolve(this SigPointer signature, MetadataReader reader, TypeContext typeContext)
+        {
+            SigParser sp = new SigParser(signature);
+            return Resolve(ref sp, reader, typeContext);
+        }
+
+        // Resolves the type at the current position and advances the parser past it.
+        internal static RuntimeTypeInfo Resolve(ref SigParser sp, MetadataReader reader, TypeContext typeContext)
         {
             Exception? exception = null;
-            RuntimeTypeInfo? runtimeType = signature.TryResolve(typeContext, ref exception);
+            RuntimeTypeInfo? runtimeType = TryResolveTypeSignature(ref sp, reader, typeContext, ref exception);
             if (runtimeType is null)
                 throw exception!;
             return runtimeType;
@@ -57,15 +64,15 @@ namespace System.Reflection.Runtime.General
         //
         // Resolve ECMA-335 II.23.1.16 signature elements with native handles for named types.
         //
-        internal static RuntimeTypeInfo? TryResolve(this TypeSignature signature, TypeContext typeContext, ref Exception? exception)
+        internal static RuntimeTypeInfo? TryResolve(this SigPointer signature, MetadataReader reader, TypeContext typeContext, ref Exception? exception)
         {
-            SignatureReader reader = signature.GetReader();
-            return TryResolveTypeSignature(ref reader, signature.Reader, typeContext, ref exception);
+            SigParser sp = new SigParser(signature);
+            return TryResolveTypeSignature(ref sp, reader, typeContext, ref exception);
         }
 
-        private static RuntimeTypeInfo? TryResolveTypeSignature(ref SignatureReader reader, MetadataReader metadataReader, TypeContext typeContext, ref Exception? exception)
+        private static RuntimeTypeInfo? TryResolveTypeSignature(ref SigParser sp, MetadataReader reader, TypeContext typeContext, ref Exception? exception)
         {
-            switch (reader.ReadElementType())
+            switch (sp.GetElemType())
             {
                 case CorElementType.ELEMENT_TYPE_VOID:
                     return typeof(void).ToRuntimeTypeInfo();
@@ -106,14 +113,14 @@ namespace System.Reflection.Runtime.General
 
                 case CorElementType.ELEMENT_TYPE_CLASS:
                 case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                    return reader.ReadTypeHandle().TryResolve(metadataReader, typeContext, ref exception);
+                    return sp.GetToken().TryResolve(reader, typeContext, ref exception);
 
                 case CorElementType.ELEMENT_TYPE_ARRAY:
                 {
-                    RuntimeTypeInfo? elementType = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
+                    RuntimeTypeInfo? elementType = TryResolveTypeSignature(ref sp, reader, typeContext, ref exception);
                     if (elementType is null)
                         return null;
-                    int rank = reader.ReadArrayShape();
+                    int rank = sp.GetArrayShape();
                     if (rank <= 0)
                         throw new BadImageFormatException(); // Bad rank.
                     return elementType.GetMultiDimArrayType(rank);
@@ -121,18 +128,18 @@ namespace System.Reflection.Runtime.General
 
                 case CorElementType.ELEMENT_TYPE_BYREF:
                 {
-                    RuntimeTypeInfo? targetType = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
+                    RuntimeTypeInfo? targetType = TryResolveTypeSignature(ref sp, reader, typeContext, ref exception);
                     if (targetType is null)
                         return null;
                     return targetType.GetByRefType();
                 }
 
                 case CorElementType.ELEMENT_TYPE_MVAR:
-                    return typeContext.GenericMethodArguments[reader.ReadCompressedInteger()];
+                    return typeContext.GenericMethodArguments[sp.GetData()];
 
                 case CorElementType.ELEMENT_TYPE_PTR:
                 {
-                    RuntimeTypeInfo? targetType = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
+                    RuntimeTypeInfo? targetType = TryResolveTypeSignature(ref sp, reader, typeContext, ref exception);
                     if (targetType is null)
                         return null;
                     return targetType.GetPointerType();
@@ -140,25 +147,30 @@ namespace System.Reflection.Runtime.General
 
                 case CorElementType.ELEMENT_TYPE_FNPTR:
                 {
-                    MdSigCallingConvention header = reader.ReadMethodHeader(out _, out int count);
-                    RuntimeTypeInfo? returnType = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
+                    // Same header validation as CoreCLR's SigPointer::GetTypeHandleThrowing.
+                    MdSigCallingConvention callConv = sp.GetCallingConvInfo();
+                    if ((callConv & MdSigCallingConvention.CallConvMask) == MdSigCallingConvention.Field
+                        || (callConv & MdSigCallingConvention.Generic) != 0)
+                        throw new BadImageFormatException();
+                    int count = sp.GetData();
+                    RuntimeTypeInfo? returnType = TryResolveTypeSignature(ref sp, reader, typeContext, ref exception);
                     if (returnType is null)
                         return null;
                     var parameterTypes = new RuntimeTypeInfo[count];
                     for (int i = 0; i < parameterTypes.Length; i++)
                     {
-                        RuntimeTypeInfo? parameterType = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
+                        RuntimeTypeInfo? parameterType = TryResolveTypeSignature(ref sp, reader, typeContext, ref exception);
                         if (parameterType is null)
                             return null;
                         parameterTypes[i] = parameterType;
                     }
-                    bool isUnmanaged = (header & MdSigCallingConvention.CallConvMask) != 0;
+                    bool isUnmanaged = (callConv & MdSigCallingConvention.CallConvMask) != 0;
                     return RuntimeFunctionPointerTypeInfo.GetFunctionPointerTypeInfo(returnType, parameterTypes, isUnmanaged);
                 }
 
                 case CorElementType.ELEMENT_TYPE_SZARRAY:
                 {
-                    RuntimeTypeInfo? elementType = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
+                    RuntimeTypeInfo? elementType = TryResolveTypeSignature(ref sp, reader, typeContext, ref exception);
                     if (elementType is null)
                         return null;
                     return elementType.GetArrayType();
@@ -166,14 +178,14 @@ namespace System.Reflection.Runtime.General
 
                 case CorElementType.ELEMENT_TYPE_GENERICINST:
                 {
-                    RuntimeTypeInfo? genericTypeDefinition = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
+                    RuntimeTypeInfo? genericTypeDefinition = TryResolveTypeSignature(ref sp, reader, typeContext, ref exception);
                     if (genericTypeDefinition is null)
                         return null;
-                    int count = reader.ReadCompressedInteger();
+                    int count = sp.GetData();
                     var genericTypeArguments = new RuntimeTypeInfo[count];
                     for (int i = 0; i < genericTypeArguments.Length; i++)
                     {
-                        RuntimeTypeInfo? genericTypeArgument = TryResolveTypeSignature(ref reader, metadataReader, typeContext, ref exception);
+                        RuntimeTypeInfo? genericTypeArgument = TryResolveTypeSignature(ref sp, reader, typeContext, ref exception);
                         if (genericTypeArgument is null)
                             return null;
                         genericTypeArguments[i] = genericTypeArgument;
@@ -182,7 +194,7 @@ namespace System.Reflection.Runtime.General
                 }
 
                 case CorElementType.ELEMENT_TYPE_VAR:
-                    return typeContext.GenericTypeArguments[reader.ReadCompressedInteger()];
+                    return typeContext.GenericTypeArguments[sp.GetData()];
 
                 default:
                     throw new BadImageFormatException(); // Unexpected type signature element.

@@ -5,66 +5,85 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Metadata.NativeFormat;
 
 namespace System
 {
-    // NativeFormat counterpart of CoreCLR's Signature. Offsets are relative to the start of the ECMA-335 II.23.2
-    // signature blob, and -1 denotes a position whose signature is not available.
-    internal sealed class Signature
+    // NativeFormat counterpart of CoreCLR's Signature (RuntimeHandles.cs). The offset helpers are managed ports of the
+    // Signature_* helpers in src/coreclr/vm/runtimehandles.cpp and should be kept in sync with them. Offsets are relative
+    // to the start of the ECMA-335 II.23.2 signature blob, and -1 denotes a position whose signature is not available.
+    internal sealed unsafe partial class Signature
     {
-        private readonly MetadataReader _reader;
-        private readonly uint _sig;
+        private readonly RuntimeType[]? _arguments;
+        private readonly RuntimeType _returnTypeORfieldType;
+        private readonly void* _sig;
         private readonly int _csig;
+        private readonly MetadataReader _reader;
         private readonly TypeContext _typeContext;
 
         internal Signature(MetadataReader reader, ByteCollection blob, TypeContext typeContext)
         {
-            TypeSignature start = new SignatureReader(reader, blob).Position;
+            SigPointer sig = blob.GetSigPointer();
+            _sig = sig._ptr;
+            _csig = (int)sig._len;
             _reader = reader;
-            _sig = start.Offset;
-            _csig = (int)(start.EndOffset - start.Offset);
             _typeContext = typeContext;
-        }
 
-        internal int ArgumentCount
-        {
-            get
+            // Resolve the types eagerly, like Signature_Init in src/coreclr/vm/runtimehandles.cpp.
+            SigParser sp = GetParser(0);
+            if (sp.GetCallingConvInfo() == MdSigCallingConvention.Field)
             {
-                SignatureReader reader = GetReader(0);
-                reader.ReadMethodHeader(out _, out int argumentCount);
-                return argumentCount;
+                _returnTypeORfieldType = ResolveType(ref sp);
+            }
+            else
+            {
+                sp = GetParser(0);
+                sp.SkipMethodHeaderSignature(out int argCount, skipReturnType: false);
+                _returnTypeORfieldType = ResolveType(ref sp);
+
+                RuntimeType[] arguments = argCount == 0 ? [] : new RuntimeType[argCount];
+                for (int i = 0; i < arguments.Length; i++)
+                    arguments[i] = ResolveType(ref sp);
+                _arguments = arguments;
             }
         }
 
-        // Index 0 is the return type of a method, the type of a property, or the type of a field.
-        internal RuntimeTypeInfo GetParameterType(int parameterIndex) =>
-            GetReader(GetParameterOffset(parameterIndex)).Position.Resolve(_typeContext);
+        internal RuntimeType[] Arguments
+        {
+            get
+            {
+                Debug.Assert(_arguments != null);
+                return _arguments;
+            }
+        }
+        internal RuntimeType ReturnType => _returnTypeORfieldType;
+        internal RuntimeType FieldType => _returnTypeORfieldType;
+
+        private RuntimeType ResolveType(ref SigParser sp) => TypeResolver.Resolve(ref sp, _reader, _typeContext).ToType();
 
         internal int GetParameterOffset(int parameterIndex)
         {
-            SignatureReader reader = GetReader(0);
+            SigParser sp = GetParser(0);
 
-            MdSigCallingConvention callConv = reader.ReadCallingConventionInfo();
+            MdSigCallingConvention callConv = sp.GetCallingConvInfo();
             if ((callConv & MdSigCallingConvention.CallConvMask) != MdSigCallingConvention.Field)
             {
                 if ((callConv & MdSigCallingConvention.Generic) != 0)
-                    reader.ReadCompressedInteger();
+                    sp.GetData();
 
-                int numArgs = reader.ReadCompressedInteger();
+                int numArgs = sp.GetData();
                 Debug.Assert((uint)parameterIndex <= (uint)numArgs);
 
                 for (int i = 0; i < parameterIndex; i++)
-                    reader.SkipType();
+                    sp.SkipExactlyOne();
             }
             else
             {
                 Debug.Assert(parameterIndex == 0);
             }
 
-            return GetOffset(reader);
+            return GetOffset(sp);
         }
 
         internal int GetTypeParameterOffset(int offset, int index)
@@ -75,19 +94,19 @@ namespace System
                 return offset;
             }
 
-            SignatureReader reader = GetReader(offset);
+            SigParser sp = GetParser(offset);
 
             int argCnt;
-            switch (reader.ReadElementType())
+            switch (sp.GetElemType())
             {
                 case CorElementType.ELEMENT_TYPE_FNPTR:
-                    reader.ReadMethodHeader(out _, out argCnt);
+                    sp.SkipMethodHeaderSignature(out argCnt, skipReturnType: false);
                     Debug.Assert((uint)index <= (uint)argCnt);
                     break;
                 case CorElementType.ELEMENT_TYPE_GENERICINST:
-                    reader.SkipType();
+                    sp.SkipExactlyOne();
 
-                    argCnt = reader.ReadCompressedInteger();
+                    argCnt = sp.GetData();
                     Debug.Assert((uint)index < (uint)argCnt);
                     break;
                 case CorElementType.ELEMENT_TYPE_ARRAY:
@@ -106,9 +125,9 @@ namespace System
             }
 
             for (int i = 0; i < index; i++)
-                reader.SkipType();
+                sp.SkipExactlyOne();
 
-            return GetOffset(reader);
+            return GetOffset(sp);
         }
 
         internal SignatureCallingConvention GetCallingConventionFromFunctionPointerAtOffset(int offset)
@@ -119,25 +138,24 @@ namespace System
                 return SignatureCallingConvention.Default;
             }
 
-            SignatureReader reader = GetReader(offset);
+            SigParser sp = GetParser(offset);
 
-            CorElementType elementType = reader.ReadElementType();
+            CorElementType elementType = sp.GetElemType();
             Debug.Assert(elementType == CorElementType.ELEMENT_TYPE_FNPTR);
 
-            return (SignatureCallingConvention)(reader.ReadCallingConventionInfo() & MdSigCallingConvention.CallConvMask);
+            return (SignatureCallingConvention)sp.GetCallingConv();
         }
 
         internal Type[] GetCustomModifiers(int parameterIndex, bool isOptional) =>
             GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), isOptional);
 
-        // Always returns a freshly allocated array that is safe to return to API callers.
         internal Type[] GetCustomModifiersAtOffset(int offset, bool isOptional)
         {
             ArrayBuilder<Type> customModifiers = default;
 
-            SignatureReader reader = GetReader(offset);
-            reader.SkipAnyVASentinel();
-            while (reader.TryReadCustomModifier(out bool modifierIsOptional, out Handle modifierType))
+            SigParser sp = GetParser(offset);
+            sp.SkipAnyVASentinel();
+            while (sp.TryGetCustomModifier(out bool modifierIsOptional, out Handle modifierType))
             {
                 if (isOptional == modifierIsOptional)
                     customModifiers.Add(modifierType.Resolve(_reader, _typeContext).ToType());
@@ -148,12 +166,12 @@ namespace System
             return customModifiers.ToArray();
         }
 
-        private SignatureReader GetReader(int offset)
+        private SigParser GetParser(int offset)
         {
             Debug.Assert((uint)offset < (uint)_csig);
-            return new SignatureReader(_reader, _sig + (uint)offset, _sig + (uint)_csig);
+            return new SigParser((byte*)_sig + offset, (uint)(_csig - offset));
         }
 
-        private int GetOffset(SignatureReader reader) => (int)(reader.Position.Offset - _sig);
+        private int GetOffset(SigParser sp) => (int)(sp.GetPtr() - (byte*)_sig);
     }
 }

@@ -62,8 +62,8 @@ namespace Internal.Runtime.CompilerServices
             get
             {
                 Method method = Reader.GetMethod(Handle);
-                TypeSignature returnType = method.Signature.GetMethodSignature(Reader).ReturnType;
-                return returnType.GetReader().PeekElementType() == CorElementType.ELEMENT_TYPE_GENERICINST;
+                SigPointer returnType = method.Signature.GetMethodSignature(Reader).ReturnType;
+                return new SigParser(returnType).PeekElemType() == CorElementType.ELEMENT_TYPE_GENERICINST;
             }
         }
 

@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Internal.NativeFormat;
 
 using CorElementType = System.Reflection.CorElementType;
@@ -12,100 +13,84 @@ using MdSigCallingConvention = System.Reflection.MdSigCallingConvention;
 namespace Internal.Metadata.NativeFormat;
 
 // Signature blobs follow ECMA-335 II.23.2, except that TypeDefOrRefOrSpecEncoded tokens are replaced with
-// NativeFormat handles. The reader mirrors CoreCLR's SigParser so that signature parsing can be shared with
-// CoreCLR's System.Private.CoreLib.
+// NativeFormat handles. SigPointer and SigParser mirror CoreCLR's SigPointer and SigParser (src/coreclr/inc/sigparser.h)
+// so that signature parsing can be shared with CoreCLR's System.Private.CoreLib.
 
-// A position within a signature blob, equivalent to CoreCLR's SigPointer.
+// A position within a signature blob. Unlike CoreCLR's SigPointer, which is a SigParser with type loading helpers,
+// this only records the position; use SigParser to read from it.
 #if SYSTEM_PRIVATE_CORELIB
 [CLSCompliant(false)]
 #endif
-public readonly struct TypeSignature
+public readonly unsafe struct SigPointer
 {
-    public MetadataReader Reader { get; }
-    internal uint Offset { get; }
-    internal uint EndOffset { get; }
+    internal readonly byte* _ptr;
+    internal readonly uint _len;
 
-    internal TypeSignature(MetadataReader reader, uint offset, uint endOffset)
+    internal SigPointer(byte* ptr, uint len)
     {
-        Reader = reader;
-        Offset = offset;
-        EndOffset = endOffset;
-    }
-
-    public SignatureReader GetReader() => new SignatureReader(Reader, Offset, EndOffset);
-
-    public TypeSignatureCollection GetGenericArguments()
-    {
-        SignatureReader reader = GetReader();
-        CorElementType elementType = reader.ReadElementType();
-        Debug.Assert(elementType == CorElementType.ELEMENT_TYPE_GENERICINST);
-        reader.SkipType();
-        int count = reader.ReadCompressedInteger();
-        return new TypeSignatureCollection(reader.Position, count);
+        _ptr = ptr;
+        _len = len;
     }
 }
 
+// A cursor over a signature blob. All reads are bounds-checked against the end of the blob.
 #if SYSTEM_PRIVATE_CORELIB
 [CLSCompliant(false)]
 #endif
-public struct SignatureReader
+public unsafe struct SigParser
 {
-    private readonly MetadataReader _reader;
-    private readonly uint _endOffset;
-    private uint _offset;
+    private byte* _ptr;
+    private uint _len;
 
-    internal SignatureReader(MetadataReader reader, uint offset, uint endOffset)
+    public SigParser(SigPointer sig)
+        : this(sig._ptr, sig._len)
     {
-        _reader = reader;
-        _offset = offset;
-        _endOffset = endOffset;
     }
 
-    internal SignatureReader(MetadataReader reader, ByteCollection blob)
+    internal SigParser(byte* ptr, uint len)
     {
-        _reader = reader;
-        _offset = reader._streamReader.DecodeUnsigned(blob.Offset, out uint length);
-        _endOffset = _offset + length;
-        if (_endOffset < _offset || _endOffset > reader._streamReader.Size)
-            ThrowBadImageFormatException();
+        _ptr = ptr;
+        _len = len;
     }
 
-    public readonly TypeSignature Position => new TypeSignature(_reader, _offset, _endOffset);
+    public readonly SigPointer GetSigPointer() => new SigPointer(_ptr, _len);
 
-    // Like SigParser::PeekElemType and SigParser::GetElemType, these skip a vararg sentinel and custom modifiers.
-    // Like SigParser::PeekElemType, PeekElementType reports STRING and OBJECT as CLASS.
-    public readonly CorElementType PeekElementType()
+    internal readonly byte* GetPtr() => _ptr;
+
+    // Like SigParser::PeekElemType, this skips a vararg sentinel and custom modifiers, and reports STRING and OBJECT as CLASS.
+    public readonly CorElementType PeekElemType()
     {
-        SignatureReader reader = this;
-        CorElementType elementType = reader.ReadElementType();
+        SigParser parser = this;
+        CorElementType elementType = parser.GetElemType();
         return elementType is CorElementType.ELEMENT_TYPE_STRING or CorElementType.ELEMENT_TYPE_OBJECT
             ? CorElementType.ELEMENT_TYPE_CLASS
             : elementType;
     }
 
-    public CorElementType ReadElementType()
+    // Like SigParser::GetElemType, this skips a vararg sentinel and custom modifiers.
+    public CorElementType GetElemType()
     {
         SkipCustomModifiers();
-        return (CorElementType)ReadByte();
+        return (CorElementType)GetByte();
     }
 
     // ECMA-335 II.23.2.2.
     public void SkipAnyVASentinel()
     {
         if (PeekByte() == (byte)CorElementType.ELEMENT_TYPE_SENTINEL)
-            _offset++;
+            SkipBytes(1);
     }
 
     public void SkipCustomModifiers()
     {
         SkipAnyVASentinel();
-        while (TryReadCustomModifier(out _, out _))
+        while (TryGetCustomModifier(out _, out _))
         {
         }
     }
 
     // ECMA-335 II.23.2.7.
-    public bool TryReadCustomModifier(out bool isOptional, out Handle modifierType)
+    public bool TryGetCustomModifier(out bool isOptional, out Handle modifierType)
     {
         CorElementType elementType = (CorElementType)PeekByte();
         if (elementType is not (CorElementType.ELEMENT_TYPE_CMOD_REQD or CorElementType.ELEMENT_TYPE_CMOD_OPT))
@@ -115,46 +100,39 @@ public struct SignatureReader
             return false;
         }
 
-        _offset++;
+        SkipBytes(1);
         isOptional = elementType == CorElementType.ELEMENT_TYPE_CMOD_OPT;
-        modifierType = ReadTypeHandle();
+        modifierType = GetToken();
         return true;
     }
 
     // ECMA-335 II.23.2.
-    public int ReadCompressedInteger()
+    public int GetData()
     {
-        byte first = ReadByte();
+        byte first = GetByte();
         if ((first & 0x80) == 0)
             return first;
         if ((first & 0x40) == 0)
-            return ((first & 0x3f) << 8) | ReadByte();
+            return ((first & 0x3f) << 8) | GetByte();
         if ((first & 0x20) == 0)
-            return ((first & 0x1f) << 24) | (ReadByte() << 16) | (ReadByte() << 8) | ReadByte();
+            return ((first & 0x1f) << 24) | (GetByte() << 16) | (GetByte() << 8) | GetByte();
 
         ThrowBadImageFormatException();
         return 0;
     }
 
-    public Handle ReadTypeHandle()
+    // Reads the NativeFormat handle that replaces an ECMA-335 TypeDefOrRefOrSpecEncoded token.
+    public Handle GetToken()
     {
-        _offset = _reader._streamReader.Read(_offset, out Handle handle);
-        if (_offset > _endOffset)
-            ThrowBadImageFormatException();
-        return handle;
+        byte* ptr = _ptr;
+        uint rawValue = NativePrimitiveDecoder.DecodeUnsigned(ref ptr, _ptr + _len);
+        SkipBytes((uint)(ptr - _ptr));
+        return MdBinaryReader.DecodeHandle(rawValue);
     }
 
-    public TypeSignature ReadType()
+    public void SkipExactlyOne()
     {
-        TypeSignature result = Position;
-        SkipType();
-        return result;
-    }
-
-    // Equivalent of SigParser::SkipExactlyOne.
-    public void SkipType()
-    {
-        switch (ReadElementType())
+        switch (GetElemType())
         {
             case CorElementType.ELEMENT_TYPE_VOID:
             case CorElementType.ELEMENT_TYPE_BOOLEAN:
@@ -177,31 +155,29 @@ public struct SignatureReader
                 break;
             case CorElementType.ELEMENT_TYPE_CLASS:
             case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                ReadTypeHandle();
+                GetToken();
                 break;
             case CorElementType.ELEMENT_TYPE_PTR:
             case CorElementType.ELEMENT_TYPE_BYREF:
             case CorElementType.ELEMENT_TYPE_SZARRAY:
-                SkipType();
+                SkipExactlyOne();
                 break;
             case CorElementType.ELEMENT_TYPE_VAR:
             case CorElementType.ELEMENT_TYPE_MVAR:
-                ReadCompressedInteger();
+                GetData();
                 break;
             case CorElementType.ELEMENT_TYPE_GENERICINST:
-                SkipType();
-                int arguments = ReadCompressedInteger();
+                SkipExactlyOne();
+                int arguments = GetData();
                 for (int i = 0; i < arguments; i++)
-                    SkipType();
+                    SkipExactlyOne();
                 break;
             case CorElementType.ELEMENT_TYPE_ARRAY:
-                SkipType();
-                ReadArrayShape();
+                SkipExactlyOne();
+                GetArrayShape();
                 break;
             case CorElementType.ELEMENT_TYPE_FNPTR:
-                ReadMethodHeader(out _, out int parameters);
-                for (int i = 0; i <= parameters; i++)
-                    SkipType();
+                SkipSignature();
                 break;
             default:
                 ThrowBadImageFormatException();
@@ -209,77 +185,104 @@ public struct SignatureReader
         }
     }
 
-    // ECMA-335 II.23.2.13. Returns the rank; sizes and lower bounds are skipped.
-    public int ReadArrayShape()
+    // Skips a method signature, as follows ELEMENT_TYPE_FNPTR.
+    internal void SkipSignature()
     {
-        int rank = ReadCompressedInteger();
-        int sizes = ReadCompressedInteger();
-        for (int i = 0; i < sizes; i++)
-            ReadCompressedInteger();
+        SkipMethodHeaderSignature(out int argCount);
+        for (int i = 0; i < argCount; i++)
+            SkipExactlyOne();
+    }
 
-        // Signed lower bounds use the same length encoding as unsigned integers.
-        int lowerBounds = ReadCompressedInteger();
-        for (int i = 0; i < lowerBounds; i++)
-            ReadCompressedInteger();
+    // ECMA-335 II.23.2.1-3.
+    internal void SkipMethodHeaderSignature(out int argCount, bool skipReturnType = true)
+    {
+        GetMethodHeaderSignature(out _, out argCount);
+
+        if (skipReturnType)
+            SkipExactlyOne();
+    }
+
+    // Reads the method header up to (but not including) the return type.
+    internal MdSigCallingConvention GetMethodHeaderSignature(out int genericParameterCount, out int argCount)
+    {
+        MdSigCallingConvention callConv = GetCallingConvInfo();
+        if (callConv is MdSigCallingConvention.Field or MdSigCallingConvention.LocalSig)
+            ThrowBadImageFormatException();
+
+        genericParameterCount = (callConv & MdSigCallingConvention.Generic) != 0 ? GetData() : 0;
+        argCount = GetData();
+        return callConv;
+    }
+
+    // ECMA-335 II.23.2.13. Returns the rank; sizes and lower bounds are skipped.
+    // Like CoreCLR's SigParser::SkipExactlyOne, sizes and lower bounds are only present for a nonzero rank.
+    public int GetArrayShape()
+    {
+        int rank = GetData();
+        if (rank != 0)
+        {
+            int sizes = GetData();
+            for (int i = 0; i < sizes; i++)
+                GetData();
+
+            // Signed lower bounds use the same length encoding as unsigned integers.
+            int lowerBounds = GetData();
+            for (int i = 0; i < lowerBounds; i++)
+                GetData();
+        }
         return rank;
     }
 
-    // Equivalent of SigParser::GetCallingConvInfo.
-    internal MdSigCallingConvention ReadCallingConventionInfo() => (MdSigCallingConvention)ReadByte();
+    internal MdSigCallingConvention GetCallingConvInfo() => (MdSigCallingConvention)GetByte();
 
-    // ECMA-335 II.23.2.1-3. The return type follows.
-    internal MdSigCallingConvention ReadMethodHeader(out int genericParameterCount, out int parameterCount)
-    {
-        MdSigCallingConvention header = ReadCallingConventionInfo();
-        genericParameterCount = (header & MdSigCallingConvention.Generic) != 0 ? ReadCompressedInteger() : 0;
-        parameterCount = ReadCompressedInteger();
-        return header;
-    }
-
-    // ECMA-335 II.23.2.4. The field type follows.
-    internal void ReadFieldHeader()
-    {
-        if (ReadCallingConventionInfo() != MdSigCallingConvention.Field)
-            ThrowBadImageFormatException();
-    }
+    internal MdSigCallingConvention GetCallingConv() => GetCallingConvInfo() & MdSigCallingConvention.CallConvMask;
 
     private readonly byte PeekByte()
     {
-        if (_offset >= _endOffset)
+        if (_len == 0)
             ThrowBadImageFormatException();
-        return _reader._streamReader.ReadUInt8(_offset);
+        return *_ptr;
     }
 
-    private byte ReadByte()
+    private byte GetByte()
     {
         byte value = PeekByte();
-        _offset++;
+        _ptr++;
+        _len--;
         return value;
     }
 
+    private void SkipBytes(uint count)
+    {
+        if (count > _len)
+            ThrowBadImageFormatException();
+        _ptr += count;
+        _len -= count;
+    }
+
     [DoesNotReturn]
-    private static void ThrowBadImageFormatException() => throw new BadImageFormatException();
+    internal static void ThrowBadImageFormatException() => throw new BadImageFormatException();
 }
 
 #if SYSTEM_PRIVATE_CORELIB
 [CLSCompliant(false)]
 #endif
-public readonly struct TypeSignatureCollection
+public readonly struct SigPointerCollection
 {
-    private readonly TypeSignature _first;
+    private readonly SigPointer _first;
     public int Count { get; }
 
-    internal TypeSignatureCollection(TypeSignature first, int count) => (_first, Count) = (first, count);
+    internal SigPointerCollection(SigPointer first, int count) => (_first, Count) = (first, count);
 
     public Enumerator GetEnumerator() => new Enumerator(_first, Count);
 
     public struct Enumerator
     {
-        private TypeSignature _next;
+        private SigPointer _next;
         private int _remaining;
-        public TypeSignature Current { get; private set; }
+        public SigPointer Current { get; private set; }
 
-        internal Enumerator(TypeSignature first, int count)
+        internal Enumerator(SigPointer first, int count)
         {
             _next = first;
             _remaining = count;
@@ -290,9 +293,10 @@ public readonly struct TypeSignatureCollection
         {
             if (_remaining == 0)
                 return false;
-            SignatureReader reader = _next.GetReader();
-            Current = reader.ReadType();
-            _next = reader.Position;
+            Current = _next;
+            SigParser parser = new SigParser(_next);
+            parser.SkipExactlyOne();
+            _next = parser.GetSigPointer();
             _remaining--;
             return true;
         }
@@ -304,63 +308,80 @@ internal readonly struct MethodSignatureInfo
     public MdSigCallingConvention CallingConvention { get; }
     public int GenericParameterCount { get; }
     public int ParameterCount { get; }
-    public TypeSignature ReturnType { get; }
+    public SigPointer ReturnType { get; }
 
-    public TypeSignatureCollection Parameters
+    public SigPointerCollection Parameters
     {
         get
         {
-            SignatureReader reader = ReturnType.GetReader();
-            reader.SkipType();
-            return new TypeSignatureCollection(reader.Position, ParameterCount);
+            SigParser parser = new SigParser(ReturnType);
+            parser.SkipExactlyOne();
+            return new SigPointerCollection(parser.GetSigPointer(), ParameterCount);
         }
     }
 
-    public MethodSignatureInfo(SignatureReader reader)
+    public MethodSignatureInfo(SigParser parser)
     {
-        CallingConvention = reader.ReadMethodHeader(out int genericParameterCount, out int parameterCount);
+        CallingConvention = parser.GetMethodHeaderSignature(out int genericParameterCount, out int parameterCount);
         GenericParameterCount = genericParameterCount;
         ParameterCount = parameterCount;
-        ReturnType = reader.Position;
+        ReturnType = parser.GetSigPointer();
     }
 }
 
 public readonly partial struct MethodSignature
 {
-    internal MethodSignatureInfo Info => new MethodSignatureInfo(new SignatureReader(_reader, Blob));
+    internal MethodSignatureInfo Info => new MethodSignatureInfo(new SigParser(Blob.GetSigPointer()));
     internal MdSigCallingConvention CallingConvention => Info.CallingConvention;
     public int GenericParameterCount => Info.GenericParameterCount;
     public int ParameterCount => Info.ParameterCount;
-    public TypeSignature ReturnType => Info.ReturnType;
-    public TypeSignatureCollection Parameters => Info.Parameters;
+    public SigPointer ReturnType => Info.ReturnType;
+    public SigPointerCollection Parameters => Info.Parameters;
 }
 
 public readonly partial struct FieldSignature
 {
-    public TypeSignature Type
+    public SigPointer Type
     {
         get
         {
-            SignatureReader reader = new SignatureReader(_reader, Blob);
-            reader.ReadFieldHeader();
-            return reader.Position;
+            SigParser parser = new SigParser(Blob.GetSigPointer());
+            if (parser.GetCallingConvInfo() != MdSigCallingConvention.Field)
+                SigParser.ThrowBadImageFormatException();
+            return parser.GetSigPointer();
         }
     }
 }
 
 public readonly partial struct PropertySignature
 {
-    private MethodSignatureInfo Info => new MethodSignatureInfo(new SignatureReader(_reader, Blob));
-    public TypeSignature Type => Info.ReturnType;
-    public TypeSignatureCollection Parameters => Info.Parameters;
+    private MethodSignatureInfo Info
+    {
+        get
+        {
+            MethodSignatureInfo info = new MethodSignatureInfo(new SigParser(Blob.GetSigPointer()));
+            if ((info.CallingConvention & MdSigCallingConvention.CallConvMask) != MdSigCallingConvention.Property)
+                SigParser.ThrowBadImageFormatException();
+            return info;
+        }
+    }
+
+    public SigPointer Type => Info.ReturnType;
+    public SigPointerCollection Parameters => Info.Parameters;
 }
 
 public readonly partial struct TypeSpecification
 {
-    public TypeSignature Signature => new SignatureReader(_reader, Blob).Position;
+    public SigPointer Signature => Blob.GetSigPointer();
 }
 
 public readonly partial struct ByteCollection
 {
-    internal uint Offset => _offset;
+    // NativeFormat metadata is always backed by unmanaged memory that doesn't move, so a blob can be addressed
+    // directly, like CoreCLR's PCCOR_SIGNATURE.
+    internal unsafe SigPointer GetSigPointer()
+    {
+        ReadOnlySpan<byte> bytes = AsSpan();
+        return new SigPointer((byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(bytes)), (uint)bytes.Length);
+    }
 }

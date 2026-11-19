@@ -31,9 +31,9 @@ namespace System.Reflection.Runtime.MethodInfos
         Module Module { get; }
 
         /// <summary>
-        /// Return the method signature, resolved in the given type context.
+        /// Return the method signature, resolved in the context of <see cref="DeclaringType"/> and the given method type arguments.
         /// </summary>
-        Signature GetSignature(TypeContext typeContext);
+        Signature GetSignature(RuntimeTypeInfo[] methodTypeArguments);
         MetadataReader GetMetadataReader();
         CustomAttributeHandleCollection GetCustomAttributeHandles();
 

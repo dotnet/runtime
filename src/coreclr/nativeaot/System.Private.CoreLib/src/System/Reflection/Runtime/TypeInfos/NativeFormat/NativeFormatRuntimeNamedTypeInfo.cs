@@ -75,13 +75,13 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                             .Method.GetMethod(_reader).Signature.GetMethodSignature(_reader)
                         : ca.Constructor.ToMemberReferenceHandle(_reader).GetMemberReference(_reader)
                             .Signature.ParseMethodSignature(_reader);
-                    TypeSignatureCollection parameters = signature.Parameters;
+                    SigPointerCollection parameters = signature.Parameters;
                     if (parameters.Count != 1)
                         continue;
 
-                    TypeSignatureCollection.Enumerator enumerator = parameters.GetEnumerator();
+                    SigPointerCollection.Enumerator enumerator = parameters.GetEnumerator();
                     enumerator.MoveNext();
-                    if (enumerator.Current.Resolve(default).ToType() != typeof(string))
+                    if (enumerator.Current.Resolve(_reader, default).ToType() != typeof(string))
                         continue;
 
                     BlobReader blob = new BlobReader(ca.Blob.AsSpan());
