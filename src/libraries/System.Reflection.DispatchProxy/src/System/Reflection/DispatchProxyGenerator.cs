@@ -58,8 +58,8 @@ namespace System.Reflection
         private static MethodInfo UnboxPointerMethod =>
             field ??= typeof(DispatchProxyGenerator).GetMethod(nameof(UnboxPointer), BindingFlags.NonPublic | BindingFlags.Static)!;
 
-        private static unsafe object? BoxPointer(IntPtr pointer, Type type) =>
-            pointer == IntPtr.Zero ? null : Pointer.Box((void*)pointer, type);
+        private static unsafe object BoxPointer(IntPtr pointer, Type type) =>
+            Pointer.Box((void*)pointer, type);
 
         private static unsafe IntPtr UnboxPointer(object? value, Type type)
         {

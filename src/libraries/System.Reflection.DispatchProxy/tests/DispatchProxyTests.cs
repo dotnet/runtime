@@ -1044,9 +1044,14 @@ namespace DispatchProxyTests
             Assert.Equal(typeof(long*), Assert.IsType<Pointer>(received).PointerType);
             Assert.Equal((nint)(&longValue), (nint)Pointer.Unbox(received));
 
+            proxy.EchoGeneric<long>(null);
+            Assert.Equal(typeof(long*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal(0, (nint)Pointer.Unbox(received));
+
             received = "Failed";
             proxy.Echo(null);
-            Assert.Null(received);
+            Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal(0, (nint)Pointer.Unbox(received));
         }
 
         [Theory]
@@ -1070,6 +1075,12 @@ namespace DispatchProxyTests
 
             result = null;
             Assert.Equal(0, (nint)proxy.Echo(null));
+
+            result = Pointer.Box(null, typeof(int*));
+            Assert.Equal(0, (nint)proxy.Echo(p));
+
+            result = IntPtr.Zero;
+            Assert.Equal(0, (nint)proxy.Echo(p));
 
             result = Pointer.Box((uint*)p, typeof(uint*));
             Assert.Equal((nint)p, (nint)proxy.Echo(null));
@@ -1122,7 +1133,8 @@ namespace DispatchProxyTests
             Assert.Equal(0, (nint)p);
 
             proxy.Ref(ref p);
-            Assert.Null(received);
+            Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal(0, (nint)Pointer.Unbox(received));
 
             written = Pointer.Box((long*)values, typeof(long*));
             Assert.Throws<InvalidCastException>(() => { proxy.Ref(ref p); });
@@ -1188,17 +1200,29 @@ namespace DispatchProxyTests
 
             result = Pointer.Box(p, typeof(int*));
             Assert.Equal((nint)p, (nint)proxy.EchoVoid(null));
+            Assert.Equal(typeof(void*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal(0, (nint)Pointer.Unbox(received));
 
             result = Pointer.Box(&p, typeof(int**));
             Assert.Equal((nint)(&p), (nint)proxy.EchoPointerPointer(&p));
             Assert.Equal(typeof(int**), Assert.IsType<Pointer>(received).PointerType);
             Assert.Equal((nint)(&p), (nint)Pointer.Unbox(received));
 
+            proxy.EchoPointerPointer(null);
+            Assert.Equal(typeof(int**), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal(0, (nint)Pointer.Unbox(received));
+
             result = null;
             proxy.In(in p);
             Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
             Assert.Equal((nint)(&value), (nint)Pointer.Unbox(received));
             Assert.Equal((nint)(&value), (nint)p);
+
+            int* nullPointer = null;
+            proxy.In(in nullPointer);
+            Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal(0, (nint)Pointer.Unbox(received));
+            Assert.Equal(0, (nint)nullPointer);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
