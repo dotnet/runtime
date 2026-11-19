@@ -17539,16 +17539,13 @@ bool emitter::IsRedundantLdStr(
 
     if ((ins == INS_ldr) && (emitLastIns->idIns() == INS_str))
     {
-        // If the load doesn't define the entire register, eliminating the 'ldr' will
-        // leave the upper bits of reg1 unchanged instead of zeroing them.
+        // JIT uses sub-64-bit loads for zero extension of general-purpose registers
+        // (e.g. LOAD_ZERO_EXTEND_INT), so those can't be eliminated.
 
-        // Make sure operand size covers the entire register
+        // Make sure operand size is 8-bytes for GPRs
         //  str w0, [x1, #4]
         //  ldr w0, [x1, #4]  <-- can't eliminate because upper-bits of x0 won't get set.
-        //  str d0, [x1, #8]
-        //  ldr d0, [x1, #8]  <-- can't eliminate because upper-bits of v0 won't get cleared.
-        bool definesEntireReg = isVectorRegister(reg1) ? (size == EA_16BYTE) : (size == EA_8BYTE);
-        if (!definesEntireReg)
+        if (!isVectorRegister(reg1) && (size != EA_8BYTE))
         {
             return false;
         }
