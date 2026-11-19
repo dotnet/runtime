@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <MonoForceInterpreter>true</MonoForceInterpreter>
-    <RunAOTCompilation>false</RunAOTCompilation>
     <PublishTrimmed>false</PublishTrimmed>
     <EnableDefaultItems>false</EnableDefaultItems>
     <!-- setting WasmXHarnessMonoArgs doesn't work here, but see main.js -->
@@ -12,11 +10,8 @@
     <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
 
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Mono -->
-    <IgnoreForCI Condition="'$(RuntimeFlavor)' == 'Mono'">true</IgnoreForCI>
   </PropertyGroup>
-  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Mono -->
+  <ItemGroup>
     <ProjectReference Include="ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
   </ItemGroup>
 
