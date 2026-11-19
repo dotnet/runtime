@@ -622,7 +622,12 @@ namespace System.Formats.Tar
 
             _cTime = ParseAsTimestamp(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
 
-            // TODO: Read the bytes of the currently unsupported GNU fields, in case user wants to write this entry into another GNU archive, they need to be preserved. https://github.com/dotnet/runtime/issues/68230
+            // Preserve the raw bytes of the GNU fields that are not exposed publicly, so they can be written back into another GNU archive.
+            ReadOnlySpan<byte> unusedBytes = buffer.Slice(FieldLocations.GnuUnused, FieldLengths.AllGnuUnused);
+            if (unusedBytes.ContainsAnyExcept((byte)0))
+            {
+                _gnuUnusedBytes = unusedBytes.ToArray();
+            }
         }
 
         private static DateTimeOffset ParseAsTimestamp(ReadOnlySpan<byte> buffer)

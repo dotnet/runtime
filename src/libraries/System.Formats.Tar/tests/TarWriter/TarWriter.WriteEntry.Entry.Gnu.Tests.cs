@@ -108,5 +108,99 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(longName, entry.Name);
             Assert.Equal(longLinkName, entry.LinkName);
         }
+
+        // The GNU header fields 'offset', 'longnames', 'unused', 'sparse', 'isextended' and 'realsize'
+        // are not exposed publicly, but they must be preserved when an entry is written into another GNU archive.
+        private const int GnuUnusedFieldsOffset = 369;
+        private const int GnuUnusedFieldsLength = 126;
+
+        [Theory]
+        [InlineData(TarEntryType.RegularFile, false, false)]
+        [InlineData(TarEntryType.RegularFile, false, true)]
+        [InlineData(TarEntryType.RegularFile, true, false)]
+        [InlineData(TarEntryType.RegularFile, true, true)]
+        [InlineData(TarEntryType.MultiVolume, false, false)]
+        [InlineData(TarEntryType.MultiVolume, false, true)]
+        public async Task Write_PreservesUnusedGnuFields(TarEntryType entryType, bool convertWithConstructor, bool async)
+        {
+            byte[] content = "Hello, GNU!"u8.ToArray();
+            byte[] sourceArchive = BuildRawGnuArchiveWithUnusedFields(entryType, content);
+            byte[] expectedUnusedFields = sourceArchive.AsSpan(GnuUnusedFieldsOffset, GnuUnusedFieldsLength).ToArray();
+
+            using MemoryStream destination = new MemoryStream();
+            await using (TarReaderHolder readerHolder = CreateTarReader(new MemoryStream(sourceArchive), async, leaveOpen: false))
+            await using (TarWriterHolder writerHolder = CreateTarWriter(destination, async, TarEntryFormat.Gnu, leaveOpen: true))
+            {
+                TarReader reader = readerHolder;
+                TarWriter writer = writerHolder;
+
+                TarEntry entry = await GetNextEntry(reader, async: async);
+                Assert.IsType<GnuTarEntry>(entry);
+                Assert.Equal(entryType, entry.EntryType);
+
+                if (convertWithConstructor)
+                {
+                    entry = new GnuTarEntry(entry);
+                }
+
+                await WriteEntry(writer, entry, async);
+            }
+
+            byte[] destinationArchive = destination.ToArray();
+            Assert.Equal(expectedUnusedFields, destinationArchive.AsSpan(GnuUnusedFieldsOffset, GnuUnusedFieldsLength).ToArray());
+
+            // The checksum must account for the preserved bytes, so the archive must be readable.
+            destination.Position = 0;
+            await using TarReaderHolder destinationReaderHolder = CreateTarReader(destination, async, leaveOpen: false);
+            TarReader destinationReader = destinationReaderHolder;
+
+            TarEntry roundtripped = await GetNextEntry(destinationReader, async: async);
+            Assert.IsType<GnuTarEntry>(roundtripped);
+            Assert.Equal(entryType, roundtripped.EntryType);
+            Assert.Equal("file.txt", roundtripped.Name);
+            using (MemoryStream data = new MemoryStream())
+            {
+                roundtripped.DataStream.CopyTo(data);
+                Assert.Equal(content, data.ToArray());
+            }
+
+            Assert.Null(await GetNextEntry(destinationReader, async: async));
+        }
+
+        // Builds a GNU archive with one entry whose header has the fields that are not exposed publicly set,
+        // like GNU tar does for multi-volume and old GNU sparse entries.
+        private static byte[] BuildRawGnuArchiveWithUnusedFields(TarEntryType entryType, byte[] content)
+        {
+            byte[] header = new byte[512];
+            "file.txt"u8.CopyTo(header);
+            WriteRawOctalField(header, 100, 8, Convert.ToInt32("644", 8)); // mode
+            WriteRawOctalField(header, 108, 8, 0); // uid
+            WriteRawOctalField(header, 116, 8, 0); // gid
+            WriteRawOctalField(header, 124, 12, content.Length); // size
+            WriteRawOctalField(header, 136, 12, 1700000000); // mtime
+            header[156] = (byte)entryType;
+            "ustar "u8.CopyTo(header.AsSpan(257)); // GNU magic
+            " \0"u8.CopyTo(header.AsSpan(263)); // GNU version
+
+            WriteRawOctalField(header, 369, 12, 512); // offset
+            "abcd"u8.CopyTo(header.AsSpan(381)); // longnames: not used by GNU tar, set to verify every byte is preserved
+            header[385] = (byte)'x'; // unused: set to verify every byte is preserved
+            for (int i = 0; i < 4; i++)
+            {
+                WriteRawOctalField(header, 386 + (i * 24), 12, i * 1024); // sparse[i].offset
+                WriteRawOctalField(header, 398 + (i * 24), 12, 16); // sparse[i].numbytes
+            }
+            header[482] = 1; // isextended
+            WriteRawOctalField(header, 483, 12, 4096); // realsize
+
+            WriteHeaderChecksum(header);
+
+            using MemoryStream archive = new MemoryStream();
+            archive.Write(header);
+            archive.Write(content);
+            PadToTarBlockBoundary(archive);
+            archive.Write(new byte[1024]);
+            return archive.ToArray();
+        }
     }
 }

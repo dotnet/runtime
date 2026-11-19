@@ -1109,7 +1109,7 @@ namespace System.Formats.Tar.Tests
             sb.Append($"{totalLen}{content}");
         }
 
-        private static void WriteRawOctalField(byte[] buffer, int offset, int fieldLen, long value)
+        protected static void WriteRawOctalField(byte[] buffer, int offset, int fieldLen, long value)
         {
             string octal = Convert.ToString(value, 8);
             int maxDigits = fieldLen - 1;

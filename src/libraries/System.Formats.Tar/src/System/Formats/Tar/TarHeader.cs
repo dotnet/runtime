@@ -106,6 +106,11 @@ namespace System.Formats.Tar
         internal DateTimeOffset _aTime;
         internal DateTimeOffset _cTime;
 
+        // Raw bytes of the GNU fields that are not exposed publicly: offset, longnames, unused, sparse, isextended and realsize.
+        // They are preserved so that an entry read from a GNU archive writes them back unchanged into another GNU archive.
+        // Null when all of these bytes are zero.
+        internal byte[]? _gnuUnusedBytes;
+
         // Constructor called when creating an entry with default common fields.
         internal TarHeader(TarEntryFormat format, string name = "", int mode = 0, DateTimeOffset mTime = default, TarEntryType typeFlag = TarEntryType.RegularFile)
         {
