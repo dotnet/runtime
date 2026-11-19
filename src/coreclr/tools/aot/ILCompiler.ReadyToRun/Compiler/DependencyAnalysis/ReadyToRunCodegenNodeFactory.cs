@@ -157,7 +157,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // The IL implementation of the generic unboxing thunk does not support a MethodDesc
             // generic context. Wasm uses a generated assembly stub for this case instead.
-            if (targetMethod.RequiresInstMethodDescArg() && Target.Architecture != TargetArchitecture.Wasm32)
+            if (targetMethod.RequiresInstMethodDescArg() && !Target.IsWasm)
                 return false;
 
             // TODO See comment in UnboxingThunk.EmitIL
@@ -185,7 +185,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(NeedsUnboxingStub(targetMethod));
 
-            if (Target.Architecture == TargetArchitecture.Wasm32)
+            if (Target.IsWasm)
             {
                 return _wasmUnboxingStubTargets.GetOrAdd(targetMethod);
             }

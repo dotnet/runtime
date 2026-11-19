@@ -97,7 +97,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter instructionEncoder, bool relocsOnly)
         {
-            Debug.Assert(!instructionEncoder.Is64Bit);
+            bool is64Bit = instructionEncoder.Is64Bit;
+            WasmValueType pointerType = is64Bit ? WasmValueType.I64 : WasmValueType.I32;
 
             ReadOnlySpan<WasmValueType> parameters = _signature.FuncType.Params.Types;
             int portableEntryPointIndex = parameters.Length - 1;
@@ -107,9 +108,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // The target PEP is stored immediately before this stub's PEP.
             expressions.Add(Local.Get(portableEntryPointIndex));
-            expressions.Add(I32.Const(factory.Target.PointerSize));
-            expressions.Add(I32.Sub);
-            expressions.Add(I32.Load(0));
+            expressions.Add(PointerConst(is64Bit, factory.Target.PointerSize));
+            expressions.Add(is64Bit ? I64.Sub : I32.Sub);
+            expressions.Add(LoadPointer(is64Bit));
             expressions.Add(Local.Set(targetEntryPointLocalIndex));
 
             AppendTargetCall(
@@ -118,11 +119,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 targetEntryPointLocalIndex,
                 genericContext: _kind != UnboxingStubKind.Normal,
                 hasReturnBuffer: _hasReturnBuffer,
-                pointerSize: factory.Target.PointerSize);
+                pointerSize: factory.Target.PointerSize,
+                is64Bit: is64Bit);
 
             instructionEncoder.FunctionBody = new WasmFunctionBody(
                 _signature.FuncType,
-                new[] { WasmValueType.I32 },
+                new[] { pointerType },
                 expressions.ToArray());
         }
 
@@ -132,14 +134,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             int targetEntryPointLocalIndex,
             bool genericContext,
             bool hasReturnBuffer,
-            int pointerSize)
+            int pointerSize,
+            bool is64Bit)
         {
             expressions.Add(Local.Get(0));
 
             // Skip the MethodTable pointer at the start of the boxed object.
             expressions.Add(Local.Get(1));
-            expressions.Add(I32.Const(pointerSize));
-            expressions.Add(I32.Add);
+            expressions.Add(PointerConst(is64Bit, pointerSize));
+            expressions.Add(is64Bit ? I64.Add : I32.Add);
 
             int firstExplicitArgumentIndex = 2;
             if (hasReturnBuffer)
@@ -151,15 +154,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (genericContext && _kind == UnboxingStubKind.MethodTable)
             {
                 expressions.Add(Local.Get(1));
-                expressions.Add(I32.Load(0));
+                expressions.Add(LoadPointer(is64Bit));
             }
             else if (genericContext && _kind == UnboxingStubKind.MethodDesc)
             {
                 // The target MethodDesc is stored two pointer-sized fields before this stub's PEP.
                 expressions.Add(Local.Get(portableEntryPointIndex));
-                expressions.Add(I32.Const(2 * pointerSize));
-                expressions.Add(I32.Sub);
-                expressions.Add(I32.Load(0));
+                expressions.Add(PointerConst(is64Bit, 2 * pointerSize));
+                expressions.Add(is64Bit ? I64.Sub : I32.Sub);
+                expressions.Add(LoadPointer(is64Bit));
             }
 
             for (int argumentIndex = firstExplicitArgumentIndex; argumentIndex < portableEntryPointIndex; argumentIndex++)
@@ -169,9 +172,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             expressions.Add(Local.Get(targetEntryPointLocalIndex));
             expressions.Add(Local.Get(targetEntryPointLocalIndex));
-            expressions.Add(I32.Load(0));
+            expressions.Add(LoadPointer(is64Bit));
             expressions.Add(ControlFlow.CallIndirect(_targetType, 0));
         }
+
+        private static WasmExpr PointerConst(bool is64Bit, int value) => is64Bit ? I64.Const(value) : I32.Const(value);
+
+        private static WasmExpr LoadPointer(bool is64Bit) => is64Bit ? I64.Load(0) : I32.Load(0);
 
         protected override void EmitCode(NodeFactory factory, ref X64.X64Emitter instructionEncoder, bool relocsOnly) => throw new NotSupportedException();
         protected override void EmitCode(NodeFactory factory, ref X86.X86Emitter instructionEncoder, bool relocsOnly) => throw new NotSupportedException();
