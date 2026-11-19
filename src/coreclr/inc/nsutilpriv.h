@@ -11,6 +11,7 @@
 #define __NSUTILPRIV_H__
 
 template <class T> class CQuickArray;
+class CQuickBytes;
 class SString;
 
 struct ns

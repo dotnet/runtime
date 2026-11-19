@@ -532,7 +532,14 @@ namespace System.Collections.Generic
                 Debug.Assert(_entries is not null);
 
                 Array.Clear(_buckets, 0, _buckets.Length);
-                Array.Clear(_entries, 0, _count);
+                // Resetting the buckets and count hides old entries. Insertion initializes
+                // every field before an entry is reused.
+#if NET
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<Entry>())
+#endif
+                {
+                    Array.Clear(_entries, 0, _count);
+                }
                 _count = 0;
                 _version++;
             }
@@ -782,7 +789,13 @@ namespace System.Collections.Generic
                 UpdateBucketIndex(i, shiftAmount: -1);
             }
 
-            entries[--_count] = default;
+            _count--;
+#if NET
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<Entry>())
+#endif
+            {
+                entries[_count] = default;
+            }
             _version++;
         }
 

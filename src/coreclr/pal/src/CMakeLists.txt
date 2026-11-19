@@ -153,12 +153,8 @@ set(SOURCES
   init/pal.cpp
   init/sxs.cpp
   loader/module.cpp
-  misc/cgroup.cpp
   misc/dbgmsg.cpp
-  misc/environ.cpp
   misc/error.cpp
-  misc/errorstrings.cpp
-  misc/fmtmessage.cpp
   misc/perfjitdump.cpp
   misc/strutil.cpp
   misc/sysinfo.cpp

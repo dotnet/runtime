@@ -400,9 +400,9 @@ namespace System
 
             if (srcObject is Pointer srcPointer)
             {
-                if (dstEEType == typeof(void*).TypeHandle.ToMethodTable() || RuntimeImports.AreTypesAssignable(pSourceType: srcPointer.GetPointerType().TypeHandle.ToMethodTable(), pTargetType: dstEEType))
+                if (dstEEType == typeof(void*).TypeHandle.ToMethodTable() || RuntimeImports.AreTypesAssignable(pSourceType: srcPointer.PointerType.TypeHandle.ToMethodTable(), pTargetType: dstEEType))
                 {
-                    dstPtr = srcPointer.GetPointerValue();
+                    dstPtr = (IntPtr)srcPointer.Value;
                     return null;
                 }
             }

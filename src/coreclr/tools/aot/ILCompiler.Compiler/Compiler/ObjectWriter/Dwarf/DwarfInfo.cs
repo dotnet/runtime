@@ -201,6 +201,7 @@ namespace ILCompiler.ObjectWriter
         public uint[] ArgumentTypes { get; private set; }
         public bool IsStatic { get; private set; }
         public long InfoOffset { get; set; }
+        public long[] FuncletInfoOffsets { get; set; } = [];
 
         public DwarfMemberFunction(
             Utf8String name,
@@ -319,40 +320,55 @@ namespace ILCompiler.ObjectWriter
                     foreach (DwarfMemberFunction method in _methods)
                     {
                         method.InfoOffset = writer.Position;
-                        writer.WriteStartDIE(
-                            !method.IsStatic ? DwarfAbbrev.SubprogramSpec :
-                            method.ArgumentTypes.Length > 0 ? DwarfAbbrev.SubprogramStaticSpec : DwarfAbbrev.SubprogramStaticNoChildrenSpec);
-                        // DW_AT_name
-                        writer.WriteStringReference(method.Name);
-                        // DW_AT_linkage_name
-                        writer.WriteStringReference(method.LinkageName);
-                        // DW_AT_decl_file, DW_AT_decl_line
-                        writer.Write([1, 1]);
-                        // DW_AT_type
-                        writer.WriteInfoReference(method.Descriptor.ReturnType);
+                        DumpMethodDeclaration(writer, method, method.Name, method.LinkageName);
 
-                        if (!method.IsStatic)
+                        // Funclets are described by their own subprograms. Declaring them as members of the class
+                        // keeps `this` and implicit member access working in debuggers while stopped in a funclet.
+                        for (int i = 0; i < method.FuncletInfoOffsets.Length; i++)
                         {
-                            // DW_AT_object_pointer
-                            writer.WriteInfoAbsReference(writer.Position + sizeof(uint));
-
-                            writer.WriteStartDIE(DwarfAbbrev.FormalParameterThisSpec);
-                            // DW_AT_type
-                            writer.WriteInfoReference(method.Descriptor.TypeIndexOfThisPointer);
-                            writer.WriteEndDIE();
+                            method.FuncletInfoOffsets[i] = writer.Position;
+                            DumpMethodDeclaration(writer, method,
+                                new Utf8String($"{method.Name}$funclet{i + 1}"),
+                                new Utf8String($"{method.LinkageName}$funclet{i + 1}"));
                         }
-
-                        foreach (uint argumentType in method.ArgumentTypes)
-                        {
-                            writer.WriteStartDIE(DwarfAbbrev.FormalParameterSpec);
-                            // DW_AT_type
-                            writer.WriteInfoReference(argumentType);
-                            writer.WriteEndDIE();
-                        }
-
-                        writer.WriteEndDIE();
                     }
                 }
+            }
+
+            writer.WriteEndDIE();
+        }
+
+        private static void DumpMethodDeclaration(DwarfInfoWriter writer, DwarfMemberFunction method, Utf8String name, Utf8String linkageName)
+        {
+            writer.WriteStartDIE(
+                !method.IsStatic ? DwarfAbbrev.SubprogramSpec :
+                method.ArgumentTypes.Length > 0 ? DwarfAbbrev.SubprogramStaticSpec : DwarfAbbrev.SubprogramStaticNoChildrenSpec);
+            // DW_AT_name
+            writer.WriteStringReference(name);
+            // DW_AT_linkage_name
+            writer.WriteStringReference(linkageName);
+            // DW_AT_decl_file, DW_AT_decl_line
+            writer.Write([1, 1]);
+            // DW_AT_type
+            writer.WriteInfoReference(method.Descriptor.ReturnType);
+
+            if (!method.IsStatic)
+            {
+                // DW_AT_object_pointer
+                writer.WriteInfoAbsReference(writer.Position + sizeof(uint));
+
+                writer.WriteStartDIE(DwarfAbbrev.FormalParameterThisSpec);
+                // DW_AT_type
+                writer.WriteInfoReference(method.Descriptor.TypeIndexOfThisPointer);
+                writer.WriteEndDIE();
+            }
+
+            foreach (uint argumentType in method.ArgumentTypes)
+            {
+                writer.WriteStartDIE(DwarfAbbrev.FormalParameterSpec);
+                // DW_AT_type
+                writer.WriteInfoReference(argumentType);
+                writer.WriteEndDIE();
             }
 
             writer.WriteEndDIE();
@@ -367,8 +383,8 @@ namespace ILCompiler.ObjectWriter
         private readonly DwarfMemberFunction _memberFunction;
         private readonly (DebugVarInfoMetadata, uint)[] _debugVars;
         private readonly DebugEHClauseInfo[] _debugEHClauseInfos;
+        private readonly FrameInfo[] _frameInfos;
         private readonly bool _isStatic;
-        private readonly bool _hasChildren;
         private readonly int _thisVariableIndex;
 
         public DwarfSubprogramInfo(
@@ -377,7 +393,8 @@ namespace ILCompiler.ObjectWriter
             int methodSize,
             DwarfMemberFunction memberFunction,
             (DebugVarInfoMetadata, uint)[] debugVars,
-            DebugEHClauseInfo[] debugEHClauseInfos)
+            DebugEHClauseInfo[] debugEHClauseInfos,
+            FrameInfo[] frameInfos)
         {
             _sectionSymbolName = sectionSymbolName;
             _methodAddress = methodAddress;
@@ -386,7 +403,7 @@ namespace ILCompiler.ObjectWriter
             _isStatic = memberFunction.IsStatic;
             _debugVars = debugVars;
             _debugEHClauseInfos = debugEHClauseInfos;
-            _hasChildren = _debugVars.Length > 0 || _debugEHClauseInfos.Length > 0;
+            _frameInfos = frameInfos;
             _thisVariableIndex = -1;
 
             if (!_isStatic)
@@ -405,18 +422,42 @@ namespace ILCompiler.ObjectWriter
 
         public override void Dump(DwarfInfoWriter writer)
         {
+            List<EHRegion> regions = GetEHRegions();
+
+            if (_frameInfos.Length <= 1)
+            {
+                DumpSubprogram(writer, 0, (uint)_methodSize, regions, funcletIndex: 0);
+                return;
+            }
+
+            // Funclets have their own unwind info. Debuggers such as lldb pick the unwind info by the start
+            // of the enclosing function, and merge adjacent DW_AT_ranges entries, so each funclet is described
+            // by its own subprogram.
+            for (int i = 0; i < _frameInfos.Length; i++)
+            {
+                DumpSubprogram(writer, (uint)_frameInfos[i].StartOffset, (uint)_frameInfos[i].EndOffset, regions, funcletIndex: i);
+            }
+        }
+
+        private void DumpSubprogram(DwarfInfoWriter writer, uint start, uint end, List<EHRegion> allRegions, int funcletIndex)
+        {
+            List<EHRegion> regions = allRegions.FindAll(r => r.Start >= start && r.End <= end);
+            bool hasChildren = _debugVars.Length > 0 || regions.Count > 0;
+
             writer.WriteStartDIE(
                 _thisVariableIndex >= 0 ? DwarfAbbrev.Subprogram :
-                _hasChildren ? DwarfAbbrev.SubprogramStatic : DwarfAbbrev.SubprogramStaticNoChildren);
+                hasChildren ? DwarfAbbrev.SubprogramStatic : DwarfAbbrev.SubprogramStaticNoChildren);
 
             // DW_AT_specification
-            writer.WriteInfoAbsReference(_memberFunction.InfoOffset);
+            // Funclets get their own name, like outlined cold code in native compilers, so that
+            // breakpoints on the method name don't resolve to every funclet.
+            writer.WriteInfoAbsReference(funcletIndex == 0 ? _memberFunction.InfoOffset : _memberFunction.FuncletInfoOffsets[funcletIndex - 1]);
 
             // DW_AT_low_pc
-            writer.WriteCodeReference(_sectionSymbolName, _methodAddress);
+            writer.WriteCodeReference(_sectionSymbolName, _methodAddress + start);
 
             // DW_AT_high_pc
-            writer.WriteAddressSize((ulong)_methodSize);
+            writer.WriteAddressSize(end - start);
 
             // DW_AT_frame_base
             if (writer.TargetArchitecture == TargetArchitecture.Wasm32)
@@ -453,25 +494,87 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            // EH clauses
-            foreach (DebugEHClauseInfo clause in _debugEHClauseInfos)
-            {
-                writer.WriteStartDIE(DwarfAbbrev.TryBlock);
-                // DW_AT_low_pc
-                writer.WriteCodeReference(_sectionSymbolName, _methodAddress + clause.TryOffset);
-                // DW_AT_high_pc
-                writer.WriteAddressSize(clause.TryLength);
-                writer.WriteEndDIE();
-
-                writer.WriteStartDIE(DwarfAbbrev.CatchBlock);
-                // DW_AT_low_pc
-                writer.WriteCodeReference(_sectionSymbolName, _methodAddress + clause.HandlerOffset);
-                // DW_AT_high_pc
-                writer.WriteAddressSize(clause.HandlerLength);
-                writer.WriteEndDIE();
-            }
+            DumpEHRegions(writer, regions);
 
             writer.WriteEndDIE();
+        }
+
+        private List<EHRegion> GetEHRegions()
+        {
+            // Only try regions: handlers are funclets with their own subprograms, so a DW_TAG_catch_block
+            // could not be the sibling following its try block as DWARF requires.
+            var regions = new List<EHRegion>(_debugEHClauseInfos.Length);
+            foreach (DebugEHClauseInfo clause in _debugEHClauseInfos)
+            {
+                AddRegion(regions, new EHRegion(clause.TryOffset, clause.TryOffset + clause.TryLength));
+            }
+
+            // Outer regions come first when several regions start at the same offset
+            regions.Sort((x, y) => x.Start != y.Start ? x.Start.CompareTo(y.Start) : y.End.CompareTo(x.End));
+            return regions;
+
+            static void AddRegion(List<EHRegion> regions, EHRegion region)
+            {
+                if (region.End > region.Start && !regions.Contains(region))
+                    regions.Add(region);
+            }
+        }
+
+        private void DumpEHRegions(DwarfInfoWriter writer, List<EHRegion> regions)
+        {
+            // Sibling DIEs must not have overlapping address ranges, so try regions nested inside
+            // another one are emitted as children of the innermost one.
+            var openRegions = new Stack<EHRegion>();
+            for (int i = 0; i < regions.Count; i++)
+            {
+                EHRegion region = regions[i];
+
+                while (openRegions.Count > 0 && openRegions.Peek().End <= region.Start)
+                {
+                    openRegions.Pop();
+                    writer.WriteEndDIE();
+                }
+
+                if (openRegions.Count > 0 && region.End > openRegions.Peek().End)
+                {
+                    // Partially overlapping regions cannot be represented
+                    continue;
+                }
+
+                bool hasChildren = i + 1 < regions.Count && regions[i + 1].End <= region.End;
+                writer.WriteStartDIE(hasChildren ? DwarfAbbrev.TryBlockWithChildren : DwarfAbbrev.TryBlock);
+                // DW_AT_low_pc
+                writer.WriteCodeReference(_sectionSymbolName, _methodAddress + region.Start);
+                // DW_AT_high_pc
+                writer.WriteAddressSize(region.End - region.Start);
+
+                if (hasChildren)
+                    openRegions.Push(region);
+                else
+                    writer.WriteEndDIE();
+            }
+
+            while (openRegions.Count > 0)
+            {
+                openRegions.Pop();
+                writer.WriteEndDIE();
+            }
+        }
+
+        private readonly struct EHRegion : IEquatable<EHRegion>
+        {
+            public readonly uint Start;
+            public readonly uint End;
+
+            public EHRegion(uint start, uint end)
+            {
+                Start = start;
+                End = end;
+            }
+
+            public bool Equals(EHRegion other) => Start == other.Start && End == other.End;
+            public override bool Equals(object obj) => obj is EHRegion other && Equals(other);
+            public override int GetHashCode() => HashCode.Combine(Start, End);
         }
 
         private void DumpVar(DwarfInfoWriter writer, DebugVarInfoMetadata metadataInfo, uint typeIndex, bool isThis)

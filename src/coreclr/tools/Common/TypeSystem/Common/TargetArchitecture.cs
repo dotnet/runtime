@@ -16,5 +16,6 @@ namespace Internal.TypeSystem
         Wasm32,
         LoongArch64,
         RiscV64,
+        Wasm64,
     }
 }
