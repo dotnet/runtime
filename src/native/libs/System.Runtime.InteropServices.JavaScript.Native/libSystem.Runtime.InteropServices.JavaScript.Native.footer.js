@@ -51,7 +51,9 @@ function libDotnetInteropFactory() {
     mergeDotnetInterop.SystemInteropJS_BindJSImportST__sig = "pp";
     mergeDotnetInterop.SystemInteropJS_InvokeJSImportST__sig = "vip";
     mergeDotnetInterop.SystemInteropJS_ResolveOrRejectPromise__sig = "vp";
-    mergeDotnetInterop.SystemInteropJS_InvokeJSFunction__sig = "vip";
+    mergeDotnetInterop.SystemInteropJS_InvokeJSFunction__sig = "vpp";
+    mergeDotnetInterop.SystemInteropJS_ReleaseCSOwnedObject__sig = "vp";
+    mergeDotnetInterop.SystemInteropJS_CancelPromise__sig = "vp";
     addToLibrary(mergeDotnetInterop);
 }
 
