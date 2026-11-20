@@ -13,10 +13,17 @@ private:
     BasicBlock* m_block;
     Statement*  m_statement;
 
+    enum class ParameterUseKind
+    {
+        FieldRead,
+        Kill,
+    };
+
     struct ParameterUse
     {
-        GenTreeLclVarCommon* Node;
-        BasicBlock*          Block;
+        GenTree*         Node;
+        BasicBlock*      Block;
+        ParameterUseKind Kind;
     };
 
     struct ParameterUses
@@ -77,8 +84,8 @@ private:
     Compiler::fgWalkResult RewriteNode(GenTree** useEdge, Compiler::GenTreeStack& parents);
 
 private:
-    bool ShouldRecordParameterUse(GenTree* node);
-    void RecordParameterUse(GenTree* node);
+    bool ShouldRecordParameterUse(unsigned lclNum);
+    void RecordParameterUse(GenTree* node, unsigned lclNum, ParameterUseKind kind);
     void ForgetParameterUses(const LIR::ReadOnlyRange& range);
     void RewriteParameterUses();
     void RewriteParameterField(BasicBlock* block, GenTreeLclFld* field);

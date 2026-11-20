@@ -1105,8 +1105,8 @@ private:
 #endif
     void buildInternalRegisterUses();
 
-    void writeLocalReg(GenTreeLclVar* lclNode, unsigned varNum, regNumber reg);
-    void resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, RefPosition* currentRefPosition);
+    void writeLocalReg(GenTree* node, unsigned varNum, regNumber reg, unsigned index);
+    void resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPosition* currentRefPosition);
 
     void insertMove(BasicBlock* block, GenTree* insertionPoint, unsigned lclNum, regNumber inReg, regNumber outReg);
 
@@ -2014,8 +2014,9 @@ private:
     int  BuildBlockStore(GenTreeBlk* blkNode);
     int  BuildModDiv(GenTree* tree);
     int  BuildIntrinsic(GenTree* tree);
-    void BuildStoreLocDef(GenTreeLclVarCommon* storeLoc, LclVarDsc* varDsc, RefPosition* singleUseRef, int index);
+    void BuildStoreLocDef(GenTree* storeLoc, LclVarDsc* varDsc, RefPosition* singleUseRef, int index);
     int  BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc);
+    int  BuildStoreLclVars(GenTreeStoreLclVars* store);
     int  BuildStoreLoc(GenTreeLclVarCommon* tree);
     int  BuildIndir(GenTreeIndir* indirTree);
     int  BuildGCWriteBarrier(GenTree* tree);

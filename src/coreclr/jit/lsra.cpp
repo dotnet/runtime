@@ -125,6 +125,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
 {
+    if (tree->OperIs(GT_STORE_LCL_VARS))
+    {
+        tree->AsStoreLclVars()->GetDestination(regIdx).RegNum = static_cast<regNumberSmall>(reg);
+        return;
+    }
     if (regIdx == 0)
     {
         tree->SetRegNum(reg);
@@ -2216,7 +2221,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
                     // Checked or Debug builds, for which this method will be executed.
                     if (tree != nullptr)
                     {
-                        tree->AsLclVar()->SetLastUse(currentRefPosition->multiRegIdx);
+                        tree->SetLastUse(currentRefPosition->multiRegIdx);
                     }
                 }
                 else if (!currentRefPosition->lastUse)
@@ -2235,7 +2240,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
             else if (extendLifetimes() && tree != nullptr)
             {
                 // NOTE: see the comment above re: the extendLifetimes hack.
-                tree->AsLclVar()->ClearLastUse(currentRefPosition->multiRegIdx);
+                tree->ClearLastUse(currentRefPosition->multiRegIdx);
             }
 
             if (currentRefPosition->refType == RefTypeDef || currentRefPosition->refType == RefTypeDummyDef)
@@ -3730,7 +3735,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
         // of LSRA.
         if (extendLifetimes() && assignedInterval->isLocalVar && RefTypeIsUse(spillRefPosition->refType) &&
             spillRefPosition->treeNode != nullptr &&
-            spillRefPosition->treeNode->AsLclVar()->IsLastUse(spillRefPosition->multiRegIdx))
+            spillRefPosition->treeNode->IsLastUse(spillRefPosition->multiRegIdx))
         {
             dumpLsraAllocationEvent(LSRA_EVENT_SPILL_EXTENDED_LIFETIME, assignedInterval);
             assignedInterval->isActive = false;
@@ -6906,9 +6911,10 @@ void LinearScan::updatePreviousInterval(RegRecord* reg, Interval* interval ARM_A
 // writeLocalReg: Write the register assignment for a GT_LCL_VAR node.
 //
 // Arguments:
-//    lclNode  - The GT_LCL_VAR node
+//    node     - The local reference or multiple-definition owner
 //    varNum   - The variable number for the register
 //    reg      - The assigned register
+//    index    - The destination index for STORE_LCL_VARS
 //
 // Return Value:
 //    None
@@ -6916,8 +6922,16 @@ void LinearScan::updatePreviousInterval(RegRecord* reg, Interval* interval ARM_A
 // Note:
 //    For a multireg node, 'varNum' will be the field local for the given register.
 //
-void LinearScan::writeLocalReg(GenTreeLclVar* lclNode, unsigned varNum, regNumber reg)
+void LinearScan::writeLocalReg(GenTree* node, unsigned varNum, regNumber reg, unsigned index)
 {
+    if (node->OperIs(GT_STORE_LCL_VARS))
+    {
+        GenTreeStoreLclVars::Destination& def = node->AsStoreLclVars()->GetDestination(index);
+        assert(def.LclNum == varNum);
+        def.RegNum = static_cast<regNumberSmall>(reg);
+        return;
+    }
+    GenTreeLclVar* lclNode = node->AsLclVar();
     assert((lclNode->GetLclNum() == varNum) == !lclNode->IsMultiReg());
     if (lclNode->GetLclNum() == varNum)
     {
@@ -6972,7 +6986,7 @@ void LinearScan::writeLocalReg(GenTreeLclVar* lclNode, unsigned varNum, regNumbe
 // NICE: Consider tracking whether an Interval is always in the same location (register/stack)
 // in which case it will require no resolution.
 //
-void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, RefPosition* currentRefPosition)
+void LinearScan::resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPosition* currentRefPosition)
 {
     assert((block == nullptr) == (treeNode == nullptr));
     assert(enregisterLocalVars);
@@ -6983,7 +6997,13 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
     assert(interval->isLocalVar);
 
     interval->recentRefPosition = currentRefPosition;
-    LclVarDsc* varDsc           = interval->getLocalVar(m_compiler);
+    LclVarDsc*    varDsc        = interval->getLocalVar(m_compiler);
+    GenTreeFlags  unusedFlags   = GTF_EMPTY;
+    GenTreeFlags& nodeFlags =
+        treeNode == nullptr ? unusedFlags
+        : treeNode->OperIs(GT_STORE_LCL_VARS)
+            ? treeNode->AsStoreLclVars()->GetDestination(currentRefPosition->getMultiRegIdx()).Flags
+            : treeNode->gtFlags;
 
     // NOTE: we set the LastUse flag here unless we are extending lifetimes, in which case we write
     // this bit in checkLastUses. This is a bit of a hack, but is necessary because codegen requires
@@ -7008,7 +7028,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             // during resolution. In this case we're better off making it contained.
             assert(inVarToRegMaps[curBBNum][varDsc->lvVarIndex] == REG_STK);
             currentRefPosition->registerAssignment = RBM_NONE;
-            writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
+            writeLocalReg(treeNode, interval->varNum, REG_NA, currentRefPosition->getMultiRegIdx());
         }
     }
 
@@ -7028,7 +7048,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
 
         // Set this as contained if it is not a multi-reg (we could potentially mark it s contained
         // if all uses are from spill, but that adds complexity.
-        if ((currentRefPosition->refType == RefTypeUse) && !treeNode->IsMultiReg())
+        if ((currentRefPosition->refType == RefTypeUse) && !treeNode->IsMultiRegLclVar())
         {
             assert(treeNode != nullptr);
             treeNode->SetContained();
@@ -7089,8 +7109,8 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         // which case we did the reload already
         if (treeNode != nullptr)
         {
-            treeNode->gtFlags |= GTF_SPILLED;
-            if (treeNode->IsMultiReg())
+            nodeFlags |= GTF_SPILLED;
+            if (treeNode->IsMultiRegLclVar())
             {
                 treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
             }
@@ -7107,16 +7127,16 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
                     //
                     // Note that varDsc->GetRegNum() is already to REG_STK above.
                     interval->physReg = REG_NA;
-                    writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
-                    treeNode->gtFlags &= ~GTF_SPILLED;
+                    writeLocalReg(treeNode, interval->varNum, REG_NA, currentRefPosition->getMultiRegIdx());
+                    nodeFlags &= ~GTF_SPILLED;
                     treeNode->SetContained();
                     // We don't support RegOptional for multi-reg localvars.
-                    assert(!treeNode->IsMultiReg());
+                    assert(!treeNode->IsMultiRegLclVar());
                 }
                 else
                 {
-                    treeNode->gtFlags |= GTF_SPILL;
-                    if (treeNode->IsMultiReg())
+                    nodeFlags |= GTF_SPILL;
+                    if (treeNode->IsMultiRegLclVar())
                     {
                         treeNode->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                     }
@@ -7129,7 +7149,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         }
     }
     else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType) && (treeNode != nullptr) &&
-             (!treeNode->IsMultiReg() || treeNode->gtGetOp1()->IsMultiRegNode()))
+             (!treeNode->IsMultiRegLclVar() || treeNode->gtGetOp1()->IsMultiRegNode()))
     {
         // In the case of a pure def, don't bother spilling - just assign it to the
         // stack.  However, we need to remember that it was spilled.
@@ -7139,7 +7159,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         assert(interval->isSpilled);
         varDsc->SetRegNum(REG_STK);
         interval->physReg = REG_NA;
-        writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
+        writeLocalReg(treeNode, interval->varNum, REG_NA, currentRefPosition->getMultiRegIdx());
 
         if (currentRefPosition->singleDefSpill)
         {
@@ -7162,7 +7182,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             // But for copyReg, the homeReg remains unchanged.
 
             assert(treeNode != nullptr);
-            writeLocalReg(treeNode->AsLclVar(), interval->varNum, interval->physReg);
+            writeLocalReg(treeNode, interval->varNum, interval->physReg, currentRefPosition->getMultiRegIdx());
 
             if (currentRefPosition->copyReg)
             {
@@ -7205,8 +7225,8 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         {
             if (treeNode != nullptr)
             {
-                treeNode->gtFlags |= GTF_SPILL;
-                if (treeNode->IsMultiReg())
+                nodeFlags |= GTF_SPILL;
+                if (treeNode->IsMultiRegLclVar())
                 {
                     treeNode->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                 }
@@ -7218,7 +7238,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         if (writeThru && (treeNode != nullptr))
         {
             // This is a def of a write-thru EH var (only defs are marked 'writeThru').
-            treeNode->gtFlags |= GTF_SPILL;
+            nodeFlags |= GTF_SPILL;
             // We also mark writeThru defs that are not last-use with GTF_SPILLED to indicate that they are conceptually
             // spilled and immediately "reloaded", i.e. the register remains live.
             // Note that we can have a "last use" write that has no exposed uses in the standard
@@ -7226,8 +7246,8 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             // to retain these defs, and to ensure that they write.
             if (!currentRefPosition->lastUse)
             {
-                treeNode->gtFlags |= GTF_SPILLED;
-                if (treeNode->IsMultiReg())
+                nodeFlags |= GTF_SPILLED;
+                if (treeNode->IsMultiRegLclVar())
                 {
                     treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
                 }
@@ -7244,10 +7264,10 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             // `lvSpillAtSingleDef` to decide whether to generate spill or not. In future, see if there is some
             // better way to avoid resolution moves, perhaps by updating the varDsc->SetRegNum(REG_STK) in this
             // method?
-            treeNode->gtFlags |= GTF_SPILL;
-            treeNode->gtFlags |= GTF_SPILLED;
+            nodeFlags |= GTF_SPILL;
+            nodeFlags |= GTF_SPILLED;
 
-            if (treeNode->IsMultiReg())
+            if (treeNode->IsMultiRegLclVar())
             {
                 treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
             }
@@ -8125,10 +8145,10 @@ void LinearScan::resolveRegisters()
             {
                 writeRegisters(currentRefPosition, treeNode);
 
-                if (localVarsEnregistered && treeNode->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) &&
+                if (localVarsEnregistered && treeNode->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_STORE_LCL_VARS) &&
                     currentRefPosition->getInterval()->isLocalVar)
                 {
-                    resolveLocalRef(block, treeNode->AsLclVar(), currentRefPosition);
+                    resolveLocalRef(block, treeNode, currentRefPosition);
                 }
 
                 // Mark spill locations on temps

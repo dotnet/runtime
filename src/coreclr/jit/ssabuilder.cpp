@@ -424,8 +424,8 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
     bool     anyDefs       = false;
     GenTree* lastMemoryDef = nullptr;
     auto     visitDef      = [&](const auto& def) {
-        anyDefs                           = true;
-        GenTreeLclVarCommon* localDefNode = def.GetDefNode();
+        anyDefs               = true;
+        GenTree* localDefNode = def.GetDefNode();
         // This should have been marked as definition.
         assert((localDefNode->gtFlags & GTF_VAR_DEF) != 0);
         assert(def.IsEntire(m_compiler) || ((localDefNode->gtFlags & GTF_VAR_USEASG) != 0));
@@ -483,8 +483,12 @@ unsigned SsaBuilder::RenamePushDef(GenTree* defNode, BasicBlock* block, unsigned
     assert(m_compiler->lvaInSsa(lclNum) && !m_compiler->lvaGetDesc(lclNum)->lvPromoted);
 
     LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
-    unsigned const   ssaNum =
-        varDsc->lvPerSsaData.AllocSsaNum(m_allocator, block, !defNode->IsCall() ? defNode->AsLclVarCommon() : nullptr);
+    // A multiple definition has individual SSA names, but no single scalar
+    // expression defining each one. As with call-defined locals, optimizations
+    // that follow a scalar defining tree must stop here; VN uses the byte slice.
+    unsigned const ssaNum =
+        varDsc->lvPerSsaData.AllocSsaNum(m_allocator, block,
+                                         defNode->OperIsLocalStore() ? defNode->AsLclVarCommon() : nullptr);
 
     if (!isFullDef)
     {

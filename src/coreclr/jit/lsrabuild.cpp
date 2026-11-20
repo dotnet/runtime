@@ -3931,10 +3931,7 @@ int LinearScan::BuildCastUses(GenTreeCast* cast, SingleTypeRegSet candidates)
 // Notes:
 //    This takes an index to enable building multiple defs for a multi-reg local.
 //
-void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
-                                  LclVarDsc*           varDsc,
-                                  RefPosition*         singleUseRef,
-                                  int                  index)
+void LinearScan::BuildStoreLocDef(GenTree* storeLoc, LclVarDsc* varDsc, RefPosition* singleUseRef, int index)
 {
     assert(varDsc->lvTracked);
     unsigned  varIndex       = varDsc->lvVarIndex;
@@ -3996,13 +3993,48 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
 }
 
 //------------------------------------------------------------------------
-// BuildMultiRegStoreLoc: Set register requirements for a store of a lclVar
+// BuildStoreLclVars: Build interleaved uses and scalar definitions.
 //
 // Arguments:
-//    storeLoc - the multireg local store (GT_STORE_LCL_VAR)
+//    store - The lowered multiple-definition store
 //
 // Returns:
 //    The number of source registers read.
+//
+int LinearScan::BuildStoreLclVars(GenTreeStoreLclVars* store)
+{
+    GenTree* source = store->Data();
+    assert(store->gtCount == (source->IsMultiRegNode() ? source->GetMultiRegCount(m_compiler) : 1));
+    for (unsigned i = 0; i < store->gtCount; i++)
+    {
+        GenTreeStoreLclVars::Destination& def        = store->GetDestination(i);
+        LclVarDsc*                        dsc        = m_compiler->lvaGetDesc(def.LclNum);
+        SingleTypeRegSet                  candidates = RBM_NONE;
+#ifdef TARGET_X86
+        if (varTypeIsByte(dsc))
+        {
+            candidates = allByteRegs();
+        }
+#endif
+        RefPosition* use = BuildUse(source, candidates, i);
+        if (isCandidateVar(dsc))
+        {
+            BuildStoreLocDef(store, dsc, use, i);
+        }
+        else
+        {
+            def.RegNum = REG_NA;
+        }
+        if (i + 1 < store->gtCount)
+        {
+            currentLoc += 2;
+        }
+    }
+    return store->gtCount;
+}
+
+//------------------------------------------------------------------------
+// BuildMultiRegStoreLoc: Build register requirements for a promoted local store.
 //
 int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
 {
