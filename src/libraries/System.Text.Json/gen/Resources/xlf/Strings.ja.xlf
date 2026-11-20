@@ -12,6 +12,16 @@
         <target state="translated">派生した 'JsonSerializerContext' 型と含まれているすべての型は部分的である必要があります。</target>
         <note />
       </trans-unit>
+      <trans-unit id="ContextHasNoSerializableTypesMessageFormat">
+        <source>JsonSerializerContext type '{0}' has no JsonSerializableAttribute annotations. Add at least one type to generate serialization metadata.</source>
+        <target state="new">JsonSerializerContext type '{0}' has no JsonSerializableAttribute annotations. Add at least one type to generate serialization metadata.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ContextHasNoSerializableTypesTitle">
+        <source>JsonSerializerContext has no serializable types.</source>
+        <target state="new">JsonSerializerContext has no serializable types.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DataExtensionPropertyInvalidFormat">
         <source>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</source>
         <target state="translated">データ拡張プロパティ '{0}.{1}' が無効です。これには、'IDictionary&lt;string, JsonElement&gt;'、'IDictionary&lt;string, object&gt;'、または 'JsonObject' を実装する必要があります。</target>

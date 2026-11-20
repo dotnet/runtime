@@ -17,6 +17,78 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotX86Process))] // https://github.com/dotnet/runtime/issues/71962
     public class JsonSourceGeneratorDiagnosticsTests
     {
+        [Fact]
+        public void ContextWithoutSerializableTypesProducesDiagnostic()
+        {
+            const string source = """
+                using System.Text.Json.Serialization;
+
+                public partial class EmptyContext : JsonSerializerContext { }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1245");
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            Assert.Contains("EmptyContext", diagnostic.GetMessage());
+        }
+
+        [Fact]
+        public void ContextWithSerializableTypeOnAnotherPartialDeclarationDoesNotProduceDiagnostic()
+        {
+            const string source = """
+                using System.Text.Json.Serialization;
+
+                public partial class MyContext : JsonSerializerContext { }
+
+                [JsonSerializable(typeof(int))]
+                public partial class MyContext { }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Assert.DoesNotContain(result.Diagnostics, d => d.Id == "SYSLIB1245");
+        }
+
+        [Fact]
+        public void ContextWithExplicitGetTypeInfoOverrideDoesNotProduceDiagnostic()
+        {
+            const string source = """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization.Metadata;
+
+                public partial class MyContext : JsonSerializerContext
+                {
+                    public override JsonTypeInfo? GetTypeInfo(Type type) => null;
+                    protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Assert.DoesNotContain(result.Diagnostics, d => d.Id == "SYSLIB1245");
+        }
+
+        [Fact]
+        public void AbstractContextWithoutSerializableTypesDoesNotProduceDiagnostic()
+        {
+            const string source = """
+                using System.Text.Json.Serialization;
+
+                public abstract partial class MyContext : JsonSerializerContext { }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Assert.DoesNotContain(result.Diagnostics, d => d.Id == "SYSLIB1245");
+        }
+
         /// <summary>
         /// https://github.com/dotnet/runtime/issues/61379
         /// </summary>

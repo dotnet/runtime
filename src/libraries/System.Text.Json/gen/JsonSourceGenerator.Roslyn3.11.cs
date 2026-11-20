@@ -52,7 +52,8 @@ namespace System.Text.Json.SourceGeneration
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
             try
             {
-                if (executionContext.SyntaxContextReceiver is not SyntaxContextReceiver receiver || receiver.ContextClassDeclarations == null)
+                if (executionContext.SyntaxContextReceiver is not SyntaxContextReceiver receiver ||
+                    (receiver.ContextClassDeclarations is null && receiver.ContextClassesWithoutTypes is null))
                 {
                     // nothing to do yet
                     return;
@@ -62,16 +63,31 @@ namespace System.Text.Json.SourceGeneration
                 KnownTypeSymbols knownSymbols = new(executionContext.Compilation);
                 Parser parser = new(knownSymbols);
 
-                List<ContextGenerationSpec>? contextGenerationSpecs = null;
-                foreach ((ClassDeclarationSyntax? contextClassDeclaration, SemanticModel semanticModel) in receiver.ContextClassDeclarations)
+                if (receiver.ContextClassesWithoutTypes is not null)
                 {
-                    ContextGenerationSpec? contextGenerationSpec = parser.ParseContextGenerationSpec(contextClassDeclaration, semanticModel, executionContext.CancellationToken);
-                    if (contextGenerationSpec is null)
+                    foreach ((ClassDeclarationSyntax declaration, SemanticModel model) in receiver.ContextClassesWithoutTypes)
                     {
-                        continue;
+                        Diagnostic? diagnostic = GetContextWithoutTypesDiagnostic(declaration, model, knownSymbols, executionContext.CancellationToken);
+                        if (diagnostic is not null)
+                        {
+                            executionContext.ReportDiagnostic(diagnostic);
+                        }
                     }
+                }
 
-                    (contextGenerationSpecs ??= new()).Add(contextGenerationSpec);
+                List<ContextGenerationSpec>? contextGenerationSpecs = null;
+                if (receiver.ContextClassDeclarations is not null)
+                {
+                    foreach ((ClassDeclarationSyntax contextClassDeclaration, SemanticModel semanticModel) in receiver.ContextClassDeclarations)
+                    {
+                        ContextGenerationSpec? contextGenerationSpec = parser.ParseContextGenerationSpec(contextClassDeclaration, semanticModel, executionContext.CancellationToken);
+                        if (contextGenerationSpec is null)
+                        {
+                            continue;
+                        }
+
+                        (contextGenerationSpecs ??= new()).Add(contextGenerationSpec);
+                    }
                 }
 
                 // Stage 2. Report any diagnostics gathered by the parser.
@@ -109,9 +125,15 @@ namespace System.Text.Json.SourceGeneration
             }
 
             public List<(ClassDeclarationSyntax, SemanticModel)>? ContextClassDeclarations { get; private set; }
+            public List<(ClassDeclarationSyntax, SemanticModel)>? ContextClassesWithoutTypes { get; private set; }
 
             public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
             {
+                if (IsContextWithoutTypesCandidate(context.Node))
+                {
+                    (ContextClassesWithoutTypes ??= new()).Add(((ClassDeclarationSyntax)context.Node, context.SemanticModel));
+                }
+
                 if (IsSyntaxTargetForGeneration(context.Node))
                 {
                     ClassDeclarationSyntax? classSyntax = GetSemanticTargetForGeneration(context, _cancellationToken);

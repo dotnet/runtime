@@ -12,6 +12,16 @@
         <target state="translated">Odvozené typy JsonSerializerContext a všechny obsahující typy musí být částečné.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ContextHasNoSerializableTypesMessageFormat">
+        <source>JsonSerializerContext type '{0}' has no JsonSerializableAttribute annotations. Add at least one type to generate serialization metadata.</source>
+        <target state="new">JsonSerializerContext type '{0}' has no JsonSerializableAttribute annotations. Add at least one type to generate serialization metadata.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ContextHasNoSerializableTypesTitle">
+        <source>JsonSerializerContext has no serializable types.</source>
+        <target state="new">JsonSerializerContext has no serializable types.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DataExtensionPropertyInvalidFormat">
         <source>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</source>
         <target state="translated">Vlastnost rozšíření dat {0}.{1} není platná. Musí implementovat IDictionary&lt;string, JsonElement&gt; nebo IDictionary&lt;string, object&gt;, nebo být JsonObject.</target>

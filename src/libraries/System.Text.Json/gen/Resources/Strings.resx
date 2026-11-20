@@ -135,6 +135,12 @@
   <data name="ContextClassesMustBePartialTitle" xml:space="preserve">
     <value>Derived 'JsonSerializerContext' types and all containing types must be partial.</value>
   </data>
+  <data name="ContextHasNoSerializableTypesMessageFormat" xml:space="preserve">
+    <value>JsonSerializerContext type '{0}' has no JsonSerializableAttribute annotations. Add at least one type to generate serialization metadata.</value>
+  </data>
+  <data name="ContextHasNoSerializableTypesTitle" xml:space="preserve">
+    <value>JsonSerializerContext has no serializable types.</value>
+  </data>
   <data name="MultipleJsonConstructorAttributeFormat" xml:space="preserve">
     <value>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</value>
   </data>

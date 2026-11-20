@@ -187,6 +187,14 @@ namespace System.Text.Json.SourceGeneration
                 category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor ContextHasNoSerializableTypes { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1245",
+                title: new LocalizableResourceString(nameof(SR.ContextHasNoSerializableTypesTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.ContextHasNoSerializableTypesMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Error,
+                isEnabledByDefault: true);
         }
     }
 }
