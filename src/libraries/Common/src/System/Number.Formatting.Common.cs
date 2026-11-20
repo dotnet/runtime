@@ -147,20 +147,29 @@ namespace System
                     // digits.  Further, for compat, we need to stop when we hit a null char.
                     int n = 0;
                     int i = 1;
+                    bool precisionTooLarge = false;
                     while ((uint)i < (uint)format.Length && char.IsAsciiDigit(format[i]))
                     {
-                        // Check if we are about to overflow past our limit of 9 digits
                         if (n >= 100_000_000)
                         {
-                            ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                            precisionTooLarge = true;
                         }
-                        n = (n * 10) + format[i++] - '0';
+                        else
+                        {
+                            n = (n * 10) + format[i] - '0';
+                        }
+                        i++;
                     }
 
                     // If we're at the end of the digits rather than having stopped because we hit something
-                    // other than a digit or overflowed, return the standard format info.
+                    // other than a digit, this is a standard format.
                     if ((uint)i >= (uint)format.Length || format[i] == '\0')
                     {
+                        if (precisionTooLarge)
+                        {
+                            ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                        }
+
                         digits = n;
                         return c;
                     }
