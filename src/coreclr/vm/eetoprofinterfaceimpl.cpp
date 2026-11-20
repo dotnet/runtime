@@ -1066,7 +1066,7 @@ UINT_PTR EEToProfInterfaceImpl::EEFunctionIDMapper(FunctionID funcId, BOOL * pbH
         // ClientID Hash table may throw OUTOFMEMORY exception, which is not expected by the caller.
         EX_TRY
         {
-            SimpleWriteLockHolder writeLockHolder(m_pFunctionIDHashTableRWLock);
+            SimpleWriteLockHolder writeLockHolder = SimpleRWLock::TakeWriteLock(m_pFunctionIDHashTableRWLock);
             m_pFunctionIDHashTable->AddOrReplace(functionIDAndClientID);
         }
         EX_CATCH

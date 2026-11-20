@@ -4164,7 +4164,7 @@ void DebuggerController::EnableMethodEnter()
     CONTRACTL_END;
 
     ControllerLockHolder chController;
-    Debugger::DebuggerDataLockHolder chInfo(g_pDebugger);
+    Debugger::DebuggerDataLockHolder chInfo = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
     // Both JMC + Traditional steppers may use MethodEnter.
     // For JMC, it's a core part of functionality. For Traditional steppers, we use it as a backstop
@@ -4196,7 +4196,7 @@ void DebuggerController::DisableMethodEnter()
     CONTRACTL_END;
 
     ControllerLockHolder chController;
-    Debugger::DebuggerDataLockHolder chInfo(g_pDebugger);
+    Debugger::DebuggerDataLockHolder chInfo = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
     if (m_fEnableMethodEnter)
     {
@@ -9505,7 +9505,7 @@ TP_RESULT DebuggerEnCBreakpoint::TriggerPatch(DebuggerControllerPatch *patch,
     EditAndContinueModule *pModule = (EditAndContinueModule*)module;
 
     // Release the controller lock for the rest of this method
-    CrstBase::UnsafeCrstInverseHolder inverseLock(&g_criticalSection);
+    CrstBase::UnsafeCrstInverseHolder inverseLock = CrstBase::ReleaseForScope(&g_criticalSection);
 
     // resumeIL is the IL offset in the new version of the method the debugger wants
     // to resume to.  We'll pass the address of this variable over to the right-side
@@ -9624,7 +9624,7 @@ TP_RESULT DebuggerEnCBreakpoint::HandleRemapComplete(DebuggerControllerPatch *pa
     LOG((LF_ENC, LL_ALWAYS, "DEnCBP::HRC: unlocking controller\n"));
 
     // Unlock the controller lock and dispatch the remap complete event
-    CrstBase::UnsafeCrstInverseHolder inverseLock(&g_criticalSection);
+    CrstBase::UnsafeCrstInverseHolder inverseLock = CrstBase::ReleaseForScope(&g_criticalSection);
 
     LOG((LF_ENC, LL_ALWAYS, "DEnCBP::HRC: sending RemapCompleteEvent\n"));
 

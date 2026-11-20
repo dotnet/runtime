@@ -622,6 +622,7 @@ extern "C" {
     void RuntimeHelper_AssemblyName_InitializeAssemblySpec (void *, void *, void *) __asm__("AssemblyName_InitializeAssemblySpec");
     void RuntimeHelper_AssemblyNative_ApplyUpdate (void *, void *, int32_t, void *, int32_t, void *, int32_t, void *) __asm__("AssemblyNative_ApplyUpdate");
     uint32_t RuntimeHelper_AssemblyNative_GetAssemblyCount () __asm__("AssemblyNative_GetAssemblyCount");
+    void RuntimeHelper_AssemblyNative_GetAssemblyFromHandle (void *, void *, void *) __asm__("AssemblyNative_GetAssemblyFromHandle");
     int32_t RuntimeHelper_AssemblyNative_GetCodeBase (void *, void *, void *) __asm__("AssemblyNative_GetCodeBase");
     void RuntimeHelper_AssemblyNative_GetEntryAssembly (void *, void *) __asm__("AssemblyNative_GetEntryAssembly");
     void RuntimeHelper_AssemblyNative_GetEntryPoint (void *, void *, void *) __asm__("AssemblyNative_GetEntryPoint");
@@ -665,8 +666,6 @@ extern "C" {
     int32_t RuntimeHelper_CustomAttribute_ParseAttributeUsageAttribute (void *, int32_t, void *, void *, void *) __asm__("CustomAttribute_ParseAttributeUsageAttribute");
     void RuntimeHelper_DebugDebugger_Break (void *) __asm__("DebugDebugger_Break");
     void RuntimeHelper_DebugDebugger_CustomNotification (void *, void *) __asm__("DebugDebugger_CustomNotification");
-    void RuntimeHelper_DebugDebugger_GetFuncEvalArgumentType (void *, uint32_t, void *, void *) __asm__("DebugDebugger_GetFuncEvalArgumentType");
-    void RuntimeHelper_DebugDebugger_GetFuncEvalMethod (void *, void *, void *, void *) __asm__("DebugDebugger_GetFuncEvalMethod");
     int32_t RuntimeHelper_DebugDebugger_IsLoggingHelper () __asm__("DebugDebugger_IsLoggingHelper");
     int32_t RuntimeHelper_DebugDebugger_IsManagedDebuggerAttached () __asm__("DebugDebugger_IsManagedDebuggerAttached");
     int32_t RuntimeHelper_DebugDebugger_Launch () __asm__("DebugDebugger_Launch");
@@ -1131,6 +1130,7 @@ static const Entry s_RuntimeHelpers[] = {
     { "AssemblyName_InitializeAssemblySpec", (void*)&RuntimeHelper_AssemblyName_InitializeAssemblySpec },
     { "AssemblyNative_ApplyUpdate", (void*)&RuntimeHelper_AssemblyNative_ApplyUpdate },
     { "AssemblyNative_GetAssemblyCount", (void*)&RuntimeHelper_AssemblyNative_GetAssemblyCount },
+    { "AssemblyNative_GetAssemblyFromHandle", (void*)&RuntimeHelper_AssemblyNative_GetAssemblyFromHandle },
     { "AssemblyNative_GetCodeBase", (void*)&RuntimeHelper_AssemblyNative_GetCodeBase },
     { "AssemblyNative_GetEntryAssembly", (void*)&RuntimeHelper_AssemblyNative_GetEntryAssembly },
     { "AssemblyNative_GetEntryPoint", (void*)&RuntimeHelper_AssemblyNative_GetEntryPoint },
@@ -1174,8 +1174,6 @@ static const Entry s_RuntimeHelpers[] = {
     { "CustomAttribute_ParseAttributeUsageAttribute", (void*)&RuntimeHelper_CustomAttribute_ParseAttributeUsageAttribute },
     { "DebugDebugger_Break", (void*)&RuntimeHelper_DebugDebugger_Break },
     { "DebugDebugger_CustomNotification", (void*)&RuntimeHelper_DebugDebugger_CustomNotification },
-    { "DebugDebugger_GetFuncEvalArgumentType", (void*)&RuntimeHelper_DebugDebugger_GetFuncEvalArgumentType },
-    { "DebugDebugger_GetFuncEvalMethod", (void*)&RuntimeHelper_DebugDebugger_GetFuncEvalMethod },
     { "DebugDebugger_IsLoggingHelper", (void*)&RuntimeHelper_DebugDebugger_IsLoggingHelper },
     { "DebugDebugger_IsManagedDebuggerAttached", (void*)&RuntimeHelper_DebugDebugger_IsManagedDebuggerAttached },
     { "DebugDebugger_Launch", (void*)&RuntimeHelper_DebugDebugger_Launch },
