@@ -1337,21 +1337,11 @@ ep_rt_file_open_write (const ep_char8_t *path)
     if (!path)
         return NULL;
 
-#ifdef HOST_WINDOWS
-    ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path);
-    if (!path_utf16)
+    intptr_t file_handle = minipal_create_owner_only_file_for_overwrite (path);
+    if (file_handle == -1)
         return NULL;
 
-    HANDLE res = ::CreateFileW (reinterpret_cast<LPCWSTR>(path_utf16), GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    ep_rt_utf16_string_free (path_utf16);
-    return (res != INVALID_HANDLE_VALUE) ? static_cast<ep_rt_file_handle_t>(res) : NULL;
-#else // !HOST_WINDOWS
-    int fd = minipal_create_owner_only_file_for_overwrite (path);
-    if (fd == -1)
-        return NULL;
-
-    return (ep_rt_file_handle_t)(ptrdiff_t)fd;
-#endif // HOST_WINDOWS
+    return reinterpret_cast<ep_rt_file_handle_t>(file_handle);
 }
 
 static
