@@ -24,12 +24,99 @@
 #if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
 static bool s_deferredR2RPending = false;
 static bool s_deferredR2RConfigured = false;
+static Module* s_deferredR2ROwnerModule = nullptr;
+static uint32_t s_deferredR2RReady = 0;
+static uint32_t s_deferredR2RAttempts = 0;
+static uint32_t s_deferredR2RPublished = 0;
+static uint32_t s_deferredR2RInterpreterOnly = 0;
+static uint32_t s_deferredR2RInterpreterSuspensions = 0;
+
+struct DeferredR2RAlias
+{
+    MethodDesc* Alias;
+    MethodDesc* Target;
+};
+
+// These dispatch records cache another method's bytecode and must follow its publication.
+static SArray<DeferredR2RAlias> s_deferredR2RAliases;
 
 void ReadyToRunInfo::SetDeferredR2R(bool pending)
 {
     LIMITED_METHOD_CONTRACT;
     s_deferredR2RPending = pending;
     s_deferredR2RConfigured |= pending;
+}
+
+void ReadyToRunInfo::CompleteDeferredR2RAttachment()
+{
+    STANDARD_VM_CONTRACT;
+    if (s_deferredR2ROwnerModule == nullptr || !s_deferredR2ROwnerModule->IsReadyToRun())
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    VolatileStore(&s_deferredR2RReady, 1u);
+}
+
+bool ReadyToRunInfo::IsDeferredR2RConfigured()
+{
+    LIMITED_METHOD_CONTRACT;
+    return s_deferredR2RConfigured;
+}
+
+void ReadyToRunInfo::RegisterDeferredR2RAlias(MethodDesc* alias, MethodDesc* target)
+{
+    STANDARD_VM_CONTRACT;
+    if (s_deferredR2RConfigured && alias != target &&
+        !alias->IsCollectible() && !target->IsCollectible() &&
+        !alias->IsDynamicMethod() && !target->IsDynamicMethod())
+        s_deferredR2RAliases.Append({alias, target});
+}
+
+void ReadyToRunInfo::RecordDeferredR2RActivation(MethodDesc* method, bool published)
+{
+    STANDARD_VM_CONTRACT;
+    if (!s_deferredR2RConfigured)
+        return;
+
+    s_deferredR2RAttempts++;
+    if (published)
+        s_deferredR2RPublished++;
+    else
+        s_deferredR2RInterpreterOnly++;
+
+    for (COUNT_T i = 0; i < s_deferredR2RAliases.GetCount();)
+    {
+        DeferredR2RAlias alias = s_deferredR2RAliases[i];
+        if (alias.Target != method)
+        {
+            i++;
+            continue;
+        }
+        if (published)
+        {
+            PCODE entryPoint = alias.Alias->GetPortableEntryPoint();
+            PortableEntryPoint::SetActualCode(entryPoint, PortableEntryPoint::GetActualCode(method->GetPortableEntryPoint()));
+            alias.Alias->PoisonInterpreterCode();
+            PortableEntryPoint::ClearInterpreterData(entryPoint);
+        }
+        COUNT_T last = s_deferredR2RAliases.GetCount() - 1;
+        s_deferredR2RAliases[i] = s_deferredR2RAliases[last];
+        s_deferredR2RAliases.SetCount(last);
+    }
+}
+
+void ReadyToRunInfo::RecordDeferredR2RInterpreterSuspension()
+{
+    LIMITED_METHOD_CONTRACT;
+    if (s_deferredR2RConfigured && VolatileLoad(&s_deferredR2RReady) == 0)
+        s_deferredR2RInterpreterSuspensions++;
+}
+
+void ReadyToRunInfo::GetDeferredR2RStats(uint32_t* result)
+{
+    LIMITED_METHOD_CONTRACT;
+    result[0] = s_deferredR2RAttempts;
+    result[1] = s_deferredR2RPublished;
+    result[2] = s_deferredR2RInterpreterOnly;
+    result[3] = s_deferredR2RInterpreterSuspensions;
 }
 #endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
 
@@ -599,6 +686,16 @@ bool ReadyToRunInfo::ShareDeferredComposite(Module* module1, Module* module2)
     LPCUTF8 owner2 = GetOwnerCompositeExecutableName(layout2, layout2->GetReadyToRunHeader());
     return owner1 != nullptr && owner2 != nullptr && strcmp(owner1, owner2) == 0;
 }
+
+uint32_t* ReadyToRunInfo::GetDeferredR2RActivationFlag(Module* module)
+{
+    STANDARD_VM_CONTRACT;
+    if (s_deferredR2RConfigured && VolatileLoad(&s_deferredR2RReady) == 0 &&
+        s_deferredR2ROwnerModule != nullptr && !module->IsCollectible() &&
+        ShareDeferredComposite(module, s_deferredR2ROwnerModule))
+        return &s_deferredR2RReady;
+    return nullptr;
+}
 #endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
 
 static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER *pHeader)
@@ -672,6 +769,10 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     if (isComponentAssembly && s_deferredR2RPending)
     {
         if ((pLayout->GetReadyToRunHeader()->CoreHeader.Flags & READYTORUN_FLAG_STRIPPED_IL_BODIES) != 0)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        if (s_deferredR2ROwnerModule == nullptr)
+            s_deferredR2ROwnerModule = pModule;
+        if (!ShareDeferredComposite(pModule, s_deferredR2ROwnerModule))
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         return nullptr;
     }

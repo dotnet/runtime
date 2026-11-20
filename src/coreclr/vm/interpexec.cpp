@@ -1539,6 +1539,9 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     else if (pOriginalMethod != targetMethod)
     {
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+        ReadyToRunInfo::RegisterDeferredR2RAlias(pOriginalMethod, targetIp->Method->methodHnd);
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
         pOriginalMethod->SetInterpreterCode(targetIp);
     }
 #endif
@@ -4955,6 +4958,9 @@ do                                                                      \
                     continuation->SetState(pAsyncSuspendData->suspensionPointIndex);
                     _ASSERTE(pAsyncSuspendData->methodStartIP != 0);
                     continuation->SetResumeInfo(&pAsyncSuspendData->resumeInfo);
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+                    ReadyToRunInfo::RecordDeferredR2RInterpreterSuspension();
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
                     pInterpreterFrame->SetContinuation(continuation);
                     INTOP_EXIT_FRAME;
                 }

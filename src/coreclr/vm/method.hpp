@@ -2388,9 +2388,6 @@ public:
     // publish it into this method's portable entrypoint WITHOUT compiling interpreter byte code.
     // Returns true if native code was found and published, false otherwise.
     bool TryPublishR2RCodeForUnmanagedCallersOnly();
-#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
-    bool TryActivateDeferredR2RCode();
-#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #ifdef FEATURE_READYTORUN_AUXILIARY_MODULES

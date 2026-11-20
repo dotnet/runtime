@@ -22,7 +22,10 @@ bodies. Development builds and the existing publish modes are unchanged.
 The complete eager assembly closure is downloaded before runtime initialization. The
 compiled composite is listed separately in `resources.r2rAssembly`, fetched only after
 the eager assets and native Wasm are ready, and stream-instantiated with the shared memory
-and function table. Prepared methods are upgraded in browser event-loop batches. Existing
+and function table. Image attachment publishes a readiness flag; methods prepared before
+arrival check it at their interpreter entry safepoint and activate on demand. The triggering
+invocation finishes interpreted, while subsequent calls can use ReadyToRun code. There is
+no global prepared-method sweep or per-batch timer chain. Existing
 interpreted frames and suspended continuations keep their bytecode; there is no on-stack
 replacement.
 
@@ -30,13 +33,16 @@ Eager component stubs retain their composite owner identity, keeping cross-assem
 field layouts compatible with the late code before its native image is available.
 
 For prototype validation, `getDotnetRuntime(0).INTERNAL.waitForDeferredR2R()` awaits full
-activation and `INTERNAL.getDeferredR2RState()` reports phase timings and published method
-counts. These are internal diagnostics, not supported public APIs. Late failures are fatal;
-benchmarking must await successful activation before measuring steady state.
+image attachment and `INTERNAL.getDeferredR2RState()` reports `activationMode: "lazy"`,
+phase timings and live method-activation counters. Zero published methods at readiness is
+valid: unused methods need never activate. These are internal diagnostics, not supported
+public APIs; after runtime exit the getter retains its last observed counter snapshot.
+Late failures are fatal. Benchmarks must distinguish first-use activation
+from explicitly warmed steady state rather than treating image readiness as full warmup.
 
 For Chrome profiling, set the loader environment variable `DOTNET_WASM_PERF_MEASURE=1`.
 It adds Performance API spans for eager assets, native/Webcil instantiation, VM startup,
-and deferred publication batches. Set it to `0` to disable JS interop measures in timing
+and deferred image attachment. Set it to `0` to disable JS interop measures in timing
 controls; omitting it preserves the existing interop measurement behavior.
 
 The browser sample detects this mode and withholds the late response until it has exercised

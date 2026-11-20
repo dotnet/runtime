@@ -22,56 +22,6 @@ namespace
 #if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
 static bool s_deferredR2RConfigured = false;
 static bool s_deferredR2RAttached = false;
-static SArray<MethodDesc*> s_deferredR2RMethods;
-static COUNT_T s_deferredR2RMethodIndex = 0;
-
-static void AddPreparedDeferredR2RMethod(MethodDesc* method)
-{
-    STANDARD_VM_CONTRACT;
-    if (method == nullptr || method->IsCollectible() || method->ContainsGenericVariables())
-        return;
-    PCODE entryPoint = method->GetPortableEntryPointIfExists();
-    if (entryPoint != (PCODE)nullptr &&
-        (method->GetInterpreterCode() != nullptr ||
-         (method->HasUnmanagedCallersOnlyAttribute() && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->HasNativeCode())))
-        s_deferredR2RMethods.Append(method);
-    if (!method->IsAsyncVariantMethod() && method->ReturnsTaskOrValueTask())
-    {
-        MethodDesc* asyncVariant = method->GetAsyncVariantNoCreate();
-        if (asyncVariant != nullptr && asyncVariant != method)
-            AddPreparedDeferredR2RMethod(asyncVariant);
-    }
-}
-
-static void CollectPreparedDeferredR2RMethods(Module* module)
-{
-    STANDARD_VM_CONTRACT;
-    auto addTypeMethods = [](MethodTable* table) {
-        if (table == nullptr) return;
-        for (MethodTable::IntroducedMethodIterator methods(table->GetCanonicalMethodTable()); methods.IsValid(); methods.Next())
-            AddPreparedDeferredR2RMethod(methods.GetMethodDesc());
-    };
-
-    LookupMap<PTR_MethodTable>::Iterator types = module->EnumerateTypeDefs();
-    while (types.Next())
-        addTypeMethods(types.GetElement());
-
-    EETypeHashTable::Iterator genericTypes;
-    genericTypes.Reset();
-    EETypeHashEntry* typeEntry;
-    while (module->GetAvailableParamTypes()->FindNext(&genericTypes, &typeEntry))
-    {
-        TypeHandle type = typeEntry->GetTypeHandle();
-        if (!type.IsTypeDesc())
-            addTypeMethods(type.AsMethodTable());
-    }
-
-    InstMethodHashTable::Iterator genericMethods;
-    genericMethods.Reset();
-    InstMethodHashEntry* methodEntry;
-    while (module->GetInstMethodHashTable()->FindNext(&genericMethods, &methodEntry))
-        AddPreparedDeferredR2RMethod(methodEntry->GetMethod());
-}
 
 static void AttachDeferredR2R()
 {
@@ -89,21 +39,15 @@ static void AttachDeferredR2R()
             module->GetPEAssembly()->GetLoadedLayout()->IsComponentAssembly())
             module->AttachDeferredReadyToRunInfo();
     }
-    assemblies = domain->IterateAssembliesEx(
-        static_cast<AssemblyIterationFlags>(kIncludeLoaded | kIncludeExecution));
-    while (assemblies.Next(&assembly))
-    {
-        if (!assembly->IsCollectible())
-            CollectPreparedDeferredR2RMethods(assembly->GetModule());
-    }
     ResolvePendingPortableEntryPointThunksGlobal();
+    ReadyToRunInfo::CompleteDeferredR2RAttachment();
     s_deferredR2RAttached = true;
 }
 #endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
 
 extern "C" int coreclr_wasm_defer_r2r()
 {
-#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING) && defined(FEATURE_READYTORUN_AUXILIARY_MODULES)
     if (g_fEEStarted || s_deferredR2RConfigured)
         return E_UNEXPECTED;
     ReadyToRunInfo::SetDeferredR2R(true);
@@ -111,14 +55,13 @@ extern "C" int coreclr_wasm_defer_r2r()
     return S_OK;
 #else
     return E_NOTIMPL;
-#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING && FEATURE_READYTORUN_AUXILIARY_MODULES
 }
 
-// result holds remaining/published/patch counts followed by at most batchSize old/new table-index pairs.
-extern "C" int coreclr_wasm_activate_deferred_r2r(int batchSize, uint32_t* result)
+extern "C" int coreclr_wasm_activate_deferred_r2r()
 {
 #if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
-    if (!s_deferredR2RConfigured || batchSize <= 0 || batchSize > 128 || result == nullptr)
+    if (!s_deferredR2RConfigured || s_deferredR2RAttached)
         return E_INVALIDARG;
     HRESULT status = S_OK;
     EX_TRY
@@ -129,51 +72,7 @@ extern "C" int coreclr_wasm_activate_deferred_r2r(int batchSize, uint32_t* resul
         if (thread == nullptr)
             ThrowOutOfMemory();
         GCX_PREEMP();
-        if (!s_deferredR2RAttached)
-            AttachDeferredR2R();
-
-        uint32_t published = 0;
-        uint32_t patches = 0;
-        int examined = 0;
-        while (s_deferredR2RMethodIndex < s_deferredR2RMethods.GetCount() && examined++ < batchSize)
-        {
-            MethodDesc* method = s_deferredR2RMethods[s_deferredR2RMethodIndex++];
-            InterpByteCodeStart* interpreterCode = method->GetInterpreterCode();
-            MethodDesc* target = interpreterCode != nullptr ? interpreterCode->Method->methodHnd : method;
-            if (target->TryActivateDeferredR2RCode())
-                published++;
-            PCODE targetEntryPoint = target->GetPortableEntryPointIfExists();
-            if (targetEntryPoint == (PCODE)nullptr || !PortableEntryPoint::HasNativeEntryPoint(targetEntryPoint))
-                continue;
-
-            target->PoisonInterpreterCode();
-            PortableEntryPoint::ClearInterpreterData(targetEntryPoint);
-            if (target != method)
-            {
-                PCODE aliasEntryPoint = method->GetPortableEntryPoint();
-                PortableEntryPoint::SetActualCode(aliasEntryPoint, PortableEntryPoint::GetActualCode(targetEntryPoint));
-                method->PoisonInterpreterCode();
-                PortableEntryPoint::ClearInterpreterData(aliasEntryPoint);
-            }
-            if (method->HasUnmanagedCallersOnlyAttribute())
-            {
-                const ReverseThunkMapValue* reverse = LookupThunk(method);
-                if (reverse != nullptr && *reverse->Target == method)
-                {
-                    result[3 + patches * 2] = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(reverse->EntryPoint));
-                    result[4 + patches * 2] = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(PortableEntryPoint::GetActualCode(targetEntryPoint)));
-                    patches++;
-                }
-            }
-        }
-        result[0] = s_deferredR2RMethods.GetCount() - s_deferredR2RMethodIndex;
-        result[1] = published;
-        result[2] = patches;
-        if (result[0] == 0)
-        {
-            s_deferredR2RMethods.Clear();
-            s_deferredR2RMethodIndex = 0;
-        }
+        AttachDeferredR2R();
     }
     EX_CATCH
     {
@@ -183,6 +82,16 @@ extern "C" int coreclr_wasm_activate_deferred_r2r(int batchSize, uint32_t* resul
     return status;
 #else
     return E_NOTIMPL;
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
+}
+
+extern "C" void coreclr_wasm_get_deferred_r2r_stats(uint32_t* result)
+{
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+    ReadyToRunInfo::GetDeferredR2RStats(result);
+#else
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(E_NOTIMPL,
+        W("Deferred ReadyToRun statistics require single-threaded Browser."));
 #endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
 }
 

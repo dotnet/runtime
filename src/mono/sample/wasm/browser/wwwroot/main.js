@@ -46,11 +46,14 @@ try {
         console.log("Deferred R2R interpreter probe completed.");
         releaseR2R();
         await INTERNAL.waitForDeferredR2R();
+        const firstAfterAttachment = exports.Sample.Test.DeferredProbe(41);
+        const secondAfterAttachment = exports.Sample.Test.DeferredProbe(41);
         const state = INTERNAL.getDeferredR2RState();
-        if (state.status !== "completed" || state.publishedMethods === 0 ||
+        if (state.status !== "completed" || state.activationMode !== "lazy" || state.publishedMethods === 0 ||
             exports.Sample.Test.GetDeferredProbeEntryPoint() >>> 0 !== entryPoint ||
             getHeapU32(entryPoint) === interpretedCode ||
-            exports.Sample.Test.DeferredProbe(41) !== 42) {
+            (getHeapU32(entryPoint + 12) & 4) !== 0 ||
+            firstAfterAttachment !== 42 || secondAfterAttachment !== 42) {
             throw new Error("Deferred R2R probe did not transition to compiled code.");
         }
         console.log(`Deferred R2R activated: ${state.publishedMethods} methods.`);

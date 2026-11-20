@@ -60,25 +60,23 @@ export function initializeCoreCLR(deferR2R = false): number {
     return res;
 }
 
-export function activateDeferredR2R(): { remaining: number, published: number } {
-    const batchSize = 128;
-    const statsSize = 3;
+export function activateDeferredR2R(): void {
+    const result = _ems_._BrowserHost_ActivateDeferredR2R();
+    if (result < 0) throw new Error(`Deferred ReadyToRun activation failed: 0x${(result >>> 0).toString(16)}`);
+}
+
+export function getDeferredR2RStats(): { activationAttempts: number, publishedMethods: number, interpreterOnlyMethods: number, interpreterSuspensions: number } {
     const sp = _ems_.stackSave();
     try {
-        const ptr = _ems_.stackAlloc((statsSize + batchSize * 2) * sizeOfPtr);
-        const result = _ems_._BrowserHost_ActivateDeferredR2R(batchSize, ptr);
-        if (result < 0) throw new Error(`Deferred ReadyToRun activation failed: 0x${(result >>> 0).toString(16)}`);
+        const ptr = _ems_.stackAlloc(4 * sizeOfPtr);
+        _ems_._BrowserHost_GetDeferredR2RStats(ptr);
         const index = Number(ptr) >>> 2;
-        const remaining = _ems_.HEAPU32[index];
-        const published = _ems_.HEAPU32[index + 1];
-        const patches = _ems_.HEAPU32[index + 2];
-        _ems_.dotnetAssert.check(patches <= batchSize, "Invalid deferred ReadyToRun table patch count.");
-        for (let i = 0; i < patches; i++) {
-            const from = _ems_.HEAPU32[index + statsSize + i * 2];
-            const to = _ems_.HEAPU32[index + statsSize + i * 2 + 1];
-            _ems_.wasmTable.set(from, _ems_.wasmTable.get(to));
-        }
-        return { remaining, published };
+        return {
+            activationAttempts: _ems_.HEAPU32[index],
+            publishedMethods: _ems_.HEAPU32[index + 1],
+            interpreterOnlyMethods: _ems_.HEAPU32[index + 2],
+            interpreterSuspensions: _ems_.HEAPU32[index + 3],
+        };
     } finally {
         _ems_.stackRestore(sp);
     }

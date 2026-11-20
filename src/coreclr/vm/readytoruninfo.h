@@ -251,7 +251,14 @@ public:
 
 #if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
     static void SetDeferredR2R(bool pending);
+    static bool IsDeferredR2RConfigured();
     static bool ShareDeferredComposite(Module* module1, Module* module2);
+    static uint32_t* GetDeferredR2RActivationFlag(Module* module);
+    static void CompleteDeferredR2RAttachment();
+    static void RegisterDeferredR2RAlias(MethodDesc* alias, MethodDesc* target);
+    static void RecordDeferredR2RActivation(MethodDesc* method, bool published);
+    static void RecordDeferredR2RInterpreterSuspension();
+    static void GetDeferredR2RStats(uint32_t* result);
 #endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
 
     static PTR_ReadyToRunInfo ComputeAlternateGenericLocationForR2RCode(MethodDesc *pMethod);

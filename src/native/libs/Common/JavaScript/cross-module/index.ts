@@ -171,6 +171,7 @@ export function dotnetUpdateInternalsSubscriber() {
             instantiateWasm: table[5],
             instantiateWebcilModule: table[6],
             activateDeferredR2R: table[7],
+            getDeferredR2RStats: table[8],
         };
         Object.assign(native, nativeLocal);
     }

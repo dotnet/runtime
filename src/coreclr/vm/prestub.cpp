@@ -513,6 +513,17 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 #ifdef FEATURE_READYTORUN
     ReadyToRunInfo* pAlreadyExaminedInfos[2] = {NULL, NULL};
     Module * pModule = GetModule();
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING) && defined(FEATURE_READYTORUN_AUXILIARY_MODULES)
+    if (!pModule->IsReadyToRun())
+    {
+        uint32_t* flag = ReadyToRunInfo::GetDeferredR2RActivationFlag(pModule);
+        if (flag != nullptr)
+        {
+            pConfig->SetAuxiliaryActivationFlag(flag);
+            return (PCODE)nullptr;
+        }
+    }
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING && FEATURE_READYTORUN_AUXILIARY_MODULES
     if (pModule->IsReadyToRun())
     {
         pAlreadyExaminedInfos[0] = pModule->GetReadyToRunInfo();
@@ -573,34 +584,6 @@ bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
-bool MethodDesc::TryActivateDeferredR2RCode()
-{
-    STANDARD_VM_CONTRACT;
-
-    if (!IsIL() || IsWrapperStub() || ContainsGenericVariables())
-        return false;
-
-    PCODE entryPoint = GetPortableEntryPointIfExists();
-    if (entryPoint == (PCODE)nullptr || PortableEntryPoint::HasNativeEntryPoint(entryPoint))
-        return false;
-
-    PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
-    config.SetCallerGCMode(CallerGCMode::Preemptive);
-    PCODE code = GetPrecompiledCode(&config, false);
-    if (config.ReadyToRunRejectedPrecompiledCode())
-        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-    if (code == (PCODE)nullptr)
-        return false;
-
-    SetCodeEntryPoint(code);
-    PoisonInterpreterCode();
-    PortableEntryPoint::ClearInterpreterData(entryPoint);
-    PerfMap::LogPreCompiledMethod(this, code);
-    DACNotifyCompilationFinished(this, code);
-    return true;
-}
-#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
 #ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
 // Retry R2R code lookup part of the prestub
 uint32_t* MethodDesc::TryActivateDelayedR2RCode(CallerGCMode callerGCMode)
@@ -615,16 +598,32 @@ uint32_t* MethodDesc::TryActivateDelayedR2RCode(CallerGCMode callerGCMode)
     PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
     config.SetCallerGCMode(callerGCMode);
     PCODE code = GetPrecompiledCode(&config, false);
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+    if (ReadyToRunInfo::IsDeferredR2RConfigured() && config.ReadyToRunRejectedPrecompiledCode())
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_BADIMAGEFORMAT,
+            W("Deferred ReadyToRun method activation rejected precompiled code."));
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
     if (code != (PCODE)NULL)
     {
         SetCodeEntryPoint(code);
         PoisonInterpreterCode();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        PortableEntryPoint::ClearInterpreterData(GetPortableEntryPoint());
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+        ReadyToRunInfo::RecordDeferredR2RActivation(this, true);
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
         PerfMap::LogPreCompiledMethod(this, code);
         DACNotifyCompilationFinished(this, code);
         return nullptr;
     }
 
-    return config.GetAuxiliaryActivationFlag();
+    uint32_t* nextFlag = config.GetAuxiliaryActivationFlag();
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+    if (nextFlag == nullptr)
+        ReadyToRunInfo::RecordDeferredR2RActivation(this, false);
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
+    return nextFlag;
 }
 #endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
@@ -1142,6 +1141,9 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
         interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+        ReadyToRunInfo::RegisterDeferredR2RAlias(pConfig->GetMethodDesc(), interpreterCode->Method->methodHnd);
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
         pConfig->GetMethodDesc()->SetInterpreterCode(interpreterCode);
     }
 #endif // FEATURE_INTERPRETER
@@ -2716,6 +2718,9 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             if (ilStubInterpData != NULL)
             {
                 // The managed implementation runs in the interpreter.
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+                ReadyToRunInfo::RegisterDeferredR2RAlias(this, static_cast<InterpByteCodeStart*>(ilStubInterpData)->Method->methodHnd);
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
                 ilStubInterpData = PortableEntryPoint::SetInterpreterDataInterlocked(entryPoint, ilStubInterpData);
                 SetInterpreterCode(static_cast<InterpByteCodeStart*>(ilStubInterpData));
             }
@@ -2788,6 +2793,9 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         // Use this method's own PortableEntryPoint rather than the stub's.
         // It is required to maintain 1:1 mapping between MethodDesc and its entrypoint.
         pCode = GetPortableEntryPoint();
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+        ReadyToRunInfo::RegisterDeferredR2RAlias(this, static_cast<InterpByteCodeStart*>(ilStubInterpData)->Method->methodHnd);
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
         ilStubInterpData = PortableEntryPoint::SetInterpreterDataInterlocked(pCode, ilStubInterpData);
         SetInterpreterCode(static_cast<InterpByteCodeStart*>(ilStubInterpData));
         SetCodeEntryPoint(pCode);

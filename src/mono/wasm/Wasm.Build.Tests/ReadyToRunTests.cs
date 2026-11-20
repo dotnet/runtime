@@ -57,7 +57,9 @@ namespace Wasm.Build.Tests
                     <PublishReadyToRun>true</PublishReadyToRun>
                     <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
                     <WasmEnableDeferredR2R>true</WasmEnableDeferredR2R>
+                    <WasmEnableIntegrityCheck>false</WasmEnableIntegrityCheck>
                     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+                    <Features>$(Features);runtime-async=on</Features>
                     """);
             File.AppendAllText(Path.Combine(_projectDir, "Program.cs"), """
 
@@ -86,6 +88,73 @@ namespace Wasm.Build.Tests
                     [System.Runtime.InteropServices.JavaScript.JSExport]
                     public static int EntryPoint() =>
                         new System.Func<int, int>(AddOne).Method.MethodHandle.GetFunctionPointer().ToInt32();
+
+                    [System.Runtime.InteropServices.JavaScript.JSExport]
+                    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                    public static int Cold(int value) => value * 2;
+
+                    [System.Runtime.InteropServices.JavaScript.JSExport]
+                    public static int ColdEntryPoint() =>
+                        new System.Func<int, int>(Cold).Method.MethodHandle.GetFunctionPointer().ToInt32();
+
+                    private static readonly System.Threading.Tasks.TaskCompletionSource<int> s_resume = new();
+
+                    [System.Runtime.InteropServices.JavaScript.JSExport]
+                    public static System.Threading.Tasks.Task<int> Suspend() => AwaitResume(s_resume.Task);
+
+                    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                    private static async System.Threading.Tasks.Task<int> AwaitResume(System.Threading.Tasks.Task<int> task) =>
+                        await task + 1;
+
+                    [System.Runtime.InteropServices.JavaScript.JSExport]
+                    public static void Resume() => s_resume.SetResult(41);
+
+                    private interface IProbe { int Apply(int value); }
+                    private sealed class Probe : IProbe
+                    {
+                        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                        int IProbe.Apply(int value) => value + 1;
+                    }
+
+                    private static readonly IProbe s_probe = new Probe();
+                    private static readonly System.Func<int, int> s_delegate = AddOne;
+
+                    [System.Runtime.InteropServices.JavaScript.JSExport]
+                    public static int ViaMethodImpl(int value) => s_probe.Apply(value);
+
+                    [System.Runtime.InteropServices.JavaScript.JSExport]
+                    public static int ViaDelegate(int value) => s_delegate(value);
+
+                    private struct InterpretedValue { public int Marker; }
+
+                    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                    private static int GenericSize<T>(T value) => System.Runtime.CompilerServices.Unsafe.SizeOf<T>();
+
+                    private static System.Reflection.MethodInfo InterpretedMethod() =>
+                        (typeof(DeferredR2RProbe).GetMethod(nameof(GenericSize),
+                            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
+                            ?? throw new System.MissingMethodException(nameof(GenericSize)))
+                            .MakeGenericMethod(typeof(InterpretedValue));
+
+                    [System.Runtime.InteropServices.JavaScript.JSExport]
+                    public static int InterpretedSize() =>
+                        (int)InterpretedMethod().Invoke(null, new object[] { new InterpretedValue { Marker = 42 } })!;
+
+                    [System.Runtime.InteropServices.JavaScript.JSExport]
+                    public static int InterpretedEntryPoint() =>
+                        InterpretedMethod().MethodHandle.GetFunctionPointer().ToInt32();
+
+                    private static System.Reflection.ConstructorInfo StringConstructor() =>
+                        typeof(string).GetConstructor(new[] { typeof(char[]) })
+                            ?? throw new System.MissingMethodException(".ctor(char[])");
+
+                    [System.Runtime.InteropServices.JavaScript.JSExport]
+                    public static string ViaStringConstructor() =>
+                        (string)StringConstructor().Invoke(new object[] { new[] { 'O', 'K' } });
+
+                    [System.Runtime.InteropServices.JavaScript.JSExport]
+                    public static int StringConstructorEntryPoint() =>
+                        StringConstructor().MethodHandle.GetFunctionPointer().ToInt32();
                 }
                 """);
             UpdateFile(Path.Combine("wwwroot", "index.html"), new Dictionary<string, string>
@@ -152,10 +221,21 @@ namespace Wasm.Build.Tests
                                 const exports = await runtime.getAssemblyExports(runtime.getConfig().mainAssemblyName);
                                 globalThis.deferredProbe = exports.DeferredR2RProbe;
                                 const pointer = deferredProbe.EntryPoint() >>> 0;
-                                return [deferredProbe.AddOne(41), pointer, runtime.getHeapU32(pointer)];
+                                const cold = deferredProbe.ColdEntryPoint() >>> 0;
+                                globalThis.suspendedRuntimeAsync = deferredProbe.Suspend();
+                                if (deferredProbe.ViaMethodImpl(41) !== 42 || deferredProbe.ViaDelegate(41) !== 42)
+                                    throw new Error("Initial interface/delegate dispatch failed.");
+                                const constructor = deferredProbe.StringConstructorEntryPoint() >>> 0;
+                                if (deferredProbe.ViaStringConstructor() !== "OK")
+                                    throw new Error("Initial string constructor dispatch failed.");
+                                return [deferredProbe.AddOne(41), pointer, runtime.getHeapU32(pointer),
+                                    cold, runtime.getHeapU32(cold), deferredProbe.InterpretedEntryPoint() >>> 0,
+                                    deferredProbe.InterpretedSize(), constructor, runtime.getHeapU32(constructor + 8)];
                             }
                             """);
                         Assert.Equal(42u, before[0]);
+                        Assert.Equal(4u, before[6]);
+                        Assert.NotEqual(0u, before[8]);
                         Assert.Equal(42, await page.EvaluateAsync<int>("deferredProbe.ReadLayoutMarker()"));
                         release.TrySetResult();
                         if (failDownload)
@@ -168,6 +248,10 @@ namespace Wasm.Build.Tests
                         }
 
                         await page.EvaluateAsync("getDotnetRuntime(0).INTERNAL.waitForDeferredR2R()");
+                        Assert.Equal(4u, await page.EvaluateAsync<uint>(
+                            $"getDotnetRuntime(0).getHeapU32({before[1]} + 12) & 4"));
+                        Assert.Equal(4u, await page.EvaluateAsync<uint>(
+                            $"getDotnetRuntime(0).getHeapU32({before[3]} + 12) & 4"));
                         uint[] after = await page.EvaluateAsync<uint[]>("""
                             () => {
                                 const pointer = deferredProbe.EntryPoint() >>> 0;
@@ -177,9 +261,31 @@ namespace Wasm.Build.Tests
                         Assert.Equal(before[0], after[0]);
                         Assert.Equal(before[1], after[1]);
                         Assert.NotEqual(before[2], after[2]);
+                        Assert.Equal(0u, await page.EvaluateAsync<uint>(
+                            $"getDotnetRuntime(0).getHeapU32({before[1]} + 12) & 4"));
+                        Assert.Equal(84, await page.EvaluateAsync<int>("deferredProbe.Cold(42)"));
+                        Assert.Equal(84, await page.EvaluateAsync<int>("deferredProbe.Cold(42)"));
+                        Assert.NotEqual(before[4], await page.EvaluateAsync<uint>(
+                            $"getDotnetRuntime(0).getHeapU32({before[3]})"));
+                        Assert.Equal(0u, await page.EvaluateAsync<uint>(
+                            $"getDotnetRuntime(0).getHeapU32({before[3]} + 12) & 4"));
+                        Assert.Equal(42, await page.EvaluateAsync<int>("deferredProbe.ViaMethodImpl(41)"));
+                        Assert.Equal(42, await page.EvaluateAsync<int>("deferredProbe.ViaDelegate(41)"));
+                        Assert.Equal(4, await page.EvaluateAsync<int>("deferredProbe.InterpretedSize()"));
+                        Assert.Equal(4, await page.EvaluateAsync<int>("deferredProbe.InterpretedSize()"));
+                        Assert.Equal(4u, await page.EvaluateAsync<uint>(
+                            $"getDotnetRuntime(0).getHeapU32({before[5]} + 12) & 4"));
+                        Assert.Equal("OK", await page.EvaluateAsync<string>("deferredProbe.ViaStringConstructor()"));
+                        Assert.Equal("OK", await page.EvaluateAsync<string>("deferredProbe.ViaStringConstructor()"));
+                        Assert.Equal(0u, await page.EvaluateAsync<uint>(
+                            $"getDotnetRuntime(0).getHeapU32({before[7]} + 12) & 4"));
+                        await page.EvaluateAsync("deferredProbe.Resume()");
+                        Assert.Equal(42, await page.EvaluateAsync<int>("globalThis.suspendedRuntimeAsync"));
                         Assert.Equal(42, await page.EvaluateAsync<int>("deferredProbe.ReadLayoutMarker()"));
                         JsonElement state = await page.EvaluateAsync<JsonElement>("getDotnetRuntime(0).INTERNAL.getDeferredR2RState()");
                         Assert.Equal("completed", state.GetProperty("status").GetString());
+                        Assert.Equal("lazy", state.GetProperty("activationMode").GetString());
+                        Assert.True(state.GetProperty("interpreterSuspensions").GetInt32() > 0);
                         Assert.True(state.GetProperty("publishedMethods").GetInt32() > 0);
                         double started = state.GetProperty("downloadStartedTime").GetDouble();
                         Assert.True(started >= state.GetProperty("eagerReadyTime").GetDouble());

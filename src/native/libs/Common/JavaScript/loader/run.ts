@@ -32,9 +32,16 @@ const deferredR2RState = {
     instantiatedTime: 0,
     completedTime: 0,
     publishedMethods: 0,
+    activationAttempts: 0,
+    interpreterOnlyMethods: 0,
+    interpreterSuspensions: 0,
+    activationMode: "lazy",
 };
 
 export function getDeferredR2RState() {
+    if (deferredR2RState.status !== "disabled" && !isExited()) {
+        Object.assign(deferredR2RState, dotnetBrowserHostExports.getDeferredR2RStats());
+    }
     return { ...deferredR2RState };
 }
 
@@ -71,16 +78,11 @@ function startDeferredR2R(): void {
         endPerformanceMeasure("dotnet.deferred-r2r.download-and-instantiate", downloadStart);
         deferredR2RState.instantiatedTime = performance.now();
         deferredR2RState.status = "activating";
-        let remaining = 1;
-        while (remaining > 0) {
-            await delay(0);
-            if (isExited()) throw new Error("Runtime exited during deferred ReadyToRun activation.");
-            const batchStart = startPerformanceMeasure(loaderConfig);
-            const batch = dotnetBrowserHostExports.activateDeferredR2R();
-            endPerformanceMeasure("dotnet.deferred-r2r.publish-batch", batchStart, batch);
-            deferredR2RState.publishedMethods += batch.published;
-            remaining = batch.remaining;
-        }
+        await delay(0);
+        if (isExited()) throw new Error("Runtime exited during deferred ReadyToRun activation.");
+        const attachStart = startPerformanceMeasure(loaderConfig);
+        dotnetBrowserHostExports.activateDeferredR2R();
+        endPerformanceMeasure("dotnet.deferred-r2r.attach", attachStart);
         deferredR2RState.status = "completed";
         deferredR2RState.completedTime = performance.now();
         endPerformanceMeasure("dotnet.deferred-r2r.total", activationStart, deferredR2RState);

@@ -36,6 +36,7 @@
     <NestedBuildProperty Include="PublishReadyToRun" />
     <NestedBuildProperty Include="PublishReadyToRunComposite" />
     <NestedBuildProperty Include="WasmEnableDeferredR2R" />
+    <NestedBuildProperty Include="WasmEnableIntegrityCheck" />
     <NestedBuildProperty Include="RunAOTCompilation" />
     <NestedBuildProperty Include="UsingNativeAOT" />
     <NestedBuildProperty Include="WasmBuildNative" />

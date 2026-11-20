@@ -45,7 +45,8 @@ extern "C"
         coreclr_error_writer_callback_fn error_writer);
 
     int coreclr_wasm_defer_r2r();
-    int coreclr_wasm_activate_deferred_r2r(int batchSize, uint32_t* result);
+    int coreclr_wasm_activate_deferred_r2r();
+    void coreclr_wasm_get_deferred_r2r_stats(uint32_t* result);
 
 #if !GEN_PINVOKE
     const void* SystemResolveDllImport(const char* name);
@@ -131,12 +132,17 @@ extern "C" int BrowserHost_InitializeDotnet(int propertiesCount, const char** pr
     return 0;
 }
 
-extern "C" int BrowserHost_ActivateDeferredR2R(int batchSize, uint32_t* result)
+extern "C" int BrowserHost_ActivateDeferredR2R()
 {
-    int status = coreclr_wasm_activate_deferred_r2r(batchSize, result);
+    int status = coreclr_wasm_activate_deferred_r2r();
     if (status < 0)
         std::fprintf(stderr, "Deferred ReadyToRun activation failed - Error: 0x%08x\n", status);
     return status;
+}
+
+extern "C" void BrowserHost_GetDeferredR2RStats(uint32_t* result)
+{
+    coreclr_wasm_get_deferred_r2r_stats(result);
 }
 
 static bool executeAssemblyFailed = false;
