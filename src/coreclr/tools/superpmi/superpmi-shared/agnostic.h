@@ -484,7 +484,7 @@ struct Agnostic_PrepareCallLookups
 
 struct Agnostic_PrepareCallLookupsResult
 {
-    DWORD                   isCodePointer; // which CORINFO_CALL_INFO lookup prepareCallLookups completed
+    DWORD                   isCallTarget; // which CORINFO_CALL_INFO lookup prepareCallLookups completed
     Agnostic_CORINFO_LOOKUP lookup;
 };
 

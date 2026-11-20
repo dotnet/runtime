@@ -3204,10 +3204,10 @@ void MethodContext::recPrepareCallLookups(CORINFO_RESOLVED_TOKEN* token, CORINFO
     key.callerHandle = CastHandle(caller);
     Agnostic_PrepareCallLookupsResult value;
     ZeroMemory(&value, sizeof(value));
-    bool isCodePointer = callInfo->kind == CORINFO_CALL_CODE_POINTER;
-    value.isCodePointer = isCodePointer ? 1 : 0;
+    bool isCallTarget = (callInfo->kind == CORINFO_CALL_CODE_POINTER) || (callInfo->kind == CORINFO_VIRTUALCALL_STUB);
+    value.isCallTarget = isCallTarget ? 1 : 0;
     value.lookup = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(
-        isCodePointer ? &callInfo->codePointerLookup : &callInfo->instParamLookup);
+        isCallTarget ? &callInfo->codePointerLookup : &callInfo->instParamLookup);
     PrepareCallLookups->Add(key, value);
 }
 
@@ -3223,7 +3223,7 @@ void MethodContext::repPrepareCallLookups(CORINFO_RESOLVED_TOKEN* token, CORINFO
     key.context = CastHandle(callInfo->contextHandle);
     key.callerHandle = CastHandle(caller);
     Agnostic_PrepareCallLookupsResult value = LookupByKeyOrMissNoMessage(PrepareCallLookups, key);
-    if (value.isCodePointer)
+    if (value.isCallTarget)
         callInfo->codePointerLookup = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.lookup);
     else
         callInfo->instParamLookup = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.lookup);
@@ -3231,10 +3231,10 @@ void MethodContext::repPrepareCallLookups(CORINFO_RESOLVED_TOKEN* token, CORINFO
 
 void MethodContext::dmpPrepareCallLookups(const Agnostic_PrepareCallLookups& key, const Agnostic_PrepareCallLookupsResult& value)
 {
-    printf("PrepareCallLookups rt{%s} constraint{%s} context-%016" PRIX64 " caller-%016" PRIX64 ", isCodePointer-%u lookup{%s}",
+    printf("PrepareCallLookups rt{%s} constraint{%s} context-%016" PRIX64 " caller-%016" PRIX64 ", isCallTarget-%u lookup{%s}",
         SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(),
         SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ConstrainedResolvedToken).c_str(),
-        key.context, key.callerHandle, value.isCodePointer,
+        key.context, key.callerHandle, value.isCallTarget,
         SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.lookup).c_str());
 }
 

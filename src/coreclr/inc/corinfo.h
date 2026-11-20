@@ -1560,7 +1560,8 @@ struct CORINFO_CALL_INFO
     bool                    exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
 
     // If kind.CORINFO_VIRTUALCALL_STUB then stubLookup will be set.
-    // If kind.CORINFO_CALL_CODE_POINTER then entryPointLookup will be set.
+    // If kind.CORINFO_CALL_CODE_POINTER then codePointerLookup will be set.
+    // Either lookup may require prepareCallLookups before materialization.
     union
     {
         CORINFO_LOOKUP      stubLookup;
@@ -3443,8 +3444,8 @@ public:
             ) CORINFO_PURE;
 
     // Completes the runtime-dependent lookups of a call: instParamLookup for a call
-    // with sig.hasTypeArg() and exactContextNeedsRuntimeLookup, and codePointerLookup
-    // for a CORINFO_CALL_CODE_POINTER call whose lookup kind requires a runtime lookup.
+    // with sig.hasTypeArg() and exactContextNeedsRuntimeLookup, codePointerLookup for
+    // CORINFO_CALL_CODE_POINTER, or stubLookup for CORINFO_VIRTUALCALL_STUB.
     // Other call information is unchanged.
     // The tokens and caller must match the getCallInfo query that produced pCallInfo.
     CORINFO_VIRTUAL void prepareCallLookups(

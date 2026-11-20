@@ -436,60 +436,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
                 if (callInfo->stubLookup.lookupKind.needsRuntimeLookup)
                 {
-                    if (callInfo->stubLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_NOT_SUPPORTED)
-                    {
-                        // Runtime does not support inlining of all shapes of runtime lookups
-                        // Inlining has to be aborted in such a case
-                        compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_COMPLEX_HANDLE);
-                        return TYP_UNDEF;
-                    }
-
-                    GenTree* stubAddr = impRuntimeLookupToTree(&callInfo->stubLookup, methHnd);
-
-                    // stubAddr tree may require a new temp.
-                    // If we're inlining, this may trigger the too many locals inline failure.
-                    //
-                    // If so, we need to bail out.
-                    //
-                    if (compDonotInline())
-                    {
-                        return TYP_UNDEF;
-                    }
-
-                    // This is the rough code to set up an indirect stub call
-                    assert(stubAddr != nullptr);
-
-                    // The stubAddr may be a
-                    // complex expression. As it is evaluated after the args,
-                    // it may cause registered args to be spilled. Simply spill it.
-                    //
-                    if (!stubAddr->OperIs(GT_LCL_VAR))
-                    {
-                        unsigned const lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
-                        if (compDonotInline())
-                        {
-                            return TYP_UNDEF;
-                        }
-
-                        impStoreToTemp(lclNum, stubAddr, CHECK_SPILL_NONE);
-                        stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
-                    }
-
-                    // Create the actual call node
-
                     assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG &&
                            (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
-                    call = gtNewIndCallNode(stubAddr, callRetTyp, di);
-
-                    call->gtFlags |= stubAddr->gtFlags & GTF_ALL_EFFECT;
+                    // Keep the call symbolic until import-time devirtualization has run.
+                    call                               = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
+                    call->AsCall()->gtStubCallStubAddr = nullptr;
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
-
-#ifdef TARGET_X86
-                    // No tailcalls allowed for these yet...
-                    canTailCall             = false;
-                    szCanTailCallFailReason = "VirtualCall with runtime lookup";
-#endif
                 }
                 else
                 {
@@ -1101,6 +1054,41 @@ DEVIRT:
             considerGuardedDevirtualization(call->AsCall(), rawILOffset, false, call->AsCall()->gtCallMethHnd,
                                             NO_CLASS_HANDLE, nullptr);
         }
+    }
+
+    if ((callInfo != nullptr) && (callInfo->kind == CORINFO_VIRTUALCALL_STUB) &&
+        callInfo->stubLookup.lookupKind.needsRuntimeLookup && call->AsCall()->IsVirtualStub())
+    {
+        // Only surviving interface dispatches need a dictionary slot.
+        GenTree* stubAddr = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, callInfo,
+                                                &callInfo->stubLookup, GTF_ICON_FTN_ADDR, methHnd);
+        if (compDonotInline())
+        {
+            return TYP_UNDEF;
+        }
+
+        // Evaluate the lookup before placing the call arguments in registers.
+        if (!stubAddr->OperIs(GT_LCL_VAR))
+        {
+            unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
+            if (compDonotInline())
+            {
+                return TYP_UNDEF;
+            }
+
+            impStoreToTemp(lclNum, stubAddr, CHECK_SPILL_NONE);
+            stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
+        }
+
+        call->AsCall()->gtCallType    = CT_INDIRECT;
+        call->AsCall()->gtCallMethHnd = NO_METHOD_HANDLE;
+        call->AsCall()->gtControlExpr = stubAddr;
+        call->gtFlags |= stubAddr->gtFlags & GTF_ALL_EFFECT;
+
+#ifdef TARGET_X86
+        canTailCall             = false;
+        szCanTailCallFailReason = "VirtualCall with runtime lookup";
+#endif
     }
 
     impConsiderCallProbe(call->AsCall(), rawILOffset);

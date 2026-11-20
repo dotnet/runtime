@@ -1102,6 +1102,16 @@ namespace Internal.JitInterface
         private void prepareCallLookups(ref CORINFO_RESOLVED_TOKEN resolvedToken,
             CORINFO_RESOLVED_TOKEN* constrainedToken, CORINFO_METHOD_STRUCT_* caller, CORINFO_CALL_INFO* callInfo)
         {
+#if READYTORUN
+            if (callInfo->kind == CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB)
+            {
+                Debug.Assert(callInfo->codePointerOrStubLookup.lookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED);
+                MethodDesc method = HandleToObject((CORINFO_METHOD_STRUCT_*)callInfo->codePointerOrStubLookup.runtimeLookup.signature);
+                ComputeRuntimeLookupForSharedGenericToken(Internal.ReadyToRunConstants.DictionaryEntryKind.DispatchStubAddrSlot,
+                    ref resolvedToken, null, method, HandleToObject(caller), ref callInfo->codePointerOrStubLookup);
+                return;
+            }
+#endif
             Debug.Assert((callInfo->sig.callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0 && callInfo->exactContextNeedsRuntimeLookup);
             CORINFO_CONTEXT_STRUCT* context = callInfo->contextHandle;
             bool embedParent = ((nuint)context & (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS;

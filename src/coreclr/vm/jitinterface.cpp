@@ -5229,8 +5229,7 @@ void CEEInfo::getCallInfo(
             }
             // The runtime lookup is computed in prepareCallLookups. Mark it as not-yet-computed
             // with CORINFO_LOOKUP_DEFERRED and store the entry kind and template method
-            // for prepareCallLookups to consume. The static virtual VSD path below shares this union
-            // but fills it eagerly with a real lookup kind, so the two stay distinguishable.
+            // for prepareCallLookups to consume.
             pResult->codePointerLookup.lookupKind.needsRuntimeLookup = true;
             pResult->codePointerLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
             pResult->codePointerLookup.runtimeLookup.helper = (CorInfoHelpFunc)entryKind;
@@ -5284,12 +5283,11 @@ void CEEInfo::getCallInfo(
 
         if (pResult->exactContextNeedsRuntimeLookup)
         {
-            ComputeRuntimeLookupForSharedGenericToken(fIsStaticVirtualMethod ? ConstrainedMethodEntrySlot : DispatchStubAddrSlot,
-                                                        pResolvedToken,
-                                                        pConstrainedResolvedToken,
-                                                        pMD,
-                                                        GetMethod(callerHandle),
-                                                        &pResult->stubLookup);
+            pResult->stubLookup.lookupKind.needsRuntimeLookup = true;
+            pResult->stubLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
+            pResult->stubLookup.runtimeLookup.helper =
+                (CorInfoHelpFunc)(fIsStaticVirtualMethod ? ConstrainedMethodEntrySlot : DispatchStubAddrSlot);
+            pResult->stubLookup.runtimeLookup.signature = (LPVOID)pMD;
         }
         else
         {
@@ -5545,17 +5543,17 @@ void CEEInfo::prepareCallLookups(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                CORINFO_CALL_INFO* pCallInfo)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(pCallInfo->kind == CORINFO_CALL_CODE_POINTER
+    _ASSERTE((pCallInfo->kind == CORINFO_CALL_CODE_POINTER || pCallInfo->kind == CORINFO_VIRTUALCALL_STUB)
         ? (pCallInfo->codePointerLookup.lookupKind.needsRuntimeLookup
             && pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED)
         : (pCallInfo->sig.hasTypeArg() && pCallInfo->exactContextNeedsRuntimeLookup));
 
-    if (pCallInfo->kind == CORINFO_CALL_CODE_POINTER)
+    if (pCallInfo->kind == CORINFO_CALL_CODE_POINTER || pCallInfo->kind == CORINFO_VIRTUALCALL_STUB)
     {
         _ASSERTE(pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
         DictionaryEntryKind entryKind = (DictionaryEntryKind)pCallInfo->codePointerLookup.runtimeLookup.helper;
         MethodDesc* pTemplateMD = (MethodDesc*)pCallInfo->codePointerLookup.runtimeLookup.signature;
-        _ASSERTE(entryKind == MethodEntrySlot || entryKind == ConstrainedMethodEntrySlot);
+        _ASSERTE(entryKind == MethodEntrySlot || entryKind == ConstrainedMethodEntrySlot || entryKind == DispatchStubAddrSlot);
         ComputeRuntimeLookupForSharedGenericToken(entryKind,
                                                   pResolvedToken,
                                                   pConstrainedResolvedToken,
