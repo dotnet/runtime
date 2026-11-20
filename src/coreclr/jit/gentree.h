@@ -3036,6 +3036,9 @@ class GenTreeUseEdgeIterator final
     void AdvanceFieldList();
     void AdvancePhi();
     void AdvanceConditional();
+#ifdef TARGET_WASM
+    void AdvanceWasmSelect();
+#endif
 
     template <bool ReverseOperands>
     void AdvanceBinOp();
