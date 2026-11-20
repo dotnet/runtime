@@ -331,7 +331,7 @@ bool LC_Condition::Evaluates(bool* pResult)
 //
 // Operation:
 //      Check if both conditions are equal. If so, return just 1 of them.
-//      Reverse their operators and check if their reversed operands match. If so, return either of them.
+//      Swap the operands and relational operator to check for equivalent conditions.
 //
 // Notes:
 //      This is not a full-fledged expression optimizer, it is supposed
@@ -341,13 +341,18 @@ bool LC_Condition::Evaluates(bool* pResult)
 //      would be: "beg >= 0, end <= a.len, inc > 0"
 bool LC_Condition::Combines(const LC_Condition& cond, LC_Condition* newCond)
 {
-    if (oper == cond.oper && op1 == cond.op1 && op2 == cond.op2)
+    if (GenTree::StaticOperIs(oper, GT_LT, GT_LE, GT_GT, GT_GE) && (compareUnsigned != cond.compareUnsigned))
+    {
+        return false;
+    }
+
+    if ((oper == cond.oper) && (op1 == cond.op1) && (op2 == cond.op2))
     {
         *newCond = *this;
         return true;
     }
-    else if ((oper == GT_LT || oper == GT_LE || oper == GT_GT || oper == GT_GE) &&
-             GenTree::ReverseRelop(oper) == cond.oper && op1 == cond.op2 && op2 == cond.op1)
+    else if (GenTree::StaticOperIs(oper, GT_LT, GT_LE, GT_GT, GT_GE) && (GenTree::SwapRelop(oper) == cond.oper) &&
+             (op1 == cond.op2) && (op2 == cond.op1))
     {
         *newCond = *this;
         return true;
@@ -1285,6 +1290,22 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         }
         else if (iterInfo->HasInvariantLocalLimit)
         {
+            const unsigned limitLcl = iterInfo->VarLimit();
+            if (offset < 0)
+            {
+                if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+                {
+                    JITDUMP("> Stride %d: limit var V%02u not TYP_INT-compatible\n", stride, limitLcl);
+                    return false;
+                }
+
+                // Prevent a negative limit plus a negative offset from wrapping positive.
+                LC_Ident     limitVarIdent = LC_Ident::CreateVar(limitLcl, iterInfo->LimitBase()->TypeGet());
+                LC_Condition nonNegativeLimitGuard(GT_GE, LC_Expr(limitVarIdent), LC_Expr(LC_Ident::CreateConst(0u)));
+                context->EnsureConditions(loop->GetIndex())->Push(nonNegativeLimitGuard);
+                JITDUMP("Added stride>1 nonnegative limit guard: V%02u >= 0\n", limitLcl);
+            }
+
             if (maxLimitBase64 >= INT32_MAX)
             {
                 JITDUMP("Stride>1 overflow guard trivially holds (offset %d)\n", offset);
@@ -1296,7 +1317,6 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             }
             else
             {
-                const unsigned limitLcl = iterInfo->VarLimit();
                 if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
                 {
                     JITDUMP("> Stride %d: limit var V%02u not TYP_INT-compatible\n", stride, limitLcl);
@@ -1311,12 +1331,13 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 JITDUMP("Added stride>1 overflow guard: V%02u <= %d\n", limitLcl, maxLimit);
             }
         }
-        else if (iterInfo->HasArrayLengthLimit && largeStride)
+        else if (iterInfo->HasArrayLengthLimit)
         {
-            // For stride <= 57 the implicit Array.MaxLength bound suffices;
-            // we fall through with no extra check. For wider strides emit a
-            // runtime guard on arr.Length so the fast clone only runs when
-            // the array is short enough that the post-step IV stays in int.
+            // We only get here for spans or wide strides. The limit is arr.Length + offset, so
+            // Array.MaxLength alone does not keep the post-step IV in int (a span can be longer
+            // than any array, and a large offset pushes the limit close to INT_MAX).
+            // Emit a runtime guard on arr.Length so the fast clone only runs when the
+            // post-step IV stays in int; it is elided when trivially true.
             assert(limitArrIndex != nullptr);
             if (maxLimitBase64 >= CORINFO_Array_MaxLength)
             {
@@ -2631,6 +2652,12 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
 
     unsigned indLcl = arrBndsChk->GetIndex()->AsLclVarCommon()->GetLclNum();
 
+    // The index may be a narrowed use of a wider local; the guards recreate the full local.
+    if (!genActualTypeIsInt(lvaGetDesc(indLcl)))
+    {
+        return false;
+    }
+
     if (lhsNum == BAD_VAR_NUM)
     {
         result->arrLcl  = arrLcl;
@@ -2680,8 +2707,14 @@ bool Compiler::optExtractSpanIndex(GenTree* tree, SpanIndex* result)
         return false;
     }
 
+    unsigned indLcl = arrBndsChk->GetIndex()->AsLclVarCommon()->GetLclNum();
+    if (!genActualTypeIsInt(lvaGetDesc(indLcl)))
+    {
+        return false;
+    }
+
     result->lenLcl   = arrBndsChk->GetArrayLength()->AsLclVarCommon()->GetLclNum();
-    result->indLcl   = arrBndsChk->GetIndex()->AsLclVarCommon()->GetLclNum();
+    result->indLcl   = indLcl;
     result->bndsChk  = tree;
     result->useBlock = compCurBB;
     return true;

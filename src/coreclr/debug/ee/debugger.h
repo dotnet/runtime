@@ -2337,14 +2337,57 @@ private:
 #endif // DACCESS_COMPILE
 
 
-public:
-    // define type for DebuggerLockHolder
+    struct DebuggerLockHolderTraits final
+    {
+        using Type = Debugger*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type debugger) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
-    typedef Holder<Debugger *, Debugger::AcquireDebuggerLock, Debugger::ReleaseDebuggerLock> DebuggerLockHolder;
-#else // DACCESS_COMPILE
-    // DAC acquisition may validate target state, but cleanup must not touch the target.
-    typedef Holder<Debugger *, Debugger::AcquireDebuggerLock, DoNothing<Debugger *>> DebuggerLockHolder;
+            if (debugger != NULL)
+                ReleaseDebuggerLock(debugger);
 #endif // !DACCESS_COMPILE
+        }
+    };
+
+public:
+    class DebuggerLockHolder final
+    {
+        Debugger* const m_debugger;
+        LifetimeHolder<DebuggerLockHolderTraits> m_lock;
+
+    public:
+        DebuggerLockHolder(Debugger* debugger, BOOL acquire = TRUE)
+            : m_debugger(debugger)
+        {
+            WRAPPER_NO_CONTRACT;
+            SUPPORTS_DAC;
+            if (acquire)
+                Acquire();
+        }
+
+        void Acquire()
+        {
+            WRAPPER_NO_CONTRACT;
+            SUPPORTS_DAC;
+            _ASSERTE(static_cast<Debugger*>(m_lock) == NULL);
+            if (m_debugger != NULL)
+            {
+                AcquireDebuggerLock(m_debugger);
+                m_lock = m_debugger;
+            }
+        }
+
+        void Release()
+        {
+            WRAPPER_NO_CONTRACT;
+            m_lock.Free();
+        }
+
+        DebuggerLockHolder(const DebuggerLockHolder&) = delete;
+        DebuggerLockHolder& operator=(const DebuggerLockHolder&) = delete;
+    };
 
     void LockForEventSending(DebuggerLockHolder *dbgLockHolder);
     void UnlockFromEventSending(DebuggerLockHolder *dbgLockHolder);
@@ -2591,13 +2634,32 @@ public:
 
 #endif // DACCESS_COMPILE
 
-    // define type for DebuggerDataLockHolder
+private:
+    struct DebuggerDataLockHolderTraits final
+    {
+        using Type = Debugger*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type debugger) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
-    typedef Holder<Debugger *, Debugger::AcquireDebuggerDataLock, Debugger::ReleaseDebuggerDataLock> DebuggerDataLockHolder;
-#else // DACCESS_COMPILE
-    // DAC acquisition may validate target state, but cleanup must not touch the target.
-    typedef Holder<Debugger *, Debugger::AcquireDebuggerDataLock, DoNothing<Debugger *>> DebuggerDataLockHolder;
+            if (debugger != NULL)
+                ReleaseDebuggerDataLock(debugger);
 #endif // !DACCESS_COMPILE
+        }
+    };
+
+public:
+    using DebuggerDataLockHolder = LifetimeHolder<DebuggerDataLockHolderTraits>;
+
+    static DebuggerDataLockHolder TakeDebuggerDataLock(Debugger* debugger)
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+        if (debugger != NULL)
+            AcquireDebuggerDataLock(debugger);
+        return DebuggerDataLockHolder(debugger);
+    }
 
 #ifdef _DEBUG
     // Use for asserts

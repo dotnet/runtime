@@ -116,14 +116,7 @@ add_executable_clr(paltests
   loader/LoadLibraryW/test5/loadlibraryw.cpp
   miscellaneous/CloseHandle/test2/test.cpp
   miscellaneous/FlushInstructionCache/test1/test1.cpp
-  miscellaneous/FormatMessageW/test1/test.cpp
-  miscellaneous/FormatMessageW/test2/test.cpp
-  miscellaneous/FormatMessageW/test3/test.cpp
-  miscellaneous/FormatMessageW/test4/test.cpp
-  miscellaneous/FormatMessageW/test5/test.cpp
-  miscellaneous/FormatMessageW/test6/test.cpp
   miscellaneous/GetLastError/test1/test.cpp
-  miscellaneous/GetSystemInfo/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test2/test.cpp
   miscellaneous/InterlockedCompareExchange64/test1/test.cpp
@@ -161,7 +154,6 @@ add_executable_clr(paltests
   threading/GetCurrentThread/test1/thread.cpp
   threading/GetCurrentThread/test2/test2.cpp
   threading/GetCurrentThreadId/test1/threadId.cpp
-  threading/QueryThreadCycleTime/test1/test1.cpp
   threading/ResumeThread/test1/test1.cpp
   threading/RuntimeEvent/test1/test1.cpp
   threading/SwitchToThread/test1/test1.cpp

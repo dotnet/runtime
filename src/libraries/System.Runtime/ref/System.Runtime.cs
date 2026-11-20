@@ -13934,6 +13934,8 @@ namespace System.Reflection
     public sealed partial class Pointer : System.Runtime.Serialization.ISerializable
     {
         internal Pointer() { }
+        public System.Type PointerType { get { throw null; } }
+        public unsafe void* Value { get { throw null; } }
         public unsafe static object Box(void* ptr, System.Type type) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }

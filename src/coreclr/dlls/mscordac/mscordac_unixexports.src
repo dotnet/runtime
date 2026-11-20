@@ -44,7 +44,6 @@ nativeStringResourceTable_mscorrc
 #DebugBreak
 #DuplicateHandle
 #FlushInstructionCache
-#FormatMessageW
 #FreeLibrary
 #GetCurrentProcess
 #GetCurrentProcessId
@@ -52,7 +51,6 @@ nativeStringResourceTable_mscorrc
 #GetLastError
 #GetModuleFileNameW
 #GetProcAddress
-#GetSystemInfo
 #LoadLibraryExA
 #LoadLibraryExW
 #OutputDebugStringW

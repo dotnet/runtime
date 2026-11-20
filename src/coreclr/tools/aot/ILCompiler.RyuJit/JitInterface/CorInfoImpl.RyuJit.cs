@@ -1605,7 +1605,7 @@ namespace Internal.JitInterface
                     targetOfLookup.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
 
-                if (pResult->exactContextNeedsRuntimeLookup)
+                if (_compilation.NeedsRuntimeLookup(ReadyToRunHelperId.DispatchCell, targetOfLookup))
                 {
                     ComputeLookup(ref pResolvedToken,
                         targetOfLookup,
