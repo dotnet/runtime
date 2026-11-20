@@ -4,6 +4,7 @@
 #include "common.h"
 
 #ifdef PROFILING_SUPPORTED
+#include "asmconstants.h"
 #include "proftoeeinterfaceimpl.h"
 
 UINT_PTR ProfileGetIPFromPlatformSpecificHandle(void* pPlatformSpecificHandle)

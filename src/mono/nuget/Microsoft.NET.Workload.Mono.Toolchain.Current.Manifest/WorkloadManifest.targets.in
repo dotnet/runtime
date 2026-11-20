@@ -32,7 +32,6 @@
 
   <PropertyGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm64' and '$(UseMonoRuntime)' == 'false'">
     <_CoreClrBrowserWasm64>true</_CoreClrBrowserWasm64>
-    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)WorkloadManifest.Wasi.targets" Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'" />

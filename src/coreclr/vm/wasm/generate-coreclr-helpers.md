@@ -34,7 +34,7 @@ Each run emits three files into the output directory:
 - `callhelpers-reverse.cpp`
 - `callhelpers-interp-to-managed.cpp`
 
-For the experimental browser wasm64 interpreter, invoke the project directly with
+For browser-wasm64, invoke the project directly with
 `-p:CallHelperTargetOS=browser -p:CallHelperTargetArchitecture=wasm64`. Use
 `-p:BrowserScanPath=/path/to/il/` to supply a directory containing the wasm64 IL
 CoreLib and its managed framework closure. The output goes to `browser-wasm64/`
@@ -42,102 +42,6 @@ and does not replace the browser wasm32 tables. Build the browser crossgen2
 host tool first with `./build.sh clr.tools -os browser -arch wasm -c Release`.
 This helper build uses crossgen2 only for signature lowering and helper
 generation.
-
-The browser-wasm64 build follows browser-wasm: `./build.sh -os browser -arch wasm64`
-builds the `clrjit_universal_wasm64_<host-arch>` cross-JIT and crossgen2, compiles a
-ReadyToRun `System.Private.CoreLib.wasm`, and adds ReadyToRun images for the shared
-framework to the runtime pack under `native/r2r`. ReadyToRun is enabled by default,
-as on wasm32; set `DOTNET_ReadyToRun=0` to run CoreLib and the framework in the
-interpreter. NativeAOT does not support wasm64, so the build skips it.
-To compile by hand, use `--targetos browser --targetarch wasm64 --obj-format wasm`
-and pass the cross-JIT via `--jitpath`; add `--composite` for a composite image,
-which may include CoreLib. Add `--singlemethodtypename` and `--singlemethodname`
-to compile only one method. ReadyToRun code outside CoreLib requires a ReadyToRun
-CoreLib. Crossgen2 recognizes the same
-baseline Wasm intrinsics on browser-wasm and browser-wasm64: Packed SIMD is
-available to compiled code, while relaxed SIMD is not enabled by default.
-A non-composite ReadyToRun CoreLib starts under both Node/CoreRun and Chrome.
-
-The wasm64 runtime uses the same GC configuration as wasm32: workstation GC with
-segments, not regions, and wasm32's initial segment sizes. Wasm has no
-reserve-only memory, so any reservation grows linear memory, which is never
-returned. Objects are 8-byte aligned (`DATA_ALIGNMENT`), which matches
-crossgen2's object and `Vector<T>` layout for wasm64. When R2R code calls an
-interpreted string constructor, the runtime keys the R2R-to-interpreter thunk on
-the lowered static factory signature, as crossgen2 does, on both widths; the
-computed wasm32 keys equal the fixed ones they replaced. Closed static delegates
-whose target returns through a hidden buffer use a pointer-width
-`WasmClosedStaticRetBufThunk`, which crossgen2 emits for both widths. Value-type
-methods entered with a boxed `this` use the shared `U`, `UG` and `UM` unboxing
-stubs on both widths; on these portable-entrypoint targets the runtime does not
-use crossgen2's IL unboxing thunks, so without a stub it interprets an IL stub.
-When CoreLib is part of the compilation, both widths finalize speculative
-direct calls after code generation (`DeferredWasmCallProcessor`); on wasm64 the
-frame identity that a direct call passes in the entry-point parameter is an
-`i64.const`, and fallback calls load the entry point with 64-bit loads.
-
-The build links ICU from the ICU transport package's
-`runtimes/browser-wasm64/native` assets, as browser-wasm uses
-`runtimes/browser-wasm/native`. Like the wasm32 one, the Node CoreRun host
-uses invariant globalization.
-
-The experimental CoreCLR `browser-wasm64` app host requires a
-memory64-capable browser. Otherwise the in-tree Wasm SDK treats
-browser-wasm64 like browser-wasm, including its globalization defaults:
-assemblies are staged as
-Webcil, using a wrapper that imports an i64 memory and `__memory_base`, and
-`PublishReadyToRun` (including composite) selects the same ReadyToRun images.
-
-In Chrome, an SDK-published compiled caller invoked an interpreted method in
-an excluded IL assembly with a native-integer byref. A Wasm-only change to the
-caller changed the exit code only with ReadyToRun enabled. The full browser
-sample also runs with non-composite ReadyToRun: the Promise passed to the
-managed export and the managed entry point both reach the JS import with `42`,
-and the app exits with code `0`. This was tested with a local runtime-pack
-overlay containing the rebuilt native host and its matching managed CoreLib;
-an updated runtime-pack `.nupkg` was not tested. Keep those two components
-matched when overlaying a restored pack.
-
-Two additional in-tree publishes ran the sample in Chrome with ReadyToRun:
-
-- **Native relink, without trimming:** Set `WasmBuildNative=true`. The
-  runtime-pack overlay must also contain the matching `libBrowserHost.js`
-  and CoreCLR static archives. Use clean native publish intermediates when
-  overlaying files with preserved timestamps; an older `libBrowserHost.js`
-  passes a Number to the memory64 table and fails at startup.
-- **Trimming, with the prebuilt host:** Set `PublishTrimmed=true`. If in-tree
-  static-graph restore reports a cycle through `ILLink.Tasks.csproj`, use the
-  already-built linker: set `_RequiresLiveILLink=false`, `ILLinkTargetsPath`
-  to `src/tools/illink/src/ILLink.Tasks/build/Microsoft.NET.ILLink.targets`,
-  and `ILLinkTasksAssembly` to
-  `artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll` (use absolute
-  paths for both). Setting the assembly alone does not import the targets
-  and can leave the publish untrimmed.
-
-Stock SDK RID and pack registration, distribution of the wasm64 crossgen2
-toolchain, and browser diagnostics are not validated. WASI is outside this
-experiment. Composite ReadyToRun of the app assemblies passes the JavaScript
-interop library tests in V8; CoreRun runtime tests also cover whole-program
-composite images.
-
-With the wasm64 runtime pack built, publish the in-tree browser sample with:
-
-```sh
-./dotnet.sh publish src/mono/sample/wasm/browser/Wasm.Browser.Sample.csproj \
-  -p:RuntimeFlavor=CoreCLR -p:TargetArchitecture=wasm64 -p:PublishTrimmed=false \
-  -p:WasmBuildNative=false -p:WasmEmitSymbolMap=false -p:WasmTestSupport=false
-```
-
-Serve `bin/publish/wwwroot` from the sample directory. The page should show
-`42`. This smoke test leaves diagnostics off; the diagnostic WebSocket bridge
-has not been ported to memory64.
-
-Wasm64 ReadyToRun and the interpreter share an ABI: pointers,
-native integers, and indirect aggregate addresses are 64-bit, but managed
-32-bit primitives stay 32-bit and interpreter stack slots stay 8 bytes.
-The browser smoke exercises memory and table operand widths and a byref call.
-Broader coverage is still needed for hidden return/context/async arguments,
-aggregate lowering, unwinding, and GC across the generated thunks.
 
 ## The shared QCall/FCall table
 

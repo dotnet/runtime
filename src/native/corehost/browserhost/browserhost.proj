@@ -12,7 +12,7 @@
   <Import Project="$(BrowserProjectRoot)build\BrowserWasmApp.CoreCLR.targets" />
 
   <PropertyGroup>
-    <InvariantGlobalization Condition="'$(BrowserHostInvariantGlobalization)' != ''">$(BrowserHostInvariantGlobalization)</InvariantGlobalization>
+    <InvariantGlobalization>$(BrowserHostInvariantGlobalization)</InvariantGlobalization>
     <InvariantTimezone>$(BrowserHostInvariantTimezone)</InvariantTimezone>
     <EnableDiagnostics>$(BrowserHostEnableDiagnostics)</EnableDiagnostics>
     <WasmInitialHeapSize>$(BrowserHostInitialHeapSize)</WasmInitialHeapSize>

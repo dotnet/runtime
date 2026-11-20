@@ -111,11 +111,7 @@ public:
 #endif
 
 #if defined(FEATURE_READYTORUN)
-    bool          ReadyToRun(void) const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return fReadyToRun;
-    }
+    bool          ReadyToRun(void) const { LIMITED_METHOD_CONTRACT;  return fReadyToRun; }
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
