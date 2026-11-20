@@ -13,7 +13,7 @@
 
 //-----------------------------------------------------------------------------
 // Smartpointer for internal Addref/Release
-// Using Wrapper / Holder infrastructure from src\inc\Holder.h
+// Using LifetimeHolder from src\coreclr\inc\holder.h
 //-----------------------------------------------------------------------------
 template <typename TYPE>
 inline void HolderRSRelease(TYPE *value)

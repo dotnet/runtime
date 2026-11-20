@@ -712,6 +712,43 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
 }
 
 //------------------------------------------------------------------------
+// TryMoveWasmSelectCondition: Move the condition tree to the top of the
+// Wasm value stack when it can be evaluated after both value operands.
+//
+void Lowering::TryMoveWasmSelectCondition(GenTreeConditional* select)
+{
+    GenTree* condition = select->gtCond;
+    if (condition->gtNext == select)
+    {
+        return;
+    }
+
+    bool               isClosed;
+    LIR::ReadOnlyRange range = BlockRange().GetTreeRange(condition, &isClosed);
+    if (!isClosed)
+    {
+        return;
+    }
+
+    for (GenTree* node : range)
+    {
+        if ((node->gtLIRFlags & LIR::Flags::MultiplyUsed) != 0)
+        {
+            return;
+        }
+    }
+
+    if (!IsRangeInvariantInRange(range.FirstNode(), range.LastNode(), select, nullptr))
+    {
+        return;
+    }
+
+    JITDUMP("Moving select condition to Wasm stack order\n");
+    LIR::Range conditionRange = BlockRange().Remove(std::move(range));
+    BlockRange().InsertBefore(select, std::move(conditionRange));
+}
+
+//------------------------------------------------------------------------
 // AfterLowerBlocks: stackify the nodes in all blocks.
 //
 // Stackification involves moving nodes around and inserting temporaries

@@ -354,29 +354,6 @@ PAL_ProbeMemory(
     DWORD cbBuffer,
     BOOL fWriteAccess);
 
-PALIMPORT
-int
-PALAPI
-// Start the jitdump file
-PAL_PerfJitDump_Start(const char* path);
-
-PALIMPORT
-bool
-PALAPI
-PAL_PerfJitDump_IsStarted();
-
-PALIMPORT
-int
-PALAPI
-// Log a method to the jitdump file.
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock);
-
-PALIMPORT
-int
-PALAPI
-// Finish the jitdump file
-PAL_PerfJitDump_Finish();
-
 /******************* winuser.h Entrypoints *******************************/
 
 #define IDOK                    1
@@ -2070,19 +2047,6 @@ RaiseFailFastException(
     IN PCONTEXT pContextRecord,
     IN DWORD dwFlags);
 
-PALIMPORT
-BOOL
-PALAPI
-QueryThreadCycleTime(
-    IN HANDLE ThreadHandle,
-    OUT PULONG64 CycleTime);
-
-PALIMPORT
-INT
-PALAPI
-PAL_nanosleep(
-    IN long timeInNs);
-
 typedef EXCEPTION_DISPOSITION (PALAPI_NOEXPORT *PVECTORED_EXCEPTION_HANDLER)(
                            struct _EXCEPTION_POINTERS *ExceptionPointers);
 
@@ -2602,24 +2566,9 @@ PAL_InjectActivation(
 );
 
 typedef struct _SYSTEM_INFO {
-    WORD wProcessorArchitecture_PAL_Undefined;
-    WORD wReserved_PAL_Undefined; // NOTE: diff from winbase.h - no obsolete dwOemId union
-    DWORD dwPageSize;
-    LPVOID lpMinimumApplicationAddress;
-    LPVOID lpMaximumApplicationAddress;
-    DWORD_PTR dwActiveProcessorMask_PAL_Undefined;
     DWORD dwNumberOfProcessors;
-    DWORD dwProcessorType_PAL_Undefined;
     DWORD dwAllocationGranularity;
-    WORD wProcessorLevel_PAL_Undefined;
-    WORD wProcessorRevision_PAL_Undefined;
-} SYSTEM_INFO, *LPSYSTEM_INFO;
-
-PALIMPORT
-VOID
-PALAPI
-GetSystemInfo(
-          OUT LPSYSTEM_INFO lpSystemInfo);
+} SYSTEM_INFO;
 
 //
 // The types of events that can be logged.
