@@ -247,6 +247,28 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 }
 
 //------------------------------------------------------------------------
+// TryGetCarryOp: Get the add/subtract with carry that computes "x + (cond + k)" or "x - (cond + k)"
+//    after a compare that sets the borrow iff "cond" (or iff "!cond").
+//
+// Arguments:
+//    isAdd        - true for "x + (cond + k)", false for "x - (cond + k)"
+//    borrowIsCond - true if the borrow is set iff "cond", false if it is set iff "!cond"
+//    k            - the constant added to "cond"
+//    carryOper    - [out] GT_ADD_HI or GT_SUB_HI
+//    imm          - [out] the second operand of the carry op
+//
+// Return Value:
+//    True if the target has such an instruction.
+//
+bool Lowering::TryGetCarryOp(bool isAdd, bool borrowIsCond, ssize_t k, genTreeOps* carryOper, ssize_t* imm)
+{
+    // adc adds the borrow (CF) and sbb subtracts it; "!cond" is "1 - cond".
+    *carryOper = (borrowIsCond == isAdd) ? GT_ADD_HI : GT_SUB_HI;
+    *imm       = borrowIsCond ? k : ~k;
+    return true;
+}
+
+//------------------------------------------------------------------------
 // LowerBinaryArithmetic: lowers the given binary arithmetic node.
 //
 // Recognizes opportunities for using target-independent "combined" nodes
