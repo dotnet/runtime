@@ -5976,9 +5976,8 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 
 #if defined(DEBUG) && defined(TARGET_X86)
-    // REG_ARG_0 (ECX) is trashed, so can be used as a temporary register.
     genStackPointerCheck(m_compiler->opts.compStackCheckOnCall && (call->gtCallType == CT_USER_FUNC),
-                         m_compiler->lvaCallSpCheck, call->CallerPop() ? 0 : stackArgBytes, REG_ARG_0);
+                         m_compiler->lvaCallSpCheck, call->CallerPop() ? 0 : stackArgBytes);
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
     unsigned stackAdjustBias = 0;
@@ -7536,7 +7535,9 @@ void CodeGen::genRemoveAlignmentAfterCall(GenTreeCall* call, unsigned bias)
 #if defined(TARGET_X86)
     if (bias != 0)
     {
-        if (bias == sizeof(int))
+        // LSRA may have allocated the call's result to ECX, so we can only pop into it when it's free.
+        bool resultInEcx = !call->TypeIs(TYP_VOID) && ((call->gtGetRegMask() & RBM_ECX) != RBM_NONE);
+        if ((bias == sizeof(int)) && !resultInEcx)
         {
             inst_RV(INS_pop, REG_ECX, TYP_INT);
         }

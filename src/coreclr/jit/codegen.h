@@ -1317,10 +1317,7 @@ protected:
 #endif // !TARGET_X86
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
-    void genStackPointerCheck(bool      doStackPointerCheck,
-                              unsigned  lvaStackPointerVar,
-                              ssize_t   offset = 0,
-                              regNumber regTmp = REG_NA);
+    void genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPointerVar, ssize_t offset = 0);
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #ifdef DEBUG

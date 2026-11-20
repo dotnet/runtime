@@ -1350,8 +1350,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 
             pUMEntryThunk = UMEntryThunkData::CreateUMEntryThunk();
 
-            Holder<UMEntryThunkData *, DoNothing, UMEntryThunkData::FreeUMEntryThunk> umHolder;
-            umHolder.Assign(pUMEntryThunk);
+            UMEntryThunkDataHolder umHolder(pUMEntryThunk);
 
             OBJECTHANDLE objhnd;
             PCODE pManagedTargetForDiagnostics;
@@ -1378,7 +1377,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             }
             else
             {
-                umHolder.SuppressRelease();
+                umHolder.Detach();
             }
 
             _ASSERTE(pUMEntryThunk != NULL);

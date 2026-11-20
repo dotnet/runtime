@@ -70,7 +70,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
-      <NativeCMakeArg Include="-cmakeargs &quot;-DBUILD_LIBS_NATIVE_BROWSER=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DGEN_PINVOKE=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_PAL_WS=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS=1&quot;" />

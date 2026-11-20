@@ -22,6 +22,14 @@ class InstanceFieldTest2 : InstanceFieldTest
     public int Value2;
 }
 
+class DerivedFromClassThatGainsFinalizer : ClassThatGainsFinalizer
+{
+}
+
+class IndirectlyDerivedFromClassThatGainsFinalizer : DerivedFromClassThatGainsFinalizer
+{
+}
+
 [StructLayout(LayoutKind.Sequential)]
 class InstanceFieldTestWithLayout : MyClassWithLayout
 {
@@ -78,6 +86,57 @@ public class Program
             // JIT is not allowed to assume Throw() will always be "no-return"
         }
         catch (InvalidOperationException) {}
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void ConsumeAllocation(int value, object instance)
+    {
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void AllocateClassThatGainsFinalizer(int a, int b)
+    {
+        ConsumeAllocation(a / b, new ClassThatGainsFinalizer());
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void AllocateDerivedFromClassThatGainsFinalizer(int a, int b)
+    {
+        ConsumeAllocation(a / b, new DerivedFromClassThatGainsFinalizer());
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void AllocateIndirectlyDerivedFromClassThatGainsFinalizer(int a, int b)
+    {
+        ConsumeAllocation(a / b, new IndirectlyDerivedFromClassThatGainsFinalizer());
+    }
+
+    static void TestAllocationSideEffects()
+    {
+        Action<int, int>[] allocations =
+        {
+            AllocateClassThatGainsFinalizer,
+            AllocateDerivedFromClassThatGainsFinalizer,
+            AllocateIndirectlyDerivedFromClassThatGainsFinalizer
+        };
+
+        foreach (Action<int, int> allocation in allocations)
+        {
+            bool threw = false;
+            try
+            {
+                allocation(1, 0);
+            }
+            catch (DivideByZeroException)
+            {
+                threw = true;
+            }
+
+            Assert.AreEqual(threw, true);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            Assert.AreEqual(ClassThatGainsFinalizer.FinalizedCount, 0);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -597,6 +656,9 @@ public class Program
 
         Console.WriteLine("TestThrowHelpers");
         TestThrowHelpers();
+
+        Console.WriteLine("TestAllocationSideEffects");
+        TestAllocationSideEffects();
 
         Console.WriteLine("TestConstrainedMethodCalls");
         TestConstrainedMethodCalls();
