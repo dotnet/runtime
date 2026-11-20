@@ -117,6 +117,7 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(AssemblyName_InitializeAssemblySpec)
     DllImportEntry(AssemblyNative_ApplyUpdate)
     DllImportEntry(AssemblyNative_GetAssemblyCount)
+    DllImportEntry(AssemblyNative_GetAssemblyFromHandle)
     DllImportEntry(AssemblyNative_GetCodeBase)
     DllImportEntry(AssemblyNative_GetEntryAssembly)
     DllImportEntry(AssemblyNative_GetEntryPoint)
@@ -177,10 +178,6 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(CustomAttribute_ParseAttributeUsageAttribute)
     DllImportEntry(DebugDebugger_Break)
     DllImportEntry(DebugDebugger_CustomNotification)
-#if defined(DEBUGGING_SUPPORTED)
-    DllImportEntry(DebugDebugger_GetFuncEvalArgumentType)
-    DllImportEntry(DebugDebugger_GetFuncEvalMethod)
-#endif // DEBUGGING_SUPPORTED
     DllImportEntry(DebugDebugger_IsLoggingHelper)
     DllImportEntry(DebugDebugger_IsManagedDebuggerAttached)
     DllImportEntry(DebugDebugger_Launch)
