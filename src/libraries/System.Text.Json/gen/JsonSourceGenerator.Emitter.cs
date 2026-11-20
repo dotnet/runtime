@@ -569,6 +569,8 @@ namespace System.Text.Json.SourceGeneration
                 string? ctorParamMetadataInitMethodName = null;
                 string? serializeMethodName = null;
 
+                bool omitAttributeProviders = contextSpec.GeneratedOptionsSpec?.EmitAttributeProviders is false;
+
                 if (ShouldGenerateMetadata(typeMetadata))
                 {
                     propInitMethodName = $"{typeFriendlyName}PropInit";
@@ -579,7 +581,8 @@ namespace System.Text.Json.SourceGeneration
                         ctorParamMetadataInitMethodName = $"{typeFriendlyName}CtorParamInit";
                     }
 
-                    if (constructionStrategy is ObjectConstructionStrategy.ParameterlessConstructor
+                    if (!omitAttributeProviders &&
+                        constructionStrategy is ObjectConstructionStrategy.ParameterlessConstructor
                                              or ObjectConstructionStrategy.ParameterizedConstructor)
                     {
                         string argTypes = typeMetadata.CtorParamGenSpecs.Count == 0
@@ -828,6 +831,8 @@ namespace System.Text.Json.SourceGeneration
 
             private void GeneratePropMetadataInitFunc(SourceWriter writer, ContextGenerationSpec contextSpec, string propInitMethodName, TypeGenerationSpec typeGenerationSpec)
             {
+                bool omitAttributeProviders = contextSpec.GeneratedOptionsSpec?.EmitAttributeProviders is false;
+
                 ImmutableEquatableArray<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecs;
                 HashSet<string> duplicateMemberNames = GetDuplicateMemberNames(properties);
 
@@ -874,12 +879,14 @@ namespace System.Text.Json.SourceGeneration
                             : $"({JsonConverterTypeRef}<{propertyTypeFQN}>)ExpandConverter(typeof({propertyTypeFQN}), new {converterFQN}(), options)";
                     }
 
-                    string attributeProviderFactoryExpr = property switch
-                    {
-                        _ when isIgnoredPropertyOfUnusedType => "null",
-                        { IsProperty: true } => $"typeof({property.DeclaringType.FullyQualifiedName}).GetProperty({FormatStringLiteral(property.MemberName)}, InstanceMemberBindingFlags, null, typeof({propertyTypeFQN}), {EmptyTypeArray}, null)",
-                        _ => $"typeof({property.DeclaringType.FullyQualifiedName}).GetField({FormatStringLiteral(property.MemberName)}, InstanceMemberBindingFlags)",
-                    };
+                    string attributeProviderFactoryExpr = omitAttributeProviders
+                        ? "null"
+                        : property switch
+                        {
+                            _ when isIgnoredPropertyOfUnusedType => "static () => null",
+                            { IsProperty: true } => $"static () => typeof({property.DeclaringType.FullyQualifiedName}).GetProperty({FormatStringLiteral(property.MemberName)}, InstanceMemberBindingFlags, null, typeof({propertyTypeFQN}), {EmptyTypeArray}, null)",
+                            _ => $"static () => typeof({property.DeclaringType.FullyQualifiedName}).GetField({FormatStringLiteral(property.MemberName)}, InstanceMemberBindingFlags)",
+                        };
 
                     writer.WriteLine($$"""
                         var info{{i}} = new {{JsonPropertyInfoValuesTypeRef}}<{{propertyTypeFQN}}>
@@ -897,7 +904,7 @@ namespace System.Text.Json.SourceGeneration
                             NumberHandling = {{FormatNumberHandling(property.NumberHandling)}},
                             PropertyName = {{FormatStringLiteral(property.MemberName)}},
                             JsonPropertyName = {{FormatStringLiteral(property.JsonPropertyName)}},
-                            AttributeProviderFactory = static () => {{attributeProviderFactoryExpr}},
+                            AttributeProviderFactory = {{attributeProviderFactoryExpr}},
                         };
 
                         properties[{{i}}] = {{JsonMetadataServicesTypeRef}}.CreatePropertyInfo<{{propertyTypeFQN}}>(options, info{{i}});
