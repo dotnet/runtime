@@ -140,7 +140,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override string ToString()
         {
-            return RuntimeMethodHelpers.ComputeToString(ref _common, this, Array.Empty<RuntimeTypeInfo>());
+            return RuntimeMethodHelpers.ComputeToString(ref _common, this, Array.Empty<RuntimeTypeInfo>(), Signature);
         }
 
         public sealed override RuntimeMethodHandle MethodHandle => _common.GetRuntimeMethodHandle(null);
@@ -149,9 +149,11 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return _lazyParameters ??= RuntimeParameterInfo.GetParameters(ref _common, this, Array.Empty<RuntimeTypeInfo>());
+                return _lazyParameters ??= RuntimeParameterInfo.GetParameters(ref _common, this, Signature);
             }
         }
+
+        private Signature Signature => _lazySignature ??= _common.GetSignature(Array.Empty<RuntimeTypeInfo>());
 
         protected sealed override MethodBaseInvoker UncachedMethodInvoker
         {
@@ -176,6 +178,7 @@ namespace System.Reflection.Runtime.MethodInfos
         }
 
         private volatile RuntimeParameterInfo[] _lazyParameters;
+        private volatile Signature _lazySignature;
         private TRuntimeMethodCommon _common;
     }
 }

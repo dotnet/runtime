@@ -15,6 +15,7 @@ using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
 
+using CorElementType = System.Reflection.CorElementType;
 using Debug = System.Diagnostics.Debug;
 using ReflectionExecution = Internal.Reflection.Execution.ReflectionExecution;
 
@@ -258,10 +259,13 @@ namespace Internal.StackTraceMetadata
                     return FormatAssemblyName(reader, typeRef.NamespaceOrEnclosingType);
                 case HandleType.TypeSpecification:
                     TypeSpecification typeSpec = reader.GetTypeSpecification(handle.ToTypeSpecificationHandle(reader));
-                    return FormatAssemblyName(reader, typeSpec.Signature);
-                case HandleType.TypeInstantiationSignature:
-                    TypeInstantiationSignature typeInst = reader.GetTypeInstantiationSignature(handle.ToTypeInstantiationSignatureHandle(reader));
-                    return FormatAssemblyName(reader, typeInst.GenericType);
+                    SigParser signature = new SigParser(typeSpec.Signature);
+                    if (signature.GetElemType() == CorElementType.ELEMENT_TYPE_GENERICINST
+                        && signature.GetElemType() is CorElementType.ELEMENT_TYPE_CLASS or CorElementType.ELEMENT_TYPE_VALUETYPE)
+                    {
+                        return FormatAssemblyName(reader, signature.GetToken());
+                    }
+                    return "<unknown>";
                 case HandleType.NamespaceDefinition:
                     NamespaceDefinition nsDef = reader.GetNamespaceDefinition(handle.ToNamespaceDefinitionHandle(reader));
                     return FormatAssemblyName(reader, nsDef.Scope);

@@ -63,9 +63,9 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             }
         }
 
-        public sealed override Type[] GetOptionalCustomModifiers() => FieldTypeHandle.GetCustomModifiers(_reader, _contextTypeInfo.TypeContext, optional: true);
+        public sealed override Type[] GetOptionalCustomModifiers() => GetSignature().GetCustomModifiers(0, isOptional: true);
 
-        public sealed override Type[] GetRequiredCustomModifiers() => FieldTypeHandle.GetCustomModifiers(_reader, _contextTypeInfo.TypeContext, optional: false);
+        public sealed override Type[] GetRequiredCustomModifiers() => GetSignature().GetCustomModifiers(0, isOptional: false);
 
         public sealed override int MetadataToken
         {
@@ -143,14 +143,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             return ReflectionCoreExecution.ExecutionEnvironment.TryGetFieldAccessor(this._reader, this.DeclaringType.TypeHandle, this.FieldType.TypeHandle, _fieldHandle);
         }
 
-        protected sealed override RuntimeTypeInfo FieldRuntimeType
-        {
-            get
-            {
-                TypeContext typeContext = _contextTypeInfo.TypeContext;
-                return FieldTypeHandle.Resolve(_reader, typeContext);
-            }
-        }
+        protected sealed override RuntimeTypeInfo FieldRuntimeType => GetSignature().FieldType.GetRuntimeTypeInfo();
 
         protected sealed override RuntimeTypeInfo DefiningType { get { return _definingTypeInfo; } }
 
@@ -160,14 +153,16 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         internal sealed override int ExplicitLayoutFieldOffsetData => (int)(_field.Offset);
 
-        public sealed override Type GetModifiedFieldType() => ModifiedType.Create(FieldRuntimeType.ToType(), _reader, FieldTypeHandle);
+        public sealed override Type GetModifiedFieldType() => ModifiedType.Create(FieldType, GetSignature());
 
-        private Handle FieldTypeHandle => _field.Signature.GetFieldSignature(_reader).Type;
+        private Signature GetSignature() =>
+            _lazySignature ??= new Signature(_reader, _field.Signature.GetFieldSignature(_reader).Blob, _contextTypeInfo.TypeContext);
 
         private readonly NativeFormatRuntimeNamedTypeInfo _definingTypeInfo;
         private readonly FieldHandle _fieldHandle;
 
         private readonly MetadataReader _reader;
         private readonly Field _field;
+        private volatile Signature? _lazySignature;
     }
 }

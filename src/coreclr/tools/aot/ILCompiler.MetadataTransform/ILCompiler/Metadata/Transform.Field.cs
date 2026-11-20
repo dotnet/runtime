@@ -55,12 +55,14 @@ namespace ILCompiler.Metadata
                 Ecma.MetadataReader reader = ecmaField.MetadataReader;
                 Ecma.FieldDefinition fieldDef = reader.GetFieldDefinition(ecmaField.Handle);
 
-                record.Signature = new FieldSignature
+                record.Signature = new FieldSignature();
+                if (entity.HasEmbeddedSignatureData)
+                    WriteFieldSignature(record.Signature.Blob, ecmaField.Module, fieldDef.Signature);
+                else
                 {
-                    Type = entity.HasEmbeddedSignatureData
-                        ? HandleFieldSignature(ecmaField.Module, fieldDef.Signature)
-                        : HandleType(entity.FieldType),
-                };
+                    record.Signature.Blob.WriteByte((byte)Ecma.SignatureKind.Field);
+                    WriteTypeSignature(record.Signature.Blob, entity.FieldType);
+                }
 
                 Ecma.ConstantHandle defaultValueHandle = fieldDef.GetDefaultValue();
                 if (!defaultValueHandle.IsNil)
@@ -84,12 +86,13 @@ namespace ILCompiler.Metadata
             }
         }
 
-        private MetadataRecord HandleFieldSignature(Cts.Ecma.EcmaModule module, Ecma.BlobHandle sigBlob)
+        private void WriteFieldSignature(MetadataBlob blob, Cts.Ecma.EcmaModule module, Ecma.BlobHandle sigBlob)
         {
             Ecma.BlobReader reader = module.MetadataReader.GetBlobReader(sigBlob);
             Ecma.SignatureHeader header = reader.ReadSignatureHeader();
             Debug.Assert(header.Kind == Ecma.SignatureKind.Field);
-            return HandleType(module, ref reader);
+            blob.WriteByte((byte)Ecma.SignatureKind.Field);
+            WriteTypeSignature(blob, module, ref reader);
         }
 
         private MemberReference HandleFieldReference(Cts.FieldDesc field)
@@ -101,11 +104,10 @@ namespace ILCompiler.Metadata
         {
             record.Name = HandleString(entity.GetName());
             record.Parent = HandleType(entity.OwningType);
-            record.Signature = new FieldSignature
-            {
-                Type = HandleType(entity.GetTypicalFieldDefinition().FieldType),
-                // TODO: CustomModifiers
-            };
+            FieldSignature signature = new FieldSignature();
+            signature.Blob.WriteByte((byte)Ecma.SignatureKind.Field);
+            WriteTypeSignature(signature.Blob, entity.GetTypicalFieldDefinition().FieldType);
+            record.Signature = signature;
         }
 
         private static FieldAttributes GetFieldAttributes(Cts.FieldDesc field)

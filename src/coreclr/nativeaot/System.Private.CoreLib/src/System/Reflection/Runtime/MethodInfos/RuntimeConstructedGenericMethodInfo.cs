@@ -214,6 +214,8 @@ namespace System.Reflection.Runtime.MethodInfos
             return _genericMethodDefinition.GetRuntimeReturnParameter(this);
         }
 
+        internal Signature Signature => _lazySignature ??= _genericMethodDefinition.CreateSignature(_genericTypeArguments);
+
         internal sealed override RuntimeMethodInfo WithReflectedTypeSetToDeclaringType
         {
             get
@@ -228,5 +230,6 @@ namespace System.Reflection.Runtime.MethodInfos
 
         private readonly RuntimeNamedMethodInfo _genericMethodDefinition;
         private readonly RuntimeTypeInfo[] _genericTypeArguments;
+        private volatile Signature _lazySignature;
     }
 }

@@ -12,7 +12,7 @@ using Ecma = System.Reflection.Metadata;
 using Debug = System.Diagnostics.Debug;
 using MethodAttributes = System.Reflection.MethodAttributes;
 using MethodImplAttributes = System.Reflection.MethodImplAttributes;
-using SignatureCallingConvention = Internal.Metadata.NativeFormat.SignatureCallingConvention;
+using MdSigCallingConvention = System.Reflection.MdSigCallingConvention;
 
 namespace ILCompiler.Metadata
 {
@@ -158,22 +158,8 @@ namespace ILCompiler.Metadata
 
         public override MethodSignature HandleMethodSignature(Cts.MethodSignature signature)
         {
-            // TODO: if Cts.MethodSignature implements Equals/GetHashCode, we could enable pooling here.
-
-            var result = new MethodSignature
-            {
-                CallingConvention = GetSignatureCallingConvention(signature),
-                GenericParameterCount = signature.GenericParameterCount,
-                ReturnType = HandleType(signature.ReturnType),
-                // TODO-NICE: VarArgParameters
-            };
-
-            result.Parameters.Capacity = signature.Length;
-            for (int i = 0; i < signature.Length; i++)
-            {
-                result.Parameters.Add(HandleType(signature[i]));
-            }
-
+            MethodSignature result = new MethodSignature();
+            WriteMethodSignature(result.Blob, signature);
             return result;
         }
 
@@ -185,26 +171,8 @@ namespace ILCompiler.Metadata
 
         private MethodSignature HandleMethodSignature(Cts.Ecma.EcmaModule module, ref Ecma.BlobReader blobReader)
         {
-            Ecma.SignatureHeader header = blobReader.ReadSignatureHeader();
-
-            int arity = header.IsGeneric ? blobReader.ReadCompressedInteger() : 0;
-
-            int count = blobReader.ReadCompressedInteger();
-
-            var result = new MethodSignature
-            {
-                CallingConvention = GetSignatureCallingConvention(header),
-                GenericParameterCount = arity,
-                ReturnType = HandleType(module, ref blobReader),
-                // TODO-NICE: VarArgParameters
-            };
-
-            result.Parameters.Capacity = count;
-            for (int i = 0; i < count; i++)
-            {
-                result.Parameters.Add(HandleType(module, ref blobReader));
-            }
-
+            MethodSignature result = new MethodSignature();
+            WriteMethodSignature(result.Blob, module, ref blobReader);
             return result;
         }
 
@@ -234,32 +202,32 @@ namespace ILCompiler.Metadata
                 throw new NotImplementedException();
         }
 
-        private static SignatureCallingConvention GetSignatureCallingConvention(Cts.MethodSignature signature)
+        private static MdSigCallingConvention GetSignatureCallingConvention(Cts.MethodSignature signature)
         {
-            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)SignatureCallingConvention.Cdecl);
-            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)SignatureCallingConvention.ThisCall);
-            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionMask == (int)SignatureCallingConvention.UnmanagedCallingConventionMask);
-            SignatureCallingConvention callingConvention = (SignatureCallingConvention)(signature.Flags & Cts.MethodSignatureFlags.UnmanagedCallingConventionMask);
+            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)MdSigCallingConvention.C);
+            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)MdSigCallingConvention.ThisCall);
+            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionMask == (int)MdSigCallingConvention.CallConvMask);
+            MdSigCallingConvention callingConvention = (MdSigCallingConvention)(signature.Flags & Cts.MethodSignatureFlags.UnmanagedCallingConventionMask);
             if ((signature.Flags & Cts.MethodSignatureFlags.Static) == 0)
             {
-                callingConvention |= SignatureCallingConvention.HasThis;
+                callingConvention |= MdSigCallingConvention.HasThis;
             }
             if ((signature.Flags & Cts.MethodSignatureFlags.ExplicitThis) != 0)
             {
-                callingConvention |= SignatureCallingConvention.ExplicitThis;
+                callingConvention |= MdSigCallingConvention.ExplicitThis;
             }
             return callingConvention;
         }
 
-        private static SignatureCallingConvention GetSignatureCallingConvention(Ecma.SignatureHeader signature)
+        private static MdSigCallingConvention GetSignatureCallingConvention(Ecma.SignatureHeader signature)
         {
-            Debug.Assert((int)Ecma.SignatureCallingConvention.CDecl == (int)SignatureCallingConvention.Cdecl);
-            Debug.Assert((int)Ecma.SignatureCallingConvention.ThisCall == (int)SignatureCallingConvention.ThisCall);
-            Debug.Assert((int)Ecma.SignatureCallingConvention.Unmanaged == (int)SignatureCallingConvention.Unmanaged);
-            SignatureCallingConvention callingConvention = (SignatureCallingConvention)(signature.CallingConvention);
+            Debug.Assert((int)Ecma.SignatureCallingConvention.CDecl == (int)MdSigCallingConvention.C);
+            Debug.Assert((int)Ecma.SignatureCallingConvention.ThisCall == (int)MdSigCallingConvention.ThisCall);
+            Debug.Assert((int)Ecma.SignatureCallingConvention.Unmanaged == (int)MdSigCallingConvention.Unmanaged);
+            MdSigCallingConvention callingConvention = (MdSigCallingConvention)(signature.CallingConvention);
             if (signature.IsInstance)
             {
-                callingConvention |= SignatureCallingConvention.HasThis;
+                callingConvention |= MdSigCallingConvention.HasThis;
             }
             return callingConvention;
         }

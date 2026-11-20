@@ -83,6 +83,8 @@
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.RuntimeAsyncYielder.cs" />
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncProfiler.CoreCLR.cs" />
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\RuntimeAsyncTaskContinuation.cs" />
+    <!-- TODO: shared with CoreCLR; move to the libraries partition (excluded from Mono) -->
+    <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Reflection\ModifiedType.CoreCLR.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
@@ -174,7 +176,6 @@
     <Compile Include="System\Reflection\Metadata\AssemblyExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataUpdater.cs" />
     <Compile Include="System\Reflection\MethodInvoker.cs" />
-    <Compile Include="System\Reflection\ModifiedType.NativeAot.cs" />
     <Compile Include="System\Reflection\RuntimeCustomAttributeData.NativeAot.cs" />
     <Compile Include="System\Reflection\RuntimeMethodInfo.cs" />
     <Compile Include="System\Reflection\RuntimeParameterInfo.NativeAot.cs" />
@@ -195,6 +196,7 @@
     <Compile Include="System\IO\FileLoadException.NativeAot.cs" />
     <Compile Include="System\IO\Stream.NativeAot.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
+    <Compile Include="System\Signature.NativeAot.cs" />
     <Compile Include="System\Diagnostics\Debug.NativeAot.cs" />
     <Compile Include="System\Diagnostics\Debugger.cs" />
     <Compile Include="System\Diagnostics\DebuggerGuidedStepThroughAttribute.cs" />
@@ -379,6 +381,7 @@
     <Compile Include="$(MetadataCommonPath)\MdBinaryReaderGen.cs" />
     <Compile Include="$(MetadataCommonPath)\NativeMetadataReader.cs" />
     <Compile Include="$(MetadataCommonPath)\NativeFormatReaderGen.cs" />
+    <Compile Include="$(MetadataCommonPath)\NativeFormatSignatures.cs" />
   </ItemGroup>
   <!-- Reflection.Core -->
   <ItemGroup>
@@ -433,8 +436,6 @@
     <Compile Include="System\Reflection\Runtime\General\TypeUnifier.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\QHandles.cs" />
     <Compile Include="System\Reflection\Runtime\General\QHandles.NativeFormat.cs" />
-    <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.cs" />
-    <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\NativeFormat\NativeFormatMethodCommon.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodInvoker.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodInvokerAction.cs" />

@@ -17,11 +17,11 @@ namespace System.Reflection.Runtime.MethodInfos
     internal static class RuntimeMethodHelpers
     {
         // Compute the ToString() value in a pay-to-play-safe way.
-        internal static string ComputeToString<TRuntimeMethodCommon>(ref TRuntimeMethodCommon runtimeMethodCommon, MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments)
+        internal static string ComputeToString<TRuntimeMethodCommon>(ref TRuntimeMethodCommon runtimeMethodCommon, MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, Signature sig)
             where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
         {
-            RuntimeParameterInfo returnParameter = RuntimeParameterInfo.GetReturnParameter(ref runtimeMethodCommon, contextMethod, methodTypeArguments);
-            RuntimeParameterInfo[] parameters = RuntimeParameterInfo.GetParameters(ref runtimeMethodCommon, contextMethod, methodTypeArguments);
+            RuntimeParameterInfo returnParameter = RuntimeParameterInfo.GetReturnParameter(ref runtimeMethodCommon, contextMethod, sig);
+            RuntimeParameterInfo[] parameters = RuntimeParameterInfo.GetParameters(ref runtimeMethodCommon, contextMethod, sig);
             return ComputeToString(contextMethod, methodTypeArguments, parameters, returnParameter);
         }
 

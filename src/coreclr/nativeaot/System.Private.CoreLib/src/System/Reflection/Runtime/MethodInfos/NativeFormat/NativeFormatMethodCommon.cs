@@ -24,26 +24,11 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
 
         public MethodBaseInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant, out Exception exception)
         {
-            return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(DeclaringType, new QMethodDefinition(Reader, MethodHandle), methodArguments, exceptionPertainant, MethodSignature.Parameters.Count, out exception);
+            return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(DeclaringType, new QMethodDefinition(Reader, MethodHandle), methodArguments, exceptionPertainant, MethodSignature.ParameterCount, out exception);
         }
 
-        public QSignatureTypeHandle[] QualifiedMethodSignature
-        {
-            get
-            {
-                MethodSignature methodSignature = this.MethodSignature;
-
-                QSignatureTypeHandle[] typeSignatures = new QSignatureTypeHandle[methodSignature.Parameters.Count + 1];
-                typeSignatures[0] = new QSignatureTypeHandle(_reader, methodSignature.ReturnType, true);
-                int paramIndex = 1;
-                foreach (Handle parameterTypeSignatureHandle in methodSignature.Parameters)
-                {
-                    typeSignatures[paramIndex++] = new QSignatureTypeHandle(_reader, parameterTypeSignatureHandle, true);
-                }
-
-                return typeSignatures;
-            }
-        }
+        public Signature GetSignature(RuntimeTypeInfo[] methodTypeArguments) =>
+            new Signature(_reader, MethodSignature.Blob, new TypeContext(DeclaringType.TypeContext.GenericTypeArguments, methodTypeArguments));
 
         public NativeFormatMethodCommon RuntimeMethodCommonOfUninstantiatedMethod
         {
@@ -114,8 +99,8 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
         {
             get
             {
-                var sigCallingConvention = MethodSignature.CallingConvention;
-                return (sigCallingConvention & Internal.Metadata.NativeFormat.SignatureCallingConvention.HasThis) != 0
+                MdSigCallingConvention sigCallingConvention = MethodSignature.CallingConvention;
+                return (sigCallingConvention & MdSigCallingConvention.HasThis) != 0
                     ? CallingConventions.HasThis : 0;
             }
         }
