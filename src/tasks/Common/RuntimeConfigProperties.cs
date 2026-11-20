@@ -107,7 +107,7 @@ internal static class RuntimeConfigProperties
     private sealed class RuntimeOptions
     {
         [JsonPropertyName("configProperties")]
-        public Dictionary<string, string>? ConfigProperties { get; set; }
+        public Dictionary<string, string>? ConfigProperties { get; set; } = new();
     }
 
     private sealed class Root
