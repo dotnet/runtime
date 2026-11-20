@@ -43,7 +43,7 @@ jobs:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Alpine.Edge.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-edge-helix-amd64@sha256:35243b561871ca5a68cc3c6c0c3faff79c70aa8c27579e22abb62a2f47f887ff
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.324.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64@sha256:69ad1feec51f3f93d08efd4927717e5ed073406478fe637b19adc858f28b807c
+        - (Alpine.324.Amd64.Open)AzureLinux.4.Amd64.Open@wfurthelixpoc.azurecr.io/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64-scriptless-b907036@sha256:9ac64c8156672650af15a7c41dd015bfc186dd7e662044e5eed5143bbf405f43
 
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'linux_musl_arm64') }}:
