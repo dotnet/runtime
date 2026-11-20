@@ -28,11 +28,13 @@
     <Compile Include="BigInteger\IsOne.cs" />
     <Compile Include="BigInteger\IsPowerOfTwo.cs" />
     <Compile Include="BigInteger\IsZero.cs" />
+    <Compile Include="BigInteger\leastcommonmultiple.cs" />
     <Compile Include="BigInteger\log.cs" />
     <Compile Include="BigInteger\log02.cs" />
     <Compile Include="BigInteger\log10.cs" />
     <Compile Include="BigInteger\max.cs" />
     <Compile Include="BigInteger\min.cs" />
+    <Compile Include="BigInteger\modinverse.cs" />
     <Compile Include="BigInteger\modpow.cs" />
     <Compile Include="BigInteger\multiply.cs" />
     <Compile Include="BigInteger\MyBigInt.cs" />
