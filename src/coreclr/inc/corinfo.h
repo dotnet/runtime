@@ -1245,6 +1245,15 @@ struct CORINFO_RUNTIME_LOOKUP
     CORINFO_CONST_LOOKUP helperEntryPoint;
 };
 
+// EE-owned state carried until a deferred call lookup is prepared.
+struct CORINFO_DEFERRED_LOOKUP
+{
+    CORINFO_METHOD_HANDLE method;
+    unsigned              entryKind;
+    unsigned              interfaceIndex;
+    bool                  reuseResolvedTarget;
+};
+
 // Result of calling embedGenericHandle
 struct CORINFO_LOOKUP
 {
@@ -1254,6 +1263,9 @@ struct CORINFO_LOOKUP
     {
         // If kind.needsRuntimeLookup then this indicates how to do the lookup
         CORINFO_RUNTIME_LOOKUP  runtimeLookup;
+
+        // If runtimeLookupKind is CORINFO_LOOKUP_DEFERRED, pass this state back to the EE.
+        CORINFO_DEFERRED_LOOKUP deferredLookup;
 
         // If the handle is obtained at compile-time, then this handle is the "exact" handle (class, method, or field)
         // Otherwise, it's a representative...  If accessType is

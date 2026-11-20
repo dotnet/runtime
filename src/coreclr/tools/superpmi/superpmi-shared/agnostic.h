@@ -55,11 +55,22 @@ struct Agnostic_CORINFO_RUNTIME_LOOKUP
     Agnostic_CORINFO_CONST_LOOKUP helperEntryPoint;
 };
 
+struct Agnostic_CORINFO_DEFERRED_LOOKUP
+{
+    DWORDLONG method;
+    DWORD entryKind;
+    DWORD interfaceIndex;
+    DWORD reuseResolvedTarget;
+};
+
 struct Agnostic_CORINFO_LOOKUP
 {
     Agnostic_CORINFO_LOOKUP_KIND    lookupKind;
-    Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup; // This and constLookup actually a union, but with different
-                                                   // layouts.. :-| copy the right one based on lookupKinds value
+    union
+    {
+        Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup;
+        Agnostic_CORINFO_DEFERRED_LOOKUP deferredLookup;
+    };
     Agnostic_CORINFO_CONST_LOOKUP constLookup;
 };
 

@@ -2994,7 +2994,8 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
                                                         CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
                                                         MethodDesc * pTemplateMD /* for method-based slots */,
                                                         MethodDesc * pCallerMD,
-                                                        CORINFO_LOOKUP *pResultLookup)
+                                                        CORINFO_LOOKUP *pResultLookup,
+                                                        DWORD interfaceIndex)
 {
     CONTRACTL{
         STANDARD_VM_CHECK;
@@ -3213,6 +3214,7 @@ NoSpecialCase:
 
     case MethodDescSlot:
     case MethodEntrySlot:
+    case InterfaceMethodEntrySlot:
     case DispatchStubAddrSlot:
         {
             // Encode containing type
@@ -3225,6 +3227,12 @@ NoSpecialCase:
             {
                 sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
                 sigBuilder.AppendPointer(pResolvedToken->hClass);
+            }
+
+            if (entryKind == InterfaceMethodEntrySlot)
+            {
+                _ASSERTE(interfaceIndex != (DWORD)-1);
+                sigBuilder.AppendData(interfaceIndex);
             }
 
             // Encode method
@@ -3241,7 +3249,7 @@ NoSpecialCase:
                 methodFlags |= ENCODE_METHOD_SIG_UnboxingStub;
             // Always create instantiating stub for method entry points even if the template does not ask for it. It saves caller
             // from creating throw-away instantiating stub.
-            if (pTemplateMD->IsInstantiatingStub() || (entryKind == MethodEntrySlot))
+            if (pTemplateMD->IsInstantiatingStub() || (entryKind == MethodEntrySlot) || (entryKind == InterfaceMethodEntrySlot))
                 methodFlags |= ENCODE_METHOD_SIG_InstantiatingStub;
             if (fMethodNeedsInstantiation)
                 methodFlags |= ENCODE_METHOD_SIG_MethodInstantiation;
@@ -5213,27 +5221,49 @@ void CEEInfo::getCallInfo(
         {
             pResult->kind = CORINFO_CALL_CODE_POINTER;
 
+            MethodDesc* lookupMethod = pMD;
+            DWORD interfaceIndex = (DWORD)-1;
+            bool reuseResolvedTarget = false;
+            if (fResolvedConstraint && !fForceUseRuntimeLookup && pTargetMD->IsInterface())
+            {
+                _ASSERTE(pTargetMD->IsStatic());
+                MethodTable::InterfaceMapIterator it = constrainedType.GetMethodTable()->IterateInterfaceMap();
+                while (it.Next())
+                {
+                    if (!it.HasSameTypeDefAs(pTargetMD->GetMethodTable()))
+                        continue;
+
+                    // Multiple instantiations of the declaring interface are ambiguous here.
+                    if (interfaceIndex != (DWORD)-1)
+                    {
+                        interfaceIndex = (DWORD)-1;
+                        break;
+                    }
+                    interfaceIndex = it.GetIndex();
+                }
+            }
+
             DictionaryEntryKind entryKind;
             if (constrainedType.IsNull() || ((flags & CORINFO_CALLINFO_CALLVIRT) && !constrainedType.IsValueType()))
             {
-                // For reference types, the constrained type does not affect method resolution on a callvirt, and if there is no
-                // constraint, it doesn't effect it either
                 entryKind = MethodEntrySlot;
+            }
+            else if (fResolvedConstraint && !fForceUseRuntimeLookup &&
+                     (!pTargetMD->IsInterface() || interfaceIndex != (DWORD)-1))
+            {
+                lookupMethod = pTargetMD;
+                reuseResolvedTarget = true;
+                entryKind = pTargetMD->IsInterface() ? InterfaceMethodEntrySlot : MethodEntrySlot;
             }
             else
             {
-                // constrained. callvirt case where the constraint type is a valuetype
-                // OR
-                // constrained. call or constrained. ldftn case
                 entryKind = ConstrainedMethodEntrySlot;
             }
-            // The runtime lookup is computed in prepareCallLookups. Mark it as not-yet-computed
-            // with CORINFO_LOOKUP_DEFERRED and store the entry kind and template method
-            // for prepareCallLookups to consume.
+
             pResult->codePointerLookup.lookupKind.needsRuntimeLookup = true;
             pResult->codePointerLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
-            pResult->codePointerLookup.runtimeLookup.helper = (CorInfoHelpFunc)entryKind;
-            pResult->codePointerLookup.runtimeLookup.signature = (LPVOID)pMD;
+            pResult->codePointerLookup.deferredLookup = {
+                (CORINFO_METHOD_HANDLE)lookupMethod, (unsigned)entryKind, interfaceIndex, reuseResolvedTarget};
         }
         else
         {
@@ -5285,9 +5315,10 @@ void CEEInfo::getCallInfo(
         {
             pResult->stubLookup.lookupKind.needsRuntimeLookup = true;
             pResult->stubLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
-            pResult->stubLookup.runtimeLookup.helper =
-                (CorInfoHelpFunc)(fIsStaticVirtualMethod ? ConstrainedMethodEntrySlot : DispatchStubAddrSlot);
-            pResult->stubLookup.runtimeLookup.signature = (LPVOID)pMD;
+            pResult->stubLookup.deferredLookup = {
+                (CORINFO_METHOD_HANDLE)pMD,
+                (unsigned)(fIsStaticVirtualMethod ? ConstrainedMethodEntrySlot : DispatchStubAddrSlot),
+                (DWORD)-1, false};
         }
         else
         {
@@ -5551,15 +5582,30 @@ void CEEInfo::prepareCallLookups(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     if (pCallInfo->kind == CORINFO_CALL_CODE_POINTER || pCallInfo->kind == CORINFO_VIRTUALCALL_STUB)
     {
         _ASSERTE(pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
-        DictionaryEntryKind entryKind = (DictionaryEntryKind)pCallInfo->codePointerLookup.runtimeLookup.helper;
-        MethodDesc* pTemplateMD = (MethodDesc*)pCallInfo->codePointerLookup.runtimeLookup.signature;
-        _ASSERTE(entryKind == MethodEntrySlot || entryKind == ConstrainedMethodEntrySlot || entryKind == DispatchStubAddrSlot);
-        ComputeRuntimeLookupForSharedGenericToken(entryKind,
-                                                  pResolvedToken,
-                                                  pConstrainedResolvedToken,
-                                                  pTemplateMD,
-                                                  GetMethod(callerHandle),
-                                                  &pCallInfo->codePointerLookup);
+        CORINFO_DEFERRED_LOOKUP deferred = pCallInfo->codePointerLookup.deferredLookup;
+        DictionaryEntryKind entryKind = (DictionaryEntryKind)deferred.entryKind;
+        MethodDesc* lookupMethod = GetMethod(deferred.method);
+        _ASSERTE(entryKind == MethodEntrySlot || entryKind == ConstrainedMethodEntrySlot ||
+                 entryKind == InterfaceMethodEntrySlot || entryKind == DispatchStubAddrSlot);
+
+        CORINFO_RESOLVED_TOKEN resolvedTargetToken;
+        CORINFO_RESOLVED_TOKEN* lookupToken = pResolvedToken;
+        if (deferred.reuseResolvedTarget)
+        {
+            _ASSERTE(pConstrainedResolvedToken != nullptr);
+            _ASSERTE(pResolvedToken->tokenScope == pConstrainedResolvedToken->tokenScope);
+            // Use the constrained type's owner substitution and retain the caller's method arguments.
+            resolvedTargetToken = *pResolvedToken;
+            resolvedTargetToken.hClass = pConstrainedResolvedToken->hClass;
+            resolvedTargetToken.hMethod = deferred.method;
+            resolvedTargetToken.pTypeSpec = pConstrainedResolvedToken->pTypeSpec;
+            resolvedTargetToken.cbTypeSpec = pConstrainedResolvedToken->cbTypeSpec;
+            lookupToken = &resolvedTargetToken;
+        }
+
+        ComputeRuntimeLookupForSharedGenericToken(entryKind, lookupToken, pConstrainedResolvedToken,
+                                                  lookupMethod, GetMethod(callerHandle),
+                                                  &pCallInfo->codePointerLookup, deferred.interfaceIndex);
         return;
     }
 

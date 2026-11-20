@@ -1103,12 +1103,15 @@ namespace Internal.JitInterface
             CORINFO_RESOLVED_TOKEN* constrainedToken, CORINFO_METHOD_STRUCT_* caller, CORINFO_CALL_INFO* callInfo)
         {
 #if READYTORUN
-            if (callInfo->kind == CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB)
+            if (callInfo->kind == CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER ||
+                callInfo->kind == CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB)
             {
                 Debug.Assert(callInfo->codePointerOrStubLookup.lookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED);
-                MethodDesc method = HandleToObject((CORINFO_METHOD_STRUCT_*)callInfo->codePointerOrStubLookup.runtimeLookup.signature);
-                ComputeRuntimeLookupForSharedGenericToken(Internal.ReadyToRunConstants.DictionaryEntryKind.DispatchStubAddrSlot,
-                    ref resolvedToken, null, method, HandleToObject(caller), ref callInfo->codePointerOrStubLookup);
+                CORINFO_DEFERRED_LOOKUP deferred = callInfo->codePointerOrStubLookup.deferredLookup;
+                ComputeRuntimeLookupForSharedGenericToken((Internal.ReadyToRunConstants.DictionaryEntryKind)deferred.entryKind,
+                    ref resolvedToken, callInfo->kind == CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB ? null : constrainedToken,
+                    HandleToObject(deferred.method), HandleToObject(caller),
+                    ref callInfo->codePointerOrStubLookup, deferred.reuseResolvedTarget);
                 return;
             }
 #endif

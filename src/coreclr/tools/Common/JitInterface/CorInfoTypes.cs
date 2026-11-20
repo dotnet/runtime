@@ -253,6 +253,15 @@ namespace Internal.JitInterface
         public CORINFO_CONST_LOOKUP helperEntryPoint;
     }
 
+    public unsafe struct CORINFO_DEFERRED_LOOKUP
+    {
+        public CORINFO_METHOD_STRUCT_* method;
+        public uint entryKind;
+        public uint interfaceIndex;
+        private byte _reuseResolvedTarget;
+        public bool reuseResolvedTarget { get => _reuseResolvedTarget != 0; set => _reuseResolvedTarget = value ? (byte)1 : (byte)0; }
+    }
+
     // Result of calling embedGenericHandle
     public unsafe struct CORINFO_LOOKUP
     {
@@ -260,6 +269,16 @@ namespace Internal.JitInterface
 
         // If kind.needsRuntimeLookup then this indicates how to do the lookup
         public CORINFO_RUNTIME_LOOKUP runtimeLookup;
+
+        public ref CORINFO_DEFERRED_LOOKUP deferredLookup
+        {
+            get
+            {
+                Debug.Assert(sizeof(CORINFO_RUNTIME_LOOKUP) >= sizeof(CORINFO_DEFERRED_LOOKUP));
+                fixed (CORINFO_RUNTIME_LOOKUP* p = &runtimeLookup)
+                    return ref *(CORINFO_DEFERRED_LOOKUP*)p;
+            }
+        }
 
         // If the handle is obtained at compile-time, then this handle is the "exact" handle (class, method, or field)
         // Otherwise, it's a representative...  If accessType is

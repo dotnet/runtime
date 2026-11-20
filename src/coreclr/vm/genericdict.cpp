@@ -859,6 +859,7 @@ Dictionary::PopulateEntry(
         case MethodDescSlot:
         case DispatchStubAddrSlot:
         case MethodEntrySlot:
+        case InterfaceMethodEntrySlot:
         case DeclaringTypeHandleFromMethodSlot:
         {
             TypeHandle ownerType;
@@ -970,6 +971,14 @@ Dictionary::PopulateEntry(
 
                 pOwnerMT = ownerType.GetMethodTable();
                 _ASSERTE(pOwnerMT != NULL);
+
+                if (kind == InterfaceMethodEntrySlot)
+                {
+                    uint32_t interfaceIndex;
+                    IfFailThrow(ptr.GetData(&interfaceIndex));
+                    MethodTable::InterfaceMapIterator it = pOwnerMT->IterateInterfaceMapFrom(interfaceIndex);
+                    pOwnerMT = it.GetInterface(pOwnerMT);
+                }
 
                 IfFailThrow(ptr.GetData(&methodFlags));
 
@@ -1216,7 +1225,7 @@ Dictionary::PopulateEntry(
                 result = (CORINFO_GENERIC_HANDLE)pResolvedMD->GetMultiCallableAddrOfCode();
             }
             else
-            if (kind == MethodEntrySlot)
+            if (kind == MethodEntrySlot || kind == InterfaceMethodEntrySlot)
             {
                 if (isReadyToRunModule)
                     pMethod->PrepareForUseAsACallTargetOfANativeImage();
