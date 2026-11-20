@@ -304,6 +304,7 @@ public static class Entrypoints
                 UniqueComInterfaceMarshaller<ICorDebugDataTarget>.ConvertToManaged((void*)pTarget)!;
             dataTargetComObject = (ComObject)(object)dataTarget;
             ContractDescriptorTarget target = CreateTargetFromCorDebugDataTarget(dataTarget, contractDescriptorAddress, runtimeBase);
+            Contracts.CoreCLRContracts.ValidateForDataAccess(target);
             Legacy.DacDbiImpl impl = new(target, legacyObj: null, apiLock: new Lock(), dataTargetComObject: dataTargetComObject);
             *iface = ComInterfaceMarshaller<IDacDbiInterface>.ConvertToUnmanaged(impl);
             dataTargetComObject = null;

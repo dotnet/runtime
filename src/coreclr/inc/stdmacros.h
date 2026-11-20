@@ -169,35 +169,6 @@
 #endif
 
 
-inline void *GetTopMemoryAddress(void)
-{
-    WRAPPER_NO_CONTRACT;
-
-    static void *result; // = NULL;
-    if( NULL == result )
-    {
-        SYSTEM_INFO sysInfo;
-        GetSystemInfo( &sysInfo );
-        result = sysInfo.lpMaximumApplicationAddress;
-    }
-    return result;
-}
-inline void *GetBotMemoryAddress(void)
-{
-    WRAPPER_NO_CONTRACT;
-
-    static void *result; // = NULL;
-    if( NULL == result )
-    {
-        SYSTEM_INFO sysInfo;
-        GetSystemInfo( &sysInfo );
-        result = sysInfo.lpMinimumApplicationAddress;
-    }
-    return result;
-}
-
-#define TOP_MEMORY (GetTopMemoryAddress())
-#define BOT_MEMORY (GetBotMemoryAddress())
 
 
 //

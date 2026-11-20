@@ -28,15 +28,18 @@ namespace System.Buffers.Text
 
         [Conditional("DEBUG")]
         internal static unsafe void AssertWrite<TVector>(byte* dest, byte* destStart, int destLength)
+            => AssertWrite(dest, destStart, destLength, sizeof(TVector));
+
+        [Conditional("DEBUG")]
+        internal static unsafe void AssertWrite(byte* dest, byte* destStart, int destLength, int writeLength)
         {
-            int vectorElements = sizeof(TVector);
-            byte* writeEnd = dest + vectorElements;
+            byte* writeEnd = dest + writeLength;
             byte* destEnd = destStart + destLength;
 
             if (writeEnd > destEnd)
             {
                 int destIndex = (int)(dest - destStart);
-                Debug.Fail($"Write for {typeof(TVector)} is not within safe bounds. destIndex: {destIndex}, destLength: {destLength}");
+                Debug.Fail($"Write of {writeLength} bytes is not within safe bounds. destIndex: {destIndex}, destLength: {destLength}");
             }
         }
 
