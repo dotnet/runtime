@@ -1,13 +1,14 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Immutable;
 using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-    internal readonly partial struct TypeProxy
+    internal readonly partial struct TypeProxy : IEquatable<TypeProxy>
     {
         public TypeProxy(ITypeSymbol type) => Type = type;
 
@@ -37,6 +38,12 @@ namespace ILLink.Shared.TypeSystemProxy
         public bool IsTypeOf(WellKnownType wellKnownType) => Type.IsTypeOf(wellKnownType);
 
         public string GetDisplayName() => Type.GetDisplayName();
+
+        public bool Equals(TypeProxy other) => SymbolEqualityComparer.Default.Equals(Type, other.Type);
+
+        public override bool Equals(object? obj) => obj is TypeProxy other && Equals(other);
+
+        public override int GetHashCode() => SymbolEqualityComparer.Default.GetHashCode(Type);
 
         public override string ToString() => Type.ToString();
     }

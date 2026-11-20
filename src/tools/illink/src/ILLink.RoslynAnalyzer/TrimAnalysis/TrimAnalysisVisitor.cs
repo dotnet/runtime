@@ -45,23 +45,24 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         readonly TypeNameResolver _typeNameResolver;
         readonly RequiresUnreferencedCodeAnalyzer? _trimAnalyzer;
+        private readonly AnalyzerCompilationState _compilationState;
 
         public TrimAnalysisVisitor(
             Compilation compilation,
             LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice> lattice,
             ISymbol owningSymbol,
-            ControlFlowGraph methodCFG,
-            ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
+            ControlFlowGraphProxy methodCFG,
             TrimAnalysisPatternStore trimAnalysisPatterns,
             InterproceduralState<MultiValue, ValueSetLattice<SingleValue>> interproceduralState,
             DataFlowAnalyzerContext dataFlowAnalyzerContext)
-            : base(compilation, lattice, owningSymbol, methodCFG, lValueFlowCaptures, interproceduralState)
+            : base(compilation, lattice, owningSymbol, methodCFG, interproceduralState)
         {
             _multiValueLattice = lattice.LocalStateLattice.Lattice.ValueLattice;
             TrimAnalysisPatterns = trimAnalysisPatterns;
             _featureChecksVisitor = new FeatureChecksVisitor(dataFlowAnalyzerContext);
             _typeNameResolver = new TypeNameResolver(compilation);
             _trimAnalyzer = dataFlowAnalyzerContext.TrimAnalyzer;
+            _compilationState = dataFlowAnalyzerContext.CompilationState;
         }
 
         public override FeatureChecksValue GetConditionValue(IOperation branchValueOperation, StateValue state)
@@ -154,7 +155,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             // It can also happen that we see this for a static method - for example a delegate creation
             // over a local function does this, even thought the "this" makes no sense inside a static scope.
             if (OwningSymbol is IMethodSymbol method && !method.IsStatic)
-                return new MethodParameterValue(new ParameterProxy(new(method), (ParameterIndex)0));
+            {
+                return _compilationState.FlowAnnotations.GetMethodThisParameterValue(new(method));
+            }
 
             return TopValue;
         }
@@ -244,7 +247,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
             ProcessGenericArgumentDataFlow(field, fieldReference, featureContext);
 
-            return new FieldValue(field);
+            return new FieldValue(field, _compilationState);
         }
 
         public override MultiValue GetBackingFieldTargetValue(IPropertyReferenceOperation propertyReference, in FeatureContext featureContext)
@@ -257,18 +260,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
             ProcessGenericArgumentDataFlow(property, propertyReference, featureContext);
 
-            return new FieldValue(property);
+            return new FieldValue(property, _compilationState);
         }
 
         public override MultiValue GetTupleElementValue(IFieldSymbol tupleElement)
         {
-            return new FieldValue(tupleElement);
+            return new FieldValue(tupleElement, _compilationState);
         }
 
         public override MultiValue GetConversionValue(IMethodSymbol conversionOperator, MultiValue operandValue)
         {
-            return conversionOperator.ReturnType.IsTypeInterestingForDataflow(isByRef: conversionOperator.ReturnsByRef)
-                ? new MethodReturnValue(conversionOperator, isNewObj: false)
+            return conversionOperator.ReturnType.IsTypeInterestingForDataflow(isByRef: conversionOperator.ReturnsByRef, _compilationState)
+                ? _compilationState.FlowAnnotations.GetMethodReturnValue(new(conversionOperator), isNewObj: false)
                 : operandValue;
         }
 
@@ -285,19 +288,17 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                 return TopValue;
             }
 
-            return new MethodParameterValue(new ParameterProxy(parameter, parameterMethod));
+            return _compilationState.FlowAnnotations.GetMethodParameterValue(new ParameterProxy(parameter, parameterMethod));
         }
 
         public override void HandleAssignment(MultiValue source, MultiValue target, IOperation operation, in FeatureContext featureContext)
         {
-            if (target.Equals(TopValue))
+            if (_trimAnalyzer is null || target.Equals(TopValue))
+            {
                 return;
+            }
 
-            // TODO: consider not tracking patterns unless the target is something
-            // annotated with DAMT.
-            TrimAnalysisPatterns.Add(
-                // This will copy the values if necessary
-                new TrimAnalysisAssignmentPattern(source, target, operation, OwningSymbol, featureContext));
+            TrimAnalysisPatterns.AddAssignment(source, target, operation, OwningSymbol, featureContext);
         }
 
         public override MultiValue HandleArrayElementRead(MultiValue arrayValue, MultiValue indexValue, IOperation operation)
@@ -365,16 +366,15 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             //   Especially with DAM on type, this can lead to incorrectly analyzed code (as in unknown type which leads
             //   to noise). ILLink has the same problem currently: https://github.com/dotnet/linker/issues/1952
 
-            HandleCall(_trimAnalyzer, FeatureContext.None, _typeNameResolver, operation, OwningSymbol, calledMethod, instance, arguments, Location.None, null, _multiValueLattice, out MultiValue methodReturnValue);
+            HandleCall(_trimAnalyzer, FeatureContext.None, _typeNameResolver, operation, OwningSymbol, calledMethod, instance, arguments, Location.None, null, _multiValueLattice, _compilationState.FlowAnnotations, out MultiValue methodReturnValue);
 
-            // This will copy the values if necessary
-            TrimAnalysisPatterns.Add(new TrimAnalysisMethodCallPattern(
+            TrimAnalysisPatterns.AddMethodCall(
                 calledMethod,
                 instance,
                 arguments,
                 operation,
                 OwningSymbol,
-                featureContext));
+                featureContext);
 
             ProcessGenericArgumentDataFlow(calledMethod, operation, featureContext);
 
@@ -404,9 +404,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             Location location,
             Action<Diagnostic>? reportDiagnostic,
             ValueSetLattice<SingleValue> multiValueLattice,
+            FlowAnnotations annotations,
             out MultiValue methodReturnValue)
         {
-            var handleCallAction = new HandleCallAction(trimAnalyzer, featureContext, typeNameResolver, location, owningSymbol, operation, multiValueLattice, reportDiagnostic);
+            var handleCallAction = new HandleCallAction(trimAnalyzer, featureContext, typeNameResolver, location, owningSymbol, operation, multiValueLattice, annotations, reportDiagnostic);
             MethodProxy method = new(calledMethod);
             var intrinsicId = Intrinsics.GetIntrinsicIdForMethod(method);
             if (!handleCallAction.Invoke(method, instance, arguments, intrinsicId, out methodReturnValue))
@@ -420,17 +421,21 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         public override void HandleReturnValue(MultiValue returnValue, IOperation operation, in FeatureContext featureContext)
         {
+            if (_trimAnalyzer is null)
+            {
+                return;
+            }
+
             // Return statements should only happen inside of method bodies.
             Debug.Assert(OwningSymbol is IMethodSymbol);
             if (OwningSymbol is not IMethodSymbol method)
                 return;
 
-            if (method.ReturnType.IsTypeInterestingForDataflow(isByRef: method.ReturnsByRef))
+            if (method.ReturnType.IsTypeInterestingForDataflow(isByRef: method.ReturnsByRef, _compilationState))
             {
-                var returnParameter = new MethodReturnValue(method, isNewObj: false);
+                MethodReturnValue returnParameter = _compilationState.FlowAnnotations.GetMethodReturnValue(new(method), isNewObj: false);
 
-                TrimAnalysisPatterns.Add(
-                    new TrimAnalysisAssignmentPattern(returnValue, returnParameter, operation, OwningSymbol, featureContext));
+                TrimAnalysisPatterns.AddAssignment(returnValue, returnParameter, operation, OwningSymbol, featureContext);
             }
         }
 

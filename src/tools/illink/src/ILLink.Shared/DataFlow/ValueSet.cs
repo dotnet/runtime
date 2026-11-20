@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 
@@ -13,7 +14,7 @@ using System.Text;
 
 namespace ILLink.Shared.DataFlow
 {
-    public readonly struct ValueSet<TValue> : IEquatable<ValueSet<TValue>>, IDeepCopyValue<ValueSet<TValue>>
+    public readonly struct ValueSet<TValue> : IEquatable<ValueSet<TValue>>, IDeepCopyValue<ValueSet<TValue>>, IValueWithMutableState
         where TValue : notnull
     {
         private const int MaxValuesInSet = 256;
@@ -33,6 +34,14 @@ namespace ILLink.Shared.DataFlow
         private sealed class EnumerableValues : HashSet<TValue>
         {
             public EnumerableValues(IEnumerable<TValue> values) : base(values) { }
+
+            public EnumerableValues(Enumerable values)
+            {
+                foreach (TValue value in values)
+                {
+                    Add(value);
+                }
+            }
 
             public override int GetHashCode()
             {
@@ -80,25 +89,24 @@ namespace ILLink.Shared.DataFlow
         public struct Enumerator : IEnumerator<TValue>, IDisposable, IEnumerator
         {
             private readonly object? _value;
-            private int _state;  // 0 before beginning, 1 at item, 2 after end
-            private readonly IEnumerator<TValue>? _enumerator;
+            private int _state;  // -1 for a set; single values use 0 before beginning, 1 at item, 2 after end
+            private HashSet<TValue>.Enumerator _enumerator;
 
             internal Enumerator(object? values)
             {
                 _state = 0;
-                if (values is EnumerableValues valuesSet)
-                {
-                    _enumerator = valuesSet.GetEnumerator();
-                    _value = null;
-                }
-                else
-                {
-                    _enumerator = null;
-                    _value = values;
-                }
+                _value = values;
+                _enumerator = default;
             }
 
-            public TValue Current => _enumerator is not null
+            internal Enumerator(HashSet<TValue> values)
+            {
+                _state = -1;
+                _value = null;
+                _enumerator = values.GetEnumerator();
+            }
+
+            public TValue Current => _state < 0
                 ? _enumerator.Current
                 : (_state == 1 ? (TValue)_value! : default!);
 
@@ -110,8 +118,14 @@ namespace ILLink.Shared.DataFlow
 
             public bool MoveNext()
             {
-                if (_enumerator is not null)
-                    return _enumerator.MoveNext();
+                if (_state < 0)
+                {
+                    // Keep the address-exposed collection enumerator separate from the singleton fields.
+                    HashSet<TValue>.Enumerator enumerator = _enumerator;
+                    bool hasNext = enumerator.MoveNext();
+                    _enumerator = enumerator;
+                    return hasNext;
+                }
 
                 if (_value is null)
                     return false;
@@ -125,11 +139,16 @@ namespace ILLink.Shared.DataFlow
 
             public void Reset()
             {
-                if (_enumerator is not null)
-                    _enumerator.Reset();
+                if (_state < 0)
+                {
+                    ResetEnumerator(ref _enumerator);
+                }
                 else
                     _state = 0;
             }
+
+            private static void ResetEnumerator<TEnumerator>(ref TEnumerator enumerator)
+                where TEnumerator : struct, IEnumerator => enumerator.Reset();
         }
 
         public readonly struct Enumerable : IEnumerable<TValue>
@@ -138,7 +157,9 @@ namespace ILLink.Shared.DataFlow
 
             public Enumerable(object? values) => _values = values;
 
-            public Enumerator GetEnumerator() => new(_values);
+            public Enumerator GetEnumerator() => _values is EnumerableValues values
+                ? new Enumerator(values)
+                : new Enumerator(_values);
 
             IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => GetEnumerator();
 
@@ -170,6 +191,11 @@ namespace ILLink.Shared.DataFlow
 
         public bool Equals(ValueSet<TValue> other)
         {
+            if (ReferenceEquals(_values, other._values))
+            {
+                return true;
+            }
+
             if (_values == null)
                 return other._values == null;
             if (other._values == null)
@@ -230,6 +256,27 @@ namespace ILLink.Shared.DataFlow
 
         public Enumerable GetKnownValues() => new Enumerable(_values == UnknownSentinel ? null : _values);
 
+        internal bool TryGetSingleValue([MaybeNullWhen(false)] out TValue value)
+        {
+            if (_values is EnumerableValues values)
+            {
+                if (values.Count == 1)
+                {
+                    using HashSet<TValue>.Enumerator enumerator = values.GetEnumerator();
+                    enumerator.MoveNext();
+                    value = enumerator.Current;
+                    return true;
+                }
+            }
+            else if (_values is TValue singleValue && _values != UnknownSentinel)
+            {
+                value = singleValue;
+                return true;
+            }
+            value = default;
+            return false;
+        }
+
         // Note: returns false for Unknown
         public bool Contains(TValue value)
         {
@@ -253,19 +300,50 @@ namespace ILLink.Shared.DataFlow
             if (left._values == UnknownSentinel || right._values == UnknownSentinel)
                 return Unknown;
 
+            if (ReferenceEquals(left._values, right._values) &&
+                (left._values is not EnumerableValues sameValues || sameValues.Count <= MaxValuesInSet))
+            {
+                return left.DeepCopy();
+            }
+
             if (left._values is not EnumerableValues && right.Contains((TValue)left._values))
                 return right.DeepCopy();
 
             if (right._values is not EnumerableValues && left.Contains((TValue)right._values))
                 return left.DeepCopy();
 
-            var values = new EnumerableValues(left.DeepCopy().GetKnownValues());
-            values.UnionWith(right.DeepCopy().GetKnownValues());
-            // Limit the number of values we track, to prevent hangs in case of patterns that
-            // create exponentially many possible values.
-            if (values.Count > MaxValuesInSet)
+            ValueSet<TValue> leftCopy = left.DeepCopy();
+            ValueSet<TValue> rightCopy = right.DeepCopy();
+            var leftValues = leftCopy._values as EnumerableValues;
+            int leftCount = leftValues?.Count ?? 1;
+            if (leftCount > MaxValuesInSet)
+            {
                 return Unknown;
-            return new ValueSet<TValue>(values);
+            }
+
+            EnumerableValues? values = null;
+
+            foreach (TValue value in rightCopy.GetKnownValues())
+            {
+                if (values is null)
+                {
+                    if (leftCopy.Contains(value))
+                    {
+                        continue;
+                    }
+                    values = leftValues is not null && !ReferenceEquals(leftCopy._values, left._values)
+                        ? leftValues
+                        : new EnumerableValues(leftCopy.GetKnownValues());
+                }
+                values.Add(value);
+                // Widen only after mutable values have been copied and their hashes normalized.
+                if (values.Count > MaxValuesInSet)
+                {
+                    return Unknown;
+                }
+            }
+
+            return values is null ? leftCopy : new ValueSet<TValue>(values);
         }
 
         internal static ValueSet<TValue> Intersection(ValueSet<TValue> left, ValueSet<TValue> right)
@@ -279,13 +357,28 @@ namespace ILLink.Shared.DataFlow
             if (right._values == UnknownSentinel)
                 return left.DeepCopy();
 
+            if (ReferenceEquals(left._values, right._values))
+            {
+                return left.DeepCopy();
+            }
+
             if (left._values is not EnumerableValues)
                 return right.Contains((TValue)left._values) ? left.DeepCopy() : Empty;
 
             if (right._values is not EnumerableValues)
                 return left.Contains((TValue)right._values) ? right.DeepCopy() : Empty;
 
-            var values = new EnumerableValues(left.DeepCopy().GetKnownValues());
+            ValueSet<TValue> leftCopy = left.DeepCopy();
+            var leftValues = (EnumerableValues)leftCopy._values!;
+            if (ReferenceEquals(leftCopy._values, left._values) && !right.HasMutableState &&
+                leftValues.IsSubsetOf((EnumerableValues)right._values))
+            {
+                return leftCopy;
+            }
+
+            EnumerableValues values = ReferenceEquals(leftCopy._values, left._values)
+                ? new EnumerableValues(leftCopy.GetKnownValues())
+                : leftValues;
             values.IntersectWith(right.GetKnownValues());
             return new ValueSet<TValue>(values);
         }
@@ -293,6 +386,33 @@ namespace ILLink.Shared.DataFlow
         public bool IsEmpty() => _values == null;
 
         public bool IsUnknown() => _values == UnknownSentinel;
+
+        public bool HasMutableState
+        {
+            get
+            {
+                if (_values is not EnumerableValues values)
+                {
+                    return _values is TValue value && IsMutable(value);
+                }
+
+                foreach (TValue value in values)
+                {
+                    if (IsMutable(value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        private static bool IsMutable(TValue value) =>
+            value is IValueWithMutableState mutableValue
+                ? mutableValue.HasMutableState
+                : value is IDeepCopyValue<TValue> copyValue &&
+                    (typeof(TValue).IsValueType || !ReferenceEquals(value, copyValue.DeepCopy()));
 
         public override string ToString()
         {
@@ -316,7 +436,7 @@ namespace ILLink.Shared.DataFlow
                 return this;
 
             // Optimize for the most common case with only a single value
-            if (_values is not EnumerableValues)
+            if (_values is not EnumerableValues valuesSet)
             {
                 if (_values is IDeepCopyValue<TValue> copyValue)
                     return new ValueSet<TValue>(copyValue.DeepCopy());
@@ -324,7 +444,44 @@ namespace ILLink.Shared.DataFlow
                     return this;
             }
 
-            return new ValueSet<TValue>(GetKnownValues().Select(value => value is IDeepCopyValue<TValue> copyValue ? copyValue.DeepCopy() : value));
+            return DeepCopyMultipleValues(valuesSet);
+        }
+
+        private static ValueSet<TValue> DeepCopyMultipleValues(EnumerableValues sourceValues)
+        {
+            int unchangedValues = 0;
+            using HashSet<TValue>.Enumerator enumerator = sourceValues.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                TValue value = enumerator.Current;
+                if (value is IDeepCopyValue<TValue> copyValue)
+                {
+                    TValue copiedValue = copyValue.DeepCopy();
+                    if (!ReferenceEquals(value, copiedValue))
+                    {
+                        // Preserve immutable sets, but rebuild mutable values and their hashes.
+                        var values = new EnumerableValues(Array.Empty<TValue>());
+                        using (HashSet<TValue>.Enumerator prefix = sourceValues.GetEnumerator())
+                        {
+                            for (int i = 0; i < unchangedValues; i++)
+                            {
+                                prefix.MoveNext();
+                                values.Add(prefix.Current);
+                            }
+                        }
+                        values.Add(copiedValue);
+                        while (enumerator.MoveNext())
+                        {
+                            value = enumerator.Current;
+                            values.Add(value is IDeepCopyValue<TValue> remainingCopyValue ? remainingCopyValue.DeepCopy() : value);
+                        }
+                        return new ValueSet<TValue>(values);
+                    }
+                }
+                unchangedValues++;
+            }
+
+            return new ValueSet<TValue>(sourceValues);
         }
     }
 }

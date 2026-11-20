@@ -16,15 +16,27 @@ namespace ILLink.RoslynAnalyzer
             IsSystemReflectionIReflect = 0x02,
         }
 
-        public static bool IsTypeInterestingForDataflow(this ITypeSymbol type, bool isByRef)
+        public static bool IsTypeInterestingForDataflow(this ITypeSymbol type, bool isByRef, AnalyzerCompilationState? compilationState = null)
         {
-            if (type.SpecialType is SpecialType.System_String && !isByRef)
-                return true;
+            if (compilationState is not null)
+            {
+                return compilationState.IsTypeInterestingForDataflow(type, isByRef);
+            }
+
+            if (type.SpecialType != SpecialType.None)
+            {
+                return type.SpecialType == SpecialType.System_String && !isByRef;
+            }
 
             if (type is not INamedTypeSymbol namedType)
                 return false;
 
-            var flags = GetFlags(namedType);
+            return IsNamedTypeInterestingForDataflow(namedType.OriginalDefinition);
+        }
+
+        internal static bool IsNamedTypeInterestingForDataflow(INamedTypeSymbol type)
+        {
+            HierarchyFlags flags = GetFlags(type);
             return IsSystemType(flags) || IsSystemReflectionIReflect(flags);
         }
 

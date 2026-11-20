@@ -16,11 +16,13 @@ namespace ILLink.Shared.TrimAnalysis
     /// <summary>
     /// Represents an array of <see cref="System.Type"/> where initially each element of the array has the same DynamicallyAccessedMembers annotation.
     /// </summary>
-    internal sealed record ArrayOfAnnotatedSystemTypeValue : SingleValue
+    internal sealed record ArrayOfAnnotatedSystemTypeValue : SingleValue, IValueWithMutableState
     {
         private readonly ValueWithDynamicallyAccessedMembers _initialValue;
 
         public bool IsModified { get; private set; }
+
+        bool IValueWithMutableState.HasMutableState => true;
 
         public ArrayOfAnnotatedSystemTypeValue(ValueWithDynamicallyAccessedMembers value) => _initialValue = value;
 

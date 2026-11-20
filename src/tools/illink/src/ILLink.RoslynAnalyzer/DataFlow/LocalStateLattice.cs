@@ -20,7 +20,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         public LocalKey(CaptureId captureId) => (Local, CaptureId) = (null, captureId);
 
         public bool Equals(LocalKey other) => SymbolEqualityComparer.Default.Equals(Local, other.Local) &&
-            (CaptureId?.Equals(other.CaptureId) ?? other.CaptureId == null);
+            Nullable.Equals(CaptureId, other.CaptureId);
 
         public override bool Equals(object obj)
             => obj is LocalKey inst && Equals(inst);

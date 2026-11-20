@@ -32,7 +32,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             TConditionValue>
         // This struct constraint prevents warnings due to possible null returns from the visitor methods.
         // Note that this assumes that default(TValue) is equal to the TopValue.
-        where TValue : struct, IEquatable<TValue>
+        where TValue : struct, IEquatable<TValue>, IDeepCopyValue<TValue>, IValueWithMutableState
         where TContext : struct, IEquatable<TContext>
         where TValueLattice : ILattice<TValue>
         where TContextLattice : ILattice<TContext>
@@ -47,6 +47,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         protected readonly ISymbol OwningSymbol;
 
         private readonly ControlFlowGraph ControlFlowGraph;
+
+        private readonly IReadOnlyDictionary<int, ImmutableArray<ControlFlowRegion>>? _scopeExits;
 
         private readonly SemanticModel _semanticModel;
 
@@ -68,23 +70,20 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             Compilation compilation,
             LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> lattice,
             ISymbol owningSymbol,
-            ControlFlowGraph cfg,
-            ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
+            ControlFlowGraphProxy graph,
             InterproceduralState<TValue, TValueLattice> interproceduralState)
         {
             Compilation = compilation;
             LocalStateAndContextLattice = lattice;
             InterproceduralStateLattice = default;
             OwningSymbol = owningSymbol;
+            ControlFlowGraph cfg = graph.ControlFlowGraph;
             ControlFlowGraph = cfg;
+            _scopeExits = graph.ScopeExits;
             _semanticModel = cfg.OriginalOperation.SemanticModel ??
                 compilation.GetSemanticModel(cfg.OriginalOperation.Syntax.SyntaxTree);
-            this.lValueFlowCaptures = lValueFlowCaptures;
-            _deconstructionLValueFlowCaptures = cfg
-                .DescendantOperations<IFlowCaptureReferenceOperation>(OperationKind.FlowCaptureReference)
-                .Where(reference => reference.IsInLeftOfDeconstructionAssignment(out _))
-                .Select(reference => reference.Id)
-                .ToImmutableHashSet();
+            lValueFlowCaptures = graph.LValueFlowCaptures;
+            _deconstructionLValueFlowCaptures = graph.DeconstructionLValueFlowCaptures;
             InterproceduralState = interproceduralState;
         }
 
@@ -94,6 +93,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             BlockProxy block,
             LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
         {
+            // Predecessor states have already flowed through exited finally regions and been copied.
+            if (_scopeExits is not null && _scopeExits.TryGetValue(block.Block.Ordinal, out ImmutableArray<ControlFlowRegion> regions))
+            {
+                foreach (ControlFlowRegion region in regions)
+                {
+                    state.RemoveLocals(region);
+                }
+            }
+
             foreach (IOperation operation in block.Block.Operations)
                 Visit(operation, state);
 
@@ -364,10 +372,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         return value;
                     }
 
-                    ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>();
+                    bool hasExtensionParameter = setMethod.HasExtensionParameterOnType();
+                    int argumentCount = propertyRef.Arguments.Length + 1 + (hasExtensionParameter ? 1 : 0);
+                    ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>(argumentCount);
 
                     // Handle C# 14 extension property access (see comment in ProcessMethodCall)
-                    if (setMethod.HasExtensionParameterOnType())
+                    if (hasExtensionParameter)
                     {
                         arguments.Add(instanceValue);
                         instanceValue = TopValue;
@@ -378,7 +388,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         arguments.Add(Visit(val, state));
                     arguments.Add(value);
 
-                    HandleMethodCallHelper(setMethod, instanceValue, arguments.ToImmutableArray(), assignmentOperation, state);
+                    HandleMethodCallHelper(setMethod, instanceValue, arguments.MoveToImmutable(), assignmentOperation, state);
                     // The return value of a property set expression is the value,
                     // even though a property setter has no return value.
                     return value;
@@ -400,7 +410,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
                     var property = (IPropertySymbol)indexerRef.IndexerSymbol;
 
-                    var argumentsBuilder = ImmutableArray.CreateBuilder<TValue>();
+                    ImmutableArray<TValue>.Builder argumentsBuilder = ImmutableArray.CreateBuilder<TValue>(2);
                     argumentsBuilder.Add(indexArgumentValue);
                     argumentsBuilder.Add(value);
 
@@ -412,7 +422,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         break;
                     }
 
-                    HandleMethodCallHelper(setMethod, instanceValue, argumentsBuilder.ToImmutableArray(), assignmentOperation, state);
+                    HandleMethodCallHelper(setMethod, instanceValue, argumentsBuilder.MoveToImmutable(), assignmentOperation, state);
                     return value;
                 }
 
@@ -1261,9 +1271,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             // The setter case is handled in assignment operation since here we don't have access to the value to pass to the setter
             TValue instanceValue = Visit(operation.Instance, state);
             IMethodSymbol getMethod = operation.Property.GetGetMethod()!;
-            ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>();
+            bool hasExtensionParameter = getMethod.HasExtensionParameterOnType();
+            int argumentCount = operation.Arguments.Length + (hasExtensionParameter ? 1 : 0);
+            ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>(argumentCount);
             // Handle C# 14 extension property access (see comment in ProcessMethodCall)
-            if (getMethod.HasExtensionParameterOnType())
+            if (hasExtensionParameter)
             {
                 arguments.Add(instanceValue);
                 instanceValue = TopValue;
@@ -1273,7 +1285,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             foreach (var val in operation.Arguments)
                 arguments.Add(Visit(val, state));
 
-            return HandleMethodCallHelper(getMethod, instanceValue, arguments.ToImmutableArray(), operation, state);
+            return HandleMethodCallHelper(getMethod, instanceValue, arguments.MoveToImmutable(), operation, state);
         }
 
         public override TValue VisitEventReference(IEventReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
@@ -1478,22 +1490,27 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         {
             TValue instanceValue = Visit(instance, state);
 
-            var argumentsBuilder = ImmutableArray.CreateBuilder<TValue>();
+            ImmutableArray<IParameterSymbol> parameters = method.Parameters;
+            bool hasExtensionParameter = method.HasExtensionParameterOnType();
+            int argumentOffset = hasExtensionParameter ? 1 : 0;
+            ImmutableArray<TValue>.Builder argumentsBuilder = ImmutableArray.CreateBuilder<TValue>(parameters.Length + argumentOffset);
+
+            for (int i = 0; i < parameters.Length + argumentOffset; i++)
+            {
+                argumentsBuilder.Add(TopValue);
+            }
 
             // For calls to C# 14 extensions, treat the instance argument as a regular argument.
             // The extension method doesn't have an implicit this, yet (unlike for existing extension methods)
             // the IOperation represents it as having an Instance.
-            if (method.HasExtensionParameterOnType())
+            if (hasExtensionParameter)
             {
-                argumentsBuilder.Add(instanceValue);
+                argumentsBuilder[0] = instanceValue;
                 instanceValue = TopValue;
             }
 
             // Build a map from parameter to argument so we can handle named/out-of-order arguments correctly
-            var parameters = method.Parameters;
-            var argumentsByParameter = new TValue?[parameters.Length];
-
-            foreach (var argument in arguments)
+            foreach (IArgumentOperation argument in arguments)
             {
                 // For __arglist argument there might not be any parameter
                 // __arglist is only legal as the last argument to a method and there's also no supported
@@ -1507,14 +1524,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 int parameterIndex = parameter.Ordinal;
                 if (parameterIndex >= 0 && parameterIndex < parameters.Length)
                 {
-                    argumentsByParameter[parameterIndex] = VisitArgument(argument, state);
+                    argumentsBuilder[parameterIndex + argumentOffset] = VisitArgument(argument, state);
                 }
-            }
-
-            // Add arguments in parameter order, using TopValue for missing arguments (e.g., optional parameters)
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                argumentsBuilder.Add(argumentsByParameter[i] ?? TopValue);
             }
 
             // For local functions with generic arguments, the substituted method symbol's containing
@@ -1530,7 +1541,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             return HandleMethodCallHelper(
                 method,
                 instanceValue,
-                argumentsBuilder.ToImmutableArray(),
+                argumentsBuilder.MoveToImmutable(),
                 operation,
                 state);
         }
