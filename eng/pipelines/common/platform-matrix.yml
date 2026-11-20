@@ -443,6 +443,26 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Browser WebAssembly with 64-bit memory
+
+- ${{ if containsValue(parameters.platforms, 'browser_wasm64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: browser
+      archType: wasm64
+      targetRid: browser-wasm64
+      platform: browser_wasm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: browser_wasm
+      jobParameters:
+        hostedOs: linux
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # Browser WebAssembly Linux Firefox
 
 - ${{ if containsValue(parameters.platforms, 'browser_wasm_firefox') }}:
