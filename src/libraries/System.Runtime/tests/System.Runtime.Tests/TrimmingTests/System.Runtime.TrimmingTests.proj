@@ -45,6 +45,11 @@
       <EnabledProperties>InvariantTimezone</EnabledProperties>
       <EnabledFeatureSwitches>System.TimeZoneInfo.Invariant</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="IsMultithreadingSupported.cs">
+      <!-- A publish-time switch must not override the selected runtime's thread support. -->
+      <EnabledFeatureSwitches Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(WasmEnableThreads)' != 'true'">System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported</EnabledFeatureSwitches>
+      <DisabledFeatureSwitches Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(WasmEnableThreads)' == 'true'">System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
       <!-- There is a bug with the linker where it is corrupting the pdbs while trimming
       causing the framework to not be able to get source line info any longer. This

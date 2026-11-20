@@ -57,4 +57,22 @@
     <Left>net11.0/System.Net.Http.dll</Left>
     <Right>net12.0/System.Net.Http.dll</Right>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported:[T:System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute]</Target>
+    <Left>net11.0/mscorlib.dll</Left>
+    <Right>net12.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported:[T:System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute]</Target>
+    <Left>net11.0/netstandard.dll</Left>
+    <Right>net12.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported:[T:System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute]</Target>
+    <Left>net11.0/System.Runtime.dll</Left>
+    <Right>net12.0/System.Runtime.dll</Right>
+  </Suppression>
 </Suppressions>
