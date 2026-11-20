@@ -29,7 +29,7 @@ namespace Microsoft.Win32.SafeHandles
 
         internal void TryToReuse(WaitCompletionPacket packet)
         {
-            // The cached packet is rooted by its PreAllocatedOverlapped (until it's disposed by ReleaseHandle),
+            // The cached packet is rooted by its Overlapped (until it's freed by ReleaseHandle),
             // so it must not reference this handle. Otherwise, the handle could never be finalized.
             packet.Handle = null;
             if (Interlocked.CompareExchange(ref _reusableWaitCompletionPacket, packet, null) is not null)
@@ -52,8 +52,6 @@ namespace Microsoft.Win32.SafeHandles
 
             private readonly LowLevelLock _lock = new LowLevelLock();
 
-            private readonly PreAllocatedOverlapped _preAllocatedOverlapped;
-
             private NativeOverlapped* _overlapped;
 
             private TimerQueueTimer? _timer;
@@ -72,7 +70,9 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Handle = handle;
 
-                _preAllocatedOverlapped = PreAllocatedOverlapped.UnsafeCreatePortableUnbound(s_completionCallback, this, null);
+                // userData is like pinData in ThreadPoolBoundHandleOverlapped; we can't access it later.
+                // To get the wait completion packet from the native overlapped, we have to use a subclass of Overlapped.
+                _overlapped = new WaitCompletionPacketOverlapped(this).UnsafePack(s_completionCallback, userData: null);
 
                 uint status = Interop.NtDll.NtCreateWaitCompletionPacket(
                     out _completionPacketHandle,
@@ -80,7 +80,7 @@ namespace Microsoft.Win32.SafeHandles
                     null);
                 if (!Interop.StatusOptions.NT_SUCCESS(status))
                 {
-                    _preAllocatedOverlapped.Dispose();
+                    Overlapped.Free(_overlapped);
                     Interop.NtDll.ThrowExceptionForNtStatus(status);
                 }
             }
@@ -109,12 +109,6 @@ namespace Microsoft.Win32.SafeHandles
             {
                 RestartTimer();
 
-                // Free and immediately allocate again the overlapped, to reset its _completed field.
-                if (_overlapped != null)
-                {
-                    _preAllocatedOverlapped.FreeNativeOverlappedPortableUnbound(_overlapped);
-                }
-                _overlapped = _preAllocatedOverlapped.AllocateNativeOverlappedPortableUnbound();
                 _state = State.Pending;
 
                 Debug.Assert(Handle is not null);
@@ -136,7 +130,7 @@ namespace Microsoft.Win32.SafeHandles
 
             private static void OnCompletion(uint errorCode, uint numberOfBytesTransferred, NativeOverlapped* nativeOverlapped)
             {
-                WaitCompletionPacket packet = (WaitCompletionPacket)PreAllocatedOverlapped.GetNativeOverlappedStatePortableUnbound(nativeOverlapped)!;
+                WaitCompletionPacket packet = WaitCompletionPacketOverlapped.GetWaitCompletionPacket(nativeOverlapped)!;
                 packet.ChangeState(StateTransition.Completion);
             }
 
@@ -277,7 +271,7 @@ namespace Microsoft.Win32.SafeHandles
                     {
                         registeredWaitHandle.WaitForRemoval();
                     }
-                    ReleaseResources();
+                    Reset();
                     Debug.Assert(Handle is not null);
                     Handle.TryToReuse(this);
                 }
@@ -296,27 +290,20 @@ namespace Microsoft.Win32.SafeHandles
 
             internal void Dispose()
             {
-                ReleaseResources();
+                Reset();
                 _lock.Dispose();
-                _preAllocatedOverlapped.Dispose();
                 _timer?.Dispose();
+                Overlapped.Free(_overlapped);
                 if (_completionPacketHandle != 0)
                 {
                     Interop.Kernel32.CloseHandle(_completionPacketHandle);
                 }
             }
 
-            private void ReleaseResources()
+            private void Reset()
             {
                 _registeredWaitHandle = null;
                 _state = State.Inactive;
-
-                // Free the overlapped.
-                if (_overlapped != null)
-                {
-                    _preAllocatedOverlapped.FreeNativeOverlappedPortableUnbound(_overlapped);
-                    _overlapped = null;
-                }
             }
 
             private enum State
@@ -355,6 +342,14 @@ namespace Microsoft.Win32.SafeHandles
                 Completion,
                 Unregister,
             }
+        }
+
+        private sealed class WaitCompletionPacketOverlapped(WaitCompletionPacket state) : Overlapped
+        {
+            public WaitCompletionPacket State { get; } = state;
+
+            public static unsafe WaitCompletionPacket GetWaitCompletionPacket(NativeOverlapped* nativeOverlapped) =>
+                ((WaitCompletionPacketOverlapped)Overlapped.Unpack(nativeOverlapped)).State;
         }
     }
 }

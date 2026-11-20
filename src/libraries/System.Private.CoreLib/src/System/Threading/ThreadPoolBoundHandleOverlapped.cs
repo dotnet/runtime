@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
@@ -15,7 +15,6 @@ namespace System.Threading
         private readonly IOCompletionCallback _userCallback;
         internal readonly object? _userState;
         internal readonly PreAllocatedOverlapped? _preAllocated;
-        internal bool _isUnboundPreAllocatedOverlapped;
 
         internal NativeOverlapped* _nativeOverlapped;
         internal ThreadPoolBoundHandle? _boundHandle;
@@ -34,21 +33,6 @@ namespace System.Threading
             _nativeOverlapped->OffsetHigh = 0;
         }
 
-        internal static unsafe ThreadPoolBoundHandleOverlapped GetOverlappedWrapper(NativeOverlapped* overlapped)
-        {
-            ThreadPoolBoundHandleOverlapped wrapper;
-            try
-            {
-                wrapper = (ThreadPoolBoundHandleOverlapped)Unpack(overlapped);
-            }
-            catch (NullReferenceException ex)
-            {
-                throw new ArgumentException(SR.Argument_NativeOverlappedAlreadyFree, nameof(overlapped), ex);
-            }
-
-            return wrapper;
-        }
-
         private static void CompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
             ThreadPoolBoundHandleOverlapped overlapped = (ThreadPoolBoundHandleOverlapped)Unpack(nativeOverlapped);
@@ -63,7 +47,7 @@ namespace System.Threading
 
             overlapped._completed = true;
 
-            if (!overlapped._isUnboundPreAllocatedOverlapped && overlapped._boundHandle == null)
+            if (overlapped._boundHandle == null)
                 throw new InvalidOperationException(SR.Argument_NativeOverlappedAlreadyFree);
 
             overlapped._userCallback(errorCode, numBytes, nativeOverlapped);
