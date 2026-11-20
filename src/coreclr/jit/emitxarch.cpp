@@ -5264,8 +5264,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
     if ((code & 0xFF00) != 0)
     {
         sz += emitInsSize(id, code, includeRexPrefixSize);
-        if (!IsSimdInstruction(ins) && !TakesEvexPrefix(id) && (ins != INS_crc32) &&
-            ((code & 0xFF00) != 0xC000))
+        if (!IsSimdInstruction(ins) && !TakesEvexPrefix(id) && (ins != INS_crc32) && ((code & 0xFF00) != 0xC000))
         {
             // Non-SIMD two-byte opcodes generally emit a separate ModRM byte; 0xC000 already includes it.
             // CRC32 accounts for its ModRM byte in emitGetAdjustedSize.
