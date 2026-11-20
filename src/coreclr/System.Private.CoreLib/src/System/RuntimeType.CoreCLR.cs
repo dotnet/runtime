@@ -2640,36 +2640,25 @@ namespace System
             }
 
             // Filter the cached interface list directly instead of copying it via GetInterfaces. Both sides are
-            // runtime types, so comparing generic type definitions is equivalent to HasSameMetadataDefinitionAs
-            // and cheaper.
+            // runtime types, so comparing generic type definitions by reference is equivalent to
+            // HasSameMetadataDefinitionAs and cheaper.
             RuntimeType[] candidates = Cache.GetInterfaceList(MemberListType.All, null);
             bool isGenericTypeDefinition = runtimeInterfaceType.IsGenericTypeDefinition;
 
-            Span<int> matches = candidates.Length <= 64 ? stackalloc int[candidates.Length] : new int[candidates.Length];
-            int count = 0;
-            for (int i = 0; i < candidates.Length; i++)
+            // Usually a single interface matches, which ListBuilder handles without allocating backing storage.
+            // Don't size it for every candidate: that would over-allocate when several interfaces match.
+            ListBuilder<Type> matches = default;
+            foreach (RuntimeType candidate in candidates)
             {
-                RuntimeType candidate = candidates[i];
                 if (isGenericTypeDefinition
-                    ? candidate.IsGenericType && candidate.GetGenericTypeDefinition() == runtimeInterfaceType
-                    : candidate == runtimeInterfaceType)
+                    ? candidate.IsGenericType && ReferenceEquals(candidate.GetGenericTypeDefinition(), runtimeInterfaceType)
+                    : ReferenceEquals(candidate, runtimeInterfaceType))
                 {
-                    matches[count++] = i;
+                    matches.Add(candidate);
                 }
             }
 
-            if (count == 0)
-            {
-                return EmptyTypes;
-            }
-
-            Type[] result = new Type[count];
-            for (int i = 0; i < count; i++)
-            {
-                result[i] = candidates[matches[i]];
-            }
-
-            return result;
+            return matches.ToArray();
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
