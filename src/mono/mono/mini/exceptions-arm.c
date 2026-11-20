@@ -499,7 +499,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 
 		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, (guint8*)ji->code_start,
 						   (guint8*)ji->code_start + ji->code_size,
-						   (guint8*)ip, NULL, regs, MONO_MAX_IREGS + 8,
+						   (guint8*)ip, NULL, regs, MONO_MAX_IREGS + 8, FALSE,
 						   save_locations, MONO_MAX_IREGS, &cfa);
 
 		if (!success)
