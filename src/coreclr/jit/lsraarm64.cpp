@@ -384,7 +384,8 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSe
         if (shouldCheckForRounding)
         {
             unsigned int roundedRegistersNeeded = registersNeeded - (63 - regAvailableStartIndex + 1);
-            maskForCurRange                     = (1ULL << roundedRegistersNeeded) - 1;
+            // Wrapped registers start at V0, not at bit zero.
+            maskForCurRange = ((1ULL << roundedRegistersNeeded) - 1) << REG_FP_FIRST;
         }
 
         maskForCurRange |= (registersNeededMask << regAvailableStartIndex);
