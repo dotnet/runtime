@@ -407,6 +407,11 @@ namespace System.Runtime.CompilerServices
         internal static ref nint GetMethodTableRef(this object obj)
             => ref Unsafe.Subtract(ref Unsafe.As<byte, nint>(ref GetRawData(obj)), 1);
 
+        [DebuggerHidden]
+        [DebuggerStepThrough]
+        internal static ref RawArrayData GetArrayData(this Array arr)
+            => ref Unsafe.As<byte, RawArrayData>(ref arr.GetRawData());
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe nuint GetRawObjectDataSize(object obj)
         {
@@ -415,7 +420,7 @@ namespace System.Runtime.CompilerServices
             // See comment on RawArrayData for details
             nuint rawSize = pMT->BaseSize - (nuint)(2 * sizeof(IntPtr));
             if (pMT->HasComponentSize)
-                rawSize += (uint)Unsafe.As<RawArrayData>(obj).Length * (nuint)pMT->ComponentSize;
+                rawSize += Unsafe.As<Array>(obj).NativeLength * pMT->ComponentSize;
 
             GC.KeepAlive(obj); // Keep MethodTable alive
 
@@ -436,7 +441,7 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(GetMultiDimensionalArrayRank(array) > 0);
             // See comment on RawArrayData for details
-            return ref Unsafe.As<byte, int>(ref Unsafe.As<RawArrayData>(array).Data);
+            return ref Unsafe.As<byte, int>(ref array.GetArrayData().Data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -714,13 +719,14 @@ namespace System.Runtime.CompilerServices
     // CLR arrays are laid out in memory as follows (multidimensional array bounds are optional):
     // [ sync block || pMethodTable || num components || MD array bounds || array data .. ]
     //                 ^               ^                 ^                  ^ returned reference
-    //                 |               |                 \-- ref Unsafe.As<RawArrayData>(array).Data
-    //                 \-- array       \-- ref Unsafe.As<RawData>(array).Data
+    //                 |               |                 \-- ref array.GetArrayData().Data
+    //                 \-- array       \-- ref array.GetRawData()
     // The BaseSize of an array includes all the fields before the array data,
     // including the sync block and method table. The reference to RawData.Data
     // points at the number of components, skipping over these two pointer-sized fields.
     [NonVersionable] // This only applies to field layout
-    internal sealed class RawArrayData
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RawArrayData
     {
         public uint Length; // Array._numComponents padded to IntPtr
 #if TARGET_64BIT
