@@ -352,16 +352,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <!-- The bundle is a second composite output. Check it against the compiler inputs rather than the owner,
-       which can be rewritten later by wasm-opt without invalidating the bundle. -->
-  <Target Name="_WasmCoreClrInvalidateStaleCompositeBundle"
-          AfterTargets="_WasmCoreClrConservativeR2RInputs"
-          Condition="'$(_WasmCompositeBundlePath)' != ''"
-          Inputs="$(MSBuildAllProjects);@(CrossgenTool);@(Crossgen2Tool);@(_ReadyToRunCompilerInputs);@(_ReadyToRunCompileList);@(_ReadyToRunCompositeBuildInput);@(_ReadyToRunPgoFiles)"
-          Outputs="$(_WasmCompositeBundlePath)">
-    <Delete Files="@(_ReadyToRunCompileList->WithMetadataValue('CreateCompositeImage', 'true')->'%(OutputR2RImage)')" />
-  </Target>
-
   <!-- wasm-opt comes from the Emscripten SDK, so the workload's BrowserWasmApp.CoreCLR.targets owns the
        ReadyToRun wasm-opt pass and sets _WasmCoreClrR2RWasmOptSupported. The workload manifest already requires
        the workload when WasmRunWasmOpt=true; this covers builds that still lack its targets, for example with
