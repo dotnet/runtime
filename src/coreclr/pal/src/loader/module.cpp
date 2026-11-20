@@ -60,6 +60,19 @@ using namespace CorUnix;
 /* get the full name of a module if available, and the short name otherwise*/
 #define MODNAME(x) ((x)->lib_name)
 
+#if _ENABLE_DEBUG_MESSAGES_
+// UTF-8 copy of a UTF-16 name for a trace message, freed at the end of the trace statement.
+class TraceName
+{
+    LPSTR m_name;
+public:
+    TraceName(LPCWSTR name) : m_name(name != nullptr ? UTIL_WCToMB_Alloc(name, -1) : nullptr) {}
+    ~TraceName() { free(m_name); }
+    LPCSTR Get() const { return m_name != nullptr ? m_name : "NULL"; }
+};
+#define TRACE_NAME(name) TraceName(name).Get()
+#endif // _ENABLE_DEBUG_MESSAGES_
+
 #define LIBC_NAME_WITHOUT_EXTENSION "libc"
 
 // Upper bound on ACP bytes produced per WCHAR by WideCharToMultiByte.
@@ -165,9 +178,7 @@ LoadLibraryExW(
     HMODULE hModule = nullptr;
 
     PERF_ENTRY(LoadLibraryExW);
-    ENTRY("LoadLibraryExW (lpLibFileName=%p (%S)) \n",
-          lpLibFileName ? lpLibFileName : W16_NULLSTRING,
-          lpLibFileName ? lpLibFileName : W16_NULLSTRING);
+    ENTRY("LoadLibraryExW (lpLibFileName=%p (%s)) \n", lpLibFileName, TRACE_NAME(lpLibFileName));
 
     if (!LOADVerifyLibraryPath(lpLibFileName))
     {
@@ -270,8 +281,8 @@ GetProcAddress(
 
     if (ProcAddress)
     {
-        TRACE("Symbol %s found at address %p in module %p (named %S)\n",
-              lpProcName, ProcAddress, module, MODNAME(module));
+        TRACE("Symbol %s found at address %p in module %p (named %s)\n",
+              lpProcName, ProcAddress, module, TRACE_NAME(MODNAME(module)));
 
         /* if we don't know the module's full name yet, this is our chance to obtain it */
         if (!module->lib_name && module->dl_handle)
@@ -299,8 +310,8 @@ GetProcAddress(
     }
     else
     {
-        TRACE("Symbol %s not found in module %p (named %S)\n",
-              lpProcName, module, MODNAME(module));
+        TRACE("Symbol %s not found in module %p (named %s)\n",
+              lpProcName, module, TRACE_NAME(MODNAME(module)));
         SetLastError(ERROR_PROC_NOT_FOUND);
     }
 done:
@@ -401,7 +412,7 @@ GetModuleFileNameW(
         memcpy(lpFileName, wide_name, (name_length + 1) * sizeof(WCHAR));
     }
 
-    TRACE("file name of module %p is %S\n", hModule, lpFileName);
+    TRACE("file name of module %p is %s\n", hModule, TRACE_NAME(lpFileName));
     retval = (DWORD)name_length;
 done:
     UnlockModuleList();
@@ -460,9 +471,7 @@ PAL_LoadLibraryDirect(
     NATIVE_LIBRARY_HANDLE dl_handle = nullptr;
 
     PERF_ENTRY(LoadLibraryDirect);
-    ENTRY("LoadLibraryDirect (lpLibFileName=%p (%S)) \n",
-          lpLibFileName ? lpLibFileName : W16_NULLSTRING,
-          lpLibFileName ? lpLibFileName : W16_NULLSTRING);
+    ENTRY("LoadLibraryDirect (lpLibFileName=%p (%s)) \n", lpLibFileName, TRACE_NAME(lpLibFileName));
 
     // Getting nullptr as name indicates redirection to current library
     if (lpLibFileName == nullptr)
@@ -788,8 +797,8 @@ static BOOL LOADFreeLibrary(MODSTRUCT *module, BOOL fCallDllMain)
     }
 
     module->refcount--;
-    TRACE("Reference count for module %p (named %S) decreases to %d\n",
-            module, MODNAME(module), module->refcount);
+    TRACE("Reference count for module %p (named %s) decreases to %d\n",
+            module, TRACE_NAME(MODNAME(module)), module->refcount);
 
     if (module->refcount != 0)
     {
@@ -800,8 +809,8 @@ static BOOL LOADFreeLibrary(MODSTRUCT *module, BOOL fCallDllMain)
     /* Releasing the last reference : call dlclose(), remove module from the
        process-wide module list */
 
-    TRACE("Reference count for module %p (named %S) now 0; destroying module structure\n",
-        module, MODNAME(module));
+    TRACE("Reference count for module %p (named %s) now 0; destroying module structure\n",
+        module, TRACE_NAME(MODNAME(module)));
 
     /* unlink the module structure from the list */
     module->prev->next = module->next;
@@ -884,9 +893,9 @@ static BOOL LOADCallDllMainSafe(MODSTRUCT *module, DWORD dwReason, LPVOID lpRese
 
     PAL_TRY(Param *, pParam, &param)
     {
-        TRACE("Calling DllMain (%p) for module %S\n",
+        TRACE("Calling DllMain (%p) for module %s\n",
               pParam->module->pDllMain,
-              pParam->module->lib_name ? pParam->module->lib_name : W16_NULLSTRING);
+              TRACE_NAME(pParam->module->lib_name));
 
         pParam->ret = pParam->module->pDllMain(pParam->module->hinstance, pParam->dwReason, pParam->lpReserved);
     }
@@ -1020,7 +1029,7 @@ static BOOL LOADValidateModule(MODSTRUCT *module)
                 ERROR("Found corrupt module %p!\n",module);
                 return FALSE;
             }
-            TRACE("Module %p is valid (name : %S)\n", module, MODNAME(module));
+            TRACE("Module %p is valid (name : %s)\n", module, TRACE_NAME(MODNAME(module)));
             return TRUE;
         }
         modlist_enum = modlist_enum->next;
@@ -1260,9 +1269,9 @@ static HMODULE LOADRegisterLibraryDirect(NATIVE_LIBRARY_HANDLE dl_handle, LPCSTR
     {
         if (!isAlreadyLoaded)
         {
-            TRACE("Calling DllMain (%p) for module %S\n",
+            TRACE("Calling DllMain (%p) for module %s\n",
                 module->pDllMain,
-                module->lib_name ? module->lib_name : W16_NULLSTRING);
+                TRACE_NAME(module->lib_name));
 
             if (nullptr == module->hinstance)
             {

@@ -69,7 +69,7 @@ typedef mode_t ds_ipc_mode_t;
 #else
 #ifdef FEATURE_CORECLR
 #include <pal.h>
-#include "processdescriptor.h"
+#include <minipal/transportname.h>
 #endif
 
 #ifndef ep_return_null_if_nok
@@ -726,16 +726,7 @@ ipc_transport_get_default_name (
 		"socket");
 #elif defined (EP_NO_RT_DEPENDENCY) && defined (FEATURE_CORECLR)
 	// generate the default socket name in TMP Path
-	const ProcessDescriptor pd = ProcessDescriptor::FromCurrentProcess();
-	GetTransportName(
-		name_len,
-		name,
-		"dotnet-diagnostic",
-		pd.m_Pid,
-		pd.m_ApplicationGroupId,
-		"socket");
-	// GetTransportName returns void, but sets name[0] to '\0' when it fails to generate a name.
-	return name [0] != '\0';
+	return minipal_get_transport_name (name, name_len, "dotnet-diagnostic", (uint32_t)getpid (), NULL, "socket");
 #else
 	return false;
 #endif

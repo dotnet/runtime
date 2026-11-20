@@ -6764,7 +6764,7 @@ LONG NotifyOfCHFFilterWrapper(
 
 #endif // !DACCESS_COMPILE
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(TARGET_WINDOWS)
 bool DebugIsEECxxExceptionPointer(void* pv)
 {
     CONTRACTL
@@ -6910,7 +6910,7 @@ void *DebugGetCxxException(EXCEPTION_RECORD* pExceptionRecord)
     return NULL;
 }
 
-#endif // _DEBUG
+#endif // _DEBUG && TARGET_WINDOWS
 
 #endif // #ifndef DACCESS_COMPILE
 

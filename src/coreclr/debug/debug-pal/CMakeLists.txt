@@ -40,9 +40,6 @@ if(CLR_CMAKE_HOST_UNIX)
       unix/processdescriptor.cpp
     )
 
-    # Strict POSIX mode hides sysctl on Apple and BSD.
-    set_property(SOURCE unix/processdescriptor.cpp APPEND PROPERTY COMPILE_OPTIONS -U_POSIX_C_SOURCE)
-
     if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
         list(APPEND DEBUG_PAL_SOURCES unix/wait.cpp)
         # Strict POSIX mode hides pipe2 on BSD even when the platform supports it.
@@ -59,11 +56,6 @@ if(CLR_CMAKE_HOST_UNIX)
         target_compile_definitions(debug-pal PRIVATE HAVE_PIPE2=1)
     else()
         target_compile_definitions(debug-pal PRIVATE HAVE_PIPE2=0)
-    endif()
-    if(HAVE_PROCFS_STAT)
-        target_compile_definitions(debug-pal PRIVATE HAVE_PROCFS_STAT=1)
-    else()
-        target_compile_definitions(debug-pal PRIVATE HAVE_PROCFS_STAT=0)
     endif()
 endif(CLR_CMAKE_HOST_UNIX)
 

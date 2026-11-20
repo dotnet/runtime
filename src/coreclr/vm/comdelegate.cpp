@@ -1645,10 +1645,12 @@ extern "C" void QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTab
 
     _ASSERTE(pDelegateMT != NULL);
 
+#ifdef TARGET_WINDOWS
     // Programmers could feed garbage data to DelegateConstruct().
     // It's difficult to validate a method code pointer, but at least we'll
     // try to catch the easy garbage.
     _ASSERTE(isMemoryReadable(method, 1));
+#endif // TARGET_WINDOWS
 
     MethodTable* pMTTarg = pTargetMT;
     MethodTable* pDelMT = pDelegateMT;

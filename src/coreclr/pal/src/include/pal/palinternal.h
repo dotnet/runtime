@@ -161,8 +161,6 @@ function_name() to call the system's implementation
 #include "pal.h"
 #include "palprivate.h"
 
-#include "mbusafecrt.h"
-
 #ifdef _VAC_
 #undef CHAR_BIT
 #undef va_arg

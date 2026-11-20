@@ -318,7 +318,8 @@ inline NEON128 GetSimdMem(PCODE ip)
 
 inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
-    return minipal_flush_instruction_cache(pCodeAddr, sizeOfCode);
+    minipal_flush_instruction_cache(pCodeAddr, sizeOfCode);
+    return TRUE;
 }
 
 //------------------------------------------------------------------------

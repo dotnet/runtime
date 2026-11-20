@@ -36,21 +36,7 @@ struct ProcessDescriptor
 
 #ifdef HOST_UNIX
 
-#ifdef __APPLE__
-// Max semaphore length on Mac is 31 characters. In a sandbox, IPC names are prefixed with an
-// application group ID, e.g. ABCDEFGHIJ.MS (10 characters of developer ID and 2 of group name).
-#define MAX_APPLICATION_GROUP_ID_LENGTH 13
-#endif // __APPLE__
-
 static const unsigned int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = MAX_PATH;
-
-// Gets a value that distinguishes processes that had the same pid at different times (based on
-// the process start time). Sets the key to 0 on failure, as the debugger side does.
-bool GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey);
-
-// Builds an IPC transport name from the process id. These names are a contract with dbgshim and
-// the diagnostics tools. On failure, name is set to an empty string.
-void GetTransportName(unsigned int maxTransportNameLength, char *name, const char *prefix, DWORD id, const char *applicationGroupId, const char *suffix);
 
 // Builds a debugger transport pipe name from the process id.
 void GetTransportPipeName(char *name, DWORD id, const char *applicationGroupId, const char *suffix);

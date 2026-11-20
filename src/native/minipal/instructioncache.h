@@ -4,7 +4,6 @@
 #ifndef HAVE_MINIPAL_INSTRUCTIONCACHE_H
 #define HAVE_MINIPAL_INSTRUCTIONCACHE_H
 
-#include <stdbool.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
@@ -16,9 +15,8 @@ extern "C" {
  *
  * @param address Start of the range. On Windows, NULL flushes the whole instruction cache; elsewhere it does nothing.
  * @param size Size of the range in bytes.
- * @return true on success, false otherwise.
  */
-bool minipal_flush_instruction_cache(const void* address, size_t size);
+void minipal_flush_instruction_cache(const void* address, size_t size);
 
 #ifdef __cplusplus
 }

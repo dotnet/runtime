@@ -2488,13 +2488,6 @@ typedef struct _SYSTEM_INFO {
 // errno_t is only defined when the Secure CRT Extensions library is available (which no standard library that we build with implements anyway)
 typedef int errno_t;
 
-PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t);
-PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
-PALIMPORT DLLEXPORT int __cdecl _vsnprintf_s(char *, size_t, size_t, const char *, va_list);
-PALIMPORT DLLEXPORT int __cdecl _snprintf_s(char *, size_t, size_t, const char *, ...);
-PALIMPORT DLLEXPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list);
-PALIMPORT DLLEXPORT int __cdecl sprintf_s(char *, size_t, const char *, ... );
-PALIMPORT DLLEXPORT int __cdecl sscanf_s(const char *, const char *, ...);
 
 
 inline int _stricmp(const char* a, const char* b)

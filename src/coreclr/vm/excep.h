@@ -119,7 +119,7 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT);
 // Removes source file names/paths and line information from a stack trace.
 void StripFileInfoFromStackTrace(SString &ssStackTrace);
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(TARGET_WINDOWS)
 // C++ EH cracking material gleaned from the debugger:
 // (DO NOT USE THIS KNOWLEDGE IN NON-DEBUG CODE!!!)
 void *DebugGetCxxException(EXCEPTION_RECORD* pExceptionRecord);
@@ -612,7 +612,9 @@ LONG WatsonLastChance(
     EXCEPTION_POINTERS  *pExceptionInfo,
     TypeOfReportedError tore);
 
+#if defined(_DEBUG) && defined(TARGET_WINDOWS)
 bool DebugIsEECxxException(EXCEPTION_RECORD* pExceptionRecord);
+#endif
 
 inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 {

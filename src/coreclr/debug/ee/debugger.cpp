@@ -14,6 +14,7 @@
 #if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
 #include <fcntl.h>
 #include <semaphore.h>
+#include <minipal/transportname.h>
 #include "processdescriptor.h"
 #endif
 #include <minipal.h>
@@ -1999,13 +2000,9 @@ static bool NotifyRuntimeUsingSemaphores()
     bool launched = false;
     DWORD pid = (DWORD)getpid();
 
-    UINT64 processIdDisambiguationKey = 0;
-    bool ret = GetProcessIdDisambiguationKey(pid, &processIdDisambiguationKey);
-
-    // If GetProcessIdDisambiguationKey failed for some reason, it should set the value
-    // to 0. We expect that anyone else making the semaphore name will also fail and thus
-    // will also try to use 0 as the value.
-    _ASSERTE(ret || processIdDisambiguationKey == 0);
+    // On failure the key is 0. Anyone else making the semaphore name is expected to fail too and use 0.
+    uint64_t processIdDisambiguationKey;
+    minipal_get_process_id_disambiguation_key(pid, &processIdDisambiguationKey);
 
     CreateSemaphoreName(startupSemName, RuntimeStartupSemaphoreName, pid, processIdDisambiguationKey);
     CreateSemaphoreName(continueSemName, RuntimeContinueSemaphoreName, pid, processIdDisambiguationKey);

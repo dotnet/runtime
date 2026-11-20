@@ -15,14 +15,14 @@
 #include <libkern/OSCacheControl.h>
 #endif
 
-bool minipal_flush_instruction_cache(const void* address, size_t size)
+void minipal_flush_instruction_cache(const void* address, size_t size)
 {
 #if defined(HOST_WINDOWS)
-    return FlushInstructionCache(GetCurrentProcess(), address, size) != FALSE;
+    FlushInstructionCache(GetCurrentProcess(), address, size);
 #else
     if (address == NULL)
     {
-        return true;
+        return;
     }
 
 #if defined(__linux__) && defined(HOST_ARM)
@@ -64,6 +64,5 @@ bool minipal_flush_instruction_cache(const void* address, size_t size)
 #else
     __builtin___clear_cache((char *)address, (char *)address + size);
 #endif
-    return true;
 #endif // HOST_WINDOWS
 }

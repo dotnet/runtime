@@ -19,7 +19,8 @@
 #include <string.h>
 
 #include <minipal/utils.h>
-#include "mbusafecrt.h"
+
+#include "dn-safecrt.h"
 
 #define SAFECRT_EXPORT __attribute__ ((visibility ("default")))
 
@@ -47,7 +48,7 @@ static void FillString(T* string, size_t size, size_t offset)
 // OpenBSD's libc doesn't support the legacy %C/%S wide specifiers (glibc and the
 // other BSDs do). Rewrite them to %lc/%ls. Returns a malloc'd copy, or NULL on
 // failure (callers fall back to the original format).
-static char *PAL_TranslateWideFormatForOpenBSD(const char *format)
+static char *TranslateWideFormatForOpenBSD(const char *format)
 {
     size_t length = strlen(format);
     // Each rewrite adds one 'l', so doubling is always enough.
@@ -102,17 +103,17 @@ static char *PAL_TranslateWideFormatForOpenBSD(const char *format)
     return translated;
 }
 
-static int PAL_safecrt_vsnprintf(char *string, size_t count, const char *format, va_list ap)
+static int safecrt_vsnprintf(char *string, size_t count, const char *format, va_list ap)
 {
-    char *translated = PAL_TranslateWideFormatForOpenBSD(format);
+    char *translated = TranslateWideFormatForOpenBSD(format);
     int retvalue = vsnprintf(string, count, translated != NULL ? translated : format, ap);
     free(translated);
     return retvalue;
 }
 
-#define PAL_SAFECRT_VSNPRINTF PAL_safecrt_vsnprintf
+#define SAFECRT_VSNPRINTF safecrt_vsnprintf
 #else // !defined(__OpenBSD__)
-#define PAL_SAFECRT_VSNPRINTF vsnprintf
+#define SAFECRT_VSNPRINTF vsnprintf
 #endif // defined(__OpenBSD__)
 
 SAFECRT_EXPORT int vsprintf_s(char *string, size_t sizeInBytes, const char *format, va_list ap)
@@ -123,7 +124,7 @@ SAFECRT_EXPORT int vsprintf_s(char *string, size_t sizeInBytes, const char *form
         return -1;
     }
 
-    int retvalue = PAL_SAFECRT_VSNPRINTF(string, sizeInBytes, format, ap);
+    int retvalue = SAFECRT_VSNPRINTF(string, sizeInBytes, format, ap);
     if (retvalue < 0)
     {
         string[0] = '\0';
@@ -168,7 +169,7 @@ SAFECRT_EXPORT int _vsnprintf_s(char *string, size_t sizeInBytes, size_t count, 
     int save_errno = errno;
     if (sizeInBytes > count)
     {
-        retvalue = PAL_SAFECRT_VSNPRINTF(string, count + 1, format, ap);
+        retvalue = SAFECRT_VSNPRINTF(string, count + 1, format, ap);
         if (retvalue > (int)(count + 1))
         {
             // The string has been truncated.
@@ -182,7 +183,7 @@ SAFECRT_EXPORT int _vsnprintf_s(char *string, size_t sizeInBytes, size_t count, 
     }
     else
     {
-        retvalue = PAL_SAFECRT_VSNPRINTF(string, sizeInBytes, format, ap);
+        retvalue = SAFECRT_VSNPRINTF(string, sizeInBytes, format, ap);
         string[sizeInBytes - 1] = '\0';
         // Truncation is allowed only when count == _TRUNCATE.
         if (retvalue >= (int)sizeInBytes && count == _TRUNCATE)
