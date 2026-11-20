@@ -463,6 +463,52 @@ namespace System.Diagnostics.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
+        public void TestExited_ConcurrentSubscriptions(bool removeHandlers)
+        {
+            const int HandlerCount = 1000;
+            using var p = new ProcessWithAccessibleOnExited();
+            int calls = 0;
+            EventHandler handler = (_, _) => Interlocked.Increment(ref calls);
+
+            if (removeHandlers)
+            {
+                for (int i = 0; i < HandlerCount; i++)
+                {
+                    p.Exited += handler;
+                }
+            }
+
+            p.RaiseExited();
+            Assert.Equal(removeHandlers ? HandlerCount : 0, calls);
+            calls = 0;
+
+            // Exercise handler-list updates without process-exit timing. Lost updates cause
+            // missing callbacks after adds or retained callbacks after removes. Repetition
+            // increases race exposure, but does not force a particular interleaving.
+            Parallel.For(0, HandlerCount, _ =>
+            {
+                if (removeHandlers)
+                {
+                    p.Exited -= handler;
+                }
+                else
+                {
+                    p.Exited += handler;
+                }
+            });
+
+            p.RaiseExited();
+            Assert.Equal(removeHandlers ? 0 : HandlerCount, calls);
+        }
+
+        private sealed class ProcessWithAccessibleOnExited : Process
+        {
+            public void RaiseExited() => OnExited();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
         public void TestExited_SynchronizingObject(bool invokeRequired)
         {
             var mres = new ManualResetEventSlim();
@@ -822,8 +868,13 @@ namespace System.Diagnostics.Tests
             }
             else
             {
-                IEnumerable<int> testProcessIds = Process.GetProcessesByName(RemoteExecutor.HostRunnerName).Select(p => p.Id);
-                Assert.Contains(_process.Id, testProcessIds);
+                // The child's name may transiently reflect the parent's thread name immediately
+                // after Process.Start if execve() hasn't finished updating it yet, so retry briefly.
+                RetryHelper.Execute(() =>
+                {
+                    IEnumerable<int> testProcessIds = Process.GetProcessesByName(RemoteExecutor.HostRunnerName).Select(p => p.Id);
+                    Assert.Contains(_process.Id, testProcessIds);
+                });
             }
         }
 
@@ -1434,9 +1485,16 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
 
-            // Process.ProcessName drops the extension when it's exe.
-            string processName = RemoteExecutor.HostRunner.EndsWith(".exe") ?_process.ProcessName : Path.GetFileNameWithoutExtension(_process.ProcessName);
-            Assert.Equal(Path.GetFileNameWithoutExtension(RemoteExecutor.HostRunner), processName, StringComparer.OrdinalIgnoreCase);
+            // ProcessName may transiently reflect the parent's thread name immediately
+            // after Process.Start if execve() hasn't finished updating it yet, so retry briefly.
+            RetryHelper.Execute(() =>
+            {
+                _process.Refresh();
+
+                // Process.ProcessName drops the extension when it's exe.
+                string processName = RemoteExecutor.HostRunner.EndsWith(".exe") ? _process.ProcessName : Path.GetFileNameWithoutExtension(_process.ProcessName);
+                Assert.Equal(Path.GetFileNameWithoutExtension(RemoteExecutor.HostRunner), processName, StringComparer.OrdinalIgnoreCase);
+            });
         }
 
         [Fact]
@@ -2556,14 +2614,15 @@ namespace System.Diagnostics.Tests
             };
             using (Process px = Process.Start(psi))
             {
-                // Reading of long process names is flaky during process startup and shutdown.
-                // Wait a bit to skip over the period where the ProcessName is not reliable.
-                Thread.Sleep(100);
-
-                Process[] runningProcesses = Process.GetProcesses();
                 try
                 {
-                    Assert.Contains(runningProcesses, p => p.ProcessName == LongProcessName);
+                    // ProcessName may transiently reflect the parent's thread name immediately
+                    // after Process.Start if execve() hasn't finished updating it yet, so retry briefly.
+                    RetryHelper.Execute(() =>
+                    {
+                        Process[] runningProcesses = Process.GetProcesses();
+                        Assert.Contains(runningProcesses, p => p.ProcessName == LongProcessName);
+                    });
                 }
                 finally
                 {
@@ -2635,6 +2694,27 @@ namespace System.Diagnostics.Tests
             testProcess.StartInfo = psi;
 
             AssertExtensions.Throws<ArgumentNullException>("ArgumentList[0]", () => testProcess.Start());
+        }
+
+        [Fact]
+        public void ArgumentsContainingNullThrowsOnStart()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo("unused")
+            {
+                Arguments = "argument\0suffix"
+            };
+
+            AssertExtensions.Throws<ArgumentException>("Arguments", () => Process.Start(psi));
+        }
+
+        [Fact]
+        public void ArgumentListArgumentContainingNullThrowsOnStart()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo("unused");
+            psi.ArgumentList.Add("valid");
+            psi.ArgumentList.Add("argument\0suffix");
+
+            AssertExtensions.Throws<ArgumentException>("ArgumentList[1]", () => Process.Start(psi));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

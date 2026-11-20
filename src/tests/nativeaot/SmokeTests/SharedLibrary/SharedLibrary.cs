@@ -24,6 +24,20 @@ namespace SharedLibrary
             s_setterThread.Start();
         }
 
+        [UnmanagedCallersOnly(EntryPoint = "ThisMethodMustBeCalledFirst", CallConvs = [typeof(CallConvStdcall)])]
+        public static int ThisMethodMustBeCalledFirst()
+        {
+            Span<byte> buffer = stackalloc byte[64];
+            buffer[0] = 100;
+            return ReadStackBuffer(buffer);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int ReadStackBuffer(Span<byte> buffer)
+        {
+            return buffer[0];
+        }
+
         [UnmanagedCallersOnly(EntryPoint = "ReturnsPrimitiveInt", CallConvs = [typeof(CallConvStdcall)])]
         public static int ReturnsPrimitiveInt()
         {

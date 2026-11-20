@@ -42,6 +42,8 @@
     <Scenario>WasmTestOnWasmtime</Scenario>
     <DefineConstants>$(DefineConstants);TARGET_WASI</DefineConstants>
     <XunitShowProgress>true</XunitShowProgress>
+    <!-- Test SocketsHttpHandler through HttpClientHandler, as on Android, instead of the wasi:http handler. -->
+    <UseNativeHttpHandler>false</UseNativeHttpHandler>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
@@ -148,7 +150,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="ByteArrayContentTest.cs" />
     <Compile Include="CompressedContentTest.cs" />
-    <Compile Include="CompressedContentTest.NonBrowser.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'" />
+    <Compile Include="CompressedContentTest.NonBrowser.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ChannelBindingAwareContent.cs"
              Link="Common\System\Net\Http\ChannelBindingAwareContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\DribbleStream.cs"

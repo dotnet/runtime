@@ -13,6 +13,8 @@ parameters:
   collectionName: ''
   targetOS: ''
   targetArch: ''
+  maxPartitionSizeMB: 25
+  crossgen2Composite: ''
 
 ### SuperPMI job
 ### Each collection job depends on a corresponding build job with the same buildConfig and archType.
@@ -22,7 +24,12 @@ jobs:
   parameters:
     # Compute job name from template parameters
     jobName: ${{ format('superpmi_collect_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('SuperPMI collect {4} {5} {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.collectionName, parameters.collectionType) }}
+    ${{ if eq(parameters.targetArch, '') }}:
+      displayName: ${{ format('SuperPMI collect {4} {5} {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.collectionName, parameters.collectionType) }}
+    ${{ else }}:
+      # Cross-target collections share the host osGroup/archType with a same-named host
+      # collection, so include the target in the display name to tell them apart.
+      displayName: ${{ format('SuperPMI collect {4} {5} {6} {7} {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.collectionName, parameters.collectionType, parameters.targetOS, parameters.targetArch) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -35,15 +42,17 @@ jobs:
     collectionName: ${{ parameters.collectionName }}
     targetOS: ${{ parameters.targetOS }}
     targetArch: ${{ parameters.targetArch }}
+    maxPartitionSizeMB: ${{ parameters.maxPartitionSizeMB }}
+    crossgen2Composite: ${{ parameters.crossgen2Composite }}
     # Test job depends on the corresponding build job
     dependsOn:
      - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'
      - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
         - 'coreclr_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
-     # For the corelib crossgen2 collection targeting browser/wasm we also need a
-     # browser/wasm-built System.Private.CoreLib.dll, produced by the browser_wasm_win
-     # Release build.
-     - ${{ if and(eq(parameters.collectionName, 'corelib'), eq(parameters.targetArch, 'wasm')) }}:
+     # Crossgen2 collections targeting browser/wasm compile the browser/wasm managed
+     # assembly set, which comes from the browser-wasm CoreCLR runtime pack produced by
+     # the browser_wasm_win Release build.
+     - ${{ if eq(parameters.targetArch, 'wasm') }}:
         - 'build_browser_wasm_windows_Release_'
 
     variables:
@@ -78,16 +87,16 @@ jobs:
         cleanUnpackFolder: false
         overwriteExistingFiles: true
 
-    # For the corelib crossgen2 collection targeting browser/wasm, also download the
-    # browser/wasm-built runtime artifacts. The wasm-built System.Private.CoreLib.dll
-    # under artifacts/bin/coreclr/browser.wasm.Release/ is what crossgen2 will compile.
-    - ${{ if and(eq(parameters.collectionName, 'corelib'), eq(parameters.targetArch, 'wasm')) }}:
+    # For crossgen2 collections targeting browser/wasm, also download the browser-wasm
+    # CoreCLR runtime pack. Its runtimes/browser-wasm/lib/<tfm>/*.dll and
+    # runtimes/browser-wasm/native/System.Private.CoreLib.dll are what crossgen2 compiles.
+    - ${{ if eq(parameters.targetArch, 'wasm') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
-          artifactFileName: 'BuildArtifacts_browser_wasm_Release$(archiveExtension)'
-          artifactName: BuildArtifacts_browser_wasm_Release
-          displayName: 'browser/wasm Release runtime build artifacts'
+          artifactFileName: 'WasmRuntimePack_browser_wasm_Release$(archiveExtension)'
+          artifactName: WasmRuntimePack_browser_wasm_Release
+          displayName: 'browser/wasm Release runtime pack'
           cleanUnpackFolder: false
           overwriteExistingFiles: true
 

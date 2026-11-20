@@ -47,6 +47,10 @@ namespace envvar
 // Statically linked at the per-app relink, so declared extern here (as browserhost does).
 extern "C"
 {
+    extern const char* const g_runtimeconfig_keys[];
+    extern const char* const g_runtimeconfig_values[];
+    extern const size_t g_runtimeconfig_property_count;
+
     int coreclr_initialize(
         const char* exePath,
         const char* appDomainFriendlyName,
@@ -84,6 +88,9 @@ extern "C" __attribute__((weak)) int32_t GlobalizationNative_LoadICUData(const c
 // Init properties, kept alive for the process so the runtime contract callback can serve them.
 static std::vector<std::string> s_property_keys;
 static std::vector<std::string> s_property_values;
+
+// Served on demand through the runtime contract (as corerun and hostpolicy do), not as an init property.
+static std::string s_entry_assembly_name;
 
 // R2R external-assembly probe search dirs, captured before coreclr_initialize so the probe callback
 // (invoked later by the runtime) can reach them.
@@ -158,23 +165,39 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
     return tpa_list.str();
 }
 
+// Appends the app's build-time-generated runtimeconfig configProperties (feature switches,
+// RuntimeHostConfigurationOption items, ...) to the init properties.
+static void add_runtimeconfig_properties()
+{
+    for (size_t i = 0; i < g_runtimeconfig_property_count; ++i)
+    {
+        s_property_keys.emplace_back(g_runtimeconfig_keys[i]);
+        s_property_values.emplace_back(g_runtimeconfig_values[i]);
+    }
+}
+
+static size_t copy_runtime_property(const std::string& value, char* value_buffer, size_t value_buffer_size)
+{
+    size_t len = value.length();
+    if (value_buffer != nullptr && value_buffer_size > len)
+        ::memcpy(value_buffer, value.c_str(), len + 1);
+
+    return len + 1;
+}
+
 static size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
     const char* key,
     /*out*/ char* value_buffer,
     size_t value_buffer_size,
     void* /*contract_context*/)
 {
+    if (::strcmp(key, HOST_PROPERTY_ENTRY_ASSEMBLY_NAME) == 0)
+        return copy_runtime_property(s_entry_assembly_name, value_buffer, value_buffer_size);
+
     for (size_t i = 0; i < s_property_keys.size(); ++i)
     {
         if (s_property_keys[i] == key)
-        {
-            const std::string& value = s_property_values[i];
-            size_t len = value.length();
-            if (value_buffer != nullptr && value_buffer_size > len)
-                ::memcpy(value_buffer, value.c_str(), len + 1);
-
-            return len + 1;
-        }
+            return copy_runtime_property(s_property_values[i], value_buffer, value_buffer_size);
     }
 
     return (size_t)-1;
@@ -200,6 +223,7 @@ int main(int argc, char* argv[])
         string_t file;
         pal::split_path_to_dir_filename(entry_assembly, app_path, file);
         pal::ensure_trailing_delimiter(app_path);
+        s_entry_assembly_name = file.substr(0, file.rfind('.'));
     }
 
     string_t core_libs = pal::getenv(envvar::coreLibraries);
@@ -229,6 +253,11 @@ int main(int argc, char* argv[])
     s_property_keys.push_back(HOST_PROPERTY_APP_PATHS);
     s_property_values.push_back(app_path);
 
+    // Reserved for the host by _RuntimeConfigReservedProperties in WasiApp.targets, so runtimeconfig
+    // can't supply it.
+    s_property_keys.push_back("RUNTIME_IDENTIFIER");
+    s_property_values.push_back("wasi-wasm");
+
     // NATIVE_DLL_SEARCH_DIRECTORIES is intentionally not set: on wasi native libraries are
     // statically linked and every P/Invoke is resolved by the pinvoke_override (callhelpers) before
     // the runtime's native-library search runs, and wasm has no shared-library/dlopen support, so
@@ -247,6 +276,8 @@ int main(int argc, char* argv[])
         s_property_keys.push_back(HOST_PROPERTY_RUNTIME_CONTRACT);
         s_property_values.push_back(ss.str());
     }
+
+    add_runtimeconfig_properties();
 
     std::vector<const char*> property_keys;
     std::vector<const char*> property_values;

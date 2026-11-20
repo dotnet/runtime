@@ -18,13 +18,12 @@
 #endif // TARGET_UNIX
 
 // Just a helper...
-HANDLE MethodContextReader::OpenFile(const char* inputFile, DWORD flags)
+FILE* MethodContextReader::OpenFile(const char* inputFile)
 {
-    HANDLE fileHandle =
-        CreateFileA(inputFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | flags, NULL);
-    if (fileHandle == INVALID_HANDLE_VALUE)
+    FILE* fileHandle = fopen(inputFile, "rb");
+    if (fileHandle == nullptr)
     {
-        LogError("Failed to open file '%s'. GetLastError()=%u", inputFile, GetLastError());
+        LogError("Failed to open file '%s'. errno=%d", inputFile, errno);
     }
     return fileHandle;
 }
@@ -83,7 +82,7 @@ std::string MethodContextReader::CheckForPairedFile(const std::string& fileName,
 
 MethodContextReader::MethodContextReader(
     const char* inputFileName, const int* indexes, int indexCount, char* hash, int offset, int increment)
-    : fileHandle(INVALID_HANDLE_VALUE)
+    : fileHandle(nullptr)
     , fileSize(0)
     , curMCIndex(0)
     , Indexes(indexes)
@@ -123,11 +122,16 @@ MethodContextReader::MethodContextReader(
         this->tocFile.LoadToc(tocFileName.c_str());
 
     // we'll get here even if we don't have a valid index file
-    this->fileHandle = OpenFile(mchFileName.c_str(), (this->hasTOC() && this->hasIndex()) ? FILE_ATTRIBUTE_NORMAL
-                                                                                          : FILE_FLAG_SEQUENTIAL_SCAN);
-    if (this->fileHandle != INVALID_HANDLE_VALUE)
+    this->fileHandle = OpenFile(mchFileName.c_str());
+    if (this->fileHandle != nullptr)
     {
-        GetFileSizeEx(this->fileHandle, (PLARGE_INTEGER) & this->fileSize);
+        this->fileSize = fgetsize(this->fileHandle);
+        if (this->fileSize < 0)
+        {
+            LogError("Failed to get the size of '%s'. errno=%d", mchFileName.c_str(), errno);
+            fclose(this->fileHandle);
+            this->fileHandle = nullptr;
+        }
     }
 
     ReadExcludedMethods(mchFileName);
@@ -135,9 +139,9 @@ MethodContextReader::MethodContextReader(
 
 MethodContextReader::~MethodContextReader()
 {
-    if (fileHandle != INVALID_HANDLE_VALUE)
+    if (fileHandle != nullptr)
     {
-        CloseHandle(this->fileHandle);
+        fclose(this->fileHandle);
     }
 
     minipal_mutex_destroy(&this->mutex);
@@ -157,30 +161,26 @@ void MethodContextReader::ReleaseLock()
 
 bool MethodContextReader::atEof()
 {
-    int64_t pos = 0;
-    SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos,
-                     FILE_CURRENT); // LARGE_INTEGER is a crime against humanity
-    return pos == this->fileSize;
+    return ftell_64(this->fileHandle) == this->fileSize;
 }
 
 MethodContextBuffer MethodContextReader::ReadMethodContextNoLock(bool justSkip)
 {
-    DWORD        bytesRead;
     char         buff[512];
     unsigned int totalLen = 0;
     if (atEof())
     {
         return MethodContextBuffer();
     }
-    Assert(ReadFile(this->fileHandle, buff, 2 + sizeof(unsigned int), &bytesRead, NULL) == TRUE);
+    Assert(fread(buff, 1, 2 + sizeof(unsigned int), this->fileHandle) == 2 + sizeof(unsigned int));
     AssertMsg((buff[0] == 'm') && (buff[1] == 'c'), "Didn't find magic number");
     memcpy(&totalLen, &buff[2], sizeof(unsigned int));
     if (justSkip)
     {
         int64_t pos = totalLen + 2;
         // Just move the file pointer ahead the correct number of bytes
-        AssertMsg(SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT) == TRUE,
-                  "SetFilePointerEx failed (Error %X)", GetLastError());
+        AssertMsg(fsetpos_64(this->fileHandle, ftell_64(this->fileHandle) + pos) == 0,
+                  "fsetpos_64 failed (errno %d)", errno);
 
         // Increment curMCIndex as we advanced the file pointer by another MC
         ++curMCIndex;
@@ -190,7 +190,7 @@ MethodContextBuffer MethodContextReader::ReadMethodContextNoLock(bool justSkip)
     else
     {
         unsigned char* buff2 = new unsigned char[totalLen + 2]; // total + End Canary
-        Assert(ReadFile(this->fileHandle, buff2, totalLen + 2, &bytesRead, NULL) == TRUE);
+        Assert(fread(buff2, 1, totalLen + 2, this->fileHandle) == totalLen + 2);
 
         // Increment curMCIndex as we read another MC
         ++curMCIndex;
@@ -417,7 +417,7 @@ bool MethodContextReader::hasTOC()
 
 bool MethodContextReader::isValid()
 {
-    return this->fileHandle != INVALID_HANDLE_VALUE;
+    return this->fileHandle != nullptr;
 }
 
 // Return a measure of "progress" through the method contexts, as follows:
@@ -438,8 +438,7 @@ double MethodContextReader::Progress()
     else
     {
         this->AcquireLock();
-        int64_t pos = 0;
-        SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT);
+        int64_t pos = ftell_64(this->fileHandle);
         this->ReleaseLock();
         return (double)pos;
     }
@@ -512,7 +511,7 @@ MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int m
     {
         return MethodContextBuffer(-2);
     }
-    if (SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_BEGIN))
+    if (fsetpos_64(this->fileHandle, pos) == 0)
     {
         // ReadMethodContext will release the lock, but we already acquired it
         MethodContextBuffer mcb = this->ReadMethodContext(false);
@@ -549,17 +548,16 @@ void MethodContextReader::ReadExcludedMethods(std::string mchFileName)
     {
         return;
     }
-    HANDLE excludeFileHandle = OpenFile(excludeFileName.c_str());
-    if (excludeFileHandle != INVALID_HANDLE_VALUE)
+    FILE* excludeFileHandle = OpenFile(excludeFileName.c_str());
+    if (excludeFileHandle != nullptr)
     {
-        int64_t excludeFileSizeLong;
-        GetFileSizeEx(excludeFileHandle, (PLARGE_INTEGER)&excludeFileSizeLong);
+        int64_t excludeFileSizeLong = fgetsize(excludeFileHandle);
         unsigned excludeFileSize = (unsigned)excludeFileSizeLong;
 
         char* buffer = new char[excludeFileSize + 1];
-        DWORD bytesRead;
-        bool  success = (ReadFile(excludeFileHandle, buffer, excludeFileSize, &bytesRead, NULL) == TRUE);
-        CloseHandle(excludeFileHandle);
+        size_t bytesRead = fread(buffer, 1, excludeFileSize, excludeFileHandle);
+        bool  success = !ferror(excludeFileHandle);
+        fclose(excludeFileHandle);
 
         if (!success || excludeFileSize != bytesRead)
         {
@@ -636,9 +634,8 @@ bool MethodContextReader::IsMethodExcluded(MethodContext* mc)
 
 void MethodContextReader::Reset(const int* newIndexes, int newIndexCount)
 {
-    int64_t pos    = 0;
-    BOOL    result = SetFilePointerEx(fileHandle, *(PLARGE_INTEGER)&pos, NULL, FILE_BEGIN);
-    assert(result);
+    int result = fsetpos_64(fileHandle, 0);
+    assert(result == 0);
 
     Indexes     = newIndexes;
     IndexCount  = newIndexCount;

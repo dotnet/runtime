@@ -21,11 +21,11 @@ public class PlatformNativeR2R
         string r2rDumpPath = Path.Join(coreRoot, "R2RDump", "R2RDump.dll");
 
         string testDotNetCmd = Environment.GetEnvironmentVariable("__TestDotNetCmd");
-        ProcessStartInfo psi = new ProcessStartInfo
+        ProcessStartInfo psi = new ProcessStartInfo(
+            string.IsNullOrEmpty(testDotNetCmd) ? "dotnet" : testDotNetCmd,
+            [r2rDumpPath, "--in", Assembly.GetExecutingAssembly().Location, "--header"])
         {
-            UseShellExecute = false,
-            FileName = string.IsNullOrEmpty(testDotNetCmd) ? "dotnet" : testDotNetCmd,
-            Arguments = $"\"{r2rDumpPath}\" --in \"{Assembly.GetExecutingAssembly().Location}\" --header",
+            InheritedHandles = [],
             RedirectStandardOutput = true,
             RedirectStandardError = true
         };

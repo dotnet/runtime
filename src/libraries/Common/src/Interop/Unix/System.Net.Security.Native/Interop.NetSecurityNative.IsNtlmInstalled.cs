@@ -12,6 +12,10 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IsNtlmInstalled();
 
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_IsGetNameAttributeSupported")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool IsGetNameAttributeSupported();
+
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_EnsureGssInitialized")]
         private static partial int EnsureGssInitialized();
 

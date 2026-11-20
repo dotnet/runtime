@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'arm64' or '$(RuntimeFlavor)' != 'coreclr' or '$(Configuration)' == 'Release'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs">
+      <HasDisasmCheck>true</HasDisasmCheck>
+    </Compile>
+    <CLRTestEnvironmentVariable Include="DOTNET_JitDisasmWithGC" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitFullyInt" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+  </ItemGroup>
+</Project>

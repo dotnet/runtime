@@ -209,7 +209,7 @@ namespace Microsoft.Interop.Analyzers
             // The generator never copies LibraryImportAttribute onto the implementing part, so the attribute
             // application always points at the declaration the user authored.
             if (libraryImportAttr.ApplicationSyntaxReference is not { } attributeReference
-                || !attributeReference.SyntaxTree.UseUpdatedMemorySafetyRules)
+                || !context.Compilation.UsesUpdatedMemorySafetyRules())
             {
                 return;
             }

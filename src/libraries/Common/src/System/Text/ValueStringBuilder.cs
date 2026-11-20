@@ -252,13 +252,11 @@ namespace System.Text
             Debug.Assert(additionalCapacityBeyondPos > 0);
             Debug.Assert(_pos > _chars.Length - additionalCapacityBeyondPos, "Grow called incorrectly, no resize is needed.");
 
-            const uint ArrayMaxLength = 0x7FFFFFC7; // same as Array.MaxLength
-
             // Increase to at least the required size (_pos + additionalCapacityBeyondPos), but try
             // to double the size if possible, bounding the doubling to not go beyond the max array length.
             int newCapacity = (int)Math.Max(
                 (uint)(_pos + additionalCapacityBeyondPos),
-                Math.Min((uint)_chars.Length * 2, ArrayMaxLength));
+                Math.Min((uint)_chars.Length * 2, (uint)Array.MaxLength));
 
             // Make sure to let Rent throw an exception if the caller has a bug and the desired capacity is negative.
             // This could also go negative if the actual required length wraps around.

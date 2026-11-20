@@ -71,9 +71,7 @@ static HRESULT FormatRuntimeErrorVA(
     // find the text for it.
     else
     {
-        if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,
-                0, hrRpt, 0,
-                rcMsg, cchMsg, 0/*<TODO>@todo: marker</TODO>*/))
+        if (GetSystemErrorMessage(hrRpt, rcMsg, cchMsg))
         {
             hr = S_OK;
 
@@ -83,7 +81,7 @@ static HRESULT FormatRuntimeErrorVA(
                 rcMsg[iLen - 2] = '\0';
         }
         else
-            hr = HRESULT_FROM_GetLastError();
+            hr = E_FAIL;
     }
 
     _ASSERTE(SUCCEEDED(hr));

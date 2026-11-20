@@ -50,6 +50,11 @@ internal sealed class ReaderGen : CsWriter
             EmitCollection(typeName + "HandleCollection", typeName + "Handle");
         }
 
+        foreach (var typeName in SchemaDef.TypeNamesWithHashtableTypes)
+        {
+            EmitHashtable(typeName + "Handle");
+        }
+
         foreach (var primitiveType in SchemaDef.PrimitiveTypes)
         {
             EmitCollection(primitiveType.TypeName + "Collection", primitiveType.Name);
@@ -82,9 +87,10 @@ internal sealed class ReaderGen : CsWriter
         WriteLine("NativeReader streamReader = reader._streamReader;");
         foreach (var member in record.Members)
         {
-            if ((member.Flags & MemberDefFlags.NotPersisted) != 0)
-                continue;
-            WriteLine($"offset = streamReader.Read(offset, out {member.GetMemberFieldName()});");
+            if ((member.Flags & MemberDefFlags.Blob) != 0 && member == record.Members[^1])
+                WriteLine($"{member.GetMemberFieldName()} = new ByteCollection(streamReader, offset);");
+            else
+                WriteLine($"offset = streamReader.Read(offset, out {member.GetMemberFieldName()});");
         }
         CloseScope();
 
@@ -93,9 +99,6 @@ internal sealed class ReaderGen : CsWriter
 
         foreach (var member in record.Members)
         {
-            if ((member.Flags & MemberDefFlags.NotPersisted) != 0)
-                continue;
-
             string memberType = member.GetMemberType();
             string fieldType = member.GetMemberType(MemberTypeKind.ReaderField);
 
@@ -239,6 +242,66 @@ internal sealed class ReaderGen : CsWriter
         CloseScope("Enumerator");
 
         CloseScope(collectionTypeName);
+    }
+
+    private void EmitHashtable(string elementTypeName)
+    {
+        string hashtableTypeName = $"{elementTypeName}Hashtable";
+        WriteTypeAttributesForCoreLib();
+        OpenScope($"public readonly partial struct {hashtableTypeName}");
+
+        WriteLine("private readonly NativeHashtable _hashtable;");
+
+        OpenScope($"internal {hashtableTypeName}(NativeHashtable hashtable)");
+        WriteLine("_hashtable = hashtable;");
+        CloseScope();
+
+        WriteLineIfNeeded();
+        WriteLine("public Enumerator GetEnumerator() => new Enumerator(_hashtable.EnumerateAllEntries());");
+        WriteLineIfNeeded();
+        WriteLine("public LookupEnumerator Lookup(int hashCode) => new LookupEnumerator(_hashtable.Lookup(hashCode));");
+
+        EmitHashtableEnumerator(elementTypeName, isLookup: false);
+        EmitHashtableEnumerator(elementTypeName, isLookup: true);
+
+        CloseScope(hashtableTypeName);
+    }
+
+    private void EmitHashtableEnumerator(string elementTypeName, bool isLookup)
+    {
+        string enumeratorTypeName = isLookup ? "LookupEnumerator" : "Enumerator";
+        string nativeEnumeratorTypeName = isLookup ? "Enumerator" : "AllEntriesEnumerator";
+        WriteTypeAttributesForCoreLib();
+        OpenScope($"public struct {enumeratorTypeName}");
+
+        WriteLine($"private NativeHashtable.{nativeEnumeratorTypeName} _enumerator;");
+        WriteLine($"private {elementTypeName} _current;");
+
+        OpenScope($"internal {enumeratorTypeName}(NativeHashtable.{nativeEnumeratorTypeName} enumerator)");
+        WriteLine("_enumerator = enumerator;");
+        WriteLine("_current = default;");
+        CloseScope();
+
+        WriteLineIfNeeded();
+        WriteLine($"public {elementTypeName} Current => _current;");
+        if (isLookup)
+        {
+            WriteLineIfNeeded();
+            WriteLine("public LookupEnumerator GetEnumerator() => this;");
+        }
+
+        OpenScope("public bool MoveNext()");
+        WriteLine("NativeParser parser = _enumerator.GetNext();");
+        WriteLine("if (parser.IsNull)");
+        WriteLine("    return false;");
+        WriteLine($"_current = new {elementTypeName}((int)parser.Offset);");
+        WriteLine("return true;");
+        CloseScope("MoveNext");
+
+        OpenScope("public void Dispose()");
+        CloseScope("Dispose");
+
+        CloseScope(enumeratorTypeName);
     }
 
     private void EmitOpaqueHandle()

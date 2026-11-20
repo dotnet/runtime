@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // StgTiggerStorage.h
-//
-
 //
 // TiggerStorage is a stripped down version of compound doc files.  Doc files
 // have some very useful and complex features to them, unfortunately nothing
@@ -41,8 +40,8 @@
 // backing storage, whatever scheme that may be.  There are no consistency
 // checks on the data (for example crc's) due to the expense in computation
 // required.  There is a signature at the front of the file and in the header.
-//
 //*****************************************************************************
+
 #ifndef __StgTiggerStorage_h__
 #define __StgTiggerStorage_h__
 
@@ -270,11 +269,6 @@ public:
     // Access storage object.
     StgIO *GetStgIO()
     { return (m_pStgIO); }
-
-#if defined(_DEBUG)
-    ULONG PrintSizeInfo(                // Size of streams.
-        bool verbose);                  // Be verbose?
-#endif
 
 protected:
     HRESULT Write(                      // Return code.

@@ -91,6 +91,7 @@ export function setLoaderGlobals (
     const lh: Partial<LoaderHelpers> = {
         gitHash,
         config: globalObjects.module.config,
+        callbacks: { configLoaded: [] },
         diagnosticTracing: false,
 
         maxParallelDownloads: 16,

@@ -269,37 +269,34 @@ jobs:
       - ${{ parameters._const_paths._always_exclude }}
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
-    # wasm/runtimetests mono need to be run
-    - subset: wasm_mono_runtimetests
+    # The checked-in CoreCLR wasm call helpers (src/coreclr/vm/wasm/{browser,wasi}/callhelpers-*.cpp)
+    # are generated from the framework's [UnmanagedCallersOnly] methods, P/Invokes and QCalls, so any
+    # change to that managed code can make them stale. Triggers the wasm CoreCLR build legs that run
+    # wasm-coreclr-callhelpers-check.yml.
+    - subset: wasm_coreclr_callhelpers
       combined: true
       include:
-      - src/tests/*
-      - src/mono/*
-      - ${{ parameters._const_paths._wasm_src_native }}
+      - src/libraries/*/src/*
+      - src/coreclr/System.Private.CoreLib/*
+      - src/coreclr/tools/aot/ILCompiler.ReadyToRun/*
+      - src/coreclr/tools/Common/*
+      - src/coreclr/vm/wasm/*
+      - eng/wasm/WasmPInvokeModules.props
       exclude:
-      - src/mono/nuget/*
-      - src/mono/sample/*
-      - src/mono/tests/*
-      - src/mono/tools/*
-      - src/mono/wasi/*
-      - src/mono/browser/debugger/*
-      - src/mono/wasm/host/*
-      - src/mono/wasm/templates/*
-      - src/mono/wasm/testassets/*
-      - src/mono/wasm/Wasm.Build.Tests/*
-      - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
-      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     # wasm/runtimetests coreCLR need to be run
     - subset: wasm_coreclr_runtimetests
       combined: true
       include:
+      - eng/AcquireWasiR2RTools.targets
+      - src/tests/Common/WasiR2RComposer.proj
+      - src/tasks/Microsoft.NET.WebAssembly.Webcil/*
+      - src/tasks/WasmAppBuilder/*
       - src/tests/*
       - src/coreclr/*
       - ${{ parameters._const_paths._wasm_src_native }}
       exclude:
-      - src/mono/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}

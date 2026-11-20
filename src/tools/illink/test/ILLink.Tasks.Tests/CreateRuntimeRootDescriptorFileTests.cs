@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml.Linq;
 using Microsoft.Build.Utilities;
@@ -12,7 +13,71 @@ namespace ILLink.Tasks.Tests
     public class CreateRuntimeRootDescriptorFileTests
     {
         [Fact]
-        public void TestCoreLibClassGen()
+        public void ReadsNestedNamespaceDefinitions()
+        {
+            Dictionary<string, string> namespaces = CreateRuntimeRootILLinkDescriptorFile.ReadNamespaces(new[] {
+                "#define g_SystemNS \"System\"",
+                "#define g_RuntimeNS g_SystemNS \".Runtime\"",
+                "#define g_LoaderNS g_RuntimeNS \".Loader\" // comment"
+            });
+            Assert.Equal("System.Runtime.Loader", namespaces["Loader"]);
+        }
+
+        [Theory]
+        [InlineData("#if defined(FEATURE_ON) || defined(FEATURE_OTHER)")]
+        [InlineData("#if defined()")]
+        [InlineData("#if FEATURE_ON || FEATURE_OTHER")]
+        [InlineData("#elif FEATURE_OTHER")]
+        [InlineData("#else")]
+        [InlineData("#endif")]
+        [InlineData("#ifdef FEATURE_ON\n#else\n#else\n#endif")]
+        [InlineData("#ifdef FEATURE_ON")]
+        public void InvalidHeaderConditionsAreDiagnosed(string source)
+        {
+            var errors = new List<string>();
+            var tracker = new CreateRuntimeRootILLinkDescriptorFile.DefineTracker(new HashSet<string>(), errors.Add, "corelib.h");
+            foreach (string line in source.Split('\n'))
+                tracker.ProcessLine(line);
+            tracker.Complete();
+            Assert.NotEmpty(errors);
+            Assert.All(errors, error => Assert.Contains("corelib.h", error));
+        }
+
+        [Theory]
+        [InlineData("#if defined(DEBUGGING_SUPPORTED)", true)]
+        [InlineData("#if defined(DEBUGGING_SUPPORTED)", false)]
+        [InlineData("#if defined( DEBUGGING_SUPPORTED ) // Comment", true)]
+        [InlineData("#if defined( DEBUGGING_SUPPORTED ) // Comment", false)]
+        public void DefinedHeaderConditionsSelectTheActiveBranch(string condition, bool isDefined)
+        {
+            var errors = new List<string>();
+            var defines = new HashSet<string>();
+            if (isDefined)
+                defines.Add("DEBUGGING_SUPPORTED");
+            var tracker = new CreateRuntimeRootILLinkDescriptorFile.DefineTracker(defines, errors.Add, "corelib.h");
+
+            Assert.True(tracker.ProcessLine(condition));
+            Assert.Equal(isDefined, tracker.IsActiveSection);
+            Assert.True(tracker.ProcessLine("#else"));
+            Assert.Equal(!isDefined, tracker.IsActiveSection);
+            Assert.True(tracker.ProcessLine("#endif"));
+            Assert.True(tracker.IsActiveSection);
+            tracker.Complete();
+            Assert.Empty(errors);
+        }
+
+        [Theory]
+        [InlineData(null, null)]
+        [InlineData("corelib.h", "#if FEATURE_ON || FEATURE_OTHER")]
+        [InlineData("cortypeinfo.h", "#if FEATURE_ON || FEATURE_OTHER")]
+        [InlineData("rexcep.h", "#if FEATURE_ON || FEATURE_OTHER")]
+        [InlineData("corelib.h", "#ifdef FEATURE_ON")]
+        [InlineData("cortypeinfo.h", "#ifdef FEATURE_ON")]
+        [InlineData("rexcep.h", "#ifdef FEATURE_ON")]
+        [InlineData("corelib.h", "#ifdef FEATURE_OFF")]
+        [InlineData("cortypeinfo.h", "#ifdef FEATURE_OFF")]
+        [InlineData("rexcep.h", "#ifdef FEATURE_OFF")]
+        public void TestCoreLibClassGen(string invalidHeader, string condition)
         {
             File.WriteAllLines("corelib.h", new string[] {
                 "#ifndef TESTDEF",
@@ -64,8 +129,14 @@ namespace ILLink.Tasks.Tests
             XElement existingContent = new XElement("linker", existingAssembly);
             new XDocument(existingContent).Save("Test.ILLink.Descriptors.Combined.xml");
 
+            if (invalidHeader is not null)
+                File.AppendAllText(invalidHeader, $"\n{condition}\n");
+
+            File.Delete("Test.ILLink.Descriptors.xml");
+            var buildEngine = new MockBuildEngine();
             var task = new CreateRuntimeRootILLinkDescriptorFile()
             {
+                BuildEngine = buildEngine,
                 NamespaceFilePath = new TaskItem("namespace.h"),
                 MscorlibFilePath = new TaskItem("corelib.h"),
                 CortypeFilePath = new TaskItem("cortypeinfo.h"),
@@ -80,7 +151,18 @@ namespace ILLink.Tasks.Tests
                 RuntimeRootDescriptorFilePath = new TaskItem("Test.ILLink.Descriptors.xml")
             };
 
-            Assert.True(task.Execute());
+            bool success = task.Execute();
+            if (invalidHeader is not null)
+            {
+                Assert.False(success);
+                Assert.Single(buildEngine.Errors);
+                Assert.Contains(invalidHeader, buildEngine.Errors[0].Message);
+                Assert.False(File.Exists("Test.ILLink.Descriptors.xml"));
+                return;
+            }
+
+            Assert.True(success);
+            Assert.Empty(buildEngine.Errors);
 
             XDocument output = XDocument.Load("Test.ILLink.Descriptors.xml");
             string expectedXml = new XElement("linker",

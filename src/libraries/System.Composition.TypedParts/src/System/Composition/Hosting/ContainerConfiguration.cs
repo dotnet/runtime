@@ -93,7 +93,7 @@ namespace System.Composition.Hosting
         /// <returns>A configuration object allowing configuration to continue.</returns>
         public ContainerConfiguration WithPart(Type partType, AttributedModelProvider conventions)
         {
-            if (partType == null) throw new ArgumentNullException(nameof(partType));
+            ArgumentNullException.ThrowIfNull(partType);
             return WithParts(new[] { partType }, conventions);
         }
 

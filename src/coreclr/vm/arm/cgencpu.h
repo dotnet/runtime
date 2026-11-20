@@ -1,7 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-
 
 #ifndef TARGET_ARM
 #error Should only include "cGenCpu.h" for ARM builds
@@ -77,8 +75,7 @@ EXTERN_C void checkStack(void);
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         32  // bytes (maximum HFA size is 4 doubles)
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 4   // bytes
 
-#define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
+#define HAS_FLOAT_ARGUMENT_REGISTERS            1   // Calling convention has separate floating-point argument registers
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.
@@ -275,53 +272,6 @@ inline TADDR GetSecondArgReg(T_CONTEXT *context)
 inline void ClearITState(T_CONTEXT *context) {
     LIMITED_METHOD_DAC_CONTRACT;
     context->Cpsr = context->Cpsr & 0xf9ff03ff;
-}
-
-//------------------------------------------------------------------------
-inline void emitUnconditionalBranchThumb(LPBYTE pBuffer, int16_t offset)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    uint16_t *pInstr = (uint16_t *) pBuffer;
-
-    // offset from -2KB to +2KB
-    _ASSERTE (offset >= - MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB && offset < MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB);
-
-    if (offset >= 0)
-    {
-        offset = offset >> 1;
-    }
-    else
-    {
-        offset = ((MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB + offset) >> 1) | 0x400;
-    }
-
-    *pInstr = 0xE000 | offset;
-}
-
-//------------------------------------------------------------------------
-inline int16_t decodeUnconditionalBranchThumb(LPBYTE pBuffer)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    uint16_t *pInstr = (uint16_t *) pBuffer;
-
-    int16_t offset = (~0xE000) & (*pInstr);
-
-    if ((offset & 0x400) == 0)
-    {
-        offset = offset << 1;
-    }
-    else
-    {
-        offset = (~0x400) & offset;
-        offset = (offset << 1) - MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB;
-    }
-
-    // offset from -2KB to +2KB
-    _ASSERTE (offset >= - MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB && offset < MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB);
-
-    return offset;
 }
 
 //------------------------------------------------------------------------

@@ -7,7 +7,6 @@
 namespace System.Net.Http
 {
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public sealed partial class BrotliCompressedContent : System.Net.Http.HttpContent
     {
         public BrotliCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.BrotliCompressionOptions compressionOptions) { }
@@ -115,6 +114,10 @@ namespace System.Net.Http
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> QueryAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpContent? content) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> QueryAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> QueryAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> QueryAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
@@ -539,7 +542,6 @@ namespace System.Net.Http
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public sealed partial class ZstandardCompressedContent : System.Net.Http.HttpContent
     {
         public ZstandardCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.CompressionLevel compressionLevel = System.IO.Compression.CompressionLevel.Optimal) { }

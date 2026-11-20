@@ -70,6 +70,15 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetRequiredCustomModifiers(), Projector.ProjectType);
         }
 
+        public override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            ArgumentNullException.ThrowIfNull(other);
+
+            return other is ProjectingFieldInfo otherField &&
+                   Projector == otherField.Projector &&
+                   UnderlyingField.HasSameMetadataDefinitionAs(otherField.UnderlyingField);
+        }
+
         public override bool Equals([NotNullWhen(true)] object? o)
         {
             return o is ProjectingFieldInfo other &&

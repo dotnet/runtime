@@ -149,24 +149,15 @@ public:
         ULONG       *pcbData);              // [OUT] Put size of data here.
 
     static HRESULT MergeUpdateTokenInFieldSig(
-        CMiniMdRW   *pMiniMdAssemEmit,      // [IN] The assembly emit scope.
         CMiniMdRW   *pMiniMdEmit,           // [IN] The emit scope.
-        IMetaModelCommon *pCommonAssemImport,   // [IN] Assembly scope where the signature is from.
-        const void  *pbHashValue,           // [IN] Hash value for the import assembly.
-        ULONG       cbHashValue,            // [IN] Size in bytes for the hash value.
         IMetaModelCommon *pCommonImport,    // [IN] The scope to merge into the emit scope.
         PCCOR_SIGNATURE pbSigImp,           // [IN] signature from the imported scope
         CQuickBytes *pqkSigEmit,            // [OUT] buffer for translated signature
         ULONG       cbStartEmit,            // [IN] start point of buffer to write to
         ULONG       *pcbImp,                // [OUT] total number of bytes consumed from pbSigImp
         ULONG       *pcbEmit);              // [OUT] total number of bytes write to pqkSigEmit
-
     static HRESULT MergeUpdateTokenInSig(   // S_OK or error.
-        CMiniMdRW   *pMiniMdAssemEmit,      // [IN] The assembly emit scope.
         CMiniMdRW   *pMiniMdEmit,           // [IN] The emit scope.
-        IMetaModelCommon *pCommonAssemImport,   // [IN] Assembly scope where the signature is from.
-        const void  *pbHashValue,           // [IN] Hash value for the import assembly.
-        ULONG       cbHashValue,            // [IN] Size in bytes for the hash value.
         IMetaModelCommon *pCommonImport,    // [IN] The scope to merge into the emit scope.
         PCCOR_SIGNATURE pbSigImp,           // [IN] signature from the imported scope
         CQuickBytes *pqkSigEmit,            // [OUT] translated signature
@@ -231,23 +222,14 @@ public:
         mdTypeRef   *ptr);                  // [OUT] Token for the innermost TypeRef.
 
     static HRESULT ImportTypeDef(
-        CMiniMdRW   *pMiniMdAssemEmit,      // [IN] Assembly emit scope.
-        CMiniMdRW   *pMiniMdEmit,           // [IN] Module emit scope.
-        IMetaModelCommon *pCommonAssemImport, // [IN] Assembly import scope.
-        const void  *pbHashValue,           // [IN] Hash value for import assembly.
-        ULONG       cbHashValue,            // [IN] Size in bytes of hash value.
-        IMetaModelCommon *pCommonImport,    // [IN] Module import scope.
+        CMiniMdRW   *pMiniMdEmit,           // [IN] Emit scope.
+        IMetaModelCommon *pCommonImport,    // [IN] Import scope.
         mdTypeDef   tdImport,               // [IN] Imported TypeDef.
         bool        bReturnTd,              // [IN] If the import and emit scopes are identical, return the TypeDef.
         mdToken     *ptkType);              // [OUT] Output token for the imported type in the emit scope.
-
     static HRESULT ImportTypeRef(
-        CMiniMdRW   *pMiniMdAssemEmit,      // [IN] Assembly emit scope.
-        CMiniMdRW   *pMiniMdEmit,           // [IN] Module emit scope.
-        IMetaModelCommon *pCommonAssemImport, // [IN] Assembly import scope.
-        const void  *pbHashValue,           // [IN] Hash value for import assembly.
-        ULONG       cbHashValue,            // [IN] Size in bytes of hash value.
-        IMetaModelCommon *pCommonImport,    // [IN] Module import scope.
+        CMiniMdRW   *pMiniMdEmit,           // [IN] Emit scope.
+        IMetaModelCommon *pCommonImport,    // [IN] Import scope.
         mdTypeRef   trImport,               // [IN] Imported TypeRef.
         mdToken     *ptkType);              // [OUT] Output token for the imported type in the emit scope.
 
@@ -274,23 +256,6 @@ private:
         CQuickArray<LPCUTF8> &cqaNamespaces,    // Namespaces of the nesters.
         CQuickArray<LPCUTF8> &cqaNames);    // Names of the nesters.
 
-    static HRESULT CreateModuleRefFromScope(
-        CMiniMdRW   *pMiniMdEmit,           // [IN] Emit scope in which the ModuleRef is to be created.
-        IMetaModelCommon *pCommonImport,    // [IN] Import scope.
-        mdModuleRef *ptkModuleRef);         // [OUT] Output token for ModuleRef.
-
-    static HRESULT CreateModuleRefFromModuleRef(    // S_OK or error.
-        CMiniMdRW   *pMiniMdEmit,           // [IN] Emit scope.
-        IMetaModelCommon *pCommon,          // [IN] Import scope.
-        mdModuleRef tkModuleRef,            // [IN] ModuleRef token.
-        mdModuleRef *ptkModuleRef);         // [OUT] ModuleRef token in the emit scope.
-
-    static HRESULT CreateModuleRefFromExportedType(  // S_OK, S_FALSE or error.
-        CMiniMdRW   *pAssemEmit,            // [IN] Import assembly scope.
-        CMiniMdRW   *pMiniMdEmit,           // [IN] Emit scope.
-        mdExportedType   tkExportedType,    // [IN] ExportedType token in Assembly emit scope.
-        mdModuleRef *ptkModuleRef);         // [OUT] ModuleRef token in the emit scope.
-
     // CreateAssemblyRefFromAssembly, CompareAssemblyRefToAssembly are in satellite libs because
     // they are only used in emit cases and need strong-name support in mscorwks.dll.
 
@@ -298,8 +263,6 @@ private:
         CMiniMdRW   *pMiniMdAssemEmit,      // [IN] Emit assembly scope.
         CMiniMdRW   *pMiniMdModuleEmit,     // [IN] Emit module scope.
         IMetaModelCommon *pCommonAssemImport, // [IN] Assembly import scope.
-        const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
-        ULONG       cbHashValue,            // [IN] Count of bytes.
         mdAssemblyRef *ptkAssemblyRef);     // [OUT] AssemblyRef token.
 
     static HRESULT CompareAssemblyRefToAssembly(    // S_OK, S_FALSE or error.

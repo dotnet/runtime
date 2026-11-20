@@ -20,6 +20,43 @@ namespace System.Reflection.Tests
         protected override bool SupportsMissing => false;
 
         [Theory]
+        [InlineData(nameof(RefReturningArgument))]
+        [InlineData(nameof(RefReturningArgumentFew))]
+        [InlineData(nameof(RefReturningArgumentMany))]
+        public void Invoke_RefReturnAliasesArgument(string methodName)
+        {
+            MethodInfo method = typeof(MethodInvokerTests).GetMethod(methodName)!;
+            MethodInvoker invoker = MethodInvoker.Create(method);
+            object?[] arguments = new object?[method.GetParameters().Length];
+            Array.Fill(arguments, new object());
+
+            for (int i = 0; i < 100; i++)
+            {
+                object? expected = i % 2 == 0 ? new object() : null;
+                arguments[0] = expected;
+                Assert.Same(expected, method.Invoke(null, arguments));
+                Assert.Same(expected, arguments[0]);
+                Assert.Same(expected, invoker.Invoke(null, arguments.AsSpan()));
+                Assert.Same(expected, arguments[0]);
+
+                if (arguments.Length == 1)
+                {
+                    Assert.Same(expected, invoker.Invoke(null, arguments[0]));
+                }
+                else if (arguments.Length == 4)
+                {
+                    Assert.Same(expected, invoker.Invoke(null, arguments[0], arguments[1], arguments[2], arguments[3]));
+                }
+            }
+        }
+
+        public static ref object? RefReturningArgument(ref object? value) => ref value;
+
+        public static ref object? RefReturningArgumentFew(ref object? value, object? a, object? b, object? c) => ref value;
+
+        public static ref object? RefReturningArgumentMany(ref object? value, object? a, object? b, object? c, object? d) => ref value;
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void SharedThunk_CachedInvokerPromotes(bool useByRef)
@@ -342,6 +379,24 @@ namespace System.Reflection.Tests
         {
             MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_1)));
             Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, new Span<object?>()));
+        }
+
+        [Theory]
+        [InlineData(typeof(MI_GenericClass<>), nameof(MI_GenericClass<int>.GenericMethod4))]
+        [InlineData(typeof(MI_SubClass), nameof(MI_SubClass.StaticGenericMethod))]
+        public void Invoke_OpenGeneric_Throws(Type declaringType, string methodName)
+        {
+            MethodInvoker invoker = MethodInvoker.Create(declaringType.GetMethod(methodName)!);
+
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null, Span<object?>.Empty));
+            Assert.Throws<InvalidOperationException>(() => invoker.Invoke(null, new object?[] { 1 }.AsSpan()));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null, new object?[] { 1, 2 }.AsSpan()));
+
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null));
+            Assert.Throws<InvalidOperationException>(() => invoker.Invoke(null, 1));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null, 1, 2));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null, 1, 2, 3));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null, 1, 2, 3, 4));
         }
 
         [Fact]

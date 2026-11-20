@@ -74,6 +74,61 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
+        [MemberData(nameof(ReservedSimpleValueInputs))]
+        public static void SkipValue_ReservedAdditionalInfo_ShouldThrowCborContentException(CborConformanceMode conformanceMode, bool isFinalBlock, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var options = new CborReaderOptions { ConformanceMode = conformanceMode, AllowMultipleRootLevelValues = true };
+            var reader = new CborReader(encoding, options, isFinalBlock);
+
+            foreach (bool disableConformanceModeChecks in new[] { false, true })
+            {
+                Assert.Throws<CborContentException>(() => reader.SkipValue(disableConformanceModeChecks));
+                Assert.Equal(encoding.Length, reader.BytesRemaining);
+                Assert.Equal(0, reader.CurrentDepth);
+
+                Assert.Throws<CborContentException>(() => reader.TrySkipValue(disableConformanceModeChecks));
+                Assert.Equal(encoding.Length, reader.BytesRemaining);
+                Assert.Equal(0, reader.CurrentDepth);
+
+                Assert.Throws<CborContentException>(() => reader.ReadEncodedValue(disableConformanceModeChecks));
+                Assert.Equal(encoding.Length, reader.BytesRemaining);
+                Assert.Equal(0, reader.CurrentDepth);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ReservedSimpleValueInputs))]
+        public static void SkipToParent_ReservedAdditionalInfo_ShouldThrowCborContentExceptionAndPreserveState(CborConformanceMode conformanceMode, bool isFinalBlock, string hexEncoding)
+        {
+            byte[] encoding = $"a201018102{hexEncoding}".HexToByteArray(); // { 1: 1, [2]: <invalid> }
+            var reader = new CborReader(encoding, new CborReaderOptions { ConformanceMode = conformanceMode }, isFinalBlock);
+            reader.ReadStartMap();
+            Assert.Equal(1, reader.ReadInt32());
+            Assert.Equal(1, reader.ReadInt32());
+            int bytesRemaining = reader.BytesRemaining;
+
+            foreach (bool disableConformanceModeChecks in new[] { false, true })
+            {
+                Assert.Throws<CborContentException>(() => reader.SkipToParent(disableConformanceModeChecks));
+                Assert.Equal(bytesRemaining, reader.BytesRemaining);
+                Assert.Equal(1, reader.CurrentDepth);
+                Assert.Equal(CborReaderState.StartArray, reader.PeekState());
+
+                Assert.Throws<CborContentException>(() => reader.TrySkipToParent(disableConformanceModeChecks));
+                Assert.Equal(bytesRemaining, reader.BytesRemaining);
+                Assert.Equal(1, reader.CurrentDepth);
+                Assert.Equal(CborReaderState.StartArray, reader.PeekState());
+            }
+
+            Assert.Equal(1, reader.ReadStartArray());
+            Assert.Equal(2, reader.ReadInt32());
+            reader.ReadEndArray();
+            Assert.Throws<CborContentException>(() => reader.ReadSimpleValue());
+            Assert.Equal(1, reader.BytesRemaining);
+        }
+
+        [Theory]
         [InlineData("61ff")]
         [InlineData("62f090")]
         public static void SkipValue_InvalidUtf8_LaxConformance_ShouldSucceed(string hexEncoding)
@@ -364,6 +419,12 @@ namespace System.Formats.Cbor.Tests
         [InlineData("daffffffffff")] // tag followed by break byte
         [InlineData("1c")] // reserved additional information value
         [InlineData("ff")] // break byte at the root context
+        [InlineData("fc")]
+        [InlineData("fd")]
+        [InlineData("fe")]
+        [InlineData("81fc")]
+        [InlineData("a101fd")]
+        [InlineData("c1fe")]
         public static void TrySkipValue_NotFinalBlock_MalformedData_ShouldThrowCborContentException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();

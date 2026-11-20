@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Null(result);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AbsoluteExpirationExpiresInBackground()
         {
             var clock = new TestClock();

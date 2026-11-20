@@ -9,14 +9,21 @@ namespace System.IO.Compression
     internal static class ZstandardUtils
     {
         // Zstandard compression level constants from native library
-        internal static readonly int Quality_Min = Interop.Zstd.ZSTD_minCLevel();
-        internal static readonly int Quality_Max = Interop.Zstd.ZSTD_maxCLevel();
-        internal static readonly int Quality_Default = Interop.Zstd.ZSTD_defaultCLevel();
+        internal static readonly int Quality_Min = /* SAFETY: To be audited */ unsafe(Interop.Zstd.ZSTD_minCLevel());
+        internal static readonly int Quality_Max = /* SAFETY: To be audited */ unsafe(Interop.Zstd.ZSTD_maxCLevel());
+        internal static readonly int Quality_Default = /* SAFETY: To be audited */ unsafe(Interop.Zstd.ZSTD_defaultCLevel());
 
         // Window size constraints based on Zstandard specification
         internal const int WindowLog_Min = 10;    // 1KB window
         internal static int WindowLog_Max => Environment.Is64BitProcess ? 31 : 30;    // 1GB or 2GB window, depending on platform
         internal const int WindowLog_Default = 23; // 8MB window
+
+        // Hash table and chain table constraints based on Zstandard specification
+        internal const int HashLog_Min = 6;
+        internal const int HashLog_Max = 30;
+
+        internal const int ChainLog_Min = 6;
+        internal static int ChainLog_Max => Environment.Is64BitProcess ? 30 : 29;
 
         internal const int TargetBlockSize_Min = 1340;
         internal const int TargetBlockSize_Max = 131072;   // (2^17)
@@ -25,7 +32,14 @@ namespace System.IO.Compression
         internal const int DefaultInternalBufferSize = (1 << 16) - 16; // 65520 bytes, similar to Brotli
 
         /// <summary>Checks if a Zstandard operation result indicates an error.</summary>
-        internal static bool IsError(nuint result) => Interop.Zstd.ZSTD_isError(result) != 0;
+        internal static bool IsError(nuint result)
+        {
+            // SAFETY: To be audited
+            unsafe
+            {
+                return Interop.Zstd.ZSTD_isError(result) != 0;
+            }
+        }
         internal static bool IsError(nuint result, out Interop.Zstd.ZSTD_error error)
         {
             if (IsError(result))
@@ -41,8 +55,12 @@ namespace System.IO.Compression
         /// <summary>Gets the error message for a Zstandard error code.</summary>
         internal static string GetErrorMessage(Interop.Zstd.ZSTD_error error)
         {
-            IntPtr errorNamePtr = Interop.Zstd.ZSTD_getErrorName((nuint)error);
-            return System.Runtime.InteropServices.Marshal.PtrToStringAnsi(errorNamePtr) ?? $"Unknown error {error}";
+            // SAFETY: To be audited
+            unsafe
+            {
+                IntPtr errorNamePtr = Interop.Zstd.ZSTD_getErrorName((nuint)error);
+                return System.Runtime.InteropServices.Marshal.PtrToStringAnsi(errorNamePtr) ?? $"Unknown error {error}";
+            }
         }
 
         internal static void ThrowIfError(nuint result)

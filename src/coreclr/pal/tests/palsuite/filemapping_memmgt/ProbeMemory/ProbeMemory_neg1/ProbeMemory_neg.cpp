@@ -11,6 +11,9 @@
 **
 **============================================================*/
 #include <palsuite.h>
+#include <sys/mman.h>
+#include <stdlib.h>
+
 
 #define REGIONSIZE 1024
 
@@ -27,17 +30,11 @@ PALTEST(filemapping_memmgt_ProbeMemory_ProbeMemory_neg1_paltest_probememory_prob
         return FAIL;
     }
     
-    /*allocate the virtual memory*/
-    lpProcessAddress = VirtualAlloc(
-            NULL,            /*system determine where to allocate the region*/
-            REGIONSIZE,      /*specify the size*/
-            MEM_RESERVE,     /*allocation type*/
-            PAGE_READONLY);  /*access protection*/
+    lpProcessAddress = mmap(NULL, REGIONSIZE, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
 
-    if(NULL == lpProcessAddress)
+    if (lpProcessAddress == MAP_FAILED)
     {
-        Fail("\nFailed to call VirtualAlloc API to allocate "
-                "virtual memory, error code=%u\n", GetLastError());
+        Fail("\nFailed to allocate inaccessible memory for ProbeMemory test.\n");
     }
 
     /*try to probe the unreadable memory area*/
@@ -51,13 +48,7 @@ PALTEST(filemapping_memmgt_ProbeMemory_ProbeMemory_neg1_paltest_probememory_prob
     {
         Trace("\nProbeMemory for read didn't FAILED\n");
 
-        /*decommit the specified region*/
-        err = VirtualFree(lpProcessAddress, REGIONSIZE, MEM_DECOMMIT);
-        if(0 == err)
-        {
-            Fail("\nFailed to call VirtualFree API, error code=%u\n", GetLastError());
-        }
-
+        munmap(lpProcessAddress, REGIONSIZE);
         Fail("");
     }
 
@@ -72,22 +63,11 @@ PALTEST(filemapping_memmgt_ProbeMemory_ProbeMemory_neg1_paltest_probememory_prob
     {
         Trace("\nProbeMemory for write didn't FAILED\n");
 
-        /*decommit the specified region*/
-        err = VirtualFree(lpProcessAddress, REGIONSIZE, MEM_DECOMMIT);
-        if(0 == err)
-        {
-            Fail("\nFailed to call VirtualFree API, error code=%u\n", GetLastError());
-        }
-
+        munmap(lpProcessAddress, REGIONSIZE);
         Fail("");
     }
 
-    /*decommit the specified region*/
-    err = VirtualFree(lpProcessAddress, REGIONSIZE, MEM_DECOMMIT);
-    if(0 == err)
-    {
-        Fail("\nFailed to call VirtualFree API, error code=%u\n", GetLastError());
-    }
+    munmap(lpProcessAddress, REGIONSIZE);
 
     PAL_Terminate();
     return PASS;

@@ -55,7 +55,7 @@ target_precompile_headers(mdruntimerw_dac PRIVATE stdafx.h)
 
 add_library_clr(mdruntimerw_wks OBJECT ${MDRUNTIMERW_SOURCES})
 target_compile_definitions(mdruntimerw_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
-if (FEATURE_CORPROFILER)
+if (FEATURE_CORPROFILER OR FEATURE_METADATA_UPDATER)
     target_compile_definitions(mdruntimerw_wks PRIVATE FEATURE_METADATA_PUBLIC_INTERFACES)
 endif()
 target_precompile_headers(mdruntimerw_wks PRIVATE stdafx.h)
@@ -66,5 +66,5 @@ target_compile_definitions(mdruntimerw-dbi PRIVATE FEATURE_METADATA_PUBLIC_INTER
 target_precompile_headers(mdruntimerw-dbi PRIVATE stdafx.h)
 
 add_library_clr(mdruntimerw_ppdb ${MDRUNTIMERW_SOURCES})
-target_compile_definitions(mdruntimerw_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB FEATURE_METADATA_PERSISTENCE FEATURE_METADATA_PUBLIC_INTERFACES SELF_NO_HOST)
+target_compile_definitions(mdruntimerw_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB FEATURE_METADATA_PERMISSION_SETS FEATURE_METADATA_PERSISTENCE FEATURE_METADATA_PUBLIC_INTERFACES SELF_NO_HOST)
 target_precompile_headers(mdruntimerw_ppdb PRIVATE stdafx.h)

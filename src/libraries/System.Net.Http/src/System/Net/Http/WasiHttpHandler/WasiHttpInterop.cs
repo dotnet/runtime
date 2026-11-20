@@ -117,9 +117,21 @@ namespace System.Net.Http
 
         public static Fields ConvertRequestHeaders(HttpRequestMessage request)
         {
+            // wasi:http doesn't allow setting Transfer-Encoding; the host uses chunked encoding for a body without Content-Length.
+            bool chunked = request.Headers.TransferEncodingChunked == true;
+            if (chunked && request.Content is null)
+            {
+                throw new HttpRequestException(SR.net_http_client_execution_error, new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content));
+            }
+
             var headers = new List<(string, byte[])>();
             foreach (var pair in request.Headers)
             {
+                if (chunked && string.Equals(pair.Key, KnownHeaders.TransferEncoding.Name, StringComparison.OrdinalIgnoreCase) && IsOnlyChunked(pair.Value))
+                {
+                    continue;
+                }
+
                 foreach (var value in pair.Value)
                 {
                     headers.Add((pair.Key, Encoding.UTF8.GetBytes(value)));
@@ -127,8 +139,20 @@ namespace System.Net.Http
             }
             if (request.Content is not null)
             {
+                if (!chunked)
+                {
+                    // Computes Content-Length for content of known length, so that it's sent instead of chunked encoding.
+                    _ = request.Content.Headers.ContentLength;
+                }
+
                 foreach (var pair in request.Content.Headers)
                 {
+                    if (chunked && string.Equals(pair.Key, KnownHeaders.ContentLength.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Chunked encoding takes precedence over Content-Length, as in SocketsHttpHandler.
+                        continue;
+                    }
+
                     foreach (var value in pair.Value)
                     {
                         headers.Add((pair.Key, Encoding.UTF8.GetBytes(value)));
@@ -144,6 +168,19 @@ namespace System.Net.Http
                 var error = HeaderErrorToString((HeaderError)e.Value);
                 throw new HttpRequestException($"Header validation error: {error}");
             }
+        }
+
+        private static bool IsOnlyChunked(IEnumerable<string> values)
+        {
+            foreach (string value in values)
+            {
+                if (!string.Equals(value, "chunked", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static string HeaderErrorToString(HeaderError error)

@@ -164,12 +164,13 @@ namespace Microsoft.Extensions.Options.Generators
                         // following code establishes the containment hierarchy for the generated type in terms of nested types
 
                         var parents = new List<string>();
-                        var parent = syntax.Parent as TypeDeclarationSyntax;
+                        INamedTypeSymbol? parent = validatorType.ContainingType;
 
-                        while (parent is not null && IsAllowedKind(parent.Kind()))
+                        // Partial declarations inherit constraints. Use symbols to avoid copying attributes or unbalanced directive trivia.
+                        while (parent is { TypeKind: TypeKind.Class or TypeKind.Struct })
                         {
-                            parents.Add($"partial {GetTypeKeyword(parent)} {parent.Identifier}{parent.TypeParameterList} {parent.ConstraintClauses}");
-                            parent = parent.Parent as TypeDeclarationSyntax;
+                            parents.Add($"partial {GetTypeKeyword(parent)} {GetMinimalFQN(parent)} ");
+                            parent = parent.ContainingType;
                         }
 
                         parents.Reverse();
@@ -212,12 +213,6 @@ namespace Microsoft.Extensions.Options.Generators
             return results;
         }
 
-        private static bool IsAllowedKind(SyntaxKind kind) =>
-            kind == SyntaxKind.ClassDeclaration ||
-            kind == SyntaxKind.StructDeclaration ||
-            kind == SyntaxKind.RecordStructDeclaration ||
-            kind == SyntaxKind.RecordDeclaration;
-
         private static string GetTypeKeyword(ITypeSymbol type)
         {
             if (type.IsReferenceType)
@@ -227,15 +222,6 @@ namespace Microsoft.Extensions.Options.Generators
 
             return type.IsRecord ? "record struct" : "struct";
         }
-
-        private static string GetTypeKeyword(TypeDeclarationSyntax type) =>
-            type.Kind() switch
-            {
-                SyntaxKind.ClassDeclaration => "class",
-                SyntaxKind.RecordDeclaration => "record class",
-                SyntaxKind.RecordStructDeclaration => "record struct",
-                _ => type.Keyword.ValueText,
-            };
 
         // The namespace flows into namespace declarations and "global::"-qualified references in the generated
         // code, so keyword segments (e.g. a namespace named @class) must be escaped to keep the output compiling.

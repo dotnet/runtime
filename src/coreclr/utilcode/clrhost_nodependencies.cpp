@@ -182,7 +182,7 @@ BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length)
     {
         MEMORY_BASIC_INFORMATION mbi;
 
-        SIZE_T cbBytes = ClrVirtualQuery(regionStart, &mbi, sizeof(mbi));
+        SIZE_T cbBytes = VirtualQuery(regionStart, &mbi, sizeof(mbi));
         _ASSERTE(cbBytes);
 
         // The pages must have EXECUTE set

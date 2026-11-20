@@ -65,8 +65,6 @@ static struct host_runtime_contract g_host_contract = {
 #error Unknown architecture
 #endif
 
-#define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
-
 static void
 strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
 {

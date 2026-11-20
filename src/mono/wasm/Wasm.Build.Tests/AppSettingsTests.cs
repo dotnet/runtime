@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -19,6 +20,72 @@ public class AppSettingsTests : WasmTemplateTestsBase
     public AppSettingsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
+    }
+
+    [Theory, TestCategory("coreclr"), TestCategory("no-workload")]
+    [InlineData(false, false, false, false, null)]
+    [InlineData(true, false, false, false, null)]
+    [InlineData(false, false, false, true, "default")]
+    [InlineData(true, false, false, true, "default")]
+    [InlineData(false, false, true, true, null)]
+    [InlineData(true, false, true, true, null)]
+    [InlineData(false, true, false, true, null)]
+    [InlineData(true, true, false, true, null)]
+    [InlineData(false, false, false, true, "legacy")]
+    [InlineData(false, false, false, false, "memory")]
+    [InlineData(false, false, false, false, "cache")]
+    [InlineData(false, false, false, false, "null")]
+    [InlineData(false, false, false, false, "response")]
+    [InlineData(false, false, false, false, "url")]
+    [InlineData(false, false, false, false, "empty-file")]
+    [InlineData(false, false, false, false, "no-settings")]
+    public async Task AppSettingsWithoutFilesystem(bool publish, bool includeVfsFiles, bool forceVfs, bool expectedVfs, string? mode)
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "AppSettingsMemoryTest",
+            insertAtEnd: """
+                <Target Name="_ReportAppSettingsFilesystemUsage"
+                        AfterTargets="ComputeWasmVfs;_WriteWasmPublishBootJsonPropertyStamp">
+                  <Message Importance="High" Text="Appsettings filesystem usage: $(_WasmFilesystemUsageDetected)" />
+                </Target>
+                """);
+        if (!includeVfsFiles)
+            AddItemsPropertiesToProject(info.ProjectFilePath, extraItems: """<WasmFilesToIncludeInFileSystem Remove="@(WasmFilesToIncludeInFileSystem)" />""");
+        if (mode == "empty-file")
+            File.WriteAllBytes(Path.Combine(Path.GetDirectoryName(info.ProjectFilePath)!, "wwwroot", "appsettings.Empty.json"), Array.Empty<byte>());
+        if (forceVfs && !includeVfsFiles)
+        {
+            if (publish)
+                PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:_WasmFilesystemUsageDetected=false -p:PublishTrimmed=false"));
+            else
+                BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: "-p:_WasmFilesystemUsageDetected=false"));
+        }
+        string args = mode == "default" ? string.Empty : $"-p:_WasmFilesystemUsageDetected={forceVfs.ToString().ToLowerInvariant()}";
+        if (publish && forceVfs && !includeVfsFiles)
+            args += " -p:PublishTrimmed=false";
+        (string _, string buildOutput) = publish
+            ? PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: args, UseCache: false))
+            : BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: args, UseCache: false));
+        MatchCollection detection = Regex.Matches(buildOutput, @"Appsettings filesystem usage: (true|false)");
+        Assert.NotEmpty(detection);
+        string filesystemUsage = detection[detection.Count - 1].Groups[1].Value;
+        Assert.Equal((includeVfsFiles || forceVfs || mode == "default").ToString().ToLowerInvariant(), filesystemUsage);
+
+        BrowserRunOptions options = new(config, TestScenario: "AppSettingsTest",
+            BrowserQueryString: new NameValueCollection {
+                { "settingsVfs", expectedVfs.ToString().ToLowerInvariant() },
+                { "legacySettings", (mode == "legacy").ToString().ToLowerInvariant() },
+                { "settingsDownload", mode is "memory" or "cache" ? mode : null },
+                { "settingsLoader", mode is "null" or "response" or "url" ? mode : null },
+                { "applicationEnvironment", mode == "empty-file" ? "Empty" : null },
+                { "noSettings", mode == "no-settings" ? "true" : null }
+            });
+        RunResult result = publish
+            ? await RunForPublishWithWebServer(options)
+            : await RunForBuildWithDotnetRun(options);
+        Assert.Contains(result.TestOutput, line => line.Contains($"'/appsettings.json' exists '{expectedVfs}'"));
+        Assert.Contains(result.TestOutput, line => line.Contains("Appsettings byte API passed"));
+        Assert.Contains(result.TestOutput, line => line.Contains("Appsettings file API passed"));
     }
 
     public static IEnumerable<object?[]> LoadAppSettingsBasedOnApplicationEnvironmentData()
@@ -46,6 +113,7 @@ public class AppSettingsTests : WasmTemplateTestsBase
             yield return new object?[] { false, "FromMSBuild", "Production", "Production" };
 
         yield return new object?[] { true, "FromMSBuild", "Development", "Development" };
+        yield return new object?[] { true, null, "Staging", "Staging" };
     }
 
     [Theory, TestCategory("bundler-friendly")]
@@ -74,5 +142,11 @@ public class AppSettingsTests : WasmTemplateTestsBase
         Assert.Contains(result.TestOutput, m => m.Contains($"'{browserVirtualAppBase}appsettings.json' exists 'True'"));
         Assert.Contains(result.TestOutput, m => m.Contains($"'{browserVirtualAppBase}appsettings.Development.json' exists '{expectedApplicationEnvironment == "Development"}'"));
         Assert.Contains(result.TestOutput, m => m.Contains($"'{browserVirtualAppBase}appsettings.Production.json' exists '{expectedApplicationEnvironment == "Production"}'"));
+        string expectedFiles = expectedApplicationEnvironment is "Development" or "Production"
+            ? $"appsettings.json,appsettings.{expectedApplicationEnvironment}.json"
+            : "appsettings.json";
+        Assert.Contains(result.TestOutput, m => m.Contains($"Appsettings files: {expectedFiles}"));
+        Assert.Contains(result.TestOutput, m => m.Contains("Appsettings byte API passed"));
+        Assert.Contains(result.TestOutput, m => m.Contains("Appsettings file API passed"));
     }
 }

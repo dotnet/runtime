@@ -373,8 +373,8 @@ ErrExit:
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineImportType(       // S_OK or error.
     IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the TypeDef.
-    const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
-    ULONG    cbHashValue,           // [IN] Count of bytes.
+    const void  *,                      // [IN] Hash Blob for Assembly.
+    ULONG,                              // [IN] Count of bytes.
     IMetaDataImport *pImport,           // [IN] Scope containing the TypeDef.
     mdTypeDef   tdImport,               // [IN] The imported TypeDef.
     IMetaDataAssemblyEmit *pAssemEmit,  // [IN] Assembly into which the TypeDef is imported.
@@ -388,13 +388,8 @@ STDMETHODIMP RegMeta::DefineImportType(       // S_OK or error.
     IMetaDataImport2 *pImport2 = NULL;
     IMDCommon        *pImport2MDCommon = NULL;
 
-    IMDCommon        *pAssemImportMDCommon = NULL;
-
-    RegMeta     *pAssemEmitRM = NULL;
-    CMiniMdRW   *pMiniMdAssemEmit =  NULL;
     CMiniMdRW   *pMiniMdEmit = NULL;
 
-    IMetaModelCommon *pAssemImportMetaModelCommon;
     IMetaModelCommon *pImport2MetaModelCommon;
 
     LOCKWRITE();
@@ -402,25 +397,13 @@ STDMETHODIMP RegMeta::DefineImportType(       // S_OK or error.
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
     IfFailGo(pImport->QueryInterface(IID_IMetaDataImport2, (void**)&pImport2));
 
-    if (pAssemImport)
-    {
-        IfFailGo(pAssemImport->QueryInterface(IID_IMDCommon, (void**)&pAssemImportMDCommon));
-    }
-
-    pAssemImportMetaModelCommon = pAssemImportMDCommon ? pAssemImportMDCommon->GetMetaModelCommon() : 0;
-
     IfFailGo(pImport2->QueryInterface(IID_IMDCommon, (void**)&pImport2MDCommon));
     pImport2MetaModelCommon = pImport2MDCommon->GetMetaModelCommon();
 
-    pAssemEmitRM = static_cast<RegMeta*>(pAssemEmit);
-    pMiniMdAssemEmit =  pAssemEmitRM ? static_cast<CMiniMdRW*>(&pAssemEmitRM->m_pStgdb->m_MiniMd) : 0;
     pMiniMdEmit = &m_pStgdb->m_MiniMd;
 
     IfFailGo(ImportHelper::ImportTypeDef(
-                        pMiniMdAssemEmit,
                         pMiniMdEmit,
-                        pAssemImportMetaModelCommon,
-                        pbHashValue, cbHashValue,
                         pImport2MetaModelCommon,
                         tdImport,
                         false,  // Do not optimize to TypeDef if import and emit scopes are identical.
@@ -431,9 +414,6 @@ ErrExit:
         pImport2->Release();
     if (pImport2MDCommon)
         pImport2MDCommon->Release();
-    if (pAssemImportMDCommon)
-        pAssemImportMDCommon->Release();
-
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineImportType
@@ -529,8 +509,8 @@ ErrExit:
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineImportMember(     // S_OK or error.
     IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the Member.
-    const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
-    ULONG        cbHashValue,           // [IN] Count of bytes.
+    const void  *,                      // [IN] Hash Blob for Assembly.
+    ULONG,                              // [IN] Count of bytes.
     IMetaDataImport *pImport,           // [IN] Import scope, with member.
     mdToken     mbMember,               // [IN] Member in import scope.
     IMetaDataAssemblyEmit *pAssemEmit,  // [IN] Assembly into which the Member is imported.
@@ -592,8 +572,8 @@ STDMETHODIMP RegMeta::DefineImportMember(     // S_OK or error.
 
     IfFailGo(TranslateSigWithScope(
         pAssemImport,
-        pbHashValue,
-        cbHashValue,
+        nullptr,
+        0,
         pImport,
         pvSig,
         cbSig,
@@ -1027,7 +1007,7 @@ STDMETHODIMP RegMeta::DefinePermissionSet(
     ULONG       cbPermission,           // [IN] count of bytes of pvPermission.
     mdPermission *ppm)                  // [OUT] returned permission token.
 {
-#ifdef FEATURE_METADATA_EMIT_ALL
+#if defined(FEATURE_METADATA_EMIT_ALL) && defined(FEATURE_METADATA_PERMISSION_SETS)
     HRESULT hr = S_OK;
 
     LOCKWRITE();
@@ -1038,9 +1018,9 @@ STDMETHODIMP RegMeta::DefinePermissionSet(
 
 ErrExit:
     return hr;
-#else //!FEATURE_METADATA_EMIT_ALL
+#else // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_EMIT_ALL
+#endif // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
 } // RegMeta::DefinePermissionSet
 
 
@@ -1054,7 +1034,7 @@ HRESULT RegMeta::_DefinePermissionSet(
     ULONG       cbPermission,           // [IN] count of bytes of pvPermission.
     mdPermission *ppm)                  // [OUT] returned permission token.
 {
-#ifdef FEATURE_METADATA_EMIT_ALL
+#if defined(FEATURE_METADATA_EMIT_ALL) && defined(FEATURE_METADATA_PERMISSION_SETS)
     HRESULT     hr  = S_OK;
     DeclSecurityRec *pDeclSec = NULL;
     RID         iDeclSec;
@@ -1116,9 +1096,9 @@ HRESULT RegMeta::_DefinePermissionSet(
 ErrExit:
 
     return hr;
-#else //!FEATURE_METADATA_EMIT_ALL
+#else // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_EMIT_ALL
+#endif // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
 } // RegMeta::_DefinePermissionSet
 
 
@@ -2294,7 +2274,7 @@ STDMETHODIMP RegMeta::SetPermissionSetProps(  // S_OK or error.
     ULONG       cbPermission,           // [IN] Count of bytes of pvPermission.
     mdPermission *ppm)                  // [OUT] Permission token.
 {
-#ifdef FEATURE_METADATA_EMIT_ALL
+#if defined(FEATURE_METADATA_EMIT_ALL) && defined(FEATURE_METADATA_PERMISSION_SETS)
     HRESULT hr = S_OK;
 
     USHORT      sAction = static_cast<USHORT>(dwAction);    // Corresponding DeclSec field is a USHORT.
@@ -2317,9 +2297,9 @@ STDMETHODIMP RegMeta::SetPermissionSetProps(  // S_OK or error.
     IfFailGo(_SetPermissionSetProps(tkPerm, dwAction, pvPermission, cbPermission));
 ErrExit:
     return hr;
-#else //!FEATURE_METADATA_EMIT_ALL
+#else // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_EMIT_ALL
+#endif // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
 } // RegMeta::SetPermissionSetProps
 
 //*****************************************************************************

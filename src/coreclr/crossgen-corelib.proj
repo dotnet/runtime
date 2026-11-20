@@ -5,19 +5,29 @@
 
   <ItemGroup>
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_inbuild.csproj" OutputItemType="Crossgen2Files" />
-    <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
+    <ProjectReference Include="$(CoreClrProjectRoot)merge-mibc.proj"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor;RuntimeIdentifier;TargetFramework"
+                      OutputItemType="MergedMibcFile"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(CoreCLRConfiguration)"
+                      SkipGetTargetFrameworkProperties="true"
+                      Targets="Build;GetMibcFile" />
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))" OutputItemType="CoreLib" />
+    <ProjectReference Include="$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'tasks', 'Crossgen2Tasks', 'Crossgen2Tasks.csproj'))"
+                      SetConfiguration="Configuration=$(TasksConfiguration)" />
   </ItemGroup>
 
   <PropertyGroup>
+    <CustomAfterNoTargets>$(MSBuildThisFileDirectory)crossgen-corelib.targets</CustomAfterNoTargets>
     <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
     <RootBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</RootBinDir>
     <LogsDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'log'))</LogsDir>
     <BinDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'bin', 'coreclr', $(OSPlatformConfig)))</BinDir>
     <IntermediatesDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'obj', 'coreclr', $(OSPlatformConfig)))</IntermediatesDir>
-    <DotNetCli>$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.sh'))</DotNetCli>
-    <DotNetCli Condition="'$(OS)' == 'Windows_NT'">$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.cmd'))</DotNetCli>
+    <Crossgen2TasksAssembly>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', '$(TasksConfiguration)', 'Crossgen2Tasks.dll'))</Crossgen2TasksAssembly>
   </PropertyGroup>
+
+  <UsingTask TaskName="Microsoft.NET.Build.Tasks.RunReadyToRunCompiler" AssemblyFile="$(Crossgen2TasksAssembly)" />
 
   <PropertyGroup>
     <CrossgenTargetName>InvokeCrossgen2</CrossgenTargetName>
@@ -33,8 +43,6 @@
 
     <BuildPerfMap>false</BuildPerfMap>
     <BuildPerfMap Condition="'$(TargetOS)' == 'linux'">true</BuildPerfMap>
-
-    <_MergeMibcFilesCacheFile>$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/merge_mibc_files.cache</_MergeMibcFilesCacheFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and $(PublishReadyToRun)">
@@ -52,10 +60,6 @@
     <CrossgenTargetName>$(CrossgenTargetName);CopyR2RComponentCoreLib</CrossgenTargetName>
   </PropertyGroup>
 
-  <ItemGroup>
-    <OptimizationMibcFiles Include="$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/**/*.mibc" />
-  </ItemGroup>
-
   <PropertyGroup>
     <CoreLibAssemblyName>System.Private.CoreLib</CoreLibAssemblyName>
     <CoreLibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dll'))</CoreLibOutputPath>
@@ -65,7 +69,6 @@
     <CoreLibPerfMapPath></CoreLibPerfMapPath>
     <CoreLibNiPdbPath Condition="$(BuildPdb)">$([MSBuild]::NormalizePath('$(BinDir)', 'PDB', '$(CoreLibAssemblyName).ni.pdb'))</CoreLibNiPdbPath>
     <CoreLibPerfMapPath Condition="$(BuildPerfMap)">$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).ni.r2rmap'))</CoreLibPerfMapPath>
-    <MergedMibcPath>$([MSBuild]::NormalizePath('$(BinDir)', 'StandardOptimizationData.mibc'))</MergedMibcPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishReadyToRunContainerFormat)' == 'macho'">
@@ -82,58 +85,29 @@
     <CrossgenCoreLibComponentOutputPath>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', '$(CoreLibAssemblyName).dll'))</CrossgenCoreLibComponentOutputPath>
   </PropertyGroup>
 
-  <!-- Creates a hash file that changes whenever the input mibc file modification times change.
-       This will trigger a re-merge when updating to a new version of the optimization data,
-       even if the new timestamps are still days in the past. -->
-  <Target Name="GenerateMergeMibcFilesInputCache">
-    <ItemGroup>
-      <_MergeMibcFilesInputCache Include="@(OptimizationMibcFiles)" />
-      <_MergeMibcFilesInputCache Include="@(DotNetPgo)" />
-      <_MergeMibcFilesInputCache Include="@(OptimizationMibcFiles->'%(ModifiedTime)')" />
-    </ItemGroup>
-
-    <Hash ItemsToHash="@(_MergeMibcFilesInputCache)">
-      <Output TaskParameter="HashResult" PropertyName="_MergeMibcFilesInputCacheHash" />
-    </Hash>
-
-    <WriteLinesToFile
-      Lines="$(_MergeMibcFilesInputCacheHash)"
-      File="$(_MergeMibcFilesCacheFile)"
-      Overwrite="true"
-      WriteOnlyWhenDifferent="true" />
-
-    <ItemGroup>
-      <FileWrites Include="$(_MergeMibcFilesCacheFile)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="MergeMibcFiles"
-          DependsOnTargets="GenerateMergeMibcFilesInputCache"
-          Inputs="$(_MergeMibcFilesCacheFile);@(OptimizationMibcFiles);@(DotNetPgo)"
-          Condition="'@(DotNetPgo)' != ''"
-          Outputs="$(MergedMibcPath)">
-
+  <Target Name="PrepareInvokeCrossgen2" DependsOnTargets="ResolveProjectReferences">
     <PropertyGroup>
-      <DotNetPgoCmd>$(DotNetCli) @(DotNetPgo) merge</DotNetPgoCmd>
-      <DotNetPgoCmd>$(DotNetPgoCmd) -o:$(MergedMibcPath)</DotNetPgoCmd>
-      <DotNetPgoCmd>$(DotNetPgoCmd) @(OptimizationMibcFiles->'-i:%(Identity)', ' ')</DotNetPgoCmd>
-      <DotNetPgoCmd>$(DotNetPgoCmd) --compressed false</DotNetPgoCmd> <!-- Signing service doesn't handle compressed mibc signing correctly. -->
+      <_CoreLibInstructionSetStampFile>$(IntermediatesDir)System.Private.CoreLib.instruction-set.stamp</_CoreLibInstructionSetStampFile>
     </PropertyGroup>
+    <!-- Recompile CoreLib when the instruction sets change. -->
+    <MakeDir Directories="$(IntermediatesDir)" />
+    <WriteLinesToFile File="$(_CoreLibInstructionSetStampFile)"
+                      Lines="$(PublishReadyToRunInstructionSet)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
 
-    <Message Importance="High" Text="$(DotNetPgoCmd)"/>
-    <Exec Command="$(DotNetPgoCmd)" />
-  </Target>
-
-  <Target Name="CreateMergedMibcFile"
-          DependsOnTargets="ResolveProjectReferences;MergeMibcFiles" />
-
-  <Target Name="PrepareInvokeCrossgen2" DependsOnTargets="ResolveProjectReferences;CreateMergedMibcFile">
     <ItemGroup>
       <Crossgen2Inputs Include="@(CoreLib)" />
-      <Crossgen2Inputs Include="$(MergedMibcPath)" />
+      <Crossgen2Inputs Include="@(MergedMibcFile)" />
       <Crossgen2Inputs Include="@(Crossgen2Files->Metadata('OutputPath'))" />
       <Crossgen2Inputs Include="$(WasmCoreClrFrameworkPInvokeModuleListFile)"
                        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
+      <Crossgen2Inputs Include="$(Crossgen2TasksAssembly)" />
+      <Crossgen2Inputs Include="$(_CoreLibInstructionSetStampFile)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Crossgen2CoreLibReferences Include="$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))" />
     </ItemGroup>
   </Target>
 
@@ -145,57 +119,77 @@
   </Target>
 
   <Target Name="InvokeCrossgen2"
-          DependsOnTargets="PrepareInvokeCrossgen2;CreateMergedMibcFile"
+          DependsOnTargets="PrepareInvokeCrossgen2"
           Inputs="@(Crossgen2Inputs)"
           Outputs="$(CoreLibOutputPath);$(CoreLibNiPdbPath);$(CoreLibPerfMapPath);$(CrossgenCoreLibOutputPath);$(CrossgenCoreLibComponentOutputPath)">
 
     <MakeDir
       Directories="$(BinDir);$(IntermediatesDir);$(LogsDir)" />
 
-    <Message Importance="High"
-      Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
+    <ItemGroup>
+      <_CoreLibCrossgen2Tool Include="@(Crossgen2Files->Metadata('OutputPath')->WithMetadataValue('Filename','crossgen2')->WithMetadataValue('Extension','$(ExeSuffix)'))">
+        <TargetOS>$(TargetOS)</TargetOS>
+        <TargetArch>$(TargetArchitecture)</TargetArch>
+        <PerfmapFormatVersion Condition="$(BuildPerfMap)">1</PerfmapFormatVersion>
+      </_CoreLibCrossgen2Tool>
 
-    <PropertyGroup>
-      <CrossGenDllCmd>@(Crossgen2Files->Metadata('OutputPath')->WithMetadataValue('Filename','crossgen2')->WithMetadataValue('Extension','$(ExeSuffix)'))</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CrossgenCoreLibOutputPath)</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' != ''">$(CrossGenDllCmd) --obj-format:$(PublishReadyToRunContainerFormat)</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(PublishReadyToRunStripInliningInfo)' != 'false'">$(CrossGenDllCmd) --strip-inlining-info</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(PublishReadyToRunStripDebugInfo)' != 'false'">$(CrossGenDllCmd) --strip-debug-info</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'">$(CrossGenDllCmd) --codegenopt:JitWasmNyiToR2RUnsupported=1</CrossGenDllCmd>
-      <!-- wasm: enable cross-module inlining/optimization across the whole shared framework (the -r IL closure). -->
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'">$(CrossGenDllCmd) "--opt-cross-module:*"</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'browser'">$(CrossGenDllCmd) @(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)', ' ')</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'wasi'">$(CrossGenDllCmd) @(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)', ' ')</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(UseComposite)' == 'true'">$(CrossGenDllCmd) --composite</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(FeatureDynamicCodeCompiled)' != ''">$(CrossGenDllCmd) --target-allows-runtime-code-generation:$(FeatureDynamicCodeCompiled)</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'">$(CrossGenDllCmd) -m:$(MergedMibcPath)</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true' and '$(PublishReadyToRunContainerFormat)' != 'wasm'">$(CrossGenDllCmd) --embed-pgo-data</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) -O</CrossGenDllCmd>
+      <!-- @(CoreLib) just carries the metadata below; the task ignores this item's ItemSpec in composite mode. -->
+      <_CoreLibCompilationEntry Include="@(CoreLib)">
+        <OutputR2RImage>$(CrossgenCoreLibOutputPath)</OutputR2RImage>
+        <CreateCompositeImage Condition="'$(UseComposite)' == 'true'">true</CreateCompositeImage>
+        <EmitSymbols Condition="$(BuildPdb) or $(BuildPerfMap)">true</EmitSymbols>
+        <OutputPDBImage Condition="$(BuildPdb)">$(CoreLibNiPdbPath)</OutputPDBImage>
+        <OutputPDBImage Condition="$(BuildPerfMap)">$(CoreLibPerfMapPath)</OutputPDBImage>
+      </_CoreLibCompilationEntry>
+
+      <_CoreLibCrossgen2PgoFiles Include="@(MergedMibcFile)"
+        Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
+
+      <_CoreLibCrossgen2ExtraArgs Include="--target-allows-runtime-code-generation:$(FeatureDynamicCodeCompiled)"
+        Condition="'$(FeatureDynamicCodeCompiled)' != ''" />
+      <!-- crossgen2 assumes WebAssembly runtimes are single-threaded. Multithreaded WebAssembly runtimes lay out [ThreadStatic] fields as thread statics. -->
+      <_CoreLibCrossgen2ExtraArgs Include="--target-single-threaded:false"
+        Condition="'$(WasmEnableThreads)' == 'true'" />
+      <_CoreLibCrossgen2ExtraArgs Include="--embed-pgo-data"
+        Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true' and '$(PublishReadyToRunContainerFormat)' != 'wasm'" />
       <!-- Enable type and field layout verification to make it easier to catch when the crossgen2 type layout engine and the runtime disagree on layout conventions -->
-      <CrossGenDllCmd  Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(CrossGenDllCmd) --verify-type-and-field-layout</CrossGenDllCmd>
+      <_CoreLibCrossgen2ExtraArgs Include="--verify-type-and-field-layout"
+        Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
       <!-- Enable Cached Interface Dispatch layout rules for the StubDispatch import section. This allows testing of this path on platforms that do not require CachedInterface Dispatch -->
-      <CrossGenDllCmd  Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(CrossGenDllCmd) --enable-cached-interface-dispatch-support</CrossGenDllCmd>
+      <_CoreLibCrossgen2ExtraArgs Include="--enable-cached-interface-dispatch-support"
+        Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
+
+      <_CoreLibCrossgen2ExtraArgs Include="--strip-inlining-info"
+        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(PublishReadyToRunStripInliningInfo)' != 'false'" />
+      <_CoreLibCrossgen2ExtraArgs Include="--strip-debug-info"
+        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(PublishReadyToRunStripDebugInfo)' != 'false'" />
+      <!-- wasm: enable cross-module inlining/optimization across the whole shared framework (the -r IL closure). -->
+      <_CoreLibCrossgen2ExtraArgs Include="--opt-cross-module:*"
+        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
+      <_CoreLibCrossgen2ExtraArgs Include="--instruction-set:$(PublishReadyToRunInstructionSet)"
+        Condition="'$(PublishReadyToRunInstructionSet)' != ''" />
+      <_CoreLibCrossgen2ExtraArgs Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)')"
+        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'browser'" />
+      <_CoreLibCrossgen2ExtraArgs Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)')"
+        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'wasi'" />
       <!-- Enable the GC mode transition verification scaffolding so that illegal transitions assert where they happen rather than corrupting the thread's GC mode.
            Only WebAssembly resumes from a catch by unwinding through native code, so only WebAssembly emits and consumes the scaffolding. -->
-      <CrossGenDllCmd  Condition="'$(TargetOS)' == 'browser' and ('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked')">$(CrossGenDllCmd) --verify-gc-mode-transitions</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) @(CoreLib)</CrossGenDllCmd>
-    </PropertyGroup>
+      <_CoreLibCrossgen2ExtraArgs Include="--verify-gc-mode-transitions"
+        Condition="'$(TargetOS)' == 'browser' and ('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked')" />
+    </ItemGroup>
 
-    <PropertyGroup Condition="$(BuildPdb)">
-      <CrossGenDllCmd>$(CrossGenDllCmd) --pdb --pdb-path:$([MSBuild]::NormalizePath('$(BinDir)', 'PDB'))</CrossGenDllCmd>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="$(BuildPerfMap)">
-      <CrossGenDllCmd>$(CrossGenDllCmd) --perfmap-format-version:1</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) --perfmap --perfmap-path:$(BinDir)</CrossGenDllCmd>
-    </PropertyGroup>
-
-    <Message Importance="High" Text="$(CrossGenDllCmd)" />
-
-    <Exec Command="$(CrossGenDllCmd)" />
+    <!-- Match the local registration instead of the SDK's short-name task. -->
+    <Microsoft.NET.Build.Tasks.RunReadyToRunCompiler
+      Crossgen2Tool="@(_CoreLibCrossgen2Tool)"
+      UseCrossgen2="true"
+      ShowCompilerWarnings="true"
+      ImplementationAssemblyReferences="@(Crossgen2CoreLibReferences)"
+      ReadyToRunCompositeBuildReferences="@(Crossgen2CoreLibReferences)"
+      ReadyToRunCompositeBuildInput="@(CoreLib)"
+      Crossgen2PgoFiles="@(_CoreLibCrossgen2PgoFiles)"
+      Crossgen2ContainerFormat="$(PublishReadyToRunContainerFormat)"
+      Crossgen2ExtraCommandLineArgs="@(_CoreLibCrossgen2ExtraArgs, ';')"
+      CompilationEntry="@(_CoreLibCompilationEntry)" />
 
     <Message Importance="High" Text="Crossgenning of System.Private.CoreLib succeeded." />
     <Message Importance="High" Text="Product binaries are available at $(BinDir)" />
@@ -309,4 +303,18 @@
   </Target>
 
   <Target Name="CrossgenCoreLib" DependsOnTargets="$(CrossgenTargetName)" AfterTargets="CoreBuild" />
+
+  <Target Name="_GetRuntimePackCoreLibFiles">
+    <ItemGroup>
+      <_RuntimePackCoreLibPortablePdb Include="$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '$(CoreLibAssemblyName).pdb'))" />
+      <RuntimePackCoreLibFile Include="$(CoreLibOutputPath)" />
+      <RuntimePackCoreLibFile Include="@(_RuntimePackCoreLibPortablePdb)" />
+      <RuntimePackCoreLibFile Include="$(CoreLibNiPdbPath)"
+                              Condition="'$(CoreLibNiPdbPath)' != ''" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetRuntimePackCoreLib"
+          DependsOnTargets="CrossgenCoreLib;_GetRuntimePackCoreLibFiles"
+          Returns="@(RuntimePackCoreLibFile)" />
 </Project>

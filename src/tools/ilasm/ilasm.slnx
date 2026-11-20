@@ -2,4 +2,5 @@
   <Project Path="src/ilasm/ilasm.csproj" />
   <Project Path="src/ILAssembler/ILAssembler.csproj" />
   <Project Path="tests/ILAssembler.Tests/ILAssembler.Tests.csproj" />
+  <Project Path="tests/ilasm.Tests/ilasm.Tests.csproj" />
 </Solution>
