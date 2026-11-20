@@ -13136,25 +13136,12 @@ bool LinearScan::RegisterSelection::spillCandidateCost(regNumber spillCandidateR
     Interval*    assignedInterval        = spillCandidateRegRecord->assignedInterval;
     RefPosition* recentRefPosition       = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
 
-    auto hasRequiredRef = [&](regNumber regNum) {
-        Interval* interval = linearScan->physRegs[regNum].assignedInterval;
-        return (interval != nullptr) && (linearScan->nextIntervalRef[regNum] == thisLocation) &&
-               !interval->getNextRefPosition()->RegOptional();
-    };
-    if (hasRequiredRef(spillCandidateRegNum)
-#ifdef TARGET_ARM
-        || ((currentInterval->registerType == TYP_DOUBLE) && hasRequiredRef(REG_NEXT(spillCandidateRegNum)))
-#endif
-    )
-    {
-        return false;
-    }
-
     // Can and should the interval in this register be spilled for this one,
     // if we don't find a better alternative?
 
     weight_t currentSpillWeight = 0;
 #ifdef TARGET_ARM64
+    // Reject active consecutive uses before inspecting their next reference, which may not exist.
     if ((recentRefPosition != nullptr) && linearScan->isRefPositionActive(recentRefPosition, thisLocation) &&
         (recentRefPosition->needsConsecutive))
     {
@@ -13163,6 +13150,20 @@ bool LinearScan::RegisterSelection::spillCandidateCost(regNumber spillCandidateR
     else if (assignedInterval != nullptr)
 #endif
     {
+        auto hasRequiredRef = [&](regNumber regNum) {
+            Interval* interval = linearScan->physRegs[regNum].assignedInterval;
+            return (interval != nullptr) && (linearScan->nextIntervalRef[regNum] == thisLocation) &&
+                   !interval->getNextRefPosition()->RegOptional();
+        };
+        if (hasRequiredRef(spillCandidateRegNum)
+#ifdef TARGET_ARM
+            || ((currentInterval->registerType == TYP_DOUBLE) && hasRequiredRef(REG_NEXT(spillCandidateRegNum)))
+#endif
+        )
+        {
+            return false;
+        }
+
         if (!linearScan->isSpillCandidate(currentInterval, refPosition, spillCandidateRegRecord))
         {
             return false;
