@@ -1402,6 +1402,13 @@ void MyICJI::embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     jitInstance->mc->repEmbedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult);
 }
 
+void MyICJI::prepareCallLookups(CORINFO_RESOLVED_TOKEN* token, CORINFO_RESOLVED_TOKEN* constrainedToken,
+                         CORINFO_METHOD_HANDLE caller, CORINFO_CALL_INFO* callInfo)
+{
+    jitInstance->mc->cr->AddCall("prepareCallLookups");
+    jitInstance->mc->repPrepareCallLookups(token, constrainedToken, caller, callInfo);
+}
+
 // Return information used to locate the exact enclosing type of the current method.
 // Used only to invoke .cctor method from code shared across generic instantiations
 //   !needsRuntimeLookup       statically known (enclosing type of method itself)
