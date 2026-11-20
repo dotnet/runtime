@@ -40,6 +40,7 @@ internal sealed class DevServerStartup
         app.UseWebAssemblyDebugging();
 
         DevServerOptions options = optionsContainer.Value;
+        BrowserHost.ConfigureLaunchEndpoint(app, options.LaunchArguments, options.LaunchConfigPath);
 
         if (options.WebServerUseCrossOriginPolicy)
         {

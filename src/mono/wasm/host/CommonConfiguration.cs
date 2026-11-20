@@ -15,8 +15,8 @@ internal sealed class CommonConfiguration
 {
     public bool Debugging { get; set; }
     public string AppPath { get; init; }
-    public string[] RuntimeArguments => HostProperties.RuntimeArguments ?? Array.Empty<string>();
     public IEnumerable<string> RemainingArgs { get; init; }
+    public LaunchArguments LaunchOptions { get; }
     public WasmHost Host { get; init; }
     public HostConfig HostConfig { get; init; }
     public WasmHostProperties HostProperties { get; init; }
@@ -51,7 +51,11 @@ internal sealed class CommonConfiguration
             { "apply-cop-headers", "Apply COOP/COEP headers, required for multi-threaded apps", _ => ApplyCopHeaders = true }
         };
 
-        RemainingArgs = options.Parse(args);
+        int separator = Array.IndexOf(args, "--");
+        RemainingArgs = separator < 0
+            ? options.Parse(args)
+            : options.Parse(args[..separator]).Concat(args[(separator + 1)..]).ToArray();
+        LaunchOptions = LaunchArguments.Parse(RemainingArgs);
         if (string.IsNullOrEmpty(RuntimeConfigPath))
         {
             string[] configs = Directory.EnumerateFiles(Environment.CurrentDirectory, "*.runtimeconfig.json").ToArray();

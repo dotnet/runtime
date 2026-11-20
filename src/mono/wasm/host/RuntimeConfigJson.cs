@@ -18,7 +18,7 @@ internal sealed record WasmHostProperties(
      string DefaultConfig,
      [property: JsonPropertyName("perHostConfig")] List<HostConfig> HostConfigs,
      string MainAssembly,
-     string[] RuntimeArguments,
+     string? RuntimeFlavor,
      IDictionary<string, string>? EnvironmentVariables,
      int? FirefoxProxyPort,
      int? FirefoxDebuggingPort,

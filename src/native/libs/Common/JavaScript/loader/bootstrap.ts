@@ -5,12 +5,28 @@ import { exceptionsFinal, simd } from "wasm-feature-detect";
 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, globalThisAny } from "./per-module";
 import { dotnetAssert } from "./cross-module";
+import { nodeFs, nodeUrl } from "./polyfills";
 
 const scriptUrlQuery = /*! webpackIgnore: true */import.meta.url;
 const queryIndex = scriptUrlQuery.indexOf("?");
 const modulesUniqueQuery = queryIndex > 0 ? scriptUrlQuery.substring(queryIndex) : "";
 const scriptUrl = normalizeFileUrl(scriptUrlQuery);
 const scriptDirectory = normalizeDirectoryUrl(scriptUrl);
+
+export async function isNodeHosted(): Promise<boolean> {
+    if (!ENVIRONMENT_IS_NODE || !process.argv[1]) {
+        return false;
+    }
+    const [fs, url] = await Promise.all([nodeFs(), nodeUrl()]);
+    if (url.pathToFileURL(process.argv[1]).href === scriptUrl) {
+        return true;
+    }
+    if (!fs.existsSync(process.argv[1])) {
+        return false;
+    }
+    const entryUrl: string = url.pathToFileURL(fs.realpathSync(process.argv[1])).href;
+    return entryUrl === scriptUrl;
+}
 
 export async function validateEngineFeatures(): Promise<void> {
     dotnetAssert.check(await exceptionsFinal(), "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");

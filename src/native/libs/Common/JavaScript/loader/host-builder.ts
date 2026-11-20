@@ -9,6 +9,7 @@ import { loaderConfig, mergeLoaderConfig, validateLoaderConfig } from "./config"
 import { createRuntime } from "./run";
 import { exit } from "./exit";
 import { setLoadBootResourceCallback } from "./assets";
+import { applyLaunchArguments, getLaunchArguments } from "./launch";
 
 let applicationArguments: string[] | undefined = [];
 
@@ -119,6 +120,7 @@ export class HostBuilder implements DotnetHostBuilder {
 
     async download(httpCacheOnly?: boolean): Promise<void> {
         try {
+            await applyLaunchArguments();
             validateLoaderConfig();
             return createRuntime(true, httpCacheOnly ?? false);
         } catch (err) {
@@ -129,6 +131,7 @@ export class HostBuilder implements DotnetHostBuilder {
 
     async create(): Promise<RuntimeAPI> {
         try {
+            await applyLaunchArguments();
             validateLoaderConfig();
             await createRuntime(false);
             this.dotnetApi = dotnetApi;
@@ -153,7 +156,7 @@ export class HostBuilder implements DotnetHostBuilder {
             } else {
                 validateLoaderConfig();
             }
-            return this.dotnetApi!.runMain(loaderConfig.mainAssemblyName, applicationArguments);
+            return this.dotnetApi!.runMain(loaderConfig.mainAssemblyName, (await getLaunchArguments()).applicationArguments ?? applicationArguments);
         } catch (err) {
             exit(1, err);
             throw err;
@@ -167,7 +170,7 @@ export class HostBuilder implements DotnetHostBuilder {
             } else {
                 validateLoaderConfig();
             }
-            return this.dotnetApi!.runMainAndExit(loaderConfig.mainAssemblyName, applicationArguments);
+            return this.dotnetApi!.runMainAndExit(loaderConfig.mainAssemblyName, (await getLaunchArguments()).applicationArguments ?? applicationArguments);
         } catch (err) {
             exit(1, err);
             throw err;
