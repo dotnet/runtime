@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
@@ -114,7 +116,7 @@ public static unsafe class EntrypointHelpers
             };
         }
 
-        return ContractDescriptorTarget.Create(
+        ContractDescriptorTarget target = ContractDescriptorTarget.Create(
             contractAddress,
             (address, buffer) =>
             {
@@ -138,6 +140,120 @@ public static unsafe class EntrypointHelpers
             allocVirtual,
             [CoreCLRContracts.Register],
             runtimeImageBase);
+
+        EnableMetadataRecovery(target, dataTarget);
+        return target;
+    }
+
+    internal static void EnableMetadataRecovery(ContractDescriptorTarget target, object dataTarget)
+    {
+        MetadataMemoryCache.GetMetadataDelegate? callback = CreateMetadataCallback(dataTarget);
+        if (callback is not null)
+            target.EnableMetadataRecovery(callback);
+    }
+
+    internal static MetadataMemoryCache.GetMetadataDelegate? CreateMetadataCallback(object dataTarget)
+    {
+        ICLRMetadataLocator? clrLocator = dataTarget as ICLRMetadataLocator;
+        IXCLRDataTarget3? ixclrLocator = dataTarget as IXCLRDataTarget3;
+        ICorDebugMetaDataLocator? corDebugLocator = dataTarget as ICorDebugMetaDataLocator;
+        if (clrLocator is null && ixclrLocator is null && corDebugLocator is null)
+            return null;
+
+        return (string path, uint timestamp, uint imageSize, uint rva, Span<byte> buffer, out uint dataSize) =>
+        {
+            dataSize = 0;
+            int hr = HResults.E_NOTIMPL;
+            fixed (char* pathPointer = path)
+            fixed (byte* bufferPointer = buffer)
+            fixed (uint* sizePointer = &dataSize)
+            {
+                if (clrLocator is not null)
+                    hr = clrLocator.GetMetadata(pathPointer, timestamp, imageSize, null, rva, 0,
+                        (uint)buffer.Length, bufferPointer, sizePointer);
+
+                if (hr < 0 && ixclrLocator is not null)
+                {
+                    dataSize = 0;
+                    hr = ixclrLocator.GetMetaData(pathPointer, timestamp, imageSize, null, rva, 0,
+                        (uint)buffer.Length, bufferPointer, sizePointer);
+                }
+            }
+
+            if (hr < 0 && corDebugLocator is not null)
+                hr = ReadLocatedMetadata(corDebugLocator, path, timestamp, imageSize, buffer, out dataSize);
+
+            return hr;
+        };
+    }
+
+    private static int ReadLocatedMetadata(ICorDebugMetaDataLocator locator, string path, uint timestamp,
+        uint imageSize, Span<byte> buffer, out uint dataSize)
+    {
+        const int InitialPathBufferSize = 260;
+        dataSize = 0;
+        char[] pathBuffer = new char[InitialPathBufferSize];
+        uint pathLength = 0;
+        int hr;
+        fixed (char* pathPointer = path)
+        {
+            fixed (char* bufferPointer = pathBuffer)
+            {
+                hr = locator.GetMetaData(pathPointer, timestamp, imageSize,
+                    (uint)pathBuffer.Length, &pathLength, bufferPointer);
+            }
+
+            if (hr < 0 && pathLength >= pathBuffer.Length)
+            {
+                // Some hosts report the character count without the terminator.
+                pathBuffer = new char[checked((int)pathLength + 1)];
+                pathLength = 0;
+                fixed (char* bufferPointer = pathBuffer)
+                {
+                    hr = locator.GetMetaData(pathPointer, timestamp, imageSize,
+                        (uint)pathBuffer.Length, &pathLength, bufferPointer);
+                }
+            }
+        }
+
+        if (hr < 0)
+            return hr;
+        if (pathLength == 0 || pathLength > pathBuffer.Length)
+            return HResults.E_FAIL;
+
+        int terminator = pathBuffer.AsSpan(0, checked((int)pathLength)).IndexOf('\0');
+        if (terminator < 0 && pathLength < pathBuffer.Length && pathBuffer[pathLength] == '\0')
+            terminator = (int)pathLength;
+        if (terminator <= 0)
+            return HResults.E_FAIL;
+
+        try
+        {
+            using FileStream stream = File.OpenRead(new string(pathBuffer, 0, terminator));
+            using PEReader peReader = new(stream);
+            if (!peReader.HasMetadata)
+                return HResults.E_FAIL;
+
+            PEMemoryBlock metadata = peReader.GetMetadata();
+            dataSize = (uint)metadata.Length;
+            if (metadata.Length > buffer.Length)
+                return CorDbgHResults.ERROR_INSUFFICIENT_BUFFER;
+
+            metadata.GetContent().AsSpan().CopyTo(buffer);
+            return HResults.S_OK;
+        }
+        catch (IOException ex)
+        {
+            return ex.HResult;
+        }
+        catch (BadImageFormatException ex)
+        {
+            return ex.HResult;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return ex.HResult;
+        }
     }
 
     private static int SetThreadContext(ICLRDataTarget dataTarget, uint threadId, ReadOnlySpan<byte> context)
