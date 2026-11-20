@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+    <CreatedumpSupport>true</CreatedumpSupport>
+    <DefineConstants>$(DefineConstants);LINKED_CREATEDUMP</DefineConstants>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'linux' or ('$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64')">true</CLRTestTargetUnsupported>
+    <!-- Full dumps include sanitizer shadow mappings, which can be extremely large. -->
+    <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Createdump.cs" />
+  </ItemGroup>
+</Project>

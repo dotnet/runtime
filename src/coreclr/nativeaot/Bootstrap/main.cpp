@@ -114,6 +114,10 @@ static char& __unbox_z = __stop___unbox;
 
 #endif // TARGET_WASM
 
+#ifdef TARGET_LINUX
+extern bool nativeaot_createdump(int argc, char* argv[], int* exitCode);
+#endif // TARGET_LINUX
+
 extern "C" bool RhInitialize(bool isLibrary);
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
@@ -261,6 +265,14 @@ int __cdecl wmain(int argc, wchar_t* argv[])
 int main(int argc, char* argv[])
 #endif
 {
+#ifdef TARGET_LINUX
+    int createdumpExitCode;
+    if (nativeaot_createdump(argc, argv, &createdumpExitCode))
+    {
+        return createdumpExitCode;
+    }
+#endif
+
     int initval = InitializeRuntime();
     if (initval != 0)
         return initval;
