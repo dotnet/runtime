@@ -2764,33 +2764,7 @@ HRESULT RegMeta::DefineSecurityAttributeSet(// Return code.
 STDMETHODIMP RegMeta::ApplyEditAndContinue(   // S_OK or error.
     IUnknown    *pUnk)                  // [IN] Metadata from the delta PE.
 {
-#ifdef FEATURE_METADATA_EMIT_ALL
-    HRESULT hr;
-
-    IMetaDataImport2 *pImport=0;        // Interface on the delta metadata.
-    RegMeta     *pDeltaMD=0;            // The delta metadata.
-    CMiniMdRW   *mdDelta = NULL;
-    CMiniMdRW   *mdBase = NULL;
-
-    // Get the MiniMd on the delta.
-    IfFailGo(pUnk->QueryInterface(IID_IMetaDataImport2, (void**)&pImport));
-
-    pDeltaMD = static_cast<RegMeta*>(pImport);
-
-    mdDelta = &(pDeltaMD->m_pStgdb->m_MiniMd);
-    mdBase = &(m_pStgdb->m_MiniMd);
-
-    IfFailGo(mdBase->ConvertToRW());
-    IfFailGo(mdBase->ApplyDelta(*mdDelta));
-
-ErrExit:
-    if (pImport)
-        pImport->Release();
-
-    return hr;
-#else //!FEATURE_METADATA_EMIT_ALL
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_EMIT_ALL
 } // RegMeta::ApplyEditAndContinue
 #endif // FEATURE_METADATA_PUBLIC_INTERFACES
 

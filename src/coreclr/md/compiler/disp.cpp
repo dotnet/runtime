@@ -566,6 +566,14 @@ Disp::SetOption(
         }
         m_OptionValue.m_UpdateMode = V_UI4(pvalue);
     }
+    else if (optionid == MetaDataImportOption)
+    {   // Accepted for compatibility; importers now enumerate all records.
+        if (V_VT(pvalue) != VT_UI4)
+        {
+            _ASSERTE(!"Invalid Variant Type value!");
+            IfFailGo(E_INVALIDARG);
+        }
+    }
     else if (optionid == MetaDataLinkerOptions)
     {   // Used only by code:RegMeta::UnmarkAll (code:IMetaDataFilter::UnmarkAll)
         if (V_VT(pvalue) != VT_UI4)

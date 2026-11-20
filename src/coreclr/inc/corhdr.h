@@ -1404,6 +1404,21 @@ typedef enum CorErrorIfEmitOutOfOrder
 } CorErrorIfEmitOutOfOrder;
 
 
+// Legacy flags accepted with MetaDataImportOption. All records are enumerated regardless of these flags.
+typedef enum CorImportOptions
+{
+    MDImportOptionDefault       = 0x00000000,
+    MDImportOptionAll           = 0xFFFFFFFF,
+    MDImportOptionAllTypeDefs   = 0x00000001,
+    MDImportOptionAllMethodDefs = 0x00000002,
+    MDImportOptionAllFieldDefs  = 0x00000004,
+    MDImportOptionAllProperties = 0x00000008,
+    MDImportOptionAllEvents     = 0x00000010,
+    MDImportOptionAllCustomAttributes = 0x00000020,
+    MDImportOptionAllExportedTypes  = 0x00000040,
+} CorImportOptions;
+
+
 // flags for MetaDataThreadSafetyOptions
 typedef enum CorThreadSafetyOptions
 {
