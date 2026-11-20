@@ -865,6 +865,30 @@ namespace System.Runtime.CompilerServices
                         // method. This implements the context transparent
                         // forwarding and makes these wrappers minimal cost.
                         Debug.Assert(taskCont.Task != null);
+
+                        // If the head continuation is transparent then proactively move to the continuation context of the upcoming user context.
+                        // This is an optimization to avoid unnecessary thread hopping and also maintains behavior parity with async1.
+                        if ((taskCont.Flags & ContinuationFlags.AllContinuationFlags) == 0)
+                        {
+                            const ContinuationFlags CapturedContextFlags =
+                                ContinuationFlags.ContinueOnCapturedSynchronizationContext |
+                                ContinuationFlags.ContinueOnCapturedTaskScheduler;
+                            Continuation? awaiter = taskCont.Next;
+                            while (awaiter is not null && (awaiter.Flags & ContinuationFlags.AllContinuationFlags) == 0)
+                            {
+                                awaiter = awaiter.Next;
+                            }
+
+                            if (awaiter is not null && (awaiter.Flags & CapturedContextFlags) != 0)
+                            {
+                                taskCont.ContinuationContext = awaiter.GetContinuationContext();
+                                taskCont.Flags |= awaiter.Flags & CapturedContextFlags;
+
+                                // Apply the captured context once, when dispatching this continuation.
+                                awaiter.Flags &= ~CapturedContextFlags;
+                            }
+                        }
+
                         taskCont.RuntimeAsyncTask = this;
                         if (!taskCont.Task.AddTaskContinuation(taskCont, addBeforeOthers: false))
                         {
