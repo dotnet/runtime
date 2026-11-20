@@ -4,11 +4,60 @@
 //Unit test for typeof assertion.
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 public class Sample10
 {
     private static int s_s = 1;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static T GetMetadataValue<T>(IDictionary<string, object> metadata)
+    {
+        return metadata.TryGetValue("flag", out object value) && value is T result ? result : default;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CountFlags(IEnumerable<IDictionary<string, object>> records)
+    {
+        // ARM64-NOT: CORINFO_HELP_UNBOX
+        // X64-NOT: CORINFO_HELP_UNBOX
+        int count = 0;
+        foreach (var record in records)
+        {
+            if (GetMetadataValue<bool>(record))
+                count++;
+        }
+        return count;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool CastAfterMutation(ref object value, object replacement)
+    {
+        if (value is bool)
+        {
+            value = replacement;
+            return (bool)value;
+        }
+        return false;
+    }
+
+    [Fact]
+    public static void CapturedTypeChecks()
+    {
+        var records = new List<IDictionary<string, object>>();
+        foreach (object value in new object[] { true, false, null, "text", 1 })
+            records.Add(new Dictionary<string, object> { ["flag"] = value });
+        records.Add(new Dictionary<string, object>());
+        Assert.Equal(1, CountFlags(records));
+
+        object boxed = true;
+        Assert.False(CastAfterMutation(ref boxed, false));
+        Assert.Throws<InvalidCastException>(() => CastAfterMutation(ref boxed, "text"));
+        boxed = true;
+        Assert.Throws<NullReferenceException>(() => CastAfterMutation(ref boxed, null));
+    }
 
     [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     private static int AddOne(int i)
