@@ -12663,6 +12663,9 @@ bool LinearScan::RegisterSelection::applySingleRegSelection(int selectionScore, 
 // ----------------------------------------------------------
 //  try_FREE_OR_CHEAPER_SPILL: Apply the FREE_OR_CHEAPER_SPILL heuristic.
 //
+//  Release dispatch skips free-register heuristics when no free candidates remain.
+//  DEBUG allows JitLsraOrdering to reorder them, so each must check for itself.
+//
 void LinearScan::RegisterSelection::try_FREE_OR_CHEAPER_SPILL()
 {
     assert(!found);
@@ -12697,27 +12700,19 @@ void LinearScan::RegisterSelection::try_FREE_OR_CHEAPER_SPILL()
             }
             if (!anyFreeCovers)
             {
-                weight_t thisWeight   = linearScan->getWeight(refPosition);
-                weight_t bestEviction = FloatingPointUtils::infinite_double();
+                weight_t thisWeight = linearScan->getWeight(refPosition);
                 for (SingleTypeRegSet busyCallees = calleeSaves; busyCallees != RBM_NONE;)
                 {
                     regNumber busyReg = genFirstRegNumFromMaskAndToggle(busyCallees, regType);
 
-                    // Use the spill selector's own eligibility and pricing,
-                    // so this check can not commit to an eviction that
-                    // try_SPILL_COST would exclude or price differently.
+                    // One cheaper legal spill is enough; try_SPILL_COST chooses the best one.
                     weight_t evictionCost;
-                    if (!spillCandidateCost(busyReg, &evictionCost))
+                    if (spillCandidateCost(busyReg, &evictionCost) && (evictionCost < thisWeight))
                     {
-                        continue;
+                        candidates     = calleeSaves;
+                        freeCandidates = RBM_NONE;
+                        return;
                     }
-                    bestEviction = min(bestEviction, evictionCost);
-                }
-                if (bestEviction < thisWeight)
-                {
-                    candidates     = calleeSaves;
-                    freeCandidates = RBM_NONE;
-                    return;
                 }
             }
         }
