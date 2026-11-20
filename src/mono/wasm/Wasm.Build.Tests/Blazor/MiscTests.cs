@@ -158,8 +158,12 @@ public class MiscTests : BlazorWasmTestBase
             var client2Files = Directory.GetFiles(client2Framework);
             Assert.Contains(client1Files, f => Path.GetFileName(f).StartsWith("dotnet.") && f.EndsWith(".js"));
             Assert.Contains(client2Files, f => Path.GetFileName(f).StartsWith("dotnet.") && f.EndsWith(".js"));
-            Assert.Contains(client1Files, f => Path.GetFileName(f).Contains("dotnet.native") && f.EndsWith(".wasm"));
-            Assert.Contains(client2Files, f => Path.GetFileName(f).Contains("dotnet.native") && f.EndsWith(".wasm"));
+            foreach (var (objDir, frameworkDir) in new[] { (client1ObjDir, client1Framework), (client2ObjDir, client2Framework) })
+            {
+                bool runInWorker = _provider.GetBootJson(Path.Combine(objDir, "dotnet.js")).runInWorker == true;
+                string nativeDir = runInWorker ? Path.Combine(objDir, "wasm-shared", "build") : frameworkDir;
+                Assert.True(File.Exists(Path.Combine(nativeDir, "dotnet.native.wasm")), $"Missing native image in {nativeDir}");
+            }
 
             // Start the server via `dotnet run --no-build` and verify that the static web assets
             // middleware serves each referenced client's framework files from its obj/ materialized

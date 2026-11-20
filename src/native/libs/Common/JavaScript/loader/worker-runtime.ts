@@ -34,6 +34,7 @@ export type WorkerToMainMessage =
     | { type: "preloaded", appSettings: [string, Uint8Array][] }
     | { type: "error", error: WorkerError }
     | WorkerResourceRequest
+    | { type: "output"; stream: "out" | "err"; text: string }
     | { type: "diagnostic-download"; chunks: Uint8Array[] }
     | { type: "download-progress"; loaded: number; total: number };
 
@@ -188,6 +189,10 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage, bootCon
         });
         restoreWorkerModules(message.config, bootConfig);
         mergeLoaderConfig(message.config);
+        const forwardOutput = (stream: "out" | "err", text: string) =>
+            self.postMessage({ type: "output", stream, text } satisfies WorkerToMainMessage);
+        Module.out = text => forwardOutput("out", text);
+        Module.err = text => forwardOutput("err", text);
         if (message.downloadOnly) {
             await builder.download(false);
             self.postMessage({ type: "preloaded", appSettings: appSettingsSnapshot() });

@@ -5,10 +5,11 @@ import type { LoaderConfig, RuntimeAPI, VoidPtr } from "./types";
 import { InternalExchangeIndex } from "../types";
 import { scriptUrl } from "./bootstrap";
 import { dotnetApi, dotnetInternals, dotnetRuntimeExports, dotnetBrowserUtilsExports, dotnetLogger, Module } from "./cross-module";
-import { runtimeState } from "./exit";
+import { exit, runtimeState } from "./exit";
 import { loaderCallbacks } from "./callbacks";
 import { loadDotnetModule, loadJSModule, callLibraryInitializerOnRuntimeReady, updateWorkerDownloadProgress } from "./assets";
 import { initializeLoaderConfig } from "./run";
+import { getIcuResourceName } from "./icu";
 import { storeAppSettingsBytes } from "../appsettings";
 import { serveWorkerResource } from "./worker-assets";
 import { createWorkerLocal } from "./worker-local";
@@ -33,16 +34,26 @@ interface WorkerSession {
 let workerSession: Promise<WorkerSession> | undefined;
 
 export async function createWorkerProxy(config: LoaderConfig, downloadOnly = false): Promise<RuntimeAPI> {
-    const session = await (workerSession ??= createWorkerSession(config, downloadOnly));
-    if (downloadOnly) return session.downloaded;
-    session.start();
-    return session.ready;
+    try {
+        runtimeState.creatingRuntime = true;
+        const session = await (workerSession ??= createWorkerSession(config, downloadOnly));
+        if (downloadOnly) return await session.downloaded;
+        session.start();
+        return await session.ready;
+    } catch (error) {
+        exit(1, error);
+        throw error;
+    } finally {
+        runtimeState.creatingRuntime = false;
+    }
 }
 
 async function createWorkerSession(config: LoaderConfig, preload: boolean): Promise<WorkerSession> {
     const initializers = await initializeLoaderConfig();
     const resources = config.resources;
     if (!resources) throw new Error("runInWorker: runtime resources are missing");
+    // UI initializers retain this config, so resolve culture before cloning it for the worker.
+    getIcuResourceName();
     const boot = createWorkerBootConfig(config);
     const worker = new Worker(scriptUrl, { type: "module" });
     const ready = createPromiseCompletionSource<RuntimeAPI>();
@@ -61,12 +72,16 @@ async function createWorkerSession(config: LoaderConfig, preload: boolean): Prom
     const armTimeout = () => timeoutMs > 0 ? setTimeout(() => terminate(new Error("runInWorker: worker startup timed out")), timeoutMs) : undefined;
     let timeout = armTimeout();
 
-    function terminate(error: Error): void {
+    function terminate(error: Error, exitCode = 1): void {
         if (exited) return;
         exited = error;
+        try {
+            exit(runtimeState.exitCode ?? exitCode, error);
+        } catch {
+            // exit notifies listeners and then throws the exit reason.
+        }
         resourceAbort.abort(error);
         if (timeout !== undefined) clearTimeout(timeout);
-        runtimeState.exitCode ??= 1;
         const context = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext];
         if (context) context.exitError = error;
         channel?.stop(error);
@@ -171,12 +186,12 @@ async function createWorkerSession(config: LoaderConfig, preload: boolean): Prom
             runMainAndExit: async (assembly?: string, args?: string[]) => {
                 if (exited) throw exited;
                 if (pending) throw new Error("runInWorker: another command is already running");
+                let code = 1;
                 try {
-                    const code = await send(CommandId.RUN_MAIN_AND_EXIT, assembly, args);
-                    runtimeState.exitCode = code;
+                    code = await send(CommandId.RUN_MAIN_AND_EXIT, assembly, args);
                     return code;
                 } finally {
-                    terminate(new Error("runInWorker: runtime exited"));
+                    terminate(new Error("runInWorker: runtime exited"), code);
                 }
             },
             exit: (code: number, reason?: unknown) => {
@@ -189,8 +204,7 @@ async function createWorkerSession(config: LoaderConfig, preload: boolean): Prom
                 pending?.abort(error);
                 pending = undefined;
                 void send(CommandId.EXIT, undefined, undefined, code, serializeWorkerError(error)).then(() => {
-                    runtimeState.exitCode = code;
-                    terminate(error);
+                    terminate(error, code);
                 }, failure => {
                     dotnetLogger.error("runInWorker: exit failed", failure);
                     terminate(error);
@@ -198,6 +212,10 @@ async function createWorkerSession(config: LoaderConfig, preload: boolean): Prom
             },
         });
         runtimeState.nativeReady = true;
+        if (resources!.jsModuleDiagnostics?.length) {
+            const diagnosticsModule = await loadDotnetModule(resources!.jsModuleDiagnostics[0]);
+            await diagnosticsModule.dotnetInitializeModule<void>(dotnetInternals);
+        }
         const runtimeModule = await loadDotnetModule(resources!.jsModuleRuntime[0]);
         await runtimeModule.dotnetInitializeModule<void>(dotnetInternals);
         dotnetApi.INTERNAL.workerMemoryViews = new MemoryViewManager(message.wasmMemory, signal);
@@ -249,7 +267,14 @@ async function createWorkerSession(config: LoaderConfig, preload: boolean): Prom
     worker.onmessage = event => {
         if (exited) return;
         const message = event.data as WorkerToMainMessage;
-        if (message.type === "diagnostic-download") {
+        if (message.type === "output") {
+            try {
+                Module[message.stream](message.text);
+            } catch (error) {
+                dotnetLogger.error("runInWorker: output callback failed", error);
+                terminate(error instanceof Error ? error : new Error(String(error)));
+            }
+        } else if (message.type === "diagnostic-download") {
             try {
                 const download = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]?.downloadDiagnosticData;
                 if (!download) throw new Error("runInWorker: UI diagnostic download handler is not initialized");

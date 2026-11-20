@@ -111,6 +111,17 @@ worker hosting. The former `withWorker()` API is removed.
 Browser ReadyToRun images must be produced by a compiler that includes a maximum
 in their memory imports. Older unbounded images fail shared staging explicitly.
 
+Blazor applications must use an ASP.NET Core version with the out-of-process
+WebAssembly renderer and set the managed environment variable
+`__BLAZOR_WEBASSEMBLY_OUT_OF_PROCESS_RENDERER=true`. The shared-heap renderer
+reads strings directly from shared memory, which browser `TextDecoder` rejects.
+The CoreCLR Blazor build-test fixtures enable this renderer.
+
+Bundlers must keep the loader as a separate entry point and support code-split
+dynamic imports. The native worker starts from the loader module URL, not the
+application entry point; native modules and UI initializers must remain in their
+own realms.
+
 The bridge reuses the normal UI-side `dotnet.runtime.js` implementation and native
 interop signatures: Boolean, Byte, Char, Int16, Int32, Int52, BigInt64, Single, Double,
 String, IntPtr, DateTime/DateTimeOffset, nullable scalars, arrays, Span/ArraySegment,
@@ -170,6 +181,10 @@ The existing loader handles URL overrides, default loading and Response promises
 response streams are transferred to the worker without buffering whole WASM
 images. Progress combines UI and worker assets. Native JS modules are imported
 only in the worker, even when their URLs are selected by a UI callback.
+Native stdout/stderr writes use the UI's configured output callbacks. The
+diagnostics module initializes UI exit/logging hooks separately from worker-owned
+collection and router services, so startup failures report through the normal
+exit listeners and DOM hooks.
 Shutdown aborts loader-owned fetches and cancels late custom response bodies.
 `INTERNAL` selects native-host operations: HTTP/WebSocket services, lazy/satellite assembly loading,
 diagnostic collection/router operations and native contract/heap access. UI wrappers

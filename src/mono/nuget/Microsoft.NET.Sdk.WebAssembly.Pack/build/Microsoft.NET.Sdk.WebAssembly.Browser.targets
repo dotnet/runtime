@@ -1109,16 +1109,8 @@ Copyright (c) .NET Foundation. All rights reserved.
                                    Condition="'$(PublishReadyToRunComposite)' != 'true' and '$(PublishTrimmed)' != 'true'" />
     </ItemGroup>
 
-    <StageWasmSharedMemory Condition="'$(WasmRunInWorker)' == 'true'"
-                          Candidates="@(_WasmResolvedFilesToPublish)"
-                          OutputPath="$(IntermediateOutputPath)wasm-shared\publish">
-      <Output TaskParameter="StagedCandidates" ItemName="_WasmSharedPublishCandidates" />
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </StageWasmSharedMemory>
-    <ItemGroup Condition="'$(WasmRunInWorker)' == 'true'">
-      <_WasmResolvedFilesToPublish Remove="@(_WasmResolvedFilesToPublish)" />
-      <_WasmResolvedFilesToPublish Include="@(_WasmSharedPublishCandidates)" />
-    </ItemGroup>
+    <!-- Build assets already carry shared images. Keep resolved publish identities
+         unchanged so ComputeWasmPublishAssets can remove their original copy items. -->
     <StageWasmSharedMemory Condition="'$(WasmRunInWorker)' == 'true'"
                           Candidates="@(WasmNativeAsset)"
                           OutputPath="$(IntermediateOutputPath)wasm-shared\publish">

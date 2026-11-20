@@ -78,7 +78,6 @@ namespace Wasm.Build.Tests;
             if (runInWorker)
             {
                 Assert.Contains("typeof importScripts === \"function\" ? import(\"./dotnet.native.js\")", imports);
-                Assert.Contains("typeof importScripts === \"function\" ? import(\"./dotnet.diagnostics.js\")", imports);
                 Assert.Contains("typeof importScripts !== \"function\" ? import(\"./initializer.js\")", imports);
             }
             else
@@ -86,6 +85,7 @@ namespace Wasm.Build.Tests;
                 Assert.DoesNotContain("? import(", imports);
             }
             Assert.Contains("from \"./dotnet.runtime.js\"", imports);
+            Assert.Contains("from \"./dotnet.diagnostics.js\"", imports);
             using JsonDocument json = JsonDocument.Parse(JsonSerializer.Serialize(config, BootJsonBuilderHelper.JsonOptions));
             foreach (string kind in new[] { "jsModuleRuntime", "jsModuleNative", "jsModuleDiagnostics", "modulesAfterConfigLoaded" })
             {

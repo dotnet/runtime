@@ -88,6 +88,399 @@ test("shared loader initialization snapshots ordered config callbacks and runs o
     assert.deepEqual(events, ["validate-engine", "first", "first-done", "second", "validate-config", "polyfills"]);
 });
 
+test("worker boot resolves the shared UI culture after config callbacks and before cloning", async () => {
+    for (const [overrides, icu, expectedCulture, expectedLang, expectedMode] of [
+        [{}, "icudt_EFIGS.dat", "fr-FR", "fr-FR.UTF-8", "sharded"],
+        [{ applicationCulture: "ja-JP" }, "icudt_CJK.dat", "ja-JP", "ja-JP.UTF-8", "sharded"],
+        [{ environmentVariables: { LANG: "de-DE.UTF-8" } }, "icudt_EFIGS.dat", "fr-FR", "de-DE.UTF-8", "sharded"],
+        [{ globalizationMode: "invariant" }, "icudt_EFIGS.dat", undefined, undefined, "invariant"],
+        [{}, undefined, "fr-FR", "fr-FR.UTF-8", "invariant"],
+    ]) {
+        let workerConfig, getApplicationCulture;
+        const stopped = new Error("Worker boot captured");
+        const callbacks = { configLoaded: [config => {
+            Object.assign(config, overrides);
+            getApplicationCulture = () => config.applicationCulture;
+        }] };
+        const context = createContext({
+            console, Error, AbortController, setTimeout, clearTimeout, structuredClone,
+            navigator: { languages: ["fr-FR"] },
+            Worker: class {
+                postMessage(message) {
+                    workerConfig = structuredClone(message.config);
+                    throw stopped;
+                }
+                terminate() {}
+            },
+        });
+        const assets = Object.fromEntries([
+            "fetchAssembly", "fetchIcu", "fetchNativeSymbols", "fetchPdb", "fetchSatelliteAssemblies",
+            "fetchVfs", "fetchMainWasm", "loadDotnetModule", "loadJSModule", "verifyAllAssetsDownloaded",
+            "callLibraryInitializerOnRuntimeReady", "callLibraryInitializerOnRuntimeConfigLoaded",
+            "prefetchAllResources", "prefetchJSModuleLinks", "resolveAllDownloadsQueued", "fetchAppSettings",
+            "updateWorkerDownloadProgress",
+        ].map(name => [name, () => {
+            throw new Error(`Unexpected asset operation: ${name}`);
+        }]));
+        const load = createWorkerModuleLoader(context, {
+            "./assets": { ...assets, nativeModulePromiseController: {} },
+            "./bootstrap": { scriptUrl: "https://example.test/dotnet.js", validateEngineFeatures: async () => {} },
+            "./callbacks": { loaderCallbacks: callbacks },
+            "./cross-module": {
+                dotnetApi: {}, dotnetInternals: {}, dotnetRuntimeExports: {}, dotnetBrowserUtilsExports: {},
+                dotnetBrowserHostExports: {}, dotnetAssert: {}, Module: {},
+                dotnetLogger: { debug() {}, error() {} },
+            },
+            "./exit": { runtimeState: {}, exit() {} },
+            "./per-module": { ENVIRONMENT_IS_WEB: true, browserVirtualAppBase: "/" },
+            "./polyfills": { initPolyfillsLoader: async () => {} },
+            "./types": { GlobalizationMode: { Invariant: "invariant", Sharded: "sharded", All: "all", Custom: "custom" } },
+            "../types": { InternalExchangeIndex: { WorkerRuntimeContext: 0 } },
+            "../appsettings": { getAppSettingsAssets() {}, storeAppSettingsBytes() {} },
+            "./worker-assets": { serveWorkerResource() {} },
+            "./worker-local": { createWorkerLocal() {} },
+            "./worker-native": { createNativeChannel() {}, NativeOperation: {}, RuntimeOperation: {} },
+        });
+        const proxy = await load("./worker-proxy");
+        await proxy.evaluate();
+        const configModule = await load("./config");
+        configModule.namespace.mergeLoaderConfig({
+            mainAssemblyName: "test.dll", globalizationMode: "sharded", workerOptions: { timeoutMs: 0 },
+            resources: {
+                coreAssembly: [{ name: "test.dll" }],
+                icu: icu ? [{ name: "fingerprinted.dat", virtualPath: icu }] : [],
+            },
+        });
+        const config = configModule.namespace.loaderConfig;
+        await assert.rejects(proxy.namespace.createWorkerProxy(config), error => error === stopped);
+        assert.ok(workerConfig);
+        assert.equal(getApplicationCulture(), expectedCulture);
+        assert.equal(workerConfig.applicationCulture, expectedCulture);
+        assert.equal(config.environmentVariables.LANG, expectedLang);
+        assert.equal(workerConfig.environmentVariables.LANG, expectedLang);
+        assert.equal(config.globalizationMode, expectedMode);
+        assert.equal(workerConfig.globalizationMode, expectedMode);
+        assert.equal(workerConfig.environmentVariables.DOTNET_SYSTEM_GLOBALIZATION_INVARIANT,
+            expectedMode === "invariant" ? "1" : undefined);
+    }
+});
+
+test("native worker forwards stdout and stderr during preload and startup", async () => {
+    for (const downloadOnly of [false, true]) {
+        const messages = [];
+        const Module = {};
+        const emit = () => {
+            Module.out("native stdout");
+            Module.err("native stderr");
+            Module.out("");
+            Module.err("first line\nsecond line \u{1f30d}");
+        };
+        const load = createWorkerModuleLoader(createContext({
+            Atomics, SharedArrayBuffer, Error,
+            self: { addEventListener() {}, postMessage: message => messages.push(structuredClone(message)) },
+        }), {
+            "./cross-module": {
+                dotnetApi: { INTERNAL: {} }, dotnetInternals: {}, Module,
+                dotnetNativeBrowserExports: {}, dotnetInteropJSExports: {}, dotnetBrowserUtilsExports: {},
+            },
+            "../types": { InternalExchangeIndex: { WorkerRuntimeContext: 0 } },
+            "./config": { mergeLoaderConfig() {} },
+            "./host-builder": { HostBuilder: class {
+                async create() {
+                    emit();
+                    return { runtimeBuildInfo: {}, INTERNAL: { nativeBoundary: { getProxyCounts: () => [] } } };
+                }
+                async download() { emit(); }
+            } },
+            "./worker-native": { createNativeCallBuffer: () => new SharedArrayBuffer(16),
+                createNativeChannel: () => ({ listen() {}, stop() {} }), NativeOperation: {} },
+            "./worker-assets": { loadWorkerResource() {}, resolveWorkerModule() {} },
+            "./callbacks": { loaderCallbacks: {} },
+            "./assets": { fetchLazyAssembly() {}, fetchSatelliteAssemblies() {} },
+            "./worker-local": { serveWorkerLocal() {} },
+            "./worker-config": { restoreWorkerModules() {} },
+            "../appsettings": { getAppSettingsFiles: () => [], getAppSettingsBytes() {} },
+        });
+        const module = await load("./worker-runtime");
+        await module.evaluate();
+        await module.namespace.bootstrapWorkerRuntime({ type: "init", config: {}, downloadOnly }, {});
+        assert.deepEqual(messages.slice(0, 4), [
+            { type: "output", stream: "out", text: "native stdout" },
+            { type: "output", stream: "err", text: "native stderr" },
+            { type: "output", stream: "out", text: "" },
+            { type: "output", stream: "err", text: "first line\nsecond line \u{1f30d}" },
+        ]);
+        assert.equal(messages[4].type, downloadOnly ? "preloaded" : "ready");
+    }
+});
+
+test("UI dispatches worker output to configured callbacks and surfaces callback failures", async () => {
+    for (const stream of ["out", "err"]) {
+        const output = [];
+        const errors = [];
+        const failure = new TypeError(`${stream} callback failed`);
+        const Module = {};
+        const runtimeState = {};
+        let worker;
+        const load = createWorkerModuleLoader(createContext({
+            Error, AbortController, setTimeout, clearTimeout,
+            Worker: class {
+                constructor() { worker = this; }
+                postMessage() {}
+                terminate() { this.terminated = true; }
+            },
+        }), {
+            "./run": { initializeLoaderConfig: async () => {
+                for (const name of ["out", "err"]) Module[name] = function (text) {
+                    assert.equal(this, Module);
+                    if (text === "fail") throw failure;
+                    output.push([name, text]);
+                };
+                return [];
+            } },
+            "./icu": { getIcuResourceName() {} },
+            "./bootstrap": { scriptUrl: "https://example.test/dotnet.js" },
+            "./cross-module": {
+                dotnetApi: {}, dotnetInternals: {}, dotnetRuntimeExports: {}, dotnetBrowserUtilsExports: {}, Module,
+                dotnetLogger: { debug() {}, error: (...args) => errors.push(args) },
+            },
+            "../types": { InternalExchangeIndex: { WorkerRuntimeContext: 0 } },
+            "./exit": { runtimeState, exit(code, error) {
+                runtimeState.exitCode ??= code;
+                throw error;
+            } },
+            "./callbacks": { loaderCallbacks: {} },
+            "./assets": { loadDotnetModule() {}, loadJSModule() {}, callLibraryInitializerOnRuntimeReady() {},
+                updateWorkerDownloadProgress() {} },
+            "../appsettings": { storeAppSettingsBytes() {} },
+            "./worker-assets": { serveWorkerResource() {} },
+            "./worker-local": { createWorkerLocal() {} },
+            "./worker-native": { createNativeChannel() {}, NativeOperation: {}, RuntimeOperation: {} },
+        });
+        const module = await load("./worker-proxy");
+        await module.evaluate();
+        const ready = module.namespace.createWorkerProxy({ resources: {}, workerOptions: { timeoutMs: 0 } });
+        // Wait until loader initialization has installed the worker's message handler.
+        while (!worker?.onmessage) await new Promise(resolve => setImmediate(resolve));
+        for (const [name, text] of [["out", "native stdout"], ["err", "native stderr"], ["out", ""]]) {
+            worker.onmessage({ data: { type: "output", stream: name, text } });
+        }
+        assert.deepEqual(output, [["out", "native stdout"], ["err", "native stderr"], ["out", ""]]);
+        const rejected = assert.rejects(ready, error => error === failure);
+        worker.onmessage({ data: { type: "output", stream, text: "fail" } });
+        await rejected;
+        assert.equal(worker.terminated, true);
+        assert.equal(worker.onmessage, null);
+        assert.equal(runtimeState.exitCode, 1);
+        assert.equal(errors.length, 1);
+        assert.equal(errors[0][1], failure);
+    }
+});
+
+test("worker startup failure notifies normal exit listeners before teardown and preserves successful exit codes", async () => {
+    for (const scenario of ["initializer failure", "exit", "runMainAndExit"]) {
+        const events = [];
+        const failure = new Error("UI initializer failed");
+        const config = {
+            resources: { jsModuleRuntime: [{}], jsModuleDiagnostics: [{ name: "diagnostics" }] },
+            workerOptions: { timeoutMs: 0 }, logExitCode: true, appendElementOnExit: true,
+        };
+        const dotnetApi = { INTERNAL: {}, runtimeBuildInfo: {}, getConfig: () => config };
+        const dotnetInternals = [];
+        dotnetInternals[2] = dotnetApi;
+        const loaderExports = { abortStartup: reason => {
+            assert.equal(reason, failure);
+            events.push("abort startup");
+        } };
+        let worker, signal, shared, stopped = false;
+        const load = createWorkerModuleLoader(createContext({
+            Error, AbortController, setTimeout, clearTimeout, SharedArrayBuffer, WebAssembly, Atomics,
+            console: { log: message => events.push(message) },
+            addEventListener() {}, removeEventListener() {},
+            document: {
+                createElement: () => ({ style: {} }),
+                body: { appendChild: element => events.push(`exit element ${element.innerHTML}`) },
+            },
+            Worker: class {
+                constructor() { worker = this; }
+                postMessage(message) {
+                    if (message.type === "init") queueMicrotask(() => this.onmessage({ data: {
+                        type: "attach", signalBuffer: signal.buffer, nativeBuffer: new SharedArrayBuffer(16),
+                        wasmMemory: new WebAssembly.Memory({ initial: 1, maximum: 1, shared: true }),
+                    } }));
+                    if (message.type === "attached") queueMicrotask(() => this.onmessage({ data: {
+                        type: "ready", runtimeBuildInfo: {}, workerProxyCounts: [], appSettings: [],
+                    } }));
+                    if (message.type === "command") {
+                        Atomics.store(signal, shared.OFFSET_COMMAND_RESULT, 0);
+                        Atomics.store(signal, shared.OFFSET_COMMAND_PROMISE_ID, message.promiseId);
+                        Atomics.store(signal, shared.OFFSET_COMMAND_SIGNAL, shared.SignalState.DONE);
+                        shared.wakeMain(signal);
+                    }
+                }
+                terminate() { events.push("terminate"); }
+            },
+        }), {
+            "./run": { initializeLoaderConfig: async () => [[{}, Promise.resolve({})]] },
+            "./icu": { getIcuResourceName() {} },
+            "./bootstrap": { scriptUrl: "https://example.test/dotnet.js" },
+            "./cross-module": {
+                dotnetApi, dotnetInternals, Module: {},
+                dotnetUpdateInternals: () => events.push("diagnostics subscribed"),
+                dotnetUpdateInternalsSubscriber() {},
+                dotnetRuntimeExports: { abortInteropTimers() {
+                    assert.equal(stopped, false);
+                    events.push("abort timers");
+                } },
+                dotnetBrowserUtilsExports: {},
+                dotnetLoaderExports: loaderExports,
+                dotnetLogger: { debug() {}, error() {}, warn: (...args) => assert.fail(String(args)),
+                    info: message => events.push(message) },
+            },
+            "./per-module": { ENVIRONMENT_IS_NODE: false, ENVIRONMENT_IS_SHELL: false,
+                ENVIRONMENT_IS_WEB: true, globalThisAny: {} },
+            "../types": { InternalExchangeIndex: { WorkerRuntimeContext: 0, InteropJavaScriptExportsTable: 1,
+                RuntimeAPI: 2, DiagnosticsExportsTable: 3 } },
+            "consts:gitHash": { default: "" },
+            "./symbolicate": { installNativeSymbols() {}, symbolicateStackTrace() {} },
+            "./console-proxy": { installLoggingProxy: () => events.push("logging proxy"), teardownProxyConsole() {} },
+            "./dotnet-counters": { collectMetrics() {} },
+            "./dotnet-gcdump": { collectGcDump() {} },
+            "./dotnet-cpu-profiler": { collectCpuSamples() {} },
+            "./dotnet-pgo-trace": { collectPgoTrace() {} },
+            "./diagnostic-server": {
+                connectDSRouter() {}, ds_rt_websocket_close() {}, ds_rt_websocket_create() {},
+                ds_rt_websocket_poll() {}, ds_rt_websocket_recv() {}, ds_rt_websocket_send() {},
+                initializeDS: () => assert.fail("UI must not initialize the native diagnostic server"),
+            },
+            "./browser-profiler": { ds_rt_browser_performance_measure() {} },
+            "./common": { downloadBlob() {} },
+            "./callbacks": { loaderCallbacks: {} },
+            "./assets": {
+                loadDotnetModule: async asset => {
+                    if (asset.name !== "diagnostics") return { dotnetInitializeModule() {} };
+                    const module = await load("../../../System.Native.Browser/diagnostics/index");
+                    await module.evaluate();
+                    return module.namespace;
+                }, loadJSModule() {},
+                callLibraryInitializerOnRuntimeReady() {
+                    if (scenario === "initializer failure") throw failure;
+                },
+                updateWorkerDownloadProgress() {},
+            },
+            "../appsettings": { storeAppSettingsBytes() {} },
+            "./worker-assets": { serveWorkerResource() {} },
+            "./worker-local": { createWorkerLocal() {} },
+            "./worker-native": {
+                createNativeChannel: () => ({ invoke() {}, assertCallAvailable() {}, listen() {}, getStats() {},
+                    stop() { stopped = true; events.push("stop channel"); } }),
+                NativeOperation: {}, RuntimeOperation: {},
+            },
+        }, (specifier, source) => specifier === "../../../System.Native.Browser/diagnostics/index"
+            ? source.replace('from "./exit"', 'from "../../../System.Native.Browser/diagnostics/exit"')
+            : source);
+        const signaling = await load("./shared-signaling");
+        await signaling.evaluate();
+        shared = signaling.namespace;
+        signal = new Int32Array(shared.createSignalingBuffer());
+        const exitModule = await load("./exit");
+        await exitModule.evaluate();
+        const { runtimeState, exit, addOnExitListener } = exitModule.namespace;
+        loaderExports.addOnExitListener = addOnExitListener;
+        addOnExitListener((code, reason) => {
+            assert.equal(stopped, false);
+            assert.equal(code, scenario === "initializer failure" ? 1 : 0);
+            if (scenario === "initializer failure") {
+                assert.equal(reason, failure);
+                assert.equal(runtimeState.creatingRuntime, true);
+                dotnetApi.exit(7);
+            }
+            events.push("exit listener");
+            return false;
+        });
+        const module = await load("./worker-proxy");
+        await module.evaluate();
+        const ready = module.namespace.createWorkerProxy(config);
+        if (scenario === "initializer failure") {
+            await assert.rejects(ready, error => {
+                try { exit(1, error); } catch (reason) { assert.equal(reason, failure); }
+                return error === failure;
+            });
+            assert.equal(events.filter(value => value.startsWith("Aborting startup")).length, 1);
+            assert.equal(events.filter(value => value === "abort startup").length, 1);
+        } else {
+            const api = await ready;
+            assert.equal(runtimeState.creatingRuntime, false);
+            if (scenario === "exit") {
+                api.exit(0);
+                while (!events.includes("terminate")) await new Promise(resolve => setImmediate(resolve));
+            } else assert.equal(await api.runMainAndExit(), 0);
+        }
+        assert.equal(events.filter(value => value === "exit listener").length, 1);
+        assert.equal(events.filter(value => value === "terminate").length, 1);
+        assert.ok(events.indexOf("exit listener") < events.indexOf("stop channel"));
+        assert.equal(runtimeState.exitCode, scenario === "initializer failure" ? 1 : 0);
+        assert.equal(runtimeState.creatingRuntime, false);
+        assert.equal(worker.onmessage, null);
+        assert.equal(events.filter(value => value === `WASM EXIT ${runtimeState.exitCode}`).length, 1);
+        assert.equal(events.filter(value => value === `exit element ${runtimeState.exitCode}`).length, 1);
+        assert.equal(events.filter(value => value === "diagnostics subscribed").length, 1);
+        assert.equal(events.filter(value => value === "logging proxy").length, 1);
+        assert.equal(dotnetApi.collectMetrics, undefined);
+        assert.equal(dotnetInternals[3], undefined);
+    }
+});
+
+test("native worker diagnostics retain collection and cleanup without UI exit reporting", async () => {
+    const listeners = [];
+    const events = [];
+    const collectMetrics = () => {};
+    const config = { logExitCode: true, appendElementOnExit: true, forwardConsole: true,
+        interopCleanupOnExit: true, exitOnUnhandledError: true };
+    const dotnetApi = { runtimeBuildInfo: {}, getConfig: () => config };
+    const dotnetInternals = [{ role: "worker" }, dotnetApi];
+    const unexpected = () => assert.fail("Native worker must not initialize UI diagnostics or access the DOM");
+    const load = createWorkerModuleLoader(createContext({
+        console: { log: unexpected }, addEventListener: unexpected, removeEventListener: unexpected,
+        document: { createElement: unexpected },
+    }), {
+        "consts:gitHash": { default: "" },
+        "../types": { InternalExchangeIndex: { WorkerRuntimeContext: 0, RuntimeAPI: 1, DiagnosticsExportsTable: 2 } },
+        "./cross-module": {
+            dotnetApi, dotnetInternals, dotnetUpdateInternals() {}, dotnetUpdateInternalsSubscriber() {},
+            dotnetLoaderExports: { addOnExitListener: listener => listeners.push(listener) },
+            dotnetRuntimeExports: { forceDisposeProxies: (...args) => events.push(["cleanup", ...args]) },
+            dotnetLogger: { debug: unexpected, error: unexpected },
+        },
+        "./per-module": { ENVIRONMENT_IS_NODE: false, ENVIRONMENT_IS_WEB: true },
+        "./symbolicate": { installNativeSymbols() {}, symbolicateStackTrace() {} },
+        "./console-proxy": { installLoggingProxy: unexpected, teardownProxyConsole: unexpected },
+        "./dotnet-counters": { collectMetrics },
+        "./dotnet-gcdump": { collectGcDump() {} },
+        "./dotnet-cpu-profiler": { collectCpuSamples() {} },
+        "./dotnet-pgo-trace": { collectPgoTrace() {} },
+        "./diagnostic-server": {
+            connectDSRouter() {}, ds_rt_websocket_close() {}, ds_rt_websocket_create() {},
+            ds_rt_websocket_poll() {}, ds_rt_websocket_recv() {}, ds_rt_websocket_send() {},
+            initializeDS: () => events.push(["diagnostic server"]),
+        },
+        "./browser-profiler": { ds_rt_browser_performance_measure() {} },
+        "./common": { downloadBlob() {} },
+    }, (specifier, source) => specifier === "../../../System.Native.Browser/diagnostics/index"
+        ? source.replace('from "./exit"', 'from "../../../System.Native.Browser/diagnostics/exit"')
+        : source);
+    const module = await load("../../../System.Native.Browser/diagnostics/index");
+    await module.evaluate();
+    module.namespace.dotnetInitializeModule(dotnetInternals);
+    assert.equal(dotnetApi.collectMetrics, collectMetrics);
+    assert.equal(dotnetApi.INTERNAL.collectMetrics, collectMetrics);
+    assert.equal(dotnetApi.INTERNAL.TARGET, undefined);
+    assert.equal(dotnetInternals[2].length, 8);
+    assert.equal(listeners.length, 1);
+    assert.equal(listeners[0](0, new Error("Runtime exited"), false), true);
+    assert.deepEqual(events, [["diagnostic server"], ["cleanup", true, true]]);
+});
+
 test("worker errors preserve built-in type, stack, cause, status and aggregate members", async () => {
     const load = createWorkerModuleLoader(createContext({ structuredClone }), {});
     const module = await load("./worker-errors");

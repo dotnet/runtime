@@ -149,6 +149,8 @@ public class AssetCachingTests : BlazorWasmTestBase
             Test = async page =>
             {
                 await page.WaitForFunctionAsync("document.title === 'cache-seeded'");
+                if (IsCoreClrRuntime)
+                    Assert.True(await page.EvaluateAsync<bool>("crossOriginIsolated"));
                 string baseUrl = new Uri(page.Url).GetLeftPart(UriPartial.Authority);
                 using var requestLogClient = new BlazorWebWasmLogClient(baseUrl);
                 var seedRequests = await requestLogClient.GetRequestLogsAsync();

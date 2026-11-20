@@ -28,6 +28,13 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, Diagnostics: ${GitHash}`);
     }
 
+    if (internals[InternalExchangeIndex.WorkerRuntimeContext]?.role === "ui") {
+        dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
+        registerExit();
+        installLoggingProxy();
+        return;
+    }
+
     internals[InternalExchangeIndex.DiagnosticsExportsTable] = diagnosticsExportsToTable({
         symbolicateStackTrace,
         installNativeSymbols,
@@ -41,7 +48,9 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
 
     registerExit();
-    installLoggingProxy();
+    if (internals[InternalExchangeIndex.WorkerRuntimeContext]?.role !== "worker") {
+        installLoggingProxy();
+    }
     initializeDS();
 
     dotnetApi.collectCpuSamples = collectCpuSamples;

@@ -224,7 +224,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             assets.jsModuleRuntime = MapJsAssets(resources.jsModuleRuntime);
             assets.jsModuleNative = MapJsAssets(resources.jsModuleNative, workerOnly: config.runInWorker == true);
             assets.jsModuleWorker = MapJsAssets(resources.jsModuleWorker);
-            assets.jsModuleDiagnostics = MapJsAssets(resources.jsModuleDiagnostics, workerOnly: config.runInWorker == true);
+            assets.jsModuleDiagnostics = MapJsAssets(resources.jsModuleDiagnostics);
 
             assets.wasmNative = resources.wasmNative?.Select(a =>
             {

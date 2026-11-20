@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Xunit;
@@ -493,7 +494,8 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (IsCoreClrRuntime && runOptions.Host == RunHost.WebServer)
         {
             string bootPath = Path.Combine(GetObjDir(runOptions.Configuration), "dotnet.js");
-            if (_provider.GetBootJson(bootPath).runInWorker == true && !runOptions.ExtraArgs.Contains("--web-server-use-cop", StringComparison.Ordinal))
+            string bootConfig = ProjectProviderBase.GetBootJsonContent(bootPath);
+            if (Regex.IsMatch(bootConfig, @"""runInWorker""\s*:\s*true\b") && !runOptions.ExtraArgs.Contains("--web-server-use-cop", StringComparison.Ordinal))
                 runOptions = runOptions with { ExtraArgs = runOptions.ExtraArgs + " --web-server-use-cop" };
         }
         if (EnvironmentVariables.UseJavascriptBundler)

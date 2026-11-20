@@ -144,12 +144,11 @@ namespace Wasm.Build.Tests
             {
                 string workerArg = useDefault && shared ? "" : $"-p:WasmRunInWorker={shared.ToString().ToLowerInvariant()} ";
                 string args = $"{workerArg}-p:WasmBuildNative={nativeRelink.ToString().ToLowerInvariant()} -p:UsingBrowserRuntimeWorkload={IsUsingWorkloads.ToString().ToLowerInvariant()}";
-                // Shared copies intentionally differ from runtime-pack/relink bytes; verify the live memory below.
-                BuildProject(info, Config, new BuildOptions(UseCache: false, AssertAppBundle: !shared,
+                BuildProject(info, Config, new BuildOptions(UseCache: false,
                     ExtraMSBuildArgs: args + " -p:WasmBuildOnlyAfterPublish=false"), isNativeBuild: nativeRelink);
                 string buildBootPath = provider.GetBootConfigPath(GetBinFrameworkDir(Config, forPublish: false));
                 Assert.Equal(shared, provider.GetBootJson(buildBootPath).runInWorker == true);
-                PublishProject(info, Config, new PublishOptions(UseCache: false, AssertAppBundle: !shared, ExtraMSBuildArgs: args), isNativeBuild: nativeRelink);
+                PublishProject(info, Config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: args), isNativeBuild: nativeRelink);
                 RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(Config,
                     BrowserQueryString: new System.Collections.Specialized.NameValueCollection { ["shared"] = shared ? "true" : "false" },
                     ExtraArgs: shared && !useDefault ? "--web-server-use-cop" : ""));
