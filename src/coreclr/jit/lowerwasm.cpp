@@ -173,6 +173,22 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
         }
     }
 
+    // Record blocks with stores of invariant values for fgWasmRematerializeInvariantLocals.
+    if (m_compiler->opts.OptimizationEnabled() && storeLoc->OperIs(GT_STORE_LCL_VAR) &&
+        Compiler::fgWasmIsRematerializableValue(storeLoc->Data()))
+    {
+        ArrayStack<BasicBlock*>*& rematBlocks = m_compiler->m_wasmRematBlocks;
+        if (rematBlocks == nullptr)
+        {
+            rematBlocks = new (m_compiler, CMK_Lower) ArrayStack<BasicBlock*>(m_compiler->getAllocator(CMK_Lower));
+        }
+
+        if (rematBlocks->Empty() || (rematBlocks->Top() != m_block))
+        {
+            rematBlocks->Push(m_block);
+        }
+    }
+
     ContainCheckStoreLoc(storeLoc);
     return storeLoc->gtNext;
 }
