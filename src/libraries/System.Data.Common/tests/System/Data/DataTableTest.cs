@@ -589,6 +589,35 @@ namespace System.Data.Tests
             Assert.Equal("923", t.Select("substring(id, 2, 3) = '23'")[8]["id"]);
         }
 
+        [Theory]
+        [InlineData("NAME <> 'ITEM1' AND NAME <> 'ITEM2' AND STATE = 'READY'", new[] { 3, 4 })]
+        [InlineData("NAME NOT LIKE '*ITEM1*' AND NAME NOT LIKE '*ITEM2*' AND STATE = 'READY'", new[] { 3, 4 })]
+        [InlineData("NAME NOT IN ('ITEM1') AND NAME NOT IN ('ITEM2') AND STATE = 'READY'", new[] { 3, 4 })]
+        [InlineData("NOT (NAME = 'ITEM1') AND NOT (NAME = 'ITEM2') AND STATE = 'READY'", new[] { 3, 4 })]
+        [InlineData("NAME NOT LIKE '*ITEM1*' AND NAME NOT LIKE '*ITEM2*' AND NAME NOT LIKE '*OTHER*' AND STATE = 'READY'", new[] { 4 })]
+        [InlineData("A AND B AND STATE = 'READY'", new[] { 1 })]
+        [InlineData("(A) AND (B) AND STATE = 'READY'", new[] { 1 })]
+        [InlineData("ISNULL(A, false) AND ISNULL(B, false) AND STATE = 'READY'", new[] { 1 })]
+        public void SelectKeepsAllAndOperandsWhenIndexIsReused(string filter, int[] expectedIds)
+        {
+            DataTable table = new DataTable();
+            table.Columns.Add("ID", typeof(int));
+            table.Columns.Add("NAME", typeof(string));
+            table.Columns.Add("STATE", typeof(string));
+            table.Columns.Add("A", typeof(bool));
+            table.Columns.Add("B", typeof(bool));
+            table.Rows.Add(1, "ITEM1", "READY", true, true);
+            table.Rows.Add(2, "ITEM2", "READY", true, false);
+            table.Rows.Add(3, "OTHER", "READY", false, true);
+            table.Rows.Add(4, "NEXT", "READY", false, false);
+
+            // The first Select leaves an index on the table and the second one reuses it.
+            table.Select("STATE = 'READY'");
+            DataRow[] rows = table.Select(filter, "ID ASC");
+
+            Assert.Equal(expectedIds, Array.ConvertAll(rows, row => (int)row["ID"]));
+        }
+
         [Fact]
         public void SelectRelations()
         {
