@@ -66,6 +66,15 @@ namespace System.IO.MemoryMappedFiles.Tests
             Assert.NotNull(handle);
         }
 
+        [Fact]
+        public void EmptyViewHandleRetainsZeroLength()
+        {
+            using MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 4096);
+            using MemoryMappedViewStream view = mmf.CreateViewStream(4096, 0);
+
+            Assert.Equal(0UL, view.SafeMemoryMappedViewHandle.ByteLength);
+        }
+
         [LibraryImport("libc")]
         private static unsafe partial SafeMemoryMappedViewHandle mmap(IntPtr addr, nint lengthint, int prot, int flags, int fd, nuint offset);
     }
