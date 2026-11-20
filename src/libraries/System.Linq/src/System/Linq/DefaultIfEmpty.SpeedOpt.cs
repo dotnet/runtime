@@ -30,14 +30,14 @@ namespace System.Linq
 
             public override int GetCount(bool onlyIfCheap)
             {
-                int count;
-                if (!onlyIfCheap || _source is ICollection<TSource> || _source is ICollection)
+                if (!TryGetNonEnumeratedCount(_source, out int count))
                 {
+                    if (onlyIfCheap)
+                    {
+                        return -1;
+                    }
+
                     count = _source.Count();
-                }
-                else
-                {
-                    count = _source is Iterator<TSource> iterator ? iterator.GetCount(onlyIfCheap: true) : -1;
                 }
 
                 return count == 0 ? 1 : count;

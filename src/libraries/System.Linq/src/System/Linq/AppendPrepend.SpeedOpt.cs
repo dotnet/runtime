@@ -121,13 +121,17 @@ namespace System.Linq
 
             public override int GetCount(bool onlyIfCheap)
             {
-                if (_source is Iterator<TSource> iterator)
+                if (!TryGetNonEnumeratedCount(_source, out int count))
                 {
-                    int count = iterator.GetCount(onlyIfCheap);
-                    return count == -1 ? -1 : checked(count + 1);
+                    if (onlyIfCheap)
+                    {
+                        return -1;
+                    }
+
+                    count = _source.Count();
                 }
 
-                return !onlyIfCheap || _source is ICollection<TSource> ? checked(_source.Count() + 1) : -1;
+                return checked(count + 1);
             }
 
             public override TSource? TryGetFirst(out bool found)
@@ -274,13 +278,17 @@ namespace System.Linq
 
             public override int GetCount(bool onlyIfCheap)
             {
-                if (_source is Iterator<TSource> iterator)
+                if (!TryGetNonEnumeratedCount(_source, out int count))
                 {
-                    int count = iterator.GetCount(onlyIfCheap);
-                    return count == -1 ? -1 : checked(count + _appendCount + _prependCount);
+                    if (onlyIfCheap)
+                    {
+                        return -1;
+                    }
+
+                    count = _source.Count();
                 }
 
-                return !onlyIfCheap || _source is ICollection<TSource> ? checked(_source.Count() + _appendCount + _prependCount) : -1;
+                return checked(count + _appendCount + _prependCount);
             }
 
             public override bool Contains(TSource value)
