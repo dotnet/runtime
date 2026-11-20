@@ -21,7 +21,7 @@
 // and perhaps additional criteria.
 //
 //          name                score       short_name      orderSeqId
-REG_SEL_DEF(FREE,               0x10000,    "FREE ",        'A')    // It is not currently assigned to an *active* interval
+REG_SEL_DEF(FREE_OR_CHEAPER_SPILL, 0x10000,  "FR/SP",        'A')    // Prefer a free register unless spilling a callee-saved occupant is cheaper.
 
 // These are the original criteria for comparing registers that are free.
 

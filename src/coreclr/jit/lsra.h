@@ -1335,6 +1335,7 @@ private:
 
         bool             applySelection(int selectionScore, SingleTypeRegSet selectionCandidates);
         bool             applySingleRegSelection(int selectionScore, SingleTypeRegSet selectionCandidate);
+        LsraLocation     getRegisterCoverageEnd(regNumber regNum);
         FORCEINLINE void calculateCoversSets();
         FORCEINLINE void calculateUnassignedSets();
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
@@ -1346,6 +1347,8 @@ private:
             return this->rbmAllInt;
         }
 #endif // TARGET_AMD64
+
+        bool spillCandidateCost(regNumber spillCandidateRegNum, weight_t* pSpillWeight);
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)      FORCEINLINE void try_##stat();
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
@@ -1570,7 +1573,7 @@ private:
     void     updateLsraStat(LsraStat stat, unsigned currentBBNum);
     void     dumpLsraStats(FILE* file);
     LsraStat getLsraStatFromScore(RegisterScore registerScore);
-    LsraStat firstRegSelStat = STAT_FREE;
+    LsraStat firstRegSelStat = STAT_FREE_OR_CHEAPER_SPILL;
 
 public:
     virtual void       dumpLsraStatsCsv(FILE* file);
