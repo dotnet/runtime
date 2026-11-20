@@ -132,7 +132,7 @@ enum UnwindStackFrameFlags
 class ICodeManager
 {
 public:
-    virtual bool IsSafePoint(PTR_VOID pvAddress) PURE_VIRTUAL
+    virtual bool IsSafePoint(MethodInfo * pMethodInfo, PTR_VOID pvAddress) PURE_VIRTUAL
 
     virtual bool FindMethodInfo(PTR_VOID        ControlPC,
                                 MethodInfo *    pMethodInfoOut) PURE_VIRTUAL
