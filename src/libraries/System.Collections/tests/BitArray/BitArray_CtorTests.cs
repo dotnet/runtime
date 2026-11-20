@@ -390,6 +390,126 @@ namespace System.Collections.Tests
             Assert.Equal(bitArray.Length, clone.Length);
         }
 
+        [Theory]
+        [MemberData(nameof(Ctor_BoolArray_TestData))]
+        public static void Ctor_BoolEnumerable_As_Array(bool[] data)
+        {
+            IEnumerable<bool> values = data;
+            AssertBitArray(new BitArray(values), data);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_BoolArray_TestData))]
+        public static void Ctor_BoolEnumerable_As_List(bool[] data)
+        {
+            List<bool> list = new List<bool>(data);
+            AssertBitArray(new BitArray(list), data);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_BoolArray_TestData))]
+        public static void Ctor_BoolEnumerable_As_Collection(bool[] data)
+        {
+            Queue<bool> queue = new Queue<bool>(data);
+            AssertBitArray(new BitArray(queue), data);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_BoolArray_TestData))]
+        public static void Ctor_BoolEnumerable_As_Enumerable(bool[] data)
+        {
+            AssertBitArray(new BitArray(Enumerate(data)), data);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_ByteArray_TestData))]
+        public static void Ctor_ByteEnumerable_As_Array(byte[] bytes, bool[] expected)
+        {
+            IEnumerable<byte> values = bytes;
+            AssertBitArray(new BitArray(values), expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_ByteArray_TestData))]
+        public static void Ctor_ByteEnumerable_As_List(byte[] bytes, bool[] expected)
+        {
+            List<byte> list = new List<byte>(bytes);
+            AssertBitArray(new BitArray(list), expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_ByteArray_TestData))]
+        public static void Ctor_ByteEnumerable_As_Collection(byte[] bytes, bool[] expected)
+        {
+            Queue<byte> queue = new Queue<byte>(bytes);
+            AssertBitArray(new BitArray(queue), expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_ByteArray_TestData))]
+        public static void Ctor_ByteEnumerable_As_Enumerable(byte[] bytes, bool[] expected)
+        {
+            AssertBitArray(new BitArray(Enumerate(bytes)), expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_IntArray_TestData))]
+        public static void Ctor_IntEnumerable_As_Array(int[] array, bool[] expected)
+        {
+            IEnumerable<int> values = array;
+            AssertBitArray(new BitArray(values), expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_IntArray_TestData))]
+        public static void Ctor_IntEnumerable_As_List(int[] array, bool[] expected)
+        {
+            List<int> list = new List<int>(array);
+            AssertBitArray(new BitArray(list), expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_IntArray_TestData))]
+        public static void Ctor_IntEnumerable_As_Collection(int[] array, bool[] expected)
+        {
+            Queue<int> queue = new Queue<int>(array);
+            AssertBitArray(new BitArray(queue), expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_IntArray_TestData))]
+        public static void Ctor_IntEnumerable_As_Enumerable(int[] array, bool[] expected)
+        {
+            AssertBitArray(new BitArray(Enumerate(array)), expected);
+        }
+
+        [Fact]
+        public static void Ctor_NullEnumerable_ThrowsArgumentNullException()
+        {
+            IEnumerable<bool>? boolValues = null;
+            AssertExtensions.Throws<ArgumentNullException>("values", () => new BitArray(boolValues));
+
+            IEnumerable<byte>? byteValues = null;
+            AssertExtensions.Throws<ArgumentNullException>("values", () => new BitArray(byteValues));
+
+            IEnumerable<int>? intValues = null;
+            AssertExtensions.Throws<ArgumentNullException>("values", () => new BitArray(intValues));
+        }
+
+        [Fact]
+        public static void Ctor_EmptyEnumerables()
+        {
+            Assert.Empty(new BitArray(Enumerable.Empty<bool>()));
+            Assert.Empty(new BitArray(Enumerable.Empty<byte>()));
+            Assert.Empty(new BitArray(Enumerable.Empty<int>()));
+        }
+
+        private static IEnumerable<T> Enumerate<T>(IEnumerable<T> values)
+        {
+            foreach (T value in values)
+                yield return value;
+        }
+
         private static void AssertBitArray(BitArray bitArray, ReadOnlySpan<bool> expected)
         {
             Assert.Equal(expected.Length, bitArray.Length);
