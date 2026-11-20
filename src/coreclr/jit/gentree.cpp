@@ -5987,6 +5987,24 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
 #endif // defined(TARGET_RISCV64)
         }
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+        // Keep the index cast available for lowering to eliminate or fold into
+        // the address, instead of materializing a CSE temp. On xarch only the
+        // zero extending form folds, while arm64 has both UXTW and SXTW. For a
+        // scaled address mode the cast sits under the scale node that was just
+        // marked, while an unscaled one has the cast as the index itself.
+        GenTree* index = noCSE ? op2->gtGetOp1() : op2;
+        if ((index != nullptr) && index->OperIs(GT_CAST) && index->TypeIs(TYP_I_IMPL) && !index->gtOverflow() &&
+            genActualTypeIsInt(index->AsCast()->CastOp())
+#if defined(TARGET_XARCH)
+            && index->IsUnsigned()
+#endif
+        )
+        {
+            index->gtFlags |= GTF_ADDRMODE_NO_CSE;
+        }
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
+
         // Finally, adjust the costs on the parenting COMMAs.
         while (addrComma != addr)
         {
