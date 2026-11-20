@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -21,6 +22,8 @@ namespace System.Xml.Xsl.Runtime
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static class XsltFunctions
     {
+        private const int StackallocThreshold = 256;
+
         //------------------------------------------------
         // Xslt/XPath functions
         //------------------------------------------------
@@ -100,95 +103,79 @@ namespace System.Xml.Xsl.Runtime
 
         public static string NormalizeSpace(string value)
         {
-            StringBuilder? sb = null;
-            int idx, idxStart = 0, idxSpace = 0;
+            char[]? rented = null;
+            Span<char> chars = value.Length <= StackallocThreshold ?
+                stackalloc char[StackallocThreshold] :
+                (rented = ArrayPool<char>.Shared.Rent(value.Length));
 
-            for (idx = 0; idx < value.Length; idx++)
+            int length = 0;
+            bool firstSpace = false; // Start false to trim the beginning
+            foreach (char c in value)
             {
-                if (XmlCharType.IsWhiteSpace(value[idx]))
+                if (!XmlCharType.IsWhiteSpace(c))
                 {
-                    if (idx == idxStart)
-                    {
-                        // Previous character was a whitespace character, so discard this character
-                        idxStart++;
-                    }
-                    else if (value[idx] != ' ' || idxSpace == idx)
-                    {
-                        // Space was previous character or this is a non-space character
-                        if (sb == null)
-                        {
-                            sb = new StringBuilder(value.Length);
-                        }
-                        else
-                        {
-                            sb.Append(' ');
-                        }
-
-                        // Copy non-space characters into string builder
-                        sb.Append(value, idxStart, idxSpace == idx ? idx - idxStart - 1 : idx - idxStart);
-
-                        idxStart = idx + 1;
-                    }
-                    else
-                    {
-                        // Single whitespace character doesn't cause normalization, but mark its position
-                        idxSpace = idx + 1;
-                    }
+                    firstSpace = true;
+                    chars[length++] = c;
+                }
+                else if (firstSpace)
+                {
+                    firstSpace = false;
+                    chars[length++] = ' ';
                 }
             }
 
-            if (sb == null)
+            // Trim end
+            if (length > 0 && chars[length - 1] == ' ')
             {
-                // Check for string that is entirely composed of whitespace
-                if (idxStart == idx) return string.Empty;
-
-                // If string does not end with a space, then it must already be normalized
-                if (idxStart == 0 && idxSpace != idx) return value;
-
-                sb = new StringBuilder(value.Length);
-            }
-            else if (idx != idxStart)
-            {
-                sb.Append(' ');
+                length--;
             }
 
-            // Copy non-space characters into string builder
-            if (idxSpace == idx)
-                sb.Append(value, idxStart, idx - idxStart - 1);
-            else
-                sb.Append(value, idxStart, idx - idxStart);
+            // If the string is already normalized, return it rather than allocating a copy
+            ReadOnlySpan<char> normalized = chars.Slice(0, length);
+            string result = normalized.SequenceEqual(value) ? value : normalized.ToString();
 
-            return sb.ToString();
+            if (rented != null)
+            {
+                ArrayPool<char>.Shared.Return(rented);
+            }
+            return result;
         }
 
         public static string Translate(string arg, string mapString, string transString)
         {
-            if (mapString.Length == 0)
+            // Skip the leading characters that are not mapped; if all of them are, the argument is returned unchanged
+            int i = 0;
+            while (i < arg.Length && mapString.IndexOf(arg[i]) < 0)
+            {
+                i++;
+            }
+            if (i == arg.Length)
             {
                 return arg;
             }
 
-            StringBuilder sb = new StringBuilder(arg.Length);
-
-            for (int i = 0; i < arg.Length; i++)
+            char[] chars = arg.ToCharArray();
+            int length = i;
+            for (; i < chars.Length; i++)
             {
-                int index = mapString.IndexOf(arg[i]);
+                int index = mapString.IndexOf(chars[i]);
                 if (index < 0)
                 {
                     // Keep the character
-                    sb.Append(arg[i]);
+                    chars[length++] = chars[i];
                 }
                 else if (index < transString.Length)
                 {
                     // Replace the character
-                    sb.Append(transString[index]);
+                    chars[length++] = transString[index];
                 }
                 else
                 {
                     // Remove the character
                 }
             }
-            return sb.ToString();
+
+            return new string(chars, 0, length);
         }
 
         public static bool Lang(string value, XPathNavigator context)
