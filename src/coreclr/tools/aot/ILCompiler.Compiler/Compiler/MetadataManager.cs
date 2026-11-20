@@ -75,6 +75,7 @@ namespace ILCompiler
         private readonly SortedSet<MethodDesc> _reflectableMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<IMethodBodyNode> _methodBodiesGenerated = new SortedSet<IMethodBodyNode>(CompilerComparer.Instance);
         private readonly SortedSet<UnboxingStubNode> _unboxingStubsGenerated = new SortedSet<UnboxingStubNode>(CompilerComparer.Instance);
+        private readonly SortedSet<AddressTakenMethodNode> _addressTakenMethodsGenerated = new SortedSet<AddressTakenMethodNode>(CompilerComparer.Instance);
         private readonly SortedSet<FrozenObjectNode> _frozenObjects = new SortedSet<FrozenObjectNode>(CompilerComparer.Instance);
         private readonly SortedSet<TypeGVMEntriesNode> _typeGVMEntries
             = new SortedSet<TypeGVMEntriesNode>(Comparer<TypeGVMEntriesNode>.Create((a, b) => TypeSystemComparer.Instance.Compare(a.AssociatedType, b.AssociatedType)));
@@ -276,6 +277,9 @@ namespace ILCompiler
 
             if (obj is UnboxingStubNode unboxingStub)
                 _unboxingStubsGenerated.Add(unboxingStub);
+
+            if (obj is AddressTakenMethodNode addressTakenMethod)
+                _addressTakenMethodsGenerated.Add(addressTakenMethod);
 
             IMethodNode methodNode = methodBodyNode;
             if (methodNode != null)
@@ -759,6 +763,28 @@ namespace ILCompiler
 
             // Generate entries in the blob for methods that will be necessary for stack trace purposes.
             var stackTraceRecords = new List<StackTraceRecordData>();
+
+            // Delegates and function pointers can point to stubs that forward to a method body. If that body got
+            // folded with the body of a different method, the record for the body only describes one of them.
+            // Generate records keyed by the stub address for these.
+            var stubsWithRecords = new HashSet<IMethodNode>();
+            foreach ((IMethodNode stub, MethodDesc target) in GetStubsWithFoldedTargets(factory))
+            {
+                if ((_stackTraceEmissionPolicy.GetMethodVisibility(target) & MethodStackTraceVisibilityFlags.HasMetadata) == 0)
+                    continue;
+
+                // Stubs are not interesting as stack frames of their own
+                StackTraceRecordData record = CreateStackTraceRecord(transform, target, StackTraceRecordFlags.IsHidden, stub);
+
+                stackTraceRecords.Add(record);
+                stubsWithRecords.Add(stub);
+
+                writer.AdditionalRootRecords.Add(record.OwningType);
+                writer.AdditionalRootRecords.Add(record.MethodName);
+                writer.AdditionalRootRecords.Add(record.MethodSignature);
+                writer.AdditionalRootRecords.Add(record.MethodInstantiationArgumentCollection);
+            }
+
             var methodBodies = new HashSet<MethodDesc>();
             foreach (var methodBody in GetCompiledMethodBodies())
             {
@@ -774,6 +800,10 @@ namespace ILCompiler
                 // Methods that will end up in the reflection invoke table should not have an entry in stack trace table
                 // We'll try looking them up in reflection data at runtime.
                 if (methodsWithMappings.Contains(method))
+                    continue;
+
+                // Instantiating unboxing thunks can already have a record describing their target
+                if (stubsWithRecords.Contains(methodBody))
                     continue;
 
                 MethodStackTraceVisibilityFlags stackVisibility = _stackTraceEmissionPolicy.GetMethodVisibility(method);
@@ -797,7 +827,7 @@ namespace ILCompiler
                 }
                 else if ((stackVisibility & MethodStackTraceVisibilityFlags.IsHidden) != 0)
                 {
-                    stackTraceRecords.Add(new StackTraceRecordData(method, null, null, null, null, flags));
+                    stackTraceRecords.Add(new StackTraceRecordData(method, null, null, null, null, flags, null));
                 }
             }
 
@@ -921,18 +951,59 @@ namespace ILCompiler
                         writer.GetRecordHandle(stackTraceRecord.MethodSignature),
                         writer.GetRecordHandle(stackTraceRecord.MethodName),
                         stackTraceRecord.MethodInstantiationArgumentCollection != null ? writer.GetRecordHandle(stackTraceRecord.MethodInstantiationArgumentCollection) : 0,
-                        stackTraceRecord.Flags);
+                        stackTraceRecord.Flags,
+                        stackTraceRecord.Stub);
                     stackTraceMapping.Add(mapping);
                 }
                 else
                 {
                     Debug.Assert((stackTraceRecord.Flags & StackTraceRecordFlags.IsHidden) != 0);
-                    stackTraceMapping.Add(new StackTraceMapping(stackTraceRecord.Method, 0, 0, 0, 0, stackTraceRecord.Flags));
+                    Debug.Assert(stackTraceRecord.Stub == null);
+                    stackTraceMapping.Add(new StackTraceMapping(stackTraceRecord.Method, 0, 0, 0, 0, stackTraceRecord.Flags, null));
                 }
             }
         }
 
-        protected StackTraceRecordData CreateStackTraceRecord(Metadata.MetadataTransform transform, MethodDesc method, StackTraceRecordFlags flags)
+        /// <summary>
+        /// Gets stubs that forward to a method body that was folded with the body of a different method,
+        /// along with the method the stub forwards to.
+        /// </summary>
+        private IEnumerable<(IMethodNode Stub, MethodDesc Target)> GetStubsWithFoldedTargets(NodeFactory factory)
+        {
+            // These are only emitted if the target got folded. The runtime cannot resolve them to their target.
+            foreach (AddressTakenMethodNode addressTakenMethod in _addressTakenMethodsGenerated)
+            {
+                if (!addressTakenMethod.ShouldSkipEmittingObjectNode(factory))
+                    yield return (addressTakenMethod, addressTakenMethod.Method);
+            }
+
+            // The runtime can resolve unboxing stubs to their target. A record keyed by the stub is only needed
+            // if the record of the target body would describe a method other than the target.
+            foreach (UnboxingStubNode unboxingStub in _unboxingStubsGenerated)
+            {
+                if (IsFoldedIntoDifferentMethod(factory, unboxingStub.Method))
+                    yield return (unboxingStub, unboxingStub.Method);
+            }
+
+            foreach (IMethodBodyNode methodBody in _methodBodiesGenerated)
+            {
+                if (methodBody is ISpecialUnboxThunkNode { IsSpecialUnboxingThunk: true })
+                {
+                    MethodDesc target = _typeSystemContext.GetTargetOfSpecialUnboxingThunk(methodBody.Method);
+                    if (IsFoldedIntoDifferentMethod(factory, target))
+                        yield return (methodBody, target);
+                }
+            }
+
+            static bool IsFoldedIntoDifferentMethod(NodeFactory factory, MethodDesc method)
+            {
+                // Stack trace records only describe the typical method definition
+                return factory.ObjectInterner.GetDeduplicatedSymbol(factory, factory.MethodEntrypoint(method)) is IMethodNode representative
+                    && representative.Method.GetTypicalMethodDefinition() != method.GetTypicalMethodDefinition();
+            }
+        }
+
+        protected StackTraceRecordData CreateStackTraceRecord(Metadata.MetadataTransform transform, MethodDesc method, StackTraceRecordFlags flags, IMethodNode stub = null)
         {
             // In the metadata, we only represent the generic definition
             MethodDesc methodToGenerateMetadataFor = method.GetTypicalMethodDefinition();
@@ -981,7 +1052,7 @@ namespace ILCompiler
                 methodInst = null;
             }
 
-            return new StackTraceRecordData(method, owningType, signature, name, methodInst, flags);
+            return new StackTraceRecordData(method, owningType, signature, name, methodInst, flags, stub);
         }
 
         /// <summary>
@@ -1325,9 +1396,14 @@ namespace ILCompiler
         public readonly int MethodInstantiationArgumentCollectionHandle;
         public readonly StackTraceRecordFlags Flags;
 
-        public StackTraceMapping(MethodDesc method, int owningTypeHandle, int methodSignatureHandle, int methodNameHandle, int methodInstantiationArgumentCollectionHandle, StackTraceRecordFlags flags)
-            => (Method, OwningTypeHandle, MethodSignatureHandle, MethodNameHandle, MethodInstantiationArgumentCollectionHandle, Flags)
-            = (method, owningTypeHandle, methodSignatureHandle, methodNameHandle, methodInstantiationArgumentCollectionHandle, flags);
+        /// <summary>
+        /// If not null, the entry is keyed by this stub that forwards to <see cref="Method"/> instead of the method body.
+        /// </summary>
+        public readonly IMethodNode Stub;
+
+        public StackTraceMapping(MethodDesc method, int owningTypeHandle, int methodSignatureHandle, int methodNameHandle, int methodInstantiationArgumentCollectionHandle, StackTraceRecordFlags flags, IMethodNode stub)
+            => (Method, OwningTypeHandle, MethodSignatureHandle, MethodNameHandle, MethodInstantiationArgumentCollectionHandle, Flags, Stub)
+            = (method, owningTypeHandle, methodSignatureHandle, methodNameHandle, methodInstantiationArgumentCollectionHandle, flags, stub);
     }
 
     public readonly struct ReflectionStackTraceMapping
@@ -1356,10 +1432,11 @@ namespace ILCompiler
         public readonly MetadataRecord MethodName;
         public readonly MetadataRecord MethodInstantiationArgumentCollection;
         public readonly StackTraceRecordFlags Flags;
+        public readonly IMethodNode Stub;
 
-        public StackTraceRecordData(MethodDesc method, MetadataRecord owningType, MetadataRecord methodSignature, MetadataRecord methodName, MetadataRecord methodInstantiationArgumentCollection, StackTraceRecordFlags flags)
-            => (Method, OwningType, MethodSignature, MethodName, MethodInstantiationArgumentCollection, Flags)
-            = (method, owningType, methodSignature, methodName, methodInstantiationArgumentCollection, flags);
+        public StackTraceRecordData(MethodDesc method, MetadataRecord owningType, MetadataRecord methodSignature, MetadataRecord methodName, MetadataRecord methodInstantiationArgumentCollection, StackTraceRecordFlags flags, IMethodNode stub)
+            => (Method, OwningType, MethodSignature, MethodName, MethodInstantiationArgumentCollection, Flags, Stub)
+            = (method, owningType, methodSignature, methodName, methodInstantiationArgumentCollection, flags, stub);
     }
 
     [Flags]
