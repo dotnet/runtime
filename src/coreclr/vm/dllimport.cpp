@@ -5631,7 +5631,7 @@ namespace
                                                         iLCIDArg);
 
                                 // we successfully generated the IL stub
-                                sgh.SuppressRelease();
+                                sgh.Detach();
                             }
 
                             pEntry->m_hrResultCode = S_OK;

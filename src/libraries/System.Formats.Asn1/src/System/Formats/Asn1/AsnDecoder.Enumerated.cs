@@ -227,7 +227,7 @@ namespace System.Formats.Asn1
                     out long value,
                     out int consumed))
                 {
-                    throw new AsnContentException(SR.ContentException_EnumeratedValueTooBig);
+                    throw new AsnContentException(SR.Format(SR.ContentException_EnumeratedValueTooBig, enumType.FullName));
                 }
 
                 bytesConsumed = consumed;
@@ -248,7 +248,7 @@ namespace System.Formats.Asn1
                     out ulong value,
                     out int consumed))
                 {
-                    throw new AsnContentException(SR.ContentException_EnumeratedValueTooBig);
+                    throw new AsnContentException(SR.Format(SR.ContentException_EnumeratedValueTooBig, enumType.FullName));
                 }
 
                 bytesConsumed = consumed;

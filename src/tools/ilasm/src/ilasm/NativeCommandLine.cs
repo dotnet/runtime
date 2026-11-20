@@ -34,14 +34,12 @@ internal static class NativeCommandLine
         ["OPT"] = "--optimize",
         ["OUT"] = "--output",
         ["PDB"] = "--pdb",
-        ["PE6"] = "--pe64",
         ["QUI"] = "--quiet",
         ["RES"] = "--resource",
         ["STA"] = "--stack",
         ["STR"] = "--stripreloc",
         ["SSV"] = "--ssver",
         ["SUB"] = "--subsystem",
-        ["X64"] = "--x64",
     };
 
     internal static string[] Normalize(string[] args) =>
@@ -69,10 +67,21 @@ internal static class NativeCommandLine
         List<string> result = new(args.Length);
         bool preserveRemainingArguments = false;
         bool preserveNextArgument = false;
+        List<string>? remainingArguments = null;
+
+        // Native ilasm applies the last /X64 or /ARM64 switch, and /PE64 without either targets x64.
+        bool pe64 = false;
+        string? machine = null;
 
         foreach (string arg in args)
         {
-            if (preserveRemainingArguments || preserveNextArgument)
+            if (preserveRemainingArguments)
+            {
+                (remainingArguments ??= new()).Add(arg);
+                continue;
+            }
+
+            if (preserveNextArgument)
             {
                 result.Add(arg);
                 preserveNextArgument = false;
@@ -81,7 +90,6 @@ internal static class NativeCommandLine
 
             if (arg == "--")
             {
-                result.Add(arg);
                 preserveRemainingArguments = true;
                 continue;
             }
@@ -119,7 +127,8 @@ internal static class NativeCommandLine
             string? normalizedOption;
             if (optionName.StartsWith("ARM64", StringComparison.OrdinalIgnoreCase))
             {
-                normalizedOption = "--arm64";
+                machine = "arm64";
+                continue;
             }
             else if (optionName.Equals("ARM", StringComparison.OrdinalIgnoreCase))
             {
@@ -140,6 +149,16 @@ internal static class NativeCommandLine
                 }
                 if (prefix.Equals("LIS", StringComparison.OrdinalIgnoreCase))
                 {
+                    continue;
+                }
+                if (prefix.Equals("X64", StringComparison.OrdinalIgnoreCase))
+                {
+                    machine = "x64";
+                    continue;
+                }
+                if (prefix.Equals("PE6", StringComparison.OrdinalIgnoreCase))
+                {
+                    pe64 = true;
                     continue;
                 }
 
@@ -185,6 +204,22 @@ internal static class NativeCommandLine
                 }
 
                 result.Add(normalizedValue);
+            }
+        }
+
+        string? architecture = machine ?? (pe64 ? "x64" : null);
+        if (architecture is not null)
+        {
+            result.Add("--arch");
+            result.Add(architecture);
+        }
+
+        if (preserveRemainingArguments)
+        {
+            result.Add("--");
+            if (remainingArguments is not null)
+            {
+                result.AddRange(remainingArguments);
             }
         }
 

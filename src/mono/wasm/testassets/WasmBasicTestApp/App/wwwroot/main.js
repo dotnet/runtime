@@ -174,6 +174,41 @@ switch (testCase) {
             return defaultUri;
         });
         break;
+    case "FetchIntegrity": {
+        for (const link of document.querySelectorAll('link[rel="preload"]')) {
+            if (link.href.includes("/_framework/dotnet.")) {
+                testOutput(`HTML preload integrity: ${link.integrity ? "yes" : "no"} ${link.href}`);
+            }
+        }
+        const importMap = JSON.parse(document.querySelector('script[type="importmap"]').textContent);
+        for (const [specifier, url] of Object.entries(importMap.imports ?? {})) {
+            if (specifier.startsWith("./_framework/dotnet.")) {
+                testOutput(`Import-map integrity: ${importMap.integrity?.[url] ? "yes" : "no"} ${specifier}`);
+            }
+        }
+        const disableIntegrityCheck = params.get("disableIntegrityCheck");
+        if (disableIntegrityCheck !== null) {
+            dotnet.withConfig({ disableIntegrityCheck: disableIntegrityCheck === "true" });
+        }
+        dotnet.withResourceLoader((type, name, defaultUri, integrity) => {
+            if (["assembly", "dotnetwasm", "globalization"].includes(type) && !integrity?.startsWith("sha256-")) {
+                throw new Error(`Missing integrity hash for '${name}'`);
+            }
+            return defaultUri;
+        });
+        let phase = "prefetch";
+        const originalFetch = globalThis.fetch.bind(globalThis);
+        globalThis.fetch = (input, options) => {
+            const url = input instanceof Request ? input.url : String(input);
+            if (/\.(wasm|dll|dat|pdb)$/.test(new URL(url, location.href).pathname)) {
+                testOutput(`Fetch integrity (${phase}): ${options?.integrity ? "yes" : "no"} ${url}`);
+            }
+            return originalFetch(input, options);
+        };
+        await dotnet.download(true);
+        phase = "create";
+        break;
+    }
     case "NativeSymbolsDownload": {
         const failure = params.get("failure");
         const originalFetch = globalThis.fetch.bind(globalThis);
@@ -493,6 +528,7 @@ try {
             break;
         case "DownloadResourceProgressTest":
         case "AssetIntegrity":
+        case "FetchIntegrity":
             exit(0);
             break;
         case "NativeSymbolsDownload":

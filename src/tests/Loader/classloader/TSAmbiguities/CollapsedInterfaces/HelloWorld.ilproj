@@ -10,8 +10,6 @@
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <!--https://github.com/dotnet/runtimelab/issues/155: Thorough checking of invalid inputs-->
     <NativeAotIncompatible>true</NativeAotIncompatible>
-    <!-- need triage -->
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="HelloWorld.il" />

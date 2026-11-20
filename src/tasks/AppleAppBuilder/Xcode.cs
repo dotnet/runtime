@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -193,9 +192,10 @@ internal sealed class Xcode
         IEnumerable<string> environmentVariables,
         string? nativeMainSource = null,
         TargetRuntime targetRuntime = TargetRuntime.MonoVM,
-        bool isLibraryMode = false)
+        bool isLibraryMode = false,
+        string? runtimeConfigFile = null)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, environmentVariables, nativeMainSource, targetRuntime, isLibraryMode);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, environmentVariables, nativeMainSource, targetRuntime, isLibraryMode, runtimeConfigFile);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -267,7 +267,8 @@ internal sealed class Xcode
         IEnumerable<string> environmentVariables,
         string? nativeMainSource = null,
         TargetRuntime targetRuntime = TargetRuntime.MonoVM,
-        bool isLibraryMode = false)
+        bool isLibraryMode = false,
+        string? runtimeConfigFile = null)
     {
         // bundle everything as resources excluding native files
         var predefinedExcludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "icudt*" };
@@ -621,7 +622,7 @@ internal sealed class Xcode
                 File.WriteAllText(Path.Combine(binDir, "host_runtime_contract.h"),
                     Utils.GetEmbeddedResource("host_runtime_contract.h"));
 
-                var (appContextKeys, appContextValues, propertyCount) = RenderCoreClrRuntimeConfigProperties(workspace);
+                var (appContextKeys, appContextValues, propertyCount) = RenderCoreClrRuntimeConfigProperties(runtimeConfigFile);
 
                 // NOTE: Library mode is not supported yet
                 File.WriteAllText(Path.Combine(binDir, "runtime.m"),
@@ -762,9 +763,14 @@ internal sealed class Xcode
         return Path.Combine(appDirectory, Path.GetFileNameWithoutExtension(xcodePrjPath) + ".app");
     }
 
-    private (string appContextKeys, string appContextValues, int propertyCount) RenderCoreClrRuntimeConfigProperties(string workspace)
+    private static (string appContextKeys, string appContextValues, int propertyCount) RenderCoreClrRuntimeConfigProperties(string? runtimeConfigFile)
     {
-        Dictionary<string, string> configProperties = ParseRuntimeConfigProperties(workspace);
+        Dictionary<string, string> configProperties = RuntimeConfigProperties.Read(
+            runtimeConfigFile,
+            "RUNTIME_IDENTIFIER",
+            "APP_CONTEXT_BASE_DIRECTORY",
+            "TRUSTED_PLATFORM_ASSEMBLIES",
+            "HOST_RUNTIME_CONTRACT");
 
         // Hardcoded properties count: RUNTIME_IDENTIFIER, APP_CONTEXT_BASE_DIRECTORY, TRUSTED_PLATFORM_ASSEMBLIES, HOST_RUNTIME_CONTRACT = 4
         const int hardcodedProperties = 4;
@@ -773,53 +779,15 @@ internal sealed class Xcode
         var appContextValues = new StringBuilder();
 
         int i = 0;
-        foreach ((string key, string value) in configProperties)
+        foreach ((string key, string value) in configProperties.OrderBy(property => property.Key, StringComparer.Ordinal))
         {
-            appContextKeys.AppendLine($"    appctx_keys[{i + hardcodedProperties}] = \"{key}\";");
-            appContextValues.AppendLine($"    appctx_values[{i + hardcodedProperties}] = \"{value}\";");
+            appContextKeys.AppendLine($"    appctx_keys[{i + hardcodedProperties}] = {RuntimeConfigProperties.ToCStringLiteral(key)};");
+            appContextValues.AppendLine($"    appctx_values[{i + hardcodedProperties}] = {RuntimeConfigProperties.ToCStringLiteral(value)};");
             i++;
         }
 
         int propertyCount = hardcodedProperties + configProperties.Count;
 
         return (appContextKeys.ToString().TrimEnd(), appContextValues.ToString().TrimEnd(), propertyCount);
-    }
-
-    private Dictionary<string, string> ParseRuntimeConfigProperties(string workspace)
-    {
-        var configProperties = new Dictionary<string, string>();
-        string runtimeConfigPath = Path.Combine(workspace, "runtimeconfig.bin");
-
-        if (!File.Exists(runtimeConfigPath))
-        {
-            return configProperties;
-        }
-
-        try
-        {
-            byte[] fileBytes = File.ReadAllBytes(runtimeConfigPath);
-            unsafe
-            {
-                fixed (byte* ptr = fileBytes)
-                {
-                    var blobReader = new BlobReader(ptr, fileBytes.Length);
-
-                    int count = blobReader.ReadCompressedInteger();
-
-                    for (int i = 0; i < count; i++)
-                    {
-                        string key = blobReader.ReadSerializedString() ?? string.Empty;
-                        string value = blobReader.ReadSerializedString() ?? string.Empty;
-                        configProperties[key] = value;
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.LogMessage(MessageImportance.High, $"Error while parsing runtime config at {runtimeConfigPath}: {ex.Message}");
-        }
-
-        return configProperties;
     }
 }

@@ -15,9 +15,9 @@ internal interface IWasmR2RInfo
 {
     /// <summary>
     /// Returns the base virtual IP represented by a frame identity. Returns false, or a base of 0,
-    /// when the identity does not map to a known R2R function.
+    /// when the identity does not map to a known R2R function. Also returns its unwind blob.
     /// </summary>
-    bool TryGetVirtualIPBase(uint frameIdentity, out ulong baseVirtualIP);
+    bool TryGetVirtualIPBase(uint frameIdentity, out ulong baseVirtualIP, out TargetPointer unwindDataAddress);
 
     /// <summary>
     /// Returns the address of the WASM unwind blob for the function containing
@@ -34,7 +34,8 @@ internal interface IWasmR2RInfo
 /// </summary>
 /// <remarks>
 /// Each R2R frame base stores its frame identity at offset 0 and its function-local virtual IP
-/// (divided by 2) at offset 4. A frame whose first word is
+/// (divided by 2) at offset 4, unless its unwind extent implies the sole IP is 1.
+/// A frame whose first word is
 /// <see cref="StackWalkIndirectToFramePointer"/> is a <c>localloc</c> frame whose real base
 /// pointer is stored one pointer-sized slot later. A frame whose first word is
 /// <see cref="TerminateR2RStackWalk"/> is not R2R code (an interpreter transition or the stack
@@ -143,12 +144,13 @@ internal sealed class WasmUnwinder
             return TargetCodePointer.Null;
 
         uint frameIdentity = _target.Read<uint>(establishingFrame.Value + FrameIdentityOffset);
-        // Virtual IPs are stored divided by 2; the low bit distinguishes virtual IPs from
-        // interpreter addresses / portable entrypoints.
-        uint functionLocalVirtualIP = _target.Read<uint>(frameBase.Value + VirtualIpOffset) * 2;
-
-        if (!_r2rInfo.TryGetVirtualIPBase(frameIdentity, out ulong baseVirtualIP) || baseVirtualIP == 0)
+        if (!_r2rInfo.TryGetVirtualIPBase(frameIdentity, out ulong baseVirtualIP, out TargetPointer unwindData) || baseVirtualIP == 0)
             return TargetCodePointer.Null;
+
+        ulong address = unwindData.Value;
+        DecodeULEB128(ref address); // Skip the fixed frame size.
+        uint virtualIPLength = DecodeULEB128(ref address);
+        uint functionLocalVirtualIP = virtualIPLength == 2 ? 2 : _target.Read<uint>(frameBase.Value + VirtualIpOffset) * 2;
 
         return new TargetCodePointer(baseVirtualIP + functionLocalVirtualIP);
     }
@@ -177,7 +179,8 @@ internal sealed class WasmUnwinder
         }
 
         uint frameIdentity = _target.Read<uint>(frameBase.Value + FrameIdentityOffset);
-        uint frameSize = DecodeULEB128(unwindData.Value);
+        ulong address = unwindData.Value;
+        uint frameSize = DecodeULEB128(ref address);
         if (frameSize == 0)
         {
             // A zero frame size makes no progress; terminate rather than risk an unbounded walk.
@@ -220,14 +223,14 @@ internal sealed class WasmUnwinder
 
     // Standard little-endian base-128 varint, matching the native DecodeULEB128AsU32. A ULEB128
     // uint32 is at most 5 bytes (5 * 7 = 35 >= 32 bits); a longer encoding is malformed.
-    private uint DecodeULEB128(ulong address)
+    private uint DecodeULEB128(ref ulong address)
     {
         const int MaxBytes = 5;
         uint result = 0;
         int shift = 0;
         for (ulong offset = 0; offset < MaxBytes; offset++)
         {
-            byte b = _target.Read<byte>(address + offset);
+            byte b = _target.Read<byte>(address++);
             result |= (uint)(b & 0x7F) << shift;
             if ((b & 0x80) == 0)
                 return result;

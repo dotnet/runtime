@@ -22,6 +22,7 @@ ILStubCache::ILStubCache(LoaderAllocator *pAllocator)
     : m_crst(CrstStubCache, CRST_UNSAFE_ANYMODE)
     , m_pAllocator(pAllocator)
     , m_pStubMT(NULL)
+    , m_pCollectibleStubResolvers(NULL)
 {
     WRAPPER_NO_CONTRACT;
 }
@@ -105,7 +106,8 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
         // may need to be freed when the LoaderAllocator is unloaded.
         ILStubCache* pCache = pAllocator->GetILStubCache();
         CrstHolder ch(&pCache->m_crst);
-        pCache->m_collectibleStubResolvers.Append(pResolver);
+        pResolver->m_pNextCollectibleResolver = pCache->m_pCollectibleStubResolvers;
+        pCache->m_pCollectibleStubResolvers = pResolver;
     }
 
     return pStubMD;
@@ -723,10 +725,12 @@ void ILStubCache::FreeCollectibleStubsCompileTimeState()
 
 #ifndef DACCESS_COMPILE
     // This method doesn't take m_crst, because it's only called from LoaderAllocator::Terminate,
-    // when nothing can create or use the stubs anymore. The array itself is freed with the LoaderAllocator.
-    for (COUNT_T i = 0; i < m_collectibleStubResolvers.GetCount(); i++)
+    // when nothing can create or use the stubs anymore.
+    for (ILStubResolver* pResolver = m_pCollectibleStubResolvers;
+        pResolver != NULL;
+        pResolver = pResolver->m_pNextCollectibleResolver)
     {
-        m_collectibleStubResolvers[i]->FreeCompileTimeState();
+        pResolver->FreeCompileTimeState();
     }
 #endif // DACCESS_COMPILE
 }
