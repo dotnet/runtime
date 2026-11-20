@@ -42,6 +42,7 @@ class DeadCodeElimination
         TestComplexInlinedDeadBranchElimination.Run();
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
+        TestConstrainedGenericStaticVirtualFromSharedCode.Run();
         TestTypeIs.Run();
         TestTypeEquals.Run();
         TestTypeEqualityDeadBranchScanRemoval.Run();
@@ -465,6 +466,58 @@ class DeadCodeElimination
 
             ThrowIfNotPresent(typeof(TestStaticVirtualMethodOptimizations), nameof(Marker1));
             ThrowIfPresent(typeof(TestStaticVirtualMethodOptimizations), nameof(Marker2));
+        }
+    }
+
+    class TestConstrainedGenericStaticVirtualFromSharedCode
+    {
+        interface IVisitor<T>
+        {
+            static abstract Type Visit<TResult>();
+        }
+
+        struct Target<T> : IVisitor<T>
+        {
+            public static Type Visit<TResult>() => typeof(Marker1);
+        }
+
+        struct Unrelated<T> : IVisitor<T>
+        {
+            public static Type Visit<TResult>() => typeof(Marker2);
+        }
+
+        class Marker1 { }
+        class Marker2 { }
+
+        static Type Start<T, TVisitor>() where TVisitor : IVisitor<T> => TVisitor.Visit<object>();
+
+        // Reached through a generic virtual method, so its dictionary, and Start's, are built from templates
+        interface IRunner
+        {
+            Type Run<U>();
+        }
+
+        class Runner<T, TVisitor> : IRunner where TVisitor : IVisitor<T>
+        {
+            public Type Run<U>() => Start<T, TVisitor>();
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing constrained generic static virtual method call from shared code");
+
+            // Implements IVisitor<object>.Visit and is constructed, but no call is constrained on it,
+            // so its implementation won't be generated.
+            object unrelated = new Unrelated<object>();
+            unrelated.ToString();
+
+            // The constraint type is known up to its canonical form - only its implementation is reachable.
+            IRunner runner = new Runner<object, Target<object>>();
+            if (runner.Run<object>() != typeof(Marker1))
+                throw new Exception();
+
+            ThrowIfNotPresent(typeof(TestConstrainedGenericStaticVirtualFromSharedCode), nameof(Marker1));
+            ThrowIfPresent(typeof(TestConstrainedGenericStaticVirtualFromSharedCode), nameof(Marker2));
         }
     }
 
