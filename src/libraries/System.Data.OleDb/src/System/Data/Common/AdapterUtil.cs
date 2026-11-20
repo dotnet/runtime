@@ -450,6 +450,15 @@ namespace System.Data.Common
         {
             return IndexOutOfRange(SR.GetString(SR.ADP_CollectionIndexInt32, index.ToString(CultureInfo.InvariantCulture), collection.Name, count.ToString(CultureInfo.InvariantCulture)));
         }
+        internal static ArgumentOutOfRangeException CollectionIndexInt32OutOfRange(string parameterName, int index, Type collection, int count)
+        {
+            ArgumentOutOfRangeException e = new ArgumentOutOfRangeException(
+                parameterName,
+                index,
+                SR.GetString(SR.ADP_CollectionIndexInt32, index.ToString(CultureInfo.InvariantCulture), collection.Name, count.ToString(CultureInfo.InvariantCulture)));
+            TraceExceptionAsReturnValue(e);
+            return e;
+        }
         internal static IndexOutOfRangeException CollectionIndexString(Type itemType, string propertyName, string propertyValue, Type collection)
         {
             return IndexOutOfRange(SR.GetString(SR.ADP_CollectionIndexString, itemType.Name, propertyName, propertyValue, collection.Name));

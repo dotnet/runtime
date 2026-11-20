@@ -242,7 +242,14 @@ namespace System.Data.OleDb
         public override void RemoveAt(int index)
         {
             OnChange();
-            RangeCheck(index);
+
+            // IList.RemoveAt documents ArgumentOutOfRangeException for an index that is not valid. The indexer
+            // and the name-based members keep throwing IndexOutOfRangeException through RangeCheck.
+            if ((uint)index >= (uint)Count)
+            {
+                throw ADP.CollectionIndexInt32OutOfRange(nameof(index), index, GetType(), Count);
+            }
+
             RemoveIndex(index);
         }
 
