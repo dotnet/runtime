@@ -19,17 +19,39 @@ namespace Internal.IL.Stubs
         {
             Debug.Assert(((MetadataType)method.OwningType).Name == "RuntimeHelpers"u8);
 
+            if (!TryGetConstantValue(method, out bool result))
+                return null;
+
+            ILOpcode opcode = result ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0;
+
+            return new ILStubMethodIL(method, new byte[] { (byte)opcode, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), Array.Empty<object>());
+        }
+
+        /// <summary>
+        /// Evaluates the System.Runtime.CompilerServices.RuntimeHelpers intrinsics that expand to a constant
+        /// for a given instantiation. This is the single source of truth for the body <see cref="EmitIL"/> returns,
+        /// so callers that need to reason about the result at compile time agree with the code generated for the method.
+        /// </summary>
+        /// <remarks>
+        /// The result for a canonical instantiation must be the same as for every exact instantiation that shares it.
+        /// Code compiled for the canonical form is shared by all of them and callers rely on that.
+        /// Intrinsics that are not constant per instantiation cannot be added here, they need their own <see cref="EmitIL"/> case.
+        /// The method must not be instantiated over signature variables, callers that analyze uninstantiated IL need to filter those out.
+        /// </remarks>
+        public static bool TryGetConstantValue(MethodDesc method, out bool result)
+        {
+            result = false;
+
             // All the methods handled below are per-instantiation generic methods
             if (method.Instantiation.Length != 1 || method.IsTypicalMethodDefinition)
-                return null;
+                return false;
 
             TypeDesc elementType = method.Instantiation[0];
 
             // Fallback to non-intrinsic implementation for universal generics
             if (elementType.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                return null;
+                return false;
 
-            bool result;
             if (method.Name == "IsBitwiseEquatable"u8)
             {
                 // Ideally we could detect automatically whether a type is trivially equatable
@@ -80,12 +102,10 @@ namespace Internal.IL.Stubs
             }
             else
             {
-                return null;
+                return false;
             }
 
-            ILOpcode opcode = result ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0;
-
-            return new ILStubMethodIL(method, new byte[] { (byte)opcode, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), Array.Empty<object>());
+            return true;
         }
 
         private static bool IsKnownBitwiseEquatableType(MetadataType type)
