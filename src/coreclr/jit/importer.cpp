@@ -1302,6 +1302,25 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     return result;
 }
 
+//------------------------------------------------------------------------
+// impCallLookupToTree: Prepare a call lookup on demand and materialize it.
+// The lookup must refer to the selected slot in callInfo, not a copy.
+//
+GenTree* Compiler::impCallLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                       CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                                       CORINFO_CALL_INFO*      callInfo,
+                                       CORINFO_LOOKUP*         lookup,
+                                       GenTreeFlags            handleFlags,
+                                       void*                   compileTimeHandle)
+{
+    assert((lookup == &callInfo->instParamLookup) || (lookup == &callInfo->codePointerLookup));
+    if (lookup->lookupKind.needsRuntimeLookup && (lookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED))
+    {
+        info.compCompHnd->prepareCallLookups(pResolvedToken, pConstrainedResolvedToken, info.compMethodHnd, callInfo);
+    }
+    return impLookupToTree(lookup, handleFlags, compileTimeHandle);
+}
+
 GenTree* Compiler::impLookupToTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFlags, void* compileTimeHandle)
 {
     // A lookup deferred by getCallInfo carries CORINFO_LOOKUP_DEFERRED until prepareCallLookups
@@ -1482,12 +1501,8 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             break;
 
         case CORINFO_CALL_CODE_POINTER:
-            if (pCallInfo->codePointerLookup.lookupKind.needsRuntimeLookup &&
-                (pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED))
-            {
-                info.compCompHnd->prepareCallLookups(pResolvedToken, pConstrainedResolvedToken, info.compMethodHnd, pCallInfo);
-            }
-            op1 = impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
+            op1 = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, pCallInfo,
+                                      &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
             break;
 
         default:

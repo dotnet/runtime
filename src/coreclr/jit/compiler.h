@@ -5687,6 +5687,13 @@ public:
         return impTokenToHandle(pResolvedToken, pRuntimeLookup, true);
     }
 
+    GenTree* impCallLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                               CORINFO_CALL_INFO* callInfo,
+                               CORINFO_LOOKUP* lookup,
+                               GenTreeFlags handleFlags,
+                               void* compileTimeHandle);
+
     GenTree* impLookupToTree(CORINFO_LOOKUP*         pLookup,
                              GenTreeFlags            flags,
                              void*                   compileTimeHandle);
