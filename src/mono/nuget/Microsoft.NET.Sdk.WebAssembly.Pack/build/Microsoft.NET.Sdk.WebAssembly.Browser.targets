@@ -1003,8 +1003,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <StaticWebAssetEndpoint Include="@(_UpdatedWasmPreloadBuildAssetEndpoint)" />
     </ItemGroup>
   </Target>
-  <!-- A nested publish must not generate the publish boot config: it lacks the outer publish's assets but
-       shares its output and completion stamp, so the outer publish would then skip regenerating it. -->
   <Target Name="_AddWasmPreloadPublishProperties" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'">
 
     <FilterStaticWebAssetEndpoints
@@ -1032,6 +1030,18 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup Condition="!Exists('$(UserRuntimeConfig)')">
       <UserRuntimeConfig>$(MSBuildThisFileDirectory)browser.runtimeconfig.template.json</UserRuntimeConfig>
     </PropertyGroup>
+  </Target>
+
+  <!-- Static web assets are copied outside ResolvedFileToPublish. Include framework outputs in publish
+       cleanup so a later publish removes stale fingerprinted assets and their compressed variants. -->
+  <Target Name="_TrackWasmFrameworkPublishOutputs"
+          BeforeTargets="_GetCurrentAndPriorPublishFileWrites"
+          DependsOnTargets="CopyStaticWebAssetsToPublishDirectory;_SplitPublishStaticWebAssetsByCopyOptions">
+    <ItemGroup>
+      <_WasmFrameworkPublishAsset Include="@(_PublishStaticWebAssetsTargetPath)"
+        Condition="('%(CopyToPublishDirectory)' == 'Always' or '%(CopyToPublishDirectory)' == 'PreserveNewest' or '%(CopyToPublishDirectory)' == 'IfDifferent') and $([System.String]::Copy('%(RelativePath)').StartsWith('_framework/'))" />
+      <_CurrentPublishFileWritesUnfiltered Include="@(_WasmFrameworkPublishAsset->'$(PublishDir)%(TargetPath)')" />
+    </ItemGroup>
   </Target>
 
   <!-- Publish targets and output directory messages start here -->
@@ -1147,7 +1157,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmCompositePublishCandidate Update="@(_WasmCompositePublishCandidate)"
                                       ContentRoot="%(RootDir)%(Directory)"
                                       RelativePath="_framework/%(FileName)%(Extension)" />
-      <_WasmCompositeFingerprintPattern Include="WasmFiles" Pattern="*.wasm" Expression="#[.{fingerprint}]!" />
     </ItemGroup>
     <Error Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true' and '@(_WasmCompositePublishCandidate)' == ''"
            Text="Composite ReadyToRun compilation did not produce a composite WebAssembly image." />
@@ -1166,7 +1175,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopyToOutputDirectory="Never"
       CopyToPublishDirectory="PreserveNewest"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
-      FingerprintPatterns="@(_WasmCompositeFingerprintPattern)">
+      FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)">
       <Output TaskParameter="Assets" ItemName="_WasmCompositePublishStaticWebAsset" />
     </DefineStaticWebAssets>
 
@@ -1191,7 +1200,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopyToOutputDirectory="Never"
       CopyToPublishDirectory="PreserveNewest"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
-      FingerprintPatterns="@(_WasmCompositeFingerprintPattern)">
+      FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)">
       <Output TaskParameter="Assets" ItemName="_WasmCompositePublishStaticWebAsset" />
     </DefineStaticWebAssets>
 

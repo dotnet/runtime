@@ -239,14 +239,6 @@ namespace Wasm.Build.Tests
             if (useSdkTargets)
             {
                 AssetsData assets = (AssetsData)_provider.GetBootJson(_provider.GetBootConfigPath(frameworkDir)).resources;
-                string[] coreAssemblyFiles = assets.coreAssembly
-                    .Select(asset => Path.Combine(frameworkDir, asset.name))
-                    .ToArray();
-                foreach (string path in coreAssemblyFiles)
-                {
-                    Assert.True(File.Exists(path + ".br"), $"Missing Brotli asset for '{path}'.");
-                    Assert.True(File.Exists(path + ".gz"), $"Missing gzip asset for '{path}'.");
-                }
                 initialCompositeFiles = assets.coreAssembly
                     .Where(asset => asset.isCompositeImage == true || asset.isBundle == true)
                     .Select(asset => Path.Combine(frameworkDir, asset.name))

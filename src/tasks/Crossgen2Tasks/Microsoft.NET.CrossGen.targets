@@ -524,10 +524,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
+  <!-- Each _ReadyToRunCompileList item may carry AdditionalOutputs metadata: a semicolon-separated list of files the
+       compiler produces besides OutputR2RImage and OutputPDBImage. Targets that change which files the compiler emits
+       should update this metadata after _PrepareForReadyToRunCompilation. -->
   <UsingTask Condition="'$(Crossgen2TasksOverriden)' != 'true'" TaskName="RunReadyToRunCompiler" AssemblyFile="$(MicrosoftNETBuildTasksAssembly)" />
   <Target Name="_CreateR2RImages"
           Inputs="$(MSBuildAllProjects);@(CrossgenTool);@(Crossgen2Tool);@(_ReadyToRunCompilerInputs);@(_ReadyToRunCompileList);@(_ReadyToRunCompositeBuildInput);@(_ReadyToRunPgoFiles);$(_ReadyToRunCompilerArgumentsCacheFile)"
-          Outputs="%(_ReadyToRunCompileList.OutputR2RImage);%(_ReadyToRunCompileList.OutputPDBImage)">
+          Outputs="%(_ReadyToRunCompileList.OutputR2RImage);%(_ReadyToRunCompileList.OutputPDBImage);%(_ReadyToRunCompileList.AdditionalOutputs)">
 
     <RunReadyToRunCompiler CrossgenTool="@(CrossgenTool)"
                            Crossgen2Tool="@(Crossgen2Tool)"

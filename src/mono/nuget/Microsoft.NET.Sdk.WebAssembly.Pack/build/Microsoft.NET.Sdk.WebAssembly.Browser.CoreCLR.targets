@@ -125,19 +125,6 @@ Copyright (c) .NET Foundation. All rights reserved.
                                      AssemblyCandidates="@(ReferenceCopyLocalPaths);@(IntermediateAssembly)" />
   </Target>
 
-  <!-- Webcil/composite outputs are copied by static-web-assets targets, not ResolvedFileToPublish.
-       Track those existing publish assets so a later publish can remove stale fingerprints and
-       compressed variants. -->
-  <Target Name="_TrackWasmFrameworkPublishOutputs"
-          BeforeTargets="_GetCurrentAndPriorPublishFileWrites"
-          DependsOnTargets="CopyStaticWebAssetsToPublishDirectory;_SplitPublishStaticWebAssetsByCopyOptions">
-    <ItemGroup>
-      <_WasmFrameworkPublishAsset Include="@(_PublishStaticWebAssetsTargetPath)"
-        Condition="('%(CopyToPublishDirectory)' == 'Always' or '%(CopyToPublishDirectory)' == 'PreserveNewest' or '%(CopyToPublishDirectory)' == 'IfDifferent') and $([System.String]::Copy('%(RelativePath)').StartsWith('_framework/'))" />
-      <_CurrentPublishFileWritesUnfiltered Include="@(_WasmFrameworkPublishAsset->'$(PublishDir)%(TargetPath)')" />
-    </ItemGroup>
-  </Target>
-
   <!-- PublishTrimmed selects the staged closure (untrimmed pack vs linker output) exactly like
        PublishReadyToRun selects its flavour, so it belongs in the webcil staging stamp too. -->
   <ItemGroup>
@@ -334,10 +321,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmReadyToRunStateChanged Condition="'$(_WasmPreviousReadyToRunStateHash)' != '$(_WasmReadyToRunStateHash)'">true</_WasmReadyToRunStateChanged>
     </PropertyGroup>
+    <ItemGroup>
+      <_ReadyToRunCompileList Update="@(_ReadyToRunCompileList)"
+                                Condition="'$(_WasmCompositeBundlePath)' != '' and '%(CreateCompositeImage)' == 'true'"
+                                AdditionalOutputs="$(_WasmCompositeBundlePath)" />
+    </ItemGroup>
     <!-- Output timestamps can be newer than a newly written state file. Delete every batch output on a
          state change so _CreateR2RImages cannot retain a mixture of full and partial images. -->
     <Delete Condition="'$(_WasmReadyToRunStateChanged)' == 'true'"
-            Files="@(_ReadyToRunCompileList->'%(OutputR2RImage)');@(_ReadyToRunCompileList->'%(OutputPDBImage)')" />
+              Files="@(_ReadyToRunCompileList->'%(OutputR2RImage)');@(_ReadyToRunCompileList->'%(OutputPDBImage)');@(_ReadyToRunCompileList->'%(AdditionalOutputs)')" />
     <WriteLinesToFile File="$(_WasmReadyToRunStateFile)"
                       Lines="$(_WasmReadyToRunStateHash)"
                       Overwrite="true"
