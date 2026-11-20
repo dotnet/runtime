@@ -12,8 +12,7 @@ function wasm_common() {
     wasm-multithreaded)
         # Put your common commands for wasm-multithread here
         # Multithreading is not supported on CoreCLR yet
-        echo "WASM multithreading is not supported on CoreCLR yet." >&2
-        return 1
+        echo "Warning: WASM multithreading is not supported on CoreCLR yet, skipping prebuild." >&2
         ;;
     *)
         # install dotnet-serve for running wasm samples
