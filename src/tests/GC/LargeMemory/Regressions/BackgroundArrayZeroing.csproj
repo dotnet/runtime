@@ -4,7 +4,7 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <IsLongRunningGCTest>true</IsLongRunningGCTest>
     <CLRTestPriority>1</CLRTestPriority>
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'wasm' or '$(TargetArchitecture)' == 'wasm64'">true</CLRTestTargetUnsupported>
     <CLRTestBatchPreCommands><![CDATA[
       $(CLRTestBatchPreCommands)
       set DOTNET_gcConcurrent=1
