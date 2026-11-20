@@ -1,9 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileName).cs" />
-    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
   </ItemGroup>
 </Project>

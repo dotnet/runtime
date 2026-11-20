@@ -689,6 +689,7 @@ namespace ILCompiler
                     if (current.ConvertToCanonForm(CanonicalFormKind.Specific) == canonicalOwner)
                         return current;
                 }
+                Debug.Fail("Not a base?");
                 return null;
             }
 
@@ -703,6 +704,7 @@ namespace ILCompiler
 
                 result = iface;
             }
+            Debug.Assert(result != null, "Not an implemented interface?");
             return result;
         }
 
