@@ -1781,6 +1781,18 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void GetInterfacesWithSameMetadataDefinitionAs_NonRuntimeInterfaceType()
+        {
+            // An interface type from another Type implementation never matches the interfaces of a runtime type.
+            Assert.Empty(typeof(List<int>).GetInterfacesWithSameMetadataDefinitionAs(new TypeDelegator(typeof(IEnumerable<>))));
+            Assert.Empty(typeof(TI_ClassWithGenericInterfaces).GetInterfacesWithSameMetadataDefinitionAs(new TypeDelegator(typeof(TI_NonGenericInterface1))));
+
+            // It's still validated.
+            AssertExtensions.Throws<ArgumentException>("interfaceType", () => typeof(List<int>).GetInterfacesWithSameMetadataDefinitionAs(new TypeDelegator(typeof(string))));
+            AssertExtensions.Throws<ArgumentException>("interfaceType", () => typeof(List<int>).GetInterfacesWithSameMetadataDefinitionAs(new TypeDelegator(typeof(IList<int>))));
+        }
+
+        [Fact]
         public void GetInterfacesWithSameMetadataDefinitionAs_GenericTypeDefinition()
         {
             Type[] actual = typeof(List<>).GetInterfacesWithSameMetadataDefinitionAs(typeof(IList<>));

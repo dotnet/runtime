@@ -2629,21 +2629,17 @@ namespace System
 
         public override Type[] GetInterfacesWithSameMetadataDefinitionAs(Type interfaceType)
         {
-            if (interfaceType is not RuntimeType runtimeInterfaceType)
-            {
-                return base.GetInterfacesWithSameMetadataDefinitionAs(interfaceType);
-            }
-
-            if (!runtimeInterfaceType.IsInterface || runtimeInterfaceType.IsConstructedGenericType)
+            ArgumentNullException.ThrowIfNull(interfaceType);
+            if (!interfaceType.IsInterface || interfaceType.IsConstructedGenericType)
             {
                 throw new ArgumentException(SR.Arg_MustBeInterfaceOrGenericInterfaceDefinition, nameof(interfaceType));
             }
 
-            // Filter the cached interface list directly instead of copying it via GetInterfaces. Both sides are
+            // Filter the cached interface list directly instead of copying it via GetInterfaces. The candidates are
             // runtime types, so comparing generic type definitions by reference is equivalent to
-            // HasSameMetadataDefinitionAs and cheaper.
+            // HasSameMetadataDefinitionAs and cheaper, and an interfaceType that isn't a RuntimeType never matches.
             RuntimeType[] candidates = Cache.GetInterfaceList(MemberListType.All, null);
-            bool isGenericTypeDefinition = runtimeInterfaceType.IsGenericTypeDefinition;
+            bool isGenericTypeDefinition = interfaceType.IsGenericTypeDefinition;
 
             // Usually a single interface matches, which ListBuilder handles without allocating backing storage.
             // Don't size it for every candidate: that would over-allocate when several interfaces match.
@@ -2651,8 +2647,8 @@ namespace System
             foreach (RuntimeType candidate in candidates)
             {
                 if (isGenericTypeDefinition
-                    ? candidate.IsGenericType && ReferenceEquals(candidate.GetGenericTypeDefinition(), runtimeInterfaceType)
-                    : ReferenceEquals(candidate, runtimeInterfaceType))
+                    ? candidate.IsGenericType && ReferenceEquals(candidate.GetGenericTypeDefinition(), interfaceType)
+                    : ReferenceEquals(candidate, interfaceType))
                 {
                     matches.Add(candidate);
                 }
