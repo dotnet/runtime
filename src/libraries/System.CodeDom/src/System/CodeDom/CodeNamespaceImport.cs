@@ -1,21 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.CodeDom
 {
     public class CodeNamespaceImport : CodeObject
     {
-        private string _nameSpace;
+        private string? _nameSpace;
 
         public CodeNamespaceImport() { }
 
-        public CodeNamespaceImport(string nameSpace)
+        public CodeNamespaceImport(string? nameSpace)
         {
             Namespace = nameSpace;
         }
 
-        public CodeLinePragma LinePragma { get; set; }
+        public CodeLinePragma? LinePragma { get; set; }
 
+        [AllowNull]
         public string Namespace
         {
             get => _nameSpace ?? string.Empty;

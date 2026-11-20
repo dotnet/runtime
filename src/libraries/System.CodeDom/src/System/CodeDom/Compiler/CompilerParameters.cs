@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.CodeDom.Compiler
 {
@@ -11,17 +12,17 @@ namespace System.CodeDom.Compiler
         {
         }
 
-        public CompilerParameters(string[] assemblyNames) :
+        public CompilerParameters(string[]? assemblyNames) :
             this(assemblyNames, null, false)
         {
         }
 
-        public CompilerParameters(string[] assemblyNames, string outputName) :
+        public CompilerParameters(string[]? assemblyNames, string? outputName) :
             this(assemblyNames, outputName, false)
         {
         }
 
-        public CompilerParameters(string[] assemblyNames, string outputName, bool includeDebugInformation)
+        public CompilerParameters(string[]? assemblyNames, string? outputName, bool includeDebugInformation)
         {
             if (assemblyNames != null)
             {
@@ -52,10 +53,11 @@ namespace System.CodeDom.Compiler
         public bool GenerateInMemory { get; set; }
 
         public StringCollection ReferencedAssemblies { get; } = new StringCollection();
-        public string MainClass { get; set; }
+        public string? MainClass { get; set; }
 
-        public string OutputAssembly { get; set; }
+        public string? OutputAssembly { get; set; }
 
+        [AllowNull]
         public TempFileCollection TempFiles
         {
             get => field ??= new TempFileCollection();
@@ -68,9 +70,9 @@ namespace System.CodeDom.Compiler
 
         public int WarningLevel { get; set; } = -1; // use compiler default
 
-        public string CompilerOptions { get; set; }
+        public string? CompilerOptions { get; set; }
 
-        public string Win32Resource { get; set; }
+        public string? Win32Resource { get; set; }
 
         public StringCollection EmbeddedResources { get; } = new StringCollection();
 

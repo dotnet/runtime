@@ -21,7 +21,7 @@ namespace System.CodeDom.Compiler
 
         public CompilerError this[int index]
         {
-            get => (CompilerError)List[index];
+            get => (CompilerError)List[index]!;
             set => List[index] = value;
         }
 

@@ -21,7 +21,7 @@ namespace System.CodeDom
 
         public CodeParameterDeclarationExpression this[int index]
         {
-            get => (CodeParameterDeclarationExpression)List[index];
+            get => (CodeParameterDeclarationExpression)List[index]!;
             set => List[index] = value;
         }
 

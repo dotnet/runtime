@@ -15,12 +15,12 @@ namespace System.CodeDom
         private const int BaseTypesCollection = 0x1;
         private const int MembersCollection = 0x2;
 
-        public event EventHandler PopulateBaseTypes;
-        public event EventHandler PopulateMembers;
+        public event EventHandler? PopulateBaseTypes;
+        public event EventHandler? PopulateMembers;
 
         public CodeTypeDeclaration() { }
 
-        public CodeTypeDeclaration(string name)
+        public CodeTypeDeclaration(string? name)
         {
             Name = name;
         }
@@ -48,8 +48,7 @@ namespace System.CodeDom
             {
                 if (value)
                 {
-                    TypeAttributes &= ~TypeAttributes.ClassSemanticsMask;
-                    TypeAttributes |= TypeAttributes.Class;
+                    TypeAttributes = (TypeAttributes & ~TypeAttributes.ClassSemanticsMask) | TypeAttributes.Class;
                     _isStruct = false;
                     _isEnum = false;
                 }
@@ -63,11 +62,14 @@ namespace System.CodeDom
             {
                 if (value)
                 {
-                    TypeAttributes &= ~TypeAttributes.ClassSemanticsMask;
+                    TypeAttributes = (TypeAttributes & ~TypeAttributes.ClassSemanticsMask) | TypeAttributes.Class;
+                    _isStruct = true;
                     _isEnum = false;
                 }
-
-                _isStruct = value;
+                else
+                {
+                    _isStruct = false;
+                }
             }
         }
 
@@ -78,11 +80,14 @@ namespace System.CodeDom
             {
                 if (value)
                 {
-                    TypeAttributes &= ~TypeAttributes.ClassSemanticsMask;
+                    TypeAttributes = (TypeAttributes & ~TypeAttributes.ClassSemanticsMask) | TypeAttributes.Class;
                     _isStruct = false;
+                    _isEnum = true;
                 }
-
-                _isEnum = value;
+                else
+                {
+                    _isEnum = false;
+                }
             }
         }
 
@@ -93,14 +98,13 @@ namespace System.CodeDom
             {
                 if (value)
                 {
-                    TypeAttributes &= ~TypeAttributes.ClassSemanticsMask;
-                    TypeAttributes |= TypeAttributes.Interface;
+                    TypeAttributes = (TypeAttributes & ~TypeAttributes.ClassSemanticsMask) | TypeAttributes.Interface;
                     _isStruct = false;
                     _isEnum = false;
                 }
                 else
                 {
-                    TypeAttributes &= ~TypeAttributes.Interface;
+                    TypeAttributes = (TypeAttributes & ~TypeAttributes.ClassSemanticsMask) | TypeAttributes.Class;
                 }
             }
         }

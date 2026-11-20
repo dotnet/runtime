@@ -1,23 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.CodeDom
 {
     public class CodeMemberMethod : CodeTypeMember
     {
         private readonly CodeParameterDeclarationExpressionCollection _parameters = new CodeParameterDeclarationExpressionCollection();
         private readonly CodeStatementCollection _statements = new CodeStatementCollection();
-        private CodeTypeReferenceCollection _implementationTypes;
+        private CodeTypeReferenceCollection? _implementationTypes;
 
         private int _populated;
         private const int ParametersCollection = 0x1;
         private const int StatementsCollection = 0x2;
         private const int ImplTypesCollection = 0x4;
 
-        public event EventHandler PopulateParameters;
-        public event EventHandler PopulateStatements;
-        public event EventHandler PopulateImplementationTypes;
+        public event EventHandler? PopulateParameters;
+        public event EventHandler? PopulateStatements;
+        public event EventHandler? PopulateImplementationTypes;
 
+        [AllowNull]
         public CodeTypeReference ReturnType
         {
             get => field ??= new CodeTypeReference(typeof(void).FullName);
@@ -52,7 +55,7 @@ namespace System.CodeDom
             }
         }
 
-        public CodeTypeReference PrivateImplementationType { get; set; }
+        public CodeTypeReference? PrivateImplementationType { get; set; }
 
         public CodeTypeReferenceCollection ImplementationTypes
         {

@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.CodeDom
 {
     public class CodeNamespace : CodeObject
     {
-        private string _name;
+        private string? _name;
         private readonly CodeNamespaceImportCollection _imports = new CodeNamespaceImportCollection();
         private readonly CodeCommentStatementCollection _comments = new CodeCommentStatementCollection();
         private readonly CodeTypeDeclarationCollection _classes = new CodeTypeDeclarationCollection();
@@ -16,13 +17,13 @@ namespace System.CodeDom
         private const int CommentsCollection = 0x2;
         private const int TypesCollection = 0x4;
 
-        public event EventHandler PopulateComments;
-        public event EventHandler PopulateImports;
-        public event EventHandler PopulateTypes;
+        public event EventHandler? PopulateComments;
+        public event EventHandler? PopulateImports;
+        public event EventHandler? PopulateTypes;
 
         public CodeNamespace() { }
 
-        public CodeNamespace(string name)
+        public CodeNamespace(string? name)
         {
             Name = name;
         }
@@ -55,12 +56,6 @@ namespace System.CodeDom
             }
         }
 
-        public string Name
-        {
-            get => _name ?? string.Empty;
-            set => _name = value;
-        }
-
         public CodeCommentStatementCollection Comments
         {
             get
@@ -73,6 +68,13 @@ namespace System.CodeDom
 
                 return _comments;
             }
+        }
+
+        [AllowNull]
+        public string Name
+        {
+            get => _name ?? string.Empty;
+            set => _name = value;
         }
     }
 }
