@@ -249,7 +249,8 @@ namespace System.Threading.Tasks
                 if (!exceptionSeen) cancellationToken.ThrowIfCancellationRequested();
 
                 // Now gather up and throw all of the exceptions.
-                foreach (Task task in tasks) AddExceptionsForCompletedTask(ref exceptions, task);
+                TaskCanceledException? sharedCanceledException = null;
+                foreach (Task task in tasks) AddExceptionsForCompletedTask(ref exceptions, task, ref sharedCanceledException);
                 Debug.Assert(exceptions != null, "Should have seen at least one exception");
                 ThrowHelper.ThrowAggregateException(exceptions);
             }

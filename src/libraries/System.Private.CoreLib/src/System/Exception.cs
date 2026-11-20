@@ -233,11 +233,17 @@ namespace System
         }
 
         [StackTraceHidden]
-        internal void SetCurrentStackTrace()
+        internal void SetCurrentStackTrace(Exception? source = null)
         {
             if (!CanSetRemoteStackTrace())
             {
                 return; // early-exit
+            }
+
+            if (source?._remoteStackTraceString is string existingTrace)
+            {
+                _remoteStackTraceString = existingTrace;
+                return;
             }
 
             // Store the current stack trace into the "remote" stack trace, which was originally introduced to support
