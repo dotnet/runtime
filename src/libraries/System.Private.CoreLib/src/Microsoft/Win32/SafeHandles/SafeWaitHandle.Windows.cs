@@ -12,7 +12,10 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            _reusableWaitCompletionPacket?.Dispose();
+            if (!ThreadPool.UseWindowsThreadPool)
+            {
+                _reusableWaitCompletionPacket?.Dispose();
+            }
             return Interop.Kernel32.CloseHandle(handle);
         }
 
