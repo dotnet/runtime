@@ -174,7 +174,9 @@ The following rules only apply to code that is considered "reachable" from the e
 
 ### Type Map Assembly Target probing
 
-The process of building type maps starts at the entry-point method of the app (the `Main` method). The initial entries for the type maps are collected from the assembly containing the entry-point for the app. From that assembly, any assembly names that are mentioned in a `TypeMapAssemblyTargetAttribute` are scanned. This process then repeats for those assemblies until all assemblies transitively referenced by `TypeMapAssemblyTargetAttribute`s have been scanned.
+For a group `G` requested by a reachable call to `TypeMapping.GetOrCreateExternalTypeMapping<G>()` or `TypeMapping.GetOrCreateProxyTypeMapping<G>()`, type-map discovery has two roots: the assembly containing the entry point of the app (or the configured type-map entry assembly), and the assembly defining `G`. The entry assembly does not need to declare any type-map attributes. A library can define both its group and its mappings without an application-side `TypeMapAssemblyTargetAttribute<G>`.
+
+From both roots, discovery collects mappings for `G` and follows `TypeMapAssemblyTargetAttribute<G>` attributes transitively. Each assembly is processed only once for the requested group, including when the two graphs overlap or contain cycles. Discovery from the defining assembly is triggered by use of the group; it does not discover other groups or follow arbitrary assembly references. The existing conditional trimming rules still apply to entries from either root.
 
 An assembly name mentioned in the `TypeMapAssemblyTargetAttribute` does not need to map to an `AssemblyRef` row in the module's metadata. As long as a given name can be resolved by the runtime or by whatever trimming tool is run on the application, it can be used.
 

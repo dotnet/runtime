@@ -350,8 +350,6 @@ namespace ILCompiler
             MethodDesc IProxyTypeMap.ThrowingMethodStub => _associatedTypeMapExceptionStub;
         }
 
-        public static readonly TypeMapMetadata Empty = new TypeMapMetadata(new Dictionary<TypeDesc, Map>(), "No type maps", null);
-
         private readonly IReadOnlyDictionary<TypeDesc, Map> _states;
 
         private TypeMapMetadata(IReadOnlyDictionary<TypeDesc, Map> states, string diagnosticName, ModuleDesc associatedModule)
@@ -370,6 +368,15 @@ namespace ILCompiler
         public ModuleDesc AssociatedModule { get; }
 
         public static TypeMapMetadata CreateFromAssembly(EcmaAssembly assembly, ModuleDesc throwHelperEmitModule, TypeMapAssemblyTargetsMode assemblyTargetsMode)
+            => CreateFromAssembly(assembly, throwHelperEmitModule, assemblyTargetsMode, null);
+
+        internal static Map CreateForGroup(EcmaAssembly entryAssembly, ModuleDesc throwHelperEmitModule, TypeDesc typeMapGroup)
+        {
+            TypeMapMetadata metadata = CreateFromAssembly(entryAssembly, throwHelperEmitModule, TypeMapAssemblyTargetsMode.Traverse, typeMapGroup);
+            return metadata._states.TryGetValue(typeMapGroup, out Map map) ? map : new Map(typeMapGroup);
+        }
+
+        private static TypeMapMetadata CreateFromAssembly(EcmaAssembly assembly, ModuleDesc throwHelperEmitModule, TypeMapAssemblyTargetsMode assemblyTargetsMode, TypeDesc requestedGroup)
         {
             Dictionary<TypeDesc, Map> typeMapStates = [];
             // The pendingMaps collection represents assemblies that have been scanned, but the provided assembly
@@ -379,7 +386,24 @@ namespace ILCompiler
             HashSet<(EcmaAssembly assembly, TypeDesc typeMapGroup)> scannedAssemblies = [];
 
             Queue<(EcmaAssembly assembly, TypeDesc typeMapGroup)> assembliesToScan = [];
-            assembliesToScan.Enqueue((assembly, null));
+            if (assembly is not null)
+            {
+                assembliesToScan.Enqueue((assembly, requestedGroup));
+            }
+
+            if (requestedGroup is not null)
+            {
+                TypeDesc definingType = requestedGroup;
+                while (definingType.IsParameterizedType)
+                {
+                    definingType = definingType.GetParameterType();
+                }
+
+                if (definingType.GetTypeDefinition() is MetadataType { Module.Assembly: EcmaAssembly definingAssembly })
+                {
+                    assembliesToScan.Enqueue((definingAssembly, requestedGroup));
+                }
+            }
 
             while (assembliesToScan.Count > 0)
             {
@@ -443,6 +467,11 @@ namespace ILCompiler
                     }
 
                     TypeDesc typeMapGroup = type.Instantiation[0];
+
+                    if (requestedGroup is not null && typeMapGroup != requestedGroup)
+                    {
+                        continue;
+                    }
 
                     Map typeMapState;
 
@@ -544,7 +573,7 @@ namespace ILCompiler
                         return;
                     }
 
-                    EcmaAssembly targetAssembly = (EcmaAssembly)assembly.Context.ResolveAssembly(AssemblyNameInfo.Parse(assemblyName), throwIfNotFound: true);
+                    EcmaAssembly targetAssembly = (EcmaAssembly)currentAssembly.Context.ResolveAssembly(AssemblyNameInfo.Parse(assemblyName), throwIfNotFound: true);
                     typeMapState.AddTargetModule(targetAssembly);
 
                     if (assemblyTargetsMode == TypeMapAssemblyTargetsMode.Traverse

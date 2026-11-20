@@ -13,6 +13,9 @@ using Xunit;
 using DupType_MapObject = Original.Lib.AliasedName;
 using DupType_MapString = Lib.AliasedName;
 
+[assembly: TypeMap<DefinedInLibrary>("entry", typeof(int))]
+[assembly: TypeMapAssemblyTarget<DefinedInLibrary>("TypeMapLib3")]
+
 [assembly: TypeMapAssemblyTarget<MultipleTypeMapAssemblies>("TypeMapLib3")]
 [assembly: TypeMapAssemblyTarget<MultipleTypeMapAssemblies>("TypeMapLib4")]
 
@@ -68,6 +71,7 @@ using DupType_MapString = Lib.AliasedName;
 [assembly: TypeMap<DuplicateTypeNameKey>("1", typeof(object))]
 
 [assembly: TypeMap<DuplicateTypeMapEntriesAcrossAssemblies>("1", typeof(object))]
+[assembly: TypeMap<DefinedDuplicateGroup>("duplicate", typeof(string))]
 
 
 [assembly: TypeMapAssociation<DuplicateTypeNameKey>(typeof(DupType_MapObject), typeof(object))]
@@ -83,6 +87,16 @@ namespace Lib
 
 public class TypeMap
 {
+    [Fact]
+    public static void Validate_DefiningAssemblyUnion()
+    {
+        IReadOnlyDictionary<string, Type> map = TypeMapping.GetOrCreateExternalTypeMapping<DefinedInLibrary>();
+        Assert.Equal(typeof(int), map["entry"]);
+        Assert.Equal(typeof(string), map["local"]);
+        Assert.Equal(typeof(object), map["second"]);
+        Assert.Equal(typeof(object), map["third"]);
+    }
+
     [Fact]
     public static void Validate_ExternalTypeMapping()
     {
@@ -192,6 +206,7 @@ public class TypeMap
         AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<DuplicateTypeNameKey>());
 
         AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<DuplicateTypeMapEntriesAcrossAssemblies>());
+        AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<DefinedDuplicateGroup>());
     }
 
     [Fact]

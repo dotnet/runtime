@@ -64,15 +64,15 @@ namespace Mono.Linker
             _pendingAssemblyTargetsByAssembly = [];
             _referencedExternalTypeMaps = new(typeReferenceEqualityComparer);
             _referencedProxyTypeMaps = new(typeReferenceEqualityComparer);
-            var typeMapResolver = new TypeMapResolver(entryPointAssembly);
-            typeMapResolver.Resolve(context, this);
-            _lazyTypeMapResolver = typeMapResolver;
+            _lazyTypeMapResolver = new TypeMapResolver(entryPointAssembly, typeReferenceEqualityComparer);
+            _lazyTypeMapResolver.Resolve(context, this);
         }
 
         public void ProcessExternalTypeMapGroupSeen(MethodDefinition callingMethod, TypeReference typeMapGroup)
         {
             EnsureInitialized();
             _referencedExternalTypeMaps.Add(typeMapGroup);
+            _lazyTypeMapResolver.ResolveGroup(_context, this, typeMapGroup);
             if (_pendingExternalTypeMapEntries.Remove(typeMapGroup, out List<CustomAttributeWithOrigin>? pendingEntries))
             {
                 foreach (var entry in pendingEntries)
@@ -93,6 +93,7 @@ namespace Mono.Linker
         {
             EnsureInitialized();
             _referencedProxyTypeMaps.Add(typeMapGroup);
+            _lazyTypeMapResolver.ResolveGroup(_context, this, typeMapGroup);
             if (_pendingProxyTypeMapEntries.Remove(typeMapGroup, out List<CustomAttributeWithOrigin>? pendingEntries))
             {
                 foreach (var entry in pendingEntries)
@@ -309,18 +310,35 @@ namespace Mono.Linker
             return type is { Namespace: "System.Runtime.InteropServices", Name: "TypeMapAttribute`1" or "TypeMapAssociationAttribute`1" or "TypeMapAssemblyTargetAttribute`1" };
         }
 
-        class TypeMapResolver(AssemblyDefinition? _assembly)
+        class TypeMapResolver(AssemblyDefinition? _assembly, IEqualityComparer<TypeReference> comparer)
         {
+            readonly HashSet<AssemblyDefinition> _seenAssemblies = [];
+            readonly Dictionary<TypeReference, HashSet<AssemblyDefinition>> _seenGroups = new(comparer);
+
             public void Resolve(LinkContext context, TypeMapHandler manager)
+                => Resolve(context, manager, _assembly, null, _seenAssemblies);
+
+            public void ResolveGroup(LinkContext context, TypeMapHandler manager, TypeReference group)
             {
-                if (_assembly is null)
+                if (!_seenGroups.TryAdd(group, []))
                     return;
-                HashSet<AssemblyDefinition> seen = new();
+
+                AssemblyDefinition? assembly = context.Resolve(UnwrapToResolvableType(group))?.Module.Assembly;
+                Resolve(context, manager, assembly, group, _seenGroups[group]);
+            }
+
+            void Resolve(LinkContext context, TypeMapHandler manager, AssemblyDefinition? root, TypeReference? requestedGroup, HashSet<AssemblyDefinition> seen)
+            {
+                if (root is null)
+                    return;
                 Queue<AssemblyDefinition> toVisit = new();
-                toVisit.Enqueue(_assembly);
+                toVisit.Enqueue(root);
                 while (toVisit.Count > 0)
                 {
                     var assembly = toVisit.Dequeue();
+                    if ((requestedGroup is not null && _seenAssemblies.Contains(assembly)) || !seen.Add(assembly))
+                        continue;
+
                     foreach (CustomAttribute attr in assembly.CustomAttributes)
                     {
                         if (attr.AttributeType is not GenericInstanceType
@@ -331,6 +349,9 @@ namespace Mono.Linker
                         {
                             continue; // Only interested in System.Runtime.InteropServices attributes
                         }
+
+                        if (requestedGroup is not null && !comparer.Equals(requestedGroup, typeMapGroup))
+                            continue;
 
                         if (attr.AttributeType.Name is "TypeMapAttribute`1")
                         {
@@ -349,7 +370,7 @@ namespace Mono.Linker
                                 if (nextAssemblyName is not null && context.TryResolve(nextAssemblyName) is AssemblyDefinition nextAssembly)
                                 {
                                     resolvedTargetAssembly = nextAssembly;
-                                    if (seen.Add(nextAssembly))
+                                    if (!seen.Contains(nextAssembly))
                                     {
                                         toVisit.Enqueue(nextAssembly);
                                     }

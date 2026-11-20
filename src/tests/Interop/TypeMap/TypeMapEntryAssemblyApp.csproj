@@ -4,6 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <TypeMapEntryAssembly>TypeMapLib5</TypeMapEntryAssembly>
+    <DefineConstants>$(DefineConstants);TYPEMAP_ENTRY_ASSEMBLY_OVERRIDE</DefineConstants>
     <MonoAotIncompatible>true</MonoAotIncompatible>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
     <IlcGenerateMstatFile>true</IlcGenerateMstatFile>
@@ -23,5 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="TypeMapLib5.csproj" />
     <ProjectReference Include="TypeMapLib1.csproj" />
+    <ProjectReference Include="TypeMapLib3.csproj" />
+    <ProjectReference Include="TypeMapLib4.csproj" />
   </ItemGroup>
 </Project>
