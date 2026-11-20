@@ -260,6 +260,13 @@ build_native()
     fi
 
     local exit_code
+    local emscripten_env=()
+    if [[ "$hostArch" == "wasm64" && "$targetOS" == "browser" ]]; then
+        # The Emscripten SDK package only prebuilds the wasm32 system libraries in its frozen cache.
+        # Build the wasm64 ones on demand in a separate cache: unfreezing the shared cache would
+        # clear it, because its sanity stamp comes from the machine that packaged it.
+        emscripten_env=(env EM_FROZEN_CACHE= EM_CACHE="$__RepoRootDir/artifacts/obj/emscripten-cache-wasm64")
+    fi
     if [[ "$__StaticAnalyzer" == 1 ]]; then
         pushd "$intermediatesDir"
 
@@ -282,7 +289,7 @@ build_native()
             pushd "$intermediatesDir"
 
             echo "Executing $buildTool -j $__NumProc $target"
-            "$buildTool" -j "$__NumProc" $target
+            "${emscripten_env[@]}" "$buildTool" -j "$__NumProc" $target
             exit_code="$?"
 
             popd
