@@ -91,7 +91,8 @@ public record X86GCInfo : IGCInfoDecoder
     private ImmutableArray<int> SortedTransitionOffsets => _sortedTransitionOffsets.Value;
     private readonly Lazy<ImmutableArray<int>> _sortedTransitionOffsets;
 
-    private ImmutableArray<NoGCRegion> NoGCRegions => _noGCRegions.Value;
+    // Internal (rather than private) so ILCompiler.Reflection.ReadyToRun can display the table.
+    internal ImmutableArray<NoGCRegion> NoGCRegions => _noGCRegions.Value;
     private readonly Lazy<ImmutableArray<NoGCRegion>> _noGCRegions;
 
     internal readonly record struct NoGCRegion(uint Offset, uint Size);

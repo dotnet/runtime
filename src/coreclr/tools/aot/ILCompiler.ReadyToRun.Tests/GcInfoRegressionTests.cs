@@ -7,7 +7,9 @@ using System.IO;
 using System.Reflection.PortableExecutable;
 using ILCompiler.Reflection.ReadyToRun;
 using ILCompiler.Reflection.ReadyToRun.Amd64;
+using ILCompiler.Reflection.ReadyToRun.Cdac;
 using Xunit;
+using X86TransitionPointer = Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers.X86.GcTransitionPointer;
 
 namespace ILCompiler.ReadyToRun.Tests;
 
@@ -179,6 +181,189 @@ public class GcInfoRegressionTests
         Assert.Equal(writer.ByteCount, info.Size);
     }
 
+    [Fact]
+    public void CdacReversePInvokeFrameSlotIsDenormalized()
+    {
+        BitWriter writer = new();
+        WriteFatHeader(writer, Machine.Amd64, 0x200);
+        writer.WriteSigned(-7, 6);
+        writer.WriteUnsigned(0, 3);
+        writer.WriteUnsigned(0, 2);
+        writer.WriteUnsigned(0, 1);
+        writer.Write(0, 2);
+
+        CdacGcInfo info = Assert.IsType<CdacGcInfo>(DecodeCdac(writer, Machine.Amd64));
+        Assert.Equal(-56, info.ReversePInvokeFrameStackSlot);
+        Assert.Contains("ReversePInvokeFrameStackSlot: -56", info.ToString());
+        Assert.Equal(writer.ByteCount, info.Size);
+    }
+
+    [Fact]
+    public void CdacTransitionsAtAdjacentRangeStartUseFirstRange()
+    {
+        BitWriter writer = new();
+        WriteFatHeader(writer, Machine.Amd64, 0, codeLength: 64);
+        writer.WriteUnsigned(0, 3);
+        writer.WriteUnsigned(0, 2);
+        writer.WriteUnsigned(2, 1);
+        writer.WriteUnsigned(8, 6); // [8, 16)
+        writer.WriteUnsigned(7, 6);
+        writer.WriteUnsigned(0, 6); // [16, 24)
+        writer.WriteUnsigned(7, 6);
+        writer.Write(1, 1);
+        writer.WriteUnsigned(1, 2);
+        writer.Write(0, 1);
+        writer.WriteUnsigned(0, 3); // RAX
+        writer.Write(0, 2);
+        writer.WriteUnsigned(1, 3);
+        writer.Write(1, 1);
+        writer.Align();
+        writer.Write(0, 1);
+        writer.Write(1, 1);
+        writer.Write(0, 1); // Final state is dead.
+        writer.Write(1, 1);
+        writer.Write(8, 6);
+        writer.Write(0, 1);
+
+        BaseGcInfo info = DecodeCdac(writer, Machine.Amd64);
+        Assert.Equal(new[] { 8, 16 }, info.Transitions.Keys);
+        Assert.Equal("RAX is live", Assert.Single(info.Transitions[8]).ToString());
+        Assert.Equal("RAX is dead", Assert.Single(info.Transitions[16]).ToString());
+        Assert.Equal(writer.ByteCount, info.Size);
+    }
+
+    [Fact]
+    public void CdacStackSlotsNameTheirBase()
+    {
+        BitWriter writer = new();
+        WriteFatHeader(writer, Machine.Amd64, 0x40);
+        writer.WriteUnsigned(0, 3); // RBP
+        writer.WriteUnsigned(0, 3);
+        writer.WriteUnsigned(0, 2);
+        writer.WriteUnsigned(1, 1);
+        writer.WriteUnsigned(0, 6); // [0, 8)
+        writer.WriteUnsigned(7, 6);
+        writer.Write(0, 1);
+        writer.Write(1, 1);
+        writer.WriteUnsigned(3, 2);
+        writer.WriteUnsigned(0, 1);
+        writer.Write(0, 2); // caller.sp+8
+        writer.WriteSigned(1, 6);
+        writer.Write(0, 2);
+        writer.Write(1, 2); // sp+16
+        writer.WriteUnsigned(1, 4);
+        writer.Write(2, 2); // rbp+24
+        writer.WriteUnsigned(1, 4);
+        writer.WriteUnsigned(1, 3);
+        writer.Write(1, 1);
+        writer.Align();
+        writer.Write(0, 1);
+        writer.Write(7, 3);
+        writer.Write(7, 3);
+        writer.Write(0, 3);
+
+        CdacGcInfo info = Assert.IsType<CdacGcInfo>(DecodeCdac(writer, Machine.Amd64));
+        Assert.Equal(new[] { "caller.sp+8", "sp+16", "rbp+24" }, info.Slots.ConvertAll(s => s.Location));
+        Assert.Equal(new[] { "caller.sp+8 is live", "sp+16 is live", "rbp+24 is live" },
+            Assert.Single(info.Transitions).Value.ConvertAll(t => t.ToString()));
+        Assert.Equal(writer.ByteCount, info.Size);
+    }
+
+    [Fact]
+    public void CdacStackSlotDeltaIsUnsigned()
+    {
+        BitWriter writer = new();
+        WriteFatHeader(writer, Machine.Amd64, 0);
+        writer.WriteUnsigned(0, 3);
+        writer.WriteUnsigned(0, 2);
+        writer.WriteUnsigned(0, 1);
+        writer.Write(0, 1);
+        writer.Write(1, 1);
+        writer.WriteUnsigned(2, 2);
+        writer.WriteUnsigned(0, 1);
+        writer.Write(1, 2);
+        writer.WriteSigned(1, 6);
+        writer.Write(0, 2);
+        writer.Write(1, 2);
+        writer.WriteUnsigned(8, 4);
+
+        CdacGcInfo info = Assert.IsType<CdacGcInfo>(DecodeCdac(writer, Machine.Amd64));
+        Assert.Equal(new[] { 8, 72 }, info.Slots.ConvertAll(s => s.StackSlot.SpOffset));
+        Assert.Equal(writer.ByteCount, info.Size);
+    }
+
+    [Fact]
+    public void CdacDecodesGcInfoLargerThanDecoderWindow()
+    {
+        const int SafePointCount = 5000;
+        BitWriter writer = new();
+        WriteFatHeader(writer, Machine.Amd64, 0, codeLength: 1 << 20);
+        writer.WriteUnsigned(0, 3);
+        writer.WriteUnsigned(SafePointCount, 2);
+        writer.WriteUnsigned(0, 1);
+        for (int i = 0; i < SafePointCount; i++)
+            writer.Write(i * 8, 20);
+        writer.Write(0, 1);
+        writer.Write(0, 1);
+        Assert.True(writer.ByteCount > 10000);
+
+        CdacGcInfo info = Assert.IsType<CdacGcInfo>(DecodeCdac(writer, Machine.Amd64));
+        Assert.Equal(SafePointCount, info.SafePoints.Count);
+        Assert.Equal(writer.ByteCount, info.Size);
+    }
+
+    [Fact]
+    public void CdacX86EbpFrameCallOffsetsAccumulate()
+    {
+        BaseGcInfo info = DecodeCdacX86([64, 0x81, 0xBE, 0x3F, 0x03, 0x04, 0xFF]);
+        Assert.Equal(new[] { 3, 7 }, info.Transitions.Keys);
+        Assert.Equal(7, info.Size);
+    }
+
+    [Fact]
+    public void CdacX86ArgumentPushKeepsThisAndInteriorFlags()
+    {
+        BaseGcInfo info = DecodeCdacX86([64, 0x81, 0x40, 0xBC, 0xBF, 0x81, 0xC9, 0xFF]);
+        X86TransitionPointer push = Assert.IsType<X86TransitionPointer>(
+            Assert.IsType<CdacX86GcTransition>(Assert.Single(info.Transitions[1])).Transition);
+        Assert.True(push.IsThis);
+        Assert.True(push.Iptr);
+        Assert.Equal(0u, push.ArgOffset);
+        X86TransitionPointer pop = Assert.IsType<X86TransitionPointer>(
+            Assert.IsType<CdacX86GcTransition>(Assert.Single(info.Transitions[2])).Transition);
+        Assert.Equal(1u, pop.ArgOffset);
+        Assert.Equal(0u, pop.ArgCount);
+        Assert.Equal(8, info.Size);
+    }
+
+    [Fact]
+    public void CdacX86TrackedEbpSlotsUseSignedOffsets()
+    {
+        // One VarPtr entry: EBP-8, live in [2, 6).
+        CdacX86GcInfo info = Assert.IsType<CdacX86GcInfo>(
+            DecodeCdacX86([64, 0x81, 0x82, 0xBE, 0xBF, 0x46, 1, 3, 8, 2, 4, 0xFF]));
+        CdacX86GcSlot slot = Assert.Single(info.Slots);
+        Assert.Equal("[EBP-8]", slot.Location);
+        Assert.Equal(2u, slot.BeginOffset);
+        Assert.Equal(6u, slot.EndOffset);
+        Assert.Contains("[EBP-8]", info.ToString());
+        Assert.Equal(12, info.Size);
+    }
+
+    private static BaseGcInfo DecodeCdac(BitWriter writer, Machine machine)
+    {
+        using MemoryStream stream = new(writer.ToArray());
+
+        return CdacGcInfo.Decode(new NativeReader(stream), 0, machine, 5);
+    }
+
+    private static BaseGcInfo DecodeCdacX86(byte[] encoded)
+    {
+        using MemoryStream stream = new([.. encoded, .. new byte[8]]);
+
+        return CdacGcInfo.Decode(new NativeReader(stream), 0, Machine.I386, 5);
+    }
+
     private static void WriteFatHeader(BitWriter writer, Machine machine, int flags, int codeLength = 8)
     {
         writer.Write(1, 1);
@@ -218,6 +403,20 @@ public class GcInfoRegressionTests
                 value >>>= encodingBase;
                 Write(chunk | (value == 0 ? 0 : 1 << encodingBase), encodingBase + 1);
             } while (value != 0);
+        }
+
+        public void WriteSigned(int value, int encodingBase)
+        {
+            int signBit = 1 << (encodingBase - 1);
+            while (true)
+            {
+                int chunk = value & ((1 << encodingBase) - 1);
+                value >>= encodingBase;
+                bool done = (value == 0 && (chunk & signBit) == 0) || (value == -1 && (chunk & signBit) != 0);
+                Write(chunk | (done ? 0 : 1 << encodingBase), encodingBase + 1);
+                if (done)
+                    return;
+            }
         }
 
         public void Align()

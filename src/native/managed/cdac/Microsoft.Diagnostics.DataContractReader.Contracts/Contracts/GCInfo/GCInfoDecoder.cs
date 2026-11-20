@@ -923,6 +923,96 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     public uint NumTrackedSlots => _numSlots - _numUntrackedSlots;
 
+    #region Accessors for ILCompiler.Reflection.ReadyToRun
+    // Not used by the cDAC. ILCompiler.Reflection.ReadyToRun (R2RDump) compiles this file as shared
+    // source and uses these members to display GC info fields that IGCInfoDecoder does not expose.
+
+    internal bool IsSlimHeader
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.CodeLength);
+            return _slimHeader;
+        }
+    }
+
+    internal uint ValidRangeEnd
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.PrologLength);
+            return _validRangeEnd;
+        }
+    }
+
+    internal uint? SizeOfEditAndContinuePreservedArea
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.EditAndContinue);
+            return _sizeOfEnCPreservedArea != TTraits.NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA ? _sizeOfEnCPreservedArea : null;
+        }
+    }
+
+    internal uint SizeOfEditAndContinueFixedStackFrame
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.EditAndContinue);
+            return _sizeOfEnCFixedStackFrame;
+        }
+    }
+
+    internal int? ReversePInvokeFrameStackSlot
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.ReversePInvoke);
+            return _reversePInvokeFrameStackSlot != TTraits.NO_REVERSE_PINVOKE_FRAME ? _reversePInvokeFrameStackSlot : null;
+        }
+    }
+
+    internal bool HasStackBaseRegister
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.StackParameterArea);
+            return _stackBaseRegister != TTraits.NO_STACK_BASE_REGISTER;
+        }
+    }
+
+    /// <summary>
+    /// All slots in slot table order: registers, then stack slots, then untracked slots.
+    /// </summary>
+    internal IReadOnlyList<GcSlotDesc> Slots
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.SlotTable);
+            return _slots;
+        }
+    }
+
+    internal uint NumRegisters
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.SlotTable);
+            return _numRegisters;
+        }
+    }
+
+    internal uint NumUntrackedSlots
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.SlotTable);
+            return _numUntrackedSlots;
+        }
+    }
+
+    #endregion
+
     IReadOnlyList<LiveSlot> IGCInfoDecoder.EnumerateLiveSlots(
         uint instructionOffset,
         GcSlotEnumerationOptions options)

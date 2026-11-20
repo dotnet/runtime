@@ -546,7 +546,12 @@ namespace ILCompiler.Reflection.ReadyToRun
                         _readyToRunReader.ReadyToRunHeader.MajorVersion,
                         _readyToRunReader.ReadyToRunHeader.MinorVersion);
 
-                    if (_readyToRunReader.Machine == Machine.I386)
+                    if (gcInfoVersion >= 4)
+                    {
+                        // GC info v4+ is decoded with the decoders shared with the cDAC.
+                        _gcInfo = Cdac.CdacGcInfo.Decode(_readyToRunReader.ImageReader, gcInfoOffset, _readyToRunReader.Machine, gcInfoVersion);
+                    }
+                    else if (_readyToRunReader.Machine == Machine.I386)
                     {
                         _gcInfo = new x86.GcInfo(_readyToRunReader.ImageReader, gcInfoOffset, gcInfoVersion);
                     }
@@ -613,6 +618,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             } // Done with all entries in this table
         }
 
+        // R2R version 14 changed x86 code generation to use funclets, which added an UNWIND_INFO before the GC info.
+        private bool X86HasFuncletUnwindInfo => _readyToRunReader.ReadyToRunHeader.MajorVersion >= 14;
+
         /// <summary>
         /// Get the RVAs of the runtime functions for each method
         /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/zap/zapcode.cpp">ZapUnwindInfo::Save</a>
@@ -661,7 +669,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 BaseUnwindInfo unwindInfo = null;
                 if (_readyToRunReader.Machine == Machine.I386)
                 {
-                    unwindInfo = new x86.UnwindInfo(_readyToRunReader.ImageReader, unwindOffset);
+                    unwindInfo = new x86.UnwindInfo(_readyToRunReader.ImageReader, unwindOffset, X86HasFuncletUnwindInfo);
                 }
                 else if (_readyToRunReader.Machine == Machine.Amd64)
                 {
@@ -690,7 +698,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 if (i == 0 && unwindInfo != null)
                 {
-                    if (_readyToRunReader.Machine == Machine.I386)
+                    if (_readyToRunReader.Machine == Machine.I386 && !X86HasFuncletUnwindInfo)
                     {
                         GcInfoRva = unwindRva;
                     }
