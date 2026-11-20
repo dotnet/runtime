@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
@@ -22,6 +23,9 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal abstract partial class WasmObjectWriter : ObjectWriter
     {
+        private static readonly Utf8String s_compilerVersion = new(
+            Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion);
+
         private readonly Dictionary<ObjectNodeSection, WasmSectionType> _sectionToType = new()
         {
             { WasmObjectNodeSection.MemorySection, WasmSectionType.Memory },
@@ -133,18 +137,18 @@ namespace ILCompiler.ObjectWriter
         {
             MemoryStream payload = new();
             WriteULEB128(payload, 2);
-            WriteProducerField(payload, new Utf8String("processed-by"), new Utf8String(WasmProducerName));
-            WriteProducerField(payload, new Utf8String("sdk"), new Utf8String(".NET"));
+            WriteProducerField(payload, new Utf8String("processed-by"), new Utf8String(WasmProducerName), s_compilerVersion);
+            WriteProducerField(payload, new Utf8String("sdk"), new Utf8String(".NET"), s_compilerVersion);
             payload.Position = 0;
             return payload;
         }
 
-        private static void WriteProducerField(Stream output, Utf8String field, Utf8String name)
+        private static void WriteProducerField(Stream output, Utf8String field, Utf8String name, Utf8String version)
         {
             WriteName(output, field);
             WriteULEB128(output, 1);
             WriteName(output, name);
-            WriteULEB128(output, 0);
+            WriteName(output, version);
         }
 
         private protected static void WriteName(Stream output, Utf8String value)

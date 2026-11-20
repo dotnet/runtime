@@ -116,6 +116,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             string frameworkDirectory = GetBinFrameworkDir(config, forPublish: true);
             string frameworkWebcil = FindWasmAsset(frameworkDirectory, "System.Private.CoreLib");
+            AssertProducers(frameworkWebcil, "WebCIL");
             string? frameworkBuildId = GetBuildIdHex(frameworkWebcil);
             Assert.NotNull(frameworkBuildId);
             Assert.Equal(64, frameworkBuildId!.Length);
@@ -177,6 +178,13 @@ namespace Wasm.Build.NativeRebuild.Tests
             Assert.Contains($".ascii \"{runtimePackVersion}\"", source);
             Assert.Null(package.GetEntry("runtimes/browser-wasm/native/dotnet-producers.o"));
 
+            ZipArchiveEntry? r2rCoreLibEntry = package.GetEntry("runtimes/browser-wasm/native/r2r/System.Private.CoreLib.wasm");
+            Assert.NotNull(r2rCoreLibEntry);
+            using var r2rCoreLib = new MemoryStream();
+            using (Stream r2rCoreLibStream = r2rCoreLibEntry.Open())
+                r2rCoreLibStream.CopyTo(r2rCoreLib);
+            AssertProducers(r2rCoreLib.ToArray(), "WebCIL", requireVersion: true);
+
             ZipArchiveEntry? nativeWasmEntry = package.GetEntry("runtimes/browser-wasm/native/dotnet.native.wasm");
             Assert.NotNull(nativeWasmEntry);
             using Stream nativeWasmStream = nativeWasmEntry.Open();
@@ -198,19 +206,43 @@ namespace Wasm.Build.NativeRebuild.Tests
             return Assert.Single(Directory.GetFiles(frameworkDirectory, $"{baseName}.*.wasm"));
         }
 
-        private static void AssertProducers(string wasmPath, string expectedProcessedBy)
-            => AssertProducers(File.ReadAllBytes(wasmPath), expectedProcessedBy);
+        private static void AssertProducers(string wasmPath, string expectedProcessedBy, bool requireVersion = false)
+            => AssertProducers(File.ReadAllBytes(wasmPath), expectedProcessedBy, requireVersion);
 
-        private static void AssertProducers(byte[] wasm, string expectedProcessedBy)
+        private static void AssertProducers(byte[] wasm, string expectedProcessedBy, bool requireVersion = false)
         {
             byte[]? producers = ReadCustomSection(wasm, "producers");
             Assert.NotNull(producers);
 
-            // The section holds length-prefixed ASCII field/value strings; a substring scan is enough.
-            string text = Encoding.Latin1.GetString(producers!);
-            Assert.DoesNotContain("C#", text);
-            Assert.Contains(".NET", text);
-            Assert.Contains(expectedProcessedBy, text);
+            AssertProducer(producers!, "processed-by", expectedProcessedBy, requireVersion);
+            AssertProducer(producers!, "sdk", ".NET", requireVersion);
+        }
+
+        private static void AssertProducer(byte[] producers, string expectedField, string expectedName, bool requireVersion)
+        {
+            int pos = 0;
+            bool found = false;
+            uint fieldCount = ReadULEB128(producers, ref pos);
+            for (uint fieldIndex = 0; fieldIndex < fieldCount; fieldIndex++)
+            {
+                string field = ReadName(producers, ref pos);
+                uint valueCount = ReadULEB128(producers, ref pos);
+                for (uint valueIndex = 0; valueIndex < valueCount; valueIndex++)
+                {
+                    string name = ReadName(producers, ref pos);
+                    string version = ReadName(producers, ref pos);
+                    Assert.NotEqual("C#", name);
+
+                    if (field == expectedField && name == expectedName)
+                    {
+                        if (requireVersion)
+                            Assert.NotEmpty(version);
+                        found = true;
+                    }
+                }
+            }
+
+            Assert.True(found, $"Producer '{expectedField}={expectedName}' was not found.");
         }
 
         private static string? GetBuildIdHex(string wasmPath)
@@ -274,6 +306,14 @@ namespace Wasm.Build.NativeRebuild.Tests
                 pos = payloadEnd;
             }
             return found;
+        }
+
+        private static string ReadName(byte[] bytes, ref int pos)
+        {
+            uint length = ReadULEB128(bytes, ref pos);
+            string value = Encoding.UTF8.GetString(bytes, pos, checked((int)length));
+            pos += checked((int)length);
+            return value;
         }
 
         private static uint ReadULEB128(byte[] bytes, ref int pos)
