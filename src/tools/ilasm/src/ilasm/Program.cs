@@ -9,7 +9,7 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed class Program
 {
@@ -150,14 +150,14 @@ internal sealed class Program
                 options.CorFlags = (CorFlags)flags;
             }
 
-            // Target machine
-            if (Get(_command.TargetX64) || Get(_command.Pe64))
+            if (Get(_command.Architecture) is TargetArchitecture architecture)
             {
-                options.Machine = Machine.Amd64;
-            }
-            else if (Get(_command.TargetArm64))
-            {
-                options.Machine = Machine.Arm64;
+                options.Machine = architecture switch
+                {
+                    TargetArchitecture.X64 => Machine.Amd64,
+                    TargetArchitecture.Arm64 => Machine.Arm64,
+                    _ => Machine.I386,
+                };
             }
 
             // PE characteristics
@@ -182,6 +182,7 @@ internal sealed class Program
             // Assembly options
             options.AssemblyName = Get(_command.AssemblyName);
             options.KeyFile = Get(_command.KeyFile);
+            options.Win32ResourceFile = Get(_command.ResourceFile);
             options.Optimize = Get(_command.Optimize);
             options.PseudoAttributes = Get(_command.PseudoAttributes);
             options.Fold = Get(_command.Fold);

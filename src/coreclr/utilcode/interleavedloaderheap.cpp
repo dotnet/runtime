@@ -74,13 +74,15 @@ UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
         pVirtualAddress = pSearch->pVirtualAddress;
         pNext = pSearch->pNext;
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         if (m_pConfig->Template != NULL)
         {
             ExecutableAllocator::Instance()->FreeThunksFromTemplate(pVirtualAddress, GetStubCodePageSize());
         }
         else
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         {
-            ExecutableAllocator::Instance()->Release(pVirtualAddress);
+            ExecutableAllocator::Instance()->Release(pVirtualAddress, pSearch->dwVirtualSize);
         }
 
         delete pSearch;
@@ -178,7 +180,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     }
 
     // Own the reserved memory for automatic cleanup on the error paths below.
-    pDataHolder = pData;
+    pDataHolder = ReservedMemoryBlock{ pData, dwSizeToReserve };
 
     // When the user passes in the reserved memory, the commit size is 0 and is adjusted to be the sizeof(LoaderHeap).
     // If for some reason this is not true then we just catch this via an assertion and the dev who changed code
@@ -197,7 +199,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         return FALSE;
     }
 
-    NewHolder<LoaderHeapBlock> pNewBlock = new (nothrow) LoaderHeapBlock;
+    NewHolder<LoaderHeapBlock> pNewBlock{ new (nothrow) LoaderHeapBlock };
     if (pNewBlock == NULL)
     {
         return FALSE;
@@ -217,7 +219,6 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 
     m_dwTotalAlloc += dwSizeToCommit;
 
-    pNewBlock.SuppressRelease();
     pDataHolder.Detach();
 
     pNewBlock->dwVirtualSize    = dwSizeToReserve;
@@ -226,7 +227,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     pNewBlock->m_fReleaseMemory = TRUE;
 
     // Add to the linked list
-    m_pFirstBlock = pNewBlock;
+    m_pFirstBlock = pNewBlock.Detach();
 
     dwSizeToCommit /= 2;
 
@@ -237,6 +238,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     return TRUE;
 }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 struct ThunkMemoryTraits final
 {
     using Type = BYTE*;
@@ -251,6 +253,7 @@ struct ThunkMemoryTraits final
     }
 };
 using ThunkMemoryHolder = LifetimeHolder<ThunkMemoryTraits>;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 // Get some more committed pages - either commit some more in the current reserved region, or, if it
 // has run out, reserve another set of pages.
@@ -267,6 +270,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     }
     CONTRACTL_END;
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     if (m_pConfig->Template != NULL)
     {
         BYTE* newAllocatedThunks = (BYTE*)ExecutableAllocator::Instance()->AllocateThunksFromTemplate(m_pConfig->Template, GetStubCodePageSize(), m_pConfig->DataPageGenerator);
@@ -278,7 +282,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         // Own the allocated thunks for automatic cleanup on the error paths below.
         ThunkMemoryHolder thunksHolder(newAllocatedThunks);
 
-        NewHolder<LoaderHeapBlock> pNewBlock = new (nothrow) LoaderHeapBlock;
+        NewHolder<LoaderHeapBlock> pNewBlock{ new (nothrow) LoaderHeapBlock };
         if (pNewBlock == NULL)
         {
             return FALSE;
@@ -300,7 +304,6 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         m_dwTotalAlloc += dwSizeToReserve;
 
-        pNewBlock.SuppressRelease();
         thunksHolder.Detach();
 
         pNewBlock->dwVirtualSize    = dwSizeToReserve;
@@ -309,7 +312,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         pNewBlock->m_fReleaseMemory = TRUE;
 
         // Add to the linked list
-        m_pFirstBlock = pNewBlock;
+        m_pFirstBlock = pNewBlock.Detach();
 
         m_pAllocPtr = (BYTE*)newAllocatedThunks;
         m_pPtrToEndOfCommittedRegion = m_pAllocPtr + GetStubCodePageSize();
@@ -318,6 +321,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         return TRUE;
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     // From here, all work is only for the dynamically allocated InterleavedLoaderHeap path
 
@@ -527,7 +531,11 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
 void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size), void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
 {
     pConfig->StubSize = (uint32_t)stubSize;
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     pConfig->Template = ExecutableAllocator::Instance()->CreateTemplate(templateInImage, GetStubCodePageSize(), codePageGenerator);
+#else // FEATURE_PORTABLE_ENTRYPOINTS
+    pConfig->Template = nullptr;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     pConfig->CodePageGenerator = codePageGenerator;
     pConfig->DataPageGenerator = dataPageGenerator;
 }

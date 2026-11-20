@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.Claims;
@@ -31,6 +32,53 @@ namespace System.Threading.Threads.Tests
         [ThreadStatic]
         private static object t_threadStaticReference;
         private static int s_globalStaticValue;
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Browser)]
+        [InlineData(1)]
+        [InlineData(4)]
+        public static void NativeThreadIds_AreDistinctAndStable(int workerCount)
+        {
+            using var ready = new CountdownEvent(workerCount);
+            using var release = new ManualResetEventSlim();
+            ulong currentThreadId = Interop.Sys.GetCurrentThreadId();
+            ulong[] threadIds = new ulong[workerCount];
+            Action[] waitForThreads = new Action[workerCount];
+
+            for (int i = 0; i < workerCount; i++)
+            {
+                int index = i;
+                Thread thread = ThreadTestHelpers.CreateGuardedThread(out waitForThreads[i], () =>
+                {
+                    threadIds[index] = Interop.Sys.GetCurrentThreadId();
+                    ready.Signal();
+                    Assert.True(release.Wait(UnexpectedTimeoutMilliseconds));
+                    Assert.Equal(threadIds[index], Interop.Sys.GetCurrentThreadId());
+                });
+                thread.IsBackground = true;
+                thread.Start();
+            }
+
+            try
+            {
+                Assert.True(ready.Wait(UnexpectedTimeoutMilliseconds));
+                var uniqueIds = new HashSet<ulong> { currentThreadId };
+                Assert.NotEqual(0UL, currentThreadId);
+                foreach (ulong threadId in threadIds)
+                {
+                    Assert.NotEqual(0UL, threadId);
+                    Assert.True(uniqueIds.Add(threadId), $"Duplicate native thread ID: {threadId}");
+                }
+            }
+            finally
+            {
+                release.Set();
+                foreach (Action waitForThread in waitForThreads)
+                {
+                    waitForThread();
+                }
+            }
+        }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ConstructorTest()
@@ -82,6 +130,53 @@ namespace System.Threading.Threads.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new Thread(() => { }, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new Thread(state => { }, -1));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.Browser & ~TestPlatforms.Wasi)]
+        [SkipOnMono("Tests CoreCLR's memory-pressure accounting.")]
+        [SkipOnCoreClr("GC stress can advance memory-pressure history during the test.", RuntimeTestModes.AnyGCStress)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void UnattachedThreadDoesNotRemoveMemoryPressure(bool failConstructor)
+        {
+            RemoteExecutor.Invoke(static failConstruction =>
+            {
+                // Losing candidates never run a constructor; failed public constructors also leave no native thread.
+                Thread thread = (Thread)RuntimeHelpers.GetUninitializedObject(typeof(Thread));
+                if (bool.Parse(failConstruction))
+                {
+                    ConstructorInfo constructor = typeof(Thread).GetConstructor(new[] { typeof(ThreadStart) });
+                    TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() =>
+                        constructor.Invoke(thread, new object[] { null }));
+                    Assert.IsType<ArgumentNullException>(exception.InnerException);
+                }
+                GC.SuppressFinalize(thread);
+
+                MethodInfo finalize = typeof(Thread).GetMethod("Finalize", BindingFlags.Instance | BindingFlags.NonPublic);
+                Type pressureType = typeof(GC).GetNestedType("MemoryPressure", BindingFlags.NonPublic);
+                long[] removed = (long[])pressureType.GetField("s_removePressure", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.RemoveMemoryPressure(1);
+                long before = 0;
+                foreach (long value in removed)
+                {
+                    before += value;
+                }
+
+                finalize.Invoke(thread, null);
+                finalize.Invoke(thread, null);
+
+                long after = 0;
+                foreach (long value in removed)
+                {
+                    after += value;
+                }
+
+                Assert.Equal(before, after);
+            }, failConstructor.ToString()).Dispose();
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]

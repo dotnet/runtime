@@ -10,11 +10,24 @@
 #include "utilcode.h"
 #include "minipal/time.h"
 
+#include <time.h> // For CLOCK_THREAD_CPUTIME_ID
+
 bool CycleTimer::GetThreadCyclesS(uint64_t* cycles)
 {
-    BOOL res = FALSE;
-    res = QueryThreadCycleTime(GetCurrentThread(), cycles);
-    return res != FALSE;
+#ifdef HOST_UNIX
+#ifdef CLOCK_THREAD_CPUTIME_ID
+    struct timespec ts;
+    if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) != 0)
+        return false;
+
+    *cycles = (uint64_t)ts.tv_sec * 1000000000 + (uint64_t)ts.tv_nsec;
+    return true;
+#else // CLOCK_THREAD_CPUTIME_ID
+    return false;
+#endif // CLOCK_THREAD_CPUTIME_ID
+#else // HOST_UNIX
+    return QueryThreadCycleTime(GetCurrentThread(), cycles) != FALSE;
+#endif // HOST_UNIX
 }
 
 static const int SampleLoopSize = 1000000;

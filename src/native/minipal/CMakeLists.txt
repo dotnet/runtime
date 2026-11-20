@@ -7,6 +7,7 @@ set(SOURCES
     cpufeatures.c
     descriptorlimit.c
     entrypoints.c
+    environ.c
     getexepath.c
     memorybarrierprocesswide.c
     mutex.c
@@ -25,6 +26,7 @@ set(SOURCES
 
 if(CLR_CMAKE_HOST_UNIX)
     list(APPEND SOURCES
+        cgroup.c
         cpucount.c
         cpuid.c
         thread.c

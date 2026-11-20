@@ -20,7 +20,7 @@ namespace System.Runtime.Caching.Configuration
 
         internal static int GetIntValue(NameValueCollection config, string valueName, int defaultValue, bool zeroAllowed, int maxValueAllowed)
         {
-            string sValue = config[valueName];
+            string? sValue = config[valueName];
 
             if (sValue == null)
             {
@@ -53,7 +53,7 @@ namespace System.Runtime.Caching.Configuration
 
         internal static int GetIntValueFromTimeSpan(NameValueCollection config, string valueName, int defaultValue)
         {
-            string sValue = config[valueName];
+            string? sValue = config[valueName];
 
             if (sValue == null)
             {
@@ -78,7 +78,7 @@ namespace System.Runtime.Caching.Configuration
 
         internal static bool GetBooleanValue(NameValueCollection config, string valueName, bool defaultValue)
         {
-            string sValue = config[valueName];
+            string? sValue = config[valueName];
 
             if (sValue == null)
             {

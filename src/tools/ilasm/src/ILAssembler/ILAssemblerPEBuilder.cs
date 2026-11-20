@@ -12,7 +12,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 /// <summary>
 /// The <see cref="ManagedPEBuilder"/> for every image the assembler writes, including VTable fixups,

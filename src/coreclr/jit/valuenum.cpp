@@ -3039,8 +3039,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
 //
 // Return Value:     - Returns the ValueNum associated with 'func'('arg0VN','arg1VN','arg2VN','arg3VN')
 //
-// Note:   Currently the only four operand funcs are VNF_PtrToArrElem and VNF_MapStore.
-//
 ValueNum ValueNumStore::VNForFunc(
     var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN, ValueNum arg3VN)
 {
@@ -3547,7 +3545,7 @@ TailCall:
     MapSelectWorkCacheEntry entry;
 
     VNDefFuncApp<2> fstruct(VNF_MapSelect, map, index);
-    if (GetMapSelectWorkCache()->Lookup(fstruct, &entry))
+    if (GetMapSelectWorkCache(vnk)->Lookup(fstruct, &entry))
     {
         entry.GetMemoryDependencies(m_compiler, memoryDependencies);
         return entry.Result;
@@ -3571,7 +3569,7 @@ TailCall:
         // the IR may "evaluate" to this same VNForExpr, so it is not "unique" in the sense
         // that permits the BasicBlock attribution.
         entry.Result = VNForExpr(nullptr, type);
-        GetMapSelectWorkCache()->Set(fstruct, entry);
+        GetMapSelectWorkCache(vnk)->Set(fstruct, entry);
         return entry.Result;
     }
 
@@ -3795,7 +3793,7 @@ TailCall:
                     // If we ran out of budget we could have already cached the
                     // result in the leaf. In that case it is ok to overwrite
                     // it here.
-                    MapSelectWorkCache* cache = GetMapSelectWorkCache();
+                    MapSelectWorkCache* cache = GetMapSelectWorkCache(vnk);
                     assert(!cache->Lookup(fstruct) || ((*cache)[fstruct].Result == sameSelResult));
                     cache->Set(fstruct, entry, MapSelectWorkCache::Overwrite);
                 }
@@ -3812,7 +3810,7 @@ TailCall:
     }
 
     // We may have run out of budget and already assigned a result
-    if (!GetMapSelectWorkCache()->Lookup(fstruct, &entry))
+    if (!GetMapSelectWorkCache(vnk)->Lookup(fstruct, &entry))
     {
         // Otherwise, assign a new VN for the function application.
         Chunk* const          c                 = GetAllocChunk(type, CEA_Func2);
@@ -3825,7 +3823,7 @@ TailCall:
         entry.Result = c->m_baseVN + offsetWithinChunk;
         entry.SetMemoryDependencies(m_compiler, recMemoryDependencies);
 
-        GetMapSelectWorkCache()->Set(fstruct, entry);
+        GetMapSelectWorkCache(vnk)->Set(fstruct, entry);
     }
 
     recMemoryDependencies.ForEach([this, &memoryDependencies](ValueNum vn) {
@@ -7095,8 +7093,7 @@ var_types ValueNumStore::TypeOfVN(ValueNum vn) const
 }
 
 //------------------------------------------------------------------------
-// LoopOfVN: If the given value number is VNF_MemOpaque, VNF_MapStore, or
-//    VNF_MemoryPhiDef, return the loop where the memory update occurs,
+// LoopOfVN: If the given value number describes a memory update, return its loop,
 //    otherwise returns nullptr
 //
 // Arguments:
@@ -7130,6 +7127,10 @@ FlowGraphNaturalLoop* ValueNumStore::LoopOfVN(ValueNum vn)
             }
 
             return m_compiler->m_loops->GetLoopByIndex(index);
+        }
+        else if (funcApp.FuncIs(VNF_ByrefExposedStore))
+        {
+            return LoopOfVN(funcApp.GetArg(3));
         }
     }
     else if (GetMemoryPhiDef(vn, &memoryPhiDef))
@@ -12943,6 +12944,33 @@ void Compiler::fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree)
 }
 
 //------------------------------------------------------------------------
+// IsByrefStoreForwardingType: Can a store of this type to unknown memory be forwarded to a later load?
+//
+// Arguments:
+//    type - The store or load type
+//
+// Return Value:
+//    True for primitive types the target operates on as a single value.
+//
+static bool IsByrefStoreForwardingType(var_types type)
+{
+    switch (type)
+    {
+        case TYP_INT:
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return true;
+        case TYP_LONG:
+            return LOWER_DECOMPOSE_LONGS == 0;
+        case TYP_REF:
+        case TYP_BYREF:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
 // fgValueNumberStore: Does value numbering for a store.
 //
 // While this method does indeed give a VN to the store tree itself, its
@@ -13052,15 +13080,27 @@ void Compiler::fgValueNumberStore(GenTree* store)
             else
             {
                 assert(!store->HasAnyLocalDefs(this));
-                // If it doesn't define a local, then it might update GcHeap/ByrefExposed.
-                // For the new ByrefExposed VN, we could use an operator here like
-                // VNF_ByrefExposedStore that carries the VNs of the pointer and RHS, then
-                // at byref loads if the current ByrefExposed VN happens to be
-                // VNF_ByrefExposedStore with the same pointer VN, we could propagate the
-                // VN from the RHS to the VN for the load.  This would e.g. allow tracking
-                // values through stores to out params.  For now, just model this as an
-                // opaque GcHeap/ByrefExposed mutation.
-                fgMutateGcHeap(store DEBUGARG("assign-of-IND"));
+                if (store->OperIs(GT_STOREIND) && IsByrefStoreForwardingType(store->TypeGet()) &&
+                    (value->TypeGet() == store->TypeGet()) && !store->AsIndir()->IsVolatile() &&
+                    !(addrIsVNFunc && funcApp.FuncIs(VNF_PtrToLoc)))
+                {
+                    // Keep the rest of memory opaque; only an exact, same-type load can reuse this value.
+                    ValueNum memoryVN =
+                        vnStore->VNForFunc(TYP_HEAP, VNF_ByrefExposedStore, vnStore->VNNormalValue(addrVN),
+                                           vnStore->VNNormalValue(addr->gtVNPair.GetConservative()),
+                                           valueVNPair.GetLiberal(), vnStore->VNForExpr(compCurBB, TYP_HEAP));
+                    recordGcHeapStore(store, memoryVN DEBUGARG("byref store"));
+                    if (!byrefStatesMatchGcHeapStates)
+                    {
+                        // recordGcHeapStore made ByrefExposed opaque, but this store is also its current state.
+                        fgSetCurrentMemoryVN(ByrefExposed, memoryVN);
+                        fgValueNumberRecordMemorySsa(ByrefExposed, store);
+                    }
+                }
+                else
+                {
+                    fgMutateGcHeap(store DEBUGARG("assign-of-IND"));
+                }
             }
         }
         break;
@@ -13448,6 +13488,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
     genTreeOps oper = tree->OperGet();
     var_types  typ  = tree->TypeGet();
 
+    // Set when a forwarded load reads the address its forwarding store already dereferenced.
+    bool addressAlreadyDereferenced = false;
+
     if (GenTree::OperIsConst(oper))
     {
         fgValueNumberTreeConst(tree);
@@ -13495,6 +13538,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     // An untracked local, and other odd cases.
                     lcl->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lcl->TypeGet()));
+                }
+
+                // Treat Span lengths like array lengths: comparisons against them are worth analyzing.
+                if (varDsc->IsNeverNegative() && lcl->TypeIs(TYP_INT))
+                {
+                    ValueNum lenVN = vnStore->VNConservativeNormalValue(lcl->gtVNPair);
+                    if (!vnStore->IsVNConstant(lenVN))
+                    {
+                        vnStore->SetVNIsCheckedBound(lenVN);
+                    }
                 }
             }
             break;
@@ -13726,7 +13779,27 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 else // We don't know where the address points, so it is an ByrefExposed load.
                 {
                     ValueNum addrVN = addr->gtVNPair.GetLiberal();
-                    ValueNum loadVN = fgValueNumberByrefExposedLoad(typ, addrVN);
+                    ValueNum loadVN;
+                    if (IsByrefStoreForwardingType(typ) && vnStore->GetVNFunc(fgCurMemoryVN[ByrefExposed], &funcApp) &&
+                        funcApp.FuncIs(VNF_ByrefExposedStore) &&
+                        (funcApp.GetArg(0) == vnStore->VNNormalValue(addrVN)) &&
+                        (vnStore->TypeOfVN(funcApp.GetArg(2)) == typ))
+                    {
+                        loadVN = funcApp.GetArg(2);
+                        if (m_blockToLoop->GetLoop(compCurBB) != nullptr)
+                        {
+                            optRecordLoopMemoryDependence(tree, compCurBB, fgCurMemoryVN[ByrefExposed]);
+                        }
+
+                        // The store faults first on a null address, so this load cannot. This must hold for
+                        // the actual address, not just its liberal value.
+                        addressAlreadyDereferenced = funcApp.GetArg(1) == addrNvnp.GetConservative();
+                    }
+                    else
+                    {
+                        loadVN = fgValueNumberByrefExposedLoad(typ, addrVN);
+                    }
+
                     tree->gtVNPair.SetLiberal(loadVN);
                     tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                 }
@@ -13981,7 +14054,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         }
 
         // next we add any exception sets for the current tree node
-        fgValueNumberAddExceptionSet(tree);
+        if (!addressAlreadyDereferenced)
+        {
+            fgValueNumberAddExceptionSet(tree);
+        }
     }
     else
     {
@@ -14401,6 +14477,18 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
                 }
             }
         }
+    }
+
+    // Vector division can throw both arithmetic overflow, if signed, and divide by zero exceptions
+    if (intrinsicId == NI_Vector_op_Division)
+    {
+        assert(opCount == 2);
+        assert(varTypeIsInt(tree->GetSimdBaseType()));
+
+        genTreeOps   oper = varTypeIsSigned(tree->GetSimdBaseType()) ? GT_DIV : GT_UDIV;
+        ValueNumPair divisionExc =
+            fgValueNumberDivisionExceptions(oper, tree->Op(1), tree->Op(2), tree->GetSimdBaseType());
+        excSetPair = vnStore->VNPExcSetUnion(excSetPair, divisionExc);
     }
 
     // Some intrinsics should always be unique
@@ -14927,6 +15015,14 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
                 }
             }
         }
+        if ((vnf == VNF_ReadyToRunGenericHandle) &&
+            !s_helperCallProperties.NoThrow(call->GetHelperNum(), IsNativeAot()))
+        {
+            // A lookup that failed to build throws the same way wherever it is evaluated.
+            ValueNumPair lookupExc = vnStore->VNPairForFunc(TYP_REF, VNF_HelperOpaqueExc, call->gtVNPair);
+            vnpExc                 = vnStore->VNPExcSetUnion(vnpExc, vnStore->VNPExcSetSingleton(lookupExc));
+        }
+
         // Add the accumulated exceptions.
         call->gtVNPair = vnStore->VNPWithExc(call->gtVNPair, vnpExc);
     }
@@ -15379,6 +15475,12 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             vnf = VNF_GetdynamicNongcthreadstaticBase;
             break;
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+            vnf = VNF_GetdynamicGcthreadstaticBaseOptimized;
+            break;
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
+            vnf = VNF_GetdynamicNongcthreadstaticBaseOptimized;
+            break;
         case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
             vnf = VNF_GetdynamicGcthreadstaticBaseNoctor;
             break;
@@ -15552,7 +15654,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
     bool isAlloc     = s_helperCallProperties.IsAllocator(helpFunc);
     bool mayRunCctor = s_helperCallProperties.MayRunCctor(helpFunc);
     bool modHeap     = s_helperCallProperties.MutatesHeap(helpFunc) || mayRunCctor; // a cctor may modify the heap
-    bool noThrow     = s_helperCallProperties.NoThrow(helpFunc);
+    bool noThrow     = s_helperCallProperties.NoThrow(helpFunc, IsNativeAot());
 
     ValueNumPair vnpExc = ValueNumStore::VNPForEmptyExcSet();
 
@@ -15640,9 +15742,11 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
-                // These take ThreadStaticInfo as parameters.
+                // These take ThreadStaticInfo or a thread static block index as parameters.
                 vnpExc = vnStore->VNPExcSetSingleton(
                     vnStore->VNPairForFunc(TYP_REF, VNF_ThreadClassInitExc,
                                            vnStore->VNPNormalPair(
@@ -15678,6 +15782,10 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
             case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
                 vnpExc = fgValueNumberIndirNullCheckExceptions(call->gtArgs.GetUserArgByIndex(0)->GetNode());
+                break;
+
+            case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+                // fgValueNumberHelperCallFunc adds an exception determined by the lookup itself.
                 break;
 
             default:
@@ -15857,14 +15965,18 @@ void Compiler::fgValueNumberAddExceptionSetForDivision(GenTree* tree)
 //   Compute exception set for a division operation
 //
 // Arguments:
-//    oper - Division operation (signed/unsigned division/modulo)
-//    dividend - Tree representing dividend
-//    divisor  - Tree representing divisor
+//    oper         - Division operation (signed/unsigned division/modulo)
+//    dividend     - Tree representing dividend
+//    divisor      - Tree representing divisor
+//    simdBaseType - SIMD base type, or TYP_UNDEF for scalar division
 //
 // Return Value:
 //    VNP representing exception set
 //
-ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree* dividend, GenTree* divisor)
+ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper,
+                                                       GenTree*   dividend,
+                                                       GenTree*   divisor,
+                                                       var_types  simdBaseType)
 {
     // A Divide By Zero exception may be possible.
     //
@@ -15874,8 +15986,11 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree*
     bool needArithmeticExcLib   = !isUnsignedOper; // Overflow isn't possible for unsigned divide
     bool needArithmeticExcCon   = !isUnsignedOper;
 
+    bool isSimdOper = simdBaseType != TYP_UNDEF;
+    assert(isSimdOper == varTypeIsSIMD(dividend));
+
     // Determine if we have a 32-bit or 64-bit divide operation
-    var_types typ = genActualType(dividend);
+    var_types typ = isSimdOper ? genActualType(simdBaseType) : genActualType(dividend);
     assert((typ == TYP_INT) || (typ == TYP_LONG));
 
     // Retrieve the Norm VN for divisor to use it for the DivideByZeroExc
@@ -15883,7 +15998,29 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree*
     ValueNum     vnDivisorNormLib = vnpDisivorNorm.GetLiberal();
     ValueNum     vnDivisorNormCon = vnpDisivorNorm.GetConservative();
 
-    if (typ == TYP_INT)
+#if defined(FEATURE_SIMD)
+    if (isSimdOper && !varTypeHasUnknownSize(dividend))
+    {
+        unsigned simdSize = genTypeSize(dividend);
+
+        // DivideByZero exception unneeded for simd if constant divisor has all nonzero lanes
+        // Arithmetic exception unneeded if constant divisor has all lanes not equal to -1
+        if (vnStore->IsVNConstant(vnDivisorNormLib))
+        {
+            simd_t simdValue       = vnStore->GetConstantSimd(vnDivisorNormLib);
+            needDivideByZeroExcLib = SimdConstantContains(simdBaseType, simdValue, simdSize, 0);
+            needArithmeticExcLib = needArithmeticExcLib && SimdConstantContains(simdBaseType, simdValue, simdSize, -1);
+        }
+        if (vnStore->IsVNConstant(vnDivisorNormCon))
+        {
+            simd_t simdValue       = vnStore->GetConstantSimd(vnDivisorNormCon);
+            needDivideByZeroExcCon = SimdConstantContains(simdBaseType, simdValue, simdSize, 0);
+            needArithmeticExcCon = needArithmeticExcCon && SimdConstantContains(simdBaseType, simdValue, simdSize, -1);
+        }
+    }
+#endif // FEATURE_SIMD
+
+    if (!isSimdOper && (typ == TYP_INT))
     {
         if (vnStore->IsVNConstant(vnDivisorNormLib))
         {
@@ -15910,7 +16047,7 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree*
             }
         }
     }
-    else // (typ == TYP_LONG)
+    else if (!isSimdOper) // (typ == TYP_LONG)
     {
         if (vnStore->IsVNConstant(vnDivisorNormLib))
         {
@@ -15943,7 +16080,26 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree*
     ValueNum     vnDividendNormLib = vnpDividendNorm.GetLiberal();
     ValueNum     vnDividendNormCon = vnpDividendNorm.GetConservative();
 
-    if (needArithmeticExcLib || needArithmeticExcCon)
+#if defined(FEATURE_SIMD)
+    if (isSimdOper && !varTypeHasUnknownSize(dividend))
+    {
+        unsigned simdSize = genTypeSize(dividend);
+        INT64    minValue = (typ == TYP_INT) ? INT32_MIN : INT64_MIN;
+
+        if (needArithmeticExcLib && vnStore->IsVNConstant(vnDividendNormLib))
+        {
+            simd_t simdValue     = vnStore->GetConstantSimd(vnDividendNormLib);
+            needArithmeticExcLib = SimdConstantContains(simdBaseType, simdValue, simdSize, minValue);
+        }
+        if (needArithmeticExcCon && vnStore->IsVNConstant(vnDividendNormCon))
+        {
+            simd_t simdValue     = vnStore->GetConstantSimd(vnDividendNormCon);
+            needArithmeticExcCon = SimdConstantContains(simdBaseType, simdValue, simdSize, minValue);
+        }
+    }
+#endif // FEATURE_SIMD
+
+    if (!isSimdOper && (needArithmeticExcLib || needArithmeticExcCon))
     {
         if (typ == TYP_INT)
         {

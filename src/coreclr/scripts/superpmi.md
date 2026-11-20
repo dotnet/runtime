@@ -139,6 +139,16 @@ be removed when the collection is finished. It is recommended to set the TEMP va
 to a location with adequate space, and preferably on a fast SSD to improve performance,
 before running `collect` to avoid running out of disk space.
 
+Linux ARM32 and ARM64 CI collections configured by `superpmi_collect_setup.py`
+use Azure Linux 4 ARM64 Helix hosts for both public and internal queues.
+The containers remain Debian 12 for ARM32 and Azure Linux 4 for ARM64.
+
+The Aspire collection uses `superpmi_nativeaot_app.py --public_sign` to build its
+collection inputs without generating RSA/SHA-1 strong-name signatures or relaxing
+the OS crypto policy. Public signing preserves assembly identity; these builds are
+collection inputs, not production release artifacts. Other applications retain
+their existing signing settings unless `--public_sign` is specified.
+
 ### Azure Storage collections
 
 As stated above, you can use the `list-collections` command to see which collections

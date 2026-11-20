@@ -40,7 +40,6 @@ namespace Wasm.Build.Tests
             { "<InvariantGlobalization>false</InvariantGlobalization>", false },
             { "<InvariantTimezone>false</InvariantTimezone>", false },
             { "<EnableDiagnostics>false</EnableDiagnostics>", false },
-            { "<WasmEnableRelaxedSimd>false</WasmEnableRelaxedSimd>", false },
             // property left unset -> no relink
             { "", false },
             // casing must not matter, MSBuild string comparison is case-insensitive
@@ -49,7 +48,6 @@ namespace Wasm.Build.Tests
             { "<InvariantGlobalization>true</InvariantGlobalization>", true },
             { "<InvariantTimezone>true</InvariantTimezone>", true },
             { "<EnableDiagnostics>true</EnableDiagnostics>", true },
-            { "<WasmEnableRelaxedSimd>true</WasmEnableRelaxedSimd>", true },
             { "<WasmInitialHeapSize>67108864</WasmInitialHeapSize>", true },
             // EmccInitialHeapSize is the documented browser property and EmccTotalMemory its legacy
             // alias; both must be normalized into WasmInitialHeapSize before the registry compares.
@@ -64,10 +62,6 @@ namespace Wasm.Build.Tests
             // comparison is textual, so a numerically equal but differently spelled size counts as
             // a mismatch. That only costs an unnecessary relink, never a mismatched binary.
             { "<EmccStackSize>2097152</EmccStackSize>", true },
-            // WasmPerformanceInstrumentation would force a relink, but that defaulting is temporarily
-            // disabled in BrowserWasmApp.CoreCLR.targets pending https://github.com/dotnet/runtime/issues/132772,
-            // so it currently does not relink.
-            { "<WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>", false },
         };
 
         [Theory]

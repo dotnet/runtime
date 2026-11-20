@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="methodtokensignaturehelper.il" />
+    <ProjectReference Include="signaturedependency.csproj" />
+  </ItemGroup>
+</Project>

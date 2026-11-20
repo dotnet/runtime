@@ -474,6 +474,11 @@ namespace ILCompiler
                         }
                     }
 
+                    if (!composite && Get(_command.StripILBodies))
+                    {
+                        throw new Exception(SR.ErrorStripILBodiesRequiresComposite);
+                    }
+
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
                     ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
@@ -698,6 +703,7 @@ namespace ILCompiler
                         .UsePdbFile(Get(_command.Pdb), Get(_command.PdbPath))
                         .UsePerfMapFile(Get(_command.PerfMap), Get(_command.PerfMapPath), Get(_command.PerfMapFormatVersion))
                         .UseWasmDebugInfo(Get(_command.WasmDebugInfoOption))
+                        .UseDeferredWasmCalls(!Get(_command.DisableDeferredWasmCalls))
                         .UseProfileFile(jsonProfile != null)
                         .UseProfileData(profileDataManager)
                         .UseNodeFactoryOptimizationFlags(nodeFactoryFlags)

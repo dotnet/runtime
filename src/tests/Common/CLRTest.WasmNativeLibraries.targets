@@ -1,0 +1,29 @@
+<Project>
+  <Target Name="_WasmResolveNativeTestLibraries">
+    <PropertyGroup>
+      <!-- Tests merged into a wrapper run from the wrapper's directory instead of their own.
+           Their native code stays unlinked, and checks that need it skip themselves through
+           PlatformDetection.PlatformDoesNotSupportNativeTestAssets. -->
+      <_WasmNativeTestRunsFromOutDir Condition="'$(RequiresProcessIsolation)' == 'true' or
+                                               '$(BuildAsStandalone)' == 'true' or
+                                               '$(IsMergedTestRunnerAssembly)' == 'true'">true</_WasmNativeTestRunsFromOutDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- Native static libraries produced by the test's own CMake project(s), already staged into
+           $(OutDir) by CopyNativeProjectBinaries. -->
+      <_WasmNativeTestLib Include="$(OutDir)*$(StaticLibSuffix)" />
+
+      <!-- src/tests/Common/Platform is the shared native helper library for tests, and several of
+           the CMake projects that produce a test library link it (Interop, Runtime_101046,
+           Runtime_76194, exceptioninterop). It installs into the common bin directory instead of
+           being staged next to each test, so without it here any use of its TP_* helpers would
+           only surface as an undefined symbol from wasm-ld. It is kept out of
+           @(_WasmNativeTestLib) on purpose: that item decides whether a project has native code
+           at all, and this library exists for every project. Linking it costs nothing when it goes
+           unused, because wasm-ld pulls in only the archive members that are referenced. -->
+      <_WasmNativeCommonLib Include="$(TestBinDir)bin/libplatformdefines$(StaticLibSuffix)"
+                            Condition="Exists('$(TestBinDir)bin/libplatformdefines$(StaticLibSuffix)')" />
+    </ItemGroup>
+  </Target>
+</Project>
