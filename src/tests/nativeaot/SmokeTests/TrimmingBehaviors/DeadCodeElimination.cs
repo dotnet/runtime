@@ -1735,6 +1735,7 @@ class DeadCodeElimination
     {
         class DeadFieldResult;
         class DeadChainResult;
+        class DeadCopiedResult;
         class DeadStaticResult;
         class DeadMethodGroupResult;
         class DeadClearedResult;
@@ -1745,6 +1746,7 @@ class DeadCodeElimination
         class LiveChainResult;
         class LiveRefResult;
         class LiveMixedResult;
+        class LiveUncachedResult;
         class ConstrainedResult;
 
         class ReflectionTarget
@@ -1777,6 +1779,10 @@ class DeadCodeElimination
         static class StaticHolder
         {
             public static Func<object> s_dead;
+            public static Func<object> s_source;
+            public static Func<object> s_sink;
+            public static Func<object> s_refilled;
+            public static Func<object> s_refilledSink;
         }
 
         interface IFactory
@@ -1825,6 +1831,28 @@ class DeadCodeElimination
             return null;
         }
         static object CreateLiveMixedResult() => new LiveMixedResult();
+        static object CreateLiveUncachedResult() => new LiveUncachedResult();
+        static object CreateCoalescedResult() => null;
+        static object CreateRefilledResult() => null;
+        static Func<object> ThrowFromFallback() => throw new Exception();
+
+        class ReceiverHolder
+        {
+            public static readonly ReceiverHolder Instance = Create();
+
+            static ReceiverHolder Create()
+            {
+                TouchedFlag.s_touched = true;
+                return new ReceiverHolder();
+            }
+
+            public object Make() => null;
+        }
+
+        static class TouchedFlag
+        {
+            public static bool s_touched;
+        }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void MakeDeadDelegates()
@@ -1841,12 +1869,15 @@ class DeadCodeElimination
 
             var source = new DeadPropertyHolder { Factory = static () => new DeadChainResult() };
             GC.KeepAlive(new DeadSink { Factory = source.Factory });
+
+            var copied = new DeadFieldHolder { Factory = static () => new DeadCopiedResult() };
+            GC.KeepAlive(new DeadSink { Factory = copied.Factory });
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void MakeDeadGenericDelegate<T>() where T : class
         {
-            GC.KeepAlive(new DeadFieldHolder { Factory = static () => new DeadGenericResult() });
+            GC.KeepAlive(new DeadFieldHolder { Factory = static () => typeof(T) == typeof(string) ? new DeadGenericResult() : null });
             GC.KeepAlive(new DeadGenericHolder<T> { Factory = CreateDeadGenericMethodGroupResult<T> });
         }
 
@@ -1902,6 +1933,22 @@ class DeadCodeElimination
             if (mixed() is not LiveMixedResult)
                 throw new Exception();
 
+            // An uncached creation of the same target does not read the cache, but still needs the method.
+            GC.KeepAlive(new DeadFieldHolder { Factory = CreateLiveUncachedResult });
+            Func<object> uncached = new Func<object>(CreateLiveUncachedResult);
+            if (uncached() is not LiveUncachedResult)
+                throw new Exception();
+
+            // Whether the delegate is null decides if the fallback runs, so it is observed even if the destination never is.
+            StaticHolder.s_source = CreateCoalescedResult;
+            StaticHolder.s_sink = StaticHolder.s_source ?? ThrowFromFallback();
+
+            // A refill that is not the cache of a compiler generated class can run anything, so the field counts as read.
+            StaticHolder.s_refilled = CreateRefilledResult;
+            StaticHolder.s_refilledSink = StaticHolder.s_refilled ??= ReceiverHolder.Instance.Make;
+            if (TouchedFlag.s_touched)
+                throw new Exception();
+
             PreinitHolder.s_live += "!";
             if (PreinitHolder.s_live != "ok!")
                 throw new Exception();
@@ -1909,6 +1956,7 @@ class DeadCodeElimination
 #if !DEBUG
             ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadFieldResult));
             ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadChainResult));
+            ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadCopiedResult));
             ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadStaticResult));
             ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadMethodGroupResult));
             ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadClearedResult));

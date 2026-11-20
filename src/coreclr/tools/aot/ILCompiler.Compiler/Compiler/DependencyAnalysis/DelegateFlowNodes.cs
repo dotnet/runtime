@@ -80,7 +80,8 @@ namespace ILCompiler.DependencyAnalysis
     }
 
     /// <summary>
-    /// Marked when a delegate created at the given site may be observed. A site that has a
+    /// Marked when a delegate created at the given site may be observed, and for every delegate creation of the same
+    /// target in the same method that the delegate flow analysis does not understand. A site that has a
     /// <see cref="DelegateCreationSiteNode"/> but no <see cref="DelegateCreationSiteUseNode"/> in the scanned
     /// graph creates delegates that the program never observes.
     /// </summary>

@@ -4,7 +4,6 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 
 using ILLink.Shared.DataFlow;
 
@@ -17,8 +16,28 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler
 {
     /// <summary>
-    /// Classification helpers for the analysis that determines whether delegates stored into fields
-    /// can ever be observed. See <see cref="DelegateFlowPatterns"/> for the IL patterns that are understood.
+    /// Helpers for the analysis that determines whether delegates stored into fields can ever be observed.
+    /// The IL importer of the scanner recognizes the following patterns. In all of them, the consumer is a store
+    /// into a tracked field (`stfld` or `stsfld`), or a call to a trivial setter of a tracked field.
+    ///
+    /// Delegate creation, in the form the C# compiler uses to cache lambdas and method groups. F is a field of a compiler
+    /// generated class, and the receiver is `ldnull` for a static target or the `&lt;&gt;9` singleton of a lambda container
+    /// class, so that dropping the creation can't change behavior:
+    ///   ldsfld F; dup; brtrue L; pop; (ldsfld C::&lt;&gt;9 | ldnull); ldftn M; newobj D::.ctor; dup; stsfld F; L: consumer
+    ///
+    /// The creation itself is recognized from the receiver on, without looking at the instructions before it.
+    /// The created delegate can only end up in F and in the destination of the consumer, so it is observable only if the
+    /// program may observe one of those. A read of F that is the first instruction of the sequence forwards the question to
+    /// the destination of the consumer. This requires the null case to be the creation that refills F: anything else could
+    /// make whether F has a delegate observable. A read of F that is not understood makes F observable on its own.
+    ///
+    /// Copy from one tracked field to another:
+    ///   (ldfld G | ldsfld G | call trivial getter of G); consumer
+    ///
+    /// Clearing a tracked instance field (not a read of it):
+    ///   ldflda F; ldnull; call Volatile.Write&lt;T&gt;(ref T, T)
+    ///
+    /// Any other use of a tracked field marks it as read.
     /// </summary>
     internal sealed class DelegateFlowAnalysis
     {
@@ -182,360 +201,21 @@ namespace ILCompiler
             field = field.GetTypicalFieldDefinition();
             return IsTrackedField(field) ? field : null;
         }
-    }
 
-    /// <summary>
-    /// The result of looking for IL patterns in a method body that let the delegate flow analysis
-    /// understand where delegates created by that method go.
-    ///
-    /// The following patterns are recognized. In all of them, the consumer is a store into a tracked field
-    /// (`stfld` or `stsfld`), or a call to a trivial setter of a tracked field, and the instruction following
-    /// the producer is not a branch target.
-    ///
-    /// Delegate creation, in the form the C# compiler uses to cache lambdas and method groups. F is a field of a compiler
-    /// generated class, and the receiver is `ldnull` for a static target or the `&lt;&gt;9` singleton of a lambda container
-    /// class, so that dropping the creation can't change behavior:
-    ///   ldsfld F; dup; brtrue L; pop; (ldsfld C::&lt;&gt;9 | ldnull); ldftn M; newobj D::.ctor; dup; stsfld F; L: consumer
-    ///
-    /// Copy from one tracked field to another:
-    ///   (ldfld G | ldsfld G | call trivial getter of G); consumer
-    ///
-    /// Clearing a tracked field (not a read of it):
-    ///   ldflda F; ldnull; call Volatile.Write&lt;T&gt;(ref T, T)
-    /// </summary>
-    internal sealed class DelegateFlowPatterns
-    {
-        public enum EventKind : byte
+        /// <summary>
+        /// Gets whether the given tracked field is the cache the C# compiler uses for the delegates it creates for
+        /// lambdas and method groups.
+        /// </summary>
+        public static bool IsDelegateCacheField(FieldDesc field)
         {
-            // At a `ldftn` that starts a delegate creation. Target is the target method. Dest is the destination field,
-            // Source is the field of the cache of the C# lambda caching pattern.
-            Site,
-
-            // At the load of a tracked field (Source) whose value is consumed by a store to Dest.
-            FieldForward,
-
-            // At a call to a trivial getter (Getter) whose result is consumed by a store to Dest.
-            GetterForward,
-
-            // At the `ldflda` of a tracked field that is cleared with Volatile.Write. Not a read of the field.
-            VolatileNullWrite,
-        }
-
-        public readonly struct Event(EventKind kind, MethodDesc target, MethodDesc getter, FieldDesc source, FieldDesc dest)
-        {
-            public EventKind Kind { get; } = kind;
-            public MethodDesc Target { get; } = target;
-            public MethodDesc Getter { get; } = getter;
-            public FieldDesc Source { get; } = source;
-            public FieldDesc Dest { get; } = dest;
-        }
-
-        private readonly Dictionary<int, Event> _events = new();
-
-        public bool TryGetEvent(int offset, out Event e) => _events.TryGetValue(offset, out e);
-
-        // Whether the method has any delegate creation that is conditional on the delegate being observed.
-        public bool HasSites { get; private set; }
-
-        public IReadOnlyDictionary<int, Event> Events => _events;
-
-        private struct Instr
-        {
-            public int Offset;
-            public ILOpcode Opcode;
-            public int Token;
-            public int BranchDestination;
-        }
-
-        [ThreadStatic]
-        private static List<Instr> t_instructions;
-
-        public static DelegateFlowPatterns Analyze(DelegateFlowAnalysis analysis, MethodIL methodIL)
-        {
-            // Classifying the callees can end up analyzing other methods on this thread, so the list is taken out while in use.
-            List<Instr> instructions = t_instructions ?? new List<Instr>();
-            t_instructions = null;
-            try
-            {
-                return AnalyzeCore(analysis, methodIL, instructions);
-            }
-            catch (TypeSystemException)
-            {
-                // The method body might refer to things that don't resolve in code that is never reached. Be conservative.
-                return null;
-            }
-            finally
-            {
-                instructions.Clear();
-                t_instructions = instructions;
-            }
-        }
-
-        private static DelegateFlowPatterns AnalyzeCore(DelegateFlowAnalysis analysis, MethodIL methodIL, List<Instr> instructions)
-        {
-            byte[] body = methodIL.GetILBytes();
-            if (body.Length < 7)
-                return null;
-
-            List<int> switchTargets = null;
-
-            var reader = new ILReader(body);
-            while (reader.HasNext)
-            {
-                var instr = new Instr { Offset = reader.Offset, BranchDestination = -1 };
-                ILOpcode opcode = reader.ReadILOpcode();
-                instr.Opcode = opcode;
-
-                switch (opcode)
-                {
-                    case ILOpcode.ldfld:
-                    case ILOpcode.ldsfld:
-                    case ILOpcode.ldflda:
-                    case ILOpcode.stfld:
-                    case ILOpcode.stsfld:
-                    case ILOpcode.call:
-                    case ILOpcode.callvirt:
-                    case ILOpcode.newobj:
-                    case ILOpcode.ldftn:
-                        instr.Token = reader.ReadILToken();
-                        break;
-
-                    case ILOpcode.switch_:
-                        {
-                            uint count = reader.ReadILUInt32();
-                            int jmpBase = reader.Offset + (int)(4 * count);
-                            switchTargets ??= new List<int>();
-                            for (uint i = 0; i < count; i++)
-                                switchTargets.Add((int)reader.ReadILUInt32() + jmpBase);
-                        }
-                        break;
-
-                    default:
-                        if ((opcode >= ILOpcode.br_s && opcode <= ILOpcode.blt_un) || opcode == ILOpcode.leave || opcode == ILOpcode.leave_s)
-                            instr.BranchDestination = reader.ReadBranchDestination(opcode);
-                        else
-                            reader.Skip(opcode);
-                        break;
-                }
-
-                instructions.Add(instr);
-            }
-
-            int instructionCount = instructions.Count;
-
-            // Most methods have nothing that could match. Find out before doing any real work.
-            bool hasCandidate = false;
-            for (int i = 0; i < instructionCount && !hasCandidate; i++)
-                hasCandidate = IsCandidate(instructions, i);
-
-            if (!hasCandidate)
-                return null;
-
-            bool[] isTarget = new bool[body.Length + 1];
-
-            if (switchTargets != null)
-            {
-                foreach (int destination in switchTargets)
-                {
-                    if ((uint)destination >= (uint)isTarget.Length)
-                        return null;
-                    isTarget[destination] = true;
-                }
-            }
-
-            for (int i = 0; i < instructionCount; i++)
-            {
-                int destination = instructions[i].BranchDestination;
-                if (destination < 0)
-                    continue;
-                if (destination >= isTarget.Length)
-                    return null;
-                isTarget[destination] = true;
-            }
-
-            foreach (ILExceptionRegion region in methodIL.GetExceptionRegions())
-            {
-                if ((uint)region.TryOffset >= (uint)isTarget.Length || (uint)region.HandlerOffset >= (uint)isTarget.Length)
-                    return null;
-
-                isTarget[region.TryOffset] = true;
-                isTarget[region.HandlerOffset] = true;
-                if (region.Kind == ILExceptionRegionKind.Filter && (uint)region.FilterOffset < (uint)isTarget.Length)
-                    isTarget[region.FilterOffset] = true;
-            }
-
-            DelegateFlowPatterns result = null;
-
-            for (int i = 0; i < instructionCount; i++)
-            {
-                Instr instr = instructions[i];
-
-                switch (instr.Opcode)
-                {
-                    case ILOpcode.ldftn:
-                        TryMatchCreation(analysis, methodIL, instructions, isTarget, i, ref result);
-                        break;
-
-                    case ILOpcode.ldfld:
-                    case ILOpcode.ldsfld:
-                        {
-                            if (!IsCandidate(instructions, i) || isTarget[instructions[i + 1].Offset])
-                                break;
-
-                            FieldDesc source = DelegateFlowAnalysis.GetTrackedField(methodIL, instr.Token);
-                            if (source == null)
-                                break;
-
-                            if (TryGetStoreDestination(analysis, methodIL, instructions[i + 1], out FieldDesc dest))
-                            {
-                                result ??= new DelegateFlowPatterns();
-                                result._events[instr.Offset] = new Event(EventKind.FieldForward, null, null, source, dest);
-                            }
-                        }
-                        break;
-
-                    case ILOpcode.call:
-                    case ILOpcode.callvirt:
-                        {
-                            if (!IsCandidate(instructions, i) || isTarget[instructions[i + 1].Offset])
-                                break;
-
-                            if (methodIL.GetObject(instr.Token, NotFoundBehavior.ReturnNull) is not MethodDesc method)
-                                break;
-
-                            var (kind, field) = analysis.GetAccessor(method);
-                            if (kind != DelegateFlowAnalysis.AccessorKind.Getter)
-                                break;
-
-                            if (TryGetStoreDestination(analysis, methodIL, instructions[i + 1], out FieldDesc dest))
-                            {
-                                result ??= new DelegateFlowPatterns();
-                                result._events[instr.Offset] = new Event(EventKind.GetterForward, null, method.GetTypicalMethodDefinition(), field, dest);
-                            }
-                        }
-                        break;
-
-                    case ILOpcode.ldflda:
-                        {
-                            if (!IsCandidate(instructions, i)
-                                || isTarget[instructions[i + 1].Offset]
-                                || isTarget[instructions[i + 2].Offset])
-                            {
-                                break;
-                            }
-
-                            FieldDesc field = DelegateFlowAnalysis.GetTrackedField(methodIL, instr.Token);
-                            if (field == null)
-                                break;
-
-                            if (methodIL.GetObject(instructions[i + 2].Token, NotFoundBehavior.ReturnNull) is MethodDesc callee
-                                && callee.OwningType is MetadataType calleeType
-                                && calleeType.Module == calleeType.Context.SystemModule
-                                && calleeType.Name == "Volatile"u8
-                                && calleeType.Namespace == "System.Threading"u8
-                                && callee.Name == "Write"u8
-                                && callee.Signature.Length == 2
-                                && callee.HasInstantiation)
-                            {
-                                result ??= new DelegateFlowPatterns();
-                                result._events[instr.Offset] = new Event(EventKind.VolatileNullWrite, null, null, field, null);
-                            }
-                        }
-                        break;
-                }
-            }
-
-            return result;
-        }
-
-        // Whether the instruction at the given index starts something that could be one of the patterns, judging by opcodes alone.
-        private static bool IsCandidate(List<Instr> instructions, int i)
-        {
-            int count = instructions.Count;
-            switch (instructions[i].Opcode)
-            {
-                case ILOpcode.ldftn:
-                    return i + 1 < count && instructions[i + 1].Opcode == ILOpcode.newobj;
-
-                case ILOpcode.ldfld:
-                case ILOpcode.ldsfld:
-                case ILOpcode.call:
-                case ILOpcode.callvirt:
-                    return i + 1 < count && instructions[i + 1].Opcode is ILOpcode.stfld or ILOpcode.stsfld or ILOpcode.call or ILOpcode.callvirt;
-
-                case ILOpcode.ldflda:
-                    return i + 2 < count && instructions[i + 1].Opcode == ILOpcode.ldnull && instructions[i + 2].Opcode == ILOpcode.call;
-
-                default:
-                    return false;
-            }
-        }
-
-
-        private static void TryMatchCreation(DelegateFlowAnalysis analysis, MethodIL methodIL, List<Instr> instructions, bool[] isTarget, int i, ref DelegateFlowPatterns result)
-        {
-            int count = instructions.Count;
-            Instr ldftn = instructions[i];
-
-            // Delegate creations in static constructors are left alone.
-            if (methodIL.OwningMethod.IsStaticConstructor)
-                return;
-
-            if (i < 1 || i + 2 >= count || isTarget[ldftn.Offset])
-                return;
-
-            Instr newobj = instructions[i + 1];
-            if (newobj.Opcode != ILOpcode.newobj || isTarget[newobj.Offset])
-                return;
-
-            if (methodIL.GetObject(ldftn.Token, NotFoundBehavior.ReturnNull) is not MethodDesc target
-                || methodIL.GetObject(newobj.Token, NotFoundBehavior.ReturnNull) is not MethodDesc ctor
-                || !ctor.OwningType.IsDelegate
-                || !ctor.IsConstructor
-                || !IsInfallibleReceiver(methodIL, instructions[i - 1], target))
-            {
-                return;
-            }
-
-            // Only the pattern the C# compiler uses to cache delegates is matched, with the cache in a compiler generated class.
             // A delegate creation that type preinitialization can interpret must not be dropped: the scanner doesn't see the code
             // preinitialization runs, so it can't tell whether the delegate is observed, and preinitialization would otherwise
             // embed a delegate to a method that was not scanned. Preinitialization gives up when it has to store into the static
-            // of another type, which is the case for the cache of every creation matched here. A creation without a cache, or
-            // with a cache in a class that could run user code in its static constructor, is left alone.
-            if (i >= 5
-                && i + 4 < count
-                && instructions[i - 5].Opcode == ILOpcode.ldsfld
-                && instructions[i - 4].Opcode == ILOpcode.dup
-                && instructions[i - 3].Opcode is ILOpcode.brtrue or ILOpcode.brtrue_s
-                && instructions[i - 2].Opcode == ILOpcode.pop
-                && instructions[i - 1].Opcode is ILOpcode.ldsfld or ILOpcode.ldnull
-                && instructions[i + 2].Opcode == ILOpcode.dup
-                && instructions[i + 3].Opcode == ILOpcode.stsfld
-                && instructions[i - 3].BranchDestination == instructions[i + 4].Offset
-                && !isTarget[instructions[i - 4].Offset]
-                && !isTarget[instructions[i - 3].Offset]
-                && !isTarget[instructions[i - 2].Offset]
-                && !isTarget[instructions[i - 1].Offset]
-                && !isTarget[ldftn.Offset]
-                && !isTarget[instructions[i + 2].Offset]
-                && !isTarget[instructions[i + 3].Offset])
-            {
-                FieldDesc cache = DelegateFlowAnalysis.GetTrackedField(methodIL, instructions[i - 5].Token);
-                FieldDesc storedCache = DelegateFlowAnalysis.GetTrackedField(methodIL, instructions[i + 3].Token);
-                if (cache != null && cache == storedCache
-                    && cache.OwningType is MetadataType cacheOwner
-                    && (CompilerGeneratedNames.IsLambdaDisplayClass(cacheOwner.Name.AsSpan()) || (IsDelegateCacheContainer(cacheOwner.Name.AsSpan()) && !cacheOwner.HasStaticConstructor))
-                    && TryGetStoreDestination(analysis, methodIL, instructions[i + 4], out FieldDesc dest))
-                {
-                    result ??= new DelegateFlowPatterns();
-
-                    // The value read from the cache by the first instruction flows to the same place as the new delegate.
-                    result._events[instructions[i - 5].Offset] = new Event(EventKind.FieldForward, null, null, cache, dest);
-                    result._events[ldftn.Offset] = new Event(EventKind.Site, target.GetTypicalMethodDefinition(), null, cache, dest);
-                    result.HasSites = true;
-                }
-            }
+            // of another type, which is the case for the cache of every creation we recognize. A cache in a class that could run
+            // user code in its static constructor is not recognized.
+            return field.OwningType is MetadataType owner
+                && (CompilerGeneratedNames.IsLambdaDisplayClass(owner.Name.AsSpan())
+                    || (IsDelegateCacheContainer(owner.Name.AsSpan()) && !owner.HasStaticConstructor));
         }
 
         // The C# compiler caches method group delegates in a container class named `<>O` (`<Method>O__ordinal_id` for
@@ -549,23 +229,35 @@ namespace ILCompiler
                 && (end + 2 == name.Length || name.Slice(end + 2).StartsWith("__"u8));
         }
 
-        // Removing the delegate creation also removes the checks the runtime does when binding the delegate to its receiver,
-        // and the use of the receiver. This is only fine if the creation can't throw and has no observable effect:
-        // - `ldnull` with a static target (an open static delegate), or
-        // - the singleton instance of the container class the C# compiler uses for lambdas that capture nothing
-        //   (a static readonly field of the container's own type, assigned by its static constructor and never null),
-        //   with a target in that class.
-        // Any other receiver, or a prefix such as `constrained.` in front of the `ldftn`, is left alone.
-        private static bool IsInfallibleReceiver(MethodIL methodIL, in Instr receiver, MethodDesc target)
+        /// <summary>
+        /// Gets whether a delegate creation that targets the given method can be a site (see <see cref="IsInfallibleReceiver"/>).
+        /// A delegate creation that is not a site only needs to be tracked for targets where it can share a key with one.
+        /// </summary>
+        public static bool IsPossibleSiteTarget(MethodDesc target)
         {
-            switch (receiver.Opcode)
+            return target.Signature.IsStatic
+                || (target.OwningType is MetadataType owner && CompilerGeneratedNames.IsLambdaDisplayClass(owner.Name.AsSpan()));
+        }
+
+        /// <summary>
+        /// Gets whether the instruction that loads the receiver of a delegate creation can be left in place when the creation
+        /// is replaced with null. Without the creation, nothing binds the delegate to its receiver, so the creation must not be able
+        /// to throw or have an observable effect:
+        /// - `ldnull` with a static target (an open static delegate), or
+        /// - the singleton instance of the container class the C# compiler uses for lambdas that capture nothing
+        ///   (a static readonly field of the container's own type, assigned by its static constructor and never null),
+        ///   with a target in that class.
+        /// </summary>
+        public static bool IsInfallibleReceiver(MethodIL methodIL, ILOpcode receiver, int receiverToken, MethodDesc target)
+        {
+            switch (receiver)
             {
                 case ILOpcode.ldnull:
                     return target.Signature.IsStatic;
 
                 case ILOpcode.ldsfld:
                     return !target.Signature.IsStatic
-                        && methodIL.GetObject(receiver.Token, NotFoundBehavior.ReturnNull) is FieldDesc field
+                        && methodIL.GetObject(receiverToken, NotFoundBehavior.ReturnNull) is FieldDesc field
                         && field.IsStatic
                         && field.IsInitOnly
                         && field.OwningType is MetadataType owningType
@@ -573,35 +265,6 @@ namespace ILCompiler
                         && CompilerGeneratedNames.IsLambdaDisplayClass(owningType.Name.AsSpan())
                         && field.FieldType.GetTypeDefinition() == owningType.GetTypeDefinition()
                         && field.GetTypicalFieldDefinition().OwningType == target.GetTypicalMethodDefinition().OwningType;
-
-                default:
-                    return false;
-            }
-        }
-
-        private static bool TryGetStoreDestination(DelegateFlowAnalysis analysis, MethodIL methodIL, in Instr consumer, out FieldDesc dest)
-        {
-            dest = null;
-
-            switch (consumer.Opcode)
-            {
-                case ILOpcode.stfld:
-                case ILOpcode.stsfld:
-                    dest = DelegateFlowAnalysis.GetTrackedField(methodIL, consumer.Token);
-                    return dest != null;
-
-                case ILOpcode.call:
-                case ILOpcode.callvirt:
-                    if (methodIL.GetObject(consumer.Token, NotFoundBehavior.ReturnNull) is MethodDesc method)
-                    {
-                        var (kind, field) = analysis.GetAccessor(method);
-                        if (kind == DelegateFlowAnalysis.AccessorKind.Setter)
-                        {
-                            dest = field;
-                            return true;
-                        }
-                    }
-                    return false;
 
                 default:
                     return false;
