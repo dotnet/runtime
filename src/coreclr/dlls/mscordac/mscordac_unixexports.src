@@ -51,7 +51,6 @@ nativeStringResourceTable_mscorrc
 #GetLastError
 #GetModuleFileNameW
 #GetProcAddress
-#GetSystemInfo
 #LoadLibraryExA
 #LoadLibraryExW
 #OutputDebugStringW

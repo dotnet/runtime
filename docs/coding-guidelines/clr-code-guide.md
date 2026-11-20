@@ -537,33 +537,34 @@ Suppose you want to auto-close the handle if an error occurs but keep the handle
 
 ### <a name="2.2.3"></a>2.2.3 Common Features of Holders
 
-All holders, no matter how complex or simple, offer these basic services:
+Holders manage resource ownership through scope-based cleanup. `LifetimeHolder` provides these basic services:
 
 - When the holder goes out of scope, via an exception or normal flow, it invokes a RELEASE function supplied by the holder's designer. The RELEASE function is responsible for the cleanup.
-- A holder declared without an explicit initializer will be initialized to a default value. The precise value of the default is supplied by the holder's designer.
-- Holders know about "null" values. The holder guarantees never to call RELEASE or ACQUIRE on a null value. The designer can specify any number of null values or no null value at all.
-- Holders expose a public SuppressRelease() method which eliminates the auto-release in the destructor. Use this for conditional backout.
-- Holders also support an ACQUIRE method when a resource can be meaningfully released and reacquired (e.g. locks.)
+- A holder declared without an explicit initializer is initialized to the traits type's default value.
+- Cleanup is invoked even for the default value, so the traits type must handle that value safely.
+- `Free()` cleans up the current value and resets it to the default.
+- `Detach()` returns the current value and resets it to the default without cleanup. Use this to transfer ownership.
+- Custom lock guards can expose `Acquire()` and `Release()` when callers need to release and reacquire a captured lock.
 
-In addition, some holders derive from the Wrapper class. Wrappers are like holders but also implement operator overloads for type casting, assignment, comparison, etc. so that the holder proxies the object smart-pointer style. The HandleHolder object is actually a wrapper.
+`LifetimeHolder` also supports assignment, conversion to the resource type, and pointer-like access for pointer resources.
 
 ### <a name="2.2.4"></a>2.2.4 Where do I find a holder?
 
 First, look for a prebaked holder that does what you want. Some common ones are described below.
 
-If no existing holder fits your need, make one. If it's your first holder, start by reading [src\inc\holder.h][holder.h]. Decide if you want a holder or a wrapper. If you don't do much with a resource except acquire and release it, use a holder. Otherwise, you want the wrapper since its overloaded operators make it much easier to replace the resource variable with the wrapper.
+If no existing holder fits your need, make one. If it's your first holder, start by reading [src\coreclr\inc\holder.h][holder.h]. Prefer `LifetimeHolder` for resources that only need cleanup.
 
 [holder.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/holder.h
 
-Instantiate the holder or wrapper template with the required parameters. You must supply the data type being managed, the RELEASE function, the default value for uninitialized constructions, the IS_NULL function and the ACQUIRE function. Unless you're implementing a critical section holder, you can probably supply a NOP for ACQUIRE . Most resources can't be meaningfully released and reacquired so it's easier to allocate the resource outside the holder and pass it in through its constructor. For convenience, [holder.h][holder.h] defines a DoNothing<Type> template that creates a NOP ACQUIRE function for any given resource type. There are also convenience templates for writing RELEASE functions. See [holder.h][holder.h] for their definitions and examples of their use.
+Instantiate `LifetimeHolder` with a traits type that supplies `Type`, `Default()`, and `Free(Type)`. The holder adopts an already acquired resource; it does not acquire it. Cleanup must accept the default value and must not throw. Use `Free()` to release and reset the resource, or `Detach()` to transfer ownership without cleanup. For locks, use a factory that acquires the lock before returning the holder. If callers need to release and reacquire a captured resource, a custom guard can retain its identity and compose a `LifetimeHolder` for the active ownership.
 
-Publish the holder in the most global header file possible. [src\inc\holder.h][holder.h] is ideal for OS-type resources. Otherwise, put it in the header file that owns the type being managed.
+Publish the holder in the most global header file possible. [src\coreclr\inc\holder.h][holder.h] is ideal for OS-type resources. Otherwise, put it in the header file that owns the type being managed.
 
 ### <a name="2.2.5"></a>2.2.5 Can I bake my own holder?
 
-When we first put holders into the code, we encouraged developers to inherit from the base holder class rather than writing their own. But the reality has been that many holders only need destruction and SuppressRelease() and it's proven easier for developers to write them from scratch rather than try to master the formidable C++ template magic that goes on in [holder.h][holder.h] It is better that you write your own holders than give up the design pattern altogether because you don't want to tackle [holder.h].
+Use a custom holder when the resource needs state or operations that `LifetimeHolder` does not provide. Prefer composition: `LifetimeHolder` is final and cannot be used as a base class.
 
-But however you decide to implement it, if you call your object a "holder", please make sure its external behavior conforms to the conventions listed above in "Common Features of Holders."
+Custom holders should make acquisition, cleanup, and ownership transfer explicit and prevent accidental copying.
 
 ### <a name="2.2.6"></a>2.2.6 What if my backout code throws an exception?
 
@@ -575,7 +576,7 @@ Often, you can avoid failures in backout code by designing a better data structu
 
 ### <a name="2.2.7"></a>2.2.7 Pay attention to holder initialization semantics
 
-Holders consistently release on destruction – that's their whole purpose. Sadly, we are not so consistent when it comes the initialization semantics. Some holders, such as the Crst holder, do an implicit Acquire on initialization. Others, such as the ComHolder do not (initializing a ComHolder does _not_ do an AddRef.) The BaseHolder class constructor leaves it up to the holder designer to make the choice. This is an easy source of bugs so pay attention to this.
+Holders consistently release on destruction – that's their whole purpose. Pay attention to initialization semantics: a `CrstHolder` acquires its lock on construction, whereas a `LifetimeHolder` adopts an already acquired resource without acquiring it again. In particular, initializing a `ComHolder` does _not_ call `AddRef`. Acquiring factories should make this distinction explicit.
 
 ### <a name="2.2.8"></a>2.2.8 Some generally useful prebaked holders
 
