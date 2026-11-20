@@ -1193,6 +1193,7 @@ namespace Internal.JitInterface
             // properly.
             NativeMemory.Fill(pResult, (nuint)sizeof(CORINFO_CALL_INFO), 0xcc);
 #endif
+            pResult->instParamLookup = default;
             MethodDesc method = HandleToObject(pResolvedToken.hMethod);
 
             // Spec says that a callvirt lookup ignores static methods. Since static methods
@@ -1521,7 +1522,7 @@ namespace Internal.JitInterface
 
                     if (instParam != null)
                     {
-                        pResult->instParamLookup = CreateConstLookupToSymbol(instParam);
+                        pResult->instParamLookup.constLookup = CreateConstLookupToSymbol(instParam);
                     }
 
                     pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(

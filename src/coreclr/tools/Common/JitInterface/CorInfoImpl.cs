@@ -1099,6 +1099,25 @@ namespace Internal.JitInterface
             return corInfoType;
         }
 
+        private void prepareCallLookups(ref CORINFO_RESOLVED_TOKEN resolvedToken,
+            CORINFO_RESOLVED_TOKEN* constrainedToken, CORINFO_METHOD_STRUCT_* caller, CORINFO_CALL_INFO* callInfo)
+        {
+            Debug.Assert((callInfo->sig.callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0 && callInfo->exactContextNeedsRuntimeLookup);
+            CORINFO_CONTEXT_STRUCT* context = callInfo->contextHandle;
+            bool embedParent = ((nuint)context & (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS;
+            CORINFO_GENERICHANDLE_RESULT result = default;
+            if (embedParent && constrainedToken != null &&
+                (CORINFO_CLASS_STRUCT_*)((nuint)context & ~(nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == constrainedToken->hClass)
+            {
+                embedGenericHandle(ref *constrainedToken, false, caller, ref result);
+            }
+            else
+            {
+                embedGenericHandle(ref resolvedToken, embedParent, caller, ref result);
+            }
+            callInfo->instParamLookup = result.lookup;
+        }
+
         private CORINFO_CONTEXT_STRUCT* contextFromMethod(MethodDesc method)
         {
             return (CORINFO_CONTEXT_STRUCT*)(((nuint)ObjectToHandle(method)) | (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_METHOD);

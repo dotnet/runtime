@@ -5542,63 +5542,28 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         }
         else
         {
-            // Instantiated generic method
-            CORINFO_CONTEXT_HANDLE exactContextHnd = callInfo.contextHandle;
-            if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+            if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && readonly)
             {
-                assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
-
-                CORINFO_METHOD_HANDLE exactMethodHandle =
-                    (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
-                DeclarePointerIsMethod(exactMethodHandle);
-
-                if (!callInfo.exactContextNeedsRuntimeLookup)
-                {
-                    PushStackType(StackTypeI, NULL);
-                    m_pStackPointer--;
-                    contextParamVar = m_pStackPointer[0].var;
-                    AddIns(INTOP_LDPTR);
-                    m_pLastNewIns->SetDVar(contextParamVar);
-                    m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactMethodHandle);
-                }
-                else
-                {
-                    contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly).var;
-                }
+                // A null instantiation argument requests readonly array Address semantics.
+                EmitLoadPointer(0);
             }
-            // otherwise must be an instance method in a generic struct,
-            // a static method in a generic type, or a runtime-generated array method
             else
             {
-                assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-                CORINFO_CLASS_HANDLE exactClassHandle = getClassFromContext(exactContextHnd);
-                DeclarePointerIsClass(exactClassHandle);
-
-                if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && readonly)
+                if (callInfo.exactContextNeedsRuntimeLookup)
                 {
-                    PushStackType(StackTypeI, NULL);
-                    m_pStackPointer--;
-                    contextParamVar = m_pStackPointer[0].var;
-                    // We indicate "readonly" to the Address operation by using a null
-                    // instParam.
-                    AddIns(INTOP_LDPTR);
-                    m_pLastNewIns->SetDVar(contextParamVar);
-                    m_pLastNewIns->data[0] = GetDataItemIndex(NULL);
+                    m_compHnd->prepareCallLookups(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, &callInfo);
                 }
-                else if (!callInfo.exactContextNeedsRuntimeLookup)
+                if (callInfo.instParamLookup.lookupKind.needsRuntimeLookup)
                 {
-                    PushStackType(StackTypeI, NULL);
-                    m_pStackPointer--;
-                    contextParamVar = m_pStackPointer[0].var;
-                    AddIns(INTOP_LDPTR);
-                    m_pLastNewIns->SetDVar(contextParamVar);
-                    m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactClassHandle);
+                    EmitPushCORINFO_LOOKUP(callInfo.instParamLookup);
                 }
                 else
                 {
-                    contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly | GenericHandleEmbedOptions::EmbedParent).var;
+                    assert(callInfo.instParamLookup.constLookup.accessType == IAT_VALUE);
+                    EmitLoadPointer((intptr_t)callInfo.instParamLookup.constLookup.handle);
                 }
             }
+            contextParamVar = (--m_pStackPointer)->var;
         }
         callArgs[extraParamArgLocation] = contextParamVar;
     }

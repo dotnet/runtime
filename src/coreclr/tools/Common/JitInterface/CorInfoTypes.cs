@@ -1162,7 +1162,7 @@ namespace Internal.JitInterface
         public CORINFO_LOOKUP codePointerOrStubLookup;
 
         // Used by Ready-to-Run
-        public CORINFO_CONST_LOOKUP instParamLookup;
+        public CORINFO_LOOKUP instParamLookup;
     }
 
     public enum CORINFO_DEVIRTUALIZATION_DETAIL
