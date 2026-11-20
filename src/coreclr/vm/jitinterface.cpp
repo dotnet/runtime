@@ -4912,6 +4912,8 @@ void CEEInfo::getCallInfo(
     bool canPassDeclaringTypeArg = false;
     MethodDesc* pDeclaringTypeArgMethod = NULL;
     DWORD declaringTypeInterfaceIndex = (DWORD)-1;
+    bool canPassMethodContextArg = false;
+    MethodDesc* pMethodContextArgMethod = NULL;
 
     JIT_TO_EE_TRANSITION();
 
@@ -5216,12 +5218,23 @@ void CEEInfo::getCallInfo(
             }
         }
 
+        // A resolved generic method on the constrained value type needs its own method context.
+        // prepareCallLookups looks that up from the resolved method, so the call stays direct
+        // and inlinable with the method context supplied as a deferred lookup.
+        canPassMethodContextArg = allowInstParam && fResolvedConstraint && !fForceUseRuntimeLookup &&
+                                  pTargetMD->HasMethodInstantiation() && exactType.IsValueType() &&
+                                  exactType == constrainedType;
+        if (canPassMethodContextArg)
+        {
+            pMethodContextArgMethod = pTargetMD;
+        }
+
         // If the target method is resolved via constrained static virtual dispatch and needs a
         // context other than the constrained type, force the call down the CORINFO_CALL_CODE_POINTER
         // path and look the correct instantiating stub up at runtime. This should only happen for
         // shared generic code calling a shared generic implementation method, which should be rare.
         if (IsMdStatic(dwTargetMethodAttrs) && constrainedType != NULL && pResult->exactContextNeedsRuntimeLookup &&
-            !canPassConstrainedTypeArg && !canPassDeclaringTypeArg)
+            !canPassConstrainedTypeArg && !canPassDeclaringTypeArg && !canPassMethodContextArg)
         {
             allowInstParam = FALSE;
         }
@@ -5253,7 +5266,7 @@ void CEEInfo::getCallInfo(
         //        still require a runtime lookup of the instantiating stub
 
         if (((pResult->exactContextNeedsRuntimeLookup && pTargetMD->IsInstantiatingStub() &&
-              (!allowInstParam || (fResolvedConstraint && !canPassConstrainedTypeArg && !canPassDeclaringTypeArg))) || fForceUseRuntimeLookup))
+              (!allowInstParam || (fResolvedConstraint && !canPassConstrainedTypeArg && !canPassDeclaringTypeArg && !canPassMethodContextArg))) || fForceUseRuntimeLookup))
         {
             pResult->kind = CORINFO_CALL_CODE_POINTER;
 
@@ -5599,6 +5612,14 @@ void CEEInfo::getCallInfo(
         pResult->instParamLookup.deferredLookup = {
             (CORINFO_METHOD_HANDLE)pDeclaringTypeArgMethod, (unsigned)DeclaringTypeHandleFromMethodSlot,
             declaringTypeInterfaceIndex, true};
+    }
+    else if (canPassMethodContextArg)
+    {
+        // The resolved generic method's own context is looked up from it in prepareCallLookups.
+        pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
+        pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
+        pResult->instParamLookup.deferredLookup = {
+            (CORINFO_METHOD_HANDLE)pMethodContextArgMethod, (unsigned)MethodDescSlot, (DWORD)-1, true};
     }
     else if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
     {
