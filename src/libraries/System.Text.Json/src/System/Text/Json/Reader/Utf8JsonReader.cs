@@ -1364,7 +1364,8 @@ namespace System.Text.Json
             long prevLineBytePosition = _bytePositionInLine;
             long prevLineNumber = _lineNumber;
 
-            _bytePositionInLine += idx + 1; // Add 1 for the first quote
+            // Track the position in a local rather than updating the field for every byte.
+            long bytePositionInLine = _bytePositionInLine + idx + 1; // Add 1 for the first quote
 
             bool nextCharEscaped = false;
             for (; idx < data.Length; idx++)
@@ -1386,14 +1387,17 @@ namespace System.Text.Json
                 {
                     if (!JsonConstants.EscapableChars.Contains(currentByte))
                     {
+                        _bytePositionInLine = bytePositionInLine;
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterAfterEscapeWithinString, currentByte);
                     }
 
                     if (currentByte == 'u')
                     {
                         // Expecting 4 hex digits to follow the escaped 'u'
-                        _bytePositionInLine++;  // move past the 'u'
-                        if (ValidateHexDigits(data, idx + 1))
+                        _bytePositionInLine = bytePositionInLine + 1;  // move past the 'u'
+                        bool validHexDigits = ValidateHexDigits(data, idx + 1);
+                        bytePositionInLine = _bytePositionInLine;
+                        if (validHexDigits)
                         {
                             idx += 4;   // Skip the 4 hex digits, the for loop accounts for idx incrementing past the 'u'
                         }
@@ -1409,16 +1413,18 @@ namespace System.Text.Json
                 }
                 else if (currentByte < JsonConstants.Space)
                 {
+                    _bytePositionInLine = bytePositionInLine;
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterWithinString, currentByte);
                 }
 
-                _bytePositionInLine++;
+                bytePositionInLine++;
             }
 
             if (idx >= data.Length)
             {
                 if (IsLastSpan)
                 {
+                    _bytePositionInLine = bytePositionInLine;
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.EndOfStringNotFound);
                 }
                 _lineNumber = prevLineNumber;
@@ -1427,7 +1433,7 @@ namespace System.Text.Json
             }
 
         Done:
-            _bytePositionInLine++;  // Add 1 for the end quote
+            _bytePositionInLine = bytePositionInLine + 1;  // Add 1 for the end quote
             ValueSpan = data.Slice(0, idx);
             ValueIsEscaped = true;
             _tokenType = JsonTokenType.String;
