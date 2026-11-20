@@ -13,6 +13,10 @@ namespace System.IO
 
         public static char[] GetInvalidPathChars() => new char[] { '\0' };
 
+        private const int MaxPathLength = 4096;
+
+        private const int MaxNameLength = 255;
+
         // Checks if the given path is available for use.
         private static bool ExistsCore(string fullPath, out bool isDirectory)
         {
@@ -50,7 +54,7 @@ namespace System.IO
             return GetFullPathInternal(CombineInternal(basePath, path));
         }
 
-        // Gets the full path without argument validation
+        // Gets the full path with a length check
         private static string GetFullPathInternal(string path)
         {
             Debug.Assert(!string.IsNullOrEmpty(path));
@@ -69,6 +73,33 @@ namespace System.IO
                 "Either we've removed characters, or the string should be unmodified from the input path.");
 
             string result = collapsedString.Length == 0 ? PathInternal.DirectorySeparatorCharAsString : collapsedString;
+
+            // Check total path length.
+            if (result.Length > MaxPathLength)
+                throw new PathTooLongException(SR.Format(SR.IO_PathTooLong_Path, result));
+
+            // Check the maximum length of a single path component.
+            int maxNameLength = 0;
+            int currentNameLength = 0;
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                if (result[i] == PathInternal.DirectorySeparatorChar)
+                {
+                    if (currentNameLength > maxNameLength)
+                        maxNameLength = currentNameLength;
+                    currentNameLength = 0;
+                }
+                else
+                {
+                    currentNameLength++;
+                }
+            }
+
+            if (maxNameLength > MaxNameLength || currentNameLength > MaxNameLength)
+            {
+                throw new PathTooLongException(SR.Format(SR.IO_PathTooLong_Path, result));
+            }
 
             return result;
         }
