@@ -12958,6 +12958,7 @@ static bool isJitted(MethodDesc* ftnDesc, const char* ftnName)
         "IsAsciiLetter",
         "LSeek",
         "FStat",
+        "FastMod",
         "ReadInt16",
         "ParseExtendedStrings",
         "GetString",
