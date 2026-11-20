@@ -6,7 +6,7 @@
     <!-- File version numbers -->
     <MajorVersion>11</MajorVersion>
     <MinorVersion>0</MinorVersion>
-    <PatchVersion>1</PatchVersion>
+    <PatchVersion>2</PatchVersion>
     <!-- The .NET product branding version -->
     <ProductVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</ProductVersion>
     <PackageVersionNet10>10.0.0</PackageVersionNet10>
