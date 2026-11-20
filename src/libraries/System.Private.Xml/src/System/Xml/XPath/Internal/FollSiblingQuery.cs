@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Xml.XPath;
 using StackNav = MS.Internal.Xml.XPath.ClonableStack<System.Xml.XPath.XPathNavigator>;
 
@@ -10,42 +9,27 @@ namespace MS.Internal.Xml.XPath
     internal sealed class FollSiblingQuery : BaseAxisQuery
     {
         private readonly StackNav _elementStk;
-        private readonly List<XPathNavigator> _parentStk;
+        private readonly SiblingInputParents _inputParents;
         private XPathNavigator? _nextInput;
 
         public FollSiblingQuery(Query qyInput, string name, string prefix, XPathNodeType type) : base(qyInput, name, prefix, type)
         {
             _elementStk = new StackNav();
-            _parentStk = new List<XPathNavigator>();
+            _inputParents = new SiblingInputParents(reverse: false);
         }
         private FollSiblingQuery(FollSiblingQuery other) : base(other)
         {
             _elementStk = other._elementStk.Clone();
-            _parentStk = new List<XPathNavigator>(other._parentStk);
+            _inputParents = other._inputParents.Clone();
             _nextInput = Clone(other._nextInput);
         }
 
         public override void Reset()
         {
             _elementStk.Clear();
-            _parentStk.Clear();
+            _inputParents.Clear();
             _nextInput = null;
             base.Reset();
-        }
-
-        private bool Visited(XPathNavigator nav)
-        {
-            XPathNavigator parent = nav.Clone();
-            parent.MoveToParent();
-            for (int i = 0; i < _parentStk.Count; i++)
-            {
-                if (parent.IsSamePosition(_parentStk[i]))
-                {
-                    return true;
-                }
-            }
-            _parentStk.Add(parent);
-            return false;
         }
 
         private XPathNavigator? FetchInput()
@@ -58,7 +42,7 @@ namespace MS.Internal.Xml.XPath
                 {
                     return null;
                 }
-            } while (Visited(input));
+            } while (!_inputParents.TryAdd(input));
             return input.Clone();
         }
 
