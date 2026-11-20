@@ -9,6 +9,7 @@
 // 4gb of memory. Limit the maximum number of dimensions to a value that 
 // requires 4gb of memory.
 // If you make this bigger, you need to make MAX_CLASSNAME_LENGTH bigger too.
+// Keep in sync with managed Array.MaxRank
 #define MAX_RANK 32
 
 class MethodTable;

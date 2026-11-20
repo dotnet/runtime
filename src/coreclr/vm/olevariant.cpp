@@ -1717,8 +1717,8 @@ BASEARRAYREF OleVariant::CreateArrayRefForSafeArray(SAFEARRAY *pSafeArray, VARTY
     CONTRACTL_END;
 
     TypeHandle arrayType;
-    INT32 *pAllocateArrayArgs;
-    int cAllocateArrayArgs;
+    INT32 *pAllocateArrayLengths;
+    INT32 *pAllocateArrayLowerBounds;
     int Rank;
     VARTYPE SafeArrayVT;
 
@@ -1746,41 +1746,25 @@ BASEARRAYREF OleVariant::CreateArrayRefForSafeArray(SAFEARRAY *pSafeArray, VARTY
         }
     }
 
-    // Determine if the input SAFEARRAY can be converted to an SZARRAY.
-    if ((pSafeArray->cDims == 1) && (pSafeArray->rgsabound->lLbound == 0))
-    {
-        // The SAFEARRAY maps to an SZARRAY. For SZARRAY's AllocateArrayEx()
-        // expects the arguments to be a pointer to the cound of elements in the array
-        // and the size of the args must be set to 1.
-        Rank = 1;
-        cAllocateArrayArgs = 1;
-        pAllocateArrayArgs = (INT32 *) &pSafeArray->rgsabound[0].cElements;
-    }
-    else
-    {
-        // The SAFEARRAY maps to an general array. For general arrays AllocateArrayEx()
-        // expects the arguments to be composed of the lower bounds / element count pairs
-        // for each of the dimensions. We need to reverse the order that the lower bounds
-        // and element pairs are presented before we call AllocateArrayEx().
-        Rank = pSafeArray->cDims;
-        cAllocateArrayArgs = Rank * 2;
-        pAllocateArrayArgs = (INT32*)_alloca(sizeof(INT32) * Rank * 2);
-        INT32 * pBoundsPtr = pAllocateArrayArgs;
+    Rank = pSafeArray->cDims;
+    pAllocateArrayLengths = (INT32*)_alloca(sizeof(INT32) * Rank);
+    pAllocateArrayLowerBounds = (INT32*)_alloca(sizeof(INT32) * Rank);
+    INT32* pLengthsPtr = pAllocateArrayLengths;
+    INT32* pLowerBoundsPtr = pAllocateArrayLowerBounds;
 
-        // Copy the lower bounds and count of elements for the dimensions. These
-        // need to copied in reverse order.
-        for (int i = Rank - 1; i >= 0; i--)
-        {
-            *pBoundsPtr++ = pSafeArray->rgsabound[i].lLbound;
-            *pBoundsPtr++ = pSafeArray->rgsabound[i].cElements;
-        }
+    // Copy the lower bounds and count of elements for the dimensions. These
+    // need to copied in reverse order.
+    for (int i = Rank - 1; i >= 0; i--)
+    {
+        *pLengthsPtr++ = pSafeArray->rgsabound[i].lLbound;
+        *pLowerBoundsPtr++ = pSafeArray->rgsabound[i].cElements;
     }
 
     // Retrieve the type of the array.
     arrayType = GetArrayForVarType(vt, pElementMT, Rank);
 
-    // Allocate the array.
-    return (BASEARRAYREF) AllocateArrayEx(arrayType, pAllocateArrayArgs, cAllocateArrayArgs);
+    // Allocate the array. AllocateArrayEx handles the conversion to SZARRAY.
+    return (BASEARRAYREF) AllocateArrayEx(arrayType, pAllocateArrayLengths, pAllocateArrayLowerBounds, Rank);
 }
 
 /* ------------------------------------------------------------------------- *
@@ -2465,28 +2449,17 @@ BASEARRAYREF OleVariant::ExtractWrappedObjectsFromArray(BASEARRAYREF *pArray)
     }
     _ASSERTE(!hndArrayType.IsNull());
 
-    // Set up the bounds arguments.
-    DWORD numArgs =  rank*2;
-        INT32* args = (INT32*) _alloca(sizeof(INT32)*numArgs);
-
+    BASEARRAYREF DestArray = NULL;
     if (bIsMDArray)
     {
-        const INT32* bounds = (*pArray)->GetBoundsPtr();
-        const INT32* lowerBounds = (*pArray)->GetLowerBoundsPtr();
-        for(unsigned int i=0; i < rank; i++)
-        {
-            args[2*i]   = lowerBounds[i];
-            args[2*i+1] = bounds[i];
-        }
+        DestArray = (BASEARRAYREF)AllocateArrayEx(hndArrayType, (*pArray)->GetBoundsPtr(), (*pArray)->GetLowerBoundsPtr(), rank);
     }
     else
     {
-        numArgs = 1;
-        args[0] = (*pArray)->GetNumComponents();
+        DestArray = (BASEARRAYREF)AllocateSzArray(hndArrayType, (*pArray)->GetNumComponents());
     }
 
     // Extract the values from the source array and copy them into the destination array.
-    BASEARRAYREF DestArray = (BASEARRAYREF)AllocateArrayEx(hndArrayType, args, numArgs);
     GCPROTECT_BEGIN(DestArray)
     {
         SIZE_T NumComponents = (*pArray)->GetNumComponents();

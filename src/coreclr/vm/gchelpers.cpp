@@ -680,7 +680,7 @@ void ThrowOutOfMemoryDimensionsExceeded()
 //
 // This is wrapper overload to handle TypeHandle arrayType
 //
-OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags)
+OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pLengths, INT32 *pLowerBounds, DWORD dwNumArgs, GC_ALLOC_FLAGS flags)
 {
     CONTRACTL
     {
@@ -689,24 +689,24 @@ OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, G
 
     MethodTable* pArrayMT = arrayType.AsMethodTable();
 
-    return AllocateArrayEx(pArrayMT, pArgs, dwNumArgs, flags);
+    return AllocateArrayEx(pArrayMT, pLengths, pLowerBounds, dwNumArgs, flags);
 }
 
 //
 // Handles arrays of arbitrary dimensions
 //
-// If dwNumArgs is set to greater than 1 for a SZARRAY this function will recursively
+// If dwRank is set to greater than 1 for a SZARRAY this function will recursively
 // allocate sub-arrays and fill them in.
 //
-// For arrays with lower bounds, pBounds is <lower bound 1>, <count 1>, <lower bound 2>, ...
-OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags)
+// For arrays with lower bounds, pLowerBounds is not null.
+OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pLengths, INT32 *pLowerBounds, DWORD dwRank, GC_ALLOC_FLAGS flags)
 {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
-        PRECONDITION(CheckPointer(pArgs));
-        PRECONDITION(dwNumArgs > 0);
+        PRECONDITION(CheckPointer(pLengths));
+        PRECONDITION(dwRank > 0);
     } CONTRACTL_END;
 
     SetTypeHandleOnThreadForAlloc(TypeHandle(pArrayMT));
@@ -724,33 +724,29 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     // Calculate the total number of elements in the array
     UINT32 cElements;
     bool maxArrayDimensionLengthOverflow = false;
-    bool providedLowerBounds = false;
 
     if (kind == ELEMENT_TYPE_ARRAY)
     {
         unsigned rank = pArrayMT->GetRank();
-        _ASSERTE(dwNumArgs == rank || dwNumArgs == 2*rank);
+        _ASSERTE(dwRank == rank);
 
         // Morph a ARRAY rank 1 with 0 lower bound into an SZARRAY
-        if (rank == 1 && (dwNumArgs == 1 || pArgs[0] == 0))
+        if (rank == 1 && (!pLowerBounds || pLowerBounds[0] == 0))
         {
             TypeHandle szArrayType = ClassLoader::LoadArrayTypeThrowing(pArrayMT->GetArrayElementTypeHandle(), ELEMENT_TYPE_SZARRAY, 1);
-            return AllocateSzArray(szArrayType, pArgs[dwNumArgs - 1], flags);
+            return AllocateSzArray(szArrayType, pLengths[0], flags);
         }
-
-        providedLowerBounds = (dwNumArgs == 2*rank);
 
         S_UINT32 safeTotalElements = S_UINT32(1);
 
-        for (unsigned i = 0; i < dwNumArgs; i++)
+        for (unsigned i = 0; i < dwRank; i++)
         {
             int lowerBound = 0;
-            if (providedLowerBounds)
+            if (pLowerBounds)
             {
-                lowerBound = pArgs[i];
-                i++;
+                lowerBound = pLowerBounds[i];
             }
-            int length = pArgs[i];
+            int length = pLengths[i];
             if (length < 0)
                 COMPlusThrow(kOverflowException);
             if ((SIZE_T)length > MaxArrayLength())
@@ -766,7 +762,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     }
     else
     {
-        int length = pArgs[0];
+        int length = pLengths[0];
         if (length < 0)
             COMPlusThrow(kOverflowException);
         if ((SIZE_T)length > MaxArrayLength())
@@ -830,11 +826,11 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     {
         INT32 *pCountsPtr      = (INT32 *) orArray->GetBoundsPtr();
         INT32 *pLowerBoundsPtr = (INT32 *) orArray->GetLowerBoundsPtr();
-        for (unsigned i = 0; i < dwNumArgs; i++)
+        for (unsigned i = 0; i < dwRank; i++)
         {
-            if (providedLowerBounds)
-                *pLowerBoundsPtr++ = pArgs[i++];        // if not stated, lower bound becomes 0
-            *pCountsPtr++ = pArgs[i];
+            if (pLowerBounds)
+                *pLowerBoundsPtr++ = pLowerBounds[i];        // if not stated, lower bound becomes 0
+            *pCountsPtr++ = pLengths[i];
         }
     }
 
@@ -843,7 +839,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     if (kind != ELEMENT_TYPE_ARRAY)
     {
         // Handle allocating multiple jagged array dimensions at once
-        if (dwNumArgs > 1)
+        if (dwRank > 1)
         {
             PTRARRAYREF outerArray = (PTRARRAYREF) ObjectToOBJECTREF((Object *) orArray);
             GCPROTECT_BEGIN(outerArray);
@@ -862,7 +858,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
                     TypeHandle subArrayType = pArrayMT->GetArrayElementTypeHandle();
                     for (UINT32 i = 0; i < cElements; i++)
                     {
-                        OBJECTREF obj = AllocateArrayEx(subArrayType, &pArgs[1], dwNumArgs-1, flagsOriginal);
+                        OBJECTREF obj = AllocateArrayEx(subArrayType, &pLengths[1], NULL, dwRank-1, flagsOriginal);
                         outerArray->SetAt(i, obj);
                     }
 
@@ -877,6 +873,41 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     }
 
     return ObjectToOBJECTREF((Object *) orArray);
+}
+
+//
+// Handles arrays of arbitrary dimensions
+//
+// This is wrapper overload to handle args in array ctor format: <lower bound 1>, <count 1>, <lower bound 2>, ...
+//
+OBJECTREF AllocateArrayCtorArgs(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags)
+{
+    CONTRACTL
+    {
+        WRAPPER_NO_CONTRACT;
+    } CONTRACTL_END;
+
+    DWORD rank = pArrayMT->GetRank();
+    _ASSERTE(dwNumArgs == rank || dwNumArgs == 2 * rank);
+
+    if (dwNumArgs == 2 * rank)
+    {
+        // Array ctor uses args in <lowerbound1> <count1> <lowerbound2> <count2> ... order.
+        // Split the bounds and lengths.
+        INT32* pLowerBounds = (INT32*)_alloca(rank * sizeof(INT32));
+        INT32* pLengths = (INT32*)_alloca(rank * sizeof(INT32));
+        for (DWORD i = 0; i < rank; i++)
+        {
+            pLowerBounds[i] = pArgs[i * 2];
+            pLengths[i] = pArgs[i * 2 + 1];
+        }
+        
+        return AllocateArrayEx(pArrayMT, pLengths, pLowerBounds, dwNumArgs);
+    }
+    else
+    {
+        return AllocateArrayEx(pArrayMT, pArgs, NULL, dwNumArgs);
+    }
 }
 
 /*
@@ -921,27 +952,15 @@ OBJECTREF   DupArrayForCloning(BASEARRAYREF pRef)
     } CONTRACTL_END;
 
     MethodTable *pArrayMT = pRef->GetMethodTable();
-    unsigned rank = pArrayMT->GetRank();
-
-    DWORD numArgs =  rank*2;
-    INT32* args = (INT32*) _alloca(sizeof(INT32)*numArgs);
 
     if (pArrayMT->GetInternalCorElementType() == ELEMENT_TYPE_ARRAY)
     {
-        const INT32* bounds = pRef->GetBoundsPtr();
-        const INT32* lowerBounds = pRef->GetLowerBoundsPtr();
-        for(unsigned int i=0; i < rank; i++)
-        {
-            args[2*i]   = lowerBounds[i];
-            args[2*i+1] = bounds[i];
-        }
+        return AllocateArrayEx(pArrayMT, pRef->GetBoundsPtr(), pRef->GetLowerBoundsPtr(), pArrayMT->GetRank(), GC_ALLOC_ZEROING_OPTIONAL);
     }
     else
     {
-        numArgs = 1;
-        args[0] = pRef->GetNumComponents();
+        return AllocateSzArray(pArrayMT, pRef->GetNumComponents(), GC_ALLOC_ZEROING_OPTIONAL);
     }
-    return AllocateArrayEx(pArrayMT, args, numArgs, GC_ALLOC_ZEROING_OPTIONAL);
 }
 
 

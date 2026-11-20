@@ -1001,7 +1001,7 @@ static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int
         dims[i] = *(int32_t*)(dimsBase + i * 8);
     }
 
-    return AllocateArrayEx(arrayClass, dims, numArgs);
+    return AllocateArrayCtorArgs(arrayClass, dims, numArgs);
 }
 
 template <typename THelper> static THelper GetPossiblyIndirectHelper(const InterpMethod* pMethod, int32_t _data, MethodDesc** pILTargetMethod = NULL)

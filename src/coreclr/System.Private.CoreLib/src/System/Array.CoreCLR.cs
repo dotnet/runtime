@@ -20,6 +20,7 @@ namespace System
         private static unsafe partial void InternalCreate(QCallTypeHandle type, int rank, int* pLengths, int* pLowerBounds,
             [MarshalAs(UnmanagedType.Bool)] bool fromArrayType, ObjectHandleOnStack retArray);
 
+        // Callers are responsive to keep pLengths and pLowerBounds immutable.
         private static unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds)
         {
             Array? retArray = null;
@@ -28,6 +29,7 @@ namespace System
             return retArray!;
         }
 
+        // Callers are responsive to keep pLengths and pLowerBounds immutable.
         private static unsafe Array InternalCreateFromArrayType(RuntimeType arrayType, int rank, int* pLengths, int* pLowerBounds)
         {
             Array? retArray = null;
