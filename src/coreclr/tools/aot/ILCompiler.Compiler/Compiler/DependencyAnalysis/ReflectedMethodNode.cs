@@ -36,6 +36,13 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.MetadataManager.GetDependenciesDueToReflectability(sink, factory, _method);
 
+            // Reflection can call the method, so if it is a getter of a delegate stored in a field, that delegate is observable.
+            if (factory is ILScanNodeFactory { DelegateFlow: not null } scanFactory
+                && scanFactory.DelegateFlow.GetAccessor(_method).Kind == DelegateFlowAnalysis.AccessorKind.Getter)
+            {
+                sink.Add(scanFactory.DelegateReturnObserved(_method.GetTypicalMethodDefinition()), "Reflectable getter");
+            }
+
             // Ensure we consistently apply reflectability to all methods sharing the same definition.
             // Different instantiations of the method have a conditional dependency on the definition node that
             // brings a ReflectableMethod of the instantiated method if it's necessary for it to be reflectable.

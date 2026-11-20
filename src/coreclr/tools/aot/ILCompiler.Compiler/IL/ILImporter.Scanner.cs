@@ -11,6 +11,7 @@ using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 
 using Debug = System.Diagnostics.Debug;
+using DependencyNodeCore = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using CombinedDependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyList;
 using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
@@ -34,6 +35,11 @@ namespace Internal.IL
         private readonly MethodDesc _canonMethod;
 
         private DependencyList _unconditionalDependencies = new DependencyList();
+
+        // State of the analysis that determines whether delegates stored into fields are ever observed.
+        // See DelegateFlowAnalysis for the IL patterns that are understood.
+        private (DelegateFlowAnalysis.AccessorKind Kind, FieldDesc Field) _ownAccessor;
+        private CombinedDependencyList _delegateFlowDependencies;
 
         private readonly byte[] _ilBytes;
 
@@ -191,6 +197,9 @@ namespace Internal.IL
                 _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContexts"u8, null)), reason);
             }
 
+            if (!_isFallbackBodyCompilation && _factory.DelegateFlow is { } delegateFlow)
+                _ownAccessor = delegateFlow.GetAccessor(_methodIL.OwningMethod);
+
             FindBasicBlocks();
             ImportBasicBlocks();
 
@@ -206,6 +215,11 @@ namespace Internal.IL
             }
 
             conditionalDependencies ??= new CombinedDependencyList();
+            if (_delegateFlowDependencies != null)
+            {
+                foreach (var dep in _delegateFlowDependencies)
+                    conditionalDependencies.Add(dep);
+            }
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(_unconditionalDependencies, _factory, _canonMethod, _canonMethodIL);
             CodeBasedDependencyAlgorithm.AddConditionalDependenciesDueToMethodCodePresence(conditionalDependencies, _factory, _canonMethod);
 
@@ -552,6 +566,8 @@ namespace Internal.IL
 
             _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(_dependencies, _compilation.NodeFactory, _canonMethodIL, method);
 
+            ImportDelegateGetterUse(opcode, method);
+
             if (method.IsRawPInvoke())
             {
                 // Raw P/invokes don't have any dependencies.
@@ -582,6 +598,29 @@ namespace Internal.IL
             }
 
             ImportCall(opcode, method, runtimeDeterminedMethod);
+        }
+
+        // The method that is being called, or whose address is taken, might be a trivial getter of a tracked field.
+        // Unless this is a call whose result goes straight into a store that the analysis understands, the
+        // delegate it returns may be observed.
+        private void ImportDelegateGetterUse(ILOpcode opcode, MethodDesc method)
+        {
+            if (_factory.DelegateFlow is not { } delegateFlow)
+                return;
+
+            var (kind, _) = delegateFlow.GetAccessor(method);
+            if (kind != DelegateFlowAnalysis.AccessorKind.Getter)
+                return;
+
+            MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
+
+            if (opcode is ILOpcode.call or ILOpcode.callvirt && TryGetNextDelegateStoreDestination(out FieldDesc dest))
+            {
+                AddDelegateFlowDependency(_factory.DelegateReturnObserved(typicalMethod), _factory.DelegateFieldRead(dest), "Delegate returned by getter is copied into a field");
+                return;
+            }
+
+            _dependencies.Add(_factory.DelegateReturnObserved(typicalMethod), "Trivial getter used");
         }
 
         private void ImportCall(ILOpcode opcode, MethodDesc method, MethodDesc runtimeDeterminedMethod)
@@ -1036,6 +1075,7 @@ namespace Internal.IL
             }
 
             // Is this a verifiable delegate creation sequence (load function pointer followed by newobj)?
+            bool conditionalDelegateCreation = false;
             if ((opcode == ILOpcode.ldftn || opcode == ILOpcode.ldvirtftn)
                 && _currentOffset + 5 < _ilBytes.Length
                 && _basicBlocks[_currentOffset] == null
@@ -1055,11 +1095,50 @@ namespace Internal.IL
                     TypeDesc canonDelegateType = ctorMethod.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
                     DelegateCreationInfo info = _compilation.GetDelegateCtor(canonDelegateType, targetForDelegate, constraintForDelegate, opcode == ILOpcode.ldvirtftn);
 
-                    if (info.NeedsRuntimeLookup)
-                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
+                    ISymbolNode helper = info.NeedsRuntimeLookup
+                        ? GetGenericLookupHelper(ReadyToRunHelperId.DelegateCtor, info)
+                        : _factory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, info);
+
+                    if (opcode == ILOpcode.ldftn
+                        && _factory.DelegateFlow != null
+                        && ctorMethod.IsConstructor
+                        && !method.IsIntrinsic
+                        && TryMatchDelegateCacheCreation(out FieldDesc siteCache, out FieldDesc siteDestination))
+                    {
+                        // This delegate only ever goes into fields. If nobody observes the contents of those fields, the
+                        // delegate is never invoked and its target doesn't need to be compiled. Whether that is the case is
+                        // only known once the scan is complete, and the compilation phase leaves out the delegate creation
+                        // for the sites that turn out to be dead.
+                        MethodDesc owner = _methodIL.OwningMethod.GetTypicalMethodDefinition();
+                        MethodDesc typicalTarget = method.GetTypicalMethodDefinition();
+                        var creationSite = _factory.DelegateCreationSite(owner, typicalTarget);
+                        var creationSiteUse = _factory.DelegateCreationSiteUse(owner, typicalTarget);
+
+                        _dependencies.Add(creationSite, reason);
+                        _delegateFlowDependencies ??= new CombinedDependencyList();
+                        _delegateFlowDependencies.Add(new(helper, creationSiteUse, reason));
+                        AddDelegateFlowDependency(creationSiteUse, _factory.DelegateFieldRead(siteDestination), "Delegate stored into field");
+                        AddDelegateFlowDependency(creationSiteUse, _factory.DelegateFieldRead(siteCache), "Delegate cached in field");
+                        conditionalDelegateCreation = true;
+                    }
                     else
-                        _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
+                    {
+                        _dependencies.Add(helper, reason);
+                    }
                 }
+            }
+
+            // The compilation phase removes the delegate creations that turned out to never be observed. It finds them by the method
+            // that contains the creation and the target of the delegate, so any other creation of that target in that method
+            // keeps all of them alive.
+            if (opcode == ILOpcode.ldftn
+                && !conditionalDelegateCreation
+                && _factory.DelegateFlow != null
+                && _currentOffset < _ilBytes.Length
+                && _ilBytes[_currentOffset] == (byte)ILOpcode.newobj
+                && DelegateFlowAnalysis.IsPossibleSiteTarget(method))
+            {
+                _dependencies.Add(_factory.DelegateCreationSiteUse(_methodIL.OwningMethod.GetTypicalMethodDefinition(), method.GetTypicalMethodDefinition()), "Delegate creation that may be observed");
             }
         }
 
@@ -1398,6 +1477,9 @@ namespace Internal.IL
                 }
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeFieldHandle), "ldtoken");
+
+                // A field handle can be used to read the field.
+                ImportDelegateFieldRead(field.GetTypicalFieldDefinition(), forceUnconditional: true);
             }
         }
 
@@ -1427,6 +1509,9 @@ namespace Internal.IL
 
             if (field.IsLiteral)
                 ThrowHelper.ThrowMissingFieldException(field.OwningType, field.GetName());
+
+            if (write != true)
+                ImportDelegateFieldRead(field, isAddress: write is null);
 
             _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(_dependencies, _compilation.NodeFactory, _canonMethodIL, canonField);
 
@@ -1502,6 +1587,208 @@ namespace Internal.IL
                 {
                     _dependencies.Add(_factory.ReadyToRunHelper(helperId, owningType), reason);
                 }
+            }
+        }
+
+        private void AddDelegateFlowDependency(DependencyNodeCore node, DependencyNodeCore condition, string reason)
+        {
+            _delegateFlowDependencies ??= new CombinedDependencyList();
+            _delegateFlowDependencies.Add(new(node, condition, reason));
+        }
+
+        // A tracked field is read. Unless this is a read that the delegate flow analysis understands, any delegate
+        // stored into the field may now be observed.
+        private void ImportDelegateFieldRead(FieldDesc field, bool isAddress = false, bool forceUnconditional = false)
+        {
+            if (_factory.DelegateFlow is null)
+                return;
+
+            FieldDesc typicalField = field.GetTypicalFieldDefinition();
+            if (!DelegateFlowAnalysis.IsTrackedField(typicalField))
+                return;
+
+            if (forceUnconditional)
+            {
+                _dependencies.Add(_factory.DelegateFieldRead(typicalField), "Delegate field handle");
+                return;
+            }
+
+            if (isAddress)
+            {
+                // Overwrites the field with null. Does not observe the value.
+                if (!typicalField.IsStatic && IsVolatileNullWrite())
+                    return;
+            }
+            else if (TryGetDelegateFieldForwardDestination(typicalField, out FieldDesc dest))
+            {
+                // The value is only copied into another field. It is observable if that field is.
+                AddDelegateFlowDependency(_factory.DelegateFieldRead(typicalField), _factory.DelegateFieldRead(dest), "Delegate copied between fields");
+                return;
+            }
+
+            if (_ownAccessor.Kind == DelegateFlowAnalysis.AccessorKind.Getter
+                && _ownAccessor.Field == typicalField
+                && _currentInstructionOffset == 1)
+            {
+                // Body of a trivial getter. The value is observable if the result of the getter is. That is decided by the callers.
+                AddDelegateFlowDependency(_factory.DelegateFieldRead(typicalField),
+                    _factory.DelegateReturnObserved(_methodIL.OwningMethod.GetTypicalMethodDefinition()),
+                    "Trivial getter");
+                return;
+            }
+
+            _dependencies.Add(_factory.DelegateFieldRead(typicalField), "Delegate field read");
+        }
+
+        // Matches the instructions after the load of a tracked field that make the value only be copied to another tracked field:
+        //   consumer
+        // or, for a static field, the C# compiler pattern for caching a lambda or method group, where the delegate in
+        // the field is what ends up being consumed by the instruction that the branch goes to:
+        //   dup; brtrue L; pop; (ldsfld C::<>9 | ldnull); ldftn M; newobj D::.ctor; dup; stsfld F; L: consumer
+        // The creation has to be a refill of the same field: if the null case ran anything else, whether the field has a delegate
+        // would be observable.
+        private bool TryGetDelegateFieldForwardDestination(FieldDesc typicalField, out FieldDesc dest)
+        {
+            if (typicalField.IsStatic && DelegateFlowAnalysis.IsDelegateCacheField(typicalField))
+            {
+                ILReader reader = new ILReader(_ilBytes, _currentOffset);
+                if (reader.HasNext && reader.ReadILOpcode() == ILOpcode.dup && reader.HasNext)
+                {
+                    ILOpcode branch = reader.ReadILOpcode();
+                    if (branch is ILOpcode.brtrue or ILOpcode.brtrue_s)
+                    {
+                        int destination = reader.ReadBranchDestination(branch);
+                        if (TryReadDelegateCacheRefill(ref reader, typicalField) && reader.Offset == destination)
+                            return TryGetDelegateStoreDestination(reader, out dest);
+                    }
+                }
+            }
+
+            return TryGetNextDelegateStoreDestination(out dest);
+        }
+
+        // Matches `pop; (ldsfld | ldnull); ldftn; newobj; dup; stsfld F` for the given field F.
+        private bool TryReadDelegateCacheRefill(ref ILReader reader, FieldDesc typicalCache)
+        {
+            if (!reader.HasNext || reader.ReadILOpcode() != ILOpcode.pop || !reader.HasNext)
+                return false;
+
+            ILOpcode receiver = reader.ReadILOpcode();
+            int receiverToken = receiver == ILOpcode.ldsfld ? reader.ReadILToken() : 0;
+
+            return TryReadDelegateCacheCreation(ref reader, receiver, receiverToken, out FieldDesc cache) && cache == typicalCache;
+        }
+
+        // Matches `ldnull; call Volatile.Write<T>(ref T, T)` after the load of the address of a tracked instance field.
+        private bool IsVolatileNullWrite()
+        {
+            ILReader reader = new ILReader(_ilBytes, _currentOffset);
+            return reader.HasNext
+                && reader.ReadILOpcode() == ILOpcode.ldnull
+                && reader.HasNext
+                && reader.ReadILOpcode() == ILOpcode.call
+                && _methodIL.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) is MethodDesc callee
+                && callee.OwningType is MetadataType calleeType
+                && calleeType.Module == calleeType.Context.SystemModule
+                && calleeType.Name == "Volatile"u8
+                && calleeType.Namespace == "System.Threading"u8
+                && callee.Name == "Write"u8
+                && callee.Signature.Length == 2
+                && callee.HasInstantiation;
+        }
+
+        // Matches `ldftn M; newobj D::.ctor; dup; stsfld F` after the given receiver, where F is the cache of a compiler
+        // generated class and the receiver is one that can be dropped together with the creation.
+        private bool TryReadDelegateCacheCreation(ref ILReader reader, ILOpcode receiver, int receiverToken, out FieldDesc cache)
+        {
+            cache = null;
+
+            if (receiver is not (ILOpcode.ldnull or ILOpcode.ldsfld))
+                return false;
+
+            if (!reader.HasNext
+                || reader.ReadILOpcode() != ILOpcode.ldftn
+                || _methodIL.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) is not MethodDesc target
+                || !DelegateFlowAnalysis.IsInfallibleReceiver(_methodIL, receiver, receiverToken, target)
+                || !reader.HasNext
+                || reader.ReadILOpcode() != ILOpcode.newobj
+                || _methodIL.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) is not MethodDesc { IsConstructor: true, OwningType.IsDelegate: true }
+                || !reader.HasNext
+                || reader.ReadILOpcode() != ILOpcode.dup
+                || !reader.HasNext
+                || reader.ReadILOpcode() != ILOpcode.stsfld)
+            {
+                return false;
+            }
+
+            cache = DelegateFlowAnalysis.GetTrackedField(_methodIL, reader.ReadILToken());
+            return cache != null && DelegateFlowAnalysis.IsDelegateCacheField(cache);
+        }
+
+        // Matches the delegate creation of the current instruction (a function pointer load) in the form the C# compiler uses
+        // to cache lambdas and method groups, from the receiver on:
+        //   (ldsfld C::<>9 | ldnull); ldftn M; newobj D::.ctor; dup; stsfld F; consumer
+        // where the consumer stores the delegate into another tracked field.
+        // The delegate only ever goes into these two fields. See DelegateFlowAnalysis for why nothing else needs to be checked.
+        private bool TryMatchDelegateCacheCreation(out FieldDesc cache, out FieldDesc dest)
+        {
+            cache = null;
+            dest = null;
+
+            // Delegate creations in static constructors are left alone: type preinitialization could interpret them.
+            if (_methodIL.OwningMethod.IsStaticConstructor || _constrained != null)
+                return false;
+
+            // The receiver is the previous instruction of the same basic block.
+            if (_previousInstructionOffset < 0)
+                return false;
+
+            ILReader reader = new ILReader(_ilBytes, _previousInstructionOffset);
+            ILOpcode receiver = reader.ReadILOpcode();
+            int receiverToken = receiver == ILOpcode.ldsfld ? reader.ReadILToken() : 0;
+
+            return TryReadDelegateCacheCreation(ref reader, receiver, receiverToken, out cache)
+                && TryGetDelegateStoreDestination(reader, out dest);
+        }
+
+        // The value pushed by the current instruction is directly stored into a tracked field or passed to a trivial setter of one.
+        private bool TryGetNextDelegateStoreDestination(out FieldDesc dest)
+        {
+            dest = null;
+            return _currentOffset < _ilBytes.Length
+                && _basicBlocks[_currentOffset] == null
+                && TryGetDelegateStoreDestination(new ILReader(_ilBytes, _currentOffset), out dest);
+        }
+
+        // The instruction at the reader stores the value on the top of the stack into a tracked field or passes it to a trivial setter of one.
+        private bool TryGetDelegateStoreDestination(ILReader reader, out FieldDesc dest)
+        {
+            dest = null;
+            if (!reader.HasNext)
+                return false;
+
+            switch (reader.ReadILOpcode())
+            {
+                case ILOpcode.stfld:
+                case ILOpcode.stsfld:
+                    dest = DelegateFlowAnalysis.GetTrackedField(_methodIL, reader.ReadILToken());
+                    return dest != null;
+
+                case ILOpcode.call:
+                case ILOpcode.callvirt:
+                    if (_methodIL.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) is MethodDesc method)
+                    {
+                        var (kind, field) = _factory.DelegateFlow.GetAccessor(method);
+                        if (kind == DelegateFlowAnalysis.AccessorKind.Setter)
+                        {
+                            dest = field;
+                            return true;
+                        }
+                    }
+                    return false;
+
+                default:
+                    return false;
             }
         }
 

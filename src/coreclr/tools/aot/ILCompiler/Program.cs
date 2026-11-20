@@ -542,7 +542,7 @@ namespace ILCompiler
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
 
-                ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager, metadataManager, scanResults.GetAnalysisCharacteristics());
+                ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager, metadataManager, scanResults.GetAnalysisCharacteristics(), scanResults.GetDeadDelegateCreationSites());
 
                 // Use a more precise IL provider that uses whole program analysis for dead branch elimination
                 builder.UseILProvider(ilProvider);
@@ -575,8 +575,10 @@ namespace ILCompiler
                 // has the whole program view.
                 if (preinitStatics)
                 {
+                    // Preinitialization evaluates the original program, not the one without the delegate creations that were proven dead.
+                    var preinitILProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager, metadataManager, scanResults.GetAnalysisCharacteristics());
                     var readOnlyFieldPolicy = scanResults.GetReadOnlyFieldPolicy();
-                    preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, scanResults.GetPreinitializationPolicy(),
+                    preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, preinitILProvider, scanResults.GetPreinitializationPolicy(),
                         readOnlyFieldPolicy, flowAnnotations);
                     builder.UsePreinitializationManager(preinitManager)
                         .UseReadOnlyFieldPolicy(readOnlyFieldPolicy);

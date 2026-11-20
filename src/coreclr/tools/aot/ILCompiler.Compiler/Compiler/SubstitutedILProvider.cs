@@ -26,14 +26,24 @@ namespace ILCompiler
         private readonly DevirtualizationManager _devirtualizationManager;
         private readonly MetadataManager _metadataManager;
         private readonly HashSet<string> _characteristics;
+        private readonly HashSet<(MethodDesc Owner, MethodDesc Target)> _deadDelegateCreationSites;
+        private readonly HashSet<MethodDesc> _deadDelegateCreationOwners;
 
-        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager, MetadataManager metadataManager = null, IEnumerable<string> characteristics = null)
+        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager, MetadataManager metadataManager = null, IEnumerable<string> characteristics = null, HashSet<(MethodDesc Owner, MethodDesc Target)> deadDelegateCreationSites = null)
         {
             _nestedILProvider = nestedILProvider;
             _substitutionProvider = substitutionProvider;
             _devirtualizationManager = devirtualizationManager;
             _metadataManager = metadataManager;
             _characteristics = characteristics != null ? new HashSet<string>(characteristics) : null;
+
+            if (deadDelegateCreationSites is { Count: > 0 })
+            {
+                _deadDelegateCreationSites = deadDelegateCreationSites;
+                _deadDelegateCreationOwners = new HashSet<MethodDesc>();
+                foreach (var site in deadDelegateCreationSites)
+                    _deadDelegateCreationOwners.Add(site.Owner);
+            }
         }
 
         public override MethodIL GetMethodIL(MethodDesc method)
@@ -74,9 +84,71 @@ namespace ILCompiler
                 {
                     result = GetMethodILWithInlinedSubstitutions(result);
                 }
+
+                if (_deadDelegateCreationOwners != null)
+                    result = RewriteDeadDelegateCreations(method, result);
             }
             return result;
             // END TEMPORARY WORKAROUND
+        }
+
+        // Replaces delegate creations that the scanner proved are never observed with a null reference.
+        // The scanner only reports a method and delegate target as dead when it understood every delegate creation
+        // of that target in that method, so all of them can be replaced without looking at the surrounding IL.
+        private MethodIL RewriteDeadDelegateCreations(MethodDesc method, MethodIL methodIL)
+        {
+            MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
+            if (!_deadDelegateCreationOwners.Contains(typicalMethod))
+                return methodIL;
+
+            MethodIL methodILDefinition = methodIL.GetMethodILDefinition();
+            byte[] original = methodILDefinition.GetILBytes();
+            byte[] body = null;
+
+            var reader = new ILReader(original);
+            bool prefixed = false;
+            while (reader.HasNext)
+            {
+                int offset = reader.Offset;
+                ILOpcode opcode = reader.ReadILOpcode();
+                if (opcode != ILOpcode.ldftn)
+                {
+                    reader.Skip(opcode);
+                    prefixed = opcode == ILOpcode.constrained;
+                    continue;
+                }
+
+                int ldftnToken = reader.ReadILToken();
+                ILReader next = reader;
+                if (!prefixed
+                    && methodILDefinition.GetObject(ldftnToken, NotFoundBehavior.ReturnNull) is MethodDesc target
+                    && _deadDelegateCreationSites.Contains((typicalMethod, target.GetTypicalMethodDefinition()))
+                    && next.HasNext
+                    && next.ReadILOpcode() == ILOpcode.newobj
+                    && methodILDefinition.GetObject(next.ReadILToken(), NotFoundBehavior.ReturnNull) is MethodDesc { IsConstructor: true, OwningType.IsDelegate: true })
+                {
+                    // Replace `ldftn <token>; newobj <token>` (11 bytes) that turns the receiver on the stack into a delegate
+                    // with `pop; ldnull` and padding. The size of the method and all offsets stay the same.
+                    body ??= (byte[])original.Clone();
+                    body[offset] = (byte)ILOpcode.pop;
+                    body[offset + 1] = (byte)ILOpcode.ldnull;
+                    Array.Clear(body, offset + 2, 9);
+                }
+
+                prefixed = false;
+            }
+
+            if (body == null)
+                return methodIL;
+
+            MethodIL newDefinition = new SubstitutedMethodIL(
+                methodILDefinition,
+                body,
+                methodILDefinition.GetExceptionRegions(),
+                methodILDefinition.GetDebugInfo(),
+                []);
+
+            return methodIL == methodILDefinition ? newDefinition : new InstantiatedMethodIL(method, newDefinition);
         }
 
         // Flags that we track for each byte of the IL instruction stream.
