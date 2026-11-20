@@ -6,7 +6,6 @@
     <EnableAOTAndTrimming>true</EnableAOTAndTrimming>
     <EnableAggressiveTrimming>$(EnableAOTAndTrimming)</EnableAggressiveTrimming>
     <PublishTrimmed>$(EnableAOTAndTrimming)</PublishTrimmed>
-    <RunAOTCompilation>$(EnableAOTAndTrimming)</RunAOTCompilation>
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- don't need to run this on helix -->

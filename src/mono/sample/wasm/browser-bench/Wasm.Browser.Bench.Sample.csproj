@@ -7,7 +7,6 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <EnableAggressiveTrimming Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</EnableAggressiveTrimming>
     <PublishTrimmed Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</PublishTrimmed>
-    <RunAOTCompilation Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</RunAOTCompilation>
     <WasmFingerprintAssets>false</WasmFingerprintAssets>
   </PropertyGroup>
 
