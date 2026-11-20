@@ -165,7 +165,10 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo -O >> "$__ResponseFile"
         echo --targetarch:$(TargetArchitecture) >> "$__ResponseFile"
         echo --targetos:$(TargetOS) >> "$__ResponseFile"
-        echo --verify-type-and-field-layout >> "$__ResponseFile"
+        # Layout verification loads types early, which hides missing signature preparation under GC stress.
+        if [ -z "$DOTNET_GCStress" ] || [ "$DOTNET_GCStress" == "0" ]; then
+            echo --verify-type-and-field-layout >> "$__ResponseFile"
+        fi
         echo --method-layout:random >> "$__ResponseFile"
         if [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
             echo --verify-gc-mode-transitions >> "$__ResponseFile"
@@ -442,7 +445,10 @@ if defined RunCrossGen2 (
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
     echo --targetos:$(TargetOS)>>!__ResponseFile!
-    echo --verify-type-and-field-layout>>!__ResponseFile!
+    rem Layout verification loads types early, which hides missing signature preparation under GC stress.
+    set __VerifyLayout=1
+    if defined DOTNET_GCStress if not "!DOTNET_GCStress!"=="0" set __VerifyLayout=
+    if defined __VerifyLayout echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
     if "$(CrossGen2OutputFormat)"=="wasm" (
         echo --verify-gc-mode-transitions>>!__ResponseFile!

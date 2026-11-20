@@ -1084,6 +1084,27 @@ namespace Internal.JitInterface
                 genericContextObject: typeOrMethodContext,
                 forceOwningTypeFromMethodDesc: strippedInstantiation);
 
+            if (DelegateCtorSignature.CanEmitGCRefMap(targetMethod))
+            {
+                // A delegate-ctor import can cache a GCRefMap on the target method when resolved. Check the
+                // signature layouts at this caller's entrypoint so a versioning mismatch rejects the R2R caller
+                // before it can use a map computed from stale layouts.
+                MethodSignature signature = targetMethodDesc.Signature;
+                if (NeedsTypeLayoutCheck(signature.ReturnType))
+                {
+                    AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckTypeLayout(signature.ReturnType));
+                }
+
+                for (int i = 0; i < signature.Length; i++)
+                {
+                    TypeDesc parameterType = signature[i];
+                    if (NeedsTypeLayoutCheck(parameterType))
+                    {
+                        AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckTypeLayout(parameterType));
+                    }
+                }
+            }
+
             // runtime lookup is not needed, callerHandle is unused
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
@@ -1789,11 +1810,21 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramDefault);
             }
 
+            // ValuesTypes are not treated as being capable of having finalizers in the runtime.
+            if (type.IsValueType)
+            {
+                pHasSideEffects = false;
+                return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
+            }
+
             pHasSideEffects = type.HasFinalizer;
 
-            // If the type isn't within the version bubble, it could gain a finalizer. Always treat it as if it has a finalizer
-            if (!pHasSideEffects && !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
-                pHasSideEffects = true;
+            // A type or any of its base types outside the version bubble could gain a finalizer.
+            // System.Object cannot gain a finalizer.
+            for (TypeDesc currentType = type; !pHasSideEffects && !currentType.IsObject; currentType = currentType.BaseType)
+            {
+                pHasSideEffects = !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(currentType);
+            }
 
             return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
         }

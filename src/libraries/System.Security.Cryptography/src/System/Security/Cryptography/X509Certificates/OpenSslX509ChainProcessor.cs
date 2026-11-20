@@ -1223,15 +1223,15 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static X509ChainStatusFlags MapOpenSsl30Code(Interop.Crypto.X509VerifyStatusCode code)
+        private static X509ChainStatusFlags MapOpenSsl3Code(Interop.Crypto.X509VerifyStatusCode code)
         {
-            switch (code.Code30)
+            switch (code.Code3)
             {
-                case Interop.Crypto.X509VerifyStatusCode30.X509_V_ERR_INVALID_CA:
+                case Interop.Crypto.X509VerifyStatusCode3.X509_V_ERR_INVALID_CA:
                     return X509ChainStatusFlags.InvalidBasicConstraints;
                 default:
-                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code.Code30);
-                    throw GetUnmappedCodeException(nameof(MapOpenSsl30Code), (int)code.Code30);
+                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code.Code3);
+                    throw GetUnmappedCodeException(nameof(MapOpenSsl3Code), (int)code.Code3);
             }
         }
 
@@ -1433,10 +1433,12 @@ namespace System.Security.Cryptography.X509Certificates
                 //   which will trigger OCSP, so is ignorable.
                 // * X509_V_ERR_CERT_CHAIN_TOO_LONG is just the reason the loop stopped, not a
                 //   problem with the cert itself.
+                // * For compatibility with older OpenSSL versions, ignore X509_V_ERR_DUPLICATE_EXTENSION.
                 if (errorCode != X509VerifyStatusCodeUniversal.X509_V_OK &&
                     errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_CRL_NOT_YET_VALID &&
                     errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_DIFFERENT_CRL_SCOPE &&
-                    errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_CHAIN_TOO_LONG)
+                    errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_CHAIN_TOO_LONG &&
+                    errorCode.Code4 != Interop.Crypto.X509VerifyStatusCode4.X509_V_ERR_DUPLICATE_EXTENSION)
                 {
                     if (_errors == null)
                     {
@@ -1469,9 +1471,10 @@ namespace System.Security.Cryptography.X509Certificates
         {
             // 3.0+ are M_NN_00_PP_p (Major, Minor, 0, Patch, Preview)
             // 1.x.y are 1_XX_YY_PP_p
+            // OpenSSL 4.0 and 4.1 do not yet have any codes that need to be mapped.
             if (SafeEvpPKeyHandle.OpenSslVersion >= 0x3_00_00_00_0)
             {
-                return MapOpenSsl30Code;
+                return MapOpenSsl3Code;
             }
 
             if (SafeEvpPKeyHandle.OpenSslVersion >= 0x1_01_01_00_0)
@@ -1489,16 +1492,16 @@ namespace System.Security.Cryptography.X509Certificates
 
         private struct ErrorCollection
         {
-            // As of OpenSSL 1.1.1 there are 75 defined X509_V_ERR values,
-            // therefore it fits in a bitvector backed by 3 ints (96 bits available).
-            private const int BucketCount = 3;
+            // As of OpenSSL 4.1 the highest X509_V_ERR value is 104,
+            // therefore it fits in a bitvector backed by 4 ints (128 bits available).
+            private const int BucketCount = 4;
             private const int OverflowValue = BucketCount * sizeof(int) * 8 - 1;
-            private InlineArray3<int> _codes;
+            private InlineArray4<int> _codes;
 
-            internal bool HasOverflow => _codes[2] < 0;
+            internal bool HasOverflow => _codes[BucketCount - 1] < 0;
 
             internal bool HasErrors =>
-                _codes[0] != 0 || _codes[1] != 0 || _codes[2] != 0;
+                _codes[0] != 0 || _codes[1] != 0 || _codes[2] != 0 || _codes[3] != 0;
 
             internal void Add(Interop.Crypto.X509VerifyStatusCode statusCode)
             {

@@ -1457,15 +1457,6 @@ extern "C" DWORD64 __stdcall GetDataCacheZeroIDReg();
 extern "C" uint64_t GetSveLengthFromOS();
 #endif
 
-#ifdef TARGET_WASM
-static bool s_wasmRelaxedSimdSupported;
-
-extern "C" void coreclr_wasm_set_relaxed_simd_supported()
-{
-    s_wasmRelaxedSimdSupported = true;
-}
-#endif
-
 void EEJitManager::SetCpuInfo()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1510,10 +1501,6 @@ void EEJitManager::SetCpuInfo()
 #if defined(TARGET_WASM)
     CPUCompileFlags.Set(InstructionSet_WasmBase);
     CPUCompileFlags.Set(InstructionSet_PackedSimd);
-    if (s_wasmRelaxedSimdSupported)
-    {
-        CPUCompileFlags.Set(InstructionSet_RelaxedSimd);
-    }
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -5969,9 +5956,26 @@ FunctionTableIndexRangeSection* ExecutionManager::FindFunctionTableIndexRangeSec
     return nullptr;
 }
 
-TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex)
+static TADDR GetWasmVirtualIPFromRuntimeFunction(ReadyToRunInfo* pR2RInfo, PTR_RUNTIME_FUNCTION pRuntimeFunction, bool* pHasSingleVirtualIP)
 {
     LIMITED_METHOD_CONTRACT;
+
+    if (pHasSingleVirtualIP != nullptr)
+    {
+        TADDR imageBase = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase());
+        // Two logical IP units cover the prolog and the sole observable IP (1).
+        *pHasSingleVirtualIP = RUNTIME_FUNCTION__EndAddress(pRuntimeFunction, imageBase) -
+                              RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction) == 4;
+    }
+    return pR2RInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction);
+}
+
+TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex, bool* pHasSingleVirtualIP)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (pHasSingleVirtualIP != nullptr)
+        *pHasSingleVirtualIP = false;
 
     FunctionTableIndexRangeSection* pSection = FindFunctionTableIndexRangeSection(functionIndex);
     if (pSection == nullptr)
@@ -6001,11 +6005,11 @@ TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionInd
             localIndex--;
             continue;
         }
-        return pR2RInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction);
+        return GetWasmVirtualIPFromRuntimeFunction(pR2RInfo, pRuntimeFunction, pHasSingleVirtualIP);
     } while (true);
 }
 
-TADDR ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(DWORD functionIndex)
+TADDR ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(DWORD functionIndex, bool* pHasSingleVirtualIP)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -6016,7 +6020,7 @@ TADDR ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(DWORD fu
     _ASSERTE(functionIndex < pR2RInfo->GetRuntimeFunctionCount());
     PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + functionIndex;
     _ASSERTE(!RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction));
-    return WasmInitialVirtualIP + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction);
+    return GetWasmVirtualIPFromRuntimeFunction(pR2RInfo, pRuntimeFunction, pHasSingleVirtualIP);
 }
 
 TADDR ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP)

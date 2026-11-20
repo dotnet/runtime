@@ -156,11 +156,18 @@ internal sealed partial class GrammarActions
         result.WriteInt16((short)namedArguments.Length);
         foreach (CustomAttributeNamedArgumentValue argument in namedArguments)
         {
-            result.WriteByte(argument.Kind);
-            MaterializeSerializationType(argument.Type).WriteContentTo(result);
-            result.WriteSerializedString(argument.Name);
-            MaterializeSerializedInitializer(argument.Value).WriteContentTo(result);
+            WriteCustomBlobNamedArgument(result, argument);
         }
+    }
+
+    private void WriteCustomBlobNamedArgument(
+        BlobBuilder result,
+        CustomAttributeNamedArgumentValue argument)
+    {
+        result.WriteByte(argument.Kind);
+        MaterializeSerializationType(argument.Type).WriteContentTo(result);
+        result.WriteSerializedString(argument.Name);
+        MaterializeSerializedInitializer(argument.Value).WriteContentTo(result);
     }
 
     private EntityRegistry.CustomAttributeEntity MaterializeCustomAttribute(

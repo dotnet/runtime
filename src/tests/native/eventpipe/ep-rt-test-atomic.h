@@ -9,6 +9,9 @@
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <minipal/utils.h>
+
+extern PLATFORM_THREAD_LOCAL void (*ep_rt_test_before_store_int64)(volatile int64_t *ptr, int64_t value);
 
 #if defined(_WIN32) && defined(_MSC_VER)
 #include <windows.h>
@@ -122,6 +125,8 @@ ep_rt_volatile_store_uint32_t(volatile uint32_t *ptr, uint32_t value)
 static inline void
 ep_rt_volatile_store_int64_t(volatile int64_t *ptr, int64_t value)
 {
+    if (ep_rt_test_before_store_int64)
+        ep_rt_test_before_store_int64(ptr, value);
     InterlockedExchange64((volatile LONG64 *)ptr, value);
 }
 
@@ -279,6 +284,8 @@ ep_rt_volatile_store_uint32_t(volatile uint32_t *ptr, uint32_t value)
 static inline void
 ep_rt_volatile_store_int64_t(volatile int64_t *ptr, int64_t value)
 {
+    if (ep_rt_test_before_store_int64)
+        ep_rt_test_before_store_int64(ptr, value);
     atomic_store((volatile ep_test_atomic_int64_t *)ptr, value);
     ep_test_atomic_seq_cst_barrier();
 }
