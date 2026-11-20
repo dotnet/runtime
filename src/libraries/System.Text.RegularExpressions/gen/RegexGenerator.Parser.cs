@@ -138,6 +138,14 @@ namespace System.Text.RegularExpressions.Generator
                 nullableRegex = regexPropertySymbol.NullableAnnotation == NullableAnnotation.Annotated;
             }
 
+            for (INamedTypeSymbol? containingType = regexMemberSymbol.ContainingType; containingType is not null; containingType = containingType.ContainingType)
+            {
+                if (containingType.IsFileLocal)
+                {
+                    return Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustNotBeInFileLocalType, memberSyntax.GetLocation());
+                }
+            }
+
             RegexOptions regexOptions = options is not null ? (RegexOptions)options : RegexOptions.None;
 
             // If RegexOptions.IgnoreCase was specified or the inline ignore case option `(?i)` is present in the pattern, then we will (in priority order):
