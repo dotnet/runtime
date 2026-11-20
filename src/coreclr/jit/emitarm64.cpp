@@ -4482,7 +4482,8 @@ void emitter::emitIns_R_R(instruction     ins,
                           regNumber       reg1,
                           regNumber       reg2,
                           insOpts         opt /* = INS_OPTS_NONE */,
-                          insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
+                          insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */,
+                          bool            canPeephole /* = true */)
 {
     if (IsMovInstruction(ins))
     {
@@ -4728,7 +4729,7 @@ void emitter::emitIns_R_R(instruction     ins,
         case INS_strh:
         case INS_tst:
             assert(insOptsNone(opt));
-            emitIns_R_R_I(ins, attr, reg1, reg2, 0, INS_OPTS_NONE);
+            emitIns_R_R_I(ins, attr, reg1, reg2, 0, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE, canPeephole);
             return;
 
         case INS_cmp:
@@ -5300,7 +5301,8 @@ void emitter::emitIns_R_R_I(instruction     ins,
                             regNumber       reg2,
                             ssize_t         imm,
                             insOpts         opt /* = INS_OPTS_NONE */,
-                            insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
+                            insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */,
+                            bool            canPeephole /* = true */)
 {
     emitAttr  size       = EA_SIZE(attr);
     emitAttr  elemsize   = EA_UNKNOWN;
@@ -5921,7 +5923,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
         }
 
         // Try to optimize a load/store with an alternative instruction.
-        if (isLdrStr && !insOptsIndexed(opt) && m_compiler->opts.OptimizationEnabled() &&
+        if (isLdrStr && canPeephole && !insOptsIndexed(opt) && m_compiler->opts.OptimizationEnabled() &&
             OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, false, -1, -1 DEBUG_ARG(false)))
         {
             return;
@@ -8236,7 +8238,8 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
  *
  *  Add an instruction referencing a register and a stack-based local variable.
  */
-void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
+void emitter::emitIns_R_S(
+    instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, bool canPeephole /* = true */)
 {
     emitAttr  size         = EA_SIZE(attr);
     insFormat fmt          = IF_NONE;
@@ -8454,7 +8457,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     assert(fmt != IF_NONE);
 
     // Try to optimize a load/store with an alternative instruction.
-    if (isLdrStr && m_compiler->opts.OptimizationEnabled() &&
+    if (isLdrStr && canPeephole && m_compiler->opts.OptimizationEnabled() &&
         OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs DEBUG_ARG(useRegForImm)))
     {
         return;
@@ -8580,7 +8583,8 @@ void emitter::emitIns_R_R_S_S(
  *
  *  Add an instruction referencing a stack-based local variable and a register
  */
-void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
+void emitter::emitIns_S_R(
+    instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, bool canPeephole /* = true */)
 {
     assert(offs >= 0);
     emitAttr  size          = EA_SIZE(attr);
@@ -8737,7 +8741,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     assert(fmt != IF_NONE);
 
     // Try to optimize a store with an alternative instruction.
-    if (isStr && m_compiler->opts.OptimizationEnabled() &&
+    if (isStr && canPeephole && m_compiler->opts.OptimizationEnabled() &&
         OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs DEBUG_ARG(useRegForImm)))
     {
         return;
@@ -15036,6 +15040,10 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 {
     GenTree* addr = indir->Addr();
 
+    // A volatile access may fall back to a plain ldr/str plus a barrier, so it can't be removed or
+    // replaced by OptimizeLdrStr.
+    const bool canPeephole = !indir->IsVolatile();
+
     if (addr->isContained())
     {
         assert(addr->OperIs(GT_LCL_ADDR, GT_LEA) || (addr->IsIconHandle(GTF_ICON_TLS_HDL)));
@@ -15082,7 +15090,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
 
                     // Then load/store dataReg from/to [tmpReg + offset]
-                    emitIns_R_R_I(ins, attr, dataReg, tmpReg, offset);
+                    emitIns_R_R_I(ins, attr, dataReg, tmpReg, offset, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE,
+                                  canPeephole);
                 }
                 else // large offset
                 {
@@ -15148,22 +15157,24 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 unsigned             offset  = varNode->GetLclOffs();
                 if (emitInsIsStore(ins))
                 {
-                    emitIns_S_R(ins, attr, dataReg, lclNum, offset);
+                    emitIns_S_R(ins, attr, dataReg, lclNum, offset, canPeephole);
                 }
                 else
                 {
-                    emitIns_R_S(ins, attr, dataReg, lclNum, offset);
+                    emitIns_R_S(ins, attr, dataReg, lclNum, offset, canPeephole);
                 }
             }
             else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
             {
                 // On Arm64, TEB is in r18, so load from the r18 as base.
-                emitIns_R_R_I(ins, attr, dataReg, REG_R18, addr->AsIntCon()->IconValue());
+                emitIns_R_R_I(ins, attr, dataReg, REG_R18, addr->AsIntCon()->IconValue(), INS_OPTS_NONE,
+                              INS_SCALABLE_OPTS_NONE, canPeephole);
             }
             else if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
             {
                 // Then load/store dataReg from/to [memBase + offset]
-                emitIns_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), offset);
+                emitIns_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), offset, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE,
+                              canPeephole);
             }
             else
             {
@@ -15193,7 +15204,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 #endif // DEBUG
 
         // Then load/store dataReg from/to [addrReg]
-        emitIns_R_R(ins, attr, dataReg, addr->GetRegNum());
+        emitIns_R_R(ins, attr, dataReg, addr->GetRegNum(), INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE, canPeephole);
     }
 }
 
@@ -17510,9 +17521,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 //    true if previous instruction already has desired value in register/memory location.
 //
 // Notes:
-//    For volatile load/store, there will be memory barrier instruction before/after the load/store
-//    and in such case, this method returns false, because the method just checks for load/store
-//    pair next to each other.
+//    A volatile load may be emitted as a plain ldr followed by a barrier, so emitInsLoadStoreOp
+//    disables OptimizeLdrStr for volatile accesses.
 //
 bool emitter::IsRedundantLdStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
