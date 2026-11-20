@@ -12,6 +12,7 @@
 #include "runtimedetails.h"
 #include "logging.h"
 #include "jitdebugger.h"
+#include <minipal/thread.h>
 
 // JIT debugging is broken due to utilcode changes to support LongFile. We need to re-copy
 // or adjust the implementation of the below functions so they link properly.
@@ -25,11 +26,7 @@
 
 int DbgBreakCheck(const char* szFile, int iLine, const char* szExpr)
 {
-#ifdef HOST_UNIX
-    DWORD pid = getpid();
-#else
-    DWORD pid = GetCurrentProcessId();
-#endif
+    DWORD pid = minipal_get_current_process_id();
     LogError("SuperPMI: Assert Failure (PID %d, Thread %d/%x)\n"
              "%s\n"
              "\n"

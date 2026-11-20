@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include "minipal/time.h"
+#include "minipal/thread.h"
 
 //
 // Forbid the use of srand()/rand(), as these are globally shared facilities and our use of them would
@@ -74,11 +75,7 @@ public:
     void Init()
     {
         LIMITED_METHOD_CONTRACT;
-#ifdef HOST_UNIX
-        Init((int)minipal_hires_ticks() ^ GetCurrentThreadId() ^ getpid());
-#else
-        Init((int)minipal_hires_ticks() ^ GetCurrentThreadId() ^ GetCurrentProcessId());
-#endif
+        Init((int)minipal_hires_ticks() ^ GetCurrentThreadId() ^ minipal_get_current_process_id());
     }
 
     void Init(int Seed)

@@ -8,6 +8,7 @@
 // ===========================================================================
 
 #include "common.h"
+#include <minipal/thread.h>
 
 #include "dbginterface.h"
 #include "versionresilienthashcode.h"
@@ -427,11 +428,7 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
             fullname.Append(wszReadyToRunLogFile);
 
             WCHAR pidSuffix[ARRAY_SIZE(".") + MaxUnsigned32BitDecString] = W(".");
-#ifdef TARGET_UNIX
-            DWORD pid = getpid();
-#else
-            DWORD pid = GetCurrentProcessId();
-#endif
+            DWORD pid = minipal_get_current_process_id();
             FormatInteger(pidSuffix + 1, ARRAY_SIZE(pidSuffix) - 1, "%u", pid);
             fullname.Append(pidSuffix);
             if (fopen_lp(&r2rLogFile, fullname.GetUnicode(), W("w")) != 0)

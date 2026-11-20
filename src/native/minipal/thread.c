@@ -11,6 +11,11 @@ size_t minipal_get_current_thread_id(void)
     return (size_t)GetCurrentThreadId();
 }
 
+uint32_t minipal_get_current_process_id(void)
+{
+    return (uint32_t)GetCurrentProcessId();
+}
+
 #else // HOST_WINDOWS
 
 #if defined(__linux__) && !defined(_GNU_SOURCE)
@@ -27,6 +32,7 @@ size_t minipal_get_current_thread_id(void)
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #if defined(__linux__)
 #include <sys/syscall.h>
@@ -57,6 +63,11 @@ size_t minipal_get_current_thread_id(void)
 #if !defined(__wasm) || defined(_REENTRANT)
 PLATFORM_THREAD_LOCAL size_t minipal_cached_thread_id;
 #endif
+
+uint32_t minipal_get_current_process_id(void)
+{
+    return (uint32_t)getpid();
+}
 
 size_t minipal_get_current_thread_id_no_cache(void)
 {

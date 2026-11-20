@@ -11,6 +11,7 @@
 #include "eventtracebase.h"
 #endif // !SELF_NO_HOST
 #include "minipal/time.h"
+#include "minipal/thread.h"
 
 #if defined(MEMORY_MAPPED_STRESSLOG) && !defined(HOST_WINDOWS)
 #include <dn-stdio.h>
@@ -201,11 +202,7 @@ void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
         wcsncpy_s(replaced, replacedLength, original, pidInx);
 
         // append the string representation of the PID
-#ifdef HOST_UNIX
-        DWORD pid = getpid();
-#else
-        DWORD pid = GetCurrentProcessId();
-#endif
+        DWORD pid = minipal_get_current_process_id();
         WCHAR pidStr[20];
         FormatInteger(pidStr, ARRAY_SIZE(pidStr), "%u", pid);
         wcscat_s(replaced, replacedLength, pidStr);

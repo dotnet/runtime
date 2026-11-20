@@ -63,6 +63,7 @@
 // ======================================================================================
 
 #include "common.h"
+#include <minipal/thread.h>
 
 #ifdef PROFILING_SUPPORTED
 
@@ -1400,11 +1401,7 @@ HRESULT EEToProfInterfaceImpl::AllocByClass(ObjectID objId, ClassID clsId, void 
 #ifdef _DEBUG
         // This is a slight attempt to make sure that this is never called in a multi-threaded
         // manner.  This heap walk should be done by one thread at a time only.
-#ifdef TARGET_UNIX
-        dwProcId = getpid();
-#else
-        dwProcId = GetCurrentProcessId();
-#endif
+        dwProcId = minipal_get_current_process_id();
 #endif
 
         // See if we've saved a data block from a previous GC
@@ -1427,11 +1424,7 @@ HRESULT EEToProfInterfaceImpl::AllocByClass(ObjectID objId, ClassID clsId, void 
         pData->hashTable.RemoveAll(true);
     }
 
-#ifdef TARGET_UNIX
-    _ASSERTE(dwProcId == (DWORD)getpid());
-#else
-    _ASSERTE(dwProcId == GetCurrentProcessId());
-#endif
+    _ASSERTE(dwProcId == minipal_get_current_process_id());
 
     if (!pData->hashTable.Update(clsId, [](AllocByClassEntry &entry) { entry.m_count++; }))
     {

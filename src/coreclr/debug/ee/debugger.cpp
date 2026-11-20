@@ -11,6 +11,7 @@
 #include <minipal/debugger.h>
 #include "CLREventBase.h"
 #include <minipal/time.h>
+#include <minipal/thread.h>
 #if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
 #include <fcntl.h>
 #include <semaphore.h>
@@ -830,11 +831,7 @@ Debugger::Debugger()
     InitDebugEventCounting();
 #endif
 
-#ifdef TARGET_UNIX
-    m_processId = getpid();
-#else
-    m_processId = GetCurrentProcessId();
-#endif
+    m_processId = minipal_get_current_process_id();
 
     m_pForceCatchHandlerFoundEventsTable = new ForceCatchHandlerFoundTable();
     m_pCustomNotificationTable = new CustomNotificationTable();
@@ -8787,11 +8784,7 @@ int Debugger::NotifyUserOfFault(bool userBreakpoint, DebuggerLaunchSetting dls)
         DWORD pid;
         DWORD tid;
 
-#ifdef TARGET_UNIX
-        pid = getpid();
-#else
-        pid = GetCurrentProcessId();
-#endif
+        pid = minipal_get_current_process_id();
         tid = GetCurrentThreadId();
 
         DWORD flags = 0;

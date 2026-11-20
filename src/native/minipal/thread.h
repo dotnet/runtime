@@ -79,4 +79,21 @@ size_t minipal_get_current_thread_id(void);
 
 #endif // !HOST_WINDOWS
 
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * Get the current process ID.
+ *
+ * @return The current process ID.
+ */
+uint32_t minipal_get_current_process_id(void);
+
+#ifdef __cplusplus
+}
+#endif // extern "C"
+
 #endif // HAVE_MINIPAL_THREAD_H

@@ -6,6 +6,7 @@
 //
 #include "stdafx.h"
 #include <minipal/debugger.h>
+#include <minipal/thread.h>
 
 //
 // Define LOGGING by default in a checked build. If you want to log in a free
@@ -78,11 +79,7 @@ VOID InitLogging()
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogWithPid))
     {
         WCHAR pidSuffix[ARRAY_SIZE(".") + MaxUnsigned32BitDecString] = W(".");
-#ifdef HOST_UNIX
-        DWORD pid = getpid();
-#else
-        DWORD pid = GetCurrentProcessId();
-#endif
+        DWORD pid = minipal_get_current_process_id();
         FormatInteger(pidSuffix + 1, ARRAY_SIZE(pidSuffix) - 1, "%u", pid);
         // Append the format ".%u" to the end of the file name
         wcscat_s(szLogFileName.Ptr(), szLogFileName.Size(), pidSuffix);

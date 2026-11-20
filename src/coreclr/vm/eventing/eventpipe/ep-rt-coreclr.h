@@ -1164,11 +1164,7 @@ uint32_t
 ep_rt_current_process_get_id (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-#ifdef TARGET_UNIX
-	return static_cast<uint32_t>(getpid());
-#else
-	return static_cast<uint32_t>(GetCurrentProcessId());
-#endif
+	return minipal_get_current_process_id();
 }
 
 static

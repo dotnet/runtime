@@ -12,6 +12,7 @@
 #include "stdafx.h"
 #include "CLREventBase.h"
 #include <minipal/time.h>
+#include <minipal/thread.h>
 #include "threadsuspend.h"
 
 #ifndef SM_REMOTESESSION
@@ -506,11 +507,7 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
 #if defined(_DEBUG)
     DebuggerIPCEvent *event = ((DebugFilterParam *)pv)->event;
 
-#ifdef TARGET_UNIX
-    DWORD pid = getpid();
-#else
-    DWORD pid = GetCurrentProcessId();
-#endif
+    DWORD pid = minipal_get_current_process_id();
     DWORD tid = GetCurrentThreadId();
 
     DebuggerIPCEventType type = (DebuggerIPCEventType) (event->type & DB_IPCE_TYPE_MASK);
