@@ -301,10 +301,10 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory,
-            InlineData(":bar"),
-            InlineData(":bar:$DATA"),
-            InlineData("::$DATA")]
+        [ConditionalTheory(typeof(FileSystemTest), nameof(FileSystemTest.SupportsAlternateDataStreams))]
+        [InlineData(":bar")]
+        [InlineData(":bar:$DATA")]
+        [InlineData("::$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsAlternateDataStream(string streamName)
         {
@@ -316,9 +316,9 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory,
-            InlineData(":bar"),
-            InlineData(":bar:$DATA")]
+        [ConditionalTheory(typeof(FileSystemTest), nameof(FileSystemTest.SupportsAlternateDataStreams))]
+        [InlineData(":bar")]
+        [InlineData(":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsAlternateDataStream_OnExisting(string streamName)
         {
