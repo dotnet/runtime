@@ -134,7 +134,7 @@ public class ConvertDllsToWebcil : Task
 
         WebcilCandidates = webcilCandidates.ToArray();
         PassThroughCandidates = passThroughCandidates.ToArray();
-        return true;
+        return !Log.HasLoggedErrors;
     }
 
     private TaskItem ConvertDll(string tmpDir, ITaskItem candidate)
@@ -269,6 +269,18 @@ public class ConvertDllsToWebcil : Task
         }
 
         Guid? prebuiltMvid = TryReadMvid(prebuiltImagePath);
+
+        // A per-assembly R2R image keeps its assembly's MVID; an empty one means a composite image, whose
+        // component metadata has no module identity. The base SDK ReadyToRun tasks emit those for wasm even
+        // without PublishReadyToRunComposite (dotnet/sdk#55785). Fail instead of silently publishing IL.
+        if (prebuiltMvid == Guid.Empty)
+        {
+            Log.LogError(
+                $"Prebuilt R2R image '{prebuiltImagePath}' for '{candidateDllPath}' has an empty MVID, so it is a composite image rather than the per-assembly image expected for CoreCLR browser-wasm. "
+                + "The ReadyToRun SDK tasks in use do not support per-assembly wasm output (https://github.com/dotnet/sdk/issues/55785); "
+                + "set Crossgen2SdkOverridePropsPath and Crossgen2SdkOverrideTargetsPath to the dotnet/runtime Crossgen2Tasks.");
+            return false;
+        }
 
         // Compare MVIDs, not assembly versions: with cross-module inlining every image in the bundle shares one
         // version bubble the runtime checks by MVID at load, and the assembly version rarely changes between
