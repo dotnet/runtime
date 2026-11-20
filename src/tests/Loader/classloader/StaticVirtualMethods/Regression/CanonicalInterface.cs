@@ -278,32 +278,21 @@ public class CanonicalInterface
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int CallClassResult<TFunc, T>() where TFunc : class, IResult<T> => TFunc.Get();
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int CallConvergentClass<T>() =>
-        CallClassResult<SameResultClass<T>, T[]>() + CallClassResult<SameResultClass<T>, List<T>>();
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int CallInheritedResult<TUnused, T>() =>
-        CallClassResult<InheritedResult<TUnused, T>, T[]>() + CallClassResult<InheritedResult<TUnused, T>, List<T>>();
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int CallFixedInheritedResult<T>() => CallClassResult<FixedInheritedResult<T>, string[]>();
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int CallReimplementedResult<T>() =>
-        CallClassResult<ReimplementedResult<T>, T[]>() * 100 + CallClassResult<ReimplementedResult<T>, List<T>>();
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int CallInheritedConstant<T>()
-    {
-        return CallClassResult<InheritedConstantResult<T>, object>();
-    }
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Func<int> GetResultDelegate<TFunc, T>() where TFunc : IResult<T> => TFunc.Get;
 
+    // One shared generic context per instantiation flavor, covering the convergent,
+    // inherited, reimplemented and constant class results plus the delegate form.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Func<int> GetInheritedResultDelegate<T>() => GetResultDelegate<InheritedResult<string, T>, T[]>();
+    private static void CheckInheritedResults<TUnused, T>(int convergent, int inherited, int reimplemented, int delegated)
+    {
+        Assert.Equal(convergent, CallClassResult<SameResultClass<T>, T[]>() + CallClassResult<SameResultClass<T>, List<T>>());
+        Assert.Equal(inherited, CallClassResult<InheritedResult<TUnused, T>, T[]>() + CallClassResult<InheritedResult<TUnused, T>, List<T>>());
+        Assert.Equal(9, CallClassResult<FixedInheritedResult<T>, string[]>());
+        Assert.Equal(reimplemented, CallClassResult<ReimplementedResult<T>, T[]>() * 100 + CallClassResult<ReimplementedResult<T>, List<T>>());
+        Assert.Equal(42, CallClassResult<InheritedConstantResult<T>, object>());
+        Assert.Equal(delegated, GetResultDelegate<InheritedResult<string, T>, T[]>()());
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int CallExactGeneric<TFunc, T>(T value) where TFunc : struct, IFunc<T>
@@ -341,12 +330,11 @@ public class CanonicalInterface
 
     // Inlining exposes an interface, rather than a class or struct, as the constrained type.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Type CallInterfaceGeneric<TArg>((object, int) value)
-        => CallClassGeneric<IGenericDefaultFunc, (object, int), TArg>(value);
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Func<(object, int), Type> GetInterfaceGenericDelegate<TArg>()
-        => GetClassGenericDelegate<IGenericDefaultFunc, (object, int), TArg>();
+    private static void CheckInterfaceGeneric<TArg>((object, int) value)
+    {
+        Assert.Equal(typeof(TArg), CallClassGeneric<IGenericDefaultFunc, (object, int), TArg>(value));
+        Assert.Equal(typeof(TArg), GetClassGenericDelegate<IGenericDefaultFunc, (object, int), TArg>()(value));
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Func<T, Type> GetClassGenericDelegate<TFunc, T, TArg>() where TFunc : class, IGenericFunc<T>
@@ -372,20 +360,18 @@ public class CanonicalInterface
         => TFunc.Invoke(value);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int CallSharedClass<T>((T, int) value)
-        => CallClass<SharedClassFunc<T>, (T, int)>(value);
+    private static void CheckSharedClasses<T>((T, int) state, int expected)
+    {
+        Assert.Equal(expected, CallClass<SharedClassFunc<T>, (T, int)>(state));
+        Assert.Equal(expected, CallClass<InheritedSharedClassFunc<T>, (T, int)>(state));
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int CallInheritedSharedClass<T>((T, int) value)
-        => CallClass<InheritedSharedClassFunc<T>, (T, int)>(value);
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int CallMultipleClassObject<T>((object, int) value)
-        => CallClass<MultipleClassFunc<T>, (object, int)>(value);
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int CallMultipleClassString<T>((string, int) value)
-        => CallClass<MultipleClassFunc<T>, (string, int)>(value);
+    private static void CheckMultipleClasses<T>((object, int) objectState, (string, int) stringState, int objectExpected, int stringExpected)
+    {
+        Assert.Equal(objectExpected, CallClass<MultipleClassFunc<T>, (object, int)>(objectState));
+        Assert.Equal(stringExpected, CallClass<MultipleClassFunc<T>, (string, int)>(stringState));
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Func<T, int> GetClassDelegate<TFunc, T>() where TFunc : class, IFunc<T>
@@ -403,27 +389,25 @@ public class CanonicalInterface
     private static Type CallInheritedGeneric<T, TArg>() =>
         CallClassGeneric<InheritedGenericClass<T>, (List<T>, int), TArg>(default);
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Type CallVariantHierarchy<T>() => CallClassCovariant<CovariantDerived<T>, object>();
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Type CallCrossFamilyShared<T>() => CallClassCovariant<CrossFamilyFunc<T>, object>();
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Type CallCrossFamilyAgree<T>() => CallClassCovariant<CrossFamilyAgreeFunc<T>, object>();
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Type CallCrossFamilyDefault<T>() => CallClassCovariant<CrossFamilyDefaultFunc<T>, object>();
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Type CallClassContravariant<TFunc, T>() where TFunc : class, IContravariantFunc<T>
         => TFunc.GetInput();
 
+    // One shared generic context per instantiation, covering the variant hierarchy and the
+    // cross-family shapes. The disagreeing cross-family results assert consistency with the
+    // exact compilation, passed in from the caller's exact context. The winner follows the
+    // first-variant-match-in-interface-order rule, specified for the instance variance pass
+    // and applied to statics by analogy, so nothing here encodes the order.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Type CallContravariantShared<T>() => CallClassContravariant<ContravariantFunc<T>, string>();
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Type CallContravariantDefault<T>() => CallClassContravariant<ContravariantDefaultFunc<T>, string>();
+    private static void CheckVariantFamilies<T>(Type crossFamily, Type crossFamilyDefault)
+    {
+        Assert.Equal(typeof(T), CallClassCovariant<CovariantDerived<T>, object>());
+        Assert.Equal(crossFamily, CallClassCovariant<CrossFamilyFunc<T>, object>());
+        Assert.Equal(crossFamilyDefault, CallClassCovariant<CrossFamilyDefaultFunc<T>, object>());
+        Assert.Equal(typeof(T), CallClassCovariant<CrossFamilyAgreeFunc<T>, object>());
+        Assert.Equal(typeof((T, object)), CallClassContravariant<ContravariantFunc<T>, string>());
+        Assert.Equal(typeof(object), CallClassContravariant<ContravariantDefaultFunc<T>, string>());
+    }
 
     [Theory]
     [InlineData(0)]
@@ -437,12 +421,9 @@ public class CanonicalInterface
         CheckInterfaceInstantiations<object>(objectState);
         CheckInterfaceInstantiations<string>(objectState);
 
-        Assert.Equal(typeof(int), CallInterfaceGeneric<int>(objectState));
-        Assert.Equal(typeof(object), CallInterfaceGeneric<object>(objectState));
-        Assert.Equal(typeof(string), CallInterfaceGeneric<string>(objectState));
-        Assert.Equal(typeof(int), GetInterfaceGenericDelegate<int>()(objectState));
-        Assert.Equal(typeof(object), GetInterfaceGenericDelegate<object>()(objectState));
-        Assert.Equal(typeof(string), GetInterfaceGenericDelegate<string>()(objectState));
+        CheckInterfaceGeneric<int>(objectState);
+        CheckInterfaceGeneric<object>(objectState);
+        CheckInterfaceGeneric<string>(objectState);
 
         Assert.Equal(42, CallConvergent<SameResult, object>());
         Assert.Equal(42, CallConvergent<SameResult, string>());
@@ -453,52 +434,32 @@ public class CanonicalInterface
         Assert.Equal(-1, CallResult<PartialObjectResult, string>());
         Assert.Equal(-1, CallResult<PartialStringResult, object>());
         Assert.Equal(4, CallResult<PartialStringResult, string>());
-        Assert.Equal(10, CallConvergentClass<object>());
 
-        Assert.Equal(16, CallInheritedResult<string, object>());
-        Assert.Equal(18, CallInheritedResult<object, string>());
-        Assert.Equal(9, CallFixedInheritedResult<object>());
-        Assert.Equal(9, CallFixedInheritedResult<string>());
-        Assert.Equal(810, CallReimplementedResult<object>());
-        Assert.Equal(910, CallReimplementedResult<string>());
-        Assert.Equal(42, CallInheritedConstant<object>());
-        Assert.Equal(42, CallInheritedConstant<string>());
-        Assert.Equal(8, GetInheritedResultDelegate<object>()());
-        Assert.Equal(9, GetInheritedResultDelegate<string>()());
+        CheckInheritedResults<string, object>(10, 16, 810, 8);
+        CheckInheritedResults<object, string>(12, 18, 910, 9);
+        CheckInheritedResults<string, object>(10, 16, 810, 8);
         Assert.Equal(typeof((List<object>, string)), CallInheritedGeneric<object, string>());
         Assert.Equal(typeof((List<string>, object)), CallInheritedGeneric<string, object>());
         Assert.Equal(typeof((List<string>, int)), CallInheritedGeneric<string, int>());
-        Assert.Equal(typeof(string), CallVariantHierarchy<string>());
-        Assert.Equal(typeof(int), CallVariantHierarchy<int>());
-        // The disagreeing cross-family shape asserts consistency between the shared and the
-        // exact compilation. The winner follows the first-variant-match-in-interface-order
-        // rule, specified for the instance variance pass and applied to statics by analogy,
-        // so the test asserts agreement rather than encoding the order.
-        Assert.Equal(CallClassCovariant<CrossFamilyFunc<string>, object>(), CallCrossFamilyShared<string>());
-        Assert.Equal(CallClassCovariant<CrossFamilyFunc<Uri>, object>(), CallCrossFamilyShared<Uri>());
-        Assert.Equal(CallClassCovariant<CrossFamilyDefaultFunc<string>, object>(), CallCrossFamilyDefault<string>());
-        Assert.Equal(CallClassCovariant<CrossFamilyDefaultFunc<Uri>, object>(), CallCrossFamilyDefault<Uri>());
-        Assert.Equal(typeof(string), CallCrossFamilyAgree<string>());
-        Assert.Equal(typeof(Uri), CallCrossFamilyAgree<Uri>());
-        Assert.Equal(typeof((string, object)), CallContravariantShared<string>());
-        Assert.Equal(typeof((Uri, object)), CallContravariantShared<Uri>());
-        Assert.Equal(typeof(object), CallContravariantDefault<string>());
-        Assert.Equal(typeof(object), CallContravariantDefault<Uri>());
-        Assert.Equal(12, CallConvergentClass<string>());
-        Assert.Equal(10, CallConvergentClass<object>());
+
+        CheckVariantFamilies<string>(
+            CallClassCovariant<CrossFamilyFunc<string>, object>(),
+            CallClassCovariant<CrossFamilyDefaultFunc<string>, object>());
+        CheckVariantFamilies<Uri>(
+            CallClassCovariant<CrossFamilyFunc<Uri>, object>(),
+            CallClassCovariant<CrossFamilyDefaultFunc<Uri>, object>());
+        CheckVariantFamilies<int>(
+            CallClassCovariant<CrossFamilyFunc<int>, object>(),
+            CallClassCovariant<CrossFamilyDefaultFunc<int>, object>());
 
         Assert.Equal(value + 10, CallClass<ClassFunc, (object, int)>(objectState));
         Assert.Equal(value + 10, CallClass<InheritedClassFunc, (object, int)>(objectState));
         Assert.Equal(value + 20, CallClass<ReimplementedClassFunc, (object, int)>(objectState));
-        Assert.Equal(value + 30, CallSharedClass(objectState));
-        Assert.Equal(value + 40, CallSharedClass(stringState));
-        Assert.Equal(value + 30, CallInheritedSharedClass(objectState));
-        Assert.Equal(value + 40, CallInheritedSharedClass(stringState));
-        Assert.Equal(value + 1, CallMultipleClassObject<object>(objectState));
-        Assert.Equal(value + 2, CallMultipleClassString<object>(stringState));
-        Assert.Equal(value + 3, CallMultipleClassObject<string>(objectState));
-        Assert.Equal(value + 4, CallMultipleClassString<string>(stringState));
-        Assert.Equal(value + 1, CallMultipleClassObject<object>(objectState));
+        CheckSharedClasses(objectState, value + 30);
+        CheckSharedClasses(stringState, value + 40);
+        CheckMultipleClasses<object>(objectState, stringState, value + 1, value + 2);
+        CheckMultipleClasses<string>(objectState, stringState, value + 3, value + 4);
+        CheckMultipleClasses<object>(objectState, stringState, value + 1, value + 2);
         Assert.Equal(7, CallClass<DefaultClassFunc, (object, int)>(objectState));
         Assert.Equal(value + 10, GetClassDelegate<InheritedClassFunc, (object, int)>()(objectState));
         Assert.Equal(value + 20, GetClassDelegate<ReimplementedClassFunc, (object, int)>()(objectState));
