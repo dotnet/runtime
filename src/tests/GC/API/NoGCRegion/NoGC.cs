@@ -1,5 +1,6 @@
 using System;
 using System.Runtime;
+using System.Threading;
 using Xunit;
 using TestLibrary;
 
@@ -8,6 +9,44 @@ public class Test
     private static byte[][] arrByteArray;
     private static int arrByteArrayLen;
     private static Random Rand;
+
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+    [InlineData(false)]
+    [InlineData(true)]
+    [SkipOnMono("Tests the CoreCLR and NativeAOT memory pressure heuristic.")]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+    public static void MemoryPressureInNoGCRegion(bool specifyLohSize)
+    {
+        const long RegionSize = 128 * 1024 * 1024;
+        const long MemoryPressure = 64 * 1024 * 1024;
+
+        bool started = specifyLohSize
+            ? GC.TryStartNoGCRegion(RegionSize, RegionSize / 2)
+            : GC.TryStartNoGCRegion(RegionSize);
+        Assert.True(started);
+
+        try
+        {
+            int gen2Count = GC.CollectionCount(2);
+            long deadline = Environment.TickCount64 + 5000;
+            while (GC.CollectionCount(2) == gen2Count && Environment.TickCount64 < deadline)
+            {
+                GC.AddMemoryPressure(MemoryPressure);
+                GC.RemoveMemoryPressure(MemoryPressure);
+                Thread.Sleep(10);
+            }
+
+            Assert.True(GC.CollectionCount(2) > gen2Count, "Memory pressure did not trigger a gen2 collection.");
+            Assert.NotEqual(GCLatencyMode.NoGCRegion, GCSettings.LatencyMode);
+        }
+        finally
+        {
+            if (GCSettings.LatencyMode == GCLatencyMode.NoGCRegion)
+            {
+                GC.EndNoGCRegion();
+            }
+        }
+    }
 
     static void DoAlloc()
     {
@@ -207,4 +246,3 @@ public class Test
         return isTestSucceeded ? 100 : 1;
     }
 }
-
