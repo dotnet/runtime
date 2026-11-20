@@ -41,21 +41,6 @@ GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                                ? (CORINFO_GENERIC_HANDLE)((SIZE_T)context & ~CORINFO_CONTEXTFLAGS_MASK)
                                                : (CORINFO_GENERIC_HANDLE)eeGetClassFromContext(context);
     GenTreeFlags           flags         = methodContext ? GTF_ICON_METHOD_HDL : GTF_ICON_CLASS_HDL;
-
-    // A resolved non-generic method on the constrained value type needs only that type's
-    // context. The original method token can name an interface, so obtain the context from
-    // the constrained token instead.
-    if (!methodContext && (pConstrainedResolvedToken != nullptr) &&
-        (pConstrainedResolvedToken->hClass == (CORINFO_CLASS_HANDLE)handle))
-    {
-        GenTree* constrainedInstParam = impTokenToHandle(pConstrainedResolvedToken);
-        if (constrainedInstParam == nullptr)
-        {
-            assert(compDonotInline());
-        }
-        return constrainedInstParam;
-    }
-
     GenTree*               result        = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, callInfo,
                                                                &callInfo->instParamLookup, flags, handle);
     if ((result != nullptr) && callInfo->instParamLookup.lookupKind.needsRuntimeLookup)

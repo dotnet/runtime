@@ -5170,29 +5170,16 @@ void CEEInfo::getCallInfo(
         bool allowInstParam = (flags & CORINFO_CALLINFO_ALLOWINSTPARAM);
 
         // A resolved non-generic method on the constrained value type needs only that
-        // type's context. The JIT can obtain it from the constrained type token.
+        // type's context. prepareCallLookups embeds it from the constrained token, so the call
+        // stays direct and inlinable with the instantiation argument supplied as a deferred lookup.
         canPassConstrainedTypeArg = allowInstParam && fResolvedConstraint && !fForceUseRuntimeLookup &&
                                     !pTargetMD->HasMethodInstantiation() && exactType.IsValueType() &&
                                     exactType == constrainedType;
 
-        // If the target method is resolved via constrained static virtual dispatch
-        // and needs a context other than the constrained type, we do not have the generic
-        // dictionary infrastructure to load the correct generic context arg via EmbedGenericHandle.
-        // Instead, force the call to go down the CORINFO_CALL_CODE_POINTER code path
-        // which should have somewhat inferior performance. This should only actually happen in the case
-        // of shared generic code calling a shared generic implementation method, which should be rare.
-        //
-        // An alternative design would be to add a new generic dictionary entry kind to hold the MethodDesc
-        // of the constrained target instead, and use that in some circumstances; however, implementation of
-        // that design requires refactoring variuos parts of the JIT interface as well as
-        // TryResolveConstraintMethodApprox. In particular we would need to be abled to embed a constrained lookup
-        // via EmbedGenericHandle, as well as decide in TryResolveConstraintMethodApprox if the call can be made
-        // via a single use of CORINFO_CALL_CODE_POINTER, or would be better done with a CORINFO_CALL + embedded
-        // constrained generic handle, or if there is a case where we would want to use both a CORINFO_CALL and
-        // embedded constrained generic handle. Given the current expected high performance use case of this feature
-        // which is generic numerics which will always resolve to exact valuetypes, it is not expected that
-        // the complexity involved would be worth the risk. Other scenarios are not expected to be as performance
-        // sensitive.
+        // If the target method is resolved via constrained static virtual dispatch and needs a
+        // context other than the constrained type, force the call down the CORINFO_CALL_CODE_POINTER
+        // path and look the correct instantiating stub up at runtime. This should only happen for
+        // shared generic code calling a shared generic implementation method, which should be rare.
         if (IsMdStatic(dwTargetMethodAttrs) && constrainedType != NULL && pResult->exactContextNeedsRuntimeLookup &&
             !canPassConstrainedTypeArg)
         {
@@ -5564,11 +5551,7 @@ void CEEInfo::getCallInfo(
     EE_TO_JIT_TRANSITION();
 
     pResult->instParamLookup = {};
-    if (canPassConstrainedTypeArg)
-    {
-        // The JIT obtains the hidden instantiation argument directly from the constrained token.
-    }
-    else if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
+    if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
     {
         pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
         pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
