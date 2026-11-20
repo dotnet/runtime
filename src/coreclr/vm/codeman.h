@@ -2341,6 +2341,15 @@ public:
         return m_CPUCompileFlags;
     }
 
+#if defined(TARGET_WASM) && !defined(DACCESS_COMPILE)
+    // Wasm cannot detect instruction sets at run time; CoreLib's ReadyToRun image defines them.
+    void SetInstructionSetFromCoreLib(CORINFO_InstructionSet instructionSet)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_CPUCompileFlags.Set(instructionSet);
+    }
+#endif
+
 #if defined(TARGET_ARM64)
     inline bool UseScalableVectorT()
     {

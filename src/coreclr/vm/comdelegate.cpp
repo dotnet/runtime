@@ -188,15 +188,6 @@ public:
         // over a register we later need to shuffle down as well).
         if (m_currentGenRegIndex < m_argLocDesc->m_cGenReg)
         {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            if (7 < (m_currentGenRegIndex + m_argLocDesc->m_idxGenReg))
-            {
-                m_currentGenRegIndex++;
-                index = m_currentByteStackIndex;
-                m_currentByteStackIndex += TARGET_POINTER_SIZE;
-                return index;
-            }
-#endif
             index = m_argLocDesc->m_idxGenReg + m_currentGenRegIndex;
             m_currentGenRegIndex++;
 
@@ -1359,8 +1350,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 
             pUMEntryThunk = UMEntryThunkData::CreateUMEntryThunk();
 
-            Holder<UMEntryThunkData *, DoNothing, UMEntryThunkData::FreeUMEntryThunk> umHolder;
-            umHolder.Assign(pUMEntryThunk);
+            UMEntryThunkDataHolder umHolder(pUMEntryThunk);
 
             OBJECTHANDLE objhnd;
             PCODE pManagedTargetForDiagnostics;
@@ -1387,7 +1377,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             }
             else
             {
-                umHolder.SuppressRelease();
+                umHolder.Detach();
             }
 
             _ASSERTE(pUMEntryThunk != NULL);

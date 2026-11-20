@@ -9,6 +9,7 @@
 #include "ep-event.h"
 #include "ep-provider-internals.h"
 #include "ep-rt.h"
+#include <minipal/time.h>
 
 #define NUM_NANOSECONDS_IN_1_MS 1000000
 
@@ -99,7 +100,7 @@ EP_RT_DEFINE_THREAD_FUNC (sampling_thread)
 				// Sample all threads.
 				ep_rt_sample_profiler_write_sampling_event_for_threads (thread_params->thread, _thread_time_event);
 				// Wait until it's time to sample again.
-				ep_rt_thread_sleep (_sampling_rate_in_ns);
+				minipal_microdelay ((uint32_t)(_sampling_rate_in_ns / 1000), NULL);
 			}
 		EP_GCX_PREEMP_EXIT
 	}

@@ -28,9 +28,11 @@ struct _EventPipeProvider_Internal {
 	// The name of the provider.
 	ep_char8_t *provider_name;
 	ep_char16_t *provider_name_utf16;
-	// List of every event currently associated with the provider.
+	// List of dynamically added events associated with the provider.
 	// New events can be added on-the-fly.
 	dn_list_t *event_list;
+	// Statically reserved events, prepared only when the provider is enabled.
+	const EventPipeEventTable *event_table;
 	// The optional provider callback function.
 	EventPipeCallback callback_func;
 	// The optional provider callback data pointer.
@@ -60,6 +62,7 @@ EP_DEFINE_GETTER(EventPipeProvider *, provider, const ep_char8_t *, provider_nam
 EP_DEFINE_GETTER(EventPipeProvider *, provider, const ep_char16_t *, provider_name_utf16)
 EP_DEFINE_GETTER(EventPipeProvider *, provider, bool, delete_deferred)
 EP_DEFINE_GETTER(EventPipeProvider *, provider, uint64_t, sessions)
+EP_DEFINE_SETTER(EventPipeProvider *, provider, const EventPipeEventTable *, event_table)
 
 static
 inline

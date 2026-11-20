@@ -1207,7 +1207,9 @@ namespace Mono.Linker.Steps
                     for (int handlerIndex = 0; handlerIndex < handlerCount; handlerIndex++)
                     {
                         ExceptionHandler handler = ExceptionHandlers[handlerIndex];
-                        exceptionHandlerRanges[handlerIndex] = (instructions.IndexOf(handler.TryStart), instructions.IndexOf(handler.TryEnd) - 1);
+                        // Cecil represents the end of the method with a null TryEnd.
+                        int end = handler.TryEnd is null ? reachable.Length - 1 : instructions.IndexOf(handler.TryEnd) - 1;
+                        exceptionHandlerRanges[handlerIndex] = (instructions.IndexOf(handler.TryStart), end);
                     }
                 }
 

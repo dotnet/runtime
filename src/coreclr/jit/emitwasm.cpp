@@ -88,10 +88,12 @@ void emitter::emitIns_BlockTy(instruction ins, WasmValueType valType)
 //   attr     - emit attributes
 //   imm      - immediate value
 //   isLastUse - whether this local.get is the last use of the stored value
+//   lclNum   - local variable number for register-local disassembly annotations
 //
-void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool isLastUse)
+void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool isLastUse, unsigned lclNum)
 {
     assert(!isLastUse || (ins == INS_local_get));
+    assert((lclNum == BAD_VAR_NUM) || (ins == INS_local_get) || (ins == INS_local_set) || (ins == INS_local_tee));
 
     // Keep the local assignment unless this get is known to be its last use.
     //
@@ -121,6 +123,11 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+
+    if (m_debugInfoSize > 0)
+    {
+        id->idDebugOnlyInfo()->idLclNum = lclNum;
+    }
 
     dispIns(id);
     appendToCurIG(id);

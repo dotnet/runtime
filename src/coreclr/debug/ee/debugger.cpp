@@ -2653,7 +2653,7 @@ DebuggerMethodInfo *Debugger::GetOrCreateMethodInfo(Module *pModule, mdMethodDef
     // nor would it be useful for anything.
     ALLOW_DATATARGET_MISSING_MEMORY(
         // In case we don't have already, take it now.
-        DebuggerDataLockHolder debuggerDataLockHolder(this);
+        DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
     );
 
     if (m_pMethodInfos != NULL)
@@ -5024,7 +5024,7 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule)
     // the lock when actually using the DebuggerModule (since it won't be unloaded as long as there is a thread
     // in that appdomain). Many of our callers already have this lock, many don't.
     // We can take the lock anyways because it's reentrant.
-    DebuggerDataLockHolder ch(g_pDebugger); // need to traverse module list
+    DebuggerDataLockHolder ch = TakeDebuggerDataLock(g_pDebugger); // need to traverse module list
 
     DebuggerModule* dmod = NULL;
 
@@ -5071,7 +5071,7 @@ DebuggerModule* Debugger::AddDebuggerModule(Assembly * pAssembly)
     CONTRACTL_END;
 
     LOG((LF_CORDB, LL_INFO1000, "D::ADM asm=0x%p\n", pAssembly));
-    DebuggerDataLockHolder chInfo(this);
+    DebuggerDataLockHolder chInfo = TakeDebuggerDataLock(this);
 
     Module *     pRuntimeModule = pAssembly->GetModule();
 
@@ -5585,7 +5585,7 @@ void Debugger::SetModuleDefaultJMCStatus(Module * pRuntimeModule, bool fStatus)
 
     if (pTable != NULL)
     {
-        Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+        Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
         for (DebuggerMethodInfoTable::Iterator iterator = pTable->Begin(), end = pTable->End();
              iterator != end; iterator++)
         {
@@ -9396,7 +9396,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
         // because JMC status is not maintained on a per-AppDomain basis and we don't
         // want to change the JMC behavior of the module in other domains.
         LOG((LF_CORDB, LL_EVERYTHING, "Setting all JMC methods to false:\n"));
-        DebuggerDataLockHolder debuggerDataLockHolder(this);
+        DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
         DebuggerMethodInfoTable * pTable = GetMethodInfoTable();
         if (pTable != NULL)
         {
@@ -9415,7 +9415,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
         // Delete the Left Side representation of the module.
         if (m_pModules != NULL)
         {
-            DebuggerDataLockHolder chInfo(this);
+            DebuggerDataLockHolder chInfo = TakeDebuggerDataLock(this);
             m_pModules->RemoveModule(pRuntimeModule);
         }
 
@@ -9489,7 +9489,7 @@ void Debugger::RemoveModuleReferences( Module* pModule )
 
         if (SUCCEEDED(hr))
         {
-            DebuggerDataLockHolder debuggerDataLockHolder(this);
+            DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
 
             m_pMethodInfos->ClearMethodsOfModule(pModule);
 
@@ -10653,7 +10653,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             if (pMethodInfoTable != NULL)
             {
-                DebuggerDataLockHolder debuggerDataLockHolder(this);
+                DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
 
                 for (DebuggerMethodInfoTable::Iterator iterator = pMethodInfoTable->Begin(), end = pMethodInfoTable->End();
                      iterator != end; iterator++)
@@ -10672,7 +10672,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         {
 
             // Removes all DebuggerModules
-            DebuggerDataLockHolder ch(this);
+            DebuggerDataLockHolder ch = TakeDebuggerDataLock(this);
             m_pModules->Clear();
 
         }
@@ -10927,7 +10927,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             }
             else
             {
-                DebuggerDataLockHolder debuggerDataLockHolder(this);
+                DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
                 // This may be called on an unjitted method, so we may
                 // have to create the MethodInfo.
                 DebuggerMethodInfo * pMethodInfo = GetOrCreateMethodInfo(pModule, token);
@@ -11645,110 +11645,6 @@ HRESULT Debugger::BasicTypeInfoToTypeHandle(DebuggerIPCE_BasicTypeData *data, Ty
         return CORDBG_E_CLASS_NOT_LOADED;
     *pRes = th;
     return S_OK;
-}
-
-// Iterate through the type argument data, creating type handles as we go.
-void Debugger::TypeDataWalk::ReadTypeHandles(unsigned int nTypeArgs, TypeHandle *ppResults)
-{
-    WRAPPER_NO_CONTRACT;
-
-    for (unsigned int i = 0; i < nTypeArgs; i++)
-        ppResults[i] = ReadTypeHandle();
-    }
-
-TypeHandle Debugger::TypeDataWalk::ReadInstantiation(Module *pModule, mdTypeDef tok, unsigned int nTypeArgs)
-{
-    WRAPPER_NO_CONTRACT;
-
-    DWORD dwAllocSize;
-    if (!ClrSafeInt<DWORD>::multiply(nTypeArgs, sizeof(TypeHandle), dwAllocSize))
-    {
-        ThrowHR(COR_E_OVERFLOW);
-    }
-    TypeHandle * inst = (TypeHandle *) _alloca(dwAllocSize);
-    ReadTypeHandles(nTypeArgs, inst) ;
-    TypeHandle th = g_pEEInterface->LoadInstantiation(pModule, tok, nTypeArgs, inst);
-    if (th.IsNull())
-      COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
-    return th;
-}
-
-TypeHandle Debugger::TypeDataWalk::ReadTypeHandle()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DebuggerIPCE_TypeArgData * data = ReadOne();
-    if (!data)
-      COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
-
-    LOG((LF_CORDB, LL_INFO10000,
-         "D::ETITTH: expanding right-side type to left-side type, ELEMENT_TYPE: %d.\n",
-         static_cast<CorElementType>(data->data.elementType)));
-
-    TypeHandle th;
-    CorElementType et = data->data.elementType;
-    switch (et)
-    {
-    case ELEMENT_TYPE_ARRAY:
-    case ELEMENT_TYPE_SZARRAY:
-    case ELEMENT_TYPE_PTR:
-    case ELEMENT_TYPE_BYREF:
-        if(data->numTypeArgs == (UINT)1)
-        {
-            TypeHandle typar = ReadTypeHandle();
-            switch (et)
-            {
-            case ELEMENT_TYPE_ARRAY:
-            case ELEMENT_TYPE_SZARRAY:
-                th = g_pEEInterface->LoadArrayType(data->data.elementType, typar, data->data.ArrayTypeData.arrayRank);
-                break;
-            case ELEMENT_TYPE_PTR:
-            case ELEMENT_TYPE_BYREF:
-                th = g_pEEInterface->LoadPointerOrByrefType(data->data.elementType, typar);
-                break;
-            default:
-                _ASSERTE(0);
-        }
-        }
-        break;
-
-    case ELEMENT_TYPE_CLASS:
-    case ELEMENT_TYPE_VALUETYPE:
-        {
-            DebuggerModule *pDebuggerModule = g_pDebugger->LookupOrCreateModule(data->data.ClassTypeData.vmAssembly);
-            th = ReadInstantiation(pDebuggerModule->GetRuntimeModule(), data->data.ClassTypeData.metadataToken, data->numTypeArgs);
-            break;
-        }
-
-    case ELEMENT_TYPE_FNPTR:
-        {
-            SIZE_T cbAllocSize;
-            if ((!ClrSafeInt<SIZE_T>::multiply(data->numTypeArgs, sizeof(TypeHandle), cbAllocSize)) ||
-                (cbAllocSize != (size_t)(cbAllocSize)))
-            {
-                _ASSERTE(COR_E_OVERFLOW);
-                cbAllocSize = UINT_MAX;
-            }
-            TypeHandle * inst = (TypeHandle *) _alloca(cbAllocSize);
-            ReadTypeHandles(data->numTypeArgs, inst) ;
-            th = g_pEEInterface->LoadFnptrType(inst, data->numTypeArgs);
-            break;
-        }
-
-    default:
-        th = g_pEEInterface->LoadElementType(data->data.elementType);
-        break;
-    }
-    if (th.IsNull())
-      COMPlusThrow(kArgumentNullException, W("ArgumentNull_Type"));
-    return th;
-
 }
 
 //
@@ -12775,7 +12671,7 @@ HRESULT Debugger::AddFunction(MethodDesc* pMD, SIZE_T encVersion)
     }
     CONTRACTL_END;
 
-    DebuggerDataLockHolder debuggerDataLockHolder(this);
+    DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
 
     LOG((LF_CORDB, LL_INFO10000, "D::AF: adding "
          "%s::%s to version %zu\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, encVersion));

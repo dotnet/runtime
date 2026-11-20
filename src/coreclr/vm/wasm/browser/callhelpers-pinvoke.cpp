@@ -343,6 +343,7 @@ extern "C" {
     int32_t RuntimeHelper_AssemblyLoadContext_IsTracingEnabled (uintptr_t, uintptr_t) __asm__("AssemblyLoadContext_IsTracingEnabled");
     void RuntimeHelper_AssemblyName_InitializeAssemblySpec (void *, void *, void *) __asm__("AssemblyName_InitializeAssemblySpec");
     void RuntimeHelper_AssemblyNative_ApplyUpdate (void *, void *, int32_t, void *, int32_t, void *, int32_t, void *) __asm__("AssemblyNative_ApplyUpdate");
+    void RuntimeHelper_AssemblyNative_GetAssemblyFromHandle (void *, void *, void *) __asm__("AssemblyNative_GetAssemblyFromHandle");
     int32_t RuntimeHelper_AssemblyNative_GetCodeBase (void *, void *, void *) __asm__("AssemblyNative_GetCodeBase");
     void RuntimeHelper_AssemblyNative_GetEntryAssembly (void *, void *) __asm__("AssemblyNative_GetEntryAssembly");
     void RuntimeHelper_AssemblyNative_GetEntryPoint (void *, void *, void *) __asm__("AssemblyNative_GetEntryPoint");
@@ -385,8 +386,6 @@ extern "C" {
     int32_t RuntimeHelper_CustomAttribute_ParseAttributeUsageAttribute (void *, int32_t, void *, void *, void *) __asm__("CustomAttribute_ParseAttributeUsageAttribute");
     void RuntimeHelper_DebugDebugger_Break (void *) __asm__("DebugDebugger_Break");
     void RuntimeHelper_DebugDebugger_CustomNotification (void *, void *) __asm__("DebugDebugger_CustomNotification");
-    void RuntimeHelper_DebugDebugger_GetFuncEvalArgumentType (void *, uint32_t, void *, void *) __asm__("DebugDebugger_GetFuncEvalArgumentType");
-    void RuntimeHelper_DebugDebugger_GetFuncEvalMethod (void *, void *, void *, void *) __asm__("DebugDebugger_GetFuncEvalMethod");
     int32_t RuntimeHelper_DebugDebugger_IsLoggingHelper () __asm__("DebugDebugger_IsLoggingHelper");
     int32_t RuntimeHelper_DebugDebugger_IsManagedDebuggerAttached () __asm__("DebugDebugger_IsManagedDebuggerAttached");
     int32_t RuntimeHelper_DebugDebugger_Launch () __asm__("DebugDebugger_Launch");
@@ -419,6 +418,9 @@ extern "C" {
     void RuntimeHelper_Enum_GetValuesAndNames (void *, void *, void *, int32_t, void *) __asm__("Enum_GetValuesAndNames");
     void RuntimeHelper_Environment_Exit (int32_t, void *) __asm__("Environment_Exit");
     void RuntimeHelper_Environment_FailFast (void *, void *, void *, void *, void *) __asm__("Environment_FailFast");
+    void * RuntimeHelper_Environment_GetEnviron (void *) __asm__("Environment_GetEnviron");
+    void * RuntimeHelper_Environment_GetEnvironmentVariable (void *, void *) __asm__("Environment_GetEnvironmentVariable");
+    int32_t RuntimeHelper_Environment_SetEnvironmentVariable (void *, void *) __asm__("Environment_SetEnvironmentVariable");
     int32_t RuntimeHelper_Environment_get_ExitCode (uintptr_t, uintptr_t) __asm__("Environment_get_ExitCode");
     void RuntimeHelper_Environment_set_ExitCode (uintptr_t, int32_t, uintptr_t) __asm__("Environment_set_ExitCode");
     void * RuntimeHelper_EventPipeInternal_CreateProvider (void *, void *, void *, void *) __asm__("EventPipeInternal_CreateProvider");
@@ -443,7 +445,6 @@ extern "C" {
     int32_t RuntimeHelper_Exception_IsImmutableException (uintptr_t, void *, uintptr_t) __asm__("Exception_IsImmutableException");
     void RuntimeHelper_Exception_PrepareForForeignExceptionRaise (uintptr_t, uintptr_t) __asm__("Exception_PrepareForForeignExceptionRaise");
     void RuntimeHelper_FileLoadException_GetMessageForHR (int32_t, void *, void *) __asm__("FileLoadException_GetMessageForHR");
-    int32_t RuntimeHelper_FreeEnvironmentStringsW (void *) __asm__("FreeEnvironmentStringsW");
     void RuntimeHelper_GCFrameRegistration_RegisterForGCReporting (uintptr_t, void *, uintptr_t) __asm__("GCFrameRegistration_RegisterForGCReporting");
     void RuntimeHelper_GCFrameRegistration_UnregisterForGCReporting (uintptr_t, void *, uintptr_t) __asm__("GCFrameRegistration_UnregisterForGCReporting");
     void * RuntimeHelper_GCHandle_InternalAllocWithGCTransition (void *, int32_t, void *) __asm__("GCHandle_InternalAllocWithGCTransition");
@@ -491,8 +492,6 @@ extern "C" {
     int32_t RuntimeHelper_GC__RegisterForFullGCNotification (uintptr_t, int32_t, int32_t, uintptr_t) __asm__("GC__RegisterForFullGCNotification");
     void * RuntimeHelper_GenericHandleWorker (void *, void *, void *, uint32_t, void *, void *) __asm__("GenericHandleWorker");
     void * RuntimeHelper_GetCurrentExInfo () __asm__("GetCurrentExInfo");
-    void * RuntimeHelper_GetEnvironmentStringsW () __asm__("GetEnvironmentStringsW");
-    uint32_t RuntimeHelper_GetEnvironmentVariableW (void *, void *, uint32_t) __asm__("GetEnvironmentVariableW");
     void RuntimeHelper_GetFileLoadExceptionMessage (int32_t, void *, void *) __asm__("GetFileLoadExceptionMessage");
     void RuntimeHelper_GetTypeLoadExceptionMessage (int32_t, void *, void *) __asm__("GetTypeLoadExceptionMessage");
     void RuntimeHelper_InitClassHelper (void *, void *) __asm__("InitClassHelper");
@@ -770,7 +769,6 @@ extern "C" {
     void RuntimeHelper_RuntimeTypeHandle_RegisterCollectibleTypeDependency (void *, void *, void *) __asm__("RuntimeTypeHandle_RegisterCollectibleTypeDependency");
     int32_t RuntimeHelper_RuntimeTypeHandle_SatisfiesConstraints (void *, void *, void *, void *, void *) __asm__("RuntimeTypeHandle_SatisfiesConstraints");
     void RuntimeHelper_RuntimeTypeHandle_VerifyInterfaceIsImplemented (void *, void *, void *) __asm__("RuntimeTypeHandle_VerifyInterfaceIsImplemented");
-    int32_t RuntimeHelper_SetEnvironmentVariableW (void *, void *) __asm__("SetEnvironmentVariableW");
     uint32_t RuntimeHelper_SfiInit (void *, void *, uint32_t, void *, void *) __asm__("SfiInit");
     uint32_t RuntimeHelper_SfiNext (void *, void *, void *, void *, void *) __asm__("SfiNext");
     int32_t RuntimeHelper_Signature_AreEqual (void *, int32_t, void *, void *, int32_t, void *, void *) __asm__("Signature_AreEqual");
@@ -851,6 +849,7 @@ static const Entry s_RuntimeHelpers[] = {
     { "AssemblyLoadContext_IsTracingEnabled", (void*)&RuntimeHelper_AssemblyLoadContext_IsTracingEnabled },
     { "AssemblyName_InitializeAssemblySpec", (void*)&RuntimeHelper_AssemblyName_InitializeAssemblySpec },
     { "AssemblyNative_ApplyUpdate", (void*)&RuntimeHelper_AssemblyNative_ApplyUpdate },
+    { "AssemblyNative_GetAssemblyFromHandle", (void*)&RuntimeHelper_AssemblyNative_GetAssemblyFromHandle },
     { "AssemblyNative_GetCodeBase", (void*)&RuntimeHelper_AssemblyNative_GetCodeBase },
     { "AssemblyNative_GetEntryAssembly", (void*)&RuntimeHelper_AssemblyNative_GetEntryAssembly },
     { "AssemblyNative_GetEntryPoint", (void*)&RuntimeHelper_AssemblyNative_GetEntryPoint },
@@ -893,8 +892,6 @@ static const Entry s_RuntimeHelpers[] = {
     { "CustomAttribute_ParseAttributeUsageAttribute", (void*)&RuntimeHelper_CustomAttribute_ParseAttributeUsageAttribute },
     { "DebugDebugger_Break", (void*)&RuntimeHelper_DebugDebugger_Break },
     { "DebugDebugger_CustomNotification", (void*)&RuntimeHelper_DebugDebugger_CustomNotification },
-    { "DebugDebugger_GetFuncEvalArgumentType", (void*)&RuntimeHelper_DebugDebugger_GetFuncEvalArgumentType },
-    { "DebugDebugger_GetFuncEvalMethod", (void*)&RuntimeHelper_DebugDebugger_GetFuncEvalMethod },
     { "DebugDebugger_IsLoggingHelper", (void*)&RuntimeHelper_DebugDebugger_IsLoggingHelper },
     { "DebugDebugger_IsManagedDebuggerAttached", (void*)&RuntimeHelper_DebugDebugger_IsManagedDebuggerAttached },
     { "DebugDebugger_Launch", (void*)&RuntimeHelper_DebugDebugger_Launch },
@@ -927,6 +924,9 @@ static const Entry s_RuntimeHelpers[] = {
     { "Enum_GetValuesAndNames", (void*)&RuntimeHelper_Enum_GetValuesAndNames },
     { "Environment_Exit", (void*)&RuntimeHelper_Environment_Exit },
     { "Environment_FailFast", (void*)&RuntimeHelper_Environment_FailFast },
+    { "Environment_GetEnviron", (void*)&RuntimeHelper_Environment_GetEnviron },
+    { "Environment_GetEnvironmentVariable", (void*)&RuntimeHelper_Environment_GetEnvironmentVariable },
+    { "Environment_SetEnvironmentVariable", (void*)&RuntimeHelper_Environment_SetEnvironmentVariable },
     { "Environment_get_ExitCode", (void*)&RuntimeHelper_Environment_get_ExitCode },
     { "Environment_set_ExitCode", (void*)&RuntimeHelper_Environment_set_ExitCode },
     { "EventPipeInternal_CreateProvider", (void*)&RuntimeHelper_EventPipeInternal_CreateProvider },
@@ -951,7 +951,6 @@ static const Entry s_RuntimeHelpers[] = {
     { "Exception_IsImmutableException", (void*)&RuntimeHelper_Exception_IsImmutableException },
     { "Exception_PrepareForForeignExceptionRaise", (void*)&RuntimeHelper_Exception_PrepareForForeignExceptionRaise },
     { "FileLoadException_GetMessageForHR", (void*)&RuntimeHelper_FileLoadException_GetMessageForHR },
-    { "FreeEnvironmentStringsW", (void*)&RuntimeHelper_FreeEnvironmentStringsW },
     { "GCFrameRegistration_RegisterForGCReporting", (void*)&RuntimeHelper_GCFrameRegistration_RegisterForGCReporting },
     { "GCFrameRegistration_UnregisterForGCReporting", (void*)&RuntimeHelper_GCFrameRegistration_UnregisterForGCReporting },
     { "GCHandle_InternalAllocWithGCTransition", (void*)&RuntimeHelper_GCHandle_InternalAllocWithGCTransition },
@@ -999,8 +998,6 @@ static const Entry s_RuntimeHelpers[] = {
     { "GC__RegisterForFullGCNotification", (void*)&RuntimeHelper_GC__RegisterForFullGCNotification },
     { "GenericHandleWorker", (void*)&RuntimeHelper_GenericHandleWorker },
     { "GetCurrentExInfo", (void*)&RuntimeHelper_GetCurrentExInfo },
-    { "GetEnvironmentStringsW", (void*)&RuntimeHelper_GetEnvironmentStringsW },
-    { "GetEnvironmentVariableW", (void*)&RuntimeHelper_GetEnvironmentVariableW },
     { "GetFileLoadExceptionMessage", (void*)&RuntimeHelper_GetFileLoadExceptionMessage },
     { "GetTypeLoadExceptionMessage", (void*)&RuntimeHelper_GetTypeLoadExceptionMessage },
     { "InitClassHelper", (void*)&RuntimeHelper_InitClassHelper },
@@ -1278,7 +1275,6 @@ static const Entry s_RuntimeHelpers[] = {
     { "RuntimeTypeHandle_RegisterCollectibleTypeDependency", (void*)&RuntimeHelper_RuntimeTypeHandle_RegisterCollectibleTypeDependency },
     { "RuntimeTypeHandle_SatisfiesConstraints", (void*)&RuntimeHelper_RuntimeTypeHandle_SatisfiesConstraints },
     { "RuntimeTypeHandle_VerifyInterfaceIsImplemented", (void*)&RuntimeHelper_RuntimeTypeHandle_VerifyInterfaceIsImplemented },
-    { "SetEnvironmentVariableW", (void*)&RuntimeHelper_SetEnvironmentVariableW },
     { "SfiInit", (void*)&RuntimeHelper_SfiInit },
     { "SfiNext", (void*)&RuntimeHelper_SfiNext },
     { "Signature_AreEqual", (void*)&RuntimeHelper_Signature_AreEqual },

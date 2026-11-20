@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal static SafeX509CrlHandle? DownloadCrl(string uri, TimeSpan downloadTimeout)
         {
-            byte[]? data = DownloadAsset(uri, downloadTimeout);
+            byte[]? data = RequestCache.LargeAssetInstance.Get(uri, downloadTimeout);
 
             if (data == null)
             {
@@ -103,7 +103,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal static void ReportCrlCached(string uri)
         {
-            RequestCache.Instance.Remove(uri);
+            RequestCache.LargeAssetInstance.Remove(uri);
         }
 
         internal static SafeOcspResponseHandle? DownloadOcspGet(string uri, TimeSpan downloadTimeout)
@@ -147,13 +147,16 @@ namespace System.Security.Cryptography.X509Certificates
         private sealed class RequestCache : X509MruCache<CachedRequest>
         {
             private static readonly TimeSpan s_refreshInterval = TimeSpan.FromMinutes(6);
+            private readonly Func<string, TimeSpan, Task<byte[]?>> _downloadAsset;
 
-            internal static RequestCache Instance { get; } = new();
+            internal static RequestCache Instance { get; } = new(System.Net.Http.X509ResourceClient.DownloadAssetAsync);
+            internal static RequestCache LargeAssetInstance { get; } = new(System.Net.Http.X509ResourceClient.DownloadLargeAssetAsync);
 
-            // Each request can be caching a 100MB response, so limit the cache to 10 requests (1GB).
+            // Each CRL request can be caching a 100MB response, so limit each cache to 10 requests.
             // The expected size of each entry is more likely in the 10s of kB.
-            private RequestCache() : base(10)
+            private RequestCache(Func<string, TimeSpan, Task<byte[]?>> downloadAsset) : base(10)
             {
+                _downloadAsset = downloadAsset;
             }
 
             internal byte[]? Get(string uri, TimeSpan downloadTimeout)
@@ -220,7 +223,7 @@ namespace System.Security.Cryptography.X509Certificates
                             hashCode,
                             uri,
                             new CachedRequest(
-                                System.Net.Http.X509ResourceClient.DownloadAssetAsync(uri, timeout)),
+                                _downloadAsset(uri, timeout)),
                             out evicted,
                             replaced: out _);
                     }
@@ -308,7 +311,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 try
                 {
-                    Task<byte[]?> downloadTask = System.Net.Http.X509ResourceClient.DownloadAssetAsync(
+                    Task<byte[]?> downloadTask = _downloadAsset(
                         uri,
                         ChainPal.DefaultRetrievalTimeout);
 
