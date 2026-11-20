@@ -269,7 +269,7 @@ public class RegressionTests
         { "boxed fixed", "void A::.ctor(object) = { object(int32(5)) }", "object(int32(5))" },
         { "boxed named", "void A::.ctor() = { property object 'O' = object(string('x')) }", "property object 'O' = object(string('x'))" },
         { "arrays", "void A::.ctor(int32[], string[]) = { int32[2](1 2) string[2]('a' nullref) }", "int32[2](1 2)" },
-        { "empty and null arrays", "void A::.ctor(int32[], string[]) = { int32[0]( ) string[-1]( ) }", "string[-1]( )" },
+        { "empty and null arrays", "void A::.ctor(int32[], string[]) = { int32[0]() string[-1]() }", "string[-1]()" },
         { "object array", "void A::.ctor(object[]) = { object[2](int32(1) string('s')) }", "object[2](int32(1) string('s'))" },
         { "local enum", "void A::.ctor(valuetype E) = { int16(3) }", "int16(3)" },
         { "local enum array", "void A::.ctor(valuetype E[]) = { int16[2](1 2) }", "int16[2](1 2)" },

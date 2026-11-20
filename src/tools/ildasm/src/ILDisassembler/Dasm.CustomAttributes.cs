@@ -336,8 +336,7 @@ internal sealed partial class Dasm
             }
         }
 
-        // An empty array gets "( )": managed ilasm reads "()" as a single token.
-        out_.Append(count == 0 && isArray ? " )" : ")");
+        out_.Append(')');
     }
 
     private SerializationTypeCode UnderlyingTypeOfEnumValue(CAType t, int remaining, bool isArray)

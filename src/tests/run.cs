@@ -4,7 +4,7 @@
 #:property Configuration=Release
 #:property ImportDirectoryBuildProps=false
 #:property ImportDirectoryBuildTargets=false
-#:property TargetFramework=$(BundledNETCoreAppTargetFramework)
+#:property TargetFramework=net11.0
 #:property GenerateDependencyFile=true
 #:property GenerateRuntimeConfigurationFiles=true
 #:property SelfContained=false

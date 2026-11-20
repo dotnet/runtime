@@ -4,14 +4,15 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 
 namespace ILDisassembler;
 
-// /METADATA[=<specifier>]: the MetaInfo dump (MDInfo::DisplayMD in src/coreclr/tools/metainfo). MetaInfo reads the metadata through the public
-// IMetaDataImport/IMetaDataTables interfaces of the read-write metadata engine, so the lookups below mirror what that
-// engine does on the raw tables (binary searches on sorted tables, linear scans, table pointer indirections) rather
-// than what System.Reflection.Metadata offers.
+// /METADATA[=<specifier>]: the MetaInfo dump. The metadata is read with System.Reflection.Metadata; the raw dumps
+// (RAW, SCHEMA, MDHEADER, CSV, STATS, HEAPS) also show the stored layout of the tables and heaps. If the metadata cannot
+// be read, the dump stops with an error line and the rest of the disassembly goes on.
 internal sealed partial class Dasm
 {
     private void DumpMetaInfo()
@@ -57,15 +58,11 @@ internal sealed partial class Dasm
         private const string Separator = "===========================================================";
         private const string Dashes = "-------------------------------------------------------";
 
-        // Name buffer sizes, in UTF-16 characters (STRING_BUFFER_LEN and MAX_CLASS_NAME).
-        private const int StringBufferLen = 4096;
-        private const int MaxClassName = 1024;
-
         private const uint TypeDefModule = 0x02000001;
 
         private readonly Dasm _dasm;
         private readonly uint _filter;
-        private readonly byte[] _d;
+        private readonly MetadataReader _md;
         private readonly uint _entryPoint;
         private ulong _coffNames;
 
@@ -76,9 +73,8 @@ internal sealed partial class Dasm
         {
             _dasm = dasm;
             _filter = filter;
-            _d = dasm._metadataBlock.GetContent().AsSpan().ToArray();
+            _md = dasm._md;
             _entryPoint = (uint)(dasm._pe.PEHeaders.CorHeader?.EntryPointTokenOrRelativeVirtualAddress ?? 0);
-            LoadMetadata();
         }
 
         // ================================================================ output (DumpMI)
@@ -132,12 +128,79 @@ internal sealed partial class Dasm
 
         private static string PadR(string s, int w) => s.Length >= w ? s : s.PadRight(w);
 
-        // Names are converted to UTF-16 into fixed size buffers and back to UTF-8.
-        private static string Fit(string s, int cch) => s.Length < cch ? s : s.Substring(0, cch - 1);
-
         private static string Utf8(ReadOnlySpan<byte> bytes) => Encoding.UTF8.GetString(bytes);
 
-        // ================================================================ raw metadata
+        // ================================================================ metadata access
+
+        private sealed class MetaInfoFailure : Exception
+        {
+            public MetaInfoFailure(string message) : base(message)
+            {
+            }
+        }
+
+        private uint Rows(int table) => (uint)_md.GetTableRowCount((TableIndex)table);
+
+        private static uint Token(EntityHandle h) => (uint)MetadataTokens.GetToken(h);
+
+        private string Str(StringHandle h) => _md.GetString(h);
+
+        private byte[] Blob(BlobHandle h) => _md.GetBlobBytes(h);
+
+        // A byte of a blob; past its end, 0.
+        private static uint B(byte[] blob, long i) => i >= 0 && i < blob.Length ? blob[i] : 0u;
+
+        // The text of a blob from the given position up to the next NUL or the end of the blob.
+        private static string CString(byte[] blob, int start = 0)
+        {
+            if (start >= blob.Length)
+            {
+                return "";
+            }
+
+            ReadOnlySpan<byte> s = blob.AsSpan(start);
+            int n = s.IndexOf((byte)0);
+            return Utf8(n < 0 ? s : s.Slice(0, n));
+        }
+
+        private unsafe ReadOnlySpan<byte> HeapBytes(HeapIndex heap)
+        {
+            int size = _md.GetHeapSize(heap);
+            return size == 0 ? default : new ReadOnlySpan<byte>(_md.MetadataPointer + _md.GetHeapMetadataOffset(heap), size);
+        }
+
+        // The size of a heap as shown by the raw dumps; a missing or empty heap counts as its single empty entry.
+        private int HeapSize(HeapIndex heap)
+        {
+            int size = _md.GetHeapSize(heap);
+            return size == 0 && heap != HeapIndex.Guid ? 1 : size;
+        }
+
+        // The UTF-8 bytes of the string heap entry at the offset, or null if the offset is out of the heap.
+        private byte[]? StringBytes(uint offset)
+        {
+            ReadOnlySpan<byte> heap = HeapBytes(HeapIndex.String);
+            if (offset >= (uint)heap.Length)
+            {
+                return null;
+            }
+
+            ReadOnlySpan<byte> s = heap.Slice((int)offset);
+            int n = s.IndexOf((byte)0);
+            return (n < 0 ? s : s.Slice(0, n)).ToArray();
+        }
+
+        // The size of the blob or user string heap entry at the offset.
+        private unsafe int HeapEntrySize(HeapIndex heap, int offset)
+        {
+            byte* start = _md.MetadataPointer + _md.GetHeapMetadataOffset(heap);
+            return new BlobReader(start + offset, _md.GetHeapSize(heap) - offset).ReadCompressedInteger();
+        }
+
+        // ns::MakePath
+        private static string MakePath(string ns, string name) => ns.Length == 0 ? name : ns + "." + name;
+
+        // ================================================================ raw layout (raw dumps and ClassLayout lookups)
 
         private sealed class Stream
         {
@@ -146,29 +209,12 @@ internal sealed partial class Dasm
             public int Size;
         }
 
+        // The metadata bytes, with the stream headers and table layout read from them.
+        private byte[] _d = [];
         private readonly List<Stream> _streams = new();
         private int _tablesStream = -1;
-        private int _tablesStreamSize;
-
-        // Heaps: Base is the offset in _d (or in the private zero buffer when the heap is missing), Size the size the
-        // read-write engine reports.
-        private struct Heap
-        {
-            public byte[] Data;
-            public int Base;
-            public int Size;
-        }
-
-        private Heap _strings;
-        private Heap _blobs;
-        private Heap _guids;
-        private Heap _userStrings;
-
         private int _tableCount;
-        private byte _heapSizes;
-        private readonly uint[] _rows = new uint[64];
-        private readonly int[] _tableOffset = new int[64];
-        private readonly int[] _cbRec = new int[64];
+        private readonly int[] _cbRec = new int[TblCount];
         private readonly int[][] _colOffset = new int[TblCount][];
         private readonly int[][] _colSize = new int[TblCount][];
 
@@ -339,8 +385,9 @@ internal sealed partial class Dasm
 
         private ulong U64At(long off) => U32At(off) | (ulong)U32At(off + 4) << 32;
 
-        private void LoadMetadata()
+        private unsafe void LoadLayout()
         {
+            _d = new ReadOnlySpan<byte>(_md.MetadataPointer, _md.MetadataLength).ToArray();
             int verLen = (int)U32At(12);
             int p = 16 + verLen;
             int count = (int)U16At(p + 2);
@@ -358,65 +405,9 @@ internal sealed partial class Dasm
                 s.Name = Encoding.Latin1.GetString(_d, n, e - n);
                 p = (e + 4) & ~3;
                 _streams.Add(s);
-            }
-
-            Heap Find(string name, out bool found)
-            {
-                foreach (Stream s in _streams)
-                {
-                    if (s.Name == name)
-                    {
-                        found = true;
-                        return new Heap { Data = _d, Base = s.Offset, Size = s.Size };
-                    }
-                }
-
-                found = false;
-                return default;
-            }
-
-            _strings = Find("#Strings", out bool hasStrings);
-            if (hasStrings && _strings.Size > 0)
-            {
-                // StgStringPool::InitOnMem trims the padding, keeping one terminator.
-                int size = _strings.Size;
-                while (size > 1 && HeapByte(_strings, size - 1) == 0 && HeapByte(_strings, size - 2) == 0)
-                {
-                    size--;
-                }
-
-                _strings.Size = size;
-            }
-            else
-            {
-                _strings = new Heap { Data = new byte[8], Base = 0, Size = 1 };
-            }
-
-            _blobs = Find("#Blob", out bool hasBlobs);
-            if (!hasBlobs || _blobs.Size == 0)
-            {
-                _blobs = new Heap { Data = new byte[8], Base = 0, Size = 1 };
-            }
-
-            _userStrings = Find("#US", out bool hasUserStrings);
-            if (!hasUserStrings || _userStrings.Size == 0)
-            {
-                _userStrings = new Heap { Data = new byte[8], Base = 0, Size = 1 };
-            }
-
-            _guids = Find("#GUID", out bool hasGuids);
-            if (!hasGuids)
-            {
-                _guids = new Heap { Data = new byte[8], Base = 0, Size = 0 };
-            }
-
-            foreach (Stream s in _streams)
-            {
-                if (s.Name is "#~" or "#-")
+                if (_tablesStream < 0 && s.Name is "#~" or "#-")
                 {
                     _tablesStream = s.Offset;
-                    _tablesStreamSize = s.Size;
-                    break;
                 }
             }
 
@@ -426,30 +417,8 @@ internal sealed partial class Dasm
             }
 
             int t = _tablesStream;
-            uint major = U8At(t + 4);
-            uint minor = U8At(t + 5);
-            _heapSizes = (byte)U8At(t + 6);
-            ulong valid = U64At(t + 8);
-            _tableCount = major == 1 && minor == 0 ? TblCountV1 : TblCount;
-            int q = t + 24;
-            for (int i = 0; i < 64; i++)
-            {
-                if ((valid & (1UL << i)) != 0)
-                {
-                    if (i < TblCount)
-                    {
-                        _rows[i] = U32At(q);
-                    }
-
-                    q += 4;
-                }
-            }
-
-            if ((_heapSizes & 0x40) != 0)
-            {
-                q += 4;
-            }
-
+            uint heapSizes = U8At(t + 6);
+            _tableCount = U8At(t + 4) == 1 && U8At(t + 5) == 0 ? TblCountV1 : TblCount;
             for (int i = 0; i < TblCount; i++)
             {
                 TableDef def = s_tables[i];
@@ -463,7 +432,7 @@ internal sealed partial class Dasm
                     int size;
                     if (type < CT)
                     {
-                        size = _rows[type] > ushort.MaxValue ? 4 : 2;
+                        size = Rows(type) > ushort.MaxValue ? 4 : 2;
                     }
                     else if (type < iSHORT)
                     {
@@ -471,10 +440,7 @@ internal sealed partial class Dasm
                         uint max = 0;
                         foreach (uint tk in tokens)
                         {
-                            if (tk != mdtString)
-                            {
-                                max = Math.Max(max, _rows[tk >> 24]);
-                            }
+                            max = Math.Max(max, Rows((int)(tk >> 24)));
                         }
 
                         size = ((ulong)max << s_codedBits[tokens.Length]) > ushort.MaxValue ? 4 : 2;
@@ -486,9 +452,9 @@ internal sealed partial class Dasm
                             iBYTE => 1,
                             iSHORT or iUSHORT => 2,
                             iLONG or iULONG => 4,
-                            iSTRING => (_heapSizes & 0x01) != 0 ? 4 : 2,
-                            iGUID => (_heapSizes & 0x02) != 0 ? 4 : 2,
-                            _ => (_heapSizes & 0x04) != 0 ? 4 : 2,
+                            iSTRING => (heapSizes & 0x01) != 0 ? 4 : 2,
+                            iGUID => (heapSizes & 0x02) != 0 ? 4 : 2,
+                            _ => (heapSizes & 0x04) != 0 ? 4 : 2,
                         };
                     }
 
@@ -498,23 +464,13 @@ internal sealed partial class Dasm
                 }
 
                 _cbRec[i] = offset;
-                if (i < _tableCount)
-                {
-                    _tableOffset[i] = q;
-                    q += offset * (int)_rows[i];
-                }
             }
         }
 
-        private static uint HeapByte(Heap h, int index)
-            => index >= 0 && h.Base + index < h.Data.Length ? h.Data[h.Base + index] : 0u;
-
-        private uint Rows(int table) => _rows[table];
-
-        // GetCol: the raw value of a column; signed types are sign-extended.
+        // The stored value of a column; signed types are sign-extended.
         private uint Col(int table, int col, uint rid)
         {
-            long off = _tableOffset[table] + (long)(rid - 1) * _cbRec[table] + _colOffset[table][col];
+            long off = _md.GetTableMetadataOffset((TableIndex)table) + (long)(rid - 1) * _md.GetTableRowSize((TableIndex)table) + _colOffset[table][col];
             uint v = _colSize[table][col] switch
             {
                 1 => U8At(off),
@@ -542,21 +498,7 @@ internal sealed partial class Dasm
             return (val >> bits) | tokens[ix];
         }
 
-        private static uint EncodeToken(uint rid, uint type, int coded)
-        {
-            uint[] tokens = s_codedTokens[coded];
-            for (int ix = 0; ix < tokens.Length; ix++)
-            {
-                if (tokens[ix] == TypeOf(type))
-                {
-                    return (rid << s_codedBits[tokens.Length]) | (uint)ix;
-                }
-            }
-
-            return 0;
-        }
-
-        // GetToken: a RID column as a token of its table, or a decoded coded token.
+        // A RID column as a token of its table, or a decoded coded token.
         private uint ColToken(int table, int col, uint rid)
         {
             byte type = s_tables[table].ColTypes[col];
@@ -567,284 +509,6 @@ internal sealed partial class Dasm
             }
 
             return DecodeToken(v, type - CT);
-        }
-
-        private bool IsSorted(int table) => _rows[table] > 0;
-
-        // vSearchTable: a binary search on a key column; the row found is any one of the matching rows.
-        private uint SearchTable(int table, int col, uint target)
-        {
-            int lo = 1;
-            int hi = (int)_rows[table];
-            while (lo <= hi)
-            {
-                int mid = (lo + hi) / 2;
-                uint val = Col(table, col, (uint)mid);
-                if (val == target)
-                {
-                    return (uint)mid;
-                }
-
-                if (val < target || val == 0)
-                {
-                    lo = mid + 1;
-                }
-                else
-                {
-                    hi = mid - 1;
-                }
-            }
-
-            if (table == TblGenericParam && !IsSorted(table))
-            {
-                for (uint i = 1; i <= _rows[table]; i++)
-                {
-                    if (Col(table, col, i) == target)
-                    {
-                        return i;
-                    }
-                }
-            }
-
-            return 0;
-        }
-
-        // SearchTableForMultipleRows: the range [start, end) of the rows with the key, or (0, 0).
-        private (uint Start, uint End) SearchRange(int table, int col, uint target)
-        {
-            uint begin = SearchTable(table, col, target);
-            if (begin == 0)
-            {
-                return (0, 0);
-            }
-
-            uint end = begin + 1;
-            while (begin > 1 && Col(table, col, begin - 1) == target)
-            {
-                begin--;
-            }
-
-            while (end <= _rows[table] && Col(table, col, end) == target)
-            {
-                end++;
-            }
-
-            return (begin, end);
-        }
-
-        // Find<Table>Helper for the tables with one row per parent: a binary search if the table is sorted (any
-        // non-empty table is), a linear search otherwise.
-        private uint FindByKey(int table, int col, uint target)
-        {
-            if (IsSorted(table))
-            {
-                return SearchTable(table, col, target);
-            }
-
-            for (uint i = 1; i <= _rows[table]; i++)
-            {
-                if (Col(table, col, i) == target)
-                {
-                    return i;
-                }
-            }
-
-            return 0;
-        }
-
-        // Impl_GetEndRidForColumn
-        private uint EndRid(int table, uint row, int col, int target)
-        {
-            if (row < _rows[table])
-            {
-                uint end = Col(table, col, row + 1);
-                if (end != 0)
-                {
-                    return end;
-                }
-            }
-
-            return Col(table, col, row) == 0 ? 0 : _rows[target] + 1;
-        }
-
-        // GetMethodRid/GetFieldRid/...: the pointer tables, when present, map list indexes to rows.
-        private uint Indirect(int ptrTable, uint index) => _rows[ptrTable] > 0 ? Col(ptrTable, 0, index) : index;
-
-        private static List<uint> Range(uint start, uint end, uint type)
-        {
-            List<uint> list = new();
-            for (uint i = start; i < end; i++)
-            {
-                list.Add(i | type);
-            }
-
-            return list;
-        }
-
-        // ---------------------------------------------------------------- heaps
-
-        private sealed class MetaInfoFailure : Exception
-        {
-            public MetaInfoFailure(string message) : base(message)
-            {
-            }
-        }
-
-        // The UTF-8 bytes of a string heap entry, or null if the index is out of the heap.
-        private byte[]? StringBytes(uint index)
-        {
-            if (index >= (uint)_strings.Size)
-            {
-                return null;
-            }
-
-            int start = _strings.Base + (int)index;
-            int end = start;
-            byte[] data = _strings.Data;
-            while (end < data.Length && data[end] != 0)
-            {
-                end++;
-            }
-
-            return data.AsSpan(start, end - start).ToArray();
-        }
-
-        private string Str(uint index)
-        {
-            byte[]? b = StringBytes(index);
-            if (b is null)
-            {
-                throw new MetaInfoFailure("string");
-            }
-
-            return Utf8(b);
-        }
-
-        private string StrCol(int table, int col, uint rid) => Str(Col(table, col, rid));
-
-        // ns::MakePath
-        private static string MakePath(string ns, string name) => ns.Length == 0 ? name : ns + "." + name;
-
-        // A blob: the offset of its data in Data and its size, or false if it cannot be read.
-        private bool TryBlob(Heap heap, uint index, out int offset, out int size, out int prefix)
-        {
-            offset = 0;
-            size = 0;
-            prefix = 0;
-            if (index == 0)
-            {
-                return true;
-            }
-
-            if (index >= (uint)heap.Size)
-            {
-                return false;
-            }
-
-            int avail = heap.Size - (int)index;
-            uint b0 = HeapByte(heap, (int)index);
-            uint len;
-            if ((b0 & 0x80) == 0)
-            {
-                prefix = 1;
-                len = b0;
-            }
-            else if ((b0 & 0xC0) == 0x80)
-            {
-                prefix = 2;
-                len = (b0 & 0x3F) << 8 | HeapByte(heap, (int)index + 1);
-            }
-            else if ((b0 & 0xE0) == 0xC0)
-            {
-                prefix = 4;
-                len = (b0 & 0x1F) << 24 | HeapByte(heap, (int)index + 1) << 16 | HeapByte(heap, (int)index + 2) << 8 | HeapByte(heap, (int)index + 3);
-            }
-            else
-            {
-                return false;
-            }
-
-            if (prefix > avail || len > (uint)(avail - prefix))
-            {
-                return false;
-            }
-
-            offset = heap.Base + (int)index + prefix;
-            size = (int)len;
-            return true;
-        }
-
-        // A signature or blob from the blob heap: (offset in _d, size).
-        private (int Offset, int Size) Blob(uint index)
-        {
-            if (!TryBlob(_blobs, index, out int offset, out int size, out _))
-            {
-                throw new MetaInfoFailure("blob");
-            }
-
-            if (index == 0 || _blobs.Data != _d)
-            {
-                // An empty blob points at zeros.
-                return (-1, size);
-            }
-
-            return (offset, size);
-        }
-
-        private (int Offset, int Size) BlobCol(int table, int col, uint rid) => Blob(Col(table, col, rid));
-
-        // Reads a byte of a blob, past its end too.
-        private uint B(int offset, long i) => offset < 0 ? 0u : U8At(offset + i);
-
-        private byte[] BlobBytes(int offset, int size)
-        {
-            byte[] r = new byte[size];
-            for (int i = 0; i < size; i++)
-            {
-                r[i] = (byte)B(offset, i);
-            }
-
-            return r;
-        }
-
-        // printf("%s") of a pointer into the metadata: the bytes up to the next NUL.
-        private string CStringAt(long offset)
-        {
-            List<byte> bytes = new();
-            while (offset >= 0 && offset < _d.Length && _d[offset] != 0)
-            {
-                bytes.Add(_d[offset]);
-                offset++;
-            }
-
-            return Utf8(bytes.ToArray());
-        }
-
-        private static string CString(byte[] bytes)
-        {
-            int n = Array.IndexOf(bytes, (byte)0);
-            return Utf8(n < 0 ? bytes : bytes.AsSpan(0, n));
-        }
-
-        private Guid GetGuid(uint index)
-        {
-            if (index == 0)
-            {
-                return Guid.Empty;
-            }
-
-            if ((ulong)index * 16 > (ulong)_guids.Size)
-            {
-                throw new MetaInfoFailure("guid");
-            }
-
-            byte[] b = new byte[16];
-            for (int i = 0; i < 16; i++)
-            {
-                b[i] = (byte)HeapByte(_guids, (int)(index - 1) * 16 + i);
-            }
-
-            return new Guid(b);
         }
 
         // ================================================================ DisplayMD
@@ -859,11 +523,17 @@ internal sealed partial class Dasm
             {
                 // The failure has been reported; there is nothing more to show here.
             }
+            catch (Exception e) when (e is BadImageFormatException or ArgumentException)
+            {
+                // The line being built is dropped along with the rest of the dump.
+                _dasm.PrintLine("// Error: the metadata cannot be read: " + e.Message);
+            }
         }
 
         private void DisplayMDWorker()
         {
             WriteLine(Separator);
+            LoadLayout();
             if ((_filter & (DumpSchema | DumpHeader | DumpCSV | DumpRaw | DumpStats | DumpRawHeaps)) != 0)
             {
                 DisplayRaw();
@@ -898,12 +568,7 @@ internal sealed partial class Dasm
 
         private void DisplayVersionInfo()
         {
-            byte[]? b = StringBytes(1);
-            if (b is null)
-            {
-                throw new MetaInfoFailure("GetString() failed.");
-            }
-
+            byte[] b = StringBytes(1) ?? throw new MetaInfoFailure("GetString() failed.");
             string s = Utf8(b);
             if (s.StartsWith("Version of runtime against which the binary is built : ", StringComparison.Ordinal))
             {
@@ -918,8 +583,9 @@ internal sealed partial class Dasm
                 throw new MetaInfoFailure("GetScopeProps failed.");
             }
 
-            string name = Fit(StrCol(TblModule, 1, 1), StringBufferLen);
-            Guid mvid = GetGuid(Col(TblModule, 2, 1));
+            ModuleDefinition module = _md.GetModuleDefinition();
+            string name = Str(module.Name);
+            Guid mvid = _md.GetGuid(module.Mvid);
             WriteLine("ScopeName : " + name);
             WriteLine("MVID      : " + mvid.ToString("B"));
             DisplayPermissions(0x00000001, "");
@@ -959,7 +625,8 @@ internal sealed partial class Dasm
                 return null;
             }
 
-            return MakePath(StrCol(TblTypeDef, 2, RidOf(td)), StrCol(TblTypeDef, 1, RidOf(td)));
+            TypeDefinition t = _md.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle((int)RidOf(td)));
+            return MakePath(Str(t.Namespace), Str(t.Name));
         }
 
         private string? TypeRefFullName(uint tr)
@@ -969,12 +636,13 @@ internal sealed partial class Dasm
                 return null;
             }
 
-            return MakePath(StrCol(TblTypeRef, 2, RidOf(tr)), StrCol(TblTypeRef, 1, RidOf(tr)));
+            TypeReference t = _md.GetTypeReference(MetadataTokens.TypeReferenceHandle((int)RidOf(tr)));
+            return MakePath(Str(t.Namespace), Str(t.Name));
         }
 
-        private string TypeDefName(uint td) => TypeDefFullName(td) is string s ? Fit(s, StringBufferLen) : "[Invalid TypeDef]";
+        private string TypeDefName(uint td) => TypeDefFullName(td) ?? "[Invalid TypeDef]";
 
-        private string TypeRefName(uint tr) => TypeRefFullName(tr) is string s ? Fit(s, StringBufferLen) : "[Invalid TypeRef]";
+        private string TypeRefName(uint tr) => TypeRefFullName(tr) ?? "[Invalid TypeRef]";
 
         private string TypeDeforRefName(uint tk)
         {
@@ -1001,7 +669,9 @@ internal sealed partial class Dasm
                 throw new MetaInfoFailure("GetMemberProps failed.");
             }
 
-            return Fit(StrCol(table, table == TblMethod ? 3 : 1, RidOf(tk)), StringBufferLen);
+            return table == TblMethod
+                ? Str(_md.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)RidOf(tk))).Name)
+                : Str(_md.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle((int)RidOf(tk))).Name);
         }
 
         private string MemberRefName(uint tk)
@@ -1011,7 +681,7 @@ internal sealed partial class Dasm
                 throw new MetaInfoFailure("GetMemberRefProps failed.");
             }
 
-            return Fit(StrCol(TblMemberRef, 1, RidOf(tk)), StringBufferLen);
+            return Str(_md.GetMemberReference(MetadataTokens.MemberReferenceHandle((int)RidOf(tk))).Name);
         }
 
         private string MemberDeforRefName(uint tk)
@@ -1078,25 +748,25 @@ internal sealed partial class Dasm
 
         // ---------------------------------------------------------------- methods
 
-        private List<uint> EnumMethods(uint td)
+        private TypeDefinition? TypeDefOrModule(uint td)
         {
             if (td == mdtTypeDef || td == 0)
             {
                 td = TypeDefModule;
             }
 
-            uint rid = RidOf(td);
-            if (rid == 0 || rid > Rows(TblTypeDef))
-            {
-                return new List<uint>();
-            }
+            return ValidRid(TblTypeDef, td) ? _md.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle((int)RidOf(td))) : null;
+        }
 
-            uint start = Col(TblTypeDef, 5, rid);
-            uint end = EndRid(TblTypeDef, rid, 5, TblMethod);
+        private List<uint> EnumMethods(uint td)
+        {
             List<uint> list = new();
-            for (uint i = start; i < end; i++)
+            if (TypeDefOrModule(td) is TypeDefinition t)
             {
-                list.Add(Indirect(TblMethodPtr, i) | mdtMethodDef);
+                foreach (MethodDefinitionHandle h in t.GetMethods())
+                {
+                    list.Add(Token(h));
+                }
             }
 
             return list;
@@ -1104,23 +774,13 @@ internal sealed partial class Dasm
 
         private List<uint> EnumFields(uint td)
         {
-            if (td == mdtTypeDef || td == 0)
-            {
-                td = TypeDefModule;
-            }
-
-            uint rid = RidOf(td);
-            if (rid == 0 || rid > Rows(TblTypeDef))
-            {
-                return new List<uint>();
-            }
-
-            uint start = Col(TblTypeDef, 4, rid);
-            uint end = EndRid(TblTypeDef, rid, 4, TblField);
             List<uint> list = new();
-            for (uint i = start; i < end; i++)
+            if (TypeDefOrModule(td) is TypeDefinition t)
             {
-                list.Add(Indirect(TblFieldPtr, i) | mdtFieldDef);
+                foreach (FieldDefinitionHandle h in t.GetFields())
+                {
+                    list.Add(Token(h));
+                }
             }
 
             return list;
@@ -1178,12 +838,13 @@ internal sealed partial class Dasm
                 throw new MetaInfoFailure("GetMethodProps failed.");
             }
 
-            uint rid = RidOf(md);
-            string name = Fit(StrCol(TblMethod, 3, rid), StringBufferLen);
-            uint flags = Col(TblMethod, 2, rid);
-            uint rva = Col(TblMethod, 0, rid);
-            uint implFlags = Col(TblMethod, 1, rid);
-            (int sig, int cbSig) = BlobCol(TblMethod, 4, rid);
+            MethodDefinition m = _md.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)RidOf(md)));
+            string name = Str(m.Name);
+            uint flags = (uint)m.Attributes;
+            uint rva = (uint)m.RelativeVirtualAddress;
+            uint implFlags = (uint)m.ImplAttributes;
+            byte[] sig = Blob(m.Signature);
+            int cbSig = sig.Length;
 
             WriteLine("\t\tMethodName: " + name + " (" + X8(md) + ")");
 
@@ -1251,45 +912,38 @@ internal sealed partial class Dasm
                 WriteLine("\t\tERROR: no valid signature ");
             }
 
-            DisplayGenericParams(md, "\t\t");
+            DisplayGenericParams(m.GetGenericParameters(), "\t\t");
             return flags;
         }
 
         private void DisplayParams(uint md)
         {
-            uint rid = RidOf(md);
-            if (rid == 0 || rid > Rows(TblMethod))
+            if (!ValidRid(TblMethod, md))
             {
                 return;
             }
 
-            uint start = Col(TblMethod, 5, rid);
-            uint end = EndRid(TblMethod, rid, 5, TblParam);
-            if (start >= end)
+            ParameterHandleCollection parameters = _md.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)RidOf(md))).GetParameters();
+            if (parameters.Count == 0)
             {
                 return;
             }
 
-            WriteLine("\t\t" + D(end - start) + " Parameters");
-            for (uint i = start; i < end; i++)
+            WriteLine("\t\t" + D(parameters.Count) + " Parameters");
+            foreach (ParameterHandle h in parameters)
             {
-                uint pd = Indirect(TblParamPtr, i) | mdtParamDef;
-                DisplayParamInfo(pd);
-                DisplayFieldMarshal(pd);
+                DisplayParamInfo(h);
+                DisplayFieldMarshal(_md.GetParameter(h).GetMarshallingDescriptor());
             }
         }
 
-        private void DisplayParamInfo(uint pd)
+        private void DisplayParamInfo(ParameterHandle h)
         {
-            if (!ValidRid(TblParam, pd))
-            {
-                throw new MetaInfoFailure("GetParamProps failed.");
-            }
-
-            uint rid = RidOf(pd);
-            uint flags = Col(TblParam, 0, rid);
-            uint seq = Col(TblParam, 1, rid);
-            string name = Fit(StrCol(TblParam, 2, rid), StringBufferLen);
+            uint pd = Token(h);
+            Parameter param = _md.GetParameter(h);
+            uint flags = (uint)param.Attributes;
+            uint seq = (uint)param.SequenceNumber;
+            string name = Str(param.Name);
             StringBuilder sb = new();
             Flag(sb, (flags & 1) != 0, "In");
             Flag(sb, (flags & 2) != 0, "Out");
@@ -1301,47 +955,34 @@ internal sealed partial class Dasm
             DisplayCustomAttributes(pd, "\t\t\t");
         }
 
-        private void DisplayGenericParams(uint tk, string prefix)
+        private void DisplayGenericParams(GenericParameterHandleCollection list, string prefix)
         {
-            List<uint> list = new();
-            if (IsSorted(TblGenericParam))
-            {
-                uint encoded = EncodeToken(RidOf(tk), TypeOf(tk), CdTypeOrMethodDef);
-                (uint start, uint end) = SearchRange(TblGenericParam, 2, encoded);
-                list = Range(start, end, mdtGenericParam);
-            }
-
             if (list.Count == 0)
             {
                 return;
             }
 
             WriteLine(prefix + D(list.Count) + " Generic Parameters");
-            foreach (uint gp in list)
+            foreach (GenericParameterHandle gp in list)
             {
                 DisplayGenericParamInfo(gp, prefix);
             }
         }
 
-        private void DisplayGenericParamInfo(uint gp, string prefix)
+        private void DisplayGenericParamInfo(GenericParameterHandle h, string prefix)
         {
-            if (!ValidRid(TblGenericParam, gp))
-            {
-                throw new MetaInfoFailure("GetGenericParamProps failed.");
-            }
-
-            uint rid = RidOf(gp);
-            uint seq = Col(TblGenericParam, 0, rid);
-            uint flags = Col(TblGenericParam, 1, rid);
-            uint owner = ColToken(TblGenericParam, 2, rid);
-            string name = Fit(StrCol(TblGenericParam, 3, rid), StringBufferLen);
+            uint gp = Token(h);
+            GenericParameter p = _md.GetGenericParameter(h);
+            uint seq = (uint)p.Index;
+            uint flags = (uint)p.Attributes;
+            uint owner = Token(p.Parent);
+            string name = Str(p.Name);
             WriteLine(prefix + "\t(" + U(seq) + ") GenericParamToken : (" + x8(gp) + ") Name : " + name + " flags: " + x8(flags) + " Owner: " + x8(owner));
 
             List<uint> constraints = new();
-            if (IsSorted(TblGenericParamConstraint))
+            foreach (GenericParameterConstraintHandle c in p.GetConstraints())
             {
-                (uint start, uint end) = SearchRange(TblGenericParamConstraint, 0, rid);
-                constraints = Range(start, end, mdtGenericParamConstraint);
+                constraints.Add(Token(_md.GetGenericParameterConstraint(c).Type));
             }
 
             // The constraints are enumerated 4 at a time, one line per batch.
@@ -1355,17 +996,7 @@ internal sealed partial class Dasm
                 Write(prefix + "\t\t");
                 for (int j = i; j < constraints.Count && j < i + 4; j++)
                 {
-                    uint c = RidOf(constraints[j]);
-                    uint cOwner = ValidRid(TblGenericParamConstraint, constraints[j]) ? ColToken(TblGenericParamConstraint, 0, c) : 0;
-                    uint constraint = ValidRid(TblGenericParamConstraint, constraints[j]) ? ColToken(TblGenericParamConstraint, 1, c) : 0;
-                    if (cOwner != gp)
-                    {
-                        Write(x8(constraint) + " (owner: " + x8(cOwner) + ")  ");
-                    }
-                    else
-                    {
-                        Write(x8(constraint) + "  ");
-                    }
+                    Write(x8(constraints[j]) + "  ");
                 }
 
                 WriteLine("");
@@ -1384,20 +1015,17 @@ internal sealed partial class Dasm
             {
                 WriteLine("\tField #" + D(n++) + " (" + x8(fd) + ")");
                 WriteLine("\t" + Dashes);
-                uint flags = DisplayFieldInfo(fd);
+                FieldDefinition field = _md.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle((int)RidOf(fd)));
+                DisplayFieldInfo(fd, field);
                 DisplayCustomAttributes(fd, "\t\t");
                 DisplayPermissions(fd, "\t");
-                DisplayFieldMarshal(fd);
+                DisplayFieldMarshal(field.GetMarshallingDescriptor());
                 if (td == 0)
                 {
-                    DisplayFieldRVA(fd);
+                    WriteLine("\t\tRVA       : 0x" + x8((uint)field.GetRelativeVirtualAddress()));
                 }
 
-                if ((flags & 0x2000) != 0)
-                {
-                    DisplayPinvokeInfo(fd);
-                }
-
+                // A PinvokeImpl field has no P/Invoke data to show: ImplMap rows only map methods.
                 if (offsets is not null && offsets.TryGetValue(RidOf(fd), out uint offset))
                 {
                     WriteLine("\t\tOffset : 0x" + x8(offset));
@@ -1407,17 +1035,12 @@ internal sealed partial class Dasm
             }
         }
 
-        private uint DisplayFieldInfo(uint fd)
+        private void DisplayFieldInfo(uint fd, FieldDefinition field)
         {
-            if (!ValidRid(TblField, fd))
-            {
-                throw new MetaInfoFailure("GetFieldProps failed.");
-            }
-
-            uint rid = RidOf(fd);
-            uint flags = Col(TblField, 0, rid);
-            string name = Fit(StrCol(TblField, 1, rid), StringBufferLen);
-            (int sig, int cbSig) = BlobCol(TblField, 2, rid);
+            uint flags = (uint)field.Attributes;
+            string name = Str(field.Name);
+            byte[] sig = Blob(field.Signature);
+            int cbSig = sig.Length;
             StringBuilder sb = new();
             uint access = flags & 7;
             Flag(sb, access == 6, "Public");
@@ -1445,15 +1068,6 @@ internal sealed partial class Dasm
             {
                 DisplaySignature(sig, (uint)cbSig, "");
             }
-
-            return flags;
-        }
-
-        private void DisplayFieldRVA(uint fd)
-        {
-            uint row = FindByKey(TblFieldRVA, 1, RidOf(fd));
-            uint rva = row == 0 ? 0 : Col(TblFieldRVA, 0, row);
-            WriteLine("\t\tRVA       : 0x" + x8(rva));
         }
 
         // ---------------------------------------------------------------- member refs
@@ -1466,14 +1080,14 @@ internal sealed partial class Dasm
             }
 
             int n = 1;
-            for (uint i = 1; i <= Rows(TblMemberRef); i++)
+            foreach (MemberReferenceHandle h in _md.MemberReferences)
             {
-                if (ColToken(TblMemberRef, 0, i) != parent)
+                if (Token(_md.GetMemberReference(h).Parent) != parent)
                 {
                     continue;
                 }
 
-                uint mr = i | mdtMemberRef;
+                uint mr = Token(h);
                 WriteLine(prefix + "\tMemberRef #" + D(n++) + " (" + x8(mr) + ")");
                 WriteLine(prefix + "\t" + Dashes);
                 DisplayMemberRefInfo(mr, prefix);
@@ -1483,7 +1097,8 @@ internal sealed partial class Dasm
         private void DisplayMemberRefInfo(uint mr, string prefix)
         {
             string name = MemberRefName(mr);
-            (int sig, int cbSig) = BlobCol(TblMemberRef, 2, RidOf(mr));
+            byte[] sig = Blob(_md.GetMemberReference(MetadataTokens.MemberReferenceHandle((int)RidOf(mr))).Signature);
+            int cbSig = sig.Length;
             WriteLine(prefix + "\t\tMember: (" + x8(mr) + ") " + name + ": ");
             if (cbSig != 0)
             {
@@ -1512,34 +1127,29 @@ internal sealed partial class Dasm
             }
         }
 
-        private void DisplayTypeDefProps(uint td)
+        private void DisplayTypeDefProps(uint td, TypeDefinition t)
         {
-            uint rid = RidOf(td);
-            string name = Fit(TypeDefFullName(td) ?? throw new MetaInfoFailure("GetTypeDefProps failed."), StringBufferLen);
-            uint flags = Col(TblTypeDef, 0, rid);
-            uint extends = ColToken(TblTypeDef, 3, rid);
-            if (RidOf(extends) == 0)
-            {
-                extends = mdtTypeRef;
-            }
+            string name = TypeDefFullName(td) ?? throw new MetaInfoFailure("GetTypeDefProps failed.");
+            uint flags = (uint)t.Attributes;
+            uint extends = t.BaseType.IsNil ? mdtTypeRef : Token(t.BaseType);
 
             WriteLine("\tTypDefName: " + name + "  (" + X8(td) + ")");
             WriteLine("\tFlags     : " + ClassFlags(flags) + " (" + x8(flags) + ")");
             WriteLine("\tExtends   : " + X8(extends) + " [" + TokenTypeName(extends) + "] " + TypeDeforRefName(extends));
 
-            uint layout = FindByKey(TblClassLayout, 2, rid);
-            if (layout != 0)
+            TypeLayout layout = t.GetLayout();
+            if (HasClassLayout(td, layout))
             {
-                WriteLine("\tLayout    : Packing:" + D(Col(TblClassLayout, 0, layout)) + ", Size:" + D(Col(TblClassLayout, 1, layout)));
+                WriteLine("\tLayout    : Packing:" + D(layout.PackingSize) + ", Size:" + D(layout.Size));
             }
 
             if ((flags & 7) >= 2)
             {
-                uint nested = FindByKey(TblNestedClass, 0, rid);
-                if (nested != 0)
+                TypeDefinitionHandle enclosing = t.GetDeclaringType();
+                if (!enclosing.IsNil)
                 {
-                    uint enclosing = ColToken(TblNestedClass, 1, nested);
-                    WriteLine("\tEnclosingClass : " + TypeDeforRefName(enclosing) + " (" + X8(enclosing) + ")");
+                    uint tk = Token(enclosing);
+                    WriteLine("\tEnclosingClass : " + TypeDeforRefName(tk) + " (" + X8(tk) + ")");
                 }
                 else
                 {
@@ -1548,58 +1158,66 @@ internal sealed partial class Dasm
             }
         }
 
+        // Whether the type has a ClassLayout row. System.Reflection.Metadata reports a row with packing 0 and size 0 (as
+        // emitted for explicit layout without .pack or .size) like a missing row, so that case is looked up in the table.
+        private bool HasClassLayout(uint td, TypeLayout layout)
+        {
+            if (!layout.IsDefault)
+            {
+                return true;
+            }
+
+            for (uint i = 1; i <= Rows(TblClassLayout); i++)
+            {
+                if (Col(TblClassLayout, 2, i) == RidOf(td))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private void DisplayTypeDefInfo(uint td)
         {
-            DisplayTypeDefProps(td);
+            TypeDefinition t = _md.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle((int)RidOf(td)));
+            DisplayTypeDefProps(td, t);
 
-            // GetClassLayout: the field offsets, if the type has a layout or any of its fields has an offset.
-            uint rid = RidOf(td);
-            bool hasLayout = FindByKey(TblClassLayout, 2, rid) != 0;
+            // The field offsets, if the type has a layout or any of its fields has an offset.
+            bool hasLayout = HasClassLayout(td, t.GetLayout());
             Dictionary<uint, uint> offsets = new();
-            uint start = Col(TblTypeDef, 4, rid);
-            uint end = EndRid(TblTypeDef, rid, 4, TblField);
-            for (uint i = start; i < end; i++)
+            foreach (FieldDefinitionHandle h in t.GetFields())
             {
-                uint fieldRid = Indirect(TblFieldPtr, i);
-                uint row = FindByKey(TblFieldLayout, 1, fieldRid);
-                uint offset = 0xFFFFFFFF;
-                if (row != 0)
+                int offset = _md.GetFieldDefinition(h).GetOffset();
+                if (offset != -1)
                 {
-                    offset = Col(TblFieldLayout, 0, row);
                     hasLayout = true;
                 }
 
-                offsets.TryAdd(fieldRid, offset);
+                offsets.TryAdd(RidOf(Token(h)), (uint)offset);
             }
 
-            DisplayGenericParams(td, "\t");
+            DisplayGenericParams(t.GetGenericParameters(), "\t");
             DisplayFields(td, hasLayout && offsets.Count > 0 ? offsets : null);
             DisplayMethods(td);
-            DisplayProperties(td);
-            DisplayEvents(td);
-            DisplayMethodImpls(td);
+            DisplayProperties(t);
+            DisplayEvents(t);
+            DisplayMethodImpls(t);
             DisplayPermissions(td, "");
-            DisplayInterfaceImpls(td);
+            DisplayInterfaceImpls(td, t);
             DisplayCustomAttributes(td, "\t");
         }
 
-        private void DisplayInterfaceImpls(uint td)
+        private void DisplayInterfaceImpls(uint td, TypeDefinition t)
         {
-            List<uint> list = new();
-            if (IsSorted(TblInterfaceImpl))
-            {
-                (uint start, uint end) = SearchRange(TblInterfaceImpl, 0, RidOf(td));
-                list = Range(start, end, mdtInterfaceImpl);
-            }
-
             int n = 1;
-            foreach (uint ii in list)
+            foreach (InterfaceImplementationHandle h in t.GetInterfaceImplementations())
             {
+                uint ii = Token(h);
+                uint itf = Token(_md.GetInterfaceImplementation(h).Interface);
                 WriteLine("\tInterfaceImpl #" + D(n++) + " (" + x8(ii) + ")");
                 WriteLine("\t" + Dashes);
-                uint cls = ColToken(TblInterfaceImpl, 0, RidOf(ii));
-                uint itf = ColToken(TblInterfaceImpl, 1, RidOf(ii));
-                WriteLine("\t\tClass     : " + TypeDeforRefName(cls));
+                WriteLine("\t\tClass     : " + TypeDeforRefName(td));
                 WriteLine("\t\tToken     : " + X8(itf) + " [" + TokenTypeName(itf) + "] " + TypeDeforRefName(itf));
                 DisplayCustomAttributes(ii, "\t\t");
                 DisplayPermissions(ii, "\t");
@@ -1607,127 +1225,46 @@ internal sealed partial class Dasm
             }
         }
 
-        private void DisplayMethodImpls(uint td)
+        private void DisplayMethodImpls(TypeDefinition t)
         {
-            List<uint> rows = new();
-            if (IsSorted(TblMethodImpl))
-            {
-                (uint start, uint end) = SearchRange(TblMethodImpl, 0, RidOf(td));
-                rows = Range(start, end, 0);
-            }
-
             int n = 1;
-            foreach (uint row in rows)
+            foreach (MethodImplementationHandle h in t.GetMethodImplementations())
             {
+                MethodImplementation impl = _md.GetMethodImplementation(h);
                 WriteLine("\n\tMethodImpl #" + D(n) + " (" + x8((uint)n) + ")");
                 n++;
                 WriteLine("\t" + Dashes);
-                WriteLine("\t\tMethod Body Token : 0x" + x8(ColToken(TblMethodImpl, 1, row)));
-                WriteLine("\t\tMethod Declaration Token : 0x" + x8(ColToken(TblMethodImpl, 2, row)));
+                WriteLine("\t\tMethod Body Token : 0x" + x8(Token(impl.MethodBody)));
+                WriteLine("\t\tMethod Declaration Token : 0x" + x8(Token(impl.MethodDeclaration)));
                 WriteLine("");
             }
         }
 
         // ---------------------------------------------------------------- properties and events
 
-        // EnumProperties/EnumEvents: the map row is found by a linear search, the list is clamped to the table.
-        private List<uint> EnumMapList(uint td, int mapTable, int ptrTable, int table, uint tokenType)
-        {
-            List<uint> list = new();
-            if (RidOf(td) == 0)
-            {
-                return list;
-            }
-
-            uint map = 0;
-            for (uint i = 1; i <= Rows(mapTable); i++)
-            {
-                if (Col(mapTable, 0, i) == RidOf(td))
-                {
-                    map = i;
-                    break;
-                }
-            }
-
-            uint start = 0, end = 0;
-            if (map != 0)
-            {
-                start = Col(mapTable, 1, map);
-                end = EndRid(mapTable, map, 1, table);
-                uint max = Rows(table) + 1;
-                if (start == 0)
-                {
-                    start = 1;
-                }
-
-                if (end > max)
-                {
-                    end = max;
-                }
-
-                if (start > end)
-                {
-                    start = end;
-                }
-            }
-
-            for (uint i = start; i < end; i++)
-            {
-                list.Add(Indirect(ptrTable, i) | tokenType);
-            }
-
-            return list;
-        }
-
-        // The MethodSemantics rows of an event or property, in table order.
-        private List<uint> MethodSemanticsOf(uint tk)
-        {
-            List<uint> rows = new();
-            if (IsSorted(TblMethodSemantics))
-            {
-                (uint start, uint end) = SearchRange(TblMethodSemantics, 2, EncodeToken(RidOf(tk), TypeOf(tk), CdHasSemantic));
-                rows = Range(start, end, 0);
-            }
-
-            return rows;
-        }
-
-        private void DisplayProperties(uint td)
+        private void DisplayProperties(TypeDefinition t)
         {
             int n = 1;
-            foreach (uint prop in EnumMapList(td, TblPropertyMap, TblPropertyPtr, TblProperty, mdtProperty))
+            foreach (PropertyDefinitionHandle h in t.GetProperties())
             {
+                uint prop = Token(h);
                 WriteLine("\tProperty #" + D(n++) + " (" + x8(prop) + ")");
                 WriteLine("\t" + Dashes);
-                DisplayPropertyInfo(prop);
+                DisplayPropertyInfo(prop, _md.GetPropertyDefinition(h));
                 DisplayPermissions(prop, "\t");
                 WriteLine("");
             }
         }
 
-        private void DisplayPropertyInfo(uint prop)
+        private void DisplayPropertyInfo(uint prop, PropertyDefinition p)
         {
-            if (!ValidRid(TblProperty, prop))
-            {
-                throw new MetaInfoFailure("GetPropertyProps failed.");
-            }
-
-            uint rid = RidOf(prop);
-            uint flags = Col(TblProperty, 0, rid);
-            (int sig, int cbSig) = BlobCol(TblProperty, 2, rid);
-            uint setter = mdtMethodDef, getter = mdtMethodDef, others = 0;
-            foreach (uint row in MethodSemanticsOf(prop))
-            {
-                uint method = Col(TblMethodSemantics, 1, row) | mdtMethodDef;
-                switch (Col(TblMethodSemantics, 0, row))
-                {
-                    case 0x1: setter = method; break;
-                    case 0x2: getter = method; break;
-                    case 0x4: others++; break;
-                }
-            }
-
-            string name = Fit(StrCol(TblProperty, 1, rid), StringBufferLen);
+            uint flags = (uint)p.Attributes;
+            byte[] sig = Blob(p.Signature);
+            int cbSig = sig.Length;
+            PropertyAccessors accessors = p.GetAccessors();
+            uint setter = Token(accessors.Setter), getter = Token(accessors.Getter);
+            uint others = (uint)accessors.Others.Length;
+            string name = Str(p.Name);
             WriteLine("\t\tProp.Name : " + name + " (" + X8(prop) + ")");
             StringBuilder sb = new();
             Flag(sb, (flags & 0x200) != 0, "SpecialName");
@@ -1749,43 +1286,28 @@ internal sealed partial class Dasm
             DisplayCustomAttributes(prop, "\t\t");
         }
 
-        private void DisplayEvents(uint td)
+        private void DisplayEvents(TypeDefinition t)
         {
             int n = 1;
-            foreach (uint ev in EnumMapList(td, TblEventMap, TblEventPtr, TblEvent, mdtEvent))
+            foreach (EventDefinitionHandle h in t.GetEvents())
             {
+                uint ev = Token(h);
                 WriteLine("\tEvent #" + D(n++) + " (" + x8(ev) + ")");
                 WriteLine("\t" + Dashes);
-                DisplayEventInfo(ev);
+                DisplayEventInfo(ev, _md.GetEventDefinition(h));
                 DisplayPermissions(ev, "\t");
                 WriteLine("");
             }
         }
 
-        private void DisplayEventInfo(uint ev)
+        private void DisplayEventInfo(uint ev, EventDefinition e)
         {
-            if (!ValidRid(TblEvent, ev))
-            {
-                throw new MetaInfoFailure("GetEventProps failed.");
-            }
-
-            uint rid = RidOf(ev);
-            uint flags = Col(TblEvent, 0, rid);
-            uint eventType = ColToken(TblEvent, 2, rid);
-            uint addOn = mdtMethodDef, removeOn = mdtMethodDef, fire = mdtMethodDef, others = 0;
-            foreach (uint row in MethodSemanticsOf(ev))
-            {
-                uint method = Col(TblMethodSemantics, 1, row) | mdtMethodDef;
-                switch (Col(TblMethodSemantics, 0, row))
-                {
-                    case 0x08: addOn = method; break;
-                    case 0x10: removeOn = method; break;
-                    case 0x20: fire = method; break;
-                    case 0x04: others++; break;
-                }
-            }
-
-            string name = Fit(StrCol(TblEvent, 1, rid), StringBufferLen);
+            uint flags = (uint)e.Attributes;
+            uint eventType = Token(e.Type);
+            EventAccessors accessors = e.GetAccessors();
+            uint addOn = Token(accessors.Adder), removeOn = Token(accessors.Remover), fire = Token(accessors.Raiser);
+            uint others = (uint)accessors.Others.Length;
+            string name = Str(e.Name);
             WriteLine("\t\tName      : " + name + " (" + X8(ev) + ")");
             StringBuilder sb = new();
             Flag(sb, (flags & 0x200) != 0, "SpecialName");
@@ -1801,43 +1323,30 @@ internal sealed partial class Dasm
 
         // ---------------------------------------------------------------- custom attributes
 
-        private List<uint> EnumCustomAttributes(uint tk)
-        {
-            if (RidOf(tk) == 0)
-            {
-                return Range(1, Rows(TblCustomAttribute) + 1, mdtCustomAttribute);
-            }
-
-            if (IsSorted(TblCustomAttribute))
-            {
-                (uint start, uint end) = SearchRange(TblCustomAttribute, 0, EncodeToken(RidOf(tk), TypeOf(tk), CdHasCustomAttribute));
-                return Range(start, end, mdtCustomAttribute);
-            }
-
-            return new List<uint>();
-        }
+        private IEnumerable<CustomAttributeHandle> EnumCustomAttributes(uint tk)
+            => RidOf(tk) == 0 ? _md.CustomAttributes : _md.GetCustomAttributes(MetadataTokens.EntityHandle((int)tk));
 
         private void DisplayCustomAttributes(uint tk, string prefix)
         {
             int n = 1;
-            foreach (uint ca in EnumCustomAttributes(tk))
+            foreach (CustomAttributeHandle h in EnumCustomAttributes(tk))
             {
-                WriteLine(prefix + "CustomAttribute #" + D(n++) + " (" + x8(ca) + ")");
+                WriteLine(prefix + "CustomAttribute #" + D(n++) + " (" + x8(Token(h)) + ")");
                 WriteLine(prefix + Dashes);
-                DisplayCustomAttributeInfo(ca, prefix);
+                DisplayCustomAttributeInfo(_md.GetCustomAttribute(h), prefix);
             }
         }
 
-        private void DisplayCustomAttributeInfo(uint ca, string prefix)
+        private void DisplayCustomAttributeInfo(CustomAttribute ca, string prefix)
         {
-            uint rid = RidOf(ca);
-            uint type = ColToken(TblCustomAttribute, 1, rid);
-            (int value, int cbValue) = BlobCol(TblCustomAttribute, 2, rid);
+            uint type = Token(ca.Constructor);
+            byte[] value = Blob(ca.Value);
+            int cbValue = value.Length;
             WriteLine(prefix + "\tCustomAttribute Type: " + x8(type));
 
             uint tk = type;
             string? methName = null;
-            int sig = -1;
+            byte[] sig = [];
             int cbSig = 0;
             bool hasSig = false;
             switch (TypeOf(tk))
@@ -1848,10 +1357,12 @@ internal sealed partial class Dasm
                         throw new MetaInfoFailure("GetNameFromToken failed.");
                     }
 
-                    methName = StrCol(TblMemberRef, 1, RidOf(tk));
-                    (sig, cbSig) = BlobCol(TblMemberRef, 2, RidOf(tk));
+                    MemberReference mr = _md.GetMemberReference(MetadataTokens.MemberReferenceHandle((int)RidOf(tk)));
+                    methName = Str(mr.Name);
+                    sig = Blob(mr.Signature);
+                    cbSig = sig.Length;
                     hasSig = true;
-                    tk = ColToken(TblMemberRef, 0, RidOf(tk));
+                    tk = Token(mr.Parent);
                     break;
                 case mdtMethodDef:
                     if (!ValidRid(TblMethod, tk))
@@ -1859,10 +1370,12 @@ internal sealed partial class Dasm
                         throw new MetaInfoFailure("GetNameFromToken failed.");
                     }
 
-                    methName = StrCol(TblMethod, 3, RidOf(tk));
-                    (sig, cbSig) = BlobCol(TblMethod, 4, RidOf(tk));
+                    MethodDefinition md = _md.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)RidOf(tk)));
+                    methName = Str(md.Name);
+                    sig = Blob(md.Signature);
+                    cbSig = sig.Length;
                     hasSig = true;
-                    tk = ParentOfMethod(tk);
+                    tk = Token(md.GetDeclaringType());
                     break;
             }
 
@@ -1870,10 +1383,10 @@ internal sealed partial class Dasm
             switch (TypeOf(tk))
             {
                 case mdtTypeDef:
-                    rcName = Fit(TypeDefFullName(tk) ?? throw new MetaInfoFailure("GetTypeDefProps failed."), MaxClassName);
+                    rcName = TypeDefFullName(tk) ?? throw new MetaInfoFailure("GetTypeDefProps failed.");
                     break;
                 case mdtTypeRef:
-                    rcName = Fit(TypeRefFullName(tk) ?? throw new MetaInfoFailure("GetTypeRefProps failed."), MaxClassName);
+                    rcName = TypeRefFullName(tk) ?? throw new MetaInfoFailure("GetTypeRefProps failed.");
                     break;
             }
 
@@ -1898,7 +1411,7 @@ internal sealed partial class Dasm
             DumpHex(newPrefix, value, cbValue, true, 16);
             if (coff)
             {
-                WriteLine(prefix + "\t            " + CStringAt(value));
+                WriteLine(prefix + "\t            " + CString(value));
             }
 
             if (hasSig)
@@ -1909,92 +1422,8 @@ internal sealed partial class Dasm
             WriteLine("");
         }
 
-        // FindParentOfMethodHelper: the type whose method list holds the method.
-        private uint ParentOfMethod(uint md)
-        {
-            uint rid = RidOf(md);
-            if (Rows(TblMethodPtr) > 0)
-            {
-                uint parent = 0;
-                for (uint td = 1; td <= Rows(TblTypeDef); td++)
-                {
-                    uint end = EndRid(TblTypeDef, td, 5, TblMethod);
-                    for (uint i = Col(TblTypeDef, 5, td); i < end; i++)
-                    {
-                        if (Col(TblMethodPtr, 0, i) == rid)
-                        {
-                            parent = td;
-                        }
-                    }
-                }
-
-                return parent | mdtTypeDef;
-            }
-
-            return SearchNotGreater(TblTypeDef, 5, rid) | mdtTypeDef;
-        }
-
-        // vSearchTableNotGreater: the last row whose value is not greater than the target.
-        private uint SearchNotGreater(int table, int col, uint target)
-        {
-            uint cRecs = Rows(table);
-            uint lo = 1, hi = cRecs, mid = 0, val = 0;
-            if (lo > hi)
-            {
-                return 0;
-            }
-
-            while (lo <= hi)
-            {
-                mid = (lo + hi) / 2;
-                val = Col(table, col, mid);
-                if (val == target)
-                {
-                    break;
-                }
-
-                if (val < target && val != 0)
-                {
-                    lo = mid + 1;
-                }
-                else
-                {
-                    hi = mid - 1;
-                }
-            }
-
-            if (val > target || val == 0)
-            {
-                while (val > target || val == 0)
-                {
-                    if (mid == 1)
-                    {
-                        return 0;
-                    }
-
-                    --mid;
-                    val = Col(table, col, mid);
-                }
-            }
-            else
-            {
-                while (mid < cRecs)
-                {
-                    val = Col(table, col, mid + 1);
-                    if (val > target || val == 0)
-                    {
-                        break;
-                    }
-
-                    mid++;
-                }
-            }
-
-            return mid;
-        }
-
         // Decodes the constructor arguments of a custom attribute blob (the common cases only).
-        private void DecodeCustomAttributeArgs(int sig, int value, int cbValue, string prefix)
+        private void DecodeCustomAttributeArgs(byte[] sig, byte[] value, int cbValue, string prefix)
         {
             long ps = 0;
             uint data = SigData(sig, ref ps);
@@ -2109,11 +1538,11 @@ internal sealed partial class Dasm
             WriteLine(")");
         }
 
-        private uint ReadU4(int offset, int i) => B(offset, i) | B(offset, i + 1) << 8 | B(offset, i + 2) << 16 | B(offset, i + 3) << 24;
+        private static uint ReadU4(byte[] blob, int i) => B(blob, i) | B(blob, i + 1) << 8 | B(blob, i + 2) << 16 | B(blob, i + 3) << 24;
 
-        // CustomAttributeParser::GetString, printed with "%s": the text runs to the next NUL in memory. On failure the
-        // previous string pointer is printed again.
-        private string? CaString(int value, int cbValue, ref int cur, string? previous)
+        // CustomAttributeParser::GetString, printed with "%s": the text runs to the next NUL in the blob. On failure the
+        // previous string is printed again.
+        private static string? CaString(byte[] value, int cbValue, ref int cur, string? previous)
         {
             if (cbValue - cur <= 0)
             {
@@ -2156,7 +1585,7 @@ internal sealed partial class Dasm
 
             int start = cur + prefix;
             cur = start + (int)len;
-            return value < 0 ? "" : CStringAt(value + start);
+            return CString(value, start);
         }
 
         // printf("%f")
@@ -2192,39 +1621,40 @@ internal sealed partial class Dasm
                 return;
             }
 
-            List<uint> list;
-            if (RidOf(tk) != 0)
+            DeclarativeSecurityAttributeHandleCollection list;
+            if (RidOf(tk) == 0)
             {
-                if (IsSorted(TblDeclSecurity))
-                {
-                    (uint start, uint end) = SearchRange(TblDeclSecurity, 1, EncodeToken(RidOf(tk), type, CdHasDeclSecurity));
-                    list = Range(start, end, mdtPermission);
-                }
-                else
-                {
-                    list = new List<uint>();
-                }
+                list = _md.DeclarativeSecurityAttributes;
+            }
+            else if (type == mdtTypeDef)
+            {
+                list = _md.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle((int)RidOf(tk))).GetDeclarativeSecurityAttributes();
+            }
+            else if (type == mdtMethodDef)
+            {
+                list = _md.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)RidOf(tk))).GetDeclarativeSecurityAttributes();
             }
             else
             {
-                list = Range(1, Rows(TblDeclSecurity) + 1, mdtPermission);
+                list = _md.GetAssemblyDefinition().GetDeclarativeSecurityAttributes();
             }
 
             int n = 1;
-            foreach (uint perm in list)
+            foreach (DeclarativeSecurityAttributeHandle h in list)
             {
+                uint perm = Token(h);
                 WriteLine(prefix + "\tPermission #" + D(n++) + " (" + x8(perm) + ")");
                 WriteLine(prefix + "\t" + Dashes);
-                DisplayPermissionInfo(perm, prefix);
+                DisplayPermissionInfo(perm, _md.GetDeclarativeSecurityAttribute(h), prefix);
                 WriteLine("");
             }
         }
 
-        private void DisplayPermissionInfo(uint perm, string prefix)
+        private void DisplayPermissionInfo(uint perm, DeclarativeSecurityAttribute attr, string prefix)
         {
-            uint rid = RidOf(perm);
-            uint action = Col(TblDeclSecurity, 0, rid);
-            (int blob, int cb) = BlobCol(TblDeclSecurity, 2, rid);
+            uint action = (uint)(short)attr.Action;
+            byte[] blob = Blob(attr.PermissionSet);
+            int cb = blob.Length;
             string desc = action < s_actions.Length ? s_actions[action]! : "(null)";
             WriteLine(prefix + "\t\tAction    : " + desc);
             WriteLine(prefix + "\t\tBlobLen   : " + D(cb));
@@ -2256,7 +1686,7 @@ internal sealed partial class Dasm
         private const uint NativeTypeMax = 0x50;
 
         // TrySigUncompress: false (and cbCur = -1) on an invalid encoding.
-        private bool TrySigUncompress(int blob, ref uint cbCur, out uint data)
+        private static bool TrySigUncompress(byte[] blob, ref uint cbCur, out uint data)
         {
             uint b0 = B(blob, cbCur);
             uint size;
@@ -2287,7 +1717,7 @@ internal sealed partial class Dasm
         }
 
         // CPackedLen::GetLength
-        private uint PackedLen(int blob, long at, out int byteCount)
+        private static uint PackedLen(byte[] blob, long at, out int byteCount)
         {
             uint b0 = B(blob, at);
             if ((b0 & 0x80) == 0)
@@ -2312,7 +1742,7 @@ internal sealed partial class Dasm
             return 0;
         }
 
-        private byte[] PackedString(int blob, ref uint cbCur)
+        private static byte[] PackedString(byte[] blob, ref uint cbCur)
         {
             uint len = PackedLen(blob, cbCur, out int byteCount);
             cbCur += (uint)byteCount;
@@ -2326,15 +1756,15 @@ internal sealed partial class Dasm
             return s;
         }
 
-        private void DisplayFieldMarshal(uint tk)
+        private void DisplayFieldMarshal(BlobHandle descriptor)
         {
-            uint row = FindByKey(TblFieldMarshal, 0, EncodeToken(RidOf(tk), TypeOf(tk), CdHasFieldMarshal));
-            if (row == 0)
+            if (descriptor.IsNil)
             {
                 return;
             }
 
-            (int nt, int cbNative) = BlobCol(TblFieldMarshal, 1, row);
+            byte[] nt = Blob(descriptor);
+            int cbNative = nt.Length;
             uint cbNativeType = (uint)cbNative;
             uint cbCur = 0;
             uint data = 0;
@@ -2527,17 +1957,18 @@ internal sealed partial class Dasm
             }
         }
 
-        private void DisplayPinvokeInfo(uint tk)
+        private void DisplayPinvokeInfo(uint md)
         {
-            uint row = FindByKey(TblImplMap, 1, EncodeToken(RidOf(tk), TypeOf(tk), CdMemberForwarded));
-            if (row == 0)
+            MethodImport import = _md.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)RidOf(md))).GetImport();
+            if (import.Module.IsNil && import.Name.IsNil && import.Attributes == 0)
             {
+                // The method has no ImplMap row.
                 return;
             }
 
-            uint flags = Col(TblImplMap, 0, row);
-            string name = Fit(StrCol(TblImplMap, 2, row), 512);
-            uint moduleRef = ColToken(TblImplMap, 3, row);
+            uint flags = (uint)import.Attributes;
+            string name = Str(import.Name);
+            uint moduleRef = Token(import.Module);
             WriteLine("\t\tPinvoke Map Data:");
             WriteLine("\t\tEntry point:      " + name);
             WriteLine("\t\tModule ref:       " + x8(moduleRef));
@@ -2584,7 +2015,7 @@ internal sealed partial class Dasm
         private const uint ElementTypeMax = 0x23;
 
         // CorSigUncompressData(PCCOR_SIGNATURE, ULONG*): the size read, or -1 (with 0) on an invalid encoding.
-        private uint Uncompress(int sig, long at, out uint data)
+        private static uint Uncompress(byte[] sig, long at, out uint data)
         {
             uint b0 = B(sig, at);
             if ((b0 & 0x80) == 0)
@@ -2609,8 +2040,8 @@ internal sealed partial class Dasm
             return 0xFFFFFFFF;
         }
 
-        // CorSigUncompressData(PCCOR_SIGNATURE&): no validation, advances the pointer.
-        private uint SigData(int sig, ref long p)
+        // CorSigUncompressData(PCCOR_SIGNATURE&): no validation, advances the position.
+        private static uint SigData(byte[] sig, ref long p)
         {
             uint b0 = B(sig, p);
             if ((b0 & 0x80) == 0)
@@ -2633,14 +2064,14 @@ internal sealed partial class Dasm
 
         private static readonly uint[] s_sigTokenTypes = [mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType];
 
-        private uint UncompressToken(int sig, long at, out uint tk)
+        private static uint UncompressToken(byte[] sig, long at, out uint tk)
         {
             uint cb = Uncompress(sig, at, out uint v);
             tk = (v >> 2) | s_sigTokenTypes[v & 3];
             return cb;
         }
 
-        private uint UncompressSignedInt(int sig, long at, out int value)
+        private static uint UncompressSignedInt(byte[] sig, long at, out int value)
         {
             uint cb = Uncompress(sig, at, out uint data);
             if (cb == 0xFFFFFFFF)
@@ -2662,7 +2093,7 @@ internal sealed partial class Dasm
 
         private readonly StringBuilder _sigBuf = new();
 
-        private void DisplaySignature(int sig, uint ulSigBlob, string prefix)
+        private void DisplaySignature(byte[] sig, uint ulSigBlob, string prefix)
         {
             uint cbCur = 0;
             uint cb;
@@ -2826,9 +2257,9 @@ internal sealed partial class Dasm
             }
         }
 
-        // GetOneElementType: appends the element type at sig+start to _sigBuf; false on E_FAIL. Like the metadata engine,
-        // the size is not set when the type is not recognized at all.
-        private bool GetOneElementType(int sig, uint start, uint ulSigBlob, ref uint pcb)
+        // GetOneElementType: appends the element type at sig+start to _sigBuf; false on E_FAIL. The
+        // size is not set when the type is not recognized at all.
+        private bool GetOneElementType(byte[] sig, uint start, uint ulSigBlob, ref uint pcb)
         {
             bool ok = true;
             uint cbCur = 0;
@@ -3078,7 +2509,7 @@ internal sealed partial class Dasm
             "<error> ", "<error> ", "", "", "", "native vararg ", null,
         ];
 
-        private string PrettyPrintSig(int sig, int cbSig, string name)
+        private string PrettyPrintSig(byte[] sig, int cbSig, string name)
         {
             StringBuilder o = new();
             long p = 0;
@@ -3155,7 +2586,7 @@ internal sealed partial class Dasm
             return o.ToString();
         }
 
-        private void PrettyPrintType(int sig, ref long p, long end, StringBuilder o)
+        private void PrettyPrintType(byte[] sig, ref long p, long end, StringBuilder o)
         {
             uint elt = B(sig, p++);
             switch (elt)
@@ -3187,11 +2618,11 @@ internal sealed partial class Dasm
                     o.Append(elt == 0x11 ? "value class " : "class ");
                     if (TypeOf(tk) == mdtTypeRef)
                     {
-                        o.Append(TypeRefFullName(tk) is string s ? Fit(s, MaxClassName) : "");
+                        o.Append(TypeRefFullName(tk) ?? "");
                     }
                     else if (TypeOf(tk) == mdtTypeDef)
                     {
-                        o.Append(TypeDefFullName(tk) is string s ? Fit(s, MaxClassName) : "");
+                        o.Append(TypeDefFullName(tk) ?? "");
                     }
                     else
                     {
@@ -3321,7 +2752,7 @@ internal sealed partial class Dasm
 
         // The nested PrettyPrintSigWorker of a function pointer: it shrinks the shared output buffer to nothing first,
         // and advances the caller's pointer (passed by reference) past the method signature.
-        private string PrettyPrintSigInPlace(int sig, ref long p, long len)
+        private string PrettyPrintSigInPlace(byte[] sig, ref long p, long len)
         {
             StringBuilder o = new();
             long end = p + len;
@@ -3392,8 +2823,8 @@ internal sealed partial class Dasm
                 uint tr = rid | mdtTypeRef;
                 WriteLine("TypeRef #" + D(n++) + " (" + x8(tr) + ")");
                 WriteLine(Dashes);
-                uint scope = ColToken(TblTypeRef, 0, rid);
-                string name = Fit(TypeRefFullName(tr)!, StringBufferLen);
+                uint scope = Token(_md.GetTypeReference(MetadataTokens.TypeReferenceHandle((int)rid)).ResolutionScope);
+                string name = TypeRefFullName(tr)!;
                 WriteLine("Token:             0x" + x8(tr));
                 WriteLine("ResolutionScope:   0x" + x8(scope));
                 WriteLine("TypeRefName:       " + name);
@@ -3420,7 +2851,8 @@ internal sealed partial class Dasm
         private void DisplayTypeSpecInfo(uint ts, string prefix)
         {
             _sigBuf.Clear();
-            (int sig, int cbSig) = BlobCol(TblTypeSpec, 0, RidOf(ts));
+            byte[] sig = Blob(_md.GetTypeSpecification(MetadataTokens.TypeSpecificationHandle((int)RidOf(ts))).Signature);
+            int cbSig = sig.Length;
             uint cb = 0;
             if (!GetOneElementType(sig, 0, (uint)cbSig, ref cb))
             {
@@ -3442,8 +2874,10 @@ internal sealed partial class Dasm
                 uint ms = rid | mdtMethodSpec;
                 WriteLine("MethodSpec #" + D(n++) + " (" + x8(ms) + ")");
                 _sigBuf.Clear();
-                uint parent = ColToken(TblMethodSpec, 0, rid);
-                (int sig, int cbSig) = BlobCol(TblMethodSpec, 1, rid);
+                MethodSpecification spec = _md.GetMethodSpecification(MetadataTokens.MethodSpecificationHandle((int)rid));
+                uint parent = Token(spec.Method);
+                byte[] sig = Blob(spec.Signature);
+                int cbSig = sig.Length;
                 WriteLine("\tParent   : 0x" + x8(parent));
                 DisplaySignature(sig, (uint)cbSig, "");
                 WriteLine("");
@@ -3458,7 +2892,7 @@ internal sealed partial class Dasm
                 uint mr = rid | mdtModuleRef;
                 WriteLine("ModuleRef #" + D(n++) + " (" + x8(mr) + ")");
                 WriteLine(Dashes);
-                WriteLine("\t\tModuleRef: (" + x8(mr) + ") " + Fit(StrCol(TblModuleRef, 0, rid), StringBufferLen) + ": ");
+                WriteLine("\t\tModuleRef: (" + x8(mr) + ") " + Str(_md.GetModuleReference(MetadataTokens.ModuleReferenceHandle((int)rid)).Name) + ": ");
                 DisplayCustomAttributes(mr, "\t\t");
                 DisplayMemberRefs(mr, "");
                 WriteLine("");
@@ -3473,7 +2907,8 @@ internal sealed partial class Dasm
                 uint sg = rid | mdtSignature;
                 WriteLine("Signature #" + D(n++) + " (" + AltHex08(sg) + ")");
                 WriteLine(Dashes);
-                (int sig, int cbSig) = BlobCol(TblStandAloneSig, 0, rid);
+                byte[] sig = Blob(_md.GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle((int)rid)).Signature);
+                int cbSig = sig.Length;
                 if (cbSig != 0)
                 {
                     DisplaySignature(sig, (uint)cbSig, "");
@@ -3498,8 +2933,9 @@ internal sealed partial class Dasm
             DisplayManifestResources();
         }
 
-        private void DisplayAssemblyMetadata(uint major, uint minor, uint build, uint revision, string locale)
+        private void DisplayAssemblyMetadata(Version version, string locale)
         {
+            uint major = (uint)version.Major, minor = (uint)version.Minor, build = (uint)version.Build, revision = (uint)version.Revision;
             WriteLine("\tVersion: " + D(major) + "." + D(minor) + "." + D(build) + "." + D(revision));
             WriteLine("\tMajor Version: 0x" + x8(major));
             WriteLine("\tMinor Version: 0x" + x8(minor));
@@ -3525,18 +2961,20 @@ internal sealed partial class Dasm
             }
 
             uint mda = 1 | mdtAssembly;
-            uint hashAlg = Col(TblAssembly, 0, 1);
-            uint flags = Col(TblAssembly, 5, 1);
-            (int pk, int cbPk) = BlobCol(TblAssembly, 6, 1);
-            string name = Fit(StrCol(TblAssembly, 7, 1), StringBufferLen);
-            string locale = Fit(StrCol(TblAssembly, 8, 1), StringBufferLen);
+            AssemblyDefinition asm = _md.GetAssemblyDefinition();
+            uint hashAlg = (uint)asm.HashAlgorithm;
+            uint flags = (uint)asm.Flags;
+            byte[] pk = Blob(asm.PublicKey);
+            int cbPk = pk.Length;
+            string name = Str(asm.Name);
+            string locale = Str(asm.Culture);
             WriteLine("Assembly");
             WriteLine(Dashes);
             WriteLine("\tToken: 0x" + x8(mda));
             WriteLine("\tName : " + name);
             DumpHex("\tPublic Key    ", pk, cbPk, false, 24);
             WriteLine("\tHash Algorithm : 0x" + x8(hashAlg));
-            DisplayAssemblyMetadata(Col(TblAssembly, 1, 1), Col(TblAssembly, 2, 1), Col(TblAssembly, 3, 1), Col(TblAssembly, 4, 1), locale);
+            DisplayAssemblyMetadata(asm.Version, locale);
             WriteLine("\tFlags : " + AssemblyFlags(flags) + " (" + x8(flags) + ")");
             DisplayCustomAttributes(mda, "\t");
             DisplayPermissions(mda, "\t");
@@ -3552,14 +2990,17 @@ internal sealed partial class Dasm
                 WriteLine("AssemblyRef #" + D(n++) + " (" + x8(ar) + ")");
                 WriteLine(Dashes);
                 WriteLine("\tToken: 0x" + x8(ar));
-                uint flags = Col(TblAssemblyRef, 4, rid);
-                (int pk, int cbPk) = BlobCol(TblAssemblyRef, 5, rid);
-                string name = Fit(StrCol(TblAssemblyRef, 6, rid), StringBufferLen);
-                string locale = Fit(StrCol(TblAssemblyRef, 7, rid), StringBufferLen);
-                (int hash, int cbHash) = BlobCol(TblAssemblyRef, 8, rid);
+                AssemblyReference asmRef = _md.GetAssemblyReference(MetadataTokens.AssemblyReferenceHandle((int)rid));
+                uint flags = (uint)asmRef.Flags;
+                byte[] pk = Blob(asmRef.PublicKeyOrToken);
+                int cbPk = pk.Length;
+                string name = Str(asmRef.Name);
+                string locale = Str(asmRef.Culture);
+                byte[] hash = Blob(asmRef.HashValue);
+                int cbHash = hash.Length;
                 DumpHex("\tPublic Key or Token", pk, cbPk, false, 24);
                 WriteLine("\tName: " + name);
-                DisplayAssemblyMetadata(Col(TblAssemblyRef, 0, rid), Col(TblAssemblyRef, 1, rid), Col(TblAssemblyRef, 2, rid), Col(TblAssemblyRef, 3, rid), locale);
+                DisplayAssemblyMetadata(asmRef.Version, locale);
                 DumpHex("\tHashValue Blob", hash, cbHash, false, 24);
                 WriteLine("\tFlags: " + AssemblyFlags(flags) + " (" + x8(flags) + ")");
                 DisplayCustomAttributes(ar, "\t");
@@ -3577,9 +3018,11 @@ internal sealed partial class Dasm
                 WriteLine("File #" + D(n++) + " (" + x8(file) + ")");
                 WriteLine(Dashes);
                 WriteLine("\tToken: 0x" + x8(file));
-                uint flags = Col(TblFile, 0, rid);
-                string name = Fit(StrCol(TblFile, 1, rid), StringBufferLen);
-                (int hash, int cbHash) = BlobCol(TblFile, 2, rid);
+                AssemblyFile f = _md.GetAssemblyFile(MetadataTokens.AssemblyFileHandle((int)rid));
+                uint flags = f.ContainsMetadata ? 0u : 1u;
+                string name = Str(f.Name);
+                byte[] hash = Blob(f.HashValue);
+                int cbHash = hash.Length;
                 WriteLine("\tName : " + name);
                 DumpHex("\tHashValue Blob ", hash, cbHash, false, 24);
                 StringBuilder sb = new();
@@ -3601,10 +3044,11 @@ internal sealed partial class Dasm
                 WriteLine("ExportedType #" + D(n++) + " (" + x8(et) + ")");
                 WriteLine(Dashes);
                 WriteLine("\tToken: 0x" + x8(et));
-                uint flags = Col(TblExportedType, 0, rid);
-                uint typeDef = Col(TblExportedType, 1, rid);
-                string name = Fit(MakePath(StrCol(TblExportedType, 3, rid), StrCol(TblExportedType, 2, rid)), StringBufferLen);
-                uint impl = ColToken(TblExportedType, 4, rid);
+                ExportedType e = _md.GetExportedType(MetadataTokens.ExportedTypeHandle((int)rid));
+                uint flags = (uint)e.Attributes;
+                uint typeDef = (uint)e.GetTypeDefinitionId();
+                string name = MakePath(Str(e.Namespace), Str(e.Name));
+                uint impl = Token(e.Implementation);
                 WriteLine("\tName: " + name);
                 WriteLine("\tImplementation token: 0x" + x8(impl));
                 WriteLine("\tTypeDef token: 0x" + x8(typeDef));
@@ -3624,10 +3068,11 @@ internal sealed partial class Dasm
                 WriteLine("ManifestResource #" + D(n++) + " (" + x8(mr) + ")");
                 WriteLine(Dashes);
                 WriteLine("\tToken: 0x" + x8(mr));
-                uint offset = Col(TblManifestResource, 0, rid);
-                uint flags = Col(TblManifestResource, 1, rid);
-                string name = Fit(StrCol(TblManifestResource, 2, rid), StringBufferLen);
-                uint impl = ColToken(TblManifestResource, 3, rid);
+                ManifestResource res = _md.GetManifestResource(MetadataTokens.ManifestResourceHandle((int)rid));
+                uint offset = (uint)res.Offset;
+                uint flags = (uint)res.Attributes;
+                string name = Str(res.Name);
+                uint impl = Token(res.Implementation);
                 WriteLine("Name: " + name);
                 WriteLine("Implementation token: 0x" + x8(impl));
                 WriteLine("Offset: 0x" + x8(offset));
@@ -3645,31 +3090,21 @@ internal sealed partial class Dasm
 
         private void DisplayUserStrings()
         {
-            // EnumUserStrings collects every non-empty entry first; a bad entry fails the whole enumeration.
-            List<(uint Index, int Offset, int Size)> strings = new();
-            for (uint index = 0; index < (uint)_userStrings.Size;)
+            // Every non-empty entry is collected first; a bad entry fails the whole enumeration.
+            List<(uint Index, int Size, string Value)> strings = new();
+            for (UserStringHandle h = _md.GetNextHandle(default(UserStringHandle)); !h.IsNil; h = _md.GetNextHandle(h))
             {
-                if (!TryBlob(_userStrings, index, out int offset, out int size, out int prefix))
-                {
-                    return;
-                }
-
-                if (index == 0)
-                {
-                    prefix = 1;
-                }
-
+                int index = MetadataTokens.GetHeapOffset(h);
+                int size = HeapEntrySize(HeapIndex.UserString, index);
                 if (size != 0)
                 {
-                    strings.Add((index, offset, size));
+                    strings.Add(((uint)index, size, _md.GetUserString(h)));
                 }
-
-                index += (uint)(prefix + size);
             }
 
             bool first = true;
             bool unprint = false;
-            foreach ((uint index, int offset, int size) in strings)
+            foreach ((uint index, int size, string value) in strings)
             {
                 if (first)
                 {
@@ -3683,12 +3118,8 @@ internal sealed partial class Dasm
                     throw new MetaInfoFailure("GetUserString failed.");
                 }
 
-                int cch = size / 2;
-                char[] chars = new char[cch];
-                for (int j = 0; j < cch; j++)
-                {
-                    chars[j] = (char)(HeapByte(_userStrings, offset - _userStrings.Base + 2 * j) | HeapByte(_userStrings, offset - _userStrings.Base + 2 * j + 1) << 8);
-                }
+                char[] chars = value.ToCharArray();
+                int cch = chars.Length;
 
                 Write((index | mdtString).ToString("x8", CultureInfo.InvariantCulture) + " : (" + PadL(D(cch), 2) + ") L\"");
                 for (int j = 0; j < cch; j++)
@@ -3750,16 +3181,15 @@ internal sealed partial class Dasm
             Write("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
             List<uint> tokens = new();
-            for (uint td = 2; td <= Rows(TblTypeDef); td++)
+            for (int td = 2; td <= Rows(TblTypeDef); td++)
             {
-                bool isInterface = (Col(TblTypeDef, 0, td) & 0x20) != 0;
-                uint start = Col(TblTypeDef, 5, td);
-                uint end = EndRid(TblTypeDef, td, 5, TblMethod);
-                for (uint i = start; i < end; i++)
+                TypeDefinition t = _md.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(td));
+                bool isInterface = ((uint)t.Attributes & 0x20) != 0;
+                foreach (MethodDefinitionHandle h in t.GetMethods())
                 {
-                    uint rid = Indirect(TblMethodPtr, i);
-                    uint flags = Col(TblMethod, 2, rid);
-                    uint implFlags = Col(TblMethod, 1, rid);
+                    MethodDefinition m = _md.GetMethodDefinition(h);
+                    uint flags = (uint)m.Attributes;
+                    uint implFlags = (uint)m.ImplAttributes;
                     if (isInterface && (flags & 0x10) == 0)
                     {
                         continue;
@@ -3772,17 +3202,18 @@ internal sealed partial class Dasm
                             continue;
                         }
 
-                        tokens.Add(rid | mdtMethodDef);
+                        tokens.Add(Token(h));
                     }
                 }
             }
 
             // RefToDefOptimization resolves (and reparents) the global MemberRefs that match a member of <Module>.
-            for (uint mr = 1; mr <= Rows(TblMemberRef); mr++)
+            foreach (MemberReferenceHandle h in _md.MemberReferences)
             {
-                if (ColToken(TblMemberRef, 0, mr) == TypeDefModule && !ResolvesToModuleMember(mr))
+                MemberReference mr = _md.GetMemberReference(h);
+                if (Token(mr.Parent) == TypeDefModule && !ResolvesToModuleMember(mr))
                 {
-                    tokens.Add(mr | mdtMemberRef);
+                    tokens.Add(Token(h));
                 }
             }
 
@@ -3799,34 +3230,25 @@ internal sealed partial class Dasm
             }
         }
 
-        private bool ResolvesToModuleMember(uint mr)
+        private bool ResolvesToModuleMember(MemberReference mr)
         {
-            string name = StrCol(TblMemberRef, 1, mr);
-            (int sig, int cbSig) = BlobCol(TblMemberRef, 2, mr);
-            byte[] refSig = BlobBytes(sig, cbSig);
+            string name = Str(mr.Name);
+            byte[] refSig = Blob(mr.Signature);
             foreach (uint md in EnumMethods(TypeDefModule))
             {
-                uint rid = RidOf(md);
-                if (StrCol(TblMethod, 3, rid) == name)
+                MethodDefinition m = _md.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)RidOf(md)));
+                if (Str(m.Name) == name && Blob(m.Signature).AsSpan().SequenceEqual(refSig))
                 {
-                    (int s, int cb) = BlobCol(TblMethod, 4, rid);
-                    if (BlobBytes(s, cb).AsSpan().SequenceEqual(refSig))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
 
             foreach (uint fd in EnumFields(TypeDefModule))
             {
-                uint rid = RidOf(fd);
-                if (StrCol(TblField, 1, rid) == name)
+                FieldDefinition f = _md.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle((int)RidOf(fd)));
+                if (Str(f.Name) == name && Blob(f.Signature).AsSpan().SequenceEqual(refSig))
                 {
-                    (int s, int cb) = BlobCol(TblField, 2, rid);
-                    if (BlobBytes(s, cb).AsSpan().SequenceEqual(refSig))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
 
@@ -3835,7 +3257,8 @@ internal sealed partial class Dasm
 
         // ---------------------------------------------------------------- DumpHex
 
-        private void DumpHex(string prefix, int data, int cbData, bool text, int nLine)
+        // Dumps cbData bytes of data from start; past the end of data, the bytes show as 0.
+        private void DumpHex(string prefix, byte[] data, int cbData, bool text, int nLine, int start = 0)
         {
             nLine &= ~7;
             int nPrefix = 0;
@@ -3861,7 +3284,7 @@ internal sealed partial class Dasm
                         sb.Append(' ');
                     }
 
-                    sb.Append(((byte)B(data, pos + i)).ToString("x2", CultureInfo.InvariantCulture)).Append(' ');
+                    sb.Append(((byte)B(data, start + pos + i)).ToString("x2", CultureInfo.InvariantCulture)).Append(' ');
                 }
 
                 if (text)
@@ -3874,7 +3297,7 @@ internal sealed partial class Dasm
                     sb.Append('>');
                     for (int i = 0; i < nPrint; i++)
                     {
-                        uint b = B(data, pos + i);
+                        uint b = B(data, start + pos + i);
                         sb.Append(b >= 0x20 && b < 0x7F ? (char)b : ' ');
                     }
 
@@ -3935,7 +3358,7 @@ internal sealed partial class Dasm
             };
         }
 
-        private uint BlobSizeOrZero(uint index) => TryBlob(_blobs, index, out _, out int size, out _) ? (uint)size : 0;
+        private uint BlobSize(uint offset) => (uint)_md.GetBlobReader(MetadataTokens.BlobHandle((int)offset)).Length;
 
         private string RawCol(int table, int col, uint rid, bool stats)
         {
@@ -3979,7 +3402,7 @@ internal sealed partial class Dasm
                     string s = "blob#" + Hx(val);
                     if (stats && val != 0)
                     {
-                        uint cb = BlobSizeOrZero(val) + 1;
+                        uint cb = BlobSize(val) + 1;
                         if (cb > 128)
                         {
                             cb++;
@@ -4028,7 +3451,7 @@ internal sealed partial class Dasm
                         break;
                     case iBLOB:
                     {
-                        uint cb = BlobSizeOrZero(val);
+                        uint cb = BlobSize(val);
                         result += cb + 1;
                         if (cb > 128)
                         {
@@ -4057,7 +3480,7 @@ internal sealed partial class Dasm
             uint verLen = U32At(12);
             int header = 16 + (int)verLen;
             WriteLine("Metadata section: 0x" + x8(U32At(0)) + ", version: " + D(U16At(4)) + "." + D(U16At(6)) + ", extra: " + D(U32At(8))
-                + ", version len: " + D(verLen) + ", version: " + CStringAt(16));
+                + ", version len: " + D(verLen) + ", version: " + CString(_d, 16));
             WriteLine("           flags: 0x" + U8At(header).ToString("x2", CultureInfo.InvariantCulture) + ", streams: " + D(U16At(header + 2)));
             if ((_filter & DumpMoreHex) != 0)
             {
@@ -4067,7 +3490,7 @@ internal sealed partial class Dasm
                     cb = _streams[0].Offset;
                 }
 
-                DumpHex("        ", 0, cb, true, 16);
+                DumpHex("        ", _d, cb, true, 16);
             }
 
             int ix = 0;
@@ -4084,16 +3507,18 @@ internal sealed partial class Dasm
                     + ", sorted: 0x" + U64At(t + 16).ToString("x16", CultureInfo.InvariantCulture));
                 if ((_filter & DumpMoreHex) != 0)
                 {
-                    DumpHex("        ", t, 24, true, 16);
+                    DumpHex("        ", _d, 24, true, 16, t);
                 }
             }
 
             WriteLine("");
 
-            Write("Strings: " + D((uint)_strings.Size) + "(" + AltHex((uint)_strings.Size) + ")");
-            Write(", Blobs: " + D((uint)_blobs.Size) + "(" + AltHex((uint)_blobs.Size) + ")");
-            Write(", Guids: " + D((uint)_guids.Size) + "(" + AltHex((uint)_guids.Size) + ")");
-            WriteLine(", User strings: " + D((uint)_userStrings.Size) + "(" + AltHex((uint)_userStrings.Size) + ")");
+            uint strings = (uint)HeapSize(HeapIndex.String), blobs = (uint)HeapSize(HeapIndex.Blob), guids = (uint)HeapSize(HeapIndex.Guid);
+            uint userStrings = (uint)HeapSize(HeapIndex.UserString);
+            Write("Strings: " + D(strings) + "(" + AltHex(strings) + ")");
+            Write(", Blobs: " + D(blobs) + "(" + AltHex(blobs) + ")");
+            Write(", Guids: " + D(guids) + "(" + AltHex(guids) + ")");
+            WriteLine(", User strings: " + D(userStrings) + "(" + AltHex(userStrings) + ")");
 
             for (int tbl = 0; tbl < _tableCount; tbl++)
             {
@@ -4163,9 +3588,9 @@ internal sealed partial class Dasm
         private void DumpRawCSV()
         {
             WriteLine("Name,Size,cRecs,cbRec");
-            WriteLine("Strings," + D((uint)_strings.Size));
-            WriteLine("Blobs," + D((uint)_blobs.Size));
-            WriteLine("Guids," + D((uint)_guids.Size));
+            WriteLine("Strings," + D(HeapSize(HeapIndex.String)));
+            WriteLine("Blobs," + D(HeapSize(HeapIndex.Blob)));
+            WriteLine("Guids," + D(HeapSize(HeapIndex.Guid)));
             for (int tbl = 0; tbl < _tableCount; tbl++)
             {
                 uint cRows = Rows(tbl);
@@ -4176,50 +3601,29 @@ internal sealed partial class Dasm
 
         private void DumpHeaps()
         {
-            uint size = (uint)_blobs.Size;
+            uint size = (uint)HeapSize(HeapIndex.Blob);
             WriteLine("");
             WriteLine("Blob Heap:  " + D(size) + "(" + AltHex(size) + ") bytes");
-            uint offset = 0;
-            while (true)
+            BlobHandle h = default;
+            do
             {
-                int data = -1;
-                int cbData = 0;
-                int prefix = 1;
-                bool ok = TryBlob(_blobs, offset, out int dataOffset, out int dataSize, out int prefixSize);
-                if (ok && offset != 0)
-                {
-                    data = _blobs.Data == _d ? dataOffset : -1;
-                    cbData = dataSize;
-                    prefix = prefixSize;
-                }
-
-                DumpHex(PadL(Hx(offset), 5) + "," + PadR(Hx((uint)cbData), 2), data, cbData, true, 16);
-
-                // GetNextBlob
-                if (!ok)
-                {
-                    break;
-                }
-
-                uint next = offset + (uint)(offset == 0 ? 1 : prefix + cbData);
-                if (next >= size)
-                {
-                    break;
-                }
-
-                offset = next;
+                byte[] data = Blob(h);
+                DumpHex(PadL(Hx((uint)MetadataTokens.GetHeapOffset(h)), 5) + "," + PadR(Hx((uint)data.Length), 2), data, data.Length, true, 16);
+                h = _md.GetNextHandle(h);
             }
+            while (!h.IsNil);
 
-            size = (uint)_strings.Size;
+            size = (uint)HeapSize(HeapIndex.String);
             WriteLine("");
             WriteLine("String Heap:  " + D(size) + "(" + AltHex(size) + ") bytes");
-            offset = 0;
+            uint offset = 0;
             while (true)
             {
                 byte[] s = StringBytes(offset) ?? Array.Empty<byte>();
                 if ((_filter & DumpMoreHex) != 0)
                 {
-                    DumpHex(x8(offset), _strings.Data == _d ? _strings.Base + (int)offset : -1, s.Length + 1, true, 16);
+                    // The entry with its terminating NUL.
+                    DumpHex(x8(offset), s, s.Length + 1, true, 16);
                 }
                 else if (s.Length != 0)
                 {
