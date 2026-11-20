@@ -8,6 +8,9 @@ namespace System
         /// <summary>Whether to output ANSI color strings.</summary>
         private static NullableBool s_emitAnsiColorCodes;
 
+        /// <summary>Whether color output was explicitly forced on by an environment variable.</summary>
+        private static NullableBool s_colorForcedByEnvironment;
+
         /// <summary>Get whether to emit ANSI color codes.</summary>
         public static bool EmitAnsiColorCodes
         {
@@ -30,6 +33,32 @@ namespace System
                 // Store and return the computed answer.
                 s_emitAnsiColorCodes = enabled ? NullableBool.True : NullableBool.False;
                 return enabled;
+            }
+        }
+
+        /// <summary>
+        /// Gets whether color output was explicitly requested via <c>FORCE_COLOR</c> or
+        /// <c>DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION</c>, as opposed to being
+        /// enabled implicitly because output isn't redirected.
+        /// </summary>
+        /// <remarks>
+        /// Callers use this to distinguish "color is on because the terminal looks interactive"
+        /// from "the user asked for color unconditionally". The latter warrants emitting color
+        /// even when the terminal description doesn't advertise support for it.
+        /// </remarks>
+        internal static bool ColorForcedByEnvironment
+        {
+            get
+            {
+                NullableBool forced = s_colorForcedByEnvironment;
+                if (forced is not NullableBool.Undefined)
+                {
+                    return forced is NullableBool.True;
+                }
+
+                bool value = GetColorOverrideFromEnvironment() is true;
+                s_colorForcedByEnvironment = value ? NullableBool.True : NullableBool.False;
+                return value;
             }
         }
 
