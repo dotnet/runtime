@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="istypeequivalent.cs" />
   </ItemGroup>
