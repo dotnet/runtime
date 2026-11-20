@@ -8,6 +8,7 @@ set(SOURCES
     descriptorlimit.c
     entrypoints.c
     environ.c
+    fileio.c
     getexepath.c
     memorybarrierprocesswide.c
     mutex.c
@@ -39,7 +40,7 @@ include_directories(${CLR_SRC_NATIVE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 add_library(minipal_objects OBJECT ${SOURCES})
 
 if (WIN32)
-    target_link_libraries(minipal_objects PUBLIC bcrypt)
+    target_link_libraries(minipal_objects PUBLIC advapi32 bcrypt)
 endif()
 
 # Add a copy of the minipal object library with interprocedural optimization disabled
@@ -49,7 +50,7 @@ add_library(aotminipal STATIC ${SOURCES})
 set_target_properties(aotminipal PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
 if (WIN32)
-    target_link_libraries(aotminipal PUBLIC bcrypt)
+    target_link_libraries(aotminipal PUBLIC advapi32 bcrypt)
 endif()
 
 # Provide a static library for our shared library and executable scenarios
