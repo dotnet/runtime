@@ -345,10 +345,10 @@ void SEHCleanupSignals(bool isChildProcess)
 #if !HAVE_MACH_EXCEPTIONS
         // If SIGABRT doesn't end the process, glibc abort() falls back to a trap
         // instruction. That happens when the process is PID 1, because the kernel
-        // drops SIGABRT for init when it has the default disposition. On arm64 the
-        // trap raises SIGTRAP, and our handler would return to the same instruction
-        // and loop forever. With the original handler restored, the kernel ends
-        // the process.
+        // drops SIGABRT for init when it has the default disposition. On architectures
+        // where that instruction raises SIGTRAP (arm64, loongarch64, riscv64), our
+        // handler would return to it and loop forever. With the original handler
+        // restored, the kernel ends the process.
         restore_signal(SIGTRAP, &g_previous_sigtrap);
 #endif
     }
