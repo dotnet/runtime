@@ -702,7 +702,7 @@ public:
     {
 #ifndef STRESS_LOG_READONLY
         //there is no need to zero buffers because we could handle garbage contents
-        threadId = (DWORD)minipal_get_current_thread_id();
+        threadId = minipal_get_current_thread_id();
         isDead = FALSE;
         curWriteChunk = chunkListTail;
         curPtr = (StressMsg *)curWriteChunk->EndPtr ();

@@ -2406,11 +2406,11 @@ public:
 
         if (g_pEEInterface->GetThread())
         {
-            return (GetThreadIdHelper(g_pEEInterface->GetThread()) == m_mutexOwner);
+            return (g_pEEInterface->GetThread()->GetOSThreadId64() == m_mutexOwner);
         }
         else
         {
-            return ((DWORD)minipal_get_current_thread_id() == m_mutexOwner);
+            return (minipal_get_current_thread_id() == m_mutexOwner);
         }
     }
 #endif // _DEBUG_IMPL
@@ -2867,10 +2867,10 @@ private:
 
 #ifdef _DEBUG
     // Ownership tracking for debugging.
-    DWORD                 m_mutexOwner;
+    size_t                m_mutexOwner;
 
     // Tid that last called LockForEventSending.
-    DWORD                 m_tidLockedForEventSending;
+    size_t                m_tidLockedForEventSending;
 #endif
     LONG                  m_threadsAtUnsafePlaces;
     Volatile<BOOL>        m_jitAttachInProgress;
@@ -3748,7 +3748,7 @@ HANDLE OpenWin32EventOrThrow(
 //   SuspendComplete
 //
 // @todo- we could also assert that:
-// - m_tidLockedForEventSending = (DWORD)minipal_get_current_thread_id();
+// - m_tidLockedForEventSending = minipal_get_current_thread_id();
 #define SENDEVENT_CONTRACT_ITEMS \
     GC_NOTRIGGER; \
     MODE_PREEMPTIVE; \

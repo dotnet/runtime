@@ -1939,11 +1939,11 @@ void SendAttachProcessWorkItem::Do()
     // The left-side will also mark itself as attached in response to this event.
     // We explicitly don't mark it as attached from the right-side because we want to let the left-side
     // synchronize first (to stop all running threads) before marking the debugger as attached.
-    LOG((LF_CORDB, LL_INFO1000, "[%x] CP::S: sending attach.\n", (DWORD)minipal_get_current_thread_id()));
+    LOG((LF_CORDB, LL_INFO1000, "[%zx] CP::S: sending attach.\n", minipal_get_current_thread_id()));
 
     hr = GetProcess()->SendIPCEvent(event, CorDBIPC_BUFFER_SIZE);
 
-    LOG((LF_CORDB, LL_INFO1000, "[%x] CP::S: sent attach.\n", (DWORD)minipal_get_current_thread_id()));
+    LOG((LF_CORDB, LL_INFO1000, "[%zx] CP::S: sent attach.\n", minipal_get_current_thread_id()));
 }
 
 //---------------------------------------------------------------------------------------
@@ -4709,8 +4709,8 @@ void CordbProcess::RawDispatchEvent(
 #endif
     case DB_IPCE_USER_BREAKPOINT:
         {
-            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: user breakpoint.\n",
-                 (DWORD)minipal_get_current_thread_id());
+            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%zx] RCET::DRCE: user breakpoint.\n",
+                 minipal_get_current_thread_id());
 
             _ASSERTE(pThread != NULL);
             _ASSERTE(pAppDomain != NULL);
@@ -4726,8 +4726,8 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_STEP_COMPLETE:
         {
-            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: step complete.\n",
-                 (DWORD)minipal_get_current_thread_id());
+            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%zx] RCET::DRCE: step complete.\n",
+                 minipal_get_current_thread_id());
 
             _ASSERTE(pThread != NULL);
 
@@ -4758,8 +4758,8 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_EXCEPTION:
         {
-            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: exception.\n",
-                 (DWORD)minipal_get_current_thread_id());
+            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%zx] RCET::DRCE: exception.\n",
+                 minipal_get_current_thread_id());
 
             _ASSERTE(pAppDomain != NULL);
 
@@ -4800,8 +4800,8 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_THREAD_DETACH:
         {
-            STRESS_LOG2(LF_CORDB, LL_INFO100, "[%x] RCET::HRCE: thread detach : ID=%x \n",
-                 (DWORD)minipal_get_current_thread_id(), dwVolatileThreadId);
+            STRESS_LOG2(LF_CORDB, LL_INFO100, "[%zx] RCET::HRCE: thread detach : ID=%x \n",
+                 minipal_get_current_thread_id(), dwVolatileThreadId);
 
             // If the runtime thread never entered managed code, there
             // won't be a CordbThread, and CreateThread was never
@@ -4827,7 +4827,7 @@ void CordbProcess::RawDispatchEvent(
                 m_userThreads.RemoveBase(VmPtrToCookie(pThread->m_vmThreadToken));
 
 
-                LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::HRCE: sending thread detach.\n", (DWORD)minipal_get_current_thread_id()));
+                LOG((LF_CORDB, LL_INFO1000, "[%zx] RCET::HRCE: sending thread detach.\n", minipal_get_current_thread_id()));
 
                 {
                     PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
@@ -5295,8 +5295,8 @@ void CordbProcess::RawDispatchEvent(
         // EnC Remap opportunity
         case DB_IPCE_ENC_REMAP:
         {
-            LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC Remap!.\n",
-                 (DWORD)minipal_get_current_thread_id()));
+            LOG((LF_CORDB, LL_INFO1000, "[%zx] RCET::DRCE: EnC Remap!.\n",
+                 minipal_get_current_thread_id()));
 
             _ASSERTE(NULL != pAppDomain);
 
@@ -5351,8 +5351,8 @@ void CordbProcess::RawDispatchEvent(
         // EnC Remap complete
         case DB_IPCE_ENC_REMAP_COMPLETE:
         {
-            LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC Remap Complete!.\n",
-                 (DWORD)minipal_get_current_thread_id()));
+            LOG((LF_CORDB, LL_INFO1000, "[%zx] RCET::DRCE: EnC Remap Complete!.\n",
+                 minipal_get_current_thread_id()));
 
             _ASSERTE(NULL != pAppDomain);
 
@@ -5530,8 +5530,8 @@ void CordbProcess::RawDispatchEvent(
     default:
         _ASSERTE(!"Unknown event");
         LOG((LF_CORDB, LL_INFO1000,
-             "[%x] RCET::HRCE: Unknown event: 0x%08x\n",
-             (DWORD)minipal_get_current_thread_id(), static_cast<unsigned>(pEvent->type)));
+             "[%zx] RCET::HRCE: Unknown event: 0x%08x\n",
+             minipal_get_current_thread_id(), static_cast<unsigned>(pEvent->type)));
     }
 
 
@@ -7780,8 +7780,8 @@ void CordbProcess::DispatchUnmanagedOOBEvent()
         // Make sure we keep the thread alive while we're playing with it.
         RSSmartPtr<CordbUnmanagedThread> pRef(pUnmanagedThread);
 
-        LOG((LF_CORDB, LL_INFO10000, "[%x] CP::DUE: dispatching OOB unmanaged event %d for thread 0x%x\n",
-             (DWORD)minipal_get_current_thread_id(), pUnmanagedEvent->m_currentDebugEvent.dwDebugEventCode, pUnmanagedThread->m_id));
+        LOG((LF_CORDB, LL_INFO10000, "[%zx] CP::DUE: dispatching OOB unmanaged event %d for thread 0x%x\n",
+             minipal_get_current_thread_id(), pUnmanagedEvent->m_currentDebugEvent.dwDebugEventCode, pUnmanagedThread->m_id));
 
         m_dispatchingOOBEvent = true;
         pUnmanagedEvent->SetState(CUES_Dispatched);
@@ -7893,7 +7893,7 @@ HRESULT CordbProcess::StartSyncFromWin32Stop(BOOL * pfAsyncBreakSent)
                 return ErrWrapper(CORDBG_E_CANT_CALL_ON_THIS_THREAD);
             }
 
-            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] CP::SSFW32S: sending internal continue\n", (DWORD)minipal_get_current_thread_id());
+            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%zx] CP::SSFW32S: sending internal continue\n", minipal_get_current_thread_id());
 
             // Can't do this on the win32 event thread.
             _ASSERTE(!this->IsWin32EventThread());
@@ -7934,13 +7934,13 @@ HRESULT CordbProcess::StartSyncFromWin32Stop(BOOL * pfAsyncBreakSent)
             // if the process is sync'd or not. This is exactly what we want.
             hr = this->m_pShim->GetWin32EventThread()->SendUnmanagedContinue(this, cInternalUMContinue);
 
-            LOG((LF_CORDB, LL_INFO1000, "[%x] CP::SSFW32S: internal continue returned\n", (DWORD)minipal_get_current_thread_id()));
+            LOG((LF_CORDB, LL_INFO1000, "[%zx] CP::SSFW32S: internal continue returned\n", minipal_get_current_thread_id()));
 
             // Send an async break to the left side now that its running.
             DebuggerIPCEvent * pEvent = (DebuggerIPCEvent *) _alloca(CorDBIPC_BUFFER_SIZE);
             InitIPCEvent(pEvent, DB_IPCE_ASYNC_BREAK, false, VMPTR_AppDomain::NullPtr());
 
-            LOG((LF_CORDB, LL_INFO1000, "[%x] CP::SSFW32S: sending async stop\n", (DWORD)minipal_get_current_thread_id()));
+            LOG((LF_CORDB, LL_INFO1000, "[%zx] CP::SSFW32S: sending async stop\n", minipal_get_current_thread_id()));
 
             // If the process gets synchronized between the Unlock() and here, then this message will do nothing (Left
             // Side catches it) and we'll never get a response, and it won't hurt anything.
@@ -7951,13 +7951,13 @@ HRESULT CordbProcess::StartSyncFromWin32Stop(BOOL * pfAsyncBreakSent)
             // to sync.
             if (!m_helperThreadDead)
             {
-                STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] CP::SSFW32S: sent async stop, waiting for event\n", (DWORD)minipal_get_current_thread_id());
+                STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%zx] CP::SSFW32S: sent async stop, waiting for event\n", minipal_get_current_thread_id());
 
                 // If we got synchronized between the Unlock() and here its okay since m_stopWaitEvent is still high
                 // from the last sync.
                 DWORD dwWaitResult = SafeWaitForSingleObject(this, m_stopWaitEvent, INFINITE);
 
-                STRESS_LOG2(LF_CORDB, LL_INFO1000, "[%x] CP::SSFW32S: got event, %d\n", (DWORD)minipal_get_current_thread_id(), dwWaitResult);
+                STRESS_LOG2(LF_CORDB, LL_INFO1000, "[%zx] CP::SSFW32S: got event, %d\n", minipal_get_current_thread_id(), dwWaitResult);
 
                 _ASSERTE(dwWaitResult == WAIT_OBJECT_0);
             }
@@ -7998,9 +7998,9 @@ void CordbProcess::UnrecoverableError(HRESULT errorHR,
                                       const char *errorFile,
                                       unsigned int errorLine)
 {
-    LOG((LF_CORDB, LL_INFO10, "[%x] CP::UE: unrecoverable error 0x%08x "
+    LOG((LF_CORDB, LL_INFO10, "[%zx] CP::UE: unrecoverable error 0x%08x "
          "(%d) %s:%d\n",
-         (DWORD)minipal_get_current_thread_id(),
+         minipal_get_current_thread_id(),
          errorHR, errorCode, errorFile, errorLine));
 
     // We definitely want to know about any of these.
@@ -8136,8 +8136,8 @@ HRESULT CordbProcess::EnableLogMessages(BOOL fOnOff)
     hr = m_cordb->SendIPCEvent(this, event, CorDBIPC_BUFFER_SIZE);
     hr = WORST_HR(hr, event->hr);
 
-    LOG((LF_CORDB, LL_INFO10000, "[%x] CP::EnableLogMessages: EnableLogMessages=%d sent.\n",
-         (DWORD)minipal_get_current_thread_id(), fOnOff));
+    LOG((LF_CORDB, LL_INFO10000, "[%zx] CP::EnableLogMessages: EnableLogMessages=%d sent.\n",
+         minipal_get_current_thread_id(), fOnOff));
 
     return hr;
 }
@@ -8939,7 +8939,7 @@ void CordbProcess::FinishInitializeIPCChannelWorker()
 
     EX_TRY
     {
-        LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::HFRCE: first event..., process %p\n", (DWORD)minipal_get_current_thread_id(), this));
+        LOG((LF_CORDB, LL_INFO1000, "[%zx] RCET::HFRCE: first event..., process %p\n", minipal_get_current_thread_id(), this));
 
         BOOL fBlockExists;
         GetEventBlock(&fBlockExists); // throws on error
@@ -8964,7 +8964,7 @@ void CordbProcess::FinishInitializeIPCChannelWorker()
         GetDCB()->m_rightSideIsWin32Debugger = IsInteropDebugging();
         UpdateLeftSideDCBField(&(GetDCB()->m_rightSideIsWin32Debugger), sizeof(GetDCB()->m_rightSideIsWin32Debugger));
 
-        LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::HFRCE: ...went fine\n", (DWORD)minipal_get_current_thread_id()));
+        LOG((LF_CORDB, LL_INFO1000, "[%zx] RCET::HFRCE: ...went fine\n", minipal_get_current_thread_id()));
         _ASSERTE(SUCCEEDED(hr));
 
     } EX_CATCH_HRESULT(hr);

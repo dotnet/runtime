@@ -1469,17 +1469,17 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
     event.SetIP.fIsIL = fIsIL;
 
 
-    LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: Info:thread:0x%zx"
+    LOG((LF_CORDB, LL_INFO10000, "[%zx] CT::SIP: Info:thread:0x%zx"
         "mod:0x%zx  MethodDef:0x%x offset:0x%zx  il?:0x%x\n",
-         (DWORD)minipal_get_current_thread_id(),
+         minipal_get_current_thread_id(),
          (size_t)VmPtrToCookie(m_vmThreadToken),
          (size_t)VmPtrToCookie(vmAssembly),
          pNativeCode->GetMetadataToken(),
          offset,
          fIsIL));
 
-    LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: sizeof(DebuggerIPCEvent):0x%zx **********\n",
-        (DWORD)minipal_get_current_thread_id(), sizeof(DebuggerIPCEvent)));
+    LOG((LF_CORDB, LL_INFO10000, "[%zx] CT::SIP: sizeof(DebuggerIPCEvent):0x%zx **********\n",
+        minipal_get_current_thread_id(), sizeof(DebuggerIPCEvent)));
 
     HRESULT hr = GetProcess()->m_cordb->SendIPCEvent(GetProcess(), &event, sizeof(DebuggerIPCEvent));
 

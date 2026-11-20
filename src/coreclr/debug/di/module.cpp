@@ -2158,15 +2158,15 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
                 {
                     // Done receiving update events
                     hr = retEvent->ApplyChangesResult.hr;
-                    LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC apply changes result %8.8x.\n", (DWORD)minipal_get_current_thread_id(), hr));
+                    LOG((LF_CORDB, LL_INFO1000, "[%zx] RCET::DRCE: EnC apply changes result %8.8x.\n", minipal_get_current_thread_id(), hr));
                     break;
                 }
 
                 _ASSERTE(retEvent->type == DB_IPCE_ENC_UPDATE_FUNCTION ||
                                   retEvent->type == DB_IPCE_ENC_ADD_FUNCTION ||
                                   retEvent->type == DB_IPCE_ENC_ADD_FIELD);
-                LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC %s %8.8x to version %llu.\n",
-                        (DWORD)minipal_get_current_thread_id(),
+                LOG((LF_CORDB, LL_INFO1000, "[%zx] RCET::DRCE: EnC %s %8.8x to version %llu.\n",
+                        minipal_get_current_thread_id(),
                         retEvent->type == DB_IPCE_ENC_UPDATE_FUNCTION ? "Update function" :
                         retEvent->type == DB_IPCE_ENC_ADD_FUNCTION ? "Add function" : "Add field",
                         static_cast<mdToken>(retEvent->EnCUpdate.memberMetadataToken),

@@ -754,7 +754,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
     else
     {
         // recycle old thread msg
-        msgs->threadId = (DWORD)minipal_get_current_thread_id();
+        msgs->threadId = minipal_get_current_thread_id();
         StressLogChunk* slc = msgs->chunkListHead;
         while (true)
         {
@@ -931,7 +931,7 @@ FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const cha
     curPtr = msg;
 
 #ifdef _DEBUG
-    if (!IsValid () || threadId != (DWORD)minipal_get_current_thread_id())
+    if (!IsValid () || threadId != minipal_get_current_thread_id())
         DebugBreak();
 #endif // _DEBUG
 #endif //DACCESS_COMPILE

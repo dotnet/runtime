@@ -379,8 +379,8 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
 {
     WRAPPER_NO_CONTRACT;
 
-    LOG((LF_CORDB,LL_INFO10000, "D::Lock acquire attempt by 0x%x\n",
-        (DWORD)minipal_get_current_thread_id()));
+    LOG((LF_CORDB,LL_INFO10000, "D::Lock acquire attempt by 0x%zx\n",
+        minipal_get_current_thread_id()));
 
     // Debugger lock is larger than both Controller & debugger-data locks.
     // So we should never try to take the D lock if we hold either of the others.
@@ -454,29 +454,29 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
         if (pThread)
         {
             // mamaged thread
-            _ASSERTE(m_mutexOwner == GetThreadIdHelper(pThread));
+            _ASSERTE(m_mutexOwner == pThread->GetOSThreadId64());
         }
         else
         {
             // unmanaged thread
-            _ASSERTE(m_mutexOwner == (DWORD)minipal_get_current_thread_id());
+            _ASSERTE(m_mutexOwner == minipal_get_current_thread_id());
         }
     }
 
     m_mutexCount++;
     if (pThread)
     {
-        m_mutexOwner = GetThreadIdHelper(pThread);
+        m_mutexOwner = pThread->GetOSThreadId64();
     }
     else
     {
         // unmanaged thread
-        m_mutexOwner = (DWORD)minipal_get_current_thread_id();
+        m_mutexOwner = minipal_get_current_thread_id();
     }
 
     if (m_mutexCount == 1)
     {
-        LOG((LF_CORDB,LL_INFO10000, "D::Lock acquired by 0x%x\n", m_mutexOwner));
+        LOG((LF_CORDB,LL_INFO10000, "D::Lock acquired by 0x%zx\n", m_mutexOwner));
     }
 #endif
 
@@ -495,7 +495,7 @@ void Debugger::DoNotCallDirectlyPrivateUnlock(void)
     {
 #ifdef _DEBUG
         if (m_mutexCount == 1)
-            LOG((LF_CORDB,LL_INFO10000, "D::Unlock released by 0x%x\n",
+            LOG((LF_CORDB,LL_INFO10000, "D::Unlock released by 0x%zx\n",
                 m_mutexOwner));
 
         if(0 == --m_mutexCount)
@@ -1896,7 +1896,7 @@ static RuntimeEventsOverPipes NotifyRuntimeUsingPipes()
     int startupPipeFd = -1;
     int continuePipeFd = -1;
     size_t offset = 0;
-    DWORD pid = (DWORD)getpid();
+    DWORD pid = minipal_get_current_process_id();
 
     GetTransportPipeName(continuePipeName, pid, nullptr, RuntimeContinuePipeName);
 
@@ -1995,7 +1995,7 @@ static bool NotifyRuntimeUsingSemaphores()
     sem_t *startupSem = SEM_FAILED;
     sem_t *continueSem = SEM_FAILED;
     bool launched = false;
-    DWORD pid = (DWORD)getpid();
+    DWORD pid = minipal_get_current_process_id();
 
     // On failure the key is 0. Anyone else making the semaphore name is expected to fail too and use 0.
     uint64_t processIdDisambiguationKey;
@@ -6522,7 +6522,7 @@ void Debugger::LockForEventSending(DebuggerLockHolder *dbgLockHolder)
 #ifdef _DEBUG
      // Track our TID. We're not re-entrant.
     //_ASSERTE(m_tidLockedForEventSending == 0);
-    m_tidLockedForEventSending = (DWORD)minipal_get_current_thread_id();
+    m_tidLockedForEventSending = minipal_get_current_thread_id();
 #endif
 
 }
@@ -6543,7 +6543,7 @@ void Debugger::UnlockFromEventSending(DebuggerLockHolder *dbgLockHolder)
     CONTRACTL_END;
 
 #ifdef _DEBUG
-    //_ASSERTE(m_tidLockedForEventSending == (DWORD)minipal_get_current_thread_id());
+    //_ASSERTE(m_tidLockedForEventSending == minipal_get_current_thread_id());
     m_tidLockedForEventSending = 0;
 #endif
     if (dbgLockHolder != NULL)
@@ -6924,7 +6924,7 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
     CONTRACTL_END;
 
 #ifndef TARGET_UNIX
-    LOG((LF_CORDB, LL_INFO10000, "D::EDA: thread 0x%x is launching the debugger.\n", (DWORD)minipal_get_current_thread_id()));
+    LOG((LF_CORDB, LL_INFO10000, "D::EDA: thread 0x%zx is launching the debugger.\n", minipal_get_current_thread_id()));
 
     _ASSERTE(HasLazyData());
 
@@ -8782,24 +8782,24 @@ int Debugger::NotifyUserOfFault(bool userBreakpoint, DebuggerLaunchSetting dls)
     if (!CORDebuggerAttached())
     {
         DWORD pid;
-        DWORD tid;
+        size_t tid;
 
         pid = minipal_get_current_process_id();
-        tid = (DWORD)minipal_get_current_thread_id();
+        tid = minipal_get_current_thread_id();
 
         DWORD flags = 0;
 
         CHAR const* msg;
         if (userBreakpoint)
         {
-            msg = "Application has encountered a user-defined breakpoint.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick ABORT to terminate the application.\nClick RETRY to debug the application.\nClick IGNORE to ignore the breakpoint.";
+            msg = "Application has encountered a user-defined breakpoint.\n\nProcess ID=0x%x (%d), Thread ID=0x%zx (%zu).\n\nClick ABORT to terminate the application.\nClick RETRY to debug the application.\nClick IGNORE to ignore the breakpoint.";
 #ifdef HOST_WINDOWS
             flags |= MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION;
 #endif
         }
         else
         {
-            msg = "Application has generated an exception that could not be handled.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick OK to terminate the application.\nClick CANCEL to debug the application.";
+            msg = "Application has generated an exception that could not be handled.\n\nProcess ID=0x%x (%d), Thread ID=0x%zx (%zu).\n\nClick OK to terminate the application.\nClick CANCEL to debug the application.";
 #ifdef HOST_WINDOWS
             flags |= MB_OKCANCEL | MB_ICONEXCLAMATION;
 #endif
@@ -9354,7 +9354,7 @@ BOOL Debugger::SuspendComplete(bool isEESuspendedForGC)
     // We do the EEH part when we get the Continue event.
     {
 #ifdef _DEBUG
-        //_ASSERTE(m_tidLockedForEventSending == (DWORD)minipal_get_current_thread_id());
+        //_ASSERTE(m_tidLockedForEventSending == minipal_get_current_thread_id());
         m_tidLockedForEventSending = 0;
 #endif
 
@@ -13545,26 +13545,26 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     // at this point we know that there is an interop debugger attached. This makes it safe to send
     // flares
 #if DOSPEW
-    DWORD tid = (DWORD)minipal_get_current_thread_id();
+    size_t tid = minipal_get_current_thread_id();
 #endif
 
-    SPEW(fprintf(stderr, "0x%x D::FCHF: in first chance hijack filter.\n", tid));
-    SPEW(fprintf(stderr, "0x%x D::FCHF: pExceptionRecord=0x%p (%d), pContext=0x%p (%d)\n", tid, pExceptionRecord, sizeof(EXCEPTION_RECORD),
+    SPEW(fprintf(stderr, "0x%zx D::FCHF: in first chance hijack filter.\n", tid));
+    SPEW(fprintf(stderr, "0x%zx D::FCHF: pExceptionRecord=0x%p (%d), pContext=0x%p (%d)\n", tid, pExceptionRecord, sizeof(EXCEPTION_RECORD),
         pContext, sizeof(CONTEXT)));
 #if defined(TARGET_AMD64)
-    SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%p, Rip=0x%p, Rsp=0x%p, EFlags=0x%08x\n",
+    SPEW(fprintf(stderr, "0x%zx D::FCHF: code=0x%08x, addr=0x%p, Rip=0x%p, Rsp=0x%p, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Rip, pContext->Rsp,
         pContext->EFlags));
 #elif defined(TARGET_X86)
-    SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Eip=0x%08x, Esp=0x%08x, EFlags=0x%08x\n",
+    SPEW(fprintf(stderr, "0x%zx D::FCHF: code=0x%08x, addr=0x%08x, Eip=0x%08x, Esp=0x%08x, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Eip, pContext->Esp,
         pContext->EFlags));
 #elif defined(TARGET_ARM64)
-    SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p, EFlags=0x%08x\n",
+    SPEW(fprintf(stderr, "0x%zx D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp,
         pContext->EFlags));
 #elif defined(TARGET_LOONGARCH64)
-    SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p\n",
+    SPEW(fprintf(stderr, "0x%zx D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp));
 #endif
 
@@ -13594,13 +13594,13 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
         fcd.action = HIJACK_ACTION_EXIT_UNHANDLED;
         fcd.debugCounter = 0;
 
-        SPEW(fprintf(stderr, "0x%x D::FCHF: Set debugger word to 0x%p.\n", tid, pFcd));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: Set debugger word to 0x%p.\n", tid, pFcd));
         g_pEEInterface->SetThreadDebuggerWord((VOID*)pFcd);
 
         // Signal the RS to tell us what to do
-        SPEW(fprintf(stderr, "0x%x D::FCHF: Signaling hijack started.\n", tid));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: Signaling hijack started.\n", tid));
         SignalHijackStarted();
-        SPEW(fprintf(stderr, "0x%x D::FCHF: Signaling hijack started complete. DebugCounter=0x%x\n", tid, (UINT)pFcd->debugCounter));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: Signaling hijack started complete. DebugCounter=0x%x\n", tid, (UINT)pFcd->debugCounter));
 
         if ((HijackAction)pFcd->action == HIJACK_ACTION_WAIT)
         {
@@ -13608,7 +13608,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
             // If we belong to the CLR, then we either:
             // - were a  M2U transition, in which case we should be in a different Hijack
             // - were a CLR exception in CLR code, in which case we should have continued and let the inproc handlers get it.
-            SPEW(fprintf(stderr, "0x%x D::FCHF: exception does not belong to the Runtime, pEEThread=0x%p, pContext=0x%p\n",
+            SPEW(fprintf(stderr, "0x%zx D::FCHF: exception does not belong to the Runtime, pEEThread=0x%p, pContext=0x%p\n",
                          tid, pEEThread, pContext));
 
             if (pEEThread != NULL)
@@ -13627,13 +13627,13 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
 
             // Wait for the continue. We may / may not have an EE Thread for this, (and we're definitely
             // not doing fiber-mode debugging), so just use a raw win32 API, and not some fancy fiber-safe call.
-            SPEW(fprintf(stderr, "0x%x D::FCHF: waiting for continue.\n", tid));
+            SPEW(fprintf(stderr, "0x%zx D::FCHF: waiting for continue.\n", tid));
             DWORD ret = g_pDebugger->m_pRCThread->GetLeftSideUnmanagedWaitEvent().Wait(INFINITE);
-            SPEW(fprintf(stderr, "0x%x D::FCHF: waiting for continue complete.\n", tid));
+            SPEW(fprintf(stderr, "0x%zx D::FCHF: waiting for continue complete.\n", tid));
 
             if (ret != WAIT_OBJECT_0)
             {
-                SPEW(fprintf(stderr, "0x%x D::FCHF: wait failed!\n", tid));
+                SPEW(fprintf(stderr, "0x%zx D::FCHF: wait failed!\n", tid));
             }
 
             if (pEEThread != NULL)
@@ -13649,22 +13649,22 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
             }
         }
 
-        SPEW(fprintf(stderr, "0x%x D::FCHF: signaling HijackComplete.\n", tid));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: signaling HijackComplete.\n", tid));
         SignalHijackComplete();
-        SPEW(fprintf(stderr, "0x%x D::FCHF: done signaling HijackComplete. DebugCounter=0x%x\n", tid, (UINT)pFcd->debugCounter));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: done signaling HijackComplete. DebugCounter=0x%x\n", tid, (UINT)pFcd->debugCounter));
 
         // we should know what we are about to do now
         _ASSERTE((HijackAction)pFcd->action != HIJACK_ACTION_WAIT);
 
         // cleanup from above
-        SPEW(fprintf(stderr, "0x%x D::FCHF: set debugger word = NULL.\n", tid));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: set debugger word = NULL.\n", tid));
         g_pEEInterface->SetThreadDebuggerWord(NULL);
 
     } // end can't stop region
 
     if ((HijackAction)pFcd->action == HIJACK_ACTION_EXIT_HANDLED)
     {
-        SPEW(fprintf(stderr, "0x%x D::FCHF: exiting with CONTINUE_EXECUTION\n", tid));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: exiting with CONTINUE_EXECUTION\n", tid));
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
         if (fIsVEH)
         {
@@ -13675,7 +13675,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     }
     else
     {
-        SPEW(fprintf(stderr, "0x%x D::FCHF: exiting with CONTINUE_SEARCH\n", tid));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: exiting with CONTINUE_SEARCH\n", tid));
         _ASSERTE((HijackAction)pFcd->action == HIJACK_ACTION_EXIT_UNHANDLED);
         return EXCEPTION_CONTINUE_SEARCH;
     }
@@ -13685,7 +13685,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
 void GenericHijackFuncHelper()
 {
 #if DOSPEW
-    DWORD tid = (DWORD)minipal_get_current_thread_id();
+    size_t tid = minipal_get_current_thread_id();
 #endif
 
     // The Windows native break in thread does not have TLS storage allocated.
@@ -13697,11 +13697,11 @@ void GenericHijackFuncHelper()
     // (This makes places where we assert that we're in a CS region happy).
     CantStopHolder hCantStop(!debuggerBreakInThread);
 
-    SPEW(fprintf(stderr, "0x%x D::GHF: in generic hijack.\n", tid));
+    SPEW(fprintf(stderr, "0x%zx D::GHF: in generic hijack.\n", tid));
 
     // There is no need to setup any context pointer or interact with the Right Side in anyway. We simply wait for
     // the continue event to be set.
-    SPEW(fprintf(stderr, "0x%x D::GHF: waiting for continue.\n", tid));
+    SPEW(fprintf(stderr, "0x%zx D::GHF: waiting for continue.\n", tid));
 
     // If this thread has an EE thread and that EE thread has preemptive gc disabled, then mark that there is a
     // thread at an unsafe place and enable pgc. This will allow us to sync even with this thread hijacked.
@@ -13722,7 +13722,7 @@ void GenericHijackFuncHelper()
 
     if (ret != WAIT_OBJECT_0)
     {
-        SPEW(fprintf(stderr, "0x%x D::GHF: wait failed!\n", tid));
+        SPEW(fprintf(stderr, "0x%zx D::GHF: wait failed!\n", tid));
     }
 
     // Get the continue type. Non-zero means that the exception was not cleared by the Right Side and therefore has
@@ -13746,11 +13746,11 @@ void GenericHijackFuncHelper()
         g_pEEInterface->SetThreadDebuggerWord(NULL);
     }
 
-    SPEW(fprintf(stderr, "0x%x D::GHF: continued with %d.\n", tid, continueType));
+    SPEW(fprintf(stderr, "0x%zx D::GHF: continued with %d.\n", tid, continueType));
 
     if (continueType)
     {
-        SPEW(fprintf(stderr, "0x%x D::GHF: calling ExitProcess\n", tid));
+        SPEW(fprintf(stderr, "0x%zx D::GHF: calling ExitProcess\n", tid));
 
         // Continuing from a second chance exception without clearing the exception causes the process to
         // exit. Note: the continue type will only be non-zero if this hijack was setup for a second chance

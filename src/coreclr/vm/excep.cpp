@@ -5968,12 +5968,12 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                         pStack = sStack.GetUTF8();
                     }
 
-                    DWORD tid = (DWORD)minipal_get_current_thread_id();
+                    size_t tid = minipal_get_current_thread_id();
 
                     BOOL debuggerPresentBeforeAssert = minipal_is_native_debugger_present();
 
 
-                    CONSISTENCY_CHECK_MSGF(false, ("AV in clr at this callstack:\n------\n%s\n-----\n.AV on tid=0x%x (%d), cxr=%p, exr=%p\n",
+                    CONSISTENCY_CHECK_MSGF(false, ("AV in clr at this callstack:\n------\n%s\n-----\n.AV on tid=0x%zx (%zu), cxr=%p, exr=%p\n",
                         pStack, tid, tid, pContext, pExceptionRecord));
 
                     // @todo - this may not be what we want for interop-debugging...

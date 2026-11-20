@@ -66,7 +66,12 @@ PLATFORM_THREAD_LOCAL size_t minipal_cached_thread_id;
 
 uint32_t minipal_get_current_process_id(void)
 {
+#ifdef __wasi__
+    // WASI has no process IDs; getpid() only exists as an opt-in emulation returning a placeholder.
+    return 1;
+#else
     return (uint32_t)getpid();
+#endif
 }
 
 size_t minipal_get_current_thread_id_no_cache(void)

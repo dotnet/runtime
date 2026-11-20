@@ -185,11 +185,11 @@ VOID LogAssert(
 
     LOG((LF_ASSERT,
          LL_FATALERROR,
-         "FAILED ASSERT(PID %d [0x%08x], Thread: %d [0x%x]) (%d/%d/%d: %02d:%02d:%02d %s): File: %s, Line %d : %s\n",
+         "FAILED ASSERT(PID %d [0x%08x], Thread: %zu [0x%zx]) (%d/%d/%d: %02d:%02d:%02d %s): File: %s, Line %d : %s\n",
          minipal_get_current_process_id(),
          minipal_get_current_process_id(),
-         (DWORD)minipal_get_current_thread_id(),
-         (DWORD)minipal_get_current_thread_id(),
+         minipal_get_current_thread_id(),
+         minipal_get_current_thread_id(),
          local.tm_mon,
          local.tm_mday,
          local.tm_year,
@@ -252,11 +252,11 @@ bool _DbgBreakCheck(
             GetExecutableFileNameUtf8(modulePath);
 
             sprintf_s(formatBuffer, sizeof(formatBuffer),
-                "\nAssert failure(PID %d [0x%08x], Thread: %d [0x%04x]): %s\n"
+                "\nAssert failure(PID %d [0x%08x], Thread: %zu [0x%04zx]): %s\n"
                 "    File: %s:%d\n"
                 "    Image: %s\n\n",
                 minipal_get_current_process_id(), minipal_get_current_process_id(),
-                (DWORD)minipal_get_current_thread_id(), (DWORD)minipal_get_current_thread_id(),
+                minipal_get_current_thread_id(), minipal_get_current_thread_id(),
                 szExpr, szFile, iLine, modulePath.GetUTF8());
 
             formattedMessages = TRUE;
@@ -491,10 +491,10 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
     GetExecutableFileNameUtf8(modulePath);
 
     SString buffer;
-    buffer.Printf("CLR: Assert failure(PID %d [0x%08x], Thread: %d [0x%x]): %s\n"
+    buffer.Printf("CLR: Assert failure(PID %d [0x%08x], Thread: %zu [0x%zx]): %s\n"
                 "    File: %s:%d Image:\n%s\n",
                 minipal_get_current_process_id(), minipal_get_current_process_id(),
-                (DWORD)minipal_get_current_thread_id(), (DWORD)minipal_get_current_thread_id(),
+                minipal_get_current_thread_id(), minipal_get_current_thread_id(),
                 szExpr, szFile, iLine, modulePath.GetUTF8());
     OutputDebugStringUtf8(buffer.GetUTF8());
 

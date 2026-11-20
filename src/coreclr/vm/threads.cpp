@@ -656,13 +656,13 @@ Thread* SetupThread()
 
     if (ThreadStore::s_pThreadStore->GetPendingThreadCount() != 0)
     {
-        DWORD  ourOSThreadId = (DWORD)minipal_get_current_thread_id();
+        size_t ourOSThreadId = minipal_get_current_thread_id();
         {
             ThreadStoreLockHolder TSLockHolder;
             _ASSERTE(pThread == NULL);
             while ((pThread = ThreadStore::s_pThreadStore->GetAllThreadList(pThread, Thread::TS_Unstarted | Thread::TS_FailStarted, Thread::TS_Unstarted)) != NULL)
             {
-                if (pThread->GetOSThreadId() == ourOSThreadId)
+                if (pThread->GetOSThreadId64() == ourOSThreadId)
                 {
                     break;
                 }
@@ -3781,7 +3781,7 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     CONTRACTL_END;
 
     // This method can be called on current thread only
-    _ASSERTE(m_OSThreadId == (DWORD)minipal_get_current_thread_id());
+    _ASSERTE(m_OSThreadId == minipal_get_current_thread_id());
 
     // Setting the state to AS_Unknown indicates we should CoUninitialize
     // the thread.

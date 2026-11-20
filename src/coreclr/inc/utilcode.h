@@ -2480,7 +2480,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // not fiber for HOST_UNIX - use the regular thread ID
-        return (void *)(size_t)(DWORD)minipal_get_current_thread_id();
+        return (void *)minipal_get_current_thread_id();
     }
 
     static void* GetStackBase()

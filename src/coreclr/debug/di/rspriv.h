@@ -872,7 +872,7 @@ protected:
     ERSLockLevel m_level;
     int m_eAttr;        // Bitwise combination of ELockAttr values
     int m_count;
-    DWORD m_tidOwner;
+    size_t m_tidOwner;
     const char * m_szTag;
 
 #endif // #if debug
@@ -10898,7 +10898,7 @@ protected:
     EThreadType m_eThreadType;
 
     // More debugging tidbits - tid that we're on, and a sanity checking cookie.
-    DWORD m_tid;
+    size_t m_tid;
     DWORD m_Cookie;
 
     enum ECookie

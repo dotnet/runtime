@@ -27,11 +27,11 @@
 int DbgBreakCheck(const char* szFile, int iLine, const char* szExpr)
 {
     DWORD pid = minipal_get_current_process_id();
-    LogError("SuperPMI: Assert Failure (PID %d, Thread %d/%x)\n"
+    LogError("SuperPMI: Assert Failure (PID %d, Thread %zu/%zx)\n"
              "%s\n"
              "\n"
              "%s, Line: %d\n",
-             pid, (DWORD)minipal_get_current_thread_id(), (DWORD)minipal_get_current_thread_id(), szExpr, szFile, iLine);
+             pid, minipal_get_current_thread_id(), minipal_get_current_thread_id(), szExpr, szFile, iLine);
 
     return 1;
 }
@@ -406,8 +406,8 @@ int DbgBreakCheck(const char* szFile, int iLine, const char* szExpr)
     sprintf_s(dialogText, sizeof(dialogText),
               "%s\n\n%s, Line: %d\n\nAbort - Kill program\nRetry - Debug\nIgnore - Keep running\n", szExpr, szFile,
               iLine);
-    sprintf_s(dialogTitle, sizeof(dialogTitle), "SuperPMI: Assert Failure (PID %d, Thread %d/%x)        ",
-              GetCurrentProcessId(), (DWORD)minipal_get_current_thread_id(), (DWORD)minipal_get_current_thread_id());
+    sprintf_s(dialogTitle, sizeof(dialogTitle), "SuperPMI: Assert Failure (PID %d, Thread %zu/%zx)        ",
+              GetCurrentProcessId(), minipal_get_current_thread_id(), minipal_get_current_thread_id());
 
     // Tell user there was an error.
     int ret = MessageBoxA(NULL, dialogText, dialogTitle, MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION | MB_TOPMOST);
