@@ -139,6 +139,8 @@ C_FUNC(\Name\()_End):
     PROLOG_END
 
     lea \Target, [esp + 4]
+    // Keep the transition frame at its fixed EBP offset and align native call arguments separately.
+    and esp, -16
 .endm
 
 // Inlined version of GetThreadEEAllocContext.
@@ -146,6 +148,8 @@ C_FUNC(\Name\()_End):
     push  ecx
     push  eax
     call  C_FUNC(GetThreadEEAllocContext)
+    // The C helper returns in eax, while allocation helpers expect the context in edx.
+    mov   edx, eax
     pop   eax
     pop   ecx
 .endm
@@ -154,8 +158,8 @@ C_FUNC(\Name\()_End):
     // restore stack pointer
     EPILOG_BEG
 
-    // skip over alignment (4) + ArgumentRegisters (8)
-    EPILOG_FREE 12
+    // Restore the saved-register area below EBP, skipping any dynamic alignment padding.
+    lea esp, [ebp - 12]
 
     // pop CalleeSavedRegisters
     EPILOG_POP edi

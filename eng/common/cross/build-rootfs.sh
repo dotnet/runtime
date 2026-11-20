@@ -231,6 +231,8 @@ while :; do
             __BuildArch=x86
             __UbuntuArch=i386
             __AlpineArch=x86
+            __FreeBSDArch=i386
+            __FreeBSDMachineArch=i386
             __UbuntuRepo="https://archive.ubuntu.com/ubuntu/"
             ;;
         lldb*)

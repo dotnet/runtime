@@ -14,6 +14,7 @@
 // and is always apply to the current thread.
 //
 LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
+LOCAL_LABEL(CaptureContext):
     // Store
     push  eax
     push  ebx
@@ -89,7 +90,8 @@ LEAF_ENTRY RtlCaptureContext, _TEXT
     mov     eax, [esp + 8]
     mov     DWORD PTR [eax + CONTEXT_ContextFlags], (CONTEXT_FLOATING_POINT)
     pop     eax
-    jmp     C_FUNC(CONTEXT_CaptureContext)
+    // Use the local entry to keep this branch position independent in shared libraries.
+    jmp     LOCAL_LABEL(CaptureContext)
 LEAF_END RtlCaptureContext, _TEXT
 
 LEAF_ENTRY RtlRestoreContext, _TEXT

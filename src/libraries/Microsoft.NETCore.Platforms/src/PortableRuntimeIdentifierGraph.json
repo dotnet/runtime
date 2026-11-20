@@ -64,6 +64,12 @@
           "unix-x64"
         ]
       },
+      "freebsd-x86": {
+        "#import": [
+          "freebsd",
+          "unix-x86"
+        ]
+      },
       "haiku": {
         "#import": [
           "unix"

@@ -51,6 +51,9 @@
          in our runtime.json to enable others to provide them.  -->
     <UnofficialBuildRID Include="freebsd-x64" />
     <UnofficialBuildRID Include="freebsd-arm64" />
+    <UnofficialBuildRID Include="freebsd-x86">
+      <Platform>x86</Platform>
+    </UnofficialBuildRID>
     <UnofficialBuildRID Include="tizen.4.0.0-armel">
       <Platform>armel</Platform>
     </UnofficialBuildRID>

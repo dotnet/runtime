@@ -609,9 +609,9 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
     mov         esi, esp
 
-    #define STACK_ALIGN_PADDING 8
-
-    sub         esp, STACK_ALIGN_PADDING
+    // Keep the transition block at ESI while aligning the three native arguments.
+    and         esp, -16
+    sub         esp, 4
     push        [esi + 4*4]     // dispatch token
     push        [esi + 5*4]     // siteAddrForRegisterIndirect
     push        esi             // pTransitionBlock
@@ -625,9 +625,7 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     CHECK_STACK_ALIGNMENT
     call        C_FUNC(VSD_ResolveWorker)
 
-    add         esp, STACK_ALIGN_PADDING
-
-    #undef STACK_ALIGN_PADDING
+    mov         esp, esi
 
     // From here on, mustn't trash eax
 
