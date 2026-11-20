@@ -1255,5 +1255,71 @@ namespace System.Text.RegularExpressions.Tests
                 return handle.Process.StandardOutput.ReadToEnd();
             }
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConditionalModifiers_Method_CompilesCleanly(bool defineBranch)
+        {
+            string define = defineBranch ? "#define TRIVIA_BRANCH\n" : "";
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator($@"
+                {define}
+                using System.Text.RegularExpressions;
+                public partial class Test
+                {{
+                    [GeneratedRegex(""a"")]
+                    public
+                #if TRIVIA_BRANCH
+                    static partial Regex Method();
+                #else
+                    static partial Regex Method2();
+                #endif
+                }}
+            ", compile: true));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConditionalModifiers_Property_CompilesCleanly(bool defineBranch)
+        {
+            string define = defineBranch ? "#define TRIVIA_BRANCH\n" : "";
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator($@"
+                {define}
+                using System.Text.RegularExpressions;
+                public partial class Test
+                {{
+                    [GeneratedRegex(""a"")]
+                    public
+                #if TRIVIA_BRANCH
+                    static partial Regex Property {{ get; }}
+                #else
+                    static partial Regex Property2 {{ get; }}
+                #endif
+                }}
+            ", compile: true));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConditionalTypeParameters_ContainingType_CompilesCleanly(bool defineBranch)
+        {
+            string define = defineBranch ? "#define TRIVIA_BRANCH\n" : "";
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator($@"
+                {define}
+                using System.Text.RegularExpressions;
+                public partial class Test<T,
+                #if TRIVIA_BRANCH
+                    U>
+                #else
+                    V>
+                #endif
+                {{
+                    [GeneratedRegex(""a"")]
+                    public static partial Regex Method();
+                }}
+            ", compile: true));
+        }
     }
 }
