@@ -656,7 +656,7 @@ Thread* SetupThread()
 
     if (ThreadStore::s_pThreadStore->GetPendingThreadCount() != 0)
     {
-        DWORD  ourOSThreadId = ::GetCurrentThreadId();
+        DWORD  ourOSThreadId = (DWORD)minipal_get_current_thread_id();
         {
             ThreadStoreLockHolder TSLockHolder;
             _ASSERTE(pThread == NULL);
@@ -743,7 +743,7 @@ Thread* SetupThread()
                 (ThreadID)pThread);
         }
 
-        DWORD osThreadId = ::GetCurrentThreadId();
+        DWORD osThreadId = (DWORD)minipal_get_current_thread_id();
         (&g_profControlBlock)->ThreadAssignedToOSThread(
             (ThreadID)pThread, osThreadId);
         END_PROFILER_CALLBACK();
@@ -1844,7 +1844,7 @@ BOOL Thread::HasStarted()
 
         GC_ON_TRANSITIONS(gcOnTransition);
 
-        DWORD osThreadId = ::GetCurrentThreadId();
+        DWORD osThreadId = (DWORD)minipal_get_current_thread_id();
         (&g_profControlBlock)->ThreadAssignedToOSThread(
             (ThreadID) this, osThreadId);
         END_PROFILER_CALLBACK();
@@ -3781,7 +3781,7 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     CONTRACTL_END;
 
     // This method can be called on current thread only
-    _ASSERTE(m_OSThreadId == ::GetCurrentThreadId());
+    _ASSERTE(m_OSThreadId == (DWORD)minipal_get_current_thread_id());
 
     // Setting the state to AS_Unknown indicates we should CoUninitialize
     // the thread.
@@ -6571,14 +6571,14 @@ void dbgOnly_IdentifySpecialEEThread()
     LONG  ourCount = InterlockedIncrement(&cnt_SpecialEEThreads);
 
     _ASSERTE(ourCount < (LONG) ARRAY_SIZE(SpecialEEThreads));
-    SpecialEEThreads[ourCount-1] = ::GetCurrentThreadId();
+    SpecialEEThreads[ourCount-1] = (DWORD)minipal_get_current_thread_id();
 }
 
 BOOL dbgOnly_IsSpecialEEThread()
 {
     WRAPPER_NO_CONTRACT;
 
-    DWORD   ourId = ::GetCurrentThreadId();
+    DWORD   ourId = (DWORD)minipal_get_current_thread_id();
 
     for (LONG i=0; i<cnt_SpecialEEThreads; i++)
         if (ourId == SpecialEEThreads[i])

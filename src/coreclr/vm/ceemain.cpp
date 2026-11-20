@@ -116,6 +116,7 @@
 //     boxing this describes this feature.
 
 #include "common.h"
+#include <minipal/thread.h>
 #include "CLREventBase.h"
 
 #include "vars.hpp"
@@ -308,7 +309,7 @@ HRESULT EnsureEEStarted()
             // And if EEStartup already failed before, we don't do it again.
             if (!g_fEEStarted && !g_fEEInit && SUCCEEDED (g_EEStartupStatus))
             {
-                g_dwStartupThreadId = GetCurrentThreadId();
+                g_dwStartupThreadId = (DWORD)minipal_get_current_thread_id();
 
                 EEStartup();
                 bStarted=g_fEEStarted;
@@ -350,7 +351,7 @@ HRESULT EnsureEEStarted()
         // is already affinitized by the code above.  So if we get that particular OS thread ID, we know for sure
         // we are really the startup thread.
         //
-        if (g_EEStartupLock.IsHeld() && g_dwStartupThreadId != GetCurrentThreadId())
+        if (g_EEStartupLock.IsHeld() && g_dwStartupThreadId != (DWORD)minipal_get_current_thread_id())
         {
             DangerousNonHostedSpinLockHolder lockHolder = g_EEStartupLock.TakeLock();
         }

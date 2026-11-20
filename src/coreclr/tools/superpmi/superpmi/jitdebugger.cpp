@@ -31,7 +31,7 @@ int DbgBreakCheck(const char* szFile, int iLine, const char* szExpr)
              "%s\n"
              "\n"
              "%s, Line: %d\n",
-             pid, GetCurrentThreadId(), GetCurrentThreadId(), szExpr, szFile, iLine);
+             pid, (DWORD)minipal_get_current_thread_id(), (DWORD)minipal_get_current_thread_id(), szExpr, szFile, iLine);
 
     return 1;
 }
@@ -407,7 +407,7 @@ int DbgBreakCheck(const char* szFile, int iLine, const char* szExpr)
               "%s\n\n%s, Line: %d\n\nAbort - Kill program\nRetry - Debug\nIgnore - Keep running\n", szExpr, szFile,
               iLine);
     sprintf_s(dialogTitle, sizeof(dialogTitle), "SuperPMI: Assert Failure (PID %d, Thread %d/%x)        ",
-              GetCurrentProcessId(), GetCurrentThreadId(), GetCurrentThreadId());
+              GetCurrentProcessId(), (DWORD)minipal_get_current_thread_id(), (DWORD)minipal_get_current_thread_id());
 
     // Tell user there was an error.
     int ret = MessageBoxA(NULL, dialogText, dialogTitle, MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION | MB_TOPMOST);

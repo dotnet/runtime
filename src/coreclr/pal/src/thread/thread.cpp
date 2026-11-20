@@ -192,36 +192,6 @@ static void FreeTHREAD(CPalThread *pThread)
 
 /*++
 Function:
-  GetCurrentThreadId
-
-See MSDN doc.
---*/
-DWORD
-PALAPI
-GetCurrentThreadId(
-            VOID)
-{
-    DWORD dwThreadId;
-
-    PERF_ENTRY(GetCurrentThreadId);
-    ENTRY("GetCurrentThreadId()\n");
-
-    //
-    // TODO: should do perf test to see how this compares
-    // with calling InternalGetCurrentThread (i.e., is our lookaside
-    // cache faster on average than pthread_self?)
-    //
-
-    dwThreadId = (DWORD)THREADSilentGetCurrentThreadId();
-
-    LOGEXIT("GetCurrentThreadId returns DWORD %#x\n", dwThreadId);
-    PERF_EXIT(GetCurrentThreadId);
-
-    return dwThreadId;
-}
-
-/*++
-Function:
   GetCurrentThread
 
 See MSDN doc.

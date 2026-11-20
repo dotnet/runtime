@@ -11,6 +11,7 @@
 #define DEBUGGER_H_
 
 #include <windows.h>
+#include <minipal/thread.h>
 
 #include <utilcode.h>
 
@@ -2409,7 +2410,7 @@ public:
         }
         else
         {
-            return (GetCurrentThreadId() == m_mutexOwner);
+            return ((DWORD)minipal_get_current_thread_id() == m_mutexOwner);
         }
     }
 #endif // _DEBUG_IMPL
@@ -3747,7 +3748,7 @@ HANDLE OpenWin32EventOrThrow(
 //   SuspendComplete
 //
 // @todo- we could also assert that:
-// - m_tidLockedForEventSending = GetCurrentThreadId();
+// - m_tidLockedForEventSending = (DWORD)minipal_get_current_thread_id();
 #define SENDEVENT_CONTRACT_ITEMS \
     GC_NOTRIGGER; \
     MODE_PREEMPTIVE; \

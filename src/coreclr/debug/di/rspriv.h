@@ -11,6 +11,7 @@
 #define RSPRIV_H
 
 #include <winwrap.h>
+#include <minipal/thread.h>
 #include <windows.h>
 
 #include <utilcode.h>
@@ -10148,7 +10149,7 @@ public:
 
     bool IsWin32EventThread()
     {
-        return (m_threadId == GetCurrentThreadId());
+        return (m_threadId == (DWORD)minipal_get_current_thread_id());
     }
 
     void Win32EventLoop();

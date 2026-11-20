@@ -10,6 +10,7 @@
 //
 
 #include "common.h"
+#include <minipal/thread.h>
 #include <minipal/debugger.h>
 #include "CLREventBase.h"
 #include "vars.hpp"
@@ -119,7 +120,7 @@ void _MulticoreJitTrace(const char * format, ...)
 
     int len;
 
-    len  =  sprintf_s(buffer,       ARRAY_SIZE(buffer),       "Mcj TID %04x: ", GetCurrentThreadId());
+    len  =  sprintf_s(buffer,       ARRAY_SIZE(buffer),       "Mcj TID %04x: ", (DWORD)minipal_get_current_thread_id());
     len += _vsnprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, format, args);
     len +=  sprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, ", (time=%d ms)\r\n", (unsigned)minipal_lowres_ticks() - s_startTick);
 

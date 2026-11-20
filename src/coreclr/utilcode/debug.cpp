@@ -188,8 +188,8 @@ VOID LogAssert(
          "FAILED ASSERT(PID %d [0x%08x], Thread: %d [0x%x]) (%d/%d/%d: %02d:%02d:%02d %s): File: %s, Line %d : %s\n",
          minipal_get_current_process_id(),
          minipal_get_current_process_id(),
-         GetCurrentThreadId(),
-         GetCurrentThreadId(),
+         (DWORD)minipal_get_current_thread_id(),
+         (DWORD)minipal_get_current_thread_id(),
          local.tm_mon,
          local.tm_mday,
          local.tm_year,
@@ -256,7 +256,7 @@ bool _DbgBreakCheck(
                 "    File: %s:%d\n"
                 "    Image: %s\n\n",
                 minipal_get_current_process_id(), minipal_get_current_process_id(),
-                GetCurrentThreadId(), GetCurrentThreadId(),
+                (DWORD)minipal_get_current_thread_id(), (DWORD)minipal_get_current_thread_id(),
                 szExpr, szFile, iLine, modulePath.GetUTF8());
 
             formattedMessages = TRUE;
@@ -494,7 +494,7 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
     buffer.Printf("CLR: Assert failure(PID %d [0x%08x], Thread: %d [0x%x]): %s\n"
                 "    File: %s:%d Image:\n%s\n",
                 minipal_get_current_process_id(), minipal_get_current_process_id(),
-                GetCurrentThreadId(), GetCurrentThreadId(),
+                (DWORD)minipal_get_current_thread_id(), (DWORD)minipal_get_current_thread_id(),
                 szExpr, szFile, iLine, modulePath.GetUTF8());
     OutputDebugStringUtf8(buffer.GetUTF8());
 

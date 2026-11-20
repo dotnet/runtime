@@ -508,7 +508,7 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
     DebuggerIPCEvent *event = ((DebugFilterParam *)pv)->event;
 
     DWORD pid = minipal_get_current_process_id();
-    DWORD tid = GetCurrentThreadId();
+    DWORD tid = (DWORD)minipal_get_current_thread_id();
 
     DebuggerIPCEventType type = (DebuggerIPCEventType) (event->type & DB_IPCE_TYPE_MASK);
 #endif // _DEBUG
@@ -660,7 +660,7 @@ void DebuggerRCThread::ThreadProc(void)
     // this, no other threads will ever become the temporary helper
     // thread.
     HelperThreadExitSignal helperThreadExitSignal = { m_helperThreadRunning, m_helperThreadExitedEvent };
-    m_pDCB->m_helperThreadId = GetCurrentThreadId();
+    m_pDCB->m_helperThreadId = (DWORD)minipal_get_current_thread_id();
     m_helperThreadRunning.Store(TRUE);
 
     LOG((LF_CORDB, LL_INFO1000, "DRCT::TP: helper thread id is 0x%x helperThreadId\n",
@@ -1673,7 +1673,7 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
         {
             // If the helper thread calls this, we deadlock.
             // (Since we wait on an event that only the helper thread sets)
-            _ASSERTE(GetRCThreadId() != GetCurrentThreadId());
+            _ASSERTE(GetRCThreadId() != (DWORD)minipal_get_current_thread_id());
 
             SetFavorFnPtr(fp, pData);
 

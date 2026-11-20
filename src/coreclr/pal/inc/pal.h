@@ -374,11 +374,6 @@ HANDLE
 PALAPI
 GetCurrentProcess();
 
-PALIMPORT
-DWORD
-PALAPI
-GetCurrentThreadId();
-
 // To work around multiply-defined symbols in the Carbon framework.
 #define GetCurrentThread PAL_GetCurrentThread
 PALIMPORT

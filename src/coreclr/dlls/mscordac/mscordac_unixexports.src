@@ -39,7 +39,6 @@ nativeStringResourceTable_mscorrc
 #DuplicateHandle
 #FreeLibrary
 #GetCurrentProcess
-#GetCurrentThreadId
 #GetLastError
 #GetModuleFileNameW
 #GetProcAddress

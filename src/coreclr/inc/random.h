@@ -75,7 +75,7 @@ public:
     void Init()
     {
         LIMITED_METHOD_CONTRACT;
-        Init((int)minipal_hires_ticks() ^ GetCurrentThreadId() ^ minipal_get_current_process_id());
+        Init((int)minipal_hires_ticks() ^ (DWORD)minipal_get_current_thread_id() ^ minipal_get_current_process_id());
     }
 
     void Init(int Seed)

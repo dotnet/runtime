@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "stdafx.h"
+#include <minipal/thread.h>
 #include "primitives.h"
 #include <float.h>
 #include <tls.h>
@@ -1470,7 +1471,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
 
     LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: Info:thread:0x%zx"
         "mod:0x%zx  MethodDef:0x%x offset:0x%zx  il?:0x%x\n",
-         GetCurrentThreadId(),
+         (DWORD)minipal_get_current_thread_id(),
          (size_t)VmPtrToCookie(m_vmThreadToken),
          (size_t)VmPtrToCookie(vmAssembly),
          pNativeCode->GetMetadataToken(),
@@ -1478,7 +1479,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
          fIsIL));
 
     LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: sizeof(DebuggerIPCEvent):0x%zx **********\n",
-        GetCurrentThreadId(), sizeof(DebuggerIPCEvent)));
+        (DWORD)minipal_get_current_thread_id(), sizeof(DebuggerIPCEvent)));
 
     HRESULT hr = GetProcess()->m_cordb->SendIPCEvent(GetProcess(), &event, sizeof(DebuggerIPCEvent));
 

@@ -380,7 +380,7 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     WRAPPER_NO_CONTRACT;
 
     LOG((LF_CORDB,LL_INFO10000, "D::Lock acquire attempt by 0x%x\n",
-        GetCurrentThreadId()));
+        (DWORD)minipal_get_current_thread_id()));
 
     // Debugger lock is larger than both Controller & debugger-data locks.
     // So we should never try to take the D lock if we hold either of the others.
@@ -459,7 +459,7 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
         else
         {
             // unmanaged thread
-            _ASSERTE(m_mutexOwner == GetCurrentThreadId());
+            _ASSERTE(m_mutexOwner == (DWORD)minipal_get_current_thread_id());
         }
     }
 
@@ -471,7 +471,7 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     else
     {
         // unmanaged thread
-        m_mutexOwner = GetCurrentThreadId();
+        m_mutexOwner = (DWORD)minipal_get_current_thread_id();
     }
 
     if (m_mutexCount == 1)
@@ -2534,7 +2534,7 @@ HRESULT Debugger::RequestFavor(FAVORCALLBACK fp, void * pData)
     CONTRACTL_END;
 
     if (m_pRCThread == NULL ||
-        m_pRCThread->GetRCThreadId() == GetCurrentThreadId())
+        m_pRCThread->GetRCThreadId() == (DWORD)minipal_get_current_thread_id())
     {
         // Since favors are only used internally, we know that the helper should always be up and ready
         // to handle them. Also, since favors can be used in low-stack scenarios, there's not any
@@ -5725,7 +5725,7 @@ void Debugger::TraceCall(const BYTE *code)
     // One threat is that our helper thread may be forced to execute a managed DLL main.
     // In that case, it's before the helper thread proc is even executed, so our conventional
     // IsHelperThread() checks are inadequate.
-    _ASSERTE((GetCurrentThreadId() != g_pRCThread->m_DbgHelperThreadOSTid) || !"You're running managed code on the helper thread");
+    _ASSERTE(((DWORD)minipal_get_current_thread_id() != g_pRCThread->m_DbgHelperThreadOSTid) || !"You're running managed code on the helper thread");
 
     _ASSERTE((g_pEEInterface->GetThreadFilterContext(pCurThread) == NULL) || !"Shouldn't run managed code w/ Filter-Context set");
 
@@ -6522,7 +6522,7 @@ void Debugger::LockForEventSending(DebuggerLockHolder *dbgLockHolder)
 #ifdef _DEBUG
      // Track our TID. We're not re-entrant.
     //_ASSERTE(m_tidLockedForEventSending == 0);
-    m_tidLockedForEventSending = GetCurrentThreadId();
+    m_tidLockedForEventSending = (DWORD)minipal_get_current_thread_id();
 #endif
 
 }
@@ -6543,7 +6543,7 @@ void Debugger::UnlockFromEventSending(DebuggerLockHolder *dbgLockHolder)
     CONTRACTL_END;
 
 #ifdef _DEBUG
-    //_ASSERTE(m_tidLockedForEventSending == GetCurrentThreadId());
+    //_ASSERTE(m_tidLockedForEventSending == (DWORD)minipal_get_current_thread_id());
     m_tidLockedForEventSending = 0;
 #endif
     if (dbgLockHolder != NULL)
@@ -6686,7 +6686,7 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
     s_DebuggerLaunchJitInfoContext = *pExceptionInfo->ContextRecord;
 
     s_DebuggerLaunchJitInfo.dwSize = sizeof(s_DebuggerLaunchJitInfo);
-    s_DebuggerLaunchJitInfo.dwThreadID = pThread == NULL ? GetCurrentThreadId() : pThread->GetOSThreadId();
+    s_DebuggerLaunchJitInfo.dwThreadID = pThread == NULL ? (DWORD)minipal_get_current_thread_id() : pThread->GetOSThreadId();
     s_DebuggerLaunchJitInfo.lpExceptionRecord = reinterpret_cast<ULONG64>(&s_DebuggerLaunchJitInfoExceptionRecord);
     s_DebuggerLaunchJitInfo.lpContextRecord = reinterpret_cast<ULONG64>(&s_DebuggerLaunchJitInfoContext);
     s_DebuggerLaunchJitInfo.lpExceptionAddress = s_DebuggerLaunchJitInfoExceptionRecord.ExceptionAddress != NULL ?
@@ -6924,7 +6924,7 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
     CONTRACTL_END;
 
 #ifndef TARGET_UNIX
-    LOG((LF_CORDB, LL_INFO10000, "D::EDA: thread 0x%x is launching the debugger.\n", GetCurrentThreadId()));
+    LOG((LF_CORDB, LL_INFO10000, "D::EDA: thread 0x%x is launching the debugger.\n", (DWORD)minipal_get_current_thread_id()));
 
     _ASSERTE(HasLazyData());
 
@@ -8785,7 +8785,7 @@ int Debugger::NotifyUserOfFault(bool userBreakpoint, DebuggerLaunchSetting dls)
         DWORD tid;
 
         pid = minipal_get_current_process_id();
-        tid = GetCurrentThreadId();
+        tid = (DWORD)minipal_get_current_thread_id();
 
         DWORD flags = 0;
 
@@ -9354,7 +9354,7 @@ BOOL Debugger::SuspendComplete(bool isEESuspendedForGC)
     // We do the EEH part when we get the Continue event.
     {
 #ifdef _DEBUG
-        //_ASSERTE(m_tidLockedForEventSending == GetCurrentThreadId());
+        //_ASSERTE(m_tidLockedForEventSending == (DWORD)minipal_get_current_thread_id());
         m_tidLockedForEventSending = 0;
 #endif
 
@@ -13545,7 +13545,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     // at this point we know that there is an interop debugger attached. This makes it safe to send
     // flares
 #if DOSPEW
-    DWORD tid = GetCurrentThreadId();
+    DWORD tid = (DWORD)minipal_get_current_thread_id();
 #endif
 
     SPEW(fprintf(stderr, "0x%x D::FCHF: in first chance hijack filter.\n", tid));
@@ -13685,7 +13685,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
 void GenericHijackFuncHelper()
 {
 #if DOSPEW
-    DWORD tid = GetCurrentThreadId();
+    DWORD tid = (DWORD)minipal_get_current_thread_id();
 #endif
 
     // The Windows native break in thread does not have TLS storage allocated.
@@ -14875,7 +14875,7 @@ void Debugger::DoHelperThreadDuty()
          "thread duty...\n"));
 
     // We're the temporary helper thread now.
-    DWORD dwMyTID = GetCurrentThreadId();
+    DWORD dwMyTID = (DWORD)minipal_get_current_thread_id();
     m_pRCThread->GetDCB()->m_temporaryHelperThreadId = dwMyTID;
 
     // Make sure the helper thread has something to wait on while
@@ -15188,7 +15188,7 @@ bool ThisIsHelperThreadWorker(void)
 
     // Even if we're not on the real helper thread, we may still be on a thread
     // pretending to be the helper. (Helper Duty, etc).
-    DWORD id = GetCurrentThreadId();
+    DWORD id = (DWORD)minipal_get_current_thread_id();
 
     // Check for temporary helper thread.
     if (ThisIsTempHelperThread(id))
@@ -15212,12 +15212,12 @@ bool Debugger::ThisIsHelperThread(void)
 }
 
 // Check if we're the temporary helper thread. Have 2 forms of this, 1 that assumes the current
-// thread (but has the overhead of an extra call to GetCurrentThreadId() if we laready know the tid.
+// thread (but has the overhead of an extra call to minipal_get_current_thread_id() if we laready know the tid.
 bool ThisIsTempHelperThread()
 {
     WRAPPER_NO_CONTRACT;
 
-    DWORD id = GetCurrentThreadId();
+    DWORD id = (DWORD)minipal_get_current_thread_id();
     return ThisIsTempHelperThread(id);
 }
 

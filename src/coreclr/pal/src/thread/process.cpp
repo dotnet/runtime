@@ -212,9 +212,9 @@ ExitProcess(
     PERF_ENTRY_ONLY(ExitProcess);
     ENTRY("ExitProcess(uExitCode=0x%x)\n", uExitCode );
 
-    old_terminator = InterlockedCompareExchange(&terminator, GetCurrentThreadId(), 0);
+    old_terminator = InterlockedCompareExchange(&terminator, (DWORD)THREADSilentGetCurrentThreadId(), 0);
 
-    if (GetCurrentThreadId() == old_terminator)
+    if ((DWORD)THREADSilentGetCurrentThreadId() == old_terminator)
     {
         // This thread has already initiated termination. This can happen
         // in two ways:
@@ -1332,9 +1332,9 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
     BOOL locked;
     DWORD old_terminator;
 
-    old_terminator = InterlockedCompareExchange(&terminator, GetCurrentThreadId(), 0);
+    old_terminator = InterlockedCompareExchange(&terminator, (DWORD)THREADSilentGetCurrentThreadId(), 0);
 
-    if (0 != old_terminator && GetCurrentThreadId() != old_terminator)
+    if (0 != old_terminator && (DWORD)THREADSilentGetCurrentThreadId() != old_terminator)
     {
         /* another thread has already initiated the termination process. we
            could just block on the PALInitLock critical section, but then

@@ -292,7 +292,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
     static bool needsPrefix = true;
 
     if (needsPrefix)
-        buflen = sprintf_s(pBuffer, ARRAY_SIZE(rgchBuffer), "TID %04x: ", GetCurrentThreadId());
+        buflen = sprintf_s(pBuffer, ARRAY_SIZE(rgchBuffer), "TID %04x: ", (DWORD)minipal_get_current_thread_id());
 
     needsPrefix = (fmt[strlen(fmt)-1] == '\n');
 

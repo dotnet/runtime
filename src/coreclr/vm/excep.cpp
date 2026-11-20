@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+#include <minipal/thread.h>
 
 #include "frames.h"
 #include "threads.h"
@@ -5967,7 +5968,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                         pStack = sStack.GetUTF8();
                     }
 
-                    DWORD tid = GetCurrentThreadId();
+                    DWORD tid = (DWORD)minipal_get_current_thread_id();
 
                     BOOL debuggerPresentBeforeAssert = minipal_is_native_debugger_present();
 

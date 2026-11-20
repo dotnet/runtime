@@ -145,7 +145,6 @@ add_executable_clr(paltests
   threading/GetCurrentProcess/test1/process.cpp
   threading/GetCurrentThread/test1/thread.cpp
   threading/GetCurrentThread/test2/test2.cpp
-  threading/GetCurrentThreadId/test1/threadId.cpp
   threading/ResumeThread/test1/test1.cpp
   threading/RuntimeEvent/test1/test1.cpp
   threading/TerminateProcess/test1/TerminateProcess.cpp
