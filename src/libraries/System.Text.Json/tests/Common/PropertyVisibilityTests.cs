@@ -1097,13 +1097,25 @@ namespace System.Text.Json.Serialization.Tests
         public async Task NoGetter()
         {
             ClassWithNoGetter objWithNoGetter = await Serializer.DeserializeWrapper<ClassWithNoGetter>(
-                """{"MyString":"Hello","MyIntArray":[0],"MyIntList":[0]}""");
+                """{"MyString":"Hello","MyIntArray":[0],"MyList":[0]}""");
 
             Assert.Equal("Hello", objWithNoGetter.GetMyString());
+            Assert.Equal(0, Assert.Single(objWithNoGetter.GetMyIntArray()));
+            Assert.Equal(0, Assert.Single(objWithNoGetter.GetMyIntList()));
+        }
 
-            // Currently we don't support setters without getters.
-            Assert.Equal(0, objWithNoGetter.GetMyIntArray().Length);
-            Assert.Equal(0, objWithNoGetter.GetMyIntList().Count);
+        [Fact]
+        public async Task RequiredSetterOnlyCollections()
+        {
+            ClassWithRequiredSetterOnlyCollections result = await Serializer.DeserializeWrapper<ClassWithRequiredSetterOnlyCollections>(
+                """{"List":[1],"Dictionary":{"key":2},"Enumerable":[3]}""");
+
+            Assert.Equal(1, Assert.Single(result.GetList()));
+            Assert.Equal(2, result.GetDictionary()["key"]);
+            Assert.Equal(3, Assert.Single(result.GetEnumerable()));
+
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<ClassWithRequiredSetterOnlyCollections>(
+                """{"List":[1],"Dictionary":{"key":2}}"""));
         }
 
         [Fact]
@@ -1666,6 +1678,26 @@ namespace System.Text.Json.Serialization.Tests
             {
                 return _myIntList;
             }
+        }
+
+        public class ClassWithRequiredSetterOnlyCollections
+        {
+            private List<int> _list = new();
+            private Dictionary<string, int> _dictionary = new();
+            private IEnumerable<int> _enumerable = new List<int>();
+
+            [JsonRequired]
+            public List<int> List { set => _list = value; }
+
+            [JsonRequired]
+            public Dictionary<string, int> Dictionary { set => _dictionary = value; }
+
+            [JsonRequired]
+            public IEnumerable<int> Enumerable { set => _enumerable = value; }
+
+            public List<int> GetList() => _list;
+            public Dictionary<string, int> GetDictionary() => _dictionary;
+            public IEnumerable<int> GetEnumerable() => _enumerable;
         }
 
         public class ClassWithIgnoreAttributeProperty

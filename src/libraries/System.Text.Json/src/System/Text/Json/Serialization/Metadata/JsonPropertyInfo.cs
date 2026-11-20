@@ -534,15 +534,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            if ((EffectiveConverter.ConverterStrategy & (ConverterStrategy.Enumerable | ConverterStrategy.Dictionary)) != 0)
-            {
-                // Properties of collections types that only have setters are not supported.
-                if (Get is null && Set is not null && !_isUserSpecifiedSetter)
-                {
-                    CanDeserialize = false;
-                }
-            }
-            else
+            if ((EffectiveConverter.ConverterStrategy & (ConverterStrategy.Enumerable | ConverterStrategy.Dictionary)) == 0)
             {
                 // For read-only properties of non-collection types, apply IgnoreReadOnlyProperties/Fields policy,
                 // unless a `ShouldSerialize` predicate has been explicitly applied by the user (null or non-null).
