@@ -10,7 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace ILDisassembler;
 
-// Token level access to the metadata, shaped after the IMDInternalImport calls made by the native ildasm.
+// Token level access to the metadata, shaped after the IMDInternalImport calls.
 internal sealed partial class Dasm
 {
     internal const int mdtModule = 0x00000000;
@@ -53,7 +53,7 @@ internal sealed partial class Dasm
 
     private static int Token(Handle h) => h.IsNil ? 0 : MetadataTokens.GetToken(h);
 
-    // A nil coded index keeps its table: a nil TypeDefOrRef is a nil TypeDef token, as the native reader reports it.
+    // A nil coded index keeps its table: a nil TypeDefOrRef is a nil TypeDef token.
     private static int TokenOrNil(EntityHandle h, int nilToken) => h.IsNil ? nilToken : MetadataTokens.GetToken(h);
 
     private static EntityHandle Handle(int tk) => MetadataTokens.EntityHandle(tk);
@@ -168,7 +168,7 @@ internal sealed partial class Dasm
         return (Token(ms.Method), Blob(ms.Signature));
     }
 
-    // GetParentToken for the member kinds the native tool asks about.
+    // GetParentToken for the member kinds that have a parent.
     private int GetParentToken(int tk)
     {
         switch (TypeFromToken(tk))
@@ -400,7 +400,7 @@ internal sealed partial class Dasm
             return v;
         }
 
-        // Invalid compressed integer: consume one byte like the native decoder.
+        // Invalid compressed integer: consume one byte.
         p++;
         return 0xFFFFFFFF;
     }

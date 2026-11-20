@@ -9,7 +9,7 @@ using System.Text;
 
 namespace ILDisassembler;
 
-// Port of the shared signature formatter (src/coreclr/inc/formattype.cpp) as compiled into ildasm.
+// Signature formatting.
 internal sealed partial class Dasm
 {
     private const byte ELEMENT_TYPE_END = 0x00;
@@ -70,7 +70,7 @@ internal sealed partial class Dasm
         public int Tok;
     }
 
-    // Replaces the native "inlabel" string: either a "<prefix>_<n>" name generator or an explicit name table.
+    // Labels of instruction offsets: either a "<prefix>_<n>" name generator or an explicit name table.
     internal sealed class SigLabel
     {
         public string Prefix = "";

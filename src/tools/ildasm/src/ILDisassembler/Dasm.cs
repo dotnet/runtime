@@ -14,8 +14,7 @@ using System.Text;
 
 namespace ILDisassembler;
 
-// A port of the native ildasm (src/coreclr/ildasm). The text it produces is meant to match the native
-// tool line for line, so that the output can be reassembled by either ilasm with the same result.
+// The IL disassembler. Its output can be reassembled by ilasm with the same result.
 internal sealed partial class Dasm
 {
     private enum DumpMode
@@ -81,7 +80,7 @@ internal sealed partial class Dasm
     private int _eatBase;
     private string?[] _asmRefNames = Array.Empty<string?>();
 
-    // Data referenced through field RVAs and vtable fixups, dumped as .data at the end ("ldptr" in the native tool).
+    // Data referenced through field RVAs and vtable fixups, dumped as .data at the end.
     private readonly List<(uint Rva, uint Size)> _ptrTags = new();
 
     public Dasm(PEReader pe, Options options, TextWriter output, TextWriter error, bool toFile, string outputFileName, string newLine = "\n")
@@ -289,10 +288,8 @@ internal sealed partial class Dasm
 
     // ---------------------------------------------------------------- field sizes
 
-    // The size of the data of an RVA field. The native tool (dasm_sz.cpp) adds up field sizes without alignment
-    // padding, so it truncates the data of structs with padding and the round trip changes their contents; this
-    // computes the layout like the runtime does for sequential and explicit layout (an upper bound for auto layout,
-    // which only ever packs tighter). 0xFFFFFFFF means unknown: the data then extends to the next label.
+    // The size of the data of an RVA field, computed from the layout like the runtime does for sequential and
+    // explicit layout (an upper bound for auto layout, which only ever packs tighter). 0xFFFFFFFF means unknown: the data then extends to the next label.
     private const uint UnknownSize = 0xFFFFFFFF;
 
     private readonly Dictionary<int, (uint Size, uint Align)> _valueTypeLayouts = new();
@@ -883,7 +880,6 @@ internal sealed partial class Dasm
 
     private bool FinishFile()
     {
-        // The native tool saves Win32 resources on Windows only (dotnet/runtime#83254).
         if (_toFile)
         {
             DumpWin32Resources();
@@ -975,7 +971,7 @@ internal sealed partial class Dasm
         }
 
         List<(uint Rva, uint Size)> tags = new(_ptrTags);
-        // The native code bubble sorts by RVA, which is stable.
+        // Sorted by RVA with a stable sort.
         tags.Sort((x, y) => x.Rva.CompareTo(y.Rva));
         for (int j = 0; j < tags.Count; j++)
         {
@@ -1098,7 +1094,7 @@ internal sealed partial class Dasm
                 }
                 else if (_html)
                 {
-                    // The native code drops other characters in HTML mode.
+                    // Other characters are dropped in HTML mode.
                     if (b == '<')
                     {
                         sz.Append(LTN());
@@ -1313,8 +1309,6 @@ internal sealed partial class Dasm
                         _vtableRefs.Add(new VTableRef { Tok = tok, Entry = k, Slot = s });
                     }
 
-                    // The native tool loses this comment on non-Windows platforms (it formats it with
-                    // sprintf_s(buf, COMMENT(buf))); the output is the same everywhere here (dotnet/runtime#122976).
                     sb.Append(COMMENT(c.ToString()));
                 }
                 else

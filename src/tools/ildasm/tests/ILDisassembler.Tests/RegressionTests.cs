@@ -12,8 +12,8 @@ using Xunit;
 
 namespace ILDisassembler.Tests;
 
-// Cases where the native ildasm produces output that does not reassemble to the original; the managed one must.
-public class NativeIssueTests
+// Disassembly that must reassemble to the original, from reported issues and review findings.
+public class RegressionTests
 {
     private const string Prolog = """
         .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) .ver 10:0:0:0 }
@@ -194,13 +194,13 @@ public class NativeIssueTests
     [Fact]
     public void LineNumbersComeFromThePortablePdb()
     {
-        string path = typeof(NativeIssueTests).Assembly.Location;
+        string path = typeof(RegressionTests).Assembly.Location;
         using Disassembler disassembler = new(path, new Options { ShowLineNumbers = true });
         StringWriter writer = new();
         Assert.True(disassembler.Disassemble(writer, TextWriter.Null, outputFilePath: null));
         string il = writer.ToString();
         Assert.Contains(".line ", il);
-        Assert.Contains("NativeIssueTests.cs'", il);
+        Assert.Contains("RegressionTests.cs'", il);
     }
     // dotnet/runtime#38507 (JIT/opt/Inline/regression/badcallee): a branch past the end of the code has no label to refer to.
     [Fact]
@@ -220,8 +220,7 @@ public class NativeIssueTests
         Assert.Contains("br.s       100", il);
     }
 
-    // JIT/Directed/RVAInit: the native ildasm sizes the data of a struct field by the sum of its fields,
-    // dropping the padding and truncating the data.
+    // JIT/Directed/RVAInit: the data of a struct field includes the padding of the struct.
     [Fact]
     public void FieldDataOfAPaddedStructKeepsItsSize()
     {
@@ -261,6 +260,80 @@ public class NativeIssueTests
         string il = RoundTripTests.Disassemble(original, new Options { CustomAttributesVerbal = true });
         Assert.DoesNotContain("string('a')", il);
         Assert.Equal(CustomAttributeValues(original), CustomAttributeValues(RoundTripTests.Assemble(il)));
+    }
+
+    public static TheoryData<string, string, string> VerbalCustomAttributes { get; } = new()
+    {
+        { "fixed and named", "void A::.ctor(int32, string, bool) = { int32(5) string('a') bool(true) property int32 'P' = int32(7) field string 'F' = string('b') }",
+          "property int32 'P' = int32(7)" },
+        { "boxed fixed", "void A::.ctor(object) = { object(int32(5)) }", "object(int32(5))" },
+        { "boxed named", "void A::.ctor() = { property object 'O' = object(string('x')) }", "property object 'O' = object(string('x'))" },
+        { "arrays", "void A::.ctor(int32[], string[]) = { int32[2](1 2) string[2]('a' nullref) }", "int32[2](1 2)" },
+        { "empty and null arrays", "void A::.ctor(int32[], string[]) = { int32[0]( ) string[-1]( ) }", "string[-1]( )" },
+        { "object array", "void A::.ctor(object[]) = { object[2](int32(1) string('s')) }", "object[2](int32(1) string('s'))" },
+        { "local enum", "void A::.ctor(valuetype E) = { int16(3) }", "int16(3)" },
+        { "local enum array", "void A::.ctor(valuetype E[]) = { int16[2](1 2) }", "int16[2](1 2)" },
+        { "external enum", "void A::.ctor(valuetype [System.Runtime]System.AttributeTargets) = { int32(4) }", "int32(4)" },
+        { "named enum", "void A::.ctor() = { property enum class 'E' 'P' = int16(2) }", "property enum " },
+        { "type", "void A::.ctor(class [System.Runtime]System.Type) = { type(class 'C') }", "type(C)" },
+    };
+
+    [Theory]
+    [MemberData(nameof(VerbalCustomAttributes))]
+    public void VerbalCustomAttributeRoundTrips(string name, string attribute, string expected)
+    {
+        _ = name;
+        byte[] original = RoundTripTests.Assemble(Prolog + $$"""
+            .class public sealed E extends [System.Runtime]System.Enum
+            {
+              .field public specialname rtspecialname int16 value__
+            }
+            .class public A extends [System.Runtime]System.Attribute
+            {
+              .method public specialname rtspecialname instance void .ctor() cil managed { ret }
+              .method public specialname rtspecialname instance void .ctor(int32 a, string b, bool c) cil managed { ret }
+              .method public specialname rtspecialname instance void .ctor(object a) cil managed { ret }
+              .method public specialname rtspecialname instance void .ctor(int32[] a, string[] b) cil managed { ret }
+              .method public specialname rtspecialname instance void .ctor(object[] a) cil managed { ret }
+              .method public specialname rtspecialname instance void .ctor(valuetype E a) cil managed { ret }
+              .method public specialname rtspecialname instance void .ctor(valuetype E[] a) cil managed { ret }
+              .method public specialname rtspecialname instance void .ctor(valuetype [System.Runtime]System.AttributeTargets a) cil managed { ret }
+              .method public specialname rtspecialname instance void .ctor(class [System.Runtime]System.Type a) cil managed { ret }
+            }
+            .class public C extends [System.Runtime]System.Object
+            {
+              .custom instance {{attribute}}
+            }
+            """);
+        string il = RoundTripTests.Disassemble(original, new Options { CustomAttributesVerbal = true });
+        Assert.Contains(expected, il);
+        Assert.DoesNotContain(il.Split('\n'), l => l.Contains("A::.ctor") && l.Contains("= ( ")); // not dumped as bytes
+        Assert.Equal(CustomAttributeValues(original), CustomAttributeValues(RoundTripTests.Assemble(il)));
+    }
+
+    [Fact]
+    public void PermissionSetRoundTrips()
+    {
+        byte[] original = RoundTripTests.Assemble(Prolog + """
+            .class public C extends [System.Runtime]System.Object
+            {
+              .method public static void M() cil managed
+              {
+                .permissionset demand = {[System.Runtime]System.Security.Permissions.SecurityPermissionAttribute = {property bool 'UnmanagedCode' = bool(true) property int32 'Flags' = int32(2)}}
+                ret
+              }
+            }
+            """);
+        string il = RoundTripTests.Disassemble(original);
+        Assert.Contains("property bool 'UnmanagedCode' = bool(true)", il);
+        Assert.Equal(PermissionSets(original), PermissionSets(RoundTripTests.Assemble(il)));
+    }
+
+    private static string[] PermissionSets(byte[] image)
+    {
+        using PEReader pe = new(new MemoryStream(image));
+        MetadataReader md = pe.GetMetadataReader();
+        return md.DeclarativeSecurityAttributes.Select(h => Convert.ToHexString(md.GetBlobBytes(md.GetDeclarativeSecurityAttribute(h).PermissionSet))).ToArray();
     }
 
     // A comma in a quoted name after an escaped quote is not a parameter separator for the long-signature split.
@@ -320,7 +393,7 @@ public class NativeIssueTests
     public void HeadersOfAFileWithoutMetadata()
     {
         BlobBuilder image = new();
-        new NativePEBuilder().Serialize(image);
+        new NoMetadataPEBuilder().Serialize(image);
         using Disassembler disassembler = new(new MemoryStream(image.ToArray()), new Options { Headers = true });
         StringWriter writer = new();
         StringWriter error = new();
@@ -329,7 +402,7 @@ public class NativeIssueTests
         Assert.Contains("has no valid CLR header", error.ToString());
     }
 
-    private sealed class NativePEBuilder() : PEBuilder(PEHeaderBuilder.CreateLibraryHeader(), deterministicIdProvider: null)
+    private sealed class NoMetadataPEBuilder() : PEBuilder(PEHeaderBuilder.CreateLibraryHeader(), deterministicIdProvider: null)
     {
         protected override System.Collections.Immutable.ImmutableArray<Section> CreateSections()
             => [new Section(".text", SectionCharacteristics.ContainsCode | SectionCharacteristics.MemRead | SectionCharacteristics.MemExecute)];

@@ -182,7 +182,7 @@ internal static class NativeCommandLine
                 throw new ArgumentException($"Invalid native option '{arg}'.");
             }
 
-            // The native tool writes to the console for -OUT=CON.
+            // -OUT=CON writes to the console.
             if (normalizedOption == "--output" && normalizedValue.Equals("CON", StringComparison.OrdinalIgnoreCase))
             {
                 continue;

@@ -14,7 +14,7 @@ using System.Text;
 
 namespace ILDisassembler;
 
-// Assembly and manifest disassembly (the native dman.cpp).
+// Assembly and manifest disassembly.
 internal sealed partial class Dasm
 {
     private readonly List<(int Tok, string Name)> _files = new();
@@ -103,7 +103,7 @@ internal sealed partial class Dasm
         {
             StringBuilder sb = new();
             sb.Append(Indent).Append(KEYWORD(".locale")).Append(" = (");
-            // The native tool includes the terminating NUL character.
+            // The terminating NUL character is included.
             byte[] bytes = new byte[(culture.Length + 1) * 2];
             Encoding.Unicode.GetBytes(culture, 0, culture.Length, bytes, 0);
             DumpByteArray(sb, bytes);

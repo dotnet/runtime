@@ -24,8 +24,7 @@ public sealed class Options
     public bool ShowTokens { get; set; }
 
     /// <summary>
-    /// Show original source lines as comments. Accepted for compatibility: like the native ildasm on .NET,
-    /// which has no symbol reader, this has no effect on the output.
+    /// Show original source lines as comments. Accepted for compatibility; this has no effect on the output.
     /// </summary>
     public bool ShowSource { get; set; }
 

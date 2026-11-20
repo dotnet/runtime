@@ -10,7 +10,6 @@ namespace ILDisassembler;
 
 /// <summary>
 /// Disassembles a PE file into IL assembler source that ilasm can reassemble.
-/// The output follows the format of the native ildasm.
 /// </summary>
 public sealed class Disassembler : IDisposable
 {
@@ -34,7 +33,7 @@ public sealed class Disassembler : IDisposable
     }
 
     /// <summary>
-    /// Disassembles the PE file to the specified output, as the native ildasm does for console output.
+    /// Disassembles the PE file to the specified output, formatted as for console output.
     /// </summary>
     /// <returns>true on success.</returns>
     public bool Disassemble(TextWriter output) => Disassemble(output, Console.Error, outputFilePath: null);

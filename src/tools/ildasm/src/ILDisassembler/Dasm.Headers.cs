@@ -10,7 +10,7 @@ using System.Text;
 
 namespace ILDisassembler;
 
-// PE and CLR header dumps (/HEADERS), as in the native dasm.cpp.
+// PE and CLR header dumps (/HEADERS).
 internal sealed partial class Dasm
 {
     private PEMemoryBlock _r2rBlock;
@@ -85,7 +85,7 @@ internal sealed partial class Dasm
             PrintLine($"{dosNames[i]}0x{U16(i * 2):x4}");
         }
 
-        // The native tool prints e_ip again for the CS line.
+        // e_ip is printed again for the CS line.
         PrintLine($"// Initial (relative) CS:      0x{U16(0x14):x4}");
         PrintLine($"// File addr. of reloc table:  0x{U16(0x18):x4}");
         PrintLine($"// Overlay number:             0x{U16(0x1A):x4}");

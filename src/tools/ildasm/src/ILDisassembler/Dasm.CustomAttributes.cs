@@ -5,22 +5,27 @@ using System;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 
 namespace ILDisassembler;
 
-// Verbal custom attribute and permission set blobs (/CAVERBAL and .permissionset), as in the native dasm.cpp.
+// Verbal custom attribute (/CAVERBAL) and permission set blobs.
+//
+// The blobs are walked with BlobReader instead of being decoded with CustomAttribute.DecodeValue, which cannot
+// produce output that reassembles to the same blob:
+//  - It reports a boxed (object) argument by the type of its value, so object(int32(5)) and int32(5) look the
+//    same, but ilasm encodes them differently. For a named argument, the declared type is not available otherwise.
+//  - It needs the underlying type of every enum through the type provider, without access to the blob. The
+//    underlying type of an enum from another assembly is not known, and is instead inferred from the size of
+//    the remaining value.
+//  - It does not report whether the whole blob was consumed, so trailing data would be lost.
+// System.Reflection.Metadata has no decoder for the binary permission set format.
+// A blob that cannot be shown losslessly is dumped as bytes by the callers.
 internal sealed partial class Dasm
 {
-    private const byte SERIALIZATION_TYPE_TYPE = 0x50;
-    private const byte SERIALIZATION_TYPE_TAGGED_OBJECT = 0x51;
-    private const byte SERIALIZATION_TYPE_FIELD = 0x53;
-    private const byte SERIALIZATION_TYPE_PROPERTY = 0x54;
-    private const byte SERIALIZATION_TYPE_ENUM = 0x55;
-
-    private sealed class CABlobException : Exception
-    {
-    }
+    // The type of a value in a custom attribute blob.
+    private sealed record CAType(SerializationTypeCode Code, CAType? Element = null, int EnumToken = 0, string? EnumName = null);
 
     // ---------------------------------------------------------------- reflection notation
 
@@ -81,15 +86,8 @@ internal sealed partial class Dasm
     }
 
     // "Namespace.Name, Assembly, ..." -> a TypeDef or TypeRef token, or 0.
-    private int ResolveReflectionNotation(byte[] data, int start, int len)
+    private int ResolveReflectionNotation(string str)
     {
-        string str = Encoding.UTF8.GetString(data, start, len);
-        int z = str.IndexOf('\0');
-        if (z >= 0)
-        {
-            str = str.Substring(0, z);
-        }
-
         string? assembly = null;
         int comma = str.IndexOf(',');
         if (comma >= 0)
@@ -120,32 +118,29 @@ internal sealed partial class Dasm
             assembly = "mscorlib";
         }
 
-        int n = RowCount(System.Reflection.Metadata.Ecma335.TableIndex.AssemblyRef);
-        for (int i = 1; i <= n; i++)
+        foreach (AssemblyReferenceHandle h in _md.AssemblyReferences)
         {
-            AssemblyReference ar = _md.GetAssemblyReference(System.Reflection.Metadata.Ecma335.MetadataTokens.AssemblyReferenceHandle(i));
-            if (Str(ar.Name) == assembly)
+            if (Str(_md.GetAssemblyReference(h).Name) == assembly)
             {
-                return ResolveTypeRefReflectionNotation(ns, name, mdtAssemblyRef | i);
+                return ResolveTypeRefReflectionNotation(ns, name, Token(h));
             }
         }
 
         return 0;
     }
 
-    // The underlying type of an enum defined in this module; enums referenced from other assemblies cannot be
-    // resolved (the native tool cannot open them either) and give 0.
-    private uint UnderlyingTypeOfEnum(int tk)
+    // The underlying type of an enum defined in this module, or null (enums of other assemblies cannot be resolved).
+    private PrimitiveTypeCode? UnderlyingTypeOfEnum(int tk)
     {
         if (TypeFromToken(tk) != mdtTypeDef || !IsValidToken(tk))
         {
-            return 0;
+            return null;
         }
 
         (_, int parent) = GetTypeDefProps(tk);
         if (RidFromToken(parent) == 0 || !IsValidToken(parent))
         {
-            return 0;
+            return null;
         }
 
         (string name, string ns) = TypeFromToken(parent) switch
@@ -156,7 +151,7 @@ internal sealed partial class Dasm
         };
         if (name != "Enum" || ns != "System")
         {
-            return 0;
+            return null;
         }
 
         foreach (FieldDefinitionHandle fh in _md.GetTypeDefinition((TypeDefinitionHandle)Handle(tk)).GetFields())
@@ -167,409 +162,110 @@ internal sealed partial class Dasm
                 continue;
             }
 
-            byte[] sig = Blob(fd.Signature);
-            return sig.Length > 1 ? sig[1] : 0u;
+            BlobReader sig = _md.GetBlobReader(fd.Signature);
+            if (sig.ReadSignatureHeader().Kind != SignatureKind.Field)
+            {
+                return null;
+            }
+
+            SignatureTypeCode code = sig.ReadSignatureTypeCode();
+            return code is >= SignatureTypeCode.Boolean and <= SignatureTypeCode.UInt64 ? (PrimitiveTypeCode)code : null;
         }
 
-        return 0;
+        return null;
     }
 
-    // ---------------------------------------------------------------- blob values
+    // ---------------------------------------------------------------- types
 
-    private static int SkipType(byte[] s, int p)
+    private static bool IsPrimitive(SerializationTypeCode code)
+        => code is >= SerializationTypeCode.Boolean and <= SerializationTypeCode.String;
+
+    // A parameter type of the attribute constructor signature.
+    private static CAType ReadParameterType(ref BlobReader sig)
     {
         while (true)
         {
-            byte b = s[p++];
-            switch (b)
+            byte b = sig.ReadByte();
+            switch ((SignatureTypeCode)b)
             {
-                case SERIALIZATION_TYPE_ENUM:
-                {
-                    uint l = UncompressData(s, ref p);
-                    return p + (int)l;
-                }
-
-                case ELEMENT_TYPE_VALUETYPE:
-                case ELEMENT_TYPE_CLASS:
-                    UncompressToken(s, ref p);
-                    return p;
-                case ELEMENT_TYPE_CMOD_REQD:
-                case ELEMENT_TYPE_CMOD_OPT:
-                    UncompressToken(s, ref p);
+                case SignatureTypeCode.RequiredModifier:
+                case SignatureTypeCode.OptionalModifier:
+                    sig.ReadTypeHandle();
                     continue;
-                case ELEMENT_TYPE_ARRAY:
-                {
-                    p = SkipType(s, p);
-                    uint rank = UncompressData(s, ref p);
-                    if (rank != 0)
-                    {
-                        uint numSizes = UncompressData(s, ref p);
-                        while (numSizes-- > 0)
-                        {
-                            UncompressData(s, ref p);
-                        }
-
-                        uint numLowBounds = UncompressData(s, ref p);
-                        while (numLowBounds-- > 0)
-                        {
-                            UncompressData(s, ref p);
-                        }
-                    }
-
-                    return p;
-                }
-
-                case ELEMENT_TYPE_PINNED:
-                case ELEMENT_TYPE_PTR:
-                case ELEMENT_TYPE_BYREF:
-                case ELEMENT_TYPE_SZARRAY:
+                case SignatureTypeCode.Pinned:
+                case SignatureTypeCode.Sentinel:
                     continue;
-                case ELEMENT_TYPE_VAR:
-                case ELEMENT_TYPE_MVAR:
-                    UncompressData(s, ref p);
-                    return p;
-                case ELEMENT_TYPE_FNPTR:
-                {
-                    UncompressData(s, ref p);
-                    uint argCnt = UncompressData(s, ref p);
-                    p = SkipType(s, p);
-                    while (argCnt-- > 0)
-                    {
-                        p = SkipType(s, p);
-                    }
-
-                    return p;
-                }
-
-                case ELEMENT_TYPE_GENERICINST:
-                {
-                    p = SkipType(s, p);
-                    uint argCnt = UncompressData(s, ref p);
-                    while (argCnt-- > 0)
-                    {
-                        p = SkipType(s, p);
-                    }
-
-                    return p;
-                }
-
+                case SignatureTypeCode.Object:
+                    return new CAType(SerializationTypeCode.TaggedObject);
+                case SignatureTypeCode.SZArray:
+                    return new CAType(SerializationTypeCode.SZArray, ElementType(ReadParameterType(ref sig)));
+                case (SignatureTypeCode)SignatureTypeKind.Class:
+                    // Only System.Type is valid here.
+                    sig.ReadTypeHandle();
+                    return new CAType(SerializationTypeCode.Type);
+                case (SignatureTypeCode)SignatureTypeKind.ValueType:
+                    // Only an enum is valid here.
+                    return new CAType(SerializationTypeCode.Enum, EnumToken: Token(sig.ReadTypeHandle()));
                 default:
-                    return p;
+                    return IsPrimitive((SerializationTypeCode)b) ? new CAType((SerializationTypeCode)b) : throw new BadImageFormatException();
             }
         }
     }
 
-    // PrettyPrintCABlobValue: formats one value of type ts[tp] read from data[dp]; throws CABlobException on failure.
-    private void PrettyPrintCABlobValue(byte[] ts, ref int tp, byte[] data, ref int dp, int dataEnd, StringBuilder out_)
+    // A type encoded in the blob: the type of a named argument or of a boxed value.
+    private static CAType ReadEncodedType(ref BlobReader r)
     {
-        string appendix = "";
-        uint numElements = 1;
-        bool reiterate;
-        bool closeParenthesis;
-        CultureInfo inv = CultureInfo.InvariantCulture;
-        do
+        SerializationTypeCode code = r.ReadSerializationTypeCode();
+        return code switch
         {
-            if (dp >= dataEnd)
-            {
-                throw new CABlobException();
-            }
-
-            reiterate = false;
-            closeParenthesis = true;
-            byte typ = ts[tp++];
-
-            void Open(string keyword)
-            {
-                out_.Append(KEYWORD(keyword)).Append(appendix).Append('(');
-            }
-
-            switch (typ)
-            {
-                case ELEMENT_TYPE_BOOLEAN:
-                    Open("bool");
-                    for (uint n = 0; n < numElements; n++)
-                    {
-                        if (n != 0) out_.Append(' ');
-                        out_.Append(data[dp] != 0 ? KEYWORD("true") : KEYWORD("false"));
-                        dp++;
-                    }
-
-                    break;
-                case ELEMENT_TYPE_CHAR:
-                    Open("char");
-                    for (uint n = 0; n < numElements; n++)
-                    {
-                        if (n != 0) out_.Append(' ');
-                        out_.Append("0x").Append(BitConverter.ToUInt16(data, dp).ToString("X4", inv));
-                        dp += 2;
-                    }
-
-                    break;
-                case ELEMENT_TYPE_I1:
-                    Open("int8");
-                    for (uint n = 0; n < numElements; n++)
-                    {
-                        if (n != 0) out_.Append(' ');
-                        out_.Append(((sbyte)data[dp]).ToString(inv));
-                        dp++;
-                    }
-
-                    break;
-                case ELEMENT_TYPE_U1:
-                    Open("uint8");
-                    for (uint n = 0; n < numElements; n++)
-                    {
-                        if (n != 0) out_.Append(' ');
-                        out_.Append(data[dp].ToString(inv));
-                        dp++;
-                    }
-
-                    break;
-                case ELEMENT_TYPE_I2:
-                    Open("int16");
-                    for (uint n = 0; n < numElements; n++)
-                    {
-                        if (n != 0) out_.Append(' ');
-                        out_.Append(BitConverter.ToInt16(data, dp).ToString(inv));
-                        dp += 2;
-                    }
-
-                    break;
-                case ELEMENT_TYPE_U2:
-                    Open("uint16");
-                    for (uint n = 0; n < numElements; n++)
-                    {
-                        if (n != 0) out_.Append(' ');
-                        out_.Append(BitConverter.ToUInt16(data, dp).ToString(inv));
-                        dp += 2;
-                    }
-
-                    break;
-                case ELEMENT_TYPE_I4:
-                case ELEMENT_TYPE_U4:
-                    // The native tool prints both with %d.
-                    Open(typ == ELEMENT_TYPE_I4 ? "int32" : "uint32");
-                    for (uint n = 0; n < numElements; n++)
-                    {
-                        if (n != 0) out_.Append(' ');
-                        out_.Append(BitConverter.ToInt32(data, dp).ToString(inv));
-                        dp += 4;
-                    }
-
-                    break;
-                case ELEMENT_TYPE_I8:
-                case ELEMENT_TYPE_U8:
-                    // The native tool prints both with %lld.
-                    Open(typ == ELEMENT_TYPE_I8 ? "int64" : "uint64");
-                    for (uint n = 0; n < numElements; n++)
-                    {
-                        if (n != 0) out_.Append(' ');
-                        out_.Append(BitConverter.ToInt64(data, dp).ToString(inv));
-                        dp += 8;
-                    }
-
-                    break;
-                case ELEMENT_TYPE_R4:
-                    Open("float32");
-                    for (uint n = 0; n < numElements; n++)
-                    {
-                        if (n != 0) out_.Append(' ');
-                        uint bits = BitConverter.ToUInt32(data, dp);
-                        string s = FormatG(BitConverter.UInt32BitsToSingle(bits), 8, alternate: true);
-                        float df = (float)Atof(s);
-                        if (BitConverter.SingleToUInt32Bits(df) != bits || IsSpecialNumber(s))
-                        {
-                            s = "0x" + bits.ToString("X8", inv);
-                        }
-
-                        out_.Append(s);
-                        dp += 4;
-                    }
-
-                    break;
-                case ELEMENT_TYPE_R8:
-                    Open("float64");
-                    for (uint n = 0; n < numElements; n++)
-                    {
-                        if (n != 0) out_.Append(' ');
-                        ulong bits = BitConverter.ToUInt64(data, dp);
-                        string s = FormatG(BitConverter.UInt64BitsToDouble(bits), 17, alternate: true);
-                        double df = Atof(s);
-                        if (BitConverter.DoubleToUInt64Bits(df) != bits || IsSpecialNumber(s))
-                        {
-                            s = "0x" + bits.ToString("X", inv);
-                        }
-
-                        out_.Append(s);
-                        dp += 8;
-                    }
-
-                    break;
-                case ELEMENT_TYPE_OBJECT:
-                case SERIALIZATION_TYPE_TAGGED_OBJECT:
-                    Open("object");
-                    for (uint n = 0; n < numElements; n++)
-                    {
-                        int valuePtr = SkipType(data, dp);
-                        if (n != 0) out_.Append(' ');
-                        int typePtr = dp;
-                        PrettyPrintCABlobValue(data, ref typePtr, data, ref valuePtr, dataEnd, out_);
-                        dp = valuePtr;
-                    }
-
-                    break;
-                case ELEMENT_TYPE_STRING:
-                    Open("string");
-                    for (uint n = 0; n < numElements; n++)
-                    {
-                        if (n != 0) out_.Append(' ');
-                        if (data[dp] == 0xFF)
-                        {
-                            out_.Append(KEYWORD("nullref"));
-                            dp++;
-                        }
-                        else
-                        {
-                            out_.Append('\'');
-                            int l = (int)UncompressData(data, ref dp);
-                            if (dp + l > dataEnd)
-                            {
-                                throw new CABlobException();
-                            }
-
-                            out_.Append(UnquotedProperName(CAString(data, dp, l))).Append('\'');
-                            dp += l;
-                        }
-                    }
-
-                    break;
-                case ELEMENT_TYPE_CLASS:
-                case SERIALIZATION_TYPE_TYPE:
-                    if (typ == ELEMENT_TYPE_CLASS)
-                    {
-                        UncompressToken(ts, ref tp);
-                    }
-
-                    Open("type");
-                    for (uint n = 0; n < numElements; n++)
-                    {
-                        if (n != 0) out_.Append(' ');
-                        if (data[dp] == 0xFF)
-                        {
-                            out_.Append(KEYWORD("nullref"));
-                            dp++;
-                        }
-                        else
-                        {
-                            int l = (int)UncompressData(data, ref dp);
-                            if (dp + l > dataEnd)
-                            {
-                                throw new CABlobException();
-                            }
-
-                            AppendResolvedType(out_, data, dp, l);
-                            dp += l;
-                        }
-                    }
-
-                    break;
-                case ELEMENT_TYPE_VALUETYPE:
-                case SERIALIZATION_TYPE_ENUM:
-                {
-                    int tk;
-                    if (typ == ELEMENT_TYPE_VALUETYPE)
-                    {
-                        tk = UncompressToken(ts, ref tp);
-                    }
-                    else
-                    {
-                        int l = (int)UncompressData(ts, ref tp);
-                        tk = ResolveReflectionNotation(ts, tp, l);
-                        tp += l;
-                    }
-
-                    uint underType = UnderlyingTypeOfEnum(tk);
-                    if (underType == 0)
-                    {
-                        underType = (dataEnd - dp) switch
-                        {
-                            1 => ELEMENT_TYPE_BOOLEAN,
-                            2 => ELEMENT_TYPE_I2,
-                            4 => ELEMENT_TYPE_I4,
-                            8 => ELEMENT_TYPE_I8,
-                            _ => throw new CABlobException(),
-                        };
-                    }
-
-                    byte[] ps = [(byte)underType];
-                    int pp = 0;
-                    PrettyPrintCABlobValue(ps, ref pp, data, ref dp, dataEnd, out_);
-                    closeParenthesis = false;
-                    break;
-                }
-
-                case ELEMENT_TYPE_SZARRAY:
-                    numElements *= BitConverter.ToUInt32(data, dp);
-                    reiterate = true;
-                    appendix = "[" + ((int)numElements).ToString(inv) + "]";
-                    if (numElements == 0xFFFFFFFF)
-                    {
-                        numElements = 0;
-                    }
-
-                    dp += 4;
-                    break;
-                case ELEMENT_TYPE_CMOD_OPT:
-                case ELEMENT_TYPE_CMOD_REQD:
-                case ELEMENT_TYPE_PINNED:
-                    reiterate = true;
-                    break;
-                default:
-                    throw new CABlobException();
-            }
-        }
-        while (reiterate);
-
-        if (closeParenthesis)
-        {
-            out_.Append(')');
-        }
+            SerializationTypeCode.Type or SerializationTypeCode.TaggedObject => new CAType(code),
+            SerializationTypeCode.SZArray => new CAType(code, ElementType(ReadEncodedType(ref r))),
+            SerializationTypeCode.Enum => new CAType(code, EnumName: ReadString(ref r) ?? throw new BadImageFormatException()),
+            _ => IsPrimitive(code) ? new CAType(code) : throw new BadImageFormatException(),
+        };
     }
 
-    private static readonly UTF8Encoding s_strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    // Arrays of arrays are not valid in custom attributes.
+    private static CAType ElementType(CAType t) => t.Code != SerializationTypeCode.SZArray ? t : throw new BadImageFormatException();
 
-    // CAString: decodes a SerString value, falling back to the raw blob when the string cannot be written losslessly
-    // (embedded NULs or invalid UTF-8).
-    private static string CAString(byte[] b, int start, int len)
+    // A SerString that can be written losslessly: one with embedded NULs or invalid UTF-8 (decoded as U+FFFD) cannot.
+    private static string? ReadString(ref BlobReader r)
     {
-        if (Array.IndexOf(b, (byte)0, start, len) >= 0)
+        string? s = r.ReadSerializedString();
+        if (s is not null && (s.Contains('\0') || s.Contains('\uFFFD')))
         {
-            throw new CABlobException();
+            throw new BadImageFormatException();
         }
 
-        try
-        {
-            return s_strictUtf8.GetString(b, start, len);
-        }
-        catch (DecoderFallbackException)
-        {
-            throw new CABlobException();
-        }
+        return s;
     }
 
-    private static string Utf8Z(byte[] b, int start, int len)
+    private static string Keyword(SerializationTypeCode code) => code switch
     {
-        int end = start + len;
-        int z = Array.IndexOf(b, (byte)0, start, len);
-        return Encoding.UTF8.GetString(b, start, (z < 0 ? end : z) - start);
-    }
+        SerializationTypeCode.Boolean => "bool",
+        SerializationTypeCode.Char => "char",
+        SerializationTypeCode.SByte => "int8",
+        SerializationTypeCode.Byte => "uint8",
+        SerializationTypeCode.Int16 => "int16",
+        SerializationTypeCode.UInt16 => "uint16",
+        SerializationTypeCode.Int32 => "int32",
+        SerializationTypeCode.UInt32 => "uint32",
+        SerializationTypeCode.Int64 => "int64",
+        SerializationTypeCode.UInt64 => "uint64",
+        SerializationTypeCode.Single => "float32",
+        SerializationTypeCode.Double => "float64",
+        SerializationTypeCode.String => "string",
+        SerializationTypeCode.Type => "type",
+        SerializationTypeCode.TaggedObject => "object",
+        _ => throw new BadImageFormatException(),
+    };
 
-    private void AppendResolvedType(StringBuilder out_, byte[] data, int start, int len)
+    private void AppendResolvedType(StringBuilder out_, string name)
     {
-        int tk = ResolveReflectionNotation(data, start, len);
+        int tk = ResolveReflectionNotation(name);
         if (IsNilToken(tk))
         {
-            out_.Append(KEYWORD("class ")).Append('\'').Append(UnquotedProperName(Utf8Z(data, start, len))).Append('\'');
+            out_.Append(KEYWORD("class ")).Append('\'').Append(UnquotedProperName(name)).Append('\'');
         }
         else
         {
@@ -577,90 +273,224 @@ internal sealed partial class Dasm
         }
     }
 
-    private void PrettyPrintCustomAttributeNVPairs(uint nPairs, byte[] data, ref int dp, int dataEnd, StringBuilder out_)
+    // The type of a named argument: "int32", "string[]", "type", "object[]", "enum class 'N.E'"...
+    private void AppendEncodedType(StringBuilder out_, CAType t)
     {
-        while (dp < dataEnd)
+        switch (t.Code)
         {
-            switch (data[dp])
-            {
-                case SERIALIZATION_TYPE_FIELD:
-                    out_.Append(KEYWORD("field "));
-                    break;
-                case SERIALIZATION_TYPE_PROPERTY:
-                    out_.Append(KEYWORD("property "));
-                    break;
-                default:
-                    throw new CABlobException();
-            }
-
-            dp++;
-            if (dp >= dataEnd)
-            {
-                throw new CABlobException();
-            }
-
-            int dataTypePtr = dp;
-            string append = "";
-            if (data[dp] == ELEMENT_TYPE_SZARRAY)
-            {
-                append = "[]";
-                dp++;
-            }
-
-            if (data[dp] == SERIALIZATION_TYPE_TYPE)
-            {
-                out_.Append(KEYWORD("type"));
-                dp++;
-            }
-            else if (data[dp] == SERIALIZATION_TYPE_TAGGED_OBJECT)
-            {
-                out_.Append(KEYWORD("object"));
-                dp++;
-            }
-            else if (data[dp] == SERIALIZATION_TYPE_ENUM)
-            {
+            case SerializationTypeCode.SZArray:
+                AppendEncodedType(out_, t.Element!);
+                out_.Append("[]");
+                break;
+            case SerializationTypeCode.Enum:
                 out_.Append(KEYWORD("enum "));
-                dp++;
-                int l = (int)UncompressData(data, ref dp);
-                if (dp + l > dataEnd)
-                {
-                    throw new CABlobException();
-                }
-
-                AppendResolvedType(out_, data, dp, l);
-                dp += l;
-            }
-            else
-            {
-                append = "";
-                dp = dataTypePtr;
-                PrettyPrintType(data, ref dp, out_);
-            }
-
-            out_.Append(append);
-            if (dp >= dataEnd)
-            {
-                throw new CABlobException();
-            }
-
-            int nameLen = (int)UncompressData(data, ref dp);
-            if (dp + nameLen > dataEnd)
-            {
-                throw new CABlobException();
-            }
-
-            out_.Append(" '").Append(UnquotedProperName(Utf8Z(data, dp, nameLen))).Append("' = ");
-            dp += nameLen;
-            if (dp >= dataEnd)
-            {
-                throw new CABlobException();
-            }
-
-            PrettyPrintCABlobValue(data, ref dataTypePtr, data, ref dp, dataEnd, out_);
-            out_.Append('\n');
-            nPairs--;
+                AppendResolvedType(out_, t.EnumName!);
+                break;
+            default:
+                out_.Append(KEYWORD(Keyword(t.Code)));
+                break;
         }
     }
+
+    // ---------------------------------------------------------------- values
+
+    // Appends a value of type t, such as "int32(5)", "string[2]('a' nullref)" or "object(type(class C))",
+    // read from r, which must not go past end.
+    private void AppendValue(ref BlobReader r, int end, CAType t, StringBuilder out_)
+    {
+        if (r.Offset >= end)
+        {
+            throw new BadImageFormatException();
+        }
+
+        string appendix = "";
+        int count = 1;
+        bool isArray = t.Code == SerializationTypeCode.SZArray;
+        if (isArray)
+        {
+            int n = r.ReadInt32();
+            if (n < -1)
+            {
+                throw new BadImageFormatException();
+            }
+
+            appendix = "[" + n.ToString(CultureInfo.InvariantCulture) + "]";
+            count = n == -1 ? 0 : n; // -1 is a null array
+            t = t.Element!;
+        }
+
+        // An enum value is shown as its underlying type.
+        SerializationTypeCode code = t.Code == SerializationTypeCode.Enum ? UnderlyingTypeOfEnumValue(t, end - r.Offset, isArray) : t.Code;
+        out_.Append(KEYWORD(Keyword(code))).Append(appendix).Append('(');
+        for (int i = 0; i < count; i++)
+        {
+            if (i != 0)
+            {
+                out_.Append(' ');
+            }
+
+            AppendElement(ref r, end, code, out_);
+            if (r.Offset > end)
+            {
+                throw new BadImageFormatException();
+            }
+        }
+
+        // An empty array gets "( )": managed ilasm reads "()" as a single token.
+        out_.Append(count == 0 && isArray ? " )" : ")");
+    }
+
+    private SerializationTypeCode UnderlyingTypeOfEnumValue(CAType t, int remaining, bool isArray)
+    {
+        PrimitiveTypeCode? underlying = UnderlyingTypeOfEnum(t.EnumToken != 0 ? t.EnumToken : ResolveReflectionNotation(t.EnumName!));
+        if (underlying is not null)
+        {
+            return (SerializationTypeCode)underlying.Value;
+        }
+
+        // Unknown enum: infer the size from the rest of the value, which only works for the last one.
+        return isArray ? throw new BadImageFormatException() : remaining switch
+        {
+            1 => SerializationTypeCode.Byte,
+            2 => SerializationTypeCode.Int16,
+            4 => SerializationTypeCode.Int32,
+            8 => SerializationTypeCode.Int64,
+            _ => throw new BadImageFormatException(),
+        };
+    }
+
+    private void AppendElement(ref BlobReader r, int end, SerializationTypeCode code, StringBuilder out_)
+    {
+        CultureInfo inv = CultureInfo.InvariantCulture;
+        switch (code)
+        {
+            case SerializationTypeCode.Boolean:
+                out_.Append(KEYWORD(r.ReadByte() switch
+                {
+                    0 => "false",
+                    1 => "true",
+                    _ => throw new BadImageFormatException(), // not representable as bool(...)
+                }));
+                break;
+            case SerializationTypeCode.Char:
+                out_.Append("0x").Append(r.ReadUInt16().ToString("X4", inv));
+                break;
+            case SerializationTypeCode.SByte:
+                out_.Append(r.ReadSByte().ToString(inv));
+                break;
+            case SerializationTypeCode.Byte:
+                out_.Append(r.ReadByte().ToString(inv));
+                break;
+            case SerializationTypeCode.Int16:
+                out_.Append(r.ReadInt16().ToString(inv));
+                break;
+            case SerializationTypeCode.UInt16:
+                out_.Append(r.ReadUInt16().ToString(inv));
+                break;
+            case SerializationTypeCode.Int32:
+            case SerializationTypeCode.UInt32:
+                // Both are shown as signed.
+                out_.Append(r.ReadInt32().ToString(inv));
+                break;
+            case SerializationTypeCode.Int64:
+            case SerializationTypeCode.UInt64:
+                out_.Append(r.ReadInt64().ToString(inv));
+                break;
+            case SerializationTypeCode.Single:
+            {
+                uint bits = r.ReadUInt32();
+                string s = FormatG(BitConverter.UInt32BitsToSingle(bits), 8, alternate: true);
+                if (BitConverter.SingleToUInt32Bits((float)Atof(s)) != bits || IsSpecialNumber(s))
+                {
+                    s = "0x" + bits.ToString("X8", inv);
+                }
+
+                out_.Append(s);
+                break;
+            }
+
+            case SerializationTypeCode.Double:
+            {
+                ulong bits = r.ReadUInt64();
+                string s = FormatG(BitConverter.UInt64BitsToDouble(bits), 17, alternate: true);
+                if (BitConverter.DoubleToUInt64Bits(Atof(s)) != bits || IsSpecialNumber(s))
+                {
+                    s = "0x" + bits.ToString("X", inv);
+                }
+
+                out_.Append(s);
+                break;
+            }
+
+            case SerializationTypeCode.String:
+            {
+                string? s = ReadString(ref r);
+                if (s is null)
+                {
+                    out_.Append(KEYWORD("nullref"));
+                }
+                else
+                {
+                    out_.Append('\'').Append(UnquotedProperName(s)).Append('\'');
+                }
+
+                break;
+            }
+
+            case SerializationTypeCode.Type:
+            {
+                string? s = ReadString(ref r);
+                if (s is null)
+                {
+                    out_.Append(KEYWORD("nullref"));
+                }
+                else
+                {
+                    AppendResolvedType(out_, s);
+                }
+
+                break;
+            }
+
+            case SerializationTypeCode.TaggedObject:
+                AppendValue(ref r, end, ReadEncodedType(ref r), out_);
+                break;
+            default:
+                throw new BadImageFormatException();
+        }
+    }
+
+    // Appends count named arguments, one per line, which must end exactly at end.
+    private void AppendNamedArguments(ref BlobReader r, int count, int end, StringBuilder out_)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            if (r.Offset >= end)
+            {
+                throw new BadImageFormatException();
+            }
+
+            out_.Append(KEYWORD((CustomAttributeNamedArgumentKind)r.ReadByte() switch
+            {
+                CustomAttributeNamedArgumentKind.Field => "field ",
+                CustomAttributeNamedArgumentKind.Property => "property ",
+                _ => throw new BadImageFormatException(),
+            }));
+            CAType t = ReadEncodedType(ref r);
+            AppendEncodedType(out_, t);
+            string name = ReadString(ref r) ?? throw new BadImageFormatException();
+            out_.Append(" '").Append(UnquotedProperName(name)).Append("' = ");
+            AppendValue(ref r, end, t, out_);
+            out_.Append('\n');
+        }
+
+        if (r.Offset != end)
+        {
+            throw new BadImageFormatException();
+        }
+    }
+
+    // ---------------------------------------------------------------- custom attributes
 
     // Appends " = {...}" to line (possibly emitting preceding lines); returns false if the blob cannot be shown verbally.
     private bool PrettyPrintCustomAttributeBlob(int tkType, byte[] blob, StringBuilder line)
@@ -680,50 +510,12 @@ internal sealed partial class Dasm
         }
 
         StringBuilder out_ = new();
-        uint numElements;
+        int numElements;
         try
         {
-            int tp = 0;
-            uint callConv = UncompressData(sig, ref tp);
-            if ((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
-            {
-                return false;
-            }
-
-            uint numArgs = UncompressData(sig, ref tp);
-            numElements = numArgs;
-            if (!IsCallConv(callConv, IMAGE_CEE_CS_CALLCONV_GENERICINST))
-            {
-                PrettyPrintType(sig, ref tp, new StringBuilder());
-            }
-
-            out_.Append(" = {");
-            int dp = 2;
-            while (tp < sig.Length)
-            {
-                if (sig[tp] == ELEMENT_TYPE_SENTINEL)
-                {
-                    tp++;
-                }
-                else
-                {
-                    if (numArgs == 0)
-                    {
-                        break;
-                    }
-
-                    PrettyPrintCABlobValue(sig, ref tp, blob, ref dp, blob.Length - 2, out_);
-                    out_.Append('\n');
-                    --numArgs;
-                }
-            }
-
-            ushort numPairs = BitConverter.ToUInt16(blob, dp);
-            dp += 2;
-            numElements += numPairs;
-            PrettyPrintCustomAttributeNVPairs(numPairs, blob, ref dp, blob.Length, out_);
+            numElements = AppendCustomAttributeValue(sig, blob, out_);
         }
-        catch (Exception e) when (e is CABlobException or IndexOutOfRangeException or ArgumentException)
+        catch (BadImageFormatException)
         {
             return false;
         }
@@ -767,46 +559,88 @@ internal sealed partial class Dasm
         return true;
     }
 
-    // DumpPermissionSetBlob: the XML-less (".") permission set format, shown as attribute-like name/value pairs.
-    private bool DumpPermissionSetBlob(StringBuilder line, byte[] perm)
+    // Appends the constructor arguments and named arguments, one per line; returns their number.
+    private unsafe int AppendCustomAttributeValue(byte[] signature, byte[] blob, StringBuilder out_)
     {
-        if (perm.Length == 0 || perm[0] != '.')
+        fixed (byte* pSig = signature, pBlob = blob)
         {
-            return false;
-        }
+            BlobReader sig = new(pSig, signature.Length);
+            BlobReader r = new(pBlob, blob.Length);
+            SignatureHeader header = sig.ReadSignatureHeader();
+            if (header.Kind != SignatureKind.Method || header.IsGeneric)
+            {
+                throw new BadImageFormatException();
+            }
 
+            int numArgs = sig.ReadCompressedInteger();
+            SignatureTypeCode returnType;
+            while ((returnType = sig.ReadSignatureTypeCode()) is SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier)
+            {
+                sig.ReadTypeHandle();
+            }
+
+            if (returnType != SignatureTypeCode.Void || r.ReadUInt16() != 1) // the prolog
+            {
+                throw new BadImageFormatException();
+            }
+
+            out_.Append(" = {");
+            int argsEnd = blob.Length - 2; // the number of named arguments follows
+            for (int i = 0; i < numArgs; i++)
+            {
+                AppendValue(ref r, argsEnd, ReadParameterType(ref sig), out_);
+                out_.Append('\n');
+            }
+
+            int numPairs = r.ReadUInt16();
+            AppendNamedArguments(ref r, numPairs, blob.Length, out_);
+            return numArgs + numPairs;
+        }
+    }
+
+    // ---------------------------------------------------------------- permission sets
+
+    // DumpPermissionSetBlob: the binary (".") permission set format, shown as attribute-like name/value pairs.
+    private bool DumpPermissionSetBlob(StringBuilder line, BlobHandle permissionSet)
+    {
         StringBuilder out_ = new();
         try
         {
-            int p = 1;
-            out_.Append(" = {");
-            uint nAttrs = UncompressData(perm, ref p);
-            for (uint iAttr = 0; iAttr < nAttrs; iAttr++)
+            BlobReader r = _md.GetBlobReader(permissionSet);
+            if (r.Length == 0 || r.ReadByte() != '.')
             {
-                int l = (int)UncompressData(perm, ref p);
-                AppendResolvedType(out_, perm, p, l);
-                p += l;
+                return false;
+            }
+
+            out_.Append(" = {");
+            int nAttrs = r.ReadCompressedInteger();
+            for (int iAttr = 0; iAttr < nAttrs; iAttr++)
+            {
+                AppendResolvedType(out_, ReadString(ref r) ?? throw new BadImageFormatException());
                 out_.Append(" = {");
-                l = (int)UncompressData(perm, ref p);
+                int l = r.ReadCompressedInteger();
                 if (l > 0)
                 {
-                    int end = p + l;
-                    uint props = UncompressData(perm, ref p);
+                    int end = r.Offset + l;
+                    int props = r.ReadCompressedInteger();
+                    AppendNamedArguments(ref r, props, end, out_);
                     if (props > 0)
                     {
-                        PrettyPrintCustomAttributeNVPairs(props, perm, ref p, end, out_);
-                        out_.Length--;
+                        out_.Length--; // the last newline
                     }
-
-                    p = end;
                 }
 
                 out_.Append(iAttr == nAttrs - 1 ? "}" : "}, ");
             }
 
+            if (r.RemainingBytes != 0)
+            {
+                return false;
+            }
+
             out_.Append('}');
         }
-        catch (Exception e) when (e is CABlobException or IndexOutOfRangeException or ArgumentException)
+        catch (BadImageFormatException)
         {
             return false;
         }

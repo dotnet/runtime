@@ -8,8 +8,7 @@ using System.Text;
 
 namespace ILDisassembler;
 
-// /METADATA[=<specifier>]: the MetaInfo integration (DumpMetaInfo and DumpMI in the native dasm.cpp, which host
-// MDInfo::DisplayMD from src/coreclr/tools/metainfo/mdinfo.cpp). MetaInfo reads the metadata through the public
+// /METADATA[=<specifier>]: the MetaInfo dump (MDInfo::DisplayMD in src/coreclr/tools/metainfo). MetaInfo reads the metadata through the public
 // IMetaDataImport/IMetaDataTables interfaces of the read-write metadata engine, so the lookups below mirror what that
 // engine does on the raw tables (binary searches on sorted tables, linear scans, table pointer indirections) rather
 // than what System.Reflection.Metadata offers.
@@ -20,7 +19,7 @@ internal sealed partial class Dasm
         uint filter = 0;
         foreach (string spec in _options.MetadataFilters)
         {
-            // The native tool recognizes the specifier by its first 3 characters.
+            // The specifier is recognized by its first 3 characters.
             string s = spec.Length >= 3 ? spec.Substring(0, 3).ToLowerInvariant() : spec.ToLowerInvariant();
             filter |= s switch
             {
@@ -58,7 +57,7 @@ internal sealed partial class Dasm
         private const string Separator = "===========================================================";
         private const string Dashes = "-------------------------------------------------------";
 
-        // Name buffer sizes, in UTF-16 characters (STRING_BUFFER_LEN and MAX_CLASS_NAME in the native code).
+        // Name buffer sizes, in UTF-16 characters (STRING_BUFFER_LEN and MAX_CLASS_NAME).
         private const int StringBufferLen = 4096;
         private const int MaxClassName = 1024;
 
@@ -133,7 +132,7 @@ internal sealed partial class Dasm
 
         private static string PadR(string s, int w) => s.Length >= w ? s : s.PadRight(w);
 
-        // The native code converts names to UTF-16 into fixed size buffers and back to UTF-8.
+        // Names are converted to UTF-16 into fixed size buffers and back to UTF-8.
         private static string Fit(string s, int cch) => s.Length < cch ? s : s.Substring(0, cch - 1);
 
         private static string Utf8(ReadOnlySpan<byte> bytes) => Encoding.UTF8.GetString(bytes);
@@ -794,7 +793,7 @@ internal sealed partial class Dasm
 
         private (int Offset, int Size) BlobCol(int table, int col, uint rid) => Blob(Col(table, col, rid));
 
-        // Reads a byte of a blob, past its end too, as the native code does through raw pointers.
+        // Reads a byte of a blob, past its end too.
         private uint B(int offset, long i) => offset < 0 ? 0u : U8At(offset + i);
 
         private byte[] BlobBytes(int offset, int size)
@@ -858,7 +857,7 @@ internal sealed partial class Dasm
             }
             catch (MetaInfoFailure)
             {
-                // The native tool reports the failure and exits; there is nothing more to show here.
+                // The failure has been reported; there is nothing more to show here.
             }
         }
 
@@ -1345,7 +1344,7 @@ internal sealed partial class Dasm
                 constraints = Range(start, end, mdtGenericParamConstraint);
             }
 
-            // The native code enumerates the constraints 4 at a time, one line per batch.
+            // The constraints are enumerated 4 at a time, one line per batch.
             for (int i = 0; i < constraints.Count; i += 4)
             {
                 if (i == 0)
@@ -1994,7 +1993,7 @@ internal sealed partial class Dasm
             return mid;
         }
 
-        // Decodes the constructor arguments of a custom attribute blob (the native code covers the common cases only).
+        // Decodes the constructor arguments of a custom attribute blob (the common cases only).
         private void DecodeCustomAttributeArgs(int sig, int value, int cbValue, string prefix)
         {
             long ps = 0;
@@ -2827,7 +2826,7 @@ internal sealed partial class Dasm
             }
         }
 
-        // GetOneElementType: appends the element type at sig+start to _sigBuf; false on E_FAIL. Like the native code,
+        // GetOneElementType: appends the element type at sig+start to _sigBuf; false on E_FAIL. Like the metadata engine,
         // the size is not set when the type is not recognized at all.
         private bool GetOneElementType(int sig, uint start, uint ulSigBlob, ref uint pcb)
         {
@@ -2881,7 +2880,7 @@ internal sealed partial class Dasm
             _sigBuf.Append(' ');
             if (ulData >= ElementTypeMax)
             {
-                // The native code indexes past the table here; it never happens with valid signatures.
+                // Indexes past the table here; it never happens with valid signatures.
                 ok = false;
                 goto ErrExit;
             }
@@ -3071,7 +3070,7 @@ internal sealed partial class Dasm
             return ok;
         }
 
-        // ---------------------------------------------------------------- PrettyPrintSigLegacy (utilcode/prettyprintsig.cpp)
+        // ---------------------------------------------------------------- PrettyPrintSigLegacy
 
         private static readonly string?[] s_callConvNames =
         [

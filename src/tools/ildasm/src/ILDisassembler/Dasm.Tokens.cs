@@ -7,7 +7,7 @@ using System.Text;
 
 namespace ILDisassembler;
 
-// Token pretty printing (PrettyPrintToken and friends in the native dis.cpp).
+// Token pretty printing.
 internal sealed partial class Dasm
 {
     // .typedef aliases encoded by ilasm as ELEMENT_TYPE_TYPEDEF TypeSpecs.
@@ -265,7 +265,7 @@ internal sealed partial class Dasm
                 }
 
                 pComma++;
-                // The native counters are unsigned: a negative parenthesis depth never allows a split.
+                // The counters are unsigned: a negative parenthesis depth never allows a split.
                 if (i == 0 && j == 0 && k >= 0 && k <= 1 && l == 0)
                 {
                     PrintLine(tail.Substring(0, pComma));

@@ -9,7 +9,7 @@ namespace ILDisassembler;
 
 internal static partial class OpcodeTable
 {
-    // Indexed by the native OPCODE enum value: the opcode byte for one-byte opcodes, 256 + second byte for 0xFE-prefixed ones.
+    // Indexed by the OPCODE enum value (opcode.def): the opcode byte for one-byte opcodes, 256 + second byte for 0xFE-prefixed ones.
     internal static readonly OpcodeInfo[] Opcodes =
     [
         new("nop", OperandType.InlineNone),  // CEE_NOP

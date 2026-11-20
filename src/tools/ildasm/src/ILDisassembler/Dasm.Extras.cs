@@ -13,7 +13,7 @@ using System.Text;
 
 namespace ILDisassembler;
 
-// /STATS and /CLASSLIST (DumpStatistics and PrintClassList in the native dasm.cpp).
+// /STATS and /CLASSLIST.
 internal sealed partial class Dasm
 {
     private static string Pct(int value, int fileSize)
@@ -322,7 +322,7 @@ internal sealed partial class Dasm
         }
     }
 
-    // The metadata schema table names (g_Tables in the native metadata reader).
+    // The metadata schema table names.
     private static readonly string[] s_schemaTableNames =
     [
         "Module", "TypeRef", "TypeDef", "FieldPtr", "Field", "MethodPtr", "Method", "ParamPtr", "Param", "InterfaceImpl",
@@ -387,10 +387,10 @@ internal sealed partial class Dasm
         PrintLine("");
     }
 
-    // DumpResourceToFile (the native dres.cpp, Windows only): saves the Win32 resources as a .res file next to the output.
+    // Saves the Win32 resources as a .res file next to the output.
     private void DumpWin32Resources()
     {
-        // The native tool replaces whatever follows the last '.' of the whole path.
+        // Whatever follows the last '.' of the whole path is replaced.
         int dot = _outputFileName.LastIndexOf('.');
         string resFile = (dot < 0 ? _outputFileName : _outputFileName.Substring(0, dot)) + ".res";
         uint ret = DumpResourceToFile(resFile);

@@ -12,8 +12,7 @@ using System.Text;
 namespace ILDisassembler;
 
 // /LINENUM: .line directives from the portable PDB (embedded, or found through the CodeView entry or next to the
-// image). The native ildasm on .NET has no symbol reader and ignores the option (dotnet/runtime#53822); the
-// directive format is the one it used with a symbol reader.
+// image).
 internal sealed partial class Dasm
 {
     private MetadataReader? _pdb;
@@ -66,7 +65,7 @@ internal sealed partial class Dasm
             return null;
         }
 
-        // Ordered like the native tool: by offset, then line, then column.
+        // Ordered by offset, then line, then column.
         points.Sort((a, b) =>
         {
             int c = a.Offset.CompareTo(b.Offset);

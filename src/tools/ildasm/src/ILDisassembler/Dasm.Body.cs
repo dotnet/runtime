@@ -9,7 +9,7 @@ using System.Text;
 
 namespace ILDisassembler;
 
-// Method body disassembly (Disassemble, DumpLocals and the EH clause handling in the native dis.cpp).
+// Method body disassembly: instructions, locals and EH clauses.
 internal sealed partial class Dasm
 {
     private const uint COR_ILEXCEPTION_CLAUSE_FILTER = 0x0001;
@@ -185,7 +185,7 @@ internal sealed partial class Dasm
 
         if (tryInCode)
         {
-            // qsort is not stable; the native comparison has no further tie breaker, so equal clauses keep an unspecified order.
+            // qsort is not stable and the comparison has no further tie breaker, so equal clauses keep an unspecified order.
             EHClause[] sorted = _ehInfo.ToArray();
             QSort(sorted, static (a, b) =>
             {
@@ -467,7 +467,7 @@ internal sealed partial class Dasm
 
     private const int CEE_NO = 0x100 + 0x19;
 
-    // The native opcode table has no 'no.' prefix (0xFE 0x19), which ilasm accepts as an instruction with a byte operand.
+    // opcode.def has no 'no.' prefix (0xFE 0x19), which ilasm accepts as an instruction with a byte operand.
     private static OpcodeInfo GetOpcodeInfo(int instr)
         => instr == CEE_NO ? new OpcodeInfo("no.", OperandType.ShortInlineI) : OpcodeTable.Opcodes[instr];
 
@@ -619,7 +619,7 @@ internal sealed partial class Dasm
             if (IsUndefinedOpcode(instr))
             {
                 // Undefined opcodes have no unambiguous mnemonic: emit their bytes so that the IL reassembles
-                // exactly (the native ildasm prints "unused", or stops with an error, instead).
+                // exactly.
                 if (instr == CEE_COUNT && len == 3)
                 {
                     // A reserved prefix byte: only that byte is undefined.

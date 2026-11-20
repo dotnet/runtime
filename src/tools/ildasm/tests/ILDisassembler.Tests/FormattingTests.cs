@@ -56,7 +56,7 @@ public class FormattingTests
     [InlineData("it's", "'it\\'s'")]
     [InlineData("tab\there", "'tab\\there'")]
     [InlineData("café", "'café'")]
-    public void ProperNameQuotesLikeNativeIldasm(string name, string expected)
+    public void ProperNameQuotesKeywordsAndSpecialNames(string name, string expected)
     {
         Assert.Equal(expected, CreateDasm(new Options()).ProperName(name));
     }

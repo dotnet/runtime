@@ -12,7 +12,7 @@ using System.Text;
 
 namespace ILDisassembler;
 
-// Classes and their members (DumpClass, DumpMethod, DumpField, ... in the native dasm.cpp).
+// Classes and their members.
 internal sealed partial class Dasm
 {
     // ---------------------------------------------------------------- custom attributes
@@ -387,7 +387,7 @@ internal sealed partial class Dasm
                 PrintLine(sb);
                 sb.Clear();
                 sb.Append(Indent).Append("          ");
-                if (!DumpPermissionSetBlob(sb, blob))
+                if (!DumpPermissionSetBlob(sb, ds.PermissionSet))
                 {
                     sb.Append(KEYWORD("bytearray")).Append(" (");
                     DumpByteArray(sb, blob);

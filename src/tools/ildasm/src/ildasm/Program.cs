@@ -21,7 +21,7 @@ internal sealed class Program
 
     public int Run()
     {
-        // Like the native ildasm, nothing but the disassembly goes to the console; there is no logo or progress output.
+        // Nothing but the disassembly goes to the console; there is no logo or progress output.
         string? inputFile = Get(_command.InputFilePath);
         if (string.IsNullOrEmpty(inputFile))
         {
@@ -37,7 +37,6 @@ internal sealed class Program
 
         if (Get(_command.ShowSource))
         {
-            // Matches the native ildasm on CoreCLR, which has no symbol reader for source lines.
             Console.WriteLine("Warning: 'SOURCE' option is ignored for ildasm on CoreCLR.");
         }
 

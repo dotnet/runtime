@@ -10,7 +10,7 @@ namespace ILDisassembler;
 
 // Output primitives: the line writer, the code indent, the HTML/RTF decorations, name quoting and
 // C runtime style number formatting. These mirror printLine, g_szAsmCodeIndent, KEYWORD/COMMENT/...,
-// ProperName and the printf formats used by the native ildasm, whose output is the specification.
+// Name quoting and the printf-style number formats of the output.
 internal sealed partial class Dasm
 {
     private readonly StringBuilder _indent = new();
@@ -75,7 +75,7 @@ internal sealed partial class Dasm
 
     private const string AllowedSymbols = "#_@$.";
 
-    // Names are checked byte by byte in UTF-8 by the native tool, so any non-ASCII character forces quoting.
+    // Names are checked byte by byte in UTF-8, so any non-ASCII character forces quoting.
     private static bool IsDisallowedStarting(char c)
         => !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || AllowedSymbols.IndexOf(c) >= 0);
 
@@ -186,7 +186,7 @@ internal sealed partial class Dasm
     private static bool IsPrint(int c) => c >= 0x20 && c <= 0x7E;
 
     // DumpQString: appends a quoted string to sb, splitting it into "..." + "..." lines when it is longer than maxLen.
-    // Like the native tool, lengths are measured in UTF-8 bytes.
+    // Lengths are measured in UTF-8 bytes.
     private void DumpQString(StringBuilder sb, string toDump, string prefix, int maxLen)
     {
         byte[] bytes = Encoding.UTF8.GetBytes(toDump);

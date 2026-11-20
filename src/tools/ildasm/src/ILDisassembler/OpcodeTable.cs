@@ -3,7 +3,7 @@
 
 namespace ILDisassembler;
 
-// Operand kinds, in the order of the native OPCODE_FORMAT enum (opcode.def).
+// Operand kinds, in the order of the OPCODE_FORMAT enum (opcode.def).
 internal enum OperandType
 {
     InlineNone,
