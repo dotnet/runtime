@@ -45,6 +45,21 @@ endif ()
 
 check_struct_has_member ("ucontext_t" uc_mcontext.gregs[0] ${UCONTEXT_T_HEADER} HAVE_GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.__gregs[0] ${UCONTEXT_T_HEADER} HAVE___GREGSET_T)
+check_struct_has_member ("ucontext_t" uc_mcontext.fpregs->__glibc_reserved1[0] ${UCONTEXT_T_HEADER} HAVE_FPSTATE_GLIBC_RESERVED1 LANGUAGE CXX)
+
+check_cxx_source_compiles("
+#include <signal.h>
+
+int main(int argc, char **argv)
+{
+    struct _xstate xstate;
+    struct _fpx_sw_bytes bytes;
+    return 0;
+}" HAVE_PUBLIC_XSTATE_STRUCT)
+
+if(HAVE_PUBLIC_XSTATE_STRUCT)
+    check_struct_has_member ("struct _fpx_sw_bytes" xstate_bv "signal.h" HAVE__FPX_SW_BYTES_WITH_XSTATE_BV LANGUAGE CXX)
+endif()
 
 set(CMAKE_EXTRA_INCLUDE_FILES)
 set(CMAKE_EXTRA_INCLUDE_FILES signal.h)
