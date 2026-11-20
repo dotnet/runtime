@@ -850,7 +850,7 @@ void emitter::emitIns_R_R_R(
     if ((INS_add <= ins && ins <= INS_and) || (INS_mul <= ins && ins <= INS_remuw) ||
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
-        (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
+        (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amocas_d) ||
         (INS_sh1add <= ins && ins <= INS_sh3add_uw) || (INS_rol <= ins && ins <= INS_maxu) ||
         (INS_bset <= ins && ins <= INS_binv) || (INS_czero_eqz <= ins && ins <= INS_czero_nez))
     {
@@ -939,6 +939,8 @@ void emitter::emitIns_R_R_R(
             case INS_amominu_d:
             case INS_amomaxu_w:
             case INS_amomaxu_d:
+            case INS_amocas_w:
+            case INS_amocas_d:
 
             case INS_sh1add:
             case INS_sh2add:
@@ -987,7 +989,7 @@ void emitter::emitIns_R_R_R(
         {
             code |= 0b10 << 25; // release ordering, it ends the lr-sc loop
         }
-        else if ((ins == INS_lr_w || ins == INS_lr_d) || (INS_amoswap_w <= ins && ins <= INS_amomaxu_d))
+        else if ((ins == INS_lr_w || ins == INS_lr_d) || (INS_amoswap_w <= ins && ins <= INS_amocas_d))
         {
             // For now all atomics are seq. consistent as Interlocked.* APIs don't expose acquire/release ordering
             code |= 0b11 << 25;
@@ -4629,6 +4631,9 @@ void emitter::emitDispInsName(
                     break;
                 case 0b00000:
                     name = "amoadd";
+                    break;
+                case 0b00101:
+                    name = "amocas";
                     break;
                 case 0b00100:
                     name = "amoxor";
