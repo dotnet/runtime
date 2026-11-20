@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 
 namespace System.IO.Ports
@@ -136,11 +137,12 @@ namespace System.IO.Ports
 
         private static string[] GetPortNames_OpenBSD()
         {
+            HashSet<string>? bootDevices = GetBootDevices();
             List<string> ports = [];
 
             foreach (string path in Directory.EnumerateFiles("/dev"))
             {
-                if (IsOpenBSDSerialPortName(Path.GetFileName(path.AsSpan())))
+                if (GetOpenBSDSerialDevice(Path.GetFileName(path.AsSpan())) is string device && IsAttached(device, bootDevices))
                 {
                     ports.Add(path);
                 }
@@ -148,30 +150,36 @@ namespace System.IO.Ports
 
             return ports.ToArray();
 
-            // Per MAKEDEV, e.g. tty00 and tty0a (com), ttyc0 (cy), ttyU0 (ucom) and ttyVI00 (viocon), with cua* dial-out.
-            static bool IsOpenBSDSerialPortName(ReadOnlySpan<char> name)
+            // Per MAKEDEV, e.g. tty00 and tty0a (com, hex units), ttyc0 (cy), ttyU0 (ucom) and ttyVI00 (viocon), with cua* dial-out.
+            static string? GetOpenBSDSerialDevice(ReadOnlySpan<char> name)
             {
                 bool dialIn = name.StartsWith("tty", StringComparison.Ordinal);
                 if (!dialIn && !name.StartsWith("cua", StringComparison.Ordinal))
                 {
-                    return false;
+                    return null;
                 }
 
                 ReadOnlySpan<char> unit = name.Slice(3);
-                return (unit.Length == 2 && unit[0] is >= '0' and <= '7' && char.IsAsciiHexDigitLower(unit[1]))
-                    || HasUnit(unit, "c")
-                    || HasUnit(unit, "U", allowLetters: true)
-                    || (dialIn && HasUnit(unit, "VI"));
+                if (unit.Length == 2 && unit[0] is >= '0' and <= '7' && char.IsAsciiHexDigitLower(unit[1]))
+                {
+                    return "com" + int.Parse(unit, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
+                }
+
+                return HasUnit(unit, "c") ? "cy"
+                    : HasUnit(unit, "U", allowLetters: true) ? UsbDevice
+                    : dialIn && HasUnit(unit, "VI") ? "viocon"
+                    : null;
             }
         }
 
         private static string[] GetPortNames_NetBSD()
         {
+            HashSet<string>? bootDevices = GetBootDevices();
             List<string> ports = [];
 
             foreach (string path in Directory.EnumerateFiles("/dev"))
             {
-                if (IsNetBSDSerialPortName(Path.GetFileName(path.AsSpan())))
+                if (GetNetBSDSerialDevice(Path.GetFileName(path.AsSpan())) is string device && IsAttached(device, bootDevices))
                 {
                     ports.Add(path);
                 }
@@ -179,29 +187,91 @@ namespace System.IO.Ports
 
             return ports.ToArray();
 
-            // Per MAKEDEV, e.g. tty00 (com), ttyU0 (ucom) and plcom0 (arm), with dty* dial-out.
-            static bool IsNetBSDSerialPortName(ReadOnlySpan<char> name)
+            // Per MAKEDEV, e.g. tty00 (com), ttyZ0 (zstty), ttyU0 (ucom) and plcom0 (arm), with dty* dial-out.
+            static string? GetNetBSDSerialDevice(ReadOnlySpan<char> name)
             {
-                if (HasUnit(name, "plcom") || HasUnit(name, "dplcom"))
+                if (HasUnit(name, "plcom"))
                 {
-                    return true;
+                    return name.ToString();
+                }
+
+                if (HasUnit(name, "dplcom"))
+                {
+                    return name.Slice(1).ToString();
                 }
 
                 bool dialIn = name.StartsWith("tty", StringComparison.Ordinal);
                 if (!dialIn && !name.StartsWith("dty", StringComparison.Ordinal))
                 {
-                    return false;
+                    return null;
                 }
 
                 ReadOnlySpan<char> unit = name.Slice(3);
-                return HasUnit(unit, "")
-                    || HasUnit(unit, "U")
-                    || HasUnit(unit, "Y")
-                    || HasUnit(unit, "CY")
-                    || HasUnit(unit, "CZ")
-                    || HasUnit(unit, "Z")
-                    || (dialIn && HasUnit(unit, "VI"));
+                if (HasUnit(unit, ""))
+                {
+                    return "com" + int.Parse(unit, NumberStyles.None, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
+                }
+
+                return HasUnit(unit, "Z") ? "zstty" + unit.Slice(1).ToString()
+                    : HasUnit(unit, "U") || HasUnit(unit, "Y") ? UsbDevice
+                    : HasUnit(unit, "CY") ? "cy"
+                    : HasUnit(unit, "CZ") ? "cz"
+                    : dialIn && HasUnit(unit, "VI") ? "viocon"
+                    : null;
             }
+        }
+
+        // The device behind USB serial nodes, which can be plugged in after boot.
+        private const string UsbDevice = "";
+
+        // Whether the device behind a node is present: USB devices always count, and so does everything when the boot devices are unknown.
+        private static bool IsAttached(string device, HashSet<string>? bootDevices) =>
+            device.Length == 0 || bootDevices is null || bootDevices.Contains(device);
+
+        // OpenBSD and NetBSD have a static /dev with nodes for every unit MAKEDEV knows about. Fixed serial ports only
+        // attach at boot, so the dmesg copy saved at boot tells which of them exist (OpenBSD's fw_update reads it too).
+        // Returns the attached devices, both as "com0" and as the driver "com", or null if that can't be determined.
+        private static HashSet<string>? GetBootDevices()
+        {
+            HashSet<string> devices = [];
+            bool sawBootBanner = false;
+
+            try
+            {
+                foreach (string line in File.ReadLines("/var/run/dmesg.boot"))
+                {
+                    // NetBSD may prefix messages with a timestamp, e.g. "[     1.003637] com0 at isa0 port 0x3f8-0x3ff irq 4".
+                    ReadOnlySpan<char> message = line.AsSpan();
+                    if (message.StartsWith('['))
+                    {
+                        message = message.Slice(message.IndexOf(']') + 1).TrimStart();
+                    }
+
+                    // The message buffer can still hold an earlier boot, so only the last one counts.
+                    if (message.StartsWith("OpenBSD ", StringComparison.Ordinal) || message.StartsWith("NetBSD ", StringComparison.Ordinal))
+                    {
+                        devices.Clear();
+                        sawBootBanner = true;
+                        continue;
+                    }
+
+                    // e.g. "com0 at acpi0 COM1 addr 0x3f8/0x8 irq 4: ns16550a, 16 byte fifo"
+                    int at = message.IndexOf(" at ", StringComparison.Ordinal);
+                    if (at > 0 && !message.Slice(0, at).ContainsAny(' ', ':'))
+                    {
+                        ReadOnlySpan<char> device = message.Slice(0, at);
+                        devices.Add(device.ToString());
+                        devices.Add(device.TrimEnd("0123456789").ToString());
+                    }
+                }
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                return null;
+            }
+
+            // Without the boot banner the start of the boot was lost, so attach messages may be missing too.
+            return sawBootBanner ? devices : null;
         }
 
         // Whether name is prefix followed by a non-empty unit of ASCII digits (or ASCII letters and digits).
