@@ -422,9 +422,23 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // get the next batch of results
                     info = GetReplicationInfoHelper(dsHandle, (int)DS_REPL_INFO_TYPE.DS_REPL_INFO_CURSORS_3_FOR_NC, (int)DS_REPL_INFO_TYPE.DS_REPL_INFO_CURSORS_FOR_NC, partition, ref advanced, context, libHandle);
+
+                    // if the server fell back to the legacy API partway through the
+                    // pagination, the buffer it just returned uses the legacy structure
+                    // and needs to be read and freed through the legacy path below
+                    // instead of being treated as another advanced page. The legacy API
+                    // returns all the results in a single call, so any cursors collected
+                    // so far are only a subset of the full legacy result set and are
+                    // discarded to avoid reporting duplicates.
+                    if (!advanced)
+                    {
+                        collection = new ReplicationCursorCollection(server);
+                        break;
+                    }
                 }
             }
-            else
+
+            if (!advanced)
             {
                 try
                 {
