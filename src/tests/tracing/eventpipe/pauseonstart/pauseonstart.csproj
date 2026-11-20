@@ -4,7 +4,7 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- TODO: Re-enable when browser CoreCLR supports diagnostic IPC sockets.
          Tracked by https://github.com/dotnet/runtime/issues/131321. -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
 
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
