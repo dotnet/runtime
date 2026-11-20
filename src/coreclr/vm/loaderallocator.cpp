@@ -1952,6 +1952,8 @@ void AssemblyLoaderAllocator::CleanupHandles()
     }
 #endif // FEATURE_MULTITHREADING
 
+    GCX_COOP();
+
     // This method doesn't take a lock around RemoveHead because it's supposed to
     // be called only from Terminate
     while (!m_handleCleanupList.IsEmpty())

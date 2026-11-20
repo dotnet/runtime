@@ -1490,7 +1490,7 @@ void EnCSyncBlockInfo::Cleanup()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
     // Walk our linked list of all the fields that were added
