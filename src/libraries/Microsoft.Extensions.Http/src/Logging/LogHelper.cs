@@ -99,7 +99,7 @@ namespace Microsoft.Extensions.Http.Logging
             }
         }
 
-        public static void LogRequestFailed(this ILogger logger, TimeSpan duration, HttpRequestException exception) =>
+        public static void LogRequestFailed(this ILogger logger, TimeSpan duration, Exception exception) =>
             _requestFailed(logger, duration.TotalMilliseconds, exception);
 
         public static IDisposable? BeginRequestPipelineScope(this ILogger logger, HttpRequestMessage request, out string? formattedUri)
@@ -138,7 +138,7 @@ namespace Microsoft.Extensions.Http.Logging
             }
         }
 
-        public static void LogRequestPipelineFailed(this ILogger logger, TimeSpan duration, HttpRequestException exception) =>
+        public static void LogRequestPipelineFailed(this ILogger logger, TimeSpan duration, Exception exception) =>
             _requestPipelineFailed(logger, duration.TotalMilliseconds, exception);
     }
 }
