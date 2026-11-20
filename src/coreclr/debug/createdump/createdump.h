@@ -92,6 +92,11 @@ typedef int T_CONTEXT;
 #else
 #include <elf.h>
 #include <link.h>
+#if defined(__aarch64__) && defined(__linux__)
+#ifndef NT_ARM_PAC_MASK
+#define NT_ARM_PAC_MASK 0x406
+#endif
+#endif
 #endif
 #else
 #include <winternl.h>

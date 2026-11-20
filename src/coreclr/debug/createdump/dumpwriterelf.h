@@ -68,7 +68,7 @@ private:
     size_t GetAuxvInfoSize() const { return sizeof(Nhdr) + 8 + m_crashInfo.GetAuxvSize(); }
     size_t GetThreadInfoSize() const
     {
-        return (m_crashInfo.Signal() != 0 ? (sizeof(Nhdr) + 8 + sizeof(siginfo_t)) : 0)
+        size_t size = (m_crashInfo.Signal() != 0 ? (sizeof(Nhdr) + 8 + sizeof(siginfo_t)) : 0)
               + (m_crashInfo.Threads().size() * ((sizeof(Nhdr) + 8 + sizeof(prstatus_t))
               + (sizeof(Nhdr) + 8 + sizeof(user_fpregs_struct))
 #if defined(__i386__)
@@ -78,5 +78,15 @@ private:
               + (sizeof(Nhdr) + 8 + sizeof(user_vfpregs_struct))
 #endif
         ));
+#if defined(__aarch64__) && defined(__linux__)
+        for (const ThreadInfo* thread : m_crashInfo.Threads())
+        {
+            if (thread->HasPacMask())
+            {
+                size += sizeof(Nhdr) + 8 + sizeof(UserPacMask);
+            }
+        }
+#endif
+        return size;
     }
 };
