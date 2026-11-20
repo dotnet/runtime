@@ -1963,7 +1963,8 @@ FCIMPL3(void, JIT_VTableProfile64, Object* obj, MethodDesc* pBaseMD, ICorJitInfo
 }
 FCIMPLEND
 
-HCIMPL2(void, JIT_GenericVirtualProfile32, MethodDesc* pExactMD, ICorJitInfo::HandleHistogram32* methodProfile)
+FCDECL2(void, JIT_GenericVirtualProfile32, MethodDesc* pExactMD, ICorJitInfo::HandleHistogram32* methodProfile);
+FCIMPL2(void, JIT_GenericVirtualProfile32, MethodDesc* pExactMD, ICorJitInfo::HandleHistogram32* methodProfile)
 {
     FCALL_CONTRACT;
 
@@ -1989,9 +1990,10 @@ HCIMPL2(void, JIT_GenericVirtualProfile32, MethodDesc* pExactMD, ICorJitInfo::Ha
 
     methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
 }
-HCIMPLEND
+FCIMPLEND
 
-HCIMPL2(void, JIT_GenericVirtualProfile64, MethodDesc* pExactMD, ICorJitInfo::HandleHistogram64* methodProfile)
+FCDECL2(void, JIT_GenericVirtualProfile64, MethodDesc* pExactMD, ICorJitInfo::HandleHistogram64* methodProfile);
+FCIMPL2(void, JIT_GenericVirtualProfile64, MethodDesc* pExactMD, ICorJitInfo::HandleHistogram64* methodProfile)
 {
     FCALL_CONTRACT;
 
@@ -2017,7 +2019,7 @@ HCIMPL2(void, JIT_GenericVirtualProfile64, MethodDesc* pExactMD, ICorJitInfo::Ha
 
     methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
 }
-HCIMPLEND
+FCIMPLEND
 
 // Helpers for scalable approximate counters
 //

@@ -2173,6 +2173,7 @@ public:
                     compiler->gtNewOperNode(GT_COMMA, TYP_I_IMPL, storeNode, profileCommaNode);
 
                 methodHandleArg->SetEarlyNode(storeCommaNode);
+                compiler->gtUpdateNodeSideEffects(lookupCall);
             }
             else
             {

@@ -223,15 +223,15 @@ private:
                 {
                     GenTree* node = *use;
 
-                    if (m_origCall->IsGenericVirtual(m_compiler) && (use == &m_origCall->gtControlExpr))
+                    // GDV evaluates the dispatch lookup on the fallback path. A fat pointer check needs it here.
+                    if ((use == &m_origCall->gtControlExpr) && (use != useToSpill) &&
+                        m_origCall->IsGenericVirtual(m_compiler))
                     {
-                        CallArg* methodHandleArg =
-                            node->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
-                        assert(methodHandleArg != nullptr);
-                        SpillUseToTemp(block, &methodHandleArg->EarlyNodeRef());
+                        break;
                     }
-                    else if (((node->gtFlags & GTF_ALL_EFFECT) != 0) ||
-                             (!m_compiler->impIsInvariant(node) && m_compiler->gtHasLocalsWithAddrOp(node)))
+
+                    if (((node->gtFlags & GTF_ALL_EFFECT) != 0) ||
+                        (!m_compiler->impIsInvariant(node) && m_compiler->gtHasLocalsWithAddrOp(node)))
                     {
                         SpillUseToTemp(block, use);
                     }
@@ -713,30 +713,22 @@ private:
                 prevCheckBlock->SetCond(prevCheckCheckEdge, prevCheckThenEdge);
             }
 
-            InlineCandidateInfo* guardedInfo      = m_origCall->GetGDVCandidateInfo(checkIdx);
-            GenTree*             runtimeGvmMethod = nullptr;
-            if (m_origCall->IsGenericVirtual(m_compiler) &&
-                m_origCall->gtControlExpr->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR))
-            {
-                GenTreeCall* lookupCall = m_origCall->gtControlExpr->AsCall();
-
-                CallArg* methodHandleArg = lookupCall->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
-                assert(methodHandleArg != nullptr);
-
-                unsigned const methodHandleTemp =
-                    m_compiler->lvaGrabTemp(true DEBUGARG("generic virtual method guard"));
-                m_compiler->lvaTable[methodHandleTemp].lvType = TYP_I_IMPL;
-
-                // Capture the lookup's instantiated base method so the guard and fallback use the same value.
-                //
-                GenTree* store = m_compiler->gtNewStoreLclVarNode(methodHandleTemp, methodHandleArg->GetEarlyNode());
-                GenTree* methodHandle = m_compiler->gtNewLclvNode(methodHandleTemp, TYP_I_IMPL);
-                methodHandleArg->SetEarlyNode(m_compiler->gtNewOperNode(GT_COMMA, TYP_I_IMPL, store, methodHandle));
-                runtimeGvmMethod = m_compiler->gtNewLclvNode(methodHandleTemp, TYP_I_IMPL);
-            }
-
             CallArg* thisArg = m_origCall->gtArgs.GetThisArg();
             SplitCall(m_checkBlock, &thisArg->EarlyNodeRef());
+
+            InlineCandidateInfo* guardedInfo      = m_origCall->GetGDVCandidateInfo(checkIdx);
+            GenTree*             runtimeGvmMethod = nullptr;
+            if (guardedInfo->guardedBaseMethodHandle != NO_METHOD_HANDLE)
+            {
+                assert(m_origCall->gtControlExpr->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR));
+                GenTreeCall* lookupCall      = m_origCall->gtControlExpr->AsCall();
+                CallArg*     methodHandleArg = lookupCall->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
+
+                // Evaluate the instantiation after the call arguments and share it with the fallback lookup.
+                SpillUseToTemp(m_checkBlock, &methodHandleArg->EarlyNodeRef());
+                m_compiler->gtUpdateNodeSideEffects(lookupCall);
+                runtimeGvmMethod = m_compiler->gtCloneExpr(methodHandleArg->GetEarlyNode());
+            }
 
             GenTree* thisTree = m_compiler->gtCloneExpr(thisArg->GetNode());
 
@@ -773,7 +765,8 @@ private:
 
                 if (runtimeGvmMethod != nullptr)
                 {
-                    GenTree* targetGvmMethod = m_compiler->gtNewIconEmbMethHndNode(guardedInfo->originalMethodHandle);
+                    GenTree* targetGvmMethod =
+                        m_compiler->gtNewIconEmbMethHndNode(guardedInfo->guardedBaseMethodHandle);
                     GenTree* methodCompare =
                         m_compiler->gtNewOperNode(GT_NE, TYP_INT, targetGvmMethod, runtimeGvmMethod);
                     GenTree* combinedCompare = m_compiler->gtNewOperNode(GT_OR, TYP_INT, compare, methodCompare);
