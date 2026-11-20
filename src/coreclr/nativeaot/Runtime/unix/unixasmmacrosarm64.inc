@@ -26,7 +26,7 @@
     .endif
 
 #ifdef FEATURE_EMULATED_TLS
-    PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x30
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED fp, lr, -0x30
     PROLOG_SAVE_REG_PAIR              x0, x1, 0x10
     PROLOG_SAVE_REG                   x2, 0x20
 
@@ -50,7 +50,7 @@
 // Creating two stack frames in one function can confuse the unwinder/debugger
 
 .macro GETTHREAD_ETLS_1
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -32           // ;; Push down stack pointer and store FP and LR
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED fp, lr, -32       // ;; Push down stack pointer and store FP and LR
     str         x0,  [sp, #0x10]
 
     bl C_FUNC(RhpGetThread)
@@ -61,7 +61,7 @@
 .endm
 
 .macro GETTHREAD_ETLS_2
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -32           // ;; Push down stack pointer and store FP and LR
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED fp, lr, -32       // ;; Push down stack pointer and store FP and LR
     stp         x0, x1, [sp, #0x10]
 
     bl C_FUNC(RhpGetThread)
@@ -72,7 +72,7 @@
 .endm
 
 .macro GETTHREAD_ETLS_3
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -48           // ;; Push down stack pointer and store FP and LR
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED fp, lr, -48       // ;; Push down stack pointer and store FP and LR
     stp         x0, x1, [sp, #0x10]
     str         x2,  [sp, #0x20]
 

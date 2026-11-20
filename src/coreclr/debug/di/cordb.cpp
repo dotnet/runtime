@@ -85,6 +85,48 @@ HRESULT EnsureUniversalDbiInitialized()
 }
 #endif // MSCORDBI_LINKS_PRIVATE_PAL && HOST_UNIX
 
+//-----------------------------------------------------------------------------
+// When the caller supplies the DAC/cDAC, verify that it can
+// read the target before handing back an ICorDebug.
+//-----------------------------------------------------------------------------
+static HRESULT VerifyCDac(DWORD pid, LPCWSTR lpApplicationGroupId, LPCWSTR dacModulePath, HMODULE hmodTargetCLR)
+{
+    // Not freed: Cordb loads the same module later, and the cDAC can't be unloaded.
+    HMODULE hDac = (dacModulePath != NULL && hmodTargetCLR != NULL) ? WszLoadLibrary(dacModulePath) : NULL;
+    if (hDac == NULL)
+    {
+        // Cordb reports DAC load failures as before.
+        return S_OK;
+    }
+
+    ReleaseHolder<ShimDataTarget> pDataTarget;
+    MAKE_UTF8PTR_FROMWIDE_NOTHROW(applicationGroupId, lpApplicationGroupId != NULL ? lpApplicationGroupId : W(""));
+    ProcessDescriptor pd = ProcessDescriptor::Create(pid, lpApplicationGroupId != NULL ? applicationGroupId : NULL);
+    HRESULT hr = BuildPlatformSpecificDataTarget(MachineInfo(), &pd, &pDataTarget);
+    if (FAILED(hr))
+    {
+        // Can't verify; Cordb reports attach failures as before.
+        return S_OK;
+    }
+
+    // The probe only reads the runtime version, so neither the allocator nor the metadata lookup is used.
+    IDacDbiInterface * pDacDbi = NULL;
+    ReleaseHolder<IUnknown> pLegacyDac;
+    hr = CordbProcess::InstantiateDacDbiInterface(hDac, pDataTarget, PTR_TO_CORDB_ADDRESS(hmodTargetCLR), NULL, NULL, &pDacDbi, &pLegacyDac);
+    if (pDacDbi != NULL)
+    {
+        // Live debugging requires a .NET 12+ target.
+        COR_VERSION version;
+        if (SUCCEEDED(hr) && (FAILED(pDacDbi->GetRuntimeVersion(&version)) || version.dwMajor <= 11))
+        {
+            hr = CORDBG_E_UNSUPPORTED;
+        }
+        pDacDbi->Destroy();
+        pDacDbi->Release();
+    }
+    return hr;
+}
+
 //********** Code. ************************************************************
 
 
@@ -150,6 +192,12 @@ STDAPI DLLEXPORT CoreCLRCreateCordbObject3(int iDebuggerVersion, DWORD pid, LPCW
         return E_INVALIDARG;
     }
 
+    HRESULT hr = VerifyCDac(pid, lpApplicationGroupId, dacModulePath, hmodTargetCLR);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
     //
     // Create the ICorDebug object
     //
@@ -159,7 +207,7 @@ STDAPI DLLEXPORT CoreCLRCreateCordbObject3(int iDebuggerVersion, DWORD pid, LPCW
     //
     // Associate it with the target instance
     //
-    HRESULT hr = static_cast<Cordb*>(pCordb.GetValue())->SetTargetCLR(hmodTargetCLR);
+    hr = static_cast<Cordb*>(pCordb.GetValue())->SetTargetCLR(hmodTargetCLR);
     if (FAILED(hr))
     {
         return hr;

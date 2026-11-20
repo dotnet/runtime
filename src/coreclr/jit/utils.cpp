@@ -3950,21 +3950,24 @@ public:
 
         if (strBufferSize > bufferSize)
         {
-            m_pBuffer = new WCHAR[strBufferSize];
+            m_pBuffer = HostAllocator::getHostAllocator().allocate<WCHAR>(strBufferSize);
         }
         else
         {
             m_pBuffer = m_bufferUnsafe;
         }
 
-        minipal_convert_utf8_to_utf16(str, strLength, (CHAR16_T*)m_pBuffer, strBufferSize, 0);
+        if (m_pBuffer != nullptr)
+        {
+            minipal_convert_utf8_to_utf16(str, strLength, (CHAR16_T*)m_pBuffer, strBufferSize, 0);
+        }
     }
 
     ~Utf16String()
     {
-        if (m_pBuffer != m_bufferUnsafe)
+        if ((m_pBuffer != nullptr) && (m_pBuffer != m_bufferUnsafe))
         {
-            delete[] m_pBuffer;
+            HostAllocator::getHostAllocator().deallocate(m_pBuffer);
             m_pBuffer = nullptr;
         }
     }

@@ -161,6 +161,10 @@ namespace ILCompiler.ObjectWriter
             Utf8String sectionNameUtf8 = new(sectionName);
             if (comdatName.IsNull)
             {
+                // A split code section repeats its name, so each part after the first gets its own
+                // key for the section symbol that debug information relocates against.
+                if (_symbolNameToIndex.ContainsKey(sectionNameUtf8))
+                    sectionNameUtf8 = new Utf8StringBuilder().Append(sectionNameUtf8).Append('$').Append(sectionIndex).ToUtf8String();
                 _symbolNameToIndex[sectionNameUtf8] = (uint)_symbols.Count;
                 _symbols.Add(new ElfSymbol
                 {

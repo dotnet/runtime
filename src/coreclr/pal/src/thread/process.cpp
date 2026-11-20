@@ -22,12 +22,13 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/init.h"
 #include "pal/debug.h"
 #include "pal/utils.h"
-#include "pal/environ.h"
 #include "pal/stackstring.hpp"
 #include "pal/signal.hpp"
 
+
 #include <generatedumpflags.h>
 #include <clrconfignocache.h>
+#include <minipal/time.h>
 
 #include <errno.h>
 #if HAVE_POLL
@@ -168,7 +169,6 @@ Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 
 // Function to call instead of exec'ing the createdump binary.  Used by single-file and native AOT hosts.
 Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
-
 // Function to call to log the managed callstack for a signal. Used by Android since CoreCLR doesn't support CreateDump on Android.
 Volatile<PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK> g_logManagedCallstackForSignalCallback = nullptr;
 
@@ -501,7 +501,6 @@ PAL_SetCreateDumpCallback(
     _ASSERTE(g_createdumpCallback == nullptr);
     g_createdumpCallback = callback;
 }
-
 /*++
 Function:
   PAL_SetLogManagedCallstackForSignalCallback
@@ -582,7 +581,7 @@ static const char *const TwoWayNamedPipePrefix = "clr-debug-pipe";
 static const char* RuntimeStartupPipeName = "st";
 static const char* RuntimeContinuePipeName = "co";
 
-#define PIPE_OPEN_RETRY_DELAY_NS 500000000 // 500 ms
+#define PIPE_OPEN_RETRY_DELAY_MS 500
 
 typedef enum
 {
@@ -616,7 +615,7 @@ OpenPipe(const char* name, int mode)
         {
             if (mode == O_WRONLY && errno == ENXIO)
             {
-                PAL_nanosleep(PIPE_OPEN_RETRY_DELAY_NS);
+                minipal_sleep(PIPE_OPEN_RETRY_DELAY_MS);
                 continue;
             }
             else if (errno == EINTR)
@@ -1545,7 +1544,7 @@ PROCLaunchCreateDump(
         else
         {
             // Execute the createdump program
-            if (execve(argv[0], (char**)argv, palEnvironment) == -1)
+            if (execv(argv[0], (char**)argv) == -1)
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
                 _exit(EXIT_FAILURE);
@@ -2094,7 +2093,6 @@ CorUnix::CreateInitialProcessAndThreadObjects(
 {
     PAL_ERROR palError = NO_ERROR;
     HANDLE hThread;
-    CObjectAttributes oa;
 
     //
     // Create initial thread object

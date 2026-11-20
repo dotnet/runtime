@@ -1815,11 +1815,21 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramDefault);
             }
 
+            // ValuesTypes are not treated as being capable of having finalizers in the runtime.
+            if (type.IsValueType)
+            {
+                pHasSideEffects = false;
+                return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
+            }
+
             pHasSideEffects = type.HasFinalizer;
 
-            // If the type isn't within the version bubble, it could gain a finalizer. Always treat it as if it has a finalizer
-            if (!pHasSideEffects && !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
-                pHasSideEffects = true;
+            // A type or any of its base types outside the version bubble could gain a finalizer.
+            // System.Object cannot gain a finalizer.
+            for (TypeDesc currentType = type; !pHasSideEffects && !currentType.IsObject; currentType = currentType.BaseType)
+            {
+                pHasSideEffects = !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(currentType);
+            }
 
             return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
         }

@@ -29,99 +29,9 @@
     <TestBuildSteps Include="ManagedBuild" />
     <TestBuildSteps Include="GenerateLayout" />
     <TestBuildSteps Include="CrossgenFramework" />
-    <TestBuildSteps Include="BuildMonoAot" />
   </ItemGroup>
 
   <Target Name="Rebuild" />
-
-  <Target Name="MonoAotCompileTests" DependsOnTargets="GetListOfTestCmds">
-    <ItemGroup>
-      <AllTestScripts Condition="'@(MergedRunnableTestPaths)' != ''" Include="%(MergedRunnableTestPaths.RootDir)%(MergedRunnableTestPaths.Directory)*.dll" />
-      <AllTestScripts Condition="'@(OutOfProcessTestPaths)' != ''" Include="%(OutOfProcessTestPaths.RootDir)%(OutOfProcessTestPaths.Directory)*.sh" />
-      <TestScripts Include="@(AllTestScripts)" />
-
-      <TestAssemblyPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
-      <TestAssemblies Include="%(TestAssemblyPaths.Identity)" Condition="Exists(%(TestAssemblyPaths.Identity))" />
-      <TestDirsWithDuplicates Include="$([System.IO.Path]::GetDirectoryName('%(TestAssemblies.Identity)'))" />
-    </ItemGroup>
-
-    <Error
-      Text="No tests found for Mono AOT compilation. Make sure that the desired test cases are not excluded from AOT compilation."
-      Condition="!Exists(%(TestAssemblies.Identity))" />
-
-    <RemoveDuplicates Inputs="@(TestDirsWithDuplicates)">
-      <Output TaskParameter="Filtered" ItemName="TestDirs" />
-    </RemoveDuplicates>
-    <ItemGroup>
-      <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/**/*.dll" Exclude="@(NoMonoAotAssemblyPaths)" />
-      <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll;$(CORE_ROOT)/Microsoft.CodeAnalysis.VisualBasic.dll" />
-      <AllDlls Condition="'$(MonoFullAot)' == 'true'" Include="@(TestsAndAssociatedAssemblies);@(CoreRootDlls)" />
-      <AllDlls Condition="'$(MonoFullAot)' != 'true'" Include="@(TestsAndAssociatedAssemblies)" />
-    </ItemGroup>
-
-    <PropertyGroup Condition="'$(CROSSCOMPILE)' == ''">
-      <AotCompiler Condition="'$(RunningOnUnix)' == 'true'">$(CORE_ROOT)/corerun</AotCompiler>
-      <AotCompiler Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</AotCompiler>
-      <MonoLlvmPath>$(MonoBinDir)</MonoLlvmPath>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(CROSSCOMPILE)' != ''">
-      <AotCompiler>$(MonoBinDir)/cross/$(TargetRid)/mono-aot-cross</AotCompiler>
-      <MonoLlvmPath>$(MonoBinDir)/cross/$(TargetRid)</MonoLlvmPath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <MonoAotOption Condition="'$(MonoForceInterpreter)' == 'true'" Include="interp" />
-      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="full" />
-      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nimt-trampolines=2000" />
-      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ntrampolines=80000" />
-      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nrgctx-fetch-trampolines=256" />
-      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ngsharedvt-trampolines=8400" />
-      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nftnptr-arg-trampolines=4000" />
-      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nrgctx-trampolines=21000" />
-      <MonoAotOption Condition="'$(RuntimeVariant)' == 'llvmaot' or '$(RuntimeVariant)' == 'llvmfullaot'" Include="llvm" />
-      <MonoAotOption Condition="'$(RuntimeVariant)' == 'llvmaot' or '$(RuntimeVariant)' == 'llvmfullaot'" Include="llvm-path=$(MonoLlvmPath)" />
-      <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(MonoFullAot)' == 'true' and '$(TargetOS)' == 'linux'">
-      <MonoAotOption Include="as-name=clang" />
-      <MonoAotOption Include="as-options='-c -x assembler'" />
-      <MonoAotOption Include="tool-prefix=''" />
-      <MonoAotOption Include="ld-name=clang" />
-      <MonoAotOption Include="ld-options='-fuse-ld=lld'" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64'">
-      <MonoAotOption Include="mattr=crc" />
-      <MonoAotOption Include="mattr=crypto" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'x64'">
-      <MonoAotOption Include="mattr=sse4.2" />
-      <MonoAotOption Include="mattr=popcnt" />
-      <MonoAotOption Include="mattr=lzcnt" />
-      <MonoAotOption Include="mattr=bmi" />
-      <MonoAotOption Include="mattr=bmi2" />
-      <MonoAotOption Include="mattr=pclmul" />
-      <MonoAotOption Include="mattr=aes" />
-    </ItemGroup>
-    <PropertyGroup>
-      <MonoAotOptions>@(MonoAotOption->'%(Identity)', ',')</MonoAotOptions>
-      <MonoPath>$(CORE_ROOT)</MonoPath>
-    </PropertyGroup>
-
-    <Message Importance="High" Text="Mono AOT options: $(MonoAotOptions)" />
-    <Message Importance="High" Text="Mono AOT MONO_PATH: $(MonoPath)" />
-
-    <ItemGroup>
-      <AotProject Include="../mono/msbuild/aot-compile.proj">
-        <Properties>_AotCompiler=$(AotCompiler);_TestDll=%(AllDlls.Identity);_MonoPath=$(MonoPath);_MonoAotOptions=$(MonoAotOptions)</Properties>
-      </AotProject>
-    </ItemGroup>
-    <MSBuild
-      Projects="@(AotProject)"
-      Targets="AotCompile"
-      Condition="@(AllDlls->Count()) &gt; 0"
-      BuildInParallel="true"
-      />
-  </Target>
 
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
@@ -137,8 +47,6 @@
       <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(MergedAssemblyMarkerPaths)' != ''" />
       <OutOfProcessTestMarkerPaths Include="$(XunitTestBinBase)\**\*.OutOfProcessTest"/>
       <OutOfProcessTestPaths Include="$([System.IO.Path]::ChangeExtension('%(OutOfProcessTestMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(OutOfProcessTestMarkerPaths)' != ''" />
-      <NoMonoAotMarkerPaths Include="$(XunitTestBinBase)\**\*.NoMonoAot" />
-      <NoMonoAotAssemblyPaths Include="$([System.IO.Path]::ChangeExtension('%(NoMonoAotMarkerPaths.Identity)', '.dll'))" Condition="'@(NoMonoAotMarkerPaths)' != ''" />
     </ItemGroup>
     <!-- Remove the cmd/sh scripts for merged test runner app bundles from our list. -->
     <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
@@ -193,7 +101,7 @@
 
   <Target Name="ManagedBuild"
       DependsOnTargets="BuildManagedTestGroups"
-      Condition="'$(__GenerateLayoutOnly)' != '1' and '$(__SkipManaged)' != '1' and !$(MonoAot) and !$(MonoFullAot)" />
+      Condition="'$(__GenerateLayoutOnly)' != '1' and '$(__SkipManaged)' != '1'" />
 
   <Target Name="BuildManagedTestGroups" DependsOnTargets="RestorePackages;ResolveDisabledProjects;BuildNativeAotFrameworkObjects">
     <Message Importance="High" Text="$(MsgPrefix)Building managed test components" />
@@ -246,7 +154,6 @@
       <GroupBuildCmd Condition="'$(TargetOS)' == 'browser' and '$(ContinuousIntegrationBuild)' == 'true'">$(GroupBuildCmd) /m:1</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TargetOS)' == 'wasi'">$(GroupBuildCmd) /m:1</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">$(GroupBuildCmd) "/p:DevTeamProvisioning=-"</GroupBuildCmd>
-      <GroupBuildCmd Condition="'$(UseMonoRuntime)' != ''">$(GroupBuildCmd) "/p:UseMonoRuntime=$(UseMonoRuntime)"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(UseNativeAOTRuntime)' != ''">$(GroupBuildCmd) "/p:UseNativeAOTRuntime=$(UseNativeAOTRuntime)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /bl:$(ArtifactsDir)/log/$(Configuration)/InnerManagedTestBuild.$(__TestGroupToBuild).binlog</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(CrossBuild)' == 'true'">$(GroupBuildCmd) "/p:CrossBuild=true"</GroupBuildCmd>
@@ -257,10 +164,8 @@
       <GroupBuildCmd Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(GroupBuildCmd) "/p:BuildNativeAotFrameworkObjects=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(GroupBuildCmd) /p:ContinuousIntegrationBuild=true</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(BuildTestsOnHelix)' == 'true'">$(GroupBuildCmd) "/p:BuildTestsOnHelix=true"</GroupBuildCmd>
-      <GroupBuildCmd Condition="'$(MonoForceInterpreter)' == 'true'">$(GroupBuildCmd) "/p:MonoForceInterpreter=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(PublishReadyToRunInstructionSet)' != ''">$(GroupBuildCmd) "/p:PublishReadyToRunInstructionSet=$(PublishReadyToRunInstructionSet)"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcInstructionSet)' != ''">$(GroupBuildCmd) "/p:IlcInstructionSet=$(IlcInstructionSet)"</GroupBuildCmd>
-      <GroupBuildCmd Condition="'$(RunAOTCompilation)' == 'true'">$(GroupBuildCmd) "/p:RunAOTCompilation=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(DevTeamProvisioning)' != ''">$(GroupBuildCmd) "/p:DevTeamProvisioning=$(DevTeamProvisioning)"</GroupBuildCmd>
     </PropertyGroup>
 
@@ -272,7 +177,7 @@
   <Target Name="GenerateLayout"
       DependsOnTargets="CreateTestOverlay"
       AfterTargets="ManagedBuild;RestorePackages"
-      Condition="'$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)">
+      Condition="'$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1'">
 
     <MSBuild
       Projects="Common\XUnitLogChecker\XUnitLogChecker.csproj"
@@ -283,7 +188,7 @@
 
   <Target Name="CrossgenFramework"
       DependsOnTargets="GenerateLayout"
-      Condition="'$(__CopyNativeTestBinaries)' != '1' and '$(__TestBuildMode)' == 'crossgen2' and '$(TargetArchitecture)' != 'wasm' and !$(MonoAot) and !$(MonoFullAot)" >
+      Condition="'$(__CopyNativeTestBinaries)' != '1' and '$(__TestBuildMode)' == 'crossgen2' and '$(TargetArchitecture)' != 'wasm'" >
 
     <PropertyGroup>
       <CrossgenOutputDir>$(__TestIntermediatesDir)\crossgen.out</CrossgenOutputDir>
@@ -319,11 +224,6 @@
 
     <Move SourceFiles="@(CrossgenOutputFiles)" DestinationFolder="$(CORE_ROOT)" />
   </Target>
-
-  <Target Name="BuildMonoAot"
-      DependsOnTargets="MonoAotCompileTests"
-      AfterTargets="ManagedBuild"
-      Condition="'$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ($(MonoAot) or $(MonoFullAot))" />
 
   <Target Name="BuildNativeAotFrameworkObjects"
           Condition="'$(BuildNativeAotFrameworkObjects)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">

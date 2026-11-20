@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 34
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MINOR_VERSION 0x0002
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 34
 
@@ -89,7 +89,8 @@
 // R2R Version 34 changes the ABI for funclets on other architectures to match AMD64: funclets save
 //                only the return address, and the runtime preserves the callee-saved registers around the
 //                funclets that it calls
-// R2R Version 34.1 adds READYTORUN_HELPER_InterfaceDispatch. Images compiled with cached interface dispatch support
+// R2R Version 34.1 adds AuxiliaryModuleMetadata sections
+// R2R Version 34.2 adds READYTORUN_HELPER_InterfaceDispatch. Images compiled with cached interface dispatch support
 //                  call it with the dispatch cell instead of calling through the cell, and lay out their dispatch
 //                  cells as { MethodTable, Code, Token }.
 
@@ -166,6 +167,7 @@ enum class ReadyToRunSectionType : uint32_t
     ProxyTypeMaps               = 125, // Added in V18.3
     TypeMapAssemblyTargets      = 126, // Added in V18.3
     WasmAsyncResumeInfo         = 127, // Added in V29
+    AuxiliaryModuleMetadata     = 128, // Added in V34.1
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail

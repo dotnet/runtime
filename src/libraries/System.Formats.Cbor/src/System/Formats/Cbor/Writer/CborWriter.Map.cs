@@ -76,7 +76,7 @@ namespace System.Formats.Cbor
 
         private void WriteStartMapIndefiniteLength()
         {
-            if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
+            if (!ConvertIndefiniteLengthEncodings && _requiresDefiniteLengthItems)
             {
                 throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
@@ -96,7 +96,7 @@ namespace System.Formats.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset == null);
 
-            if (CborConformanceModeHelpers.RequiresUniqueKeys(ConformanceMode))
+            if (_requiresUniqueKeys)
             {
                 HashSet<(int Offset, int Length)> keyEncodingRanges = GetKeyEncodingRanges();
 
@@ -120,7 +120,7 @@ namespace System.Formats.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset != null);
 
-            if (CborConformanceModeHelpers.RequiresSortedKeys(ConformanceMode))
+            if (_requiresSortedKeys)
             {
                 List<KeyValuePairEncodingRange> keyValuePairEncodingRanges = GetKeyValueEncodingRanges();
 

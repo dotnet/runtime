@@ -91,6 +91,7 @@
 #endif // FEATURE_INTERPRETER
 
 #include "MiscNativeHelpers.h"
+#include "ProcessEnvironment.h"
 
 #if !defined(TARGET_WASM) || !GEN_PINVOKE
 // Keep entries sorted by name using strcmp ordering for binary search.
@@ -116,6 +117,7 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(AssemblyName_InitializeAssemblySpec)
     DllImportEntry(AssemblyNative_ApplyUpdate)
     DllImportEntry(AssemblyNative_GetAssemblyCount)
+    DllImportEntry(AssemblyNative_GetAssemblyFromHandle)
     DllImportEntry(AssemblyNative_GetCodeBase)
     DllImportEntry(AssemblyNative_GetEntryAssembly)
     DllImportEntry(AssemblyNative_GetEntryPoint)
@@ -176,10 +178,6 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(CustomAttribute_ParseAttributeUsageAttribute)
     DllImportEntry(DebugDebugger_Break)
     DllImportEntry(DebugDebugger_CustomNotification)
-#if defined(DEBUGGING_SUPPORTED)
-    DllImportEntry(DebugDebugger_GetFuncEvalArgumentType)
-    DllImportEntry(DebugDebugger_GetFuncEvalMethod)
-#endif // DEBUGGING_SUPPORTED
     DllImportEntry(DebugDebugger_IsLoggingHelper)
     DllImportEntry(DebugDebugger_IsManagedDebuggerAttached)
     DllImportEntry(DebugDebugger_Launch)
@@ -214,7 +212,14 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(Enum_GetValuesAndNames)
     DllImportEntry(Environment_Exit)
     DllImportEntry(Environment_FailFast)
+#ifdef TARGET_UNIX
+    DllImportEntry(Environment_GetEnviron)
+    DllImportEntry(Environment_GetEnvironmentVariable)
+#endif // TARGET_UNIX
     DllImportEntry(Environment_GetProcessorCount)
+#ifdef TARGET_UNIX
+    DllImportEntry(Environment_SetEnvironmentVariable)
+#endif // TARGET_UNIX
     DllImportEntry(Environment_get_ExitCode)
     DllImportEntry(Environment_set_ExitCode)
 #ifdef FEATURE_PERFTRACING
@@ -249,9 +254,6 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(Exception_IsImmutableException)
     DllImportEntry(Exception_PrepareForForeignExceptionRaise)
     DllImportEntry(FileLoadException_GetMessageForHR)
-#ifdef TARGET_UNIX
-    DllImportEntry(FreeEnvironmentStringsW)
-#endif // TARGET_UNIX
     DllImportEntry(GCFrameRegistration_RegisterForGCReporting)
     DllImportEntry(GCFrameRegistration_UnregisterForGCReporting)
     DllImportEntry(GCHandle_InternalAllocWithGCTransition)
@@ -308,10 +310,6 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(GC__RegisterForFullGCNotification)
     DllImportEntry(GenericHandleWorker)
     DllImportEntry(GetCurrentExInfo)
-#ifdef TARGET_UNIX
-    DllImportEntry(GetEnvironmentStringsW)
-    DllImportEntry(GetEnvironmentVariableW)
-#endif // TARGET_UNIX
     DllImportEntry(GetFileLoadExceptionMessage)
 #ifdef FEATURE_MULTITHREADING
     DllImportEntry(GetThreadStaticsByIndex)
@@ -698,9 +696,6 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(RuntimeTypeHandle_RegisterCollectibleTypeDependency)
     DllImportEntry(RuntimeTypeHandle_SatisfiesConstraints)
     DllImportEntry(RuntimeTypeHandle_VerifyInterfaceIsImplemented)
-#ifdef TARGET_UNIX
-    DllImportEntry(SetEnvironmentVariableW)
-#endif // TARGET_UNIX
     DllImportEntry(SfiInit)
     DllImportEntry(SfiNext)
     DllImportEntry(Signature_AreEqual)

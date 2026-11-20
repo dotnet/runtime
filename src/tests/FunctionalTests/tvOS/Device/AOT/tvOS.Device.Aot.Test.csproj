@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="MonoForceInterpreter">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
@@ -11,12 +11,6 @@
     <SelfContained>true</SelfContained>
     <UseConsoleUITemplate>true</UseConsoleUITemplate>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
-    <MonoEnableLLVM>true</MonoEnableLLVM>
-    <MainLibraryFileName>tvOS.Device.Aot.Test.dll</MainLibraryFileName>
-    <MonoForceInterpreter>false</MonoForceInterpreter>
   </PropertyGroup>
 
   <ItemGroup>

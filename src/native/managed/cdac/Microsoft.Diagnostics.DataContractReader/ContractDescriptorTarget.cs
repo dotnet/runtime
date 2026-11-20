@@ -998,7 +998,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public sealed class DataCache : Target.IDataCache
     {
         private readonly ContractDescriptorTarget _target;
-        private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
+        private readonly Dictionary<(ulong, RuntimeTypeHandle), object?> _readDataByAddress = [];
 
         public DataCache(ContractDescriptorTarget target)
         {
@@ -1011,7 +1011,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
                 return result;
 
             T constructed = T.Create(_target, address);
-            if (_readDataByAddress.TryAdd((address, typeof(T)), constructed))
+            if (_readDataByAddress.TryAdd((address, typeof(T).TypeHandle), constructed))
                 return constructed;
 
             bool found = TryGet(address, out result);
@@ -1022,7 +1022,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         public bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
         {
             data = default;
-            if (!_readDataByAddress.TryGetValue((address, typeof(T)), out object? dataObj))
+            if (!_readDataByAddress.TryGetValue((address, typeof(T).TypeHandle), out object? dataObj))
                 return false;
 
             if (dataObj is T dataMaybe)
