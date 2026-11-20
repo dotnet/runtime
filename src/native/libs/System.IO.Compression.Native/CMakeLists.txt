@@ -13,7 +13,7 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
     if (CLR_CMAKE_USE_SYSTEM_BROTLI)
         find_library(BROTLIDEC brotlidec REQUIRED)
         find_library(BROTLIENC brotlienc REQUIRED)
-        list(APPEND ${BROTLI_LIBRARIES} ${BROTLIDEC} ${BROTLIENC})
+        list(APPEND BROTLI_LIBRARIES ${BROTLIDEC} ${BROTLIENC})
 
         if (CLR_CMAKE_HOST_FREEBSD)
             set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)

@@ -3,8 +3,11 @@
 
 using System;
 using System.Diagnostics.Tracing;
+using System.Globalization;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace BasicEventSourceTests
@@ -66,6 +69,60 @@ namespace BasicEventSourceTests
             }
 
             Assert.True(finalListener.ReceivedEvent, "A new runtime-provider subscription received no events.");
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnMono("Runtime-provider events are dispatched by CoreCLR.")]
+        [InlineData(1)]
+        [InlineData(8)]
+        public void RuntimeProviderListener_DelayedDispatchStart_ReceivesEvents(int iterations)
+        {
+            RemoteExecutor.Invoke(async iterationCount =>
+            {
+                const EventKeywords GCKeyword = (EventKeywords)0x1;
+                // The old sessions must not be able to deliver the GC events expected by the final listener.
+                const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
+                int count = int.Parse(iterationCount, CultureInfo.InvariantCulture);
+                var dispatchStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var releaseDispatch = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var delayDispatch = new AsyncLocal<bool>(args =>
+                {
+                    // Context restoration runs before the dispatch task's delegate reads its cancellation token.
+                    if (args.ThreadContextChanged && args.CurrentValue)
+                    {
+                        dispatchStarted.TrySetResult();
+                        releaseDispatch.Task.GetAwaiter().GetResult();
+                    }
+                });
+
+                try
+                {
+                    delayDispatch.Value = true;
+                    for (int i = 0; i < count; i++)
+                    {
+                        using var listener = new RuntimeProviderListener(ThreadingKeyword);
+                    }
+
+                    delayDispatch.Value = false;
+                    await dispatchStarted.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+                    using var finalListener = new RuntimeProviderListener(GCKeyword);
+                    releaseDispatch.SetResult();
+
+                    for (int attempt = 0; attempt < 50 && !finalListener.ReceivedEvent; attempt++)
+                    {
+                        GC.Collect();
+                        await Task.Delay(100);
+                    }
+
+                    Assert.True(finalListener.ReceivedEvent, "A new runtime-provider subscription received no events after delayed dispatch startup.");
+                }
+                finally
+                {
+                    delayDispatch.Value = false;
+                    releaseDispatch.TrySetResult();
+                }
+            }, iterations.ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
         private sealed class RuntimeProviderListener : EventListener

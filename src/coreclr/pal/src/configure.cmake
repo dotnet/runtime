@@ -31,14 +31,9 @@ endif()
 
 list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_FILE_OFFSET_BITS=64)
 
-check_include_files(sys/vmparam.h HAVE_SYS_VMPARAM_H)
-check_include_files(mach/vm_types.h HAVE_MACH_VM_TYPES_H)
-check_include_files(mach/vm_param.h HAVE_MACH_VM_PARAM_H)
 check_include_files("sys/param.h;sys/types.h;machine/npx.h" HAVE_MACHINE_NPX_H)
 check_include_files("sys/param.h;sys/cdefs.h;machine/reg.h" HAVE_MACHINE_REG_H)
-check_include_files(machine/vmparam.h HAVE_MACHINE_VMPARAM_H)
 check_include_files(procfs.h HAVE_PROCFS_H)
-check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 check_include_files(sys/time.h HAVE_SYS_TIME_H)
 check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
 check_include_files(sys/membarrier.h HAVE_SYS_MEMBARRIER_H)
@@ -80,7 +75,6 @@ int main(int argc, char **argv) {
 
 set(CMAKE_REQUIRED_LIBRARIES)
 
-check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
 check_include_files(gnu/lib-names.h HAVE_GNU_LIBNAMES_H)
 
 if(CLR_CMAKE_TARGET_HAIKU)
@@ -104,7 +98,6 @@ endif()
 if (PTHREAD_LIBRARY)
   check_library_exists(${PTHREAD_LIBRARY} pthread_attr_get_np "" HAVE_PTHREAD_ATTR_GET_NP)
   check_library_exists(${PTHREAD_LIBRARY} pthread_getattr_np "" HAVE_PTHREAD_GETATTR_NP)
-  check_library_exists(${PTHREAD_LIBRARY} pthread_getcpuclockid "" HAVE_PTHREAD_GETCPUCLOCKID)
 endif()
 
 check_function_exists(fsync HAVE_FSYNC)
@@ -173,29 +166,7 @@ set(CMAKE_EXTRA_INCLUDE_FILES)
 check_type_size(off_t SIZEOF_OFF_T)
 
 check_cxx_symbol_exists(INFTIM poll.h HAVE_INFTIM)
-check_cxx_symbol_exists(_DEBUG sys/user.h USER_H_DEFINES_DEBUG)
-check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
-check_cxx_symbol_exists(_SC_AVPHYS_PAGES unistd.h HAVE__SC_AVPHYS_PAGES)
 
-check_cxx_source_runs("
-#include <sys/param.h>
-#include <stdlib.h>
-
-int main(void) {
-  char *path;
-#ifdef PATH_MAX
-  char resolvedPath[PATH_MAX];
-#elif defined(MAXPATHLEN)
-  char resolvedPath[MAXPATHLEN];
-#else
-  char resolvedPath[1024];
-#endif
-  path = realpath(\"a_nonexistent_file\", resolvedPath);
-  if (path == NULL) {
-    exit(1);
-  }
-  exit(0);
-}" REALPATH_SUPPORTS_NONEXISTENT_FILES)
 set(CMAKE_REQUIRED_LIBRARIES pthread)
 check_cxx_source_runs("
 #include <stdio.h>
@@ -227,118 +198,6 @@ set(CMAKE_REQUIRED_LIBRARIES)
 if (PTHREAD_LIBRARY)
   check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 endif()
-
-set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-
-int main()
-{
-  int ret;
-  struct timespec ts;
-  ret = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
-
-  exit(ret);
-}" HAVE_CLOCK_THREAD_CPUTIME)
-set(CMAKE_REQUIRED_LIBRARIES)
-
-check_cxx_source_runs("
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#ifndef MAP_ANON
-#define MAP_ANON MAP_ANONYMOUS
-#endif
-
-void *handle_signal(int signal) {
-  /* If we reach this, we've crashed due to mmap honoring
-  PROT_NONE. */
-  _exit(1);
-}
-
-int main(void) {
-  int *ptr;
-  struct sigaction action;
-
-  ptr = (int *) mmap(NULL, getpagesize(), PROT_NONE,
-                     MAP_ANON | MAP_PRIVATE, -1, 0);
-  if (ptr == (int *) MAP_FAILED) {
-    exit(0);
-  }
-  action.sa_handler = &handle_signal;
-  action.sa_flags = 0;
-  sigemptyset(&action.sa_mask);
-  if (sigaction(SIGBUS, &action, NULL) != 0) {
-    exit(0);
-  }
-  if (sigaction(SIGSEGV, &action, NULL) != 0) {
-    exit(0);
-  }
-  /* This will drop us into the signal handler if PROT_NONE
-     is honored. */
-  *ptr = 123;
-  exit(0);
-}" MMAP_ANON_IGNORES_PROTECTION)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <algorithm>
-
-#define MEM_SIZE 1024
-#define TEMP_FILE_TEMPLATE \"${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/multiplemaptestXXXXXX\"
-int main(void)
-{
-  char * fname;
-  int fd;
-  int ret;
-  void * pAddr0, * pAddr1;
-
-  fname = (char *)malloc(std::max((size_t)MEM_SIZE, sizeof(TEMP_FILE_TEMPLATE)));
-  if (!fname)
-    exit(1);
-  strcpy(fname, TEMP_FILE_TEMPLATE);
-
-  fd = mkstemp(fname);
-  if (fd < 0)
-    exit(1);
-
-  ret = write (fd, (void *)fname, MEM_SIZE);
-  if (ret < 0)
-    exit(1);
-
-  pAddr0 = mmap(0, MEM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-  pAddr1 = mmap(0, MEM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
-  /* In theory we should look for (pAddr1 == MAP_FAILED) && (pAddr1 != MAP_FAILED)
-   but in case the first test also failed, i.e. we failed to run the test,
-   let's assume that the system might not allow multiple shared mapping of the
-   same file region in the same process. The code enabled in this case is
-   only a fall-back code path. In case the double mmap actually works, virtually
-   nothing will change and the normal code path will be executed */
-  if (pAddr1 == MAP_FAILED)
-    ret = 1;
-  else
-    ret = 0;
-
-  if (pAddr0)
-    munmap (pAddr0, MEM_SIZE);
-  if (pAddr1)
-    munmap (pAddr1, MEM_SIZE);
-  close(fd);
-  unlink(fname);
-  free(fname);
-
-  exit(ret != 1);
-}" ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS)
 
 check_cxx_source_runs("
 #include <fcntl.h>
@@ -404,9 +263,6 @@ int main(int argc, char **argv)
         return 0;
 }" UNWIND_CONTEXT_IS_UCONTEXT_T)
 
-check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
-check_symbol_exists(unw_get_proc_info_in_range libunwind.h HAVE_GET_PROC_INFO_IN_RANGE)
-
 check_cxx_source_compiles("
 #include <libunwind.h>
 
@@ -444,7 +300,6 @@ int main(int argc, char **argv)
 }" HAVE_PR_SET_PTRACER)
 
 if(CLR_CMAKE_TARGET_APPLE)
-  set(HAVE__NSGETENVIRON 1)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 

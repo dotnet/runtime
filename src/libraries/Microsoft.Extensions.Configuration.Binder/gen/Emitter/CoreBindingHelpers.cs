@@ -690,7 +690,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string tempIdentifier = GetIncrementalIdentifier(Identifier.temp);
 
                 // Create temp list.
-                _writer.WriteLine($"var {tempIdentifier} = new List<{elementTypeFQN}>();");
+                _writer.WriteLine($"var {tempIdentifier} = new global::System.Collections.Generic.List<{elementTypeFQN}>();");
                 _writer.WriteLine();
 
                 // Bind elements to temp list.

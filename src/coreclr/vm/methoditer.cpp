@@ -18,7 +18,7 @@
 // assembly might be without a reference and get deallocated (even the native part).
 //
 BOOL LoadedMethodDescIterator::Next(
-    CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder)
+    CollectibleAssemblyHolder* pAssemblyHolder)
 {
     CONTRACTL
     {

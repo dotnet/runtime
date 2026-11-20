@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
@@ -75,5 +76,36 @@ public class CdacStressTests : CdacStressTestBase
 
         CdacStressResults results = await RunArgIterStressAsync(debuggee.Name);
         AssertAllArgIterPassed(results, debuggee.Name);
+    }
+
+    [Theory]
+    [InlineData("Frameless", "native-gc-info", true)]
+    [InlineData("Frameless", "r2r-gcrefmap", false)]
+    [InlineData("ExternalMethodFrame", "r2r-gcrefmap", true)]
+    [InlineData("StubDispatchFrame", "r2r-gcrefmap", true)]
+    [InlineData("PrestubMethodFrame", "r2r-gcrefmap", true)]
+    [InlineData("CallCountingHelperFrame", "r2r-gcrefmap", true)]
+    [InlineData("PrestubMethodFrame", "native-gc-info", false)]
+    [InlineData("HelperMethodFrame", "frame-specific-roots", true)]
+    [InlineData("HelperMethodFrame", "", false)]
+    public void ArgIterStress_UnloadedLayoutRequiresFrameAppropriateFallback(string frame, string fallback, bool valid)
+    {
+        string logFile = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(logFile,
+                $"[ARG_SKIP] MD=0x1 frame={frame} reason=runtime-type-not-loaded fallback={fallback} Test.Method()\n" +
+                "[ARG_STATS] pass=1 fail=0 skip=1 error=0\n");
+            CdacStressResults results = CdacStressResults.Parse(logFile);
+            if (valid)
+                AssertAllArgIterPassed(results, nameof(ArgIterStress_UnloadedLayoutRequiresFrameAppropriateFallback));
+            else
+                Assert.ThrowsAny<Xunit.Sdk.XunitException>(() =>
+                    AssertAllArgIterPassed(results, nameof(ArgIterStress_UnloadedLayoutRequiresFrameAppropriateFallback)));
+        }
+        finally
+        {
+            File.Delete(logFile);
+        }
     }
 }

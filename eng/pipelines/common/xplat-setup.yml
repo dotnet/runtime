@@ -175,7 +175,7 @@ jobs:
 
         # OSX Public Build Pool (we don't have on-prem OSX BuildPool).
         ${{ if and(or(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(parameters.jobParameters.hostedOs, 'osx')), eq(variables['System.TeamProject'], 'public')) }}:
-          vmImage: 'macos-15'
+          vmImage: 'macos-26'
 
         # Official build OSX pool
         ${{ if and(or(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(parameters.jobParameters.hostedOs, 'osx')), ne(variables['System.TeamProject'], 'public')) }}:

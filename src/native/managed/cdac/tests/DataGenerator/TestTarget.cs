@@ -272,6 +272,9 @@ internal sealed class TestTarget : Target
 
         public override IManagedTypeSource ManagedTypeSource => _managedTypeSource;
 
+        public override bool TryGetContractVersion<TContract>([NotNullWhen(true)] out string? version)
+            => throw new NotImplementedException();
+
         public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, [NotNullWhen(false)] out System.Exception? failureException)
         {
             if (typeof(TContract) == typeof(IManagedTypeSource))

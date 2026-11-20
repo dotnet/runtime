@@ -22,7 +22,6 @@
 void indexKeywords(Indx* indx); // defined in asmparse.y
 
 unsigned int g_uCodePage = CP_ACP;
-unsigned int g_uConsoleCP = CP_ACP;
 
 char g_szSourceFileName[MAX_FILENAME_LENGTH*3];
 
@@ -605,7 +604,7 @@ void Assembler::EmitImports()
     mdToken tk;
     for(i=0; (pID = m_ImportList.PEEK(i)); i++)
     {
-        MultiByteToWideChar(g_uCodePage,0,pID->szDllName,-1,wzDllName,dwUniBuf-1);
+        minipal_convert_utf8_to_utf16(pID->szDllName,strlen(pID->szDllName)+1,(CHAR16_T*)wzDllName,dwUniBuf-1,0);
         if(FAILED(m_pEmitter->DefineModuleRef(             // S_OK or error.
                             wzDllName,            // [IN] DLL name
                             &tk)))      // [OUT] returned
@@ -619,7 +618,7 @@ HRESULT Assembler::EmitPinvokeMap(mdToken tk, PInvokeDescriptor* pDescr)
 {
     WCHAR*               wzAlias=&wzUniBuf[0];
 
-    if(pDescr->szAlias) MultiByteToWideChar(g_uCodePage,0,pDescr->szAlias,-1,wzAlias,dwUniBuf-1);
+    if(pDescr->szAlias) minipal_convert_utf8_to_utf16(pDescr->szAlias,strlen(pDescr->szAlias)+1,(CHAR16_T*)wzAlias,dwUniBuf-1,0);
 
     return m_pEmitter->DefinePinvokeMap(        // Return code.
                         tk,                     // [IN] FieldDef, MethodDef or MethodImpl.
@@ -657,7 +656,7 @@ BOOL Assembler::EmitMethod(Method *pMethod)
     ClassToken = (pMethod->IsGlobalMethod())? mdTokenNil
                                     : pMethod->m_pClass->m_cl;
     // Convert name to UNICODE
-    MultiByteToWideChar(g_uCodePage,0,pszMethodName,-1,wzMemberName,dwUniBuf-1);
+    minipal_convert_utf8_to_utf16(pszMethodName,strlen(pszMethodName)+1,(CHAR16_T*)wzMemberName,dwUniBuf-1,0);
 
     if(IsMdPrivateScope(pMethod->m_Attr))
     {
@@ -801,7 +800,7 @@ BOOL Assembler::EmitMethod(Method *pMethod)
             if(pAN->dwName) strcpy_s(szPhonyName,dwUniBuf >> 1,pAN->szName);
             else sprintf_s(szPhonyName,(dwUniBuf >> 1),"A_%d",pAN->nNum);
 
-            MultiByteToWideChar(g_uCodePage,0,szPhonyName,-1,wzParName,dwUniBuf >> 1);
+            minipal_convert_utf8_to_utf16(szPhonyName,strlen(szPhonyName)+1,(CHAR16_T*)wzParName,dwUniBuf >> 1,0);
 
             if(pAN->pValue)
             {
@@ -904,7 +903,7 @@ BOOL Assembler::EmitEvent(EventDescriptor* pED)
 
     if(!pED) return FALSE;
 
-    MultiByteToWideChar(g_uCodePage,0,pED->m_szName,-1,wzMemberName,dwUniBuf-1);
+    minipal_convert_utf8_to_utf16(pED->m_szName,strlen(pED->m_szName)+1,(CHAR16_T*)wzMemberName,dwUniBuf-1,0);
 
     mdAddOn = ResolveLocalMemberRef(pED->m_tkAddOn);
     if(TypeFromToken(mdAddOn) != mdtMethodDef)
@@ -964,7 +963,7 @@ BOOL Assembler::EmitProp(PropDescriptor* pPD)
 
     if(!pPD) return FALSE;
 
-    MultiByteToWideChar(g_uCodePage,0,pPD->m_szName,-1,wzMemberName,dwUniBuf-1);
+    minipal_convert_utf8_to_utf16(pPD->m_szName,strlen(pPD->m_szName)+1,(CHAR16_T*)wzMemberName,dwUniBuf-1,0);
 
     mdSet = ResolveLocalMemberRef(pPD->m_tkSet);
     if((RidFromToken(mdSet)!=0)&&(TypeFromToken(mdSet) != mdtMethodDef))
@@ -1091,7 +1090,7 @@ BOOL Assembler::EmitClass(Class *pClass)
     else
         szFullName = pClass->m_szFQN;
 
-    MultiByteToWideChar(g_uCodePage,0,szFullName,-1,wzFullName,dwUniBuf);
+    minipal_convert_utf8_to_utf16(szFullName,strlen(szFullName)+1,(CHAR16_T*)wzFullName,dwUniBuf,0);
 
     L = u16_strlen(wzFullName);
     if((L==0)||(wzFullName[L-1]==L'.')) // Missing class name!
@@ -1364,7 +1363,7 @@ char* Assembler::ReflectionNotation(mdToken tk)
                 mdToken tkResScope;
                 if(SUCCEEDED(m_pImporter->GetTypeRefProps(tk,&tkResScope,wzUniBuf,cchUniBuf,&N)))
                 {
-                    int ret = WideCharToMultiByte(CP_UTF8,0,wzUniBuf,-1,sz,szSizeBytes,NULL,NULL);
+                    size_t ret = minipal_convert_utf16_to_utf8((const CHAR16_T*)wzUniBuf,u16_strlen(wzUniBuf)+1,sz,szSizeBytes,0);
                     if(TypeFromToken(tkResScope)==mdtAssemblyRef)
                     {
                         AsmManAssembly *pAsmRef = m_pManifest->m_AsmRefLst.PEEK(RidFromToken(tkResScope)-1);
@@ -1403,8 +1402,8 @@ char* Assembler::ReflectionNotation(mdToken tk)
                                 {
                                     memcpy(wzUniBuf,pAsmRef->pLocale->ptr(),L);
                                     wzUniBuf[L>>1] = 0;
-                                    ret = WideCharToMultiByte(CP_UTF8,0,wzUniBuf,-1,pc,(int)szRemainingSizeBytes,NULL,NULL);
-                                    if (ret <= 0)
+                                    ret = minipal_convert_utf16_to_utf8((const CHAR16_T*)wzUniBuf,u16_strlen(wzUniBuf)+1,pc,szRemainingSizeBytes,0);
+                                    if (ret == 0)
                                     {
                                         report->error("Locale too long.\n");
                                         *sz=0;
@@ -1413,7 +1412,7 @@ char* Assembler::ReflectionNotation(mdToken tk)
                                     else
                                     {
                                         pc += ret;
-                                        szRemainingSizeBytes -= (size_t)ret;
+                                        szRemainingSizeBytes -= ret;
                                     }
                                 }
                             }

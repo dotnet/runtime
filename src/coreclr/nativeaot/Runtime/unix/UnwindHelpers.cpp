@@ -48,8 +48,6 @@ using libunwind::CompactUnwinder_arm64;
 using libunwind::Registers_loongarch;
 #elif defined(TARGET_RISCV64)
 using libunwind::Registers_riscv;
-#elif defined(TARGET_X86)
-using libunwind::Registers_x86;
 #else
 #error "Unwinding is not implemented for this architecture yet."
 #endif
@@ -245,131 +243,6 @@ struct Registers_REGDISPLAY : REGDISPLAY
 };
 
 #endif // TARGET_AMD64
-#if defined(TARGET_X86)
-struct Registers_REGDISPLAY : REGDISPLAY
-{
-    typedef uint32_t reg_t;
-    typedef uint32_t link_reg_t;
-    typedef const link_reg_t &link_hardened_reg_arg_t;
-
-    static int  getArch() { return libunwind::REGISTERS_X86; }
-
-    inline uint64_t getRegister(int regNum) const
-    {
-        switch (regNum)
-        {
-        case UNW_REG_IP:
-            return IP;
-        case UNW_REG_SP:
-            return SP;
-        case UNW_X86_EAX:
-            return *pRax;
-        case UNW_X86_EDX:
-            return *pRdx;
-        case UNW_X86_ECX:
-            return *pRcx;
-        case UNW_X86_EBX:
-            return *pRbx;
-        case UNW_X86_ESI:
-            return *pRsi;
-        case UNW_X86_EDI:
-            return *pRdi;
-        case UNW_X86_EBP:
-            return *pRbp;
-        case UNW_X86_ESP:
-            return SP;
-        }
-
-        // Unsupported register requested
-        abort();
-    }
-
-    // Callee-saved registers are tracked by the location they were saved at, see setRegisterLocation
-    inline void setRegister(int regNum, uint64_t value)
-    {
-        switch (regNum)
-        {
-        case UNW_REG_IP:
-            IP = value;
-            return;
-        case UNW_REG_SP:
-        case UNW_X86_ESP:
-            SP = value;
-            return;
-        }
-    }
-
-    inline void setRegisterLocation(int regNum, uint64_t location)
-    {
-        switch (regNum)
-        {
-        case UNW_REG_IP:
-        case UNW_REG_SP:
-        case UNW_X86_ESP:
-            return;
-        case UNW_X86_EAX:
-            pRax = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_EDX:
-            pRdx = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_ECX:
-            pRcx = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_EBX:
-            pRbx = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_ESI:
-            pRsi = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_EDI:
-            pRdi = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_EBP:
-            pRbp = (PTR_uintptr_t)location;
-            return;
-        }
-
-        // Unsupported x86_64 register
-        abort();
-    }
-
-    // N/A for x86
-    inline bool validFloatRegister(int) { return false; }
-    inline bool validVectorRegister(int) { return false; }
-
-    static constexpr int lastDwarfRegNum() { return 16; }
-
-    inline bool validRegister(int regNum) const
-    {
-        if (regNum == UNW_REG_IP)
-            return true;
-        if (regNum == UNW_REG_SP)
-            return true;
-        if (regNum < 0)
-            return false;
-        if (regNum > 15)
-            return false;
-        return true;
-    }
-
-    // N/A for x86
-    inline double getFloatRegister(int) const { abort(); }
-    inline   void setFloatRegister(int, double) { abort(); }
-    inline double getVectorRegister(int) const { abort(); }
-    inline   void setVectorRegister(int, ...) { abort(); }
-
-    void      setSP(uint64_t value) { SP = value; }
-
-    uint64_t  getIP() const { return IP; }
-
-    void      setIP(uint64_t value) { IP = value; }
-
-    uint64_t  getEBP() const { return *pRbp; }
-    uint64_t  getEBX() const { return *pRbx; }
-};
-
-#endif // TARGET_X86
 #if defined(TARGET_ARM)
 
 struct Registers_REGDISPLAY : REGDISPLAY
@@ -1401,23 +1274,57 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t fo
     return true;
 }
 
+#if _LIBUNWIND_SUPPORT_DWARF_UNWIND && defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
+// Finds the FDE covering the address through the .eh_frame_hdr binary search table, and returns false
+// only when that table is present and no FDE covers the address. libunwind would otherwise scan the
+// whole .eh_frame section, which in a large image takes long enough that a thread interrupted for
+// suspension in a range extension thunk between two sections of managed code makes no progress.
+template <typename R>
+static bool FindFdeOffsetInDwarfIndex(PCODE pc, const UnwindInfoSections &uwInfoSections, uint32_t *pDwarfOffset)
+{
+    LocalAddressSpace::pint_t indexStart = uwInfoSections.dwarf_index_section;
+    if (indexStart == 0)
+    {
+        return true;
+    }
+
+    LocalAddressSpace::pint_t indexEnd = indexStart + uwInfoSections.dwarf_index_section_length;
+    libunwind::EHHeaderParser<LocalAddressSpace>::EHHeaderInfo indexInfo;
+    if (!libunwind::EHHeaderParser<LocalAddressSpace>::decodeEHHdr(_addressSpace, indexStart, indexEnd, indexInfo) ||
+        indexInfo.fde_count == 0)
+    {
+        return true;
+    }
+
+    libunwind::CFI_Parser<LocalAddressSpace>::FDE_Info fdeInfo;
+    libunwind::CFI_Parser<LocalAddressSpace>::CIE_Info cieInfo;
+    if (!libunwind::EHHeaderParser<LocalAddressSpace>::template findFDE<R>(
+            _addressSpace, pc, indexStart, (uint32_t)uwInfoSections.dwarf_index_section_length, &fdeInfo, &cieInfo))
+    {
+        return false;
+    }
+
+    *pDwarfOffset = (uint32_t)(fdeInfo.fdeStart - uwInfoSections.dwarf_section);
+    return true;
+}
+#endif
+
 bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSections, unw_proc_info_t *procInfo)
 {
 #if defined(TARGET_AMD64)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_x86_64> uc(_addressSpace, nullptr);
+    using NativeRegisters = Registers_x86_64;
 #elif defined(TARGET_ARM)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm> uc(_addressSpace, nullptr);
+    using NativeRegisters = Registers_arm;
 #elif defined(TARGET_ARM64)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm64> uc(_addressSpace, nullptr);
-#elif defined(HOST_X86)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_x86> uc(_addressSpace, nullptr);
+    using NativeRegisters = Registers_arm64;
 #elif defined(HOST_LOONGARCH64)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_loongarch> uc(_addressSpace, nullptr);
+    using NativeRegisters = Registers_loongarch;
 #elif defined(HOST_RISCV64)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_riscv> uc(_addressSpace, nullptr);
+    using NativeRegisters = Registers_riscv;
 #else
     #error "Unwinding is not implemented for this architecture yet."
 #endif
+    libunwind::UnwindCursor<LocalAddressSpace, NativeRegisters> uc(_addressSpace, nullptr);
 
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
     uint32_t dwarfOffsetHint = 0;
@@ -1454,6 +1361,13 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSectio
 #else
         PORTABILITY_ASSERT("GetUnwindProcInfo");
 #endif
+    }
+#endif
+
+#if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
+    if (dwarfOffsetHint == 0 && !FindFdeOffsetInDwarfIndex<NativeRegisters>(pc, uwInfoSections, &dwarfOffsetHint))
+    {
+        return false;
     }
 #endif
 

@@ -7,24 +7,21 @@
 
 bool MethodContextIterator::Initialize(const char* fileName)
 {
-    m_hFile = CreateFileA(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                          FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (m_hFile == INVALID_HANDLE_VALUE)
+    m_hFile = fopen(fileName, "rb");
+    if (m_hFile == nullptr)
     {
-        LogError("Failed to open file '%s'. GetLastError()=%u", fileName, GetLastError());
+        LogError("Failed to open file '%s'. errno=%d", fileName, errno);
         return false;
     }
 
-    LARGE_INTEGER DataTemp;
-    if (GetFileSizeEx(m_hFile, &DataTemp) == 0)
+    m_fileSize = fgetsize(m_hFile);
+    if (m_fileSize < 0)
     {
-        LogError("GetFileSizeEx failed. GetLastError()=%u", GetLastError());
-        CloseHandle(m_hFile);
-        m_hFile = INVALID_HANDLE_VALUE;
+        LogError("fgetsize failed. errno=%d", errno);
+        fclose(m_hFile);
+        m_hFile = nullptr;
         return false;
     }
-
-    m_fileSize = DataTemp.QuadPart;
 
     if (m_progressReport)
     {
@@ -37,14 +34,14 @@ bool MethodContextIterator::Initialize(const char* fileName)
 bool MethodContextIterator::Destroy()
 {
     bool ret = true; // assume success
-    if (m_hFile != INVALID_HANDLE_VALUE)
+    if (m_hFile != nullptr)
     {
-        if (!CloseHandle(m_hFile))
+        if (fclose(m_hFile) != 0)
         {
-            LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
+            LogError("fclose failed. errno=%d", errno);
             ret = false;
         }
-        m_hFile = INVALID_HANDLE_VALUE;
+        m_hFile = nullptr;
     }
     delete m_mc;
     m_mc = nullptr;
@@ -72,15 +69,14 @@ bool MethodContextIterator::MoveNext()
     while (true)
     {
         // Figure out where the pointer is currently.
-        LARGE_INTEGER pos;
-        pos.QuadPart = 0;
-        if (SetFilePointerEx(m_hFile, pos, &m_pos, FILE_CURRENT) == 0)
+        m_pos = ftell_64(m_hFile);
+        if (m_pos < 0)
         {
-            LogError("SetFilePointerEx failed. GetLastError()=%u", GetLastError());
+            LogError("ftell_64 failed. errno=%d", errno);
             return false; // any failure causes us to bail out.
         }
 
-        if (m_pos.QuadPart >= m_fileSize)
+        if (m_pos >= m_fileSize)
         {
             return false;
         }

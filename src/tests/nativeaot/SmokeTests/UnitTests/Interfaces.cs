@@ -1158,12 +1158,15 @@ public class Interfaces
                     throw new Exception();
             }
 
+            // Shared generic default interface methods require dynamic entrypoint allocation.
+            if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
             {
                 IInterface o = (IInterface)new CastableClass<IInterface, IInterfaceCastableImpl<Atom>>();
                 if (o.GetCookie() != "Atom")
                     throw new Exception();
             }
 
+            if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
             {
                 IInterface o = (IInterface)new CastableClass<IInterface, IInterfaceIndirectCastableImpl<Atom>>();
                 if (o.GetCookie() != "Atom")

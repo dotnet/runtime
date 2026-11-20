@@ -10,6 +10,7 @@
 #include "stdafx.h"
 #include "CLREventBase.h"
 #include <minipal/time.h>
+#include <minipal.h>
 #include "debugdebugger.h"
 #include "../inc/common.h"
 #include "eeconfig.h" // This is here even for retail & free builds...
@@ -744,47 +745,6 @@ CONTEXT * GetManagedLiveCtx(Thread * pThread)
     return pCtx;
 }
 
-// Validate an object. Returns E_INVALIDARG or S_OK.
-HRESULT ValidateObject(Object *objPtr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    EX_TRY
-    {
-        // Use AVInRuntimeImplOkHolder.
-        AVInRuntimeImplOkayHolder AVOkay;
-
-        // NULL is certinally valid...
-        if (objPtr != NULL)
-        {
-            if (!objPtr->ValidateObjectWithPossibleAV())
-            {
-                LOG((LF_CORDB, LL_INFO10000, "GAV: object methodtable-class invariant doesn't hold.\n"));
-                hr = E_INVALIDARG;
-                goto LExit;
-            }
-        }
-
-    LExit: ;
-    }
-    EX_CATCH
-    {
-        LOG((LF_CORDB, LL_INFO10000, "GAV: exception indicated ref is bad.\n"));
-        hr = E_INVALIDARG;
-    }
-    EX_END_CATCH
-
-    return hr;
-}   // ValidateObject
-
-
 #ifdef FEATURE_DBGIPC_TRANSPORT_VM
 void
 ShutdownTransport()
@@ -960,8 +920,10 @@ void Debugger::InitDebugEventCounting()
     if (wstrValue != NULL)
     {
         LPSTR   strValue;
-        int     cbReq;
-        cbReq = WideCharToMultiByte(CP_UTF8, 0, wstrValue,-1, 0,0, 0,0);
+        size_t  cbReq;
+        const CHAR16_T* wszValue = (const CHAR16_T*)(LPWSTR)wstrValue;
+        size_t  cchValue = u16_strlen(wstrValue) + 1;
+        cbReq = minipal_get_length_utf16_to_utf8(wszValue, cchValue, 0);
 
         strValue = new (nothrow) char[cbReq+1];
         // This is a debug only thingy, if it fails, not worth taking
@@ -971,7 +933,7 @@ void Debugger::InitDebugEventCounting()
 
 
         // now translate the unicode to ansi string
-        WideCharToMultiByte(CP_UTF8, 0, wstrValue, -1, strValue, cbReq+1, 0,0);
+        minipal_convert_utf16_to_utf8(wszValue, cchValue, strValue, cbReq+1, 0);
         char *szEnd = (char *)strchr(strValue, ';');
         char *szStart = strValue;
         while (szEnd != NULL)
@@ -1256,7 +1218,6 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_pAssembly = pEvalInfo->vmAssembly.GetRawPtr();
     m_funcEvalKey = pEvalInfo->funcEvalKey;
     m_argCount = pEvalInfo->argCount;
-    m_targetCodeAddr = (TADDR)NULL;
     m_stringSize = pEvalInfo->stringSize;
     m_arrayRank = pEvalInfo->arrayRank;
     m_genericArgsCount = pEvalInfo->genericArgsCount;
@@ -1264,9 +1225,9 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_successful = false;
     m_argData = NULL;
     memset(m_result, 0, sizeof(m_result));
-    m_md = NULL;
     m_resultType = TypeHandle();
     m_externalMemoryOwner = NULL;
+    m_funcEvalResult = NULL;
     m_aborting = FE_ABORT_NONE;
     m_aborted = false;
     m_completed = false;
@@ -1288,6 +1249,13 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     }
 }
 
+void ReleaseDebuggerExternalMemoryHandle(ExternalMemoryHandle* pHandle)
+{
+    WRAPPER_NO_CONTRACT;
+
+    ExternalMemoryHandle::Remove(pHandle DEBUG_ARG(g_pDebugger->IsStopped()));
+}
+
 DebuggerExternalMemoryOwner::DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE *pMemory)
     : m_pHandle(NULL),
       m_pMemory(pMemory)
@@ -1300,15 +1268,42 @@ DebuggerExternalMemoryOwner::DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE 
     }
     CONTRACTL_END;
 
-    m_pHandle = ExternalMemoryHandle::Add(pMT, m_pMemory, 0);
+    m_pHandle = ExternalMemoryHandle::Add(TypeHandle(pMT), m_pMemory);
 }
 
 DebuggerExternalMemoryOwner::~DebuggerExternalMemoryOwner()
 {
     WRAPPER_NO_CONTRACT;
 
-    ExternalMemoryHandle::Remove(m_pHandle DEBUG_ARG(g_pDebugger->IsStopped()));
+    ReleaseDebuggerExternalMemoryHandle(m_pHandle);
     DeleteInteropSafe(m_pMemory);
+}
+
+DebuggerExternalMemoryOwner *DebuggerExternalMemoryOwner::Create(MethodTable *pMT, SIZE_T size)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    BYTE *pMemory = new (interopsafe) BYTE[size];
+    memset(pMemory, 0, size);
+    DebuggerExternalMemoryOwner *pOwner = nullptr;
+    EX_TRY
+    {
+        pOwner = new (interopsafe) DebuggerExternalMemoryOwner(pMT, pMemory);
+    }
+    EX_CATCH
+    {
+        DeleteInteropSafe(pMemory);
+        EX_RETHROW;
+    }
+    EX_END_CATCH
+
+    return pOwner;
 }
 
 BYTE *DebuggerEval::CreateExternalMemory(MethodTable *pMT, SIZE_T size)
@@ -1321,21 +1316,9 @@ BYTE *DebuggerEval::CreateExternalMemory(MethodTable *pMT, SIZE_T size)
     }
     CONTRACTL_END;
 
-    _ASSERTE(m_externalMemoryOwner == NULL);
-
-    BYTE *pMemory = new (interopsafe) BYTE[size];
-    EX_TRY
-    {
-        m_externalMemoryOwner = new (interopsafe) DebuggerExternalMemoryOwner(pMT, pMemory);
-    }
-    EX_CATCH
-    {
-        DeleteInteropSafe(pMemory);
-        EX_RETHROW;
-    }
-    EX_END_CATCH
-
-    return pMemory;
+    _ASSERTE(m_externalMemoryOwner == nullptr);
+    m_externalMemoryOwner = DebuggerExternalMemoryOwner::Create(pMT, size);
+    return m_externalMemoryOwner->GetMemory();
 }
 
 #ifdef _DEBUG
@@ -2670,7 +2653,7 @@ DebuggerMethodInfo *Debugger::GetOrCreateMethodInfo(Module *pModule, mdMethodDef
     // nor would it be useful for anything.
     ALLOW_DATATARGET_MISSING_MEMORY(
         // In case we don't have already, take it now.
-        DebuggerDataLockHolder debuggerDataLockHolder(this);
+        DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
     );
 
     if (m_pMethodInfos != NULL)
@@ -2921,11 +2904,11 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     ULONG32 cMap = min((ULONG32)cMapMax, pDJI->GetSequenceMapCount());
     DebuggerILToNativeMap * rgMapInt = pDJI->GetSequenceMap();
 
-    NewArrayHolder<UINT> rguiILOffsetTemp = new (nothrow) UINT[cMap];
+    NewArrayHolder<UINT> rguiILOffsetTemp(new (nothrow) UINT[cMap]);
     if (rguiILOffsetTemp == NULL)
         return E_OUTOFMEMORY;
 
-    NewArrayHolder<UINT> rguiNativeOffsetTemp = new (nothrow) UINT[cMap];
+    NewArrayHolder<UINT> rguiNativeOffsetTemp(new (nothrow) UINT[cMap]);
     if (rguiNativeOffsetTemp == NULL)
         return E_OUTOFMEMORY;
 
@@ -2939,8 +2922,8 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     // then cMap must fit in a USHORT as well
     _ASSERTE(FitsIn<USHORT>(cMap));
     *pcMap = (USHORT) cMap;
-    *prguiILOffset = rguiILOffsetTemp.Extract();
-    *prguiNativeOffset = rguiNativeOffsetTemp.Extract();
+    *prguiILOffset = rguiILOffsetTemp.Detach();
+    *prguiNativeOffset = rguiNativeOffsetTemp.Detach();
 
     return S_OK;
 }
@@ -3079,15 +3062,15 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
                     // instrumented IL map if one exists.
                     if (dmi->HasInstrumentedILMap())
                     {
-                        InstrumentedILOffsetMapping mapping =
-                            dmi->GetRuntimeModule()->GetInstrumentedILOffsetMapping(dmi->m_token);
+                        InstrumentedILOffsetMappingHolder mapping(
+                            dmi->GetRuntimeModule()->GetInstrumentedILOffsetMapping(dmi->m_token));
 
                         for (SIZE_T i = 0; i < n; i++)
                         {
                             int origOffset = *p;
 
                             *p = dmi->TranslateToInstIL(
-                                                  &mapping,
+                                                  &mapping.Get(),
                                                   origOffset,
                                                   bOriginalToInstrumented);
 
@@ -5041,7 +5024,7 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule)
     // the lock when actually using the DebuggerModule (since it won't be unloaded as long as there is a thread
     // in that appdomain). Many of our callers already have this lock, many don't.
     // We can take the lock anyways because it's reentrant.
-    DebuggerDataLockHolder ch(g_pDebugger); // need to traverse module list
+    DebuggerDataLockHolder ch = TakeDebuggerDataLock(g_pDebugger); // need to traverse module list
 
     DebuggerModule* dmod = NULL;
 
@@ -5088,7 +5071,7 @@ DebuggerModule* Debugger::AddDebuggerModule(Assembly * pAssembly)
     CONTRACTL_END;
 
     LOG((LF_CORDB, LL_INFO1000, "D::ADM asm=0x%p\n", pAssembly));
-    DebuggerDataLockHolder chInfo(this);
+    DebuggerDataLockHolder chInfo = TakeDebuggerDataLock(this);
 
     Module *     pRuntimeModule = pAssembly->GetModule();
 
@@ -5602,7 +5585,7 @@ void Debugger::SetModuleDefaultJMCStatus(Module * pRuntimeModule, bool fStatus)
 
     if (pTable != NULL)
     {
-        Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+        Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
         for (DebuggerMethodInfoTable::Iterator iterator = pTable->Begin(), end = pTable->End();
              iterator != end; iterator++)
         {
@@ -9413,7 +9396,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
         // because JMC status is not maintained on a per-AppDomain basis and we don't
         // want to change the JMC behavior of the module in other domains.
         LOG((LF_CORDB, LL_EVERYTHING, "Setting all JMC methods to false:\n"));
-        DebuggerDataLockHolder debuggerDataLockHolder(this);
+        DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
         DebuggerMethodInfoTable * pTable = GetMethodInfoTable();
         if (pTable != NULL)
         {
@@ -9432,7 +9415,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
         // Delete the Left Side representation of the module.
         if (m_pModules != NULL)
         {
-            DebuggerDataLockHolder chInfo(this);
+            DebuggerDataLockHolder chInfo = TakeDebuggerDataLock(this);
             m_pModules->RemoveModule(pRuntimeModule);
         }
 
@@ -9506,7 +9489,7 @@ void Debugger::RemoveModuleReferences( Module* pModule )
 
         if (SUCCEEDED(hr))
         {
-            DebuggerDataLockHolder debuggerDataLockHolder(this);
+            DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
 
             m_pMethodInfos->ClearMethodsOfModule(pModule);
 
@@ -9786,7 +9769,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)pResult;
     ipce->FuncEvalComplete.vmAppDomain.SetRawPtr(pDomain);
     ipce->FuncEvalComplete.vmObjectHandle = pDE->m_vmObjectHandle;
-    ipce->FuncEvalComplete.vmExternalMemoryOwner.SetRawPtr(pDE->m_externalMemoryOwner);
+    ipce->FuncEvalComplete.vmExternalMemoryOwner.SetRawPtr(static_cast<DebuggerExternalMemoryOwner *>(pDE->m_externalMemoryOwner));
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: TypeHandle is %p\n", pDE->m_resultType.AsPtr()));
 
@@ -9807,7 +9790,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
         (CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr))));
 
     IfFailThrow(m_pRCThread->SendIPCEvent());
-    pDE->m_externalMemoryOwner = NULL;
+    pDE->m_externalMemoryOwner.Detach();
 
 #endif
 }
@@ -10670,7 +10653,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             if (pMethodInfoTable != NULL)
             {
-                DebuggerDataLockHolder debuggerDataLockHolder(this);
+                DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
 
                 for (DebuggerMethodInfoTable::Iterator iterator = pMethodInfoTable->Begin(), end = pMethodInfoTable->End();
                      iterator != end; iterator++)
@@ -10689,7 +10672,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         {
 
             // Removes all DebuggerModules
-            DebuggerDataLockHolder ch(this);
+            DebuggerDataLockHolder ch = TakeDebuggerDataLock(this);
             m_pModules->Clear();
 
         }
@@ -10944,7 +10927,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             }
             else
             {
-                DebuggerDataLockHolder debuggerDataLockHolder(this);
+                DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
                 // This may be called on an unjitted method, so we may
                 // have to create the MethodInfo.
                 DebuggerMethodInfo * pMethodInfo = GetOrCreateMethodInfo(pModule, token);
@@ -11664,110 +11647,6 @@ HRESULT Debugger::BasicTypeInfoToTypeHandle(DebuggerIPCE_BasicTypeData *data, Ty
     return S_OK;
 }
 
-// Iterate through the type argument data, creating type handles as we go.
-void Debugger::TypeDataWalk::ReadTypeHandles(unsigned int nTypeArgs, TypeHandle *ppResults)
-{
-    WRAPPER_NO_CONTRACT;
-
-    for (unsigned int i = 0; i < nTypeArgs; i++)
-        ppResults[i] = ReadTypeHandle();
-    }
-
-TypeHandle Debugger::TypeDataWalk::ReadInstantiation(Module *pModule, mdTypeDef tok, unsigned int nTypeArgs)
-{
-    WRAPPER_NO_CONTRACT;
-
-    DWORD dwAllocSize;
-    if (!ClrSafeInt<DWORD>::multiply(nTypeArgs, sizeof(TypeHandle), dwAllocSize))
-    {
-        ThrowHR(COR_E_OVERFLOW);
-    }
-    TypeHandle * inst = (TypeHandle *) _alloca(dwAllocSize);
-    ReadTypeHandles(nTypeArgs, inst) ;
-    TypeHandle th = g_pEEInterface->LoadInstantiation(pModule, tok, nTypeArgs, inst);
-    if (th.IsNull())
-      COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
-    return th;
-}
-
-TypeHandle Debugger::TypeDataWalk::ReadTypeHandle()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DebuggerIPCE_TypeArgData * data = ReadOne();
-    if (!data)
-      COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
-
-    LOG((LF_CORDB, LL_INFO10000,
-         "D::ETITTH: expanding right-side type to left-side type, ELEMENT_TYPE: %d.\n",
-         static_cast<CorElementType>(data->data.elementType)));
-
-    TypeHandle th;
-    CorElementType et = data->data.elementType;
-    switch (et)
-    {
-    case ELEMENT_TYPE_ARRAY:
-    case ELEMENT_TYPE_SZARRAY:
-    case ELEMENT_TYPE_PTR:
-    case ELEMENT_TYPE_BYREF:
-        if(data->numTypeArgs == (UINT)1)
-        {
-            TypeHandle typar = ReadTypeHandle();
-            switch (et)
-            {
-            case ELEMENT_TYPE_ARRAY:
-            case ELEMENT_TYPE_SZARRAY:
-                th = g_pEEInterface->LoadArrayType(data->data.elementType, typar, data->data.ArrayTypeData.arrayRank);
-                break;
-            case ELEMENT_TYPE_PTR:
-            case ELEMENT_TYPE_BYREF:
-                th = g_pEEInterface->LoadPointerOrByrefType(data->data.elementType, typar);
-                break;
-            default:
-                _ASSERTE(0);
-        }
-        }
-        break;
-
-    case ELEMENT_TYPE_CLASS:
-    case ELEMENT_TYPE_VALUETYPE:
-        {
-            DebuggerModule *pDebuggerModule = g_pDebugger->LookupOrCreateModule(data->data.ClassTypeData.vmAssembly);
-            th = ReadInstantiation(pDebuggerModule->GetRuntimeModule(), data->data.ClassTypeData.metadataToken, data->numTypeArgs);
-            break;
-        }
-
-    case ELEMENT_TYPE_FNPTR:
-        {
-            SIZE_T cbAllocSize;
-            if ((!ClrSafeInt<SIZE_T>::multiply(data->numTypeArgs, sizeof(TypeHandle), cbAllocSize)) ||
-                (cbAllocSize != (size_t)(cbAllocSize)))
-            {
-                _ASSERTE(COR_E_OVERFLOW);
-                cbAllocSize = UINT_MAX;
-            }
-            TypeHandle * inst = (TypeHandle *) _alloca(cbAllocSize);
-            ReadTypeHandles(data->numTypeArgs, inst) ;
-            th = g_pEEInterface->LoadFnptrType(inst, data->numTypeArgs);
-            break;
-        }
-
-    default:
-        th = g_pEEInterface->LoadElementType(data->data.elementType);
-        break;
-    }
-    if (th.IsNull())
-      COMPlusThrow(kArgumentNullException, W("ArgumentNull_Type"));
-    return th;
-
-}
-
 //
 // GetAndSendTransitionStubInfo figures out if an address is a stub
 // address and sends the result back to the right side.
@@ -12021,9 +11900,9 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
 
     // Now deoptimize anything that has inlined it in a R2R method
     AppDomain::AssemblyIterator assemblyIterator = SystemDomain::System()->DefaultDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
+    CollectibleAssemblyHolder pAssembly;
     NativeImageInliningIterator inlinerIter;
-    while (assemblyIterator.Next(pAssembly.This()))
+    while (assemblyIterator.Next(&pAssembly))
     {
         Module *pCandidateModule = pAssembly->GetModule();
         if (pCandidateModule->HasReadyToRunInlineTrackingMap())
@@ -12792,7 +12671,7 @@ HRESULT Debugger::AddFunction(MethodDesc* pMD, SIZE_T encVersion)
     }
     CONTRACTL_END;
 
-    DebuggerDataLockHolder debuggerDataLockHolder(this);
+    DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
 
     LOG((LF_CORDB, LL_INFO10000, "D::AF: adding "
          "%s::%s to version %zu\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, encVersion));
@@ -13278,7 +13157,7 @@ VOID Debugger::M2UHandoffHijackWorker(CONTEXT *pContext,
 
     //win32 has a weird property where EIP points after the BP in the debug event
     //so we are adjusting it to point at the BP
-    CORDbgAdjustPCForBreakInstruction((DT_CONTEXT*)pContext);
+    CORDbgAdjustPCForBreakInstruction(pContext);
     LOG((LF_CORDB, LL_INFO1000, "D::M2UHHW: Context ip set to 0x%p\n", GetIP(pContext)));
 
     _ASSERTE(!ISREDIRECTEDTHREAD(pEEThread));
@@ -13394,7 +13273,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
         Thread *pEEThread = debuggerBreakInThread ? NULL : g_pEEInterface->GetThread();
 
         // Hook up the memory so RS can get to it
-        fcd.pLeftSideContext.Set((DT_CONTEXT*)pContext);
+        fcd.pLeftSideContext.Set((T_CONTEXT*)pContext);
         fcd.action = HIJACK_ACTION_EXIT_UNHANDLED;
         fcd.debugCounter = 0;
 
@@ -14260,7 +14139,7 @@ Debugger::FuncEvalAbort(
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        if (g_pEEInterface->GetThread() != nullptr) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
     }
     CONTRACTL_END;
 
@@ -14323,7 +14202,7 @@ Debugger::FuncEvalRudeAbort(
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        if (g_pEEInterface->GetThread() != nullptr) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
     }
     CONTRACTL_END;
 
@@ -14399,6 +14278,46 @@ HRESULT Debugger::FuncEvalCleanup(DebuggerEval *debuggerEvalKey)
 }
 
 #endif // ifndef DACCESS_COMPILE
+
+// Validate an object. Returns E_INVALIDARG or S_OK.
+HRESULT ValidateObject(Object *objPtr)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    HRESULT hr = S_OK;
+
+    EX_TRY
+    {
+        // Use AVInRuntimeImplOkHolder.
+        AVInRuntimeImplOkayHolder AVOkay;
+
+        // NULL is certinally valid...
+        if (objPtr != NULL)
+        {
+            if (!objPtr->ValidateObjectWithPossibleAV())
+            {
+                LOG((LF_CORDB, LL_INFO10000, "GAV: object methodtable-class invariant doesn't hold.\n"));
+                hr = E_INVALIDARG;
+                goto LExit;
+            }
+        }
+
+    LExit: ;
+    }
+    EX_CATCH
+    {
+        LOG((LF_CORDB, LL_INFO10000, "GAV: exception indicated ref is bad.\n"));
+        hr = E_INVALIDARG;
+    }
+    EX_END_CATCH
+
+    return hr;
+}   // ValidateObject
 
 //
 // SetReference sets an object reference for the Right Side,
@@ -14862,7 +14781,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx)
     if (success)
     {
         // Check single-step flag
-        if (IsSSFlagEnabled(reinterpret_cast<DT_CONTEXT *>(pCtx) ARM_ARG(pThread) ARM64_ARG(pThread) RISCV64_ARG(pThread) LOONGARCH64_ARG(pThread)))
+        if (IsSSFlagEnabled(pCtx ARM_ARG(pThread) ARM64_ARG(pThread) RISCV64_ARG(pThread) LOONGARCH64_ARG(pThread)))
         {
             // Can't hijack a thread whose SS-flag is set. This could lead to races
             // with the thread taking the SS-exception.
@@ -15071,6 +14990,14 @@ void Debugger::ReleaseDebuggerDataLock(Debugger *pDebugger)
  * Functions for DebuggerHeap executable memory allocations
  * ------------------------------------------------------------------------ */
 
+#ifndef HOST_WINDOWS
+// AllocateMemory requires a multiple of the system page size, which may exceed DEBUGGERHEAP_PAGESIZE.
+static size_t DebuggerHeapAllocationSize()
+{
+    return ALIGN_UP((size_t)DEBUGGERHEAP_PAGESIZE, (size_t)minipal_getpagesize());
+}
+#endif // !HOST_WINDOWS
+
 DebuggerHeapExecutableMemoryAllocator::~DebuggerHeapExecutableMemoryAllocator()
 {
     while (m_pages != NULL)
@@ -15078,7 +15005,11 @@ DebuggerHeapExecutableMemoryAllocator::~DebuggerHeapExecutableMemoryAllocator()
         DebuggerHeapExecutableMemoryPage *temp = m_pages->GetNextPage();
 
         // Free this page
+#ifdef HOST_WINDOWS
         INDEBUG(BOOL ret =) VirtualFree(m_pages, 0, MEM_RELEASE);
+#else
+        INDEBUG(BOOL ret =) VMToOSInterface::ReleaseMemoryReservation(m_pages, DebuggerHeapAllocationSize()) ? TRUE : FALSE;
+#endif
         ASSERT(ret == TRUE);
 
         m_pages = temp;
@@ -15155,7 +15086,15 @@ void DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
 
 DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewPage()
 {
+#ifdef HOST_WINDOWS
     void* newPageAddr = VirtualAlloc(NULL, sizeof(DebuggerHeapExecutableMemoryPage), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+#else
+    void* newPageAddr = VMToOSInterface::AllocateMemory(NULL, DebuggerHeapAllocationSize(), VMToOSInterface::MemoryProtection::ExecuteReadWrite);
+#endif
+    if (newPageAddr == NULL)
+    {
+        return NULL;
+    }
 
     DebuggerHeapExecutableMemoryPage *newPage = new (newPageAddr) DebuggerHeapExecutableMemoryPage;
     CrstHolder execMemAllocCrstHolder(&m_execMemAllocMutex);

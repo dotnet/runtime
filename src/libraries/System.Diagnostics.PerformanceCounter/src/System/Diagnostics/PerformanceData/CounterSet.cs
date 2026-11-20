@@ -9,8 +9,8 @@ namespace System.Diagnostics.PerformanceData
 {
     /// <summary>
     /// CounterSet is equivalent to "Counter Object" in native performance counter terminology,
-    /// or "Counter Category" in previous framework releases. It defines a abstract grouping of
-    /// counters, where each counter defines measurable matrix. In the new performance counter
+    /// or "Counter Category" in previous framework releases. It defines an abstract grouping of
+    /// counters, where each counter defines a measurable metric. In the new performance counter
     /// infrastructure, CounterSet is defined by GUID called CounterSetGuid, and is hosted inside
     /// provider application, which is also defined by another GUID called ProviderGuid.
     /// </summary>

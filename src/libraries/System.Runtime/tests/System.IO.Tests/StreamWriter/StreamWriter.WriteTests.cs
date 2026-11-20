@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Globalization;
 using System.Linq;
+using System.Tests;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +19,49 @@ namespace System.IO.Tests
         protected virtual Stream CreateStream()
         {
             return new MemoryStream();
+        }
+
+        [Theory]
+        [MemberData(nameof(TextWriterTests.NumericWriteData), MemberType = typeof(TextWriterTests))]
+        public void WriteNumber_UsesCurrentCulture(object value, bool appendNewLine)
+        {
+            foreach (int symbolLength in new[] { 1, 129 })
+            {
+                NumberFormatInfo format = TextWriterTests.CreateNumericFormat(symbolLength);
+                using var culture = new ThreadCultureChange(new CultureInfo("") { NumberFormat = format });
+                using var stream = new MemoryStream();
+                using var writer = new StreamWriter(stream, new UTF8Encoding(false));
+
+                TextWriterTests.WriteNumber(writer, value, appendNewLine);
+                writer.Flush();
+
+                Assert.Equal(((IFormattable)value).ToString(null, format) + (appendNewLine ? writer.NewLine : ""), Encoding.UTF8.GetString(stream.ToArray()));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TextWriterTests.NumericWriteData), MemberType = typeof(TextWriterTests))]
+        public void WriteNumber_DerivedWriter_UsesVirtualMembers(object value, bool appendNewLine)
+        {
+            NumberFormatInfo format = TextWriterTests.CreateNumericFormat(1);
+            using var writer = new WriteStringCapturingStreamWriter(format);
+
+            TextWriterTests.WriteNumber(writer, value, appendNewLine);
+
+            Assert.Equal(((IFormattable)value).ToString(null, format), writer.Written.ToString());
+        }
+
+        private sealed class WriteStringCapturingStreamWriter : StreamWriter
+        {
+            private readonly IFormatProvider _formatProvider;
+
+            public WriteStringCapturingStreamWriter(IFormatProvider formatProvider) : base(Stream.Null) => _formatProvider = formatProvider;
+
+            public StringBuilder Written { get; } = new StringBuilder();
+
+            public override IFormatProvider FormatProvider => _formatProvider;
+
+            public override void Write(string value) => Written.Append(value);
         }
 
         [Fact]
