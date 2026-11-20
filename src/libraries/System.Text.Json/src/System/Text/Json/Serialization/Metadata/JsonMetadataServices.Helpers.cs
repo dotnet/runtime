@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -27,6 +28,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates serialization metadata for an object.
         /// </summary>
+        // Keep converter selection visible to generated callers so NativeAOT can trim unused strategies.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static JsonTypeInfo<T> CreateCore<T>(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo)
         {
             JsonConverter<T> converter = GetConverter(objectInfo);
@@ -103,6 +106,7 @@ namespace System.Text.Json.Serialization.Metadata
             return typeInfo;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static JsonConverter<T> GetConverter<T>(JsonObjectInfoValues<T> objectInfo)
         {
 #pragma warning disable CS8714 // Nullability of type argument 'T' doesn't match 'notnull' constraint.
