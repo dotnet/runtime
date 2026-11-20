@@ -805,11 +805,14 @@ internal static partial class Interop
                 ExceptionDispatchInfo.Throw(handshakeException);
             }
 
-            // in case of TLS 1.3 post-handshake authentication, SslDoHandhaske
-            // may return SSL_ERROR_NONE while still expecting more data from
-            // the client. Attempts to send app data in this state would result
-            // in SSL_ERROR_WANT_READ from SslWrite, override the return status
-            // to continue waiting for the rest of the TLS frames
+            // Sending CertificateRequest does not complete post-handshake authentication.
+            // A KeyUpdate may also produce output without completing the certificate flight.
+            if (context.IsPostHandshakeAuthenticationPending())
+            {
+                return SecurityStatusPalErrorCode.ContinueNeeded;
+            }
+
+            // OpenSSL can also report success before a TLS 1.2 renegotiation finishes.
             if (context.IsServer && token.Size == 0 && errorCode == Ssl.SslErrorCode.SSL_ERROR_NONE && Ssl.IsSslRenegotiatePending(context))
             {
                 return SecurityStatusPalErrorCode.ContinueNeeded;
