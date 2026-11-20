@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' OR '$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64'">true</CLRTestTargetUnsupported>
     <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
     <CrossGen2TestExtraArguments>$(CrossGen2TestExtraArguments) --instruction-set:avx2</CrossGen2TestExtraArguments>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>

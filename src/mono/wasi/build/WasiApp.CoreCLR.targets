@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+    <WasmPInvokeModulesPropsPath Condition="'$(WasmPInvokeModulesPropsPath)' == ''">$(MSBuildThisFileDirectory)WasmPInvokeModules.props</WasmPInvokeModulesPropsPath>
+    <WasmAppRuntimeFlavor>CoreCLR</WasmAppRuntimeFlavor>
+  </PropertyGroup>
   <Import Project="$(WasmPInvokeModulesPropsPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ComputeWasmPInvokeModules"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
@@ -39,12 +43,13 @@
     src/native/corehost/wasihost) so reverse P/Invoke thunks for the app/test
     [UnmanagedCallersOnly] methods are covered (the baked libcoreclr_gen_static.a
     only covers framework top-level UCO callbacks). Runs crossgen2's portable call-helpers
-    generator (TargetOS=wasi) over the bundle, compiles the generated callhelpers with the wasi-sdk
-    clang, and links libWasiHost.a from the runtime-pack static archives + the app callhelper .o
-    (replacing libcoreclr_gen_static.a) via wasm-component-ld. The wasi:http import that
-    System.Net.* pulls in is declared via the component-type link flag
-    (WasiHttpWorld_component_type.wit, as Mono does); wasmtime gets -S http from
-    eng/testing/tests.wasi.targets.
+    generator (TargetOS=wasi) over the bundle, compiles the generated callhelpers and runtime
+    configuration properties with the wasi-sdk clang, and links libWasiHost.a from the runtime-pack
+    static archives + the per-app objects (replacing libcoreclr_gen_static.a) via wasm-component-ld.
+    The WIT worlds of framework
+    libraries that import WASI interfaces directly (@(NetCoreAppComponentType), e.g. the
+    wasi:http world System.Net.Http uses) are passed as component-type link flags; wasmtime
+    gets -S http from eng/testing/tests.wasi.targets.
 
     See https://github.com/dotnet/runtime/issues/130129.
   -->
@@ -55,8 +60,7 @@
   </PropertyGroup>
 
   <!-- Reuse the shared WASI bundling; the Mono-only clang-link targets stay inert (gated on
-       WasmBuildNative). Imported first so the CoreCLR overrides below win over its
-       WasmAppRuntimeFlavor=Mono default. -->
+       WasmBuildNative). Imported first so the CoreCLR overrides below win. -->
   <Import Project="$(MSBuildThisFileDirectory)WasiApp.targets" />
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.FilterManagedAssemblies" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
@@ -66,7 +70,7 @@
 
   <PropertyGroup>
     <WasmAppRuntimeFlavor>CoreCLR</WasmAppRuntimeFlavor>
-    <UseMonoRuntime>false</UseMonoRuntime>
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == ''">false</UseMonoRuntime>
     <RequiresCrossgen2Pack Condition="'$(RequiresCrossgen2Pack)' == ''">true</RequiresCrossgen2Pack>
     <!-- The Mono per-app clang relink (WasmBuildNative) is not used; CoreCLR links the
          wasihost corehost (libWasiHost.a) per-app through its own targets below. -->
@@ -74,11 +78,15 @@
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
   </PropertyGroup>
 
+  <!-- WIT worlds for framework libraries that import WASI interfaces directly. Unused imports are dropped from the component. -->
+  <ItemGroup>
+    <NetCoreAppComponentType Include="WasiHttpWorld_component_type" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
-    <WasiEnableCompositeR2R Condition="'$(WasiEnableCompositeR2R)' == ''">true</WasiEnableCompositeR2R>
     <!-- Run wasm-opt over the composed module. Off by default so codegen problems surface in crossgen2's
          output instead of being optimized away. -->
     <WasiR2ROptimizeComposite Condition="'$(WasiR2ROptimizeComposite)' == ''">false</WasiR2ROptimizeComposite>
@@ -93,8 +101,6 @@
            Text="PublishReadyToRunContainerFormat '$(PublishReadyToRunContainerFormat)' is not supported for CoreCLR wasi-wasm; only 'wasm' is supported." />
     <Error Condition="'$(WasmSingleFileBundle)' == 'true'"
            Text="CoreCLR ReadyToRun publishing for wasi-wasm does not support WasmSingleFileBundle." />
-    <Error Condition="'$(WasiEnableCompositeR2R)' != 'true'"
-           Text="CoreCLR ReadyToRun publishing for wasi-wasm requires WasiEnableCompositeR2R=true." />
   </Target>
 
   <Target Name="_WasiCoreCLRSetRuntimePaths"
@@ -187,12 +193,6 @@
           SourceFiles="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"
           DestinationFolder="$(WasmAppDir)managed"
           SkipUnchangedFiles="true" />
-    <!-- The wasihost corehost reads the app's runtimeconfig properties from runtimeconfig.bin
-         next to the entry assembly and passes them to the runtime. -->
-    <Copy Condition="'$(_ParsedRuntimeConfigFilePath)' != '' and Exists('$(_ParsedRuntimeConfigFilePath)')"
-          SourceFiles="$(_ParsedRuntimeConfigFilePath)"
-          DestinationFolder="$(WasmAppDir)managed"
-          SkipUnchangedFiles="true" />
   </Target>
 
   <!-- ============================ Per-app wasihost link ============================ -->
@@ -226,6 +226,7 @@
       <_WasiPInvokeTablePath>$(_WasiRelinkObjDir)callhelpers-pinvoke.cpp</_WasiPInvokeTablePath>
       <_WasiReversePInvokeTablePath>$(_WasiRelinkObjDir)callhelpers-reverse.cpp</_WasiReversePInvokeTablePath>
       <_WasiInterpToNativeTablePath>$(_WasiRelinkObjDir)callhelpers-interp-to-managed.cpp</_WasiInterpToNativeTablePath>
+      <_WasiRuntimeConfigPropertiesSourcePath Condition="'$(_WasiRuntimeConfigPropertiesSourcePath)' == ''">$(_WasiRelinkObjDir)runtimeconfig.cpp</_WasiRuntimeConfigPropertiesSourcePath>
 
       <!-- Curated header set for the generated callhelpers (mirrors browser's
            _EmccCFlagsGenerated): force-include coreclr_compat.h + -I the dirs with
@@ -236,14 +237,10 @@
       <_WasiCoreClrCompatHeader Condition="'$(CORECLR_COMPAT_HEADER)' != ''">$([System.IO.Path]::GetFullPath('$(CORECLR_COMPAT_HEADER)'))</_WasiCoreClrCompatHeader>
       <_WasiCoreClrCompatHeader Condition="'$(_WasiCoreClrCompatHeader)' == ''">$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'browser', 'build', 'coreclr_compat.h'))</_WasiCoreClrCompatHeader>
       <_WasiVmWasmIncludeDir Condition="'$(CORECLR_VM_WASM_INCLUDE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(CORECLR_VM_WASM_INCLUDE_DIR)'))))</_WasiVmWasmIncludeDir>
+      <_WasiVmWasmIncludeDir Condition="'$(_WasiVmWasmIncludeDir)' == '' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include\callhelpers.hpp')">$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)', 'include'))</_WasiVmWasmIncludeDir>
       <_WasiVmWasmIncludeDir Condition="'$(_WasiVmWasmIncludeDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'coreclr', 'vm', 'wasm'))</_WasiVmWasmIncludeDir>
       <_WasiMinipalIncludeRoot Condition="'$(MINIPAL_INCLUDE_DIR)' != ''">$([MSBuild]::NormalizeDirectory($([System.IO.Path]::GetFullPath('$(MINIPAL_INCLUDE_DIR)')), '..'))</_WasiMinipalIncludeRoot>
       <_WasiMinipalIncludeRoot Condition="'$(_WasiMinipalIncludeRoot)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'native'))</_WasiMinipalIncludeRoot>
-
-      <!-- wasi:http world declaration for the component encoder. Prefer the pack native
-           dir (shippable); fall back to the in-repo source (in-tree builds). -->
-      <_WasiHttpWorldWit>$(MicrosoftNetCoreAppRuntimePackRidNativeDir)WasiHttpWorld_component_type.wit</_WasiHttpWorldWit>
-      <_WasiHttpWorldWit Condition="!Exists('$(_WasiHttpWorldWit)')">$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)..', '..', '..', 'libraries', 'System.Net.Http', 'src', 'System', 'Net', 'Http', 'WasiHttpHandler', 'WasiHttpWorld_component_type.wit'))</_WasiHttpWorldWit>
 
       <_WasiRelinkCompileRsp>$(_WasiRelinkObjDir)compile.rsp</_WasiRelinkCompileRsp>
       <_WasiRelinkLinkRsp>$(_WasiRelinkObjDir)link.rsp</_WasiRelinkLinkRsp>
@@ -255,8 +252,8 @@
 
     <Error Condition="!Exists('$(_WasiCoreClrCompatHeader)')"
            Text="coreclr_compat.h not found at $(_WasiCoreClrCompatHeader). For out-of-tree/pack builds set %24(CORECLR_COMPAT_HEADER) to the staged header (and CORECLR_VM_WASM_INCLUDE_DIR/MINIPAL_INCLUDE_DIR for the include dirs); see #128362." />
-    <Error Condition="!Exists('$(_WasiHttpWorldWit)')"
-           Text="WasiHttpWorld_component_type.wit not found at $(_WasiHttpWorldWit)." />
+    <Error Condition="!Exists('$(_WasiRuntimeConfigPropertiesSourcePath)')"
+           Text="Generated runtime configuration properties source not found at '$(_WasiRuntimeConfigPropertiesSourcePath)'." />
 
     <!-- 1. Generate the per-app callhelper tables over the bundled managed closure.
          The bundle can carry native payloads named .dll, and the generator reads managed
@@ -264,6 +261,11 @@
     <ItemGroup>
       <_WasiBundledFile Include="$(WasmAppDir)managed\*.dll" />
       <_WasiPInvokeModules Remove="@(_WasiPInvokeModules)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(PublishTrimmed)' == 'true' and '$(IntermediateLinkDir)' != ''">
+      <_WasiBundledFileR2RRemap Include="@(_WasiBundledFile)" Condition="Exists('$(IntermediateLinkDir)%(FileName)%(Extension)')" />
+      <_WasiBundledFile Remove="@(_WasiBundledFileR2RRemap)" />
+      <_WasiBundledFile Include="@(_WasiBundledFileR2RRemap->'$(IntermediateLinkDir)%(FileName)%(Extension)')" />
     </ItemGroup>
     <ComputeWasmPInvokeModules TargetOS="wasi"
                                InvariantGlobalization="$(InvariantGlobalization)"
@@ -310,7 +312,7 @@
       <FileWrites Include="$(_Crossgen2GeneratorRsp);$(_WasiPInvokeTablePath);$(_WasiReversePInvokeTablePath);$(_WasiInterpToNativeTablePath)" />
     </ItemGroup>
 
-    <!-- 2. Compile the three generated callhelper sources with the wasi-sdk clang.
+    <!-- 2. Compile the generated per-app sources with the wasi-sdk clang.
          The generated .cpp #include the real <callhelpers.hpp>/<minipal/*.h>; the
          force-included coreclr_compat.h supplies the prerequisite types/macros the
          in-tree PCH would otherwise provide. -->
@@ -377,6 +379,7 @@
       <_WasiCallHelperSource Include="$(_WasiPInvokeTablePath)"        ObjectFile="$(_WasiRelinkObjDir)callhelpers-pinvoke.o" />
       <_WasiCallHelperSource Include="$(_WasiReversePInvokeTablePath)" ObjectFile="$(_WasiRelinkObjDir)callhelpers-reverse.o" />
       <_WasiCallHelperSource Include="$(_WasiInterpToNativeTablePath)" ObjectFile="$(_WasiRelinkObjDir)callhelpers-interp-to-managed.o" />
+      <_WasiCallHelperSource Include="$(_WasiRuntimeConfigPropertiesSourcePath)" ObjectFile="$(_WasiRelinkObjDir)runtimeconfig.o" />
       <_WasiCallHelperSource Include="$(_WasiR2RImageBufferSource)"
                              ObjectFile="$(_WasiRelinkObjDir)r2r-image-buffer.o"
                              Condition="'$(PublishReadyToRun)' == 'true'" />
@@ -399,7 +402,7 @@
       <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.a" />
       <_WasiHostLibsPre Condition="'$(InvariantTimezone)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.TimeZoneData.Invariant.a" />
       <_WasiHostLibsPre Condition="'$(InvariantTimezone)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.TimeZoneData.a" />
-      <!-- app callhelper .o goes here, in place of libcoreclr_gen_static.a -->
+      <!-- Per-app generated objects go here, with the callhelpers replacing libcoreclr_gen_static.a. -->
       <_WasiHostLibsPre Include="%(_WasiCallHelperSource.ObjectFile)" />
       <_WasiHostLibsPre Include="$(WasiCoreCLRNativeRuntimeDir)libnativeresourcestring.a" />
       <!-- Not linking libgcinfo_unix_wasm.a (browser does): it's the gcinfo ENCODER
@@ -429,10 +432,6 @@
     <PropertyGroup>
       <_WasiRelinkOutput>$(_WasiRelinkObjDir)corerun</_WasiRelinkOutput>
       <_WasiPublishedHost>$(WasmAppDir)managed\corerun</_WasiPublishedHost>
-      <!-- Opt-in: link the app host so a composite ReadyToRun image can be spliced into it afterwards
-           (see docs/workflow/building/coreclr/wasi-r2r.md). Off by default because the table reservation below is a fixed
-           cost paid by every app whether or not it is ever spliced. -->
-      <WasiEnableCompositeR2R Condition="'$(WasiEnableCompositeR2R)' == ''">false</WasiEnableCompositeR2R>
       <!-- Table slots 1..N-1 are reserved for the composite's ACTIVE element segment, which the engine
            installs at instantiation - so the table must already be large enough. Reserve by the
            element segment's slot count, independently of how many function definitions those slots reference. -->
@@ -450,10 +449,10 @@
       <!-- The remaining imports a composed composite needs from its host. The per-app host carries the
            probe (wasi_r2r_probe.hpp, via libWasiHost.a), so without them the probe is present but can
            never be satisfied and the app silently interprets everything. -->
-      <_WasiRelinkLinkFlags Include="-Wl,--table-base=$(WasiCompositeR2RTableBase)" Condition="'$(WasiEnableCompositeR2R)' == 'true'" />
-      <_WasiRelinkLinkFlags Include="-Wl,--export-table" Condition="'$(WasiEnableCompositeR2R)' == 'true'" />
-      <_WasiRelinkLinkFlags Include="-Wl,--export=__stack_pointer" Condition="'$(WasiEnableCompositeR2R)' == 'true'" />
-      <_WasiRelinkLinkFlags Include="-Wl,--export=__coreclr_wasm_rtlrestorecontext_tag" Condition="'$(WasiEnableCompositeR2R)' == 'true'" />
+      <_WasiRelinkLinkFlags Include="-Wl,--table-base=$(WasiCompositeR2RTableBase)" Condition="'$(PublishReadyToRun)' == 'true'" />
+      <_WasiRelinkLinkFlags Include="-Wl,--export-table" Condition="'$(PublishReadyToRun)' == 'true'" />
+      <_WasiRelinkLinkFlags Include="-Wl,--export=__stack_pointer" Condition="'$(PublishReadyToRun)' == 'true'" />
+      <_WasiRelinkLinkFlags Include="-Wl,--export=__coreclr_wasm_rtlrestorecontext_tag" Condition="'$(PublishReadyToRun)' == 'true'" />
       <_WasiRelinkLinkFlags Include="-fwasm-exceptions" />
       <_WasiRelinkLinkFlags Include="-mllvm" />
       <_WasiRelinkLinkFlags Include="-wasm-use-legacy-eh=false" />
@@ -465,7 +464,7 @@
       <_WasiRelinkLinkFlags Include="-Wl,-z,stack-size=8388608" />
       <_WasiRelinkLinkFlags Include="-Wl,--initial-memory=134217728" />
       <_WasiRelinkLinkFlags Include="-Wl,--max-memory=4294967296" />
-      <_WasiRelinkLinkFlags Include="-Wl,--component-type,&quot;$(_WasiHttpWorldWit.Replace('\','/'))&quot;" />
+      <_WasiRelinkLinkFlags Include="@(NetCoreAppComponentType->'-Wl,--component-type,&quot;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity).wit&quot;')" />
       <!-- Host archive first, whole-archive so main()/_start are included. -->
       <_WasiRelinkLinkFlags Include="-Wl,--whole-archive" />
       <_WasiRelinkLinkFlags Include="&quot;$(WasiCoreCLRHostNativeDir)libWasiHost.a&quot;" />
@@ -475,7 +474,7 @@
       <_WasiRelinkLinkFlags Include="@(_WasiHostLibsPost->'&quot;%(Identity)&quot;')" />
       <_WasiRelinkLinkFlags Include="-o &quot;$(_WasiRelinkOutput.Replace('\','/'))&quot;" />
     </ItemGroup>
-    <WriteLinesToFile Lines="@(_WasiRelinkLinkFlags)" File="$(_WasiRelinkLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile Lines="@(_WasiRelinkLinkFlags->Replace('\','/'))" File="$(_WasiRelinkLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
     <Message Text="Linking CoreCLR-WASI wasihost host with per-app callhelper thunks ..." Importance="High" />
     <Exec Command="&quot;$(_WasiClangxx)&quot; &quot;@$(_WasiRelinkLinkRsp)&quot;"

@@ -1475,6 +1475,9 @@ HRESULT RegMeta::_SetPermissionSetProps(         // Return hresult.
     void const  *pvPermission,          // [IN] Permission blob.
     ULONG       cbPermission)           // [IN] Count of bytes of pvPermission.
 {
+#ifndef FEATURE_METADATA_PERMISSION_SETS
+    return E_NOTIMPL;
+#else // FEATURE_METADATA_PERMISSION_SETS
     DeclSecurityRec *pRecord;
     HRESULT     hr = S_OK;
 
@@ -1487,6 +1490,7 @@ HRESULT RegMeta::_SetPermissionSetProps(         // Return hresult.
                                         pRecord, pvPermission, cbPermission));
 ErrExit:
     return hr;
+#endif // FEATURE_METADATA_PERMISSION_SETS
 } // HRESULT RegMeta::_SetPermissionSetProps()
 
 //******************************************************************************

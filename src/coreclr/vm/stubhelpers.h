@@ -20,23 +20,24 @@ public:
 #ifdef VERIFY_HEAP
     static void ProcessByrefValidationList();
 #endif // VERIFY_HEAP
-
-    //-------------------------------------------------------
-    // PInvoke stub helpers
-    //-------------------------------------------------------
-
-#ifdef FEATURE_COMINTEROP
-    FCDECL4(static IUnknown*,       GetCOMIPFromRCW,    Object* pSrcUNSAFE, MethodTable* pInterfaceMT, INT32 comSlot, void **ppTarget);
-#endif // FEATURE_COMINTEROP
-
-    FCDECL0(static void,            SetLastError            );
-    FCDECL0(static void,            ClearLastError          );
-
-    FCDECL2(static void,            LogPinnedArgument, MethodDesc *localDesc, Object *nativeArg);
-#ifdef FEATURE_VARARGS
-    FCDECL1(static DWORD,           CalcVaListSize, VARARGS *varargs);
-#endif // FEATURE_VARARGS
 };
+
+//-------------------------------------------------------
+// PInvoke stub helpers
+//-------------------------------------------------------
+
+extern "C"
+{
+#ifdef FEATURE_COMINTEROP
+    FCDECL4(IUnknown*,       StubHelpers_GetCOMIPFromRCW,    Object* pSrcUNSAFE, MethodTable* pInterfaceMT, INT32 comSlot, void **ppTarget);
+#endif // FEATURE_COMINTEROP
+    FCDECL0(void,            StubHelpers_SetLastError            );
+    FCDECL0(void,            StubHelpers_ClearLastError          );
+    FCDECL2(void,            StubHelpers_LogPinnedArgument, MethodDesc *localDesc, Object *nativeArg);
+#ifdef FEATURE_VARARGS
+    FCDECL1(DWORD,           StubHelpers_CalcVaListSize, VARARGS *varargs);
+#endif // FEATURE_VARARGS
+}
 
 extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError);
 

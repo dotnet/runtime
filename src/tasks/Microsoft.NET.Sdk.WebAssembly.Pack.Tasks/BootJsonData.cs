@@ -49,6 +49,11 @@ public class BootJsonData
     public bool? cacheBootResources { get; set; }
 
     /// <summary>
+    /// Gets or sets whether to disable integrity checks when fetching resources.
+    /// </summary>
+    public bool? disableIntegrityCheck { get; set; }
+
+    /// <summary>
     /// Gets a value that determines if this is a debug build.
     /// </summary>
     public bool? debugBuild { get; set; }

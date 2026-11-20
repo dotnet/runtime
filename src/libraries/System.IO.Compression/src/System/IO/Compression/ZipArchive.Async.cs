@@ -272,6 +272,8 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
 
         try
         {
+            ValidateArchiveStreamLength();
+
             // This seeks backwards almost to the beginning of the EOCD, one byte after where the signature would be
             // located if the EOCD had the minimum possible size (no file zip comment)
             _archiveStream.Seek(-ZipEndOfCentralDirectoryBlock.SizeOfBlockWithoutSignature, SeekOrigin.End);

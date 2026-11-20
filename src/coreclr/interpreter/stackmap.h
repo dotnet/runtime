@@ -11,13 +11,13 @@ struct InterpreterStackMapSlot
 
 class InterpreterStackMap
 {
-    void PopulateStackMap (ICorJitInfo* jitInfo, CORINFO_CLASS_HANDLE classHandle, InterpAllocator allocator);
+    void PopulateStackMap (COMP_HANDLE jitInfo, CORINFO_CLASS_HANDLE classHandle, InterpAllocator allocator);
 
 public:
     unsigned m_slotCount;
     InterpreterStackMapSlot* m_slots;
 
-    InterpreterStackMap (ICorJitInfo* jitInfo, CORINFO_CLASS_HANDLE classHandle, InterpAllocator allocator)
+    InterpreterStackMap (COMP_HANDLE jitInfo, CORINFO_CLASS_HANDLE classHandle, InterpAllocator allocator)
         : m_slotCount(0)
         , m_slots(nullptr)
     {

@@ -11,7 +11,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Caching.Configuration;
 using System.Runtime.Caching.Resources;
-using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
 
@@ -39,11 +38,9 @@ namespace System.Runtime.Caching
         private bool _useMemoryCacheManager = true;
         private bool _throwOnDisposed;
 #if NET
-        [UnsupportedOSPlatformGuard("wasi")]
-        [UnsupportedOSPlatformGuard("browser")]
-        private static bool _countersSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
+        private static bool CountersSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
-        private static bool _countersSupported => true;
+        private static bool CountersSupported => true;
 #endif
 
         private bool IsDisposed { get { return (_disposed == 1); } }
@@ -194,7 +191,7 @@ namespace System.Runtime.Caching
             {
                 try
                 {
-                    if (_countersSupported)
+                    if (CountersSupported)
                     {
                         _perfCounters = new Counters(_name);
                     }
@@ -443,7 +440,7 @@ namespace System.Runtime.Caching
                 }
                 if (_perfCounters != null)
                 {
-                    if (_countersSupported)
+                    if (CountersSupported)
                     {
                         _perfCounters.Dispose();
                     }

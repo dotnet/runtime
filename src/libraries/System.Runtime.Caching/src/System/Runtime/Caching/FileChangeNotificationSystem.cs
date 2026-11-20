@@ -12,7 +12,6 @@ using System.Security;
 namespace System.Runtime.Caching
 {
 #if NET
-    [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]
     [SupportedOSPlatform("maccatalyst")]
