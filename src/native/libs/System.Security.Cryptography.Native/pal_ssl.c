@@ -490,6 +490,11 @@ int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl)
     return SSL_renegotiate_pending(ssl) != 0;
 }
 
+int32_t CryptoNative_SslPending(SSL* ssl)
+{
+    return SSL_pending(ssl);
+}
+
 int32_t CryptoNative_SslShutdown(SSL* ssl)
 {
     ERR_clear_error();
@@ -522,9 +527,22 @@ int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode, int32_t proces
         // Start processing peer-initiated renegotiation and post-handshake messages.
         // Skip this when only flushing our initial request, so sending the request
         // cannot also consume the peer's entire answer.
-        // Preserve errno so the last error reflects SSL_do_handshake rather than SSL_peek.
         int peekErrno = errno;
-        SSL_peek(ssl, NULL, 0);
+        uint8_t peekBuffer;
+        int peekResult = SSL_peek(ssl, &peekBuffer, sizeof(peekBuffer));
+        int savedErrno = errno;
+        if (peekResult <= 0)
+        {
+            int peekError = SSL_get_error(ssl, peekResult);
+            if (peekError != SSL_ERROR_WANT_READ)
+            {
+                // SSL_do_handshake can report success after SSL_peek processes close_notify.
+                *errorCode = peekError;
+                errno = savedErrno;
+                return peekResult;
+            }
+        }
+
         errno = peekErrno;
     }
 
@@ -565,17 +583,7 @@ int32_t CryptoNative_SslHandshake(
         CryptoNative_BioSetWriteWindow(outputBio, outputPtr, outputCap);
     }
 
-    // this peek ensures that the SSL handshake state machine starts processing
-    // renegotiation and post-handshake client cert requests
-    // Guard errno the same way CryptoNative_SslDoHandshake does: this shim is also
-    // P/Invoked with SetLastError=true, so save/restore errno around SSL_peek so the
-    // last error reflects the SSL_do_handshake attempt rather than the peek.
-    int peekErrno = errno;
-    SSL_peek(ssl, NULL, 0);
-    errno = peekErrno;
-
-    int32_t result = SSL_do_handshake(ssl);
-    *errorCode = (result == 1) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, result);
+    int32_t result = CryptoNative_SslDoHandshake(ssl, errorCode, 1);
 
     if (outputBio != NULL)
     {
