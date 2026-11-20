@@ -187,6 +187,7 @@ private:
     void      ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const char* reason));
 
     void BuildIntervals();
+    unsigned int ComputeIndexBase(FuncInfoDsc* funcInfo, regNumber spVirtReg, regNumber fpVirtReg);
     void BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* funcletData);
     void DumpIntervals();
 
