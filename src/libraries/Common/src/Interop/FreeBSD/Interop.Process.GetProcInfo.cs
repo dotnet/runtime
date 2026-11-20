@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 #pragma warning disable CA1823 // analyzer incorrectly flags fixed buffer length const (https://github.com/dotnet/roslyn/issues/37593)
@@ -21,9 +22,9 @@ internal static partial class Interop
         private const int LOGINCLASSLEN = 17;
         private const int KI_NGROUPS = 16;
 
-        private const int KI_NSPARE_INT = 4;
+        private const int KI_NSPARE_INT = 2;
         private const int KI_NSPARE_LONG = 12;
-        private const int KI_NSPARE_PTR = 6;
+        private const int KI_NSPARE_PTR = 5;
 
         // Constants from sys/sysctl.h
         private const int CTL_KERN = 1;
@@ -69,20 +70,33 @@ internal static partial class Interop
         {
             public timeval ru_utime;        /* user time used */
             public timeval ru_stime;        /* system time used */
-            public long ru_maxrss;          /* max resident set size */
-            private long ru_ixrss;          /* integral shared memory size */
-            private long ru_idrss;          /* integral unshared data " */
-            private long ru_isrss;          /* integral unshared stack " */
-            private long ru_minflt;         /* page reclaims */
-            private long ru_majflt;         /* page faults */
-            private long ru_nswap;          /* swaps */
-            private long ru_inblock;        /* block input operations */
-            private long ru_oublock;        /* block output operations */
-            private long ru_msgsnd;         /* messages sent */
-            private long ru_msgrcv;         /* messages received */
-            private long ru_nsignals;       /* signals received */
-            private long ru_nvcsw;          /* voluntary context switches */
-            private long ru_nivcsw;         /* involuntary " */
+            // C long follows the native word size on FreeBSD, including i386.
+            public nint ru_maxrss;          /* max resident set size */
+            private nint ru_ixrss;          /* integral shared memory size */
+            private nint ru_idrss;          /* integral unshared data " */
+            private nint ru_isrss;          /* integral unshared stack " */
+            private nint ru_minflt;         /* page reclaims */
+            private nint ru_majflt;         /* page faults */
+            private nint ru_nswap;          /* swaps */
+            private nint ru_inblock;        /* block input operations */
+            private nint ru_oublock;        /* block output operations */
+            private nint ru_msgsnd;         /* messages sent */
+            private nint ru_msgrcv;         /* messages received */
+            private nint ru_nsignals;       /* signals received */
+            private nint ru_nvcsw;          /* voluntary context switches */
+            private nint ru_nivcsw;         /* involuntary " */
+        }
+
+        [InlineArray(KI_NSPARE_PTR)]
+        private struct SparePointers
+        {
+            private nint _element0;
+        }
+
+        [InlineArray(KI_NSPARE_LONG)]
+        private struct SpareLongs
+        {
+            private nint _element0;
         }
 
         // From  sys/user.h
@@ -107,7 +121,7 @@ internal static partial class Interop
             public int ki_tsid;                         /* Terminal session ID */
             private short ki_jobc;                      /* job control counter */
             private short ki_spare_short1;              /* unused (just here for alignment) */
-            private int ki_tdev;                        /* controlling tty dev */
+            private uint ki_tdev_freebsd11;             /* legacy controlling tty dev */
             private sigset_t ki_siglist;                /* Signals arrived but not delivered */
             private sigset_t ki_sigmask;                /* Current signal mask */
             private sigset_t ki_sigignore;              /* Signals being ignored */
@@ -120,12 +134,12 @@ internal static partial class Interop
             private short ki_ngroups;                   /* number of groups */
             private short ki_spare_short2;              /* unused (just here for alignment) */
             private fixed uint ki_groups[KI_NGROUPS];   /* groups */
-            public ulong ki_size;                       /* virtual size */
-            public long ki_rssize;                      /* current resident set size in pages */
-            private long ki_swrss;                      /* resident set size before last swap */
-            private long ki_tsize;                      /* text size (pages) XXX */
-            private long ki_dsize;                      /* data size (pages) XXX */
-            private long ki_ssize;                      /* stack size (pages) */
+            public nuint ki_size;                       /* virtual size */
+            public nint ki_rssize;                      /* current resident set size in pages */
+            private nint ki_swrss;                      /* resident set size before last swap */
+            private nint ki_tsize;                      /* text size (pages) XXX */
+            private nint ki_dsize;                      /* data size (pages) XXX */
+            private nint ki_ssize;                      /* stack size (pages) */
             private ushort ki_xstat;                    /* Exit status for wait & stop signal */
             private ushort ki_acflag;                   /* Accounting flags */
             private uint ki_pctcpu;                     /* %cpu for process during ki_swtime */
@@ -136,11 +150,11 @@ internal static partial class Interop
             private ulong ki_runtime;                   /* Real time in microsec */
             public timeval ki_start;                    /* starting time */
             private timeval ki_childtime;               /* time used by process children */
-            private long ki_flag;                       /* P_* flags */
-            private long ki_kiflag;                     /* KI_* flags (below) */
+            private nint ki_flag;                       /* P_* flags */
+            private nint ki_kiflag;                     /* KI_* flags (below) */
             private int ki_traceflag;                   /* Kernel trace points */
             private byte ki_stat;                       /* S* process status */
-            public byte ki_nice;                        /* Process "nice" value */
+            public sbyte ki_nice;                       /* Process "nice" value */
             private byte ki_lock;                       /* Process lock (prevent swap) count */
             private byte ki_rqindex;                    /* Run queue index */
             private byte ki_oncpu_old;                  /* Which cpu we are on (legacy) */
@@ -152,8 +166,10 @@ internal static partial class Interop
             public fixed byte ki_comm[COMMLEN + 1];       /* command name */
             private fixed byte ki_emul[KI_EMULNAMELEN + 1]; /* emulation name */
             private fixed byte ki_loginclass[LOGINCLASSLEN + 1]; /* login class */
-            private fixed byte ki_sparestrings[50];     /* spare string space */
+            private fixed byte ki_moretdname[COMMLEN - TDNAMLEN + 1]; /* more thread name */
+            private fixed byte ki_sparestrings[46];     /* spare string space */
             private fixed int ki_spareints[KI_NSPARE_INT]; /* spare room for growth */
+            private ulong ki_tdev;                      /* controlling tty dev */
             private int ki_oncpu;                       /* Which cpu we are on */
             private int ki_lastcpu;                     /* Last cpu we were on */
             private int ki_tracer;                      /* Pid of tracing process */
@@ -172,10 +188,11 @@ internal static partial class Interop
             private void* ki_udata;                     /* User convenience pointer */
             public void* ki_tdaddr;                     /* address of thread */
 
-            private fixed long ki_spareptrs[KI_NSPARE_PTR];     /* spare room for growth */
-            private fixed long ki_sparelongs[KI_NSPARE_LONG];   /* spare room for growth */
-            private long ki_sflag;                              /* PS_* flags */
-            private long ki_tdflags;                            /* XXXKSE kthread flag */
+            private void* ki_pd;                       /* pointer to process paths info */
+            private SparePointers ki_spareptrs;        /* spare room for growth */
+            private SpareLongs ki_sparelongs;          /* spare room for growth */
+            private nint ki_sflag;                     /* PS_* flags */
+            private nint ki_tdflags;                   /* XXXKSE kthread flag */
         }
 
         /// <summary>
@@ -196,7 +213,7 @@ internal static partial class Interop
 
             kinfo_proc* kinfo = (kinfo_proc*)pBuffer;
 
-            Debug.Assert(kinfo->ki_structsize == sizeof(kinfo_proc));
+            Debug.Assert(bytesLength == 0 || kinfo->ki_structsize == sizeof(kinfo_proc));
 
             count = (int)bytesLength / sizeof(kinfo_proc);
 
