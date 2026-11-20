@@ -67,21 +67,11 @@ namespace VirtualFunctionOverride
         {
             return new BaseCovariant();
         }
-
-        public virtual BaseCovariant FromTypeGeneric<T>()
-        {
-            return new BaseCovariant();
-        }
     }
 
     class ImplCovariant : BaseCovariant
     {
         public override ImplCovariant FromType()
-        {
-            return new ImplCovariant();
-        }
-
-        public override ImplCovariant FromTypeGeneric<T>()
         {
             return new ImplCovariant();
         }
@@ -93,11 +83,6 @@ namespace VirtualFunctionOverride
         {
             return new SubImplCovariant();
         }
-
-        public override SubImplCovariant FromTypeGeneric<T>()
-        {
-            return new SubImplCovariant();
-        }
     }
 
     class SubImplCovariant2 : ImplCovariant
@@ -106,21 +91,11 @@ namespace VirtualFunctionOverride
         {
             return new ImplCovariant();
         }
-
-        public override ImplCovariant FromTypeGeneric<T>()
-        {
-            return new ImplCovariant();
-        }
     }
 
     class SubSubImplCovariant : SubImplCovariant2
     {
         public override SubSubImplCovariant FromType()
-        {
-            return new SubSubImplCovariant();
-        }
-
-        public override SubSubImplCovariant FromTypeGeneric<T>()
         {
             return new SubSubImplCovariant();
         }
