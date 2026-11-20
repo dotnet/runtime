@@ -4751,7 +4751,20 @@ void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
 
     GenTreeLclVar* lclNode = op1->AsLclVar();
     LclVarDsc*     varDsc  = m_compiler->lvaGetDesc(lclNode);
-    assert(emitTypeSize(varDsc->GetRegisterType(lclNode)) == 16);
+    var_types      regType = varDsc->GetRegisterType(lclNode);
+
+    if (regType == TYP_SIMD)
+    {
+        assert(node->GetRegNum() == REG_NA);
+        assert((node->gtFlags & GTF_SPILL) != 0);
+
+        regNumber op1Reg = genConsumeReg(op1);
+        assert(op1Reg != REG_NA);
+        GetEmitter()->emitIns_S_R(ins_Store(regType), emitActualTypeSize(regType), op1Reg, lclNode->GetLclNum(), 0);
+        return;
+    }
+
+    assert(emitTypeSize(regType) == 16);
 
     regNumber tgtReg = node->GetRegNum();
     assert(tgtReg != REG_NA);
@@ -4807,7 +4820,20 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
 
     GenTreeLclVar* lclNode = op1->AsLclVar();
     LclVarDsc*     varDsc  = m_compiler->lvaGetDesc(lclNode);
-    assert(emitTypeSize(varDsc->GetRegisterType(lclNode)) == 16);
+    var_types      regType = varDsc->GetRegisterType(lclNode);
+
+    if (regType == TYP_SIMD)
+    {
+        assert(node->GetRegNum() == REG_NA);
+        assert((node->gtFlags & GTF_SPILLED) != 0);
+
+        regNumber lclVarReg = genConsumeReg(lclNode);
+        assert(lclVarReg != REG_NA);
+        GetEmitter()->emitIns_R_S(ins_Load(regType), emitActualTypeSize(regType), lclVarReg, lclNode->GetLclNum(), 0);
+        return;
+    }
+
+    assert(emitTypeSize(regType) == 16);
 
     regNumber srcReg = node->GetRegNum();
     assert(srcReg != REG_NA);

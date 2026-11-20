@@ -440,6 +440,8 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         case TYP_SIMD64:
+#elif defined(TARGET_ARM64)
+        case TYP_SIMD:
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 #ifdef TARGET_64BIT
@@ -584,6 +586,8 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         case TYP_SIMD64:
+#elif defined(TARGET_ARM64)
+        case TYP_SIMD:
 #endif // TARGET_XARCH
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
@@ -1319,9 +1323,18 @@ void CodeGenInterface::VariableLiveKeeper::siEndVariableLiveRange(unsigned int v
 //    The emitter should be pointing to the first instruction where
 //    the new variable location is becoming valid.
 //
+// Notes:
+//    Scalable locals are not reported, matching siStartVariableLiveRange.
+//
 void CodeGenInterface::VariableLiveKeeper::siUpdateVariableLiveRange(const LclVarDsc* varDsc, unsigned int varNum)
 {
     noway_assert(varDsc != nullptr);
+
+    // TODO-SVE: Support debug locations for scalable registers and unknown-size stack homes.
+    if (!varDsc->lvValueSize().IsExact())
+    {
+        return;
+    }
 
     // Only the variables that exist in the IL, "this", and special arguments
     // will be reported. These are locals and arguments, and are counted in
