@@ -218,6 +218,14 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
                                  Condition="Exists('$(EmscriptenPythonToolsPath)python.exe')" />
     </ItemGroup>
 
+    <!-- The Emscripten cache package only prebuilds the wasm32 system libraries in its frozen cache. Use the
+         separate unfrozen cache that the wasm64 native build uses (eng/native/build-commons.sh); the in-tree
+         Emscripten config only unfreezes its cache for an empty EM_FROZEN_CACHE. -->
+    <ItemGroup Condition="'$(_WasmCorerunSkip)' != 'true' and '$(TargetArchitecture)' == 'wasm64'">
+      <_WasmCorerunToolEnv Include="EM_CACHE=$(ArtifactsObjDir)emscripten-cache-wasm64" />
+      <_WasmCorerunToolEnv Include="EM_FROZEN_CACHE=" />
+    </ItemGroup>
+
     <PropertyGroup Condition="'$(_WasmCorerunSkip)' != 'true'">
       <!-- Build intermediates (generated sources, objects, response files, the generator's cache)
            live under obj, not next to the test: everything in $(OutDir) is sent to Helix, and
