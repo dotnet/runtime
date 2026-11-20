@@ -50,7 +50,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         private readonly SemanticModel _semanticModel;
 
-        protected TValue TopValue => LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Top;
+        protected TValue TopValue => LocalStateAndContextLattice.LocalStateLattice.ValueLattice.Top;
 
         private readonly ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures;
 
@@ -193,7 +193,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         public override TValue VisitLocalReference(ILocalReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
         {
-            return GetLocal(operation.Local, state);
+            return GetLocal(operation.Local, state).GetScalarValueOrTop(TopValue);
         }
 
         private TValue ProcessBinderCall(IOperation operation, string methodName, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
@@ -230,20 +230,20 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             return !ReferenceEquals(local.ContainingSymbol, OwningSymbol);
         }
 
-        private TValue GetLocal(ILocalSymbol symbol, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        private LocalValue<TValue> GetLocal(ILocalSymbol symbol, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
         {
             var local = new LocalKey(symbol);
             if (IsCapturedVariable(symbol))
                 InterproceduralState.TrackHoistedLocal(local);
 
             // Get the value from the hoisted locals, if it's tracked there.
-            if (InterproceduralState.TryGetHoistedLocal(local, out TValue? value))
+            if (InterproceduralState.TryGetHoistedLocal(local, out LocalValue<TValue>? value))
                 return value.Value;
 
             return state.Get(local);
         }
 
-        private void SetLocal(ILocalSymbol localSymbol, TValue value, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state, bool merge = false)
+        private void SetLocal(ILocalSymbol localSymbol, LocalValue<TValue> value, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state, bool merge = false)
         {
             var local = new LocalKey(localSymbol);
             if (IsCapturedVariable(localSymbol))
@@ -258,6 +258,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 : value;
             state.Set(local, newValue);
         }
+
+        private void SetLocal(ILocalSymbol localSymbol, TValue value, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state, bool merge = false) =>
+            SetLocal(localSymbol, new LocalValue<TValue>(value), state, merge);
 
         private TValue ProcessSingleTargetAssignment(
             IOperation targetOperation,
@@ -575,7 +578,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             {
                 targetOperation = capturedReference.Reference;
                 var singleValue = ProcessSingleTargetAssignment(targetOperation, operation, state, merge: true);
-                value = LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Meet(value, singleValue);
+                value = LocalStateAndContextLattice.LocalStateLattice.ValueLattice.Meet(value, singleValue);
             }
 
             return value;
@@ -606,7 +609,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             foreach (var capturedReference in capturedReferences.GetKnownValues())
             {
                 TValue singleValue = ProcessSingleTargetAssignment(capturedReference.Reference, value, assignmentOperation, state, merge: true, savedTargetValues);
-                result = LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Meet(result, singleValue);
+                result = LocalStateAndContextLattice.LocalStateLattice.ValueLattice.Meet(result, singleValue);
             }
 
             return result;
@@ -1070,7 +1073,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Read),
                 $"{operation.Syntax.GetLocation().GetLineSpan()}");
 
-            return state.Get(new LocalKey(operation.Id));
+            return state.Get(new LocalKey(operation.Id)).GetScalarValueOrTop(TopValue);
         }
 
         // Similar to VisitLocalReference
@@ -1159,19 +1162,19 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             }
             else
             {
-                TValue capturedValue;
+                LocalValue<TValue> capturedValue;
                 if (operation.Value is IFlowCaptureReferenceOperation captureRef)
                 {
                     if (IsLValueFlowCapture(captureRef.Id))
                     {
                         // If an r-value captures an l-value, we must dereference the l-value
                         // and copy out the value to capture.
-                        capturedValue = TopValue;
+                        capturedValue = LocalValue<TValue>.Top;
                         var capturedReferences = state.Current.LocalState.CapturedReferences.Get(captureRef.Id);
                         Debug.Assert(!capturedReferences.IsUnknown());
                         foreach (var capturedReference in capturedReferences.GetKnownValues())
                         {
-                            var value = Visit(capturedReference.Reference, state);
+                            LocalValue<TValue> value = new(Visit(capturedReference.Reference, state));
                             capturedValue = LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Meet(capturedValue, value);
                         }
                     }
@@ -1182,11 +1185,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 }
                 else
                 {
-                    capturedValue = Visit(operation.Value, state);
+                    capturedValue = new LocalValue<TValue>(Visit(operation.Value, state));
                 }
 
                 state.Set(new LocalKey(operation.Id), capturedValue);
-                return capturedValue;
+                return capturedValue.GetScalarValueOrTop(TopValue);
             }
         }
 
