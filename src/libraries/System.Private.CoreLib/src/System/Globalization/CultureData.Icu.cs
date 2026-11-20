@@ -203,8 +203,9 @@ namespace System.Globalization
                     return false; // fail
                 }
 
-                // Success - use the locale name returned which may be different than realNameBuffer (casing)
-                windowsName = new string(buffer); // the name passed to subsequent ICU calls
+                string localeName = new string(buffer);
+                // ICU's empty territory slot produces names like "uz--LATIN"; normalize them before CultureInfo validates them.
+                windowsName = NormalizeCultureName(localeName, ReadOnlySpan<char>.Empty, localeName, out _);
                 return true;
             }
         }
