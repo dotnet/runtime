@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -27,7 +28,8 @@ public class ForwardActivationSignalToPreviousHandler
     /// Multiple runtimes in one process (for example CoreCLR and NativeAOT libraries) share the signal used to
     /// interrupt threads for GC suspension. Each runtime must forward every activation to the handler registered
     /// before it; otherwise a runtime that registered earlier never sees its own activations and its GC hangs.
-    /// The child process preloads a native library that registers a handler before the runtime starts.
+    /// The child process preloads a native library that registers a handler before the runtime starts, then
+    /// interrupts a spinning thread both for GC suspension and for an abort.
     /// </summary>
     [Fact]
     [SkipOnMono("Mono does not use the activation signal for thread suspension.")]
@@ -41,10 +43,31 @@ public class ForwardActivationSignalToPreviousHandler
 
         if (IsHandlerInstalledBeforeRuntime() == 0)
         {
+            // The loader ignores DYLD_INSERT_LIBRARIES for binaries with the hardened runtime enabled, so the
+            // preload is not guaranteed on macOS. LD_PRELOAD is always honored on Linux.
+            Assert.True(OperatingSystem.IsMacOS(), "The native library was not preloaded before the runtime started.");
             Console.WriteLine("The native library was not preloaded before the runtime started; skipping.");
             return;
         }
 
+        if (TestLibrary.Utilities.IsCoreClrInterpreter)
+        {
+            // Interpreted loops have GC safe points, so suspending or aborting a spinning thread doesn't need an activation.
+            Console.WriteLine("Running under the interpreter; skipping.");
+            return;
+        }
+
+        SuspendSpinningThreadForGC();
+        Assert.True(GetHandlerCallCount() > 0, "The previously registered activation signal handler was never invoked.");
+
+        // An activation that aborts the thread doesn't return from the activation handler, so it must still be forwarded.
+        int callsBeforeAbort = GetHandlerCallCount();
+        AbortSpinningThread();
+        Assert.True(GetHandlerCallCount() > callsBeforeAbort, "The activation that aborted the thread was not forwarded to the previously registered handler.");
+    }
+
+    private static void SuspendSpinningThreadForGC()
+    {
         var spinner = new Thread(Spin);
         spinner.Start();
         while (!s_spinning)
@@ -61,8 +84,18 @@ public class ForwardActivationSignalToPreviousHandler
 
         s_stopSpinning = true;
         spinner.Join();
+    }
 
-        Assert.True(GetHandlerCallCount() > 0, "The previously registered activation signal handler was never invoked.");
+    private static void AbortSpinningThread()
+    {
+        using var cts = new CancellationTokenSource();
+#pragma warning disable SYSLIB0046 // ControlledExecution.Run is obsolete
+        Assert.Throws<OperationCanceledException>(() => ControlledExecution.Run(() =>
+        {
+            cts.CancelAfter(100);
+            SpinForever();
+        }, cts.Token));
+#pragma warning restore SYSLIB0046
     }
 
     private static void RunChildProcess()
@@ -99,6 +132,14 @@ public class ForwardActivationSignalToPreviousHandler
     {
         s_spinning = true;
         while (!s_stopSpinning)
+        {
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
+    private static void SpinForever()
+    {
+        while (true)
         {
         }
     }

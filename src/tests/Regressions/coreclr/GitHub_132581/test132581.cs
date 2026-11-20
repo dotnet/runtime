@@ -40,7 +40,12 @@ public class HandleMacosSAFlagsOddityAcrossExec
         }
 
         Assert.Equal(0, SendSignalFromChildProcess());
-        SuspendSpinningThreadForGC();
+
+        // Interpreted loops have GC safe points, so suspending a spinning thread doesn't need an activation.
+        if (!TestLibrary.Utilities.IsCoreClrInterpreter)
+        {
+            SuspendSpinningThreadForGC();
+        }
     }
 
     private static volatile bool s_spinning;
