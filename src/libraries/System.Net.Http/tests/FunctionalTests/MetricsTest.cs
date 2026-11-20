@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.IO;
 using System.Linq;
 using System.Net.Http.Metrics;
 using System.Net.Sockets;
@@ -322,6 +323,58 @@ namespace System.Net.Http.Functional.Tests
                     await connection.SendResponseAsync();
                 });
             });
+        }
+
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
+        public Task ActiveRequests_TwoHandlersOnOneMeter_RecordedAsOneSeries()
+        {
+            TaskCompletionSource firstRequestReceived = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource secondRequestReceived = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource sendResponses = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using InstrumentRecorder<long> recorder = SetupInstrumentRecorder<long>(InstrumentNames.ActiveRequests);
+                HttpClientHandler secondHandler = CreateHttpClientHandler();
+                secondHandler.MeterFactory = _meterFactory;
+                using HttpMessageInvoker firstClient = CreateHttpMessageInvoker();
+                using HttpMessageInvoker secondClient = CreateHttpMessageInvoker(secondHandler);
+                using HttpRequestMessage firstRequest = new(HttpMethod.Get, uri) { Version = UseVersion };
+                using HttpRequestMessage secondRequest = new(HttpMethod.Get, uri) { Version = UseVersion };
+
+                Task<HttpResponseMessage> firstResponse = SendAsync(firstClient, firstRequest);
+                await firstRequestReceived.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                Task<HttpResponseMessage> secondResponse = SendAsync(secondClient, secondRequest);
+                await secondRequestReceived.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
+                recorder.RecordObservableInstruments();
+                sendResponses.SetResult();
+                (await firstResponse).Dispose();
+                (await secondResponse).Dispose();
+
+                Assert.Collection(recorder.GetMeasurements(),
+                    m => VerifyActiveRequests(m, 2, uri));
+            }, async server =>
+            {
+                if (server is Http2LoopbackServer http2Server)
+                {
+                    http2Server.AllowMultipleConnections = true;
+                }
+
+                Task firstConnection = AcceptAndRespondAsync(server, firstRequestReceived);
+                await firstRequestReceived.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                await Task.WhenAll(firstConnection, AcceptAndRespondAsync(server, secondRequestReceived));
+            });
+
+            Task AcceptAndRespondAsync(GenericLoopbackServer server, TaskCompletionSource requestReceived) =>
+                server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync();
+                    requestReceived.SetResult();
+                    await sendResponses.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    await connection.SendResponseAsync();
+                });
         }
 
         [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
@@ -1728,6 +1781,64 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Throws<InvalidOperationException>(() => handler.MeterFactory = new TestMeterFactory());
             }, server => server.AcceptConnectionSendResponseAndCloseAsync());
+        }
+
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public async Task ObservableInstruments_ManyHandlersOnMeterFactory_CreatedOncePerMeter()
+        {
+            using TestMeterFactory factory = new();
+            Meter meter = factory.Create("System.Net.Http");
+            await SendFromManyHandlersAndVerifyObservableInstrumentsCreatedOnce(factory, m => m == meter);
+        }
+
+        [ConditionalFact(typeof(HttpMetricsTest_DefaultMeter), nameof(HttpMetricsTest_DefaultMeter.RemoteExecutorAndSocketsHttpHandlerSupported))]
+        public async Task ObservableInstruments_ManyHandlersOnDefaultMeter_CreatedOncePerMeter()
+        {
+            // The default meter lives as long as the process, so only a fresh process observes its instruments being created.
+            await RemoteExecutor.Invoke(static () =>
+                SendFromManyHandlersAndVerifyObservableInstrumentsCreatedOnce(meterFactory: null, meter => meter.Name == "System.Net.Http")).DisposeAsync();
+        }
+
+        private static async Task SendFromManyHandlersAndVerifyObservableInstrumentsCreatedOnce(IMeterFactory? meterFactory, Func<Meter, bool> isTargetMeter)
+        {
+            ConcurrentQueue<string> published = new();
+            using MeterListener listener = new();
+            listener.InstrumentPublished = (instrument, _) =>
+            {
+                if (isTargetMeter(instrument.Meter))
+                {
+                    published.Enqueue(instrument.Name);
+                }
+            };
+            listener.Start();
+
+            // A handler builds its chain, and with it both observable instruments, on the first send before it connects.
+            // Failing the connect keeps the test off the network.
+            // Starting the handlers together makes them race on the first creation.
+            TaskCompletionSource start = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            Task[] sends = new Task[32];
+            for (int i = 0; i < sends.Length; i++)
+            {
+                sends[i] = Task.Run(async () =>
+                {
+                    await start.Task;
+                    using SocketsHttpHandler handler = new()
+                    {
+                        MeterFactory = meterFactory,
+                        UseProxy = false,
+                        ConnectCallback = static (_, _) => throw new IOException("This test does not connect."),
+                    };
+                    using HttpMessageInvoker invoker = new(handler);
+                    using HttpRequestMessage request = new(HttpMethod.Get, "http://localhost/");
+                    await Assert.ThrowsAsync<HttpRequestException>(() => invoker.SendAsync(request, CancellationToken.None));
+                });
+            }
+
+            start.SetResult();
+            await Task.WhenAll(sends);
+
+            Assert.Single(published, name => name == "http.client.active_requests");
+            Assert.Single(published, name => name == "http.client.open_connections");
         }
     }
 

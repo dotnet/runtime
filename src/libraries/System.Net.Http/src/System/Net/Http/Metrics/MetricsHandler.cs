@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -60,10 +61,46 @@ namespace System.Net.Http.Metrics
 
     /// <summary>
     /// Thread-safe tracker for active request counts by tag combination.
+    /// Every handler that uses a meter shares that meter's tracker and its http.client.active_requests instrument.
     /// </summary>
+    /// <remarks>
+    /// A meter does not cache observable instruments and keeps each one until the meter is disposed.
+    /// One instrument per handler would therefore grow without bound when handlers are recreated.
+    /// </remarks>
     internal sealed class ActiveRequestsTracker
     {
+        private static readonly ConditionalWeakTable<Meter, ActiveRequestsTracker> s_trackers = new();
+
         private readonly ConcurrentDictionary<ActiveRequestsTagKey, long> _counts = new();
+        private ObservableUpDownCounter<long>? _instrument;
+
+        private ActiveRequestsTracker()
+        {
+        }
+
+        public bool Enabled => _instrument?.Enabled ?? false;
+
+        public static ActiveRequestsTracker GetOrCreate(Meter meter)
+        {
+            if (!s_trackers.TryGetValue(meter, out ActiveRequestsTracker? tracker))
+            {
+                // Only the caller whose tracker wins the add creates the instrument, so it is created once per meter without a lock.
+                // Creating the instrument runs listener callbacks, and a callback that creates a handler on this meter finds the tracker.
+                // A caller that gets the tracker before its instrument exists sees Enabled == false, as if no listener had subscribed yet.
+                ActiveRequestsTracker created = new();
+                tracker = s_trackers.GetOrAdd(meter, created);
+                if (tracker == created)
+                {
+                    created._instrument = meter.CreateObservableUpDownCounter<long>(
+                        "http.client.active_requests",
+                        observeValues: created.GetMeasurements,
+                        unit: "{request}",
+                        description: "Number of outbound HTTP requests that are currently active on the client.");
+                }
+            }
+
+            return tracker;
+        }
 
         /// <summary>
         /// Increments the count for the specified tag combination.
@@ -128,8 +165,7 @@ namespace System.Net.Http.Metrics
     internal sealed class MetricsHandler : HttpMessageHandlerStage
     {
         private readonly HttpMessageHandler _innerHandler;
-        private readonly ActiveRequestsTracker _activeRequestsTracker = new();
-        private readonly ObservableUpDownCounter<long> _activeRequests;
+        private readonly ActiveRequestsTracker _activeRequestsTracker;
         private readonly Histogram<double> _requestsDuration;
         private readonly IWebProxy? _proxy;
 
@@ -142,12 +178,7 @@ namespace System.Net.Http.Metrics
 
             meter = meterFactory?.Create("System.Net.Http") ?? SharedMeter.Instance;
 
-            // Meter has a cache for the instruments it owns
-            _activeRequests = meter.CreateObservableUpDownCounter<long>(
-                "http.client.active_requests",
-                observeValues: _activeRequestsTracker.GetMeasurements,
-                unit: "{request}",
-                description: "Number of outbound HTTP requests that are currently active on the client.");
+            _activeRequestsTracker = ActiveRequestsTracker.GetOrCreate(meter);
             _requestsDuration = meter.CreateHistogram<double>(
                 "http.client.request.duration",
                 unit: "s",
@@ -157,7 +188,7 @@ namespace System.Net.Http.Metrics
 
         internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (_activeRequests.Enabled || _requestsDuration.Enabled)
+            if (_activeRequestsTracker.Enabled || _requestsDuration.Enabled)
             {
                 return SendAsyncWithMetrics(request, async, cancellationToken);
             }
@@ -206,7 +237,7 @@ namespace System.Net.Http.Metrics
 
         private (long StartTimestamp, bool RecordCurrentRequests, ActiveRequestsTagKey RequestTagKey) RequestStart(HttpRequestMessage request)
         {
-            bool recordCurrentRequests = _activeRequests.Enabled;
+            bool recordCurrentRequests = _activeRequestsTracker.Enabled;
             long startTimestamp = Stopwatch.GetTimestamp();
 
             ActiveRequestsTagKey requestTagKey = CreateActiveRequestsTagKey(request);

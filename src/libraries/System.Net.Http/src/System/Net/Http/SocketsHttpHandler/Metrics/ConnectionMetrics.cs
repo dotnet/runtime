@@ -20,7 +20,7 @@ namespace System.Net.Http.Metrics
         public ConnectionMetrics(SocketsHttpHandlerMetrics metrics, string protocolVersion, string scheme, string host, int port, string? peerAddress)
         {
             _metrics = metrics;
-            _openConnectionsEnabled = _metrics.OpenConnections.Enabled;
+            _openConnectionsEnabled = _metrics.OpenConnectionsTracker.Enabled;
             _protocolVersionTag = protocolVersion;
             _schemeTag = scheme;
             _hostTag = host;
