@@ -464,20 +464,32 @@ namespace ILCompiler
 
                 // Gather a candidate from every canonically matching interface. A type and its
                 // definition have interface maps of identical shape, so the two RuntimeInterfaces
-                // arrays correspond index for index.
+                // arrays correspond index for index. For a variant interface every entry of the
+                // same definition participates. The ECMA-335 augments specify the variance pass
+                // of interface resolution as returning the first variant match in interface
+                // order and the runtime resolves variant static matches the same way, so a
+                // shared body must not pick a later family that an earlier entry wins at exact
+                // instantiations.
                 int potentialMatchingInterfaces = 0;
+                int canonicalMatchingInterfaces = 0;
                 TypeDesc matchingInterface = null;
                 bool targetsAgree = true;
+                bool interfaceTypeHasVariance = interfaceType.HasVariance;
                 TypeDesc canonInterfaceType = interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific);
                 DefType[] runtimeInterfaces = constrainedType.RuntimeInterfaces;
                 for (int interfaceIndex = 0; interfaceIndex < runtimeInterfaces.Length; interfaceIndex++)
                 {
                     DefType potentialInterfaceType = runtimeInterfaces[interfaceIndex];
-                    if (potentialInterfaceType.ConvertToCanonForm(CanonicalFormKind.Specific) != canonInterfaceType)
+                    bool canonicalMatch = potentialInterfaceType.ConvertToCanonForm(CanonicalFormKind.Specific) == canonInterfaceType;
+                    if (!canonicalMatch && !(interfaceTypeHasVariance && potentialInterfaceType.HasSameTypeDefinition(interfaceType)))
                         continue;
 
                     potentialMatchingInterfaces++;
-                    matchingInterface = potentialInterfaceType;
+                    if (canonicalMatch)
+                    {
+                        canonicalMatchingInterfaces++;
+                        matchingInterface = potentialInterfaceType;
+                    }
 
                     TypeDesc resolutionInterface = resolutionType.RuntimeInterfaces[interfaceIndex];
                     MethodDesc potentialInterfaceMethod = genInterfaceMethod;
@@ -535,7 +547,7 @@ namespace ILCompiler
                 }
                 else
                 {
-                    if (potentialMatchingInterfaces == 1)
+                    if (canonicalMatchingInterfaces == 1)
                         staticInterfaceType = matchingInterface;
 
                     // If we can resolve the interface exactly then do so (e.g. when doing the exact

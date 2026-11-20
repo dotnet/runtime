@@ -159,6 +159,17 @@ public class CanonicalInterface
         static Type ICovariantFunc<string>.GetArgument() => typeof(T);
     }
 
+    private sealed class CrossFamilyFunc<T> : ICovariantFunc<T[]>, ICovariantFunc<string>
+    {
+        static Type ICovariantFunc<T[]>.GetArgument() => typeof(T[]);
+        static Type ICovariantFunc<string>.GetArgument() => typeof(string);
+    }
+
+    private sealed class CrossFamilyAgreeFunc<T> : ICovariantFunc<T[]>, ICovariantFunc<string>
+    {
+        public static Type GetArgument() => typeof(T);
+    }
+
     private readonly struct MultipleDefaultFunc : ICovariantFunc<string>, ICovariantFunc<object> { }
 
     private readonly struct GenericDefaultFunc<T> : ICovariantFunc<T> { }
@@ -381,6 +392,12 @@ public class CanonicalInterface
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type CallVariantHierarchy<T>() => CallClassCovariant<CovariantDerived<T>, object>();
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type CallCrossFamilyShared<T>() => CallClassCovariant<CrossFamilyFunc<T>, object>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type CallCrossFamilyAgree<T>() => CallClassCovariant<CrossFamilyAgreeFunc<T>, object>();
+
     [Theory]
     [InlineData(0)]
     [InlineData(42)]
@@ -426,6 +443,14 @@ public class CanonicalInterface
         Assert.Equal(typeof((List<string>, int)), CallInheritedGeneric<string, int>());
         Assert.Equal(typeof(string), CallVariantHierarchy<string>());
         Assert.Equal(typeof(int), CallVariantHierarchy<int>());
+        // The disagreeing cross-family shape asserts consistency between the shared and the
+        // exact compilation. The winner follows the first-variant-match-in-interface-order
+        // rule, specified for the instance variance pass and applied to statics by analogy,
+        // so the test asserts agreement rather than encoding the order.
+        Assert.Equal(CallClassCovariant<CrossFamilyFunc<string>, object>(), CallCrossFamilyShared<string>());
+        Assert.Equal(CallClassCovariant<CrossFamilyFunc<Uri>, object>(), CallCrossFamilyShared<Uri>());
+        Assert.Equal(typeof(string), CallCrossFamilyAgree<string>());
+        Assert.Equal(typeof(Uri), CallCrossFamilyAgree<Uri>());
         Assert.Equal(12, CallConvergentClass<string>());
         Assert.Equal(10, CallConvergentClass<object>());
 
