@@ -411,21 +411,15 @@ namespace System.Security.Cryptography
                 Algorithm.MaxEncapsulationKeySizeInBytes - AlgorithmDetails.MLKemAlgorithm.EncapsulationKeySizeInBytes;
 
             using (CryptoPoolLease lease = CryptoPoolLease.Rent(maxTraditionalPublicKeySize, skipClear: true))
-            using (IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA3_256))
             {
                 int traditionalPublicKeySize = _traditionalKem.ExportPublicKey(lease.Span);
-
-                hash.AppendData(mlkemSharedSecret);
-                hash.AppendData(traditionalSharedSecret);
-                hash.AppendData(traditionalCiphertext);
-                hash.AppendData(lease.Span.Slice(0, traditionalPublicKeySize));
-                hash.AppendData(AlgorithmDetails.Label);
-
-                if (!hash.TryGetHashAndReset(destination, out int bytesWritten) || bytesWritten != destination.Length)
-                {
-                    Debug.Fail("SHA3-256 produced an unexpected output length.");
-                    throw new CryptographicException();
-                }
+                CompositeMLKemCombiner.Combine(
+                    mlkemSharedSecret,
+                    traditionalSharedSecret,
+                    traditionalCiphertext,
+                    lease.Span.Slice(0, traditionalPublicKeySize),
+                    AlgorithmDetails.Label,
+                    destination);
             }
         }
 
