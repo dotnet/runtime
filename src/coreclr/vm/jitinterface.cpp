@@ -15026,7 +15026,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 
     if (msig.HasGenericContextArg())
     {
-        pCode->EmitLDC(0);
+        pCode->EmitLDC_I(0);
         pCode->EmitCALL(METHOD__RUNTIME_HELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
     }
 
@@ -15039,8 +15039,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
     {
         if (md->GetMethodTable()->IsValueType())
         {
-            pCode->EmitLDC(0);
-            pCode->EmitCONV_U();
+            pCode->EmitLDC_I(0);
         }
         else
         {
@@ -15057,8 +15056,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         TypeHandle tyHnd = msig.GetLastTypeHandleThrowing();
         if (tyHnd.IsByRef())
         {
-            pCode->EmitLDC(0);
-            pCode->EmitCONV_U();
+            pCode->EmitLDC_I(0);
         }
         else
         {
@@ -15084,7 +15082,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         // expects and then delegating back into the OSR version (knowing to do
         // so through information stored in the continuation).
         _ASSERTE(m_pPatchpointInfoFromRuntime != NULL);
-        pCode->EmitLDC((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
+        pCode->EmitLDC_I((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
 #else // !FEATURE_ON_STACK_REPLACEMENT
         _ASSERTE(!"Unexpected optimization tier with OSR disabled");
 #endif // FEATURE_ON_STACK_REPLACEMENT
@@ -15096,7 +15094,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
             m_finalCodeAddressSlot = (PCODE*)amTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE))));
         }
 
-        pCode->EmitLDC((DWORD_PTR)m_finalCodeAddressSlot);
+        pCode->EmitLDC_I((DWORD_PTR)m_finalCodeAddressSlot);
         pCode->EmitLDIND_I();
     }
 
