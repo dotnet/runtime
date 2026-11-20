@@ -525,7 +525,7 @@ namespace ILCompiler
                 FieldDesc storedCache = DelegateFlowAnalysis.GetTrackedField(methodIL, instructions[i + 3].Token);
                 if (cache != null && cache == storedCache
                     && cache.OwningType is MetadataType cacheOwner
-                    && (CompilerGeneratedNames.IsLambdaDisplayClass(cacheOwner.Name.AsSpan()) || (cacheOwner.Name.AsSpan().StartsWith("<>O"u8) && !cacheOwner.HasStaticConstructor))
+                    && (CompilerGeneratedNames.IsLambdaDisplayClass(cacheOwner.Name.AsSpan()) || (IsDelegateCacheContainer(cacheOwner.Name.AsSpan()) && !cacheOwner.HasStaticConstructor))
                     && TryGetStoreDestination(analysis, methodIL, instructions[i + 4], out FieldDesc dest))
                 {
                     result ??= new DelegateFlowPatterns();
@@ -538,11 +538,23 @@ namespace ILCompiler
             }
         }
 
+        // The C# compiler caches method group delegates in a container class named `<>O` (`<Method>O__ordinal_id` for
+        // methods that need a container of their own, such as generic ones).
+        private static bool IsDelegateCacheContainer(ReadOnlySpan<byte> name)
+        {
+            int end = name.IndexOf(">O"u8);
+
+            return name.StartsWith("<"u8)
+                && end > 0
+                && (end + 2 == name.Length || name.Slice(end + 2).StartsWith("__"u8));
+        }
+
         // Removing the delegate creation also removes the checks the runtime does when binding the delegate to its receiver,
         // and the use of the receiver. This is only fine if the creation can't throw and has no observable effect:
         // - `ldnull` with a static target (an open static delegate), or
         // - the singleton instance of the container class the C# compiler uses for lambdas that capture nothing
-        //   (`ldsfld <>c::<>9`, which is never null), with a target in that class.
+        //   (a static readonly field of the container's own type, assigned by its static constructor and never null),
+        //   with a target in that class.
         // Any other receiver, or a prefix such as `constrained.` in front of the `ldftn`, is left alone.
         private static bool IsInfallibleReceiver(MethodIL methodIL, in Instr receiver, MethodDesc target)
         {
@@ -556,10 +568,10 @@ namespace ILCompiler
                         && methodIL.GetObject(receiver.Token, NotFoundBehavior.ReturnNull) is FieldDesc field
                         && field.IsStatic
                         && field.IsInitOnly
-                        && field.Name == "<>9"u8
                         && field.OwningType is MetadataType owningType
                         && owningType.HasStaticConstructor
                         && CompilerGeneratedNames.IsLambdaDisplayClass(owningType.Name.AsSpan())
+                        && field.FieldType.GetTypeDefinition() == owningType.GetTypeDefinition()
                         && field.GetTypicalFieldDefinition().OwningType == target.GetTypicalMethodDefinition().OwningType;
 
                 default:

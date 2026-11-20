@@ -1739,6 +1739,7 @@ class DeadCodeElimination
         class DeadMethodGroupResult;
         class DeadClearedResult;
         class DeadGenericResult;
+        class DeadGenericMethodGroupResult;
         class LiveFieldResult;
         class LiveReflectionResult;
         class LiveChainResult;
@@ -1753,6 +1754,7 @@ class DeadCodeElimination
         }
 
         class DeadFieldHolder { public Func<object> Factory; }
+        class DeadGenericHolder<T> { public Func<T> Factory; }
         class LiveFieldHolder { public Func<object> Factory; }
         class ReflectedFieldHolder { public Func<object> Factory; }
         class RefReadHolder { public Func<object> Factory; }
@@ -1817,6 +1819,11 @@ class DeadCodeElimination
         }
 
         static object CreateDeadMethodGroupResult() => new DeadMethodGroupResult();
+        static T CreateDeadGenericMethodGroupResult<T>() where T : class
+        {
+            GC.KeepAlive(new DeadGenericMethodGroupResult());
+            return null;
+        }
         static object CreateLiveMixedResult() => new LiveMixedResult();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1840,6 +1847,7 @@ class DeadCodeElimination
         static void MakeDeadGenericDelegate<T>() where T : class
         {
             GC.KeepAlive(new DeadFieldHolder { Factory = static () => new DeadGenericResult() });
+            GC.KeepAlive(new DeadGenericHolder<T> { Factory = CreateDeadGenericMethodGroupResult<T> });
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1905,6 +1913,7 @@ class DeadCodeElimination
             ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadMethodGroupResult));
             ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadClearedResult));
             ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadGenericResult));
+            ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadGenericMethodGroupResult));
 
             // Reflection over the contents of a lambda that is never called doesn't keep the members alive.
             if (GetMethodSecretly(typeof(ReflectionTarget), nameof(ReflectionTarget.Hidden)) != null)
