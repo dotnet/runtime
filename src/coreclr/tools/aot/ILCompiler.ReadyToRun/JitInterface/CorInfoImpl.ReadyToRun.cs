@@ -2884,7 +2884,12 @@ namespace Internal.JitInterface
             }
 
             pResult->instParamLookup = default;
-            if (pResult->sig.hasTypeArg() && !pResult->exactContextNeedsRuntimeLookup)
+            if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
+            {
+                pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
+                pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED;
+            }
+            else if (pResult->sig.hasTypeArg())
             {
                 MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (canonMethod.RequiresInstMethodDescArg())

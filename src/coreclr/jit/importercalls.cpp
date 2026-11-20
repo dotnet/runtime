@@ -648,8 +648,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     }
                     else
                     {
-                        wasmInstParam = impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo, clsFlags,
-                                                          isReadonlyCall);
+                        wasmInstParam = impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo,
+                                                           clsFlags, isReadonlyCall);
                         if (wasmInstParam == nullptr)
                         {
                             assert(compDonotInline());
@@ -697,6 +697,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG);
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
+
+                if (callInfo->codePointerLookup.lookupKind.needsRuntimeLookup &&
+                    (callInfo->codePointerLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED))
+                {
+                    info.compCompHnd->prepareCallLookups(pResolvedToken, pConstrainedResolvedToken, info.compMethodHnd,
+                                                  callInfo);
+                }
 
                 GenTree* fptr = impLookupToTree(&callInfo->codePointerLookup, GTF_ICON_FTN_ADDR, callInfo->hMethod);
 
@@ -917,7 +924,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             assert(opcode != CEE_CALLI);
 
-            instParam = impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo, clsFlags, isReadonlyCall);
+            instParam =
+                impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo, clsFlags, isReadonlyCall);
             if (instParam == nullptr)
             {
                 assert(compDonotInline());

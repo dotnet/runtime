@@ -5625,7 +5625,9 @@ protected:
 
     GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
 
-    GenTree* impMethodPointer(CORINFO_CALL_INFO* pCallInfo);
+    GenTree* impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                              CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                              CORINFO_CALL_INFO*      pCallInfo);
 
     GenTree* impTransformThis(GenTree*                thisPtr,
                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,

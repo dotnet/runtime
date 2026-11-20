@@ -444,7 +444,7 @@ public:
                         CORINFO_METHOD_HANDLE caller, CORINFO_CALL_INFO* callInfo);
     void repPrepareCallLookups(CORINFO_RESOLVED_TOKEN* token, CORINFO_RESOLVED_TOKEN* constrainedToken,
                         CORINFO_METHOD_HANDLE caller, CORINFO_CALL_INFO* callInfo);
-    void dmpPrepareCallLookups(const Agnostic_PrepareCallLookups& key, const Agnostic_CORINFO_LOOKUP& value);
+    void dmpPrepareCallLookups(const Agnostic_PrepareCallLookups& key, const Agnostic_PrepareCallLookupsResult& value);
 
     void recGetEHinfo(CORINFO_METHOD_HANDLE ftn, unsigned EHnumber, CORINFO_EH_CLAUSE* clause);
     void dmpGetEHinfo(DLD key, const Agnostic_CORINFO_EH_CLAUSE& value);
