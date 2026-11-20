@@ -1868,10 +1868,10 @@ namespace System
 
                 if (value is Pointer pointer)
                 {
-                    Type pointerType = pointer.GetPointerType();
+                    Type pointerType = pointer.PointerType;
                     if (pointerType == this)
                     {
-                        value = pointer.GetPointerValue();
+                        value = (IntPtr)pointer.Value;
                         return CheckValueStatus.Success;
                     }
                 }

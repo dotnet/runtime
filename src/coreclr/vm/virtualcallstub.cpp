@@ -3196,7 +3196,7 @@ void VirtualCallStubManagerManager::AddStubManager(VirtualCallStubManager *pMgr)
 {
     WRAPPER_NO_CONTRACT;
 
-    SimpleWriteLockHolder lh(&m_RWLock);
+    SimpleWriteLockHolder lh = SimpleRWLock::TakeWriteLock(&m_RWLock);
 
     pMgr->m_pNext = m_pManagers;
     m_pManagers = pMgr;
@@ -3220,7 +3220,7 @@ void VirtualCallStubManagerManager::RemoveStubManager(VirtualCallStubManager *pM
     }
     CONTRACTL_END;
 
-    SimpleWriteLockHolder lh(&m_RWLock);
+    SimpleWriteLockHolder lh = SimpleRWLock::TakeWriteLock(&m_RWLock);
 
     // Remove this manager from our list.
     for (VirtualCallStubManager **pCur = &m_pManagers;

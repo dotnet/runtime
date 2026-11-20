@@ -6,7 +6,7 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <!-- These platforms do not support native test assets: https://github.com/dotnet/runtime/issues/123946
          Browser wasm on CoreCLR links the native asset into a test-specific corerun, so it is supported there. -->
-    <CLRTestTargetUnsupported Condition="('$(TargetsWasm)' == 'true' or '$(TargetsMobile)' == 'true') and ('$(TargetsBrowser)' != 'true' or '$(RuntimeFlavor)' != 'coreclr')">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="('$(TargetsWasm)' == 'true' or '$(TargetsMobile)' == 'true') and '$(TargetsBrowser)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />

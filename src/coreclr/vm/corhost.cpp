@@ -69,7 +69,7 @@ STDMETHODIMP CorHost2::Start()
     HRESULT hr;
 
     // Ensure that only one thread at a time gets in here
-    DangerousNonHostedSpinLockHolder lockHolder(&lockOnlyOneToInvokeStart);
+    DangerousNonHostedSpinLockHolder lockHolder = lockOnlyOneToInvokeStart.TakeLock();
 
     // To provide the complete semantic of Start/Stop in context of a given host, we check m_fStarted and let
     // them invoke the Start only if they have not already. Likewise, they can invoke the Stop method

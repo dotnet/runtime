@@ -144,8 +144,9 @@ private:
     MethodTable*    m_pStubMT;
     SHash<ILStubCacheTraits> m_hashMap;
 
-    // Resolvers of stubs created in collectible LoaderAllocators.
-    SArray<ILStubResolver*> m_collectibleStubResolvers;
+    // Resolvers of stubs created in a collectible LoaderAllocator,
+    // linked through ILStubResolver::m_pNextCollectibleResolver.
+    ILStubResolver* m_pCollectibleStubResolvers;
 };
 
 #endif //_ILSTUBCACHE_H

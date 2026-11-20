@@ -10,12 +10,6 @@
     <UseConsoleUITemplate>true</UseConsoleUITemplate>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-    <MonoForceInterpreter>true</MonoForceInterpreter>
-    <RunAOTCompilation>false</RunAOTCompilation>
-    <MainLibraryFileName>iOS.Device.ParallelForEachAsync.Test.dll</MainLibraryFileName>
-  </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>

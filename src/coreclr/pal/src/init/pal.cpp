@@ -25,7 +25,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/debug.h"
 #include "pal/init.h"
 #include "pal/stackstring.hpp"
-#include "pal/cgroup.h"
 #include <minipal/getexepath.h>
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/descriptorlimit.h>
@@ -337,8 +336,6 @@ Initialize(
         }
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
-        InitializeCGroup();
-
         if (!minipal_increase_descriptor_limit())
         {
             ERROR("Unable to increase the file descriptor limit!\n");
@@ -498,7 +495,6 @@ CLEANUP1b:
     // Cleanup initial thread data
 CLEANUP1a:
     // Cleanup global process data
-    CleanupCGroup();
 CLEANUP0a:
     TLSCleanup();
     ERROR("PAL_Initialize failed\n");

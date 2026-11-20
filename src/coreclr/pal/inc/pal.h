@@ -354,29 +354,6 @@ PAL_ProbeMemory(
     DWORD cbBuffer,
     BOOL fWriteAccess);
 
-PALIMPORT
-int
-PALAPI
-// Start the jitdump file
-PAL_PerfJitDump_Start(const char* path);
-
-PALIMPORT
-bool
-PALAPI
-PAL_PerfJitDump_IsStarted();
-
-PALIMPORT
-int
-PALAPI
-// Log a method to the jitdump file.
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock);
-
-PALIMPORT
-int
-PALAPI
-// Finish the jitdump file
-PAL_PerfJitDump_Finish();
-
 /******************* winuser.h Entrypoints *******************************/
 
 #define IDOK                    1
@@ -1845,21 +1822,6 @@ PVOID
 PALAPI
 PAL_GetStackLimit();
 
-PALIMPORT
-DWORD
-PALAPI
-PAL_GetLogicalCpuCountFromOS();
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_GetTotalCpuCount();
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetCpuLimit(UINT* val);
-
 PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context);
 
 #define PAGE_NOACCESS                   0x01
@@ -2084,19 +2046,6 @@ RaiseFailFastException(
     IN PEXCEPTION_RECORD pExceptionRecord,
     IN PCONTEXT pContextRecord,
     IN DWORD dwFlags);
-
-PALIMPORT
-BOOL
-PALAPI
-QueryThreadCycleTime(
-    IN HANDLE ThreadHandle,
-    OUT PULONG64 CycleTime);
-
-PALIMPORT
-INT
-PALAPI
-PAL_nanosleep(
-    IN long timeInNs);
 
 typedef EXCEPTION_DISPOSITION (PALAPI_NOEXPORT *PVECTORED_EXCEPTION_HANDLER)(
                            struct _EXCEPTION_POINTERS *ExceptionPointers);
@@ -2562,28 +2511,9 @@ YieldProcessor()
 #endif
 }
 
-#define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
-#define FORMAT_MESSAGE_IGNORE_INSERTS  0x00000200
 #define FORMAT_MESSAGE_FROM_STRING     0x00000400
 #define FORMAT_MESSAGE_FROM_SYSTEM     0x00001000
-#define FORMAT_MESSAGE_ARGUMENT_ARRAY  0x00002000
 #define FORMAT_MESSAGE_MAX_WIDTH_MASK  0x000000FF
-
-PALIMPORT
-DWORD
-PALAPI
-FormatMessageW(
-           IN DWORD dwFlags,
-           IN LPCVOID lpSource,
-           IN DWORD dwMessageId,
-           IN DWORD dwLanguageId,
-           OUT LPWSTR lpBffer,
-           IN DWORD nSize,
-           IN va_list *Arguments);
-
-#ifdef UNICODE
-#define FormatMessage FormatMessageW
-#endif
 
 
 PALIMPORT
@@ -2636,24 +2566,9 @@ PAL_InjectActivation(
 );
 
 typedef struct _SYSTEM_INFO {
-    WORD wProcessorArchitecture_PAL_Undefined;
-    WORD wReserved_PAL_Undefined; // NOTE: diff from winbase.h - no obsolete dwOemId union
-    DWORD dwPageSize;
-    LPVOID lpMinimumApplicationAddress;
-    LPVOID lpMaximumApplicationAddress;
-    DWORD_PTR dwActiveProcessorMask_PAL_Undefined;
     DWORD dwNumberOfProcessors;
-    DWORD dwProcessorType_PAL_Undefined;
     DWORD dwAllocationGranularity;
-    WORD wProcessorLevel_PAL_Undefined;
-    WORD wProcessorRevision_PAL_Undefined;
-} SYSTEM_INFO, *LPSYSTEM_INFO;
-
-PALIMPORT
-VOID
-PALAPI
-GetSystemInfo(
-          OUT LPSYSTEM_INFO lpSystemInfo);
+} SYSTEM_INFO;
 
 //
 // The types of events that can be logged.

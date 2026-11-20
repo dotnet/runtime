@@ -219,6 +219,11 @@ namespace System.Collections.Immutable
             public void ExceptWith(IEnumerable<T> other)
             {
                 Requires.NotNull(other, nameof(other));
+                if (ReferenceEquals(this, other))
+                {
+                    this.Clear();
+                    return;
+                }
 
                 foreach (T item in other)
                 {
@@ -323,6 +328,10 @@ namespace System.Collections.Immutable
             public void UnionWith(IEnumerable<T> other)
             {
                 Requires.NotNull(other, nameof(other));
+                if (ReferenceEquals(this, other))
+                {
+                    return;
+                }
 
                 foreach (T item in other)
                 {
@@ -393,7 +402,7 @@ namespace System.Collections.Immutable
             /// <returns>A enumerator that can be used to iterate through the collection.</returns>
             IEnumerator<T> IEnumerable<T>.GetEnumerator()
             {
-                return this.Root.GetEnumerator();
+                return this.GetEnumerator();
             }
 
             /// <summary>

@@ -12,7 +12,6 @@
   <!-- Default priority building values. -->
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' == 'true' and '$(HasMergedInTests)' != 'true'">true</DisableProjectBuild>
-    <DisableProjectBuild Condition="'$(MonoAotIncompatible)' == 'true' and '$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'minifullaot' or '$(RuntimeVariant)' == 'llvmfullaot')">true</DisableProjectBuild>
     <SkipInferOutputType Condition="'$(TargetOS)' == 'android' and '$(TestBuildMode)' == 'nativeaot' and '$(OutputType)' != ''">true</SkipInferOutputType>
     <OutputType Condition="'$(SkipInferOutputType)' != 'true' and (('$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true') or ('$(RequiresProcessIsolation)' == 'true' and '$(CLRTestKind)' != 'SharedLibrary'))">Exe</OutputType>
 
@@ -101,7 +100,6 @@
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(NativeAotIncompatible)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(IsGCSimulatorTest)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">false</_WillCLRTestProjectBuild>
-    <_WillCLRTestProjectBuild Condition="'$(RuntimeFlavor)' == 'mono' And '$(AlwaysUseCrossgen2)' == 'true'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(EnableNativeSanitizers)' != '' And '$(AlwaysUseCrossgen2)' == 'true'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot' And '$(AlwaysUseCrossgen2)' == 'true'">false</_WillCLRTestProjectBuild>
   </PropertyGroup>
@@ -294,11 +292,11 @@
   <!-- WebAssembly cannot load native libraries at run time, so tests that call into their own
        native code need a corerun with that code linked in. -->
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.WasmCorerun.targets"
-          Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' != 'nativeaot'" />
+          Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(TestBuildMode)' != 'nativeaot'" />
 
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134949 WASI ReadyToRun tests run
        with an interpreted CoreLib currently so they can only use the runtime's baseline instruction sets. -->
-  <PropertyGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">
     <PublishReadyToRunInstructionSet Condition="'$(PublishReadyToRunInstructionSet)' == ''">-relaxed-simd</PublishReadyToRunInstructionSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(PublishReadyToRunInstructionSet)' != ''">
@@ -467,9 +465,6 @@
       </MarkerFile>
       <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).IlasmRoundTripIncompatible" Condition="'$(IlasmRoundTripIncompatible)' == 'true'">
         <Type>IlasmRoundTripIncompatible</Type>
-      </MarkerFile>
-      <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot" Condition="'$(MonoAotIncompatible)' == 'true'">
-        <Type>NoMonoAot</Type>
       </MarkerFile>
       <MarkerFile Include="$(IntermediateOutputPath)\ExpectedExitCode.txt" Condition="'$(ExpectedExitCode)' != '' and ('$(IsMergedTestRunnerAssembly)' == 'true' or '$(BuildAllTestsAsStandalone)' == 'true') and '$(CLRTestKind)' != 'SharedLibrary'">
         <Type>$(ExpectedExitCode)</Type>

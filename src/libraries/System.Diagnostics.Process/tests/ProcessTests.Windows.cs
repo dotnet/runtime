@@ -26,9 +26,9 @@ namespace System.Diagnostics.Tests
             RemoteExecutor.IsSupported;
 
         [ConditionalFact(typeof(ProcessTests), nameof(IsPreciseGcAndRemoteExecutorSupported))]
-        public async Task RedirectedOutputHandlesAreFinalizedAfterAsyncReads()
+        public void RedirectedOutputHandlesAreFinalizedAfterAsyncReads()
         {
-            (WeakReference<SafeFileHandle> output, WeakReference<SafeFileHandle> error) = await ReadOutputAndErrorAsync();
+            (WeakReference<SafeFileHandle> output, WeakReference<SafeFileHandle> error) = ReadOutputAndError();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -38,8 +38,10 @@ namespace System.Diagnostics.Tests
             Assert.False(error.TryGetTarget(out _));
         }
 
+        // The helper is synchronous on purpose: the continuation of an async helper references the process
+        // until the thread that completed it is done with it, which races with the GC in the test.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async Task<(WeakReference<SafeFileHandle>, WeakReference<SafeFileHandle>)> ReadOutputAndErrorAsync()
+        private static (WeakReference<SafeFileHandle>, WeakReference<SafeFileHandle>) ReadOutputAndError()
         {
             RemoteInvokeOptions options = new()
             {
@@ -58,9 +60,9 @@ namespace System.Diagnostics.Tests
 
             Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
             Task<string> errorTask = process.StandardError.ReadToEndAsync();
-            Assert.Equal("out", await outputTask);
-            Assert.Equal("err", await errorTask);
-            await process.WaitForExitAsync();
+            Assert.Equal("out", outputTask.Result);
+            Assert.Equal("err", errorTask.Result);
+            process.WaitForExit();
 
             return (outputHandle, errorHandle);
         }
