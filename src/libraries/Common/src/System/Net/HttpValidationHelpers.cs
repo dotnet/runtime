@@ -1,35 +1,34 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+
 namespace System.Net
 {
     internal static class HttpValidationHelpers
     {
+        // Separators and whitespace that can't appear in a method or header name.
+        private static readonly SearchValues<char> s_invalidMethodOrHeaderChars =
+            SearchValues.Create("\t\n\r \"'(),/:;<=>?@[\\]{}");
+
+        // Printable ASCII characters (32-126) other than those in s_invalidMethodOrHeaderChars.
+        private static readonly SearchValues<char> s_validTokenChars =
+            SearchValues.Create("!#$%&*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
+
         internal static string CheckBadHeaderNameChars(string name)
         {
-            // First, check for absence of separators and spaces.
-            if (IsInvalidMethodOrHeaderString(name))
+            // Check for absence of separators, spaces, and characters outside of printable ASCII (32-126).
+            // Length is accessed directly, as AsSpan would treat a null name as empty rather than throwing.
+            if (name.Length != 0 && name.AsSpan().ContainsAnyExcept(s_validTokenChars))
             {
                 throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidHeaderChars, name), nameof(name));
             }
 
-            // Second, check for non CTL ASCII-7 characters (32-126).
-            if (ContainsNonAsciiChars(name))
-            {
-                throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidHeaderChars, name), nameof(name));
-            }
             return name;
         }
 
-        internal static bool ContainsNonAsciiChars(string token) =>
-            token.AsSpan().ContainsAnyExceptInRange((char)0x20, (char)0x7e);
-
-        internal static bool IsValidToken(string token)
-        {
-            return (token.Length > 0)
-                && !IsInvalidMethodOrHeaderString(token)
-                && !ContainsNonAsciiChars(token);
-        }
+        internal static bool IsValidToken(string token) =>
+            token.Length > 0 && !token.AsSpan().ContainsAnyExcept(s_validTokenChars);
 
         private static readonly char[] s_httpTrimCharacters = new char[] { (char)0x09, (char)0xA, (char)0xB, (char)0xC, (char)0xD, (char)0x20 };
 
@@ -101,42 +100,7 @@ namespace System.Net
 
         // Returns true if stringValue contains characters that cannot appear
         // in a valid method-verb or HTTP header.
-        public static bool IsInvalidMethodOrHeaderString(string stringValue)
-        {
-            for (int i = 0; i < stringValue.Length; i++)
-            {
-                switch (stringValue[i])
-                {
-                    case '(':
-                    case ')':
-                    case '<':
-                    case '>':
-                    case '@':
-                    case ',':
-                    case ';':
-                    case ':':
-                    case '\\':
-                    case '"':
-                    case '\'':
-                    case '/':
-                    case '[':
-                    case ']':
-                    case '?':
-                    case '=':
-                    case '{':
-                    case '}':
-                    case ' ':
-                    case '\t':
-                    case '\r':
-                    case '\n':
-                        return true;
-
-                    default:
-                        break;
-                }
-            }
-
-            return false;
-        }
+        public static bool IsInvalidMethodOrHeaderString(string stringValue) =>
+            stringValue.Length != 0 && stringValue.AsSpan().ContainsAny(s_invalidMethodOrHeaderChars);
     }
 }

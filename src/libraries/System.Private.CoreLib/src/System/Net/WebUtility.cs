@@ -77,77 +77,68 @@ namespace System.Net
 
         private static void HtmlEncode(ReadOnlySpan<char> input, ref ValueStringBuilder output)
         {
-            for (int i = 0; i < input.Length; i++)
+            while (true)
             {
-                char ch = input[i];
-                if (ch <= '>')
+                int i = IndexOfHtmlEncodingChar(input);
+                if (i < 0)
                 {
-                    switch (ch)
+                    output.Append(input);
+                    return;
+                }
+
+                output.Append(input.Slice(0, i));
+                char ch = input[i];
+                input = input.Slice(i + 1);
+
+                switch (ch)
+                {
+                    case '<':
+                        output.Append("&lt;");
+                        continue;
+                    case '>':
+                        output.Append("&gt;");
+                        continue;
+                    case '"':
+                        output.Append("&quot;");
+                        continue;
+                    case '\'':
+                        output.Append("&#39;");
+                        continue;
+                    case '&':
+                        output.Append("&amp;");
+                        continue;
+                }
+
+                int valueToEncode;
+                if (char.IsSurrogate(ch))
+                {
+                    if (input.IsEmpty || !Rune.TryCreate(ch, input[0], out Rune rune))
                     {
-                        case '<':
-                            output.Append("&lt;");
-                            break;
-                        case '>':
-                            output.Append("&gt;");
-                            break;
-                        case '"':
-                            output.Append("&quot;");
-                            break;
-                        case '\'':
-                            output.Append("&#39;");
-                            break;
-                        case '&':
-                            output.Append("&amp;");
-                            break;
-                        default:
-                            output.Append(ch);
-                            break;
+                        // Don't encode BMP characters (like U+FFFD) since they wouldn't have
+                        // been encoded if explicitly present in the string anyway.
+                        output.Append((char)UnicodeUtility.ReplacementChar);
+                        continue;
                     }
+
+                    valueToEncode = rune.Value;
+                    input = input.Slice(1);
                 }
                 else
                 {
-                    int valueToEncode = -1; // set to >= 0 if needs to be encoded
-
-                    if (char.IsBetween(ch, (char)160, (char)255))
-                    {
-                        // The seemingly arbitrary 160 comes from RFC
-                        valueToEncode = ch;
-                    }
-                    else if (char.IsSurrogate(ch))
-                    {
-                        if ((uint)(i + 1) < (uint)input.Length &&
-                            Rune.TryCreate(ch, input[i + 1], out Rune rune))
-                        {
-                            valueToEncode = rune.Value;
-                            i++;
-                        }
-                        else
-                        {
-                            // Don't encode BMP characters (like U+FFFD) since they wouldn't have
-                            // been encoded if explicitly present in the string anyway.
-                            ch = (char)UnicodeUtility.ReplacementChar;
-                        }
-                    }
-
-                    if (valueToEncode >= 0)
-                    {
-                        // value needs to be encoded
-                        output.Append("&#");
-
-                        // Use the buffer directly and reserve a conservative estimate of 10 chars.
-                        const int MaxInt32Digits = 10;
-                        Span<char> encodingBuffer = output.AppendSpan(MaxInt32Digits);
-                        valueToEncode.TryFormat(encodingBuffer, out int charsWritten); // Invariant
-                        output.Length -= (MaxInt32Digits - charsWritten);
-
-                        output.Append(';');
-                    }
-                    else
-                    {
-                        // write out the character directly
-                        output.Append(ch);
-                    }
+                    // The seemingly arbitrary 160 comes from RFC
+                    Debug.Assert(char.IsBetween(ch, (char)160, (char)255));
+                    valueToEncode = ch;
                 }
+
+                output.Append("&#");
+
+                // Use the buffer directly and reserve a conservative estimate of 10 chars.
+                const int MaxInt32Digits = 10;
+                Span<char> encodingBuffer = output.AppendSpan(MaxInt32Digits);
+                valueToEncode.TryFormat(encodingBuffer, out int charsWritten); // Invariant
+                output.Length -= (MaxInt32Digits - charsWritten);
+
+                output.Append(';');
             }
         }
 

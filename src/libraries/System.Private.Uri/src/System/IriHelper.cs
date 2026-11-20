@@ -171,8 +171,22 @@ namespace System
 
                     continue;
                 }
+                else if ((uint)(i + 1) < (uint)span.Length && UriHelper.AsciiOtherThanPercent.Contains(span[i + 1]))
+                {
+                    // ASCII followed by more ASCII, just copy the run of ASCII characters other than '%'
+                    int runLength = span.Slice(i + 1).IndexOfAnyExcept(UriHelper.AsciiOtherThanPercent);
+                    if (runLength < 0)
+                    {
+                        dest.Append(span.Slice(i));
+                        break;
+                    }
 
-                // ASCII, just copy the character
+                    dest.Append(span.Slice(i, runLength + 1));
+                    i += runLength;
+                    continue;
+                }
+
+                // ASCII, or '%' not followed by two characters, just copy the character
                 dest.Append(ch);
             }
         }
