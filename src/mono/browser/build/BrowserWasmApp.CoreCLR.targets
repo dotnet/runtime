@@ -539,6 +539,9 @@
       <_PathSeparator Condition="$([MSBuild]::IsOSPlatform('windows'))">;</_PathSeparator>
       <_PathSeparator Condition="!$([MSBuild]::IsOSPlatform('windows'))">:</_PathSeparator>
       <_EmscriptenPrependPATHProperty>@(EmscriptenPrependPATH -> '%(Identity)', '$(_PathSeparator)')</_EmscriptenPrependPATHProperty>
+      <!-- The Emscripten cache package only prebuilds the wasm32 system libraries in its frozen cache. In-tree
+           browser-wasm64 builds use the separate unfrozen cache that the native build uses (eng/native/build-commons.sh). -->
+      <_WasmInTreeWasm64EmscriptenCache Condition="'$(_CoreCLRBrowserArchitecture)' == 'wasm64' and '$(WasmCachePath)' == '' and '$(ArtifactsObjDir)' != ''">$(ArtifactsObjDir)emscripten-cache-wasm64</_WasmInTreeWasm64EmscriptenCache>
     </PropertyGroup>
 
     <ItemGroup>
@@ -549,8 +552,11 @@
       <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
-      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=1" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
+      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=1" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)' and '$(_WasmInTreeWasm64EmscriptenCache)' == ''" />
       <EmscriptenEnvVars Include="EM_FROZEN_CACHE=0" Condition="'$(WasmCachePath)' != '' and '$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'" />
+      <EmscriptenEnvVars Include="EM_CACHE=$(_WasmInTreeWasm64EmscriptenCache)" Condition="'$(_WasmInTreeWasm64EmscriptenCache)' != ''" />
+      <!-- The in-tree Emscripten config only unfreezes its cache for an empty value. -->
+      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=" Condition="'$(_WasmInTreeWasm64EmscriptenCache)' != ''" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=1" />
     </ItemGroup>
