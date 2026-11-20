@@ -38,14 +38,29 @@ namespace Microsoft.Extensions.Hosting
             _remoteInvokeHandle.Process = null;
 
             var statusEx = QueryServiceStatusEx();
+
+            Process p;
             try
             {
-                _remoteInvokeHandle.Process = Process.GetProcessById(statusEx.dwProcessId);
-                // fetch the process handle so that we can get the exit code later.
-                var _ = _remoteInvokeHandle.Process.SafeHandle;
+                p = Process.GetProcessById(statusEx.dwProcessId);
             }
             catch (ArgumentException)
-            { }
+            {
+                return;
+            }
+
+            try
+            {
+                // fetch the process handle so that we can get the exit code later.
+                var _ = p.SafeHandle;
+            }
+            catch (InvalidOperationException)
+            {
+                p.Dispose();
+                return;
+            }
+
+            _remoteInvokeHandle.Process = p;
         }
 
         public static TimeSpan WaitForStatusTimeout { get; set; } = TimeSpan.FromMinutes(3);
