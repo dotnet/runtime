@@ -312,7 +312,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void ReceiveSent_ReuseEventArgsAcrossAddressFamilies_Success(bool ipv4First)
