@@ -2063,8 +2063,7 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
 
     PROCCreateCrashDumpIfEnabled(signal, siginfo, context, CrashDumpSerialize_WaitInfinite);
 
-    // Restore all signals; the SIGABORT handler to prevent recursion and
-    // the others to prevent multiple core dumps from being generated.
+    // Restore the signals that abort() relies on to end the process. See SEHCleanupSignals.
     SEHCleanupSignals(false /* isChildProcess */);
 
     // Abort the process after waiting for the core dump to complete
