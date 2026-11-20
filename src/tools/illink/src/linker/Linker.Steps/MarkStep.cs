@@ -3718,8 +3718,12 @@ namespace Mono.Linker.Steps
                     continue;
                 }
 
+                // A base that was already marked has its own bases marked when it is processed (ProcessMethod calls
+                // MarkBaseMethods); walking them again from every derived method is exponential in deep interface chains.
+                bool wasMarked = Annotations.IsMarked(ov.Base);
                 MarkMethod(ov.Base, new DependencyInfo(DependencyKind.BaseMethod, method), origin);
-                MarkBaseMethods(ov.Base, origin);
+                if (!wasMarked)
+                    MarkBaseMethods(ov.Base, origin);
             }
         }
 
