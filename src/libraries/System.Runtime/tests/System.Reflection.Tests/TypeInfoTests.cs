@@ -1771,6 +1771,15 @@ namespace System.Reflection.Tests
             Assert.Equal(expected.OrderBy(t => t.ToString()), actual.OrderBy(t => t.ToString()));
         }
 
+        [Theory, MemberData(nameof(GetInterfacesWithSameMetadataDefinitionAsData))]
+        public void GetInterfacesWithSameMetadataDefinitionAs_TypeDelegator(Type type, Type interfaceType, Type[] expected)
+        {
+            // TypeDelegator doesn't override GetInterfacesWithSameMetadataDefinitionAs, so this uses the base Type
+            // implementation, which runtime types may specialize.
+            Type[] actual = new TypeDelegator(type).GetInterfacesWithSameMetadataDefinitionAs(interfaceType);
+            Assert.Equal(expected.OrderBy(t => t.ToString()), actual.OrderBy(t => t.ToString()));
+        }
+
         [Fact]
         public void GetInterfacesWithSameMetadataDefinitionAs_GenericTypeDefinition()
         {
