@@ -2413,6 +2413,28 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector64ByteShuffleNativeReflectionTest()
+        {
+            Vector64<byte> vector = Vector64<byte>.Zero;
+            Vector64<byte> indices = Vector64<byte>.Zero;
+
+            for (int index = 0; index < Vector64<byte>.Count; index++)
+            {
+                vector = vector.WithElement(index, (byte)(index + 1));
+                indices = indices.WithElement(index, (byte)(index + Vector64<byte>.Count));
+            }
+
+            Vector64<byte> expected = Vector64.ShuffleNative(vector, indices);
+            MethodInfo methodInfo = typeof(Vector64).GetMethod(nameof(Vector64.ShuffleNative), [typeof(Vector64<byte>), typeof(Vector64<byte>)]);
+            Vector64<byte> actual = (Vector64<byte>)methodInfo.Invoke(null, [vector, indices]);
+
+            for (int index = 0; index < Vector64<byte>.Count; index++)
+            {
+                Assert.Equal(expected.GetElement(index), actual.GetElement(index));
+            }
+        }
+
+        [Fact]
         public void Vector64Int16ShuffleNativeOneInputTest()
         {
             Vector64<short> vector = Vector64.Create((short)1, 2, 3, 4);
