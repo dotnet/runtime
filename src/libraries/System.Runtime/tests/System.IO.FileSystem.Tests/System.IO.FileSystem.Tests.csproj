@@ -47,6 +47,7 @@
     <Compile Include="DumpDriveInformation.cs" />
     <Compile Include="FileStream\LockUnlock.cs" />
     <Compile Include="FileSystemTest.cs" />
+    <Compile Include="ThrowingMemoryManager.cs" />
     <Compile Include="File\AppendAllBytesAsync.cs" />
     <Compile Include="File\EncryptDecrypt.cs" />
     <Compile Include="File\AppendAllBytes.cs" />
