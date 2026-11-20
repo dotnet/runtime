@@ -1230,6 +1230,128 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public async Task SocketsHttpHandler_SharedObservableInstruments_AggregateActiveRequests()
+        {
+            using TestMeterFactory factory = new();
+            using SocketsHttpHandler firstHandler = new() { MeterFactory = factory };
+            using SocketsHttpHandler secondHandler = new() { MeterFactory = factory };
+            using HttpClient firstClient = new(firstHandler, disposeHandler: false);
+            using HttpClient secondClient = new(secondHandler, disposeHandler: false);
+
+            TaskCompletionSource firstRequestReceived = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource bothRequestsReceived = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource releaseFirstResponse = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource releaseSecondResponse = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            using InstrumentRecorder<long> activeRequestsEnabler = new(factory, InstrumentNames.ActiveRequests);
+
+            await Http11LoopbackServerFactory.Singleton.CreateClientAndServerAsync(async uri =>
+            {
+                Task<HttpResponseMessage> firstRequest = firstClient.GetAsync(uri);
+                await firstRequestReceived.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
+                Task<HttpResponseMessage> secondRequest = secondClient.GetAsync(uri);
+                await bothRequestsReceived.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
+                using (InstrumentRecorder<long> recorder = new(factory, InstrumentNames.ActiveRequests))
+                {
+                    recorder.RecordObservableInstruments();
+                    VerifyActiveRequests(Assert.Single(recorder.GetMeasurements()), 2, uri);
+                }
+
+                releaseFirstResponse.SetResult();
+                using (HttpResponseMessage response = await firstRequest)
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+
+                firstHandler.Dispose();
+                using (InstrumentRecorder<long> recorder = new(factory, InstrumentNames.ActiveRequests))
+                {
+                    recorder.RecordObservableInstruments();
+                    VerifyActiveRequests(Assert.Single(recorder.GetMeasurements()), 1, uri);
+                }
+
+                releaseSecondResponse.SetResult();
+                using (HttpResponseMessage response = await secondRequest)
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+
+                secondHandler.Dispose();
+                using (InstrumentRecorder<long> recorder = new(factory, InstrumentNames.ActiveRequests))
+                {
+                    recorder.RecordObservableInstruments();
+                    Assert.Empty(recorder.GetMeasurements());
+                }
+            }, async server =>
+            {
+                Task firstConnection = server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync();
+                    firstRequestReceived.SetResult();
+                    await releaseFirstResponse.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    await connection.SendResponseAsync();
+                });
+
+                await firstRequestReceived.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                Task secondConnection = server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync();
+                    bothRequestsReceived.SetResult();
+                    await releaseSecondResponse.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    await connection.SendResponseAsync();
+                });
+
+                await Task.WhenAll(firstConnection, secondConnection);
+            });
+        }
+
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public async Task SocketsHttpHandler_SharedActiveRequests_DrainsWhenDisposedDuringRequest()
+        {
+            using TestMeterFactory factory = new();
+            using SocketsHttpHandler handler = new() { MeterFactory = factory };
+            using HttpClient client = new(handler, disposeHandler: false);
+            TaskCompletionSource requestReceived = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource handlerDisposed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            using InstrumentRecorder<long> activeRequestsEnabler = new(factory, InstrumentNames.ActiveRequests);
+
+            await Http11LoopbackServerFactory.Singleton.CreateClientAndServerAsync(async uri =>
+            {
+                Task<HttpResponseMessage> request = client.GetAsync(uri);
+                await requestReceived.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
+                using (InstrumentRecorder<long> recorder = new(factory, InstrumentNames.ActiveRequests))
+                {
+                    recorder.RecordObservableInstruments();
+                    VerifyActiveRequests(Assert.Single(recorder.GetMeasurements()), 1, uri);
+                }
+
+                handler.Dispose();
+                handlerDisposed.SetResult();
+                using (HttpResponseMessage response = await request)
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+
+                using (InstrumentRecorder<long> recorder = new(factory, InstrumentNames.ActiveRequests))
+                {
+                    recorder.RecordObservableInstruments();
+                    Assert.Empty(recorder.GetMeasurements());
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync();
+                    requestReceived.SetResult();
+                    await handlerDisposed.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    await connection.SendResponseAsync();
+                });
+            });
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
         [InlineData(false)]
         [InlineData(true)]
@@ -1664,6 +1786,114 @@ namespace System.Net.Http.Functional.Tests
 
     public class HttpMetricsTest_General
     {
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public async Task SocketsHttpHandler_ObservableInstruments_ArePublishedOncePerMeter()
+        {
+            using TestMeterFactory factory = new();
+            Meter meter = factory.Create("System.Net.Http");
+            using MeterListener listener = new();
+
+            int activeRequestsInstrumentCount = 0;
+            int openConnectionsInstrumentCount = 0;
+            listener.InstrumentPublished = (instrument, _) =>
+            {
+                if (instrument.Meter == meter)
+                {
+                    if (instrument.Name == "http.client.active_requests")
+                    {
+                        Interlocked.Increment(ref activeRequestsInstrumentCount);
+                    }
+                    else if (instrument.Name == "http.client.open_connections")
+                    {
+                        Interlocked.Increment(ref openConnectionsInstrumentCount);
+                    }
+                }
+            };
+            listener.Start();
+
+            const int HandlerCount = 3;
+            await Http11LoopbackServerFactory.Singleton.CreateClientAndServerAsync(async uri =>
+            {
+                for (int i = 0; i < HandlerCount; i++)
+                {
+                    using SocketsHttpHandler handler = new() { MeterFactory = factory };
+                    using HttpClient client = new(handler, disposeHandler: false);
+                    using HttpResponseMessage response = await client.GetAsync(uri);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            }, async server =>
+            {
+                for (int i = 0; i < HandlerCount; i++)
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync();
+                }
+            });
+
+            Assert.Equal(1, Volatile.Read(ref activeRequestsInstrumentCount));
+            Assert.Equal(1, Volatile.Read(ref openConnectionsInstrumentCount));
+        }
+
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public async Task SocketsHttpHandler_ObservableInstruments_ConcurrentInitialization_ArePublishedOncePerMeter()
+        {
+            const int IterationCount = 3;
+            const int HandlerCount = 8;
+
+            for (int iteration = 0; iteration < IterationCount; iteration++)
+            {
+                using TestMeterFactory factory = new();
+                Meter meter = factory.Create("System.Net.Http");
+                using MeterListener listener = new();
+
+                int activeRequestsInstrumentCount = 0;
+                int openConnectionsInstrumentCount = 0;
+                listener.InstrumentPublished = (instrument, _) =>
+                {
+                    if (instrument.Meter == meter)
+                    {
+                        if (instrument.Name == "http.client.active_requests")
+                        {
+                            Interlocked.Increment(ref activeRequestsInstrumentCount);
+                        }
+                        else if (instrument.Name == "http.client.open_connections")
+                        {
+                            Interlocked.Increment(ref openConnectionsInstrumentCount);
+                        }
+                    }
+                };
+                listener.Start();
+
+                TaskCompletionSource startRequests = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                await Http11LoopbackServerFactory.Singleton.CreateClientAndServerAsync(async uri =>
+                {
+                    Task[] requests = new Task[HandlerCount];
+                    for (int i = 0; i < requests.Length; i++)
+                    {
+                        requests[i] = Task.Run(async () =>
+                        {
+                            await startRequests.Task;
+                            using SocketsHttpHandler handler = new() { MeterFactory = factory };
+                            using HttpClient client = new(handler, disposeHandler: false);
+                            using HttpResponseMessage response = await client.GetAsync(uri);
+                            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        });
+                    }
+
+                    startRequests.SetResult();
+                    await Task.WhenAll(requests);
+                }, async server =>
+                {
+                    for (int i = 0; i < HandlerCount; i++)
+                    {
+                        await server.AcceptConnectionSendResponseAndCloseAsync();
+                    }
+                });
+
+                Assert.Equal(1, Volatile.Read(ref activeRequestsInstrumentCount));
+                Assert.Equal(1, Volatile.Read(ref openConnectionsInstrumentCount));
+            }
+        }
+
         [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
         public void SocketsHttpHandler_Dispose_DoesNotDisposeMeterFactory()
         {
