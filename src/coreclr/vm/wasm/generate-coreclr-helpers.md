@@ -79,8 +79,7 @@ frame identity that a direct call passes in the entry-point parameter is an
 The build links ICU from the ICU transport package's
 `runtimes/browser-wasm64/native` assets, as browser-wasm uses
 `runtimes/browser-wasm/native`. Like the wasm32 one, the Node CoreRun host
-uses invariant globalization by default; on wasm64, set `DOTNET_ICU_DATA_PATH`
-to an `icudt.dat` from the same package to run CoreRun with ICU.
+uses invariant globalization.
 
 The experimental CoreCLR `browser-wasm64` app host requires a
 memory64-capable browser. Otherwise the in-tree Wasm SDK treats
