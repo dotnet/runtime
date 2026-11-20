@@ -1576,7 +1576,7 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
         VolatileLoad(&settings.gc_index),
         get_str_gc_type()));
 #else
-    dprintf (2,("GC#d: Verifying heap - end", VolatileLoad(&settings.gc_index)));
+    dprintf (2,("GC%zu: Verifying heap - end", VolatileLoad(&settings.gc_index)));
 #endif //BACKGROUND_GC
 }
 
