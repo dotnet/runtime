@@ -88,7 +88,7 @@
                          Condition="@(NativeFileReference->Count()) > 0 or @(NativeLibrary->Count()) > 0 or @(DirectPInvoke->Count()) > 0 or @(DirectPInvokeList->Count()) > 0" />
   </ItemGroup>
   <Target Name="_WasmAddMissingWorkloadPackForNativeItems"
-          BeforeTargets="_CheckForMissingWorkload"
+          BeforeTargets="_CheckForMissingWorkload;GetSuggestedWorkloads"
           Condition="'$(_WasmCoreCLRNativeItemsNeedWorkload)' == 'true' and
                      (@(NativeFileReference->Count()) > 0 or @(NativeLibrary->Count()) > 0 or @(DirectPInvoke->Count()) > 0 or @(DirectPInvokeList->Count()) > 0)">
     <ItemGroup>

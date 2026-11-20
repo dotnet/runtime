@@ -156,8 +156,9 @@ namespace Wasm.Build.Tests
             Assert.NotEqual(0, buildResult.ExitCode);
             Assert.Contains("following workloads must be installed: wasm-tools", buildResult.Output);
 
-            // Visual Studio offers to install the workloads this target returns. It checks its condition
-            // before any BeforeTargets run, so it only sees items added before the workload manifest is imported.
+            // Visual Studio offers to install the workloads this target returns. Until the SDK checks for
+            // missing packs after its BeforeTargets run (dotnet/sdk#57257), it only sees items added before
+            // the workload manifest is imported.
             if (fromDirectoryBuildTargets)
                 return;
 
