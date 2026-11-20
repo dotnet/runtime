@@ -704,7 +704,6 @@ static class RuntimeTypeSystem_1_Helpers
 | `ConstructedTypeHashSeed` | uint | Initial accumulator for the constructed-type hash | `5381` (`0x00001505`) |
 | `ConstructedTypeHashMultiplier` | uint | Multiplier applied before XORing each constructed-type hash input | `33` |
 | `FpStructMaxSize` | uint | Largest struct, in bytes, considered for floating-point register passing on RISC-V and LoongArch64 (`ENREGISTERED_PARAMTYPE_MAXSIZE`); larger structs use the integer calling convention | `16` |
-| `FpStructMaxNestingDepth` | int | Reader-side guard against corrupted target data: the maximum depth of nested value-type fields flattened during floating-point struct classification (the runtime has no such limit); deeper nesting is treated as not classifiable | `16` |
 
 ```csharp
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables;
@@ -804,18 +803,17 @@ static class RuntimeTypeSystem_1_Helpers
     //       if targetArch is not RISCV64/LOONGARCH64:     return false
     //       if !th.IsMethodTable() or NumInstanceFieldBytes(th) > FpStructMaxSize: return false
     //       fields = []
-    //       if !Flatten(th, 0, fields, 0):                return false
+    //       if !Flatten(th, 0, fields):                   return false
     //       if no field in fields is floating-point:      return false
     //       sort fields by offset; return (true, (fields[0], fields[1] if present))
     //
-    //   Flatten(mt, structOffset, fields, depth):
-    //       if depth >= FpStructMaxNestingDepth:      return false
+    //   Flatten(mt, structOffset, fields):
     //       occupied = 0 (byte bitmap)
     //       for each non-static field f of mt:
     //           start = structOffset + GetFieldDescOffset(f); size = ValueType ? NumInstanceFieldBytes(f's type) : element size
     //           if [start, start + size) overlaps occupied: return false    // union
     //           occupied |= [start, start + size)
-    //           if f is ValueType:                    if !Flatten(f's type, start, fields, depth + 1): return false
+    //           if f is ValueType:                    if !Flatten(f's type, start, fields): return false
     //           else if size <= pointer size:         if fields.Count == 2: return false
     //                                                 fields.Add((f is R4/R8, size, start))
     //           else:                                 return false
