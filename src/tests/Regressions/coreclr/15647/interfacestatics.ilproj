@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
-  <PropertyGroup>
-    <!-- Needed for CLRTestTargetUnsupported -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="interfacestatics.il" />
   </ItemGroup>
