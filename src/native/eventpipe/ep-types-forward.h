@@ -16,6 +16,8 @@ typedef struct _EventPipeBlock EventPipeBlock;
 typedef struct _EventPipeBlockVtable EventPipeBlockVtable;
 typedef struct _EventPipeConfiguration EventPipeConfiguration;
 typedef struct _EventPipeEvent EventPipeEvent;
+typedef struct _EventPipeEventDefinition EventPipeEventDefinition;
+typedef struct _EventPipeEventTable EventPipeEventTable;
 typedef struct _EventPipeEventBlockBase EventPipeEventBlockBase;
 typedef struct _EventPipeEventBlock EventPipeEventBlock;
 typedef struct _EventPipeEventHeader EventPipeEventHeader;

@@ -4,7 +4,7 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
     <!-- AssemblyDependencyResolver throws PlatformNotSupportedException on WebAssembly, which has no host policy. -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
     <!-- AssemblyDependencyResolver is not supported -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
