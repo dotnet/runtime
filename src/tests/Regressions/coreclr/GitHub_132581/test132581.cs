@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Xunit;
 
 public class HandleMacosSAFlagsOddityAcrossExec
@@ -21,6 +22,8 @@ public class HandleMacosSAFlagsOddityAcrossExec
     /// to handle the signal (instead of sa_handler). If the runtime doesn't also check that sa_sigaction is not SIG_IGN
     /// or SIG_DFL, a crash occurs. This test ensures that the cleared signal handler, sa_sigaction, is not called when
     /// it is set to SIG_IGN (ignore signal) or SIG_DFL (use default handler) even if the sa_flags says to use it.
+    /// Both a signal from another process and the runtime's own activation signal (SIGUSR1 on macOS, used to suspend
+    /// threads for GC) are exercised, since the previous handler is consulted for both.
     /// </summary>
     [Fact]
     public static void DoNotCallPreviousSignalHandlerIfHandlerIsNotSet()
@@ -36,5 +39,28 @@ public class HandleMacosSAFlagsOddityAcrossExec
         }
 
         Assert.Equal(0, SendSignalFromChildProcess());
+        SuspendSpinningThreadForGC();
+    }
+
+    private static volatile bool s_stopSpinning;
+
+    private static void SuspendSpinningThreadForGC()
+    {
+        // A thread spinning in managed code can only be suspended for GC by injecting an activation signal.
+        var spinner = new Thread(() =>
+        {
+            while (!s_stopSpinning)
+            {
+            }
+        });
+        spinner.Start();
+
+        for (int i = 0; i < 100; i++)
+        {
+            GC.Collect();
+        }
+
+        s_stopSpinning = true;
+        spinner.Join();
     }
 }

@@ -972,21 +972,21 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
             CONTEXTToNativeContext(&winContext, ucontext);
         }
     }
-    else
+
+    // Call the original handler when it is not ignored or default (terminate).
+    // This is done for every activation, since other runtimes in the process
+    // (e.g. NativeAOT) may share the activation signal and rely on receiving it.
+    if (!IsSigDfl(&g_previous_activation) && !IsSigIgn(&g_previous_activation))
     {
-        // Call the original handler when it is not ignored or default (terminate).
-        if (!IsSigDfl(&g_previous_activation) && !IsSigIgn(&g_previous_activation))
+        if (IsSaSigInfo(&g_previous_activation))
         {
-            if (IsSaSigInfo(&g_previous_activation))
-            {
-                _ASSERTE(g_previous_activation.sa_sigaction != NULL);
-                g_previous_activation.sa_sigaction(code, siginfo, context);
-            }
-            else
-            {
-                _ASSERTE(g_previous_activation.sa_handler != NULL);
-                g_previous_activation.sa_handler(code);
-            }
+            _ASSERTE(g_previous_activation.sa_sigaction != NULL);
+            g_previous_activation.sa_sigaction(code, siginfo, context);
+        }
+        else
+        {
+            _ASSERTE(g_previous_activation.sa_handler != NULL);
+            g_previous_activation.sa_handler(code);
         }
     }
 }
