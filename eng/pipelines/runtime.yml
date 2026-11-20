@@ -134,7 +134,7 @@ extends:
           - browser_wasm_win
           jobParameters:
             nameSuffix: CoreCLR
-            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false /p:BuildCrossgen2HostPackForWorkloadTesting=true
+            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
             timeoutInMinutes: 120
             postBuildSteps:
               # Runs on the Linux-hosted browser_wasm job only; the step skips itself on Windows.
