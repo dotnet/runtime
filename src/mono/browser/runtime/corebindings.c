@@ -34,7 +34,7 @@ extern int mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
 typedef void (*background_job_cb)(void);
 typedef int (*ds_job_cb)(void* data);
 
-void SystemInteropJS_BindAssemblyExports (char *assembly_name);
+int SystemInteropJS_BindAssemblyExports (char *assembly_name);
 void SystemInteropJS_AssemblyGetEntryPoint (char *assembly_name, int auto_insert_breakpoint, MonoMethod **method_out);
 void SystemInteropJS_GetAssemblyExport (char *assembly_name, char *namespace, char *classname, char *methodname, int signature_hash, MonoMethod **method_out);
 
@@ -178,7 +178,7 @@ end:
 	*method_out = method;
 }
 
-void SystemInteropJS_BindAssemblyExports (char *assembly_name)
+int SystemInteropJS_BindAssemblyExports (char *assembly_name)
 {
 	MonoError error;
 	MonoAssembly* assembly;
@@ -189,7 +189,8 @@ void SystemInteropJS_BindAssemblyExports (char *assembly_name)
 
 	assert (assembly_name);
 	assembly = _mono_wasm_assembly_load (assembly_name);
-	assert (assembly);
+	if (!assembly)
+		return 0;
 	image = mono_assembly_get_image (assembly);
 	assert (image);
 
@@ -213,6 +214,7 @@ void SystemInteropJS_BindAssemblyExports (char *assembly_name)
 	else if (!mono_runtime_run_module_cctor(image, &error)) {
 		//g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
 	}
+	return 1;
 }
 
 void SystemInteropJS_GetAssemblyExport (char *assembly_name, char *namespace, char *classname, char *methodname, int signature_hash, MonoMethod **method_out)
@@ -227,7 +229,8 @@ void SystemInteropJS_GetAssemblyExport (char *assembly_name, char *namespace, ch
 
 	assert (assembly_name);
 	assembly = _mono_wasm_assembly_load (assembly_name);
-	assert (assembly);
+	if (!assembly)
+		goto end;
 	image = mono_assembly_get_image (assembly);
 	assert (image);
 
@@ -242,6 +245,7 @@ void SystemInteropJS_GetAssemblyExport (char *assembly_name, char *namespace, ch
 	*method_out = method;
     // This is freed by _mono_wasm_assembly_load for some reason
     // free (assembly_name);
+end:
 	free (namespace);
 	free (classname);
 	free (methodname);

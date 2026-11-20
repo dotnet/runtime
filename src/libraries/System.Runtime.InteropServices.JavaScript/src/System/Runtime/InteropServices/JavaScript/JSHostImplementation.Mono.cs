@@ -15,7 +15,8 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         public static Task BindAssemblyExports(string? assemblyName)
         {
-            Interop.Runtime.BindAssemblyExports(Marshal.StringToCoTaskMemUTF8(assemblyName));
+            if (Interop.Runtime.BindAssemblyExports(Marshal.StringToCoTaskMemUTF8(assemblyName)) == 0)
+                throw new FileNotFoundException(message: null, fileName: assemblyName);
             return Task.CompletedTask;
         }
 
@@ -39,7 +40,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             if (monoMethod == IntPtr.Zero)
             {
-                Environment.FailFast($"Can't find {nameSpace}{shortClassName}{methodName} in {assemblyName}.dll");
+                throw new FileNotFoundException(message: null, fileName: assemblyName);
             }
 
             var signature = GetMethodSignature(signatures, null, null);
