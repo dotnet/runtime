@@ -47,9 +47,14 @@ private:
 
     genTreeOps m_mainOper = GT_COUNT; // The main oper of the if conversion.
 
+    // A Then or Else value that is a load which may only be performed when its arm is taken.
+    // The SELECT keeps it conditional by emitting it as the memory operand of a CFCMOV.
+    GenTree* m_guardedLoad = nullptr;
+
     bool IfConvertCheck();
     bool IfConvertCheckFlow();
     bool IfConvertCheckStmts(BasicBlock* block, IfConvertOperation* foundOperation);
+    bool IfConvertIsGuardedLoad(GenTree* value);
     bool IfConvertTryGetElseFromJtrueBlock(GenTreeLclVar* thenStore, IfConvertOperation* foundOperation);
 
     GenTree* TryOptimizeSelect(GenTreeConditional* select);
@@ -213,18 +218,25 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* block, IfConvertOperati
             GenTree* op1 = tree->gtGetOp1();
 
             // Ensure it won't cause any additional side effects.
-            if ((op1->gtFlags & GTF_OBS_EFFECT) != 0)
-            {
-                return false;
-            }
+            bool hasEffects = (op1->gtFlags & GTF_OBS_EFFECT) != 0;
 
             // Evaluating unconditionally effectively has the same effect as reordering
             // with the condition (for example, the condition could be an explicit bounds
             // check and the operand could read an array element). Disallow this except
             // for some common cases that we know are always side effect free.
-            if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !op1->IsInvariant() && !op1->OperIsLocal())
+            bool isOrderDependent =
+                ((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !op1->IsInvariant() && !op1->OperIsLocal();
+
+            if (hasEffects || isOrderDependent)
             {
-                return false;
+                // A load that is not evaluated unconditionally is fine, but only one arm can be one.
+                if ((m_guardedLoad != nullptr) || (op1->TypeGet() != genActualType(tree)) ||
+                    !IfConvertIsGuardedLoad(op1))
+                {
+                    return false;
+                }
+
+                m_guardedLoad = op1;
             }
 
             found                 = true;
@@ -240,6 +252,76 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* block, IfConvertOperati
     }
 
     return found;
+}
+
+//-----------------------------------------------------------------------------
+// IfConvertIsGuardedLoad
+//
+// Check whether a Then or Else value that cannot be evaluated unconditionally is a
+// load that the SELECT can perform conditionally instead, as the memory operand of
+// an APX CFCMOV. CFCMOV does not access memory when its condition is false, so the
+// load keeps its exception and ordering behavior; only its address is computed
+// unconditionally.
+//
+// Arguments:
+//   value - The Then or Else value
+//
+// Returns:
+//   True if the value is such a load.
+//
+bool OptIfConversionDsc::IfConvertIsGuardedLoad(GenTree* value)
+{
+#ifdef TARGET_AMD64
+    if (JitConfig.EnableApxCfcmov() == 0)
+    {
+        return false;
+    }
+
+    // The load must be contained in the CFCMOV, so it has to be as wide as the SELECT.
+    // GC-typed loads are not supported yet.
+    if (!value->OperIs(GT_IND) || !value->TypeIs(TYP_INT, TYP_LONG))
+    {
+        return false;
+    }
+
+    if ((value->gtFlags & (GTF_ASG | GTF_CALL | GTF_IND_VOLATILE)) != 0)
+    {
+        return false;
+    }
+
+    // Floating-point conditions that need two flag checks are emitted as two
+    // conditional moves, which would access memory twice.
+    if (varTypeIsFloating(m_cond->gtGetOp1()))
+    {
+        return false;
+    }
+
+    // The address is computed unconditionally, so allow only a local plus a small
+    // constant offset. It has no side effects, and lowering folds it into the
+    // CFCMOV's address mode, so a byref the condition would have rejected (for
+    // example past the end of an array) is never materialized in a register.
+    GenTree* addr = value->AsIndir()->Addr();
+    if (addr->OperIs(GT_ADD) && addr->gtGetOp2()->IsCnsIntOrI() && !addr->gtGetOp2()->IsIconHandle())
+    {
+        ssize_t offset = addr->gtGetOp2()->AsIntCon()->IconValue();
+        if ((offset < 0) || m_compiler->fgIsBigOffset((size_t)offset))
+        {
+            return false;
+        }
+
+        addr = addr->gtGetOp1();
+    }
+
+    if (!addr->OperIs(GT_LCL_VAR) || !varTypeIsI(addr))
+    {
+        return false;
+    }
+
+    // Ask last: this records a dependency on APX when it returns true.
+    return m_compiler->canUseApxEvexEncoding();
+#else
+    return false;
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -267,7 +349,7 @@ bool OptIfConversionDsc::IfConvertTryGetElseFromJtrueBlock(GenTreeLclVar* thenSt
         return false;
     }
 
-    assert((thenStore->Data()->gtFlags & GTF_SIDE_EFFECT) == 0);
+    assert(((thenStore->Data()->gtFlags & GTF_SIDE_EFFECT) == 0) || (thenStore->Data() == m_guardedLoad));
     if (m_compiler->gtTreeHasLocalRead(thenStore->Data(), targetLclNum))
     {
         return false;
@@ -277,6 +359,14 @@ bool OptIfConversionDsc::IfConvertTryGetElseFromJtrueBlock(GenTreeLclVar* thenSt
     bool       hasEhSuccs       = m_startBlock->HasPotentialEHSuccs(m_compiler);
     Statement* last             = m_startBlock->lastStmt();
     Statement* stmt             = last;
+
+    // The SELECT replaces the JTRUE, and a guarded load makes it throw when the condition
+    // holds, so using the store as the Else would sink it past a potential exception.
+    if ((thenStore->Data() == m_guardedLoad) && hasEhSuccs)
+    {
+        return false;
+    }
+
     do
     {
         if (stmtSearchBudget-- <= 0)
@@ -606,8 +696,36 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         selectFalseInput = m_thenOperation.node->AsOp()->GetReturnValue();
     }
 
+    if (m_guardedLoad != nullptr)
+    {
+        // Lowering contains the guarded load in the CFCMOV, which moves it past the other input.
+        // The guarded load is ordered, so it cannot move past a memory read.
+        GenTree* otherInput = (m_guardedLoad == selectTrueInput) ? selectFalseInput : selectTrueInput;
+        if ((otherInput->gtFlags & GTF_GLOB_REF) != 0)
+        {
+            JITDUMP("Skipping if-conversion: guarded load [%06d] cannot be contained past [%06d]\n",
+                    m_compiler->dspTreeID(m_guardedLoad), m_compiler->dspTreeID(otherInput));
+            return false;
+        }
+    }
+
+    // CFCMOV performs its load when the condition is true, so the guarded load is the true input.
+    if (m_guardedLoad == selectFalseInput)
+    {
+        std::swap(selectTrueInput, selectFalseInput);
+        m_cond = m_compiler->gtReverseCond(m_cond);
+    }
+
     GenTree* select = m_compiler->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput,
                                                        genActualType(m_thenOperation.node));
+
+    if (m_guardedLoad != nullptr)
+    {
+        assert(m_guardedLoad == selectTrueInput);
+        select->gtFlags |= GTF_SELECT_COND_LOAD;
+        JITDUMP("Guarded load [%06d] stays conditional as a CFCMOV memory operand\n",
+                m_compiler->dspTreeID(m_guardedLoad));
+    }
 
 #ifdef DEBUG
     JITDUMP("\nSELECT created:\n");
