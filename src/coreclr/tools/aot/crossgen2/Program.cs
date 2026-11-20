@@ -81,11 +81,17 @@ namespace ILCompiler
             (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
                 Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
 
-            // The portable call-helpers generator is currently supported only for Wasm.
-            if (_generatePortableCallHelpers is not null
-                && (targetArchitecture != TargetArchitecture.Wasm32 || targetOS is not (TargetOS.Browser or TargetOS.Wasi)))
+            bool supportsPortableCallHelpers = (targetArchitecture, targetOS) is
+                (TargetArchitecture.Wasm32, TargetOS.Browser or TargetOS.Wasi) or
+                (TargetArchitecture.Wasm64, TargetOS.Browser);
+            if (_generatePortableCallHelpers is not null && !supportsPortableCallHelpers)
             {
                 throw new CommandLineException(SR.GeneratePortableCallHelpersRequiresWasmTarget);
+            }
+            if (targetArchitecture == TargetArchitecture.Wasm64 && _generatePortableCallHelpers is null &&
+                (targetOS != TargetOS.Browser || Get(_command.OutputFormat) != ReadyToRunContainerFormat.Wasm))
+            {
+                throw new CommandLineException(SR.Wasm64ReadyToRunUnsupported);
             }
             bool targetAllowsRuntimeCodeGeneration = Get(_command.TargetAllowsRuntimeCodeGeneration)
                 ?? GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
@@ -758,7 +764,7 @@ namespace ILCompiler
         // CoreCLR on WebAssembly is built without FEATURE_MULTITHREADING by default.
         private static bool GetTargetIsSingleThreaded(TargetArchitecture architecture)
         {
-            return architecture is TargetArchitecture.Wasm32;
+            return architecture is TargetArchitecture.Wasm32 or TargetArchitecture.Wasm64;
         }
 
         private void CheckManagedCppInputFiles(IEnumerable<string> inputPaths)

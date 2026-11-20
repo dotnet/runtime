@@ -65,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public uint GetWasmVirtualIP(MethodWithGCInfo lookupMethod, int lookupFrameIndex)
         {
-            bool isWasm = _nodeFactory.Target.Architecture == TargetArchitecture.Wasm32;
+            bool isWasm = _nodeFactory.Target.IsWasm;
 
             if (!isWasm)
             {
@@ -132,7 +132,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             uint runtimeFunctionIndex = 0;
             List<uint> mapping = new List<uint>();
 
-            bool isWasm = _nodeFactory.Target.Architecture == TargetArchitecture.Wasm32;
+            bool isWasm = _nodeFactory.Target.IsWasm;
 
             for (int cold = 0; cold < 2; cold++)
             {
@@ -252,6 +252,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int ClassCode => (int)ObjectNodeOrder.RuntimeFunctionsTableNode;
 
         internal int SentinelSizeAdjustment =>
-            _nodeFactory.Target.Architecture == TargetArchitecture.Wasm32 ? -8 : -4;
+            _nodeFactory.Target.IsWasm ? -8 : -4;
     }
 }

@@ -17,7 +17,7 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --arch (-a)                     Target platform: x86, x64, arm, armv6, armel, arm64, loongarch64, riscv64, s390x, ppc64le or wasm."
+  echo "  --arch (-a)                     Target platform: x86, x64, arm, armv6, armel, arm64, loongarch64, riscv64, s390x, ppc64le, wasm or wasm64."
   echo "                                  [Default: Your machine's architecture.]"
   echo "  --binaryLog (-bl)               Output binary log."
   echo "  --cross                         Optional argument to signify cross compilation."
@@ -222,12 +222,12 @@ while [[ $# -gt 0 ]]; do
       fi
       passedArch="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       case "$passedArch" in
-        x64|x86|arm|armv6|armel|arm64|loongarch64|riscv64|s390x|ppc64le|wasm)
+        x64|x86|arm|armv6|armel|arm64|loongarch64|riscv64|s390x|ppc64le|wasm|wasm64)
           arch=$passedArch
           ;;
         *)
           echo "Unsupported target architecture '$2'."
-          echo "The allowed values are x86, x64, arm, armv6, armel, arm64, loongarch64, riscv64, s390x, ppc64le and wasm."
+          echo "The allowed values are x86, x64, arm, armv6, armel, arm64, loongarch64, riscv64, s390x, ppc64le, wasm and wasm64."
           exit 1
           ;;
       esac
@@ -571,8 +571,10 @@ if [ ${#actInt[@]} -eq 0 ]; then
 fi
 
 if [[ "$os" == "browser" ]]; then
-    # override default arch for Browser, we only support wasm
-    arch=wasm
+    # Keep the existing wasm default unless wasm64 was explicitly requested.
+    if [[ "$arch" != "wasm64" ]]; then
+        arch=wasm
+    fi
     # because on docker instance without swap file, MSBuild nodes need to make some room for LLVM
     # https://github.com/dotnet/runtime/issues/113724
     # this is hexa percentage: 46-> 70%

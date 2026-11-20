@@ -165,7 +165,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_RuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_RuntimePackDir>
       <_RuntimePackDir Condition="'$(_RuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_RuntimePackDir>
-      <_RuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(_RuntimePackDir), 'runtimes', 'browser-wasm', 'native'))</_RuntimePackNativeDir>
+      <_RuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(_RuntimePackDir), 'runtimes', '$(RuntimeIdentifier)', 'native'))</_RuntimePackNativeDir>
       <_LoadCustomIcuData Condition="'$(InvariantGlobalization)' != 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' != 'true' AND '$(BlazorIcuDataFileName)' != ''">true</_LoadCustomIcuData>
       <_LoadCustomIcuData Condition="'$(_LoadCustomIcuData)' == ''">false</_LoadCustomIcuData>
       <_BlazorIcuDataFileName Condition="'$(_LoadCustomIcuData)' == 'true' AND Exists('$(BlazorIcuDataFileName)')">$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
@@ -201,6 +201,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEnableWebcil Condition="'$(_WasmEnableWebcil)' == ''">true</_WasmEnableWebcil>
       <_WasmWebcilVersion Condition="'$(_WasmWebcilVersion)' == '' and '$(UseMonoRuntime)' == 'true'">0</_WasmWebcilVersion>
       <_WasmWebcilVersion Condition="'$(_WasmWebcilVersion)' == ''">1</_WasmWebcilVersion>
+      <_WasmWebcilMemory64 Condition="'$(_WasmWebcilMemory64)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm64'">true</_WasmWebcilMemory64>
+      <_WasmWebcilMemory64 Condition="'$(_WasmWebcilMemory64)' == ''">false</_WasmWebcilMemory64>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
       <!-- With AOT, each AOT image hard-binds to every assembly it references when the image is
@@ -393,7 +395,7 @@ Copyright (c) .NET Foundation. All rights reserved.
          already per-project (Computed); items without are Framework assets needing per-project
          materialization. Pre-filtering avoids MSBuild batching errors on WasmNativeBuildOutput
          metadata that only WasmNativeAsset items define. -->
-    <ItemGroup Condition="'$(_WasmEnableWebcil)' == 'true'">
+    <ItemGroup Condition="'$(_WasmEnableWebcil)' == 'true' and '$(_WasmStageOnlyReadyToRunWebcil)' != 'true'">
       <!-- Build DLL candidates with pre-computed WebcilOutputPath metadata.
            First filter to DLLs only, then split by culture to assign the correct output path.
            The combined list enables MSBuild partial target execution via Outputs transform
@@ -430,6 +432,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <ItemGroup>
     <_WasmWebcilStampProperty Include="_WasmEnableWebcil" />
     <_WasmWebcilStampProperty Include="_WasmWebcilVersion" />
+    <_WasmWebcilStampProperty Include="_WasmWebcilMemory64" />
     <_WasmWebcilStampProperty Include="PublishReadyToRun" />
     <_WasmWebcilStampProperty Include="_WasmBuildPrebuiltR2RDirectory" />
   </ItemGroup>
@@ -468,11 +471,11 @@ Copyright (c) .NET Foundation. All rights reserved.
        rebuilds would loop since skipped outputs retain pre-existing timestamps. -->
   <Target Name="_ConvertBuildDllsToWebcil"
     DependsOnTargets="_ComputeWasmBuildCandidates;_WriteWasmBuildWebcilStamp"
-    Condition="'$(_WasmEnableWebcil)' == 'true'"
+    Condition="'$(_WasmEnableWebcil)' == 'true' and '$(_WasmStageOnlyReadyToRunWebcil)' != 'true'"
     Inputs="@(_WasmDllBuildCandidates);$(IntermediateOutputPath)wasm-webcil-build.stamp;$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
     Outputs="@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')">
 
-    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmBuildPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-build.stamp">
+    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" Memory64="$(_WasmWebcilMemory64)" PrebuiltR2RDirectory="$(_WasmBuildPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-build.stamp">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FilesToTouch" ItemName="_WasmConvertedWebcilOutputs" />
     </ConvertDllsToWebcil>
@@ -499,7 +502,7 @@ Copyright (c) .NET Foundation. All rights reserved.
          metadata (like RelatedAsset) that only culture items define.
          Only webcil-converted items and WasmNativeBuildOutput items go to _WebcilAssetsCandidates
          (Computed SourceType). Framework candidates are classified separately. -->
-    <ItemGroup Condition="'$(_WasmEnableWebcil)' == 'true'">
+    <ItemGroup Condition="'$(_WasmEnableWebcil)' == 'true' and '$(_WasmStageOnlyReadyToRunWebcil)' != 'true'">
       <_WasmWebcilConvertedNonCulture Include="@(_WasmDllBuildCandidatesNonCulture->'%(WebcilOutputPath)')">
         <RelativePath>$([System.IO.Path]::ChangeExtension(%(RelativePath), '.wasm'))</RelativePath>
         <OriginalItemSpec>%(WebcilOutputPath)</OriginalItemSpec>
@@ -525,7 +528,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- When webcil is disabled, DLLs retain their shared paths and also need Framework
          materialization (along with non-DLL items). Only WasmNativeBuildOutput items are
          already per-project (Computed). -->
-    <ItemGroup Condition="'$(_WasmEnableWebcil)' != 'true'">
+    <ItemGroup Condition="'$(_WasmEnableWebcil)' != 'true' or '$(_WasmStageOnlyReadyToRunWebcil)' == 'true'">
       <_WebcilAssetsCandidates Include="@(_WasmNativeBuildOutputCandidates)" />
       <_WasmFrameworkCandidates Include="@(_WasmNonDllNonNativeCandidates)" />
       <_WasmFrameworkCandidates Include="@(_BuildAssetsCandidates)" Condition="'%(Extension)' == '.dll'" />
@@ -1156,7 +1159,9 @@ Copyright (c) .NET Foundation. All rights reserved.
                                     Condition="'$(_WasmPublishPrebuiltR2RDirectory)' != ''" />
       <_WasmPublishWebcilStampInput Include="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)" />
       <_WasmPublishWebcilStampLine Include="_WasmEnableWebcil=$(_WasmEnableWebcil)" />
+      <_WasmPublishWebcilStampLine Include="_WasmStageOnlyReadyToRunWebcil=$(_WasmStageOnlyReadyToRunWebcil)" />
       <_WasmPublishWebcilStampLine Include="_WasmWebcilVersion=$(_WasmWebcilVersion)" />
+      <_WasmPublishWebcilStampLine Include="_WasmWebcilMemory64=$(_WasmWebcilMemory64)" />
       <_WasmPublishWebcilStampLine Include="PublishReadyToRun=$(PublishReadyToRun)" />
       <_WasmPublishWebcilStampLine Include="PublishReadyToRunComposite=$(PublishReadyToRunComposite)" />
       <_WasmPublishWebcilStampLine Include="PublishTrimmed=$(PublishTrimmed)" />
@@ -1172,7 +1177,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <FileWrites Include="$(IntermediateOutputPath)wasm-webcil-publish.stamp" />
     </ItemGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmPublishPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-publish.stamp">
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" StageOnlyReadyToRun="$(_WasmStageOnlyReadyToRunWebcil)" WebcilVersion="$(_WasmWebcilVersion)" Memory64="$(_WasmWebcilMemory64)" PrebuiltR2RDirectory="$(_WasmPublishPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-publish.stamp">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FilesToTouch" ItemName="_WasmConvertedPublishWebcilOutputs" />
@@ -1274,7 +1279,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <Target Name="_AddPublishWasmBootJsonToStaticWebAssets" DependsOnTargets="GeneratePublishWasmBootJson">
+  <Target Name="_AddPublishWasmBootJsonToStaticWebAssets"
+          Condition="'$(WasmBuildingForNestedPublish)' != 'true'"
+          DependsOnTargets="GeneratePublishWasmBootJson">
 
     <ItemGroup>
       <!-- Track boot JSON for clean operations even when GeneratePublishWasmBootJson was skipped -->
@@ -1387,6 +1394,7 @@ Copyright (c) .NET Foundation. All rights reserved.
        This target is incremental: when all inputs (assemblies, publish assets, config files,
        extensions, property stamp) are older than the output, the target is skipped. -->
   <Target Name="GeneratePublishWasmBootJson"
+    Condition="'$(WasmBuildingForNestedPublish)' != 'true'"
     DependsOnTargets="_WriteWasmPublishBootJsonPropertyStamp;_AttachPublishWebcilSizes"
     Inputs="@(IntermediateAssembly);@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish);@(_WasmPublishConfigFile);@(_WasmDotnetJsForPublish);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
     Outputs="$(IntermediateOutputPath)wasm-bootjson-publish.complete.stamp">
@@ -1476,7 +1484,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_RuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_RuntimePackDir>
       <_RuntimePackDir Condition="'$(_RuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_RuntimePackDir>
-      <_RuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(_RuntimePackDir), 'runtimes', 'browser-wasm', 'native'))</_RuntimePackNativeDir>
+      <_RuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(_RuntimePackDir), 'runtimes', '$(RuntimeIdentifier)', 'native'))</_RuntimePackNativeDir>
       <_DotnetTypesSourcePath>$([MSBuild]::NormalizePath($(_RuntimePackNativeDir), 'dotnet.d.ts'))</_DotnetTypesSourcePath>
     </PropertyGroup>
   </Target>

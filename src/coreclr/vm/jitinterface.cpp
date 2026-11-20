@@ -15466,6 +15466,8 @@ uint32_t CEEInfo::getExpectedTargetArchitecture()
     return CORINFO_ARCH_RISCV64;
 #elif defined(TARGET_WASM32)
     return CORINFO_ARCH_WASM32;
+#elif defined(TARGET_WASM64)
+    return CORINFO_ARCH_WASM64;
 #else
     PORTABILITY_ASSERT("NYI: CEEInfo::getExpectedTargetArchitecture");
     return -1;

@@ -64,6 +64,23 @@ extern "C" void DynamicHelper_GenericDictionaryLookup_Method_UseHelper();
 extern "C" PCODE g_pMethodWithSlotAndModule;
 extern "C" PCODE g_pClassWithSlotAndModule;
 
+#ifdef TARGET_WASM64
+// The table64 call_indirect lives here rather than in dynamichelpers.S because the standalone
+// assembler type-checks call_indirect there as a table32 instruction. ReadyToRun callers do not
+// publish their stack pointer to __stack_pointer, so this bridge must stay naked and stackless.
+extern "C" TADDR __attribute__((naked)) CallDictionaryLookupHelper(TADDR stackPointer, TADDR context, GenericHandleArgs* args, PCODE entryPoint)
+{
+    asm ("local.get 0\n"
+         "local.get 1\n"
+         "local.get 2\n"
+         "local.get 3\n"
+         "local.get 3\n"
+         "i64.load 0\n" /* Load the helper from the portable entry point */
+         "call_indirect __indirect_function_table, (i64, i64, i64, i64) -> (i64)\n"
+         "return\n");
+}
+#endif
+
 PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator, CORINFO_RUNTIME_LOOKUP * pLookup, DWORD dictionaryIndexAndSlot, Module * pModule)
 {
     STANDARD_VM_CONTRACT;
@@ -72,7 +89,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
     PCODE helperAddress = GetDictionaryLookupHelper(pLookup->helper);
 
-    WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
+    UINT32 slotOffset = (dictionaryIndexAndSlot & 0xFFFF) * sizeof(DictionaryEntry);
 
     // It's available only via the run-time helper function
     PCODE helper = (PCODE)NULL;

@@ -182,7 +182,7 @@
   <!-- Set Test Wrapper running host OS -->
   <PropertyGroup>
     <TestWrapperTargetsWindows>false</TestWrapperTargetsWindows>
-    <TestWrapperTargetsWindows Condition=" ('$(TargetsWindows)' != '' And '$(TargetsWindows)' ) OR ('$(TargetOS)' == 'android' And '$(TargetArchitecture)' == 'arm64' ) OR ($(WindowsHost) And '$(TargetArchitecture)' == 'wasm')">true</TestWrapperTargetsWindows>
+    <TestWrapperTargetsWindows Condition=" ('$(TargetsWindows)' != '' And '$(TargetsWindows)' ) OR ('$(TargetOS)' == 'android' And '$(TargetArchitecture)' == 'arm64' ) OR ($(WindowsHost) And ('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'))">true</TestWrapperTargetsWindows>
     <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' != 'true' ">sh</TestScriptExtension>
     <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' == 'true' ">cmd</TestScriptExtension>
   </PropertyGroup>
@@ -196,6 +196,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <CLRTestMSBuildArgs>/p:MSBuildEnableWorkloadResolver=false /p:Configuration=$(Configuration)</CLRTestMSBuildArgs>
+    <RuntimeIdentifierGraphPath Condition="'$(TargetArchitecture)' == 'wasm64'">$(RepoRoot)src/libraries/Microsoft.NETCore.Platforms/src/PortableRuntimeIdentifierGraph.json</RuntimeIdentifierGraphPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">

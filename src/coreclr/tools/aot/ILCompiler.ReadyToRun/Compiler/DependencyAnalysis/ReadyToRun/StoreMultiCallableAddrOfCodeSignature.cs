@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // On wasm the target code is a function-table index (WASM_TABLE_INDEX_REL_I32); elsewhere
             // an imageBase RVA. Keep this in sync with ResumptionStubEntryPointSignature.
-            RelocType codeRelocType = factory.Target.Architecture == TargetArchitecture.Wasm32
+            RelocType codeRelocType = factory.Target.IsWasm
                 ? RelocType.WASM_TABLE_INDEX_REL_I32
                 : RelocType.IMAGE_REL_BASED_ADDR32NB;
             builder.EmitReloc(_target, codeRelocType);

@@ -26,6 +26,8 @@ public class ConvertDllsToWebcil : Task
     [Required]
     public bool IsEnabled { get; set; }
 
+    public bool StageOnlyReadyToRun { get; set; }
+
     public string? ConversionStamp { get; set; }
 
     /// <summary>
@@ -36,6 +38,11 @@ public class ConvertDllsToWebcil : Task
     public string? PrebuiltR2RDirectory { get; set; }
 
     public int WebcilVersion { get; set; }
+
+    /// <summary>
+    /// Emits wrappers that import a memory64 (i64) memory, for browser-wasm64.
+    /// </summary>
+    public bool Memory64 { get; set; }
 
     [Output]
     public ITaskItem[] WebcilCandidates { get; set; }
@@ -120,8 +127,10 @@ public class ConvertDllsToWebcil : Task
 
             try
             {
-                TaskItem webcilItem = ConvertDll(tmpDir, candidate);
-                webcilCandidates.Add(webcilItem);
+                TaskItem? webcilItem = ConvertDll(tmpDir, candidate);
+                webcilCandidates.Add(webcilItem ?? candidate);
+                if (webcilItem is null)
+                    passThroughCandidates.Add(candidate);
             }
             catch (Exception ex)
             {
@@ -137,7 +146,7 @@ public class ConvertDllsToWebcil : Task
         return true;
     }
 
-    private TaskItem ConvertDll(string tmpDir, ITaskItem candidate)
+    private TaskItem? ConvertDll(string tmpDir, ITaskItem candidate)
     {
         var dllFilePath = candidate.ItemSpec;
         var webcilFileName = Path.GetFileNameWithoutExtension(dllFilePath) + Utils.WebcilInWasmExtension;
@@ -184,6 +193,9 @@ public class ConvertDllsToWebcil : Task
                 }
             }
         }
+        if (StageOnlyReadyToRun && string.IsNullOrEmpty(r2rWebcilPath))
+            return null;
+
         bool outputHasExpectedFlavor = OutputHasExpectedWebcilFlavor(finalWebcil, useR2R: !string.IsNullOrEmpty(r2rWebcilPath));
         if (!string.IsNullOrEmpty(r2rWebcilPath))
         {
@@ -208,7 +220,7 @@ public class ConvertDllsToWebcil : Task
         {
             var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
             var logAdapter = new Microsoft.WebAssembly.Build.Tasks.LogAdapter(Log);
-            var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter, webcilVersion: WebcilVersion);
+            var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter, webcilVersion: WebcilVersion, memory64: Memory64);
             webcilWriter.ConvertToWebcil();
 
             if (!Directory.Exists(candidatePath))

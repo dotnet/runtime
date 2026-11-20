@@ -166,6 +166,13 @@
         "any": "Microsoft.NETCore.App.Runtime.browser-wasm"
       }
     },
+    "Microsoft.NETCore.App.Runtime.${NetVersion}.browser-wasm64": {
+      "kind": "framework",
+      "version": "${PackageVersion}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.browser-wasm64"
+      }
+    },
     "Microsoft.NETCore.App.Runtime.${NetVersion}.wasi-wasm" : {
       "kind": "framework",
       "version": "${PackageVersion}",

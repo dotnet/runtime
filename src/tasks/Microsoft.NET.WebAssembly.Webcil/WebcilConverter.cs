@@ -45,22 +45,24 @@ public class WebcilConverter
     private readonly string _inputPath;
     private readonly string _outputPath;
     private readonly int _webcilVersion;
+    private readonly bool _memory64;
 
     private string InputPath => _inputPath;
 
     public bool WrapInWebAssembly { get; set; } = true;
 
-    private WebcilConverter(string inputPath, string outputPath, int webcilVersion)
+    private WebcilConverter(string inputPath, string outputPath, int webcilVersion, bool memory64)
     {
         if (webcilVersion != 0 && webcilVersion != 1)
             throw new ArgumentOutOfRangeException(nameof(webcilVersion), webcilVersion, "Only webcil version 0 and 1 are supported");
         _inputPath = inputPath;
         _outputPath = outputPath;
         _webcilVersion = webcilVersion;
+        _memory64 = memory64;
     }
 
-    public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath, int webcilVersion = 0)
-        => new WebcilConverter(inputPath, outputPath, webcilVersion);
+    public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath, int webcilVersion = 0, bool memory64 = false)
+        => new WebcilConverter(inputPath, outputPath, webcilVersion, memory64);
 
     public void ConvertToWebcil()
     {
@@ -85,7 +87,7 @@ public class WebcilConverter
             using var memoryStream = new MemoryStream(checked((int)inputStream.Length));
             WriteConversionTo(memoryStream, inputStream, peInfo, wcInfo);
             memoryStream.Flush();
-            var wrapper = new WebcilWasmWrapper(memoryStream, selfInstalling: _webcilVersion >= 1);
+            var wrapper = new WebcilWasmWrapper(memoryStream, selfInstalling: _webcilVersion >= 1, memory64: _memory64);
             memoryStream.Seek(0, SeekOrigin.Begin);
             wrapper.WriteWasmWrappedWebcil(outputStream);
         }

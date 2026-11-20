@@ -52,7 +52,7 @@
       <RunTimeDependencyCopyLocal Include="@(_CoreRootArtifactSource)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' and '$(TestBuildMode)' != 'nativeaot'">
+    <ItemGroup Condition="('$(TargetArchitecture)' == 'wasm' or '$(TargetArchitecture)' == 'wasm64') and '$(TestBuildMode)' != 'nativeaot'">
         <RunTimeDependencyCopyLocal
           Include="@(RuntimeFiles)"
           TargetDir="runtimepack/native/"/>

@@ -5,7 +5,7 @@
     <!-- TODO: Re-enable when WebAssembly diagnostics expose the required interpreter or JIT debug maps;
          the test also starts a process, which WebAssembly cannot do.
          Tracked by https://github.com/dotnet/runtime/issues/131321. -->
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</CLRTestTargetUnsupported>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>

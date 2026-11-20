@@ -28,7 +28,7 @@ internal static class TestRunner
     private static readonly Regex s_coreDumpRegex = new("^core$", RegexOptions.CultureInvariant);
     private static readonly Regex s_coreDumpWithPidRegex = new(@"^core\.[0-9]+", RegexOptions.CultureInvariant);
     private static readonly Regex s_issueUrlRegex = new(@"^https://github\.com/([^/]+/[^/]+)/issues/(\d+)", RegexOptions.CultureInvariant);
-    private static readonly string[] s_validArchitectures = ["x64", "x86", "arm", "arm64", "loongarch64", "riscv64", "wasm"];
+    private static readonly string[] s_validArchitectures = ["x64", "x86", "arm", "arm64", "loongarch64", "riscv64", "wasm", "wasm64"];
     private static readonly string[] s_validBuildTypes = ["Debug", "Checked", "Release"];
     private static readonly string[] s_validHostOperatingSystems = ["windows", "osx", "linux", "illumos", "solaris", "haiku", "freebsd", "browser", "android", "wasi"];
     private static readonly string[] s_validParallelValues = ["none", "collections", "assemblies", "all"];

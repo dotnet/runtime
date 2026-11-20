@@ -21,9 +21,30 @@ namespace System.Runtime.InteropServices.JavaScript
         internal JSMarshalerArgumentImpl slot;
 
         // keep in sync with JSMarshalerArgumentOffsets in marshal.ts
+#if TARGET_WASM64
+        [StructLayout(LayoutKind.Explicit, Pack = 32, Size = 56)]
+#else
         [StructLayout(LayoutKind.Explicit, Pack = 32, Size = 32)]
+#endif
         internal struct JSMarshalerArgumentImpl
         {
+#if TARGET_WASM64
+            private const int HandleOffset = 8;
+            private const int LengthOffset = 16;
+            private const int TypeOffset = 20;
+            private const int ContextOffset = 24;
+            private const int ReceiverShouldFreeOffset = 32;
+            private const int CallerNativeTIDOffset = 40;
+            private const int SyncDoneSemaphoreOffset = 48;
+#else
+            private const int HandleOffset = 4;
+            private const int LengthOffset = 8;
+            private const int TypeOffset = 12;
+            private const int ContextOffset = 16;
+            private const int ReceiverShouldFreeOffset = 20;
+            private const int CallerNativeTIDOffset = 24;
+            private const int SyncDoneSemaphoreOffset = 28;
+#endif
             [FieldOffset(0)]
             internal bool BooleanValue;  // note this is 1 byte
             [FieldOffset(0)]
@@ -43,32 +64,32 @@ namespace System.Runtime.InteropServices.JavaScript
             [FieldOffset(0)]
             internal IntPtr IntPtrValue;
 
-            [FieldOffset(4)]
+            [FieldOffset(HandleOffset)]
             internal IntPtr JSHandle;
-            [FieldOffset(4)]
+            [FieldOffset(HandleOffset)]
             internal IntPtr GCHandle;
 
-            [FieldOffset(8)]
+            [FieldOffset(LengthOffset)]
             internal int Length;
 
             /// <summary>
             /// Discriminators
             /// </summary>
-            [FieldOffset(12)]
+            [FieldOffset(TypeOffset)]
             internal MarshalerType Type;
-            [FieldOffset(13)]
+            [FieldOffset(TypeOffset + 1)]
             internal MarshalerType ElementType;
 
-            [FieldOffset(16)]
+            [FieldOffset(ContextOffset)]
             internal IntPtr ContextHandle;
 
-            [FieldOffset(20)]
+            [FieldOffset(ReceiverShouldFreeOffset)]
             internal bool ReceiverShouldFree; // note this is 1 byte
 
-            [FieldOffset(24)]
+            [FieldOffset(CallerNativeTIDOffset)]
             internal IntPtr CallerNativeTID;
 
-            [FieldOffset(28)]
+            [FieldOffset(SyncDoneSemaphoreOffset)]
             internal IntPtr SyncDoneSemaphorePtr;
         }
 

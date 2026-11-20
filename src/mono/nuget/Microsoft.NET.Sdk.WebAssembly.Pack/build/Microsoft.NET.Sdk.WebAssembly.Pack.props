@@ -13,7 +13,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <PropertyGroup>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">browser-wasm</RuntimeIdentifier>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'browser-wasm64'">
     <_WebAssemblyPropsFile>$(MSBuildThisFileDirectory)\Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
   </PropertyGroup>
 </Project>

@@ -11370,7 +11370,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                     op1->ChangeOper(GT_MUL);
 
                     add->AsIntCon()->SetIconValue(imul);
-                    fgValueNumberTreeConst(add);
+                    fgUpdateConstTreeValueNumber(add);
                 }
             }
 
@@ -14623,8 +14623,8 @@ GenTree* Compiler::fgInitThisClass()
             {
                 GenTree* methHndTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
                 methHndTree->gtFlags |= GTF_VAR_CONTEXT;
-                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, HelperInitClassRetType, gtNewIconNode(0),
-                                           methHndTree);
+                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, HelperInitClassRetType,
+                                           gtNewIconNode(0, TYP_I_IMPL), methHndTree);
             }
 
             default:

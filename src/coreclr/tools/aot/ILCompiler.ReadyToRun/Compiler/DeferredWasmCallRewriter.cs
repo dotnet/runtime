@@ -35,7 +35,7 @@ namespace ILCompiler;
 // rebase surviving relocations, update frame ranges and body-size prefixes,
 // and map raw debug offsets before their final encoding.
 //
-// scratchLocals assigns one appended i32 PEP temporary per body, including
+// scratchLocals assigns one appended pointer-sized PEP temporary per body, including
 // funclets. activationImports preserves the first import-time activation
 // token for each target, which need not match a surviving call site's token.
 // _fixups and _fixupsInitialized lazily seed and reuse a per-method set for
@@ -137,7 +137,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
             if (relocation.Target is DeferredWasmCallNode call)
             {
                 Debug.Assert(relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB);
-                AssertDeferredCall(original.Data, relocation.Offset);
+                AssertDeferredCall(original.Data, relocation.Offset, compilation.NodeFactory.Target.PointerSize == 8);
                 bool direct = compilation.DeferredWasmCalls.CanUseDirectCall(call.Method, out DeferredWasmMethodFinalizationInfo info);
                 Debug.Assert(direct);
                 SelectCall(method, call, useDirectCall: true, info.IsEager, activationImports);
@@ -155,6 +155,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports)
     {
         NodeFactory factory = compilation.NodeFactory;
+        bool is64Bit = factory.Target.PointerSize == 8;
         Relocation[] originalRelocations = original.Relocs ?? [];
         FrameInfo[] frames = method.FrameInfos;
         var edits = new List<Edit>();
@@ -165,7 +166,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
             if (relocation.Target is DeferredWasmCallNode call)
             {
                 Debug.Assert(relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB);
-                AssertDeferredCall(original.Data, relocation.Offset);
+                AssertDeferredCall(original.Data, relocation.Offset, is64Bit);
                 bool direct = compilation.DeferredWasmCalls.CanUseDirectCall(call.Method, out DeferredWasmMethodFinalizationInfo info);
                 SelectCall(method, call, direct, info.IsEager, activationImports);
                 if (direct)
@@ -182,7 +183,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
                 Debug.Assert(instructionOffset > frames[frameIndex].StartOffset);
                 if (!scratchLocals.TryGetValue(frameIndex, out int scratchLocal))
                 {
-                    scratchLocal = AddScratchLocal(method, original.Data, frameIndex, edits);
+                    scratchLocal = AddScratchLocal(method, original.Data, frameIndex, edits, is64Bit);
                     scratchLocals.Add(frameIndex, scratchLocal);
                 }
 
@@ -190,7 +191,8 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
                 bool tailCall = original.Data[relocation.Offset - 1] == (byte)WasmExprKind.ReturnCall;
                 edits.Add(EncodeEdit(instructionOffset, DeferredCallLength,
                     new WasmLEBConstantReloc(WasmExprKind.GlobalGet, imageBase, RelocType.WASM_GLOBAL_INDEX_LEB),
-                    I32.LoadWithRVAOffset(call.Fallback), Local.Tee(scratchLocal), Local.Get(scratchLocal), I32.Load(0),
+                    is64Bit ? I64.LoadWithRVAOffset(call.Fallback) : I32.LoadWithRVAOffset(call.Fallback),
+                    Local.Tee(scratchLocal), Local.Get(scratchLocal), is64Bit ? I64.Load(0) : I32.Load(0),
                     new WasmIndirectCallInstruction(
                         tailCall ? WasmExprKind.ReturnCallIndirect : WasmExprKind.CallIndirect,
                         call.Signature, 0)));
@@ -294,11 +296,12 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         }
     }
 
-    // Append a non-GC i32 local so fallback calls can reuse the loaded PEP without
+    // Append a non-GC pointer-sized local so fallback calls can reuse the loaded PEP without
     // renumbering JIT locals. Return its index after accounting for the main
     // method's or funclet's parameters.
-    private static int AddScratchLocal(MethodWithGCInfo method, byte[] code, int frameIndex, List<Edit> edits)
+    private static int AddScratchLocal(MethodWithGCInfo method, byte[] code, int frameIndex, List<Edit> edits, bool is64Bit)
     {
+        byte pointerType = (byte)(is64Bit ? WasmValueType.I64 : WasmValueType.I32);
         int start = method.FrameInfos[frameIndex].StartOffset + BodySizePrefixLength;
         int position = start;
         int groupCount = ReadUnsigned(code, ref position);
@@ -315,7 +318,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
             lastGroupType = code[position++];
         }
 
-        bool extendLastGroup = groupCount != 0 && lastGroupType == (byte)WasmValueType.I32;
+        bool extendLastGroup = groupCount != 0 && lastGroupType == pointerType;
         int newGroupCount = groupCount + (extendLastGroup ? 0 : 1);
         int prefixSize = checked((int)DwarfHelper.SizeOfULEB128((ulong)newGroupCount));
         int copiedLength = (extendLastGroup ? lastGroupStart : position) - groupsStart;
@@ -325,7 +328,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         DwarfHelper.WriteULEB128(declarations, (ulong)newGroupCount);
         code.AsSpan(groupsStart, copiedLength).CopyTo(declarations.AsSpan(prefixSize));
         DwarfHelper.WriteULEB128(declarations.AsSpan(prefixSize + copiedLength), (ulong)appendedCount);
-        declarations[^1] = (byte)WasmValueType.I32;
+        declarations[^1] = pointerType;
         edits.Add(new Edit(start, position - start, declarations, []));
 
         int parameterCount = frameIndex == 0
@@ -345,10 +348,10 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
     // Check the instruction-boundary assumptions needed to replace the identity
     // constant and call as one self-contained bundle.
     [Conditional("DEBUG")]
-    private static void AssertDeferredCall(byte[] code, int callOffset)
+    private static void AssertDeferredCall(byte[] code, int callOffset, bool is64Bit)
     {
         Debug.Assert(callOffset >= RelocInstructionLength + 1);
-        Debug.Assert(code[callOffset - RelocInstructionLength - 1] == (byte)WasmExprKind.I32Const);
+        Debug.Assert(code[callOffset - RelocInstructionLength - 1] == (byte)(is64Bit ? WasmExprKind.I64Const : WasmExprKind.I32Const));
         Debug.Assert(code[callOffset - 1] is (byte)WasmExprKind.Call or (byte)WasmExprKind.ReturnCall);
     }
 

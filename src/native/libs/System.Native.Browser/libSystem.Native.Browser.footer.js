@@ -41,6 +41,8 @@ function libDotnetFactory() {
         },
         $DOTNET__deps: commonDeps,
         $DOTNET__postset: "DOTNET.selfInitialize()",
+        SystemJS_GetLocaleInfo__sig: "ppipipip",
+        SystemJS_RandomBytes__sig: "ipi",
     };
 
     for (const exportName of Reflect.ownKeys(exports)) {

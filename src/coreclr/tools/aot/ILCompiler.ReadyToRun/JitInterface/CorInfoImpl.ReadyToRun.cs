@@ -3113,6 +3113,18 @@ namespace Internal.JitInterface
 
             pResultLookup.runtimeLookup.helperEntryPoint = CreateConstLookupToSymbol(helper);
 
+            if (_compilation.NodeFactory.Target.Architecture == TargetArchitecture.Wasm64)
+            {
+                // Both dictionary slow paths use the same signature. The VM calls these
+                // CoreLib methods directly, so no JIT call site registers the thunk.
+                MetadataType helpers = _compilation.TypeSystemContext.SystemModule.GetType(
+                    "System.Runtime.CompilerServices"u8, "GenericsHelpers"u8);
+                MethodDesc lookup = helpers.GetMethod("ClassWithSlotAndModule"u8, null);
+                WasmSignature signature = WasmLowering.GetSignature(lookup.Signature, WasmLowering.LoweringFlags.None);
+                AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(signature),
+                    "Dictionary lookup helper with interpreted CoreLib");
+            }
+
             // For R2R compilations, we don't generate the dictionary lookup signatures (dictionary lookups are done in a
             // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
         }
@@ -4159,12 +4171,13 @@ namespace Internal.JitInterface
                     // The adapter accepts the managed instance shape
                     // (sp, this, retbuf, ..., pep). Require an indirect aggregate return,
                     // no async-continuation argument, and pointer-typed this/retbuf positions.
+                    WasmValueType pointerType = _compilation.NodeFactory.Target.PointerSize == 8 ? WasmValueType.I64 : WasmValueType.I32;
                     if (!sig.IsStatic &&
                         wasmSig.SignatureString[0] == 'S' &&
                         !wasmSig.SignatureString.Contains('a') &&
                         parameters.Length >= 4 &&
-                        parameters[1] == WasmValueType.I32 &&
-                        parameters[2] == WasmValueType.I32)
+                        parameters[1] == pointerType &&
+                        parameters[2] == pointerType)
                     {
                         AddWasmClosedStaticRetBufThunkDependencies(wasmSig);
                     }

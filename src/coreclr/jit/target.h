@@ -58,6 +58,8 @@ inline bool compFeatureArgSplit()
 #define TARGET_READABLE_NAME "RISCV64"
 #elif defined(TARGET_WASM32)
 #define TARGET_READABLE_NAME "WASM32"
+#elif defined(TARGET_WASM64)
+#define TARGET_READABLE_NAME "WASM64"
 #else
 #error Unsupported or unset target architecture
 #endif

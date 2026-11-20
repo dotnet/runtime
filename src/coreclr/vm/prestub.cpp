@@ -2122,7 +2122,7 @@ FORCEINLINE static void* ExecuteInterpretedMethodBody(
     // shared `asyncContinuation` global (see wasmasynccontinuation.h) that the
     // R2R caller reads after the call. The transition-block register area is
     // unused on wasm.
-    RuntimeAsync_StoreAsyncContinuation((uint32_t)(uintptr_t)*frames.interpreterFrame.GetContinuationPtr());
+    RuntimeAsync_StoreAsyncContinuation(reinterpret_cast<uintptr_t>(*frames.interpreterFrame.GetContinuationPtr()));
 #else
     #error Unsupported architecture
 #endif
@@ -2314,7 +2314,7 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
 #ifdef TARGET_WASM
                 if (pContinuationRet != nullptr)
                 {
-                    RuntimeAsync_StoreAsyncContinuation((uint32_t)(uintptr_t)continuationRet);
+                    RuntimeAsync_StoreAsyncContinuation(reinterpret_cast<uintptr_t>(continuationRet));
                 }
 #endif // TARGET_WASM
             }

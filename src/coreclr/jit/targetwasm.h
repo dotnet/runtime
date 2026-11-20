@@ -10,7 +10,7 @@
 #ifdef TARGET_WASM32
 #define CORINFO_ARCH_TARGET      CORINFO_ARCH_WASM32
 #else
-#error NYI: WASM64
+#define CORINFO_ARCH_TARGET      CORINFO_ARCH_WASM64
 #endif
 
 #define WASM_THREAD_SUPPORT      0       // Codegen does not support WasmThreads yet

@@ -277,7 +277,7 @@ REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
 COPY /y %CORE_ROOT%\CoreShim.dll .
       ]]></BatchCopyCoreShimLocalCmds>
-      <CLRTestBatchPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
+      <CLRTestBatchPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and ('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true')"><![CDATA[
 $(CLRTestBatchPreCommands)
 $(BatchDefaultRunWithNodeJS)
 if defined RunCrossGen2 (

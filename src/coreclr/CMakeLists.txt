@@ -173,9 +173,10 @@ if ((NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI) OR CLR_CROSS_CO
   add_subdirectory(tools/aot/jitinterface)
 endif ()
 
-if(NOT CLR_CROSS_COMPONENTS_BUILD)
+# NativeAOT does not support wasm64.
+if(NOT CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_TARGET_ARCH STREQUAL wasm64)
   add_subdirectory(nativeaot)
-endif(NOT CLR_CROSS_COMPONENTS_BUILD)
+endif()
 
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake

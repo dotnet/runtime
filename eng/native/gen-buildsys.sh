@@ -94,9 +94,12 @@ if [[ "$scan_build" == "ON" && -n "$SCAN_BUILD_COMMAND" ]]; then
 fi
 
 cmake_extra_defines_wasm=()
-if [[ "$host_arch" == "wasm" ]]; then
+if [[ "$host_arch" == "wasm" || "$host_arch" == "wasm64" ]]; then
     . "$scriptroot"/../wasm/wasm-tool-cache.sh
     if [[ "$target_os" == "browser" ]]; then
+        if [[ "$host_arch" == "wasm64" ]]; then
+            cmake_extra_defines_wasm+=("-DCLR_CMAKE_TARGET_ARCH=wasm64")
+        fi
         if [[ -z "$EMSDK_PATH" ]]; then
             if EMSDK_PATH="$(wasm_tool_cache_dir emscripten "$reporoot"/src/mono/browser/emscripten-version.txt "$reporoot")"; then
                 export EMSDK_PATH

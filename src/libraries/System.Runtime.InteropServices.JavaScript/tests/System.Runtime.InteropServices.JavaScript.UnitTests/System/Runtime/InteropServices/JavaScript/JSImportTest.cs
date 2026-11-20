@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void StructSize()
         {
-            Assert.Equal(32, sizeof(JSMarshalerArgument));
+            Assert.Equal(IntPtr.Size == 8 ? 56 : 32, sizeof(JSMarshalerArgument));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNodeJS))] // not V8 shell
@@ -830,6 +830,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             var actualJsType = JavaScriptTestHelper.getType1();
             Assert.Equal("number", actualJsType);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        public void JsImportIntPtrBeyondNumberPrecision()
+        {
+            JSException ex = Assert.Throws<JSException>(() => JavaScriptTestHelper.store1_IntPtr(IntPtr.MaxValue));
+            Assert.Contains("cannot be represented exactly as a JavaScript number", ex.Message);
         }
 
         #endregion VoidPtr

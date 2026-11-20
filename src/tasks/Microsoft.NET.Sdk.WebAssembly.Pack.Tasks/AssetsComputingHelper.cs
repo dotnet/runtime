@@ -21,6 +21,7 @@ public class AssetsComputingHelper
     private static readonly string[] coreclrPackageIds = new[]
     {
         "Microsoft.NETCore.App.Runtime.browser-wasm",
+        "Microsoft.NETCore.App.Runtime.browser-wasm64",
         "Microsoft.NETCore.App.Runtime.multithread.browser-wasm",
     };
 
