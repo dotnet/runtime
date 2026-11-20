@@ -65,13 +65,19 @@ extern "C" PCODE g_pMethodWithSlotAndModule;
 extern "C" PCODE g_pClassWithSlotAndModule;
 
 #ifdef TARGET_WASM64
-// Have LLVM codegen emit the table64 indirect call; its assembler type-checks
-// handwritten call_indirect as a table32 instruction.
-extern "C" TADDR CallDictionaryLookupHelper(TADDR stackPointer, TADDR context, GenericHandleArgs* args, PCODE entryPoint)
+// The table64 call_indirect lives here rather than in dynamichelpers.S because the standalone
+// assembler type-checks call_indirect there as a table32 instruction. ReadyToRun callers do not
+// publish their stack pointer to __stack_pointer, so this bridge must stay naked and stackless.
+extern "C" TADDR __attribute__((naked)) CallDictionaryLookupHelper(TADDR stackPointer, TADDR context, GenericHandleArgs* args, PCODE entryPoint)
 {
-    using LookupHelper = TADDR (*)(TADDR, TADDR, GenericHandleArgs*, PCODE);
-    PCODE target = *reinterpret_cast<PCODE*>(entryPoint);
-    return reinterpret_cast<LookupHelper>(target)(stackPointer, context, args, entryPoint);
+    asm ("local.get 0\n"
+         "local.get 1\n"
+         "local.get 2\n"
+         "local.get 3\n"
+         "local.get 3\n"
+         "i64.load 0\n" /* Load the helper from the portable entry point */
+         "call_indirect __indirect_function_table, (i64, i64, i64, i64) -> (i64)\n"
+         "return\n");
 }
 #endif
 
