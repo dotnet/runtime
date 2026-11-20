@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
     {
         private static readonly ParameterExpression ScopeParameter = Expression.Parameter(typeof(ServiceProviderEngineScope));
 
-        private static readonly ParameterExpression ResolvedServices = Expression.Variable(typeof(IDictionary<ServiceCacheKey, object>), ScopeParameter.Name + "resolvedServices");
+        private static readonly ParameterExpression ResolvedServices = Expression.Variable(typeof(Dictionary<ServiceCacheKey, object>), ScopeParameter.Name + "resolvedServices");
         private static readonly ParameterExpression Sync = Expression.Variable(typeof(object), ScopeParameter.Name + "sync");
         private static readonly BinaryExpression ResolvedServicesVariableAssignment =
             Expression.Assign(ResolvedServices,
@@ -243,8 +243,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 captureDisposible);
 
             MethodCallExpression addValueExpression = Expression.Call(
-                resolvedServices,
-                ServiceLookupHelpers.AddMethodInfo,
+                ScopeParameter,
+                ServiceLookupHelpers.AddResolvedServiceMethodInfo,
                 keyExpression,
                 resolvedVariable);
 

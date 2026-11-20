@@ -161,7 +161,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     AcquiredLocks = context.AcquiredLocks | lockType
                 });
                 serviceProviderEngine.CaptureDisposable(resolved);
-                resolvedServices.Add(callSite.Cache.Key, resolved);
+                serviceProviderEngine.AddResolvedService(callSite.Cache.Key, resolved);
                 return resolved;
             }
             finally

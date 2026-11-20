@@ -30,6 +30,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private readonly ConcurrentDictionary<ServiceIdentifier, ServiceAccessor> _serviceAccessors;
 
+        // Number of services resolved by the most recently disposed scope (capped), used to presize
+        // ResolvedServices of new scopes. Racy reads and writes are fine since it's only a hint.
+        internal int ScopeResolvedServicesCapacityHint;
+
         internal CallSiteFactory CallSiteFactory { get; }
 
         internal ServiceProviderEngineScope Root { get; }

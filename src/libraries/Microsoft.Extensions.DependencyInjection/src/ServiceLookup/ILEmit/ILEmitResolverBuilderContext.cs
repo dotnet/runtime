@@ -13,5 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public ILGenerator Generator { get; }
         public List<object?>? Constants { get; set; }
         public List<Func<IServiceProvider, object>>? Factories { get; set; }
+        // True while emitting code that runs under the scope lock of the method being generated.
+        public bool InScopeLock { get; set; }
     }
 }

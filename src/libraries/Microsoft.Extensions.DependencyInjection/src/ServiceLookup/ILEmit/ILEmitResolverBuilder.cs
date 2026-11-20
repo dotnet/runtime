@@ -32,6 +32,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private static readonly FieldInfo FactoriesField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Factories))!;
         private static readonly FieldInfo ConstantsField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Constants))!;
+        private static readonly FieldInfo ScopeLockHeldField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.ScopeLockHeld))!;
         private static readonly MethodInfo GetTypeFromHandleMethod = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle))!;
 
         private static readonly ConstructorInfo CacheKeyCtor = typeof(ServiceCacheKey).GetConstructors()[0];
@@ -40,6 +41,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             public object?[]? Constants;
             public Func<IServiceProvider, object>[]? Factories;
+            // True for the context passed by resolvers that already hold the scope lock.
+            public bool ScopeLockHeld;
         }
 
         private struct GeneratedMethod
@@ -47,6 +50,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             public Func<ServiceProviderEngineScope, object?> Lambda;
 
             public ILEmitResolverBuilderRuntimeContext Context;
+            // Same as Context but with ScopeLockHeld set. Only created for scope-cached call sites.
+            public ILEmitResolverBuilderRuntimeContext? ScopeLockHeldContext;
             public DynamicMethod DynamicMethod;
         }
 
@@ -123,6 +128,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 Lambda = (Func<ServiceProviderEngineScope, object?>)dynamicMethod.CreateDelegate(typeof(Func<ServiceProviderEngineScope, object?>), runtimeContext),
                 Context = runtimeContext,
+                ScopeLockHeldContext = callSite.Cache.Location == CallSiteResultCacheLocation.Scope ?
+                    new ILEmitResolverBuilderRuntimeContext
+                    {
+                        Constants = runtimeContext.Constants,
+                        Factories = runtimeContext.Factories,
+                        ScopeLockHeld = true
+                    } :
+                    null,
                 DynamicMethod = dynamicMethod
             };
         }
@@ -181,7 +194,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             argument.Generator.Emit(OpCodes.Ldarg_1);
             argument.Generator.Emit(OpCodes.Call, generatedMethod.Lambda.GetType().GetMethod("Invoke")!);
 #else
-            AddConstant(argument, generatedMethod.Context);
+            // When called under the scope lock (from another scoped resolver), let the callee skip taking it again.
+            // The callee gets the same scope (ldarg.1), so the lock held by the caller is the one it would take.
+            Debug.Assert(generatedMethod.ScopeLockHeldContext is not null);
+            AddConstant(argument, argument.InScopeLock ? generatedMethod.ScopeLockHeldContext : generatedMethod.Context);
             // ProviderScope
             argument.Generator.Emit(OpCodes.Ldarg_1);
             argument.Generator.Emit(OpCodes.Call, generatedMethod.DynamicMethod);
@@ -275,7 +291,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             var id = key.ServiceIdentifier;
 
             // new ServiceCacheKey(key.ServiceKey, key.type, key.slot)
-            AddConstant(argument, id.ServiceKey);
+            if (id.ServiceKey is null)
+            {
+                argument.Generator.Emit(OpCodes.Ldnull);
+            }
+            else
+            {
+                AddConstant(argument, id.ServiceKey);
+            }
             argument.Generator.Emit(OpCodes.Ldtoken, id.ServiceType);
             argument.Generator.Emit(OpCodes.Call, GetTypeFromHandleMethod);
             argument.Generator.Emit(OpCodes.Ldc_I4, key.Slot);
@@ -302,12 +325,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // {
             //    var resolvedServices = scope.ResolvedServices;
             //    sync = scope.Sync;
-            //    Monitor.Enter(sync, ref lockTaken);
+            //    if (!context.ScopeLockHeld)
+            //    {
+            //       Monitor.Enter(sync, ref lockTaken);
+            //    }
             //    if (!resolvedServices.TryGetValue(cacheKey, out result)
             //    {
             //       result = [createvalue];
             //       CaptureDisposable(result);
-            //       resolvedServices.Add(cacheKey, result);
+            //       scope.AddResolvedService(cacheKey, result);
             //    }
             // }
             // finally
@@ -322,7 +348,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             if (callSite.Cache.Location == CallSiteResultCacheLocation.Scope)
             {
                 LocalBuilder cacheKeyLocal = context.Generator.DeclareLocal(typeof(ServiceCacheKey));
-                LocalBuilder resolvedServicesLocal = context.Generator.DeclareLocal(typeof(IDictionary<ServiceCacheKey, object>));
+                LocalBuilder resolvedServicesLocal = context.Generator.DeclareLocal(typeof(Dictionary<ServiceCacheKey, object>));
                 LocalBuilder syncLocal = context.Generator.DeclareLocal(typeof(object));
                 LocalBuilder lockTakenLocal = context.Generator.DeclareLocal(typeof(bool));
                 LocalBuilder resultLocal = context.Generator.DeclareLocal(typeof(object));
@@ -330,6 +356,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 Label skipCreationLabel = context.Generator.DefineLabel();
                 Label returnLabel = context.Generator.DefineLabel();
                 Label defaultLabel = context.Generator.DefineLabel();
+                Label lockHeldLabel = context.Generator.DefineLabel();
 
                 // Check if scope IsRootScope
                 context.Generator.Emit(OpCodes.Ldarg_1);
@@ -364,12 +391,19 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // Store syncLocal
                 context.Generator.Emit(OpCodes.Stloc, syncLocal);
 
+                // Skip Monitor.Enter if the caller already holds the scope lock (nested scoped resolution)
+                context.Generator.Emit(OpCodes.Ldarg_0);
+                context.Generator.Emit(OpCodes.Ldfld, ScopeLockHeldField);
+                context.Generator.Emit(OpCodes.Brtrue, lockHeldLabel);
+
                 // Load syncLocal
                 context.Generator.Emit(OpCodes.Ldloc, syncLocal);
                 // Load address of lockTaken
                 context.Generator.Emit(OpCodes.Ldloca, lockTakenLocal);
                 // Monitor.Enter
                 context.Generator.Emit(OpCodes.Call, ServiceLookupHelpers.MonitorEnterMethodInfo);
+
+                context.Generator.MarkLabel(lockHeldLabel);
 
                 // Load resolved services
                 context.Generator.Emit(OpCodes.Ldloc, resolvedServicesLocal);
@@ -378,13 +412,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // Load address of result local
                 context.Generator.Emit(OpCodes.Ldloca, resultLocal);
                 // .TryGetValue
-                context.Generator.Emit(OpCodes.Callvirt, ServiceLookupHelpers.TryGetValueMethodInfo);
+                context.Generator.Emit(OpCodes.Call, ServiceLookupHelpers.TryGetValueMethodInfo);
 
                 // Jump to the end if already in cache
                 context.Generator.Emit(OpCodes.Brtrue, skipCreationLabel);
 
-                // Create value
+                // Create value (under the scope lock)
+                context.InScopeLock = true;
                 VisitCallSiteMain(callSite, context);
+                context.InScopeLock = false;
                 context.Generator.Emit(OpCodes.Stloc, resultLocal);
 
                 if (callSite.CaptureDisposable)
@@ -396,14 +432,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     generator.Emit(OpCodes.Pop);
                 }
 
-                // load resolvedServices
-                context.Generator.Emit(OpCodes.Ldloc, resolvedServicesLocal);
+                // scope
+                context.Generator.Emit(OpCodes.Ldarg_1);
                 // load cache key
                 context.Generator.Emit(OpCodes.Ldloc, cacheKeyLocal);
                 // load value
                 context.Generator.Emit(OpCodes.Ldloc, resultLocal);
-                // .Add
-                context.Generator.Emit(OpCodes.Callvirt, ServiceLookupHelpers.AddMethodInfo);
+                // .AddResolvedService
+                context.Generator.Emit(OpCodes.Call, ServiceLookupHelpers.AddResolvedServiceMethodInfo);
 
                 context.Generator.MarkLabel(skipCreationLabel);
 

@@ -23,6 +23,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         // with an inline reference-equality scan rather than allocating a HashSet.
         private const int MaxDisposablesForLinearDedup = 16;
 
+        // Upper bound for ServiceProvider.ScopeResolvedServicesCapacityHint, so that a small scope
+        // following a large one doesn't preallocate an unbounded ResolvedServices dictionary.
+        private const int MaxResolvedServicesCapacityHint = 256;
+
         private bool _disposed;
         private List<object?>? _disposables;
 
@@ -79,6 +83,21 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public IServiceProvider ServiceProvider => this;
 
         public IServiceScope CreateScope() => RootProvider.CreateScope();
+
+        // Called under Sync when a scoped service is created and cached.
+        internal void AddResolvedService(ServiceCacheKey key, object? service)
+        {
+            Debug.Assert(!IsRootScope);
+#if !(NETFRAMEWORK || NETSTANDARD2_0)
+            // Presize on the first insertion rather than in the constructor, so scopes that
+            // never cache a scoped service don't allocate.
+            if (ResolvedServices.Count == 0)
+            {
+                ResolvedServices.EnsureCapacity(RootProvider.ScopeResolvedServicesCapacityHint);
+            }
+#endif
+            ResolvedServices.Add(key, service);
+        }
 
         [return: NotNullIfNotNull(nameof(service))]
         internal object? CaptureDisposable(object? service)
@@ -291,6 +310,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                 // Track statistics about the scope (number of disposable objects and number of disposed services)
                 DependencyInjectionEventSource.Log.ScopeDisposed(RootProvider.GetHashCode(), ResolvedServices.Count, _disposables?.Count ?? 0);
+
+                if (!IsRootScope)
+                {
+                    RootProvider.ScopeResolvedServicesCapacityHint = Math.Min(ResolvedServices.Count, MaxResolvedServicesCapacityHint);
+                }
 
                 // We've transitioned to the disposed state, so future calls to
                 // CaptureDisposable will immediately dispose the object.

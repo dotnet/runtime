@@ -20,14 +20,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         internal static readonly MethodInfo CaptureDisposableMethodInfo = typeof(ServiceProviderEngineScope)
             .GetMethod(nameof(ServiceProviderEngineScope.CaptureDisposable), LookupFlags)!;
 
-        internal static readonly MethodInfo TryGetValueMethodInfo = typeof(IDictionary<ServiceCacheKey, object>)
-            .GetMethod(nameof(IDictionary<ServiceCacheKey, object>.TryGetValue), LookupFlags)!;
+        internal static readonly MethodInfo TryGetValueMethodInfo = typeof(Dictionary<ServiceCacheKey, object>)
+            .GetMethod(nameof(Dictionary<ServiceCacheKey, object>.TryGetValue), LookupFlags)!;
 
         internal static readonly MethodInfo ResolveCallSiteAndScopeMethodInfo = typeof(CallSiteRuntimeResolver)
             .GetMethod(nameof(CallSiteRuntimeResolver.Resolve), LookupFlags)!;
 
-        internal static readonly MethodInfo AddMethodInfo = typeof(IDictionary<ServiceCacheKey, object>)
-            .GetMethod(nameof(IDictionary<ServiceCacheKey, object>.Add), LookupFlags)!;
+        internal static readonly MethodInfo AddResolvedServiceMethodInfo = typeof(ServiceProviderEngineScope)
+            .GetMethod(nameof(ServiceProviderEngineScope.AddResolvedService), LookupFlags)!;
 
         internal static readonly MethodInfo MonitorEnterMethodInfo = typeof(Monitor)
             .GetMethod(nameof(Monitor.Enter), BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof(object), typeof(bool).MakeByRefType() }, null)!;
