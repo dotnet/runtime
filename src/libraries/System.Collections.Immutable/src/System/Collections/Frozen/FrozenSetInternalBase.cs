@@ -130,9 +130,43 @@ namespace System.Collections.Frozen
         {
             Debug.Assert(_thisSet.Count != 0, "EmptyFrozenSet should have been used.");
 
+            return other switch
+            {
+                // Fast path for Overlaps when other is HashSet and same equality comparer
+                HashSet<T> hs when _thisSet.Comparer.Equals(hs.Comparer) => OverlapsCompatibleSetImpl(hs),
+
+                // Fast path for Overlaps when other is FrozenSet and same equality comparer
+                FrozenSet<T> fs when _thisSet.Comparer.Equals(fs.Comparer) => OverlapsCompatibleSetImpl(fs),
+
+                _ => OverlapsEnumerableImpl(other)
+            };
+        }
+
+        private bool OverlapsEnumerableImpl(IEnumerable<T> other)
+        {
             foreach (T element in other)
             {
                 if (_thisSet.FindItemIndex(element) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool OverlapsCompatibleSetImpl(ISet<T> other)
+        {
+            return other.Count > Count
+                        ? SmallerSetOverlapsLargerCompatibleSetImpl(this, other)
+                        : SmallerSetOverlapsLargerCompatibleSetImpl(other, this);
+        }
+
+        private static bool SmallerSetOverlapsLargerCompatibleSetImpl(ISet<T> smaller, ISet<T> larger)
+        {
+            foreach (T element in smaller)
+            {
+                if (larger.Contains(element))
                 {
                     return true;
                 }
