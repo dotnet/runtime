@@ -59,6 +59,7 @@ export interface AssetEntryInternal extends AssetEntry {
     useCredentials?: boolean
     culture?: string
     priority?: boolean
+    onDownloadStarted?: () => void
     shortName?: string
     inprogress?: boolean
     tableSize?: number

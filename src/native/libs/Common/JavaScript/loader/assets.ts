@@ -159,8 +159,36 @@ export async function fetchIcu(asset: IcuAsset): Promise<void> {
 }
 
 export async function fetchAssembly(asset: AssemblyAsset, reportProgress = true): Promise<void> {
-    const assetInternal = asset as AssetEntryInternal;
     if (reportProgress) totalAssetsToDownload++;
+    const assetInternal = prepareAssemblyAsset(asset);
+    if (assetInternal.behavior === "webcil") {
+        await fetchWebcil(assetInternal, reportProgress);
+    } else {
+        await fetchDll(assetInternal);
+    }
+}
+
+export async function compileDeferredR2R(asset: AssemblyAsset, onDownloadStarted: () => void): Promise<WebAssembly.Module> {
+    const assetInternal = prepareAssemblyAsset(asset);
+    assetInternal.onDownloadStarted = onDownloadStarted;
+    try {
+        const response = await loadResource(assetInternal);
+        if (!response.ok) {
+            throw new Error(`Failed to load deferred ReadyToRun image '${asset.name}'. HTTP status: ${response.status} ${response.statusText}`);
+        }
+        const contentType = response.headers?.get("Content-Type");
+        if (typeof WebAssembly.compileStreaming === "function" && typeof globalThis.Response === "function" &&
+            response instanceof globalThis.Response && contentType === "application/wasm") {
+            return await WebAssembly.compileStreaming(response);
+        }
+        return await WebAssembly.compile(await response.arrayBuffer());
+    } finally {
+        onDownloadedAsset(assetInternal, false);
+    }
+}
+
+function prepareAssemblyAsset(asset: AssemblyAsset): AssetEntryInternal {
+    const assetInternal = asset as AssetEntryInternal;
     dotnetAssert.check(assetInternal.virtualPath, "Assembly asset must have virtualPath");
     const assetNameForUrl = assetInternal.culture
         ? `${assetInternal.culture}/${assetInternal.name}`
@@ -171,12 +199,8 @@ export async function fetchAssembly(asset: AssemblyAsset, reportProgress = true)
 
     const isWebcilInWasm = assetInternal.virtualPath?.endsWith(".wasm") ?? false;
     normalizeVirtualPath(assetInternal);
-
-    if (isWebcilInWasm) {
-        await fetchWebcil(assetInternal, reportProgress);
-    } else {
-        await fetchDll(assetInternal);
-    }
+    assetInternal.behavior = isWebcilInWasm ? "webcil" : "assembly";
+    return assetInternal;
 }
 
 async function fetchWebcil(assetInternal: AssetEntryInternal, reportProgress: boolean): Promise<void> {
@@ -542,6 +566,10 @@ function finishThrottling(asset: AssetEntryInternal) {
 }
 
 async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
+    if (asset.onDownloadStarted) {
+        asset.onDownloadStarted();
+        asset.onDownloadStarted = undefined;
+    }
     const expectedContentType = behaviorToContentTypeMap[asset.behavior];
     dotnetAssert.check(expectedContentType, `Unsupported asset behavior: ${asset.behavior}`);
     if (asset.buffer) {

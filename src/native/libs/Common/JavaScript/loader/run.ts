@@ -13,7 +13,7 @@ import { initPolyfillsLoader } from "./polyfills";
 import { validateEngineFeatures } from "./bootstrap";
 import { loaderCallbacks } from "./callbacks";
 import { getAppSettingsAssets } from "../appsettings";
-import { fetchAppSettings, nativeWasmReadyTime } from "./assets";
+import { fetchAppSettings, nativeWasmReadyTime, compileDeferredR2R, wasmMemoryPromiseController } from "./assets";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
@@ -24,11 +24,14 @@ let downloadedIntoMemory = false;
 let configInitialized = false;
 let modulesAfterConfigLoadedCache: [JsAsset, Promise<any>][] = [];
 let deferredR2RPromise: Promise<void> | undefined;
+const deferredR2RActivationGate = createPromiseCompletionSource<void>();
 const deferredR2RState = {
     status: "disabled" as "disabled" | "pending" | "downloading" | "activating" | "completed" | "failed" | "exited",
     eagerReadyTime: 0,
     nativeWasmReadyTime: 0,
+    downloadQueuedTime: 0,
     downloadStartedTime: 0,
+    compiledTime: 0,
     instantiatedTime: 0,
     completedTime: 0,
     publishedMethods: 0,
@@ -39,7 +42,8 @@ const deferredR2RState = {
 };
 
 export function getDeferredR2RState() {
-    if (deferredR2RState.status !== "disabled" && !isExited()) {
+    deferredR2RState.nativeWasmReadyTime = nativeWasmReadyTime;
+    if (deferredR2RState.status !== "disabled" && runtimeState.dotnetReady && !isExited()) {
         Object.assign(deferredR2RState, dotnetBrowserHostExports.getDeferredR2RStats());
     }
     return { ...deferredR2RState };
@@ -50,13 +54,23 @@ export async function waitForDeferredR2R(): Promise<void> {
     await deferredR2RPromise;
 }
 
-function startDeferredR2R(): void {
+function queueDeferredR2R(): void {
     const assets = loaderConfig.resources?.r2rAssembly;
     if (!assets?.length || deferredR2RPromise) return;
     deferredR2RState.status = "pending";
-    deferredR2RState.eagerReadyTime = performance.now();
-    deferredR2RState.nativeWasmReadyTime = nativeWasmReadyTime;
+    if (assets.length !== 1 || !assets[0].isCompositeImage || !assets[0].tableSize || !assets[0].payloadSize) {
+        throw new Error("Deferred ReadyToRun requires exactly one composite Webcil image with payload and table sizes.");
+    }
+    deferredR2RState.downloadQueuedTime = performance.now();
     const activationStart = startPerformanceMeasure(loaderConfig);
+    const compiledModule = compileDeferredR2R(assets[0], () => {
+        deferredR2RState.status = "downloading";
+        deferredR2RState.downloadStartedTime = performance.now();
+    }).then(module => {
+        deferredR2RState.compiledTime = performance.now();
+        endPerformanceMeasure("dotnet.deferred-r2r.compile", activationStart);
+        return module;
+    });
     deferredR2RPromise = activate();
     void deferredR2RPromise.catch(error => {
         if (isExited()) {
@@ -69,13 +83,15 @@ function startDeferredR2R(): void {
     });
 
     async function activate(): Promise<void> {
+        const [module] = await Promise.all([compiledModule, deferredR2RActivationGate.promise]);
         await delay(0);
-        if (isExited()) throw new Error("Runtime exited before deferred ReadyToRun started.");
-        deferredR2RState.status = "downloading";
-        deferredR2RState.downloadStartedTime = performance.now();
-        const downloadStart = startPerformanceMeasure(loaderConfig);
-        await fetchAssembly(assets![0], false);
-        endPerformanceMeasure("dotnet.deferred-r2r.download-and-instantiate", downloadStart);
+        if (isExited()) throw new Error("Runtime exited before deferred ReadyToRun instantiation.");
+        deferredR2RState.nativeWasmReadyTime = nativeWasmReadyTime;
+        const memory = await wasmMemoryPromiseController.promise;
+        const asset = assets![0];
+        await dotnetBrowserHostExports.instantiateWebcilModule(Promise.resolve({ module }), memory,
+            asset.virtualPath!, asset.tableSize, asset.payloadSize);
+        endPerformanceMeasure("dotnet.deferred-r2r.download-and-instantiate", activationStart);
         deferredR2RState.instantiatedTime = performance.now();
         deferredR2RState.status = "activating";
         await delay(0);
@@ -111,7 +127,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         if (downloadedIntoMemory && !downloadOnly) {
             Module.runtimeKeepalivePush();
             await initializeCoreCLR();
-            startDeferredR2R();
+            deferredR2RActivationGate.resolve();
 
             await loaderCallbacks.dotnetReady?.();
 
@@ -203,10 +219,6 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         const corePDBsPromise = forEachResource(resources.corePdb, fetchPdb, () => isDebuggingSupported);
         const pdbsPromise = forEachResource(resources.pdb, fetchPdb, () => isDebuggingSupported);
 
-        // Signal that all first-attempt asset fetches queued above via forEachResource/fetch* have been queued.
-        // Retry logic waits on this before attempting second downloads for those asset fetches.
-        resolveAllDownloadsQueued();
-
         // In download-only mode, just add prefetch hints for runtime-ready modules so create() loads them from cache.
         // In create mode, load them now so onRuntimeReady can be called later.
         let modulesAfterRuntimeReadyPromises: [JsAsset, Promise<any>][] = [];
@@ -215,6 +227,10 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         } else {
             modulesAfterRuntimeReadyPromises = normalizeCollection(resources.modulesAfterRuntimeReady).map((a) => [a, loadJSModule(a)]);
         }
+
+        queueDeferredR2R();
+        // Retries follow all first attempts, including the late R2R image.
+        resolveAllDownloadsQueued();
 
         const nativeModule = await nativeModulePromise;
         const modulePromise = nativeModule.dotnetInitializeModule<EmscriptenModuleInternal>(dotnetInternals);
@@ -234,6 +250,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         if (!downloadOnly) {
             if (resources.r2rAssembly?.length) await assembliesPromise;
             endPerformanceMeasure("dotnet.eager-assets.ready", eagerStart);
+            deferredR2RState.eagerReadyTime = performance.now();
             Module.runtimeKeepalivePush();
             await initializeCoreCLR();
         }
@@ -247,18 +264,20 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         verifyAllAssetsDownloaded();
 
         if (downloadOnly) {
+            deferredR2RState.eagerReadyTime = performance.now();
             downloadMode = "intoMemory";
             downloadedIntoMemory = true;
             downloadDeferred?.resolve(undefined as unknown as void);
             return;
         }
 
-        startDeferredR2R();
+        deferredR2RActivationGate.resolve();
         await loaderCallbacks.dotnetReady?.();
 
         await Promise.all([...modulesAfterConfigLoadedPromises, ...modulesAfterRuntimeReadyPromises].map(callLibraryInitializerOnRuntimeReady));
 
     } catch (err) {
+        if (deferredR2RPromise) deferredR2RActivationGate.reject(err);
         downloadDeferred?.reject(err);
         exit(1, err);
     } finally {
@@ -274,9 +293,6 @@ export function abortStartup(reason: any): void {
 async function initializeCoreCLR(): Promise<void> {
     dotnetAssert.check(!runtimeState.dotnetReady, "CoreCLR should be initialized just once");
     const assets = loaderConfig.resources?.r2rAssembly;
-    if (assets?.length && (assets.length !== 1 || !assets[0].isCompositeImage || !assets[0].tableSize || !assets[0].payloadSize)) {
-        throw new Error("Deferred ReadyToRun requires exactly one composite Webcil image with payload and table sizes.");
-    }
     const start = startPerformanceMeasure(loaderConfig);
     const res = dotnetBrowserHostExports.initializeCoreCLR(!!assets?.length);
     endPerformanceMeasure("dotnet.vm.initialize", start);

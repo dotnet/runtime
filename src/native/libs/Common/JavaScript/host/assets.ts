@@ -50,7 +50,7 @@ export function registerDllBytes(bytes: Uint8Array, virtualPath: string, shortNa
     }
 }
 
-export async function instantiateWebcilModule(webcilPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string, tableSize?: number, payloadSize?: number): Promise<void> {
+export async function instantiateWebcilModule(webcilPromise: Promise<Response | { module: WebAssembly.Module }>, memory: WebAssembly.Memory, virtualPath: string, tableSize?: number, payloadSize?: number): Promise<void> {
     // Boot-config sizes let us reserve the payload and table ranges before streaming instantiation.
     // Assets without a tableSize are IL-only images.
     if (typeof payloadSize !== "number" || payloadSize === 0) {
@@ -58,7 +58,10 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
     }
     const tableEntries = typeof tableSize === "number" ? tableSize : 0;
 
-    const res = await checkWebcilResponse(webcilPromise, virtualPath);
+    const input = await webcilPromise;
+    const res = "module" in input
+        ? input
+        : await checkWebcilResponse(Promise.resolve(input), virtualPath);
     if (_ems_.dotnetLoaderExports.isExited()) throw new Error("Runtime exited before Webcil instantiation.");
     let payloadPtr = 0;
     try {
@@ -68,10 +71,12 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
         endPerformanceMeasure(`dotnet.webcil.allocate ${virtualPath}`, allocationStart,
             { payloadSize, tableEntries, wasmMemoryBytes: memory.buffer.byteLength });
         let instance: WebAssembly.Instance;
-        const contentType = res.headers && res.headers.get ? res.headers.get("Content-Type") : undefined;
+        const contentType = "module" in res ? undefined : res.headers?.get("Content-Type");
         const streamingOk = hasInstantiateStreaming && typeof globalThis.Response === "function" && res instanceof globalThis.Response && contentType === "application/wasm";
         const instantiateStart = startPerformanceMeasure(_ems_.dotnetApi.getConfig());
-        if (streamingOk) {
+        if ("module" in res) {
+            instance = await WebAssembly.instantiate(res.module, imports);
+        } else if (streamingOk) {
             instance = (await WebAssembly.instantiateStreaming(res, imports)).instance;
         } else {
             const data = await res.arrayBuffer();

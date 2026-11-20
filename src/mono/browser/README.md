@@ -20,9 +20,12 @@ image. Set `PublishReadyToRun=true` and `PublishReadyToRunComposite=true`, and r
 bodies. Development builds and the existing publish modes are unchanged.
 
 The complete eager assembly closure is downloaded before runtime initialization. The
-compiled composite is listed separately in `resources.r2rAssembly`, fetched only after
-the eager assets and native Wasm are ready, and stream-instantiated with the shared memory
-and function table. Image attachment publishes a readiness flag; methods prepared before
+compiled composite is listed separately in `resources.r2rAssembly` and enqueued directly
+after the eager assets in the same download throttler. Fetching and streaming compilation
+do not wait for eager completion, native Wasm or VM initialization. Its download slot is
+released after compilation consumes the response. Instantiation into shared memory and
+the function table waits for VM readiness and a browser turn. Image attachment publishes
+a readiness flag; methods prepared before
 arrival check it at their interpreter entry safepoint and activate on demand. The triggering
 invocation finishes interpreted, while subsequent calls can use ReadyToRun code. There is
 no global prepared-method sweep or per-batch timer chain. Existing

@@ -167,7 +167,11 @@ namespace Wasm.Build.Tests
                         if (location.search.includes("deferred-setup")) {
                             document.querySelector("#app").classList.add("page");
                         } else {
-                            Blazor.start();
+                            Blazor.start({
+                                configureRuntime: dotnet => dotnet
+                                    .withConfig({ maxParallelDownloads: location.search.includes("single-slot") ? 1 : 16, enableDownloadRetry: true })
+                                    .withDotnetReady(() => { globalThis.deferredVmInitialized = true; })
+                            });
                         }
                     </script>
                     """
@@ -199,8 +203,24 @@ namespace Wasm.Build.Tests
                 {
                     var requested = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                     var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    int lateRequests = 0;
+                    var releaseEager = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    if (!nativeRelink)
+                    {
+                        WebcilAsset eager = assets.assembly.Last();
+                        await page.RouteAsync($"**/{eager.name}", async route =>
+                        {
+                            await releaseEager.Task;
+                            await route.ContinueAsync();
+                        });
+                    }
                     await page.RouteAsync($"**/{composite.name}", async route =>
                     {
+                        if (++lateRequests == 1 && nativeRelink)
+                        {
+                            await route.FulfillAsync(new() { Status = 503, ContentType = "application/wasm", Body = "Retry late image" });
+                            return;
+                        }
                         requested.TrySetResult();
                         await release.Task;
                         if (failDownload)
@@ -211,7 +231,15 @@ namespace Wasm.Build.Tests
                     string baseUrl = new System.Uri(page.Url).GetLeftPart(System.UriPartial.Authority);
                     try
                     {
-                        await page.GotoAsync(baseUrl);
+                        await page.GotoAsync(nativeRelink ? $"{baseUrl}?single-slot" : baseUrl,
+                            new() { WaitUntil = WaitUntilState.Commit });
+                        if (!nativeRelink)
+                        {
+                            // A free download slot must start R2R even while an eager response blocks VM initialization.
+                            await requested.Task.WaitAsync(System.TimeSpan.FromMilliseconds(InteractionTimeoutMs));
+                            Assert.False(await page.EvaluateAsync<bool>("globalThis.deferredVmInitialized === true"));
+                            releaseEager.TrySetResult();
+                        }
                         await page.Locator(".page").WaitForAsync(new() { Timeout = InteractionTimeoutMs });
                         await requested.Task.WaitAsync(System.TimeSpan.FromSeconds(60));
                         await InteractAllPagesAsync(page);
@@ -287,13 +315,17 @@ namespace Wasm.Build.Tests
                         Assert.Equal("lazy", state.GetProperty("activationMode").GetString());
                         Assert.True(state.GetProperty("interpreterSuspensions").GetInt32() > 0);
                         Assert.True(state.GetProperty("publishedMethods").GetInt32() > 0);
+                        Assert.Equal(nativeRelink ? 2 : 1, lateRequests);
                         double started = state.GetProperty("downloadStartedTime").GetDouble();
-                        Assert.True(started >= state.GetProperty("eagerReadyTime").GetDouble());
-                        Assert.True(started >= state.GetProperty("nativeWasmReadyTime").GetDouble());
+                        Assert.True(started >= state.GetProperty("downloadQueuedTime").GetDouble());
+                        Assert.True(state.GetProperty("compiledTime").GetDouble() >= started);
+                        if (!nativeRelink)
+                            Assert.True(started < state.GetProperty("eagerReadyTime").GetDouble());
                         await InteractAllPagesAsync(page);
                     }
                     finally
                     {
+                        releaseEager.TrySetResult();
                         release.TrySetResult();
                     }
                 }));
