@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.Intrinsics;
 
 namespace System.Linq
 {
@@ -129,11 +130,56 @@ namespace System.Linq
                     return span[^1];
                 }
 
-                for (value = span[i]; (uint)i < (uint)span.Length; i++)
+                value = span[i];
+
+                // Only worth vectorizing when a vector holds at least four elements: the NaN lanes
+                // have to be replaced before the comparison, and with two elements per vector that
+                // costs as much as it saves.
+                if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported &&
+                    Vector128<T>.Count >= 4 && span.Length - i >= Vector128<T>.Count * 2)
+                {
+                    Vector128<T> negativeInfinity = Vector128.Create(T.NegativeInfinity);
+                    Vector128<T> best = Vector128.Create(value);
+                    ReadOnlySpan<T> remaining = span.Slice(i);
+
+                    while (remaining.Length >= Vector128<T>.Count)
+                    {
+                        // A NaN is never the maximum here, and Vector128.Max would propagate it.
+                        Vector128<T> current = Vector128.Create(remaining);
+                        best = Vector128.Max(best, Vector128.ConditionalSelect(Vector128.Equals(current, current), current, negativeInfinity));
+                        remaining = remaining.Slice(Vector128<T>.Count);
+                    }
+
+                    i = span.Length - remaining.Length;
+
+                    for (int lane = 0; lane < Vector128<T>.Count; lane++)
+                    {
+                        T candidate = best.GetElement(lane);
+                        if (candidate > value)
+                        {
+                            value = candidate;
+                        }
+                    }
+                }
+
+                for (; (uint)i < (uint)span.Length; i++)
                 {
                     if (span[i] > value)
                     {
                         value = span[i];
+                    }
+                }
+
+                // Negative and positive zero compare equal, so the reduction may have kept either
+                // one, while the sequential walk keeps the first of two equal values.
+                if (value == T.Zero)
+                {
+                    foreach (T element in span)
+                    {
+                        if (element == T.Zero)
+                        {
+                            return element;
+                        }
                     }
                 }
 

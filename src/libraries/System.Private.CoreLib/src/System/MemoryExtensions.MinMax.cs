@@ -38,6 +38,8 @@ namespace System
             if (typeof(T) == typeof(nint)) return MinMaxInteger<T, nint, MinCalc<nint>>(span);
             if (typeof(T) == typeof(Int128)) return MinMaxInteger<T, Int128, MinCalc<Int128>>(span);
             if (typeof(T) == typeof(UInt128)) return MinMaxInteger<T, UInt128, MinCalc<UInt128>>(span);
+            if (typeof(T) == typeof(float)) return MinFloat<T, float>(span);
+            if (typeof(T) == typeof(double)) return MinFloat<T, double>(span);
 
             return MinMax<T, MinDirection>(span, Comparer<T>.Default);
         }
@@ -91,6 +93,8 @@ namespace System
             if (typeof(T) == typeof(nint)) return MinMaxInteger<T, nint, MaxCalc<nint>>(span);
             if (typeof(T) == typeof(Int128)) return MinMaxInteger<T, Int128, MaxCalc<Int128>>(span);
             if (typeof(T) == typeof(UInt128)) return MinMaxInteger<T, UInt128, MaxCalc<UInt128>>(span);
+            if (typeof(T) == typeof(float)) return MaxFloat<T, float>(span);
+            if (typeof(T) == typeof(double)) return MaxFloat<T, double>(span);
 
             return MinMax<T, MaxDirection>(span, Comparer<T>.Default);
         }
@@ -219,6 +223,169 @@ namespace System
             public static Vector128<T> Compare(Vector128<T> left, Vector128<T> right) => Vector128.Max(left, right);
             public static Vector256<T> Compare(Vector256<T> left, Vector256<T> right) => Vector256.Max(left, right);
             public static Vector512<T> Compare(Vector512<T> left, Vector512<T> right) => Vector512.Max(left, right);
+        }
+
+        private static TOuter MinFloat<TOuter, TInner>(this ReadOnlySpan<TOuter> span)
+            where TInner : struct, IFloatingPointIeee754<TInner> =>
+            Unsafe.BitCast<TInner, TOuter>(MinFloat<TInner>(Unsafe.BitCast<ReadOnlySpan<TOuter>, ReadOnlySpan<TInner>>(span)));
+
+        private static TOuter MaxFloat<TOuter, TInner>(this ReadOnlySpan<TOuter> span)
+            where TInner : struct, IFloatingPointIeee754<TInner> =>
+            Unsafe.BitCast<TInner, TOuter>(MaxFloat<TInner>(Unsafe.BitCast<ReadOnlySpan<TOuter>, ReadOnlySpan<TInner>>(span)));
+
+        /// <remarks>
+        /// Comparer{T}.Default orders NaN below every value and treats negative and positive zero
+        /// as equal, keeping whichever of the two the span holds first. Both are preserved here.
+        /// </remarks>
+        private static T MinFloat<T>(this ReadOnlySpan<T> span) where T : struct, IFloatingPointIeee754<T>
+        {
+            if (span.IsEmpty)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
+            }
+
+            T value;
+            int i = 1;
+
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && span.Length >= Vector128<T>.Count * 2)
+            {
+                Vector128<T> best = Vector128.Create(span);
+                Vector128<T> nanFound = ~Vector128.Equals(best, best);
+                ReadOnlySpan<T> remaining = span.Slice(Vector128<T>.Count);
+
+                while (remaining.Length >= Vector128<T>.Count)
+                {
+                    Vector128<T> current = Vector128.Create(remaining);
+                    nanFound |= ~Vector128.Equals(current, current);
+                    best = Vector128.Min(best, current);
+                    remaining = remaining.Slice(Vector128<T>.Count);
+                }
+
+                i = span.Length - remaining.Length;
+
+                if (nanFound != Vector128<T>.Zero)
+                {
+                    foreach (T element in span)
+                    {
+                        if (T.IsNaN(element))
+                        {
+                            return element;
+                        }
+                    }
+                }
+
+                value = best.GetElement(0);
+                for (int lane = 1; lane < Vector128<T>.Count; lane++)
+                {
+                    T candidate = best.GetElement(lane);
+                    if (candidate < value)
+                    {
+                        value = candidate;
+                    }
+                }
+            }
+            else
+            {
+                value = span[0];
+            }
+
+            for (; i < span.Length; i++)
+            {
+                T current = span[i];
+                if (T.IsNaN(current))
+                {
+                    return current;
+                }
+
+                if (current < value)
+                {
+                    value = current;
+                }
+            }
+
+            if (value == T.Zero)
+            {
+                foreach (T element in span)
+                {
+                    if (element == T.Zero)
+                    {
+                        return element;
+                    }
+                }
+            }
+
+            return value;
+        }
+
+        /// <inheritdoc cref="MinFloat{T}(ReadOnlySpan{T})"/>
+        private static T MaxFloat<T>(this ReadOnlySpan<T> span) where T : struct, IFloatingPointIeee754<T>
+        {
+            if (span.IsEmpty)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
+            }
+
+            int i = 0;
+            while (i < span.Length && T.IsNaN(span[i]))
+            {
+                i++;
+            }
+
+            if (i == span.Length)
+            {
+                return span[0];
+            }
+
+            T value = span[i];
+            i++;
+
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && span.Length - i >= Vector128<T>.Count * 2)
+            {
+                Vector128<T> negativeInfinity = Vector128.Create(T.NegativeInfinity);
+                Vector128<T> best = Vector128.Create(value);
+                ReadOnlySpan<T> remaining = span.Slice(i);
+
+                while (remaining.Length >= Vector128<T>.Count)
+                {
+                    // A NaN is never the maximum here, and Vector128.Max would propagate it.
+                    Vector128<T> current = Vector128.Create(remaining);
+                    best = Vector128.Max(best, Vector128.ConditionalSelect(Vector128.Equals(current, current), current, negativeInfinity));
+                    remaining = remaining.Slice(Vector128<T>.Count);
+                }
+
+                i = span.Length - remaining.Length;
+
+                for (int lane = 0; lane < Vector128<T>.Count; lane++)
+                {
+                    T candidate = best.GetElement(lane);
+                    if (candidate > value)
+                    {
+                        value = candidate;
+                    }
+                }
+            }
+
+            for (; i < span.Length; i++)
+            {
+                T current = span[i];
+                if (current > value)
+                {
+                    value = current;
+                }
+            }
+
+            if (value == T.Zero)
+            {
+                foreach (T element in span)
+                {
+                    if (element == T.Zero)
+                    {
+                        return element;
+                    }
+                }
+            }
+
+            return value;
         }
 
         private static TOuter MinMaxInteger<TOuter, TInner, TMinMax>(this ReadOnlySpan<TOuter> span)
