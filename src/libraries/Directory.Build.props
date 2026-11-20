@@ -11,7 +11,7 @@
 
   <Import Project="..\..\Directory.Build.props" />
 
-  <PropertyGroup Condition="'$(TestWasmReadyToRun)' == 'true' and '$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR'">
+  <PropertyGroup Condition="'$(TestWasmReadyToRun)' == 'true' and '$(TargetOS)' == 'wasi'">
     <!-- WASI library tests do not import WasiApp.InTree.props because test projects own
          their target properties. Register the same post-SDK ReadyToRun overrides here. -->
     <AfterMicrosoftNETSdkTargets Condition="'$(Crossgen2SdkOverrideTargetsPath)' != '' and Exists('$(Crossgen2SdkOverrideTargetsPath)')">$(AfterMicrosoftNETSdkTargets);$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
@@ -101,11 +101,6 @@
 
   <PropertyGroup Condition="'$(TestReadyToRun)' == 'true'">
     <UseLocalAppHostPack>true</UseLocalAppHostPack>
-  </PropertyGroup>
-
-  <!-- To enable the interpreter for mono desktop, we need to pass an env switch -->
-  <PropertyGroup>
-    <MonoEnvOptions Condition="'$(MonoEnvOptions)' == '' and '$(TargetsMobile)' != 'true' and '$(MonoForceInterpreter)' == 'true'">--interpreter</MonoEnvOptions>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />

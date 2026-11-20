@@ -14,7 +14,7 @@
     <PublishTrimmed>false</PublishTrimmed>
     <!-- Merged runtime-test wrappers are not trim-safe (they crash ILLink); keep them untrimmed unless they explicitly opt in below. -->
     <PublishTrimmed Condition="'$(TestFramework)' == 'GeneratedRunner'">false</PublishTrimmed>
-    <PublishTrimmed Condition="'$(RunAOTCompilation)' == 'true' or '$(PublishReadyToRun)' == 'true' or '$(TestTrimming)' == 'true'">true</PublishTrimmed>
+    <PublishTrimmed Condition="'$(PublishReadyToRun)' == 'true' or '$(TestTrimming)' == 'true'">true</PublishTrimmed>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
     <WasmBuildNativeImplicitInReleaseConfiguration>false</WasmBuildNativeImplicitInReleaseConfiguration>
 
@@ -24,7 +24,7 @@
       ReadWasmNativeAssetsFromFileSystem;
       UpdateWasmNativeAssetOriginalItemSpec
     </ResolveWasmOutputsDependsOn>
-    <ResolveWasmOutputsDependsOn Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <ResolveWasmOutputsDependsOn>
       $(ResolveWasmOutputsDependsOn);
       AddTestRunnersToReferenceCopyLocalPaths
     </ResolveWasmOutputsDependsOn>
@@ -93,7 +93,7 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+  <PropertyGroup>
     <WasmTestSupport>true</WasmTestSupport>
     <WasmTestExitOnUnhandledError>true</WasmTestExitOnUnhandledError>
     <WasmTestAppendElementOnExit>true</WasmTestAppendElementOnExit>
@@ -105,7 +105,7 @@
   </ItemGroup>
 
   <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120226 (CoreCLR on wasm defaults) -->
-  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+  <PropertyGroup>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
   </PropertyGroup>
 
@@ -209,7 +209,6 @@
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration) /p:TasksConfiguration=$(TasksConfiguration)</_AOTBuildCommand>
 
-    <_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) $(_ShellCommandSeparator) cd wasm_build/AppBundle</_AOTBuildCommand>
 
     <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(_AOTBuildCommand)</RunScriptCommand>
@@ -386,7 +385,6 @@
       <WasmAssembliesToBundle Condition="'%(WasmAssembliesToBundle.FileName)' == 'WasmSymbolicator'" AOT_InternalForceToInterpret="true" />
     </ItemGroup>
 
-    <ForceMSBuildGC Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
   </Target>
 
   <Target Name="_PrepareForAOTOnHelix">

@@ -9,14 +9,6 @@
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
-    <!-- this is necessary for libmono-component-diagnostics_tracing-static.a to be linked, which makes the EventPipeEventProvider.EventActivityIdControl to work in Mono -->
-    <EnableDiagnostics>true</EnableDiagnostics>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetPlatformIdentifier)' == 'android'">
-    <RuntimeComponents Include="diagnostics_tracing" />
-    <RuntimeComponents Include="marshal-ilgen" />
-  </ItemGroup>
   <!-- Windows only files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="BasicEventSourceTest\Harness\EtwListener.cs" />

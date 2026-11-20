@@ -63,7 +63,6 @@
 
     <ItemGroup>
       <AndroidAssembliesToBundle Include="@(NativeLibraries->'$(PublishDir)%(Identity)')">
-        <_InternalForceInterpret>true</_InternalForceInterpret>
         <_IsNative>true</_IsNative>
       </AndroidAssembliesToBundle>
 
@@ -71,7 +70,6 @@
       <_SatelliteAssemblies Include="$(PublishDir)\**\*.resources.dll" />
 
       <AndroidAssembliesToBundle Include="@(_PublishAssemblies)">
-        <_InternalForceInterpret Condition="'$(UseMonoJustInterp)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
         <_IsNative>false</_IsNative>
       </AndroidAssembliesToBundle>
 

@@ -23,7 +23,7 @@
   <!-- CoreCLR-WASI: WasiApp.CoreCLR.targets links the wasihost corehost per-app (so
        library/test reverse P/Invoke thunks are covered), and the host preloads icudt.dat,
        so the leg runs with full ICU globalization. -->
-  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+  <PropertyGroup>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
   </PropertyGroup>
 
@@ -36,13 +36,11 @@
 
   <PropertyGroup>
     <_AppArgs Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_AppArgs>
-    <!-- Mono launches dotnet.wasm with the entry assembly name; CoreCLR launches the
-         per-app-linked wasihost host with the managed entry assembly (.dll). The host is
-         linked into managed/ (as 'corerun') alongside the framework and finds the runtime via
+    <!-- CoreCLR launches the per-app-linked wasihost host with the managed entry assembly (.dll).
+         The host is linked into managed/ (as 'corerun') alongside the framework and finds the runtime via
          CORE_ROOT (see WasiApp.CoreCLR.targets). Validated locally: discovers + runs the full
          System.Runtime.Tests suite under wasmtime. -->
-    <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true' and '$(RuntimeFlavor)' != 'CoreCLR'">dotnet.wasm WasmTestRunner</_AppArgs>
-    <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">managed/corerun managed/WasmTestRunner.dll</_AppArgs>
+    <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true'">managed/corerun managed/WasmTestRunner.dll</_AppArgs>
 
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmSingleFileBundle)' != 'true'">$(_AppArgs) managed/$(AssemblyName).dll</_AppArgs>
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmSingleFileBundle)' == 'true'">$(_AppArgs) $(AssemblyName).dll</_AppArgs>
@@ -73,8 +71,8 @@
     <!-- CoreCLR-WASI: enable the wasm exception-handling proposal (the host relies on it)
          and point the host at the bundled framework via CORE_ROOT=/managed. Validated
          locally: host+runtime live in managed/ and init succeeds under wasmtime. -->
-    <_XHarnessArgs Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XHarnessArgs) --engine-arg=-W --engine-arg=exceptions=y</_XHarnessArgs>
-    <_XHarnessArgs Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XHarnessArgs) --engine-arg=--env --engine-arg=CORE_ROOT=/managed</_XHarnessArgs>
+    <_XHarnessArgs>$(_XHarnessArgs) --engine-arg=-W --engine-arg=exceptions=y</_XHarnessArgs>
+    <_XHarnessArgs>$(_XHarnessArgs) --engine-arg=--env --engine-arg=CORE_ROOT=/managed</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
     <_InvariantGlobalization Condition="'$(InvariantGlobalization)' == 'true'">--env=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true</_InvariantGlobalization>
@@ -91,7 +89,6 @@
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration) /p:TasksConfiguration=$(TasksConfiguration)</_AOTBuildCommand>
 
-    <_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) $(_ShellCommandSeparator) cd wasm_build/AppBundle</_AOTBuildCommand>
 
     <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(_AOTBuildCommand)</RunScriptCommand>
@@ -165,7 +162,6 @@
               Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>
 
-    <ForceMSBuildGC Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
   </Target>
 
   <Target Name="_PrepareForAOTOnHelix">
@@ -209,7 +205,7 @@
        build agent otherwise. The zip still has the composed module that runs. -->
   <Target Name="_RemoveWasiIntermediatesAfterArchive"
           AfterTargets="ZipTestArchive"
-          Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+          Condition="'$(ContinuousIntegrationBuild)' == 'true'">
     <RemoveDir Directories="$(IntermediateOutputPath)R2R;$(IntermediateOutputPath)wasm" ContinueOnError="WarnAndContinue" />
   </Target>
 </Project>
