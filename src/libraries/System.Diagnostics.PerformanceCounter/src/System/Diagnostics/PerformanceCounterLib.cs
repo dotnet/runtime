@@ -124,7 +124,8 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_categoryTable == null)
+                Hashtable categoryTable = _categoryTable;
+                if (categoryTable == null)
                 {
                     lock (_categoryTableLock)
                     {
@@ -194,10 +195,12 @@ namespace System.Diagnostics
 
                             _categoryTable = tempCategoryTable;
                         }
+
+                        categoryTable = _categoryTable;
                     }
                 }
 
-                return _categoryTable;
+                return categoryTable;
             }
         }
 
@@ -205,15 +208,16 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_helpTable == null)
+                Hashtable helpTable = _helpTable;
+                if (helpTable == null)
                 {
                     lock (_helpTableLock)
                     {
-                        _helpTable ??= GetStringTable(true);
+                        helpTable = _helpTable ??= GetStringTable(true);
                     }
                 }
 
-                return _helpTable;
+                return helpTable;
             }
         }
 
@@ -246,15 +250,16 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_nameTable == null)
+                Hashtable nameTable = _nameTable;
+                if (nameTable == null)
                 {
                     lock (_nameTableLock)
                     {
-                        _nameTable ??= GetStringTable(false);
+                        nameTable = _nameTable ??= GetStringTable(false);
                     }
                 }
 
-                return _nameTable;
+                return nameTable;
             }
         }
 
@@ -329,10 +334,13 @@ namespace System.Diagnostics
 
         internal static void CloseAllTables()
         {
-            if (s_libraryTable != null)
+            lock (InternalSyncObject)
             {
-                foreach (PerformanceCounterLib library in s_libraryTable.Values)
-                    library.CloseTables();
+                if (s_libraryTable != null)
+                {
+                    foreach (PerformanceCounterLib library in s_libraryTable.Values)
+                        library.CloseTables();
+                }
             }
         }
 
