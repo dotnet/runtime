@@ -148,7 +148,9 @@ HRESULT EEConfig::Init()
     m_SuspendDeadlockTimeout = 40000;
 #endif // _DEBUG
 
+#ifdef FEATURE_RUNTIME_MARSHALLING
     m_fRuntimeMarshallingEnabled = true;
+#endif // FEATURE_RUNTIME_MARSHALLING
 
 #ifdef FEATURE_COMINTEROP
     bLogCCWRefCountChange = false;
@@ -585,7 +587,9 @@ HRESULT EEConfig::sync()
     fJitVerificationDisable = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitVerificationDisable) != 0);
 #endif
 
+#ifdef FEATURE_RUNTIME_MARSHALLING
     m_fRuntimeMarshallingEnabled = Configuration::GetKnobBooleanValue(W("System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled"), true);
+#endif // FEATURE_RUNTIME_MARSHALLING
 
 #ifdef FEATURE_COMINTEROP
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_LogCCWRefCountChange, (LPWSTR*)&pszLogCCWRefCountChange));
@@ -594,7 +598,7 @@ HRESULT EEConfig::sync()
         bLogCCWRefCountChange = true;
 
     fEnableRCWCleanupOnSTAShutdown = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableRCWCleanupOnSTAShutdown) != 0);
-    m_fBuiltInCOMInteropSupported = m_fRuntimeMarshallingEnabled &&
+    m_fBuiltInCOMInteropSupported = IsRuntimeMarshallingEnabled() &&
         Configuration::GetKnobBooleanValue(W("System.Runtime.InteropServices.BuiltInComInterop.IsSupported"), true);
 #endif // FEATURE_COMINTEROP
 

@@ -3809,7 +3809,9 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
 #endif // FEATURE_COMINTEROP
         {
             if (marshalType == MarshalInfo::MARSHAL_TYPE_BLITTABLEVALUECLASS
+#ifdef FEATURE_RUNTIME_MARSHALLING
                     || marshalType == MarshalInfo::MARSHAL_TYPE_VALUECLASS
+#endif // FEATURE_RUNTIME_MARSHALLING
                     || marshalType == MarshalInfo::MARSHAL_TYPE_GUID
                     || marshalType == MarshalInfo::MARSHAL_TYPE_DECIMAL
                 )
@@ -3820,6 +3822,7 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
                     COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);
                 }
             }
+#ifdef FEATURE_RUNTIME_MARSHALLING
             else if (marshalType == MarshalInfo::MARSHAL_TYPE_CURRENCY
                     || marshalType == MarshalInfo::MARSHAL_TYPE_ARRAYWITHOFFSET
 #ifdef FEATURE_VARARGS
@@ -3835,6 +3838,7 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
                 // We don't know the native type representation early enough to get this correct, so we throw an exception here.
                 COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);
             }
+#endif // FEATURE_RUNTIME_MARSHALLING
             else if (IsUnsupportedTypedrefReturn(msig))
             {
                 COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);

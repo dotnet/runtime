@@ -5,6 +5,7 @@
 
     <PropertyGroup>
         <FeatureCoreCLR>true</FeatureCoreCLR>
+        <FeatureRuntimeMarshalling>true</FeatureRuntimeMarshalling>
         <FeaturePerfTracing>true</FeaturePerfTracing>
         <FeaturePortableEntryPoints>false</FeaturePortableEntryPoints>
         <FeaturePortableHelpers>false</FeaturePortableHelpers>
@@ -24,6 +25,7 @@
 
     <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
         <FeaturePortableEntryPoints>true</FeaturePortableEntryPoints>
+        <FeatureRuntimeMarshalling>false</FeatureRuntimeMarshalling>
         <FeaturePortableHelpers>true</FeaturePortableHelpers>
         <FeatureInterpreter>true</FeatureInterpreter>
         <FeatureJavaMarshal>false</FeatureJavaMarshal>
@@ -69,6 +71,7 @@
 
     <PropertyGroup>
         <DefineConstants Condition="'$(FeatureJavaMarshal)' == 'true'">$(DefineConstants);FEATURE_JAVAMARSHAL</DefineConstants>
+        <DefineConstants Condition="'$(FeatureRuntimeMarshalling)' == 'true'">$(DefineConstants);FEATURE_RUNTIME_MARSHALLING</DefineConstants>
         <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">$(DefineConstants);FEATURE_COMWRAPPERS</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>

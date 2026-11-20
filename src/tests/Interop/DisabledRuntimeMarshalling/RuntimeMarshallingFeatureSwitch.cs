@@ -15,7 +15,9 @@ public unsafe class RuntimeMarshallingFeatureSwitch
     private const string BuiltInComSwitchName = "System.Runtime.InteropServices.BuiltInComInterop.IsSupported";
     private const string NativeLibraryName = "DisabledRuntimeMarshallingNative";
 
-    private static bool IsEnabled => !AppContext.TryGetSwitch(SwitchName, out bool enabled) || enabled;
+    private static bool IsEnabled =>
+        RuntimeInformation.ProcessArchitecture is not Architecture.Wasm &&
+        (!AppContext.TryGetSwitch(SwitchName, out bool enabled) || enabled);
     private static bool IsBuiltInComEnabled => IsEnabled && (!AppContext.TryGetSwitch(BuiltInComSwitchName, out bool enabled) || enabled);
 
     [DllImport(NativeLibraryName, EntryPoint = "PassThrough", CallingConvention = CallingConvention.Cdecl)]
@@ -357,7 +359,7 @@ public unsafe class RuntimeMarshallingFeatureSwitch
         Assert.Throws<ArgumentException>(() => Marshal.OffsetOf<AutoLayout>(nameof(AutoLayout.Value)));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWindows))]
     public static void ManagedComFeatureUsesRuntimeConfiguration()
     {
         bool enabled = IsEnabled;

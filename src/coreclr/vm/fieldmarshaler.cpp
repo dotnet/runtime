@@ -303,6 +303,7 @@ VOID ParseNativeType(Module*                     pModule,
         case MarshalInfo::MARSHAL_TYPE_GENERIC_8:
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(INT64), sizeof(INT64));
             break;
+#ifdef FEATURE_RUNTIME_MARSHALLING
         case MarshalInfo::MARSHAL_TYPE_ANSICHAR:
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(CHAR), sizeof(CHAR));
             break;
@@ -317,21 +318,25 @@ VOID ParseNativeType(Module*                     pModule,
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(VARIANT_BOOL), sizeof(VARIANT_BOOL));
             break;
 #endif
+#endif // FEATURE_RUNTIME_MARSHALLING
         case MarshalInfo::MARSHAL_TYPE_FLOAT:
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::FLOAT, sizeof(float), sizeof(float));
             break;
         case MarshalInfo::MARSHAL_TYPE_DOUBLE:
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::FLOAT, sizeof(double), sizeof(double));
             break;
+#ifdef FEATURE_RUNTIME_MARSHALLING
         case MarshalInfo::MARSHAL_TYPE_CURRENCY:
             *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__CURRENCY));
             break;
+#endif // FEATURE_RUNTIME_MARSHALLING
         case MarshalInfo::MARSHAL_TYPE_DECIMAL:
             *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__DECIMAL));
             break;
         case MarshalInfo::MARSHAL_TYPE_GUID:
             *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__GUID));
             break;
+#ifdef FEATURE_RUNTIME_MARSHALLING
         case MarshalInfo::MARSHAL_TYPE_DATE:
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::FLOAT, sizeof(double), sizeof(double));
             break;
@@ -353,12 +358,16 @@ VOID ParseNativeType(Module*                     pModule,
         case MarshalInfo::MARSHAL_TYPE_DELEGATE:
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(void*), sizeof(void*));
             break;
+#endif // FEATURE_RUNTIME_MARSHALLING
         case MarshalInfo::MARSHAL_TYPE_BLITTABLEVALUECLASS:
+#ifdef FEATURE_RUNTIME_MARSHALLING
         case MarshalInfo::MARSHAL_TYPE_VALUECLASS:
         case MarshalInfo::MARSHAL_TYPE_LAYOUTCLASS:
         case MarshalInfo::MARSHAL_TYPE_BLITTABLE_LAYOUTCLASS:
+#endif // FEATURE_RUNTIME_MARSHALLING
             *pNFD = NativeFieldDescriptor(pFD, pargs->m_pMT);
             break;
+#ifdef FEATURE_RUNTIME_MARSHALLING
 #ifdef FEATURE_COMINTEROP
         case MarshalInfo::MARSHAL_TYPE_OBJECT:
             *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__COMVARIANT));
@@ -404,6 +413,7 @@ VOID ParseNativeType(Module*                     pModule,
         case MarshalInfo::MARSHAL_TYPE_FIXED_WSTR:
             *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__UINT16), pargs->fs.fixedStringLength);
             break;
+#endif // FEATURE_RUNTIME_MARSHALLING
         case MarshalInfo::MARSHAL_TYPE_POINTER:
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(void*), sizeof(void*));
             break;

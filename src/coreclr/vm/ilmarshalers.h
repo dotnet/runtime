@@ -1880,6 +1880,7 @@ protected:
     }
 };
 
+#ifdef FEATURE_RUNTIME_MARSHALLING
 class ILDelegateMarshaler : public ILMarshaler
 {
 public:
@@ -3497,3 +3498,4 @@ public:
 protected:
     void EmitCreateMngdMarshaler(ILCodeStream* pslILEmit) override;
 };
+#endif // FEATURE_RUNTIME_MARSHALLING

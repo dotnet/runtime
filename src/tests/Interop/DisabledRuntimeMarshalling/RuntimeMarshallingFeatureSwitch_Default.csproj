@@ -2,7 +2,8 @@
   <PropertyGroup>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr' or '$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <WasmBuildTestCorerun Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'wasm'">false</WasmBuildTestCorerun>
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>

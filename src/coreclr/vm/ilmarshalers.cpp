@@ -16,6 +16,7 @@
 #endif // FEATURE_COMINTEROP
 #include "fieldmarshaler.h"
 
+#ifdef FEATURE_RUNTIME_MARSHALLING
 LocalDesc ILReflectionObjectMarshaler::GetManagedType()
 {
     STANDARD_VM_CONTRACT;
@@ -5029,3 +5030,4 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
 
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum); // Store the ICustomMarshaler as our marshaler state
 }
+#endif // FEATURE_RUNTIME_MARSHALLING

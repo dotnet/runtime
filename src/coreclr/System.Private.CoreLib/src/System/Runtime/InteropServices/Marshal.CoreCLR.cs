@@ -444,6 +444,7 @@ namespace System.Runtime.InteropServices
         internal static unsafe bool IsPinnable(object? obj)
             => (obj == null) || !RuntimeHelpers.GetMethodTable(obj)->ContainsGCPointers;
 
+#if FEATURE_RUNTIME_MARSHALLING
         [FeatureSwitchDefinition("System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled")]
         internal static bool IsRuntimeMarshallingEnabled { get; } = IsRuntimeMarshallingEnabledInternal();
 
@@ -451,6 +452,9 @@ namespace System.Runtime.InteropServices
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_IsRuntimeMarshallingEnabled")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool IsRuntimeMarshallingEnabledInternal();
+#else
+        internal static bool IsRuntimeMarshallingEnabled => false;
+#endif
 
 #if TARGET_WINDOWS
         internal static bool IsBuiltInComSupported =>

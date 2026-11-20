@@ -927,6 +927,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
         }
     }
 
+#ifdef FEATURE_RUNTIME_MARSHALLING
     if (nativeType == NATIVE_TYPE_CUSTOMMARSHALER)
     {
         if (IsFieldScenario())
@@ -991,9 +992,11 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
         goto lExit;
     }
+#endif // FEATURE_RUNTIME_MARSHALLING
 
     switch (mtype)
     {
+#ifdef FEATURE_RUNTIME_MARSHALLING
         case ELEMENT_TYPE_BOOLEAN:
 
             switch (nativeType)
@@ -1034,14 +1037,19 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     IfFailGoto(E_FAIL, lFail);
             }
             break;
+#endif // FEATURE_RUNTIME_MARSHALLING
 
         case ELEMENT_TYPE_CHAR:
             switch (nativeType)
             {
                 case NATIVE_TYPE_I1: //fallthru
                 case NATIVE_TYPE_U1:
+#ifdef FEATURE_RUNTIME_MARSHALLING
                     m_type = MARSHAL_TYPE_ANSICHAR;
                     break;
+#else // FEATURE_RUNTIME_MARSHALLING
+                    goto lFail;
+#endif // FEATURE_RUNTIME_MARSHALLING
 
                 case NATIVE_TYPE_I2: //fallthru
                 case NATIVE_TYPE_U2:
@@ -1049,7 +1057,13 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     break;
 
                 case NATIVE_TYPE_DEFAULT:
+#ifdef FEATURE_RUNTIME_MARSHALLING
                     m_type = ( ((m_ms == MARSHAL_SCENARIO_NDIRECT || m_ms == MARSHAL_SCENARIO_FIELD) && m_fAnsi) ? MARSHAL_TYPE_ANSICHAR : MARSHAL_TYPE_GENERIC_U2 );
+#else // FEATURE_RUNTIME_MARSHALLING
+                    if (m_fAnsi)
+                        goto lFail;
+                    m_type = MARSHAL_TYPE_GENERIC_U2;
+#endif // FEATURE_RUNTIME_MARSHALLING
                     break;
 
                 default:
@@ -1254,6 +1268,9 @@ MarshalInfo::MarshalInfo(Module* pModule,
 #endif
             }
 
+#ifndef FEATURE_RUNTIME_MARSHALLING
+            goto lFail;
+#else // FEATURE_RUNTIME_MARSHALLING
             // Disallow marshaling generic types.
             if (sigTH.HasInstantiation())
             {
@@ -1675,9 +1692,9 @@ MarshalInfo::MarshalInfo(Module* pModule,
 #endif // FEATURE_COMINTEROP
                 }
             }
+#endif // FEATURE_RUNTIME_MARSHALLING
             break;
         }
-
 
         case ELEMENT_TYPE_VALUETYPE:
         lValueClass:
@@ -1691,6 +1708,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         m_type = MARSHAL_TYPE_DECIMAL;
                         break;
 
+#ifdef FEATURE_RUNTIME_MARSHALLING
                     case NATIVE_TYPE_LPSTRUCT:
                         if (IsFieldScenario())
                         {
@@ -1703,6 +1721,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     case NATIVE_TYPE_CURRENCY:
                         m_type = MARSHAL_TYPE_CURRENCY;
                         break;
+#endif // FEATURE_RUNTIME_MARSHALLING
 
                     default:
                         m_resID = IsFieldScenario() ? IDS_EE_BADMARSHALFIELD_DECIMAL : IDS_EE_BADMARSHALPARAM_DECIMAL;
@@ -1718,6 +1737,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         m_type = MARSHAL_TYPE_GUID;
                         break;
 
+#ifdef FEATURE_RUNTIME_MARSHALLING
                     case NATIVE_TYPE_LPSTRUCT:
                         if (IsFieldScenario())
                         {
@@ -1726,12 +1746,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         }
                         m_type = MARSHAL_TYPE_GUID_PTR;
                         break;
+#endif // FEATURE_RUNTIME_MARSHALLING
 
                     default:
                         m_resID = IDS_EE_BADMARSHAL_GUID;
                         IfFailGoto(E_FAIL, lFail);
                 }
             }
+#ifdef FEATURE_RUNTIME_MARSHALLING
             else if (sig.IsClassThrowing(pModule, g_DateClassName, pTypeContext))
             {
                 if (!(nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_STRUCT))
@@ -1831,6 +1853,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                 m_type = MARSHAL_TYPE_RUNTIMEMETHODHANDLE;
             }
+#endif // FEATURE_RUNTIME_MARSHALLING
             else
             {
                 m_pMT =  sig.GetTypeHandleThrowing(pModule, pTypeContext).GetMethodTable();
@@ -1913,6 +1936,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
                 else
                 {
+#ifdef FEATURE_RUNTIME_MARSHALLING
                     if (!(nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_STRUCT))
                     {
                         m_resID = IDS_EE_BADMARSHAL_VALUETYPE;
@@ -1926,11 +1950,15 @@ MarshalInfo::MarshalInfo(Module* pModule,
 #endif
                     m_args.m_pMT = m_pMT;
                     m_type = MARSHAL_TYPE_VALUECLASS;
+#else // FEATURE_RUNTIME_MARSHALLING
+                    goto lFail;
+#endif // FEATURE_RUNTIME_MARSHALLING
                 }
             }
             break;
         }
 
+#ifdef FEATURE_RUNTIME_MARSHALLING
         case ELEMENT_TYPE_SZARRAY:
         case ELEMENT_TYPE_ARRAY:
         {
@@ -1952,6 +1980,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             IfFailGoto(HandleArrayElemType(&ParamInfo, thElement, arrayTypeHnd.GetRank(), mtype == ELEMENT_TYPE_SZARRAY, isParam, pAssembly), lFail);
             break;
         }
+#endif // FEATURE_RUNTIME_MARSHALLING
 
         default:
             m_resID = IDS_EE_BADMARSHAL_BADMANAGED;
@@ -2148,6 +2177,7 @@ void MarshalInfo::ThrowTypeLoadExceptionForInvalidFieldMarshal(FieldDesc* pField
 }
 
 
+#ifdef FEATURE_RUNTIME_MARSHALLING
 HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHandle thElement, int iRank, BOOL fNoLowerBounds, BOOL isParam, Assembly *pAssembly, BOOL isArrayClass /* = FALSE */)
 {
     CONTRACTL
@@ -2273,6 +2303,8 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
 
     return S_OK;
 }
+
+#endif // FEATURE_RUNTIME_MARSHALLING
 
 ILMarshaler* CreateILMarshaler(MarshalInfo::MarshalType mtype, PInvokeStubLinker* psl)
 {
@@ -2482,7 +2514,11 @@ void MarshalInfo::GenerateReturnIL(PInvokeStubLinker* psl,
     if (amostat == HANDLEASNORMAL)
     {
         // Historically we have always allowed reading fields that are marshaled as C arrays.
-        if (m_type == MARSHAL_TYPE_UNKNOWN || (!fieldGetter && m_type == MARSHAL_TYPE_NATIVEARRAY))
+        if (m_type == MARSHAL_TYPE_UNKNOWN
+#ifdef FEATURE_RUNTIME_MARSHALLING
+            || (!fieldGetter && m_type == MARSHAL_TYPE_NATIVEARRAY)
+#endif // FEATURE_RUNTIME_MARSHALLING
+            )
         {
             EmitOrThrowInteropParamException(psl, fMngToNative, m_resID, 0);
             return;
@@ -2675,10 +2711,12 @@ bool MarshalInfo::IsValueClass(MarshalType mtype)
     switch (mtype)
     {
     case MARSHAL_TYPE_BLITTABLEVALUECLASS:
+#ifdef FEATURE_RUNTIME_MARSHALLING
     case MARSHAL_TYPE_VALUECLASS:
 #if defined(FEATURE_IJW)
     case MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR:
 #endif // defined(FEATURE_IJW)
+#endif // FEATURE_RUNTIME_MARSHALLING
         return true;
 
     default:

@@ -308,7 +308,15 @@ public:
     bool IsBuiltInCOMSupported() const { LIMITED_METHOD_CONTRACT;  return m_fBuiltInCOMInteropSupported; }
 #endif // FEATURE_COMINTEROP
 
-    bool IsRuntimeMarshallingEnabled() const { LIMITED_METHOD_CONTRACT; return m_fRuntimeMarshallingEnabled; }
+    bool IsRuntimeMarshallingEnabled() const
+    {
+        LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_RUNTIME_MARSHALLING
+        return m_fRuntimeMarshallingEnabled;
+#else // FEATURE_RUNTIME_MARSHALLING
+        return false;
+#endif // FEATURE_RUNTIME_MARSHALLING
+    }
 
 #ifdef _DEBUG
     bool ExpandModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fExpandAllOnLoad; }
@@ -506,7 +514,9 @@ private: //----------------------------------------------------------------
     bool m_fBuiltInCOMInteropSupported;   // COM built-in support
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_RUNTIME_MARSHALLING
     bool m_fRuntimeMarshallingEnabled;
+#endif // FEATURE_RUNTIME_MARSHALLING
 
 #ifdef _DEBUG
     bool fExpandAllOnLoad;              // True if we want to load all types/jit all methods in an assembly
