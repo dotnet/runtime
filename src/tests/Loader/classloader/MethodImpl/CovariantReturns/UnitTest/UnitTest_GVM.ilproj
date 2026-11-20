@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <MonoAotIncompatible>true</MonoAotIncompatible>  <!-- https://github.com/dotnet/runtime/issues/90427  -->
-    <!-- Needed for MonoAotIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- The test has its own Main, so the WASI ReadyToRun failure is skipped here.
          ActiveIssue https://github.com/dotnet/runtime/issues/134949 -->

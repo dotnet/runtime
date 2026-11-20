@@ -160,7 +160,6 @@ sealed class EventDataGenerator
                 delete[] buffer;
 
         """;
-    private const string MonoProfilerProvider = "Microsoft-DotNETRuntimeMonoProfiler";
     private const string StressProvider = "Microsoft-Windows-DotNETRuntimeStress";
     private static readonly string[] s_mcOutputs = ["ClrEtwAll.h", "ClrEtwAll.rc", "ClrEtwAll_MSG00001.bin", "ClrEtwAllTEMP.bin"];
 
@@ -526,7 +525,7 @@ sealed class EventDataGenerator
     }
 
     private bool IncludeProvider(string providerName) =>
-        providerName != MonoProfilerProvider && !(_nativeAot && providerName == StressProvider);
+        !(_nativeAot && providerName == StressProvider);
 
     private bool IncludeEvent(string providerName, string eventName)
     {
