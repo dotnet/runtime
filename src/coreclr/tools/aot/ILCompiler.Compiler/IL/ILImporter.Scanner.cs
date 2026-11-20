@@ -1013,7 +1013,7 @@ namespace Internal.IL
                         _canonMethod,
                         methodToLookup.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
-                if (exactContextNeedsRuntimeLookup)
+                if (_compilation.NeedsRuntimeLookup(ReadyToRunHelperId.DispatchCell, methodToLookup))
                 {
                     _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DispatchCell, methodToLookup), reason);
                 }

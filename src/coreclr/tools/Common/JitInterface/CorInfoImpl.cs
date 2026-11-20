@@ -2676,7 +2676,7 @@ namespace Internal.JitInterface
                 if (fieldType.IsValueType)
                 {
                     var fieldDefType = (DefType)fieldType;
-                    if (!fieldDefType.ContainsGCPointers && !fieldDefType.IsByRefLike)
+                    if (!fieldDefType.ContainsGCPointers && !fieldDefType.ContainsByRefs)
                         continue;
 
                     gcType = CorInfoGCType.TYPE_GC_OTHER;
