@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs">
+      <HasDisasmCheck>true</HasDisasmCheck>
+    </Compile>
+
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
+    <!-- Keep field and offset operands visible to the range-fold phase. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_JitNoCSE" Value="1" />
+    <!-- Exercise LCL_FLD folding in Checked builds without relying on struct layout. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_JitNoStructPromotion" Value="1" />
+  </ItemGroup>
+</Project>
