@@ -101,8 +101,44 @@ PhaseStatus Compiler::optRedundantBranches()
     };
 
     optReachableBitVecTraits = nullptr;
+    optRboNeedsSsaRebuild    = false;
     OptRedundantBranchesDomTreeVisitor visitor(this);
     visitor.WalkTree(m_domTree);
+
+    // If we jump threaded, recompute the flow graph annotations, SSA and value numbers.
+    //
+    if (optRboNeedsSsaRebuild)
+    {
+        JITDUMP("Jump threading modified the flow graph; rebuilding SSA and value numbers\n");
+
+        fgResetForSsa(/* deepClean */ true);
+        vnStore                    = nullptr;
+        m_blockToEHPreds           = nullptr;
+        m_dominancePreds           = nullptr;
+        m_nodeToLoopMemoryBlockMap = nullptr;
+        fgSsaPassesCompleted       = 0;
+        fgVNPassesCompleted        = 0;
+
+        // Tree VNs refer to the old ValueNumStore.
+        //
+        for (BasicBlock* const block : Blocks())
+        {
+            for (Statement* const stmt : block->Statements())
+            {
+                for (GenTree* const tree : stmt->TreeList())
+                {
+                    tree->ClearVN();
+                }
+            }
+        }
+
+        fgDfsBlocksAndRemove();
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+
+        fgSsaBuild();
+        fgValueNumber();
+    }
 
     // BBF_STALE_PREDICATE is only meaningful while this phase runs, since it is tied to
     // the dominator info we started with. Clear it so a later run sees a clean slate.
@@ -1970,8 +2006,8 @@ Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const b
     // Since flow is going to bypass block, make sure there
     // is nothing in block that can cause a side effect.
     //
-    // For non-PHI RBO, we neglect PHI stores. This can leave SSA in
-    // an incorrect state but so far it has not yet caused problems.
+    // For non-PHI RBO, we neglect PHI stores; SSA and VNs are rebuilt after
+    // the phase if we thread.
     //
     // For PHI-based RBO we need to be more cautious. We can now tolerate
     // some non-local PHI uses, but only when all uses are found in the
@@ -2611,19 +2647,10 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
             JITDUMPEXEC(vnpPrint(newVNPair, 1));
             JITDUMP("\n");
 
+            // Ancestors of the use may now have stale VNs; they are fixed when SSA and VNs
+            // are rebuilt at the end of the phase.
+            //
             use->SetVNs(newVNPair);
-
-            GenTree* node   = use;
-            GenTree* parent = node->gtGetParent(nullptr);
-
-            while ((parent != nullptr) && parent->OperIs(GT_COMMA) && (parent->AsOp()->gtOp2 == node))
-            {
-                JITDUMP(" Updating COMMA parent VN [%06u]\n", dspTreeID(parent));
-                ValueNumPair op1Xvnp = vnStore->VNPExceptionSet(parent->AsOp()->gtOp1->gtVNPair);
-                parent->SetVNs(vnStore->VNPWithExc(parent->AsOp()->gtOp2->gtVNPair, op1Xvnp));
-                node   = parent;
-                parent = node->gtGetParent(nullptr);
-            }
         }
 
         replacementSsaDef->AddUse(phiUse.m_block);
@@ -2766,8 +2793,11 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         JITDUMP("Updating [%06u] liberal VN from " FMT_VN " to " FMT_VN "\n", dspTreeID(tree), treeOldVN, treeNewVN);
     }
 
-    // We optimized.
+    // We optimized. Threading invalidates SSA and value numbers (stale phis, phi args,
+    // and VNs of trees using rewritten locals), so they must be rebuilt before later
+    // phases rely on them.
     //
+    optRboNeedsSsaRebuild = true;
     Metrics.JumpThreadingsPerformed++;
     fgModified = true;
     return true;
