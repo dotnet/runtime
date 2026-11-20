@@ -5329,6 +5329,14 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
     GenTree*            tmp2   = nullptr;
     GenTreeHWIntrinsic* result = node;
 
+    unsigned op1TempNum = BAD_VAR_NUM;
+    // Preserve the source vector across value-operand side effects.
+    if ((simdSize > 16) && op1->OperIs(GT_LCL_VAR) &&
+        ((op3->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0))
+    {
+        op1TempNum = m_compiler->lvaGrabTemp(true DEBUGARG("WithElement source vector"));
+    }
+
     if (simdType == TYP_SIMD64)
     {
         // If we have a simd64 WithElement, we will spill the original
@@ -5351,7 +5359,7 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
 
         // TODO-CQ: move the tmp64 node closer to the final InsertVector128.
         LIR::Use op1Use(BlockRange(), &node->Op(1), node);
-        ReplaceWithLclVar(op1Use);
+        ReplaceWithLclVar(op1Use, op1TempNum);
         GenTree* tmp64 = node->Op(1);
 
         op1 = m_compiler->gtClone(tmp64);
@@ -5435,7 +5443,7 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
 
         // TODO-CQ: move the tmp32 node closer to the final InsertVector128.
         LIR::Use op1Use(BlockRange(), &node->Op(1), node);
-        ReplaceWithLclVar(op1Use);
+        ReplaceWithLclVar(op1Use, op1TempNum);
         GenTree* tmp32 = node->Op(1);
 
         op1 = m_compiler->gtClone(tmp32);
