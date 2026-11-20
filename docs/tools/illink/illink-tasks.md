@@ -75,9 +75,11 @@ without changing the cache key, so a cached warning can fail a build under `-war
 
 Caching is bypassed with a diagnostic for arbitrary `ExtraArgs`, custom steps/data,
 dependency-dump options, and explicit task environment overrides. Runtime's library-build
-arguments for link attributes, substitutions, and assembly search directories are supported.
-Their XML files and search-directory assembly candidates (including sidecars) are content-hashed,
-without changing assembly resolution. Other SDK options supplied through `ExtraArgs` remain unsupported.
+policy arguments for ignoring link attributes/substitutions, feature settings, and explicit
+link-attributes/substitutions XML files are supported. Runtime library builds supply selected
+references through `ReferenceAssemblyPaths`, so only those assemblies and their sidecars are
+content-hashed. Search directories (`-d`) and other custom options supplied through `ExtraArgs`
+still execute unchanged, but bypass caching.
 Inherited environment variables are not tracked; disable caching
 when they affect outputs or dependencies beyond the keyed inputs, or require tool-execution
 side effects such as startup hooks or profiling. Unreadable inputs or linker files also
