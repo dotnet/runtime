@@ -84,7 +84,7 @@ scenario=RichSigsegv
 project="src/tests/FunctionalTests/iOS/InProcCrashReport/$scenario/iOS.InProcCrashReport.$scenario.Test.csproj"
 ./dotnet.sh build "$project" -c Release -t:Test \
   -p:TargetOS="$target" -p:TargetArchitecture=arm64 \
-  -p:UseMonoRuntime=false -p:UseNativeAOTRuntime=false
+  -p:UseNativeAOTRuntime=false
 ```
 
 Start with RichSigsegv to check both JSON and compact output, then run `Abort`, `StackOverflow`, `ConsoleOnly`, and `OnDemand` through their own projects. Repeat OnDemand by relaunching its app, not by calling its entry point again in the same process. The test runner returns zero only when XHarness observes the app's expected exit code 100.
@@ -100,7 +100,7 @@ signing=-
 if [ "$target" = maccatalyst ]; then signing=adhoc; fi
 ./dotnet.sh build "$project" -c Release \
   -p:TargetOS="$target" -p:TargetArchitecture=arm64 \
-  -p:UseMonoRuntime=false -p:UseNativeAOTRuntime=false \
+  -p:UseNativeAOTRuntime=false \
   -p:ArchiveTests=true -p:BuildTestsOnHelix=true \
   -p:ContinuousIntegrationBuild=true -p:DevTeamProvisioning="$signing"
 ```
@@ -112,7 +112,7 @@ Generate the actual Helix work-item commands **without submitting a job** using 
 ```bash
 ./dotnet.sh msbuild src/libraries/sendtohelixhelp.proj \
   -t:CreateAppleWorkItems -p:TargetOS="$target" -p:TargetArchitecture=arm64 \
-  -p:Configuration=Release -p:RuntimeFlavor=CoreCLR \
+  -p:Configuration=Release \
   -p:Scenario=BuildiOSApps -p:NeedsToBuildAppsOnHelix=true \
   -p:HelixTargetQueue=local-inspection-only -getItem:HelixWorkItem
 ```

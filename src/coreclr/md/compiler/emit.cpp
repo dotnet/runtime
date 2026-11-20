@@ -1007,7 +1007,7 @@ STDMETHODIMP RegMeta::DefinePermissionSet(
     ULONG       cbPermission,           // [IN] count of bytes of pvPermission.
     mdPermission *ppm)                  // [OUT] returned permission token.
 {
-#ifdef FEATURE_METADATA_EMIT_ALL
+#if defined(FEATURE_METADATA_EMIT_ALL) && defined(FEATURE_METADATA_PERMISSION_SETS)
     HRESULT hr = S_OK;
 
     LOCKWRITE();
@@ -1018,9 +1018,9 @@ STDMETHODIMP RegMeta::DefinePermissionSet(
 
 ErrExit:
     return hr;
-#else //!FEATURE_METADATA_EMIT_ALL
+#else // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_EMIT_ALL
+#endif // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
 } // RegMeta::DefinePermissionSet
 
 
@@ -1034,7 +1034,7 @@ HRESULT RegMeta::_DefinePermissionSet(
     ULONG       cbPermission,           // [IN] count of bytes of pvPermission.
     mdPermission *ppm)                  // [OUT] returned permission token.
 {
-#ifdef FEATURE_METADATA_EMIT_ALL
+#if defined(FEATURE_METADATA_EMIT_ALL) && defined(FEATURE_METADATA_PERMISSION_SETS)
     HRESULT     hr  = S_OK;
     DeclSecurityRec *pDeclSec = NULL;
     RID         iDeclSec;
@@ -1096,9 +1096,9 @@ HRESULT RegMeta::_DefinePermissionSet(
 ErrExit:
 
     return hr;
-#else //!FEATURE_METADATA_EMIT_ALL
+#else // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_EMIT_ALL
+#endif // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
 } // RegMeta::_DefinePermissionSet
 
 
@@ -2274,7 +2274,7 @@ STDMETHODIMP RegMeta::SetPermissionSetProps(  // S_OK or error.
     ULONG       cbPermission,           // [IN] Count of bytes of pvPermission.
     mdPermission *ppm)                  // [OUT] Permission token.
 {
-#ifdef FEATURE_METADATA_EMIT_ALL
+#if defined(FEATURE_METADATA_EMIT_ALL) && defined(FEATURE_METADATA_PERMISSION_SETS)
     HRESULT hr = S_OK;
 
     USHORT      sAction = static_cast<USHORT>(dwAction);    // Corresponding DeclSec field is a USHORT.
@@ -2297,9 +2297,9 @@ STDMETHODIMP RegMeta::SetPermissionSetProps(  // S_OK or error.
     IfFailGo(_SetPermissionSetProps(tkPerm, dwAction, pvPermission, cbPermission));
 ErrExit:
     return hr;
-#else //!FEATURE_METADATA_EMIT_ALL
+#else // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_EMIT_ALL
+#endif // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
 } // RegMeta::SetPermissionSetProps
 
 //*****************************************************************************

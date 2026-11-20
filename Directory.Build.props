@@ -9,10 +9,6 @@
          leg only, so we also take DotNetBuildSourceOnly into account. -->
     <BuildingAnOfficialBuildLeg Condition="'$(BuildingAnOfficialBuildLeg)' == '' and '$(OfficialBuildId)' != '' and '$(DotNetBuildSourceOnly)' != 'true'">true</BuildingAnOfficialBuildLeg>
     <RunILLinkInBuild Condition="'$(RunILLinkInBuild)' == '' and '$(BuildingAnOfficialBuildLeg)' == 'true'">true</RunILLinkInBuild>
-    <!-- When doing a source build, we want to build the various text-only manifests in
-         all cases, rather than ordinarily where we build them during mobile or wasm
-         build legs. This makes the manifests available on source-only builds. -->
-    <ForceBuildMobileManifests Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ForceBuildMobileManifests>
     <!-- Propagate the configuration and platform to project references. When building in VS, this defaults to true.
          Explicitly setting it to false ensures projects are built in the corresponding configuration both in VS and on the command line. -->
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
@@ -178,12 +174,6 @@
     -->
     <WasmtimeDir Condition="'$(WasmtimeDir)' == ''">$(WasmtimeCacheDir)</WasmtimeDir>
     <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists('$(WasmtimeStampFile)')">true</InstallWasmtimeForTests>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">
-    <BuildMonoAOTCrossCompilerOnly>true</BuildMonoAOTCrossCompilerOnly>
-    <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>
-    <MonoCrossAOTTargetOS Condition="'$(TargetOS)' == 'osx'">$(MonoCrossAOTTargetOS)+tvos+ios+maccatalyst</MonoCrossAOTTargetOS>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)RuntimeIdentifier.props" />

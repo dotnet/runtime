@@ -5921,7 +5921,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
         }
 
         // Try to optimize a load/store with an alternative instruction.
-        if (isLdrStr && m_compiler->opts.OptimizationEnabled() &&
+        if (isLdrStr && !insOptsIndexed(opt) && m_compiler->opts.OptimizationEnabled() &&
             OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, false, -1, -1 DEBUG_ARG(false)))
         {
             return;
@@ -17458,7 +17458,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
             // For mov with EA_8BYTE, ensure src/dst are both scalar or both vector.
             if (size == EA_8BYTE)
             {
-                if (isVectorRegister(src) == isVectorRegister(dst))
+                // A vector move may still be needed to clear the destination's upper bits.
+                if ((isVectorRegister(src) == isVectorRegister(dst)) && (canSkip || !isVectorRegister(dst)))
                 {
                     JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst "
                             "to src register.\n");
@@ -17611,7 +17612,8 @@ bool emitter::OptimizeLdrStr(instruction ins,
 {
     assert(ins == INS_ldr || ins == INS_str);
 
-    if (!emitCanPeepholeLastIns() || (emitLastIns->idIns() != ins))
+    // A preceding writeback changes the base used by this access.
+    if (!emitCanPeepholeLastIns() || (emitLastIns->idIns() != ins) || insOptsIndexed(emitLastIns->idInsOpt()))
     {
         return false;
     }

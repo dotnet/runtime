@@ -81,7 +81,7 @@ private:
     void AddRangeWorkerHelper(TADDR start, TADDR end, void* id)
     {
         ReportStubBlock((void*)start, (size_t)(end - start), _rangeListType);
-        SimpleWriteLockHolder lh(&_RangeListRWLock);
+        SimpleWriteLockHolder lh = SimpleRWLock::TakeWriteLock(&_RangeListRWLock);
 
         _ASSERTE(id == _id || _id == NULL);
         _id = id;
@@ -143,7 +143,7 @@ protected:
         CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-        SimpleWriteLockHolder lh(&_RangeListRWLock);
+        SimpleWriteLockHolder lh = SimpleRWLock::TakeWriteLock(&_RangeListRWLock);
         _ASSERTE(id == _id || (_id == NULL && _starts.IsEmpty()));
 
         // Iterate backwards to improve efficiency of removals

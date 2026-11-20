@@ -8559,6 +8559,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             case GT_SELECT_INV:
             case GT_SELECT_INC:
 #endif
+#ifdef TARGET_WASM
+            case GT_WASM_SELECT:
+#endif
             case GT_SELECT:
             {
                 GenTreeConditional* const conditional = AsConditional();
@@ -8917,7 +8920,17 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
             return ExceptionSetFlags::None;
 
         case GT_BOUNDS_CHECK:
-            return ExceptionSetFlags::IndexOutOfRangeException;
+            switch (AsBoundsChk()->gtThrowKind)
+            {
+                case SCK_RNGCHK_FAIL:
+                    return ExceptionSetFlags::IndexOutOfRangeException;
+                case SCK_ARG_EXCPN:
+                    return ExceptionSetFlags::ArgumentException;
+                case SCK_ARG_RNG_EXCPN:
+                    return ExceptionSetFlags::ArgumentOutOfRangeException;
+                default:
+                    unreached();
+            }
 
         case GT_INDEX_ADDR:
             return ExceptionSetFlags::NullReferenceException | ExceptionSetFlags::IndexOutOfRangeException;
@@ -9149,6 +9162,16 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_NONLOCAL_JMP:
         case GT_SWIFT_ERROR:
             return true;
+#ifdef FEATURE_HW_INTRINSICS
+        // Vector element access with a non-constant index is only in range due to
+        // its bounds check. Once that check is removed, the access must stay below
+        // whatever proved the index in range.
+        case GT_HWINTRINSIC:
+        {
+            NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
+            return HWIntrinsicInfo::IsVectorGetElement(id) || (id == NI_Vector_WithElement);
+        }
+#endif // FEATURE_HW_INTRINSICS
         default:
             return false;
     }
@@ -9333,6 +9356,15 @@ GenTree::VtablePtr GenTree::GetVtableForOper(genTreeOps oper)
             res = *reinterpret_cast<VtablePtr*>(&gt);
         }
         break;
+
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+        {
+            GenTreeConditional gt;
+            res = *reinterpret_cast<VtablePtr*>(&gt);
+        }
+        break;
+#endif
 
             // We don't need to handle GTSTRUCT_N for LclVarCommon, since all those allowed opers are specified
             // in their proper subtype. Similarly for GenTreeIndir.
@@ -12433,6 +12465,13 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::AdvanceConditional;
             return;
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+            m_edge = &m_node->AsConditional()->gtOp1;
+            assert(*m_edge != nullptr);
+            m_advance = &GenTreeUseEdgeIterator::AdvanceWasmSelect;
+            return;
+#endif
 
         // Binary nodes
         default:
@@ -12550,6 +12589,31 @@ void GenTreeUseEdgeIterator::AdvanceConditional()
 
     assert(*m_edge != nullptr);
 }
+
+#ifdef TARGET_WASM
+//------------------------------------------------------------------------
+// GenTreeUseEdgeIterator::AdvanceWasmSelect: produces the next operand in Wasm stack order.
+//
+void GenTreeUseEdgeIterator::AdvanceWasmSelect()
+{
+    GenTreeConditional* const select = m_node->AsConditional();
+    switch (m_state)
+    {
+        case 0:
+            m_edge  = &select->gtOp2;
+            m_state = 1;
+            break;
+        case 1:
+            m_edge    = &select->gtCond;
+            m_advance = &GenTreeUseEdgeIterator::Terminate;
+            break;
+        default:
+            unreached();
+    }
+
+    assert(*m_edge != nullptr);
+}
+#endif // TARGET_WASM
 
 //------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::AdvanceBinOp: produces the next operand of a binary node and advances the state.
@@ -15231,10 +15295,22 @@ void Compiler::gtDispTree(GenTree*                    tree,
             break;
 
         case GT_SELECT:
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+#endif
             gtDispCommonEndLine(tree);
 
             if (!topOnly)
             {
+#ifdef TARGET_WASM
+                if (tree->OperIs(GT_WASM_SELECT))
+                {
+                    gtDispChild(tree->AsConditional()->gtOp1, indentStack, IIArc, childMsg, topOnly);
+                    gtDispChild(tree->AsConditional()->gtOp2, indentStack, IIArc, childMsg, topOnly);
+                    gtDispChild(tree->AsConditional()->gtCond, indentStack, IIArcBottom, childMsg, topOnly);
+                    break;
+                }
+#endif
                 gtDispChild(tree->AsConditional()->gtCond, indentStack, IIArc, childMsg, topOnly);
                 gtDispChild(tree->AsConditional()->gtOp1, indentStack, IIArc, childMsg, topOnly);
                 gtDispChild(tree->AsConditional()->gtOp2, indentStack, IIArcBottom, childMsg, topOnly);
@@ -19446,6 +19522,12 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool igno
             GenTreeCall* const call             = potentialCall->AsCall();
             const bool         ignoreExceptions = (flags & GTF_EXCEPT) == 0;
             return call->HasSideEffects(this, ignoreExceptions, ignoreCctors);
+        }
+
+        if (potentialCall->OperIs(GT_SWIFT_ERROR))
+        {
+            // Lowering and register allocation require this node even when the error is unused.
+            return true;
         }
     }
 
@@ -26085,6 +26167,12 @@ GenTree* Compiler::gtNewSimdGetElementNode(
         GenTree* index = fgMakeMultiUse(&op2);
         index          = addRangeCheckForHWIntrinsic(index, 0, immUpperBound);
         op2            = gtWrapWithSideEffects(index, op2, GTF_OBS_EFFECT);
+
+        // The bounds check may later be removed; keep the access ordered after
+        // whatever proved the index is in range.
+        GenTree* getElement = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseType, simdSize);
+        getElement->SetHasOrderingSideEffect();
+        return getElement;
     }
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseType, simdSize);
@@ -29279,6 +29367,31 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     size_t elementSize  = genTypeSize(simdBaseType);
     size_t elementCount = simdSize / elementSize;
 
+#if defined(TARGET_XARCH)
+    // The AVX2 fallbacks for 256-bit byte and short shuffles use op1 multiple times; preserve its value in a temp
+    // if op2 can modify it.
+    GenTree* op1Store    = nullptr;
+    bool     op1MultiUse = false;
+    if ((simdSize == 32) && !gtCanReorderWithoutTemp(op1, op2))
+    {
+        if (elementSize == 1)
+        {
+            op1MultiUse = !compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative);
+        }
+        else if (elementSize == 2)
+        {
+            op1MultiUse = !compOpportunisticallyDependsOn(InstructionSet_AVX512, isShuffleNative);
+        }
+    }
+
+    if (op1MultiUse)
+    {
+        TempInfo temp = fgMakeTemp(op1);
+        op1           = temp.load;
+        op1Store      = temp.store;
+    }
+#endif
+
     // duplicate operand 2 for non-ShuffleNative implementation later
     // (also, on arm64, byte ShuffleNative is same as Shuffle)
     GenTree* op2DupSafe = nullptr;
@@ -29902,6 +30015,13 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     {
         assert(op2DupSafe == nullptr);
     }
+
+#if defined(TARGET_XARCH)
+    if (op1Store != nullptr)
+    {
+        retNode = gtNewOperNode(GT_COMMA, type, op1Store, retNode);
+    }
+#endif
 
     return retNode;
 }
@@ -31797,11 +31917,18 @@ GenTree* Compiler::gtNewSimdWithElementNode(
     if (rangeCheckNeeded)
     {
         // Evaluate op3's side effects before validating the index.
-        GenTree* index = fgMakeMultiUse(&op2);
+        GenTree* index =
+            (op3->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0 ? fgInsertCommaFormTemp(&op2) : fgMakeMultiUse(&op2);
         GenTree* value = gtTreeHasSideEffects(op3, GTF_OBS_EFFECT) ? fgMakeMultiUse(&op3) : op3;
         index          = addRangeCheckForHWIntrinsic(index, 0, immUpperBound);
         value          = gtWrapWithSideEffects(value, index, GTF_OBS_EFFECT);
         op3            = gtWrapWithSideEffects(value, op3, GTF_OBS_EFFECT);
+
+        // The bounds check may later be removed; keep the access ordered after
+        // whatever proved the index is in range.
+        GenTree* withElement = gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseType, simdSize);
+        withElement->SetHasOrderingSideEffect();
+        return withElement;
     }
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseType, simdSize);

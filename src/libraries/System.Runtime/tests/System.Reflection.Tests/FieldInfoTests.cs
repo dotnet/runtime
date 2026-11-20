@@ -99,10 +99,25 @@ namespace System.Reflection.Tests
         public void GetValue(Type type, string name, object obj, object expected)
         {
             FieldInfo fieldInfo = GetField(type, name);
-            Assert.Equal(expected, fieldInfo.GetValue(obj));
+            object actual = fieldInfo.GetValue(obj);
+            Assert.Equal(expected, actual);
+            AssertPointerMatches(expected, actual);
 
             // Perform a second time to rule out cases of slow-path vs. fast-path.
-            Assert.Equal(expected, fieldInfo.GetValue(obj));
+            actual = fieldInfo.GetValue(obj);
+            Assert.Equal(expected, actual);
+            AssertPointerMatches(expected, actual);
+        }
+
+        private static unsafe void AssertPointerMatches(object expected, object actual)
+        {
+            // Pointer.Equals compares only the address, so the type is checked here.
+            if (expected is Pointer expectedPointer)
+            {
+                Pointer actualPointer = Assert.IsType<Pointer>(actual);
+                Assert.Equal(expectedPointer.PointerType, actualPointer.PointerType);
+                Assert.Equal((IntPtr)expectedPointer.Value, (IntPtr)actualPointer.Value);
+            }
         }
 
         public static IEnumerable<object[]> GetValue_TestData_WithFunctionPointers()
