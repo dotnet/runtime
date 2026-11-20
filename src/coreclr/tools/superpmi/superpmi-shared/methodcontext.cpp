@@ -3202,9 +3202,9 @@ void MethodContext::recPrepareCallLookups(CORINFO_RESOLVED_TOKEN* token, CORINFO
         key.ConstrainedResolvedToken = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(constrainedToken, PrepareCallLookups);
     key.context = CastHandle(callInfo->contextHandle);
     key.callerHandle = CastHandle(caller);
-    key.isCodePointer = callInfo->kind == CORINFO_CALL_CODE_POINTER;
+    key.callKind = (DWORD)callInfo->kind;
     Agnostic_CORINFO_LOOKUP value = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(
-        key.isCodePointer ? &callInfo->codePointerLookup : &callInfo->instParamLookup);
+        ((callInfo->kind == CORINFO_CALL_CODE_POINTER) || (callInfo->kind == CORINFO_VIRTUALCALL_STUB)) ? &callInfo->codePointerLookup : &callInfo->instParamLookup);
     PrepareCallLookups->Add(key, value);
 }
 
@@ -3219,18 +3219,18 @@ void MethodContext::repPrepareCallLookups(CORINFO_RESOLVED_TOKEN* token, CORINFO
         key.ConstrainedResolvedToken = SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(constrainedToken, PrepareCallLookups);
     key.context = CastHandle(callInfo->contextHandle);
     key.callerHandle = CastHandle(caller);
-    key.isCodePointer = callInfo->kind == CORINFO_CALL_CODE_POINTER;
+    key.callKind = (DWORD)callInfo->kind;
     Agnostic_CORINFO_LOOKUP value = LookupByKeyOrMissNoMessage(PrepareCallLookups, key);
-    CORINFO_LOOKUP& lookup = key.isCodePointer ? callInfo->codePointerLookup : callInfo->instParamLookup;
+    CORINFO_LOOKUP& lookup = ((callInfo->kind == CORINFO_CALL_CODE_POINTER) || (callInfo->kind == CORINFO_VIRTUALCALL_STUB)) ? callInfo->codePointerLookup : callInfo->instParamLookup;
     lookup = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value);
 }
 
 void MethodContext::dmpPrepareCallLookups(const Agnostic_PrepareCallLookups& key, const Agnostic_CORINFO_LOOKUP& value)
 {
-    printf("PrepareCallLookups rt{%s} constraint{%s} context-%016" PRIX64 " caller-%016" PRIX64 ", isCodePointer-%u lookup{%s}",
+    printf("PrepareCallLookups rt{%s} constraint{%s} context-%016" PRIX64 " caller-%016" PRIX64 ", callKind-%u lookup{%s}",
         SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(),
         SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ConstrainedResolvedToken).c_str(),
-        key.context, key.callerHandle, key.isCodePointer,
+        key.context, key.callerHandle, key.callKind,
         SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value).c_str());
 }
 

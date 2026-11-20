@@ -5291,12 +5291,11 @@ void CEEInfo::getCallInfo(
 
         if (pResult->exactContextNeedsRuntimeLookup)
         {
-            ComputeRuntimeLookupForSharedGenericToken(fIsStaticVirtualMethod ? ConstrainedMethodEntrySlot : DispatchStubAddrSlot,
-                                                        pResolvedToken,
-                                                        pConstrainedResolvedToken,
-                                                        pMD,
-                                                        GetMethod(callerHandle),
-                                                        &pResult->stubLookup);
+            pResult->stubLookup = {};
+            pResult->stubLookup.lookupKind.needsRuntimeLookup = true;
+            pResult->stubLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
+            pResult->stubLookup.runtimeLookup.helper =
+                (CorInfoHelpFunc)(fIsStaticVirtualMethod ? ConstrainedMethodEntrySlot : DispatchStubAddrSlot);
         }
         else
         {
@@ -5555,22 +5554,21 @@ void CEEInfo::prepareCallLookups(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE(pCallInfo->kind == CORINFO_CALL_CODE_POINTER
+    _ASSERTE((pCallInfo->kind == CORINFO_CALL_CODE_POINTER || pCallInfo->kind == CORINFO_VIRTUALCALL_STUB)
         ? (pCallInfo->codePointerLookup.lookupKind.needsRuntimeLookup
             && pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED)
         : (pCallInfo->sig.hasTypeArg() && pCallInfo->exactContextNeedsRuntimeLookup));
 
-    if (pCallInfo->kind == CORINFO_CALL_CODE_POINTER)
+    if (pCallInfo->kind == CORINFO_CALL_CODE_POINTER || pCallInfo->kind == CORINFO_VIRTUALCALL_STUB)
     {
         DictionaryEntryKind entryKind = (DictionaryEntryKind)pCallInfo->codePointerLookup.runtimeLookup.helper;
-        _ASSERTE(entryKind == MethodEntrySlot || entryKind == ConstrainedMethodEntrySlot);
+        _ASSERTE(entryKind == MethodEntrySlot || entryKind == ConstrainedMethodEntrySlot || entryKind == DispatchStubAddrSlot);
         ComputeRuntimeLookupForSharedGenericToken(entryKind,
                                                   pResolvedToken,
                                                   pConstrainedResolvedToken,
                                                   GetMethod(pResolvedToken->hMethod),
                                                   GetMethod(callerHandle),
                                                   &pCallInfo->codePointerLookup);
-
     }
     else
     {
