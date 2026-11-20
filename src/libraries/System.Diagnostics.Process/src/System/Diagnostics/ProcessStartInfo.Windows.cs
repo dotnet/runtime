@@ -1,12 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security;
 using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -22,7 +26,15 @@ namespace System.Diagnostics
         public string Domain
         {
             get => _domain ?? string.Empty;
-            set => _domain = value;
+            set
+            {
+                ThrowIfEnvironmentWasAccessed(
+                    nameof(Domain),
+                    !string.IsNullOrEmpty(UserName) &&
+                    !UseCredentialsForNetworkingOnly &&
+                    !string.Equals(value ?? string.Empty, _domain ?? string.Empty, StringComparison.Ordinal));
+                _domain = value;
+            }
         }
 
         [SupportedOSPlatform("windows")]
@@ -44,11 +56,98 @@ namespace System.Diagnostics
         /// the process can start, but it may not have access to network resources.</para>
         /// </remarks>
         [SupportedOSPlatform("windows")]
-        public bool UseCredentialsForNetworkingOnly { get; set; }
+        public bool UseCredentialsForNetworkingOnly
+        {
+            get;
+            set
+            {
+                ThrowIfEnvironmentWasAccessed(
+                    nameof(UseCredentialsForNetworkingOnly),
+                    !string.IsNullOrEmpty(UserName) && field != value);
+                field = value;
+            }
+        }
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
         public SecureString? Password { get; set; }
+
+        // Assigned only by the UserName setter, so that apps which never set UserName
+        // can trim the logon and environment block code (and its native dependencies).
+        private static Func<ProcessStartInfo, IDictionary>? s_getUserEnvironmentVariables;
+
+        private void ThrowIfEnvironmentWasAccessed(string propertyName, bool changesEnvironment)
+        {
+            if (_environmentVariables is not null && changesEnvironment)
+            {
+                throw new InvalidOperationException(SR.Format(SR.EnvironmentAccessedCannotSet, propertyName));
+            }
+        }
+
+        /// <summary>
+        /// Returns the environment variables the started process gets by default.
+        /// When starting the process as a different user, these are the variables of that user rather than the current process.
+        /// </summary>
+        private IDictionary GetDefaultEnvironmentVariables() =>
+            s_getUserEnvironmentVariables is not null && !string.IsNullOrEmpty(UserName) && !UseCredentialsForNetworkingOnly
+                ? s_getUserEnvironmentVariables(this)
+                : System.Environment.GetEnvironmentVariables();
+
+        private unsafe IDictionary GetUserEnvironmentVariables()
+        {
+            if (Password != null && PasswordInClearText != null)
+            {
+                throw new ArgumentException(SR.CantSetDuplicatePassword);
+            }
+
+            SafeTokenHandle token;
+            fixed (char* passwordInClearTextPtr = PasswordInClearText ?? string.Empty)
+            {
+                IntPtr passwordPtr = Password != null ? Marshal.SecureStringToGlobalAllocUnicode(Password) : IntPtr.Zero;
+                try
+                {
+                    if (!Interop.Advapi32.LogonUser(
+                        UserName,
+                        Domain,
+                        passwordPtr != IntPtr.Zero ? passwordPtr : (IntPtr)passwordInClearTextPtr,
+                        Interop.Advapi32.LOGON32_LOGON_INTERACTIVE,
+                        Interop.Advapi32.LOGON32_PROVIDER_DEFAULT,
+                        out token))
+                    {
+                        int errorCode = Marshal.GetLastPInvokeError();
+                        token.Dispose();
+                        throw new Win32Exception(errorCode);
+                    }
+                }
+                finally
+                {
+                    if (passwordPtr != IntPtr.Zero)
+                    {
+                        Marshal.ZeroFreeGlobalAllocUnicode(passwordPtr);
+                    }
+                }
+            }
+
+            using (token)
+            {
+                // inherit: false, to match what CreateProcessWithLogonW does when no environment block is provided:
+                // the child gets an environment created from the target user's profile, without the variables of the current process.
+                // inherit: true would copy the current process' variables (possibly secrets) into the child running as another user.
+                if (!Interop.Userenv.CreateEnvironmentBlock(out char* block, token, inherit: false))
+                {
+                    throw new Win32Exception();
+                }
+
+                try
+                {
+                    return EnvironmentBlockParser.Parse(block);
+                }
+                finally
+                {
+                    Interop.Userenv.DestroyEnvironmentBlock(block);
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets a value indicating whether to start the process in a new process group.
