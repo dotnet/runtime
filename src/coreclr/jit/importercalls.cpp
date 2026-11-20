@@ -10118,56 +10118,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
-    GenTree* runtimeLookupContext = nullptr;
-
-    if (isLateDevirtualization && dvInfo.instParamLookup.lookupKind.needsRuntimeLookup)
-    {
-        // Late devirtualization may revisit a call that was imported in an inlinee.
-        // If token context is not the current root context, runtime lookups can be rooted in the wrong generic context.
-        //
-        CORINFO_CONTEXT_HANDLE tokenContext       = pResolvedToken->tokenContext;
-        const SIZE_T           tokenContextHandle = (SIZE_T)tokenContext & ~CORINFO_CONTEXTFLAGS_MASK;
-
-        const bool isMethodContext = ((SIZE_T)tokenContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
-        const bool isCurrentContext =
-            (tokenContext == METHOD_BEING_COMPILED_CONTEXT()) ||
-            (isMethodContext ? ((CORINFO_METHOD_HANDLE)tokenContextHandle == info.compMethodHnd)
-                             : ((CORINFO_CLASS_HANDLE)tokenContextHandle == info.compClassHnd));
-
-        // If we don't have the right context, try recover it from the tree.
-        //
-        if (!isCurrentContext)
-        {
-            CallArg* runtimeMethodHandleArg = nullptr;
-            if ((call->gtControlExpr != nullptr) && call->gtControlExpr->OperIs(GT_CALL))
-            {
-                runtimeMethodHandleArg =
-                    call->gtControlExpr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
-            }
-
-            if (runtimeMethodHandleArg != nullptr && runtimeMethodHandleArg->GetNode()->OperIs(GT_RUNTIMELOOKUP))
-            {
-                if (runtimeMethodHandleArg->GetNode()->AsRuntimeLookup()->Lookup()->OperIs(GT_CALL))
-                {
-                    GenTreeCall* const helperCall =
-                        runtimeMethodHandleArg->GetNode()->AsRuntimeLookup()->Lookup()->AsCall();
-
-                    if (helperCall->IsHelperCall(CORINFO_HELP_RUNTIMEHANDLE_METHOD) ||
-                        helperCall->IsHelperCall(CORINFO_HELP_RUNTIMEHANDLE_CLASS))
-                    {
-                        runtimeLookupContext = helperCall->gtArgs.GetArgByIndex(0)->GetNode();
-                    }
-                }
-            }
-
-            if (runtimeLookupContext == nullptr)
-            {
-                JITDUMP("Late devirt needs a runtime lookup context cannot be figured out. Bail out.\n");
-                return;
-            }
-        }
-    }
-
     CORINFO_METHOD_HANDLE   derivedMethod         = dvInfo.devirtualizedMethod;
     CORINFO_CONTEXT_HANDLE  exactContext          = dvInfo.tokenLookupContext;
     CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedMethod;
@@ -10266,6 +10216,43 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, objClass, pContextHandle,
                                         pResolvedToken);
         return;
+    }
+
+    GenTree* runtimeLookupContext = nullptr;
+    if (dvInfo.instParamLookup.lookupKind.needsRuntimeLookup)
+    {
+        // An explicit tail call retains the boxed entry. The lookup supplies the hidden
+        // argument of the unboxed entry and cannot specialize the boxed stub.
+        if (isExplicitTailCall && (dvInfo.resolvedTokenDevirtualizedUnboxedMethod.hMethod != nullptr))
+        {
+            JITDUMP("Cannot devirtualize to unboxed entry for explicit tail call\n");
+            return;
+        }
+
+        // Late devirtualization runs in the root compiler. For a call imported in an
+        // inlinee, use the context from the original method handle lookup to compute
+        // the devirtualized target's instantiation argument.
+        if (isLateDevirtualization && !call->gtInlineContext->IsRoot())
+        {
+            assert((call->gtControlExpr != nullptr) &&
+                   call->gtControlExpr->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR));
+            GenTree* methodHandle =
+                call->gtControlExpr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
+
+            if (methodHandle->OperIs(GT_RUNTIMELOOKUP) && methodHandle->AsRuntimeLookup()->Lookup()->IsHelperCall() &&
+                methodHandle->AsRuntimeLookup()->Lookup()->AsCall()->gtInlineContext == call->gtInlineContext)
+            {
+                GenTreeCall* helper = methodHandle->AsRuntimeLookup()->Lookup()->AsCall();
+                assert(helper->IsRuntimeLookupHelperCall(this) ||
+                       helper->IsHelperCall(CORINFO_HELP_READYTORUN_GENERIC_HANDLE));
+                runtimeLookupContext = helper->gtArgs.GetArgByIndex(0)->GetNode();
+            }
+            else
+            {
+                JITDUMP("Cannot figure out runtime lookup context for late devirtualization. Bail out.\n");
+                return;
+            }
+        }
     }
 
     // All checks done. Time to transform the call.

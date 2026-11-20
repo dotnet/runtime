@@ -169,15 +169,12 @@ public class GenericVirtualMethodTests
         RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnStringType<string>();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static IDevirtTarget MakeTarget() => new DevirtTarget();
+
     [Fact]
     public static void RuntimeLookupInlining()
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static IDevirtTarget MakeTarget()
-        {
-            return new DevirtTarget();
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Type LateInlinee<TInlinee>()
         {
@@ -215,6 +212,24 @@ public class GenericVirtualMethodTests
         Assert.Equal(expected, immediateActual);
         Assert.Equal(expected, lateActual);
         Assert.Equal(expected, lateRootActual);
+    }
+
+    private sealed class Receiver<TFirst, TSecond>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Type CallOther(Receiver<TSecond, TFirst> other) => other.GetFirstType();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private Type GetFirstType() => MakeTarget().GetTypeArg<TFirst>();
+    }
+
+    [Fact]
+    public static void RuntimeLookupUsesInlineeReceiver()
+    {
+        var first = new Receiver<string, object>();
+        var second = new Receiver<object, string>();
+        Assert.Equal(typeof(object), first.CallOther(second));
+        Assert.Equal(typeof(string), second.CallOther(first));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
