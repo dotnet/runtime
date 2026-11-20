@@ -58,7 +58,7 @@
         ret
     }
 
-    .method private hidebysig instance void Load.LocAllocInsideFinally_Invalid_Unverifiable_Validation_LocallocInHandler() cil managed
+    .method private hidebysig instance void Load.LocAllocInsideFinally_Invalid_Unverifiable.LocallocInHandler_Validation_LocallocInHandler() cil managed
     {
         .try
         {
@@ -75,7 +75,7 @@
         ret
     }
 
-    .method private hidebysig instance void Load.LocAllocInsideFilter_Invalid_Unverifiable_Validation_LocallocInHandler() cil managed
+    .method private hidebysig instance void Load.LocAllocInsideFilter_Invalid_Unverifiable.LocallocInHandler_Validation_LocallocInHandler() cil managed
     {
         .try
         {
@@ -98,7 +98,7 @@
         ret
     }
 
-    .method private hidebysig instance void Load.LocAllocWithInt64Size_Invalid_Unverifiable_Validation_StackUnexpected() cil managed
+    .method private hidebysig instance void Load.LocAllocWithInt64Size_Invalid_Unverifiable.StackUnexpected_Validation_StackUnexpected() cil managed
     {
         ldc.i8 2
         localloc

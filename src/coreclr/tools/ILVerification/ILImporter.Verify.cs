@@ -2781,18 +2781,14 @@ namespace Internal.IL
             // localloc is never verifiable (III.3.47); the checks below are validity rules.
             UnverifiableError(VerifierError.Unverifiable);
 
-            if (ValidationOnly)
-                Check(!_currentBasicBlock.FilterIndex.HasValue && !_currentBasicBlock.HandlerIndex.HasValue, VerifierError.LocallocInHandler);
+            Check(!_currentBasicBlock.FilterIndex.HasValue && !_currentBasicBlock.HandlerIndex.HasValue, VerifierError.LocallocInHandler);
 
             var size = Pop();
 
             Check(_stackTop == 0, VerifierError.LocallocStackNotEmpty);
 
-            // The size is a native unsigned int or an unsigned int32; verification mode keeps its existing check.
-            if (ValidationOnly)
-                CheckIsIndex(size);
-            else
-                CheckIsInteger(size);
+            // The size is a native unsigned int or an unsigned int32.
+            CheckIsIndex(size);
 
             Push(StackValue.CreatePrimitive(StackValueKind.NativeInt));
         }

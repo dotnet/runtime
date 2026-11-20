@@ -23,7 +23,7 @@ All Classes and Methods in C:\test\hello.dll Verified.
 
 Note that `ILVerify` requires all dependencies of assembly that is being verified to be explicitly specified on the command line.
 
-`--validation-only` is in progress. It is meant to report IL that is not valid and to skip rules that only verifiable IL must follow. At present it skips only one: the blanket `Unverifiable` error for `localloc`. Its validity checks remain: the size must be the only item on the stack and an `int32` or native int, and `localloc` cannot be in an exception filter or handler.
+`--validation-only` checks that IL is valid rather than verifiable. It is meant to accept the valid but unverifiable IL that the C# compiler emits for unsafe code.
 
 ## Other tools
 Historically on .NET Framework IL generators used PEVerify to make sure that they generated correct IL. PEVerify has some major limitations (e.g. it is tied to the .NET Framework, it cannot verify mscorlib.dll, etc.), which initiated this project.

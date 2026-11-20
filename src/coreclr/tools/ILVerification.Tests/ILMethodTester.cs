@@ -59,7 +59,6 @@ namespace ILVerification.Tests
         [Trait("", "Validation-only IL Tests")]
         public static void TestMethodsInValidationOnlyMode(ValidationOnlyTestCase testCase)
         {
-            // Unlike verification, validation must not throw for invalid IL, so exceptions are not caught here.
             var results = Verify(testCase, validationOnly: true).ToList();
             Assert.Equal(testCase.ExpectedVerifierErrors.Order(), results.Select(r => r.Code).Order());
         }
