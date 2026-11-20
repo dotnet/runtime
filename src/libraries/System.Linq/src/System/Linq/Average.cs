@@ -191,6 +191,38 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
+            // The two loops are separate methods so that each is optimized based on its own use,
+            // rather than one of them being treated as cold if the other is all that's been seen.
+            return source.TryGetSpan(out ReadOnlySpan<TSource> span) ?
+                Average<TSource, TSelector, TAccumulator, TResult>(span, selector) :
+                AverageEnumerable<TSource, TSelector, TAccumulator, TResult>(source, selector);
+        }
+
+        private static TResult Average<TSource, TSelector, TAccumulator, TResult>(ReadOnlySpan<TSource> span, Func<TSource, TSelector> selector)
+            where TSelector : struct, INumber<TSelector>
+            where TAccumulator : struct, INumber<TAccumulator>
+            where TResult : struct, INumber<TResult>
+        {
+            if (span.IsEmpty)
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            // As in the enumerator-based loop, the sum starts from the first value rather than from zero.
+            TAccumulator sum = TAccumulator.CreateChecked(selector(span[0]));
+            for (int i = 1; i < span.Length; i++)
+            {
+                checked { sum += TAccumulator.CreateChecked(selector(span[i])); }
+            }
+
+            return TResult.CreateChecked(sum) / TResult.CreateChecked(span.Length);
+        }
+
+        private static TResult AverageEnumerable<TSource, TSelector, TAccumulator, TResult>(IEnumerable<TSource> source, Func<TSource, TSelector> selector)
+            where TSelector : struct, INumber<TSelector>
+            where TAccumulator : struct, INumber<TAccumulator>
+            where TResult : struct, INumber<TResult>
+        {
             using IEnumerator<TSource> e = source.GetEnumerator();
             if (!e.MoveNext())
             {
@@ -235,6 +267,52 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
+            return source.TryGetSpan(out ReadOnlySpan<TSource> span) ?
+                Average<TSource, TSelector, TAccumulator, TResult>(span, selector) :
+                AverageEnumerable<TSource, TSelector, TAccumulator, TResult>(source, selector);
+        }
+
+        private static TResult? Average<TSource, TSelector, TAccumulator, TResult>(ReadOnlySpan<TSource> span, Func<TSource, TSelector?> selector)
+            where TSelector : struct, INumber<TSelector>
+            where TAccumulator : struct, INumber<TAccumulator>
+            where TResult : struct, INumber<TResult>
+        {
+            TAccumulator sum = TAccumulator.Zero;
+            long count = 0;
+            foreach (TSource item in span)
+            {
+                if (selector(item) is TSelector value)
+                {
+                    // As in the enumerator-based loop, the sum starts from the first value rather than from zero.
+                    // That is done in this one loop, rather than in a loop that finds the first value followed
+                    // by another for the rest, as the selected value is then kept in registers.
+                    TAccumulator converted = TAccumulator.CreateChecked(value);
+                    if (count == 0)
+                    {
+                        sum = converted;
+                    }
+                    else
+                    {
+                        checked { sum += converted; }
+                    }
+
+                    count++;
+                }
+            }
+
+            if (count == 0)
+            {
+                return null;
+            }
+
+            return TResult.CreateChecked(sum) / TResult.CreateChecked(count);
+        }
+
+        private static TResult? AverageEnumerable<TSource, TSelector, TAccumulator, TResult>(IEnumerable<TSource> source, Func<TSource, TSelector?> selector)
+            where TSelector : struct, INumber<TSelector>
+            where TAccumulator : struct, INumber<TAccumulator>
+            where TResult : struct, INumber<TResult>
+        {
             using IEnumerator<TSource> e = source.GetEnumerator();
             while (e.MoveNext())
             {
