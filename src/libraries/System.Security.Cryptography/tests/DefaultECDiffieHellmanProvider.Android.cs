@@ -17,8 +17,6 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         public override bool ExplicitCurvesSupported => true;
 
-        public override bool CanDeriveNewPublicKey => false;
-
         public override bool SupportsRawDerivation => true;
 
         public override bool SupportsSha3 => false;
