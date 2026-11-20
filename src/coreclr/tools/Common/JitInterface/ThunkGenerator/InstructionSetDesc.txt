@@ -218,7 +218,7 @@ instructionset     ,ARM64 ,Rdm                   ,           ,24 ,Rdm           
 instructionset     ,ARM64 ,                      ,Fp16       ,95 ,Fp16                  ,fp16
 instructionset     ,ARM64 ,Sha1                  ,           ,19 ,Sha1                  ,sha1
 instructionset     ,ARM64 ,Sha256                ,           ,20 ,Sha256                ,sha2
-instructionset     ,ARM64 ,                      ,Atomics    ,21 ,Atomics               ,lse
+instructionset     ,ARM64 ,Lse                   ,Atomics    ,21 ,Atomics               ,lse
 instructionset     ,ARM64 ,                      ,           ,   ,Vector64              ,
 instructionset     ,ARM64 ,                      ,           ,   ,Vector128             ,
 instructionset     ,ARM64 ,                      ,           ,   ,VectorT               ,
