@@ -8129,7 +8129,7 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
     {
         MakeSrcContained(node, divisor);
     }
-    else if (divisorCanBeRegOptional && (genTypeSize(divisor) == genTypeSize(node)) &&
+    else if (divisorCanBeRegOptional && IsContainableMemoryOpSize(node, divisor) &&
              IsSafeToMarkRegOptional(node, divisor))
     {
         // If there are no containable operands, we can make an operand reg optional.
