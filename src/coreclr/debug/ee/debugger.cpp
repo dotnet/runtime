@@ -454,7 +454,7 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
         if (pThread)
         {
             // mamaged thread
-            _ASSERTE(m_mutexOwner == pThread->GetOSThreadId64());
+            _ASSERTE(m_mutexOwner == GetThreadIdHelper(pThread));
         }
         else
         {
@@ -466,7 +466,7 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     m_mutexCount++;
     if (pThread)
     {
-        m_mutexOwner = pThread->GetOSThreadId64();
+        m_mutexOwner = GetThreadIdHelper(pThread);
     }
     else
     {
@@ -7933,7 +7933,7 @@ bool Debugger::FirstChanceManagedException(Thread *pThread, SIZE_T currentIP, SI
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO10000, "D::FCE: First chance exception, TID:0x%x, \n", GetThreadIdHelper(pThread)));
+    LOG((LF_CORDB, LL_INFO10000, "D::FCE: First chance exception, TID:0x%zx, \n", GetThreadIdHelper(pThread)));
 
     _ASSERTE(GetThreadNULLOk() != NULL);
 
@@ -9087,7 +9087,7 @@ void Debugger::ThreadCreated(Thread* pRuntimeThread)
     if (CORDBUnrecoverableError(this))
         return;
 
-    LOG((LF_CORDB, LL_INFO100, "D::TC: thread created for 0x%x. ******\n",
+    LOG((LF_CORDB, LL_INFO100, "D::TC: thread created for 0x%zx. ******\n",
          GetThreadIdHelper(pRuntimeThread)));
 
     // Sanity check the thread.
@@ -9135,13 +9135,13 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
 
     if (pRuntimeThread->HasThreadStateNC(Thread::TSNC_DebuggerThreadStartSent))
     {
-        LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach already sent, skipping : ID=%#x\n",
+        LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach already sent, skipping : ID=%#zx\n",
              GetThreadIdHelper(pRuntimeThread)));
         return;
     }
     pRuntimeThread->SetThreadStateNC(Thread::TSNC_DebuggerThreadStartSent);
 
-    LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach : ID=%#x AD:%p\n",
+    LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach : ID=%#zx AD:%p\n",
          GetThreadIdHelper(pRuntimeThread), static_cast<void*>(AppDomain::GetCurrentDomain())));
 
     // We just need to send a VMPTR_Thread. The RS will get everything else it needs from DAC.
@@ -9246,7 +9246,7 @@ void Debugger::DetachThread(Thread *pRuntimeThread)
     _ASSERTE (pRuntimeThread != NULL);
 
 
-    LOG((LF_CORDB, LL_INFO100, "D::DT: thread detach : ID=%#x AD:%p.\n",
+    LOG((LF_CORDB, LL_INFO100, "D::DT: thread detach : ID=%#zx AD:%p.\n",
          GetThreadIdHelper(pRuntimeThread), AppDomain::GetCurrentDomain()));
 
 
@@ -10796,9 +10796,9 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             Thread * pThread = pEvent->SetAllDebugState.vmThreadToken.GetRawPtr();
             CorDebugThreadState debugState = pEvent->SetAllDebugState.debugState;
 
-            LOG((LF_CORDB,LL_INFO10000,"HandleIPCE: SetAllDebugState: except thread 0x%p (ID:0x%x) to state 0x%x\n",
+            LOG((LF_CORDB,LL_INFO10000,"HandleIPCE: SetAllDebugState: except thread 0x%p (ID:0x%zx) to state 0x%x\n",
                  pThread,
-                 (pThread != NULL) ? GetThreadIdHelper(pThread) : 0,
+                 (pThread != NULL) ? GetThreadIdHelper(pThread) : (SIZE_T)0,
                  debugState));
 
             if (!IsAtProcessExit())
@@ -12475,7 +12475,7 @@ bool Debugger::IsThreadAtSafePlaceWorker(Thread *thread)
 #ifdef LOGGING
     if (!atSafePlace)
         LOG((LF_CORDB | LF_GC, LL_INFO1000,
-             "Thread 0x%x is not at a safe place.\n",
+             "Thread 0x%zx is not at a safe place.\n",
              GetThreadIdHelper(thread)));
 #endif
 
@@ -12520,11 +12520,11 @@ bool Debugger::IsThreadAtSafePlace(Thread *thread)
  * Helper for debugger to get an unique thread id
  *
  ******************************************************************************/
-DWORD Debugger::GetThreadIdHelper(Thread *pThread)
+SIZE_T Debugger::GetThreadIdHelper(Thread *pThread)
 {
     WRAPPER_NO_CONTRACT;
 
-    return pThread->GetOSThreadId();
+    return pThread->GetOSThreadId64();
 }
 
 //-----------------------------------------------------------------------------
@@ -14431,7 +14431,7 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
     *argDataArea = pDE->m_argData;
     *debuggerEvalKey = pDE;
 
-    LOG((LF_CORDB, LL_INFO100000, "D:FES for pDE:%p evalType:%d on thread %p, id=0x%x\n",
+    LOG((LF_CORDB, LL_INFO100000, "D:FES for pDE:%p evalType:%d on thread %p, id=0x%zx\n",
         pDE, pDE->m_evalType, pThread, GetThreadIdHelper(pThread)));
 
     return S_OK;
@@ -14475,7 +14475,7 @@ Debugger::FuncEvalAbort(
         pDE->m_aborting = DebuggerEval::FE_ABORT_NORMAL;
 
         LOG((LF_CORDB, LL_INFO1000,
-             "D::FEA: performing UserAbort on thread %p, id=0x%x\n",
+             "D::FEA: performing UserAbort on thread %p, id=0x%zx\n",
              pDE->m_thread, GetThreadIdHelper(pDE->m_thread)));
 
         if (!IsAtProcessExit() && !pDE->m_completed)
@@ -14542,7 +14542,7 @@ Debugger::FuncEvalRudeAbort(
         pDE->m_aborting = (DebuggerEval::FUNC_EVAL_ABORT_TYPE)(pDE->m_aborting | DebuggerEval::FE_ABORT_RUDE);
 
         LOG((LF_CORDB, LL_INFO1000,
-             "D::FEA: performing RudeAbort on thread %p, id=0x%x\n",
+             "D::FEA: performing RudeAbort on thread %p, id=0x%zx\n",
              pDE->m_thread, Debugger::GetThreadIdHelper(pDE->m_thread)));
 
         if (!IsAtProcessExit() && !pDE->m_completed)
@@ -14585,7 +14585,7 @@ HRESULT Debugger::FuncEvalCleanup(DebuggerEval *debuggerEvalKey)
 
     _ASSERTE(pDE->m_completed);
 
-    LOG((LF_CORDB, LL_INFO1000, "D::FEC: pDE:%p 0x%p, id=0x%x\n",
+    LOG((LF_CORDB, LL_INFO1000, "D::FEC: pDE:%p 0x%p, id=0x%zx\n",
          pDE, pDE->m_thread, GetThreadIdHelper(pDE->m_thread)));
 
     DeleteInteropSafeExecutable(pDE->m_bpInfoSegment);
@@ -15188,7 +15188,7 @@ bool ThisIsHelperThreadWorker(void)
 
     // Even if we're not on the real helper thread, we may still be on a thread
     // pretending to be the helper. (Helper Duty, etc).
-    DWORD id = (DWORD)minipal_get_current_thread_id();
+    size_t id = minipal_get_current_thread_id();
 
     // Check for temporary helper thread.
     if (ThisIsTempHelperThread(id))
@@ -15217,11 +15217,11 @@ bool ThisIsTempHelperThread()
 {
     WRAPPER_NO_CONTRACT;
 
-    DWORD id = (DWORD)minipal_get_current_thread_id();
+    size_t id = minipal_get_current_thread_id();
     return ThisIsTempHelperThread(id);
 }
 
-bool ThisIsTempHelperThread(DWORD tid)
+bool ThisIsTempHelperThread(size_t tid)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -15237,7 +15237,7 @@ bool ThisIsTempHelperThread(DWORD tid)
         {
             DWORD idTemp = pBlock->m_temporaryHelperThreadId;
 
-            if (tid == idTemp)
+            if ((DWORD)tid == idTemp)
             {
                 return true;
             }

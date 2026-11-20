@@ -350,7 +350,7 @@ inline DWORD UnsafeGetConfigDWORD(const CLRConfig::ConfigDWORDInfo & info)
 
 bool ThisIsHelperThreadWorker(void);
 bool ThisIsTempHelperThread();
-bool ThisIsTempHelperThread(DWORD tid);
+bool ThisIsTempHelperThread(size_t tid);
 
 #ifdef _DEBUG
 
@@ -2406,7 +2406,7 @@ public:
 
         if (g_pEEInterface->GetThread())
         {
-            return (g_pEEInterface->GetThread()->GetOSThreadId64() == m_mutexOwner);
+            return (GetThreadIdHelper(g_pEEInterface->GetThread()) == m_mutexOwner);
         }
         else
         {
@@ -2673,7 +2673,7 @@ public:
     void SetModuleDefaultJMCStatus(Module * pRuntimeModule, bool fStatus);
 
 #ifndef DACCESS_COMPILE
-    static DWORD GetThreadIdHelper(Thread *pThread);
+    static SIZE_T GetThreadIdHelper(Thread *pThread);
 #endif // DACCESS_COMPILE
 
 private:

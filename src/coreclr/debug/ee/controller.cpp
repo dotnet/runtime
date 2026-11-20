@@ -3569,7 +3569,7 @@ void DebuggerController::DisableSingleStep()
 //
 void DebuggerController::ApplyTraceFlag(Thread *thread)
 {
-    LOG((LF_CORDB,LL_INFO1000, "DC::ApplyTraceFlag thread:0x%p [0x%0x]\n", thread, Debugger::GetThreadIdHelper(thread)));
+    LOG((LF_CORDB,LL_INFO1000, "DC::ApplyTraceFlag thread:0x%p [0x%0zx]\n", thread, Debugger::GetThreadIdHelper(thread)));
 
     CONTEXT *context;
     if(thread->GetInteropDebuggingHijacked())
@@ -3939,7 +3939,7 @@ void DebuggerController::EnableTraceCall(FramePointer maxFrame)
 
     ASSERT(m_thread != NULL);
 
-    LOG((LF_CORDB,LL_INFO1000, "DC::ETC maxFrame=%p, thread=0x%x\n",
+    LOG((LF_CORDB,LL_INFO1000, "DC::ETC maxFrame=%p, thread=0x%zx\n",
          maxFrame.GetSPValue(), Debugger::GetThreadIdHelper(m_thread)));
 
     // JMC stepper should never enabled this. (They should enable ME instead).
@@ -3984,7 +3984,7 @@ void DebuggerController::DisableTraceCall()
     {
         if (m_traceCall)
         {
-            LOG((LF_CORDB,LL_INFO1000, "DC::DTC thread=0x%x\n",
+            LOG((LF_CORDB,LL_INFO1000, "DC::DTC thread=0x%zx\n",
              Debugger::GetThreadIdHelper(m_thread)));
 
             g_pEEInterface->DisableTraceCall(m_thread);
@@ -8965,7 +8965,7 @@ TP_RESULT DebuggerThreadStarter::TriggerPatch(DebuggerControllerPatch *patch,
     Module *module = patch->key.module;
     BOOL managed = patch->IsManagedPatch();
 
-    LOG((LF_CORDB,LL_INFO1000, "DebuggerThreadStarter::TriggerPatch for thread 0x%x\n", Debugger::GetThreadIdHelper(thread)));
+    LOG((LF_CORDB,LL_INFO1000, "DebuggerThreadStarter::TriggerPatch for thread 0x%zx\n", Debugger::GetThreadIdHelper(thread)));
 
     if (module == NULL && managed)
     {

@@ -6561,7 +6561,7 @@ void DeadlockAwareLock::LeaveLock()
 // DLL_THREAD_ATTACH notification of an (IJW?) module calls into managed code.  This
 // is incredibly dangerous.  If a GC is provoked, the system may have trouble performing
 // the GC because its threads aren't available yet.
-static DWORD SpecialEEThreads[10];
+static size_t SpecialEEThreads[10];
 static LONG  cnt_SpecialEEThreads = 0;
 
 void dbgOnly_IdentifySpecialEEThread()
@@ -6571,14 +6571,14 @@ void dbgOnly_IdentifySpecialEEThread()
     LONG  ourCount = InterlockedIncrement(&cnt_SpecialEEThreads);
 
     _ASSERTE(ourCount < (LONG) ARRAY_SIZE(SpecialEEThreads));
-    SpecialEEThreads[ourCount-1] = (DWORD)minipal_get_current_thread_id();
+    SpecialEEThreads[ourCount-1] = minipal_get_current_thread_id();
 }
 
 BOOL dbgOnly_IsSpecialEEThread()
 {
     WRAPPER_NO_CONTRACT;
 
-    DWORD   ourId = (DWORD)minipal_get_current_thread_id();
+    size_t  ourId = minipal_get_current_thread_id();
 
     for (LONG i=0; i<cnt_SpecialEEThreads; i++)
         if (ourId == SpecialEEThreads[i])
@@ -6591,7 +6591,7 @@ BOOL dbgOnly_IsSpecialEEThread()
     {
         //<TODO>We probably should use Thread::GetThreadId</TODO>
         DWORD helperID = g_pDebugInterface->GetHelperThreadID();
-        if (helperID == ourId)
+        if (helperID == (DWORD)ourId)
             return TRUE;
     }
     #endif
