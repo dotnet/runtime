@@ -1680,7 +1680,7 @@ namespace Internal.JitInterface
 
                 if (originalImpl.IsRuntimeDeterminedExactMethod || originalImpl.IsSharedByGenericInstantiations)
                 {
-                    if (info->pResolvedTokenVirtualMethod == null || unboxingStub)
+                    if (info->pResolvedTokenVirtualMethod == null)
                     {
                         info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                         return false;
