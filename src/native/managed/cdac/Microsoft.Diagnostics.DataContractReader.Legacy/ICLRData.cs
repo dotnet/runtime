@@ -127,6 +127,15 @@ public unsafe partial interface ICLRRuntimeLocator
 }
 
 [GeneratedComInterface]
+[Guid("aa8fa804-bc05-4642-b2c5-c353ed22fc63")]
+public unsafe partial interface ICLRMetadataLocator
+{
+    [PreserveSig]
+    int GetMetadata(char* imagePath, uint imageTimestamp, uint imageSize, Guid* mvid,
+        uint mdRva, uint flags, uint bufferSize, byte* buffer, uint* dataSize);
+}
+
+[GeneratedComInterface]
 [Guid("17d5b8c6-34a9-407f-af4f-a930201d4e02")]
 public unsafe partial interface ICLRContractLocator
 {
