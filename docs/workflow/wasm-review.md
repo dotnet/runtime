@@ -28,9 +28,9 @@ different tool requirements; check the actual gates before coupling them.
 
 For shared native inputs, trace each MSBuild-to-CMake bridge. For example,
 [`eng/native.wasm.targets`](../../eng/native.wasm.targets) supplies
-`NativeCMakeArg`, while the Mono browser command is constructed separately in
-[`browser.proj`](../../src/mono/browser/browser.proj). Reuse common wasm-opt feature flags
-without merging runtime-specific optimization, debug or stripping policies.
+`NativeCMakeArg`, while application relinking is handled by the runtime-specific
+Browser/WASI app targets. Reuse common wasm-opt feature flags without merging
+runtime-specific optimization, debug or stripping policies.
 
 ## Check configuration at the point it is consumed
 
