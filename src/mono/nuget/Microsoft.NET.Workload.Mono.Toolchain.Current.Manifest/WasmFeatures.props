@@ -2,6 +2,7 @@
   <PropertyGroup>
     <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+    <_WasmEventSourceSupportDefaulted Condition="'$(EventSourceSupport)' == ''">true</_WasmEventSourceSupportDefaulted>
     <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
     <MetricsSupport Condition="'$(MetricsSupport)' == ''">false</MetricsSupport>
     <UseSizeOptimizedLinq Condition="'$(UseSizeOptimizedLinq)' == ''">true</UseSizeOptimizedLinq>

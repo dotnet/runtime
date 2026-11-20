@@ -25,6 +25,7 @@
 
 #include "readonlydatatargetfacade.h"
 #include "metahost.h"
+#include <minipal/environ.h>
 
 // Defined in dbgutil; resolves a runtime export address from the data target.
 extern "C" bool TryGetSymbol(
@@ -542,6 +543,50 @@ void CordbProcess::Free(void * p)
     delete [] ((BYTE *) p);
 }
 
+//---------------------------------------------------------------------------------------
+//
+// Instantiates a DacDbi interface from a DAC module. Shared by code:CordbProcess::CreateDacDbiInterface
+// and the cDAC probe in code:VerifyCDac.
+//
+//---------------------------------------------------------------------------------------
+HRESULT
+CordbProcess::InstantiateDacDbiInterface(HMODULE hDacModule,
+                                         ICorDebugDataTarget * pDataTarget,
+                                         CORDB_ADDRESS clrInstanceId,
+                                         IDacDbiInterface::IAllocator * pAllocator,
+                                         IDacDbiInterface::IMetaDataLookup * pMetaDataLookup,
+                                         IDacDbiInterface ** ppInterface,
+                                         IUnknown ** ppLegacyDac)
+{
+    // The cDAC needs the address of the runtime's contract descriptor to initialize. The legacy
+    // DAC only needs it if it wants to route through cdac or to compare results.
+    CLRDATA_ADDRESS contractDescriptorAddress = 0;
+    {
+        uint64_t address = 0;
+        if (TryGetSymbol(pDataTarget, clrInstanceId, "DotNetRuntimeContractDescriptor", &address))
+        {
+            contractDescriptorAddress = address;
+        }
+    }
+
+    typedef HRESULT (STDAPICALLTYPE * PFN_DacDbiInterfaceInstance)(
+        ICorDebugDataTarget *,
+        CORDB_ADDRESS,
+        CLRDATA_ADDRESS,
+        IDacDbiInterface::IAllocator *,
+        IDacDbiInterface::IMetaDataLookup *,
+        IDacDbiInterface **,
+        IUnknown **);
+
+    PFN_DacDbiInterfaceInstance pfnEntry = (PFN_DacDbiInterfaceInstance)GetProcAddress(hDacModule, "DacDbiInterfaceInstance");
+    if (!pfnEntry)
+    {
+        return HRESULT_FROM_GetLastError();
+    }
+
+    return pfnEntry(pDataTarget, clrInstanceId, contractDescriptorAddress, pAllocator, pMetaDataLookup, ppInterface, ppLegacyDac);
+}
+
 
 //---------------------------------------------------------------------------------------
 //
@@ -590,35 +635,9 @@ CordbProcess::CreateDacDbiInterface()
     IDacDbiInterface::IAllocator * pAllocator = this;
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup = this;
 
-    // The cDAC needs the address of the runtime's contract descriptor to initialize. The legacy
-    // DAC only needs it if it wants to route through cdac or to compare results.
-    CLRDATA_ADDRESS contractDescriptorAddress = 0;
-    {
-        uint64_t address = 0;
-        if (TryGetSymbol(m_pDACDataTarget, m_clrInstanceId, "DotNetRuntimeContractDescriptor", &address))
-        {
-            contractDescriptorAddress = address;
-        }
-    }
-
-    typedef HRESULT (STDAPICALLTYPE * PFN_DacDbiInterfaceInstance)(
-        ICorDebugDataTarget *,
-        CORDB_ADDRESS,
-        CLRDATA_ADDRESS,
-        IDacDbiInterface::IAllocator *,
-        IDacDbiInterface::IMetaDataLookup *,
-        IDacDbiInterface **,
-        IUnknown **);
-
     IDacDbiInterface* pInterfacePtr = NULL;
     IUnknown* pLegacyDac = NULL;
-    PFN_DacDbiInterfaceInstance pfnEntry = (PFN_DacDbiInterfaceInstance)GetProcAddress(m_hDacModule, "DacDbiInterfaceInstance");
-    if (!pfnEntry)
-    {
-        ThrowLastError();
-    }
-
-    hrStatus = pfnEntry(m_pDACDataTarget, m_clrInstanceId, contractDescriptorAddress, pAllocator, pMetaDataLookup, &pInterfacePtr, &pLegacyDac);
+    hrStatus = InstantiateDacDbiInterface(m_hDacModule, m_pDACDataTarget, m_clrInstanceId, pAllocator, pMetaDataLookup, &pInterfacePtr, &pLegacyDac);
     IfFailThrow(hrStatus);
 
     // We now have resources that need to be freed.
@@ -4494,7 +4513,7 @@ void CordbProcess::DispatchRCEvent()
 
                     {
                         // Release lock around the dispatch of the event
-                        RSInverseLockHolder inverseLockHolder(GetProcessLock());
+                        RSInverseLockHolder inverseLockHolder = RSLock::ReleaseForScope(GetProcessLock());
 
                         EX_TRY
                         {
@@ -7134,7 +7153,7 @@ void CordbProcess::VerifyControlBlock()
 
 #ifdef _DEBUG
     char buf[MAX_LONGPATH];
-    DWORD len = GetEnvironmentVariableA("CORDBG_NotCompatibleTest", buf, sizeof(buf));
+    DWORD len = minipal_environ_get_variable("CORDBG_NotCompatibleTest", buf, sizeof(buf));
     _ASSERTE(len < sizeof(buf));
 
     if (len > 0)
@@ -9539,7 +9558,7 @@ void CordbRCEventThread::FlushQueuedEvents(CordbProcess* process)
 
     // Release lock before we call out to shim to Queue fake events.
     {
-        RSInverseLockHolder inverseLockHolder(process->GetProcessLock());
+        RSInverseLockHolder inverseLockHolder = RSLock::ReleaseForScope(process->GetProcessLock());
         {
             PUBLIC_CALLBACK_IN_THIS_SCOPE0_NO_LOCK(pProcess);
 
@@ -10669,39 +10688,11 @@ HRESULT CordbProcess::EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurT
     {
         return E_INVALIDARG;
     }
-    HANDLE hProcess = UnsafeGetProcessHandle();
-    LPVOID baseAddress = (LPVOID)(patchSkipAddr);
-    DWORD oldProt;
 
-    if (!VirtualProtectEx(hProcess,
-                        baseAddress,
-                        CORDbg_BREAK_INSTRUCTION_SIZE,
-                        PAGE_EXECUTE_READWRITE, &oldProt))
-    {
-        // we may be seeing unwriteable directly mapped executable memory.
-        // let's try copy-on-write instead,
-        if (!VirtualProtectEx(hProcess,
-            baseAddress,
-            CORDbg_BREAK_INSTRUCTION_SIZE,
-            PAGE_EXECUTE_WRITECOPY, &oldProt))
-        {
-            _ASSERTE(!"VirtualProtect of code page failed");
-            return HRESULT_FROM_GetLastError();
-        }
-    }
-
+    // RemoveRemotePatch makes the code page temporarily writable if needed.
     LOG((LF_CORDB, LL_INFO10000, "RS EnableInPlaceSingleStepping - address=0x%p opcode=0x%x\n", patchSkipAddr, opcode));
     HRESULT hr = RemoveRemotePatch(this, (void*)patchSkipAddr, opcode);
     IfFailRet(hr);
-
-    if (!VirtualProtectEx(hProcess,
-                baseAddress,
-                CORDbg_BREAK_INSTRUCTION_SIZE,
-                oldProt, &oldProt))
-    {
-        _ASSERTE(!"VirtualProtect of code page failed");
-        return HRESULT_FROM_GetLastError();
-    }
 
     pCurThread->SetPatchSkipAddress(patchSkipAddr);
 
@@ -10731,39 +10722,15 @@ bool CordbProcess::HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAdd
         curThread->GetThreadId() == dwThreadId &&
         curThread->IsInPlaceStepping())
     {
-        // this is an in-place step, so place the breakpoint instruction back to the patch location
-
-        HANDLE hProcess = UnsafeGetProcessHandle();
-        LPVOID baseAddress = (LPVOID)(curThread->GetPatchSkipAddress());
-        DWORD oldProt;
-
-        if (!VirtualProtectEx(hProcess,
-                            baseAddress,
-                            CORDbg_BREAK_INSTRUCTION_SIZE,
-                            PAGE_EXECUTE_READWRITE, &oldProt))
-        {
-            // we may be seeing unwriteable directly mapped executable memory.
-            // let's try copy-on-write instead,
-            if (!VirtualProtectEx(hProcess,
-                baseAddress,
-                CORDbg_BREAK_INSTRUCTION_SIZE,
-                PAGE_EXECUTE_WRITECOPY, &oldProt))
-            {
-                _ASSERTE(!"VirtualProtect of code page failed");
-                ThrowHR(HRESULT_FROM_GetLastError());
-            }
-        }
-
+        // this is an in-place step, so place the breakpoint instruction back to the patch location.
+        // ApplyRemotePatch makes the code page temporarily writable if needed. If it fails, still
+        // finish the step and resume the other threads so the process isn't left hung.
         HRESULT hr = ApplyRemotePatch(this, curThread->GetPatchSkipAddress());
-        IfFailThrow(hr);
-
-        if (!VirtualProtectEx(hProcess,
-            baseAddress,
-            CORDbg_BREAK_INSTRUCTION_SIZE,
-            oldProt, &oldProt))
+        if (FAILED(hr))
         {
-            _ASSERTE(!"VirtualProtect of code page failed");
-            ThrowHR(HRESULT_FROM_GetLastError());
+            STRESS_LOG2(LF_CORDB, LL_ERROR, "RS HandleInPlaceSingleStep - failed to reapply patch at %p, hr=0x%x\n",
+                curThread->GetPatchSkipAddress(), hr);
+            _ASSERTE(!"RS HandleInPlaceSingleStep - failed to reapply patch");
         }
 
         curThread->ClearPatchSkipAddress();

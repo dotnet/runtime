@@ -113,6 +113,12 @@ typedef int T_CONTEXT;
 
 extern MINIDUMP_TYPE GetMiniDumpType(DumpType dumpType);
 
+#ifdef HOST_UNIX
+typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
+extern BOOL VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame);
+extern BOOL GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize);
+#endif
+
 #ifdef HOST_WINDOWS
 extern std::string GetLastErrorString();
 extern DWORD GetTempPathWrapper(IN DWORD nBufferLength, OUT LPSTR lpBuffer);

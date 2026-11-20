@@ -31,14 +31,9 @@ endif()
 
 list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_FILE_OFFSET_BITS=64)
 
-check_include_files(sys/vmparam.h HAVE_SYS_VMPARAM_H)
-check_include_files(mach/vm_types.h HAVE_MACH_VM_TYPES_H)
-check_include_files(mach/vm_param.h HAVE_MACH_VM_PARAM_H)
 check_include_files("sys/param.h;sys/types.h;machine/npx.h" HAVE_MACHINE_NPX_H)
 check_include_files("sys/param.h;sys/cdefs.h;machine/reg.h" HAVE_MACHINE_REG_H)
-check_include_files(machine/vmparam.h HAVE_MACHINE_VMPARAM_H)
 check_include_files(procfs.h HAVE_PROCFS_H)
-check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 check_include_files(sys/time.h HAVE_SYS_TIME_H)
 check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
 check_include_files(sys/membarrier.h HAVE_SYS_MEMBARRIER_H)
@@ -80,7 +75,6 @@ int main(int argc, char **argv) {
 
 set(CMAKE_REQUIRED_LIBRARIES)
 
-check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
 check_include_files(gnu/lib-names.h HAVE_GNU_LIBNAMES_H)
 
 if(CLR_CMAKE_TARGET_HAIKU)
@@ -104,7 +98,6 @@ endif()
 if (PTHREAD_LIBRARY)
   check_library_exists(${PTHREAD_LIBRARY} pthread_attr_get_np "" HAVE_PTHREAD_ATTR_GET_NP)
   check_library_exists(${PTHREAD_LIBRARY} pthread_getattr_np "" HAVE_PTHREAD_GETATTR_NP)
-  check_library_exists(${PTHREAD_LIBRARY} pthread_getcpuclockid "" HAVE_PTHREAD_GETCPUCLOCKID)
 endif()
 
 check_function_exists(fsync HAVE_FSYNC)
@@ -173,9 +166,6 @@ set(CMAKE_EXTRA_INCLUDE_FILES)
 check_type_size(off_t SIZEOF_OFF_T)
 
 check_cxx_symbol_exists(INFTIM poll.h HAVE_INFTIM)
-check_cxx_symbol_exists(_DEBUG sys/user.h USER_H_DEFINES_DEBUG)
-check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
-check_cxx_symbol_exists(_SC_AVPHYS_PAGES unistd.h HAVE__SC_AVPHYS_PAGES)
 
 set(CMAKE_REQUIRED_LIBRARIES pthread)
 check_cxx_source_runs("
@@ -208,22 +198,6 @@ set(CMAKE_REQUIRED_LIBRARIES)
 if (PTHREAD_LIBRARY)
   check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 endif()
-
-set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-
-int main()
-{
-  int ret;
-  struct timespec ts;
-  ret = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
-
-  exit(ret);
-}" HAVE_CLOCK_THREAD_CPUTIME)
-set(CMAKE_REQUIRED_LIBRARIES)
 
 check_cxx_source_runs("
 #include <fcntl.h>
@@ -289,9 +263,6 @@ int main(int argc, char **argv)
         return 0;
 }" UNWIND_CONTEXT_IS_UCONTEXT_T)
 
-check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
-check_symbol_exists(unw_get_proc_info_in_range libunwind.h HAVE_GET_PROC_INFO_IN_RANGE)
-
 check_cxx_source_compiles("
 #include <libunwind.h>
 
@@ -329,7 +300,6 @@ int main(int argc, char **argv)
 }" HAVE_PR_SET_PTRACER)
 
 if(CLR_CMAKE_TARGET_APPLE)
-  set(HAVE__NSGETENVIRON 1)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 

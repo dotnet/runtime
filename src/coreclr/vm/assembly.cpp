@@ -2208,7 +2208,7 @@ void Assembly::Begin()
     STANDARD_VM_CONTRACT;
 
     {
-        AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
+        AppDomain::LoadLockHolder lock = AppDomain::GetCurrentDomain()->TakeLoadLock();
         AppDomain::GetCurrentDomain()->AddAssembly(this);
     }
     // Make it possible to find this Assembly object from associated BINDER_SPACE::Assembly.

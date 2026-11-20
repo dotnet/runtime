@@ -109,9 +109,11 @@
     <PlatformManifestFileEntry Include="libcoreclr.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr_static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libcoreclr_gen_diagnostics_static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libcoreclr_gen_production_static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libcoreclr_gen_static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libeventpipe-disabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libeventpipe-enabled.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libcoreclr_gen_static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="clrgc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.dylib" IsNative="true" />

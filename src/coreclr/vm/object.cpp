@@ -1486,10 +1486,6 @@ void ThreadBaseObject::SetInternal(Thread *it)
     // only allow a transition from NULL to non-NULL
     _ASSERTE((m_InternalThread == NULL) && (it != NULL));
     m_InternalThread = it;
-
-    // Now the native Thread will only be destroyed after the managed Thread is collected.
-    // Tell the GC that the managed Thread actually represents much more memory.
-    GCInterface::AddMemoryPressure(sizeof(Thread));
 }
 
 void ThreadBaseObject::ClearInternal()
@@ -1498,7 +1494,6 @@ void ThreadBaseObject::ClearInternal()
 
     _ASSERTE(m_InternalThread != NULL);
     m_InternalThread = NULL;
-    GCInterface::RemoveMemoryPressure(sizeof(Thread));
 }
 
 #endif // #ifndef DACCESS_COMPILE

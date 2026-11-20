@@ -3036,6 +3036,9 @@ class GenTreeUseEdgeIterator final
     void AdvanceFieldList();
     void AdvancePhi();
     void AdvanceConditional();
+#ifdef TARGET_WASM
+    void AdvanceWasmSelect();
+#endif
 
     template <bool ReverseOperands>
     void AdvanceBinOp();
@@ -5887,7 +5890,7 @@ struct GenTreeCall final : public GenTree
 
     CorInfoHelpFunc GetHelperNum() const;
 
-    ExceptionSetFlags CallExceptions() const;
+    ExceptionSetFlags CallExceptions(Compiler* comp) const;
 
     bool AreArgsComplete() const;
 

@@ -11,5 +11,7 @@
     <ProjectReference Include="ExecutableDataX86.ilproj" />
     <ProjectReference Include="VTableFixupsX64.ilproj" />
     <ProjectReference Include="VTableFixupsX86.ilproj" />
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/137424 -->
+    <ProjectReference Remove="VTableFixupsX64.ilproj;VTableFixupsX86.ilproj" />
   </ItemGroup>
 </Project>

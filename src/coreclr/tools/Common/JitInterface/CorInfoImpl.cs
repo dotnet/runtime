@@ -466,12 +466,19 @@ namespace Internal.JitInterface
             PublishRWData();
             PublishWasmMethodVirtualIPFixups();
 
+#if READYTORUN
+            if (_compilation.DeferredWasmCalls is null)
+            {
+                _methodCodeNode.FinalizePrecodeFixups(scratch: _precodeFixupScratch);
+            }
+#endif
             return CompilationResult.CompilationComplete;
         }
 
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result);
         partial void PublishWasmMethodVirtualIPFixups();
         partial void ClearWasmMethodVirtualIPFixups();
+        partial void RecordRelocationDependencies(ISymbolNode relocTarget);
 
         private static FuncletKind[] GetWasmFuncletKinds(CORINFO_EH_CLAUSE[] clauses)
         {
@@ -561,8 +568,18 @@ namespace Internal.JitInterface
                 _methodCodeNode.InitializeFuncletKinds(GetWasmFuncletKinds(_ehClauses));
             }
 
-            _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
-            _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+#if READYTORUN
+            if (_compilation.DeferredWasmCalls is not null)
+            {
+                _compilation.DeferredWasmCalls.InitializeMethodData(
+                    _methodCodeNode, _debugLocInfos, _debugVarInfos, _deferredWasmActivationImports);
+            }
+            else
+#endif
+            {
+                _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
+                _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+            }
 #if READYTORUN
             if (!_compilation.NodeFactory.OptimizationFlags.StripInliningInfo)
             {
@@ -605,7 +622,6 @@ namespace Internal.JitInterface
                     }
                 }
             }
-
             if (_synthesizedPgoDependencies != null)
             {
                 Debug.Assert(_compilation.NodeFactory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to be non-null with synthesized PGO data to embed");
@@ -1162,7 +1178,18 @@ namespace Internal.JitInterface
             if (!ModuleOptsIntoRefSafetyRules(ecmaMethod.Module, 11))
                 return true;
 
-            return ecmaMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "UnscopedRefAttribute");
+            if (ecmaMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "UnscopedRefAttribute"))
+                return true;
+
+            // C# emits [UnscopedRef] for properties on the property rather than on its accessors.
+            if (ecmaMethod.GetPropertyForAccessor() is PropertyPseudoDesc property)
+            {
+                MetadataReader reader = ecmaMethod.MetadataReader;
+                return !reader.GetCustomAttributeHandle(property.GetCustomAttributes,
+                    "System.Diagnostics.CodeAnalysis", "UnscopedRefAttribute").IsNil;
+            }
+
+            return false;
         }
 
         private static bool ModuleOptsIntoRefSafetyRules(EcmaModule module, int minVersion)
@@ -2647,7 +2674,7 @@ namespace Internal.JitInterface
                 if (fieldType.IsValueType)
                 {
                     var fieldDefType = (DefType)fieldType;
-                    if (!fieldDefType.ContainsGCPointers && !fieldDefType.IsByRefLike)
+                    if (!fieldDefType.ContainsGCPointers && !fieldDefType.ContainsByRefs)
                         continue;
 
                     gcType = CorInfoGCType.TYPE_GC_OTHER;
@@ -4790,6 +4817,17 @@ namespace Internal.JitInterface
             // the relocation with a method-load-time fixup that stores the target's runtime
             // MultiCallableAddrOfCode into the location.
             bool handledByCodeStoreFixup = false;
+#if READYTORUN
+            // Capture metadata for the immediately following function-index relocation.
+            // See #DeferredWasmCallRelocationProtocol for the emitter/consumer ordering contract.
+            if (fRelocType == CorInfoReloc.WASM_DEFERRED_CALL)
+            {
+                Debug.Assert(locationBlock == BlockType.Code && addlDelta == 0);
+                Debug.Assert(_deferredWasmCallSignature is null);
+                _deferredWasmCallSignature = (WasmTypeNode)HandleToObject(target);
+                return;
+            }
+#endif
             TryUseWasmMethodCodeStoreFixup(target, fRelocType, locationBlock, relocOffset, addlDelta, ref handledByCodeStoreFixup);
             if (handledByCodeStoreFixup)
             {
@@ -4865,8 +4903,18 @@ namespace Internal.JitInterface
 
             relocDelta += addlDelta;
 
+#if READYTORUN
+            if (relocTarget is DeferredWasmCallNode call)
+            {
+                Debug.Assert(fRelocType == CorInfoReloc.WASM_FUNCTION_INDEX_LEB && _deferredWasmCallSignature is not null);
+                relocTarget = _compilation.DeferredWasmCalls.GetCall(call.Fallback.MethodWithToken, call.Fallback, _deferredWasmCallSignature);
+                _deferredWasmCallSignature = null;
+            }
+#endif
             // relocDelta is stored as the value
             Relocation.WriteValue(relocType, location, relocDelta);
+
+            RecordRelocationDependencies(relocTarget);
 
             if (sourceBlock.Count == 0)
                 sourceBlock.EnsureCapacity(length / 32 + 1);
@@ -4875,6 +4923,12 @@ namespace Internal.JitInterface
 
         private CorInfoReloc getRelocTypeHint(void* target)
         {
+#if READYTORUN
+            if (_compilation.DeferredWasmCalls is not null && target != null && HandleToObject(target) is DeferredWasmCallNode)
+            {
+                return CorInfoReloc.WASM_DEFERRED_CALL;
+            }
+#endif
             switch (_compilation.TypeSystemContext.Target.Architecture)
             {
                 case TargetArchitecture.X64:

@@ -484,7 +484,7 @@ namespace System.Formats.Cbor
 
                 if (header.InitialByte != CborInitialByte.IndefiniteLengthBreakByte && header.MajorType != expectedType)
                 {
-                    throw new CborContentException(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem);
+                    throw new CborContentException(SR.Format(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem, (int)header.MajorType));
                 }
 
                 return header;

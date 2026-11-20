@@ -772,7 +772,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-build.stamp"
-      Lines="$(_WasmBootJsonBuildStampContent)|$(_WasmFilesystemUsageDetected)"
+      Lines="$(_WasmBootJsonBuildStampContent)|$(_WasmFilesystemUsageDetected)|$(WasmEnableIntegrityCheck)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
@@ -825,6 +825,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       UseMonoRuntime="$(UseMonoRuntime)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
+      EnableIntegrityCheck="$(WasmEnableIntegrityCheck)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"
       LogExitCode="$(WasmTestLogExitCode)"
@@ -1155,6 +1156,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishWebcilStampLine Include="_WasmWebcilVersion=$(_WasmWebcilVersion)" />
       <_WasmPublishWebcilStampLine Include="PublishReadyToRun=$(PublishReadyToRun)" />
       <_WasmPublishWebcilStampLine Include="PublishReadyToRunComposite=$(PublishReadyToRunComposite)" />
+      <_WasmPublishWebcilStampLine Include="PublishTrimmed=$(PublishTrimmed)" />
       <_WasmPublishWebcilStampLine Include="_WasmPublishPrebuiltR2RDirectory=$(_WasmPublishPrebuiltR2RDirectory)" />
       <_WasmPublishWebcilStampLine Include="PrebuiltR2R=%(_WasmPublishPrebuiltR2RInput.Identity)|%(_WasmPublishPrebuiltR2RInput.ModifiedTime)" />
       <_WasmPublishWebcilStampLine Include="Input=%(_WasmPublishWebcilStampInput.Identity)|%(_WasmPublishWebcilStampInput.ModifiedTime)" />
@@ -1269,7 +1271,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <Target Name="_AddPublishWasmBootJsonToStaticWebAssets" DependsOnTargets="GeneratePublishWasmBootJson">
+  <Target Name="_AddPublishWasmBootJsonToStaticWebAssets"
+    DependsOnTargets="GeneratePublishWasmBootJson"
+    Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
 
     <ItemGroup>
       <!-- Track boot JSON for clean operations even when GeneratePublishWasmBootJson was skipped -->
@@ -1370,7 +1374,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
-      Lines="$(_WasmBootJsonPublishStampContent)|$(_WasmFilesystemUsageDetected)"
+      Lines="$(_WasmBootJsonPublishStampContent)|$(_WasmFilesystemUsageDetected)|$(WasmEnableIntegrityCheck)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
@@ -1383,6 +1387,7 @@ Copyright (c) .NET Foundation. All rights reserved.
        extensions, property stamp) are older than the output, the target is skipped. -->
   <Target Name="GeneratePublishWasmBootJson"
     DependsOnTargets="_WriteWasmPublishBootJsonPropertyStamp;_AttachPublishWebcilSizes"
+    Condition="'$(WasmBuildingForNestedPublish)' != 'true'"
     Inputs="@(IntermediateAssembly);@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish);@(_WasmPublishConfigFile);@(_WasmDotnetJsForPublish);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
     Outputs="$(IntermediateOutputPath)wasm-bootjson-publish.complete.stamp">
 
@@ -1417,6 +1422,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       UseMonoRuntime="$(UseMonoRuntime)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
+      EnableIntegrityCheck="$(WasmEnableIntegrityCheck)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"
       LogExitCode="$(WasmTestLogExitCode)"

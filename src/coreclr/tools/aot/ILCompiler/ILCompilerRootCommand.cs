@@ -34,6 +34,8 @@ namespace ILCompiler
             new("--file-layout") { CustomParser = MakeFileLayoutAlgorithm, DefaultValueFactory = MakeFileLayoutAlgorithm, Description = "Layout algorithm used by profile-driven optimization for arranging non-method contents in a file.", HelpName = "arg" };
         public Option<string> OrderFile { get; } =
             new("--order") { Description = "File that specifies order of symbols within the generated object file" };
+        public Option<int?> FunctionAlignment { get; } =
+            new("--function-alignment") { Description = "Alignment in bytes of method bodies not optimized for size (a power of two)" };
         public Option<string[]> SatelliteFilePaths { get; } =
             new("--satellite") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Satellite assemblies associated with inputs/references" };
         public Option<bool> EnableDebugInfo { get; } =
@@ -201,6 +203,7 @@ namespace ILCompiler
             Options.Add(MethodLayout);
             Options.Add(FileLayout);
             Options.Add(OrderFile);
+            Options.Add(FunctionAlignment);
             Options.Add(SatelliteFilePaths);
             Options.Add(EnableDebugInfo);
             Options.Add(UseDwarf5);

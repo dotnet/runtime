@@ -209,7 +209,11 @@ public:
     static FILETIME GetSessionStartTime(EventPipeSession *session);
     static LONGLONG GetSessionStartTimestamp(EventPipeSession *session);
     static void AddProviderToSession(EventPipeSessionProvider *provider, EventPipeSession *session);
-    static EventPipeProvider * CreateProvider(const WCHAR* providerName, EventPipeCallback callback, void* callbackContext = nullptr);
+    static EventPipeProvider * CreateProvider(
+        const WCHAR* providerName,
+        EventPipeCallback callback,
+        void* callbackContext = nullptr,
+        const EventPipeEventTable *eventTable = nullptr);
     static void DeleteProvider(EventPipeProvider *provider);
     static EventPipeProvider * GetProvider(LPCWSTR providerName);
     static EventPipeSessionProvider * CreateSessionProvider(const EventPipeProviderConfigurationAdapter &providerConfig);
@@ -445,7 +449,7 @@ public:
 		ep_add_provider_to_session (provider, session);
 	}
 
-	static inline EventPipeProvider * CreateProvider(const WCHAR* providerName, EventPipeCallback callback, void* callbackContext = nullptr)
+	static inline EventPipeProvider * CreateProvider(const WCHAR* providerName, EventPipeCallback callback, void* callbackContext = nullptr, const EventPipeEventTable *eventTable = nullptr)
 	{
 		CONTRACTL
 		{
@@ -456,7 +460,7 @@ public:
 		CONTRACTL_END;
 
 		ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
-		EventPipeProvider * provider = ep_create_provider (providerNameUTF8, callback, callbackContext);
+		EventPipeProvider * provider = ep_create_provider_with_events (providerNameUTF8, callback, callbackContext, eventTable);
 		ep_rt_utf8_string_free (providerNameUTF8);
 		return provider;
 	}

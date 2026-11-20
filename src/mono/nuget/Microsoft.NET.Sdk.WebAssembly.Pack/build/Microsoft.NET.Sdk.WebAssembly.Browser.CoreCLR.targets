@@ -42,36 +42,59 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripDebugInfo)' == 'true' and !$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--strip-debug-info'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
     <!-- Compile every assembly into one shared (large) version bubble. -->
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
-    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--instruction-set:relaxed-simd</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
-    <RuntimeHostConfigurationOption Include="System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported"
-                                    Value="true"
-                                    Trim="true" />
-  </ItemGroup>
 
   <Target Name="_WasmCoreClrResolveNativeFlavor"
           DependsOnTargets="_ResolveWasmConfiguration">
     <PropertyGroup>
       <_WasmCoreClrNativeFlavorUnderPublish Condition="'$(_IsPublishing)' == 'true' or '$(WasmBuildingForNestedPublish)' == 'true' or
                                                        '$(WasmBuildOnlyAfterPublish)' == 'true' or '$(DeployOnBuild)' == 'true'">true</_WasmCoreClrNativeFlavorUnderPublish>
-      <_WasmCoreClrEffectiveEnableDiagnostics>$(EnableDiagnostics)</_WasmCoreClrEffectiveEnableDiagnostics>
+      <_WasmCoreClrEffectiveEnableDiagnostics Condition="('$(_WasmCoreClrEnableDiagnosticsSpecified)' == 'true' and '$(EnableDiagnostics)' == 'true') or
+                                                         ('$(_WasmCoreClrEventSourceSupportSpecified)' == 'true' and '$(EventSourceSupport)' == 'true')">true</_WasmCoreClrEffectiveEnableDiagnostics>
+      <_WasmCoreClrEffectiveEnableDiagnostics Condition="'$(_WasmCoreClrEffectiveEnableDiagnostics)' == '' and
+                                                         ('$(_WasmCoreClrEnableDiagnosticsSpecified)' == 'true' or '$(_WasmCoreClrEventSourceSupportSpecified)' == 'true')">false</_WasmCoreClrEffectiveEnableDiagnostics>
       <_WasmCoreClrEffectiveEnableDiagnostics Condition="'$(_WasmCoreClrEffectiveEnableDiagnostics)' == '' and '$(_WasmCoreClrNativeFlavorUnderPublish)' == 'true'">false</_WasmCoreClrEffectiveEnableDiagnostics>
       <_WasmCoreClrEffectiveEnableDiagnostics Condition="'$(_WasmCoreClrEffectiveEnableDiagnostics)' == ''">true</_WasmCoreClrEffectiveEnableDiagnostics>
-      <EnableDiagnostics Condition="'$(EnableDiagnostics)' == ''">$(_WasmCoreClrEffectiveEnableDiagnostics)</EnableDiagnostics>
+      <EnableDiagnostics>$(_WasmCoreClrEffectiveEnableDiagnostics)</EnableDiagnostics>
+      <EventSourceSupport>$(_WasmCoreClrEffectiveEnableDiagnostics)</EventSourceSupport>
       <_WasmCoreClrNativeFlavor Condition="'$(_WasmCoreClrEffectiveEnableDiagnostics)' == 'true'">diagnostics</_WasmCoreClrNativeFlavor>
       <_WasmCoreClrNativeFlavor Condition="'$(_WasmCoreClrNativeFlavor)' == ''">production</_WasmCoreClrNativeFlavor>
       <_WasmCoreClrNativeFlavorRoot>$([MSBuild]::NormalizeDirectory('$(_RuntimePackDir)', 'data', 'native-flavors'))</_WasmCoreClrNativeFlavorRoot>
       <_WasmCoreClrSelectedNativeFlavorDir Condition="'$(_WasmCoreClrNativeFlavor)' == 'diagnostics'">$([MSBuild]::NormalizeDirectory('$(_WasmCoreClrNativeFlavorRoot)', 'diagnostics'))</_WasmCoreClrSelectedNativeFlavorDir>
       <_WasmCoreClrSelectedNativeFlavorDir Condition="'$(_WasmCoreClrNativeFlavor)' == 'production'">$([MSBuild]::NormalizeDirectory('$(_RuntimePackDir)', 'runtimes', '$(RuntimeIdentifier)', 'native'))</_WasmCoreClrSelectedNativeFlavorDir>
+      <_WasmCoreClrSelectedManagedFlavorDir>$([MSBuild]::NormalizeDirectory('$(_WasmCoreClrNativeFlavorRoot)', '$(_WasmCoreClrNativeFlavor)', 'managed'))</_WasmCoreClrSelectedManagedFlavorDir>
     </PropertyGroup>
 
-    <Error Condition="'$(WasmBuildNative)' != 'true' and
-                      (!Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.wasm') or
-                       !Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js') or
-                       !Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js.symbols'))"
-           Text="The CoreCLR browser native flavor '$(_WasmCoreClrNativeFlavor)' was requested, but the runtime pack does not contain its complete dotnet.native.wasm, dotnet.native.js, and dotnet.native.js.symbols asset set. Install wasm-tools and set WasmBuildNative=true, or use a runtime pack that contains this flavor." />
+  </Target>
+
+  <Target Name="_WasmCoreClrConfigureManagedFlavor"
+          DependsOnTargets="_WasmCoreClrResolveNativeFlavor"
+          BeforeTargets="_WasmCoreClrSelectR2RDirectories">
+    <PropertyGroup Condition="'$(_WasmCoreClrNativeFlavorUnderPublish)' != 'true' and '$(_WasmCoreClrNativeFlavor)' == 'production'">
+      <_WasmUsePrebuiltReadyToRun>false</_WasmUsePrebuiltReadyToRun>
+      <_WasmBuildPrebuiltR2RDirectory></_WasmBuildPrebuiltR2RDirectory>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_WasmCoreClrSelectManagedFlavor"
+          DependsOnTargets="_WasmCoreClrConfigureManagedFlavor"
+          BeforeTargets="_ComputeWasmBuildCandidates">
+    <Error Condition="'$(_WasmCoreClrNativeFlavorUnderPublish)' != 'true' and !Exists('$(_WasmCoreClrSelectedManagedFlavorDir)System.Private.CoreLib.dll')"
+           Text="The CoreCLR browser managed flavor '$(_WasmCoreClrNativeFlavor)' was requested, but the runtime pack does not contain its managed framework closure." />
+    <ItemGroup Condition="'$(_WasmCoreClrNativeFlavorUnderPublish)' != 'true'">
+      <_WasmCoreClrManagedFlavorAssembly Include="$(_WasmCoreClrSelectedManagedFlavorDir)*.dll" />
+      <_WasmCoreClrManagedFlavorAssemblyName Include="@(_WasmCoreClrManagedFlavorAssembly->';%(FileName)%(Extension);')" />
+    </ItemGroup>
+    <PropertyGroup Condition="'$(_WasmCoreClrNativeFlavorUnderPublish)' != 'true'">
+      <_WasmCoreClrManagedFlavorAssemblyNames>@(_WasmCoreClrManagedFlavorAssemblyName)</_WasmCoreClrManagedFlavorAssemblyNames>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(_WasmCoreClrNativeFlavorUnderPublish)' != 'true'">
+      <_WasmCoreClrManagedFrameworkOriginal Include="@(ReferenceCopyLocalPaths)"
+                                             Condition="'%(ReferenceCopyLocalPaths.Extension)' == '.dll' and
+                                                        $([System.String]::Copy('$(_WasmCoreClrManagedFlavorAssemblyNames)').Contains(';%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension);'))" />
+      <ReferenceCopyLocalPaths Remove="@(_WasmCoreClrManagedFrameworkOriginal)" />
+      <ReferenceCopyLocalPaths Include="@(_WasmCoreClrManagedFrameworkOriginal->'$(_WasmCoreClrSelectedManagedFlavorDir)%(FileName)%(Extension)')" />
+    </ItemGroup>
   </Target>
 
   <!-- Prelinked flavors are the no-workload path. When native workload targets set
@@ -79,6 +102,11 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WasmCoreClrSelectNativeFlavor"
           DependsOnTargets="_WasmCoreClrResolveNativeFlavor"
           BeforeTargets="_ComputeWasmBuildCandidates;_HandleFileConflictsForPublish;ProcessPublishFilesForWasm">
+    <Error Condition="'$(WasmBuildNative)' != 'true' and
+                      (!Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.wasm') or
+                       !Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js') or
+                       !Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js.symbols'))"
+           Text="The CoreCLR browser native flavor '$(_WasmCoreClrNativeFlavor)' was requested, but the runtime pack does not contain its complete dotnet.native.wasm, dotnet.native.js, and dotnet.native.js.symbols asset set. Install wasm-tools and set WasmBuildNative=true, or use a runtime pack that contains this flavor." />
     <ItemGroup Condition="'$(WasmBuildNative)' != 'true'">
       <WasmNativeAsset Remove="@(WasmNativeAsset)"
                        Condition="'%(FileName)%(Extension)' == 'dotnet.native.wasm' or
@@ -308,7 +336,10 @@ Copyright (c) .NET Foundation. All rights reserved.
            is not populated, so the trimmed framework assemblies drop out of ResolvedFileToPublish and are
            omitted from the served bundle (empty coreAssembly, non-bootable). The linked dir holds exactly
            the trimmed closure, so this is equivalent on a full build and correct on an incremental one. -->
-      <_WasmReadyToRunCompileInput Include="$(IntermediateLinkDir)*.dll" />
+      <_WasmLinkedClosureFile Include="$(IntermediateLinkDir)*.dll" />
+      <!-- Respell like ILLink's items; a glob rewrites unnormalized paths, which would escape publish Removes. -->
+      <_WasmReadyToRunCompileInput Include="@(_WasmLinkedClosureFile->'$(IntermediateLinkDir)%(Filename)%(Extension)')" />
+      <_WasmLinkedClosureFile Remove="@(_WasmLinkedClosureFile)" />
       <ResolvedFileToPublish Include="@(_WasmReadyToRunCompileInput)"
                              PostprocessAssembly="true"
                              RelativePath="%(FileName)%(Extension)"
@@ -340,6 +371,9 @@ Copyright (c) .NET Foundation. All rights reserved.
           BeforeTargets="_CreateR2RImages">
     <PropertyGroup>
       <_WasmReadyToRunState>Composite=$(PublishReadyToRunComposite)|PgoFiles=@(PublishReadyToRunPgoFiles->'%(FullPath)', '|')|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)</_WasmReadyToRunState>
+      <!-- The workload targets record settings for steps that rewrite the images in place after crossgen2
+           (wasm-opt), so changing them recompiles every image. -->
+      <_WasmReadyToRunState Condition="'$(_WasmReadyToRunPostProcessState)' != ''">$(_WasmReadyToRunState)|PostProcess=$(_WasmReadyToRunPostProcessState)</_WasmReadyToRunState>
       <_WasmReadyToRunStateHash>$([MSBuild]::StableStringHash('$(_WasmReadyToRunState)', 'Sha256'))</_WasmReadyToRunStateHash>
       <_WasmReadyToRunStateFile>$(_WasmPublishR2RDir)browser-r2r-state.stamp</_WasmReadyToRunStateFile>
     </PropertyGroup>
@@ -365,6 +399,16 @@ Copyright (c) .NET Foundation. All rights reserved.
                                  Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
       <FileWrites Include="$(_WasmReadyToRunStateFile)" />
     </ItemGroup>
+  </Target>
+
+  <!-- wasm-opt comes from the Emscripten SDK, so the workload's BrowserWasmApp.CoreCLR.targets owns the
+       ReadyToRun wasm-opt pass and sets _WasmCoreClrR2RWasmOptSupported. The workload manifest already requires
+       the workload when WasmRunWasmOpt=true; this covers builds that still lack its targets, for example with
+       UsingBrowserRuntimeWorkload=false. -->
+  <Target Name="_WasmCoreClrWarnR2RWasmOptUnavailable"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmRunWasmOpt)' == 'true' and '$(_WasmCoreClrR2RWasmOptSupported)' != 'true'"
+          BeforeTargets="_CreateR2RImages">
+    <Warning Text="WasmRunWasmOpt=true is ignored for ReadyToRun images because the wasm-tools workload is not in use. Install the wasm-tools workload to optimize ReadyToRun images with wasm-opt." />
   </Target>
 
   <!-- Delete per-app images and composite component stubs left in obj/R2R by a previous build or

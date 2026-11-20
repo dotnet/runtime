@@ -48,6 +48,7 @@ Copyright (c) .NET Foundation. All rights reserved.
           Condition="'$(Crossgen2InBuildDir)' != '' or '$(Crossgen2SdkOverridePropsPath)' != ''" />
 
   <PropertyGroup>
+    <_BlazorWebAssemblyTargetsFile Condition="'$(_BlazorWebAssemblyTargetsFile)' == ''">$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.WebAssembly.BlazorWebAssembly.targets</_BlazorWebAssemblyTargetsFile>
     <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.ReadyToRun.targets</AfterMicrosoftNETSdkTargets>
   </PropertyGroup>
 
