@@ -1,12 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Pipelines;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -21,51 +17,6 @@ namespace System.Text.Json.Serialization.Metadata
             bool success = EffectiveConverter.ReadCore(ref reader, out T? result, Options, ref state);
             Debug.Assert(success, "Should only return false for async deserialization");
             return result;
-        }
-
-        internal async ValueTask<T?> DeserializeAsync<TReadBufferState, TStream>(TStream utf8Json, TReadBufferState bufferState, CancellationToken cancellationToken)
-            where TReadBufferState : struct, IReadBufferState<TReadBufferState, TStream>
-        {
-            Debug.Assert(IsConfigured);
-            JsonSerializerOptions options = Options;
-            ReadStack readStack = default;
-            readStack.Initialize(this, supportContinuation: true);
-            var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
-
-            try
-            {
-                while (true)
-                {
-                    bufferState = await bufferState.ReadAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-                    bool success = ContinueDeserialize<TReadBufferState, TStream>(
-                        ref bufferState,
-                        ref jsonReaderState,
-                        ref readStack,
-                        out T? value);
-
-                    if (success)
-                    {
-                        return value;
-                    }
-                }
-            }
-            finally
-            {
-                bufferState.Dispose();
-            }
-        }
-
-        internal ValueTask<T?> DeserializeAsync(Stream utf8Json, CancellationToken cancellationToken)
-        {
-            // Note: The ReadBufferState ctor rents pooled buffers.
-            StreamReadBufferState bufferState = new StreamReadBufferState(Options.DefaultBufferSize);
-            return DeserializeAsync(utf8Json, bufferState, cancellationToken);
-        }
-
-        internal ValueTask<T?> DeserializeAsync(PipeReader utf8Json, CancellationToken cancellationToken)
-        {
-            PipeReadBufferState bufferState = new(utf8Json);
-            return DeserializeAsync(utf8Json, bufferState, cancellationToken);
         }
 
         internal T? Deserialize(Stream utf8Json)
@@ -113,18 +64,11 @@ namespace System.Text.Json.Serialization.Metadata
         internal sealed override object? DeserializeAsObject(ref Utf8JsonReader reader, ref ReadStack state)
             => Deserialize(ref reader, ref state);
 
-        internal sealed override async ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken)
+        internal sealed override bool ContinueDeserializeAsObject(ref Utf8JsonReader reader, ref ReadStack state, out object? value)
         {
-            // Note: The ReadBufferState ctor rents pooled buffers.
-            StreamReadBufferState bufferState = new StreamReadBufferState(Options.DefaultBufferSize);
-            T? result = await DeserializeAsync(utf8Json, bufferState, cancellationToken).ConfigureAwait(false);
-            return result;
-        }
-
-        internal sealed override async ValueTask<object?> DeserializeAsObjectAsync(PipeReader utf8Json, CancellationToken cancellationToken)
-        {
-            T? result = await DeserializeAsync<PipeReadBufferState, PipeReader>(utf8Json, bufferState: new PipeReadBufferState(utf8Json), cancellationToken).ConfigureAwait(false);
-            return result;
+            bool success = EffectiveConverter.ReadCore(ref reader, out T? result, Options, ref state);
+            value = success ? (object?)result : null;
+            return success;
         }
 
         internal sealed override object? DeserializeAsObject(Stream utf8Json)

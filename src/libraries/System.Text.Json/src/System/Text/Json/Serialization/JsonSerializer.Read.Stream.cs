@@ -48,7 +48,53 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(utf8Json);
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
-            return jsonTypeInfo.DeserializeAsync(utf8Json, cancellationToken);
+            return DeserializeAsyncCore(jsonTypeInfo, utf8Json, cancellationToken);
+        }
+
+        // The typed async deserialization loop is a static generic method rather than an instance method of JsonTypeInfo<T>,
+        // so that its state machine and ValueTask<TValue> machinery are only instantiated for the TValue types that are
+        // actually used with the public async deserialization APIs, rather than for every JsonTypeInfo<T> instantiation.
+        private static ValueTask<TValue?> DeserializeAsyncCore<TValue>(JsonTypeInfo<TValue> jsonTypeInfo, Stream utf8Json, CancellationToken cancellationToken)
+        {
+            // Note: The ReadBufferState ctor rents pooled buffers.
+            StreamReadBufferState bufferState = new(jsonTypeInfo.Options.DefaultBufferSize);
+            return DeserializeAsyncCore<TValue, StreamReadBufferState, Stream>(jsonTypeInfo, utf8Json, bufferState, cancellationToken);
+        }
+
+        private static async ValueTask<TValue?> DeserializeAsyncCore<TValue, TReadBufferState, TStream>(
+            JsonTypeInfo<TValue> jsonTypeInfo,
+            TStream utf8Json,
+            TReadBufferState bufferState,
+            CancellationToken cancellationToken)
+            where TReadBufferState : struct, IReadBufferState<TReadBufferState, TStream>
+        {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+            JsonSerializerOptions options = jsonTypeInfo.Options;
+            ReadStack readStack = default;
+            readStack.Initialize(jsonTypeInfo, supportContinuation: true);
+            var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
+
+            try
+            {
+                while (true)
+                {
+                    bufferState = await bufferState.ReadAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+                    bool success = jsonTypeInfo.ContinueDeserialize<TReadBufferState, TStream>(
+                        ref bufferState,
+                        ref jsonReaderState,
+                        ref readStack,
+                        out TValue? value);
+
+                    if (success)
+                    {
+                        return value;
+                    }
+                }
+            }
+            finally
+            {
+                bufferState.Dispose();
+            }
         }
 
         /// <summary>
@@ -183,7 +229,7 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
-            return jsonTypeInfo.DeserializeAsync(utf8Json, cancellationToken);
+            return DeserializeAsyncCore(jsonTypeInfo, utf8Json, cancellationToken);
         }
 
         /// <summary>

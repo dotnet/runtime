@@ -39,6 +39,28 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public void SerializeAsync_IncompatibleUntypedRootValue_ThrowsSynchronously()
+        {
+            JsonTypeInfo intTypeInfo = JsonSerializerOptions.Default.GetTypeInfo(typeof(int));
+            MemoryStream stream = new MemoryStream();
+
+            Assert.Throws<InvalidCastException>(() => { _ = JsonSerializer.SerializeAsync(stream, "str", intTypeInfo); });
+            Assert.Throws<JsonException>(() => { _ = JsonSerializer.SerializeAsync(stream, null, intTypeInfo); });
+        }
+
+#if NET
+        [Fact]
+        public async Task SerializeAsync_ValueTypeContractWithObjectConverter_UsesSuppliedConverter()
+        {
+            JsonTypeInfo<int> typeInfo = JsonMetadataServices.CreateValueInfo<int>(new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() }, JsonMetadataServices.ObjectConverter);
+            MemoryStream stream = new MemoryStream();
+
+            await JsonSerializer.SerializeAsync(stream, 42, typeInfo);
+
+            Assert.Equal(JsonSerializer.Serialize(42, typeInfo), Encoding.UTF8.GetString(stream.ToArray()));
+        }
+#endif
+        [Fact]
         public async Task NullObjectValue()
         {
             MemoryStream stream = new MemoryStream();

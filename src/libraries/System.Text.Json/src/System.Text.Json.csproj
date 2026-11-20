@@ -290,6 +290,8 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonPropertyInfoValuesOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.Cache.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.ReadHelpers.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.WriteHelpers.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\MemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\PolymorphicTypeResolver.cs" />
