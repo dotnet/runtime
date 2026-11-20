@@ -36,6 +36,7 @@
     <Compile Include="BasicEventSourceTest\Harness\Listeners.cs" />
     <Compile Include="BasicEventSourceTest\TestEventCounter.cs" />
     <Compile Include="BasicEventSourceTest\TestFilter.cs" />
+    <Compile Include="BasicEventSourceTest\TestCallbacks.cs" />
     <Compile Include="BasicEventSourceTest\TestNotSupported.cs" />
     <Compile Include="BasicEventSourceTest\TestsEventSourceLifetime.cs" />
     <Compile Include="BasicEventSourceTest\TestsManifestGeneration.cs" />
