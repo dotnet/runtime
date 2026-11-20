@@ -3,8 +3,6 @@
     <OutputType>Exe</OutputType>
     <UseMonoRuntime>false</UseMonoRuntime>
     <UseNativeAOTRuntime>false</UseNativeAOTRuntime>
-    <MonoForceInterpreter>false</MonoForceInterpreter>
-    <RunAOTCompilation>false</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IncludesTestRunner>false</IncludesTestRunner>
@@ -19,8 +17,8 @@
   </ItemGroup>
 
   <Target Name="BuildCrashReportAppleNative" BeforeTargets="PrepareForAppleBuildApp">
-    <Error Condition="'$(RuntimeFlavor)' != 'CoreCLR' or '$(UseMonoRuntime)' == 'true' or '$(UseNativeAOTRuntime)' == 'true' or '$(TestNativeAot)' == 'true'"
-           Text="InProcCrashReport tests require CoreCLR, not Mono or NativeAOT." />
+    <Error Condition="'$(UseNativeAOTRuntime)' == 'true' or '$(TestNativeAot)' == 'true'"
+           Text="InProcCrashReport tests require CoreCLR, not NativeAOT." />
     <Error Condition="'$(TargetArchitecture)' != 'arm64' or ('$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'maccatalyst')"
            Text="InProcCrashReport Apple adapters support ios, iossimulator and maccatalyst arm64." />
     <PropertyGroup>

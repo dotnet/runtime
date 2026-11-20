@@ -92,7 +92,6 @@ namespace CorUnix
         VOID *m_pvLocalData;
 
         CObjectType *m_pot;
-        CObjectAttributes m_oa;
 
         CSimpleDataLock m_sdlLocalData;
 
@@ -134,8 +133,7 @@ namespace CorUnix
         virtual
         PAL_ERROR
         Initialize(
-            CPalThread *pthr,
-            CObjectAttributes *poa
+            CPalThread *pthr
             );
 
         //
@@ -145,12 +143,6 @@ namespace CorUnix
         virtual
         CObjectType *
         GetObjectType(
-            VOID
-            );
-
-        virtual
-        CObjectAttributes *
-        GetObjectAttributes(
             VOID
             );
 

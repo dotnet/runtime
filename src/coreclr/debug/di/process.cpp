@@ -543,6 +543,50 @@ void CordbProcess::Free(void * p)
     delete [] ((BYTE *) p);
 }
 
+//---------------------------------------------------------------------------------------
+//
+// Instantiates a DacDbi interface from a DAC module. Shared by code:CordbProcess::CreateDacDbiInterface
+// and the cDAC probe in code:VerifyCDac.
+//
+//---------------------------------------------------------------------------------------
+HRESULT
+CordbProcess::InstantiateDacDbiInterface(HMODULE hDacModule,
+                                         ICorDebugDataTarget * pDataTarget,
+                                         CORDB_ADDRESS clrInstanceId,
+                                         IDacDbiInterface::IAllocator * pAllocator,
+                                         IDacDbiInterface::IMetaDataLookup * pMetaDataLookup,
+                                         IDacDbiInterface ** ppInterface,
+                                         IUnknown ** ppLegacyDac)
+{
+    // The cDAC needs the address of the runtime's contract descriptor to initialize. The legacy
+    // DAC only needs it if it wants to route through cdac or to compare results.
+    CLRDATA_ADDRESS contractDescriptorAddress = 0;
+    {
+        uint64_t address = 0;
+        if (TryGetSymbol(pDataTarget, clrInstanceId, "DotNetRuntimeContractDescriptor", &address))
+        {
+            contractDescriptorAddress = address;
+        }
+    }
+
+    typedef HRESULT (STDAPICALLTYPE * PFN_DacDbiInterfaceInstance)(
+        ICorDebugDataTarget *,
+        CORDB_ADDRESS,
+        CLRDATA_ADDRESS,
+        IDacDbiInterface::IAllocator *,
+        IDacDbiInterface::IMetaDataLookup *,
+        IDacDbiInterface **,
+        IUnknown **);
+
+    PFN_DacDbiInterfaceInstance pfnEntry = (PFN_DacDbiInterfaceInstance)GetProcAddress(hDacModule, "DacDbiInterfaceInstance");
+    if (!pfnEntry)
+    {
+        return HRESULT_FROM_GetLastError();
+    }
+
+    return pfnEntry(pDataTarget, clrInstanceId, contractDescriptorAddress, pAllocator, pMetaDataLookup, ppInterface, ppLegacyDac);
+}
+
 
 //---------------------------------------------------------------------------------------
 //
@@ -591,35 +635,9 @@ CordbProcess::CreateDacDbiInterface()
     IDacDbiInterface::IAllocator * pAllocator = this;
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup = this;
 
-    // The cDAC needs the address of the runtime's contract descriptor to initialize. The legacy
-    // DAC only needs it if it wants to route through cdac or to compare results.
-    CLRDATA_ADDRESS contractDescriptorAddress = 0;
-    {
-        uint64_t address = 0;
-        if (TryGetSymbol(m_pDACDataTarget, m_clrInstanceId, "DotNetRuntimeContractDescriptor", &address))
-        {
-            contractDescriptorAddress = address;
-        }
-    }
-
-    typedef HRESULT (STDAPICALLTYPE * PFN_DacDbiInterfaceInstance)(
-        ICorDebugDataTarget *,
-        CORDB_ADDRESS,
-        CLRDATA_ADDRESS,
-        IDacDbiInterface::IAllocator *,
-        IDacDbiInterface::IMetaDataLookup *,
-        IDacDbiInterface **,
-        IUnknown **);
-
     IDacDbiInterface* pInterfacePtr = NULL;
     IUnknown* pLegacyDac = NULL;
-    PFN_DacDbiInterfaceInstance pfnEntry = (PFN_DacDbiInterfaceInstance)GetProcAddress(m_hDacModule, "DacDbiInterfaceInstance");
-    if (!pfnEntry)
-    {
-        ThrowLastError();
-    }
-
-    hrStatus = pfnEntry(m_pDACDataTarget, m_clrInstanceId, contractDescriptorAddress, pAllocator, pMetaDataLookup, &pInterfacePtr, &pLegacyDac);
+    hrStatus = InstantiateDacDbiInterface(m_hDacModule, m_pDACDataTarget, m_clrInstanceId, pAllocator, pMetaDataLookup, &pInterfacePtr, &pLegacyDac);
     IfFailThrow(hrStatus);
 
     // We now have resources that need to be freed.
@@ -4349,6 +4367,27 @@ void CordbProcess::GetAssembliesInLoadOrder(
 }
 
 //---------------------------------------------------------------------------------------
+// Callback for code:ShimProcess::QueueFakeAssemblyAndModuleEvent.
+// Return Value: The assembly's module, or NULL if it isn't loaded yet.
+//
+CordbModule * CordbProcess::GetLoadedModuleForShim(ICorDebugAssembly * pAssembly)
+{
+    PUBLIC_API_ENTRY_FOR_SHIM(this);
+    RSLockHolder lockHolder(GetProcessLock());
+
+    CordbAssembly * pAssemblyInternal = static_cast<CordbAssembly *>(pAssembly);
+    VMPTR_Assembly vmAssembly = pAssemblyInternal->GetAssemblyPtr();
+    VMPTR_Module vmModule = VMPTR_Module::NullPtr();
+    BOOL isModuleLoaded = FALSE;
+    IfFailThrow(GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule, &isModuleLoaded));
+    if (!isModuleLoaded)
+    {
+        return NULL;
+    }
+    return pAssemblyInternal->GetAppDomain()->LookupOrCreateModule(vmAssembly, vmModule);
+}
+
+//---------------------------------------------------------------------------------------
 // Callback to count the number of enumerations in a process.
 //
 // Arguments:
@@ -4495,7 +4534,7 @@ void CordbProcess::DispatchRCEvent()
 
                     {
                         // Release lock around the dispatch of the event
-                        RSInverseLockHolder inverseLockHolder(GetProcessLock());
+                        RSInverseLockHolder inverseLockHolder = RSLock::ReleaseForScope(GetProcessLock());
 
                         EX_TRY
                         {
@@ -9540,7 +9579,7 @@ void CordbRCEventThread::FlushQueuedEvents(CordbProcess* process)
 
     // Release lock before we call out to shim to Queue fake events.
     {
-        RSInverseLockHolder inverseLockHolder(process->GetProcessLock());
+        RSInverseLockHolder inverseLockHolder = RSLock::ReleaseForScope(process->GetProcessLock());
         {
             PUBLIC_CALLBACK_IN_THIS_SCOPE0_NO_LOCK(pProcess);
 
