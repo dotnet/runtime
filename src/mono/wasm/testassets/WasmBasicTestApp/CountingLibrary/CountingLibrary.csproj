@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFramework>net12.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants Condition="'$(RUNTIME_FLAVOR_FOR_TESTS)' == 'Mono'">$(DefineConstants);TEST_MONO</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\App\Common\TestOutput.cs" Link="TestOutput.cs" />

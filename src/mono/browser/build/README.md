@@ -2,7 +2,7 @@
 
 This usually consists of taking the built assemblies, and related files, and generating an app bundle.
 
-Browser builds default the trimming discovery root `TypeMapEntryAssembly` to the
+CoreCLR Browser builds default the trimming discovery root `TypeMapEntryAssembly` to the
 application's assembly name. The JSExport provider linker descriptor preserves
 the native `BindAssemblyExports` entry point, which makes the type-map lookup
 reachable even when JavaScript is the only caller of the application's exports.
@@ -29,24 +29,21 @@ metadata through an internal unsafe-accessor bridge. JavaScript copies that meta
 before the temporary native buffers are freed and creates marshalers on first use.
 Managed discovery forwards the catalog strings
 unchanged to JavaScript, which derives the export paths, hashes, method IDs and aliases
-using the same parser for both runtimes. The first overload in catalog order supplies
+using the CoreCLR interop parser. The first overload in catalog order supplies
 the plain-name alias. Each pending invocation handle identifies the provider and
-its catalog index. Both runtimes invoke that provider's `Bind(string methodId)`
+its catalog index. CoreCLR invokes that provider's `Bind(string methodId)`
 inside the first actual managed invocation, preserving
 synchronous return values and stable function identities without JavaScript proxies.
 Method IDs are invariant decimal catalog indexes, local to the generated assembly
 build rather than stable names or signature hashes. A generated string switch binds
 only the selected method. No managed preflight call or binder delegate is required.
-Async exports use their normal thread dispatch, including on the Mono UI thread.
+Async exports use their normal invocation path.
 Legacy assemblies retain their existing registration path.
-Assemblies without a provider or legacy initializer return empty exports on both
-runtimes. Failed or reentrant binding releases unconsumed argument payloads without
+Assemblies without a provider or legacy initializer return empty exports on CoreCLR.
+Failed or reentrant binding releases unconsumed argument payloads without
 calling the generated wrapper; subsequent invocations can retry binding.
 Private and protected nested exports use managed unsafe accessors to their generated
 wrappers. Generic and file-local containing types retain the diagnostic and reflection fallback.
-Mono's implementation is limited to an internal unconditional, assembly-local
-lookup for this discovery path. Its public application-wide type-map APIs remain
-unsupported.
 
 Wasm app build can run in two scenarios:
 

@@ -122,7 +122,7 @@ Managed JSON parsing remains the consumer's responsibility.
 ## How to add tests
 
 `WasmTemplateTests.LibraryMode` verifies build and publish for libraries with and
-without the WebAssembly SDK. Trimmed publishing checks that exactly one
+without the WebAssembly SDK. CoreCLR trimmed publishing checks that exactly one
 `--typemap-entry-assembly` argument names the library in the publish binlog's
 `ILLink` task `ExtraArgs`, then invokes its JSExport without a managed entry point.
 
@@ -136,8 +136,8 @@ targeting pack, without the in-tree pack overrides, then references its DLL from
 current-framework browser app. The targeting pack (including its generator) is restored as needed;
 no legacy SDK or browser workload is required. It also tests `net11.0` with the pinned
 `11.0.0` targeting pack and generator. Both legacy libraries are built
-separately and referenced unchanged by the current app. The test runs in the `no-workload` CI lane for
-both runtime flavors.
+separately and referenced unchanged by the current app. The test runs in the CoreCLR
+`no-workload` CI lane.
 `WasmBasicTestApp/JSExportTests.targets` opts into the binary reference and trimming
 root. Legacy compilation remains isolated from parent build imports and stages
 the unchanged DLL under `LegacyExports/staging`. Its build binlog is written to
@@ -150,15 +150,13 @@ It covers multiple exports,
 overloads, repeated assembly lookup, and trimmed and untrimmed publication without explicitly
 rooting the library. The provider's `ReadOnlySpan<string>` catalog supports discovery without enumerating
 the type map, and `Bind(string methodId)` dispatches on invariant decimal catalog indexes.
-On both runtimes, a counting provider verifies one activation at discovery, no binding at discovery or
+On CoreCLR, a counting provider verifies one activation at discovery, no binding at discovery or
 property read, exactly one binding on first invocation, stable aliases, and an
 unused method that must never be bound. Reentrant binding is rejected, and an
 async binding failure must reject its Promise and permit retry.
-Mono coverage includes trimmed and untrimmed apps using the internal
-assembly-local lookup required by JSExports. Signature metadata is
-published during discovery, while marshalers and managed callbacks remain lazy.
-Private and protected nested exports exercise generated unsafe accessors on both
-runtimes, including trimmed publication.
+Signature metadata is published during discovery, while marshalers and managed
+callbacks remain lazy. Private and protected nested exports exercise generated
+unsafe accessors on CoreCLR, including trimmed publication.
 The existing `WasmBasicTestApp` hosts these scenarios through an opt-in targets
 file and a separate `js-export-tests.js` module. Its existing HTML, runtime
 bootstrap, and TestOutput helper are reused. The counting project and provider

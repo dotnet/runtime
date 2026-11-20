@@ -12,24 +12,19 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     internal static partial class JSHostImplementation
     {
+#if !MONO
         [ThreadStatic]
         private static JSProxyContext.PendingJSExport? t_bindingExport;
 
-#if !MONO
         [RequiresUnreferencedCode("Interop types may be removed by trimming")]
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetExternalTypeMappingForAssembly")]
         private static extern Type? GetExternalTypeMappingForAssembly<TTypeMapGroup>(
             [UnsafeAccessorType("System.Runtime.InteropServices.TypeMapping, System.Private.CoreLib")] object? target, Assembly assembly, string key);
-#endif
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Generated type-map providers preserve their constructors and directly reference their export wrappers.")]
         [DynamicDependency(nameof(PreserveExportProviderMap))]
         private static Type? GetExportProviderType(Assembly assembly, string assemblyName)
-#if MONO
-            => GetExternalTypeMappingForAssembly<JSExportProvider>(assembly, assemblyName);
-#else
             => GetExternalTypeMappingForAssembly<JSExportProvider>(null, assembly, assemblyName);
-#endif
 
         // Declare the group through the SDK's existing intrinsic without performing global runtime discovery.
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "This method is rooted only to preserve the generated JSExport type-map group.")]
@@ -162,6 +157,10 @@ namespace System.Runtime.InteropServices.JavaScript
             var (assemblyName, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
             return BindManagedFunctionCore(assemblyName, nameSpace, shortClassName, methodName, signatureHash, signatures, callback);
         }
+#else
+        public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures, delegate*<JSMarshalerArgument*, void> callback)
+            => throw new PlatformNotSupportedException();
+#endif
 
         // Older generators, including .NET 11, use reflection to locate the wrapper.
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "It's kept from trimming by DynamicDependencyAttribute in the generated code.")]
@@ -188,6 +187,19 @@ namespace System.Runtime.InteropServices.JavaScript
                 Environment.FailFast($"Can't find method wrapper {wrapperName} in {nameSpace}.{shortClassName} in {assemblyName} assembly");
             }
 
+#if MONO
+            Action<IntPtr> wrapper = (IntPtr args) =>
+            {
+                object boxedLegacyArgs = Pointer.Box((void*)args, typeof(JSMarshalerArgument*));
+                wrapperInfo.Invoke(null, new object?[] { boxedLegacyArgs });
+            };
+            var ctx = JSProxyContext.BindingContextOrMain();
+            int methodHandle = ctx.AllocJSExportHandle(wrapper);
+            var signature = GetMethodSignature(signatures, null, null);
+            JavaScriptImports.BindCSFunction(methodHandle, assemblyName, nameSpace, shortClassName, methodName, signatureHash, (IntPtr)signature.Header);
+            FreeMethodSignatureBuffer(signature);
+            return signature;
+#else
             RuntimeHelpers.PrepareMethod(wrapperInfo.MethodHandle);
             var callback = (delegate*<JSMarshalerArgument*, void>)wrapperInfo.MethodHandle.GetFunctionPointer();
 
@@ -201,8 +213,10 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             return BindManagedFunctionCore(assemblyName, nameSpace, shortClassName, methodName, signatureHash, signatures, callback);
+#endif
         }
 
+#if !MONO
         private static unsafe JSFunctionBinding BindManagedFunctionCore(string assemblyName, string nameSpace, string shortClassName, string methodName,
             int signatureHash, ReadOnlySpan<JSMarshalerType> signatures, delegate*<JSMarshalerArgument*, void> callback)
         {
@@ -218,5 +232,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             return signature;
         }
+#endif
     }
 }

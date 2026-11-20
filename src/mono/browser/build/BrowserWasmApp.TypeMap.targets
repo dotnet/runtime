@@ -1,10 +1,12 @@
 <Project>
   <PropertyGroup>
     <_BrowserWasmAppTypeMapTargetsImported>true</_BrowserWasmAppTypeMapTargetsImported>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(UseMonoRuntime)' == 'false' or '$(RuntimeFlavor)' == 'CoreCLR'">
     <TypeMapEntryAssembly Condition="'$(TypeMapEntryAssembly)' == ''">$(AssemblyName)</TypeMapEntryAssembly>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(UseMonoRuntime)' == 'false' or '$(RuntimeFlavor)' == 'CoreCLR'">
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.JSExportProvider.xml" />
     <RuntimeHostConfigurationOption Remove="System.Runtime.InteropServices.TypeMappingEntryAssembly" />
     <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.TypeMappingEntryAssembly"
@@ -15,7 +17,7 @@
        Remove only this compatibility target once execution-time forwarding flows through supported SDKs. -->
   <Target Name="_WasmConfigureTypeMapEntryAssembly"
           BeforeTargets="PrepareForILLink"
-          Condition="'$(TypeMapEntryAssembly)' != '' and !$([System.String]::Copy('$(_ExtraTrimmerArgs)').Contains('--typemap-entry-assembly'))">
+          Condition="('$(UseMonoRuntime)' == 'false' or '$(RuntimeFlavor)' == 'CoreCLR') and '$(TypeMapEntryAssembly)' != '' and !$([System.String]::Copy('$(_ExtraTrimmerArgs)').Contains('--typemap-entry-assembly'))">
     <PropertyGroup>
       <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --typemap-entry-assembly "$(TypeMapEntryAssembly)"</_ExtraTrimmerArgs>
     </PropertyGroup>

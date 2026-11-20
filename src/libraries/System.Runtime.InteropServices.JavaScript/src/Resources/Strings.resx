@@ -219,10 +219,4 @@
   <data name="JSExportInvalidBinding" xml:space="preserve">
     <value>The JavaScript export provider bound a method that does not match the requested export.</value>
   </data>
-  <data name="JSExportConditionalProviderNotSupported" xml:space="preserve">
-    <value>Conditional JavaScript export provider mappings are not supported on Mono.</value>
-  </data>
-  <data name="JSExportDuplicateProvider" xml:space="preserve">
-    <value>Multiple JavaScript export providers were declared for '{0}'.</value>
-  </data>
 </root>

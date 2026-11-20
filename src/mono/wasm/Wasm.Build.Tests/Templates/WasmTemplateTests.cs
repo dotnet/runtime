@@ -401,7 +401,7 @@ namespace Wasm.Build.Tests
             else
                 BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk));
 
-            if (useWasmSdk && isPublish)
+            if (IsCoreClrRuntime && useWasmSdk && isPublish)
             {
                 SL.Build build = SL.BinaryLog.ReadBuild(Path.Combine(_logPath, $"{info.ProjectName}-publish.binlog"));
                 List<string> linkerArgs = [];

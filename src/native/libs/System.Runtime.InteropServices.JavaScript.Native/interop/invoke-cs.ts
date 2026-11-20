@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
-import { parseJSExportNames } from "../../Common/JavaScript/export-names";
+import { parseJSExportNames } from "./export-names";
 
 import type { BindingClosureCS, BoundMarshalerToCs, CSFnHandle, DeferredBindingCS, JSFunctionSignature } from "./types";
 import type { NativePointer } from "../types";

@@ -84,9 +84,6 @@ internal sealed partial class CountingAssemblyProvider : JSExportProvider
             arguments[3].ToManaged(out int right);
             if (left < 0)
             {
-#if TEST_MONO
-                DisposeOrdinaryProxies(false, false);
-#endif
                 throw new InvalidOperationException("Deferred export failure");
             }
             arguments[1].ToJS(left + right);
@@ -98,8 +95,4 @@ internal sealed partial class CountingAssemblyProvider : JSExportProvider
 
     }
 
-#if TEST_MONO
-    [JSImport("INTERNAL.forceDisposeProxies")]
-    private static partial void DisposeOrdinaryProxies(bool disposeMethods, bool verbose);
-#endif
 }

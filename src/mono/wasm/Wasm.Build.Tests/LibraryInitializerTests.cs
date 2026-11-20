@@ -83,7 +83,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         yield return new object[] { Configuration.Debug, false };
     }
 
-    [Theory, TestCategory("no-workload")]
+    [Theory, TestCategory("no-workload"), TestCategory("coreclr")]
     [MemberData(nameof(AssemblyProviderConfigurations))]
     public async Task JSExportFromAssemblyProvider(Configuration config, bool trimmed)
     {
@@ -100,7 +100,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
             result.TestOutput.Where(static message => message.StartsWith("lazy:", StringComparison.Ordinal)));
     }
 
-    [Theory, TestCategory("no-workload")]
+    [Theory, TestCategory("no-workload"), TestCategory("coreclr")]
     [InlineData(Configuration.Debug, "net10.0", "10.0.0")]
     [InlineData(Configuration.Release, "net10.0", "10.0.0")]
     [InlineData(Configuration.Debug, "net11.0", "11.0.0")]

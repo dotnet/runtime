@@ -48,8 +48,10 @@ namespace System.Runtime.InteropServices.JavaScript
         [JSImport("INTERNAL.bindCsFunction")]
         public static partial void BindCSFunction(IntPtr methodHandle, string assemblyName, string namespaceName, string shortClassName, string methodName, int signatureHash, IntPtr signature);
 
+#if !MONO
         [JSImport("INTERNAL.registerLazyCsFunctions")]
         public static partial void RegisterLazyCSFunctions(string assemblyName, string[] exportNames, int[] methodHandles, int[] signatures);
+#endif
 
 #if DEBUG
         [JSImport("globalThis.console.log")]

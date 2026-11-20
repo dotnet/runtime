@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public class JSExportAsyncTest : JSInteropTestBase, IAsyncLifetime
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
         public async Task FirstAsyncExportBindsInsideInvocation()
         {
             Assert.Equal(42, await JavaScriptTestHelper.InvokeDeferredFirstTask());
@@ -60,7 +60,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
     public class JSExportTest : JSInteropTestBase, IAsyncLifetime
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
         [InlineData(false)]
         [InlineData(true)]
         public unsafe void FailedBindingReleasesUnconsumedPayloads(bool reentrant)
@@ -107,7 +107,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task AllocatedArrayBindingFailureCanRetry(bool isAsync)
@@ -197,7 +197,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(typeof(JSExportProvider).IsAssignableFrom(applicationProvider));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
         [InlineData("Exports")]
         [InlineData("Catalog.Namespace.Exports/Nested")]
         public async Task RawExportCatalogPreservesAliases(string typeName)
@@ -214,7 +214,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await JavaScriptTestHelper.InspectRawExportCatalog(assemblyName, typeName));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
         [InlineData("[Other]Exports:Echo#1")]
         [InlineData("[RawCatalogInvalid]Exports:Echo")]
         [InlineData("[RawCatalogInvalid]Exports:Echo#")]
