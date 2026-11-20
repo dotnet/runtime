@@ -1464,8 +1464,7 @@ void ILCodeStream::EmitLDC_I4(INT32 iConst)
 }
 // Loads a constant as a native int. The constant is pushed with the shortest ldc
 // form and then converted with conv.i, so the stack type is always native int.
-// The conversion is needed even for zero, as omitting it can produce incorrect
-// code on 64-bit targets depending on the flow graph.
+// The conversion is needed since int32/int64/native int are different IL stack types.
 void ILCodeStream::EmitLDC_I(UINT_PTR uConst)
 {
     WRAPPER_NO_CONTRACT;
