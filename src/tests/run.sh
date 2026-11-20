@@ -115,7 +115,7 @@ do
             buildArch="riscv64"
             ;;
         wasm|wasm64)
-            buildArch="$1"
+            buildArch="$i"
             ;;
         android)
             buildOS="android"

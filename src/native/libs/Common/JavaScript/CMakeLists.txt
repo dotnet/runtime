@@ -30,6 +30,7 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/host.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/index.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/per-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/pointers.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/types.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/assets.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/bootstrap.ts"
