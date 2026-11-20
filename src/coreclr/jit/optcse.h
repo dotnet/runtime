@@ -105,6 +105,13 @@ public:
         return codeOptKind;
     }
 
+    // Does this heuristic read csdCallPressure? The availability pass only
+    // measures call pressure when it does.
+    virtual bool ConsumesCallPressure()
+    {
+        return false;
+    }
+
     bool IsCompatibleType(var_types cseLclVarTyp, var_types expTyp);
 
 #ifdef DEBUG
@@ -343,6 +350,13 @@ private:
     bool     largeFrame;
     bool     hugeFrame;
 
+    // Count, per register class, of promoted candidates that were priced as
+    // resident in a callee-saved register; the availability-time pressure
+    // measurements predate these, so later fits must leave room for them.
+    unsigned residencyPromoted[3] = {};
+
+    bool FitsCalleeSavedRegister(CSE_Candidate* candidate);
+
 public:
     CSE_Heuristic(Compiler*);
 
@@ -351,6 +365,17 @@ public:
     bool PromotionCheck(CSE_Candidate* candidate);
     void AdjustHeuristic(CSE_Candidate* candidate);
     bool ConsiderTree(GenTree* tree, bool isReturn);
+
+    virtual bool ConsumesCallPressure()
+    {
+        // The SMALL_CODE costs are size based; only the execution cost model
+        // prices callee-saved residency against measured call pressure.
+        //
+        // A target with no callee-saved registers at all (wasm: locals are
+        // the storage and every one of them survives calls) has no residency
+        // to contend for, so pressure has no meaning there.
+        return (RBM_CALLEE_SAVED != RBM_NONE) && (CodeOptKind() != Compiler::SMALL_CODE);
+    }
 
     const char* Name() const
     {
@@ -409,6 +434,11 @@ struct CSEdsc
 
     // true if this CSE is live across a call
     bool csdLiveAcrossCall;
+
+    // Largest register demand of this candidate's register class (in
+    // registers; pairs count twice) observed live at a call the candidate's
+    // value is live across.
+    unsigned csdCallPressure;
 
     // We may form candidates that we can't use.
     // Is this a viable cse?
@@ -486,6 +516,11 @@ class CSE_Candidate
     bool m_StressCSE;
     bool m_Random;
 
+    // Set when the candidate was priced as resident in a callee-saved
+    // register across its calls; a successful promotion then occupies one
+    // such register that later candidates' pressure measurements predate.
+    bool m_ResidencyPriced;
+
 public:
     CSE_Candidate(CSE_HeuristicCommon* context, CSEdsc* cseDsc)
         : m_context(context)
@@ -500,7 +535,18 @@ public:
         , m_Conservative(false)
         , m_StressCSE(false)
         , m_Random(false)
+        , m_ResidencyPriced(false)
     {
+    }
+
+    void SetResidencyPriced()
+    {
+        m_ResidencyPriced = true;
+    }
+
+    bool IsResidencyPriced()
+    {
+        return m_ResidencyPriced;
     }
 
     CSEdsc* CseDsc()
