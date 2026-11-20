@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { _ems_ } from "../../Common/JavaScript/ems-ambient";
-import Wasm64 from "consts:wasm64";
 
 
 export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): number {
@@ -19,7 +18,10 @@ export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): n
         return -1;
     }
 
-    bufferPtr = Wasm64 ? Number(bufferPtr) : bufferPtr >>> 0;
+    // Emscripten serializes this function into the native library without its module scope, so it
+    // cannot use build-time constants. wasm64 passes a non-negative offset.
+    if (bufferPtr < 0)
+        bufferPtr = bufferPtr >>> 0;
     const memoryView = _ems_.dotnetApi.localHeapViewU8();
     const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
 
