@@ -12676,7 +12676,7 @@ void LinearScan::RegisterSelection::try_FREE_OR_CHEAPER_SPILL()
     // When no free register covers the range, consider evicting a cheaper
     // callee-saved occupant. Let the normal spill-selection heuristics choose
     // the register.
-    if (preferCalleeSave && currentInterval->isLocalVar && refPosition->IsActualRef() && !currentInterval->isWriteThru
+    if (preferCalleeSave && refPosition->IsActualRef() && !currentInterval->isWriteThru
 #ifdef TARGET_ARM64
         && !refPosition->needsConsecutive
 #endif
@@ -12688,9 +12688,7 @@ void LinearScan::RegisterSelection::try_FREE_OR_CHEAPER_SPILL()
             bool anyFreeCovers = false;
             for (SingleTypeRegSet freeRegs = freeCandidates; freeRegs != RBM_NONE;)
             {
-                regNumber        freeReg = genFirstRegNumFromMask(freeRegs, regType);
-                SingleTypeRegSet freeBit = genSingleTypeRegMask(freeReg);
-                freeRegs ^= freeBit;
+                regNumber freeReg = genFirstRegNumFromMaskAndToggle(freeRegs, regType);
                 if (getRegisterCoverageEnd(freeReg) > lastLocation)
                 {
                     anyFreeCovers = true;
@@ -12703,9 +12701,7 @@ void LinearScan::RegisterSelection::try_FREE_OR_CHEAPER_SPILL()
                 weight_t bestEviction = FloatingPointUtils::infinite_double();
                 for (SingleTypeRegSet busyCallees = calleeSaves; busyCallees != RBM_NONE;)
                 {
-                    regNumber        busyReg = genFirstRegNumFromMask(busyCallees, regType);
-                    SingleTypeRegSet busyBit = genSingleTypeRegMask(busyReg);
-                    busyCallees ^= busyBit;
+                    regNumber busyReg = genFirstRegNumFromMaskAndToggle(busyCallees, regType);
 
                     // Use the spill selector's own eligibility and pricing,
                     // so this check can not commit to an eviction that
@@ -13464,7 +13460,6 @@ LsraLocation LinearScan::RegisterSelection::getRegisterCoverageEnd(regNumber reg
         Min(linearScan->getNextFixedRef(regNum, regType), linearScan->getNextIntervalRef(regNum, regType));
     if ((location == rangeEndLocation) && rangeEndRefPosition->isFixedRefOfReg(regNum))
     {
-        INDEBUG(linearScan->dumpLsraAllocationEvent(LSRA_EVENT_INCREMENT_RANGE_END, currentInterval));
         location++;
     }
     return location;

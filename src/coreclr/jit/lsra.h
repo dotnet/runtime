@@ -1348,9 +1348,6 @@ private:
         }
 #endif // TARGET_AMD64
 
-        // The single eligibility and pricing computation for spilling a busy
-        // register, shared by try_SPILL_COST and the earlier check that lets
-        // eviction compete with a non-covering free register.
         bool spillCandidateCost(regNumber spillCandidateRegNum, weight_t* pSpillWeight);
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)      FORCEINLINE void try_##stat();
