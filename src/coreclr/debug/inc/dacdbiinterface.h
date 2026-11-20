@@ -2175,7 +2175,7 @@ public:
         IN ContextBuffer contextBuffer,
         IN const CorDebugRegister * regs,
         IN ULONG32 nRegs,
-        IN const TADDR * values) = 0;
+        IN const CORDB_REGISTER * values) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE ReadRegistersFromContext(
         IN ContextBuffer contextBuffer,

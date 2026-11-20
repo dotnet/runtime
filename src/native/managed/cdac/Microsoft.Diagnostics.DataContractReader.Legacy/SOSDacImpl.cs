@@ -2067,6 +2067,7 @@ public sealed unsafe partial class SOSDacImpl
             IGC gc = _target.Contracts.GC;
             string[] gcIdentifiers = gc.GetGCIdentifiers();
             GCHeapSegmentData segmentData = gc.GetHeapSegmentData(seg.ToTargetPointer(_target));
+            nuint flags = checked((nuint)segmentData.Flags.Value);
 
             data->segmentAddr = seg;
             data->allocated = segmentData.Allocated.ToClrDataAddress(_target);
@@ -2076,7 +2077,7 @@ public sealed unsafe partial class SOSDacImpl
             data->mem = segmentData.Mem.ToClrDataAddress(_target);
             data->next = segmentData.Next.ToClrDataAddress(_target);
             data->gc_heap = segmentData.Heap.ToClrDataAddress(_target);
-            data->flags = (nuint)segmentData.Flags.Value;
+            data->flags = flags;
             data->background_allocated = segmentData.BackgroundAllocated.ToClrDataAddress(_target);
 
             // TODO: Compute highAllocMark - need to determine if this is the ephemeral segment
@@ -4903,9 +4904,9 @@ public sealed unsafe partial class SOSDacImpl
                 {
                     i++;
                     Contracts.LoaderHeapBlock block = blocks.Current;
-                    pCallback(block.Address.Value, (nuint)block.Size.Value, i == 1 ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+                    pCallback(block.Address.Value, checked((nuint)block.Size.Value), i == 1 ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
 #if DEBUG
-                    DebugTraverseLoaderHeapBlocks.Add((block.Address.Value, (nuint)block.Size.Value));
+                    DebugTraverseLoaderHeapBlocks.Add((block.Address.Value, checked((nuint)block.Size.Value)));
 #endif
                 }
             }
@@ -5282,26 +5283,25 @@ public sealed unsafe partial class SOSDacImpl
     private static void PopulateGCInterestingInfoData(GCHeapData heapData, DacpGCInterestingInfoData* data)
     {
         *data = default;
-
-        // The DacpGCInterestingInfoData struct hardcodes platform sized ints.
-        // This is problematic for new cross-bit scenarios.
-        // If the target platform is 64-bits but the cDAC/SOS is 32-bits, the values will be truncated.
+        DacpGCInterestingInfoData result = default;
 
         // Copy interesting data points
         for (int i = 0; i < Math.Min(GCConstants.DAC_NUM_GC_DATA_POINTS, heapData.InterestingData.Count); i++)
-            data->interestingDataPoints[i] = (nuint)heapData.InterestingData[i].Value;
+            result.interestingDataPoints[i] = checked((nuint)heapData.InterestingData[i].Value);
 
         // Copy compact reasons
         for (int i = 0; i < Math.Min(GCConstants.DAC_MAX_COMPACT_REASONS_COUNT, heapData.CompactReasons.Count); i++)
-            data->compactReasons[i] = (nuint)heapData.CompactReasons[i].Value;
+            result.compactReasons[i] = checked((nuint)heapData.CompactReasons[i].Value);
 
         // Copy expand mechanisms
         for (int i = 0; i < Math.Min(GCConstants.DAC_MAX_EXPAND_MECHANISMS_COUNT, heapData.ExpandMechanisms.Count); i++)
-            data->expandMechanisms[i] = (nuint)heapData.ExpandMechanisms[i].Value;
+            result.expandMechanisms[i] = checked((nuint)heapData.ExpandMechanisms[i].Value);
 
         // Copy interesting mechanism bits
         for (int i = 0; i < Math.Min(GCConstants.DAC_MAX_GC_MECHANISM_BITS_COUNT, heapData.InterestingMechanismBits.Count); i++)
-            data->bitMechanisms[i] = (nuint)heapData.InterestingMechanismBits[i].Value;
+            result.bitMechanisms[i] = checked((nuint)heapData.InterestingMechanismBits[i].Value);
+
+        *data = result;
     }
 
 #if DEBUG
@@ -5353,21 +5353,20 @@ public sealed unsafe partial class SOSDacImpl
             if (globalMechanisms == null)
                 throw new ArgumentException();
 
+            Span<nuint> output = new(globalMechanisms, GCConstants.DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT);
+            output.Clear();
             IGC gc = _target.Contracts.GC;
             IReadOnlyList<TargetNUInt> globalMechanismsData = gc.GetGlobalMechanisms();
 
-            // Clear the array
-            for (int i = 0; i < GCConstants.DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT; i++)
-                globalMechanisms[i] = 0;
+            Span<nuint> result = stackalloc nuint[GCConstants.DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT];
+            result.Clear();
 
             // Copy global mechanisms data
             for (int i = 0; i < Math.Min(GCConstants.DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT, globalMechanismsData.Count); i++)
             {
-                // This API hardcodes platform sized ints in the struct
-                // This is problematic for new cross-bit scenarios.
-                // If the target platform is 64-bits but the cDAC/SOS is 32-bits, the values will be truncated.
-                globalMechanisms[i] = (nuint)globalMechanismsData[i].Value;
+                result[i] = checked((nuint)globalMechanismsData[i].Value);
             }
+            result.CopyTo(output);
         }
         catch (System.Exception ex)
         {
@@ -6529,8 +6528,9 @@ public sealed unsafe partial class SOSDacImpl
                 TargetPointer taggedMemoryPtr = objcContract.GetTaggedMemory(objPtr, out TargetNUInt taggedMemorySizeNUInt);
                 if (taggedMemoryPtr != TargetPointer.Null)
                 {
+                    nuint size = checked((nuint)taggedMemorySizeNUInt.Value);
                     *taggedMemory = taggedMemoryPtr.ToClrDataAddress(_target);
-                    *taggedMemorySizeInBytes = (nuint)taggedMemorySizeNUInt.Value;
+                    *taggedMemorySizeInBytes = size;
                     hr = HResults.S_OK;
                 }
             }
