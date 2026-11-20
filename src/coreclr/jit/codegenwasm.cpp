@@ -15,33 +15,33 @@
 static const int LINEAR_MEMORY_INDEX = 0;
 
 #ifdef TARGET_64BIT
-static const instruction INS_I_load  = INS_i64_load;
-static const instruction INS_I_store = INS_i64_store;
-static const instruction INS_I_const = INS_i64_const;
+static const instruction INS_I_load                = INS_i64_load;
+static const instruction INS_I_store               = INS_i64_store;
+static const instruction INS_I_const               = INS_i64_const;
 static const instruction INS_I_const_frameidentity = INS_i64_const_frameidentity;
-static const instruction INS_I_add   = INS_i64_add;
-static const instruction INS_I_and   = INS_i64_and;
-static const instruction INS_I_or    = INS_i64_or;
-static const instruction INS_I_shl   = INS_i64_shl;
-static const instruction INS_I_eqz   = INS_i64_eqz;
-static const instruction INS_I_mul   = INS_i64_mul;
-static const instruction INS_I_sub   = INS_i64_sub;
-static const instruction INS_I_le_u  = INS_i64_le_u;
-static const instruction INS_I_gt_u  = INS_i64_gt_u;
+static const instruction INS_I_add                 = INS_i64_add;
+static const instruction INS_I_and                 = INS_i64_and;
+static const instruction INS_I_or                  = INS_i64_or;
+static const instruction INS_I_shl                 = INS_i64_shl;
+static const instruction INS_I_eqz                 = INS_i64_eqz;
+static const instruction INS_I_mul                 = INS_i64_mul;
+static const instruction INS_I_sub                 = INS_i64_sub;
+static const instruction INS_I_le_u                = INS_i64_le_u;
+static const instruction INS_I_gt_u                = INS_i64_gt_u;
 #else  // !TARGET_64BIT
-static const instruction INS_I_load  = INS_i32_load;
-static const instruction INS_I_store = INS_i32_store;
-static const instruction INS_I_const = INS_i32_const;
+static const instruction INS_I_load                = INS_i32_load;
+static const instruction INS_I_store               = INS_i32_store;
+static const instruction INS_I_const               = INS_i32_const;
 static const instruction INS_I_const_frameidentity = INS_i32_const_frameidentity;
-static const instruction INS_I_add   = INS_i32_add;
-static const instruction INS_I_and   = INS_i32_and;
-static const instruction INS_I_or    = INS_i32_or;
-static const instruction INS_I_shl   = INS_i32_shl;
-static const instruction INS_I_eqz   = INS_i32_eqz;
-static const instruction INS_I_mul   = INS_i32_mul;
-static const instruction INS_I_sub   = INS_i32_sub;
-static const instruction INS_I_le_u  = INS_i32_le_u;
-static const instruction INS_I_gt_u  = INS_i32_gt_u;
+static const instruction INS_I_add                 = INS_i32_add;
+static const instruction INS_I_and                 = INS_i32_and;
+static const instruction INS_I_or                  = INS_i32_or;
+static const instruction INS_I_shl                 = INS_i32_shl;
+static const instruction INS_I_eqz                 = INS_i32_eqz;
+static const instruction INS_I_mul                 = INS_i32_mul;
+static const instruction INS_I_sub                 = INS_i32_sub;
+static const instruction INS_I_le_u                = INS_i32_le_u;
+static const instruction INS_I_gt_u                = INS_i32_gt_u;
 #endif // !TARGET_64BIT
 
 //------------------------------------------------------------------------

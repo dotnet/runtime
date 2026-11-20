@@ -302,8 +302,7 @@ void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
         emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
                   (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->tableBase);
     }
-    emitIns_I((TARGET_POINTER_SIZE == 8) ? INS_i64_const_funcletptr : INS_i32_const_funcletptr, EA_PTRSIZE,
-              funcletId);
+    emitIns_I((TARGET_POINTER_SIZE == 8) ? INS_i64_const_funcletptr : INS_i32_const_funcletptr, EA_PTRSIZE, funcletId);
     if (!m_compiler->IsNativeAot())
     {
         emitIns((TARGET_POINTER_SIZE == 8) ? INS_i64_add : INS_i32_add);
