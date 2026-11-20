@@ -510,17 +510,34 @@ namespace Internal.Pgo
         {
             public static readonly PgoSchemaMergeComparer Singleton = new PgoSchemaMergeComparer();
 
+            // Both the count and its table sort by table kind, with the count first.
+            private static (PgoInstrumentationKind Kind, bool IsTable) GetMergeOrder(PgoSchemaElem elem)
+            {
+                PgoInstrumentationKind kind = elem.InstrumentationKind;
+                if (kind is PgoInstrumentationKind.HandleHistogramIntCount or PgoInstrumentationKind.HandleHistogramLongCount)
+                {
+                    bool isClass = ((uint)elem.Other & (uint)ClassProfileFlags.IsClass) != 0;
+                    return (isClass ? PgoInstrumentationKind.HandleHistogramTypes : PgoInstrumentationKind.HandleHistogramMethods, false);
+                }
+
+                return kind switch
+                {
+                    PgoInstrumentationKind.HandleHistogramTypes or PgoInstrumentationKind.HandleHistogramMethods => (kind, true),
+                    PgoInstrumentationKind.GetLikelyClass or PgoInstrumentationKind.GetLikelyMethod => (kind, false),
+                    _ => (kind & PgoInstrumentationKind.DescriptorMask, false),
+                };
+            }
+
             public int Compare(PgoSchemaElem x, PgoSchemaElem y)
             {
                 if (x.ILOffset != y.ILOffset)
                 {
                     return x.ILOffset.CompareTo(y.ILOffset);
                 }
-                PgoInstrumentationKind xdescr = x.InstrumentationKind & PgoInstrumentationKind.DescriptorMask;
-                PgoInstrumentationKind ydescr = y.InstrumentationKind & PgoInstrumentationKind.DescriptorMask;
-                if (xdescr != ydescr)
+                int order = GetMergeOrder(x).CompareTo(GetMergeOrder(y));
+                if (order != 0)
                 {
-                    return xdescr.CompareTo(ydescr);
+                    return order;
                 }
                 // We usually merge the Other field, except for edges, where we take care only to merge
                 // edges with equal ILOffset _and_ equal Other fields.
@@ -549,8 +566,15 @@ namespace Internal.Pgo
                 {
                     bool foundNumRuns = false;
 
-                    foreach (PgoSchemaElem schema in schemaSet)
+                    for (int i = 0; i < schemaSet.Length; i++)
                     {
+                        PgoSchemaElem schema = schemaSet[i];
+                        if (schema.InstrumentationKind is PgoInstrumentationKind.HandleHistogramIntCount or PgoInstrumentationKind.HandleHistogramLongCount &&
+                            i + 1 < schemaSet.Length && schemaSet[i + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes)
+                        {
+                            // The table identifies a type count even in profiles that omit the class flag.
+                            schema.Other |= unchecked((int)ClassProfileFlags.IsClass);
+                        }
                         if (schema.InstrumentationKind == PgoInstrumentationKind.NumRuns)
                             foundNumRuns = true;
                         MergeInSchemaElem(dataMerger, schema);
