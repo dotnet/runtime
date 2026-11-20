@@ -36,10 +36,7 @@ namespace ILCompiler.PortableCallHelpers
             var linkedModules = new HashSet<string>(StringComparer.Ordinal);
             foreach (string module in pinvokeModules)
             {
-                foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(target, module))
-                {
-                    linkedModules.Add(variation);
-                }
+                linkedModules.UnionWith(MarshalHelpers.GetPInvokeModuleNameVariations(target, module));
             }
 
             foreach (PInvokeInfo pinvoke in pinvokes)

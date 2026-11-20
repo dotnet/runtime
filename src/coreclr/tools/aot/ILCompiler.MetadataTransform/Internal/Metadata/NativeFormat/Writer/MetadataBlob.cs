@@ -33,8 +33,7 @@ public sealed class MetadataBlob : IEquatable<MetadataBlob>
     public void WriteBytes(ReadOnlySpan<byte> bytes)
     {
         Debug.Assert(!_isReadOnly);
-        foreach (byte value in bytes)
-            _bytes.Add(value);
+        _bytes.AddRange(bytes);
     }
 
     public void WriteString(ConstantStringValue value)
@@ -68,14 +67,11 @@ public sealed class MetadataBlob : IEquatable<MetadataBlob>
         if (ReferenceEquals(this, other))
             return true;
 
-        if (other is null || _bytes.Count != other._bytes.Count || _references.Count != other._references.Count)
+        if (other is null || _references.Count != other._references.Count)
             return false;
 
-        for (int i = 0; i < _bytes.Count; i++)
-        {
-            if (_bytes[i] != other._bytes[i])
-                return false;
-        }
+        if (!_bytes.SequenceEqual(other._bytes))
+            return false;
 
         for (int i = 0; i < _references.Count; i++)
         {
