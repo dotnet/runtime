@@ -335,7 +335,8 @@ MII
             CryptographicException ce = AssertExtensions.Throws<CryptographicException>(() =>
                 X509Certificate2.CreateFromPem(TestData.ECDsaCertificate, TestData.EcDhPkcs8Key));
 
-            Assert.IsType<ArgumentException>(ce.InnerException);
+            CryptographicException inner = Assert.IsType<CryptographicException>(ce.InnerException);
+            Assert.IsType<ArgumentException>(inner.InnerException);
         }
 
         [Fact]
@@ -349,7 +350,8 @@ MII
             CryptographicException ce = AssertExtensions.Throws<CryptographicException>(() =>
                 X509Certificate2.CreateFromEncryptedPem(TestData.ECDsaCertificate, otherKeyPem, "test"));
 
-            Assert.IsType<ArgumentException>(ce.InnerException);
+            CryptographicException inner = Assert.IsType<CryptographicException>(ce.InnerException);
+            Assert.IsType<ArgumentException>(inner.InnerException);
         }
 
         [Fact]
@@ -358,7 +360,8 @@ MII
             CryptographicException ce = AssertExtensions.Throws<CryptographicException>(() =>
                 X509Certificate2.CreateFromPem(TestData.EcDhCertificate, TestData.ECDsaPkcs8Key));
 
-            Assert.IsType<ArgumentException>(ce.InnerException);
+            CryptographicException inner = Assert.IsType<CryptographicException>(ce.InnerException);
+            Assert.IsType<ArgumentException>(inner.InnerException);
         }
 
         [Fact]
@@ -367,7 +370,8 @@ MII
             CryptographicException ce = AssertExtensions.Throws<CryptographicException>(() =>
                 X509Certificate2.CreateFromEncryptedPem(TestData.EcDhCertificate, TestData.ECDsaEncryptedPkcs8Key, "test"));
 
-            Assert.IsType<ArgumentException>(ce.InnerException);
+            CryptographicException inner = Assert.IsType<CryptographicException>(ce.InnerException);
+            Assert.IsType<ArgumentException>(inner.InnerException);
         }
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
