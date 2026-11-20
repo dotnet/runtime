@@ -4,7 +4,7 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- TODO: Re-enable when CoreCLR browser supports ALC unmanaged-library resolution.
          Tracked by https://github.com/dotnet/runtime/issues/131321. -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- The test leaves AssemblyLoadContext.Default.ResolvingUnmanagedDll event registered to a method in the test at exit -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>

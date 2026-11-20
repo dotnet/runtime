@@ -2,9 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <HWITestsXarchOnly>true</HWITestsXarchOnly>
-    <!-- https://github.com/dotnet/runtime/issues/57352 -->
-    <MonoAotIncompatible>true</MonoAotIncompatible>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>

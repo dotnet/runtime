@@ -11,6 +11,8 @@ internal static partial class Interop
     {
         internal ref struct ParsedMount
         {
+            public required ReadOnlySpan<char> MountId { get; init; }
+            public required ReadOnlySpan<char> ParentId { get; init; }
             public required ReadOnlySpan<char> Root { get; init; }
             public required ReadOnlySpan<char> MountPoint { get; init; }
             public required ReadOnlySpan<char> FileSystemType { get; init; }
@@ -30,9 +32,21 @@ internal static partial class Interop
             MemoryExtensions.SpanSplitEnumerator<char> fields = line.Split(' ');
 
             // (1) mount ID
+            if (!fields.MoveNext())
+            {
+                return false;
+            }
+            ReadOnlySpan<char> mountId = line[fields.Current];
+
             // (2) parent ID
+            if (!fields.MoveNext())
+            {
+                return false;
+            }
+            ReadOnlySpan<char> parentId = line[fields.Current];
+
             // (3) major:minor
-            if (!fields.MoveNext() || !fields.MoveNext() || !fields.MoveNext())
+            if (!fields.MoveNext())
             {
                 return false;
             }
@@ -83,6 +97,8 @@ internal static partial class Interop
 
             result = new ParsedMount()
             {
+                MountId = mountId,
+                ParentId = parentId,
                 Root = root.Contains('\\') ? UnescapePath(root) : root,
                 MountPoint = mountPoint.Contains('\\') ? UnescapePath(mountPoint) : mountPoint,
                 FileSystemType = fileSystemType,

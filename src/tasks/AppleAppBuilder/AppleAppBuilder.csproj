@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\RuntimeConfigProperties.cs" />
     <Compile Include="..\Common\Utils.cs" />
   </ItemGroup>
 
