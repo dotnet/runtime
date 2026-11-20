@@ -64,12 +64,15 @@ typedef struct pollfd ds_ipc_pollfd_t;
 typedef mode_t ds_ipc_mode_t;
 #endif
 
+#ifdef DS_IPC_PAL_AF_UNIX
+#include <minipal/transportname.h>
+#endif
+
 #ifndef EP_NO_RT_DEPENDENCY
 #include "ds-rt.h"
 #else
 #ifdef FEATURE_CORECLR
 #include <pal.h>
-#include <minipal/transportname.h>
 #endif
 
 #ifndef ep_return_null_if_nok
@@ -716,20 +719,7 @@ ipc_transport_get_default_name (
 	int32_t name_len)
 {
 #ifdef DS_IPC_PAL_AF_UNIX
-#ifndef EP_NO_RT_DEPENDENCY
-	return ds_rt_transport_get_default_name (
-		name,
-		name_len,
-		"dotnet-diagnostic",
-		ep_rt_current_process_get_id (),
-		NULL,
-		"socket");
-#elif defined (EP_NO_RT_DEPENDENCY) && defined (FEATURE_CORECLR)
-	// generate the default socket name in TMP Path
 	return minipal_get_transport_name (name, name_len, "dotnet-diagnostic", (uint32_t)getpid (), NULL, "socket");
-#else
-	return false;
-#endif
 #else
 	return false;
 #endif

@@ -1,6 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef HOST_WINDOWS
+
+#include "thread.h"
+#include <windows.h>
+
+size_t minipal_get_current_thread_id(void)
+{
+    return (size_t)GetCurrentThreadId();
+}
+
+#else // HOST_WINDOWS
+
 #if defined(__linux__) && !defined(_GNU_SOURCE)
 // glibc declares pthread_setname_np only when _GNU_SOURCE is defined before <pthread.h>.
 #define _GNU_SOURCE
@@ -112,3 +124,5 @@ int minipal_set_thread_name(pthread_t thread, const char* name)
 #endif
 #endif
 }
+
+#endif // HOST_WINDOWS

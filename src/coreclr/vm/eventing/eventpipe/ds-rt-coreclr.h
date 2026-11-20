@@ -17,7 +17,6 @@
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
 #include "perfmap.h"
-#include <minipal/transportname.h>
 
 #undef DS_LOG_ALWAYS_0
 #define DS_LOG_ALWAYS_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n")
@@ -140,30 +139,6 @@ ds_rt_generate_core_dump (
 	EX_CATCH {}
 	EX_END_CATCH
 	return result;
-}
-
-/*
- * DiagnosticsIpc.
- */
-
-static
-inline
-bool
-ds_rt_transport_get_default_name (
-	ep_char8_t *name,
-	int32_t name_len,
-	const ep_char8_t *prefix,
-	int32_t id,
-	const ep_char8_t *group_id,
-	const ep_char8_t *suffix)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-#ifdef TARGET_UNIX
-	return minipal_get_transport_name (name, name_len, prefix, id, group_id, suffix);
-#else
-	return false;
-#endif
 }
 
 /*

@@ -3612,11 +3612,7 @@ void Thread::PrepareApartmentAndContext()
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef TARGET_UNIX
     m_OSThreadId = minipal_get_current_thread_id();
-#else
-    m_OSThreadId = ::GetCurrentThreadId();
-#endif
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // Be very careful in here because we haven't set up e.g. TLS yet.

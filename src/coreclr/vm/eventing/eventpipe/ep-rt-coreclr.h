@@ -1212,11 +1212,7 @@ ep_rt_current_thread_get_id (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-#ifdef TARGET_UNIX
 	return static_cast<ep_rt_thread_id_t>(minipal_get_current_thread_id ());
-#else
-	return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
-#endif
 }
 
 static

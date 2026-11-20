@@ -429,11 +429,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
     static size_t s_pCrashingThreadID;
 
     size_t currentThreadID;
-#ifndef TARGET_UNIX
-    currentThreadID = GetCurrentThreadId();
-#else
     currentThreadID = minipal_get_current_thread_id();
-#endif
 
     size_t previousThreadID = InterlockedCompareExchangeT<size_t>(&s_pCrashingThreadID, currentThreadID, 0);
 

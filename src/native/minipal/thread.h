@@ -58,6 +58,25 @@ int minipal_set_thread_name(pthread_t thread, const char* name);
 }
 #endif // extern "C"
 
+#else // !HOST_WINDOWS
+
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * Get the current thread ID.
+ *
+ * @return The current thread ID as a size_t value.
+ */
+size_t minipal_get_current_thread_id(void);
+
+#ifdef __cplusplus
+}
+#endif // extern "C"
+
 #endif // !HOST_WINDOWS
 
 #endif // HAVE_MINIPAL_THREAD_H
