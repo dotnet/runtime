@@ -11,7 +11,7 @@
 
     <ItemGroup>
       <!-- Native static libraries produced by the test's own CMake project(s), already staged into
-           $(OutDir) by CopyNativeProjectBinaries. -->
+           $(OutDir) by CopyAllNativeProjectReferenceBinaries. -->
       <_WasmNativeTestLib Include="$(OutDir)*$(StaticLibSuffix)" />
 
       <!-- src/tests/Common/Platform is the shared native helper library for tests, and several of

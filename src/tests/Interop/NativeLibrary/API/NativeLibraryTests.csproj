@@ -29,7 +29,7 @@
     <FileNameSuffix>-in-subdirectory</FileNameSuffix>
   </PropertyGroup>
 
-  <Target Name="SetUpSubdirectoryNative" AfterTargets="CopyNativeProjectBinaries">
+  <Target Name="SetUpSubdirectoryNative" AfterTargets="CopyAllNativeProjectReferenceBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
     <ItemGroup>
       <NativeLibrariesToCopy Include="$(OutDir)/libNativeLibrary.*" />
       <NativeLibrariesToCopy Include="$(OutDir)/NativeLibrary.*" />
@@ -44,7 +44,7 @@
     <Copy SourceFiles="@(AssembliesToCopy)" DestinationFiles="@(AssembliesToCopy -> '$(LibrarySubdirectory)/%(Filename)$(FileNameSuffix)%(Extension)')" />
   </Target>
 
-  <Target Name="SetUpAOTDirectory" Condition="'$(TestBuildMode)' == 'nativeaot'" AfterTargets="Build">
+  <Target Name="SetUpAOTDirectory" Condition="'$(TestBuildMode)' == 'nativeaot' and '$(_WillCLRTestProjectBuild)' == 'true'" AfterTargets="Build">
     <ItemGroup>
       <NativeLibrariesToCopyAOT Include="$(OutDir)/libNativeLibrary.*" />
       <NativeLibrariesToCopyAOT Include="$(OutDir)/NativeLibrary.*" />

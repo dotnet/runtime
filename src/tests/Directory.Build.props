@@ -20,6 +20,7 @@
   <PropertyGroup>
     <TestProjectDir>$(MSBuildThisFileDirectory)</TestProjectDir>
     <TestSourceDir>$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSourceDir>
+    <DefaultCMakeProject>$(TestSourceDir)build-native.proj</DefaultCMakeProject>
   </PropertyGroup>
 
   <PropertyGroup>

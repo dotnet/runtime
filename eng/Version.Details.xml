@@ -55,6 +55,10 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>60864f1c9f7bc774d1c191ef6f1630e81607cd62</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.DotNet.CMake.Sdk" Version="12.0.0-beta.26561.116">
+      <Uri>https://github.com/dotnet/dotnet</Uri>
+      <Sha>60864f1c9f7bc774d1c191ef6f1630e81607cd62</Sha>
+    </Dependency>
     <Dependency Name="Microsoft.DotNet.XliffTasks" Version="12.0.0-beta.26561.116">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>60864f1c9f7bc774d1c191ef6f1630e81607cd62</Sha>

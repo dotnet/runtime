@@ -31,16 +31,21 @@ jobs:
             buildArgs: -s provision.emsdk+tasks -c $(buildConfigUpper)
             displayName: Provision Emscripten SDK and build tasks
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          forwardedParameters: [testGroup]
           parameters:
             creator: dotnet-bot
+            displayNameArgs: Interpreter
             testBuildArgs: -os browser /p:HostConfiguration=Release
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
             useHelixMonitor: ${{ parameters.useHelixMonitor }}
         # CrossgenFramework skips wasm, so regenerate CORE_ROOT from the same BCL
         # bits and enable Crossgen2 only for test assemblies on Helix.
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          forwardedParameters: [testGroup]
           parameters:
             creator: dotnet-bot
+            displayNameArgs: R2R_CG2
+            runAfterPreviousFailure: true
             readyToRun: true
             testBuildArgs: generatelayoutonly crossgen2 -os browser /p:HostConfiguration=Release
             testRunNamePrefixSuffix: CoreCLR_R2R_CG2_$(_BuildConfig)

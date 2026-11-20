@@ -44,18 +44,18 @@ jobs:
     ${{ if eq(parameters.displayName, '') }}:
       displayName: '${{ parameters.jobName }}'
 
-    # tests collection takes longer so increase timeout to 8 hours
-    ${{ if or(eq(parameters.collectionName, 'coreclr_tests'), eq(parameters.collectionName, 'libraries_tests')) }}:
+    # Test collection takes longer so increase timeout to 8 hours.
+    ${{ if in(parameters.collectionName, 'coreclr_tests', 'libraries_tests') }}:
       timeoutInMinutes: 480
     ${{ else }}:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
-    - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-      parameters:
-        runtimeFlavor: coreclr
-        testGroup: ${{ parameters.testGroup }}
-        liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+    - name: librariesOverrideArg
+      value: ''
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - name: librariesOverrideArg
+        value: /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}
 
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
@@ -142,9 +142,9 @@ jobs:
       - name: InputDirectory
         # Cross-target crossgen2 collections over the coreclr tests compile just the JIT tests.
         ${{ if eq(parameters.targetArch, 'wasm') }}:
-          value: '$(managedTestArtifactRootFolderPath)/JIT'
+          value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/JIT'
         ${{ else }}:
-          value: '$(managedTestArtifactRootFolderPath)'
+          value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
     - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
       - name: InputDirectory
         value: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
