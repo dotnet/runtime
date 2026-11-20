@@ -38,6 +38,7 @@ namespace System.Numerics.Tensors
             }
 
             ref TInput sourceRef = ref MemoryMarshal.GetReference(x);
+            destination = destination.Slice(0, x.Length);
             ref TOutput destinationRef = ref MemoryMarshal.GetReference(destination);
             int i = 0, oneVectorFromEnd;
 
@@ -50,17 +51,14 @@ namespace System.Numerics.Tensors
                 if (i <= oneVectorFromEnd)
                 {
                     // Loop handling one input vector / four output vectors at a time.
-                    do
+                    for (; i <= oneVectorFromEnd; i += Vector512<TInput>.Count)
                     {
-                        (Vector512<TOutput>, Vector512<TOutput>, Vector512<TOutput>, Vector512<TOutput>) results = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref sourceRef, (uint)i));
-                        results.Item1.StoreUnsafe(ref destinationRef, (uint)i);
-                        results.Item2.StoreUnsafe(ref destinationRef, (uint)(i + Vector512<TOutput>.Count));
-                        results.Item3.StoreUnsafe(ref destinationRef, (uint)(i + (Vector512<TOutput>.Count * 2)));
-                        results.Item4.StoreUnsafe(ref destinationRef, (uint)(i + (Vector512<TOutput>.Count * 3)));
-
-                        i += Vector512<TInput>.Count;
+                        (Vector512<TOutput>, Vector512<TOutput>, Vector512<TOutput>, Vector512<TOutput>) results = TUnaryOperator.Invoke(Vector512.Create(x.Slice(i)));
+                        results.Item1.CopyTo(destination.Slice(i));
+                        results.Item2.CopyTo(destination.Slice(i + Vector512<TOutput>.Count));
+                        results.Item3.CopyTo(destination.Slice(i + (Vector512<TOutput>.Count * 2)));
+                        results.Item4.CopyTo(destination.Slice(i + (Vector512<TOutput>.Count * 3)));
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final input vector.
                     if (i != x.Length)
@@ -86,18 +84,15 @@ namespace System.Numerics.Tensors
                 oneVectorFromEnd = x.Length - Vector256<TInput>.Count;
                 if (i <= oneVectorFromEnd)
                 {
-                    // Loop handling one input vector / two output vectors at a time.
-                    do
+                    // Loop handling one input vector / four output vectors at a time.
+                    for (; i <= oneVectorFromEnd; i += Vector256<TInput>.Count)
                     {
-                        (Vector256<TOutput>, Vector256<TOutput>, Vector256<TOutput>, Vector256<TOutput>) results = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref sourceRef, (uint)i));
-                        results.Item1.StoreUnsafe(ref destinationRef, (uint)i);
-                        results.Item2.StoreUnsafe(ref destinationRef, (uint)(i + Vector256<TOutput>.Count));
-                        results.Item3.StoreUnsafe(ref destinationRef, (uint)(i + (Vector256<TOutput>.Count * 2)));
-                        results.Item4.StoreUnsafe(ref destinationRef, (uint)(i + (Vector256<TOutput>.Count * 3)));
-
-                        i += Vector256<TInput>.Count;
+                        (Vector256<TOutput>, Vector256<TOutput>, Vector256<TOutput>, Vector256<TOutput>) results = TUnaryOperator.Invoke(Vector256.Create(x.Slice(i)));
+                        results.Item1.CopyTo(destination.Slice(i));
+                        results.Item2.CopyTo(destination.Slice(i + Vector256<TOutput>.Count));
+                        results.Item3.CopyTo(destination.Slice(i + (Vector256<TOutput>.Count * 2)));
+                        results.Item4.CopyTo(destination.Slice(i + (Vector256<TOutput>.Count * 3)));
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final input vector.
                     if (i != x.Length)
@@ -123,18 +118,15 @@ namespace System.Numerics.Tensors
                 oneVectorFromEnd = x.Length - Vector128<TInput>.Count;
                 if (i <= oneVectorFromEnd)
                 {
-                    // Loop handling one input vector / two output vectors at a time.
-                    do
+                    // Loop handling one input vector / four output vectors at a time.
+                    for (; i <= oneVectorFromEnd; i += Vector128<TInput>.Count)
                     {
-                        (Vector128<TOutput>, Vector128<TOutput>, Vector128<TOutput>, Vector128<TOutput>) results = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref sourceRef, (uint)i));
-                        results.Item1.StoreUnsafe(ref destinationRef, (uint)i);
-                        results.Item2.StoreUnsafe(ref destinationRef, (uint)(i + Vector128<TOutput>.Count));
-                        results.Item3.StoreUnsafe(ref destinationRef, (uint)(i + (Vector128<TOutput>.Count * 2)));
-                        results.Item4.StoreUnsafe(ref destinationRef, (uint)(i + (Vector128<TOutput>.Count * 3)));
-
-                        i += Vector128<TInput>.Count;
+                        (Vector128<TOutput>, Vector128<TOutput>, Vector128<TOutput>, Vector128<TOutput>) results = TUnaryOperator.Invoke(Vector128.Create(x.Slice(i)));
+                        results.Item1.CopyTo(destination.Slice(i));
+                        results.Item2.CopyTo(destination.Slice(i + Vector128<TOutput>.Count));
+                        results.Item3.CopyTo(destination.Slice(i + (Vector128<TOutput>.Count * 2)));
+                        results.Item4.CopyTo(destination.Slice(i + (Vector128<TOutput>.Count * 3)));
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final input vector.
                     if (i != x.Length)
@@ -154,7 +146,7 @@ namespace System.Numerics.Tensors
 
             while (i < x.Length)
             {
-                Unsafe.Add(ref destinationRef, i) = TUnaryOperator.Invoke(Unsafe.Add(ref sourceRef, i));
+                destination[i] = TUnaryOperator.Invoke(x[i]);
                 i++;
             }
         }

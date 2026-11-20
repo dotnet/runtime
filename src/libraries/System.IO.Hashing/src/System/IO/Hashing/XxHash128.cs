@@ -103,8 +103,10 @@ namespace System.IO.Hashing
         {
             if (destination.Length >= sizeof(ulong) * 2)
             {
+                // Slice before hashing so the length stays known across the call.
+                Span<byte> hashDestination = destination.Slice(0, sizeof(ulong) * 2);
                 Hash128 hash = HashToHash128(source, seed);
-                WriteBigEndian128(hash, destination);
+                WriteBigEndian128(hash, hashDestination);
                 bytesWritten = HashLengthInBytes;
                 return true;
             }
@@ -214,17 +216,9 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteBigEndian128(in Hash128 hash, Span<byte> destination)
         {
-            ulong low = hash.Low64;
-            ulong high = hash.High64;
-            if (BitConverter.IsLittleEndian)
-            {
-                low = BinaryPrimitives.ReverseEndianness(low);
-                high = BinaryPrimitives.ReverseEndianness(high);
-            }
-
-            ref byte dest0 = ref MemoryMarshal.GetReference(destination);
-            Unsafe.WriteUnaligned(ref dest0, high);
-            Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref dest0, new IntPtr(sizeof(ulong))), low);
+            destination = destination.Slice(0, sizeof(ulong) * 2);
+            BinaryPrimitives.WriteUInt64BigEndian(destination, hash.High64);
+            BinaryPrimitives.WriteUInt64BigEndian(destination.Slice(sizeof(ulong)), hash.Low64);
         }
 
         private static Hash128 HashLength0To16(byte* source, uint length, ulong seed)
