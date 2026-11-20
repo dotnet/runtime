@@ -34,28 +34,24 @@ Function:
 
 Parameters:
   pthr -- thread data for calling thread
-  poa -- the object attributes (e.g., name) for the object
 --*/
 
 PAL_ERROR
 CListedObject::Initialize(
-    CPalThread *pthr,
-    CObjectAttributes *poa
+    CPalThread *pthr
     )
 {
     PAL_ERROR palError = NO_ERROR;
 
     _ASSERTE(NULL != pthr);
-    _ASSERTE(NULL != poa);
 
     ENTRY("CListedObject::Initialize"
-        "(this = %p, pthr = %p, poa = %p)\n",
+        "(this = %p, pthr = %p)\n",
         this,
-        pthr,
-        poa
+        pthr
         );
 
-    palError = CPalObjectBase::Initialize(pthr, poa);
+    palError = CPalObjectBase::Initialize(pthr);
     if (NO_ERROR != palError)
     {
         goto InitializeExit;

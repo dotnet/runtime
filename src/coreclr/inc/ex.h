@@ -1077,10 +1077,10 @@ Exception *GetExceptionFromCxxException();
 //
 // do this:
 //
-//     Holder<Thing> thing = new Thing();   //DO THIS INSTEAD
+//     NewHolder<Thing> thing(new Thing());   //DO THIS INSTEAD
 //     blah
 //     // If we got here, we succeeded. So tell holder we want to keep the thing.
-//     thing.SuppressRelease();
+//     thing.Detach();
 //
 //	We won't rethrow the exception if it is a Stack Overflow exception. Instead, we'll throw a new
 //   exception. This will allow the stack to unwind point, and so we won't be jeopardizing a
