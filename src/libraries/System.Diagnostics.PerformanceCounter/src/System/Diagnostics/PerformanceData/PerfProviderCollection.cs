@@ -17,7 +17,7 @@ namespace System.Diagnostics.PerformanceData
         internal PerfProvider(Guid providerGuid)
         {
             _providerGuid = providerGuid;
-            uint Status = Interop.PerfCounter.PerfStartProvider(ref _providerGuid, null, out _hProvider);
+            uint Status = Interop.PerfCounter.PerfStartProvider(ref _providerGuid, null!, out _hProvider);
             // ERROR_INVALID_PARAMETER, ERROR_OUTOFMEMORY
             if (Status != (uint)Interop.Errors.ERROR_SUCCESS)
             {
@@ -30,7 +30,7 @@ namespace System.Diagnostics.PerformanceData
     {
         // Internal global PERFLIB V2 provider collection that contains a collection of PerfProvider objects.
         // Use mutex to serialize collection initialization/update.
-        private static object s_hiddenInternalSyncObject;
+        private static object? s_hiddenInternalSyncObject;
         private static readonly List<PerfProvider> s_providerList = new List<PerfProvider>();
         private static readonly Dictionary<object, int> s_counterSetList = new Dictionary<object, int>();
         private static readonly CounterType[] s_counterTypes = Enum.GetValues<CounterType>();
@@ -73,7 +73,7 @@ namespace System.Diagnostics.PerformanceData
         {
             lock (s_lockObject)
             {
-                PerfProvider MatchedProvider = null;
+                PerfProvider? MatchedProvider = null;
 
                 foreach (PerfProvider ProviderEntry in s_providerList)
                 {

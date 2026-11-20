@@ -16,7 +16,7 @@ namespace System.Diagnostics.PerformanceData
     /// </summary>
     public class CounterSet : IDisposable
     {
-        internal PerfProvider _provider;
+        internal PerfProvider? _provider;
         internal Guid _providerGuid;
         internal Guid _counterSet;
         internal CounterSetInstanceType _instType;

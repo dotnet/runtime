@@ -27,7 +27,7 @@ namespace System.Diagnostics
 
         private static long s_lastInstanceLifetimeSweepTick;
         private const long InstanceLifetimeSweepWindow = 30 * 10000000; //ticks
-        private static ProcessData s_procData;
+        private static ProcessData? s_procData;
 
         private static ProcessData ProcessData
         {
@@ -80,11 +80,11 @@ namespace System.Diagnostics
         private readonly int _categoryNameHashCode;
         private int _thisInstanceOffset = -1;
 
-        internal SharedPerformanceCounter(string catName, string counterName, string instanceName) :
+        internal SharedPerformanceCounter(string catName, string? counterName, string? instanceName) :
             this(catName, counterName, instanceName, PerformanceCounterInstanceLifetime.Global)
         { }
 
-        internal unsafe SharedPerformanceCounter(string catName, string counterName, string instanceName, PerformanceCounterInstanceLifetime lifetime)
+        internal unsafe SharedPerformanceCounter(string catName, string? counterName, string? instanceName, PerformanceCounterInstanceLifetime lifetime)
         {
             _categoryName = catName;
             _categoryNameHashCode = GetWstrHashCode(_categoryName);
@@ -211,7 +211,7 @@ namespace System.Diagnostics
             totalSize = sizeof(CategoryEntry) + sizeof(InstanceEntry) + (sizeof(CounterEntry) * _categoryData.CounterNames.Count) + categoryNameLength;
             for (int i = 0; i < _categoryData.CounterNames.Count; i++)
             {
-                totalSize += (((string)_categoryData.CounterNames[i]).Length + 1) * 2;
+                totalSize += (((string)_categoryData.CounterNames[i]!).Length + 1) * 2;
             }
 
             if (_categoryData.UseUniqueSharedMemory)
@@ -292,7 +292,7 @@ namespace System.Diagnostics
             SafeMarshalCopy(instanceName, nextPtr);
             nextPtr += instanceNameLength;
 
-            string counterName = (string)_categoryData.CounterNames[0];
+            string counterName = (string)_categoryData.CounterNames[0]!;
             newCounterEntryPointer->CounterNameHashCode = GetWstrHashCode(counterName);
             SetValue(newCounterEntryPointer, 0);
             newCounterEntryPointer->CounterNameOffset = (int)(nextPtr - _baseAddress);
@@ -303,7 +303,7 @@ namespace System.Diagnostics
             for (int i = 1; i < _categoryData.CounterNames.Count; i++)
             {
                 previousCounterEntryPointer = newCounterEntryPointer;
-                counterName = (string)_categoryData.CounterNames[i];
+                counterName = (string)_categoryData.CounterNames[i]!;
 
                 newCounterEntryPointer++;
                 newCounterEntryPointer->CounterNameHashCode = GetWstrHashCode(counterName);
@@ -363,7 +363,7 @@ namespace System.Diagnostics
                 // add in the counter names for the global shared mem.
                 for (int i = 0; i < _categoryData.CounterNames.Count; i++)
                 {
-                    totalSize += (((string)_categoryData.CounterNames[i]).Length + 1) * 2;
+                    totalSize += (((string)_categoryData.CounterNames[i]!).Length + 1) * 2;
                 }
                 freeMemoryOffset = CalculateAndAllocateMemory(totalSize, out alignmentAdjustment);
             }
@@ -431,7 +431,7 @@ namespace System.Diagnostics
                 CounterEntry* previousCounterEntryPointer = null;
                 for (int i = 0; i < _categoryData.CounterNames.Count; i++)
                 {
-                    string counterName = (string)_categoryData.CounterNames[i];
+                    string counterName = (string)_categoryData.CounterNames[i]!;
                     newCounterEntryPointer->CounterNameHashCode = GetWstrHashCode(counterName);
                     newCounterEntryPointer->CounterNameOffset = (int)(nextPtr - _baseAddress);
                     SafeMarshalCopy(counterName, nextPtr);
@@ -617,26 +617,26 @@ namespace System.Diagnostics
 
         private unsafe CategoryData GetCategoryData()
         {
-            CategoryData data = (CategoryData)s_categoryDataTable[_categoryName];
+            CategoryData? data = (CategoryData?)s_categoryDataTable[_categoryName];
 
             if (data == null)
             {
                 lock (s_categoryDataTable)
                 {
-                    data = (CategoryData)s_categoryDataTable[_categoryName];
+                    data = (CategoryData?)s_categoryDataTable[_categoryName];
                     if (data == null)
                     {
                         data = new CategoryData();
                         data.FileMappingName = DefaultFileMappingName;
                         data.MutexName = _categoryName;
 
-                        RegistryKey categoryKey = null;
+                        RegistryKey? categoryKey = null;
                         try
                         {
                             categoryKey = Registry.LocalMachine.OpenSubKey(PerformanceCounterLib.ServicePath + "\\" + _categoryName + "\\Performance");
 
                             // first read the options
-                            object optionsObject = categoryKey.GetValue("CategoryOptions");
+                            object? optionsObject = categoryKey!.GetValue("CategoryOptions");
                             if (optionsObject != null)
                             {
                                 int options = (int)optionsObject;
@@ -651,7 +651,7 @@ namespace System.Diagnostics
                             }
 
                             int fileMappingSize;
-                            object fileMappingSizeObject = categoryKey.GetValue("FileMappingSize");
+                            object? fileMappingSizeObject = categoryKey.GetValue("FileMappingSize");
                             if (fileMappingSizeObject != null && data.UseUniqueSharedMemory)
                             {
                                 // we only use this reg value in the unique shared memory case.
@@ -670,8 +670,8 @@ namespace System.Diagnostics
                             }
 
                             // now read the counter names
-                            object counterNamesObject = categoryKey.GetValue("Counter Names");
-                            byte[] counterNamesBytes = counterNamesObject as byte[];
+                            object? counterNamesObject = categoryKey.GetValue("Counter Names");
+                            byte[]? counterNamesBytes = counterNamesObject as byte[];
 
                             if (counterNamesBytes != null)
                             {
@@ -694,7 +694,7 @@ namespace System.Diagnostics
                             else
                             {
                                 Debug.Assert(counterNamesObject is string[], $"Expected string[], got '{counterNamesObject}' of type '{counterNamesObject?.GetType()}' with kind '{categoryKey.GetValueKind("Counter Names")}' for category '{_categoryName}'");
-                                string[] counterNames = (string[])counterNamesObject;
+                                string[] counterNames = (string[])counterNamesObject!;
                                 for (int i = 0; i < counterNames.Length; i++)
                                     counterNames[i] = counterNames[i].ToLowerInvariant();
                                 data.CounterNames = new ArrayList(counterNames);
@@ -747,7 +747,7 @@ namespace System.Diagnostics
                 instanceName = SingleInstanceName;
             }
 
-            Mutex mutex = null;
+            Mutex? mutex = null;
             CounterEntry* counterPointer = null;
             InstanceEntry* instancePointer = null;
             try
@@ -1056,7 +1056,7 @@ namespace System.Diagnostics
 
                             if (activateUnusedInstances)
                             {
-                                Mutex mutex = null;
+                                Mutex? mutex = null;
                                 try
                                 {
                                     NetFrameworkUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
@@ -1198,7 +1198,7 @@ namespace System.Diagnostics
             if (!_categoryData.UseUniqueSharedMemory)
                 return;
 
-            Mutex mutex = null;
+            Mutex? mutex = null;
             try
             {
                 NetFrameworkUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
@@ -1395,7 +1395,7 @@ namespace System.Diagnostics
 
             InstanceEntry* instancePointer = (InstanceEntry*)(ResolveOffset(categoryPointer->FirstInstanceOffset, sizeof(InstanceEntry)));
 
-            Mutex mutex = null;
+            Mutex? mutex = null;
             try
             {
                 NetFrameworkUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
@@ -1436,7 +1436,7 @@ namespace System.Diagnostics
             bool validatedCachedInstancePointer = false;
             bool temp;
 
-            Mutex mutex = null;
+            Mutex? mutex = null;
             try
             {
                 NetFrameworkUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
@@ -1644,8 +1644,8 @@ namespace System.Diagnostics
         private sealed class FileMapping
         {
             internal int _fileMappingSize;
-            private SafeMemoryMappedViewHandle _fileViewAddress;
-            private SafeMemoryMappedFileHandle _fileMappingHandle;
+            private SafeMemoryMappedViewHandle _fileViewAddress = null!;
+            private SafeMemoryMappedFileHandle _fileMappingHandle = null!;
             //The version of the file mapping name is independent from the
             //assembly version.
 
@@ -1847,12 +1847,12 @@ namespace System.Diagnostics
 
         private sealed class CategoryData
         {
-            public FileMapping FileMapping;
+            public FileMapping FileMapping = null!;
             public bool EnableReuse;
             public bool UseUniqueSharedMemory;
-            public string FileMappingName;
-            public string MutexName;
-            public ArrayList CounterNames;
+            public string FileMappingName = null!;
+            public string MutexName = null!;
+            public ArrayList CounterNames = null!;
         }
     }
 
