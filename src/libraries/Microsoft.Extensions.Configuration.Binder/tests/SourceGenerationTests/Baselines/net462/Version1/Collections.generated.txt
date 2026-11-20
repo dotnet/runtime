@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (TryGetConfigurationValue(section, key: null, out string? value))
                 {
-                    if (!string.IsNullOrEmpty(value))
+                    if (value is not null)
                     {
                         instance[section.Key] = ParseInt(value, section.Path);
                     }
@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (TryGetConfigurationValue(section, key: null, out string? value))
                 {
-                    if (!string.IsNullOrEmpty(value))
+                    if (value is not null)
                     {
                         temp.Add(ParseInt(value, section.Path));
                     }
@@ -122,7 +122,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (TryGetConfigurationValue(section, key: null, out string? value))
                 {
-                    if (!string.IsNullOrEmpty(value))
+                    if (value is not null)
                     {
                         temp[section.Key] = ParseInt(value, section.Path);
                     }
