@@ -436,9 +436,8 @@ namespace Internal.JitInterface
                 }
             }
 
-            // We better come up with the same method that getCallInfo came up with, with the only difference being
-            // that our targetMethod is RuntimeDetermined.
-            Debug.Assert(expectedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) == targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            // When no constraint remains, agree with getCallInfo apart from the runtime-determined context.
+            Debug.Assert(constrainedType != null || expectedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) == targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
             bool isLdvirtftn = pTargetMethod.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldvirtftn;
             DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(delegateTypeDesc, targetMethod, constrainedType, isLdvirtftn);

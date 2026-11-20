@@ -2207,12 +2207,11 @@ namespace Internal.JitInterface
                     {
                         directMethod = null;
                     }
-                    else if (dimResolution == DefaultInterfaceMethodResolution.DefaultImplementation)
+                    else if (dimResolution == DefaultInterfaceMethodResolution.DefaultImplementation || exactType.HasVariance ||
+                        !directMethod.OwningType.HasSameTypeDefinition(constrainedType))
                     {
-                        // For static virtual calls resolved through a default interface method,
-                        // emit a Check_VirtualFunctionOverride fixup so that the R2R code is
-                        // rejected at runtime if the resolution changes (e.g. a DIM override
-                        // is added in an assembly outside the version bubble).
+                        // Validate hierarchy, variant and default-interface selections against
+                        // changes outside the version bubble (e.g. an added override).
                         MethodWithToken declMethodWithToken = new MethodWithToken(originalMethod, HandleToModuleToken(ref pResolvedToken, out _), null, false, null);
 
                         ModuleToken moduleToken = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(directMethod, false, false);

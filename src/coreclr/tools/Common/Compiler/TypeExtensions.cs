@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -406,7 +405,8 @@ namespace ILCompiler
 
         public static MethodDesc TryResolveConstraintMethodApprox(this TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, out bool forceRuntimeLookup)
         {
-            return TryResolveConstraintMethodApprox(constrainedType, interfaceType, interfaceMethod, out forceRuntimeLookup, ref Unsafe.NullRef<DefaultInterfaceMethodResolution>());
+            DefaultInterfaceMethodResolution staticResolution = default;
+            return TryResolveConstraintMethodApprox(constrainedType, interfaceType, interfaceMethod, out forceRuntimeLookup, ref staticResolution);
         }
 
         /// <summary>
@@ -425,23 +425,34 @@ namespace ILCompiler
             Instantiation methodInstantiation = interfaceMethod.Instantiation;
             interfaceMethod = interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            bool isStatic = interfaceMethod.Signature.IsStatic;
-            TypeDesc staticInterfaceType = interfaceType;
+            if (interfaceMethod.Signature.IsStatic)
+            {
+                return TryResolveStaticConstraintMethodApprox(constrainedType, interfaceType, interfaceMethod, methodInstantiation, ref staticResolution);
+            }
 
             // We can't resolve instance constraint calls effectively for reference types, and there's
             // not a lot of perf. benefit in doing it anyway.
-            if (!isStatic && !constrainedType.IsValueType)
+            if (!constrainedType.IsValueType)
             {
                 return null;
             }
 
-            // Static default-method fallback needs the exact interface instantiation, when available.
-            TypeDesc canonType = isStatic ? constrainedType : constrainedType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            return TryResolveInstanceConstraintMethodApprox(constrainedType, interfaceType, interfaceMethod, methodInstantiation, out forceRuntimeLookup);
+        }
+
+        private static MethodDesc TryResolveStaticConstraintMethodApprox(TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, Instantiation methodInstantiation, ref DefaultInterfaceMethodResolution staticResolution)
+        {
+            // Resolve shared candidates on the definition form, before canonicalization merges
+            // distinct type parameters. The fallback below instead needs the exact interface
+            // instantiation, when available, so the interface scan runs on the type itself.
+            TypeDesc resolutionType = constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any)
+                ? constrainedType.GetTypeDefinition() : constrainedType;
             TypeSystemContext context = constrainedType.Context;
 
             MethodDesc genInterfaceMethod = interfaceMethod.GetMethodDefinition();
             MethodDesc method = null;
-            if (genInterfaceMethod.OwningType.IsInterface && (isStatic || constrainedType.IsValueType))
+            TypeDesc staticInterfaceType = interfaceType;
+            if (genInterfaceMethod.OwningType.IsInterface)
             {
                 // Sometimes (when compiling shared generic code)
                 // we don't have enough exact type information at JIT time
@@ -451,51 +462,54 @@ namespace ILCompiler
                 // be compatible with the call (verification will have ensured that
                 // at least one of them will be)
 
-                // Enumerate all potential interface instantiations
+                // Gather a candidate from every canonically matching interface. A type and its
+                // definition have interface maps of identical shape, so the two RuntimeInterfaces
+                // arrays correspond index for index.
                 int potentialMatchingInterfaces = 0;
                 TypeDesc matchingInterface = null;
-                foreach (DefType potentialInterfaceType in canonType.RuntimeInterfaces)
+                bool targetsAgree = true;
+                TypeDesc canonInterfaceType = interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                DefType[] runtimeInterfaces = constrainedType.RuntimeInterfaces;
+                for (int interfaceIndex = 0; interfaceIndex < runtimeInterfaces.Length; interfaceIndex++)
                 {
-                    if (potentialInterfaceType.ConvertToCanonForm(CanonicalFormKind.Specific) ==
-                        interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific))
+                    DefType potentialInterfaceType = runtimeInterfaces[interfaceIndex];
+                    if (potentialInterfaceType.ConvertToCanonForm(CanonicalFormKind.Specific) != canonInterfaceType)
+                        continue;
+
+                    potentialMatchingInterfaces++;
+                    matchingInterface = potentialInterfaceType;
+
+                    TypeDesc resolutionInterface = resolutionType.RuntimeInterfaces[interfaceIndex];
+                    MethodDesc potentialInterfaceMethod = genInterfaceMethod;
+                    if (potentialInterfaceMethod.OwningType != resolutionInterface)
                     {
-                        potentialMatchingInterfaces++;
-                        matchingInterface = potentialInterfaceType;
-
-                        MethodDesc potentialInterfaceMethod = genInterfaceMethod;
-                        if (potentialInterfaceMethod.OwningType != potentialInterfaceType)
-                        {
-                            potentialInterfaceMethod = context.GetMethodForInstantiatedType(
-                                potentialInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)potentialInterfaceType);
-                        }
-
-                        method = (isStatic
-                            ? canonType.ResolveInterfaceMethodToStaticVirtualMethodOnType(potentialInterfaceMethod)
-                            : canonType.ResolveInterfaceMethodToVirtualMethodOnType(potentialInterfaceMethod))
-                            // Do not lose track of `method` if we were able to resolve it previously
-                            ?? method;
-
-                        // See code:#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-                        if (!isStatic && method != null && !method.OwningType.IsValueType)
-                        {
-                            // We explicitly wouldn't want to abort if we found a default implementation.
-                            // The above resolution doesn't consider the default methods.
-                            Debug.Assert(!method.OwningType.IsInterface);
-                            return null;
-                        }
+                        potentialInterfaceMethod = context.GetMethodForInstantiatedType(
+                            potentialInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)resolutionInterface);
                     }
+
+                    MethodDesc candidate = ResolveStaticVirtualCandidate(resolutionType, potentialInterfaceMethod)
+                        ?? ResolveStaticDefaultCandidate(resolutionType, potentialInterfaceMethod, out _);
+
+                    // Compare the full method, including its owning instantiation.
+                    // Check the candidate before preserving a previous non-null result.
+                    if (candidate is null || (potentialMatchingInterfaces > 1 && candidate != method))
+                        targetsAgree = false;
+
+                    // Do not lose track of `method` if we were able to resolve it previously.
+                    method = candidate ?? method;
                 }
 
-                Debug.Assert(isStatic || potentialMatchingInterfaces != 0);
-
+                // Decide. Agreeing candidates are a resolution on their own, anything else must
+                // resolve on the exact instantiation or defer to the fallback and runtime lookup.
                 if (potentialMatchingInterfaces > 1)
                 {
                     // We have more potentially matching interfaces
                     Debug.Assert(interfaceType.HasInstantiation);
 
-                    bool isExactMethodResolved = false;
+                    bool isExactMethodResolved = targetsAgree && method != null;
 
-                    if (!interfaceType.IsCanonicalSubtype(CanonicalFormKind.Any) &&
+                    if (!isExactMethodResolved &&
+                        !interfaceType.IsCanonicalSubtype(CanonicalFormKind.Any) &&
                         !interfaceType.IsGenericDefinition &&
                         !constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any) &&
                         !constrainedType.IsGenericDefinition)
@@ -508,64 +522,39 @@ namespace ILCompiler
                             MethodDesc exactInterfaceMethod = context.GetMethodForInstantiatedType(
                                 genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
 
-                            method = isStatic
-                                ? constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(exactInterfaceMethod)
-                                : constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
-
+                            method = ResolveStaticVirtualCandidate(constrainedType, exactInterfaceMethod);
                             isExactMethodResolved = method != null;
                         }
                     }
 
                     if (!isExactMethodResolved)
                     {
-                        // We couldn't resolve the interface statically
-                        if (isStatic)
-                        {
-                            // Let the static resolver handle defaults and exact variant matches.
-                            method = null;
-                        }
-                        else
-                        {
-                            // The instance candidate can be left incorrect because the caller uses runtime lookup.
-                            forceRuntimeLookup = true;
-                        }
+                        // Let the fallback handle defaults and exact variant matches.
+                        method = null;
                     }
                 }
                 else
                 {
-                    if (isStatic && potentialMatchingInterfaces == 1)
+                    if (potentialMatchingInterfaces == 1)
                         staticInterfaceType = matchingInterface;
 
                     // If we can resolve the interface exactly then do so (e.g. when doing the exact
                     // lookup at runtime, or when not sharing generic code).
-                    if (constrainedType.CanCastTo(interfaceType))
+                    if (method is null && constrainedType.CanCastTo(interfaceType))
                     {
                         MethodDesc exactInterfaceMethod = genInterfaceMethod;
                         if (genInterfaceMethod.OwningType != interfaceType)
                             exactInterfaceMethod = context.GetMethodForInstantiatedType(
                                 genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
 
-                        method = isStatic
-                            ? constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(exactInterfaceMethod)
-                            : constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+                        method = ResolveStaticVirtualCandidate(constrainedType, exactInterfaceMethod);
                     }
                 }
             }
-            else if (!isStatic && genInterfaceMethod.IsVirtual)
-            {
-                MethodDesc targetMethod = interfaceType.FindMethodOnTypeWithMatchingTypicalMethod(genInterfaceMethod);
-                method = constrainedType.FindVirtualFunctionTargetMethodOnObjectType(targetMethod);
-            }
-            else
-            {
-                // The method will be null if calling a non-virtual instance
-                // methods on System.Object, i.e. when these are used as a constraint.
-                method = null;
-            }
 
-            // The VM's direct scan only considers implementations declared on the constrained type.
-            // Preserve static default-interface and reference-type hierarchy resolution otherwise.
-            if (isStatic && (method is null || !method.OwningType.HasSameTypeDefinition(constrainedType)))
+            // Fallback. Candidates here resolve on the exact instantiation directly, so they
+            // return without the definition-form mapping below.
+            if (method is null)
             {
                 interfaceType = staticInterfaceType;
 
@@ -609,15 +598,14 @@ namespace ILCompiler
                 MethodDesc staticMethodDef = interfaceMethod.GetMethodDefinition();
                 MethodDesc exactInterfaceMethod = staticMethodDef;
                 if (staticMethodDef.OwningType != interfaceType)
-                    exactInterfaceMethod = constrainedType.Context.GetMethodForInstantiatedType(
+                    exactInterfaceMethod = context.GetMethodForInstantiatedType(
                         staticMethodDef.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
 
-                MethodDesc result = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(exactInterfaceMethod);
+                MethodDesc result = ResolveStaticVirtualCandidate(constrainedType, exactInterfaceMethod);
                 if (result is null)
                 {
-                    staticResolution = constrainedType.ResolveVariantInterfaceMethodToDefaultImplementationOnType(exactInterfaceMethod, out result);
-                    if (staticResolution != DefaultInterfaceMethodResolution.DefaultImplementation)
-                        result = null;
+                    result = ResolveStaticDefaultCandidate(constrainedType, exactInterfaceMethod, out DefaultInterfaceMethodResolution dimResolution);
+                    staticResolution = dimResolution;
                 }
 
                 if (result is null)
@@ -631,6 +619,141 @@ namespace ILCompiler
                 return result;
             }
 
+            // Map definition-form results back to the constrained type before instantiating.
+            if (method.OwningType.IsInterface)
+            {
+                if (resolutionType != constrainedType)
+                    method = method.InstantiateSignature(constrainedType.Instantiation, default);
+
+                staticResolution = DefaultInterfaceMethodResolution.DefaultImplementation;
+            }
+            else if (resolutionType != constrainedType)
+                method = constrainedType.FindMethodOnTypeWithMatchingTypicalMethod(method);
+
+            // We've resolved the method, ignoring its generic method arguments
+            // If the method is a generic method then go and get the instantiated descriptor
+            if (methodInstantiation.Length != 0)
+            {
+                method = method.GetMethodDefinition().MakeInstantiatedMethod(methodInstantiation);
+            }
+
+            Debug.Assert(method != null);
+
+            return method;
+        }
+
+        private static MethodDesc TryResolveInstanceConstraintMethodApprox(TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, Instantiation methodInstantiation, out bool forceRuntimeLookup)
+        {
+            forceRuntimeLookup = false;
+            Debug.Assert(constrainedType.IsValueType);
+
+            TypeDesc canonType = constrainedType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            TypeSystemContext context = constrainedType.Context;
+
+            MethodDesc genInterfaceMethod = interfaceMethod.GetMethodDefinition();
+            MethodDesc method = null;
+            if (genInterfaceMethod.OwningType.IsInterface)
+            {
+                // Sometimes (when compiling shared generic code)
+                // we don't have enough exact type information at JIT time
+                // even to decide whether we will be able to resolve to an unboxed entry point...
+                // To cope with this case we always go via the helper function if there's any
+                // chance of this happening by checking for all interfaces which might possibly
+                // be compatible with the call (verification will have ensured that
+                // at least one of them will be)
+
+                // Gather the implementation from every canonically matching interface.
+                int potentialMatchingInterfaces = 0;
+                TypeDesc canonInterfaceType = interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                foreach (DefType potentialInterfaceType in canonType.RuntimeInterfaces)
+                {
+                    if (potentialInterfaceType.ConvertToCanonForm(CanonicalFormKind.Specific) != canonInterfaceType)
+                        continue;
+
+                    potentialMatchingInterfaces++;
+
+                    MethodDesc potentialInterfaceMethod = genInterfaceMethod;
+                    if (potentialInterfaceMethod.OwningType != potentialInterfaceType)
+                    {
+                        potentialInterfaceMethod = context.GetMethodForInstantiatedType(
+                            potentialInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)potentialInterfaceType);
+                    }
+
+                    // Do not lose track of `method` if we were able to resolve it previously.
+                    method = canonType.ResolveInterfaceMethodToVirtualMethodOnType(potentialInterfaceMethod) ?? method;
+
+                    // See code:#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
+                    if (method != null && !method.OwningType.IsValueType)
+                    {
+                        // We explicitly wouldn't want to abort if we found a default implementation.
+                        // The above resolution doesn't consider the default methods.
+                        Debug.Assert(!method.OwningType.IsInterface);
+                        return null;
+                    }
+                }
+
+                Debug.Assert(potentialMatchingInterfaces != 0);
+
+                // Decide. Multiple matches must resolve on the exact instantiation or defer to
+                // runtime lookup.
+                if (potentialMatchingInterfaces > 1)
+                {
+                    // We have more potentially matching interfaces
+                    Debug.Assert(interfaceType.HasInstantiation);
+
+                    bool isExactMethodResolved = false;
+
+                    if (!interfaceType.IsCanonicalSubtype(CanonicalFormKind.Any) &&
+                        !interfaceType.IsGenericDefinition &&
+                        !constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any) &&
+                        !constrainedType.IsGenericDefinition)
+                    {
+                        // We have exact interface and type instantiations (no generic variables and __Canon used
+                        // anywhere)
+                        if (constrainedType.CanCastTo(interfaceType))
+                        {
+                            // We can resolve to exact method
+                            MethodDesc exactInterfaceMethod = context.GetMethodForInstantiatedType(
+                                genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
+
+                            method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+                            isExactMethodResolved = method != null;
+                        }
+                    }
+
+                    if (!isExactMethodResolved)
+                    {
+                        // The candidate can be left incorrect because the caller uses runtime lookup.
+                        forceRuntimeLookup = true;
+                    }
+                }
+                else
+                {
+                    // If we can resolve the interface exactly then do so (e.g. when doing the exact
+                    // lookup at runtime, or when not sharing generic code).
+                    if (constrainedType.CanCastTo(interfaceType))
+                    {
+                        MethodDesc exactInterfaceMethod = genInterfaceMethod;
+                        if (genInterfaceMethod.OwningType != interfaceType)
+                            exactInterfaceMethod = context.GetMethodForInstantiatedType(
+                                genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
+
+                        method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+                    }
+                }
+            }
+            else if (genInterfaceMethod.IsVirtual)
+            {
+                MethodDesc targetMethod = interfaceType.FindMethodOnTypeWithMatchingTypicalMethod(genInterfaceMethod);
+                method = constrainedType.FindVirtualFunctionTargetMethodOnObjectType(targetMethod);
+            }
+            else
+            {
+                // The method will be null if calling a non-virtual instance
+                // methods on System.Object, i.e. when these are used as a constraint.
+                return null;
+            }
+
             if (method == null)
             {
                 // Fall back to VSD
@@ -638,9 +761,9 @@ namespace ILCompiler
             }
 
             //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-            // For instance calls, only return a method if the value type itself declares the method,
+            // Only return a method if the value type itself declares the method,
             // otherwise we might get a method from Object or System.ValueType
-            if (!isStatic && !method.OwningType.IsValueType)
+            if (!method.OwningType.IsValueType)
             {
                 // Fall back to VSD
                 return null;
@@ -650,12 +773,32 @@ namespace ILCompiler
             // If the method is a generic method then go and get the instantiated descriptor
             if (methodInstantiation.Length != 0)
             {
-                method = method.MakeInstantiatedMethod(methodInstantiation);
+                method = method.GetMethodDefinition().MakeInstantiatedMethod(methodInstantiation);
             }
 
             Debug.Assert(method != null);
 
             return method;
+        }
+
+        // Resolve one static interface method candidate on the given form of the constrained
+        // type, honoring variance where the interface declares it.
+        private static MethodDesc ResolveStaticVirtualCandidate(TypeDesc type, MethodDesc interfaceMethod)
+        {
+            return interfaceMethod.OwningType.HasVariance
+                ? type.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod)
+                : type.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod);
+        }
+
+        // The default-implementation complement of ResolveStaticVirtualCandidate. Partial
+        // resolutions (diamond, reabstraction) are reported but produce no candidate.
+        private static MethodDesc ResolveStaticDefaultCandidate(TypeDesc type, MethodDesc interfaceMethod, out DefaultInterfaceMethodResolution resolution)
+        {
+            MethodDesc candidate;
+            resolution = interfaceMethod.OwningType.HasVariance
+                ? type.ResolveVariantInterfaceMethodToDefaultImplementationOnType(interfaceMethod, out candidate)
+                : type.ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, out candidate);
+            return resolution == DefaultInterfaceMethodResolution.DefaultImplementation ? candidate : null;
         }
 
         // Rebind a resolved constrained target to its runtime-determined declaring context and

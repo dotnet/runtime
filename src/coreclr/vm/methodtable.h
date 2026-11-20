@@ -2529,6 +2529,19 @@ public:
         MethodDesc * pMD,
         BOOL *       pfForceUseRuntimeLookup = NULL);
 
+private:
+    // The static virtual and instance halves of TryResolveConstraintMethodApprox.
+    MethodDesc * TryResolveStaticConstraintMethodApprox(
+        TypeHandle   ownerType,
+        MethodDesc * pMD,
+        BOOL *       pfForceUseRuntimeLookup);
+
+    MethodDesc * TryResolveInstanceConstraintMethodApprox(
+        TypeHandle   ownerType,
+        MethodDesc * pMD,
+        BOOL *       pfForceUseRuntimeLookup);
+
+public:
     //-------------------------------------------------------------------
     // CONTRACT IMPLEMENTATIONS
     //

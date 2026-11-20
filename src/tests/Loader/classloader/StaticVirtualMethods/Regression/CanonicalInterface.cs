@@ -2,11 +2,65 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Xunit;
 
 public class CanonicalInterface
 {
+    private interface IResult<T>
+    {
+        static virtual int Get() => -1;
+    }
+
+    private readonly struct SameResult : IResult<object>, IResult<string>, IResult<int>
+    {
+        public static int Get() => 42;
+        static int IResult<int>.Get() => 43;
+    }
+
+    private readonly struct DifferentResults : IResult<object>, IResult<string>
+    {
+        static int IResult<object>.Get() => 1;
+        static int IResult<string>.Get() => 2;
+    }
+
+    private readonly struct PartialObjectResult : IResult<object>, IResult<string>
+    {
+        static int IResult<object>.Get() => 3;
+    }
+
+    private readonly struct PartialStringResult : IResult<object>, IResult<string>
+    {
+        static int IResult<string>.Get() => 4;
+    }
+
+    private sealed class SameResultClass<T> : IResult<T[]>, IResult<List<T>>
+    {
+        public static int Get() => typeof(T) == typeof(object) ? 5 : 6;
+    }
+
+    private class ResultBase<T> : IResult<T[]>, IResult<List<T>>
+    {
+        public static int Get() => typeof(T) == typeof(object) ? 8 : 9;
+    }
+
+    private sealed class InheritedResult<TUnused, T> : ResultBase<T> { }
+
+    private sealed class FixedInheritedResult<T> : ResultBase<string> { }
+
+    private sealed class ReimplementedResult<T> : ResultBase<T>, IResult<List<T>>
+    {
+        static int IResult<List<T>>.Get() => 10;
+    }
+
+    private class ConstantResult : IResult<object>, IResult<string>
+    {
+        public static int Get() => 42;
+    }
+
+    private sealed class InheritedConstantResult<T> : ConstantResult { }
+
     private interface IFunc<T>
     {
         int InvokeInstance(T value);
@@ -95,6 +149,16 @@ public class CanonicalInterface
     private sealed class CovariantClassFunc : ICovariantFunc<string> { }
     private sealed class MultipleDefaultClassFunc : ICovariantFunc<string>, ICovariantFunc<object> { }
 
+    private class CovariantBase : ICovariantFunc<object>
+    {
+        public static Type GetArgument() => typeof(object);
+    }
+
+    private sealed class CovariantDerived<T> : CovariantBase, ICovariantFunc<string>
+    {
+        static Type ICovariantFunc<string>.GetArgument() => typeof(T);
+    }
+
     private readonly struct MultipleDefaultFunc : ICovariantFunc<string>, ICovariantFunc<object> { }
 
     private readonly struct GenericDefaultFunc<T> : ICovariantFunc<T> { }
@@ -137,6 +201,14 @@ public class CanonicalInterface
         public static Type GetArgument<TArg>((object, int) value) => typeof(TArg);
     }
 
+    private class GenericClassBase<T> : IGenericFunc<(T, int)>
+    {
+        public Type GetInstanceArgument<TArg>((T, int) value) => typeof((T, TArg));
+        public static Type GetArgument<TArg>((T, int) value) => typeof((T, TArg));
+    }
+
+    private sealed class InheritedGenericClass<T> : GenericClassBase<List<T>> { }
+
     private readonly struct SharedGenericFunc<T> : IGenericFunc<(T, int)>
     {
         public Type GetInstanceArgument<TArg>((T, int) value) => typeof((T, TArg));
@@ -168,6 +240,45 @@ public class CanonicalInterface
     {
         return TFunc.Invoke(value);
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallConvergent<TFunc, T>() where TFunc : struct, IResult<T>
+    {
+        return TFunc.Get();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallResult<TFunc, T>() where TFunc : struct, IResult<T> => TFunc.Get();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int CallClassResult<TFunc, T>() where TFunc : class, IResult<T> => TFunc.Get();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallConvergentClass<T>() =>
+        CallClassResult<SameResultClass<T>, T[]>() + CallClassResult<SameResultClass<T>, List<T>>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallInheritedResult<TUnused, T>() =>
+        CallClassResult<InheritedResult<TUnused, T>, T[]>() + CallClassResult<InheritedResult<TUnused, T>, List<T>>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallFixedInheritedResult<T>() => CallClassResult<FixedInheritedResult<T>, string[]>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallReimplementedResult<T>() =>
+        CallClassResult<ReimplementedResult<T>, T[]>() * 100 + CallClassResult<ReimplementedResult<T>, List<T>>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallInheritedConstant<T>()
+    {
+        return CallClassResult<InheritedConstantResult<T>, object>();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Func<int> GetResultDelegate<TFunc, T>() where TFunc : IResult<T> => TFunc.Get;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Func<int> GetInheritedResultDelegate<T>() => GetResultDelegate<InheritedResult<string, T>, T[]>();
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int CallExactGeneric<TFunc, T>(T value) where TFunc : struct, IFunc<T>
@@ -263,6 +374,13 @@ public class CanonicalInterface
     private static Type CallClassGeneric<TFunc, T, TArg>(T value) where TFunc : class, IGenericFunc<T>
         => TFunc.GetArgument<TArg>(value);
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type CallInheritedGeneric<T, TArg>() =>
+        CallClassGeneric<InheritedGenericClass<T>, (List<T>, int), TArg>(default);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type CallVariantHierarchy<T>() => CallClassCovariant<CovariantDerived<T>, object>();
+
     [Theory]
     [InlineData(0)]
     [InlineData(42)]
@@ -281,6 +399,35 @@ public class CanonicalInterface
         Assert.Equal(typeof(int), GetInterfaceGenericDelegate<int>()(objectState));
         Assert.Equal(typeof(object), GetInterfaceGenericDelegate<object>()(objectState));
         Assert.Equal(typeof(string), GetInterfaceGenericDelegate<string>()(objectState));
+
+        Assert.Equal(42, CallConvergent<SameResult, object>());
+        Assert.Equal(42, CallConvergent<SameResult, string>());
+        Assert.Equal(43, CallConvergent<SameResult, int>());
+        Assert.Equal(1, CallResult<DifferentResults, object>());
+        Assert.Equal(2, CallResult<DifferentResults, string>());
+        Assert.Equal(3, CallResult<PartialObjectResult, object>());
+        Assert.Equal(-1, CallResult<PartialObjectResult, string>());
+        Assert.Equal(-1, CallResult<PartialStringResult, object>());
+        Assert.Equal(4, CallResult<PartialStringResult, string>());
+        Assert.Equal(10, CallConvergentClass<object>());
+
+        Assert.Equal(16, CallInheritedResult<string, object>());
+        Assert.Equal(18, CallInheritedResult<object, string>());
+        Assert.Equal(9, CallFixedInheritedResult<object>());
+        Assert.Equal(9, CallFixedInheritedResult<string>());
+        Assert.Equal(810, CallReimplementedResult<object>());
+        Assert.Equal(910, CallReimplementedResult<string>());
+        Assert.Equal(42, CallInheritedConstant<object>());
+        Assert.Equal(42, CallInheritedConstant<string>());
+        Assert.Equal(8, GetInheritedResultDelegate<object>()());
+        Assert.Equal(9, GetInheritedResultDelegate<string>()());
+        Assert.Equal(typeof((List<object>, string)), CallInheritedGeneric<object, string>());
+        Assert.Equal(typeof((List<string>, object)), CallInheritedGeneric<string, object>());
+        Assert.Equal(typeof((List<string>, int)), CallInheritedGeneric<string, int>());
+        Assert.Equal(typeof(string), CallVariantHierarchy<string>());
+        Assert.Equal(typeof(int), CallVariantHierarchy<int>());
+        Assert.Equal(12, CallConvergentClass<string>());
+        Assert.Equal(10, CallConvergentClass<object>());
 
         Assert.Equal(value + 10, CallClass<ClassFunc, (object, int)>(objectState));
         Assert.Equal(value + 10, CallClass<InheritedClassFunc, (object, int)>(objectState));

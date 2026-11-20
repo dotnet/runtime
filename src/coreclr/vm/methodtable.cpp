@@ -8505,24 +8505,43 @@ MethodTable::TryResolveConstraintMethodApprox(
     }
     CONTRACTL_END;
 
-    bool isStatic = pInterfaceMD->IsStatic();
-    TypeHandle thStaticInterfaceType = thInterfaceType;
+    if (pInterfaceMD->IsStatic())
+    {
+        return TryResolveStaticConstraintMethodApprox(thInterfaceType, pInterfaceMD, pfForceUseRuntimeLookup);
+    }
 
     // We can't resolve instance constraint calls effectively for reference types, and there's
     // not a lot of perf. benefit in doing it anyway.
     //
-    if (!isStatic && !IsValueType())
+    if (!IsValueType())
     {
         LOG((LF_JIT, LL_INFO10000, "TryResolveConstraintmethodApprox: not a value type %s\n", GetDebugClassName()));
         return NULL;
     }
 
-    // Static default-method fallback needs the exact interface instantiation, when available.
-    MethodTable * pCanonMT = isStatic ? this : GetCanonicalMethodTable();
+    return TryResolveInstanceConstraintMethodApprox(thInterfaceType, pInterfaceMD, pfForceUseRuntimeLookup);
+} // MethodTable::TryResolveConstraintMethodApprox
 
+//==========================================================================================
+// The static virtual half of TryResolveConstraintMethodApprox.
+MethodDesc *
+MethodTable::TryResolveStaticConstraintMethodApprox(
+    TypeHandle   thInterfaceType,
+    MethodDesc * pInterfaceMD,
+    BOOL *       pfForceUseRuntimeLookup)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    TypeHandle thStaticInterfaceType = thInterfaceType;
     MethodDesc * pGenInterfaceMD = pInterfaceMD->StripMethodInstantiation();
     MethodDesc * pMD = NULL;
-    if (pGenInterfaceMD->IsInterface() && (isStatic || IsValueType()))
+    if (pGenInterfaceMD->IsInterface())
     {   // Sometimes (when compiling shared generic code)
         // we don't have enough exact type information at JIT time
         // even to decide whether we will be able to resolve to an unboxed entry point...
@@ -8531,8 +8550,13 @@ MethodTable::TryResolveConstraintMethodApprox(
         // be compatible with the call (verification will have ensured that
         // at least one of them will be)
 
-        // Enumerate all potential interface instantiations
-        MethodTable::InterfaceMapIterator it = pCanonMT->IterateInterfaceMap();
+        // Gather a candidate from every canonically matching interface. The native resolver
+        // scans the canonical form only. Shared variant and default-interface resolution is
+        // deferred to the fallback below at exact instantiations, or to runtime lookup, so
+        // no agreement tracking is needed here and later matches overwrite pMD.
+        MethodTable * pInterfaceMT = thInterfaceType.AsMethodTable();
+        MethodTable * pCanonInterfaceMT = pInterfaceMT->GetCanonicalMethodTable();
+        MethodTable::InterfaceMapIterator it = IterateInterfaceMap();
         DWORD cPotentialMatchingInterfaces = 0;
         TypeHandle thMatchingInterface;
         while (it.Next())
@@ -8540,35 +8564,22 @@ MethodTable::TryResolveConstraintMethodApprox(
             // If the approx type doesn't match by type handle, then it clearly can't match
             // by canonical type. This avoids force loading the interface and breaking the
             // special interface map type scenario
-            if (!it.GetInterfaceApprox()->HasSameTypeDefAs(thInterfaceType.AsMethodTable()))
+            if (!it.GetInterfaceApprox()->HasSameTypeDefAs(pInterfaceMT))
                 continue;
 
-            TypeHandle thPotentialInterfaceType(it.GetInterface(pCanonMT));
-            if (thPotentialInterfaceType.AsMethodTable()->GetCanonicalMethodTable() ==
-                thInterfaceType.AsMethodTable()->GetCanonicalMethodTable())
+            TypeHandle thPotentialInterfaceType(it.GetInterface(this));
+            if (thPotentialInterfaceType.AsMethodTable()->GetCanonicalMethodTable() == pCanonInterfaceMT)
             {
                 cPotentialMatchingInterfaces++;
                 thMatchingInterface = thPotentialInterfaceType;
-                pMD = isStatic
-                    ? pCanonMT->TryResolveVirtualStaticMethodOnThisType(thPotentialInterfaceType.AsMethodTable(), pGenInterfaceMD, ResolveVirtualStaticMethodFlags::None, CLASS_LOADED)
-                    : pCanonMT->GetMethodDescForInterfaceMethod(thPotentialInterfaceType, pGenInterfaceMD, FALSE /* throwOnConflict */);
-
-                // See code:#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-                if (!isStatic && (pMD != NULL) && !pMD->GetMethodTable()->IsValueType() && !pMD->IsInterface())
-                {
-                    LOG((LF_JIT, LL_INFO10000, "TryResolveConstraintMethodApprox: %s::%s not a value type method\n",
-                        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-                    return NULL;
-                }
+                pMD = TryResolveVirtualStaticMethodOnThisType(thPotentialInterfaceType.AsMethodTable(), pGenInterfaceMD, ResolveVirtualStaticMethodFlags::None, CLASS_LOADED);
             }
         }
 
-        _ASSERTE_MSG((isStatic || cPotentialMatchingInterfaces != 0),
-            "At least one interface has to implement the method, otherwise there's a bug in JIT/verification.");
-
+        // Decide. The native scan produces no agreement information, so multiple matches
+        // must resolve on the exact instantiation or defer to the fallback and runtime lookup.
         if (cPotentialMatchingInterfaces > 1)
         {   // We have more potentially matching interfaces
-            MethodTable * pInterfaceMT = thInterfaceType.GetMethodTable();
             _ASSERTE(pInterfaceMT->HasInstantiation());
 
             BOOL fIsExactMethodResolved = FALSE;
@@ -8582,40 +8593,27 @@ MethodTable::TryResolveConstraintMethodApprox(
                 if (this->CanCastToInterface(pInterfaceMT))
                 {
                     // We can resolve to exact method
-                    pMD = isStatic
-                        ? this->TryResolveVirtualStaticMethodOnThisType(pInterfaceMT, pGenInterfaceMD, ResolveVirtualStaticMethodFlags::None, CLASS_LOADED)
-                        : this->GetMethodDescForInterfaceMethod(pInterfaceMT, pInterfaceMD, FALSE /* throwOnConflict */);
+                    pMD = this->TryResolveVirtualStaticMethodOnThisType(pInterfaceMT, pGenInterfaceMD, ResolveVirtualStaticMethodFlags::None, CLASS_LOADED);
                     fIsExactMethodResolved = pMD != NULL;
                 }
             }
 
             if (!fIsExactMethodResolved)
-            {   // We couldn't resolve the interface statically
-                if (isStatic)
-                {
-                    // Let the static resolver handle defaults and exact variant matches.
-                    pMD = NULL;
-                }
-                else
-                {
-                    // The instance candidate can be left incorrect because the caller uses runtime lookup.
-                    _ASSERTE(pfForceUseRuntimeLookup != NULL);
-                    *pfForceUseRuntimeLookup = TRUE;
-                }
+            {
+                // Let the fallback handle defaults and exact variant matches.
+                pMD = NULL;
             }
         }
         else
         {
-            if (isStatic && cPotentialMatchingInterfaces == 1)
+            if (cPotentialMatchingInterfaces == 1)
                 thStaticInterfaceType = thMatchingInterface;
 
             // If we can resolve the interface exactly then do so (e.g. when doing the exact
             // lookup at runtime, or when not sharing generic code).
-            if (pCanonMT->CanCastToInterface(thInterfaceType.GetMethodTable()))
+            if (CanCastToInterface(pInterfaceMT))
             {
-                pMD = isStatic
-                    ? pCanonMT->TryResolveVirtualStaticMethodOnThisType(thInterfaceType.AsMethodTable(), pGenInterfaceMD, ResolveVirtualStaticMethodFlags::None, CLASS_LOADED)
-                    : pCanonMT->GetMethodDescForInterfaceMethod(thInterfaceType, pGenInterfaceMD, FALSE /* throwOnConflict */);
+                pMD = TryResolveVirtualStaticMethodOnThisType(pInterfaceMT, pGenInterfaceMD, ResolveVirtualStaticMethodFlags::None, CLASS_LOADED);
                 if (pMD == NULL)
                 {
                     LOG((LF_JIT, LL_INFO10000, "TryResolveConstraintMethodApprox: failed to find method desc for interface method\n"));
@@ -8623,31 +8621,11 @@ MethodTable::TryResolveConstraintMethodApprox(
             }
         }
     }
-    else if (!isStatic && pGenInterfaceMD->IsVirtual())
-    {
-        if (pGenInterfaceMD->HasNonVtableSlot() && pGenInterfaceMD->GetMethodTable()->IsValueType())
-        {   // GetMethodDescForSlot would AV for this slot
-            // We can get here for (invalid and unverifiable) IL:
-            //    constrained. int32
-            //    callvirt System.Int32::GetHashCode()
-            pMD = pGenInterfaceMD;
-        }
-        else
-        {
-            pMD = GetMethodDescForSlot(pGenInterfaceMD->GetSlot());
-        }
-    }
-    else
-    {
-        // The pMD will be NULL if calling a non-virtual instance
-        // methods on System.Object, i.e. when these are used as a constraint.
-        pMD = NULL;
-    }
 
-    // Preserve static default-interface and reference-type hierarchy resolution when
-    // the interface scan could not identify a class implementation. Interface-owned
-    // candidates also need the resolver to apply the method instantiation.
-    if (isStatic && (pMD == NULL || pMD->GetMethodTable()->IsInterface()))
+    // Fallback. Resolves variant, default-interface and hierarchy selections on the exact
+    // instantiation when the scan could not identify a class implementation.
+    // Interface-owned candidates also need the resolver to apply the method instantiation.
+    if (pMD == NULL || pMD->GetMethodTable()->IsInterface())
     {
         _ASSERTE(!thInterfaceType.IsTypeDesc());
         _ASSERTE(thInterfaceType.IsInterface());
@@ -8675,6 +8653,147 @@ MethodTable::TryResolveConstraintMethodApprox(
         return result;
     }
 
+    // We've resolved the method, ignoring its generic method arguments
+    // If the method is a generic method then go and get the instantiated descriptor
+    pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+        pMD,
+        this,
+        FALSE /* no BoxedEntryPointStub */,
+        pInterfaceMD->GetMethodInstantiation(),
+        FALSE /* no allowInstParam */);
+
+    // FindOrCreateAssociatedMethodDesc won't return an BoxedEntryPointStub.
+    _ASSERTE(pMD != NULL);
+    _ASSERTE(!pMD->IsUnboxingStub());
+
+    return pMD;
+} // MethodTable::TryResolveStaticConstraintMethodApprox
+
+//==========================================================================================
+// The instance half of TryResolveConstraintMethodApprox. Only called for value types.
+MethodDesc *
+MethodTable::TryResolveInstanceConstraintMethodApprox(
+    TypeHandle   thInterfaceType,
+    MethodDesc * pInterfaceMD,
+    BOOL *       pfForceUseRuntimeLookup)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(IsValueType());
+    }
+    CONTRACTL_END;
+
+    MethodTable * pCanonMT = GetCanonicalMethodTable();
+    MethodDesc * pGenInterfaceMD = pInterfaceMD->StripMethodInstantiation();
+    MethodDesc * pMD = NULL;
+    if (pGenInterfaceMD->IsInterface())
+    {   // Sometimes (when compiling shared generic code)
+        // we don't have enough exact type information at JIT time
+        // even to decide whether we will be able to resolve to an unboxed entry point...
+        // To cope with this case we always go via the helper function if there's any
+        // chance of this happening by checking for all interfaces which might possibly
+        // be compatible with the call (verification will have ensured that
+        // at least one of them will be)
+
+        // Gather the implementation from every canonically matching interface.
+        MethodTable * pInterfaceMT = thInterfaceType.AsMethodTable();
+        MethodTable * pCanonInterfaceMT = pInterfaceMT->GetCanonicalMethodTable();
+        MethodTable::InterfaceMapIterator it = pCanonMT->IterateInterfaceMap();
+        DWORD cPotentialMatchingInterfaces = 0;
+        while (it.Next())
+        {
+            // If the approx type doesn't match by type handle, then it clearly can't match
+            // by canonical type. This avoids force loading the interface and breaking the
+            // special interface map type scenario
+            if (!it.GetInterfaceApprox()->HasSameTypeDefAs(pInterfaceMT))
+                continue;
+
+            TypeHandle thPotentialInterfaceType(it.GetInterface(pCanonMT));
+            if (thPotentialInterfaceType.AsMethodTable()->GetCanonicalMethodTable() == pCanonInterfaceMT)
+            {
+                cPotentialMatchingInterfaces++;
+                pMD = pCanonMT->GetMethodDescForInterfaceMethod(thPotentialInterfaceType, pGenInterfaceMD, FALSE /* throwOnConflict */);
+
+                // See code:#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
+                if ((pMD != NULL) && !pMD->GetMethodTable()->IsValueType() && !pMD->IsInterface())
+                {
+                    LOG((LF_JIT, LL_INFO10000, "TryResolveConstraintMethodApprox: %s::%s not a value type method\n",
+                        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
+                    return NULL;
+                }
+            }
+        }
+
+        _ASSERTE_MSG(cPotentialMatchingInterfaces != 0,
+            "At least one interface has to implement the method, otherwise there's a bug in JIT/verification.");
+
+        // Decide. Multiple matches must resolve on the exact instantiation or defer to
+        // runtime lookup.
+        if (cPotentialMatchingInterfaces > 1)
+        {   // We have more potentially matching interfaces
+            _ASSERTE(pInterfaceMT->HasInstantiation());
+
+            BOOL fIsExactMethodResolved = FALSE;
+
+            if (!pInterfaceMT->IsSharedByGenericInstantiations() &&
+                !pInterfaceMT->IsGenericTypeDefinition() &&
+                !this->IsSharedByGenericInstantiations() &&
+                !this->IsGenericTypeDefinition())
+            {   // We have exact interface and type instantiations (no generic variables and __Canon used
+                // anywhere)
+                if (this->CanCastToInterface(pInterfaceMT))
+                {
+                    // We can resolve to exact method
+                    pMD = this->GetMethodDescForInterfaceMethod(pInterfaceMT, pInterfaceMD, FALSE /* throwOnConflict */);
+                    fIsExactMethodResolved = pMD != NULL;
+                }
+            }
+
+            if (!fIsExactMethodResolved)
+            {
+                // The candidate can be left incorrect because the caller uses runtime lookup.
+                _ASSERTE(pfForceUseRuntimeLookup != NULL);
+                *pfForceUseRuntimeLookup = TRUE;
+            }
+        }
+        else
+        {
+            // If we can resolve the interface exactly then do so (e.g. when doing the exact
+            // lookup at runtime, or when not sharing generic code).
+            if (pCanonMT->CanCastToInterface(pInterfaceMT))
+            {
+                pMD = pCanonMT->GetMethodDescForInterfaceMethod(thInterfaceType, pGenInterfaceMD, FALSE /* throwOnConflict */);
+                if (pMD == NULL)
+                {
+                    LOG((LF_JIT, LL_INFO10000, "TryResolveConstraintMethodApprox: failed to find method desc for interface method\n"));
+                }
+            }
+        }
+    }
+    else if (pGenInterfaceMD->IsVirtual())
+    {
+        if (pGenInterfaceMD->HasNonVtableSlot() && pGenInterfaceMD->GetMethodTable()->IsValueType())
+        {   // GetMethodDescForSlot would AV for this slot
+            // We can get here for (invalid and unverifiable) IL:
+            //    constrained. int32
+            //    callvirt System.Int32::GetHashCode()
+            pMD = pGenInterfaceMD;
+        }
+        else
+        {
+            pMD = GetMethodDescForSlot(pGenInterfaceMD->GetSlot());
+        }
+    }
+    else
+    {
+        // The pMD will be NULL if calling a non-virtual instance
+        // methods on System.Object, i.e. when these are used as a constraint.
+        pMD = NULL;
+    }
+
     if (pMD == NULL)
     {   // Fall back to VSD
         return NULL;
@@ -8683,9 +8802,9 @@ MethodTable::TryResolveConstraintMethodApprox(
     if (!pMD->GetMethodTable()->IsInterface())
     {
         //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-        // For instance calls, only return a method if the value type itself declares the method
+        // Only return a method if the value type itself declares the method,
         // otherwise we might get a method from Object or System.ValueType
-        if (!isStatic && !pMD->GetMethodTable()->IsValueType())
+        if (!pMD->GetMethodTable()->IsValueType())
         {   // Fall back to VSD
             return NULL;
         }
@@ -8705,7 +8824,7 @@ MethodTable::TryResolveConstraintMethodApprox(
     }
 
     return pMD;
-} // MethodTable::TryResolveConstraintMethodApprox
+} // MethodTable::TryResolveInstanceConstraintMethodApprox
 
 //==========================================================================================
 // Make best-case effort to obtain an image name for use in an error message.
