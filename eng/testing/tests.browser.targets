@@ -55,6 +55,8 @@
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
     <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">true</EventSourceSupport>
     <EnableDiagnostics Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(EnableDiagnostics)' == ''">$(EventSourceSupport)</EnableDiagnostics>
+    <_WasmCoreClrEventSourceSupportSpecified Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</_WasmCoreClrEventSourceSupportSpecified>
+    <_WasmCoreClrEnableDiagnosticsSpecified Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</_WasmCoreClrEnableDiagnosticsSpecified>
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
 
     <!-- Library tests run directly from bin/ without the static web assets middleware,

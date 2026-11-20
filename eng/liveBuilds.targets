@@ -322,11 +322,17 @@
         "
         IsNative="true" />
 
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true' and '$(EnableDiagnostics)' != 'true' and '$(EventSourceSupport)' != 'true'"
                              Include="
         $(LibrariesSharedFrameworkDir)dotnet.native.js;
         $(LibrariesSharedFrameworkDir)dotnet.native.js.symbols;
         $(LibrariesSharedFrameworkDir)dotnet.native.wasm;"
+        IsNative="true" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true' and ('$(EnableDiagnostics)' == 'true' or '$(EventSourceSupport)' == 'true')"
+                             Include="
+        $(LibrariesSharedFrameworkDir)native-flavors\diagnostics\dotnet.native.js;
+        $(LibrariesSharedFrameworkDir)native-flavors\diagnostics\dotnet.native.js.symbols;
+        $(LibrariesSharedFrameworkDir)native-flavors\diagnostics\dotnet.native.wasm;"
         IsNative="true" />
       <!-- Headers included by the CoreCLR native relink generated sources (see BrowserWasmApp.CoreCLR.targets).
            The browserhost CMakeLists installs them into the host sharedFramework; mirrors the Mono include\wasm handling. -->

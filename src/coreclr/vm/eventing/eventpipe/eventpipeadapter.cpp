@@ -218,7 +218,8 @@ void EventPipeAdapter::AddProviderToSession(EventPipeSessionProvider *provider, 
 EventPipeProvider * EventPipeAdapter::CreateProvider(
     const WCHAR *providerName,
     EventPipeCallback callback,
-    void *callbackContext)
+    void *callbackContext,
+    const EventPipeEventTable *eventTable)
 {
     CONTRACTL
     {
@@ -229,7 +230,7 @@ EventPipeProvider * EventPipeAdapter::CreateProvider(
     CONTRACTL_END;
 
     ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
-    EventPipeProvider *provider = ep_create_provider(providerNameUTF8, callback, callbackContext);
+    EventPipeProvider *provider = ep_create_provider_with_events(providerNameUTF8, callback, callbackContext, eventTable);
     ep_rt_utf8_string_free(providerNameUTF8);
     return provider;
 }
