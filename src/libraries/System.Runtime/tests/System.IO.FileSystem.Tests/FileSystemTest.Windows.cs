@@ -17,5 +17,7 @@ namespace System.IO.Tests
         {
             throw new PlatformNotSupportedException();
         }
+
+        protected static string GetExpectedFinalLinkTarget(string path) => path;
     }
 }
