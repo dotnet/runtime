@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
@@ -42,25 +43,37 @@ public class HandleMacosSAFlagsOddityAcrossExec
         SuspendSpinningThreadForGC();
     }
 
+    private static volatile bool s_spinning;
     private static volatile bool s_stopSpinning;
 
     private static void SuspendSpinningThreadForGC()
     {
-        // A thread spinning in managed code can only be suspended for GC by injecting an activation signal.
-        var spinner = new Thread(() =>
-        {
-            while (!s_stopSpinning)
-            {
-            }
-        });
+        var spinner = new Thread(Spin);
         spinner.Start();
+        while (!s_spinning)
+        {
+            Thread.Sleep(1);
+        }
 
         for (int i = 0; i < 100; i++)
         {
             GC.Collect();
+            // Let the spinner resume its loop so that the next GC has to interrupt it again.
+            Thread.Sleep(1);
         }
 
         s_stopSpinning = true;
         spinner.Join();
+    }
+
+    // Compiled with full optimizations up front so the loop has no tier-0 patchpoints or other safe points:
+    // a thread spinning here can only be suspended for GC by injecting an activation signal.
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private static void Spin()
+    {
+        s_spinning = true;
+        while (!s_stopSpinning)
+        {
+        }
     }
 }
