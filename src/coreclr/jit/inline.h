@@ -647,10 +647,10 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 //
 struct LateDevirtualizationInfo
 {
-    CORINFO_METHOD_HANDLE  methodHnd;
-    CORINFO_CONTEXT_HANDLE exactContextHnd;
-    ILLocation             ilLocation;
-    CORINFO_RESOLVED_TOKEN resolvedToken;
+    CORINFO_METHOD_HANDLE   methodHnd;
+    CORINFO_CONTEXT_HANDLE  exactContextHnd;
+    ILLocation              ilLocation;
+    CORINFO_RESOLVED_TOKEN* pResolvedToken;
 };
 
 // InlArgInfo describes inline candidate argument properties.

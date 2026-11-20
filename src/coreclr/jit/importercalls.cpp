@@ -1451,11 +1451,15 @@ DONE:
         {
             JITDUMP("\nSaving late devirtualization info for call [%06u]\n", dspTreeID(call->AsCall()));
             assert(call->AsCall()->gtInlineContext == impCurStmtDI.GetInlineContext());
-            LateDevirtualizationInfo* const info       = new (this, CMK_Inlining) LateDevirtualizationInfo;
-            info->methodHnd                            = callInfo->hMethod;
-            info->exactContextHnd                      = exactContextHnd;
-            info->ilLocation                           = impCurStmtDI.GetLocation();
-            info->resolvedToken                        = *pResolvedToken;
+            LateDevirtualizationInfo* const info = new (this, CMK_Inlining) LateDevirtualizationInfo;
+            info->methodHnd                      = callInfo->hMethod;
+            info->exactContextHnd                = exactContextHnd;
+            info->ilLocation                     = impCurStmtDI.GetLocation();
+            info->pResolvedToken                 = nullptr;
+            if (IsAot() || call->AsCall()->IsGenericVirtual(this))
+            {
+                info->pResolvedToken = new (this, CMK_Inlining) CORINFO_RESOLVED_TOKEN(*pResolvedToken);
+            }
             call->AsCall()->gtLateDevirtualizationInfo = info;
         }
     }
