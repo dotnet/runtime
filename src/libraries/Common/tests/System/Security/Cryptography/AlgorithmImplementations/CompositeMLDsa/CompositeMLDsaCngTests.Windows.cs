@@ -8,7 +8,6 @@ using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(CompositeMLDsaTestHelpers), nameof(CompositeMLDsaTestHelpers.IsCngSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class CompositeMLDsaCngTests_AllowPlaintextExport : CompositeMLDsaTestsBase
     {
@@ -20,11 +19,11 @@ namespace System.Security.Cryptography.Tests
 
         protected override CompositeMLDsa ImportPublicKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             CompositeMLDsaTestHelpers.ImportPublicKey(algorithm, source);
+
+        protected override void AssertExportPkcs8FromPublicKey(Action export) =>
+            CompositeMLDsaTestHelpers.AssertThrowsCryptographicExceptionWithHResult(export);
     }
 
-    // Windows Insider builds don't support PKCS#8 export so we can't implement encrypted exports
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/117000")]
-    [ConditionalClass(typeof(CompositeMLDsaTestHelpers), nameof(CompositeMLDsaTestHelpers.IsCngSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class CompositeMLDsaCngTests_AllowExport : CompositeMLDsaTestsBase
     {
@@ -36,12 +35,15 @@ namespace System.Security.Cryptography.Tests
 
         protected override CompositeMLDsa ImportPublicKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             CompositeMLDsaTestHelpers.ImportPublicKey(algorithm, source);
+
+        protected override void AssertExportPkcs8FromPublicKey(Action export) =>
+            CompositeMLDsaTestHelpers.AssertThrowsCryptographicExceptionWithHResult(export);
     }
 
     [PlatformSpecific(TestPlatforms.Windows)]
     public static class CompositeMLDsaCngTests
     {
-        [ConditionalTheory(typeof(CompositeMLDsaTestHelpers), nameof(CompositeMLDsaTestHelpers.IsCngSupported))]
+        [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void ImportPrivateKey_NoExportFlag(CompositeMLDsaTestData.CompositeMLDsaTestVector info)
         {
@@ -60,7 +62,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(CompositeMLDsaTestHelpers), nameof(CompositeMLDsaTestHelpers.IsCngSupported))]
+        [Fact]
         public static void ImportPrivateKey_Persisted()
         {
             CompositeMLDsaTestData.CompositeMLDsaTestVector testVector =
@@ -109,7 +111,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
+        [Fact]
         public static void CompositeMLDsaCng_WrongAlgorithm()
         {
             using RSACng rsa = new RSACng();
@@ -117,7 +119,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ArgumentException>("key", () => new CompositeMLDsaCng(key));
         }
 
-        [ConditionalTheory(typeof(CompositeMLDsaTestHelpers), nameof(CompositeMLDsaTestHelpers.IsCngSupported))]
+        [Theory]
         [InlineData(default(string))]
         [InlineData($"CompositeMLDsaCngTests_{nameof(CompositeMLDsaCng_DuplicateHandle)}")]
         public static void CompositeMLDsaCng_DuplicateHandle(string? name)
@@ -154,7 +156,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(CompositeMLDsaTestHelpers), nameof(CompositeMLDsaTestHelpers.IsCngSupported))]
+        [Fact]
         public static void CompositeMLDsaCng_GetKey()
         {
             CngProperty parameterSet = CompositeMLDsaTestHelpers.GetCngProperty(CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256);
