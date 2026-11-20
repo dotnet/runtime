@@ -111,8 +111,12 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Increment.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IndexOfMax.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IndexOfMaxMagnitude.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IndexOfMaxMagnitudeNumber.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IndexOfMaxNumber.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IndexOfMin.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IndexOfMinMagnitude.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IndexOfMinMagnitudeNumber.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IndexOfMinNumber.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsCanonical.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsComplexNumber.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsEvenInteger.cs" />
