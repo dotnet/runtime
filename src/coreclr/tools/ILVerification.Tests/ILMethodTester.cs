@@ -61,8 +61,7 @@ namespace ILVerification.Tests
         {
             // Unlike verification, validation must not throw for invalid IL, so exceptions are not caught here.
             var results = Verify(testCase, validationOnly: true).ToList();
-            Assert.True(testCase.ExpectedVerifierErrors.Count == results.Count && testCase.ExpectedVerifierErrors.All(item => results.Any(r => r.Code == item)),
-                $"Actual errors were: {string.Join(",", results.Select(e => e.Code.ToString()))}");
+            Assert.Equal(testCase.ExpectedVerifierErrors.Order(), results.Select(r => r.Code).Order());
         }
 
         private static IEnumerable<VerificationResult> Verify(TestCase testCase, bool validationOnly = false)

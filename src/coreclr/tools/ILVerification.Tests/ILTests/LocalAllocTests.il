@@ -40,4 +40,69 @@
         pop // pop localloc pointer
         ret
     }
+
+    .method private hidebysig instance void Load.LocAllocInsideTry_Invalid_Unverifiable_Validation_Valid() cil managed
+    {
+        .try
+        {
+            ldc.i4.2
+            localloc
+            pop
+            leave.s END
+        }
+        finally
+        {
+            endfinally
+        }
+    END:
+        ret
+    }
+
+    .method private hidebysig instance void Load.LocAllocInsideFinally_Invalid_Unverifiable_Validation_LocallocInHandler() cil managed
+    {
+        .try
+        {
+            leave.s END
+        }
+        finally
+        {
+            ldc.i4.2
+            localloc
+            pop
+            endfinally
+        }
+    END:
+        ret
+    }
+
+    .method private hidebysig instance void Load.LocAllocInsideFilter_Invalid_Unverifiable_Validation_LocallocInHandler() cil managed
+    {
+        .try
+        {
+            leave.s END
+        }
+        filter
+        {
+            pop
+            ldc.i4.2
+            localloc
+            pop
+            ldc.i4.0
+            endfilter
+        }
+        {
+            pop
+            leave.s END
+        }
+    END:
+        ret
+    }
+
+    .method private hidebysig instance void Load.LocAllocWithInt64Size_Invalid_Unverifiable_Validation_StackUnexpected() cil managed
+    {
+        ldc.i8 2
+        localloc
+        pop
+        ret
+    }
 }

@@ -2778,14 +2778,21 @@ namespace Internal.IL
 
         void ImportLocalAlloc()
         {
-            // localloc is never verifiable (III.3.47); the size and empty-stack checks below are validity rules.
+            // localloc is never verifiable (III.3.47); the checks below are validity rules.
             UnverifiableError(VerifierError.Unverifiable);
+
+            if (ValidationOnly)
+                Check(!_currentBasicBlock.FilterIndex.HasValue && !_currentBasicBlock.HandlerIndex.HasValue, VerifierError.LocallocInHandler);
 
             var size = Pop();
 
             Check(_stackTop == 0, VerifierError.LocallocStackNotEmpty);
 
-            CheckIsInteger(size);
+            // The size is a native unsigned int or an unsigned int32; verification mode keeps its existing check.
+            if (ValidationOnly)
+                CheckIsIndex(size);
+            else
+                CheckIsInteger(size);
 
             Push(StackValue.CreatePrimitive(StackValueKind.NativeInt));
         }
