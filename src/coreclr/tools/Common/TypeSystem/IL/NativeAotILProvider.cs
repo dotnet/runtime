@@ -16,6 +16,13 @@ namespace Internal.IL
 {
     public sealed class NativeAotILProvider : ILProvider
     {
+        private readonly bool _mayHaveRelativeInterfaceMaps;
+
+        public NativeAotILProvider(bool mayHaveRelativeInterfaceMaps = false)
+        {
+            _mayHaveRelativeInterfaceMaps = mayHaveRelativeInterfaceMaps;
+        }
+
         private static MethodIL TryGetRuntimeImplementedMethodIL(MethodDesc method)
         {
             // Provides method bodies for runtime implemented methods. It can return null for
@@ -43,7 +50,7 @@ namespace Internal.IL
         /// It can return null if it's not an intrinsic recognized by the compiler,
         /// but an intrinsic e.g. recognized by codegen.
         /// </summary>
-        private static MethodIL TryGetIntrinsicMethodIL(MethodDesc method)
+        private MethodIL TryGetIntrinsicMethodIL(MethodDesc method)
         {
             Debug.Assert(method.IsIntrinsic);
 
@@ -71,6 +78,13 @@ namespace Internal.IL
                 if (owningType.Namespace == "Internal.Runtime"u8 && method.Name == "get_SupportsRelativePointers"u8)
                 {
                     ILOpcode value = method.Context.Target.SupportsRelativePointers ?
+                        ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0;
+                    return new ILStubMethodIL(method, new byte[] { (byte)value, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+                }
+
+                if (owningType.Namespace == "Internal.Runtime"u8 && method.Name == "get_MayHaveRelativeInterfaceMaps"u8)
+                {
+                    ILOpcode value = _mayHaveRelativeInterfaceMaps ?
                         ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0;
                     return new ILStubMethodIL(method, new byte[] { (byte)value, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
                 }

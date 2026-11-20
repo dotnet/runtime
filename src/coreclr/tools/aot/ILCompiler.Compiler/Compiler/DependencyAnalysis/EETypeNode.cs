@@ -42,13 +42,13 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// UInt16          | Number of VTable slots (X)
     ///                 |
-    /// UInt16          | Number of interfaces implemented by type (Y)
+    /// Int16           | Number of interfaces implemented by type (Y), negated if the interface map has relative pointers
     ///                 |
     /// UInt32          | Hash code
     ///                 |
     /// X * [Ptr Size]  | VTable entries (optional)
     ///                 |
-    /// Y * [Ptr Size]  | Pointers to interface map data structures (optional)
+    /// Y * [Ptr Size]  | Pointers to interface map data structures (optional). [Relative ptr] if the count is negated.
     ///                 |
     /// [Relative ptr]  | Pointer to containing TypeManager indirection cell
     ///                 |
@@ -715,9 +715,9 @@ namespace ILCompiler.DependencyAnalysis
                 OutputInterfaceMap(factory, ref objData);
             }
 
-            // Update slot count
-            int numberOfInterfaceSlots = interfaceSlotCounter.CountSlots(ref /* readonly */ objData);
-            objData.EmitShort(interfaceCountReservation, checked((short)numberOfInterfaceSlots));
+            // Update slot count. The count is negative if the interface map has relative pointers.
+            short numberOfInterfaces = checked((short)interfaceSlotCounter.CountSlots(ref /* readonly */ objData, factory.RelativeInterfaceMaps ? sizeof(int) : objData.TargetPointerSize));
+            objData.EmitShort(interfaceCountReservation, factory.RelativeInterfaceMaps ? (short)-numberOfInterfaces : numberOfInterfaces);
 
             OutputTypeManagerIndirection(factory, ref objData);
             OutputWritableData(factory, ref objData);
@@ -1024,7 +1024,10 @@ namespace ILCompiler.DependencyAnalysis
                     if (factory.InterfaceUse(itf.GetTypeDefinition()).Marked)
                     {
                         // Interface omitted for canonical instantiations (constructed at runtime for dynamic types from the native layout info)
-                        objData.EmitZeroPointer();
+                        if (factory.RelativeInterfaceMaps)
+                            objData.EmitInt(0);
+                        else
+                            objData.EmitZeroPointer();
                     }
                 }
             }
@@ -1037,7 +1040,10 @@ namespace ILCompiler.DependencyAnalysis
                     // Only emit interfaces that were not optimized away.
                     if (interfaceTypeNode.Marked)
                     {
-                        objData.EmitPointerReloc(interfaceTypeNode);
+                        if (factory.RelativeInterfaceMaps)
+                            objData.EmitReloc(interfaceTypeNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                        else
+                            objData.EmitPointerReloc(interfaceTypeNode);
                     }
                 }
             }
@@ -1222,10 +1228,13 @@ namespace ILCompiler.DependencyAnalysis
                 => new SlotCounter { _startBytes = builder.CountBytes };
 
             public int CountSlots(ref /* readonly */ ObjectDataBuilder builder)
+                => CountSlots(ref builder, builder.TargetPointerSize);
+
+            public int CountSlots(ref /* readonly */ ObjectDataBuilder builder, int slotSize)
             {
                 int bytesEmitted = builder.CountBytes - _startBytes;
-                Debug.Assert(bytesEmitted % builder.TargetPointerSize == 0);
-                return bytesEmitted / builder.TargetPointerSize;
+                Debug.Assert(bytesEmitted % slotSize == 0);
+                return bytesEmitted / slotSize;
             }
 
         }

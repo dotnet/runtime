@@ -47,7 +47,8 @@ namespace ILCompiler.DependencyAnalysis
             PreinitializationManager preinitializationManager,
             DevirtualizationManager devirtualizationManager,
             ObjectDataInterner dataInterner,
-            TypeMapManager typeMapManager)
+            TypeMapManager typeMapManager,
+            bool relativeInterfaceMaps)
         {
             _target = context.Target;
 
@@ -66,6 +67,7 @@ namespace ILCompiler.DependencyAnalysis
             DevirtualizationManager = devirtualizationManager;
             ObjectInterner = dataInterner;
             TypeMapManager = typeMapManager;
+            RelativeInterfaceMaps = relativeInterfaceMaps && _target.SupportsRelativePointers && _target.PointerSize == 8;
         }
 
         public void SetMarkingComplete()
@@ -84,6 +86,14 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public LazyGenericsPolicy LazyGenericsPolicy { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the interface maps of the generated MethodTables hold 32-bit
+        /// relative pointers instead of full pointers. This is only done on 64-bit targets, where it makes
+        /// the entries half the size.
+        /// </summary>
+        public bool RelativeInterfaceMaps { get; }
+
         public CompilationModuleGroup CompilationModuleGroup
         {
             get
