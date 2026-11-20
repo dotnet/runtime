@@ -112,5 +112,155 @@ namespace System.Linq.Tests
 
             Assert.Equal(new[] { 3, 4, 5 }, e.ToArray());
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SingleElement_UnknownCount_ResultsAndReenumeration(bool useRange)
+        {
+            foreach (int count in new[] { 0, 1, 3 })
+            {
+                Check(Enumerable.Range(0, count).ToArray());
+                Check(Enumerable.Range(0, count).Select(i => i.ToString()).ToArray());
+                Check(Enumerable.Range(0, count).Select(i => (i.ToString(), i)).ToArray());
+            }
+
+            void Check<T>(T[] values)
+            {
+                T[] expected = values.Length == 0 ? [] : [values[^1]];
+                IEnumerable<T> result = SingleElement(ForceNotCollection(values), useRange);
+                Assert.Equal(expected, result);
+                Assert.Equal(expected, result);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void SingleElement_ChangesBeforeMoveNextAreObserved(bool useRange, bool knownCount)
+        {
+            var values = new List<int> { 1 };
+            IEnumerable<int> result = SingleElement(knownCount ? values : ForceNotCollection(values), useRange);
+            using IEnumerator<int> iterator = result.GetEnumerator();
+            values.Add(2);
+            Assert.True(iterator.MoveNext());
+            Assert.Equal(2, iterator.Current);
+            Assert.False(iterator.MoveNext());
+            values.Add(3);
+            Assert.Equal(new[] { 3 }, result);
+        }
+
+        [Theory]
+        [InlineData(false, 0)]
+        [InlineData(false, 1)]
+        [InlineData(false, 3)]
+        [InlineData(true, 0)]
+        [InlineData(true, 1)]
+        [InlineData(true, 3)]
+        public void SingleElement_UnknownCount_EvaluationOrder(bool useRange, int count)
+        {
+            var calls = new List<string>();
+            int index = -1;
+            var inner = new DelegateIterator<int>(
+                moveNext: () =>
+                {
+                    calls.Add(nameof(IEnumerator<int>.MoveNext));
+                    return ++index < count;
+                },
+                current: () =>
+                {
+                    calls.Add(nameof(IEnumerator<int>.Current));
+                    return index;
+                },
+                dispose: () => calls.Add(nameof(IDisposable.Dispose)));
+            var source = new DelegateIterator<int>(getEnumerator: () =>
+            {
+                calls.Add(nameof(IEnumerable<int>.GetEnumerator));
+                return inner;
+            });
+            using IEnumerator<int> iterator = SingleElement(source, useRange).GetEnumerator();
+            Assert.Empty(calls);
+            Assert.Equal(count != 0, iterator.MoveNext());
+
+            var expected = new List<string> { nameof(IEnumerable<int>.GetEnumerator) };
+            for (int i = 0; i < count; i++)
+            {
+                expected.Add(nameof(IEnumerator<int>.MoveNext));
+                expected.Add(nameof(IEnumerator<int>.Current));
+            }
+
+            expected.Add(nameof(IEnumerator<int>.MoveNext));
+            expected.Add(nameof(IDisposable.Dispose));
+            Assert.Equal(expected, calls);
+            if (count != 0)
+            {
+                Assert.Equal(count - 1, iterator.Current);
+                Assert.False(iterator.MoveNext());
+                Assert.Equal(expected, calls);
+            }
+        }
+
+        public static IEnumerable<object[]> SingleElementExceptionData()
+        {
+            foreach (bool useRange in new[] { false, true })
+            {
+                yield return new object[] { useRange, nameof(IEnumerable<int>.GetEnumerator), 0 };
+                foreach (string operation in new[] { nameof(IEnumerator<int>.MoveNext), nameof(IEnumerator<int>.Current), nameof(IDisposable.Dispose) })
+                {
+                    yield return new object[] { useRange, operation, 0 };
+                    yield return new object[] { useRange, operation, 1 };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(SingleElementExceptionData))]
+        public void SingleElement_UnknownCount_SourceExceptions(bool useRange, string operation, int throwIndex)
+        {
+            var error = new InvalidOperationException("source");
+            int index = -1;
+            int disposeCount = 0;
+            var inner = new DelegateIterator<int>(
+                moveNext: () =>
+                {
+                    ++index;
+                    if (operation == nameof(IEnumerator<int>.MoveNext) && index == throwIndex)
+                    {
+                        throw error;
+                    }
+                    return index < (operation == nameof(IDisposable.Dispose) ? throwIndex : 2);
+                },
+                current: () => operation == nameof(IEnumerator<int>.Current) && index == throwIndex ? throw error : index,
+                dispose: () =>
+                {
+                    ++disposeCount;
+                    if (operation == nameof(IDisposable.Dispose))
+                    {
+                        throw error;
+                    }
+                });
+            var source = new DelegateIterator<int>(getEnumerator: () => operation == nameof(IEnumerable<int>.GetEnumerator) ? throw error : inner);
+            using IEnumerator<int> iterator = SingleElement(source, useRange).GetEnumerator();
+            Assert.Same(error, Assert.Throws<InvalidOperationException>(() => iterator.MoveNext()));
+            Assert.Equal(operation == nameof(IEnumerable<int>.GetEnumerator) ? 0 : 1, disposeCount);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SingleElement_UnknownCount_DisposeExceptionReplacesSourceException(bool useRange)
+        {
+            var disposeError = new InvalidOperationException("dispose");
+            var source = new DelegateIterator<int>(
+                moveNext: () => throw new ArgumentException("source"),
+                dispose: () => throw disposeError);
+            using IEnumerator<int> iterator = SingleElement(source, useRange).GetEnumerator();
+            Assert.Same(disposeError, Assert.Throws<InvalidOperationException>(() => iterator.MoveNext()));
+        }
+
+        private static IEnumerable<T> SingleElement<T>(IEnumerable<T> source, bool useRange) =>
+            useRange ? source.Take(^1..^0) : source.TakeLast(1);
     }
 }
