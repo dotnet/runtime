@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- The target must remain cold while measuring JIT compilation. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <InterpreterIncompatible>true</InterpreterIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileName).cs" />
+    <ProjectReference Include="InheritedCanonicalInterface.ilproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+  </ItemGroup>
+</Project>

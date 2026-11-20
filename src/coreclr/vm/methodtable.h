@@ -2505,12 +2505,14 @@ public:
     // Specify uniqueResolution to store the flag saying whether the resolution was unambiguous;
     // when NULL, throw an AmbiguousResolutionException upon hitting ambiguous SVM resolution.
     // The 'level' parameter specifies the load level for the class containing the resolved MethodDesc.
+    // When ppResolvedOwner is supplied, return the definition and owner separately without instantiating the method.
     MethodDesc *ResolveVirtualStaticMethod(
         MethodTable* pInterfaceType,
         MethodDesc* pInterfaceMD,
         ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags,
         BOOL *uniqueResolution = NULL,
-        ClassLoadLevel level = CLASS_LOADED);
+        ClassLoadLevel level = CLASS_LOADED,
+        MethodTable **ppResolvedOwner = NULL);
 
     // Try a partial resolve of the constraint call, up to generic code sharing.
     //
@@ -2586,12 +2588,14 @@ private:
 
 public:
 #ifndef DACCESS_COMPILE
+    // Supplying ppDefaultOwner returns an uninstantiated method and its declaring owner.
     BOOL FindDefaultInterfaceImplementation(
         MethodDesc *pInterfaceMD,
         MethodTable *pObjectMT,
         MethodDesc **ppDefaultMethod,
         FindDefaultInterfaceImplementationFlags findDefaultImplementationFlags,
-        ClassLoadLevel level = CLASS_LOADED);
+        ClassLoadLevel level = CLASS_LOADED,
+        MethodTable **ppDefaultOwner = NULL);
 #endif // DACCESS_COMPILE
 
     DispatchSlot FindDispatchSlot(UINT32 typeID, UINT32 slotNumber, BOOL throwOnConflict);

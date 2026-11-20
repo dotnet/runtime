@@ -8,6 +8,25 @@ using Xunit;
 
 public class CanonicalInterface
 {
+    private interface IArgument<T> { }
+    private sealed class Argument<T> : IArgument<T> { }
+
+    private interface IConstrainedResult<T>
+    {
+        static abstract Type Get<TArg>() where TArg : IArgument<T>;
+    }
+
+    private readonly struct ConstrainedResult<T> : IConstrainedResult<T>
+    {
+        public static Type Get<TArg>() where TArg : IArgument<T> => typeof(TArg);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type CallWithConstraint<TFunc, T, TArg>()
+        where TFunc : IConstrainedResult<T>
+        where TArg : IArgument<T>
+        => TFunc.Get<TArg>();
+
     private interface IResult<T>
     {
         static virtual int Get() => -1;
@@ -415,6 +434,9 @@ public class CanonicalInterface
     [InlineData(-17)]
     public static void TestEntryPoint(int value)
     {
+        // Bind the caller's method arguments before checking constraints on a selected target.
+        Assert.Equal(typeof(Argument<short>), CallWithConstraint<ConstrainedResult<short>, short, Argument<short>>());
+        Assert.Equal(typeof(Argument<string>), CallWithConstraint<ConstrainedResult<string>, string, Argument<string>>());
         (object, int) objectState = (new object(), value);
         (string, int) stringState = ("state", value);
 
