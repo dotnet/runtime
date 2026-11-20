@@ -40,6 +40,8 @@
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
 
+  <Import Project="$(RepoRoot)eng/testing/Android/helix.targets" />
+
   <Target Name="PrepareForBuildHelixWorkItems_Mobile">
 
     <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
