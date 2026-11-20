@@ -993,5 +993,80 @@ namespace System.SpanTests
                 }
             }
         }
+
+        // Lengths straddle Vector128/256/512<long>.Count (2/4/8) and unrolled multiples to hit vector and tail paths.
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(9)]
+        [InlineData(15)]
+        [InlineData(16)]
+        [InlineData(17)]
+        [InlineData(31)]
+        [InlineData(32)]
+        [InlineData(33)]
+        [InlineData(63)]
+        [InlineData(64)]
+        [InlineData(65)]
+        [InlineData(100)]
+        public static void IndexOfAny_TwoAndThreeInt64(int length)
+        {
+            // Targets share low 32 bits with the filler values, so only a full 64-bit compare matches correctly.
+            long[] values2 = { (1L << 32) | 1, (1L << 32) | 2 };
+            long[] values3 = { (1L << 32) | 1, (1L << 32) | 2, long.MinValue | 3 };
+
+            long[] a = new long[length];
+            for (int i = 0; i < length; i++)
+            {
+                a[i] = i + 1;
+            }
+
+            IndexOfAnyInt64(a, values2, -1);
+            IndexOfAnyInt64(a, values3, -1);
+
+            foreach (long[] values in new[] { values2, values3 })
+            {
+                for (int pos = 0; pos < length; pos++)
+                {
+                    int other = length - 1 - pos;
+
+                    a[pos] = values[pos % values.Length];
+                    IndexOfAnyInt64(a, values, pos);
+
+                    if (other != pos)
+                    {
+                        a[other] = values[(pos + 1) % values.Length];
+                        IndexOfAnyInt64(a, values, Math.Min(pos, other));
+                        a[other] = other + 1;
+                    }
+
+                    a[pos] = pos + 1;
+                }
+            }
+        }
+
+        private static void IndexOfAnyInt64(long[] a, long[] values, int expected)
+        {
+            if (values.Length == 2)
+            {
+                Assert.Equal(expected, new ReadOnlySpan<long>(a).IndexOfAny(values[0], values[1]));
+                Assert.Equal(expected, new Span<long>(a).IndexOfAny(values[0], values[1]));
+                Assert.All(GetDefaultEqualityComparers<long>(), comparer => Assert.Equal(expected, new ReadOnlySpan<long>(a).IndexOfAny(values[0], values[1], comparer)));
+                Assert.Equal(-1, new ReadOnlySpan<long>(a).IndexOfAny(values[0], values[1], GetFalseEqualityComparer<long>()));
+            }
+            else
+            {
+                Assert.Equal(expected, new ReadOnlySpan<long>(a).IndexOfAny(values[0], values[1], values[2]));
+                Assert.Equal(expected, new Span<long>(a).IndexOfAny(values[0], values[1], values[2]));
+                Assert.All(GetDefaultEqualityComparers<long>(), comparer => Assert.Equal(expected, new ReadOnlySpan<long>(a).IndexOfAny(values[0], values[1], values[2], comparer)));
+                Assert.Equal(-1, new ReadOnlySpan<long>(a).IndexOfAny(values[0], values[1], values[2], GetFalseEqualityComparer<long>()));
+            }
+        }
     }
 }
