@@ -634,7 +634,7 @@ echo -component ^<name^> : specify this option one or more times to limit compon
 echo                     Allowed ^<name^>: hosts jit alljits runtime paltests iltools nativeaot spmi cdac
 echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
-echo -skipdotnet: skip the components that need .NET to build ^(currently eventing^), when no .NET SDK is restored.
+echo -skipdotnet: skip the components that need .NET to build ^(e.g. eventing^), when no .NET SDK is restored.
 echo -cmakeargs: user-settable additional arguments passed to CMake.
 echo -configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
 echo -skipconfigure: skip CMake ^(default: CMake is run^)

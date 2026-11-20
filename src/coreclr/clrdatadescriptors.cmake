@@ -24,9 +24,9 @@ function(generate_data_descriptors)
   endif()
   configure_file("${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/contractconfiguration.h.in" "${GENERATED_CDAC_DESCRIPTOR_DIR}/contractconfiguration.h")
 
-  if (NOT CDAC_BUILD_TOOL_BINARY_PATH)
-    # if CDAC_BUILD_TOOL_BINARY_PATH is unspecified (for example for a build without a .NET SDK or msbuild),
-    # link a stub contract descriptor into the runtime
+  if (NOT CDAC_BUILD_TOOL_BINARY_PATH OR CLR_CMAKE_SKIP_DOTNET)
+    # if CDAC_BUILD_TOOL_BINARY_PATH is unspecified (for example for a build without a .NET)
+    # or the build skips .NET (-skipdotnet), link a stub contract descriptor into the runtime
     add_library_clr(${LIBRARY} OBJECT "${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/contractdescriptorstub.c")
     message(STATUS "Using a stub cDAC contract descriptor")
   else()
