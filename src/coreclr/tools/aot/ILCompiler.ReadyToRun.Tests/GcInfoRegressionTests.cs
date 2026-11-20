@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection.PortableExecutable;
 using ILCompiler.Reflection.ReadyToRun;
-using ILCompiler.Reflection.ReadyToRun.Amd64;
 using ILCompiler.Reflection.ReadyToRun.Cdac;
 using Xunit;
 using X86TransitionPointer = Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers.X86.GcTransitionPointer;
@@ -31,9 +30,9 @@ public class GcInfoRegressionTests
         writer.WriteUnsigned(0, 1);
         writer.Write(0, 2);
 
-        GcInfo info = Decode(writer, machine);
+        CdacGcInfo info = Assert.IsType<CdacGcInfo>(DecodeCdac(writer, machine));
         Assert.Equal(expectedRegister, info.StackBaseRegister);
-        Assert.Empty(info.SlotTable.GcSlots);
+        Assert.Empty(info.Slots);
         Assert.Equal(writer.ByteCount, info.Size);
     }
 
@@ -51,12 +50,13 @@ public class GcInfoRegressionTests
         writer.WriteUnsigned(0, 1);
         writer.Write(0, 2);
 
-        GcInfo info = Decode(writer, Machine.Arm64);
+        CdacGcInfo info = Assert.IsType<CdacGcInfo>(DecodeCdac(writer, Machine.Arm64));
         Assert.Equal(1u, info.SizeOfEditAndContinuePreservedArea);
-        Assert.Equal(24u, info.SizeOfStackOutgoingAndScratchArea);
-        Assert.Equal(0u, info.NumSafePoints);
-        Assert.Equal(0u, info.NumInterruptibleRanges);
-        Assert.Empty(info.SlotTable.GcSlots);
+        Assert.Equal((uint)fixedFrameSize, info.SizeOfEditAndContinueFixedStackFrame);
+        Assert.Equal(24u, info.Header.SizeOfStackParameterArea);
+        Assert.Empty(info.SafePoints);
+        Assert.Empty(info.InterruptibleRanges);
+        Assert.Empty(info.Slots);
         Assert.Equal(writer.ByteCount, info.Size);
     }
 
@@ -71,7 +71,6 @@ public class GcInfoRegressionTests
             (Machine.RiscV64, 2),
         })
         {
-            yield return [machine, instructionSize, Array.Empty<(int, int)>(), 4, 4];
             yield return [machine, instructionSize, new[] { (8, 16) }, 4, 12];
             foreach ((int transition, int expected) in new[] { (3, 3), (4, 20), (9, 41) })
                 yield return [machine, instructionSize, new[] { (0, 4), (20, 24), (40, 44) }, transition, expected];
@@ -110,7 +109,7 @@ public class GcInfoRegressionTests
         writer.Write(transition, 6);
         writer.Write(0, 1);
 
-        GcInfo info = Decode(writer, machine);
+        BaseGcInfo info = DecodeCdac(writer, machine);
         KeyValuePair<int, List<BaseGcTransition>> entry = Assert.Single(info.Transitions);
         Assert.Equal(expected * instructionSize, entry.Key);
         Assert.Equal(entry.Key, Assert.Single(entry.Value).CodeOffset);
@@ -165,7 +164,7 @@ public class GcInfoRegressionTests
             }
         }
 
-        GcInfo info = Decode(writer, Machine.Amd64);
+        CdacGcInfo info = Assert.IsType<CdacGcInfo>(DecodeCdac(writer, Machine.Amd64));
         Assert.Equal(64, info.LiveSlotsAtSafepoints.Count);
         if (runLengthEncoded)
         {
@@ -176,7 +175,7 @@ public class GcInfoRegressionTests
         {
             Assert.Equal(16, info.LiveSlotsAtSafepoints[0].Count);
             Assert.Equal(16, info.LiveSlotsAtSafepoints[63].Count);
-            Assert.Same(info.SlotTable.GcSlots[highestStateLast ? 1 : 0], info.LiveSlotsAtSafepoints[0][0]);
+            Assert.Same(info.Slots[highestStateLast ? 1 : 0], info.LiveSlotsAtSafepoints[0][0]);
         }
         Assert.Equal(writer.ByteCount, info.Size);
     }
@@ -336,12 +335,15 @@ public class GcInfoRegressionTests
         Assert.Equal(8, info.Size);
     }
 
-    [Fact]
-    public void CdacX86TrackedEbpSlotsUseSignedOffsets()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(5)]
+    public void CdacX86TrackedEbpSlotsUseSignedOffsets(int version)
     {
         // One VarPtr entry: EBP-8, live in [2, 6).
         CdacX86GcInfo info = Assert.IsType<CdacX86GcInfo>(
-            DecodeCdacX86([64, 0x81, 0x82, 0xBE, 0xBF, 0x46, 1, 3, 8, 2, 4, 0xFF]));
+            DecodeCdacX86([64, 0x81, 0x82, 0xBE, 0xBF, 0x46, 1, 3, 8, 2, 4, 0xFF], version));
         CdacX86GcSlot slot = Assert.Single(info.Slots);
         Assert.Equal("[EBP-8]", slot.Location);
         Assert.Equal(2u, slot.BeginOffset);
@@ -350,18 +352,91 @@ public class GcInfoRegressionTests
         Assert.Equal(12, info.Size);
     }
 
-    private static BaseGcInfo DecodeCdac(BitWriter writer, Machine machine)
+    [Theory]
+    [InlineData(Machine.Amd64, 1)]
+    [InlineData(Machine.Amd64, 2)]
+    [InlineData(Machine.Amd64, 3)]
+    [InlineData(Machine.ArmThumb2, 2)]
+    [InlineData(Machine.Arm64, 3)]
+    public void CdacDecodesLegacyFatHeader(Machine machine, int version)
+    {
+        bool isArm = machine == Machine.ArmThumb2;
+        int codeLengthScale = machine switch { Machine.ArmThumb2 => 2, Machine.Arm64 => 4, _ => 1 };
+        int stackSlotScale = isArm ? 4 : 8;
+
+        BitWriter writer = new();
+        writer.Write(1, 1);
+        writer.Write(0xE, version == 1 ? 9 : 10); // Security object, GS cookie and PSPSym.
+        if (version >= 2)
+            writer.Write(1, isArm ? 2 : 4); // ReturnKind
+        writer.WriteUnsigned(20, isArm ? 7 : 8);
+        writer.WriteUnsigned(3, 5); // Prolog size - 1.
+        writer.WriteUnsigned(2, 3); // Epilog size.
+        writer.WriteSigned(-2, isArm ? 5 : 6);
+        writer.WriteSigned(-3, isArm ? 5 : 6);
+        writer.WriteSigned(-4, isArm ? 5 : 6);
+        writer.WriteUnsigned(0, 3);
+        writer.WriteUnsigned(0, machine == Machine.Amd64 ? 2 : 3);
+        writer.WriteUnsigned(0, isArm ? 2 : 1);
+        writer.Write(0, 2);
+
+        CdacGcInfo info = Assert.IsType<CdacGcInfo>(DecodeCdac(writer, machine, version));
+        // Code offsets are not normalized before version 4; the code length is.
+        Assert.Equal(20 * codeLengthScale, info.CodeLength);
+        Assert.Equal(4u, info.ValidRangeStart);
+        Assert.Equal((uint)info.CodeLength - 2, info.ValidRangeEnd);
+        Assert.Equal(version >= 2 ? ReturnKinds.RT_Object : null, info.ReturnKind);
+        Assert.Equal(-2 * stackSlotScale, info.SecurityObjectStackSlot);
+        Assert.Equal(-3 * stackSlotScale, info.Header.GSCookie?.SpOffset);
+        Assert.Equal(-4 * stackSlotScale, info.Header.PSPSym?.SpOffset);
+        Assert.Contains($"PSPSymStackSlot: caller.sp{-4 * stackSlotScale}", info.ToString());
+        Assert.Equal(writer.ByteCount, info.Size);
+    }
+
+    [Theory]
+    [InlineData(Machine.Amd64, 3)]
+    [InlineData(Machine.ArmThumb2, 2)]
+    public void CdacLegacySafePointsAreEncodedWithMinusOneAdjustment(Machine machine, int version)
+    {
+        bool isArm = machine == Machine.ArmThumb2;
+
+        BitWriter writer = new();
+        writer.Write(0, 1); // Slim header without a stack base register.
+        writer.Write(0, 1);
+        writer.Write(0, 2); // ReturnKind
+        writer.WriteUnsigned(16, isArm ? 7 : 8);
+        writer.WriteUnsigned(2, isArm ? 3 : 2);
+        int bitsPerOffset = isArm ? 5 : 4; // CeilOfLog2 of the unnormalized code length.
+        writer.Write(3, bitsPerOffset);
+        writer.Write(9, bitsPerOffset);
+        writer.Write(1, 1); // One register slot.
+        writer.WriteUnsigned(1, 2);
+        writer.Write(0, 1);
+        writer.WriteUnsigned(3, isArm ? 2 : 3);
+        writer.Write(0, 2);
+        writer.Write(0, 1); // Direct live state bitmaps.
+        writer.Write(1, 1);
+        writer.Write(0, 1);
+
+        CdacGcInfo info = Assert.IsType<CdacGcInfo>(DecodeCdac(writer, machine, version));
+        Assert.Equal(new uint[] { 4, 10 }, info.SafePoints);
+        Assert.Same(info.Slots[0], Assert.Single(info.LiveSlotsAtSafepoints[0]));
+        Assert.Empty(info.LiveSlotsAtSafepoints[1]);
+        Assert.Equal(writer.ByteCount, info.Size);
+    }
+
+    private static BaseGcInfo DecodeCdac(BitWriter writer, Machine machine, int version = 5)
     {
         using MemoryStream stream = new(writer.ToArray());
 
-        return CdacGcInfo.Decode(new NativeReader(stream), 0, machine, 5);
+        return CdacGcInfo.Decode(new NativeReader(stream), 0, machine, version);
     }
 
-    private static BaseGcInfo DecodeCdacX86(byte[] encoded)
+    private static BaseGcInfo DecodeCdacX86(byte[] encoded, int version = 5)
     {
         using MemoryStream stream = new([.. encoded, .. new byte[8]]);
 
-        return CdacGcInfo.Decode(new NativeReader(stream), 0, Machine.I386, 5);
+        return CdacGcInfo.Decode(new NativeReader(stream), 0, Machine.I386, version);
     }
 
     private static void WriteFatHeader(BitWriter writer, Machine machine, int flags, int codeLength = 8)
@@ -369,13 +444,6 @@ public class GcInfoRegressionTests
         writer.Write(1, 1);
         writer.Write(flags, 10);
         writer.WriteUnsigned(codeLength, machine == Machine.ArmThumb2 ? 7 : 8);
-    }
-
-    private static GcInfo Decode(BitWriter writer, Machine machine)
-    {
-        using MemoryStream stream = new(writer.ToArray());
-
-        return new GcInfo(new NativeReader(stream), 0, machine, 5);
     }
 
     private sealed class BitWriter

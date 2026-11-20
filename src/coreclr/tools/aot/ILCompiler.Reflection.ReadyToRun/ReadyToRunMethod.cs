@@ -546,20 +546,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                         _readyToRunReader.ReadyToRunHeader.MajorVersion,
                         _readyToRunReader.ReadyToRunHeader.MinorVersion);
 
-                    if (gcInfoVersion >= 4)
-                    {
-                        // GC info v4+ is decoded with the decoders shared with the cDAC.
-                        _gcInfo = Cdac.CdacGcInfo.Decode(_readyToRunReader.ImageReader, gcInfoOffset, _readyToRunReader.Machine, gcInfoVersion);
-                    }
-                    else if (_readyToRunReader.Machine == Machine.I386)
-                    {
-                        _gcInfo = new x86.GcInfo(_readyToRunReader.ImageReader, gcInfoOffset, gcInfoVersion);
-                    }
-                    else
-                    {
-                        // Arm, Arm64, LoongArch64 and RISCV64 use the same GcInfo format as Amd64
-                        _gcInfo = new Amd64.GcInfo(_readyToRunReader.ImageReader, gcInfoOffset, _readyToRunReader.Machine, gcInfoVersion);
-                    }
+                    _gcInfo = Cdac.CdacGcInfo.Decode(_readyToRunReader.ImageReader, gcInfoOffset, _readyToRunReader.Machine, gcInfoVersion);
                 }
             }
             if (_pgoInfo == null)

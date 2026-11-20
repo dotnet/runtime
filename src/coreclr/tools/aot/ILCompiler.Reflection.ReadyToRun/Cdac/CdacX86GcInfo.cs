@@ -11,7 +11,7 @@ using CdacX86Transition = Microsoft.Diagnostics.DataContractReader.Contracts.GCI
 namespace ILCompiler.Reflection.ReadyToRun.Cdac
 {
     /// <summary>
-    /// x86 GC info (version 4 and later), decoded with the decoder shared with the cDAC.
+    /// x86 GC info, decoded with the decoder shared with the cDAC.
     /// </summary>
     public sealed class CdacX86GcInfo : BaseGcInfo
     {

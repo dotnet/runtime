@@ -12,8 +12,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 namespace ILCompiler.Reflection.ReadyToRun.Cdac
 {
     /// <summary>
-    /// GC info (version 4 and later) for the non-x86 GcInfoEncoder format, decoded with the
-    /// decoder shared with the cDAC.
+    /// GC info for the non-x86 GcInfoEncoder format, decoded with the decoder shared with the cDAC.
     /// </summary>
     public sealed class CdacGcInfo : BaseGcInfo
     {
@@ -27,6 +26,16 @@ namespace ILCompiler.Reflection.ReadyToRun.Cdac
         public uint? StackBaseRegister { get; private set; }
         public uint? SizeOfEditAndContinuePreservedArea { get; private set; }
         public uint SizeOfEditAndContinueFixedStackFrame { get; private set; }
+
+        /// <summary>
+        /// The encoded ReturnKind (GC info versions 2 and 3 only), or null.
+        /// </summary>
+        public ReturnKinds? ReturnKind { get; private set; }
+
+        /// <summary>
+        /// The security object stack slot (GC info before version 4 only), or null.
+        /// </summary>
+        public int? SecurityObjectStackSlot { get; private set; }
 
         /// <summary>
         /// Reverse P/Invoke frame stack slot as a byte offset, or null if the method has none.
@@ -56,7 +65,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Cdac
         }
 
         /// <summary>
-        /// Decodes GC info (version 4 or later) at <paramref name="offset"/> in <paramref name="imageReader"/>.
+        /// Decodes GC info at <paramref name="offset"/> in <paramref name="imageReader"/>.
         /// Returns a <see cref="CdacX86GcInfo"/> for x86 and a <see cref="CdacGcInfo"/> otherwise.
         /// </summary>
         public static BaseGcInfo Decode(NativeReader imageReader, int offset, Machine machine, int version)
@@ -90,6 +99,8 @@ namespace ILCompiler.Reflection.ReadyToRun.Cdac
                 SizeOfEditAndContinuePreservedArea = decoder.SizeOfEditAndContinuePreservedArea,
                 SizeOfEditAndContinueFixedStackFrame = decoder.SizeOfEditAndContinueFixedStackFrame,
                 ReversePInvokeFrameStackSlot = decoder.ReversePInvokeFrameStackSlot,
+                ReturnKind = (ReturnKinds?)decoder.ReturnKind,
+                SecurityObjectStackSlot = decoder.SecurityObjectStackSlot,
                 SafePoints = gcInfo.GetSafePoints(),
                 InterruptibleRanges = gcInfo.GetInterruptibleRanges(),
                 NumRegisters = decoder.NumRegisters,
@@ -119,7 +130,10 @@ namespace ILCompiler.Reflection.ReadyToRun.Cdac
             foreach (uint safePoint in result.SafePoints)
             {
                 List<BaseGcSlot> liveSlots = new List<BaseGcSlot>();
-                foreach (LiveSlot liveSlot in gcInfo.EnumerateLiveSlots(safePoint, options))
+                // Before v4, safe points are reported one byte past their encoding; like the native
+                // runtime, live slot lookup expects the encoded offset.
+                uint lookupOffset = version < 4 ? safePoint - 1 : safePoint;
+                foreach (LiveSlot liveSlot in gcInfo.EnumerateLiveSlots(lookupOffset, options))
                 {
                     liveSlots.Add(result.FindTrackedSlot(liveSlot.IsRegister, liveSlot.RegisterNumber, liveSlot.SpOffset, liveSlot.SpBase, liveSlot.GcFlags, numTracked));
                 }
@@ -205,11 +219,20 @@ namespace ILCompiler.Reflection.ReadyToRun.Cdac
             sb.AppendLine($"    ValidRangeStart: {ValidRangeStart}");
             sb.AppendLine($"    ValidRangeEnd: {ValidRangeEnd}");
 
+            if (ReturnKind is ReturnKinds returnKind)
+                sb.AppendLine($"    ReturnKind: {returnKind}");
+
+            if (SecurityObjectStackSlot is int securityObject)
+                sb.AppendLine($"    SecurityObjectStackSlot: caller.sp{securityObject:+#;-#;+0}");
+
             if (Header.GSCookie is SpecialSlot gsCookie)
             {
                 sb.AppendLine($"    GSCookieStackSlot: caller.sp{gsCookie.SpOffset:+#;-#;+0}");
                 sb.AppendLine($"    GS cookie valid range: [{Header.GSCookieValidRangeStart};{Header.GSCookieValidRangeEnd})");
             }
+
+            if (Header.PSPSym is SpecialSlot pspSym)
+                sb.AppendLine($"    PSPSymStackSlot: caller.sp{pspSym.SpOffset:+#;-#;+0}");
 
             if (Header.GenericsInstContext is SpecialSlot genericsContext)
             {
