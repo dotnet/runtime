@@ -17,15 +17,19 @@ elseif(NOT CLR_DOTNET_HOST_PATH)
     "build.sh/build.cmd or build-runtime.sh/.cmd, which pass it, or pass -skipdotnet to build-runtime.sh/.cmd.")
 endif()
 
-function(_get_event_data_command FLAVOR OUTPUT_DIR INCLUSION_LIST COMMAND_VAR)
+function(_get_event_data_provider FLAVOR PROVIDER_VAR)
   # eventtracebase.h picks the ETW implementation by host, which includes the Windows-hosted cross-OS DAC.
   if(CLR_CMAKE_HOST_WIN32)
-    set(provider etw)
+    set(${PROVIDER_VAR} etw PARENT_SCOPE)
   elseif(FEATURE_EVENTSOURCE_XPLAT AND FLAVOR STREQUAL "coreclr")
-    set(provider lttng)
+    set(${PROVIDER_VAR} lttng PARENT_SCOPE)
   else()
-    set(provider none)
+    set(${PROVIDER_VAR} none PARENT_SCOPE)
   endif()
+endfunction()
+
+function(_get_event_data_command FLAVOR OUTPUT_DIR INCLUSION_LIST COMMAND_VAR)
+  _get_event_data_provider(${FLAVOR} provider)
 
   # The Visual Studio environment sets Platform to the target architecture, which MSBuild would build the tool for.
   set(command "${CMAKE_COMMAND}" -E env --unset=Platform
@@ -38,38 +42,40 @@ function(_get_event_data_command FLAVOR OUTPUT_DIR INCLUSION_LIST COMMAND_VAR)
   set(${COMMAND_VAR} ${command} PARENT_SCOPE)
 endfunction()
 
-# get_event_data_outputs(FLAVOR <coreclr|nativeaot> OUTPUT_DIR <dir> [INCLUSION_LIST <file>] OUTPUTS <var>)
-# Sets <var> to the files generated for FLAVOR into OUTPUT_DIR.
+# get_event_data_outputs(FLAVOR <coreclr|nativeaot> OUTPUT_DIR <dir> OUTPUTS <var>)
+# Sets <var> to the files generated for FLAVOR into OUTPUT_DIR. The list is fixed here rather than queried from the
+# generator at configure time, which would cost a `dotnet run` per flavor; keep it in sync with EventDataGenerator.cs
+# (its --dry-run option prints what it writes).
 function(get_event_data_outputs)
-  cmake_parse_arguments(ARG "" "FLAVOR;OUTPUT_DIR;INCLUSION_LIST;OUTPUTS" "" ${ARGN})
+  cmake_parse_arguments(ARG "" "FLAVOR;OUTPUT_DIR;OUTPUTS" "" ${ARGN})
+  _get_event_data_provider(${ARG_FLAVOR} provider)
 
-  string(MAKE_C_IDENTIFIER "EVENT_DATA_OUTPUTS_${ARG_FLAVOR}_${ARG_OUTPUT_DIR}" cache_property)
-  get_property(outputs GLOBAL PROPERTY ${cache_property})
-  if(NOT outputs)
-    _get_event_data_command(${ARG_FLAVOR} "${ARG_OUTPUT_DIR}" "${ARG_INCLUSION_LIST}" command)
-    execute_process(
-      COMMAND ${command} --dry-run
-      RESULT_VARIABLE result
-      OUTPUT_VARIABLE dry_run_output
-      ERROR_VARIABLE dry_run_errors)
-    if(NOT result EQUAL 0)
-      message(FATAL_ERROR "Failed to run ${EVENT_DATA_GENERATOR}: ${dry_run_output}${dry_run_errors}")
-    endif()
-
-    # Only keep the listed paths; the first run may also print build output.
-    string(REPLACE "\n" ";" lines "${dry_run_output}")
-    set(outputs "")
-    foreach(line IN LISTS lines)
-      string(STRIP "${line}" line)
-      string(FIND "${line}" "${ARG_OUTPUT_DIR}/" position)
-      if(position EQUAL 0)
-        list(APPEND outputs "${line}")
-      endif()
-    endforeach()
-
-    set_property(GLOBAL PROPERTY ${cache_property} "${outputs}")
+  # One file set per provider in ClrEtwAll.man; NativeAOT's inclusion list leaves out DotNETRuntimeStress.
+  set(providers dotnetruntime dotnetruntimerundown dotnetruntimeprivate)
+  if(ARG_FLAVOR STREQUAL "coreclr")
+    list(APPEND providers dotnetruntimestress)
   endif()
 
+  set(files etmdummy.h clretwallmain.h clreventpipewriteevents.h eventpipe/eventpipehelpers.cpp)
+  if(ARG_FLAVOR STREQUAL "nativeaot")
+    list(APPEND files clretwallmain.cpp disabledclretwallmain.cpp)
+  elseif(NOT provider STREQUAL "etw")
+    list(APPEND files clrproviders.h)
+  endif()
+  if(ARG_FLAVOR STREQUAL "coreclr" OR provider STREQUAL "etw")
+    list(APPEND files clrxplatevents.h)
+  endif()
+  foreach(name IN LISTS providers)
+    list(APPEND files eventpipe/${name}.cpp)
+    if(provider STREQUAL "lttng")
+      list(APPEND files lttng/tp${name}.h lttng/eventprov${name}.cpp lttng/traceptprov${name}.cpp)
+    endif()
+  endforeach()
+  if(provider STREQUAL "etw")
+    list(APPEND files etw/ClrEtwAll.h etw/ClrEtwAll.rc etw/ClrEtwAll_MSG00001.bin etw/ClrEtwAllTEMP.bin etw/etwmacros.h)
+  endif()
+
+  list(TRANSFORM files PREPEND "${ARG_OUTPUT_DIR}/" OUTPUT_VARIABLE outputs)
   set_source_files_properties(${outputs} PROPERTIES GENERATED TRUE)
   set(${ARG_OUTPUTS} ${outputs} PARENT_SCOPE)
 endfunction()
@@ -79,7 +85,7 @@ endfunction()
 function(add_event_data_target TARGET)
   cmake_parse_arguments(ARG "" "FLAVOR;OUTPUT_DIR;INCLUSION_LIST;OUTPUTS" "" ${ARGN})
 
-  get_event_data_outputs(FLAVOR ${ARG_FLAVOR} OUTPUT_DIR "${ARG_OUTPUT_DIR}" INCLUSION_LIST "${ARG_INCLUSION_LIST}" OUTPUTS outputs)
+  get_event_data_outputs(FLAVOR ${ARG_FLAVOR} OUTPUT_DIR "${ARG_OUTPUT_DIR}" OUTPUTS outputs)
   _get_event_data_command(${ARG_FLAVOR} "${ARG_OUTPUT_DIR}" "${ARG_INCLUSION_LIST}" command)
 
   # Unchanged files are not rewritten, so track the run with a timestamp to avoid rerunning it on every build.

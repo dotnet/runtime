@@ -5,8 +5,9 @@
 // providers) for CoreCLR and NativeAOT from ClrEtwAll.man.
 
 #:package System.CommandLine@$(SystemCommandLineVersion)
+#:property Configuration=Release
+#:property TargetFramework=$(BundledNETCoreAppTargetFramework)
 #:property PublishAot=false
-#:property TargetFramework=$(NetCoreAppToolCurrent)
 
 using System.CommandLine;
 using System.Diagnostics;

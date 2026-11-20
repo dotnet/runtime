@@ -260,11 +260,11 @@ if(CLR_CMAKE_TARGET_LINUX)
       pthread
       rt
     )
-  else(NOT CLR_CMAKE_TARGET_ANDROID)
+  else()
     target_link_libraries(coreclrpal
       PUBLIC
       ${ANDROID_GLOB})
-  endif(NOT CLR_CMAKE_TARGET_ANDROID)
+  endif()
 
   target_link_libraries(coreclrpal
     PUBLIC
