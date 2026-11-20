@@ -20,7 +20,6 @@ namespace
 }
 
 #if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
-extern void ResetReverseThunkCaches();
 static bool s_deferredR2RConfigured = false;
 static bool s_deferredR2RAttached = false;
 static SArray<MethodDesc*> s_deferredR2RMethods;
@@ -98,7 +97,6 @@ static void AttachDeferredR2R()
             CollectPreparedDeferredR2RMethods(assembly->GetModule());
     }
     ResolvePendingPortableEntryPointThunksGlobal();
-    ResetReverseThunkCaches();
     s_deferredR2RAttached = true;
 }
 #endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
@@ -171,7 +169,6 @@ extern "C" int coreclr_wasm_activate_deferred_r2r(int batchSize, uint32_t* resul
         result[0] = s_deferredR2RMethods.GetCount() - s_deferredR2RMethodIndex;
         result[1] = published;
         result[2] = patches;
-        ResetReverseThunkCaches();
         if (result[0] == 0)
         {
             s_deferredR2RMethods.Clear();
@@ -192,6 +189,20 @@ extern "C" int coreclr_wasm_activate_deferred_r2r(int batchSize, uint32_t* resul
 #define WASM_STRINGIFY_HELPER(value) #value
 #define WASM_STRINGIFY(value) WASM_STRINGIFY_HELPER(value)
 
+#ifdef TARGET_BROWSER
+// emscripten libc before 6.0.10 implements overlapping memmove and memset with scalar loops.
+// Compiling these wrappers with -mbulk-memory lowers the builtins to memory.copy and memory.fill.
+// TODO: Remove once emsdk is 6.0.10 or later (https://github.com/dotnet/runtime/issues/136012).
+extern "C" void* QCall_memmove(void* dest, const void* src, size_t len)
+{
+    return __builtin_memmove(dest, src, len);
+}
+
+extern "C" void* QCall_memset(void* dest, int value, size_t len)
+{
+    return __builtin_memset(dest, value, len);
+}
+#endif // TARGET_BROWSER
 
 extern "C" void STDCALL CallCountingStubCode()
 {
@@ -2113,28 +2124,30 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
     }
     else
     {
-        uint32_t functionLocalVirtualIP = (*(uint32_t*)(fp + WASM_STACKFRAME_VIRTUALIP_OFFSET)) * 2;
         TADDR establishingFrame = GetWasmEstablishingFramePointer(fp);
         UINT_PTR identity = *reinterpret_cast<UINT_PTR*>(establishingFrame + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET);
         TADDR baseVirtualIP;
+        bool hasSingleVirtualIP;
         if ((identity & 1) == 0)
         {
             _ASSERTE(identity != STACK_WALK_INDIRECT_TO_FRAMEPOINTER);
             DWORD functionIndex = static_cast<DWORD>(reinterpret_cast<UINT_PTR>(PortableEntryPoint::GetActualCode(identity)));
-            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(functionIndex);
+            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(functionIndex, &hasSingleVirtualIP);
         }
         else if (static_cast<INT_PTR>(identity) < 0)
         {
             DWORD functionIndex = static_cast<DWORD>((~identity) >> 1);
-            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(functionIndex);
+            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(functionIndex, &hasSingleVirtualIP);
         }
         else
         {
             _ASSERTE(identity != TERMINATE_R2R_STACK_WALK);
-            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(static_cast<DWORD>(identity >> 1));
+            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(static_cast<DWORD>(identity >> 1), &hasSingleVirtualIP);
         }
         if (baseVirtualIP == 0)
             return 0;
+        uint32_t functionLocalVirtualIP = hasSingleVirtualIP ? 2 :
+            (*reinterpret_cast<uint32_t*>(fp + WASM_STACKFRAME_VIRTUALIP_OFFSET)) * 2;
         return baseVirtualIP + functionLocalVirtualIP;
     }
 }

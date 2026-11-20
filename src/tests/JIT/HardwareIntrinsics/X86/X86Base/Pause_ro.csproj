@@ -2,10 +2,8 @@
   <PropertyGroup>
     <AssemblyName>X86_Pause_ro</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-
-    <!-- https://github.com/dotnet/runtime/issues/73454;https://github.com/dotnet/runtime/pull/61707#issuecomment-973122341 -->
-    <MonoAotIncompatible>true</MonoAotIncompatible>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>  </PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
     <Optimize>True</Optimize>

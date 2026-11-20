@@ -94,6 +94,8 @@ public class GenerateWasmBootJson : Task
 
     public bool FingerprintAssets { get; set; }
 
+    public string? EnableIntegrityCheck { get; set; }
+
     public string ApplicationEnvironment { get; set; }
 
     public string MergeWith { get; set; }
@@ -143,6 +145,15 @@ public class GenerateWasmBootJson : Task
         {
             resources = new ResourcesData(),
         };
+
+        if (!string.IsNullOrEmpty(EnableIntegrityCheck))
+        {
+            result.disableIntegrityCheck = !bool.Parse(EnableIntegrityCheck);
+        }
+        else if (!isMonoRuntime && IsTargeting120OrLater())
+        {
+            result.disableIntegrityCheck = true;
+        }
 
         if (IsTargeting100OrLater())
         {

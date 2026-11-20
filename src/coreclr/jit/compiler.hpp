@@ -1536,7 +1536,7 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
-    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper, IsNativeAot()))
     {
         result->gtFlags |= GTF_EXCEPT;
 
@@ -1599,7 +1599,7 @@ inline GenTreeCall* Compiler::gtNewVirtualFunctionLookupHelperCallNode(
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
-    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper, IsNativeAot()))
     {
         result->gtFlags |= GTF_EXCEPT;
 
@@ -4431,6 +4431,16 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             RETURN_IF_ABORT(visitor(&cond->gtOp1));
             return visitor(&cond->gtOp2);
         }
+
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+        {
+            GenTreeConditional* const select = this->AsConditional();
+            RETURN_IF_ABORT(visitor(&select->gtOp1));
+            RETURN_IF_ABORT(visitor(&select->gtOp2));
+            return visitor(&select->gtCond);
+        }
+#endif
 
         default:
         {

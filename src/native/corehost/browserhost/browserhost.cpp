@@ -44,7 +44,6 @@ extern "C"
     pal::hresult_t coreclr_set_error_writer(
         coreclr_error_writer_callback_fn error_writer);
 
-    void coreclr_wasm_set_relaxed_simd_supported();
     int coreclr_wasm_defer_r2r();
     int coreclr_wasm_activate_deferred_r2r(int batchSize, uint32_t* result);
 
@@ -120,16 +119,6 @@ extern "C" int BrowserHost_InitializeDotnet(int propertiesCount, const char** pr
         if (result < 0)
             return result;
     }
-    for (int i = 0; i < propertiesCount; i++)
-    {
-        if ((strcmp(propertyKeys[i], "System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported") == 0) &&
-            (strcmp(propertyValues[i], "true") == 0))
-        {
-            coreclr_wasm_set_relaxed_simd_supported();
-            break;
-        }
-    }
-
     coreclr_set_error_writer(log_error_info);
 
     int retval = coreclr_initialize("/managed", "corehost", propertiesCount, propertyKeys, propertyValues, &CurrentClrInstance, &CurrentAppDomainId);

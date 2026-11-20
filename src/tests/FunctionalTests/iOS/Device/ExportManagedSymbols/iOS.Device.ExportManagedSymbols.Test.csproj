@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="MonoForceInterpreter">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
@@ -10,12 +10,6 @@
     <UseConsoleUITemplate>true</UseConsoleUITemplate>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
     <NativeMainSource>$(MSBuildProjectDirectory)/main.m</NativeMainSource>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
-    <MonoEnableLLVM>true</MonoEnableLLVM>
-    <MainLibraryFileName>iOS.Device.ExportManagedSymbols.Test.dll</MainLibraryFileName>
-    <MonoForceInterpreter>false</MonoForceInterpreter>
   </PropertyGroup>
 
   <ItemGroup>

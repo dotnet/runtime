@@ -16,14 +16,16 @@ try {
     let releaseR2R;
     const r2rGate = new Promise(resolve => { releaseR2R = resolve; });
     const lateNames = new Set();
+    let disableIntegrityCheck = false;
     const runtime = await dotnet
         .withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, forwardConsole: true, logExitCode: true })
         .withDiagnosticTracing(true)
         .withConfigLoaded(config => {
+            disableIntegrityCheck = !!config.disableIntegrityCheck;
             for (const asset of config.resources.r2rAssembly || []) lateNames.add(asset.name);
         })
         .withResourceLoader((type, name, uri, integrity) =>
-            lateNames.has(name) ? r2rGate.then(() => fetch(uri, { integrity })) : uri)
+            lateNames.has(name) ? r2rGate.then(() => fetch(uri, disableIntegrityCheck ? {} : { integrity })) : uri)
         .create();
     const { setModuleImports, getAssemblyExports, INTERNAL, getHeapU32 } = runtime;
 

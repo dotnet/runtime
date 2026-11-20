@@ -21,6 +21,17 @@ namespace System.Diagnostics
             return Interop.libproc.proc_pidpath(processId);
         }
 
+        /// <summary>Gets process infos for each process on the local machine.</summary>
+        /// <param name="builder">The builder to add found process infos to.</param>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
+        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter) =>
+            GetProcessInfosBsd(ref builder, processNameFilter);
+
+        /// <summary>Gets an array of module infos for the specified process.</summary>
+        /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
+        /// <returns>The array of modules.</returns>
+        internal static ProcessModuleCollection GetModules(int processId) => GetModulesBsd(processId);
+
         internal static string? GetProcessName(int processId, string _ /* machineName */, bool __ /* isRemoteMachine */, ref ProcessInfo? processInfo)
         {
             if (processInfo is not null)

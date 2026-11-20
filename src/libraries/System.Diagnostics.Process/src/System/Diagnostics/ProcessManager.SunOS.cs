@@ -10,27 +10,10 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
-        /// <summary>Gets process infos for each process on the local machine.</summary>
-        /// <param name="builder">The builder to add found process infos to.</param>
-        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
-        {
-            // Iterate through all process IDs to load information about each process
-            IEnumerable<int> pids = EnumerateProcessIds();
-            foreach (int pid in pids)
-            {
-                ProcessInfo? pi = CreateProcessInfo(pid, processNameFilter);
-                if (pi != null)
-                {
-                    builder.Add(pi);
-                }
-            }
-        }
-
         /// <summary>Gets an array of module infos for the specified process.</summary>
         /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
         /// <returns>The array of modules.</returns>
-        internal static ProcessModuleCollection GetModules(int processId)
+        private static ProcessModuleCollection GetModulesSunOS(int processId)
         {
 
             // Negative PIDs aren't valid
@@ -58,21 +41,10 @@ namespace System.Diagnostics
             return new ProcessModuleCollection(0);
         }
 
-        internal static string? GetProcessName(int processId, string _ /* machineName */, bool __ /* isRemoteMachine */, ref ProcessInfo? processInfo)
-        {
-            if (processInfo is not null)
-            {
-                return processInfo.ProcessName;
-            }
-
-            processInfo = CreateProcessInfo(processId);
-            return processInfo?.ProcessName;
-        }
-
         /// <summary>
         /// Creates a ProcessInfo from the specified process ID.
         /// </summary>
-        internal static ProcessInfo? CreateProcessInfo(int pid, string? processNameFilter = null)
+        private static ProcessInfo? CreateProcessInfoSunOS(int pid, string? processNameFilter)
         {
             // Negative PIDs aren't valid
             ArgumentOutOfRangeException.ThrowIfNegative(pid);
@@ -91,28 +63,6 @@ namespace System.Diagnostics
             }
 
             return CreateProcessInfo(ref processInfo, ref argString);
-        }
-
-        // ----------------------------------
-        // ---- Unix PAL layer ends here ----
-        // ----------------------------------
-
-        /// <summary>Enumerates the IDs of all processes on the current machine.</summary>
-        internal static IEnumerable<int> EnumerateProcessIds()
-        {
-            // Parse /proc for any directory that's named with a number.  Each such
-            // directory represents a process.
-            const string dir = "/proc";
-            foreach (string procDir in Directory.EnumerateDirectories(dir))
-            {
-                string dirName = Path.GetFileName(procDir);
-                int pid;
-                if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out pid))
-                {
-                    Debug.Assert(pid >= 0);
-                    yield return pid;
-                }
-            }
         }
 
         /// <summary>Enumerates the IDs of all threads in the specified process.</summary>
@@ -209,7 +159,7 @@ namespace System.Diagnostics
                 _basePriority = threadInfo.Priority,
                 _currentPriority = threadInfo.Priority,
                 _startAddress = null,
-                _threadState = ProcFsStateToThreadState(threadInfo.StatusCode),
+                _threadState = ProcFsStateToThreadStateSunOS(threadInfo.StatusCode),
                 _threadWaitReason = ThreadWaitReason.Unknown
             };
 
@@ -219,7 +169,7 @@ namespace System.Diagnostics
         /// <summary>Gets a ThreadState to represent the value returned from the status field of /proc/pid/stat.</summary>
         /// <param name="c">The status field value.</param>
         /// <returns></returns>
-        private static ThreadState ProcFsStateToThreadState(char c)
+        private static ThreadState ProcFsStateToThreadStateSunOS(char c)
         {
             // Information on these in fs/proc/array.c
             // `man proc` does not document them all

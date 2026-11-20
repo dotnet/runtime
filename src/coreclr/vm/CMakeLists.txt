@@ -115,6 +115,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     onstackreplacement.cpp
     peassembly.cpp
     peimage.cpp
+    perfjitdump.cpp
     perfmap.cpp
     pgo.cpp
     precode_portable.cpp
@@ -220,6 +221,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     peimage.inl
     peimagelayout.h
     peimagelayout.inl
+    perfjitdump.h
     perfmap.h
     pgo.h
     precode_portable.hpp
@@ -317,6 +319,7 @@ set(VM_SOURCES_WKS
     CachedInterfaceDispatch_Coreclr.cpp
     ${RUNTIME_DIR}/MathHelpers.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
+    ${RUNTIME_DIR}/ProcessEnvironment.cpp
     cachelinealloc.cpp
     callconvbuilder.cpp
     callhelpers.cpp
@@ -376,10 +379,10 @@ set(VM_SOURCES_WKS
     profilinghelper.cpp
     proftoeeinterfaceimpl.cpp
     qcall.cpp
-    qcallentrypoints.cpp
     reflectclasswriter.cpp
     reflectioninvocation.cpp
     runtimehandles.cpp
+    runtimehelpers.cpp
     simplerwlock.cpp
     stackingallocator.cpp
     stringliteralmap.cpp

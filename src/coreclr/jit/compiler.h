@@ -584,6 +584,10 @@ public:
                                           // in earlier phase and the information might not be appropriate
                                           // in LSRA.
 
+#ifdef TARGET_WASM
+    unsigned char lvWasmGCWriteThru : 1; // GC register candidate with an up-to-date pinned shadow-stack home.
+#endif                                   // TARGET_WASM
+
     unsigned char lvHasExceptionalUsesHint : 1; // hint for CopyProp
 
 #ifndef TARGET_64BIT
@@ -1243,10 +1247,16 @@ public:
     //-----------------------------------------------------------------------------
     //  IsAlwaysAliveInMemory: Determines if this variable's value is always
     //     up-to-date on stack. This is possible if this is an EH-var or
-    //     we decided to spill after single-def.
+    //     we decided to spill after single-def, or it is a Wasm GC write-through local.
     //
     bool IsAlwaysAliveInMemory() const
     {
+#ifdef TARGET_WASM
+        if (lvWasmGCWriteThru)
+        {
+            return true;
+        }
+#endif // TARGET_WASM
         return IsLiveInOutOfHandler() || lvSpillAtSingleDef;
     }
 
@@ -4444,6 +4454,7 @@ public:
     };
     jitstd::vector<WasmSpillSlot>* m_wasmSpillSlots = nullptr;
     BitVec* m_wasmGCRefCandidates = nullptr;
+    ArrayStack<BasicBlock*>* m_wasmLocalCopyBlocks = nullptr; // Blocks with local-to-local copies, set by lowering
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -5700,6 +5711,7 @@ public:
     bool impMatchAsyncVersionTailCall(const BYTE* codeAddr, const BYTE* codeEndp, int*        prefixFlags, int*        numBytesMatched);
     bool impMatchStlocLdloca(const BYTE** codeAddr, const BYTE* codeEndp, unsigned* lclNum);
 
+    bool impIsCovariantAwait(CorInfoType asyncVariantRetType, IL_OFFSET awaitOffset);
     bool impCheckOptimizeAwait(IL_OFFSET awaitOffset);
 
     GenTree* impCastClassOrIsInstToTree(
@@ -5922,6 +5934,7 @@ private:
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
+    void impDiscardTopOfStack();
     bool impWrapTopOfStackInAwait();
     bool impFoldAwaitedTopOfStack();
     void impPoisonImplicitByrefsBeforeReturn();
@@ -7063,6 +7076,8 @@ public:
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmRepairTryEntries();
     PhaseStatus fgWasmVirtualIP();
+    PhaseStatus fgWasmForwardLocalCopies();
+    bool        fgWasmMayEmitCall();
     PhaseStatus fgWasmFindGCRefCandidates();
     PhaseStatus fgWasmSpillRefs();
     PhaseStatus fgWasmProfInstrument();
@@ -7788,8 +7803,8 @@ protected:
     // Return true if the tree looks profitable to hoist out of "loop"
     bool optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt, bool defExecuted);
 
-    // Performs the hoisting "tree" into the PreHeader for "loop"
-    void optHoistCandidate(GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt, bool defExecuted);
+    // Returns true if "tree" was hoisted or its value was already hoisted in "loop".
+    bool optHoistCandidate(GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt, bool defExecuted);
 
     // Note the new SSA uses in tree
     void optRecordSsaUses(GenTree* tree, BasicBlock* block);
@@ -8070,6 +8085,7 @@ protected:
     void optValnumCSE_SetUpAsyncByrefKills();
     void optValnumCSE_DataFlow();
     void optValnumCSE_Availability();
+    ValueNum optValnumCSE_ImpliedExcSet(GenTree* tree);
     void optValnumCSE_Heuristic(CSE_HeuristicCommon* heuristic);
     GenTree* optExtractSideEffectsForCSE(GenTree* tree);
 

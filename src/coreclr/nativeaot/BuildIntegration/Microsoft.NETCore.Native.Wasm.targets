@@ -27,6 +27,11 @@
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
     </ItemGroup>
 
+    <!-- WIT worlds for framework libraries that import WASI interfaces directly. Unused imports are dropped from the component. -->
+    <ItemGroup>
+      <NetCoreAppComponentType Include="WasiHttpWorld_component_type" />
+    </ItemGroup>
+
     <ItemGroup>
       <DirectPInvoke Include="@(NetCoreAppNativeLibrary)" />
     </ItemGroup>
@@ -52,6 +57,7 @@
       <LinkerArg Include="--sysroot=&quot;$(WASI_SDK_PATH)/share/wasi-sysroot&quot;" />
       <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
       <LinkerArg Include="-Wl,-z,stack-size=$(IlcDefaultStackSize)" />
+      <LinkerArg Include="@(NetCoreAppComponentType->'-Wl,--component-type,&quot;$(IlcFrameworkNativePath)%(Identity).wit&quot;')" />
       <LinkerArg Include="-lwasi-emulated-process-clocks;-lwasi-emulated-signal;-lwasi-emulated-mman;-lwasi-emulated-getpid" />
       <LinkerArg Include="-lstdc++" Condition="'$(LinkStandardCPlusPlusLibrary)' == 'true'" />
       <LinkerArg Include="-g" Condition="'$(NativeDebugSymbols)' == 'true'" />

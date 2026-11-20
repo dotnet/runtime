@@ -20,20 +20,15 @@ class CustomAssemblyBinder;
 class AssemblyNative
 {
 public:
-
     static Assembly* LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage, bool excludeAppPaths = false);
-
-    // static FCALLs
-    FCDECL0(static FC_BOOL_RET, IsTracingEnabled);
-
-    //
-    // instance FCALLs
-    //
-
-    FCDECL1(static FC_BOOL_RET, GetIsDynamic, Assembly* pAssembly);
-
-    FCDECL1(static FC_BOOL_RET, GetIsCollectible, Assembly* pAssembly);
 };
+
+extern "C"
+{
+    FCDECL0(FC_BOOL_RET, AssemblyLoadContext_IsTracingEnabled);
+    FCDECL1(FC_BOOL_RET, RuntimeAssembly_GetIsDynamic, Assembly* pAssembly);
+    FCDECL1(FC_BOOL_RET, RuntimeAssembly_GetIsCollectible, Assembly* pAssembly);
+}
 
 extern "C" uint32_t QCALLTYPE AssemblyNative_GetAssemblyCount();
 
@@ -41,6 +36,8 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnS
 
 
 extern "C" void QCALLTYPE AssemblyNative_GetExecutingAssembly(QCall::StackCrawlMarkHandle stackMark, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError);
+
+extern "C" void QCALLTYPE AssemblyNative_GetAssemblyFromHandle(Assembly* pAssembly, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError);
 
 
 extern "C" void QCALLTYPE AssemblyNative_GetLocale(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError);

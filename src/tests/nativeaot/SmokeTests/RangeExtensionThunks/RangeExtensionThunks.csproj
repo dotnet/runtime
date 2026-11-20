@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+    <!-- The linker places range extension thunks between code sections where the compiler splits them: ELF and COFF on arm64 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'arm64' or ('$(TargetOS)' != 'linux' and '$(TargetOS)' != 'windows')">true</CLRTestTargetUnsupported>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StripSymbols>false</StripSymbols>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <IlcOrderFile>order.txt</IlcOrderFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 39366 method bodies aligned to 4 KB, the most link.exe accepts without /ALIGN, span more than the 128 MB reach of a direct branch -->
+    <IlcArg Include="--function-alignment:4096" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>
