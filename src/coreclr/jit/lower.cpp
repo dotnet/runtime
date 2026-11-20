@@ -7759,7 +7759,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
     // TODO-SVE: Create an addressable node containing an index scaled by VL or PL
-    if (parent->TypeIs(TYP_MASK, TYP_SIMD))
+    if (varTypeHasUnknownSize(parent))
     {
         return false;
     }
@@ -10609,6 +10609,12 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
         return false;
     }
 
+    // TODO-SVE: Implement Load/Store Coalescing.
+    if (!ind->ValueSize().IsExact())
+    {
+        return false;
+    }
+
     const bool isStore = ind->OperIs(GT_STOREIND, GT_STORE_BLK);
     const bool isLoad  = ind->OperIs(GT_IND);
 
@@ -10727,6 +10733,12 @@ bool Lowering::GetStoreCoalescingData(GenTree* store, LoadStoreCoalescingData* d
         return false;
     }
 
+    // TODO-SVE: Implement Load/Store Coalescing.
+    if (m_compiler->lvaIsUnknownSizeLocal(lclStore->GetLclNum()))
+    {
+        return false;
+    }
+
     bool               isClosedRange = false;
     LIR::ReadOnlyRange range         = BlockRange().GetTreeRange(store, &isClosedRange);
     if (!isClosedRange)
@@ -10734,9 +10746,18 @@ bool Lowering::GetStoreCoalescingData(GenTree* store, LoadStoreCoalescingData* d
         return false;
     }
 
-    LclVarDsc* varDsc      = m_compiler->lvaGetDesc(lclStore);
+    LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclStore);
+
+    // A field access may have an unknown size even when its containing local has an exact size.
+    ValueSize accessSize =
+        store->OperIs(GT_STORE_LCL_FLD) ? lclStore->AsLclFld()->GetValueSize() : varDsc->lvValueSize();
+    if (!accessSize.IsExact())
+    {
+        return false;
+    }
+
     data->targetType       = store->TypeGet();
-    data->accessSize       = store->OperIs(GT_STORE_LCL_FLD) ? lclStore->AsLclFld()->GetSize() : varDsc->lvExactSize();
+    data->accessSize       = accessSize.GetExact();
     data->value            = lclStore->Data();
     data->offset           = lclStore->GetLclOffs();
     data->lclNum           = lclStore->GetLclNum();
