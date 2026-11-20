@@ -137,12 +137,16 @@ namespace System.IO.Ports
 
         private static string[] GetPortNames_OpenBSD()
         {
-            HashSet<string>? bootDevices = GetBootDevices();
+            HashSet<string>? bootDevices = GetBootDevices(out string? serialConsoleDriver);
+
+            // A serial console that isn't com(4), e.g. pluart(4) on arm64, takes over com(4)'s device nodes,
+            // so /dev/tty00 is pluart0 then.
+            string comDriver = serialConsoleDriver ?? "com";
             List<string> ports = [];
 
             foreach (string path in Directory.EnumerateFiles("/dev"))
             {
-                if (GetOpenBSDSerialDevice(Path.GetFileName(path.AsSpan())) is string device && IsAttached(device, bootDevices))
+                if (GetOpenBSDSerialDevice(Path.GetFileName(path.AsSpan()), comDriver) is string device && IsAttached(device, bootDevices))
                 {
                     ports.Add(path);
                 }
@@ -151,7 +155,7 @@ namespace System.IO.Ports
             return ports.ToArray();
 
             // Per MAKEDEV, e.g. tty00 and tty0a (com, hex units), ttyc0 (cy), ttyU0 (ucom) and ttyVI00 (viocon), with cua* dial-out.
-            static string? GetOpenBSDSerialDevice(ReadOnlySpan<char> name)
+            static string? GetOpenBSDSerialDevice(ReadOnlySpan<char> name, string comDriver)
             {
                 bool dialIn = name.StartsWith("tty", StringComparison.Ordinal);
                 if (!dialIn && !name.StartsWith("cua", StringComparison.Ordinal))
@@ -162,7 +166,7 @@ namespace System.IO.Ports
                 ReadOnlySpan<char> unit = name.Slice(3);
                 if (unit.Length == 2 && unit[0] is >= '0' and <= '7' && char.IsAsciiHexDigitLower(unit[1]))
                 {
-                    return "com" + int.Parse(unit, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
+                    return comDriver + int.Parse(unit, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
                 }
 
                 return HasUnit(unit, "c") ? "cy"
@@ -174,7 +178,7 @@ namespace System.IO.Ports
 
         private static string[] GetPortNames_NetBSD()
         {
-            HashSet<string>? bootDevices = GetBootDevices();
+            HashSet<string>? bootDevices = GetBootDevices(out _);
             List<string> ports = [];
 
             foreach (string path in Directory.EnumerateFiles("/dev"))
@@ -230,11 +234,13 @@ namespace System.IO.Ports
 
         // OpenBSD and NetBSD have a static /dev with nodes for every unit MAKEDEV knows about. Fixed serial ports only
         // attach at boot, so the dmesg copy saved at boot tells which of them exist (OpenBSD's fw_update reads it too).
-        // Returns the attached devices, both as "com0" and as the driver "com", or null if that can't be determined.
-        private static HashSet<string>? GetBootDevices()
+        // Returns the attached devices, both as "com0" and as the driver "com", or null if that can't be determined,
+        // plus the driver of the serial console, if there is one.
+        private static HashSet<string>? GetBootDevices(out string? serialConsoleDriver)
         {
             HashSet<string> devices = [];
             bool sawBootBanner = false;
+            serialConsoleDriver = null;
 
             try
             {
@@ -251,6 +257,7 @@ namespace System.IO.Ports
                     if (message.StartsWith("OpenBSD ", StringComparison.Ordinal) || message.StartsWith("NetBSD ", StringComparison.Ordinal))
                     {
                         devices.Clear();
+                        serialConsoleDriver = null;
                         sawBootBanner = true;
                         continue;
                     }
@@ -262,6 +269,13 @@ namespace System.IO.Ports
                         ReadOnlySpan<char> device = message.Slice(0, at);
                         devices.Add(device.ToString());
                         devices.Add(device.TrimEnd("0123456789").ToString());
+                    }
+
+                    // e.g. "pluart0: console" or "com0: console", but not "wsdisplay0 at vga1 mux 1: console (80x25, vt100 emulation)"
+                    int end = message.IndexOfAny(' ', ':');
+                    if (end > 0 && message.EndsWith(": console", StringComparison.Ordinal))
+                    {
+                        serialConsoleDriver = message.Slice(0, end).TrimEnd("0123456789").ToString();
                     }
                 }
             }
