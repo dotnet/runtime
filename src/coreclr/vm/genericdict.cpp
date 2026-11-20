@@ -972,7 +972,7 @@ Dictionary::PopulateEntry(
                 pOwnerMT = ownerType.GetMethodTable();
                 _ASSERTE(pOwnerMT != NULL);
 
-                if (kind == InterfaceMethodEntrySlot)
+                if (kind == InterfaceMethodEntrySlot || kind == DeclaringTypeHandleFromMethodSlot)
                 {
                     uint32_t interfaceIndex;
                     IfFailThrow(ptr.GetData(&interfaceIndex));
@@ -1035,8 +1035,6 @@ Dictionary::PopulateEntry(
 
             if (fDeclaringTypeHandleFromMethod)
             {
-                _ASSERTE(isReadyToRunModule);
-
                 // The signature describes a method; the value of the slot is the type which declares that method.
                 // The method may be declared on a base type of the type referenced by the token, and the MethodDesc
                 // found for it may belong to a canonical instantiation of that base type, so walk the parent chain of

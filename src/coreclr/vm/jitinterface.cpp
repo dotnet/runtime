@@ -3215,6 +3215,7 @@ NoSpecialCase:
     case MethodDescSlot:
     case MethodEntrySlot:
     case InterfaceMethodEntrySlot:
+    case DeclaringTypeHandleFromMethodSlot:
     case DispatchStubAddrSlot:
         {
             // Encode containing type
@@ -3229,7 +3230,7 @@ NoSpecialCase:
                 sigBuilder.AppendPointer(pResolvedToken->hClass);
             }
 
-            if (entryKind == InterfaceMethodEntrySlot)
+            if (entryKind == InterfaceMethodEntrySlot || entryKind == DeclaringTypeHandleFromMethodSlot)
             {
                 _ASSERTE(interfaceIndex != (DWORD)-1);
                 sigBuilder.AppendData(interfaceIndex);
@@ -4906,6 +4907,12 @@ void CEEInfo::getCallInfo(
 {
     STANDARD_VM_CONTRACT;
 
+    // Declared out here so they remain visible after EE_TO_JIT_TRANSITION, where the
+    // instParam lookup is finalized.
+    bool canPassDeclaringTypeArg = false;
+    MethodDesc* pDeclaringTypeArgMethod = NULL;
+    DWORD declaringTypeInterfaceIndex = (DWORD)-1;
+
     JIT_TO_EE_TRANSITION();
 
     _ASSERTE(CheckPointer(pResult));
@@ -5176,12 +5183,45 @@ void CEEInfo::getCallInfo(
                                     !pTargetMD->HasMethodInstantiation() && exactType.IsValueType() &&
                                     exactType == constrainedType;
 
+        // A resolved static virtual default interface method needs the declaring interface's
+        // context, not the constrained value type's. prepareCallLookups looks that up from the
+        // resolved method, so the call stays direct and inlinable with the context deferred.
+        canPassDeclaringTypeArg = allowInstParam && fResolvedConstraint && !fForceUseRuntimeLookup &&
+                                  !pTargetMD->HasMethodInstantiation() && IsMdStatic(dwTargetMethodAttrs) &&
+                                  pTargetMD->IsInterface() && constrainedType.IsValueType();
+        if (canPassDeclaringTypeArg)
+        {
+            // Find the unique interface slot the default implementation resolves through.
+            // prepareCallLookups fetches the declaring type through that slot at runtime.
+            MethodTable::InterfaceMapIterator it = constrainedType.GetMethodTable()->IterateInterfaceMap();
+            while (it.Next())
+            {
+                if (!it.HasSameTypeDefAs(pTargetMD->GetMethodTable()))
+                    continue;
+                if (declaringTypeInterfaceIndex != (DWORD)-1)
+                {
+                    declaringTypeInterfaceIndex = (DWORD)-1;
+                    break;
+                }
+                declaringTypeInterfaceIndex = it.GetIndex();
+            }
+
+            if (declaringTypeInterfaceIndex == (DWORD)-1)
+            {
+                canPassDeclaringTypeArg = false;
+            }
+            else
+            {
+                pDeclaringTypeArgMethod = pTargetMD;
+            }
+        }
+
         // If the target method is resolved via constrained static virtual dispatch and needs a
         // context other than the constrained type, force the call down the CORINFO_CALL_CODE_POINTER
         // path and look the correct instantiating stub up at runtime. This should only happen for
         // shared generic code calling a shared generic implementation method, which should be rare.
         if (IsMdStatic(dwTargetMethodAttrs) && constrainedType != NULL && pResult->exactContextNeedsRuntimeLookup &&
-            !canPassConstrainedTypeArg)
+            !canPassConstrainedTypeArg && !canPassDeclaringTypeArg)
         {
             allowInstParam = FALSE;
         }
@@ -5213,7 +5253,7 @@ void CEEInfo::getCallInfo(
         //        still require a runtime lookup of the instantiating stub
 
         if (((pResult->exactContextNeedsRuntimeLookup && pTargetMD->IsInstantiatingStub() &&
-              (!allowInstParam || (fResolvedConstraint && !canPassConstrainedTypeArg))) || fForceUseRuntimeLookup))
+              (!allowInstParam || (fResolvedConstraint && !canPassConstrainedTypeArg && !canPassDeclaringTypeArg))) || fForceUseRuntimeLookup))
         {
             pResult->kind = CORINFO_CALL_CODE_POINTER;
 
@@ -5551,7 +5591,16 @@ void CEEInfo::getCallInfo(
     EE_TO_JIT_TRANSITION();
 
     pResult->instParamLookup = {};
-    if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
+    if (canPassDeclaringTypeArg)
+    {
+        // The declaring interface's context is looked up from the resolved method in prepareCallLookups.
+        pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
+        pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
+        pResult->instParamLookup.deferredLookup = {
+            (CORINFO_METHOD_HANDLE)pDeclaringTypeArgMethod, (unsigned)DeclaringTypeHandleFromMethodSlot,
+            declaringTypeInterfaceIndex, true};
+    }
+    else if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
     {
         pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
         pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
@@ -5602,6 +5651,24 @@ void CEEInfo::prepareCallLookups(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         ComputeRuntimeLookupForSharedGenericToken(entryKind, lookupToken, pConstrainedResolvedToken,
                                                   lookupMethod, GetMethod(callerHandle),
                                                   &pCallInfo->codePointerLookup, deferred.interfaceIndex);
+        return;
+    }
+
+    CORINFO_DEFERRED_LOOKUP instParamDeferred = pCallInfo->instParamLookup.deferredLookup;
+    if (instParamDeferred.method != NULL)
+    {
+        _ASSERTE(pConstrainedResolvedToken != nullptr);
+        _ASSERTE(pResolvedToken->tokenScope == pConstrainedResolvedToken->tokenScope);
+        // A resolved static default interface method carries its declaring interface context.
+        CORINFO_RESOLVED_TOKEN resolvedTargetToken = *pResolvedToken;
+        resolvedTargetToken.hClass = pConstrainedResolvedToken->hClass;
+        resolvedTargetToken.hMethod = instParamDeferred.method;
+        resolvedTargetToken.pTypeSpec = pConstrainedResolvedToken->pTypeSpec;
+        resolvedTargetToken.cbTypeSpec = pConstrainedResolvedToken->cbTypeSpec;
+        ComputeRuntimeLookupForSharedGenericToken((DictionaryEntryKind)instParamDeferred.entryKind,
+                                                  &resolvedTargetToken, pConstrainedResolvedToken,
+                                                  GetMethod(instParamDeferred.method), GetMethod(callerHandle),
+                                                  &pCallInfo->instParamLookup, instParamDeferred.interfaceIndex);
         return;
     }
 
