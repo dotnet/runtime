@@ -1191,13 +1191,16 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains("'Inner'"));
         }
 
-        [Fact]
-        public async Task BindingToCollectionOnlyTest()
+        [Theory]
+        [InlineData("global::System.Collections.Generic.IDictionary<string, string>")]
+        [InlineData("int[]")]
+        [InlineData("string[]")]
+        [InlineData("int?[]")]
+        [InlineData("int[][]")]
+        public async Task BindingToCollectionOnlyTest(string typeName)
         {
-            string source = """
+            string source = $$"""
                 using Microsoft.Extensions.Configuration;
-                using System;
-                using System.Collections.Generic;
 
                 public class Program
                 {
@@ -1208,7 +1211,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
                         var settingsSection = config.GetSection("Settings");
 
-                        IDictionary<string, string> options = settingsSection.Get<IDictionary<string, string>>()!;
+                        {{typeName}} options = settingsSection.Get<{{typeName}}>()!;
                     }
                 }
                 """;

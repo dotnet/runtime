@@ -245,6 +245,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup Condition="'$(StackTraceLineNumberSupport)' == 'false'">
       <RuntimeHostConfigurationOption Include="System.Diagnostics.StackTrace.IsLineNumberSupported" Value="false" Trim="true" />
     </ItemGroup>
+    <!-- Avoid precompiling thousands of generic call instructions for the System.Linq.Expressions interpreter by default -->
+    <PropertyGroup>
+      <LinqExpressionsInterpreterPrecompiledCallSupport Condition="'$(LinqExpressionsInterpreterPrecompiledCallSupport)' == ''">false</LinqExpressionsInterpreterPrecompiledCallSupport>
+    </PropertyGroup>
+    <ItemGroup>
+      <RuntimeHostConfigurationOption Include="System.Linq.Expressions.Interpreter.IsPrecompiledCallSupported" Value="$(LinqExpressionsInterpreterPrecompiledCallSupport)" Trim="true" />
+    </ItemGroup>
     <ItemGroup Condition="'$(WasmEnableThreads)' != 'true'">
       <RuntimeHostConfigurationOption Include="System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported" Value="false" Trim="true" />
     </ItemGroup>
@@ -768,7 +775,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-build.stamp"
-      Lines="$(_WasmBootJsonBuildStampContent)|$(_WasmFilesystemUsageDetected)"
+      Lines="$(_WasmBootJsonBuildStampContent)|$(_WasmFilesystemUsageDetected)|$(WasmEnableIntegrityCheck)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
@@ -821,6 +828,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       UseMonoRuntime="$(UseMonoRuntime)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
+      EnableIntegrityCheck="$(WasmEnableIntegrityCheck)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"
       LogExitCode="$(WasmTestLogExitCode)"
@@ -1367,7 +1375,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
-      Lines="$(_WasmBootJsonPublishStampContent)|$(_WasmFilesystemUsageDetected)"
+      Lines="$(_WasmBootJsonPublishStampContent)|$(_WasmFilesystemUsageDetected)|$(WasmEnableIntegrityCheck)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
@@ -1414,6 +1422,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       UseMonoRuntime="$(UseMonoRuntime)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
+      EnableIntegrityCheck="$(WasmEnableIntegrityCheck)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"
       LogExitCode="$(WasmTestLogExitCode)"

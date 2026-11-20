@@ -1066,7 +1066,7 @@ UINT_PTR EEToProfInterfaceImpl::EEFunctionIDMapper(FunctionID funcId, BOOL * pbH
         // ClientID Hash table may throw OUTOFMEMORY exception, which is not expected by the caller.
         EX_TRY
         {
-            SimpleWriteLockHolder writeLockHolder(m_pFunctionIDHashTableRWLock);
+            SimpleWriteLockHolder writeLockHolder = SimpleRWLock::TakeWriteLock(m_pFunctionIDHashTableRWLock);
             m_pFunctionIDHashTable->AddOrReplace(functionIDAndClientID);
         }
         EX_CATCH
@@ -1130,7 +1130,7 @@ EEToProfInterfaceImpl::GCReferencesData * EEToProfInterfaceImpl::AllocateMovedRe
 
     // SCOPE: Lock m_csGCRefDataFreeList for access to the free list
     {
-        CRITSEC_Holder csh(m_csGCRefDataFreeList);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_csGCRefDataFreeList);
 
         // Anything on the free list for us to grab?
         if (m_pGCRefDataFreeList != NULL)
@@ -1189,7 +1189,7 @@ void EEToProfInterfaceImpl::FreeMovedReferencesData(GCReferencesData * pData)
 
     // SCOPE: Lock m_csGCRefDataFreeList for access to the free list
     {
-        CRITSEC_Holder csh(m_csGCRefDataFreeList);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_csGCRefDataFreeList);
         pData->pNext = m_pGCRefDataFreeList;
         m_pGCRefDataFreeList = pData;
     }
@@ -1341,7 +1341,7 @@ HRESULT EEToProfInterfaceImpl::EndMovedReferences(void * pHeapId)
     // Now we're done with the data block, we can shove it onto the free list
     // SCOPE: Lock m_csGCRefDataFreeList for access to the free list
     {
-        CRITSEC_Holder csh(m_csGCRefDataFreeList);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_csGCRefDataFreeList);
         pData->pNext = m_pGCRefDataFreeList;
         m_pGCRefDataFreeList = pData;
     }

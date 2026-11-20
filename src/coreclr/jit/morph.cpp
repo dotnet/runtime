@@ -12841,7 +12841,11 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
 {
     // Active dependent assertions are killed here
     //
-    ASSERT_TP killed = GetAssertionDep(lclNum);
+    ASSERT_TP killed = optAssertionDep->Get(lclNum);
+    if (BitVecOps::MayBeUninit(killed))
+    {
+        return;
+    }
 
 #ifdef DEBUG
     bool hasKills = !BitVecOps::IsEmptyIntersection(apTraits, apLocal, killed);

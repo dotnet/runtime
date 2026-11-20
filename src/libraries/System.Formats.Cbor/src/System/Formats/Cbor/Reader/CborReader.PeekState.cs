@@ -123,7 +123,7 @@ namespace System.Formats.Cbor
                     case CborMajorType.TextString:
                         if (initialByte.MajorType != _currentMajorType.Value)
                         {
-                            throw new CborContentException(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem);
+                            throw new CborContentException(SR.Format(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem, (int)initialByte.MajorType));
                         }
 
                         break;
