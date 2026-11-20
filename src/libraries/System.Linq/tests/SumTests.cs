@@ -342,6 +342,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void SumOfNullableFloatingPoint_PreservesAccumulation()
+        {
+            foreach (IEnumerable<float?> source in CreateSources<float?>([16_777_216f, null, 1f, -16_777_216f]))
+            {
+                Assert.Equal(1f, source.Sum());
+            }
+
+            foreach (IEnumerable<double?> source in CreateSources<double?>([1e16, null, 1d, -1e16]))
+            {
+                Assert.Equal(0d, source.Sum());
+            }
+        }
+
+        [Fact]
         public void SumOfDecimal_SourceIsNotEmpty_ProperSumReturned()
         {
             IEnumerable<decimal> sourceDecimal = [1m, 0.5m, -1m, 0.5m];
@@ -465,6 +479,20 @@ namespace System.Linq.Tests
             IEnumerable<long?> sourceNullableLong = [long.MaxValue, null, 1];
             Assert.Throws<OverflowException>(() => sourceNullableLong.Sum());
             Assert.Throws<OverflowException>(() => sourceNullableLong.Sum(x => x));
+        }
+
+        [Fact]
+        public void SumOfNullableIntegers_ThrowsOnIntermediateOverflow()
+        {
+            foreach (IEnumerable<int?> source in CreateSources<int?>([int.MaxValue, null, 1, -1]))
+            {
+                Assert.Throws<OverflowException>(() => source.Sum());
+            }
+
+            foreach (IEnumerable<long?> source in CreateSources<long?>([long.MaxValue, null, 1L, -1L]))
+            {
+                Assert.Throws<OverflowException>(() => source.Sum());
+            }
         }
 
         [Fact]
