@@ -404,7 +404,7 @@ namespace System.Text.RegularExpressions.Tests
         public async Task Diagnostic_HasPragmaSuppressibleLocation()
         {
             // SYSLIB1044 (LimitedSourceGeneration) is emitted for case-insensitive backreferences.
-            string code = """
+            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator("""
                 #pragma warning disable SYSLIB1044
                 using System.Text.RegularExpressions;
                 partial class C
@@ -412,12 +412,9 @@ namespace System.Text.RegularExpressions.Tests
                     [GeneratedRegex("(a)\\1", RegexOptions.IgnoreCase)]
                     private static partial Regex Method();
                 }
-                """;
+                """);
 
-            (Compilation comp, GeneratorDriverRunResult result) = await RegexGeneratorHelper.RunGeneratorCore(code);
-            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, comp);
-            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1044");
-            Assert.True(diagnostic.IsSuppressed);
+            Assert.Empty(diagnostics);
         }
 
         [Fact]
