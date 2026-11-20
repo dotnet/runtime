@@ -113,7 +113,7 @@ public class ConditionalIncrementTest
     public static void cinc_short_min_max(short op1, short expected)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #45
-        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        //ARM64-FULL-LINE-NEXT: cinv {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         short result = op1 > 45 ? short.MinValue : short.MaxValue;
         Assert.Equal(expected, result);
     }
@@ -197,7 +197,7 @@ public class ConditionalIncrementTest
     public static void cinc_int_min_max(int op1, int expected)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #47
-        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
+        //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
         int result = op1 >= 47 ? int.MinValue : int.MaxValue;
         Assert.Equal(expected, result);
     }
@@ -318,5 +318,89 @@ public class ConditionalIncrementTest
         //ARM64-NOT: csinc
         //ARM64-NOT: cinc
         return condition ? x : checked(x + 1);
+    }
+
+    [Theory]
+    [InlineData(true, 3, 7, 5)]
+    [InlineData(false, 3, 7, 8)]
+    [InlineData(true, int.MaxValue, int.MaxValue, int.MinValue + 1)]
+    [InlineData(false, int.MaxValue, int.MaxValue, int.MinValue)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_fallback_int(bool condition, int a, int b, int expected)
+    {
+        //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, #2
+        //ARM64-FULL-LINE-NEXT: {{cmp|tst}} {{w[0-9]+}}, #{{0|255}}
+        //ARM64-FULL-LINE-NEXT: csinc {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{eq|ne}}
+        int result = unchecked(condition ? a + 2 : b + 1);
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(true, 3, 7, 4)]
+    [InlineData(false, 3, 7, 9)]
+    [InlineData(true, int.MaxValue, int.MaxValue, int.MinValue)]
+    [InlineData(false, int.MaxValue, int.MaxValue, int.MinValue + 1)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_fallback_int_reverse(bool condition, int a, int b, int expected)
+    {
+        //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, #2
+        //ARM64-FULL-LINE-NEXT: {{cmp|tst}} {{w[0-9]+}}, #{{0|255}}
+        //ARM64-FULL-LINE-NEXT: csinc {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{eq|ne}}
+        int result = unchecked(condition ? a + 1 : b + 2);
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(true, 3, 7, 5)]
+    [InlineData(false, 3, 7, 8)]
+    [InlineData(true, long.MaxValue, long.MaxValue, long.MinValue + 1)]
+    [InlineData(false, long.MaxValue, long.MaxValue, long.MinValue)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_fallback_long(bool condition, long a, long b, long expected)
+    {
+        //ARM64-FULL-LINE: add {{x[0-9]+}}, {{x[0-9]+}}, #2
+        //ARM64-FULL-LINE-NEXT: {{cmp|tst}} {{w[0-9]+}}, #{{0|255}}
+        //ARM64-FULL-LINE-NEXT: csinc {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{eq|ne}}
+        long result = unchecked(condition ? a + 2 : b + 1);
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(true, 3, 7, 4)]
+    [InlineData(false, 3, 7, 9)]
+    [InlineData(true, long.MaxValue, long.MaxValue, long.MinValue)]
+    [InlineData(false, long.MaxValue, long.MaxValue, long.MinValue + 1)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_fallback_long_reverse(bool condition, long a, long b, long expected)
+    {
+        //ARM64-FULL-LINE: add {{x[0-9]+}}, {{x[0-9]+}}, #2
+        //ARM64-FULL-LINE-NEXT: {{cmp|tst}} {{w[0-9]+}}, #{{0|255}}
+        //ARM64-FULL-LINE-NEXT: csinc {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{eq|ne}}
+        long result = unchecked(condition ? a + 1 : b + 2);
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public static void CheckCheckedIncrement()
+    {
+        Assert.Equal(4, CheckedIncrement(true, 3, int.MaxValue));
+        Assert.Equal(int.MinValue, CheckedIncrement(false, int.MaxValue, int.MaxValue));
+        Assert.Throws<OverflowException>(() => CheckedIncrement(true, int.MaxValue, 7));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CheckedIncrement(bool condition, int a, int b)
+    {
+        return condition ? checked(a + 1) : unchecked(b + 1);
+    }
+
+    [Theory]
+    [InlineData(true, int.MaxValue)]
+    [InlineData(false, int.MinValue)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void cinc_int_min_max_reverse(bool condition, int expected)
+    {
+        //ARM64-FULL-LINE: cinc {{w[0-9]+}}, {{w[0-9]+}}, {{eq|ne}}
+        Assert.Equal(expected, condition ? int.MaxValue : int.MinValue);
     }
 }

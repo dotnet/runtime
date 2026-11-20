@@ -198,7 +198,7 @@ namespace TestCompare
         {
             //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: ccmp {{w[0-9]+}}, {{w[0-9]+}}, 0, ge
-            //ARM64-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
+            //ARM64-FULL-LINE: cneg {{w[0-9]+}}, {{w[0-9]+}}, gt
             if (a >= lower && a <= upper)
             {
                 return 1;
@@ -211,7 +211,7 @@ namespace TestCompare
         {
             //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: ccmp {{w[0-9]+}}, {{w[0-9]+}}, nzc, lt
-            //ARM64-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
+            //ARM64-FULL-LINE: cneg {{w[0-9]+}}, {{w[0-9]+}}, gt
             if (a >= lower || a <= upper)
             {
                 return 1;

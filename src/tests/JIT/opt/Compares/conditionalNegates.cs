@@ -41,7 +41,7 @@ public class ConditionalNegateTest
     public static void cneg_short_min_max(short op1, short expected)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #44
-        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        //ARM64-FULL-LINE-NEXT: cneg {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         short result = (short) (op1 > 44 ? -short.MaxValue : short.MaxValue);
         Assert.Equal(expected, result);
     }
@@ -65,7 +65,7 @@ public class ConditionalNegateTest
     public static void cneg_int_min_max(int op1, int expected)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #46
-        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
+        //ARM64-FULL-LINE-NEXT: cneg {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
         int result = op1 >= 46 ? int.MaxValue : -int.MaxValue;
         Assert.Equal(expected, result);
     }
@@ -149,4 +149,56 @@ public class ConditionalNegateTest
         Assert.Equal(expected, op1);
     }
 
+
+    [Theory]
+    [InlineData(true, 42)]
+    [InlineData(false, -42)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void cneg_constants_int(bool condition, int expected)
+    {
+        //ARM64-FULL-LINE: cneg {{w[0-9]+}}, {{w[0-9]+}}, {{eq|ne}}
+        Assert.Equal(expected, condition ? 42 : -42);
+    }
+
+    [Theory]
+    [InlineData(true, -42)]
+    [InlineData(false, 42)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void cneg_constants_int_reverse(bool condition, int expected)
+    {
+        //ARM64-FULL-LINE: cneg {{w[0-9]+}}, {{w[0-9]+}}, {{eq|ne}}
+        Assert.Equal(expected, condition ? -42 : 42);
+    }
+
+    [Theory]
+    [InlineData(true, 0x123456789ABCL)]
+    [InlineData(false, -0x123456789ABCL)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void cneg_constants_long(bool condition, long expected)
+    {
+        //ARM64-FULL-LINE: cneg {{x[0-9]+}}, {{x[0-9]+}}, {{eq|ne}}
+        Assert.Equal(expected, condition ? 0x123456789ABCL : -0x123456789ABCL);
+    }
+
+    [Theory]
+    [InlineData(true, -0x123456789ABCL)]
+    [InlineData(false, 0x123456789ABCL)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void cneg_constants_long_reverse(bool condition, long expected)
+    {
+        //ARM64-FULL-LINE: cneg {{x[0-9]+}}, {{x[0-9]+}}, {{eq|ne}}
+        Assert.Equal(expected, condition ? -0x123456789ABCL : 0x123456789ABCL);
+    }
+
+    [Theory]
+    [InlineData(double.NaN, -42)]
+    [InlineData(double.NegativeInfinity, 42)]
+    [InlineData(-1.0, 42)]
+    [InlineData(0.0, -42)]
+    [InlineData(double.PositiveInfinity, -42)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void cneg_constants_float_condition(double value, int expected)
+    {
+        Assert.Equal(expected, value < 0 ? 42 : -42);
+    }
 }
