@@ -19,15 +19,13 @@ namespace Wasm.Build.NativeRebuild.Tests
     // Workload-free cases validate metadata already present in runtime-pack files. Native re-link cases
     // run in workload lanes and also validate that Emscripten assembles the producers source and preserves it.
     [TestCategory("native")]
+    [TestCategory("coreclr")]
     public class WasmMetadataSectionsTests : NativeRebuildTestsBase
     {
         public WasmMetadataSectionsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
         }
-
-        // The producers `processed-by` tool recorded in dotnet.native.wasm depends on the runtime engine.
-        private static string NativeRuntimeProducer => IsCoreClrRuntime ? "CoreCLR" : "Mono";
 
         [Theory]
         [InlineData(Configuration.Release, false)]
@@ -40,7 +38,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 isNativeBuild: true);
 
             string wasm = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), "dotnet.native");
-            AssertProducers(wasm, NativeRuntimeProducer);
+            AssertProducers(wasm, "CoreCLR");
             byte[]? buildId = ReadBuildId(wasm);
             Assert.NotNull(buildId);
             Assert.NotEmpty(buildId!);
@@ -72,7 +70,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             string wasm = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), "dotnet.native");
             if (emitProducers)
-                AssertProducers(wasm, NativeRuntimeProducer);
+                AssertProducers(wasm, "CoreCLR");
             else
                 Assert.Null(ReadCustomSection(wasm, "producers"));
 
@@ -159,12 +157,9 @@ namespace Wasm.Build.NativeRebuild.Tests
         public void RuntimePack_ContainsProducersAssemblySource()
         {
             string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
-            string runtimePackName = IsCoreClrRuntime
-                ? "Microsoft.NETCore.App.Runtime.browser-wasm"
-                : "Microsoft.NETCore.App.Runtime.Mono.browser-wasm";
             string packagePath = Path.Combine(
                 s_buildEnv.BuiltNuGetsPath,
-                $"{runtimePackName}.{runtimePackVersion}.nupkg");
+                $"Microsoft.NETCore.App.Runtime.browser-wasm.{runtimePackVersion}.nupkg");
 
             using ZipArchive package = ZipFile.OpenRead(packagePath);
             ZipArchiveEntry? entry = package.GetEntry("runtimes/browser-wasm/native/dotnet-producers.s");
@@ -173,7 +168,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             string source = reader.ReadToEnd();
             Assert.Contains(".section .custom_section.producers", source);
             Assert.DoesNotContain(".ascii \"C#\"", source);
-            Assert.Contains($".ascii \"{NativeRuntimeProducer}\"", source);
+            Assert.Contains(".ascii \"CoreCLR\"", source);
             Assert.Contains(".ascii \".NET\"", source);
             Assert.Contains($".ascii \"{runtimePackVersion}\"", source);
             Assert.Null(package.GetEntry("runtimes/browser-wasm/native/dotnet-producers.o"));

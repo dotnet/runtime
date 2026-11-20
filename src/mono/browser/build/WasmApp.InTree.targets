@@ -15,20 +15,20 @@
   <Import Project="$(MSBuildThisFileDirectory)WasmProducersSource.targets" />
 
   <Target Name="_ConfigureWasmProducersSource"
-          Condition="'$(UsingNativeAOT)' != 'true' and ('$(RuntimeFlavor)' == 'Mono' or '$(RuntimeFlavor)' == 'CoreCLR') and '$(WasmEmitProducersSection)' != 'false' and !Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s')">
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmEmitProducersSection)' != 'false' and !Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s')">
     <PropertyGroup>
       <WasmEmitProducersSection>true</WasmEmitProducersSection>
       <_WasmEmitProducersSection>true</_WasmEmitProducersSection>
       <_WasmProducersSourcePath>$(_WasmIntermediateOutputPath)dotnet-producers.s</_WasmProducersSourcePath>
-      <_WasmProducersSourceRuntimeName>$(RuntimeFlavor)</_WasmProducersSourceRuntimeName>
+      <_WasmProducersSourceRuntimeName>CoreCLR</_WasmProducersSourceRuntimeName>
       <_WasmProducersSourceVersion>$(ProductVersion)</_WasmProducersSourceVersion>
     </PropertyGroup>
   </Target>
 
   <Target Name="_WasmEmitProducersSource"
-          BeforeTargets="_BrowserWasmWriteRspForLinking;_CoreCLRWriteLinkRsp"
+          BeforeTargets="_CoreCLRWriteLinkRsp"
           DependsOnTargets="_ConfigureWasmProducersSource;_WriteWasmProducersSource"
-          Condition="'$(UsingNativeAOT)' != 'true' and ('$(RuntimeFlavor)' == 'Mono' or '$(RuntimeFlavor)' == 'CoreCLR') and '$(WasmEmitProducersSection)' != 'false' and !Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s')">
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmEmitProducersSection)' != 'false' and !Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s')">
     <ItemGroup>
       <FileWrites Include="$(_WasmProducersSourcePath)" />
     </ItemGroup>

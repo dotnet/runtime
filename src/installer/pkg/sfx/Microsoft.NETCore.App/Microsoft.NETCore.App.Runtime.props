@@ -38,11 +38,11 @@
   <Import Project="$(RepoRoot)src\mono\browser\build\WasmProducersSource.targets" />
 
   <Target Name="_ConfigureBrowserWasmProducersSource"
-          Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))">
+          Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))">
     <PropertyGroup>
       <_BrowserWasmProducersSource>$(IntermediateOutputPath)dotnet-producers.s</_BrowserWasmProducersSource>
       <_WasmProducersSourcePath>$(_BrowserWasmProducersSource)</_WasmProducersSourcePath>
-      <_WasmProducersSourceRuntimeName>$(RuntimeFlavor)</_WasmProducersSourceRuntimeName>
+      <_WasmProducersSourceRuntimeName>CoreCLR</_WasmProducersSourceRuntimeName>
       <_WasmProducersSourceVersion>$(Version)</_WasmProducersSourceVersion>
     </PropertyGroup>
   </Target>
@@ -50,7 +50,7 @@
   <Target Name="GenerateBrowserWasmProducersSource"
           BeforeTargets="AddRuntimeFilesToPackage"
           DependsOnTargets="_ConfigureBrowserWasmProducersSource;_WriteWasmProducersSource"
-          Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))">
+          Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))">
     <ItemGroup>
       <RuntimeFiles Include="$(_BrowserWasmProducersSource)" IsNative="true" />
       <FileWrites Include="$(_BrowserWasmProducersSource)" />
