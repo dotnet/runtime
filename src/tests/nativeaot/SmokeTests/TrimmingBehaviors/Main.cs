@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 
 bool success = RunTest(Dataflow.Run);
 success &= RunTest(DeadCodeElimination.Run);
+success &= RunTest(ConditionalTypeReferences.Run);
 success &= RunTest(FeatureSwitches.Run);
 success &= RunTest(ILLinkDescriptor.Run);
 success &= RunTest(DependencyInjectionPattern.Run);
