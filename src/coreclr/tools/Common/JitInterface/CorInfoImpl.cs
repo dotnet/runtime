@@ -2706,16 +2706,19 @@ namespace Internal.JitInterface
 
                 if (isInlineArray)
                 {
-                    if (result > 0)
+                    Debug.Assert(field.Offset.AsInt == 0);
+                    int totalLayoutSize = type.GetElementSize().AsInt / PointerSize;
+                    int elementLayoutSize = fieldType.GetElementSize().AsInt / PointerSize;
+                    for (int offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
                     {
-                        Debug.Assert(field.Offset.AsInt == 0);
-                        int totalLayoutSize = type.GetElementSize().AsInt / PointerSize;
-                        int elementLayoutSize = fieldType.GetElementSize().AsInt / PointerSize;
-                        int gcPointersInElement = result;
-                        for (int offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
+                        // Other fields may already have marked GC slots in any of the elements.
+                        if (gcType == CorInfoGCType.TYPE_GC_OTHER)
                         {
-                            Buffer.MemoryCopy(gcPtrs, gcPtrs + offset, elementLayoutSize, elementLayoutSize);
-                            result += gcPointersInElement;
+                            result += GatherClassGCLayout((MetadataType)fieldType, gcPtrs + offset);
+                        }
+                        else
+                        {
+                            result += MarkGcField(gcPtrs + offset, gcType);
                         }
                     }
 
