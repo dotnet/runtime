@@ -509,7 +509,7 @@ namespace System.Security.Cryptography
             if (ciphertext.Length < 16 || ciphertext.Length % 8 != 0)
                 throw new ArgumentException(SR.Cryptography_KeyWrap_InvalidLength, nameof(ciphertext));
 
-            using (CryptoPoolLease lease = CryptoPoolLease.Rent(ciphertext.Length - 8, skipClear: true))
+            using (CryptoPoolLease lease = CryptoPoolLease.Rent(ciphertext.Length - 8))
             {
                 int written = DecryptKeyWrapPadded(ciphertext, lease.Span);
                 return lease.Span.Slice(0, written).ToArray();
