@@ -1199,7 +1199,7 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
     }
 
     // Remove empty intervals which correspond to virtual registers that were never used in this funclet.
-    for (int i = 0; i < funcletData->m_intervals.size(); i++)
+    for (size_t i = 0; i < funcletData->m_intervals.size(); i++)
     {
         Interval* interval = funcletData->m_intervals[i];
         if (interval != nullptr && interval->start > interval->end)
