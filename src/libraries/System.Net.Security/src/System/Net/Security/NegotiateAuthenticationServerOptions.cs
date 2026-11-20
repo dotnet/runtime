@@ -43,8 +43,12 @@ namespace System.Net.Security
         public NetworkCredential Credential { get; set; } = CredentialCache.DefaultNetworkCredentials;
 
         /// <summary>
-        /// Channel binding that is used for extended protection.
+        /// Gets or sets the channel binding used for extended protection.
         /// </summary>
+        /// <remarks>
+        /// On Windows, if this property is <see langword="null" />, the
+        /// <see cref="ExtendedProtectionPolicy.CustomChannelBinding" /> specified by <see cref="Policy" /> is used.
+        /// </remarks>
         public ChannelBinding? Binding { get; set; }
 
         /// <summary>
