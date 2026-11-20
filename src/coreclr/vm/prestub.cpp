@@ -1642,6 +1642,7 @@ PCODE CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
 
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+    pCode->EmitCONV_I();
 
     if (pTargetMD->IsAsyncMethod())
     {
@@ -1719,6 +1720,7 @@ PCODE CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     MethodDesc::CreateDerivedTargetSig(msig, &stubSigBuilder);
 
     pCode->EmitLDC((TADDR)pHiddenArg);
+    pCode->EmitCONV_I();
     pCode->EmitCALL(METHOD__RUNTIME_HELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
 
     // Emit the method body
@@ -1735,6 +1737,7 @@ PCODE CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+    pCode->EmitCONV_I();
 
     if (pTargetMD->IsAsyncMethod())
     {

@@ -4432,6 +4432,16 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             return visitor(&cond->gtOp2);
         }
 
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+        {
+            GenTreeConditional* const select = this->AsConditional();
+            RETURN_IF_ABORT(visitor(&select->gtOp1));
+            RETURN_IF_ABORT(visitor(&select->gtOp2));
+            return visitor(&select->gtCond);
+        }
+#endif
+
         default:
         {
             assert(!"unhandled special node");

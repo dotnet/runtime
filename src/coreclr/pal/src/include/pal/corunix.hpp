@@ -40,94 +40,6 @@ namespace CorUnix
     class IPalObject;
 
     //
-    // A simple counted string class. Using counted strings
-    // allows for some optimizations when searching for a matching string.
-    //
-
-    class CPalString
-    {
-    protected:
-
-        const WCHAR *m_pwsz;    // NULL terminated
-
-        //
-        // Length of string, not including terminating NULL
-        //
-
-        DWORD m_dwStringLength;
-
-        //
-        // Length of buffer backing string; must be at least 1+dwStringLength
-        //
-
-        DWORD m_dwMaxLength;
-
-    public:
-
-        CPalString()
-            :
-            m_pwsz(NULL),
-            m_dwStringLength(0),
-            m_dwMaxLength(0)
-        {
-        };
-
-        CPalString(
-            const WCHAR *pwsz
-            )
-        {
-            SetString(pwsz);
-        };
-
-        void
-        SetString(
-            const WCHAR *pwsz
-            )
-        {
-            SetStringWithLength(pwsz, minipal_u16_strlen((const CHAR16_T*)pwsz));
-        };
-
-        void
-        SetStringWithLength(
-            const WCHAR *pwsz,
-            DWORD dwStringLength
-            )
-        {
-            m_pwsz = pwsz;
-            m_dwStringLength = dwStringLength;
-            m_dwMaxLength = m_dwStringLength + 1;
-
-        };
-
-        PAL_ERROR
-        CopyString(
-            CPalString *psSource
-            );
-
-        void
-        FreeBuffer();
-
-        const WCHAR *
-        GetString()
-        {
-            return m_pwsz;
-        };
-
-        DWORD
-        GetStringLength()
-        {
-            return m_dwStringLength;
-        };
-
-        DWORD
-        GetMaxLength()
-        {
-            return m_dwMaxLength;
-        };
-
-    };
-
-    //
     // Signature of the cleanup routine that is to be called for an object
     // type when:
     // 1) The object's refcount drops to 0
@@ -343,40 +255,6 @@ namespace CorUnix
         };
     };
 
-    //
-    // Attributes for a given object instance. If the object does not have
-    // a name the sObjectName member should be zero'd out. If the default
-    // security attributes are desired then pSecurityAttributes should
-    // be NULL.
-    //
-
-    class CObjectAttributes
-    {
-    public:
-
-        CPalString sObjectName;
-        LPSECURITY_ATTRIBUTES pSecurityAttributes;
-
-        CObjectAttributes(
-            const WCHAR *pwszObjectName,
-            LPSECURITY_ATTRIBUTES pSecurityAttributes_
-            )
-            :
-            pSecurityAttributes(pSecurityAttributes_)
-        {
-            if (NULL != pwszObjectName)
-            {
-                sObjectName.SetString(pwszObjectName);
-            }
-        };
-
-        CObjectAttributes()
-            :
-            pSecurityAttributes(NULL)
-        {
-        };
-    };
-
     enum LockType
     {
         ReadLock,
@@ -409,12 +287,6 @@ namespace CorUnix
         virtual
         CObjectType *
         GetObjectType(
-            VOID
-            ) = 0;
-
-        virtual
-        CObjectAttributes *
-        GetObjectAttributes(
             VOID
             ) = 0;
 
@@ -491,7 +363,6 @@ namespace CorUnix
         AllocateObject(
             CPalThread *pThread,                // IN, OPTIONAL
             CObjectType *pType,
-            CObjectAttributes *pAttributes,
             IPalObject **ppNewObject            // OUT
             ) = 0;
 
@@ -503,10 +374,6 @@ namespace CorUnix
         // caller, therefore, is responsible for releasing the
         // latter.
         //
-        // For a named object pAllowedTypes specifies what type of existing
-        // objects can be returned in ppRegisteredObjects. pAllowedTypes must
-        // include the type of pObjectToRegister.
-        //
 
         virtual
         PAL_ERROR
@@ -516,20 +383,6 @@ namespace CorUnix
             CAllowedObjectTypes *pAllowedTypes,
             HANDLE *pHandle,                    // OUT
             IPalObject **ppRegisteredObject     // OUT
-            ) = 0;
-
-        //
-        // LocateObject is used for OpenXXX routines. ObtainHandleForObject
-        // is needed for the OpenXXX routines and DuplicateHandle.
-        //
-
-        virtual
-        PAL_ERROR
-        LocateObject(
-            CPalThread *pThread,                // IN, OPTIONAL
-            CPalString *psObjectToLocate,
-            CAllowedObjectTypes *pAllowedTypes,
-            IPalObject **ppObject               // OUT
             ) = 0;
 
         //
