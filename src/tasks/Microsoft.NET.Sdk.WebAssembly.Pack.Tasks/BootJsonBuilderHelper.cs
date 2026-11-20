@@ -358,7 +358,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 if (subFolder is null && compositeImages?.Contains(a.Key) == true)
                     asset.isCompositeImage = true;
                 if (subFolder is null && webcilBundles?.Contains(a.Key) == true)
-                    asset.isWebcilBundle = true;
+                    asset.isBundle = true;
 
                 if (bundlerFriendly)
                 {

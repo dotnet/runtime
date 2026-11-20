@@ -64,7 +64,7 @@ export interface AssetEntryInternal extends AssetEntry {
     tableSize?: number
     payloadSize?: number
     isCompositeImage?: boolean
-    isWebcilBundle?: boolean
+    isBundle?: boolean
 }
 
 export type LoaderConfigInternal = LoaderConfig & {

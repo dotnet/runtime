@@ -1286,37 +1286,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <!-- Static web assets are copied separately from ResolvedFileToPublish. Include framework
-       assets in publish tracking so superseded fingerprints, including compressed variants,
-       are removed when the composite or its component set changes. -->
-  <Target Name="_TrackWasmFrameworkPublishOutputs"
-          BeforeTargets="_GetCurrentAndPriorPublishFileWrites"
-          DependsOnTargets="StaticWebAssetsPrepareForPublish;LoadStaticWebAssetsPublishManifest"
-          Condition="'$(UseMonoRuntime)' == 'false'">
-    <PropertyGroup>
-      <_WasmPublishPathPrefix>wwwroot</_WasmPublishPathPrefix>
-      <_WasmPublishPathPrefix Condition="'$(StaticWebAssetProjectMode)' == 'Root'">wwwroot/$(StaticWebAssetBasePath)</_WasmPublishPathPrefix>
-    </PropertyGroup>
-
-    <ComputeStaticWebAssetsForCurrentProject
-      Assets="@(StaticWebAsset)"
-      ProjectMode="$(StaticWebAssetProjectMode)"
-      AssetKind="Publish"
-      Source="$(PackageId)">
-      <Output TaskParameter="StaticWebAssets" ItemName="_WasmPublishStaticAssetsToTrack" />
-    </ComputeStaticWebAssetsForCurrentProject>
-
-    <ComputeStaticWebAssetsTargetPaths Assets="@(_WasmPublishStaticAssetsToTrack)" PathPrefix="$(_WasmPublishPathPrefix)">
-      <Output TaskParameter="AssetsWithTargetPath" ItemName="_WasmPublishStaticAssetPathsToTrack" />
-    </ComputeStaticWebAssetsTargetPaths>
-
-    <ItemGroup>
-      <_WasmFrameworkPublishAsset Include="@(_WasmPublishStaticAssetPathsToTrack)"
-        Condition="('%(CopyToPublishDirectory)' == 'Always' or '%(CopyToPublishDirectory)' == 'PreserveNewest' or '%(CopyToPublishDirectory)' == 'IfDifferent') and $([System.String]::Copy('%(RelativePath)').StartsWith('_framework/'))" />
-      <_CurrentPublishFileWritesUnfiltered Include="@(_WasmFrameworkPublishAsset->'$(PublishDir)%(TargetPath)')" />
-    </ItemGroup>
-  </Target>
-
   <Target
     Name="ComputeWasmExtensions"
     AfterTargets="ProcessPublishFilesForWasm"

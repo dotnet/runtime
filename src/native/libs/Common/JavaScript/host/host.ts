@@ -26,7 +26,7 @@ export function initializeCoreCLR(): number {
 
     const assemblyPaths = loaderConfig.resources!.assembly.map(asset => asset.virtualPath.replace(/\.wasm$/, ".dll"));
     const coreAssemblyPaths = loaderConfig.resources!.coreAssembly
-        .filter(asset => !(asset as AssetEntryInternal).isCompositeImage && !(asset as AssetEntryInternal).isWebcilBundle)
+        .filter(asset => !(asset as AssetEntryInternal).isCompositeImage && !(asset as AssetEntryInternal).isBundle)
         .map(asset => asset.virtualPath.replace(/\.wasm$/, ".dll"));
     const tpa = [...coreAssemblyPaths, ...getBundledAssemblyPaths(), ...assemblyPaths].join(":");
     runtimeConfigProperties.set(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, tpa);

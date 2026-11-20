@@ -79,7 +79,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
         WasmSdkBasedProjectProvider provider = GetProvider<WasmSdkBasedProjectProvider>();
         AssetsData assets = (AssetsData)provider.GetBootJson(provider.GetBootConfigPath(frameworkDir)).resources;
-        Assert.Single(assets.coreAssembly, asset => asset.isWebcilBundle == true);
+        Assert.Single(assets.coreAssembly, asset => asset.isBundle == true);
 
         RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "SatelliteAssembliesTest"));
         Assert.Collection(result.TestOutput,

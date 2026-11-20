@@ -83,7 +83,7 @@ namespace Wasm.Build.Tests
         public Task PublishCompositeUsingSdkTargets()
             => PublishRunAllPagesCore(Configuration.Release, trimmed: true, nativeRelink: false, composite: true, useSdkTargets: true);
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData(Configuration.Release, /*trimmed*/ true, /*composite*/ false)]
         [InlineData(Configuration.Release, /*trimmed*/ false, /*composite*/ false)]
         [InlineData(Configuration.Release, /*trimmed*/ true, /*composite*/ true)]
@@ -144,7 +144,7 @@ namespace Wasm.Build.Tests
         // Composite ReadyToRun in workload mode. The wasm-opt lane runs it with WasmRunWasmOpt=true, which rewrites
         // the composite in place with wasm-opt before it is staged; it must keep the self-installing Webcil host ABI
         // and still run. Per-assembly wasm-opt coverage comes from NativeLibraryTests.ProjectWithNativeReference_ReadyToRun.
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData(Configuration.Release)]
         [TestCategory("wasm-opt"), TestCategory("workload")]
         public async Task PublishRunAllPagesCompositeWithWorkload(Configuration config)
@@ -239,16 +239,19 @@ namespace Wasm.Build.Tests
             if (useSdkTargets)
             {
                 AssetsData assets = (AssetsData)_provider.GetBootJson(_provider.GetBootConfigPath(frameworkDir)).resources;
-                initialCompositeFiles = assets.coreAssembly
-                    .Where(asset => asset.isCompositeImage == true || asset.isWebcilBundle == true)
+                string[] coreAssemblyFiles = assets.coreAssembly
                     .Select(asset => Path.Combine(frameworkDir, asset.name))
                     .ToArray();
-                Assert.Equal(2, initialCompositeFiles.Length);
-                foreach (string path in initialCompositeFiles)
+                foreach (string path in coreAssemblyFiles)
                 {
                     Assert.True(File.Exists(path + ".br"), $"Missing Brotli asset for '{path}'.");
                     Assert.True(File.Exists(path + ".gz"), $"Missing gzip asset for '{path}'.");
                 }
+                initialCompositeFiles = assets.coreAssembly
+                    .Where(asset => asset.isCompositeImage == true || asset.isBundle == true)
+                    .Select(asset => Path.Combine(frameworkDir, asset.name))
+                    .ToArray();
+                Assert.Equal(2, initialCompositeFiles.Length);
                 File.WriteAllText(userFile, "preserve");
             }
 
@@ -603,7 +606,7 @@ namespace Wasm.Build.Tests
             HashSet<string> staged = new(GetStagedAssemblyNames(frameworkDir), System.StringComparer.Ordinal);
             string[] linked = Directory.EnumerateFiles(linkedDir, "*.dll").ToArray();
             AssetsData assets = (AssetsData)_provider.GetBootJson(_provider.GetBootConfigPath(frameworkDir)).resources;
-            WebcilAsset? bundle = assets.coreAssembly?.SingleOrDefault(asset => asset.isWebcilBundle == true);
+            WebcilAsset? bundle = assets.coreAssembly?.SingleOrDefault(asset => asset.isBundle == true);
             if (bundle is not null)
             {
                 var filter = new FilterWebcilBundleComponents
@@ -802,7 +805,7 @@ namespace Wasm.Build.Tests
             Assert.True(GetReadyToRunTableSize(compositePath) > 0, $"Expected compiled methods in '{compositePath}'.");
             if (bundle)
             {
-                WebcilAsset components = Assert.Single(assets.coreAssembly, asset => asset.isWebcilBundle == true);
+                WebcilAsset components = Assert.Single(assets.coreAssembly, asset => asset.isBundle == true);
                 Assert.Equal("BlazorBasicTestApp.components.wasm", components.virtualPath);
                 Assert.Equal(0, GetReadyToRunTableSize(Path.Combine(frameworkDir, components.name)));
                 Assert.DoesNotContain(assets.coreAssembly, asset => asset.virtualPath?.StartsWith("System.Private.CoreLib", System.StringComparison.Ordinal) == true);
@@ -811,7 +814,7 @@ namespace Wasm.Build.Tests
             }
             else
             {
-                Assert.DoesNotContain(assets.coreAssembly, asset => asset.isWebcilBundle == true);
+                Assert.DoesNotContain(assets.coreAssembly, asset => asset.isBundle == true);
                 Assert.Contains(assets.coreAssembly, asset => asset.virtualPath?.StartsWith("System.Private.CoreLib", System.StringComparison.Ordinal) == true);
                 Assert.Contains(assets.assembly, asset => asset.virtualPath == "R2rSuffixLibrary.r2r.wasm");
                 Assert.NotEmpty(Directory.EnumerateFiles(frameworkDir, "System.Private.CoreLib*.wasm"));

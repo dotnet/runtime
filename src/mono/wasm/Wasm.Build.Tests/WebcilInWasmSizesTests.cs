@@ -202,6 +202,7 @@ public class WebcilInWasmSizesTests
             BuildEngine = engine,
             LazyAssemblies = [new TaskItem(Path.GetFileName(lazy))],
             CompileList = [separate],
+            AssemblyCandidates = [new TaskItem(lazy), new TaskItem(Path.ChangeExtension(lazy, ".pdb"))],
             CompositeInputs = [new TaskItem(composite)],
         };
 

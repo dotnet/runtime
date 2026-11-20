@@ -36,6 +36,7 @@ public sealed class ValidateCompositeLazyReferences : Task
     public ITaskItem[] LazyAssemblies { get; set; } = Array.Empty<ITaskItem>();
     public ITaskItem[] CompositeInputs { get; set; } = Array.Empty<ITaskItem>();
     public ITaskItem[] CompileList { get; set; } = Array.Empty<ITaskItem>();
+    public ITaskItem[] AssemblyCandidates { get; set; } = Array.Empty<ITaskItem>();
 
     public override bool Execute()
     {
@@ -50,8 +51,41 @@ public sealed class ValidateCompositeLazyReferences : Task
             return true;
         }
 
-        var compiled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var available = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var assembliesWithIL = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var lazyAssemblyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (ITaskItem input in AssemblyCandidates)
+        {
+            if (!string.Equals(Path.GetExtension(input.ItemSpec), ".dll", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (!requested.Contains(Path.GetFileNameWithoutExtension(input.ItemSpec)))
+            {
+                continue;
+            }
+
+            try
+            {
+                using FileStream stream = File.OpenRead(input.ItemSpec);
+                using PEReader pe = new(stream);
+                MetadataReader metadata = pe.GetMetadataReader();
+                string assemblyName = metadata.GetString(metadata.GetAssemblyDefinition().Name);
+                lazyAssemblyNames.Add(assemblyName);
+                available.Add(assemblyName);
+                if (ConvertDllsToWebcil.AssemblyHasILCode(input.ItemSpec, out _))
+                {
+                    assembliesWithIL.Add(assemblyName);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or BadImageFormatException)
+            {
+                Log.LogError($"Cannot read lazy-loaded assembly '{input.ItemSpec}': {ex.Message}");
+            }
+        }
+
+        var compiled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (ITaskItem input in CompileList)
         {
             string name = Path.GetFileNameWithoutExtension(input.ItemSpec);
@@ -66,25 +100,18 @@ public sealed class ValidateCompositeLazyReferences : Task
                 continue;
             }
 
-            try
-            {
-                using FileStream stream = File.OpenRead(input.ItemSpec);
-                using PEReader pe = new(stream);
-                MetadataReader metadata = pe.GetMetadataReader();
-                lazyAssemblyNames.Add(metadata.GetString(metadata.GetAssemblyDefinition().Name));
-                compiled.Add(name);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or BadImageFormatException)
-            {
-                Log.LogError($"Cannot read lazy-loaded assembly '{input.ItemSpec}': {ex.Message}");
-            }
+            compiled.Add(name);
         }
 
         foreach (string name in requested)
         {
-            if (!compiled.Contains(name))
+            if (!available.Contains(name))
             {
-                Log.LogError($"Lazy-loaded assembly '{name}' is not scheduled for a separate ReadyToRun compilation. Ensure it is present in the published closure and contains compilable IL.");
+                Log.LogError($"Lazy-loaded assembly '{name}' is not present in the published assembly candidates.");
+            }
+            else if (assembliesWithIL.Contains(name) && !compiled.Contains(name))
+            {
+                Log.LogError($"Lazy-loaded assembly '{name}' is not scheduled for a separate ReadyToRun compilation.");
             }
         }
 

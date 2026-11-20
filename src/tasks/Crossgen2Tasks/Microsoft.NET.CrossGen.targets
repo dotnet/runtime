@@ -513,7 +513,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_ReadyToRunCompilerArgumentsCacheFile>$(IntermediateOutputPath)$(MSBuildProjectName).ReadyToRunCompilerArguments.cache</_ReadyToRunCompilerArgumentsCacheFile>
     </PropertyGroup>
 
-    <Hash ItemsToHash="$(PublishReadyToRunCrossgen2ExtraArgs);$(_PublishReadyToRunCrossgen2ExtraArgs);CompositeArgs=$(_PublishReadyToRunCrossgen2CompositeExtraArgs);InstructionSet=$(_ReadyToRunInstructionSetArgs);Composite=$(PublishReadyToRunComposite);ContainerFormat=$(PublishReadyToRunContainerFormat);UseCrossgen2=$(PublishReadyToRunUseCrossgen2);PerfmapFormatVersion=$(PublishReadyToRunPerfmapFormatVersion)">
+    <Hash ItemsToHash="$(PublishReadyToRunCrossgen2ExtraArgs);$(_PublishReadyToRunCrossgen2ExtraArgs);CompositeArgs=$(PublishReadyToRunCrossgen2CompositeExtraArgs);InstructionSet=$(_ReadyToRunInstructionSetArgs);Composite=$(PublishReadyToRunComposite);ContainerFormat=$(PublishReadyToRunContainerFormat);UseCrossgen2=$(PublishReadyToRunUseCrossgen2);PerfmapFormatVersion=$(PublishReadyToRunPerfmapFormatVersion)">
       <Output TaskParameter="HashResult" PropertyName="_ReadyToRunCompilerArgumentsHash" />
     </Hash>
 
@@ -535,7 +535,7 @@ Copyright (c) .NET Foundation. All rights reserved.
                            Crossgen2PgoFiles="@(_ReadyToRunPgoFiles)"
                            Crossgen2ContainerFormat="$(PublishReadyToRunContainerFormat)"
                            Crossgen2ExtraCommandLineArgs="$(PublishReadyToRunCrossgen2ExtraArgs);$(_PublishReadyToRunCrossgen2ExtraArgs);$(_ReadyToRunInstructionSetArgs)"
-                           Crossgen2CompositeExtraCommandLineArgs="$(_PublishReadyToRunCrossgen2CompositeExtraArgs)"
+                           Crossgen2CompositeExtraCommandLineArgs="$(PublishReadyToRunCrossgen2CompositeExtraArgs)"
                            ImplementationAssemblyReferences="@(_ReadyToRunAssembliesToReference)"
                            ShowCompilerWarnings="$(PublishReadyToRunShowWarnings)"
                            CompilationEntry="@(_ReadyToRunCompileList)"

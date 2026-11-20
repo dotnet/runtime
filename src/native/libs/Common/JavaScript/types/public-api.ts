@@ -286,7 +286,7 @@ export type WebcilAsset = AssemblyAsset & {
     /**
      * Set on a composite component bundle. Its payload contains separate Webcil assembly images.
      */
-    isWebcilBundle?: boolean;
+    isBundle?: boolean;
 };
 export type PdbAsset = Asset & {
     virtualPath: string;

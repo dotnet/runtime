@@ -101,34 +101,18 @@ public class LazyLoadingTests : WasmTemplateTestsBase
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-    [InlineData(false, false, true)]
-    [InlineData(false, true, true)]
-    [InlineData(true, true, true)]
-    [InlineData(false, true, false)]
+    [InlineData(false, false, true, false)]
+    [InlineData(false, true, true, false)]
+    [InlineData(true, true, true, false)]
+    [InlineData(false, true, false, false)]
+    [InlineData(true, true, true, true)]
+    [InlineData(true, true, false, true)]
     [TestCategory("no-workload")]
-    public async Task PublishLoadsLazyAssemblies(bool trimmed, bool readyToRun, bool bundle)
+    public async Task PublishLoadsLazyAssemblies(bool trimmed, bool readyToRun, bool bundle, bool includeNoILLazyAssembly)
     {
         Configuration config = Configuration.Release;
-        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"r2r_lazy_{trimmed}_{readyToRun}_{bundle}");
-        File.WriteAllText(Path.Combine(_projectDir, "LazyLoadingTest.cs"), """
-            using System;
-            using System.Diagnostics.CodeAnalysis;
-            using System.Reflection;
-            using System.Runtime.InteropServices.JavaScript;
-
-            public partial class LazyLoadingTest
-            {
-                [JSExport]
-                [DynamicDependency(DynamicallyAccessedMemberTypes.All, "Library.Person", "Json")]
-                [DynamicDependency(DynamicallyAccessedMemberTypes.All, "LazyLibrary.Foo", "LazyLibrary")]
-                [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The reflected types are preserved by DynamicDependency.")]
-                public static void Run()
-                {
-                    Type person = Assembly.Load("Json").GetType("Library.Person", throwOnError: true)!;
-                    TestOutput.WriteLine("FirstName=" + person.Name);
-                }
-            }
-            """);
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"r2r_lazy_{trimmed}_{readyToRun}_{bundle}_{includeNoILLazyAssembly}");
+        ReplaceFile("LazyLoadingTest.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "CompositeLazyLoadingTest.cs"));
         UpdateFile("wwwroot/main.js", new Dictionary<string, string>
         {
             {
@@ -138,19 +122,27 @@ public class LazyLoadingTests : WasmTemplateTestsBase
                 const firstJsonLoad = await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
                 testOutput(`jsonLoadedAfterLazy=${INTERNAL.getLoadedAssemblyBytes("Json.dll") !== undefined}`);
                 """
-            }
+            },
         });
 
-        string args = $"{GetR2RBuildArgs(config, composite: true)} -p:TestLazyLoading=true -p:PublishReadyToRun={readyToRun.ToString().ToLowerInvariant()} -p:PublishReadyToRunComposite=true -p:PublishTrimmed={trimmed.ToString().ToLowerInvariant()} -p:WasmBundleCompositeComponents={bundle.ToString().ToLowerInvariant()} -p:WasmBuildNative=false";
+        string args = $"{GetR2RBuildArgs(config, composite: true)} -p:TestLazyLoading=true -p:TestNoILLazyAssembly={includeNoILLazyAssembly.ToString().ToLowerInvariant()} -p:PublishReadyToRun={readyToRun.ToString().ToLowerInvariant()} -p:PublishReadyToRunComposite=true -p:PublishTrimmed={trimmed.ToString().ToLowerInvariant()} -p:WasmBundleCompositeComponents={bundle.ToString().ToLowerInvariant()} -p:WasmBuildNative=false";
         PublishProject(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: args));
 
         string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
         WasmSdkBasedProjectProvider provider = GetProvider<WasmSdkBasedProjectProvider>();
         AssetsData assets = (AssetsData)provider.GetBootJson(provider.GetBootConfigPath(frameworkDir)).resources;
         if (readyToRun && bundle)
-            Assert.Single(assets.coreAssembly, asset => asset.isWebcilBundle == true);
+            Assert.Single(assets.coreAssembly, asset => asset.isBundle == true);
         else
-            Assert.DoesNotContain(assets.coreAssembly, asset => asset.isWebcilBundle == true);
+            Assert.DoesNotContain(assets.coreAssembly, asset => asset.isBundle == true);
+        if (includeNoILLazyAssembly)
+        {
+            WebcilAsset noIL = Assert.Single(assets.lazyAssembly, asset => asset.virtualPath == "NoILLazyLibrary.wasm");
+            string noILPath = Path.Combine(frameworkDir, noIL.name);
+            using FileStream stream = File.OpenRead(noILPath);
+            Assert.True(WebcilReader.TryReadWebcilInWasmSizes(stream, out _, out int tableSize, out string? reason), reason);
+            Assert.Equal(0, tableSize);
+        }
         WebcilAsset json = Assert.Single(assets.lazyAssembly, asset => asset.virtualPath == "Json.wasm");
         string jsonPath = Path.Combine(frameworkDir, json.name);
         using (FileStream stream = File.OpenRead(jsonPath))
@@ -175,11 +167,19 @@ public class LazyLoadingTests : WasmTemplateTestsBase
             Assert.Equal((ReadyToRunFlags)0, flags & ReadyToRunFlags.READYTORUN_FLAG_Component);
         }
 
-        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "LazyLoadingTest"));
+        NameValueCollection query = includeNoILLazyAssembly
+            ? new NameValueCollection { { "loadNoILLazyAssembly", "true" } }
+            : new NameValueCollection();
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "LazyLoadingTest", BrowserQueryString: query));
         Assert.Contains(result.TestOutput, output => output.Contains("jsonAlreadyLoaded=false"));
         Assert.Contains(result.TestOutput, output => output.Contains("firstJsonLoad=true"));
         Assert.Contains(result.TestOutput, output => output.Contains("jsonLoadedAfterLazy=true"));
         Assert.Contains(result.TestOutput, output => output.Contains("FirstName=Person"));
+        if (includeNoILLazyAssembly)
+        {
+            Assert.Contains(result.TestOutput, output => output.Contains("noILLoad=true"));
+            Assert.Contains(result.TestOutput, output => output.Contains("NoILType=NoILType"));
+        }
     }
 
     [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]

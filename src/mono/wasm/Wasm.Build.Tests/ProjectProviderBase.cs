@@ -663,7 +663,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
 
         string? spcActualFilename = assets.coreAssembly.SingleOrDefault(a => a.virtualPath == spcExpectedFilename)?.name;
-        WebcilAsset? bundle = assets.coreAssembly.SingleOrDefault(a => a.isWebcilBundle == true);
+        WebcilAsset? bundle = assets.coreAssembly.SingleOrDefault(a => a.isBundle == true);
         if (spcActualFilename is null && bundle is null)
             throw new XunitException($"Could not find an assembly named System.Private.CoreLib.* in {bootJsonPath}");
         if (bundle is not null)

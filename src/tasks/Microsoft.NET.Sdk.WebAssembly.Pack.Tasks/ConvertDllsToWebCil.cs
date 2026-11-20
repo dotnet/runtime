@@ -213,7 +213,7 @@ public class ConvertDllsToWebcil : Task
             }
 
         }
-        if (requireSeparateR2R &&
+        if (requireSeparateR2R && AssemblyHasILCode(dllFilePath, out _) &&
             (string.IsNullOrEmpty(r2rWebcilPath) || !IsR2RWebcil(r2rWebcilPath) ||
              TryReadMvid(dllFilePath) is not Guid expectedMvid || TryReadMvid(r2rWebcilPath) != expectedMvid))
         {
@@ -324,7 +324,7 @@ public class ConvertDllsToWebcil : Task
             && tableSize > 0;
     }
 
-    private static bool AssemblyHasILCode(string path, out Guid mvid)
+    internal static bool AssemblyHasILCode(string path, out Guid mvid)
     {
         using FileStream stream = File.OpenRead(path);
         using var peReader = new PEReader(stream);
