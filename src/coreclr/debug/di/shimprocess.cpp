@@ -364,6 +364,219 @@ DWORD WINAPI CallStopGoThreadProc(LPVOID parameter)
 }
 
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+//---------------------------------------------------------------------------------------
+// Recognize a thread stopped for a 2nd-chance exception inside the
+// ntdll!NtRaiseException(ExceptionRecord, ContextRecord, FALSE) call made by
+// KiUserExceptionDispatcher, and return the address of its ContextRecord.
+//
+// Notes:
+//    In some cases the 2nd-chance debug event is reported with the live context at that syscall
+//    rather than at the faulting instruction. This was observed in CET-compatible processes when
+//    the breakpoint is in a module built with EH continuation metadata (/guard:ehcont), such as
+//    KernelBase!DebugBreak. Fail closed (return 0) unless every piece of the frame matches this
+//    exception.
+//---------------------------------------------------------------------------------------
+CORDB_ADDRESS ShimProcess::GetNtRaiseExceptionContextRecord(DWORD dwThreadId, const EXCEPTION_RECORD * pRecord, const T_CONTEXT * pLiveContext)
+{
+    // The debugger and debuggee are both x64 here, so ntdll is mapped at the same address in both.
+    HMODULE hNtdll = GetModuleHandleW(W("ntdll.dll"));
+    CORDB_ADDRESS addrNtRaiseException = PTR_TO_CORDB_ADDRESS(GetProcAddress(hNtdll, "NtRaiseException"));
+    CORDB_ADDRESS addrDispatcher = PTR_TO_CORDB_ADDRESS(GetProcAddress(hNtdll, "KiUserExceptionDispatcher"));
+    if ((addrNtRaiseException == 0) || (addrDispatcher == 0))
+    {
+        return 0;
+    }
+
+    // Live IP must be inside the NtRaiseException syscall stub, returning to KiUserExceptionDispatcher.
+    const CORDB_ADDRESS cbSyscallStub = 0x20;
+    const CORDB_ADDRESS cbDispatcher = 0x100;
+    CORDB_ADDRESS ip = pLiveContext->Rip;
+    if ((ip <= addrNtRaiseException) || (ip >= addrNtRaiseException + cbSyscallStub))
+    {
+        return 0;
+    }
+
+    DWORD64 returnAddress = 0;
+    ULONG32 cbRead = 0;
+    HRESULT hr = m_pLiveDataTarget->ReadVirtual(pLiveContext->Rsp, reinterpret_cast<BYTE *>(&returnAddress), sizeof(returnAddress), &cbRead);
+    if (FAILED(hr) || (cbRead != sizeof(returnAddress)) ||
+        (returnAddress <= addrDispatcher) || (returnAddress >= addrDispatcher + cbDispatcher))
+    {
+        return 0;
+    }
+
+    // The ExceptionRecord argument (R10, set by the syscall stub) must describe this exception.
+    EXCEPTION_RECORD record;
+    cbRead = 0;
+    hr = m_pLiveDataTarget->ReadVirtual(pLiveContext->R10, reinterpret_cast<BYTE *>(&record), offsetof(EXCEPTION_RECORD, NumberParameters), &cbRead);
+    if (FAILED(hr) || (cbRead != offsetof(EXCEPTION_RECORD, NumberParameters)) ||
+        (record.ExceptionCode != pRecord->ExceptionCode) ||
+        (record.ExceptionAddress != pRecord->ExceptionAddress))
+    {
+        return 0;
+    }
+
+    // The ContextRecord argument (Rdx) must be a full x64 context of the faulting instruction,
+    // located on the stack above the dispatcher frame.
+    CORDB_ADDRESS addrContext = pLiveContext->Rdx;
+    T_CONTEXT faultContext;
+    cbRead = 0;
+    hr = m_pLiveDataTarget->ReadVirtual(addrContext, reinterpret_cast<BYTE *>(&faultContext), sizeof(faultContext), &cbRead);
+    if (FAILED(hr) || (cbRead != sizeof(faultContext)) ||
+        ((faultContext.ContextFlags & CONTEXT_FULL) != CONTEXT_FULL) ||
+        (PTR_TO_CORDB_ADDRESS(faultContext.Rip) != PTR_TO_CORDB_ADDRESS(pRecord->ExceptionAddress)) ||
+        (addrContext <= pLiveContext->Rsp) ||
+        (faultContext.Rsp <= addrContext))
+    {
+        return 0;
+    }
+
+    LOG((LF_CORDB, LL_INFO10, "SP::SUBI using NtRaiseException ContextRecord at %p (live ip=%p) tid=0x%x\n",
+        CORDB_ADDRESS_TO_PTR(addrContext), CORDB_ADDRESS_TO_PTR(ip), dwThreadId));
+    return addrContext;
+}
+#endif // TARGET_WINDOWS && TARGET_AMD64
+
+//---------------------------------------------------------------------------------------
+// Advance a thread past an unhandled (2nd-chance) breakpoint instruction that the debugger
+// does not own, so the debuggee can continue instead of terminating with 0x80000003.
+//
+// Arguments:
+//    dwThreadId - thread that raised the exception
+//    pRecord    - exception record of the 2nd-chance STATUS_BREAKPOINT
+//
+// Returns:
+//    true if the thread context was updated and the caller should continue with DBG_CONTINUE.
+//
+// Notes:
+//    Only called when managed-only debugging. Native code in the debuggee (e.g. a profiler or
+//    native library doing "if (IsDebuggerPresent()) DebugBreak();") expects a native debugger
+//    to handle the breakpoint. A managed-only debugger cannot surface it to the user, so rather
+//    than letting it go unhandled and kill the process, skip the instruction.
+//
+//    At 2nd chance the thread resumes at the address of the breakpoint instruction (unlike 1st
+//    chance where it is already past it), so continuing without a fixup re-executes it forever.
+//    That state is either the live thread context or the ContextRecord passed to
+//    NtRaiseException (see GetNtRaiseExceptionContextRecord); both cases are handled.
+//    For both encodings (CC and CD 03) ExceptionAddress + 1 is the next instruction, because for
+//    CD 03 the OS reports the address of the 03 byte.
+//---------------------------------------------------------------------------------------
+bool ShimProcess::SkipUnhandledBreakpointInstruction(DWORD dwThreadId, const EXCEPTION_RECORD * pRecord)
+{
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))
+    if ((pRecord->ExceptionCode != STATUS_BREAKPOINT) ||
+        (m_pLiveDataTarget == NULL) ||
+        (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgSkipUnhandledNativeBreakpoint) == 0))
+    {
+        return false;
+    }
+
+    CORDB_ADDRESS addrException = PTR_TO_CORDB_ADDRESS(pRecord->ExceptionAddress);
+    if (addrException == 0)
+    {
+        return false;
+    }
+
+    T_CONTEXT context;
+    context.ContextFlags = CONTEXT_FULL;
+    HRESULT hr = m_pLiveDataTarget->GetThreadContext(dwThreadId, CONTEXT_FULL, sizeof(context), reinterpret_cast<BYTE *>(&context));
+    if (FAILED(hr))
+    {
+        LOG((LF_CORDB, LL_INFO10, "SP::SUBI GetThreadContext failed hr=0x%08x tid=0x%x\n", hr, dwThreadId));
+        return false;
+    }
+
+    CORDB_ADDRESS ip = PTR_TO_CORDB_ADDRESS(CORDbgGetIP(&context));
+    CORDB_ADDRESS addrFaultContext = 0;
+    if (ip != addrException)
+    {
+#if defined(TARGET_AMD64)
+        addrFaultContext = GetNtRaiseExceptionContextRecord(dwThreadId, pRecord, &context);
+        if (addrFaultContext == 0)
+#endif
+        {
+            // Not a state we recognize for a 2nd-chance breakpoint instruction (e.g. a software-raised
+            // STATUS_BREAKPOINT). Leave it alone.
+            LOG((LF_CORDB, LL_INFO10, "SP::SUBI not skipping: ip=%p != ExceptionAddress=%p tid=0x%x\n",
+                CORDB_ADDRESS_TO_PTR(ip), pRecord->ExceptionAddress, dwThreadId));
+            return false;
+        }
+    }
+
+    // Confirm a breakpoint instruction is still at the faulting address: CC at addrException,
+    // or CD 03 with addrException pointing at the 03 byte.
+    BYTE bytes[2] = { 0, 0 };
+    ULONG32 cbRead = 0;
+    hr = m_pLiveDataTarget->ReadVirtual(addrException - 1, bytes, sizeof(bytes), &cbRead);
+    if (FAILED(hr) || (cbRead != sizeof(bytes)))
+    {
+        cbRead = 0;
+        hr = m_pLiveDataTarget->ReadVirtual(addrException, &bytes[1], 1, &cbRead);
+        if (FAILED(hr) || (cbRead != 1))
+        {
+            return false;
+        }
+        bytes[0] = 0;
+    }
+
+    bool fIsInt3 = (bytes[1] == 0xCC);
+    bool fIsIntN3 = (bytes[0] == 0xCD) && (bytes[1] == 0x03);
+    if (!fIsInt3 && !fIsIntN3)
+    {
+        LOG((LF_CORDB, LL_INFO10, "SP::SUBI not skipping: no breakpoint instruction at %p (bytes %02x %02x) tid=0x%x\n",
+            pRecord->ExceptionAddress, bytes[0], bytes[1], dwThreadId));
+        return false;
+    }
+
+    CORDB_ADDRESS addrResume = addrException + 1;
+    if (addrFaultContext == 0)
+    {
+        CORDbgSetIP(&context, CORDB_ADDRESS_TO_PTR(addrResume));
+    }
+#if defined(TARGET_AMD64)
+    else
+    {
+        // Resume the way the OS does when a handler returns EXCEPTION_CONTINUE_EXECUTION:
+        // NtContinue(ContextRecord, FALSE). Unlike SetThreadContext with the saved context this
+        // also restores the extended (XSTATE) register state recorded by the dispatcher.
+        DWORD64 addrNtContinue = (DWORD64)GetProcAddress(GetModuleHandleW(W("ntdll.dll")), "NtContinue");
+        if (addrNtContinue == 0)
+        {
+            return false;
+        }
+
+        DWORD64 rip = addrResume;
+        hr = m_pLiveDataTarget->WriteVirtual(addrFaultContext + offsetof(T_CONTEXT, Rip), reinterpret_cast<BYTE *>(&rip), sizeof(rip));
+        if (FAILED(hr))
+        {
+            LOG((LF_CORDB, LL_INFO10, "SP::SUBI WriteVirtual of faulting context failed hr=0x%08x tid=0x%x\n", hr, dwThreadId));
+            return false;
+        }
+
+        context.Rip = addrNtContinue;
+        context.Rcx = addrFaultContext;
+        context.Rdx = FALSE;
+    }
+#endif
+
+    hr = m_pLiveDataTarget->SetThreadContext(dwThreadId, sizeof(context), reinterpret_cast<BYTE *>(&context));
+    if (FAILED(hr))
+    {
+        LOG((LF_CORDB, LL_INFO10, "SP::SUBI SetThreadContext failed hr=0x%08x tid=0x%x\n", hr, dwThreadId));
+        return false;
+    }
+
+    LOG((LF_CORDB, LL_INFO10, "SP::SUBI skipped unowned %s at %p, resuming at %p via %s tid=0x%x\n",
+        fIsInt3 ? "int3" : "int 3", pRecord->ExceptionAddress, CORDB_ADDRESS_TO_PTR(addrResume),
+        (addrFaultContext == 0) ? "SetThreadContext" : "NtContinue", dwThreadId));
+    return true;
+#else
+    // Other architectures report the breakpoint differently; not handled yet.
+    return false;
+#endif
+}
+
 //---------------------------------------------------------------------------------------
 // Does default event handling for native debug events.
 //
@@ -420,6 +633,12 @@ void ShimProcess::DefaultEventHandler(
                     // @dbgtodo sync: not needed once shim can
                     // work on sync APIs.
                     m_pProcess->QueueManagedAttachIfNeeded(); // throws
+                }
+                else if (!fFirstChance && SkipUnhandledBreakpointInstruction(dwThreadId, pRecord))
+                {
+                    LOG((LF_CORDB, LL_INFO10, "SP::DEH skipped unhandled breakpoint not owned by the debugger tid=0x%x addr=%p\n",
+                        dwThreadId, pRecord->ExceptionAddress));
+                    *pdwContinueStatus = DBG_CONTINUE;
                 }
             }
             break;
@@ -819,6 +1038,13 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
                 // For managed-only debugging, there's no user handler for native debug events,
                 // and so we still need to do some basic work on certain debug events.
                 DefaultEventHandler(pEvent, &dwContinueStatus);
+
+                if (dwContinueStatus == DBG_CONTINUE)
+                {
+                    // DefaultEventHandler consumed the event (e.g. it skipped an unowned 2nd-chance
+                    // breakpoint), so the exception is no longer going unhandled.
+                    fExceptionGoingUnhandled = false;
+                }
 
                 // This is the managed-only case. No reason to keep the target win32 frozen, so continue it immediately.
                 _ASSERTE(fContinueNow);

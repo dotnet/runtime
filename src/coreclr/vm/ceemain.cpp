@@ -1137,8 +1137,16 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(p));
-        PRECONDITION(CheckPointer(pv));
+        PRECONDITION(CheckPointer(pv, NULL_OK));
     } CONTRACTL_END;
+
+    // A breakpoint is resumable and does not by itself mean startup failed. If an attached
+    // debugger continues it after first-chance dispatch (for example, an unowned int3 raised by
+    // a profiler while it is loaded), startup must still be intact, so don't touch any state.
+    if (p->ExceptionRecord->ExceptionCode == STATUS_BREAKPOINT)
+    {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
 
     g_EEStartupStatus = (HRESULT)p->ExceptionRecord->ExceptionInformation[0];
 
