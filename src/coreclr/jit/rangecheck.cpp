@@ -137,7 +137,7 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
     ValueNumStore* vnStore = m_compiler->vnStore;
 
     // Get the VN for the upper limit.
-    ValueNum uLimitVN = vnStore->VNConservativeNormalValue(upper->gtVNPair);
+    ValueNum uLimitVN = vnStore->VNCanonicalConservativeNormalValue(upper->gtVNPair);
 
 #ifdef DEBUG
     JITDUMP(FMT_VN " upper bound is: ", uLimitVN);
@@ -521,7 +521,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
     }
 
     LclSsaVarDsc* ssaData     = m_compiler->lvaGetDesc(lcl)->GetPerSsaData(lcl->GetSsaNum());
-    ValueNum      normalLclVN = m_compiler->vnStore->VNConservativeNormalValue(ssaData->m_vnPair);
+    ValueNum      normalLclVN = m_compiler->vnStore->VNCanonicalConservativeNormalValue(ssaData->m_vnPair);
     MergeEdgeAssertions(m_compiler, normalLclVN, m_preferredBound, assertions, pRange);
 }
 
@@ -547,7 +547,7 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_V
         return Limit(Limit::keUnknown);
     }
 
-    ValueNum num = comp->vnStore->VNConservativeNormalValue(tree->gtVNPair);
+    ValueNum num = comp->vnStore->VNCanonicalConservativeNormalValue(tree->gtVNPair);
 
     if (num == ValueNumStore::NoVN)
     {
@@ -574,6 +574,7 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_V
 //
 Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum vn, ASSERT_VALARG_TP assertions, int budget)
 {
+    vn = comp->vnStore->VNCanonical(vn);
     if (vn == ValueNumStore::NoVN)
     {
         return Limit(Limit::keUnknown);
@@ -602,6 +603,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
     Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, int budget, ValueNumStore::SmallValueNumSet* visited)
 {
     assert(num != ValueNumStore::NoVN);
+    num = comp->vnStore->VNCanonical(num);
 
     var_types vnType = comp->vnStore->TypeOfVN(num);
     Range     result = GetRangeFromType(vnType);
@@ -1285,6 +1287,9 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                                            int                              budget,
                                            ValueNumStore::SmallValueNumSet* visited)
 {
+    normalLclVN      = comp->vnStore->VNCanonical(normalLclVN);
+    preferredBoundVN = comp->vnStore->VNCanonical(preferredBoundVN);
+
     Range assertedRange = Range(Limit(Limit::keUnknown));
     if (BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(comp->apTraits, assertions))
     {
@@ -1329,7 +1334,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             ValueNum addOpVN;
             int      addOpCns;
             if (comp->vnStore->IsVNBinFuncWithConst(curAssertion.GetOp1().GetVN(), VNF_ADD, &addOpVN, &addOpCns) &&
-                (addOpVN == normalLclVN))
+                (comp->vnStore->VNCanonical(addOpVN) == normalLclVN))
             {
                 if (addOpCns >= 0)
                 {
@@ -1436,7 +1441,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             const bool normalLclVNMatchesOp2 =
                 ((normalLclVN == boundVN) && (boundCns == 0)) ||
                 ((boundCns != 0) && comp->vnStore->IsVNBinFuncWithConst(normalLclVN, VNF_ADD, &addOp, &addCns) &&
-                 (addOp == boundVN) && (addCns == boundCns));
+                 (comp->vnStore->VNCanonical(addOp) == boundVN) && (addCns == boundCns));
 
             // The bound is related to the preferred bound, e.g. "a.Length == b.Length" or "a.Length <= b.Length".
             // Checked first so the limit is expressed via the preferred bound even if the bound is never negative.
@@ -2449,7 +2454,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     bool  newlyAdded = !GetSearchPath()->Set(expr, block, SearchPath::Overwrite);
     Range range      = Limit(Limit::keUndef);
 
-    ValueNum vn = m_compiler->vnStore->VNConservativeNormalValue(expr->gtVNPair);
+    ValueNum vn = m_compiler->vnStore->VNCanonicalConservativeNormalValue(expr->gtVNPair);
 
     // If we just added 'expr' in the current search path, then reduce the budget.
     if (newlyAdded)
