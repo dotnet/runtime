@@ -139,9 +139,11 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-    [InlineData(Configuration.Debug, false)]
-    [InlineData(Configuration.Release, false)]
-    public async Task BlazorEventPipeTestWithInterpPgo(Configuration config, bool aot)
+    [InlineData(Configuration.Debug, false, true)]
+    [InlineData(Configuration.Release, false, true)]
+    [InlineData(Configuration.Release, false, false)]
+    [TestCategory("no-workload"), TestCategory("coreclr")]
+    public async Task BlazorEventPipeTestWithInterpPgo(Configuration config, bool aot, bool instrumentInterpreter)
     {
         // Publishing without ReadyToRun isolates ordinary interpreter fallback from compiled bodies.
         // The SDK instrumentation property remains reserved for ReadyToRun producer publishes.
@@ -152,7 +154,10 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <PublishReadyToRun>false</PublishReadyToRun>
                 <PublishTrimmed>false</PublishTrimmed>
             ";
-        string extraItems = @"<WasmEnvironmentVariable Include=""DOTNET_WasmPgoInstrumentation"" Value=""*Counter:IncrementCount"" />";
+        string extraItems = instrumentInterpreter ? """
+            <WasmEnvironmentVariable Include="DOTNET_InterpPGO" Value="1" />
+            <WasmEnvironmentVariable Include="DOTNET_InterpPGOMethods" Value="*Counter:IncrementCount" />
+            """ : "";
 
         ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp, "blazor_interp_pgo", extraProperties: extraProperties, extraItems: extraItems);
 
@@ -165,12 +170,15 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
         async Task CollectInterpPgoTest(IPage page)
         {
-            Assert.Equal("*Counter:IncrementCount",
-                await page.EvaluateAsync<string>("globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_WasmPgoInstrumentation"));
+            Assert.Equal(instrumentInterpreter ? "1" : "", await page.EvaluateAsync<string>(
+                "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_InterpPGO ?? ''"));
             await SetupCounterPage(page, "pgo.nettrace",
                 "globalThis.getDotnetRuntime(0).collectPgoTrace({ durationSeconds: 5.0 })", uploadTrace: false);
+            if (!instrumentInterpreter)
+                await page.Locator("text=\"Click me\"").ClickAsync();
             await ClickAndCollect(page, Path.Combine(info.LogPath, "pgo.nettrace"));
-            Assert.Equal("Current count: 5", await page.Locator("p[role='status']").InnerHTMLAsync());
+            Assert.Equal($"Current count: {(instrumentInterpreter ? 5 : 6)}",
+                await page.Locator("p[role='status']").InnerHTMLAsync());
         }
 
         await RunForPublishWithWebServer(new BlazorRunOptions(
@@ -180,15 +188,16 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             CheckCounter: false
         ));
 
-        ValidateInterpPgoTrace(info, config, "pgo.nettrace", "IncrementCount");
+        ValidateInterpPgoTrace(info, config, "pgo.nettrace", "IncrementCount", instrumentInterpreter);
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-    [InlineData(Configuration.Debug, false, "all")]
-    [InlineData(Configuration.Release, false, "all")]
-    [InlineData(Configuration.Release, true, "*WasmPgoScenarios*:*")]
+    [InlineData(Configuration.Debug, false, "all", false)]
+    [InlineData(Configuration.Release, false, "all", true)]
+    [InlineData(Configuration.Release, true, "*WasmPgoScenarios*:*", false)]
     [TestCategory("no-workload"), TestCategory("coreclr")]
-    public async Task BlazorEventPipeTestWithBasicBlockPgoReadyToRun(Configuration config, bool cpuSampling, string pgoFilter)
+    public async Task BlazorEventPipeTestWithSparseEdgePgoReadyToRun(
+        Configuration config, bool cpuSampling, string pgoFilter, bool composite)
     {
         // Optimize crossgen2, not Csc: both publishes must retain the same configuration-specific IL.
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blazor_basic_block_pgo",
@@ -197,6 +206,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <WasmDebugLevel>0</WasmDebugLevel>
                 <WasmEnableThreads>false</WasmEnableThreads>
                 <PublishReadyToRun>true</PublishReadyToRun>
+                <PublishReadyToRunComposite>{composite.ToString().ToLowerInvariant()}</PublishReadyToRunComposite>
                 <PublishTrimmed>false</PublishTrimmed>
                 <WasmPgoInstrumentation Condition="'$(WasmBuildTestConsumePgo)' != 'true'">{pgoFilter}</WasmPgoInstrumentation>
                 <WasmPerformanceInstrumentation Condition="'$(WasmBuildTestConsumePgo)' != 'true'">{(cpuSampling ? "all" : "")}</WasmPerformanceInstrumentation>
@@ -206,9 +216,45 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             extraItems: """
                 <PublishReadyToRunPgoFiles Include="$(WasmBuildTestReadyToRunProfile)" Condition="'$(WasmBuildTestReadyToRunProfile)' != ''" />
                 <WasmEnvironmentVariable Include="DOTNET_EventPipeThreadSamplingRate" Value="2147483647" />
+                <Compile Remove="FallbackLibrary\**\*.cs" />
+                <ProjectReference Include="FallbackLibrary\FallbackLibrary.csproj" />
+                <PublishReadyToRunExclude Include="FallbackLibrary.dll" Condition="'$(WasmBuildTestConsumePgo)' != 'true' and '$(PublishReadyToRunComposite)' != 'true'" />
                 """);
 
         AddBasicBlockPgoScenarios();
+        string fallbackDirectory = Path.Combine(_projectDir, "FallbackLibrary");
+        Directory.CreateDirectory(fallbackDirectory);
+        File.WriteAllText(Path.Combine(fallbackDirectory, "FallbackLibrary.csproj"), $"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>{DefaultTargetFrameworkForBlazor}</TargetFramework>
+              </PropertyGroup>
+            </Project>
+            """);
+        File.WriteAllText(Path.Combine(fallbackDirectory, "Fallback.cs"), """
+            // Licensed to the .NET Foundation under one or more agreements.
+            // The .NET Foundation licenses this file to you under the MIT license.
+
+            using System.Runtime.CompilerServices;
+
+            namespace FallbackLibrary;
+
+            public static class WasmPgoScenarios
+            {
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static int InterpOnly(int value) => value * 7;
+            }
+            """);
+        File.AppendAllText(Path.Combine(_projectDir, "Pages", "Counter.razor"), """
+
+            @code {
+                protected override void OnInitialized()
+                {
+                    if (FallbackLibrary.WasmPgoScenarios.InterpOnly(6) != 42)
+                        throw new System.Exception("Fallback method returned an unexpected result");
+                }
+            }
+            """);
         string buildArgs = GetPgoBuildArgs(config);
         (_, string buildOutput) = BlazorPublish(info, config, new PublishOptions(
             UseCache: false, AssertAppBundle: false,
@@ -239,8 +285,10 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         await RunForPublishWithWebServer(new BlazorRunOptions(config, CheckCounter: false, TimeoutSeconds: 60,
             Test: async page =>
             {
-                Assert.Equal(pgoFilter == "all" ? "*" : pgoFilter,
-                    await page.EvaluateAsync<string>("globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_WasmPgoInstrumentation"));
+                Assert.Equal("", await page.EvaluateAsync<string>(
+                    "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_InterpPGO ?? ''"));
+                Assert.Equal("", await page.EvaluateAsync<string>(
+                    "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_WasmPgoInstrumentation ?? ''"));
                 Assert.Equal(cpuSampling ? "*" : "", await page.EvaluateAsync<string>(
                     "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_WasmPerformanceInstrumentation ?? ''"));
                 await SetupCounterPage(page, "basic-block.nettrace",
@@ -250,7 +298,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             }));
 
         string mibcPath = CreateBasicBlockPgoProfile(info, config, buildOutput, tracePath, producerMvids,
-            assertIntrinsics: pgoFilter == "all");
+            broadFilter: pgoFilter == "all", interpretedFallback: !composite);
         if (cpuSampling)
         {
             string cpuTrace = Path.Combine(info.LogPath, "basic-block-cpu.nettrace");
@@ -280,9 +328,12 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         AssertMeasuredPgoCount("Helper", 15);
         AssertMeasuredPgoCount("EntryAndBackedge", 2);
         AssertMeasuredPgoCount("IlZeroBackedge", 1);
+        AssertMeasuredPgoCount("SwitchEdges", 10);
+        AssertMeasuredPgoCount("ExceptionEdges", 2);
         AssertCompilerInlines("pgo-consumed.jit.txt", "GenericCalls", 3, withPgo: 3);
         AssertCompilerInlines("pgo-consumed.jit.txt", "DirectCalls", 2, withPgo: 2);
         AssertCompilerInlines("pgo-consumed.jit.txt", "FoldedCalls", 1, withPgo: 1);
+        Assert.Contains("; ReadyToRun compilation", GetCompilerMethodListing("pgo-consumed.jit.txt", "InterpOnly"));
         await RunForPublishWithWebServer(new BlazorRunOptions(config, CheckCounter: false, TimeoutSeconds: 60,
             Test: async page =>
             {
@@ -340,8 +391,9 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     {
         string listing = GetCompilerMethodListing("pgo-consumed.jit.txt", method);
         Assert.Contains("; ReadyToRun compilation", listing);
-        Match hotness = Regex.Match(listing, @"; with Static PGO: fgCalledCount is ([0-9]+(?:\.[0-9]+)?)");
-        Assert.True(hotness.Success, $"No measured block profile for {method}:{Environment.NewLine}{listing}");
+        // Normal optimization can reclassify an incorporated edge profile as synthesized.
+        Match hotness = Regex.Match(listing, @"; with (?:Static|Synthesized) PGO: fgCalledCount is ([0-9]+(?:\.[0-9]+)?)");
+        Assert.True(hotness.Success, $"No PGO entry count for {method}:{Environment.NewLine}{listing}");
         Assert.Equal((double)count, double.Parse(hotness.Groups[1].Value, CultureInfo.InvariantCulture));
     }
 
@@ -376,7 +428,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     }
 
     private string CreateBasicBlockPgoProfile(ProjectInfo info, Configuration config, string buildOutput, string tracePath,
-        IReadOnlyDictionary<string, Guid> publishedMvids, bool assertIntrinsics)
+        IReadOnlyDictionary<string, Guid> publishedMvids, bool broadFilter, bool interpretedFallback)
     {
         Assert.True(File.Exists(tracePath), $"Missing trace: {tracePath}");
         string? runtimePack = ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(buildOutput);
@@ -430,10 +482,21 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
         string tool = Path.Combine(AppContext.BaseDirectory, "dotnet-pgo", "dotnet-pgo.dll");
         Assert.True(File.Exists(tool), $"Missing dotnet-pgo payload: {tool}");
+        string ordinaryMibcPath = Path.Combine(info.LogPath, "ordinary.mibc");
+        string ordinaryDumpPath = Path.Combine(info.LogPath, "ordinary.json");
+        using (var command = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false).WithWorkingDirectory(_projectDir))
+            command.ExecuteWithCapturedOutput($"exec \"{tool}\" create-mibc --trace \"{tracePath}\" --reference \"{Path.Combine(referenceDir, "*.dll")}\" --output \"{ordinaryMibcPath}\"").EnsureSuccessful();
+        using (var command = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false).WithWorkingDirectory(_projectDir))
+            command.ExecuteWithCapturedOutput($"exec \"{tool}\" dump --input \"{ordinaryMibcPath}\" --output \"{ordinaryDumpPath}\"").EnsureSuccessful();
+        using JsonDocument ordinaryDump = JsonDocument.Parse(File.ReadAllText(ordinaryDumpPath));
+        JsonElement[] ordinaryMethods = ordinaryDump.RootElement.GetProperty("Methods").EnumerateArray().ToArray();
+        if (interpretedFallback)
+            Assert.DoesNotContain(ordinaryMethods, method =>
+                method.GetProperty("Method").GetString()!.Contains("FallbackLibrary.WasmPgoScenarios.InterpOnly(", StringComparison.Ordinal));
         string mibcPath = Path.Combine(info.LogPath, "basic-block.mibc");
         string dumpPath = Path.Combine(info.LogPath, "basic-block.json");
         using (var command = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false).WithWorkingDirectory(_projectDir))
-            command.ExecuteWithCapturedOutput($"exec \"{tool}\" create-mibc --trace \"{tracePath}\" --reference \"{Path.Combine(referenceDir, "*.dll")}\" --output \"{mibcPath}\"").EnsureSuccessful();
+            command.ExecuteWithCapturedOutput($"exec \"{tool}\" create-mibc --include-interpreted-rundown --trace \"{tracePath}\" --reference \"{Path.Combine(referenceDir, "*.dll")}\" --output \"{mibcPath}\"").EnsureSuccessful();
         using (var command = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false).WithWorkingDirectory(_projectDir))
             command.ExecuteWithCapturedOutput($"exec \"{tool}\" dump --input \"{mibcPath}\" --output \"{dumpPath}\"").EnsureSuccessful();
 
@@ -442,34 +505,39 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         JsonElement[] methods = allMethods
             .Where(method => method.GetProperty("Method").GetString()!.Contains("BlazorBasicTestApp.WasmPgoScenarios.", StringComparison.Ordinal))
             .ToArray();
-        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "Helper")), 15);
-        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "NestedInlinee")), 15);
-        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "DirectCalls")), 1, loopIterations: 10);
-        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "GenericCalls")), 1);
-        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "FoldedCalls")), 1);
-        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "ConstantInlinee")), 1);
-        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "EntryAndBackedge")), 2, loopIterations: 7);
-        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "IlZeroBackedge")),
-            config == Configuration.Release ? 7 : 1);
+        JsonElement ordinaryHelper = Assert.Single(ordinaryMethods, method => IsMethod(method, "Helper") &&
+            method.GetProperty("Method").GetString()!.Contains("BlazorBasicTestApp.WasmPgoScenarios.", StringComparison.Ordinal));
+        Assert.Equal(ordinaryHelper.GetProperty("InstrumentationData").GetRawText(),
+            Assert.Single(methods, method => IsMethod(method, "Helper")).GetProperty("InstrumentationData").GetRawText());
+        AssertEdgeCounts(Assert.Single(methods, method => IsMethod(method, "Helper")), 15);
+        AssertEdgeCounts(Assert.Single(methods, method => IsMethod(method, "NestedInlinee")), 15);
+        AssertEdgeCounts(Assert.Single(methods, method => IsMethod(method, "DirectCalls")), 1, loopIterations: 10);
+        AssertEdgeCounts(Assert.Single(methods, method => IsMethod(method, "GenericCalls")), 1);
+        AssertEdgeCounts(Assert.Single(methods, method => IsMethod(method, "FoldedCalls")), 1);
+        AssertEdgeCounts(Assert.Single(methods, method => IsMethod(method, "ConstantInlinee")), 1);
+        AssertEdgeCounts(Assert.Single(methods, method => IsMethod(method, "EntryAndBackedge")), 2, loopIterations: 7);
+        AssertEdgeCounts(Assert.Single(methods, method => IsMethod(method, "IlZeroBackedge")), 1,
+            ilZeroBackedge: config == Configuration.Release);
+        AssertEdgeCounts(Assert.Single(methods, method => IsMethod(method, "SwitchEdges")), 10);
+        AssertEdgeCounts(Assert.Single(methods, method => IsMethod(method, "ExceptionEdges")), 2);
+        JsonElement fallback = Assert.Single(allMethods, method =>
+            method.GetProperty("Method").GetString()!.Contains("FallbackLibrary.WasmPgoScenarios.InterpOnly(", StringComparison.Ordinal));
+        if (interpretedFallback)
+            Assert.False(fallback.TryGetProperty("InstrumentationData", out _), fallback.ToString());
+        else
+            AssertEdgeCounts(fallback, 1);
+        Assert.False(fallback.TryGetProperty("ExclusiveWeight", out _), fallback.ToString());
         Assert.DoesNotContain(methods, method => IsMethod(method, "NeverCalled"));
         JsonElement[] generics = methods.Where(method => IsMethod(method, "GenericEntries")).ToArray();
         Assert.Equal(2, generics.Length);
-        AssertBlockCounts(Assert.Single(generics, method => method.GetProperty("Method").GetString()!.Contains("__Canon", StringComparison.Ordinal)), 7);
-        AssertBlockCounts(Assert.Single(generics, method => method.GetProperty("Method").GetString()!.Contains("<int32>", StringComparison.Ordinal)), 6);
+        AssertEdgeCounts(Assert.Single(generics, method => method.GetProperty("Method").GetString()!.Contains("__Canon", StringComparison.Ordinal)), 7);
+        AssertEdgeCounts(Assert.Single(generics, method => method.GetProperty("Method").GetString()!.Contains("<int32>", StringComparison.Ordinal)), 6);
         JsonElement[] outOfFilter = allMethods.Where(method => method.GetProperty("Method").GetString()!.Contains(
             "BlazorBasicTestApp.IntrinsicPgoCalls.DeferredFillCalls(", StringComparison.Ordinal) &&
             method.TryGetProperty("InstrumentationData", out _)).ToArray();
-        if (assertIntrinsics)
+        if (broadFilter)
         {
-            AssertBlockCounts(Assert.Single(outOfFilter), 1);
-            // Successful expansion uses invocation-only data, not a fabricated callee CFG. The
-            // unique value type isolates this intrinsic from unrelated framework startup calls.
-            AssertInvocationCount(Assert.Single(allMethods, method =>
-                method.GetProperty("Method").GetString()!.Contains("System.Runtime.InteropServices.MemoryMarshal.GetArrayDataReference<", StringComparison.Ordinal) &&
-                method.GetProperty("Method").GetString()!.Contains("IntrinsicElement", StringComparison.Ordinal)), 1);
-            AssertInvocationCount(Assert.Single(allMethods, method =>
-                method.GetProperty("Method").GetString()!.Contains("System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<", StringComparison.Ordinal) &&
-                method.GetProperty("Method").GetString()!.Contains("IntrinsicElement", StringComparison.Ordinal)), 1);
+            AssertEdgeCounts(Assert.Single(outOfFilter), 1);
         }
         else
         {
@@ -489,34 +557,23 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 .Where(element => element.GetProperty("InstrumentationKind").GetString() is not ("Version" or "NumRuns")).ToArray();
         }
 
-        static void AssertBlockCounts(JsonElement method, long entries, long? loopIterations = null)
+        static void AssertEdgeCounts(JsonElement method, long entries, long? loopIterations = null, bool ilZeroBackedge = false)
         {
             JsonElement[] counters = GetCounters(method);
             Assert.NotEmpty(counters);
-            Assert.All(counters, counter => Assert.Equal("BasicBlockLongCount", counter.GetProperty("InstrumentationKind").GetString()));
-            Assert.Equal(entries, Assert.Single(counters, counter => counter.GetProperty("ILOffset").GetInt32() == 0).GetProperty("Data").GetInt64());
+            Assert.All(counters, counter => Assert.Equal("EdgeLongCount", counter.GetProperty("InstrumentationKind").GetString()));
+            Assert.Equal(entries, counters.Where(counter =>
+                counter.GetProperty("Other").GetInt32() == 0 &&
+                (!ilZeroBackedge || counter.GetProperty("ILOffset").GetInt32() != 0))
+                .Sum(counter => counter.GetProperty("Data").GetInt64()));
+            if (ilZeroBackedge)
+                Assert.Equal(6, Assert.Single(counters, counter => counter.GetProperty("ILOffset").GetInt32() == 0 &&
+                    counter.GetProperty("Other").GetInt32() == 0).GetProperty("Data").GetInt64());
             if (loopIterations is long iterations)
             {
-                Assert.True(counters.Length > 1, $"Expected a complete multi-block schema: {method}");
-                Assert.Contains(counters, counter => counter.GetProperty("ILOffset").GetInt32() != 0 &&
-                    counter.GetProperty("Data").GetInt64() == iterations);
+                Assert.True(counters.Length > 1, $"Expected loop and return edge counters: {method}");
+                Assert.Contains(counters, counter => counter.GetProperty("Data").GetInt64() == iterations);
             }
-        }
-
-        static void AssertInvocationCount(JsonElement method, long invocations)
-        {
-            JsonElement[] counters = GetCounters(method);
-            JsonElement entry = Assert.Single(counters,
-                counter => counter.GetProperty("InstrumentationKind").GetString() == "MethodEntryLongCount");
-            Assert.Equal(0, entry.GetProperty("ILOffset").GetInt32());
-            Assert.Equal(invocations, entry.GetProperty("Data").GetInt64());
-            // A compiled but unexecuted fallback body may retain its zero-valued block schema.
-            Assert.All(counters.Where(counter => counter.GetProperty("InstrumentationKind").GetString() != "MethodEntryLongCount"),
-                counter =>
-                {
-                    Assert.Equal("BasicBlockLongCount", counter.GetProperty("InstrumentationKind").GetString());
-                    Assert.Equal(0, counter.GetProperty("Data").GetInt64());
-                });
         }
     }
 
@@ -560,6 +617,11 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                         throw new Exception("The IL-zero backedge did not complete");
                     if (FoldedCalls() != 8)
                         throw new Exception("Constant-folded inlinee returned an unexpected result");
+                    int switchResult = 0;
+                    for (int i = 0; i < 10; i++)
+                        switchResult += SwitchEdges(i % 5);
+                    if (switchResult != 24 || ExceptionEdges(false) + ExceptionEdges(true) != 18)
+                        throw new Exception("Switch or exception profiling changed execution");
                     IntrinsicPgoCalls.ValidateCalls();
                     IntrinsicPgoCalls.DeferredFillCalls();
                     if (result != 159)
@@ -619,6 +681,38 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 }
 
                 public static int NeverCalled(int value) => value + 1;
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static int SwitchEdges(int value)
+                {
+                    switch (value)
+                    {
+                        case 0:
+                            return 1;
+                        case 1:
+                        case 2:
+                            return 2;
+                        case 3:
+                            return 3;
+                        default:
+                            return 4;
+                    }
+                }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static int ExceptionEdges(bool fail)
+                {
+                    try
+                    {
+                        if (fail)
+                            throw new InvalidOperationException();
+                        return 7;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        return 11;
+                    }
+                }
 
                 [MethodImpl(MethodImplOptions.NoInlining)]
                 public static void IlZeroBackedge()
@@ -838,13 +932,14 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         }
     }
 
-    private void ValidateInterpPgoTrace(ProjectInfo info, Configuration config, string traceFileName, string expectedMethod)
+    private void ValidateInterpPgoTrace(ProjectInfo info, Configuration config, string traceFileName,
+        string expectedMethod, bool instrumentInterpreter)
     {
         string tracePath = Path.GetFullPath(Path.Combine(info.LogPath, traceFileName));
         Assert.True(File.Exists(tracePath), $"PGO trace {tracePath} was not created");
 
         // The untrimmed IL assemblies next to the app (bin/<Config>/<TFM>) share the MVID of the served
-        // webcil, so dotnet-pgo can resolve the invocation-only events against them.
+        // webcil, so dotnet-pgo can resolve the interpreter events against them.
         string referenceDir = Path.Combine(_projectDir, "bin", config.ToString(), DefaultTargetFrameworkForBlazor);
         Assert.True(Directory.Exists(referenceDir), $"Reference assembly directory {referenceDir} was not found");
 
@@ -853,11 +948,13 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         Assert.True(File.Exists(pgoTool), $"dotnet-pgo was not found at {pgoTool}");
 
         string mibcPath = Path.Combine(info.LogPath, "pgo.mibc");
+        string discoveryArgs = instrumentInterpreter ? "" :
+            $"--include-interpreted-rundown --include-methods \"\\.{Regex.Escape(expectedMethod)}\\(\"";
 
         using (var createCmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false).WithWorkingDirectory(_projectDir))
         {
             createCmd.ExecuteWithCapturedOutput(
-                $"exec \"{pgoTool}\" create-mibc --trace \"{tracePath}\" --reference \"{Path.Combine(referenceDir, "*.dll")}\" --output \"{mibcPath}\"")
+                $"exec \"{pgoTool}\" create-mibc {discoveryArgs} --trace \"{tracePath}\" --reference \"{Path.Combine(referenceDir, "*.dll")}\" --output \"{mibcPath}\"")
                 .EnsureSuccessful();
         }
         Assert.True(File.Exists(mibcPath), $"dotnet-pgo did not produce {mibcPath}");
@@ -870,6 +967,14 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         string dumpText = File.ReadAllText(dumpPath);
         Assert.Contains(expectedMethod, dumpText);
         using JsonDocument dump = JsonDocument.Parse(dumpText);
+        if (!instrumentInterpreter)
+        {
+            JsonElement presence = Assert.Single(dump.RootElement.GetProperty("Methods").EnumerateArray());
+            Assert.False(presence.TryGetProperty("InstrumentationData", out _), presence.ToString());
+            Assert.False(presence.TryGetProperty("ExclusiveWeight", out _), presence.ToString());
+
+            return;
+        }
         JsonElement method = Assert.Single(dump.RootElement.GetProperty("Methods").EnumerateArray()
             .Where(element => element.TryGetProperty("InstrumentationData", out JsonElement instrumentation) &&
                 instrumentation.EnumerateArray().Any(record =>
@@ -877,10 +982,9 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         Assert.Contains("." + expectedMethod + "(", method.GetProperty("Method").GetString(), StringComparison.Ordinal);
         JsonElement entry = Assert.Single(method.GetProperty("InstrumentationData").EnumerateArray()
             .Where(element => element.GetProperty("InstrumentationKind").GetString() is not ("Version" or "NumRuns")));
-        Assert.Equal("MethodEntryLongCount", entry.GetProperty("InstrumentationKind").GetString());
+        Assert.Equal("BasicBlockIntCount", entry.GetProperty("InstrumentationKind").GetString());
         Assert.Equal(0, entry.GetProperty("ILOffset").GetInt32());
         Assert.Equal(5, entry.GetProperty("Data").GetInt64());
-        Assert.DoesNotContain("BasicBlockIntCount", dumpText);
         Assert.DoesNotContain("BasicBlockLongCount", dumpText);
     }
 

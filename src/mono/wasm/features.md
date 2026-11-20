@@ -438,7 +438,7 @@ globalThis.getDotnetRuntime(0).collectPgoTrace({durationSeconds: 30})
 
 #### CoreCLR profile-guided ReadyToRun publishing
 
-`WasmPgoInstrumentation` enables 64-bit basic-block counters for selected CoreCLR
+`WasmPgoInstrumentation` enables 64-bit sparse-edge counters for selected CoreCLR
 ReadyToRun methods, including inlined bodies. It uses the standard MethodSet format:
 `all` is translated to `*`, `*` selects every method, and an empty value disables
 instrumentation. For example, `*MyApplication*:*` selects methods on matching types.
@@ -488,29 +488,36 @@ needed by the profile tool. To arm the startup trace before managed execution, u
 </ItemGroup>
 ```
 
-Ordinary compiled bodies produce `BasicBlockLongCount` schemas covering their IL
-basic blocks, not just invocation counts. Expanded intrinsic callees do not execute
-their IL bodies: their `MethodEntryLongCount` data describes invocations only.
-Interpreted methods in a single-threaded Browser/Wasm producer publish use the same
-invocation-only tag as a coarse fallback.
-Invocation-only profiles do not claim measured internal branch or loop frequencies.
-Instrumentation preserves application exception behavior; there is no guarantee of
-precise counts for failed argument evaluation or throwing intrinsic operations.
+Compiled bodies produce ordinary `EdgeLongCount` schemas, using the JIT's sparse
+spanning-tree instrumentation and flow reconstruction. The source key is stored
+in `ILOffset` and the destination key in `Other`; JIT-internal blocks can use
+synthetic keys. Method entry counts and branch likelihoods are reconstructed from
+these measured edges. Intrinsic expansion does not fabricate a separate callee
+invocation profile.
 
-The publish property forwards the same filter to crossgen2 and to the runtime as
-`DOTNET_WasmPgoInstrumentation`, covering both compiled methods and interpreter
-fallbacks in the published application. Empty disables it, and `*` selects all
-methods. Other interpreter configurations, including WASI, retain their separate
-`DOTNET_InterpPGO` and `DOTNET_InterpPGOMethods` settings and sparse 32-bit block
-counters; those settings do not configure this Browser publishing workflow.
+The publish property selects R2R instrumentation in crossgen2. It does not enable
+interpreter counter probes. The interpreter retains its separate, optional
+`DOTNET_InterpPGO` and `DOTNET_InterpPGOMethods` settings; they are not required for
+this workflow. Coarse interpreter block profiles must not be mixed with R2R
+edge profiles for the same method.
+
+Use the conversion option below to include metadata-backed interpreter methods
+from existing method-load/rundown events. These are method-presence roots for the
+next compilation, not measured invocation counts or internal branch statistics.
+Prepared interpreter code need not have executed. Dynamic stubs and methods
+without usable IL bodies are excluded; shared generics retain their canonical
+identity.
+
+The PGO collector requests capture-state metadata before the runtime provider
+stops, so method/type identities are available even for methods without counters.
+This is a one-time enumeration, not interpreter execution instrumentation.
 
 Convert the downloaded `xxx.nettrace` into an `.mibc` with `dotnet-pgo` (installed via
 `dotnet tool install --global dotnet-pgo`, or from `artifacts/bin/coreclr/<host-os>.<arch>.<config>/dotnet-pgo/`
-in a runtime build). Use a tool version that understands `MethodEntryLongCount`
-when invocation-only contributions are present:
+in a runtime build). Use a tool version supporting interpreter rundown roots:
 
 ```console
-dotnet-pgo create-mibc --trace xxx.nettrace --reference "<matching-IL-directory>/*.dll" --output app.mibc
+dotnet-pgo create-mibc --include-interpreted-rundown --trace xxx.nettrace --reference "<matching-IL-directory>/*.dll" --output app.mibc
 dotnet-pgo dump --input app.mibc --output app.json
 ```
 
@@ -527,8 +534,11 @@ dotnet publish -c Release -p:WasmPgoInstrumentation=
 ```
 
 Keep the same application IL and runtime-pack IL between producer and consumer.
-The consumer uses measured block likelihoods; invocation-only contributions are
-kept distinct from block counts. Changing the filter, profile inputs, composite
+The consumer uses measured edge profiles where available and interpreter presence
+for method selection. The rundown option is only for CoreCLR Browser/Wasm traces;
+when architecture metadata is missing, specifying it asserts that input contract.
+Convert the original `.nettrace` with this option: a previously converted `.etlx`
+may already have discarded the required events. Changing the filter, profile inputs, composite
 setting, crossgen2 arguments, or ReadyToRun postprocessing settings invalidates
 the incremental ReadyToRun outputs.
 

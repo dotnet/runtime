@@ -43,6 +43,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             new("--spgo-min-samples") { DefaultValueFactory = _ => 50, Description = "The minimum number of total samples a function must have before generating profile data for it with SPGO. Default: 50" };
         public Option<bool> IncludeFullGraphs { get; } =
             new("--include-full-graphs") { Description = "Include all blocks and edges in the written .mibc file, regardless of profile counts" };
+        public Option<bool> IncludeInterpretedRundown { get; } =
+            new("--include-interpreted-rundown") { Description = "Include prepared interpreter methods from CoreCLR Browser/Wasm method load/rundown as profile roots. This option asserts Browser/Wasm input when architecture metadata is unavailable. Code presence does not imply execution or supply counts" };
         public Option<double> ExcludeEventsBefore { get; } =
             new("--exclude-events-before") { DefaultValueFactory = _ => Double.MinValue, Description = "Exclude data from events before specified time. Time is specified as milliseconds from the start of the trace" };
         public Option<double> ExcludeEventsAfter { get; } =
@@ -120,7 +122,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 PreciseDebugInfoFile,
                 Spgo,
                 SpgoMinSamples,
-                IncludeFullGraphs
+                IncludeFullGraphs,
+                IncludeInterpretedRundown
             };
 
             createMbicCommand.SetAction(result =>

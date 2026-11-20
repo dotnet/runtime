@@ -71,33 +71,35 @@ public class WasmArgumentLayoutTests
     [InlineData(true)]
     public void InstrumentationSchemaTableDeduplicatesAndOrdersLayouts(bool reverse)
     {
-        PgoInstrumentationSchema[] blocks =
+        PgoInstrumentationSchema[] edges =
         [
-            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount, Count = 1 },
-            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount, ILOffset = 12, Count = 1 },
+            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.EdgeLongCount, Other = 12, Count = 1 },
+            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.EdgeLongCount, ILOffset = 12, Count = 1 },
         ];
-        PgoInstrumentationSchema[] invocation =
+        PgoInstrumentationSchema[] alternateEdges =
         [
-            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.MethodEntryLongCount, Count = 1 },
+            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.EdgeLongCount, Other = 24, Count = 1 },
+            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.EdgeLongCount, ILOffset = 12, Count = 1 },
         ];
-        int blockSize = PgoInstrumentationSchemaTableNode.Layout(blocks);
-        int invocationSize = PgoInstrumentationSchemaTableNode.Layout(invocation);
+        int edgeSize = PgoInstrumentationSchemaTableNode.Layout(edges);
+        int alternateSize = PgoInstrumentationSchemaTableNode.Layout(alternateEdges);
         PgoInstrumentationSchemaTableNode table = new();
         if (reverse)
-            table.Add(invocation, invocationSize);
-        var blockEntry = table.Add(blocks, blockSize);
-        table.Add(invocation, invocationSize);
-        Assert.Same(blockEntry, table.Add(blocks, blockSize));
+            table.Add(alternateEdges, alternateSize);
+        var edgeEntry = table.Add(edges, edgeSize);
+        table.Add(alternateEdges, alternateSize);
+        Assert.Same(edgeEntry, table.Add(edges, edgeSize));
 
         PgoInstrumentationSchemaTableNode comparison = new();
-        comparison.Add(invocation, invocationSize);
-        comparison.Add(blocks, blockSize);
+        comparison.Add(alternateEdges, alternateSize);
+        comparison.Add(edges, edgeSize);
         byte[] data = table.Encode();
         Assert.Equal(comparison.Encode(), data);
         Assert.Equal(2, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(4)));
-        int blobOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(8 + table.GetIndex(blockEntry) * 4));
+        int blobOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(8 + table.GetIndex(edgeEntry) * 4));
         Assert.Equal(2, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset)));
         Assert.Equal(16, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset + 4)));
+        Assert.Equal(12, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset + 20)));
         Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset + 24)));
         Assert.Equal(12, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset + 32)));
         Assert.Equal(8, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset + 44)));
@@ -123,7 +125,7 @@ public class WasmArgumentLayoutTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void RecursiveIntrinsicBodyHasOneBlockProbe(bool instrument)
+    public void RecursiveIntrinsicBodyHasOneEdgeProbe(bool instrument)
     {
         string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         Directory.CreateDirectory(directory);
@@ -162,7 +164,7 @@ public class WasmArgumentLayoutTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void NullableListSetterProfilesOnlyIlBlocks(bool instrument)
+    public void NullableListSetterProfilesSparseEdges(bool instrument)
     {
         string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "il-block-profiling", Path.GetRandomFileName()));
         Directory.CreateDirectory(directory);
@@ -251,10 +253,9 @@ public class WasmArgumentLayoutTests
     }
 
     [Theory]
-    [InlineData(7L, 1L, 0L)]
-    [InlineData(21L, 3L, 0L)]
-    [InlineData(7L, 1L, 4L)]
-    public void BlockProfileSeparatesEntryFromIlZeroBackedge(long loopCount, long exitCount, long invocationCount)
+    [InlineData(7L, 1L)]
+    [InlineData(21L, 3L)]
+    public void EdgeProfileSeparatesEntryFromIlZeroBackedge(long loopCount, long exitCount)
     {
         string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "block-profile-flow", Path.GetRandomFileName()));
         Directory.CreateDirectory(directory);
@@ -283,14 +284,11 @@ public class WasmArgumentLayoutTests
             Assert.Equal((byte)ILOpCode.Ret, ilBytes[^1]);
             List<CompilerPgo.PgoSchemaElem> schema =
             [
-                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount,
-                    ILOffset = 0, Count = 1, DataLong = loopCount },
-                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount,
-                    ILOffset = ilBytes.Length - 1, Count = 1, DataLong = exitCount },
+                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.EdgeLongCount,
+                    ILOffset = 0, Other = 0, Count = 1, DataLong = loopCount - exitCount },
+                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.EdgeLongCount,
+                    ILOffset = ilBytes.Length - 1, Other = 0, Count = 1, DataLong = exitCount },
             ];
-            if (invocationCount != 0)
-                schema.Add(new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.MethodEntryLongCount,
-                    Count = 1, DataLong = invocationCount });
 
             string profile = Path.Combine(directory, "profile.mibc");
             WriteCountProfile(context, method, schema, profile);
@@ -316,7 +314,7 @@ public class WasmArgumentLayoutTests
             string listing = File.ReadAllText(listingPath);
             Match count = Regex.Match(listing, @"with Static PGO: fgCalledCount is ([\d.eE+-]+)");
             Assert.True(count.Success, listing);
-            Assert.Equal((double)(exitCount + invocationCount),
+            Assert.Equal((double)exitCount,
                 double.Parse(count.Groups[1].Value, CultureInfo.InvariantCulture));
         }
         finally
@@ -326,85 +324,9 @@ public class WasmArgumentLayoutTests
     }
 
     [Theory]
-    [InlineData(true, 30L, 50L, true)]
-    [InlineData(false, 20L, 60L, true)]
-    [InlineData(false, 60L, 60L, true)]
-    [InlineData(false, 20L, 60L, false)]
-    public void BlockProfileDoesNotInferExceptionalOrContradictoryFlow(
-        bool exceptionHandler, long firstCount, long secondCount, bool includeFirstBlock)
-    {
-        string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "conservative-block-profile", Path.GetRandomFileName()));
-        Directory.CreateDirectory(directory);
-        try
-        {
-            string source = $$"""
-                using System;
-                using System.Runtime.CompilerServices;
-                public static class Callbacks
-                {
-                    [MethodImpl(MethodImplOptions.NoInlining)]
-                    public static void MayThrow() { }
-                    [MethodImpl(MethodImplOptions.NoInlining)]
-                    public static int Branch(bool takeFirst)
-                    {
-                        {{(exceptionHandler ? "try { MayThrow();" : "")}}
-                        if (takeFirst) return 1;
-                        return 2;
-                        {{(exceptionHandler ? "} catch (Exception) { return 3; }" : "")}}
-                    }
-                }
-                """;
-            string input = CompileCallbackAssembly(source, Path.Combine(directory, "ConservativeFlow.dll"), optimize: true);
-            ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext(input);
-            EcmaModule module = context.GetModuleForSimpleName("ConservativeFlow");
-            EcmaMethod method = (EcmaMethod)module.GetType(""u8, "Callbacks"u8).GetMethod("Branch"u8, null);
-            Internal.IL.EcmaMethodIL body = Internal.IL.EcmaMethodIL.Create(method);
-            byte[] ilBytes = body.GetILBytes();
-            int argumentOffset = exceptionHandler ? 5 : 0;
-            if (exceptionHandler)
-                Assert.Equal((byte)ILOpCode.Call, ilBytes[0]);
-            Assert.Equal((byte)ILOpCode.Ldarg_0, ilBytes[argumentOffset]);
-            Assert.Equal((byte)ILOpCode.Brfalse_s, ilBytes[argumentOffset + 1]);
-            int firstOffset = argumentOffset + 3;
-            int secondOffset = firstOffset + (sbyte)ilBytes[argumentOffset + 2];
-            Assert.Equal((byte)ILOpCode.Ldc_i4_1, ilBytes[firstOffset]);
-            Assert.Equal((byte)ILOpCode.Ldc_i4_2, ilBytes[secondOffset]);
-            List<CompilerPgo.PgoSchemaElem> schema =
-            [
-                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount,
-                    ILOffset = 0, Count = 1, DataLong = 100 },
-                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount,
-                    ILOffset = secondOffset, Count = 1, DataLong = secondCount },
-                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.MethodEntryLongCount,
-                    Count = 1, DataLong = 17 },
-            ];
-            if (includeFirstBlock)
-                schema.Add(new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount,
-                    ILOffset = firstOffset, Count = 1, DataLong = firstCount });
-            if (exceptionHandler)
-            {
-                Internal.IL.ILExceptionRegion handler = Assert.Single(body.GetExceptionRegions());
-                schema.Add(new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount,
-                    ILOffset = handler.HandlerOffset, Count = 1, DataLong = 20 });
-                schema.Add(new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount,
-                    ILOffset = handler.HandlerOffset + handler.HandlerLength, Count = 1, DataLong = 100 });
-            }
-
-            string listing = CompileCountProfile(input, context, method, schema, directory);
-            AssertCountProfile(listing, entryCount: 117, firstLikelihood: 0.5, secondLikelihood: 0.5);
-        }
-        finally
-        {
-            Directory.Delete(directory, recursive: true);
-        }
-    }
-
-    [Theory]
-    [InlineData(false, 0L)]
-    [InlineData(false, 17L)]
-    [InlineData(true, 0L)]
-    [InlineData(true, 17L)]
-    public void EdgeProfileWithInvocationCountsPreservesLikelihoods(bool longCounts, long invocationCount)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EdgeProfilePreservesLikelihoods(bool longCounts)
     {
         string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "mixed-edge-profile", Path.GetRandomFileName()));
         Directory.CreateDirectory(directory);
@@ -442,12 +364,9 @@ public class WasmArgumentLayoutTests
                 new() { InstrumentationKind = edgeKind, ILOffset = FirstOffset, Other = 0, Count = 1, DataLong = 30 },
                 new() { InstrumentationKind = edgeKind, ILOffset = secondOffset, Other = 0, Count = 1, DataLong = 70 },
             ];
-            if (invocationCount != 0)
-                schema.Add(new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.MethodEntryLongCount,
-                    Count = 1, DataLong = invocationCount });
 
             string listing = CompileCountProfile(input, context, method, schema, directory);
-            AssertCountProfile(listing, entryCount: 100 + invocationCount, firstLikelihood: 0.3, secondLikelihood: 0.7);
+            AssertCountProfile(listing, entryCount: 100, firstLikelihood: 0.3, secondLikelihood: 0.7);
         }
         finally
         {

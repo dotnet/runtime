@@ -7251,15 +7251,12 @@ protected:
     PhaseStatus fgPrepareToInstrumentMethod();
     PhaseStatus fgInstrumentMethod();
     PhaseStatus fgInstrumentMethodCore();
-    Statement* impNewMethodEntryMarker(CORINFO_METHOD_HANDLE method);
-    void impRemoveMethodEntryMarker(BasicBlock* block, Statement* marker);
-    PhaseStatus fgInstrumentMethodEntryMarkers();
     PhaseStatus fgIncorporateProfileData();
     bool        fgIncorporateBlockCounts();
     bool        fgIncorporateEdgeCounts();
 
 public:
-    bool compWasmPgoInstrumentation() const;
+    bool compR2RPgoInstrumentation() const;
 
     const char*                            fgPgoFailReason;
     bool                                   fgPgoDisabled = false;

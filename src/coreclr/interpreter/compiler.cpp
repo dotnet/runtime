@@ -56,9 +56,7 @@ bool InterpCompiler::s_samplingProfilerEnabled = false;
 bool InterpCompiler::s_browserProfilerEnabled = false;
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
-#if !defined(TARGET_WASM) || !defined(TARGET_BROWSER) || defined(FEATURE_MULTITHREADING)
 bool InterpCompiler::s_interpPgoEnabled = false;
-#endif // !TARGET_WASM || !TARGET_BROWSER || FEATURE_MULTITHREADING
 
 #if MEASURE_MEM_ALLOC
 #include <minipal/mutex.h>
@@ -2258,14 +2256,9 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
 
-#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
-    m_emitMethodEntryPGO = !InterpConfig.WasmPgoInstrumentation().isEmpty()
-        && InterpConfig.WasmPgoInstrumentation().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args);
-#else
     m_emitInterpPGO = s_interpPgoEnabled
         && (InterpConfig.InterpPGOMethods().isEmpty()
             || InterpConfig.InterpPGOMethods().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args));
-#endif // TARGET_WASM && TARGET_BROWSER && !FEATURE_MULTITHREADING
 
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
@@ -2369,13 +2362,8 @@ bool InterpCompiler::CompileMethod()
     }
 #endif
 
-#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
-    if (m_emitMethodEntryPGO)
-        InstrumentMethodEntry();
-#else
     if (m_emitInterpPGO)
         InstrumentBlockCounts();
-#endif // TARGET_WASM && TARGET_BROWSER && !FEATURE_MULTITHREADING
 
     AllocOffsets();
     PatchInitLocals(m_methodInfo);
@@ -8775,34 +8763,20 @@ void InterpCompiler::CreateSynchronizedRetValVar()
     INTERP_DUMP("Created ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
 }
 
-#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
-void InterpCompiler::InstrumentMethodEntry()
-{
-    ICorJitInfo::PgoInstrumentationSchema schema = {};
-    schema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::MethodEntryLongCount;
-    schema.Count = 1;
-    uint8_t* data = nullptr;
-    HRESULT hr = m_compHnd->allocPgoInstrumentationBySchema(m_methodHnd, &schema, 1, &data);
-    if (hr == E_NOTIMPL)
-    {
-        INTERP_DUMP("Method-entry PGO requires a metadata-backed IL method\n");
-        return;
-    }
-    if (FAILED(hr) || data == nullptr)
-        NO_WAY("Failed to allocate method-entry profile counter");
-
-    // The synthetic prologue is not revisited by IL backedges to offset zero.
-    InterpInst* probe = InsertInsBB(m_pEntryBB, nullptr, INTOP_PGO_COUNT_I8);
-    probe->ilOffset = -1;
-    probe->data[0] = GetDataItemIndex(data + schema.Offset);
-}
-#else
+// Instrument the method entry and loop heads with block-count PGO probes. The counters are allocated by
+// allocPgoInstrumentationBySchema (native PgoManager memory), so they persist independently of
+// EventPipe session lifetime; the accumulated profile is flushed to the trace as
+// JitInstrumentationDataVerbose events, which dotnet-pgo consumes to build an .mibc.
 void InterpCompiler::InstrumentBlockCounts()
 {
-    // Probe IL offset zero and loop heads, retaining one counter per original IL block.
-    // Cloned and optimized-away blocks cannot provide unique IL offsets.
+    // Probe the same points as the sampling profiler - method entry and loop heads (targets of backward
+    // branches) - but with an exact counter rather than a sample. This yields exact method invocation and
+    // loop trip counts; acyclic branch structure is deliberately not profiled here, since mapping the
+    // interpreter's blocks onto the JIT's is approximate at best (#130517).
+    // Clones (funclet / leave-chain islands) and blocks removed by optimization are skipped, so every schema
+    // entry carries a unique IL offset, matching what getPgoInstrumentationResults and dotnet-pgo expect.
     TArray<InterpBasicBlock*, MemPoolAllocator> blocks(GetMemPoolAllocator(IMK_DataItem));
-    for (InterpBasicBlock* bb = m_pEntryBB; bb != nullptr; bb = bb->pNextBB)
+    for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
     {
         if (bb->ilOffset < 0 || bb->ilOffset >= m_ILCodeSizeFromILHeader || m_ppOffsetToBB[bb->ilOffset] != bb)
             continue;
@@ -8814,33 +8788,38 @@ void InterpCompiler::InstrumentBlockCounts()
     if (numBlocks == 0)
         return;
 
+    // One 4-byte block counter per block.
     TArray<ICorJitInfo::PgoInstrumentationSchema, MemPoolAllocator> schema(GetMemPoolAllocator(IMK_DataItem));
     for (int32_t i = 0; i < numBlocks; i++)
     {
-        ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
+        ICorJitInfo::PgoInstrumentationSchema schemaElem;
+        schemaElem.Offset = 0;
         schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
         schemaElem.ILOffset = blocks.Get(i)->ilOffset;
         schemaElem.Count = 1;
+        schemaElem.Other = 0;
         schema.Add(schemaElem);
     }
 
-    ICorJitInfo::PgoInstrumentationSchema* pSchema = schema.GetUnderlyingArray();
-    uint8_t* pInstrumentationData = nullptr;
-    HRESULT hr = m_compHnd->allocPgoInstrumentationBySchema(m_methodHnd, pSchema, static_cast<uint32_t>(numBlocks), &pInstrumentationData);
-    if (FAILED(hr) || pInstrumentationData == nullptr)
+    ICorJitInfo::PgoInstrumentationSchema *pSchema = schema.GetUnderlyingArray();
+    uint8_t *pInstrumentationData = NULL;
+    HRESULT hr = m_compHnd->allocPgoInstrumentationBySchema(m_methodHnd, pSchema, (uint32_t)numBlocks, &pInstrumentationData);
+    if (FAILED(hr) || pInstrumentationData == NULL)
     {
         INTERP_DUMP("InstrumentBlockCounts: allocPgoInstrumentationBySchema failed (hr=0x%08x)\n", hr);
         return;
     }
 
+    // Insert an INTOP_PGO_COUNT probe at the start of each block, pointing at its counter.
     for (int32_t i = 0; i < numBlocks; i++)
     {
-        InterpInst* ins = InsertInsBB(blocks.Get(i), nullptr, INTOP_PGO_COUNT);
+        uint32_t *pCounter = (uint32_t*)(pInstrumentationData + pSchema[i].Offset);
+        InterpInst *ins = InsertInsBB(blocks.Get(i), NULL, INTOP_PGO_COUNT);
+        // Probe is a pure counter increment with no IL mapping; keep it out of the debug maps.
         ins->ilOffset = -1;
-        ins->data[0] = GetDataItemIndex(pInstrumentationData + pSchema[i].Offset);
+        ins->data[0] = GetDataItemIndex((void*)pCounter);
     }
 }
-#endif // TARGET_WASM && TARGET_BROWSER && !FEATURE_MULTITHREADING
 
 void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {

@@ -423,21 +423,16 @@ class BlockCountInstrumentor : public Instrumentor
 private:
     void        RelocateProbes();
     BasicBlock* m_entryBlock;
-    BlkSet      m_ilBlocks;
 
 public:
     BlockCountInstrumentor(Compiler* comp)
         : Instrumentor(comp)
         , m_entryBlock(nullptr)
-        , m_ilBlocks(comp->getAllocator(CMK_Pgo))
     {
     }
     bool ShouldProcess(BasicBlock* block) override
     {
-        // Generated splits can inherit IL offsets, but are not additional IL probe sites.
-        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL) &&
-               (!m_compiler->compWasmPgoInstrumentation() ||
-                ((block->bbCodeOffs != BAD_IL_OFFSET) && m_ilBlocks.Lookup(block)));
+        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
@@ -460,16 +455,6 @@ void BlockCountInstrumentor::Prepare(bool preImport)
 {
     if (preImport)
     {
-        if (m_compiler->compWasmPgoInstrumentation())
-        {
-            for (BasicBlock* const block : m_compiler->Blocks())
-            {
-                if (!block->HasFlag(BBF_INTERNAL) && (block->bbCodeOffs != BAD_IL_OFFSET))
-                {
-                    m_ilBlocks.Set(block, true);
-                }
-            }
-        }
         return;
     }
 
@@ -601,12 +586,12 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     // When we have both interlocked and scalable profile modes enabled, we will
     // count both ways, so allocate two count slots per probe.
     //
-    if (!m_compiler->compWasmPgoInstrumentation() && (JitConfig.JitScalableProfiling() > 0) &&
+    if (!m_compiler->compR2RPgoInstrumentation() && (JitConfig.JitScalableProfiling() > 0) &&
         (JitConfig.JitInterlockedProfiling() > 0))
     {
         numCountersPerProbe = 2;
     }
-    else if (!m_compiler->compWasmPgoInstrumentation() && (JitConfig.JitCounterPadding() > 0))
+    else if (!m_compiler->compR2RPgoInstrumentation() && (JitConfig.JitCounterPadding() > 0))
     {
         numCountersPerProbe = (unsigned)JitConfig.JitCounterPadding();
     }
@@ -661,7 +646,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
     assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
            (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
 #ifdef DEBUG
-    if ((JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0) && !m_compiler->compWasmPgoInstrumentation())
+    if ((JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0) && !m_compiler->compR2RPgoInstrumentation())
     {
         uint8_t* addrOfCurrentExecutionCount = entry.Offset + profileMemory;
         // Write the current synthesized count as the profile data
@@ -722,7 +707,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 //
 // Arguments:
 //   comp        - compiler instance
-//   counterBase - profile slab, or the symbolic base-pointer cell for Wasm R2R
+//   counterBase - profile slab, or the R2R import cell containing its address
 //   counterOffset - counter offset relative to the slab
 //   countType   - type of counter
 //
@@ -734,26 +719,22 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp,
                                                         size_t    counterOffset,
                                                         var_types countType)
 {
-    // Wasm R2R uses one direct counter per probe, without runtime profiling helpers.
-    const bool wasmPgo     = comp->compWasmPgoInstrumentation();
-    const bool interlocked = !wasmPgo && (JitConfig.JitInterlockedProfiling() > 0);
-    const bool scalable    = !wasmPgo && (JitConfig.JitScalableProfiling() > 0);
+    // The initial R2R implementation supports single-threaded Browser applications.
+    const bool interlocked = !comp->compR2RPgoInstrumentation() && (JitConfig.JitInterlockedProfiling() > 0);
+    const bool scalable    = !comp->compR2RPgoInstrumentation() && (JitConfig.JitScalableProfiling() > 0);
 
     auto counterAddress = [comp, counterBase, &counterOffset]() -> GenTree* {
-#ifdef TARGET_WASM
-        if (comp->compWasmPgoInstrumentation())
+#ifdef FEATURE_R2R_PGO
+        if (comp->compR2RPgoInstrumentation())
         {
-            // The image import identifies one cell, not a separate address for each counter.
             GenTree* base =
                 comp->gtNewIndOfIconHandleNode(TYP_I_IMPL, reinterpret_cast<size_t>(counterBase), GTF_ICON_BBC_PTR);
             base->gtFlags |= GTF_IND_NONFAULTING;
-            if (counterOffset == 0)
-            {
-                return base;
-            }
-            return comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, base, comp->gtNewIconNode(counterOffset));
+            return counterOffset == 0
+                       ? base
+                       : comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, base, comp->gtNewIconNode(counterOffset));
         }
-#endif // TARGET_WASM
+#endif // FEATURE_R2R_PGO
         return comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterBase) + counterOffset, GTF_ICON_BBC_PTR);
     };
 
@@ -803,16 +784,11 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp,
     //
 
     // Read Basic-Block count value
-    GenTree* valueNode;
-    if (comp->compWasmPgoInstrumentation())
-    {
-        valueNode = comp->gtNewIndir(countType, counterAddress(), GTF_IND_NONFAULTING);
-    }
-    else
-    {
-        valueNode = comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterBase) + counterOffset,
-                                                   GTF_ICON_BBC_PTR);
-    }
+    GenTree* valueNode =
+        comp->compR2RPgoInstrumentation()
+            ? comp->gtNewIndir(countType, counterAddress(), GTF_IND_NONFAULTING)
+            : comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterBase) + counterOffset,
+                                             GTF_ICON_BBC_PTR);
 
     // Increment value by 1
     GenTree* incValueNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
@@ -820,7 +796,7 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp,
     // Write new Basic-Block count value
     GenTree* counterAddrNode = counterAddress();
     GenTree* updateNode      = comp->gtNewStoreIndNode(countType, counterAddrNode, incValueNode);
-    if (comp->compWasmPgoInstrumentation())
+    if (comp->compR2RPgoInstrumentation())
     {
         updateNode->gtFlags |= GTF_IND_NONFAULTING;
         updateNode->gtFlags &= ~GTF_EXCEPT;
@@ -1739,11 +1715,12 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
     // When we have both interlocked and scalable profile modes enabled, we will
     // count both ways, so allocate two count slots per probe.
     //
-    if ((JitConfig.JitScalableProfiling() > 0) && (JitConfig.JitInterlockedProfiling() > 0))
+    if (!m_compiler->compR2RPgoInstrumentation() && (JitConfig.JitScalableProfiling() > 0) &&
+        (JitConfig.JitInterlockedProfiling() > 0))
     {
         numCountersPerProbe = 2;
     }
-    else if (JitConfig.JitCounterPadding() > 0)
+    else if (!m_compiler->compR2RPgoInstrumentation() && (JitConfig.JitCounterPadding() > 0))
     {
         numCountersPerProbe = (unsigned)JitConfig.JitCounterPadding();
     }
@@ -1843,7 +1820,7 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
                (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount));
 
 #ifdef DEBUG
-        if (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0)
+        if ((JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0) && !m_compiler->compR2RPgoInstrumentation())
         {
             uint8_t* addrOfCurrentExecutionCount = profileMemory + entry.Offset;
             // Write the current synthesized count as the profile data
@@ -2585,63 +2562,15 @@ void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* p
 }
 
 //------------------------------------------------------------------------
-// compWasmPgoInstrumentation: whether this compilation uses Wasm image counter cells.
+// compR2RPgoInstrumentation: whether counter addresses are resolved through R2R imports.
 //
-bool Compiler::compWasmPgoInstrumentation() const
+bool Compiler::compR2RPgoInstrumentation() const
 {
-#ifdef TARGET_WASM
+#ifdef FEATURE_R2R_PGO
     return IsAot() && opts.IsInstrumented() && !JitConfig.WasmPgoInstrumentation().isEmpty();
 #else
     return false;
-#endif // TARGET_WASM
-}
-
-//------------------------------------------------------------------------
-// impNewMethodEntryMarker: retain a logical invocation without touching the importer stack.
-//
-Statement* Compiler::impNewMethodEntryMarker(CORINFO_METHOD_HANDLE method)
-{
-    assert(compWasmPgoInstrumentation());
-    GenTree* marker = new (this, GT_PGO_COUNT_INVOCATION)
-        GenTreeVal(GT_PGO_COUNT_INVOCATION, TYP_VOID, reinterpret_cast<ssize_t>(method));
-    marker->gtFlags |= GTF_ORDER_SIDEEFF;
-    Statement* stmt = fgNewStmtFromTree(marker);
-    // Use the importer list, not the block list that import will replace.
-    // This overload does not spill the stack or consume a user debug boundary.
-    impAppendStmt(stmt);
-    return stmt;
-}
-
-//------------------------------------------------------------------------
-// impRemoveMethodEntryMarker: remove a reservation if the managed call remains.
-//
-void Compiler::impRemoveMethodEntryMarker(BasicBlock* block, Statement* marker)
-{
-    if (block->HasFlag(BBF_IMPORTED))
-    {
-        fgRemoveStmt(block, marker);
-        return;
-    }
-
-    Statement* previous = marker->GetPrevStmt();
-    Statement* next     = marker->GetNextStmt();
-    if (marker == impStmtList)
-    {
-        impStmtList = next;
-    }
-    else
-    {
-        previous->SetNextStmt(next);
-    }
-    if (next != nullptr)
-    {
-        next->SetPrevStmt(previous);
-    }
-    else
-    {
-        assert(marker == impLastStmt);
-        impLastStmt = previous;
-    }
+#endif // FEATURE_R2R_PGO
 }
 
 //------------------------------------------------------------------------
@@ -2667,13 +2596,13 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     // We enable edge profiling by default, except when:
     //
     // * disabled by option
-    // * we are AOT compiling
+    // * we are AOT compiling without R2R instrumentation support
     //
     const bool edgesEnabled     = (JitConfig.JitEdgeProfiling() > 0);
     const bool prejit           = IsAot();
-    const bool useEdgeProfiles  = edgesEnabled && !prejit;
-    const bool minimalProfiling = !compWasmPgoInstrumentation() && (prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0)
-                                                                           : (JitConfig.JitMinimalJitProfiling() > 0));
+    const bool useEdgeProfiles  = edgesEnabled && (!prejit || compR2RPgoInstrumentation());
+    const bool minimalProfiling = !compR2RPgoInstrumentation() && (prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0)
+                                                                          : (JitConfig.JitMinimalJitProfiling() > 0));
 
     // Intrinsic recognition must not prevent ordinary managed implementations from
     // benefiting from profiles. Exclude compiler primitives and explicit SIMD APIs,
@@ -2746,15 +2675,14 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         }
     }
 
-#ifdef TARGET_WASM
-    if (compWasmPgoInstrumentation() &&
+#ifdef FEATURE_R2R_PGO
+    if (compR2RPgoInstrumentation() &&
         !JitConfig.WasmPgoInstrumentation().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
-        // Callers still run instrumentation phases for selected inlinees and intrinsic markers.
         fgCountInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
     else
-#endif // TARGET_WASM
+#endif // FEATURE_R2R_PGO
         if (minimalProfiling && (fgBBcount < 2))
         {
             // Don't instrument small single-block methods.
@@ -2853,57 +2781,12 @@ PhaseStatus Compiler::fgInstrumentMethod()
 
     PhaseStatus status = fgInstrumentMethodCore();
 
-    if (compWasmPgoInstrumentation() && (fgInstrumentMethodEntryMarkers() == PhaseStatus::MODIFIED_EVERYTHING))
-    {
-        status = PhaseStatus::MODIFIED_EVERYTHING;
-    }
-
     if (tempInlineeReturnStmt != nullptr)
     {
         fgRemoveStmt(retBB, tempInlineeReturnStmt);
     }
 
     return status;
-}
-
-//------------------------------------------------------------------------
-// fgInstrumentMethodEntryMarkers: materialize imported callee invocations after
-//   normal import folding, using the callee's schema rather than the caller's.
-//
-PhaseStatus Compiler::fgInstrumentMethodEntryMarkers()
-{
-    bool changed = false;
-    for (BasicBlock* const block : Blocks())
-    {
-        for (Statement* stmt = block->firstStmt(); stmt != nullptr;)
-        {
-            Statement* next   = stmt->GetNextStmt();
-            GenTree*   marker = stmt->GetRootNode();
-            if (marker->OperIs(GT_PGO_COUNT_INVOCATION))
-            {
-                assert(compWasmPgoInstrumentation());
-                ICorJitInfo::PgoInstrumentationSchema schema = {};
-                schema.InstrumentationKind   = ICorJitInfo::PgoInstrumentationKind::MethodEntryLongCount;
-                schema.Count                 = 1;
-                CORINFO_METHOD_HANDLE callee = reinterpret_cast<CORINFO_METHOD_HANDLE>(marker->AsVal()->gtVal1);
-                uint8_t*              base   = nullptr;
-                HRESULT res = info.compCompHnd->allocPgoInstrumentationBySchema(callee, &schema, 1, &base);
-                if (SUCCEEDED(res))
-                {
-                    stmt->SetRootNode(
-                        BlockCountInstrumentor::CreateCounterIncrement(this, base, schema.Offset, TYP_LONG));
-                }
-                else
-                {
-                    noway_assert(res == E_NOTIMPL);
-                    fgRemoveStmt(block, stmt);
-                }
-                changed = true;
-            }
-            stmt = next;
-        }
-    }
-    return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -2970,7 +2853,7 @@ PhaseStatus Compiler::fgInstrumentMethodCore()
     //
     bool minimalProbeMode = false;
 
-    if (compWasmPgoInstrumentation())
+    if (compR2RPgoInstrumentation())
     {
         minimalProbeMode = false;
     }
@@ -3154,10 +3037,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     JITDUMP("Have %s: %d schema records (schema at %p, data at %p)\n", compGetPgoSourceName(), fgPgoSchemaCount,
             dspPtr(fgPgoSchema), dspPtr(fgPgoData));
 
-    fgNumProfileRuns              = 0;
-    unsigned otherRecords         = 0;
-    bool     haveInvocationCounts = false;
-    weight_t invocationCount      = 0;
+    fgNumProfileRuns      = 0;
+    unsigned otherRecords = 0;
 
     for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
     {
@@ -3165,12 +3046,6 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         {
             case ICorJitInfo::PgoInstrumentationKind::NumRuns:
                 fgNumProfileRuns += fgPgoSchema[iSchema].Other;
-                break;
-
-            case ICorJitInfo::PgoInstrumentationKind::MethodEntryLongCount:
-                haveInvocationCounts = true;
-                invocationCount +=
-                    static_cast<weight_t>(*reinterpret_cast<uint64_t*>(fgPgoData + fgPgoSchema[iSchema].Offset));
                 break;
 
             case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
@@ -3264,57 +3139,6 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         }
     }
 
-    if (haveInvocationCounts)
-    {
-        // These count invocations whose body was omitted (intrinsic expansion or
-        // interpretation), not invocations already represented by block/edge probes.
-        weight_t measuredEntry = 0;
-        if (fgPgoHaveWeights)
-        {
-            measuredEntry = fgFirstBB->bbWeight;
-            for (FlowEdge* const edge : fgFirstBB->PredEdges())
-            {
-                measuredEntry -= edge->getLikelyWeight();
-            }
-            measuredEntry = max(BB_ZERO_WEIGHT, measuredEntry);
-        }
-
-        const weight_t totalEntry = measuredEntry + invocationCount;
-        JITDUMP("Method invocation profile: measured entry " FMT_WT ", omitted body " FMT_WT "\n", measuredEntry,
-                invocationCount);
-
-        if (measuredEntry > 0)
-        {
-            // Scale inferred body executions without replacing measured branch likelihoods.
-            const weight_t scale = totalEntry / measuredEntry;
-            for (BasicBlock* const block : Blocks())
-            {
-                block->setBBProfileWeight(block->bbWeight * scale);
-            }
-        }
-        else
-        {
-            const bool retainLikelihoods = fgPgoHaveWeights;
-            // A call count is input flow, not total flow into a possible IL-zero loop header.
-            fgCanonicalizeFirstBB();
-            fgFirstBB->setBBProfileWeight(totalEntry);
-            ProfileSynthesis::Run(this, retainLikelihoods ? ProfileSynthesisOption::RetainLikelihoods
-                                                          : ProfileSynthesisOption::AssignLikelihoods);
-            if (totalEntry == 0)
-            {
-                for (BasicBlock* const block : Blocks())
-                {
-                    block->setBBProfileWeight(0);
-                }
-            }
-        }
-        if (!compIsForInlining())
-        {
-            fgCalledCount = totalEntry;
-            JITDUMP("fgCalledCount is " FMT_WT "\n", fgCalledCount);
-        }
-    }
-
 #ifdef DEBUG
     // Optionally blend and recompute counts.
     //
@@ -3334,10 +3158,10 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
 //------------------------------------------------------------------------
 // fgIncorporateBlockCounts: read block count based profile data
-//   and derive block weights and uniquely determined edge likelihoods
+//   and set block weights
 //
 // Returns:
-//   True; block weights are retained even when edge flow cannot be inferred
+//   True if data is in good shape
 //
 // Notes:
 //   Since we are now running before the importer, we do not know which
@@ -3364,130 +3188,8 @@ bool Compiler::fgIncorporateBlockCounts()
         }
     }
 
-#ifdef TARGET_WASM
-    // Residual flow requires complete measurements and no implicit exceptional flow.
-    if ((fgPgoBlockCounts > 0) && (compHndBBtabCount == 0) && !opts.IsOSR())
-    {
-        JitHashTable<IL_OFFSET, JitSmallPrimitiveKeyFuncs<IL_OFFSET>, bool> measuredBlocks(getAllocator(CMK_Pgo));
-        for (UINT32 i = 0; i < fgPgoSchemaCount; i++)
-        {
-            if ((fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
-                (fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount))
-            {
-                measuredBlocks.Set(fgPgoSchema[i].ILOffset, true);
-            }
-        }
-
-        JitHashTable<FlowEdge*, JitPtrKeyFuncs<FlowEdge>, weight_t> edgeWeights(getAllocator(CMK_Pgo));
-        ArrayStack<BasicBlock*>                                     worklist(getAllocator(CMK_Pgo));
-        bool                                                        consistent = true;
-        for (BasicBlock* const block : Blocks())
-        {
-            if (!measuredBlocks.Lookup(block->bbCodeOffs))
-            {
-                consistent = false;
-                break;
-            }
-            worklist.Push(block);
-        }
-
-        auto inferEdge = [&](BasicBlock* block, bool incoming) {
-            unsigned  unknownCount = 0;
-            FlowEdge* unknownEdge  = nullptr;
-            weight_t  knownWeight  = 0;
-            auto      visitEdge    = [&](FlowEdge* edge) {
-                weight_t weight;
-                if (edgeWeights.Lookup(edge, &weight))
-                {
-                    knownWeight += weight;
-                }
-                else
-                {
-                    unknownEdge = edge;
-                    unknownCount++;
-                }
-            };
-            if (incoming)
-            {
-                for (FlowEdge* const edge : block->PredEdges())
-                {
-                    visitEdge(edge);
-                }
-            }
-            else
-            {
-                for (FlowEdge* const edge : block->SuccEdges())
-                {
-                    visitEdge(edge);
-                }
-            }
-
-            if (knownWeight > block->bbWeight)
-            {
-                consistent = false;
-            }
-            else if (unknownCount == 1)
-            {
-                edgeWeights.Set(unknownEdge, block->bbWeight - knownWeight);
-                worklist.Push(unknownEdge->getSourceBlock());
-                worklist.Push(unknownEdge->getDestinationBlock());
-            }
-            else if ((unknownCount == 0) && (knownWeight != block->bbWeight))
-            {
-                consistent = false;
-            }
-        };
-
-        while (consistent && (worklist.Height() > 0))
-        {
-            BasicBlock* const block = worklist.Pop();
-
-            if (block != fgFirstBB)
-            {
-                inferEdge(block, true);
-            }
-            if (block->NumSucc() > 0)
-            {
-                inferEdge(block, false);
-            }
-        }
-
-        for (BasicBlock* const block : Blocks())
-        {
-            for (FlowEdge* const edge : block->SuccEdges())
-            {
-                if (!edgeWeights.Lookup(edge))
-                {
-                    consistent = false;
-                    break;
-                }
-            }
-        }
-
-        // Commit only after every measured flow equation has been satisfied.
-        if (consistent)
-        {
-            for (BasicBlock* const block : Blocks())
-            {
-                if (block->bbWeight == 0)
-                {
-                    continue;
-                }
-                for (FlowEdge* const edge : block->SuccEdges())
-                {
-                    weight_t* const weight = edgeWeights.LookupPointer(edge);
-                    assert(weight != nullptr);
-                    edge->setLikelihood(*weight / block->bbWeight);
-                }
-            }
-        }
-        else
-        {
-            JITDUMP("Block profile flow is incomplete or inconsistent; using heuristic likelihoods\n");
-        }
-    }
-#endif // TARGET_WASM
-
+    // For now assume data is always good.
+    //
     return true;
 }
 

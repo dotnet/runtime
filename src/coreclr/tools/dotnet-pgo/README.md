@@ -25,6 +25,28 @@ static void FunctionCalledAtStartup()
 ## Consuming a .mibc file
 Invoke the `crossgen2` tool with the --mibc option, passing the .mibc file created by dotnet-pgo.
 
+## Including CoreCLR Browser/Wasm interpreter methods
+
+For a CoreCLR Browser/Wasm PGO trace, `create-mibc --include-interpreted-rundown`
+also selects metadata-backed interpreter methods described by method-load/rundown
+events. This complements ordinary instrumentation data, which remains enabled.
+It does not require `DOTNET_InterpPGO` or fabricate invocation or branch counts.
+Prepared code is evidence of method presence, not necessarily execution.
+Use the updated browser PGO collector: it captures method/type identities before
+the runtime provider stops. Older traces can contain code ranges without the
+`MethodDetails` needed to resolve their identities, in which case recollect rather
+than inferring generic arguments from display names.
+
+The option requires a 32-bit Wasm trace. If architecture metadata is unavailable,
+the explicit option asserts that the input is CoreCLR Browser/Wasm, with a warning.
+It must not be used to classify JIT code from other platforms as interpreter code.
+Pass the original `.nettrace` when enabling the option; previously converted
+`.etlx` files may not retain the required events.
+
+```console
+dotnet-pgo create-mibc --include-interpreted-rundown --trace app.nettrace --reference "<matching-IL-directory>/*.dll" --output app.mibc
+```
+
 ## Creating a .mibc file from a method list
 
 The `create-mibc-from-method-list` command creates a deterministic profile root set without collecting

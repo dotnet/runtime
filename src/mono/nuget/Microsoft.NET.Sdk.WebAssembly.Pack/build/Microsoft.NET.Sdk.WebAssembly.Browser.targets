@@ -139,13 +139,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       ResolveWasmOutputs;
       _AddWasmDiagnosticPortsEnvironmentVariable;
       _AddWasmPerformanceInstrumentationEnvironmentVariables;
-      _AddWasmPgoInstrumentationEnvironmentVariables;
     </GenerateBuildWasmBootJsonDependsOn>
     <GeneratePublishWasmBootJsonDependsOn>
       $(GeneratePublishWasmBootJsonDependsOn);
       _AddWasmDiagnosticPortsEnvironmentVariable;
       _AddWasmPerformanceInstrumentationEnvironmentVariables;
-      _AddWasmPgoInstrumentationEnvironmentVariables;
     </GeneratePublishWasmBootJsonDependsOn>
   </PropertyGroup>
 
@@ -681,17 +679,13 @@ Copyright (c) .NET Foundation. All rights reserved.
            Text="WasmPgoInstrumentation supports only single-threaded applications. Set WasmEnableThreads=false or clear WasmPgoInstrumentation." />
   </Target>
 
-  <Target Name="_AddWasmPgoInstrumentationEnvironmentVariables"
+  <Target Name="_ConfigureWasmPgoInstrumentation"
           Condition="'$(WasmPgoInstrumentation)' != ''"
           DependsOnTargets="_ValidateWasmPgoInstrumentation">
     <PropertyGroup>
       <_WasmPgoInstFilter>$(WasmPgoInstrumentation)</_WasmPgoInstFilter>
       <_WasmPgoInstFilter Condition="'$(_WasmPgoInstFilter)' == 'all'">*</_WasmPgoInstFilter>
     </PropertyGroup>
-    <ItemGroup>
-      <WasmEnvironmentVariable Remove="DOTNET_WasmPgoInstrumentation" />
-      <WasmEnvironmentVariable Include="DOTNET_WasmPgoInstrumentation" Value="$(_WasmPgoInstFilter)" />
-    </ItemGroup>
   </Target>
 
   <Target Name="_AddWasmDiagnosticPortsEnvironmentVariable"

@@ -12638,13 +12638,13 @@ CORJIT_FLAGS* CEECodeGenInfo::getJitFlagsInternal()
 }
 
 /*********************************************************************/
-#if defined(FEATURE_PGO) && (!defined(TARGET_WASM) || !defined(TARGET_BROWSER) || defined(FEATURE_MULTITHREADING))
+#ifdef FEATURE_PGO
 static bool InterpreterPgoInstrumentationEnabled()
 {
     static ConfigDWORD s_interpPgo;
     return s_interpPgo.val(CLRConfig::INTERNAL_InterpPGO) != 0;
 }
-#endif // FEATURE_PGO && (!TARGET_WASM || !TARGET_BROWSER || FEATURE_MULTITHREADING)
+#endif // FEATURE_PGO
 
 HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
@@ -12663,18 +12663,6 @@ HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
 #ifdef FEATURE_PGO
 
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
-#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
-    if (pMD->IsDynamicMethod() || pMD->IsILStub() || !pMD->IsIL() || pMD->GetILHeader() == nullptr)
-    {
-        hr = E_NOTIMPL;
-    }
-    else
-    {
-        pMD = pMD->GetOrdinaryVariant();
-        COR_ILMETHOD_DECODER header(pMD->GetILHeader());
-        hr = PgoManager::allocPgoInstrumentationBySchema(pMD, &header, pSchema, countSchemaItems, pInstrumentationData);
-    }
-#else
     // Interpreter PGO collects offline data independently of tiering eligibility.
     if (pMD->IsEligibleForTieredCompilation() || InterpreterPgoInstrumentationEnabled())
     {
@@ -12684,7 +12672,6 @@ HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
     {
         hr = E_NOTIMPL;
     }
-#endif // TARGET_WASM && TARGET_BROWSER && !FEATURE_MULTITHREADING
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEECodeGenInfo!");
     hr = E_NOTIMPL;
@@ -14050,7 +14037,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     case READYTORUN_FIXUP_PgoInstrumentationData:
         {
-#if defined(FEATURE_PGO) && defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+#ifdef FEATURE_R2R_PGO
             SigTypeContext typeContext;
             ZapSig::Context context(pInfoModule, currentModule, ZapSig::NormalTokens);
             PCCOR_SIGNATURE afterMethod;

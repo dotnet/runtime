@@ -20,7 +20,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_WasmCoreClrAddPgoInstrumentationToReadyToRun"
           Condition="'$(WasmPgoInstrumentation)' != ''"
-          DependsOnTargets="_AddWasmPgoInstrumentationEnvironmentVariables"
+          DependsOnTargets="_ConfigureWasmPgoInstrumentation"
           BeforeTargets="_PrepareForReadyToRunCompilation">
     <PropertyGroup>
       <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:WasmPgoInstrumentation=&quot;$(_WasmPgoInstFilter)&quot;</PublishReadyToRunCrossgen2ExtraArgs>

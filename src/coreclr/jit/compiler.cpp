@@ -2490,10 +2490,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (compIsForInlining())
     {
-#ifdef TARGET_WASM
+#ifdef FEATURE_R2R_PGO
         // Inlinees build profiling schemas even though they do not generate code independently.
-        opts.compCollect64BitCounts = compWasmPgoInstrumentation();
-#endif // TARGET_WASM
+        opts.compCollect64BitCounts = compR2RPgoInstrumentation();
+#endif // FEATURE_R2R_PGO
         return;
     }
 
@@ -2991,12 +2991,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compCollect64BitCounts = false;
 #endif
 
-#ifdef TARGET_WASM
-    if (compWasmPgoInstrumentation())
+#ifdef FEATURE_R2R_PGO
+    if (compR2RPgoInstrumentation())
     {
         opts.compCollect64BitCounts = true;
     }
-#endif // TARGET_WASM
+#endif // FEATURE_R2R_PGO
 
 #ifdef DEBUG
 
@@ -4339,9 +4339,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     activePhaseChecks |= PhaseChecks::CHECK_FG_INIT_BLOCK;
     DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
-
-    // Entry probes rely on IL backedges not targeting the synthetic entry.
-    assert(fgFirstBB->bbPreds == nullptr);
 
     // If we are doing OSR, update flow to initially reach the appropriate IL offset.
     //

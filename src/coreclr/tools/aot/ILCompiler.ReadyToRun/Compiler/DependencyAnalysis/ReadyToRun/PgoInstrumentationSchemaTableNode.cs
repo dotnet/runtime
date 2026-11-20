@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 int size = record.InstrumentationKind switch
                 {
-                    PgoInstrumentationKind.BasicBlockLongCount or PgoInstrumentationKind.MethodEntryLongCount => sizeof(long),
+                    PgoInstrumentationKind.BasicBlockLongCount or PgoInstrumentationKind.EdgeLongCount => sizeof(long),
                     PgoInstrumentationKind.NumRuns or PgoInstrumentationKind.Version => 0,
                     _ => throw new NotSupportedException($"Unsupported R2R instrumentation kind: {record.InstrumentationKind}"),
                 };
