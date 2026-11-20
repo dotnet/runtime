@@ -74,6 +74,8 @@ jobs:
             # inner and outer loop CoreCLR (general set)
             # Primary distro for all builds
             - Ubuntu.2604.Amd64.Open
+            # TEMPORARY (revert before merge): validate libmsquic on the bare Azure Linux 4 VM in PR builds
+            - AzureLinux.4.Amd64.Open
             # Additional distros on non-PR builds for broader coverage
             - ${{ if or(eq(variables['isRollingBuild'], true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
               - (AzureLinux.4.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:ad2717f231981d3218538ac74169b1354367e1ce2bd479bbf0ada3573b1db8c1
