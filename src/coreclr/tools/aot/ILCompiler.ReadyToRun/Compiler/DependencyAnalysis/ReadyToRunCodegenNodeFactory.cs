@@ -68,6 +68,7 @@ namespace ILCompiler.DependencyAnalysis
         public bool PrintReproArgs;
         public bool EnableCachedInterfaceDispatchSupport;
         public bool GenerateUnboxingStubs;
+        public bool AuxiliaryModules;
         public bool IsComponentModule;
         public bool StripInliningInfo;
         public bool StripDebugInfo;
@@ -118,6 +119,12 @@ namespace ILCompiler.DependencyAnalysis
         List<ILBodyFixupSignature> _markedILBodyFixupSignatures = new List<ILBodyFixupSignature>();
 
         public bool MarkingComplete => _markingComplete;
+
+        /// <summary>
+        /// Returns whether the code for <paramref name="method"/> is placed in an auxiliary module rather than the primary module.
+        /// The answer must be stable for the whole compilation, since table layout and emission all depend on it.
+        /// </summary>
+        public bool IsAuxiliaryMethod(MethodWithGCInfo method) => false;
 
         public void GenerateHotColdMap(DependencyAnalyzerBase<NodeFactory> dependencyGraph)
         {
@@ -1108,6 +1115,14 @@ namespace ILCompiler.DependencyAnalysis
 
             RuntimeFunctionsTable = new RuntimeFunctionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions, RuntimeFunctionsTable);
+
+            if (OptimizationFlags.AuxiliaryModules &&
+                Target.Architecture == TargetArchitecture.Wasm32 &&
+                Target.OperatingSystem == TargetOS.Browser)
+            {
+                AuxiliaryModuleMetadataNode auxiliaryModuleMetadata = new AuxiliaryModuleMetadataNode();
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.AuxiliaryModuleMetadata, auxiliaryModuleMetadata);
+            }
 
             if (Target.IsWasm)
             {

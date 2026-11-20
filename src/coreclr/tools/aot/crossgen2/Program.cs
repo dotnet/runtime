@@ -693,6 +693,7 @@ namespace ILCompiler
                     nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
                     nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
                     nodeFactoryFlags.GenerateUnboxingStubs = Get(_command.GenerateUnboxingStubs) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
+                    nodeFactoryFlags.AuxiliaryModules = Get(_command.AuxiliaryModules);
                     nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
                     nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
                     nodeFactoryFlags.StripILBodies = Get(_command.StripILBodies);

@@ -1085,31 +1085,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_pAuxiliaryModuleMetadata = m_pCompositeInfo->GetAuxiliaryModuleMetadata();
 
     IMAGE_DATA_DIRECTORY *auxiliaryModuleMetadata = m_component.FindSection(ReadyToRunSectionType::AuxiliaryModuleMetadata);
-    if (auxiliaryModuleMetadata == NULL && m_pAuxiliaryModuleMetadata == nullptr)
-    {
-        // Fake an AuxiliaryModuleMetadata for now.
-        size_t metadataSize = sizeof(ReadyToRun_AuxiliaryModuleMetadata) + sizeof(ReadyToRun_AuxiliaryModuleMetadataEntry);
-        BYTE* metadata = static_cast<BYTE*>(pamTracker->Track(
-            pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(metadataSize))));
-        m_pAuxiliaryModuleMetadata = new (metadata) ReadyToRun_AuxiliaryModuleMetadata
-            {
-                0, // EntryPointsFilenameRVA
-                0, // InstanceMethodEntryPointsRVA
-                0, // MethodDefEntryPointsInfoRVA
-                1, // EntryPointsModuleActivationStatus
-                0, // PrimaryModuleMethodCount
-                1  // AuxiliaryModuleCount
-            };
-        new (m_pAuxiliaryModuleMetadata->GetAuxiliaryModuleMetadataEntries())
-            ReadyToRun_AuxiliaryModuleMetadataEntry
-            {
-                0,                   // FileNameRVA
-                0,                   // RelativeTableBase
-                m_nRuntimeFunctions, // MethodCount
-                1                    // ActivationStatus
-            };
-    }
-    else if (m_pAuxiliaryModuleMetadata == nullptr)
+    if (m_pAuxiliaryModuleMetadata == nullptr && auxiliaryModuleMetadata != NULL)
     {
         m_pAuxiliaryModuleMetadata = (ReadyToRun_AuxiliaryModuleMetadata*)m_pComposite->GetImage()->GetDirectoryData(auxiliaryModuleMetadata);
     }

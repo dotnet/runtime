@@ -30,6 +30,8 @@ internal static class TestPaths
 
     public static bool IsWasmTarget => TargetArchitecture == "wasm";
 
+    public static bool IsBrowserWasmTarget => IsWasmTarget && TargetOS == "browser";
+
     public static bool IsNotWasmTarget => !IsWasmTarget;
 
     public static bool IsArmTarget => TargetArchitecture is "arm" or "armel";

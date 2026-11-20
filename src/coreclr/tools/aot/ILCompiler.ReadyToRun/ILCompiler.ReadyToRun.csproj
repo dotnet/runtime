@@ -324,6 +324,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringDiscoverableAssemblyStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsGCInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AuxiliaryModuleMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\HotColdMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Signature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureBuilder.cs" />

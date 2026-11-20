@@ -48,6 +48,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _insertedMethodNodes[method];
         }
 
+        public int RuntimeFunctionCount
+        {
+            get
+            {
+                if (_methodNodes == null)
+                    LayoutRuntimeFunctions();
+
+                int runtimeFunctionCount = 0;
+                foreach (MethodWithGCInfo method in _methodNodes)
+                {
+                    runtimeFunctionCount = checked(runtimeFunctionCount + method.FrameInfos.Length);
+                    if (method.ColdCodeNode is not null)
+                        runtimeFunctionCount = checked(runtimeFunctionCount + method.ColdFrameInfos.Length);
+                }
+
+                return runtimeFunctionCount;
+            }
+        }
+
         private void LayoutRuntimeFunctions()
         {
             _methodNodes = new List<MethodWithGCInfo>();
