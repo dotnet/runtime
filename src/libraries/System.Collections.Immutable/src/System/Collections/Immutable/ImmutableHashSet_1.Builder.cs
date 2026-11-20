@@ -274,6 +274,12 @@ namespace System.Collections.Immutable
             /// <param name="other">The collection of items to remove from the set.</param>
             public void ExceptWith(IEnumerable<T> other)
             {
+                if (ReferenceEquals(other, this))
+                {
+                    Clear();
+                    return;
+                }
+
                 ImmutableHashSet<T>.MutationResult result = ImmutableHashSet<T>.Except(other, _equalityComparer, _hashBucketEqualityComparer, _root);
                 this.Apply(result);
             }
