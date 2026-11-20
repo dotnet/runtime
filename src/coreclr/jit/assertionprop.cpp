@@ -99,15 +99,14 @@ static Range GetRange(Compiler*        comp,
 // Return Value:
 //    Range of "tree", or an unknown range.
 //
-static Range GetBoundMinusXRange(Compiler* comp, GenTree* tree, BasicBlock* block, ValueNum bndVN)
+template <typename TIsBoundLoopInvariant>
+static Range GetBoundMinusXRange(Compiler*             comp,
+                                 GenTree*              tree,
+                                 BasicBlock*           block,
+                                 ValueNum              bndVN,
+                                 ASSERT_VALARG_TP      assertions,
+                                 TIsBoundLoopInvariant isBoundLoopInvariant)
 {
-    // A phi bound can denote a different value on each iteration, so it cannot be used as a stable
-    // symbolic limit while walking the induction variable's SSA cycle.
-    if (comp->vnStore->IsPhiDef(bndVN))
-    {
-        return Limit(Limit::keUnknown);
-    }
-
     // Walk through local copies, e.g. CSE uses "tmp = cse" and defs "tmp = COMMA(STORE(cse, Bnd - X), cse)".
     // SSA copy chains are acyclic (they end at a PHI or a non-local value), so this terminates.
     tree = tree->gtEffectiveVal();
@@ -129,16 +128,44 @@ static Range GetBoundMinusXRange(Compiler* comp, GenTree* tree, BasicBlock* bloc
         return Limit(Limit::keUnknown);
     }
 
+    ValueNum xVN    = comp->vnStore->VNConservativeNormalValue(tree->gtGetOp2()->gtVNPair);
+    Range    xRange = Limit(Limit::keUnknown);
+    if (comp->vnStore->IsPhiDef(bndVN))
+    {
+        // Use only assertions that hold at this point to recover the symbolic bound. Starting
+        // from the type range avoids deriving limits by walking the loop-carried PHI.
+        xRange = RangeCheck::GetRangeFromType(tree->gtGetOp2()->TypeGet());
+        if (comp->vnStore->IsVNNeverNegative(xVN))
+        {
+            xRange.lLimit = Limit(Limit::keConstant, 0);
+        }
+        RangeCheck::MergeEdgeAssertions(comp, xVN, bndVN, assertions, &xRange);
+    }
+
     // X in [lo, Bnd + k] with lo >= 0 and k <= 0 means that "Bnd - X" can't overflow and is in [-k, Bnd - lo].
     // k == INT32_MIN is excluded since "-k" would overflow.
-    Range        xRange = GetRange(comp, tree->gtGetOp2(), block, BitVecOps::UninitVal(), /*fast*/ false, bndVN);
-    const Limit& xLo    = xRange.LowerLimit();
-    const Limit& xHi    = xRange.UpperLimit();
-    if (xLo.IsConstant() && (xLo.GetConstant() >= 0) && xHi.IsBinOpArray() && (xHi.vn == bndVN) &&
-        (xHi.GetConstant() <= 0) && (xHi.GetConstant() > INT32_MIN))
+    const Limit& xLo = xRange.LowerLimit();
+    const Limit& xHi = xRange.UpperLimit();
+    if (!xLo.IsConstant() || (xLo.GetConstant() < 0) || !xHi.IsBinOpArray() || (xHi.vn != bndVN) ||
+        (xHi.GetConstant() > 0) || (xHi.GetConstant() <= INT32_MIN))
     {
-        return Range(Limit(Limit::keConstant, -xHi.GetConstant()),
-                     Limit(Limit::keBinOpArray, bndVN, -xLo.GetConstant()));
+        // The slow SSA walk can use loop-carried assertions, so use it for PHI bounds only when
+        // the bound is invariant in the loop carried by X.
+        if (comp->vnStore->IsPhiDef(bndVN) && !isBoundLoopInvariant(xVN, bndVN))
+        {
+            return Limit(Limit::keUnknown);
+        }
+
+        xRange = GetRange(comp, tree->gtGetOp2(), block, BitVecOps::UninitVal(), /*fast*/ false, bndVN);
+    }
+
+    const Limit& xRangeLo = xRange.LowerLimit();
+    const Limit& xRangeHi = xRange.UpperLimit();
+    if (xRangeLo.IsConstant() && (xRangeLo.GetConstant() >= 0) && xRangeHi.IsBinOpArray() && (xRangeHi.vn == bndVN) &&
+        (xRangeHi.GetConstant() <= 0) && (xRangeHi.GetConstant() > INT32_MIN))
+    {
+        return Range(Limit(Limit::keConstant, -xRangeHi.GetConstant()),
+                     Limit(Limit::keBinOpArray, bndVN, -xRangeLo.GetConstant()));
     }
     return Limit(Limit::keUnknown);
 }
@@ -4806,7 +4833,27 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                     if (vnStore->IsVNBinFunc(op1VN, VNF_SUB, &bndVN) &&
                         optIsNeverNegativeCheckedBound(bndVN, assertions))
                     {
-                        op1Rng = GetBoundMinusXRange(this, op1, block, bndVN);
+                        auto isBoundInvariantForXLoop = [this](ValueNum xVN, ValueNum bndVN) {
+                            VNPhiDef bndPhiDef;
+                            VNPhiDef xPhiDef;
+                            if (!vnStore->GetPhiDef(bndVN, &bndPhiDef) || !vnStore->GetPhiDef(xVN, &xPhiDef) ||
+                                (m_blockToLoop == nullptr))
+                            {
+                                return false;
+                            }
+
+                            LclSsaVarDsc*         xSsaDef = lvaGetDesc(xPhiDef.LclNum)->GetPerSsaData(xPhiDef.SsaDef);
+                            FlowGraphNaturalLoop* xLoop   = m_blockToLoop->GetLoop(xSsaDef->GetBlock());
+                            if (xLoop == nullptr)
+                            {
+                                return true;
+                            }
+
+                            LclSsaVarDsc* bndSsaDef = lvaGetDesc(bndPhiDef.LclNum)->GetPerSsaData(bndPhiDef.SsaDef);
+                            return !xLoop->ContainsBlock(bndSsaDef->GetBlock());
+                        };
+
+                        op1Rng = GetBoundMinusXRange(this, op1, block, bndVN, assertions, isBoundInvariantForXLoop);
                     }
 
                     if (op1Rng.LowerLimit().IsUnknown())
