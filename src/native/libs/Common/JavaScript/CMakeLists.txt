@@ -4,6 +4,8 @@ if (NOT STATIC_LIB_DESTINATION)
     message(FATAL_ERROR "please set STATIC_LIB_DESTINATION")
 endif()
 
+get_filename_component(STATIC_LIB_DESTINATION "${STATIC_LIB_DESTINATION}" ABSOLUTE BASE_DIR "${CMAKE_BINARY_DIR}")
+
 set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/package.json"
     "${CLR_SRC_NATIVE_DIR}/tsconfig.json"

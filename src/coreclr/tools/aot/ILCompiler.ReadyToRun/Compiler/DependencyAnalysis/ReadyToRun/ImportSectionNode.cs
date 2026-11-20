@@ -88,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (EmitGCRefMap)
             {
-                ((MethodFixupSignature)import.Signature).EmitGCRefMap = true;
+                ((GCRefMapSignature)import.Signature).EmitGCRefMap = true;
             }
         }
 
@@ -99,6 +99,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public bool EmitGCRefMap => (_flags & ReadyToRunImportSectionFlags.GCRefMap) != 0;
 
         public bool IsEager => (_flags & ReadyToRunImportSectionFlags.Eager) != 0;
+
+        public bool IsEmpty => _signatureList.Count == 0;
 
         public override bool StaticDependenciesAreComputed => true;
 

@@ -16,69 +16,16 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        /// <summary>Gets the time the associated process was started.</summary>
-        internal DateTime StartTimeCore
+        /// <summary>Gets the total processor time from the procfs psinfo, a.k.a. "user" + "system" time.</summary>
+        private TimeSpan TotalProcessorTimeSunOS
         {
             get
             {
                 Interop.procfs.ProcessInfo processInfo = GetProcInfo();
-
-                DateTime startTime = DateTime.UnixEpoch +
-                    TimeSpan.FromSeconds(processInfo.StartTime) +
-                    TimeSpan.FromMicroseconds(processInfo.StartTimeNsec / 1000);
-
-                // The return value is expected to be in the local time zone.
-                return startTime.ToLocalTime();
-            }
-        }
-
-        /// <summary>Gets the parent process ID</summary>
-        private int ParentProcessId => GetProcInfo().ParentPid;
-
-        /// <summary>Gets execution path</summary>
-        internal static string? GetPathToOpenFile()
-        {
-            return ProcessUtils.FindProgramInPath("xdg-open");
-        }
-
-        public partial TimeSpan TotalProcessorTime
-        {
-            get
-            {
-                // a.k.a. "user" + "system" time
-                Interop.procfs.ProcessInfo processInfo = GetProcInfo();
-                TimeSpan ts = TimeSpan.FromSeconds(processInfo.CpuTotalTime) +
+                return TimeSpan.FromSeconds(processInfo.CpuTotalTime) +
                     TimeSpan.FromMicroseconds(processInfo.CpuTotalTimeNsec / 1000);
-                return ts;
             }
         }
-
-        public partial TimeSpan UserProcessorTime
-        {
-            get
-            {
-                // a.k.a. "user" time
-                // Could get this from /proc/$pid/status
-                // Just say it's all user time for now
-                return TotalProcessorTime;
-            }
-        }
-
-        public partial TimeSpan PrivilegedProcessorTime
-        {
-            get
-            {
-                // a.k.a. "system" time
-                // Could get this from /proc/$pid/status
-                // Just say it's all user time for now
-                EnsureState(State.HaveNonExitedId);
-                return TimeSpan.Zero;
-            }
-        }
-
-        // ----------------------------------
-        // ---- Unix PAL layer ends here ----
-        // ----------------------------------
 
         /// <summary>Gets the name that was used to start the process, or null if it could not be retrieved.</summary>
         internal static string? GetUntruncatedProcessName(ref Interop.procfs.ProcessInfo processInfo, ref string argString)

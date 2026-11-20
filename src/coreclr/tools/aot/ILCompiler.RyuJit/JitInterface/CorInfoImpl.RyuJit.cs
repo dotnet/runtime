@@ -1605,7 +1605,7 @@ namespace Internal.JitInterface
                     targetOfLookup.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
 
-                if (pResult->exactContextNeedsRuntimeLookup)
+                if (_compilation.NeedsRuntimeLookup(ReadyToRunHelperId.DispatchCell, targetOfLookup))
                 {
                     ComputeLookup(ref pResolvedToken,
                         targetOfLookup,
@@ -2425,7 +2425,7 @@ namespace Internal.JitInterface
             {
                 // Only support reading the string data
                 int strDataOffset = _compilation.TypeSystemContext.Target.PointerSize + sizeof(int); // 12 on 64bit
-                if (valueOffset >= strDataOffset && (long)frozenStr.Data.Length * 2 >= (valueOffset - strDataOffset) + bufferSize)
+                if (valueOffset >= strDataOffset && (long)frozenStr.Data.Length * 2 >= (long)(valueOffset - strDataOffset) + bufferSize)
                 {
                     int offset = valueOffset - strDataOffset;
                     fixed (char* pStr = frozenStr.Data)

@@ -20,6 +20,42 @@ namespace Wasm.Build.Tests;
     [TestCategory("no-workload")]
     public class GenerateWasmBootJsonTests
     {
+		[Theory]
+		[InlineData("v12.0", "false", null, true)]
+		[InlineData("v13.0", "false", null, true)]
+		[InlineData("v12.0", "true", null, null)]
+		[InlineData("v12.0", null, null, null)]
+		[InlineData("v11.0", "false", null, null)]
+		[InlineData("v10.0", "true", null, null)]
+		[InlineData("v12.0", "false", "true", false)]
+		[InlineData("v12.0", "false", "false", true)]
+		[InlineData("v12.0", "true", "true", false)]
+		[InlineData("v12.0", "true", "false", true)]
+		[InlineData("v11.0", "false", "true", false)]
+		[InlineData("v11.0", "false", "false", true)]
+		public void IntegrityCheckConfiguration(string framework, string? useMonoRuntime, string? enableIntegrityCheck, bool? expectedDisableIntegrityCheck)
+		{
+			using var dir = new TempDirectory();
+			string path = Path.Combine(dir.Path, "boot.json");
+			var task = new GenerateWasmBootJson
+			{
+				BuildEngine = new TestBuildEngine(),
+				AssemblyPath = typeof(GenerateWasmBootJsonTests).Assembly.Location,
+				Resources = [],
+				Endpoints = [],
+				TargetFrameworkVersion = framework,
+				UseMonoRuntime = useMonoRuntime,
+				EnableIntegrityCheck = enableIntegrityCheck,
+				OutputPath = path
+			};
+			Assert.True(task.Execute());
+			using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
+			bool? actual = document.RootElement.TryGetProperty("disableIntegrityCheck", out JsonElement value)
+				? value.GetBoolean()
+				: null;
+			Assert.Equal(expectedDisableIntegrityCheck, actual);
+		}
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

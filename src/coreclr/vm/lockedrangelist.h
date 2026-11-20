@@ -44,14 +44,14 @@ class LockedRangeList : public RangeList
     virtual BOOL AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
     {
         WRAPPER_NO_CONTRACT;
-        SimpleWriteLockHolder lh(&m_RangeListRWLock);
+        SimpleWriteLockHolder lh = SimpleRWLock::TakeWriteLock(&m_RangeListRWLock);
         return RangeList::AddRangeWorker(start,end,id);
     }
 
     virtual void RemoveRangesWorker(void *id)
     {
         WRAPPER_NO_CONTRACT;
-        SimpleWriteLockHolder lh(&m_RangeListRWLock);
+        SimpleWriteLockHolder lh = SimpleRWLock::TakeWriteLock(&m_RangeListRWLock);
         RangeList::RemoveRangesWorker(id);
     }
 
@@ -59,7 +59,7 @@ class LockedRangeList : public RangeList
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        SimpleReadLockHolder lh(&m_RangeListRWLock);
+        SimpleReadLockHolder lh = SimpleRWLock::TakeReadLock(&m_RangeListRWLock);
         return RangeList::IsInRangeWorker(address);
     }
 

@@ -111,7 +111,7 @@ PROBE_FRAME_SIZE    field 0
 ;;
 ;; Register state on exit:
 ;;  x9: thread pointer
-;;  x0-x7 preserved, x10 and x16 trashed
+;;  x0-x7 preserved, x10, x16 and x17 trashed
 ;;
     MACRO
         FixupHijackedCallstack
@@ -125,7 +125,11 @@ PROBE_FRAME_SIZE    field 0
         ldr         lr, [x9, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
         ldr         x16, [x9, #OFFSETOF__Thread__m_pSpForPacSign]
         cbz         x16, %ft1
-        DCD         0xDAC1161E  ;; autib lr, x16 instruction in binary to avoid requiring PAC-enabled assemblers
+        ;; Code compiled with return address signing can run on hardware without pointer authentication,
+        ;; where autib is undefined. autib1716 is in the hint space, so it is a NOP there.
+        mov         x17, lr
+        DCD         0xD50321DF  ;; autib1716 instruction in binary to avoid requiring PAC-enabled assemblers
+        mov         lr, x17
 
 1
         ;;

@@ -28,6 +28,8 @@ namespace GenericStaticVirtualMethod
         public static U Transform<U>(U input) => input;
     }
 
+    class DerivedClassFactory : ClassFactory { }
+
     public class Tests
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -48,6 +50,10 @@ namespace GenericStaticVirtualMethod
             // Generic static virtual method on class
             obj = CallCreate<ClassFactory, object>();
             Assert.NotNull(obj);
+
+            System.Console.WriteLine(typeof(DerivedClassFactory));
+            Assert.NotNull(CallCreate<DerivedClassFactory, object>());
+            Assert.Equal(42, CallTransform<DerivedClassFactory, int>(42));
 
             // Transform with different type args
             Assert.Equal(42, CallTransform<StructFactory, int>(42));

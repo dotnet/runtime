@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="MonoForceInterpreter">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
@@ -14,13 +14,6 @@
     <NativeLib Condition="'$(NativeLib)' == ''">shared</NativeLib>
     <BundlesResources Condition="'$(BundlesResources)' == ''">false</BundlesResources>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-    <RunAOTCompilation>true</RunAOTCompilation>
-    <MonoEnableLLVM>true</MonoEnableLLVM>
-    <MainLibraryFileName>iOS.Device.LibraryMode.Test.dll</MainLibraryFileName>
-    <MonoForceInterpreter>false</MonoForceInterpreter>
   </PropertyGroup>
 
   <ItemGroup>

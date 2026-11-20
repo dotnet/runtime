@@ -734,9 +734,9 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
     // Iterate through all modules, for any that are NGEN or R2R need to check if there are inliners there and call
     // RequestReJIT on them
     AppDomain::AssemblyIterator assemblyIterator = AppDomain::GetCurrentDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
+    CollectibleAssemblyHolder pAssembly;
     NativeImageInliningIterator inlinerIter;
-    while (assemblyIterator.Next(pAssembly.This()))
+    while (assemblyIterator.Next(&pAssembly))
     {
         _ASSERTE(pAssembly != NULL);
 

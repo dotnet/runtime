@@ -74,7 +74,18 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
 #ifdef FEATURE_NATIVEAOT
         str     x2, [sp, #locRegs]
 
+#ifdef FEATURE_EMULATED_TLS
+        // RhpGetThread trashes the argument registers. x19 and x20 are loaded from pRegs below.
+        mov     x19, x0
+        mov     x20, x1
+        bl      C_FUNC(RhpGetThread)
+        mov     x4, x0
+        mov     x0, x19
+        mov     x1, x20
+        ldr     x2, [sp, #locRegs]
+#else
         INLINE_GETTHREAD x4
+#endif
         str     x4, [sp, #locThread]
 
         // Clear the DoNotTriggerGc state before calling out to the managed funclet.
@@ -156,7 +167,7 @@ NESTED_END CallEHFunclet, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// UINT_PTR CallEHFilterFunclet(Object* pThrowable, void* pRegs, PCODE pFilter, UINT_PTR* pFuncletCallerSP)
+// int CallEHFilterFunclet(Object* pThrowable, void* pRegs, PCODE pFilter, UINT_PTR* pFuncletCallerSP)
 //
 // Calls a filter funclet with the frame pointer of the parent frame loaded from pRegs (the CONTEXT on CoreCLR,
 // the REGDISPLAY on NativeAOT) by LOAD_FUNCLET_REGISTER.

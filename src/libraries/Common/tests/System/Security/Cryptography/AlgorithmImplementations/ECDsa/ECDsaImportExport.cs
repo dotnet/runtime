@@ -290,6 +290,34 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public void ImportParameters_MismatchedKeyPair_Throws(bool explicitCurve)
+        {
+            if (explicitCurve)
+            {
+                SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
+            }
+
+            if (PlatformDetection.IsWindows)
+            {
+                SkipTestException.ThrowUnless(PlatformDetection.IsWindows10Version22000OrGreater);
+            }
+
+            ECParameters parameters = explicitCurve ?
+                EccTestData.GetNistP256ReferenceKeyExplicit() :
+                EccTestData.GetNistP256ReferenceKey();
+
+            parameters.D[0] ^= 1;
+
+            using (ECDsa ec = ECDsaFactory.Create())
+            {
+                Assert.ThrowsAny<CryptographicException>(() => ec.ImportParameters(parameters));
+            }
+        }
+
         [ConditionalFact]
         public void TestGeneralExportWithExplicitParameters()
         {
