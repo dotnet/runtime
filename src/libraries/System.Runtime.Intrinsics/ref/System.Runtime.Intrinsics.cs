@@ -8927,6 +8927,26 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector256<int> ConvertToSByteWithTruncatedSaturationAndZeroExtendToInt32(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> ConvertToVector128Int32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> ConvertToVector256Int32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<uint> ConvertToVector256UInt32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<long> ConvertToVector128Int64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<long> ConvertToVector256Int64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> ConvertToVector128UInt64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ulong> ConvertToVector256UInt64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> ConvertToVector128Int32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> ConvertToVector128Int32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<long> ConvertToVector128Int64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<long> ConvertToVector256Int64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> ConvertToVector128UInt64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ulong> ConvertToVector256UInt64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+        public static int ConvertToInt32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static uint ConvertToUInt32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static int ConvertToInt32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static uint ConvertToUInt32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> MoveScalar(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> MoveScalar(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> MoveScalar(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
@@ -8937,6 +8957,10 @@ namespace System.Runtime.Intrinsics.X86
         {
             internal X64() { }
             public static new bool IsSupported { get { throw null; } }
+            public static long ConvertToInt64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static ulong ConvertToUInt64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static long ConvertToInt64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static ulong ConvertToUInt64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
         }
         public new abstract partial class V512 : System.Runtime.Intrinsics.X86.Avx10v1.V512
         {
@@ -8950,6 +8974,14 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector512<int> ConvertToByteWithSaturationAndZeroExtendToInt32(System.Runtime.Intrinsics.Vector512<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<int> ConvertToSByteWithTruncatedSaturationAndZeroExtendToInt32(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<int> ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<int> ConvertToVector512Int32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<uint> ConvertToVector512UInt32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<long> ConvertToVector512Int64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<ulong> ConvertToVector512UInt64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<int> ConvertToVector256Int32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<uint> ConvertToVector256UInt32WithTruncatedSaturation(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<long> ConvertToVector512Int64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<ulong> ConvertToVector512UInt64WithTruncatedSaturation(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<ushort> MultipleSumAbsoluteDifferences(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right, [ConstantExpected] byte mask) { throw null; }
             public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx10v1.V512.X64
             {
