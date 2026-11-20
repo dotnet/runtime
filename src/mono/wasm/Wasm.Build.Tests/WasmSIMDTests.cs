@@ -43,6 +43,10 @@ namespace Wasm.Build.Tests
             );
 
             Assert.Contains(result.TestOutput, m => m.Contains("<-2094756296, -2094756296, -2094756296, -2094756296>"));
+            Assert.Contains(result.TestOutput, m => m.Contains("float masks <-2, -2, -2, -2>, none <0, 0, 0, 0>"));
+            Assert.Contains(result.TestOutput, m => m.Contains("double masks <-2, -2>"));
+            Assert.Contains(result.TestOutput, m => m.Contains("float equals <-2, -2, -2, -2>, none <0, 0, 0, 0>"));
+            Assert.Contains(result.TestOutput, m => m.Contains("double equals <-2, -2>"));
             Assert.Contains(result.TestOutput, m => m.Contains("Hello, World!"));
         }
 
@@ -63,11 +67,17 @@ namespace Wasm.Build.Tests
                 ExpectedExitCode: 42)
             );
             Assert.Contains(result.TestOutput, m => m.Contains("<-2094756296, -2094756296, -2094756296, -2094756296>"));
+            Assert.Contains(result.TestOutput, m => m.Contains("float masks <-2, -2, -2, -2>, none <0, 0, 0, 0>"));
+            Assert.Contains(result.TestOutput, m => m.Contains("double masks <-2, -2>"));
+            Assert.Contains(result.TestOutput, m => m.Contains("float equals <-2, -2, -2, -2>, none <0, 0, 0, 0>"));
+            Assert.Contains(result.TestOutput, m => m.Contains("double equals <-2, -2>"));
             Assert.Contains(result.TestOutput, m => m.Contains("Hello, World!"));
         }
 
         private static string s_simdProgramText = @"
             using System;
+            using System.Numerics;
+            using System.Runtime.CompilerServices;
             using System.Runtime.Intrinsics;
 
             public class TestClass {
@@ -77,10 +87,36 @@ namespace Wasm.Build.Tests
                     var v2 = Vector128.Create(0x23456789);
                     var v3 = v1*v2;
                     Console.WriteLine($""TestOutput -> {v3}"");
+
+                    // The comparisons of float and double vectors return integer masks: two of the three are all ones
+                    var floatMasks = SumOfMasks(new Vector<float>(1f), new Vector<float>(-1f), new Vector<float>(2f));
+                    Console.WriteLine($""TestOutput -> float masks {floatMasks}, none {Vector.Equals(floatMasks, Vector<int>.Zero)}"");
+                    Console.WriteLine($""TestOutput -> double masks {SumOfMasks(new Vector<double>(1d), new Vector<double>(-1d), new Vector<double>(2d))}"");
+
+                    // Vector.Equals has its own path in the JIT: two of the three are all ones here too
+                    var floatEquals = SumOfEqualsMasks(new Vector<float>(1f), new Vector<float>(1f), new Vector<float>(2f));
+                    Console.WriteLine($""TestOutput -> float equals {floatEquals}, none {Vector.Equals(floatEquals, Vector<int>.Zero)}"");
+                    Console.WriteLine($""TestOutput -> double equals {SumOfEqualsMasks(new Vector<double>(1d), new Vector<double>(1d), new Vector<double>(2d))}"");
                     Console.WriteLine(""TestOutput -> Hello, World!"");
 
                     return 42;
                 }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static Vector<int> SumOfMasks(Vector<float> a, Vector<float> b, Vector<float> c)
+                    => Vector.GreaterThan(a, Vector<float>.Zero) + Vector.GreaterThan(b, Vector<float>.Zero) + Vector.LessThan(Vector<float>.Zero, c);
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static Vector<long> SumOfMasks(Vector<double> a, Vector<double> b, Vector<double> c)
+                    => Vector.GreaterThan(a, Vector<double>.Zero) + Vector.GreaterThan(b, Vector<double>.Zero) + Vector.LessThan(Vector<double>.Zero, c);
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static Vector<int> SumOfEqualsMasks(Vector<float> a, Vector<float> b, Vector<float> c)
+                    => Vector.Equals(a, b) + Vector.Equals(b, a) + Vector.Equals(a, c);
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static Vector<long> SumOfEqualsMasks(Vector<double> a, Vector<double> b, Vector<double> c)
+                    => Vector.Equals(a, b) + Vector.Equals(b, a) + Vector.Equals(a, c);
             }";
     }
 }
