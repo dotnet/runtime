@@ -17,6 +17,7 @@ namespace System.Threading
         private readonly uint _millisecondsTimeout;
         private readonly int _signedMillisecondsTimeout;
         private bool _repeating;
+        private SafeWaitHandle.WaitCompletionPacket? _waitCompletionPacket;
 
         /// <summary>
         /// The callback to execute when the wait on <see cref="Handle"/> either times out or completes.
@@ -58,7 +59,24 @@ namespace System.Threading
             get => _repeating;
         }
 
-        public bool Unregister(WaitHandle waitObject) =>
+        partial void InitializePortableCore()
+        {
+            _waitCompletionPacket = Handle.GetWaitCompletionPacket();
+        }
+
+        internal void RegisterWaitPortableCore()
+        {
+            _waitCompletionPacket!.StartWait(this);
+        }
+
+        internal void UnregisterWaitPortableCore()
+        {
+            Debug.Assert(_waitCompletionPacket is not null);
+            _waitCompletionPacket.UnregisterWait();
+            _waitCompletionPacket = null;
+        }
+
+        public bool Unregister(WaitHandle? waitObject) =>
             ThreadPool.UseWindowsThreadPool ?
             UnregisterWindowsThreadPool(waitObject) :
             UnregisterPortableCore(waitObject);

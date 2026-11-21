@@ -8,8 +8,11 @@ using System.Runtime.Versioning;
 
 namespace System.Threading
 {
-    internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
+    /// <summary>
+    /// The info for a completed wait on a specific <see cref="RegisteredWaitHandle"/>.
+    /// </summary>
+    internal sealed class CompleteWaitThreadPoolWorkItem(RegisteredWaitHandle registeredWaitHandle, bool timedOut) : IThreadPoolWorkItem
     {
-        void IThreadPoolWorkItem.Execute() => PortableThreadPool.CompleteWait(_registeredWaitHandle, _timedOut);
+        void IThreadPoolWorkItem.Execute() => PortableThreadPool.CompleteWait(registeredWaitHandle, timedOut);
     }
 }

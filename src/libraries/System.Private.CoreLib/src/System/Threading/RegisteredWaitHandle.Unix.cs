@@ -57,7 +57,22 @@ namespace System.Threading
             get => _repeating;
         }
 
-        public bool Unregister(WaitHandle waitObject) => UnregisterPortableCore(waitObject);
+        /// <summary>
+        /// The <see cref="PortableThreadPool.WaitThread"/> this <see cref="RegisteredWaitHandle"/> was registered on.
+        /// </summary>
+        internal PortableThreadPool.WaitThread? WaitThread { get; set; }
+
+        internal void RegisterWaitPortableCore()
+        {
+            PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(this);
+        }
+
+        internal void UnregisterWaitPortableCore()
+        {
+            WaitThread!.UnregisterWait(this);
+        }
+
+        public bool Unregister(WaitHandle? waitObject) => UnregisterPortableCore(waitObject);
 
         /// <summary>
         /// Perform the registered callback if the <see cref="UserUnregisterWaitHandle"/> has not been signaled.

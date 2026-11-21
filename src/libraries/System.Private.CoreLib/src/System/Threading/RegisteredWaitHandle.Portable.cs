@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -47,11 +47,6 @@ namespace System.Threading
 
         private AutoResetEvent? _removed;
 
-        /// <summary>
-        /// The <see cref="PortableThreadPool.WaitThread"/> this <see cref="RegisteredWaitHandle"/> was registered on.
-        /// </summary>
-        internal PortableThreadPool.WaitThread? WaitThread { get; set; }
-
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
             int millisecondsTimeout, bool repeating)
         {
@@ -67,12 +62,15 @@ namespace System.Threading
             _callbackHelper = callbackHelper;
             _signedMillisecondsTimeout = millisecondsTimeout;
             _repeating = repeating;
+            InitializePortableCore();
             if (!IsInfiniteTimeout)
             {
                 RestartTimeout();
             }
 #endif
         }
+
+        partial void InitializePortableCore();
 
         private static AutoResetEvent RentEvent() =>
             Interlocked.Exchange(ref s_cachedEvent, null) ??
@@ -92,11 +90,13 @@ namespace System.Threading
             TimeoutTimeMs = Environment.TickCount + TimeoutDurationMs;
         }
 
-        private bool UnregisterPortableCore(WaitHandle waitObject)
+        private bool UnregisterPortableCore(WaitHandle? waitObject)
         {
+#if !TARGET_WINDOWS
             // The registered wait handle must have been registered by this time, otherwise the instance is not handed out to
             // the caller of the public variants of RegisterWaitForSingleObject
             Debug.Assert(WaitThread != null);
+#endif
 
             s_callbackLock.Acquire();
             bool needToRollBackRefCountOnException = false;
@@ -156,7 +156,7 @@ namespace System.Threading
                 s_callbackLock.Release();
             }
 
-            WaitThread!.UnregisterWait(this);
+            UnregisterWaitPortableCore();
             return true;
         }
 
@@ -202,8 +202,14 @@ namespace System.Threading
             }
 #endif
 
-            _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback!, timedOut);
-            CompleteCallbackRequest();
+            try
+            {
+                _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback!, timedOut);
+            }
+            finally
+            {
+                CompleteCallbackRequest();
+            }
         }
 
         /// <summary>
@@ -226,6 +232,9 @@ namespace System.Threading
         /// Called when the wait thread removes this handle registration. This will signal the user's event if there are no callbacks pending,
         /// or note that the user's event must be signaled when the callbacks complete.
         /// </summary>
+        /// <remarks>
+        /// This function must be called only after some thread has called <see cref="Unregister"/>.
+        /// </remarks>
         internal void OnRemoveWait()
         {
             s_callbackLock.Acquire();

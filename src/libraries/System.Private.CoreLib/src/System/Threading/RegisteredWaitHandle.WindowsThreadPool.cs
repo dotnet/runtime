@@ -81,7 +81,7 @@ namespace System.Threading
             {
                 if (!_unregistering)
                 {
-                    if (_repeating)
+                    if (Repeating)
                     {
                         // Allow this wait to fire again. Restart the timer before executing the callback.
                         RestartWait();
@@ -116,7 +116,7 @@ namespace System.Threading
             Interop.Kernel32.SetThreadpoolWait(_tpWait, _waitHandle!.DangerousGetHandle(), (IntPtr)pTimeout);
         }
 
-        private bool UnregisterWindowsThreadPool(WaitHandle waitObject)
+        private bool UnregisterWindowsThreadPool(WaitHandle? waitObject)
         {
             // Hold the lock during the synchronous part of Unregister (as in CoreCLR)
             lock (_lock!)

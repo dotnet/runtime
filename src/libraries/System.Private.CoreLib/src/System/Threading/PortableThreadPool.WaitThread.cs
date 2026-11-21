@@ -7,21 +7,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-    /// <summary>
-    /// The info for a completed wait on a specific <see cref="RegisteredWaitHandle"/>.
-    /// </summary>
-    internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
-    {
-        private readonly RegisteredWaitHandle _registeredWaitHandle;
-        private readonly bool _timedOut;
-
-        public CompleteWaitThreadPoolWorkItem(RegisteredWaitHandle registeredWaitHandle, bool timedOut)
-        {
-            _registeredWaitHandle = registeredWaitHandle;
-            _timedOut = timedOut;
-        }
-    }
-
     internal sealed partial class PortableThreadPool
     {
         /// <summary>
@@ -68,16 +53,6 @@ namespace System.Threading
             {
                 _waitThreadLock.Release();
             }
-        }
-
-        internal static void CompleteWait(RegisteredWaitHandle handle, bool timedOut)
-        {
-            if (NativeRuntimeEventSource.Log.IsEnabled())
-            {
-                NativeRuntimeEventSource.Log.ThreadPoolIODequeue(handle);
-            }
-
-            handle.PerformCallback(timedOut);
         }
 
         /// <summary>

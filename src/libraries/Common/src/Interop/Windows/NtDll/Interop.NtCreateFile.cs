@@ -606,7 +606,12 @@ internal static partial class Interop
             /// (For directories, <see cref="FILE_DELETE_CHILD"/> | <see cref="FILE_READ_ATTRIBUTES"/> | <see cref="STANDARD_RIGHTS_EXECUTE"/>
             /// | <see cref="SYNCHRONIZE"/>.)
             /// </summary>
-            FILE_GENERIC_EXECUTE = 0x20000000 // GENERIC_EXECUTE
+            FILE_GENERIC_EXECUTE = 0x20000000, // GENERIC_EXECUTE
+
+            /// <summary>
+            /// Maps internally to all possible access rights.
+            /// </summary>
+            FILE_GENERIC_ALL = 0x10000000 // GENERIC_ALL
         }
     }
 }

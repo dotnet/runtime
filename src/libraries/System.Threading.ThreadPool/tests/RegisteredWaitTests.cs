@@ -193,6 +193,40 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(0, backgroundAsyncLocalValue);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static void RepeatingTimeoutCallbackCanUnregister()
+        {
+            using var waitHandle = new ManualResetEvent(false);
+            using var registrationReady = new ManualResetEventSlim(false);
+            using var unregistered = new ManualResetEvent(false);
+            using var callbackReturned = new ManualResetEvent(false);
+            RegisteredWaitHandle? registeredWaitHandle = null;
+            int timedOut = 0;
+            int unregisterSucceeded = 0;
+
+            registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
+                waitHandle,
+                (_, isTimedOut) =>
+                {
+                    registrationReady.Wait();
+                    Volatile.Write(ref timedOut, isTimedOut ? 1 : 0);
+                    if (registeredWaitHandle!.Unregister(unregistered))
+                    {
+                        Volatile.Write(ref unregisterSucceeded, 1);
+                    }
+                    callbackReturned.Set();
+                },
+                null,
+                1,
+                executeOnlyOnce: false);
+            registrationReady.Set();
+
+            Assert.True(callbackReturned.WaitOne(UnexpectedTimeoutMilliseconds));
+            Assert.True(unregistered.WaitOne(UnexpectedTimeoutMilliseconds));
+            Assert.Equal(1, Volatile.Read(ref unregisterSucceeded));
+            Assert.Equal(1, Volatile.Read(ref timedOut));
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void QueueRegisterNegativeTest()
         {
