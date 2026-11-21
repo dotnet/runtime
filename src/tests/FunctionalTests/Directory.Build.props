@@ -31,7 +31,7 @@
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
   </PropertyGroup>
 
-  <!-- Modeled after Xamarin.Shared.Sdk.targets https://github.com/xamarin/xamarin-macios/blob/main/dotnet/targets/Xamarin.Shared.Sdk.targets -->
+  <!-- Modeled after the Apple mobile feature defaults in https://github.com/dotnet/macios/blob/992838a7c51b27ecfb1ecbbd31cdee73cb27733f/dotnet/targets/Xamarin.Shared.Sdk.targets#L130-L176 -->
   <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">
     <CustomResourceTypesSupport Condition="'$(CustomResourceTypesSupport)' == ''">false</CustomResourceTypesSupport>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
@@ -41,7 +41,7 @@
     <InvariantGlobalization Condition="'$(TargetOS)' == 'maccatalyst' and '$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
     <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
     <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">false</UseNativeHttpHandler>
-    <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">false</DynamicCodeSupport>
+    <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' and '$(UseNativeAOTRuntime)' == 'true'">false</DynamicCodeSupport>
   </PropertyGroup>
 
   <Import Project="..\..\libraries\Directory.Build.props" />

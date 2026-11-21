@@ -84,7 +84,7 @@ There are [functional tests](https://github.com/dotnet/runtime/tree/main/src/tes
 
 A functional test can be run the same way as any library test suite, e.g.:
 ```
-./dotnet.sh build /t:Test -c Release /p:TargetOS=iossimulator /p:TargetArchitecture=x64 src/tests/FunctionalTests/iOS/Simulator/PInvoke/iOS.Simulator.PInvoke.Test.csproj
+./dotnet.sh build /t:Test -c Release /p:TargetOS=iossimulator /p:TargetArchitecture=x64 src/tests/FunctionalTests/AppleMobile/PInvoke/PInvoke.Test.csproj
 ```
 
 Currently functional tests are expected to return `42` as a success code so please be careful when adding a new one.
