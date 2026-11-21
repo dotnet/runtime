@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Threading;
 
@@ -461,8 +462,9 @@ namespace System.Reflection
                 attributes |= mi.IsStatic ? MethodAttributes.Static : MethodAttributes.Virtual;
 
                 ParameterInfo returnParameter = mi.ReturnParameter;
+                Type[] returnReqMods = returnParameter.GetRequiredCustomModifiers();
                 MethodBuilder mdb = _tb.DefineMethod(mi.Name, attributes, CallingConventions.Standard,
-                    mi.ReturnType, returnParameter.GetRequiredCustomModifiers(), returnParameter.GetOptionalCustomModifiers(),
+                    mi.ReturnType, returnReqMods, returnParameter.GetOptionalCustomModifiers(),
                     paramTypes, paramReqMods, paramOptMods);
 
                 if (mi.ContainsGenericParameters)
@@ -486,6 +488,21 @@ namespace System.Reflection
                     ConstructorInfo exCtor = typeof(NotSupportedException).GetConstructor([typeof(string)])!;
 
                     il.Emit(OpCodes.Ldstr, SR.DispatchProxy_Method_Invocation_Cannot_Be_Static);
+                    il.Emit(OpCodes.Newobj, exCtor);
+                    il.Emit(OpCodes.Throw);
+
+                    _tb.DefineMethodOverride(mdb, mi);
+                    return mdb;
+                }
+
+                // A write through a returned 'ref' needs storage that Invoke's contract doesn't provide.
+                // A 'ref readonly' return carries modreq(InAttribute):
+                // https://github.com/dotnet/csharplang/blob/e145230405eabef04a460003a20825fecce7f4d5/proposals/csharp-7.2/readonly-ref.md#metadata-representation
+                if (mi.ReturnType.IsByRef && !returnReqMods.Contains(typeof(InAttribute)))
+                {
+                    ConstructorInfo exCtor = typeof(NotSupportedException).GetConstructor([typeof(string)])!;
+
+                    il.Emit(OpCodes.Ldstr, SR.Format(SR.DispatchProxy_Method_Ref_Return_Not_Supported, mi.DeclaringType, mi.Name));
                     il.Emit(OpCodes.Newobj, exCtor);
                     il.Emit(OpCodes.Throw);
 
@@ -569,7 +586,22 @@ namespace System.Reflection
                     }
                 }
 
-                if (resultLocal != null)
+                if (resultLocal != null && mi.ReturnType.IsByRef)
+                {
+                    // Invoke returns a value, so return a reference to a copy of it in storage the proxy allocates.
+                    // return ref new T[] { (T)result }[0];
+                    Type elementType = mi.ReturnType.GetElementType()!;
+                    il.Emit(OpCodes.Ldc_I4_1);
+                    il.Emit(OpCodes.Newarr, elementType);
+                    il.Emit(OpCodes.Dup);
+                    il.Emit(OpCodes.Ldc_I4_0);
+                    il.Emit(OpCodes.Ldloc, resultLocal);
+                    Convert(_assembly, il, typeof(object), elementType, false);
+                    il.Emit(OpCodes.Stelem, elementType);
+                    il.Emit(OpCodes.Ldc_I4_0);
+                    il.Emit(OpCodes.Ldelema, elementType);
+                }
+                else if (resultLocal != null)
                 {
                     // return (mi.ReturnType)result;
                     il.Emit(OpCodes.Ldloc, resultLocal);

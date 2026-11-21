@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Text;
 using Xunit;
@@ -1293,6 +1294,132 @@ namespace DispatchProxyTests
             };
             proxy.Ref(ref p);
             Assert.Equal((nint)(&value), (nint)p);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Invoke_RefReadOnly_Return_Method(bool useGenericCreate)
+        {
+            TestType_IRefReadOnlyReturnService proxy = CreateHelper<TestType_IRefReadOnlyReturnService, TestDispatchProxy>(useGenericCreate);
+            object returnValue = null;
+            bool echoArgument = true;
+            MethodInfo invokedMethod = null;
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                invokedMethod = method;
+                return method.IsGenericMethod && echoArgument ? args[0] : returnValue;
+            };
+
+            returnValue = 42;
+            ref readonly int intRef = ref proxy.GetInt();
+            Assert.Equal(nameof(TestType_IRefReadOnlyReturnService.GetInt), invokedMethod.Name);
+            Assert.Equal(42, intRef);
+
+            returnValue = 43;
+            Assert.Equal(43, proxy.GetInt());
+            Assert.Equal(42, intRef);
+
+            Assert.Equal(43, proxy.ReadOnlyProperty);
+            Assert.Equal("get_" + nameof(TestType_IRefReadOnlyReturnService.ReadOnlyProperty), invokedMethod.Name);
+
+            Assert.Equal(43, proxy.GetNullableInt());
+            returnValue = null;
+            Assert.Null(proxy.GetNullableInt());
+
+            Guid guid = new Guid("0f8fad5b-d9cb-469f-a165-70867728950e");
+            returnValue = guid;
+            Assert.Equal(guid, proxy.GetGuid());
+
+            returnValue = "Hello";
+            Assert.Equal("Hello", proxy.GetString());
+            returnValue = null;
+            Assert.Null(proxy.GetString());
+
+            Assert.Equal("Hello", proxy.Echo("Hello"));
+            Assert.Equal(42, proxy.Echo(42));
+            Assert.Equal(DayOfWeek.Monday, proxy.Echo(DayOfWeek.Monday));
+
+            returnValue = "Hello";
+            Assert.Throws<InvalidCastException>(() => proxy.GetInt());
+            returnValue = 42;
+            Assert.Throws<InvalidCastException>(() => proxy.GetString());
+            returnValue = null;
+            Assert.Throws<NullReferenceException>(() => proxy.GetInt());
+
+            echoArgument = false;
+            returnValue = "Hello";
+            Assert.Throws<InvalidCastException>(() => proxy.Echo(42));
+            returnValue = 42;
+            Assert.Throws<InvalidCastException>(() => proxy.Echo("Hello"));
+            returnValue = null;
+            Assert.Throws<NullReferenceException>(() => proxy.Echo(42));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Invoke_Ref_Return_Method_Throws_NotSupportedException(bool useGenericCreate)
+        {
+            TestType_IRefReturnService proxy = CreateHelper<TestType_IRefReturnService, TestDispatchProxy>(useGenericCreate);
+            MethodInfo invokedMethod = null;
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                invokedMethod = method;
+                return method.ReturnType == typeof(string) ? args[0] : 42;
+            };
+
+            Assert.Throws<NotSupportedException>(() => proxy.GetInt());
+            Assert.Null(invokedMethod);
+
+            Assert.Equal("Hello", proxy.Hello("Hello"));
+            Assert.Equal(nameof(TestType_IRefReturnService.Hello), invokedMethod.Name);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [SkipOnMono("Mono's AssemblyBuilder writes each custom modifier array in the order given.")]
+        public static void Invoke_RefReadOnly_Return_With_Two_Required_Modifiers_Invokes_Correct_Method(bool inAttributeFirst)
+        {
+            Type[] modifiers = inAttributeFirst ? new[] { typeof(InAttribute), typeof(IsVolatile) } : new[] { typeof(IsVolatile), typeof(InAttribute) };
+            AssemblyBuilder ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName($"RefReadOnlyModifiersBuilder_{inAttributeFirst}"), AssemblyBuilderAccess.Run);
+            ModuleBuilder modb = ab.DefineDynamicModule("mod");
+            TypeBuilder tb = modb.DefineType("TestType_IRefReadOnlyModifiersService", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
+            tb.DefineMethod("Echo", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, CallingConventions.HasThis,
+                typeof(int).MakeByRefType(), modifiers, null,
+                new[] { typeof(int) }, null, null);
+            Type interfaceType = tb.CreateType();
+            MethodInfo interfaceMethod = interfaceType.GetMethod("Echo");
+            Assert.Equal(2, interfaceMethod.ReturnParameter.GetRequiredCustomModifiers().Length);
+
+            object proxy = DispatchProxy.Create(interfaceType, typeof(TestDispatchProxy));
+
+            AssertEchoInvokesProxy(interfaceMethod, proxy, new object[] { 7 });
+        }
+
+        [Fact]
+        public static void Invoke_Ref_Return_With_Optional_InAttribute_Throws_NotSupportedException()
+        {
+            AssemblyBuilder ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("OptionalInAttributeBuilder"), AssemblyBuilderAccess.Run);
+            ModuleBuilder modb = ab.DefineDynamicModule("mod");
+            TypeBuilder tb = modb.DefineType("TestType_IOptionalInAttributeService", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
+            tb.DefineMethod("GetInt", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, CallingConventions.HasThis,
+                typeof(int).MakeByRefType(), null, new[] { typeof(InAttribute) },
+                Type.EmptyTypes, null, null);
+            Type interfaceType = tb.CreateType();
+            MethodInfo interfaceMethod = interfaceType.GetMethod("GetInt");
+
+            object proxy = DispatchProxy.Create(interfaceType, typeof(TestDispatchProxy));
+            MethodInfo invokedMethod = null;
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                invokedMethod = method;
+                return 42;
+            };
+
+            Assert.Throws<NotSupportedException>(() => interfaceMethod.Invoke(proxy, BindingFlags.DoNotWrapExceptions, null, null, null));
+            Assert.Null(invokedMethod);
         }
 
         private static TestType_IHelloService CreateTestHelloProxy(bool useGenericCreate) =>
