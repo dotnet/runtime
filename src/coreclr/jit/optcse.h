@@ -117,7 +117,7 @@ public:
 
 private:
     void ReplaceCSENode(Statement* stmt, GenTree* exp, GenTree* newNode);
-    void InsertUseIntoSsa(class IncrementalSsaBuilder& ssaBuilder, const struct UseDefLocation& useDefLoc);
+    void AdoptReachingDefVN(GenTreeLclVar* lcl);
 };
 
 #ifdef DEBUG
