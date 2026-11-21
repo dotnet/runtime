@@ -1,6 +1,6 @@
 # Building and running host tests
 
-The [host tests](/src/installer/tests) use [xunit](http://xunit.github.io/) for their testing framework.
+The [host tests](/src/installer/tests) use [xunit](https://xunit.net/) for their testing framework.
 
 ## Building tests
 
