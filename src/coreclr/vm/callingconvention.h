@@ -424,10 +424,13 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        if (this->IsVarArg())
-            return 0;
-        else
-            return SizeOfArgStack();
+#ifdef UNIX_X86_ABI
+        // Managed/cdecl calls are caller-pop on Unix x86 (see IsCallerPop in corinfo.h):
+        // the callee does not pop its stack arguments.
+        return 0;
+#else
+        if (this->IsVarArg()) return 0; else return SizeOfArgStack();
+#endif // UNIX_X86_ABI
     }
 #endif
 
