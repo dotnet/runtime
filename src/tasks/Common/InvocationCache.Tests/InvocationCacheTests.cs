@@ -46,6 +46,23 @@ public class InvocationCacheTests
         Assert.False(Directory.Exists(Path.Combine(test.Root, "second")));
     }).Dispose();
 
+    [Fact]
+    public void CacheConfigurationUsesSuppliedEnvironmentAndBaseDirectory()
+    {
+        using var test = new CacheTestDirectory();
+        var variables = new Dictionary<string, string?>
+        {
+            [EnabledEnvironmentVariable] = "true",
+            [PathEnvironmentVariable] = "relative-cache",
+        };
+
+        InvocationCache? cache = InvocationCache.TryCreateFromEnvironment(
+            test.Log, s_cacheConfiguration, name => variables.GetValueOrDefault(name), test.Root);
+
+        Assert.NotNull(cache);
+        Assert.Equal(Path.Combine(test.Root, "relative-cache"), cache.CacheDirectory);
+    }
+
     [Theory]
     [InlineData(null, false, false)]
     [InlineData("", false, false)]
