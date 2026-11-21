@@ -611,7 +611,7 @@ var_types RegSet::tmpNormalizeType(var_types type)
     {
         type = TYP_SIMD16;
     }
-#endif // defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
+#endif // FEATURE_SIMD
 
     return type;
 }

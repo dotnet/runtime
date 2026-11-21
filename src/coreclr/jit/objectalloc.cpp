@@ -1854,9 +1854,10 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
         m_compiler->compSuppressedZeroInit = true;
     }
 
-#ifndef TARGET_64BIT
-    lclDsc->lvStructDoubleAlign = alignTo8;
-#endif
+    if (!TargetArchitecture::Is64Bit)
+    {
+        lclDsc->lvStructDoubleAlign = alignTo8;
+    }
 
     // Mark the newarr call as being "on stack", and add the address
     // of the stack local as an argument

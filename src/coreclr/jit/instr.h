@@ -654,23 +654,19 @@ enum emitAttr : unsigned
                 EA_SIZE_MASK     = 0x01F,
 #endif
 
-#ifdef TARGET_64BIT
-                EA_PTRSIZE       = EA_8BYTE,
-#else
-                EA_PTRSIZE       = EA_4BYTE,
-#endif
-
                 EA_OFFSET_FLG    = 0x080,
-                EA_OFFSET        = EA_OFFSET_FLG | EA_PTRSIZE,       /* size ==  0 */
                 EA_GCREF_FLG     = 0x100,
-                EA_GCREF         = EA_GCREF_FLG |  EA_PTRSIZE,       /* size == -1 */
                 EA_BYREF_FLG     = 0x200,
-                EA_BYREF         = EA_BYREF_FLG |  EA_PTRSIZE,       /* size == -2 */
                 EA_DSP_RELOC_FLG = 0x400, // Is the displacement of the instruction relocatable?
                 EA_CNS_RELOC_FLG = 0x800, // Is the immediate of the instruction relocatable?
                 EA_CNS_SEC_RELOC = 0x1000, // Is the offset immediate that should be relocatable
                 EA_CNS_TLSGD_RELOC = 0x2000, // Is the tlsgd constant to pass to tls_get_addr(). Only on linux/x64/NativeAot
 };
+
+#define EA_PTRSIZE                  (TargetArchitecture::Is64Bit ? EA_8BYTE : EA_4BYTE)
+#define EA_OFFSET                   static_cast<emitAttr>(EA_OFFSET_FLG | EA_PTRSIZE)
+#define EA_GCREF                    static_cast<emitAttr>(EA_GCREF_FLG | EA_PTRSIZE)
+#define EA_BYREF                    static_cast<emitAttr>(EA_BYREF_FLG | EA_PTRSIZE)
 
 #define EA_ATTR(x)                  ((emitAttr)(x))
 #define EA_SIZE(x)                  ((emitAttr)(((unsigned)(x)) &  EA_SIZE_MASK))

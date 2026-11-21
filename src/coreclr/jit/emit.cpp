@@ -713,17 +713,51 @@ void emitterStats(FILE* fout)
 
 /*****************************************************************************/
 
+#ifdef TARGET_WASM
+#define TYPE_POINTER_SIZE 4
+const unsigned short emitTypeSizes32[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sze,
+#include "typelist.h"
+#undef DEF_TP
+};
+#undef TYPE_POINTER_SIZE
+#define TYPE_POINTER_SIZE 8
+const unsigned short emitTypeSizes64[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sze,
+#include "typelist.h"
+#undef DEF_TP
+};
+#undef TYPE_POINTER_SIZE
+#else
 const unsigned short emitTypeSizes[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sze,
 #include "typelist.h"
 #undef DEF_TP
 };
+#endif
 
+#ifdef TARGET_WASM
+#define TYPE_POINTER_SIZE 4
+const unsigned short emitTypeActSz32[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) asze,
+#include "typelist.h"
+#undef DEF_TP
+};
+#undef TYPE_POINTER_SIZE
+#define TYPE_POINTER_SIZE 8
+const unsigned short emitTypeActSz64[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) asze,
+#include "typelist.h"
+#undef DEF_TP
+};
+#undef TYPE_POINTER_SIZE
+#else
 const unsigned short emitTypeActSz[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) asze,
 #include "typelist.h"
 #undef DEF_TP
 };
+#endif
 
 /*****************************************************************************/
 /*****************************************************************************
@@ -2758,11 +2792,11 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
 {
     if (dsp == 0)
     {
-        if (instrDesc::fitsInSmallCns(cns))
+        if (instrDesc::fitsInSmallCns(TargetToHost(cns)))
         {
             instrDesc* id = emitAllocInstr(size);
 
-            id->idSmallCns(cns);
+            id->idSmallCns(TargetToHost(cns));
 
 #if EMITTER_STATS
             TrackSmallCns(cns);
@@ -2773,7 +2807,7 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
         }
         else
         {
-            instrDescCns* id = emitAllocInstrCns(size, cns);
+            instrDescCns* id = emitAllocInstrCns(size, TargetToHost(cns));
 
 #if EMITTER_STATS
             TrackLargeCns(cns);
@@ -2785,14 +2819,14 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
     }
     else
     {
-        if (instrDesc::fitsInSmallCns(cns))
+        if (instrDesc::fitsInSmallCns(TargetToHost(cns)))
         {
             instrDescDsp* id = emitAllocInstrDsp(size);
 
             id->idSetIsLargeDsp();
             id->iddDspVal = dsp;
 
-            id->idSmallCns(cns);
+            id->idSmallCns(TargetToHost(cns));
 
 #if EMITTER_STATS
             TrackSmallCns(cns);
@@ -7972,7 +8006,7 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
 //
 void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecOffs, emitter::dataSection** dataSec)
 {
-    unsigned       emittedSize = sizeof(CORINFO_AsyncResumeInfo) * numEntries;
+    unsigned       emittedSize = SIZEOF__CORINFO_AsyncResumeInfo * numEntries;
     UNATIVE_OFFSET secOffs     = AlignUp(emitConsDsc.dsdOffs, TARGET_POINTER_SIZE);
     emitConsDsc.dsdOffs        = secOffs + emittedSize;
 
@@ -8462,8 +8496,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
             JITDUMP("  section %u, size %zu, block absolute addr\n", secNum++, dscSize);
 
             assert(dscSize && dscSize % TARGET_POINTER_SIZE == 0);
-            size_t         numElems = dscSize / TARGET_POINTER_SIZE;
-            target_size_t* bDstRW   = (target_size_t*)dstRW;
+            size_t numElems = dscSize / TARGET_POINTER_SIZE;
             for (unsigned i = 0; i < numElems; i++)
             {
                 BasicBlock* block = dsc->Blocks()[i];
@@ -8480,13 +8513,22 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                     target = (BYTE*)((size_t)target | 1); // Or in thumb bit
                 }
 #endif
-                bDstRW[i] = (target_size_t)(size_t)target;
+                BYTE* address = dstRW + i * TARGET_POINTER_SIZE;
+                if (TargetArchitecture::Is64Bit)
+                {
+                    SET_UNALIGNED_64(address, reinterpret_cast<uintptr_t>(target));
+                }
+                else
+                {
+                    SET_UNALIGNED_32(address, static_cast<uint32_t>(reinterpret_cast<uintptr_t>(target)));
+                }
                 if (m_compiler->opts.compReloc)
                 {
-                    emitRecordRelocation(&(bDstRW[i]), target, CorInfoReloc::DIRECT);
+                    emitRecordRelocation(address, target, CorInfoReloc::DIRECT);
                 }
 
-                JITDUMP("  " FMT_BB ": 0x%llx\n", block->bbNum, static_cast<unsigned long long>(bDstRW[i]));
+                JITDUMP("  " FMT_BB ": 0x%llx\n", block->bbNum,
+                        static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(target)));
             }
         }
         // relative label table
@@ -8515,9 +8557,8 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
         {
             JITDUMP("  section %u, size %zu, async resume info\n", secNum++, dscSize);
 
-            size_t numElems = dscSize / sizeof(CORINFO_AsyncResumeInfo);
+            size_t numElems = dscSize / SIZEOF__CORINFO_AsyncResumeInfo;
 
-            CORINFO_AsyncResumeInfo* aDstRW = (CORINFO_AsyncResumeInfo*)dstRW;
             for (size_t i = 0; i < numElems; i++)
             {
                 emitLocation* emitLoc = &dsc->Locations()[i];
@@ -8529,19 +8570,37 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 #else
                 BYTE* target = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
 #endif
-                aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
-                aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
+                BYTE*     resume          = dstRW + i * SIZEOF__CORINFO_AsyncResumeInfo;
+                BYTE*     diagnosticIP    = resume + TARGET_POINTER_SIZE;
+                uintptr_t diagnosticValue = reinterpret_cast<uintptr_t>(target);
+#ifdef TARGET_WASM
+                // Virtual IP relocations write only the low 32 bits, also in memory64.
+                if (m_compiler->opts.compReloc)
+                {
+                    diagnosticValue = 0;
+                }
+#endif
+                if (TargetArchitecture::Is64Bit)
+                {
+                    SET_UNALIGNED_64(resume, reinterpret_cast<uintptr_t>(emitAsyncResumeStubEntryPoint));
+                    SET_UNALIGNED_64(diagnosticIP, diagnosticValue);
+                }
+                else
+                {
+                    SET_UNALIGNED_32(resume,
+                                     static_cast<uint32_t>(reinterpret_cast<uintptr_t>(emitAsyncResumeStubEntryPoint)));
+                    SET_UNALIGNED_32(diagnosticIP, static_cast<uint32_t>(diagnosticValue));
+                }
 
                 if (m_compiler->opts.compReloc)
                 {
-                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
+                    emitRecordRelocation(resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
                     if (target != nullptr)
                     {
 #ifdef TARGET_WASM
-                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target,
-                                             CorInfoReloc::WASM_METHOD_RELATIVE_VIRTUAL_IP_I32);
+                        emitRecordRelocation(diagnosticIP, target, CorInfoReloc::WASM_METHOD_RELATIVE_VIRTUAL_IP_I32);
 #else
-                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
+                        emitRecordRelocation(diagnosticIP, target, CorInfoReloc::DIRECT);
 #endif
                     }
                 }
@@ -8652,28 +8711,31 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                 }
                 else
                 {
-#ifndef TARGET_64BIT
-                    // We have a 32-BIT target
-                    if (m_compiler->opts.disDiffable)
+                    if (!TargetArchitecture::Is64Bit)
                     {
-                        printf("\tdd\t%s\n", blockLabel);
+                        // We have a 32-BIT target
+                        if (m_compiler->opts.disDiffable)
+                        {
+                            printf("\tdd\t%s\n", blockLabel);
+                        }
+                        else
+                        {
+                            printf("\tdd\t%08Xh", (uint32_t)(size_t)emitOffsetToPtr(ig->igOffs));
+                        }
                     }
                     else
                     {
-                        printf("\tdd\t%08Xh", (uint32_t)(size_t)emitOffsetToPtr(ig->igOffs));
+                        // We have a 64-BIT target
+                        if (m_compiler->opts.disDiffable)
+                        {
+                            printf("\tdq\t%s\n", blockLabel);
+                        }
+                        else
+                        {
+                            printf("\tdq\t%016llXh", static_cast<unsigned long long>(
+                                                         reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs))));
+                        }
                     }
-#else  // TARGET_64BIT
-       // We have a 64-BIT target
-                    if (m_compiler->opts.disDiffable)
-                    {
-                        printf("\tdq\t%s\n", blockLabel);
-                    }
-                    else
-                    {
-                        printf("\tdq\t%016llXh", static_cast<unsigned long long>(
-                                                     reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs))));
-                    }
-#endif // TARGET_64BIT
                 }
 
                 if (!m_compiler->opts.disDiffable)
@@ -8691,13 +8753,13 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
             const char* resumeStubName =
                 m_compiler->eeGetMethodFullName(emitAsyncResumeStub, true, true, nameBuffer, sizeof(nameBuffer));
 
-            size_t infoCount = data->dsSize / sizeof(emitLocation);
+            size_t infoCount = data->dsSize / SIZEOF__CORINFO_AsyncResumeInfo;
             for (size_t i = 0; i < infoCount; i++)
             {
                 if (i > 0)
                 {
                     sprintf_s(label, ArrLen(label), "RWD%02zu",
-                              static_cast<size_t>(data->dsOffset) + (i * sizeof(CORINFO_AsyncResumeInfo)));
+                              static_cast<size_t>(data->dsOffset) + (i * SIZEOF__CORINFO_AsyncResumeInfo));
                     printf(labelFormat, label);
                 }
 
@@ -9417,11 +9479,14 @@ unsigned char emitter::emitOutputLong(BYTE* dst, ssize_t val)
 unsigned char emitter::emitOutputSizeT(BYTE* dst, ssize_t val)
 {
     BYTE* dstRW = dst + writeableOffset;
-#if !defined(TARGET_64BIT)
-    MISALIGNED_WR_I4(dstRW, (int)val);
-#else
-    MISALIGNED_WR_ST(dstRW, val);
-#endif
+    if (!TargetArchitecture::Is64Bit)
+    {
+        MISALIGNED_WR_I4(dstRW, (int)val);
+    }
+    else
+    {
+        MISALIGNED_WR_ST(dstRW, val);
+    }
 
     return TARGET_POINTER_SIZE;
 }

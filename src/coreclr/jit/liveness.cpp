@@ -10,9 +10,7 @@
 #pragma hdrstop
 #endif
 
-#if !defined(TARGET_64BIT)
 #include "decomposelongs.h"
-#endif
 #include "lower.h" // for LowerRange()
 
 #include "jitstd/algorithm.h"
@@ -629,9 +627,7 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
                 // 32-bit targets always pop the frame in the epilog.
                 // For 64-bit targets, we only do this in the epilog for IL stubs;
                 // for non-IL stubs the frame is popped after every PInvoke call.
-#ifdef TARGET_64BIT
-                if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
-#endif
+                if (!TargetArchitecture::Is64Bit || m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
                 {
                     LclVarDsc* varDsc = m_compiler->lvaGetDesc(m_compiler->info.compLvFrameListRoot);
 
@@ -2013,9 +2009,7 @@ bool Liveness<TLiveness>::ComputeLifeUntrackedLocal(VARSET_TP&           life,
     for (unsigned i = varDsc.lvFieldLclStart; i < varDsc.lvFieldLclStart + varDsc.lvFieldCnt; ++i)
     {
         LclVarDsc* fieldVarDsc = m_compiler->lvaGetDesc(i);
-#if !defined(TARGET_64BIT)
-        if (!varTypeIsLong(fieldVarDsc->lvType) || !fieldVarDsc->lvPromoted)
-#endif // !defined(TARGET_64BIT)
+        if (TargetArchitecture::Is64Bit || !varTypeIsLong(fieldVarDsc->lvType) || !fieldVarDsc->lvPromoted)
         {
             noway_assert(fieldVarDsc->lvIsStructField);
         }

@@ -35,19 +35,20 @@ enum var_types_register
  * platform
  */
 
-#ifdef TARGET_64BIT
-#define TYP_I_IMPL TYP_LONG
-#define TYP_U_IMPL TYP_ULONG
-#else
-#define TYP_I_IMPL TYP_INT
-#define TYP_U_IMPL TYP_UINT
-#endif
+#define TYP_I_IMPL (TargetArchitecture::Is64Bit ? TYP_LONG : TYP_INT)
+#define TYP_U_IMPL (TargetArchitecture::Is64Bit ? TYP_ULONG : TYP_UINT)
 
 #define SIZE_UNKNOWN UINT8_MAX
 
 /*****************************************************************************/
 
+#ifdef TARGET_WASM
+const extern BYTE varTypeClassification32[TYP_COUNT];
+const extern BYTE varTypeClassification64[TYP_COUNT];
+#define varTypeClassification (TargetArchitecture::Is64Bit ? varTypeClassification64 : varTypeClassification32)
+#else
 const extern BYTE varTypeClassification[TYP_COUNT];
+#endif
 const extern BYTE varTypeRegister[TYP_COUNT];
 
 // make any class with a TypeGet member also have a function TypeGet() that does the same thing
@@ -216,11 +217,7 @@ inline bool varTypeIsSmall(T vt)
 template <class T>
 inline bool varTypeIsIntOrI(T vt)
 {
-    return ((TypeGet(vt) == TYP_INT)
-#ifdef TARGET_64BIT
-            || (TypeGet(vt) == TYP_I_IMPL)
-#endif // TARGET_64BIT
-    );
+    return (TypeGet(vt) == TYP_INT) || (TypeGet(vt) == TYP_I_IMPL);
 }
 
 template <class T>
@@ -250,11 +247,14 @@ inline bool varTypeIsInt(T vt)
 template <class T>
 inline bool varTypeIsMultiReg(T vt)
 {
-#ifdef TARGET_64BIT
-    return false;
-#else
-    return (TypeGet(vt) == TYP_LONG);
-#endif
+    if (TargetArchitecture::Is64Bit)
+    {
+        return false;
+    }
+    else
+    {
+        return (TypeGet(vt) == TYP_LONG);
+    }
 }
 
 template <class T>
@@ -279,12 +279,13 @@ inline bool varTypeIsComposite(T vt)
 template <class T>
 inline bool varTypeIsPromotable(T vt)
 {
-#ifndef TARGET_64BIT
-    if (varTypeIsLong(vt))
+    if (!TargetArchitecture::Is64Bit)
     {
-        return true;
+        if (varTypeIsLong(vt))
+        {
+            return true;
+        }
     }
-#endif
 
     return varTypeIsStruct(vt);
 }

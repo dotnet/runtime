@@ -65,6 +65,10 @@ regNumber MakeWasmReg(unsigned index, WasmValueType type)
 //
 WasmValueType TypeToWasmValueType(var_types type)
 {
+    if (varTypeIsGC(type))
+    {
+        return WasmNativeIntType();
+    }
     // clang-format off
     static const WasmValueType s_mapping[] = {
         WasmValueType::Invalid, // TYP_UNDEF,
@@ -79,8 +83,8 @@ WasmValueType TypeToWasmValueType(var_types type)
         WasmValueType::Invalid, // TYP_ULONG,
         WasmValueType::F32,     // TYP_FLOAT,
         WasmValueType::F64,     // TYP_DOUBLE,
-        WasmValueType::I,       // TYP_REF,
-        WasmValueType::I,       // TYP_BYREF,
+        WasmValueType::Invalid, // TYP_REF,
+        WasmValueType::Invalid, // TYP_BYREF,
         WasmValueType::Invalid, // TYP_STRUCT,
         WasmValueType::V128,    // TYP_SIMD8,
         WasmValueType::V128,    // TYP_SIMD12
@@ -108,6 +112,10 @@ WasmValueType TypeToWasmValueType(var_types type)
 //
 WasmValueType ActualTypeToWasmValueType(var_types type)
 {
+    if (varTypeIsGC(type))
+    {
+        return WasmNativeIntType();
+    }
     // clang-format off
     static const WasmValueType s_mapping[] = {
         WasmValueType::Invalid, // TYP_UNDEF,
@@ -122,8 +130,8 @@ WasmValueType ActualTypeToWasmValueType(var_types type)
         WasmValueType::Invalid, // TYP_ULONG,
         WasmValueType::F32,     // TYP_FLOAT,
         WasmValueType::F64,     // TYP_DOUBLE,
-        WasmValueType::I,       // TYP_REF,
-        WasmValueType::I,       // TYP_BYREF,
+        WasmValueType::Invalid, // TYP_REF,
+        WasmValueType::Invalid, // TYP_BYREF,
         WasmValueType::Invalid, // TYP_STRUCT,
         WasmValueType::V128,    // TYP_SIMD8,
         WasmValueType::V128,    // TYP_SIMD12

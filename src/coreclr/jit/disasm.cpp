@@ -1273,9 +1273,10 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
         return;
     }
 
-#ifdef TARGET_64BIT
-    pdis->SetAddr64(true);
-#endif
+    if (TargetArchitecture::Is64Bit)
+    {
+        pdis->SetAddr64(true);
+    }
 
     // Store a pointer to the DisAssembler so that the callback functions
     // can get to it.

@@ -475,9 +475,7 @@ enum class DoNotEnregisterReason
     IsStructArg,        // Is a struct passed as an argument in a way that requires a stack location.
     DepField,           // It is a field of a dependently promoted struct
     NoRegVars,          // opts.compFlags & CLFLG_REGVAR is not set
-#if !defined(TARGET_64BIT)
-    LongParamField, // It is a decomposed field of a long parameter.
-#endif
+    LongParamField,     // It is a decomposed field of a long parameter.
     PinningRef,
     LclAddrNode, // the local is accessed with LCL_ADDR_VAR/FLD.
     CastTakesAddr,
@@ -590,12 +588,8 @@ public:
 
     unsigned char lvHasExceptionalUsesHint : 1; // hint for CopyProp
 
-#ifndef TARGET_64BIT
     unsigned char lvStructDoubleAlign : 1; // Must we double align this struct?
-#endif                                     // !TARGET_64BIT
-#ifdef TARGET_64BIT
-    unsigned char lvQuirkToLong : 1; // Quirk to allocate this LclVar as a 64-bit long
-#endif
+    unsigned char lvQuirkToLong       : 1; // Quirk to allocate this LclVar as a 64-bit long
 #ifdef DEBUG
     unsigned char lvKeepType       : 1; // Don't change the type of this variable
     unsigned char lvNoLclFldStress : 1; // Can't apply local field stress on this one
@@ -797,14 +791,12 @@ public:
 #endif
 
 private:
-    regNumberSmall _lvRegNum; // Used to store the register this variable is in (or, the low register of a
-                              // register pair). It is set during codegen any time the
-                              // variable is enregistered (lvRegister is only set
-                              // to non-zero if the variable gets the same register assignment for its entire
-                              // lifetime).
-#if !defined(TARGET_64BIT)
+    regNumberSmall _lvRegNum;   // Used to store the register this variable is in (or, the low register of a
+                                // register pair). It is set during codegen any time the
+                                // variable is enregistered (lvRegister is only set
+                                // to non-zero if the variable gets the same register assignment for its entire
+                                // lifetime).
     regNumberSmall _lvOtherReg; // Used for "upper half" of long var.
-#endif                          // !defined(TARGET_64BIT)
 
     regNumberSmall _lvArgInitReg; // the register into which the argument is moved at entry
 
@@ -827,33 +819,18 @@ public:
 
     /////////////////////
 
-#if defined(TARGET_64BIT)
-
     regNumber GetOtherReg() const
     {
-        assert(!"shouldn't get here"); // can't use "unreached();" because it's NORETURN, which causes C4072
-                                       // "unreachable code" warnings
-        return REG_NA;
-    }
-
-    void SetOtherReg(regNumber reg)
-    {
-        assert(!"shouldn't get here"); // can't use "unreached();" because it's NORETURN, which causes C4072
-                                       // "unreachable code" warnings
-    }
-#else  // !TARGET_64BIT
-
-    regNumber GetOtherReg() const
-    {
+        assert(!TargetArchitecture::Is64Bit);
         return (regNumber)_lvOtherReg;
     }
 
     void SetOtherReg(regNumber reg)
     {
+        assert(!TargetArchitecture::Is64Bit);
         _lvOtherReg = (regNumberSmall)reg;
         assert(_lvOtherReg == reg);
     }
-#endif // !TARGET_64BIT
 
     /////////////////////
 
@@ -2933,9 +2910,7 @@ class Compiler
     friend struct HWIntrinsicInfo;
 #endif // FEATURE_HW_INTRINSICS
 
-#ifndef TARGET_64BIT
     friend class DecomposeLongs;
-#endif // !TARGET_64BIT
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3477,12 +3452,18 @@ public:
 #ifdef TARGET_WASM
     // On wasm these helpers return void* (InitHelpers.InitClass/InitInstantiatedClass). Model them as
     // value-returning so the call_indirect signature matches the compiled managed helper; the value is unused.
-    static constexpr var_types HelperInitClassRetType = TYP_I_IMPL;
+    static var_types HelperInitClassReturnType()
+    {
+        return TYP_I_IMPL;
+    }
     // Likewise for CastHelpers.Unbox at sites that discard the result. Modeling it TYP_BYREF off
     // wasm is equally correct but costs code size for no benefit.
     static constexpr var_types HelperUnboxDiscardedRetType = TYP_BYREF;
 #else
-    static constexpr var_types HelperInitClassRetType      = TYP_VOID;
+    static var_types HelperInitClassReturnType()
+    {
+        return TYP_VOID;
+    }
     static constexpr var_types HelperUnboxDiscardedRetType = TYP_VOID;
 #endif // TARGET_WASM
 
@@ -4391,9 +4372,7 @@ public:
 #ifdef DEBUG
     VARSET_TP lvaTrackedVars; // set of tracked variables
 #endif
-#ifndef TARGET_64BIT
     VARSET_TP lvaLongVars; // set of long (64-bit) variables
-#endif
     VARSET_TP lvaFloatVars; // set of floating-point (32-bit and 64-bit) or SIMD variables
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     VARSET_TP lvaMaskVars; // set of mask variables
@@ -7337,11 +7316,9 @@ private:
     GenTree* fgRecognizeAndMorphBitwiseRotation(GenTree* tree);
     bool fgOperIsBitwiseRotationRoot(genTreeOps oper);
 
-#if !defined(TARGET_64BIT)
     //                  Recognize and morph a long multiplication with 32 bit operands.
     GenTreeOp* fgRecognizeAndMorphLongMul(GenTreeOp* mul);
     GenTreeOp* fgMorphLongMul(GenTreeOp* mul);
-#endif
 
     //-------- Determine the order in which the trees will be evaluated -------
 public:
@@ -9760,7 +9737,7 @@ public:
     // Returns the page size for the target machine as reported by the EE.
     target_size_t eeGetPageSize()
     {
-        return (target_size_t)eeGetEEInfo()->osPageSize;
+        return TargetFromHost<target_size_t>(eeGetEEInfo()->osPageSize);
     }
 
     //------------------------------------------------------------------------
@@ -12451,9 +12428,7 @@ public:
         unsigned m_noRegVars;
         unsigned m_wasmGcVisibility;
         unsigned m_PinningRef;
-#if !defined(TARGET_64BIT)
         unsigned m_longParamField;
-#endif // !TARGET_64BIT
         unsigned m_parentExposed;
         unsigned m_tooConservative;
         unsigned m_escapeAddress;
@@ -14009,9 +13984,27 @@ const instruction INS_BREAKPOINT = INS_unreachable;
 
 /*****************************************************************************/
 
+#ifdef TARGET_WASM
+extern const BYTE genTypeSizes32[TYP_COUNT];
+extern const BYTE genTypeSizes64[TYP_COUNT];
+#define genTypeSizes (TargetArchitecture::Is64Bit ? genTypeSizes64 : genTypeSizes32)
+#else
 extern const BYTE genTypeSizes[];
+#endif
+#ifdef TARGET_WASM
+extern const BYTE genTypeAlignments32[TYP_COUNT];
+extern const BYTE genTypeAlignments64[TYP_COUNT];
+#define genTypeAlignments (TargetArchitecture::Is64Bit ? genTypeAlignments64 : genTypeAlignments32)
+#else
 extern const BYTE genTypeAlignments[];
+#endif
+#ifdef TARGET_WASM
+extern const BYTE genTypeStSzs32[TYP_COUNT];
+extern const BYTE genTypeStSzs64[TYP_COUNT];
+#define genTypeStSzs (TargetArchitecture::Is64Bit ? genTypeStSzs64 : genTypeStSzs32)
+#else
 extern const BYTE genTypeStSzs[];
+#endif
 extern const BYTE genActualTypes[];
 
 /*****************************************************************************/

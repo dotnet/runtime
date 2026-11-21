@@ -1633,7 +1633,7 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
 
     target_ssize_t offset;
     PeelOffsets(&vn, &offset);
-    if ((offset < 0) || m_compiler->fgIsBigOffset(static_cast<size_t>(offset)))
+    if ((offset < 0) || m_compiler->fgIsBigOffset(static_cast<size_t>(TargetToHost(offset))))
     {
         return false;
     }
@@ -1883,7 +1883,7 @@ ValueNum ValueNumStore::VNForDoubleCon(double cnsVal)
 
 ValueNum ValueNumStore::VNForByrefCon(target_size_t cnsVal)
 {
-    return VnForConst(cnsVal, GetByrefCnsMap(), TYP_BYREF);
+    return VnForConst(static_cast<size_t>(TargetToHost(cnsVal)), GetByrefCnsMap(), TYP_BYREF);
 }
 
 #if defined(FEATURE_SIMD)
@@ -2663,7 +2663,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                         CORINFO_FIELD_HANDLE field = fieldSeq->GetFieldHandle();
                         if (field != NULL)
                         {
-                            uint8_t buffer[TARGET_POINTER_SIZE] = {0};
+                            uint8_t buffer[sizeof(uint64_t)] = {0};
                             if (m_compiler->info.compCompHnd->getStaticFieldContent(field, buffer, TARGET_POINTER_SIZE,
                                                                                     0, false))
                             {
@@ -4004,12 +4004,11 @@ int ValueNumStore::GetConstantInt32(ValueNum argVN)
         case TYP_INT:
             result = ConstantValue<int>(argVN);
             break;
-#ifndef TARGET_64BIT
         case TYP_REF:
         case TYP_BYREF:
+            assert(!TargetArchitecture::Is64Bit);
             result = (int)ConstantValue<size_t>(argVN);
             break;
-#endif
         default:
             unreached();
     }
@@ -4314,7 +4313,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             {
                 assert((typ == TYP_BYREF) || (typ == TYP_I_IMPL));
                 size_t resultVal = EvalOp<size_t>(func, arg0Val, arg1Val);
-                result           = VNForByrefCon((target_size_t)resultVal);
+                result           = VNForByrefCon(TargetFromHost<target_size_t>(resultVal));
             }
         }
     }
@@ -4344,7 +4343,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             switch (typ)
             {
                 case TYP_BYREF:
-                    result = VNForByrefCon((target_size_t)resultVal);
+                    result = VNForByrefCon(TargetFromHost<target_size_t>(resultVal));
                     break;
                 case TYP_LONG:
                     result = VNForLongCon(resultVal);
@@ -4447,12 +4446,13 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
     var_types castFromType = arg0VNtyp;
     bool      checkedCast  = func == VNF_CastOvf;
 
+    if (varTypeIsGC(castFromType))
+    {
+        castFromType = TYP_I_IMPL;
+    }
+
     switch (castFromType) // GT_CAST source type
     {
-#ifndef TARGET_64BIT
-        case TYP_REF:
-        case TYP_BYREF:
-#endif
         case TYP_INT:
         {
             int arg0Val = GetConstantInt32(arg0VN);
@@ -4479,32 +4479,35 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                 case TYP_LONG:
                 case TYP_ULONG:
                     assert(!IsVNHandle(arg0VN));
-#ifdef TARGET_64BIT
-                    if (typ == TYP_LONG)
+                    if (TargetArchitecture::Is64Bit)
                     {
-                        if (srcIsUnsigned)
+                        if (typ == TYP_LONG)
                         {
-                            return VNForLongCon(INT64(unsigned(arg0Val)));
+                            if (srcIsUnsigned)
+                            {
+                                return VNForLongCon(INT64(unsigned(arg0Val)));
+                            }
+                            else
+                            {
+                                return VNForLongCon(INT64(arg0Val));
+                            }
                         }
                         else
                         {
-                            return VNForLongCon(INT64(arg0Val));
+                            assert(typ == TYP_BYREF);
+                            return VNForByrefCon(TargetFromHost<target_size_t>(arg0Val));
                         }
                     }
                     else
                     {
-                        assert(typ == TYP_BYREF);
-                        return VNForByrefCon(target_size_t(arg0Val));
+                        if (srcIsUnsigned)
+                            return VNForLongCon(INT64(unsigned(arg0Val)));
+                        else
+                            return VNForLongCon(INT64(arg0Val));
                     }
-#else // TARGET_32BIT
-                    if (srcIsUnsigned)
-                        return VNForLongCon(INT64(unsigned(arg0Val)));
-                    else
-                        return VNForLongCon(INT64(arg0Val));
-#endif
                 case TYP_BYREF:
                     assert(typ == TYP_BYREF);
-                    return VNForByrefCon(target_size_t(arg0Val));
+                    return VNForByrefCon(TargetFromHost<target_size_t>(arg0Val));
 
                 case TYP_FLOAT:
                     assert(typ == TYP_FLOAT);
@@ -4531,10 +4534,6 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
             }
             break;
         }
-#ifdef TARGET_64BIT
-        case TYP_REF:
-        case TYP_BYREF:
-#endif
         case TYP_LONG:
         {
             INT64 arg0Val = GetConstantInt64(arg0VN);
@@ -4566,7 +4565,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                     return arg0VN;
                 case TYP_BYREF:
                     assert(typ == TYP_BYREF);
-                    return VNForByrefCon((target_size_t)arg0Val);
+                    return VNForByrefCon(TargetFromHost<target_size_t>(arg0Val));
                 case TYP_FLOAT:
                     assert(typ == TYP_FLOAT);
                     if (srcIsUnsigned)
@@ -4716,7 +4715,7 @@ ValueNum ValueNumStore::EvalBitCastForConstantArgs(var_types dstType, ValueNum a
             memcpy(bytes, &int64, sizeof(int64));
             break;
         case TYP_BYREF:
-            nuint = ConstantValue<target_size_t>(arg0VN);
+            nuint = TargetFromHost<target_size_t>(ConstantValue<size_t>(arg0VN));
             memcpy(bytes, &nuint, sizeof(nuint));
             break;
         case TYP_REF:
@@ -12910,7 +12909,8 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 }
                 else
                 {
-                    tree->gtVNPair.SetBoth(vnStore->VNForByrefCon((target_size_t)tree->AsIntConCommon()->IconValue()));
+                    tree->gtVNPair.SetBoth(
+                        vnStore->VNForByrefCon(TargetFromHost<target_size_t>(tree->AsIntConCommon()->IconValue())));
                 }
             }
             break;
@@ -13329,7 +13329,7 @@ bool Compiler::GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORI
     if (vnStore->IsVNObjHandle(treeVN))
     {
         *pObj       = vnStore->ConstantObjHandle(treeVN);
-        *byteOffset = offset;
+        *byteOffset = TargetToHost(offset);
         return true;
     }
     return false;
@@ -13463,11 +13463,11 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         vnStore->PeelOffsets(&addrVN, &dataOffset);
         ValueNum baseVN = addrVN;
 
-        if (isCnsObjHandle(vnStore, baseVN, &objHandle) && (dataOffset >= (ssize_t)OFFSETOF__CORINFO_String__chars) &&
-            ((dataOffset % 2) == 0))
+        if (isCnsObjHandle(vnStore, baseVN, &objHandle) &&
+            (dataOffset >= TargetFromHost<target_ssize_t>(OFFSETOF__CORINFO_String__chars)) && ((dataOffset % 2) == 0))
         {
-            static_assert((OFFSETOF__CORINFO_String__chars % 2) == 0);
-            index = (dataOffset - OFFSETOF__CORINFO_String__chars) / 2;
+            assert((OFFSETOF__CORINFO_String__chars % 2) == 0);
+            index = TargetToHost(dataOffset - TargetFromHost<target_ssize_t>(OFFSETOF__CORINFO_String__chars)) / 2;
         }
     }
 
@@ -15903,14 +15903,14 @@ ValueNumPair Compiler::fgValueNumberIndirNullCheckExceptions(GenTree* baseAddr)
     if (!varTypeIsSIMD(baseAddr))
     {
         vnStore->PeelOffsets(&baseLVN, &offsetL);
-        if (fgIsBigOffset(offsetL))
+        if (fgIsBigOffset(TargetToHost(offsetL)))
         {
             // Reset baseLVN back to the full address expression
             baseLVN = baseVNP.GetLiberal();
         }
 
         vnStore->PeelOffsets(&baseCVN, &offsetC);
-        if (fgIsBigOffset(offsetC))
+        if (fgIsBigOffset(TargetToHost(offsetC)))
         {
             // Reset baseCVN back to the full address expression
             baseCVN = baseVNP.GetConservative();
@@ -16743,12 +16743,12 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
         {
             // Ref/byref constants are stored as host size_t; GetConstantInt64 reads them as such.
             //
-            *offset += (target_ssize_t)GetConstantInt64(app.GetArg(0));
+            *offset += TargetFromHost<target_ssize_t>(GetConstantInt64(app.GetArg(0)));
             *vn = app.GetArg(1);
         }
         else if (IsVNConstantNonHandle(app.GetArg(1)) && (app.GetArg(1) != VNForNull()))
         {
-            *offset += (target_ssize_t)GetConstantInt64(app.GetArg(1));
+            *offset += TargetFromHost<target_ssize_t>(GetConstantInt64(app.GetArg(1)));
             *vn = app.GetArg(0);
         }
         else

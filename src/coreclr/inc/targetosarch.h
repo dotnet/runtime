@@ -42,7 +42,9 @@ public:
 class TargetArchitecture
 {
 public:
-#ifdef TARGET_64BIT
+#if defined(TARGET_WASM) && defined(JIT_BUILD)
+    static bool Is64Bit;
+#elif defined(TARGET_64BIT)
     static const bool Is64Bit = true;
 #else
     static const bool Is64Bit = false;

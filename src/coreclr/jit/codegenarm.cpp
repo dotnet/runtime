@@ -66,7 +66,7 @@ bool CodeGen::genInstrWithConstant(
                 imm = -imm;
                 ins = (ins == INS_add) ? INS_sub : INS_add;
             }
-            immFitsInIns = validImmForInstr(ins, (target_ssize_t)imm, flags);
+            immFitsInIns = validImmForInstr(ins, TargetFromHost<target_ssize_t>(imm), flags);
             break;
 
         default:
@@ -77,7 +77,7 @@ bool CodeGen::genInstrWithConstant(
     if (immFitsInIns)
     {
         // generate a single instruction that encodes the immediate directly
-        GetEmitter()->emitIns_R_R_I(ins, attr, reg1, reg2, (target_ssize_t)imm);
+        GetEmitter()->emitIns_R_R_I(ins, attr, reg1, reg2, TargetFromHost<target_ssize_t>(imm));
     }
     else
     {
@@ -400,7 +400,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     BasicBlock*          endLabel                 = nullptr;
     unsigned             stackAdjustment          = 0;
     regNumber            regTmp                   = REG_NA;
-    const target_ssize_t ILLEGAL_LAST_TOUCH_DELTA = (target_ssize_t)-1;
+    const target_ssize_t ILLEGAL_LAST_TOUCH_DELTA = TargetFromHost<target_ssize_t>(-1);
     target_ssize_t       lastTouchDelta =
         ILLEGAL_LAST_TOUCH_DELTA; // The number of bytes from SP to the last stack address probed.
 
@@ -454,7 +454,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     if (size->IsCnsIntOrI())
     {
         // 'amount' is the total number of bytes to localloc to properly STACK_ALIGN
-        target_size_t amount = (target_size_t)size->AsIntCon()->IconValue();
+        target_size_t amount = TargetFromHost<target_size_t>(size->AsIntCon()->IconValue());
         amount               = AlignUp(amount, STACK_ALIGN);
 
         // For small allocations we will generate up to four push instructions (either 2 or 4, exactly,
@@ -2481,7 +2481,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
     rZero1 = genGetZeroReg(initReg, pInitRegZeroed);
     instGen_Set_Reg_To_Zero(EA_PTRSIZE, rZero2);
-    target_ssize_t stmImm = (target_ssize_t)(genRegMask(rZero1) | genRegMask(rZero2));
+    target_ssize_t stmImm = TargetFromHost<target_ssize_t>((genRegMask(rZero1) | genRegMask(rZero2)));
 
     if (!useLoop)
     {

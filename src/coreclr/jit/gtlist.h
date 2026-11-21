@@ -163,7 +163,6 @@ GTNODE(COLON            , GenTreeColon       ,0,1,GTK_BINOP|DBK_NOTLIR)
 GTNODE(INDEX_ADDR       , GenTreeIndexAddr   ,0,0,GTK_BINOP|GTK_EXOP)   // Address of SZ-array-element.
 GTNODE(LEA              , GenTreeAddrMode    ,0,0,GTK_BINOP|GTK_EXOP|DBK_NOTHIR)
 
-#if !defined(TARGET_64BIT)
 // A GT_LONG node simply represents the long value produced by the concatenation
 // of its two (lower and upper half) operands.  Some GT_LONG nodes are transient,
 // during the decomposing of longs; others are handled by codegen as operands of
@@ -190,8 +189,6 @@ GTNODE(SUB_HI           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(LSH_HI           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(RSH_LO           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 
-#endif // !defined(TARGET_64BIT)
-
 #ifdef FEATURE_HW_INTRINSICS
 GTNODE(HWINTRINSIC      , GenTreeHWIntrinsic ,0,0,GTK_SPECIAL)               // hardware intrinsics
 #endif // FEATURE_HW_INTRINSICS
@@ -215,10 +212,10 @@ GTNODE(MULHI            , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
 // It is similar to GT_MULHI, the difference being that GT_MULHI drops the lo
 // part of the result, whereas GT_MUL_LONG keeps both parts of the result.
 // MUL_LONG is also used on ARM64, where 64 bit multiplication is more expensive.
-#if !defined(TARGET_64BIT)
-GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,0,GTK_BINOP|DBK_NOTHIR)
-#elif defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
 GTNODE(MUL_LONG         , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
+#else
+GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,0,GTK_BINOP|DBK_NOTHIR)
 #endif
 // AndNot - emitted on ARM/ARM64 as the BIC instruction. Also used for creating AndNot HWINTRINSIC vector nodes in a cross-ISA manner.
 GTNODE(AND_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)

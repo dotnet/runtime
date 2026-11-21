@@ -1,21 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#define GCS EA_GCREF
-#define BRS EA_BYREF
-#define EPS EA_PTRSIZE
+#define GCS (EA_GCREF_FLG | PS)
+#define BRS (EA_BYREF_FLG | PS)
+#define EPS PS
 #define EAU EA_UNKNOWN
 #define SZU SIZE_UNKNOWN
-#define PS  TARGET_POINTER_SIZE
-#define PST (TARGET_POINTER_SIZE / sizeof(int))
-
-#ifdef TARGET_64BIT
-#define VTF_I32 0
-#define VTF_I64 VTF_I
+#ifdef TYPE_POINTER_SIZE
+#define PS TYPE_POINTER_SIZE
 #else
-#define VTF_I32 VTF_I
-#define VTF_I64 0
+#define PS TARGET_POINTER_SIZE
 #endif
+#define PST (PS / sizeof(int))
+
+#define VTF_I32 ((PS == 4) ? VTF_I : 0)
+#define VTF_I64 ((PS == 8) ? VTF_I : 0)
 
 /*  tn      - TYP_name
     nm      - name string

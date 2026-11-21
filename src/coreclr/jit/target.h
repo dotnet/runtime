@@ -56,8 +56,8 @@ inline bool compFeatureArgSplit()
 #define TARGET_READABLE_NAME "LOONGARCH64"
 #elif defined(TARGET_RISCV64)
 #define TARGET_READABLE_NAME "RISCV64"
-#elif defined(TARGET_WASM32)
-#define TARGET_READABLE_NAME "WASM32"
+#elif defined(TARGET_WASM)
+#define TARGET_READABLE_NAME (TargetArchitecture::Is64Bit ? "WASM64" : "WASM32")
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -1155,20 +1155,30 @@ static_assert((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
 /*****************************************************************************/
 #endif // HAS_FIXED_REGISTER_SET
 
-#ifdef TARGET_64BIT
-typedef uint64_t target_size_t;
-typedef int64_t  target_ssize_t;
-#define TARGET_SIGN_BIT (1ULL << 63)
+#ifdef TARGET_WASM
+#include "targetinteger.h"
+using target_size_t  = TargetInteger<false>;
+using target_ssize_t = TargetInteger<true>;
+#else
+using target_size_t  = std::conditional_t<TargetArchitecture::Is64Bit, uint64_t, unsigned int>;
+using target_ssize_t = std::conditional_t<TargetArchitecture::Is64Bit, int64_t, int>;
+#endif
 
-#else // !TARGET_64BIT
-typedef unsigned int target_size_t;
-typedef int          target_ssize_t;
-#define TARGET_SIGN_BIT (1ULL << 31)
+#ifndef TARGET_WASM
+template <typename T, typename H>
+inline T TargetFromHost(const H& value)
+{
+    return static_cast<T>(value);
+}
 
-#endif // !TARGET_64BIT
+template <typename T>
+inline T TargetToHost(T value)
+{
+    return value;
+}
+#endif
 
-static_assert(sizeof(target_size_t) == TARGET_POINTER_SIZE);
-static_assert(sizeof(target_ssize_t) == TARGET_POINTER_SIZE);
+#define TARGET_SIGN_BIT (1ULL << (TargetArchitecture::Is64Bit ? 63 : 31))
 
 #if defined(TARGET_X86)
 // instrDescCns holds constant values for the emitter. The X86 compiler is unique in that it

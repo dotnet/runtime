@@ -200,10 +200,12 @@ public:
                 return TYP_USHORT;
             case 4:
                 return TYP_INT;
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             case 8:
-                return TYP_LONG;
-#endif
+                if (TargetArchitecture::Is64Bit || TargetArchitecture::IsWasm)
+                {
+                    return TYP_LONG;
+                }
+                return TYP_UNDEF;
 #ifdef FEATURE_SIMD
             // TODO: check TYP_SIMD12 profitability,
             // it will need additional support in `BuildStoreLoc`.

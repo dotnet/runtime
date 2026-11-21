@@ -1088,14 +1088,10 @@ namespace MagicDivide
 {
 uint32_t GetUnsigned32Magic(
     uint32_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits);
-#ifdef TARGET_64BIT
 uint64_t GetUnsigned64Magic(
     uint64_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits);
-#endif
 int32_t GetSigned32Magic(int32_t d, int* shift /*out*/);
-#ifdef TARGET_64BIT
 int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
-#endif
 } // namespace MagicDivide
 
 //

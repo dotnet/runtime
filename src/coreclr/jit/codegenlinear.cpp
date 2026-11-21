@@ -1738,14 +1738,15 @@ void CodeGen::genConsumeAddrMode(GenTreeAddrMode* addr)
 
 void CodeGen::genConsumeRegs(GenTree* tree)
 {
-#if !defined(TARGET_64BIT)
-    if (tree->OperIs(GT_LONG))
+    if (!TargetArchitecture::Is64Bit)
     {
-        genConsumeRegs(tree->gtGetOp1());
-        genConsumeRegs(tree->gtGetOp2());
-        return;
+        if (tree->OperIs(GT_LONG))
+        {
+            genConsumeRegs(tree->gtGetOp1());
+            genConsumeRegs(tree->gtGetOp2());
+            return;
+        }
     }
-#endif // !defined(TARGET_64BIT)
 
     if (tree->isUsedFromSpillTemp())
     {
@@ -2319,12 +2320,12 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
         // Casts int32/uint32/int64/uint64 --> float/double
         genIntToFloatCast(tree);
     }
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
-    else if (varTypeIsLong(tree->gtOp1))
+#ifndef TARGET_WASM
+    else if (!TargetArchitecture::Is64Bit && varTypeIsLong(tree->gtOp1))
     {
         genLongToIntCast(tree);
     }
-#endif // !TARGET_64BIT && !TARGET_WASM
+#endif
     else
     {
         // Casts int <--> int
@@ -2382,11 +2383,10 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
             m_extendSrcSize = castSize;
         }
     }
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
     // castType cannot be (U)LONG on 32 bit targets, such casts should have been decomposed.
     // srcType cannot be a small int type since it's the "actual type" of the cast operand.
     // This means that widening casts do not occur on 32 bit targets.
-    else if (castSize > srcSize) // (U)INT to (U)LONG widening cast
+    else if ((TargetArchitecture::Is64Bit || TargetArchitecture::IsWasm) && (castSize > srcSize))
     {
         assert((srcSize == 4) && (castSize == 8));
 
@@ -2410,7 +2410,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
             m_extendSrcSize = 4;
         }
     }
-    else if (castSize < srcSize) // (U)LONG to (U)INT narrowing cast
+    else if ((TargetArchitecture::Is64Bit || TargetArchitecture::IsWasm) && (castSize < srcSize))
     {
         assert((srcSize == 8) && (castSize == 4));
 
@@ -2448,7 +2448,6 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
 #endif
         m_extendSrcSize = 4;
     }
-#endif
     else // if (castSize == srcSize) // Sign changing or same type cast
     {
         assert(castSize == srcSize);
@@ -2489,19 +2488,19 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
                 m_extendSrcSize = min(genTypeSize(srcLoadType), genTypeSize(castType));
                 break;
 
-#ifdef TARGET_64BIT
             case ZERO_EXTEND_INT: // ubyte/ushort/uint -> long.
+                assert(TargetArchitecture::Is64Bit || TargetArchitecture::IsWasm);
                 assert(varTypeIsUnsigned(srcLoadType) || (srcLoadType == TYP_INT));
                 m_extendKind    = varTypeIsSmall(srcLoadType) ? LOAD_ZERO_EXTEND_SMALL_INT : LOAD_ZERO_EXTEND_INT;
                 m_extendSrcSize = genTypeSize(srcLoadType);
                 break;
 
             case SIGN_EXTEND_INT: // byte/short/int -> long.
+                assert(TargetArchitecture::Is64Bit || TargetArchitecture::IsWasm);
                 assert(varTypeIsSigned(srcLoadType) || (srcLoadType == TYP_INT));
                 m_extendKind    = varTypeIsSmall(srcLoadType) ? LOAD_SIGN_EXTEND_SMALL_INT : LOAD_SIGN_EXTEND_INT;
                 m_extendSrcSize = genTypeSize(srcLoadType);
                 break;
-#endif // TARGET_64BIT
 
             case COPY: // long -> long, small type/int/long -> int.
                 m_extendKind    = LOAD_SOURCE;
@@ -2515,7 +2514,6 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
 }
 
 #ifndef TARGET_WASM
-#if !defined(TARGET_64BIT)
 //------------------------------------------------------------------------
 // genStoreLongLclVar: Generate code to store a non-enregistered long lclVar
 //
@@ -2552,7 +2550,6 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
     emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, loVal->GetRegNum(), lclNum, 0);
     emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, hiVal->GetRegNum(), lclNum, genTypeSize(TYP_INT));
 }
-#endif // !defined(TARGET_64BIT)
 
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 

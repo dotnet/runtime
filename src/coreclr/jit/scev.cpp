@@ -1412,13 +1412,14 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
                     }
                 }
 
-#ifndef TARGET_64BIT
-                if ((oper == GT_MUL) && binop->TypeIs(TYP_LONG))
+                if (!TargetArchitecture::Is64Bit)
                 {
-                    // These require helper calls. Just don't bother.
-                    return false;
+                    if ((oper == GT_MUL) && binop->TypeIs(TYP_LONG))
+                    {
+                        // These require helper calls. Just don't bother.
+                        return false;
+                    }
                 }
-#endif
                 *result = m_compiler->gtNewOperNode(oper, binop->Type, op1, op2);
             }
 
