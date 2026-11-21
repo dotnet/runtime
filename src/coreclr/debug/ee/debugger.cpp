@@ -14647,7 +14647,15 @@ HRESULT Debugger::NameChangeEvent(AppDomain *pAppDomain, Thread *pThread)
     Thread *curThread = g_pEEInterface->GetThread();
     SENDIPCEVENT_BEGIN(this, curThread);
 
-    if (CORDebuggerAttached())
+    // A stopped thread may already have sent DB_IPCE_THREAD_DETACH, after which the right side
+    // removes its CordbThread. TS_Stopped is set before Debugger::DetachThread sends that event
+    // under this lock, so checking here prevents a later rename from recreating the thread on
+    // the right side. This matches IsThreadMarkedDead, which also tests TS_Stopped.
+    if (pThread != NULL && pThread->HasThreadState(Thread::TS_Stopped))
+    {
+        LOG((LF_CORDB, LL_INFO1000, "D::NCE: Skipping NameChangeEvent for stopped thread 0x%p\n", pThread));
+    }
+    else if (CORDebuggerAttached())
     {
 
             DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
