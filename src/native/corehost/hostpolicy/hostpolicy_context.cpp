@@ -354,7 +354,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         }
 
         host_contract.get_runtime_property = &get_runtime_property;
-        pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff")];
+        pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff") + 1];
         pal::snwprintf(buffer, ARRAY_SIZE(buffer), _X("0x%zx"), (size_t)(&host_contract));
         if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), buffer))
         {
