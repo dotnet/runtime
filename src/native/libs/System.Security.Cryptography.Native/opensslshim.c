@@ -307,6 +307,8 @@ void InitializeOpenSSLShim(void)
         }
     }
 
+    InitializeErrorLayout();
+
 #if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     c_static_assert_msg(sizeof(time_t) == 8, "Build requires 64-bit time_t.");
 

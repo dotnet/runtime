@@ -81,7 +81,7 @@ namespace System
             }
 
             const string FipsEnabledPath = "/proc/sys/crypto/fips_enabled";
-            return Environment.GetEnvironmentVariable("OPENSSL_FORCE_FIPS_MODE") != null ||
+            return Environment.GetEnvironmentVariable("OPENSSL_FORCE_FIPS_MODE") is not null ||
                 (File.Exists(FipsEnabledPath) && File.ReadAllText(FipsEnabledPath).Trim() == "1");
         });
 

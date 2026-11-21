@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "openssl.h"
-#include "pal_err.h"
 #include "pal_evp.h"
 #include "pal_utilities.h"
 
@@ -54,7 +53,7 @@ EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
         // Allocation failed.
         // This is one of the few places that don't report the error to the queue, so
         // we'll do it here.
-        ERR_put_error(ERR_LIB_EVP, 0, ErrGetMallocFailureReason(), __FILE__, __LINE__);
+        ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
         return NULL;
     }
 
@@ -152,7 +151,7 @@ EVP_MD_CTX* CryptoNative_EvpMdCtxCopyEx(const EVP_MD_CTX* ctx)
         // Allocation failed.
         // This is one of the few places that don't report the error to the queue, so
         // we'll do it here.
-        ERR_put_error(ERR_LIB_EVP, 0, ErrGetMallocFailureReason(), __FILE__, __LINE__);
+        ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
         return NULL;
     }
 

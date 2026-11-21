@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "pal_err.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_ecdh.h"
 #include "pal_evp_pkey_x25519.h"
@@ -56,7 +55,7 @@ int32_t CryptoNative_X25519Available(void)
     // If we errored for a different reason, we _still_ want to return "yes" for is supported. This will allow for
     // actual use of X25519 to throw the appropriate error.
     unsigned long error = ERR_peek_error();
-    int32_t result = ErrIsUnsupported(error) ? 0 : 1;
+    int32_t result = ERR_GET_REASON(error) == ERR_R_UNSUPPORTED ? 0 : 1;
     ERR_clear_error();
     return result;
 }

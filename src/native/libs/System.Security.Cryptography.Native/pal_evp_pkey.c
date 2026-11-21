@@ -3,7 +3,6 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#include "pal_err.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_slh_dsa.h"
 #include "pal_utilities.h"
@@ -697,11 +696,13 @@ int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey, int32_t* p8size)
         // "no private key" then we should test for that explicitly. Until then,
         // we treat all errors, except a malloc error, to mean "no private key".
 
-        unsigned long error = ERR_peek_error();
+        const char* file = NULL;
+        int line = 0;
+        unsigned long error = ERR_peek_error_line(&file, &line);
 
         // If it's not a malloc failure, assume it's because the private key is
         // missing.
-        if (!ErrIsMallocFailure(error))
+        if (ERR_GET_REASON(error) != ERR_R_MALLOC_FAILURE)
         {
             ERR_clear_error();
             return -2;
@@ -709,9 +710,17 @@ int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey, int32_t* p8size)
 
         // It is a malloc failure. Clear the error queue and set the error
         // as a malloc error so it's the only error in the queue.
-        // OpenSSL 3 frees the error's file name in ERR_clear_error, so the error is set with this location instead.
+#ifdef NEED_OPENSSL_3_0
+        // OpenSSL 3 frees the error's file name in ERR_clear_error, so there the error is set again without its location.
+        if (OpenSSL_version_num() >= OPENSSL_VERSION_3_0_RTM)
+        {
+            file = NULL;
+            line = 0;
+        }
+#endif
+
         ERR_clear_error();
-        ERR_put_error(ErrGetLib(error), 0, ErrGetMallocFailureReason(), __FILE__, __LINE__);
+        ERR_put_error(ERR_GET_LIB(error), 0, ERR_R_MALLOC_FAILURE, file, line);
         return -1;
     }
 
@@ -890,7 +899,7 @@ EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char** providerNames,
         if (loadedProviders == NULL)
         {
             OSSL_LIB_CTX_free(libCtx);
-            ERR_put_error(ERR_LIB_EVP, 0, ErrGetMallocFailureReason(), __FILE__, __LINE__);
+            ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
             libCtx = NULL;
             goto end;
         }

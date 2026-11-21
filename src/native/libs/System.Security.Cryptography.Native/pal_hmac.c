@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_config.h"
-#include "pal_err.h"
 #include "pal_utilities.h"
 #include "pal_hmac.h"
 
@@ -148,7 +147,7 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
         // Allocation failed
         // This is one of the few places that don't report the error to the queue, so
         // we'll do it here.
-        ERR_put_error(ERR_LIB_EVP, 0, ErrGetMallocFailureReason(), __FILE__, __LINE__);
+        ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
         return NULL;
     }
 
@@ -354,7 +353,7 @@ DN_MAC_CTX* CryptoNative_HmacCopy(const DN_MAC_CTX* ctx)
     {
         // This is one of the few places that don't report the error to the queue, so
         // we'll do it here.
-        ERR_put_error(ERR_LIB_EVP, 0, ErrGetMallocFailureReason(), __FILE__, __LINE__);
+        ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
         return NULL;
     }
 
