@@ -11,6 +11,7 @@
 #if defined(__linux__)
 
 #include "utils.h"
+#include "mountinfo.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -209,9 +210,11 @@ static void find_hierarchy_mount(bool (*is_subsystem)(const char*), char** pmoun
                 if (mountroot == NULL)
                     goto done;
 
-                sscanfRet = sscanf(line, "%*s %*s %*s %s %s ", mountroot, mountpath);
-                if (sscanfRet != 2)
-                    assert(!"Failed to parse mount info file contents with sscanf.");
+                if (!minipal_get_mountinfo_paths(line, mountroot, mountpath, lineLen + 1))
+                {
+                    assert(!"Failed to parse mount info file paths.");
+                    goto done;
+                }
 
                 // assign the output arguments and clear the locals so we don't free them.
                 *pmountpath = mountpath;
@@ -264,7 +267,7 @@ static char* find_cgroup_path_for_subsystem(bool (*is_subsystem)(const char*))
         if (s_cgroup_version == 1)
         {
             // See man page of proc to get format for /proc/self/cgroup file
-            int sscanfRet = sscanf(line, "%*[^:]:%[^:]:%s", subsystem_list, cgroup_path);
+            int sscanfRet = sscanf(line, "%*[^:]:%[^:]:%[^\n]", subsystem_list, cgroup_path);
             if (sscanfRet != 2)
             {
                 assert(!"Failed to parse cgroup info file contents with sscanf.");
@@ -287,7 +290,7 @@ static char* find_cgroup_path_for_subsystem(bool (*is_subsystem)(const char*))
         {
             // See https://www.kernel.org/doc/Documentation/cgroup-v2.txt
             // Look for a "0::/some/path"
-            if (sscanf(line, "0::%s", cgroup_path) == 1)
+            if (sscanf(line, "0::%[^\n]", cgroup_path) == 1)
             {
                 result = true;
             }

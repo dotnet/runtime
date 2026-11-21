@@ -38,6 +38,8 @@ Abstract:
 #include <errno.h>
 #include <limits.h>
 
+#include <minipal/mountinfo.h>
+
 #include <utils/mono-logger-internals.h>
 
 #ifndef SIZE_T_MAX
@@ -387,13 +389,11 @@ findHierarchyMount(gboolean (*is_subsystem)(const char *), char** pmountpath, ch
 				if (mountroot == NULL)
 					goto done;
 
-				sscanfRet = sscanf (line,
-						   "%*s %*s %*s %s %s ",
-						   mountroot,
-						   mountpath);
-				if (sscanfRet != 2)
-					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_CONFIG, 
-						    "Failed to parse mount info file contents with sscanf.");
+				if (!minipal_get_mountinfo_paths (line, mountroot, mountpath, lineLen + 1)) {
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_CONFIG,
+						    "Failed to parse mount info file paths.");
+					goto done;
+				}
 
 				// assign the output arguments and clear the locals so we don't free them.
 				*pmountpath = mountpath;
@@ -454,7 +454,7 @@ findCGroupPathForSubsystem(gboolean (*is_subsystem)(const char *))
 		if (s_cgroup_version == 1) {
 			// See man page of proc to get format for /proc/self/cgroup file
 			int sscanfRet = sscanf (line,
-						"%*[^:]:%[^:]:%s",
+						"%*[^:]:%[^:]:%[^\n]",
 						subsystem_list,
 						cgroup_path);
 			if (sscanfRet != 2) {
@@ -476,7 +476,7 @@ findCGroupPathForSubsystem(gboolean (*is_subsystem)(const char *))
 			// See https://www.kernel.org/doc/Documentation/cgroup-v2.txt
 			// Look for a "0::/some/path"
 			int sscanfRet = sscanf (line,
-						"0::%s",
+						"0::%[^\n]",
 						cgroup_path);
 			if (sscanfRet == 1)
 			{

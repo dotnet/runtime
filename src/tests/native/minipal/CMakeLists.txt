@@ -19,6 +19,7 @@ endif()
 add_executable(NativeMinipalTestsDriver
     ${NATIVE_TEST_COMMON_DIR}/driver.c
     ${NATIVE_TEST_COMMON_DIR}/test.c
+    mountinfo-tests.c
     native-minipal-tests-driver.c
     utf8-tests.c
     u16-tests.cpp
