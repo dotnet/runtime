@@ -63,3 +63,26 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - openharmony_arm64
+          variables:
+          - name: OHOS_NDK_HOME
+            value: /opt/ohos-sdk/linux
+          - name: OHOS_ASSETS
+            value: /opt/ohos-assets
+          - name: OHOS_CMAKE_ARGS
+            value: '-DCMAKE_ICU_DIR=/opt/ohos-assets/icu -DOPENSSL_ROOT_DIR=/opt/ohos-assets/openssl -DOPENSSL_INCLUDE_DIR=/opt/ohos-assets/openssl/include -DOPENSSL_CRYPTO_LIBRARY=/opt/ohos-assets/openssl/lib/libcrypto.a -DOPENSSL_SSL_LIBRARY=/opt/ohos-assets/openssl/lib/libssl.a'
+          jobParameters:
+            nameSuffix: AllSubsets_OHOS
+            buildArgs: -s clr.runtime+libs.native -c Release -cmakeargs "$(OHOS_CMAKE_ARGS)"
+            timeoutInMinutes: 180
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+

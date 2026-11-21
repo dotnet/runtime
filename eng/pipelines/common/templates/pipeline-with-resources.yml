@@ -49,6 +49,11 @@ extends:
       linux_bionic:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-android-openssl-amd64@sha256:a50b0ef05b4cb942a1bee3536af417c3bbdc962c5caaba703c099fcfd26d0598
 
+      # This container contains the OpenHarmony SDK, static OpenSSL and ICU, and
+      # the aarch64-linux-ohos toolchain wrappers.
+      openharmony:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-openharmony-6.0-amd64@sha256:cf6b0cf84e98ca41c51e0099614901b8aeb2894282da4aff76caa5128b75abac
+
       # This container contains all required toolsets to build for Android as well as tooling to build docker images.
       android_docker:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-android-docker-amd64@sha256:60fbb36a63d7638d3364018e8a393d76aac38f2ff7156b24beef222933cee183
