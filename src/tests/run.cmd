@@ -29,6 +29,7 @@ set __LongGCTests=
 set __GCSimulatorTests=
 set __IlasmRoundTrip=
 set __UseManagedIlasm=
+set __UseManagedIldasm=
 set __PrintLastResultsOnly=
 set LogsDirArg=
 set RunInUnloadableContext=
@@ -75,6 +76,7 @@ if /i "%1" == "gcsimulator"                             (set __GCSimulatorTests=
 if /i "%1" == "longgc"                                  (set __LongGCTests=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 if /i "%1" == "usemanagedilasm"                          (set __IlasmRoundTrip=1&set __UseManagedIlasm=1&shift&goto Arg_Loop)
+if /i "%1" == "usemanagedildasm"                         (set __IlasmRoundTrip=1&set __UseManagedIldasm=1&shift&goto Arg_Loop)
 if /i "%1" == "timeout"                                 (set __TestTimeout=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "runincontext"                            (set RunInUnloadableContext=1&shift&goto Arg_Loop)
 if /i "%1" == "tieringtest"                             (set TieringTest=1&shift&goto Arg_Loop)
@@ -156,6 +158,10 @@ if defined __IlasmRoundTrip (
 
 if defined __UseManagedIlasm (
     set __RuntestArgs=%__RuntestArgs% --use_managed_ilasm
+)
+
+if defined __UseManagedIldasm (
+    set __RuntestArgs=%__RuntestArgs% --use_managed_ildasm
 )
 
 if defined __TestEnv (

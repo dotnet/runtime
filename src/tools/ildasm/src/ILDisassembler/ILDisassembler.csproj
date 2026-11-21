@@ -5,7 +5,12 @@
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
     <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsShipping>false</IsShipping>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ILDisassembler.Tests" />
+  </ItemGroup>
 
 </Project>

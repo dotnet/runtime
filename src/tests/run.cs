@@ -352,6 +352,20 @@ internal static class TestRunner
             Environment.SetEnvironmentVariable("IlasmRoundTripUseManagedIlasm", "1");
         }
 
+        if (arguments.UseManagedIldasm)
+        {
+            if (!arguments.IlasmRoundTrip && !arguments.UseManagedIlasm)
+            {
+                Console.WriteLine("--use_managed_ildasm implies --ilasmroundtrip; enabling ilasm round trip.");
+                Console.WriteLine("Setting RunningIlasmRoundTrip=1");
+                Environment.SetEnvironmentVariable("RunningIlasmRoundTrip", "1");
+            }
+
+            Console.WriteLine("Using managed ILdasm for round trip.");
+            Console.WriteLine("Setting IlasmRoundTripUseManagedIldasm=1");
+            Environment.SetEnvironmentVariable("IlasmRoundTripUseManagedIldasm", "1");
+        }
+
         if (arguments.RunCrossgen2Tests)
         {
             Console.WriteLine("Running tests R2R (Crossgen2)");
@@ -1478,6 +1492,7 @@ fi
         public bool GcSimulator { get; private set; }
         public bool IlasmRoundTrip { get; private set; }
         public bool UseManagedIlasm { get; private set; }
+        public bool UseManagedIldasm { get; private set; }
         public bool RunCrossgen2Tests { get; private set; }
         public bool LargeVersionBubble { get; private set; }
         public bool SynthesizePgo { get; private set; }
@@ -1557,6 +1572,9 @@ fi
                         break;
                     case "--use_managed_ilasm":
                         options.UseManagedIlasm = true;
+                        break;
+                    case "--use_managed_ildasm":
+                        options.UseManagedIldasm = true;
                         break;
                     case "--run_crossgen2_tests":
                         options.RunCrossgen2Tests = true;
@@ -1643,7 +1661,7 @@ usage: run.cs [-h] [-os [HOST_OS]] [-arch [ARCH]] [-build_type [BUILD_TYPE]]
               [-test_location [TEST_LOCATION]] [-core_root [CORE_ROOT]]
               [-runtime_repo_location RUNTIME_REPO_LOCATION] [-test_env TEST_ENV]
               [-parallel PARALLEL] [-logs_dir LOGS_DIR] [--il_link] [--long_gc]
-              [--gcsimulator] [--ilasmroundtrip] [--use_managed_ilasm]
+              [--gcsimulator] [--ilasmroundtrip] [--use_managed_ilasm] [--use_managed_ildasm]
               [--run_crossgen2_tests] [--large_version_bubble] [--synthesize_pgo]
               [--sequential] [--interpreter] [--node]
               [--runner_filter RUNNER_FILTER] [--active_issue_details]
@@ -1672,6 +1690,7 @@ options:
   --gcsimulator
   --ilasmroundtrip
   --use_managed_ilasm
+  --use_managed_ildasm
   --run_crossgen2_tests
   --large_version_bubble
   --synthesize_pgo
@@ -1703,6 +1722,7 @@ options:
             GcSimulator = options.GcSimulator;
             IlasmRoundTrip = options.IlasmRoundTrip;
             UseManagedIlasm = options.UseManagedIlasm;
+            UseManagedIldasm = options.UseManagedIldasm;
             RunCrossgen2Tests = options.RunCrossgen2Tests;
             LargeVersionBubble = options.LargeVersionBubble;
             SynthesizePgo = options.SynthesizePgo;
@@ -1741,6 +1761,7 @@ options:
         public bool GcSimulator { get; }
         public bool IlasmRoundTrip { get; }
         public bool UseManagedIlasm { get; }
+        public bool UseManagedIldasm { get; }
         public bool RunCrossgen2Tests { get; }
         public bool LargeVersionBubble { get; }
         public bool SynthesizePgo { get; }

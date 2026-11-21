@@ -53,7 +53,11 @@ extends:
           buildConfig: checked
           platforms: ${{ parameters.platforms }}
           jobParameters:
-            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
+            # The ilasm round-trip scenarios also disassemble with the managed ildasm (Core_Root/managed-ildasm).
+            ${{ if eq(parameters.testGroup, 'ilasm') }}:
+              buildArgs: -s clr+libs+tools.ildasm -c $(_BuildConfig) -lc Release
+            ${{ else }}:
+              buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml

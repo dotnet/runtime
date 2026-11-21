@@ -342,6 +342,12 @@ if use_managed_ilasm:
 else:
   ilasm_path = os.path.join(os.environ["CORE_ROOT"], "ilasm")
 
+use_managed_ildasm = os.environ.get("IlasmRoundTripUseManagedIldasm") == "1"
+if use_managed_ildasm:
+  ildasm_path = os.path.join(os.environ["CORE_ROOT"], "managed-ildasm", "ildasm")
+else:
+  ildasm_path = os.path.join(os.environ["CORE_ROOT"], "ildasm")
+
 if not os.path.exists("IL-RT"):
   os.mkdir("IL-RT")
 
@@ -368,7 +374,7 @@ for inputAssemblyName in glob.glob("*.dll"):
 
       shutil.copyfile(inputAssemblyName, targetAssemblyName)
 
-      ildasm_args = f'{os.environ["CORE_ROOT"]}/ildasm -raweh -unicode -out={disassemblyName} {targetAssemblyName}'
+      ildasm_args = f'{ildasm_path} -raweh -unicode -out={disassemblyName} {targetAssemblyName}'
       print(ildasm_args)
       proc = subprocess.Popen(ildasm_args, shell=True)
 
