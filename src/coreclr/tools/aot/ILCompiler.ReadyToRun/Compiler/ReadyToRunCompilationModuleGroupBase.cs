@@ -32,7 +32,7 @@ namespace ILCompiler
         public bool CompileGenericDependenciesFromVersionBubbleModuleSet;
         public bool CompileAllPossibleCrossModuleCode;
         public InstructionSetSupport InstructionSetSupport;
-        public IEnumerable<string> DirectPInvokeModules = Array.Empty<string>();
+        public DirectPInvokeSet DirectPInvokes;
     }
 
     public abstract class ReadyToRunCompilationModuleGroupBase : CompilationModuleGroup
@@ -68,7 +68,7 @@ namespace ILCompiler
         private readonly Func<EcmaMethod, bool> _tokenTranslationFreeNonVersionableUncached;
         private bool CompileAllPossibleCrossModuleCode = false;
         private InstructionSetSupport _instructionSetSupport;
-        private readonly HashSet<string> _directPInvokeModules;
+        private readonly DirectPInvokeSet _directPInvokes;
 
         public ReadyToRunCompilationModuleGroupBase(ReadyToRunCompilationModuleGroupConfig config)
         {
@@ -89,7 +89,7 @@ namespace ILCompiler
             _crossModuleInlineableModuleSet.UnionWith(_versionBubbleModuleSet);
 
             _compileGenericDependenciesFromVersionBubbleModuleSet = config.CompileGenericDependenciesFromVersionBubbleModuleSet;
-            _directPInvokeModules = new HashSet<string>(config.DirectPInvokeModules, StringComparer.Ordinal);
+            _directPInvokes = config.DirectPInvokes ?? new DirectPInvokeSet(config.Context.Target, [], []);
 
             _tokenResolver = new ModuleTokenResolver(this, config.Context);
 
@@ -114,21 +114,12 @@ namespace ILCompiler
                 return true;
             }
 
-            string module = method.GetPInvokeMethodMetadata().Module;
-            if (module is "*" or "QCall")
+            if (method.GetPInvokeMethodMetadata().Module == "QCall")
             {
                 return true;
             }
 
-            foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(method.Context.Target, module))
-            {
-                if (_directPInvokeModules.Contains(variation))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return _directPInvokes.TryGetDirectEntryPoint(method, out _);
         }
 
         public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)

@@ -108,6 +108,58 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, line => line.Contains("CoreLib entrypoint trimming sample passed", StringComparison.Ordinal));
         }
 
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, "entry" })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "entry" })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "list" })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "module" })]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        public async Task DirectPInvokeBindsListedEntryPoints(Configuration config, bool aot, bool readyToRun, string form)
+        {
+            const string ListFileName = "direct-pinvokes.txt";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"directpinvoke_{readyToRun}_{form}",
+                extraProperties: $"<PublishReadyToRun>{readyToRun}</PublishReadyToRun><AllowUnsafeBlocks>true</AllowUnsafeBlocks>" +
+                    (form == "module" ? "<DefineConstants>$(DefineConstants);DIRECT_PINVOKE_WHOLE_MODULE</DefineConstants>" : ""),
+                extraItems: form switch
+                {
+                    "list" => $"<DirectPInvokeList Include=\"{ListFileName}\" />",
+                    "module" => "<DirectPInvoke Include=\"libc\" />",
+                    _ => "<DirectPInvoke Include=\"libc!strlen\" />",
+                });
+            if (form == "list")
+                File.WriteAllText(Path.Combine(_projectDir, ListFileName), "# Bound statically\nlibc!strlen\n");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DirectPInvoke.cs"));
+            ReplaceMainJsWithMinimalRunMain();
+
+            PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false,
+                ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)), isNativeBuild: true);
+
+            string nativeBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-publish");
+            string table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
+            Assert.Contains("{ \"strlen\", (void*)&direct_pinvoke::strlen },", table);
+            Assert.Single(table.Split('\n'), line => line.Contains("__asm__(\"strlen\")", StringComparison.Ordinal));
+            Assert.Contains("{\"libc\", s_libc, 1}", table);
+            Assert.DoesNotContain("definitely_not_in_libc", table);
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains(result.TestOutput, line => line.Contains("DirectPInvoke sample passed", StringComparison.Ordinal));
+        }
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [BuildAndRun(aot: false, config: Configuration.Release)]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        public void DirectPInvokeRejectsConflictingSignatures(Configuration config, bool aot)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "directpinvoke_conflict",
+                extraProperties: "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><DefineConstants>$(DefineConstants);DIRECT_PINVOKE_CONFLICT</DefineConstants>",
+                extraItems: "<DirectPInvoke Include=\"libc!strlen\" /><DirectPInvoke Include=\"libc!llabs\" />");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DirectPInvoke.cs"));
+
+            (_, string output) = PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false, ExpectSuccess: false,
+                ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)), isNativeBuild: true);
+            Assert.Contains("Native function 'llabs' is declared with signatures that lower to different WebAssembly signatures", output);
+        }
+
         // Only Mono's generator rejects a non-blittable callback signature; crossgen2 leaves the
         // check to Roslyn and the runtime.
         [Theory, TestCategory("mono")]
@@ -509,12 +561,12 @@ namespace Wasm.Build.Tests
             // Verify that the invoke is in the pinvoke table. Under various circumstances we will silently skip it,
             //  for example if the module isn't found
             string pinvokeTableEntry = IsCoreClrRuntime
-                ? "DllImportEntry(accept_double_struct_and_return_float_struct)"
+                ? "{ \"accept_double_struct_and_return_float_struct\", (void*)&direct_pinvoke::accept_double_struct_and_return_float_struct }"
                 : "\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct";
             Assert.Contains(pinvokeTableEntry, pinvokeTable);
             // Verify the signature of the C function prototype. Wasm ABI specifies that the structs should both decompose into scalars.
-            Assert.Contains("float accept_double_struct_and_return_float_struct (double);", pinvokeTable);
-            Assert.Contains("int64_t accept_and_return_i64_struct (int64_t);", pinvokeTable);
+            Assert.Contains("float accept_double_struct_and_return_float_struct (double)", pinvokeTable);
+            Assert.Contains("int64_t accept_and_return_i64_struct (int64_t)", pinvokeTable);
 
             var runOptions = new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 3);
             RunResult result = isPublish ? await RunForPublishWithWebServer(runOptions) : await RunForBuildWithDotnetRun(runOptions);
@@ -585,12 +637,12 @@ namespace Wasm.Build.Tests
             string pinvokeTable = File.ReadAllText(Path.Combine(objDir, pinvokeTableFileName));
 
             string includedPInvokeTableEntry = IsCoreClrRuntime
-                ? "DllImportEntry(versioned_browser_add)"
+                ? "{ \"versioned_browser_add\", (void*)&direct_pinvoke::versioned_browser_add }"
                 : "\"versioned_browser_add\", versioned_browser_add";
             Assert.Contains(includedPInvokeTableEntry, pinvokeTable);
 
             string excludedPInvokeTableEntry = IsCoreClrRuntime
-                ? "DllImportEntry(versioned_windows_add)"
+                ? "\"versioned_windows_add\""
                 : "\"versioned_windows_add\", versioned_windows_add";
             Assert.DoesNotContain(excludedPInvokeTableEntry, pinvokeTable);
 
