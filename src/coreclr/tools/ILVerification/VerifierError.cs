@@ -144,5 +144,8 @@ namespace ILVerify
         UnalignedAlignment, // Alignment specified for 'unaligned.' must be 1, 2, or 4.
         ExpectedSignatureToken, // Expected signature token.
         ReadOnlyInMkrefany, // A readonly ByRef cannot be used with mkrefany.
+        LocallocInHandler, // localloc cannot be used in an exception filter or handler.
+        JmpInsideER, // The jmp instruction cannot be used to transfer control out of an exception handling region or a synchronized method.
+        NoPrefix, // Missing instruction that performs the fault checks named by the no. prefix.
     }
 }

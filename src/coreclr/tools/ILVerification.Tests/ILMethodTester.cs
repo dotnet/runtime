@@ -54,7 +54,16 @@ namespace ILVerification.Tests
             }
         }
 
-        private static IEnumerable<VerificationResult> Verify(TestCase testCase)
+        [Theory(DisplayName = "")]
+        [MemberData(nameof(TestDataLoader.GetMethodsForValidationOnlyMode), MemberType = typeof(TestDataLoader))]
+        [Trait("", "Validation-only IL Tests")]
+        public static void TestMethodsInValidationOnlyMode(ValidationOnlyTestCase testCase)
+        {
+            var results = Verify(testCase, validationOnly: true).ToList();
+            Assert.Equal(testCase.ExpectedVerifierErrors.Order(), results.Select(r => r.Code).Order());
+        }
+
+        private static IEnumerable<VerificationResult> Verify(TestCase testCase, bool validationOnly = false)
         {
             EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName, allowIgnoresAccessChecksTo: true);
             var methodHandle = (MethodDefinitionHandle) MetadataTokens.EntityHandle(testCase.MetadataToken);
@@ -62,7 +71,8 @@ namespace ILVerification.Tests
             var verifier = new Verifier((ILVerifyTypeSystemContext)method.Context, new VerifierOptions
             {
                 IncludeMetadataTokensInErrorMessages = true,
-                SanityChecks = true
+                SanityChecks = true,
+                ValidationOnly = validationOnly
             });
 
             return verifier.Verify(module.PEReader, methodHandle);

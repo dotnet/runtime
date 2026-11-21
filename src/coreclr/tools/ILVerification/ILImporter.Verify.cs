@@ -90,6 +90,7 @@ namespace Internal.IL
         }
         Prefix _pendingPrefix;
         TypeDesc _constrained;
+        byte _noPrefixChecks;
 
         int _currentInstructionOffset;
 
@@ -215,6 +216,9 @@ namespace Internal.IL
         public Action<ErrorArgument[], VerifierError> ReportVerificationError { set; private get; }
 
         public bool SanityChecks { set; private get; }
+
+        // Report the rules that valid IL must follow, and not some rules only for verifiable IL (ECMA-335 III.1.8).
+        public bool ValidationOnly { set; private get; }
 
         public void Verify()
         {
@@ -530,7 +534,7 @@ namespace Internal.IL
         }
 
         // If not, report verification error and continue verification.
-        void VerificationError(VerifierError error)
+        void Invalid(VerifierError error)
         {
             if (_currentBasicBlock != null)
                 _currentBasicBlock.IncrementErrorCount();
@@ -542,7 +546,7 @@ namespace Internal.IL
             ReportVerificationError(args, error);
         }
 
-        void VerificationError(VerifierError error, object found)
+        void Invalid(VerifierError error, object found)
         {
             if (_currentBasicBlock != null)
                 _currentBasicBlock.IncrementErrorCount();
@@ -555,7 +559,7 @@ namespace Internal.IL
             ReportVerificationError(args, error);
         }
 
-        void VerificationError(VerifierError error, object found, object expected)
+        void Invalid(VerifierError error, object found, object expected)
         {
             if (_currentBasicBlock != null)
                 _currentBasicBlock.IncrementErrorCount();
@@ -573,22 +577,44 @@ namespace Internal.IL
         bool Check(bool cond, VerifierError error)
         {
             if (!cond)
-                VerificationError(error);
+                Invalid(error);
             return cond;
         }
 
         bool Check(bool cond, VerifierError error, StackValue found)
         {
             if (!cond)
-                VerificationError(error, found);
+                Invalid(error, found);
             return cond;
         }
 
         bool Check(bool cond, VerifierError error, StackValue found, StackValue expected)
         {
             if (!cond)
-                VerificationError(error, found, expected);
+                Invalid(error, found, expected);
             return cond;
+        }
+
+        void Unverifiable(VerifierError error)
+        {
+            if (!ValidationOnly)
+                Invalid(error);
+        }
+
+        // cpblk and initblk take addresses of type native int or & (III.3.30, III.3.36).
+        void CheckIsAddress(StackValue value)
+        {
+            Check(value.Kind == StackValueKind.NativeInt || value.Kind == StackValueKind.ByRef, VerifierError.StackByRef, value);
+        }
+
+        // Their size is an unsigned int32 and the initblk value an unsigned int8, so an int64 is not valid.
+        void CheckIsInt32OrNativeInt(StackValue value)
+        {
+            if (!Check(value.Kind == StackValueKind.Int32 || value.Kind == StackValueKind.NativeInt,
+                VerifierError.ExpectedIntegerType, value))
+            {
+                AbortBasicBlockVerification();
+            }
         }
 
         void CheckIsNumeric(StackValue value)
@@ -638,21 +664,21 @@ namespace Internal.IL
         void CheckIsAssignable(StackValue src, StackValue dst, VerifierError error = VerifierError.StackUnexpected)
         {
             if (!IsAssignable(src, dst))
-                VerificationError(error, src, dst);
+                Invalid(error, src, dst);
         }
 
         private void CheckIsValidLeaveTarget(BasicBlock src, BasicBlock target)
         {
             if (!_validTargetOffsets[target.StartOffset])
             {
-                VerificationError(VerifierError.BadJumpTarget);
+                Invalid(VerifierError.BadJumpTarget);
                 return;
             }
 
             // If the source is within filter, target shall be within the same
             if (src.FilterIndex.HasValue && src.FilterIndex != target.FilterIndex)
             {
-                VerificationError(VerifierError.LeaveOutOfFilter);
+                Invalid(VerifierError.LeaveOutOfFilter);
             }
 
             // If the source is within fault handler or finally handler, target shall be within the same
@@ -660,9 +686,9 @@ namespace Internal.IL
             {
                 var regionKind = _exceptionRegions[src.HandlerIndex.Value].ILRegion.Kind;
                 if (regionKind == ILExceptionRegionKind.Fault)
-                    VerificationError(VerifierError.LeaveOutOfFault);
+                    Invalid(VerifierError.LeaveOutOfFault);
                 else if (regionKind == ILExceptionRegionKind.Finally)
-                    VerificationError(VerifierError.LeaveOutOfFinally);
+                    Invalid(VerifierError.LeaveOutOfFinally);
             }
 
             // If the source is within a try block, target shall be within the same or an enclosing try block
@@ -683,7 +709,7 @@ namespace Internal.IL
                         // Target is not first instruction
                         if (target.StartOffset != targetRegion.TryOffset)
                         {
-                            VerificationError(VerifierError.LeaveIntoTry);
+                            Invalid(VerifierError.LeaveIntoTry);
                             invalidLeaveIntoTry = true;
                         }
                         else if (srcRegion.TryOffset <= targetRegion.TryOffset &&
@@ -691,13 +717,13 @@ namespace Internal.IL
                         {
                             if (!IsDirectChildRegion(src, target))
                             {
-                                VerificationError(VerifierError.LeaveIntoTry);
+                                Invalid(VerifierError.LeaveIntoTry);
                                 invalidLeaveIntoTry = true;
                             }
                         }
                         else if (!IsDisjointTryBlock(ref targetRegion, ref srcRegion))
                         {
-                            VerificationError(VerifierError.LeaveIntoTry);
+                            Invalid(VerifierError.LeaveIntoTry);
                             invalidLeaveIntoTry = true;
                         }
                     }
@@ -723,7 +749,7 @@ namespace Internal.IL
                     {
                         // If target is not first instruction of try, or not a direct sibling
                         if (target.StartOffset != targetRegion.TryOffset || !IsDisjointTryBlock(ref targetRegion, ref srcRegion))
-                            VerificationError(VerifierError.LeaveIntoTry);
+                            Invalid(VerifierError.LeaveIntoTry);
                     }
                 }
             }
@@ -734,7 +760,7 @@ namespace Internal.IL
                 ref var targetRegion = ref _exceptionRegions[target.HandlerIndex.Value].ILRegion;
                 // If target region is not enclosing source
                 if (targetRegion.HandlerOffset > src.StartOffset || targetRegion.HandlerOffset + targetRegion.HandlerLength < src.StartOffset)
-                    VerificationError(VerifierError.LeaveIntoHandler);
+                    Invalid(VerifierError.LeaveIntoHandler);
             }
             if (target.FilterIndex.HasValue && src.FilterIndex != target.FilterIndex)
             {
@@ -743,7 +769,7 @@ namespace Internal.IL
 
                 // If target region is not enclosing source
                 if (targetRegion.FilterOffset > src.StartOffset || targetRegion.FilterOffset + filterLength < src.StartOffset)
-                    VerificationError(VerifierError.LeaveIntoFilter);
+                    Invalid(VerifierError.LeaveIntoFilter);
             }
 
             // If the target is within a try block (except first instruction), source shall be within same
@@ -755,7 +781,7 @@ namespace Internal.IL
                 if (target.StartOffset != targetRegion.TryOffset && // Not first instruction
                     (!src.HandlerIndex.HasValue || src.HandlerIndex != target.TryIndex) && // Not associated handler
                     (targetRegion.TryOffset > src.StartOffset || targetRegion.TryOffset + targetRegion.TryLength < src.StartOffset)) // Target region does not enclose source
-                    VerificationError(VerifierError.LeaveIntoTry);
+                    Invalid(VerifierError.LeaveIntoTry);
             }
         }
 
@@ -764,7 +790,7 @@ namespace Internal.IL
             if (!_validTargetOffsets[target.StartOffset])
             {
                 if (reportErrors)
-                    VerificationError(VerifierError.BadJumpTarget);
+                    Invalid(VerifierError.BadJumpTarget);
                 return false;
             }
 
@@ -780,7 +806,7 @@ namespace Internal.IL
                         if (reportErrors)
                         {
                             Debug.Assert(!isFallthrough); // This should not be reachable by fallthrough
-                            VerificationError(VerifierError.BranchIntoTry);
+                            Invalid(VerifierError.BranchIntoTry);
                         }
                         isValid = false;
                     }
@@ -790,9 +816,9 @@ namespace Internal.IL
                     if (reportErrors)
                     {
                         if (isFallthrough)
-                            VerificationError(VerifierError.FallthroughException);
+                            Invalid(VerifierError.FallthroughException);
                         else
-                            VerificationError(VerifierError.BranchOutOfTry);
+                            Invalid(VerifierError.BranchOutOfTry);
                     }
                     isValid = false;
                 }
@@ -810,7 +836,7 @@ namespace Internal.IL
                             if (reportErrors)
                             {
                                 Debug.Assert(!isFallthrough); // This should not be reachable by fallthrough
-                                VerificationError(VerifierError.BranchIntoTry);
+                                Invalid(VerifierError.BranchIntoTry);
                             }
                             isValid = false;
                         }
@@ -820,9 +846,9 @@ namespace Internal.IL
                         if (reportErrors)
                         {
                             if (isFallthrough)
-                                VerificationError(VerifierError.FallthroughException);
+                                Invalid(VerifierError.FallthroughException);
                             else
-                                VerificationError(VerifierError.BranchOutOfTry);
+                                Invalid(VerifierError.BranchOutOfTry);
                         }
                         isValid = false;
                     }
@@ -836,9 +862,9 @@ namespace Internal.IL
                     if (reportErrors)
                     {
                         if (isFallthrough)
-                            VerificationError(VerifierError.FallthroughIntoFilter);
+                            Invalid(VerifierError.FallthroughIntoFilter);
                         else
-                            VerificationError(VerifierError.BranchIntoFilter);
+                            Invalid(VerifierError.BranchIntoFilter);
                     }
                     isValid = false;
                 }
@@ -847,9 +873,9 @@ namespace Internal.IL
                     if (reportErrors)
                     {
                         if (isFallthrough)
-                            VerificationError(VerifierError.FallthroughException);
+                            Invalid(VerifierError.FallthroughException);
                         else
-                            VerificationError(VerifierError.BranchOutOfFilter);
+                            Invalid(VerifierError.BranchOutOfFilter);
                     }
                     isValid = false;
                 }
@@ -862,9 +888,9 @@ namespace Internal.IL
                         if (reportErrors)
                         {
                             if (isFallthrough)
-                                VerificationError(VerifierError.FallthroughIntoFilter);
+                                Invalid(VerifierError.FallthroughIntoFilter);
                             else
-                                VerificationError(VerifierError.BranchIntoFilter);
+                                Invalid(VerifierError.BranchIntoFilter);
                         }
                         isValid = false;
                     }
@@ -873,9 +899,9 @@ namespace Internal.IL
                         if (reportErrors)
                         {
                             if (isFallthrough)
-                                VerificationError(VerifierError.FallthroughException);
+                                Invalid(VerifierError.FallthroughException);
                             else
-                                VerificationError(VerifierError.BranchOutOfFilter);
+                                Invalid(VerifierError.BranchOutOfFilter);
                         }
                         isValid = false;
                     }
@@ -889,9 +915,9 @@ namespace Internal.IL
                     if (reportErrors)
                     {
                         if (isFallthrough)
-                            VerificationError(VerifierError.FallthroughIntoHandler);
+                            Invalid(VerifierError.FallthroughIntoHandler);
                         else
-                            VerificationError(VerifierError.BranchIntoHandler);
+                            Invalid(VerifierError.BranchIntoHandler);
                     }
                     isValid = false;
                 }
@@ -900,13 +926,13 @@ namespace Internal.IL
                     if (reportErrors)
                     {
                         if (isFallthrough)
-                            VerificationError(VerifierError.FallthroughException);
+                            Invalid(VerifierError.FallthroughException);
                         else
                         {
                             if (_exceptionRegions[src.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Finally)
-                                VerificationError(VerifierError.BranchOutOfFinally);
+                                Invalid(VerifierError.BranchOutOfFinally);
                             else
-                                VerificationError(VerifierError.BranchOutOfHandler);
+                                Invalid(VerifierError.BranchOutOfHandler);
                         }
                     }
                     isValid = false;
@@ -920,9 +946,9 @@ namespace Internal.IL
                         if (reportErrors)
                         {
                             if (isFallthrough)
-                                VerificationError(VerifierError.FallthroughIntoHandler);
+                                Invalid(VerifierError.FallthroughIntoHandler);
                             else
-                                VerificationError(VerifierError.BranchIntoHandler);
+                                Invalid(VerifierError.BranchIntoHandler);
                         }
                         isValid = false;
                     }
@@ -931,13 +957,13 @@ namespace Internal.IL
                         if (reportErrors)
                         {
                             if (isFallthrough)
-                                VerificationError(VerifierError.FallthroughException);
+                                Invalid(VerifierError.FallthroughException);
                             else
                             {
                                 if (srcRegion.Kind == ILExceptionRegionKind.Finally)
-                                    VerificationError(VerifierError.BranchOutOfFinally);
+                                    Invalid(VerifierError.BranchOutOfFinally);
                                 else
-                                    VerificationError(VerifierError.BranchOutOfHandler);
+                                    Invalid(VerifierError.BranchOutOfHandler);
                             }
                         }
                         isValid = false;
@@ -1057,7 +1083,7 @@ namespace Internal.IL
         {
             if (!IsAssignable(src, dst))
             {
-                VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src), TypeToStringForIsAssignable(dst));
+                Invalid(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src), TypeToStringForIsAssignable(dst));
             }
         }
 
@@ -1066,7 +1092,7 @@ namespace Internal.IL
             if (!IsAssignable(src, dst, true))
             {
                 // TODO: Better error message
-                VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src));
+                Invalid(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src));
             }
         }
 
@@ -1075,8 +1101,8 @@ namespace Internal.IL
             if (!(src == dst || IsSameReducedType(src, dst)))
             {
                 // TODO: Better error message
-                // VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src), TypeToStringForIsAssignable(dst));
-                VerificationError(VerifierError.StackUnexpectedArrayType, TypeToStringForIsAssignable(src));
+                // Invalid(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src), TypeToStringForIsAssignable(dst));
+                Invalid(VerifierError.StackUnexpectedArrayType, TypeToStringForIsAssignable(src));
             }
         }
 
@@ -1085,27 +1111,27 @@ namespace Internal.IL
             if (!IsAssignable(type, GetWellKnownType(WellKnownType.Object), false))
             {
                 // TODO: Better error message
-                VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(type));
+                Invalid(VerifierError.StackUnexpected, TypeToStringForIsAssignable(type));
             }
         }
 
         void CheckIsObjRef(StackValue value)
         {
             if (value.Kind != StackValueKind.ObjRef)
-                VerificationError(VerifierError.StackObjRef, value);
+                Invalid(VerifierError.StackObjRef, value);
         }
 
         private void CheckIsNotPointer(TypeDesc type)
         {
             if (type.IsPointer)
-                VerificationError(VerifierError.UnmanagedPointer);
+                Invalid(VerifierError.UnmanagedPointer);
         }
 
         void CheckIsComparable(StackValue a, StackValue b, ILOpcode op)
         {
             if (!IsBinaryComparable(a, b, op))
             {
-                VerificationError(VerifierError.StackUnexpected, a, b);
+                Invalid(VerifierError.StackUnexpected, a, b);
             }
         }
 
@@ -1113,7 +1139,7 @@ namespace Internal.IL
         {
             if (!_delegateCreateStart.HasValue)
             {
-                VerificationError(VerifierError.DelegatePattern);
+                Invalid(VerifierError.DelegatePattern);
                 return;
             }
 
@@ -1123,7 +1149,7 @@ namespace Internal.IL
             {
                 if (GetOpcodeAt(delegateStart) != ILOpcode.ldftn)
                 {
-                    VerificationError(VerifierError.DelegatePattern);
+                    Invalid(VerifierError.DelegatePattern);
                     return;
                 }
                 if (!ftn.Method.Signature.IsStatic)
@@ -1142,12 +1168,12 @@ namespace Internal.IL
                 if (GetOpcodeAt(delegateStart) != ILOpcode.dup ||
                     GetOpcodeAt(delegateStart + 1) != ILOpcode.ldvirtftn)
                 {
-                    VerificationError(VerifierError.DelegatePattern);
+                    Invalid(VerifierError.DelegatePattern);
                     return;
                 }
             }
             else
-                VerificationError(VerifierError.DelegatePattern);
+                Invalid(VerifierError.DelegatePattern);
         }
 
         bool IsDelegateAssignable(MethodDesc targetMethod, TypeDesc delegateType, StackValue firstArg)
@@ -1264,11 +1290,6 @@ namespace Internal.IL
                 opCode = (ILOpcode)(0x100 + _ilBytes[instructionOffset + 1]);
 
             return opCode;
-        }
-
-        void Unverifiable()
-        {
-            VerificationError(VerifierError.Unverifiable);
         }
 
         TypeDesc GetWellKnownType(WellKnownType wellKnownType)
@@ -1547,13 +1568,40 @@ namespace Internal.IL
 
         void ImportJmp(int token)
         {
-            Unverifiable();
+            // jmp is never verifiable (III.3.37); the checks below are validity rules.
+            Unverifiable(VerifierError.Unverifiable);
 
             var method = ResolveMethodToken(token);
+
+            if (_stackTop != 0)
+                Invalid(VerifierError.StackUnexpected, _stack[_stackTop - 1]);
+
+            Check(!_currentBasicBlock.TryIndex.HasValue && !_currentBasicBlock.FilterIndex.HasValue &&
+                !_currentBasicBlock.HandlerIndex.HasValue && !_method.IsSynchronized, VerifierError.JmpInsideER);
+
+            MethodSignature sig = method.Signature;
+            bool matches = sig.Flags == _methodSignature.Flags && sig.ReturnType == _methodSignature.ReturnType &&
+                sig.Length == _methodSignature.Length;
+            for (int i = 0; matches && i < sig.Length; i++)
+                matches = sig[i] == _methodSignature[i];
+
+            // The signature does not list an implicit 'this', which must also be passable to the target.
+            if (matches && !sig.IsStatic)
+            {
+                TypeDesc owner = method.OwningType;
+                matches = IsAssignable(StackValue.CreateFromType(_thisType),
+                    owner.IsValueType ? StackValue.CreateByRef(owner) : StackValue.CreateObjRef(owner));
+            }
+
+            if (!matches)
+                Invalid(VerifierError.StackUnexpected, method, _method);
         }
 
         void ImportCasting(ILOpcode opcode, int token)
         {
+            if (opcode == ILOpcode.castclass)
+                ConsumeNoPrefix(0x01);
+
             var type = ResolveTypeToken(token);
 
             var value = Pop();
@@ -1568,6 +1616,9 @@ namespace Internal.IL
         void ImportCall(ILOpcode opcode, int token)
         {
             FatalCheck(opcode != ILOpcode.calli, VerifierError.Unverifiable);
+
+            if (opcode == ILOpcode.callvirt)
+                ConsumeNoPrefix(0x04);
 
             TypeDesc constrained = null;
             bool tailCall = false;
@@ -1591,7 +1642,7 @@ namespace Internal.IL
 
                         // The constrained type must implement the interface declaring the static virtual method
                         if (!constrained.CanCastTo(method.OwningType))
-                            VerificationError(VerifierError.ConstrainedTypeNoInterfaceImpl, constrained, method.OwningType);
+                            Invalid(VerifierError.ConstrainedTypeNoInterfaceImpl, constrained, method.OwningType);
                     }
                 }
 
@@ -1643,7 +1694,7 @@ namespace Internal.IL
                 // A function pointer that did not come from ldftn/ldvirtftn carries no method;
                 // StackMethod has already been reported for it above.
                 if (actualFtn.IsMethod && !IsDelegateAssignable(actualFtn.Method, methodType, actualObj))
-                    VerificationError(VerifierError.DelegateCtor);
+                    Invalid(VerifierError.DelegateCtor);
             }
             else
             {
@@ -1667,7 +1718,7 @@ namespace Internal.IL
                 Check(method.IsConstructor, VerifierError.CtorExpected);
                 if (sig.IsStatic || methodType == null || method.IsAbstract)
                 {
-                    VerificationError(VerifierError.CtorSig);
+                    Invalid(VerifierError.CtorSig);
                 }
                 else
                 {
@@ -1766,9 +1817,9 @@ namespace Internal.IL
 
             // Check any constraints on the callee's class and type parameters
             if (!method.OwningType.CheckConstraints())
-                VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
+                Invalid(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
             else if (!method.CheckConstraints())
-                VerificationError(VerifierError.UnsatisfiedMethodInst, method);
+                Invalid(VerifierError.UnsatisfiedMethodInst, method);
 
             Check(_method.OwningType.CanAccess(method, instance), VerifierError.MethodAccess);
 
@@ -1796,7 +1847,7 @@ namespace Internal.IL
                     if (method.OwningType.IsArray && sig.ReturnType.IsByRef)
                         returnValue.SetIsReadOnly();
                     else
-                        VerificationError(VerifierError.ReadonlyUnexpectedCallee);
+                        Invalid(VerifierError.ReadonlyUnexpectedCallee);
 
                     ClearPendingPrefix(Prefix.ReadOnly);
                 }
@@ -1837,10 +1888,10 @@ namespace Internal.IL
 
         void ImportCalli(int token)
         {
-            // calli is always reported as unverifiable. The runtime does not track the lifetime of function
+            // calli is never verifiable. The runtime does not track the lifetime of function
             // pointers, so the target may be code that has been unloaded. The call site is still checked, and
             // verification goes on.
-            Unverifiable();
+            Unverifiable(VerifierError.Unverifiable);
 
             bool tailCall = HasPendingPrefix(Prefix.Tail);
             ClearPendingPrefix(Prefix.Tail);
@@ -1887,6 +1938,9 @@ namespace Internal.IL
 
         void ImportLdFtn(int token, ILOpcode opCode)
         {
+            if (opCode == ILOpcode.ldvirtftn)
+                ConsumeNoPrefix(0x04);
+
             MethodDesc method = ResolveMethodToken(token);
             Check(!method.IsConstructor, VerifierError.LdftnCtor);
 
@@ -1908,7 +1962,7 @@ namespace Internal.IL
                 {
                     ClearPendingPrefix(Prefix.Constrained);
                     if (!_constrained.CanCastTo(method.OwningType))
-                        VerificationError(VerifierError.ConstrainedTypeNoInterfaceImpl, _constrained, method.OwningType);
+                        Invalid(VerifierError.ConstrainedTypeNoInterfaceImpl, _constrained, method.OwningType);
                 }
                 else
                 {
@@ -1942,9 +1996,9 @@ namespace Internal.IL
 
             // Check any constraints on the callee's class and type parameters
             if (!method.OwningType.CheckConstraints())
-                VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
+                Invalid(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
             else if (!method.CheckConstraints())
-                VerificationError(VerifierError.UnsatisfiedMethodInst, method);
+                Invalid(VerifierError.UnsatisfiedMethodInst, method);
 
             Check(_method.OwningType.CanAccess(method, instance), VerifierError.MethodAccess);
 
@@ -1990,7 +2044,7 @@ namespace Internal.IL
                 else
                 {
                     // Async methods must return Task or ValueTask
-                    VerificationError(VerifierError.StackUnexpected);
+                    Invalid(VerifierError.StackUnexpected);
                 }
             }
 
@@ -1999,12 +2053,12 @@ namespace Internal.IL
                 Debug.Assert(_stackTop >= 0);
 
                 if (_stackTop > 0)
-                    VerificationError(VerifierError.ReturnVoid, _stack[_stackTop - 1]);
+                    Invalid(VerifierError.ReturnVoid, _stack[_stackTop - 1]);
             }
             else
             {
                 if (_stackTop <= 0)
-                    VerificationError(VerifierError.ReturnMissing);
+                    Invalid(VerifierError.ReturnMissing);
                 else
                 {
                     Check(_stackTop == 1, VerifierError.ReturnEmpty);
@@ -2222,7 +2276,7 @@ namespace Internal.IL
 
             if ((op1.Kind != op2.Kind) && (result.Kind != StackValueKind.NativeInt))
             {
-                VerificationError(VerifierError.StackUnexpected, op2, op1);
+                Invalid(VerifierError.StackUnexpected, op2, op1);
             }
 
             // The one exception from the above rule
@@ -2269,6 +2323,8 @@ namespace Internal.IL
         {
             ClearPendingPrefix(Prefix.Unaligned);
             ClearPendingPrefix(Prefix.Volatile);
+            if (!isStatic)
+                ConsumeNoPrefix(0x04);
 
             var field = ResolveFieldToken(token);
 
@@ -2351,6 +2407,8 @@ namespace Internal.IL
         {
             ClearPendingPrefix(Prefix.Unaligned);
             ClearPendingPrefix(Prefix.Volatile);
+            if (!isStatic)
+                ConsumeNoPrefix(0x04);
 
             var value = Pop();
             var field = ResolveFieldToken(token);
@@ -2582,6 +2640,8 @@ namespace Internal.IL
 
         void ImportLoadElement(TypeDesc elementType)
         {
+            ConsumeNoPrefix(0x06);
+
             var index = Pop();
             var array = Pop();
 
@@ -2609,11 +2669,15 @@ namespace Internal.IL
 
         void ImportStoreElement(int token)
         {
+            ConsumeNoPrefix(0x07);
             ImportStoreElement(ResolveTypeToken(token));
         }
 
         void ImportStoreElement(TypeDesc elementType)
         {
+            // Only stelem.ref and stelem <T> type-check the value.
+            ConsumeNoPrefix(elementType == null ? (byte)0x07 : (byte)0x06);
+
             var value = Pop();
             var index = Pop();
             var array = Pop();
@@ -2645,6 +2709,8 @@ namespace Internal.IL
 
         void ImportAddressOfElement(int token)
         {
+            ConsumeNoPrefix(0x07);
+
             var elementType = ResolveTypeToken(token);
 
             var index = Pop();
@@ -2711,6 +2777,9 @@ namespace Internal.IL
 
         void ImportUnbox(int token, ILOpcode opCode)
         {
+            if (opCode == ILOpcode.unbox)
+                ConsumeNoPrefix(0x01);
+
             var type = ResolveTypeToken(token);
 
             CheckIsObjRef(Pop());
@@ -2769,13 +2838,17 @@ namespace Internal.IL
 
         void ImportLocalAlloc()
         {
-            Unverifiable();
+            // localloc is never verifiable (III.3.47); the checks below are validity rules.
+            Unverifiable(VerifierError.Unverifiable);
+
+            Check(!_currentBasicBlock.FilterIndex.HasValue && !_currentBasicBlock.HandlerIndex.HasValue, VerifierError.LocallocInHandler);
 
             var size = Pop();
 
             Check(_stackTop == 0, VerifierError.LocallocStackNotEmpty);
 
-            CheckIsInteger(size);
+            // The size is a native unsigned int or an unsigned int32.
+            CheckIsIndex(size);
 
             Push(StackValue.CreatePrimitive(StackValueKind.NativeInt));
         }
@@ -2795,15 +2868,16 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Unaligned);
             ClearPendingPrefix(Prefix.Volatile);
 
-            Unverifiable();
+            // cpblk is never verifiable (III.3.30); the checks below are validity rules.
+            Unverifiable(VerifierError.Unverifiable);
 
             var size = Pop();
             var srcaddr = Pop();
             var dstaddr = Pop();
 
-            CheckIsInteger(size);
-
-            // TODO: Validate srcaddr, dstaddr
+            CheckIsAddress(srcaddr);
+            CheckIsAddress(dstaddr);
+            CheckIsInt32OrNativeInt(size);
         }
 
         void ImportInitBlk()
@@ -2811,16 +2885,16 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Unaligned);
             ClearPendingPrefix(Prefix.Volatile);
 
-            Unverifiable();
+            // initblk is never verifiable (III.3.36); the checks below are validity rules.
+            Unverifiable(VerifierError.Unverifiable);
 
             var size = Pop();
             var value = Pop();
             var addr = Pop();
 
-            CheckIsInteger(size);
-            CheckIsInteger(value);
-
-            // TODO: Validate addr
+            CheckIsAddress(addr);
+            CheckIsInt32OrNativeInt(size);
+            CheckIsInt32OrNativeInt(value);
         }
 
         void ImportRethrow()
@@ -2844,7 +2918,7 @@ namespace Internal.IL
                 }
             }
 
-            VerificationError(VerifierError.Rethrow);
+            Invalid(VerifierError.Rethrow);
         }
 
         void ImportSizeOf(int token)
@@ -2890,10 +2964,23 @@ namespace Internal.IL
 
         void ImportNoPrefix(byte mask)
         {
-            Unverifiable();
+            // no. is never verifiable (III.2.2); the next instruction checks its mask.
+            Unverifiable(VerifierError.Unverifiable);
 
             CheckPendingPrefix(_pendingPrefix);
             _pendingPrefix |= Prefix.No;
+            _noPrefixChecks = mask;
+        }
+
+        // no. may only skip fault checks that the next instruction performs:
+        // typecheck 0x01, rangecheck 0x02, nullcheck 0x04 (III.2.2).
+        void ConsumeNoPrefix(byte checks)
+        {
+            if (HasPendingPrefix(Prefix.No))
+            {
+                Check((_noPrefixChecks & ~checks) == 0, VerifierError.NoPrefix);
+                ClearPendingPrefix(Prefix.No);
+            }
         }
 
         void ImportReadOnlyPrefix()
@@ -2912,6 +2999,7 @@ namespace Internal.IL
             Check((mask & Prefix.Volatile) == 0, VerifierError.Volatile);
             Check((mask & Prefix.ReadOnly) == 0, VerifierError.ReadOnly);
             Check((mask & Prefix.Constrained) == 0, VerifierError.Constrained);
+            Check((mask & Prefix.No) == 0, VerifierError.NoPrefix);
         }
 
         static bool HasIsExternalInit(MethodSignature signature)
@@ -2941,31 +3029,31 @@ namespace Internal.IL
 
         void ReportInvalidBranchTarget(int targetOffset)
         {
-            VerificationError(VerifierError.BadBranch);
+            Invalid(VerifierError.BadBranch);
             // The later passes index the basic block array with the branch target.
             AbortMethodVerification();
         }
 
         void ReportFallthroughAtEndOfMethod()
         {
-            VerificationError(VerifierError.MethodFallthrough);
+            Invalid(VerifierError.MethodFallthrough);
             AbortMethodVerification();
         }
 
         void ReportMethodEndInsideInstruction()
         {
-            VerificationError(VerifierError.MethodEnd);
+            Invalid(VerifierError.MethodEnd);
             AbortMethodVerification();
         }
 
         void ReportInvalidInstruction(ILOpcode opcode)
         {
-            VerificationError(VerifierError.UnknownOpcode);
+            Invalid(VerifierError.UnknownOpcode);
         }
 
         void ReportInvalidExceptionRegion()
         {
-            VerificationError(VerifierError.EHClauseOutOfRange);
+            Invalid(VerifierError.EHClauseOutOfRange);
             AbortMethodVerification();
         }
 
@@ -3000,7 +3088,7 @@ namespace Internal.IL
                 Check(!ptr.IsReadOnly, VerifierError.ReadOnlyInMkrefany);
 
                 if (ptr.Type != type)
-                    VerificationError(VerifierError.StackUnexpected, ptr, StackValue.CreateByRef(type));
+                    Invalid(VerifierError.StackUnexpected, ptr, StackValue.CreateByRef(type));
             }
 
             Check(_method.OwningType.CanAccess(type), VerifierError.TypeAccess);

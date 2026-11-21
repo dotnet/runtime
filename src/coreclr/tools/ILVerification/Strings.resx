@@ -267,6 +267,9 @@
   <data name="InitOnly" xml:space="preserve">
     <value>Cannot change initonly field outside its .ctor.</value>
   </data>
+  <data name="JmpInsideER" xml:space="preserve">
+    <value>The jmp instruction cannot be used to transfer control out of a try, filter, catch, fault or finally block, or out of a synchronized method.</value>
+  </data>
   <data name="LdftnCtor" xml:space="preserve">
     <value>ldftn/ldvirtftn not allowed on .ctor.</value>
   </data>
@@ -326,6 +329,9 @@
   </data>
   <data name="NewobjAbstractClass" xml:space="preserve">
     <value>Cannot construct an instance of abstract class.</value>
+  </data>
+  <data name="NoPrefix" xml:space="preserve">
+    <value>Missing castclass, unbox, ldelema, ldelem, stelem, ldfld, stfld, callvirt or ldvirtftn that performs the fault checks named by the no. prefix.</value>
   </data>
   <data name="PathStackDepth" xml:space="preserve">
     <value>Stack depth differs depending on path.</value>
@@ -485,6 +491,9 @@
   </data>
   <data name="LocallocStackNotEmpty" xml:space="preserve">
     <value>Stack must be empty before localloc, except for the size item.</value>
+  </data>
+  <data name="LocallocInHandler" xml:space="preserve">
+    <value>localloc cannot be used in an exception filter or handler.</value>
   </data>
   <data name="InvalidBaseType" xml:space="preserve">
     <value>Type '{0}' has invalid base type '{1}'.</value>
