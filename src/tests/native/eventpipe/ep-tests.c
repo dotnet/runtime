@@ -1853,6 +1853,103 @@ ep_on_error:
 }
 
 static RESULT
+test_final_flush_at_stop_timestamp (EventPipeSerializationFormat format)
+{
+	RESULT result = NULL;
+	EventPipeProvider *provider = NULL;
+	EventPipeSessionID session_id = 0;
+	EventPipeProviderConfiguration provider_config;
+	EventPipeProviderConfiguration *current_provider_config = NULL;
+	FILE *file = NULL;
+	const uint8_t payload[] = "FinalFlushAtStopTimestamp";
+	const uint32_t event_count = 10;
+
+	ep_rt_test_perf_counter = ep_perf_timestamp_get ();
+
+	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
+	ep_raise_error_if_nok (current_provider_config != NULL);
+
+	provider = ep_create_provider (TEST_PROVIDER_NAME, NULL, NULL);
+	ep_raise_error_if_nok (provider != NULL);
+
+	EventPipeEvent *ep_event = ep_provider_add_event (provider, 1, 1, 1, EP_EVENT_LEVEL_LOGALWAYS, false, NULL, 0);
+	ep_raise_error_if_nok (ep_event != NULL);
+
+	session_id = ep_init_session (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, format, false, NULL, NULL, NULL);
+	ep_raise_error_if_nok (session_id != 0);
+	ep_start_session (session_id);
+
+	for (uint32_t i = 0; i < event_count; ++i) {
+		EventData data;
+		ep_event_data_init (&data, (uint64_t)(uintptr_t)payload, sizeof (payload), 0);
+		ep_write_event_2 (ep_event, &data, 1, NULL, NULL);
+		ep_event_data_fini (&data);
+	}
+
+	bool events_written = false;
+	ep_raise_error_if_nok (ep_session_write_all_buffers_to_file ((EventPipeSession *)(uintptr_t)session_id, false, &events_written));
+	if (events_written) {
+		result = FAILED ("Streaming flush included events at its exclusive timestamp boundary");
+		ep_raise_error ();
+	}
+
+	ep_disable (session_id);
+	session_id = 0;
+	ep_rt_test_perf_counter = 0;
+
+#ifdef _MSC_VER
+	fopen_s (&file, TEST_FILE, "rb");
+#else
+	file = fopen (TEST_FILE, "rb");
+#endif
+	ep_raise_error_if_nok (file != NULL);
+
+	uint32_t actual_event_count = 0;
+	size_t matched = 0;
+	int value;
+	while ((value = fgetc (file)) != EOF) {
+		if ((uint8_t)value == payload [matched]) {
+			if (++matched == sizeof (payload)) {
+				actual_event_count++;
+				matched = 0;
+			}
+		} else {
+			matched = (uint8_t)value == payload [0] ? 1 : 0;
+		}
+	}
+	ep_raise_error_if_nok (!ferror (file));
+
+	if (actual_event_count != event_count)
+		result = FAILED ("Final flush wrote %u of %u events at the stop timestamp", actual_event_count, event_count);
+
+ep_on_exit:
+	ep_rt_test_perf_counter = 0;
+	if (file)
+		fclose (file);
+	ep_disable (session_id);
+	ep_delete_provider (provider);
+	ep_provider_config_fini (current_provider_config);
+	return result;
+
+ep_on_error:
+	if (!result)
+		result = FAILED ("Failed to test final flush at the stop timestamp");
+	ep_exit_error_handler ();
+}
+
+static RESULT
+test_final_flush_at_stop_timestamp_v3 (void)
+{
+	return test_final_flush_at_stop_timestamp (EP_SERIALIZATION_FORMAT_NETPERF_V3);
+}
+
+static RESULT
+test_final_flush_at_stop_timestamp_v4 (void)
+{
+	return test_final_flush_at_stop_timestamp (EP_SERIALIZATION_FORMAT_NETTRACE_V4);
+}
+
+static RESULT
 test_write_get_next_event (void)
 {
 	RESULT result = NULL;
@@ -2263,6 +2360,8 @@ static Test ep_tests [] = {
 	{"test_session_write_wait_get_next_event", test_session_write_wait_get_next_event},
 	{"test_session_write_suspend_event", test_session_write_suspend_event},
 	{"test_write_event", test_write_event},
+	{"test_final_flush_at_stop_timestamp_v3", test_final_flush_at_stop_timestamp_v3},
+	{"test_final_flush_at_stop_timestamp_v4", test_final_flush_at_stop_timestamp_v4},
 	{"test_write_get_next_event", test_write_get_next_event},
 	{"test_write_wait_get_next_event", test_write_wait_get_next_event},
 	{"test_eventpipe_mem_checkpoint", test_eventpipe_mem_checkpoint},
