@@ -59,6 +59,7 @@ namespace ILLink.Shared
         InvalidMetadataOption = 1046,
         InvalidDependenciesFileFormat = 1047,
         MultipleEntryPointRoots = 1048,
+        ReflectionBlockedNotSupported = 1049,
 
         // Trimming diagnostic ids.
         TypeHasNoFieldsToPreserve = 2001,

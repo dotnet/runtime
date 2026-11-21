@@ -214,6 +214,14 @@ namespace ILCompiler.Metadata
         {
             Debug.Assert(entity.IsTypeDefinition);
 
+            if (_policy.IsStripped(entity))
+            {
+                // The type is blocked from reflection: its name is not part of the metadata. References to all such types look the same.
+                record.NamespaceOrEnclosingType = HandleNamespaceReference(entity.Module, string.Empty);
+                record.TypeName = HandleString("<stripped>");
+                return;
+            }
+
             if (entity.ContainingType != null)
             {
                 record.NamespaceOrEnclosingType = GetNestedReferenceParent(entity);

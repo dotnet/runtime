@@ -67,5 +67,11 @@ namespace ILCompiler.Metadata
         bool IsBlocked(Cts.MetadataType typeDef);
 
         bool IsBlocked(Cts.MethodDesc methodDef);
+
+        /// <summary>
+        /// Returns true if the type was blocked on the request of its author ([ReflectionBlocked]). References to such types
+        /// are emitted without their name.
+        /// </summary>
+        bool IsStripped(Cts.MetadataType typeDef);
     }
 }

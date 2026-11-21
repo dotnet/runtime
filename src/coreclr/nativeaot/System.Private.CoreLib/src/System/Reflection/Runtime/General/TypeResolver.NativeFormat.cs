@@ -206,6 +206,14 @@ namespace System.Reflection.Runtime.General
             if (parentType == HandleType.NamespaceReference)
             {
                 NamespaceReferenceHandle namespaceReferenceHandle = parent.ToNamespaceReferenceHandle(reader);
+
+                // Placeholder emitted by the compiler for types blocked with [ReflectionBlocked].
+                if (name == "<stripped>")
+                {
+                    exception = new NotSupportedException(SR.Reflection_TypeBlocked);
+                    return null;
+                }
+
                 string fullName = namespaceReferenceHandle.ToFullyQualifiedTypeName(name, reader);
                 ScopeReferenceHandle scopeReferenceHandle = namespaceReferenceHandle.GetNamespaceReference(reader).Scope;
 

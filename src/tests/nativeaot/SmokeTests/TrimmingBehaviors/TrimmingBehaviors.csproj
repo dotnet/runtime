@@ -25,6 +25,7 @@
     <Compile Include="Dataflow.cs" />
     <Compile Include="DeadCodeElimination.cs" />
     <Compile Include="DependencyInjectionPattern.cs" />
+    <Compile Include="ReflectionBlockedTests.cs" />
     <Compile Include="ILLinkDescriptor.cs" />
     <Compile Include="ILLinkLinkAttributes.cs" />
     <Compile Include="FeatureSwitches.cs" />

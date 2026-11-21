@@ -1257,6 +1257,12 @@
   <data name="MultipleEntryPointRootsTitle" xml:space="preserve">
     <value>Multiple root assemblies specified with 'entrypoint' root mode.</value>
   </data>
+  <data name="ReflectionBlockedNotSupportedMessage" xml:space="preserve">
+    <value>'ReflectionBlockedAttribute' is not supported on '{0}': {1}.</value>
+  </data>
+  <data name="ReflectionBlockedNotSupportedTitle" xml:space="preserve">
+    <value>'ReflectionBlockedAttribute' is not supported on the type.</value>
+  </data>
   <data name="RedundantSuppressionMessage" xml:space="preserve">
     <value>Unused 'UnconditionalSuppressMessageAttribute' for warning '{0}'. Consider removing the unused warning suppression.</value>
   </data>

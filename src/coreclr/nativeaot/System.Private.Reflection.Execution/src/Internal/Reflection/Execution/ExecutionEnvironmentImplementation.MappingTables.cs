@@ -57,6 +57,12 @@ namespace Internal.Reflection.Execution
             return false;
         }
 
+        public sealed override bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition)
+        {
+            Debug.Assert(!RuntimeAugments.IsGenericType(runtimeTypeHandle));
+            return TypeLoaderEnvironment.TryGetMetadataForNamedType(runtimeTypeHandle, out qTypeDefinition);
+        }
+
         /// <summary>
         /// Return the metadata handle for a TypeDef if the pay-for-policy enabled this type as browsable. This is used to obtain name and other information for types
         /// obtained via typeof() or Object.GetType(). This can include generic types (not to be confused with generic instances).

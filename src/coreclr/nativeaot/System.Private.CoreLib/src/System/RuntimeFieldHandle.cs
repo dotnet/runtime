@@ -42,7 +42,8 @@ namespace System
             FieldHandleInfo* thisInfo = ToFieldHandleInfo();
             FieldHandleInfo* thatInfo = handle.ToFieldHandleInfo();
 
-            return thisInfo->DeclaringType.Equals(thatInfo->DeclaringType) && thisInfo->Handle.Equals(thatInfo->Handle);
+            // Fields that don't have metadata (ReflectionBlocked) can only be equal if they are the same handle
+            return !thisInfo->Handle.IsNil && thisInfo->DeclaringType.Equals(thatInfo->DeclaringType) && thisInfo->Handle.Equals(thatInfo->Handle);
         }
 
         public override unsafe int GetHashCode()
