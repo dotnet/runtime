@@ -435,6 +435,14 @@ void Compiler::eePrintField(StringPrinter* printer, CORINFO_FIELD_HANDLE fld, bo
 const char* Compiler::eeGetMethodFullName(
     CORINFO_METHOD_HANDLE hnd, bool includeReturnType, bool includeThisSpecifier, char* buffer, size_t bufferSize)
 {
+    // A CT_USER_FUNC call can carry a null method handle, such as a direct call to the interface
+    // dispatch helper produced by LowerVirtualStubCall. Dump and disassembly paths must not pass
+    // it to getMethodClass, whose host can assert on a null handle.
+    if (hnd == nullptr)
+    {
+        return "<null method handle>";
+    }
+
     CorInfoHelpFunc helper = eeGetHelperNum(hnd);
     if (helper != CORINFO_HELP_UNDEF)
     {
@@ -523,6 +531,13 @@ const char* Compiler::eeGetMethodFullName(
 //
 const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE methHnd, char* buffer, size_t bufferSize)
 {
+    // See eeGetMethodFullName: a null method handle reaches here from dumping a CT_USER_FUNC call
+    // that carries no handle, such as the lowered interface dispatch helper call.
+    if (methHnd == nullptr)
+    {
+        return "<null method handle>";
+    }
+
     StringPrinter p(getAllocator(CMK_DebugOnly), buffer, bufferSize);
     bool          success = eeRunFunctorWithSPMIErrorTrap([&]() {
         eePrintMethod(&p, NO_CLASS_HANDLE, methHnd,

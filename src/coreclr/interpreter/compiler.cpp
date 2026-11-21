@@ -5596,7 +5596,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 }
                 else
                 {
-                    contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly | GenericHandleEmbedOptions::EmbedParent).var;
+                    if (pConstrainedToken != nullptr && pConstrainedToken->hClass == exactClassHandle)
+                    {
+                        contextParamVar = EmitGenericHandle(pConstrainedToken, GenericHandleEmbedOptions::VarOnly).var;
+                    }
+                    else
+                    {
+                        contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly | GenericHandleEmbedOptions::EmbedParent).var;
+                    }
                 }
             }
         }

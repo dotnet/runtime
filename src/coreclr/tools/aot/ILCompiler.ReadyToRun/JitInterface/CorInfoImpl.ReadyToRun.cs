@@ -2176,6 +2176,7 @@ namespace Internal.JitInterface
 
             bool resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;
+            bool resolvedOnConstrainedValueType = false;
 
             MethodDesc methodAfterConstraintResolution = originalMethod;
             if (constrainedType == null)
@@ -2248,6 +2249,12 @@ namespace Internal.JitInterface
                     exactType = (isStaticVirtual && dimResolution == DefaultInterfaceMethodResolution.DefaultImplementation)
                         ? directMethod.OwningType
                         : constrainedType;
+
+                    // Capture whether the implementation is a non-generic method on the constrained
+                    // value type itself before constrainedType is cleared for static virtuals below.
+                    resolvedOnConstrainedValueType = !forceUseRuntimeLookup && !directMethod.HasInstantiation &&
+                                                     constrainedType.IsValueType && exactType == constrainedType;
+
                     if (isStaticVirtual)
                     {
                         pResolvedToken.tokenType = CorInfoTokenKind.CORINFO_TOKENKIND_ResolvedStaticVirtualMethod;
@@ -2418,7 +2425,13 @@ namespace Internal.JitInterface
                 // which is generic numerics which will always resolve to exact valuetypes, it is not expected that
                 // the complexity involved would be worth the risk. Other scenarios are not expected to be as performance
                 // sensitive.
-                if (isStaticVirtual && pResult->exactContextNeedsRuntimeLookup)
+                // A resolved non-generic method on the constrained value type needs only that type's
+                // context, which RyuJIT obtains from the constrained token. Keep the call direct and
+                // inlinable instead of a fat function pointer, matching the CoreCLR VM. The resolved
+                // target is in the version bubble, so the direct call stays version resilient.
+                bool canPassConstrainedTypeArg = allowInstParam && resolvedConstraint && resolvedOnConstrainedValueType;
+
+                if (isStaticVirtual && pResult->exactContextNeedsRuntimeLookup && !canPassConstrainedTypeArg)
                 {
                     allowInstParam = false;
                 }
@@ -2457,7 +2470,7 @@ namespace Internal.JitInterface
                     // to have an unlimited number of constructors to cover stuff like "int[][][][][][]..."
                     pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
                 }
-                else if ((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || resolvedConstraint)) || forceUseRuntimeLookup)
+                else if ((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || (resolvedConstraint && !canPassConstrainedTypeArg))) || forceUseRuntimeLookup)
                 {
                     if (unresolvedLdVirtFtn)
                     {

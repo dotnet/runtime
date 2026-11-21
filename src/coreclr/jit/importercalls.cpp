@@ -10,6 +10,7 @@
 //
 // Arguments:
 //    pResolvedToken                 - resolved token for the call target
+//    pConstrainedResolvedToken      - resolved constrained type token, if present
 //    callInfo                       - EE supplied info for the call
 //    exactContextHnd                - the exact (method or class) context for the call
 //    exactContextNeedsRuntimeLookup - whether the exact context needs a runtime lookup
@@ -29,6 +30,7 @@
 //    can carry a type arg but is otherwise outside the main hasTypeArg() handling.
 //
 GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                      CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                       CORINFO_CALL_INFO*      callInfo,
                                       CORINFO_CONTEXT_HANDLE  exactContextHnd,
                                       bool                    exactContextNeedsRuntimeLookup,
@@ -114,7 +116,16 @@ GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         }
         else
         {
-            instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup);
+            if ((pConstrainedResolvedToken != nullptr) && (pConstrainedResolvedToken->hClass == exactClassHandle))
+            {
+                // The original method token can name an interface, while the implementation
+                // needs the constrained value type's context.
+                instParam = impTokenToHandle(pConstrainedResolvedToken, &runtimeLookup);
+            }
+            else
+            {
+                instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup);
+            }
             if (instParam == nullptr)
             {
                 assert(compDonotInline());
@@ -717,8 +728,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     }
                     else
                     {
-                        wasmInstParam = impGetInstParamArg(pResolvedToken, callInfo, exactContextHnd,
-                                                           exactContextNeedsRuntimeLookup, clsFlags, isReadonlyCall);
+                        wasmInstParam =
+                            impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo, exactContextHnd,
+                                               exactContextNeedsRuntimeLookup, clsFlags, isReadonlyCall);
                         if (wasmInstParam == nullptr)
                         {
                             assert(compDonotInline());
@@ -986,8 +998,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             assert(opcode != CEE_CALLI);
 
-            instParam = impGetInstParamArg(pResolvedToken, callInfo, exactContextHnd, exactContextNeedsRuntimeLookup,
-                                           clsFlags, isReadonlyCall);
+            instParam = impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo, exactContextHnd,
+                                           exactContextNeedsRuntimeLookup, clsFlags, isReadonlyCall);
             if (instParam == nullptr)
             {
                 assert(compDonotInline());
