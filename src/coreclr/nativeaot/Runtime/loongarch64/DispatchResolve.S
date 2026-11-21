@@ -13,12 +13,8 @@ LEAF_ENTRY RhpInterfaceDispatch, _TEXT
         // to a NullReferenceException at the callsite.
         ld.d    $zero, $a0, 0
 
-        // $t8 currently contains the indirection cell address.
-        // Calling convention of the universal thunk is:
-        //  $t7: target address for the thunk to call
-        //  $t8: parameter of the thunk's target
-        PREPARE_EXTERNAL_VAR RhpCidResolve, $t7
-        b       C_FUNC(RhpUniversalTransitionTailCall)
+        // $t8 contains the indirection cell address
+        b       C_FUNC(RhpInterfaceDispatchSlow)
 
 LEAF_END RhpInterfaceDispatch, _TEXT
 

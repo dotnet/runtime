@@ -6,8 +6,8 @@ include AsmMacros.inc
 
 EXTERN RhpCidResolve : PROC
 EXTERN RhpCidResolve_Worker : PROC
-EXTERN RhpUniversalTransitionTailCall : PROC
-EXTERN RhpUniversalTransitionGuardedTailCall : PROC
+EXTERN RhpInterfaceDispatchSlow : PROC
+EXTERN RhpInterfaceDispatchSlowGuarded : PROC
 
 EXTERN g_pDispatchCache : QWORD
 
@@ -153,11 +153,10 @@ else
 
       SlowPath:
         ;; DispatchCellReg contains indirection cell address
-        lea     r10, RhpCidResolve
 if Guarded ne 0
-        jmp     RhpUniversalTransitionGuardedTailCall
+        jmp     RhpInterfaceDispatchSlowGuarded
 else
-        jmp     RhpUniversalTransitionTailCall
+        jmp     RhpInterfaceDispatchSlow
 endif
 endif
 

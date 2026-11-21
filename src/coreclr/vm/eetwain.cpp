@@ -1817,14 +1817,14 @@ unsigned int EECodeManager::GetFrameSize(GCInfoToken gcInfoToken)
 
 /*****************************************************************************/
 
-// This is an assembly helper that enables us to call into EH funclets.
+// Calls a catch or finally funclet.
 EXTERN_C UINT_PTR F_CALL_CONV CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP);
 
-// This is an assembly helper that enables us to call into EH filter funclets.
+// Calls a filter funclet.
 EXTERN_C int F_CALL_CONV CallEHFilterFunclet(Object *pThrowable, CONTEXT *pContext, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
 
 #ifndef TARGET_WASM
-typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
+typedef UINT_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
 #else
 typedef TADDR HandlerFn;
 #endif // TARGET_WASM
@@ -1846,9 +1846,9 @@ static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
 // * Catch funclet: address to resume at after the catch returns
 // * Finally funclet: unused
 // * Filter funclet: result of the filter funclet (EXCEPTION_CONTINUE_SEARCH (0) or EXCEPTION_EXECUTE_HANDLER (1))
-DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilterFunclet)
+UINT_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilterFunclet)
 {
-    DWORD_PTR dwResult = 0;
+    UINT_PTR dwResult = 0;
     HandlerFn* pfnHandler = (HandlerFn*)pHandler;
 
     // Since the actual caller of the funclet is the assembly helper, pass the reference
@@ -2007,7 +2007,7 @@ extern "C" DWORD_PTR STDCALL CallInterpreterFuncletWorker(OBJECTREF throwable, v
     }
 }
 
-DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
+UINT_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
 {
 #if !defined(TARGET_WASM)
     // Call the ASM helper which creates a real TransitionBlock
