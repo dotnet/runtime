@@ -2529,39 +2529,52 @@ namespace Internal.IL
             // shall be a finally or fault handler.
             if (Check(_currentBasicBlock.HandlerIndex.HasValue, VerifierError.Endfinally))
             {
-                Check(_exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind
-                    is ILExceptionRegionKind.Finally or ILExceptionRegionKind.Fault &&
-                    !IsInTryOrFilterNestedInHandler(_currentBasicBlock), VerifierError.Endfinally);
+                ILExceptionRegionKind handlerKind = _exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind;
+                if (Check(handlerKind is ILExceptionRegionKind.Finally or ILExceptionRegionKind.Fault, VerifierError.Endfinally))
+                {
+                    bool isFault = handlerKind == ILExceptionRegionKind.Fault;
+
+                    // Test the filter first. A block in a filter can also be in a try block that encloses
+                    // the filter's clause, and nothing can be nested in a filter, so when both lie inside
+                    // the handler, the filter is the innermost.
+                    if (IsInFilterNestedInHandler(_currentBasicBlock))
+                        VerificationError(isFault ? VerifierError.EndfaultInNestedFilter : VerifierError.EndfinallyInNestedFilter);
+                    else if (IsInTryNestedInHandler(_currentBasicBlock))
+                        VerificationError(isFault ? VerifierError.EndfaultInNestedTry : VerifierError.EndfinallyInNestedTry);
+                }
             }
 
             EmptyTheStack();
         }
 
         /// <summary>
-        /// Checks whether the innermost try block or filter enclosing <paramref name="block"/> lies
-        /// inside the innermost handler enclosing it, so that the handler is not the innermost
-        /// enclosing exception-handling block.
+        /// Checks whether the innermost try block enclosing <paramref name="block"/> lies inside the
+        /// innermost handler enclosing it.
         /// </summary>
-        bool IsInTryOrFilterNestedInHandler(BasicBlock block)
+        bool IsInTryNestedInHandler(BasicBlock block)
         {
+            if (!block.TryIndex.HasValue)
+                return false;
+
             ref var handler = ref _exceptionRegions[block.HandlerIndex.Value].ILRegion;
-            int handlerEnd = handler.HandlerOffset + handler.HandlerLength;
+            ref var tryRegion = ref _exceptionRegions[block.TryIndex.Value].ILRegion;
+            return handler.HandlerOffset <= tryRegion.TryOffset &&
+                tryRegion.TryOffset + tryRegion.TryLength <= handler.HandlerOffset + handler.HandlerLength;
+        }
 
-            if (block.TryIndex.HasValue)
-            {
-                ref var tryRegion = ref _exceptionRegions[block.TryIndex.Value].ILRegion;
-                if (handler.HandlerOffset <= tryRegion.TryOffset && tryRegion.TryOffset + tryRegion.TryLength <= handlerEnd)
-                    return true;
-            }
+        /// <summary>
+        /// Checks whether the filter enclosing <paramref name="block"/> lies inside the innermost
+        /// handler enclosing it.
+        /// </summary>
+        bool IsInFilterNestedInHandler(BasicBlock block)
+        {
+            if (!block.FilterIndex.HasValue)
+                return false;
 
-            if (block.FilterIndex.HasValue)
-            {
-                ref var filterRegion = ref _exceptionRegions[block.FilterIndex.Value].ILRegion;
-                if (handler.HandlerOffset <= filterRegion.FilterOffset && filterRegion.HandlerOffset <= handlerEnd)
-                    return true;
-            }
-
-            return false;
+            ref var handler = ref _exceptionRegions[block.HandlerIndex.Value].ILRegion;
+            ref var filterRegion = ref _exceptionRegions[block.FilterIndex.Value].ILRegion;
+            return handler.HandlerOffset <= filterRegion.FilterOffset &&
+                filterRegion.HandlerOffset <= handler.HandlerOffset + handler.HandlerLength;
         }
 
         void ImportNewArray(int token)
