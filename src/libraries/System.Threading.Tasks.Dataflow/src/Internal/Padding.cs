@@ -20,6 +20,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
     internal struct PaddedInt64
     {
         [FieldOffset(PaddingHelpers.CACHE_LINE_SIZE)]
-        internal long Value;
+        internal safe long Value;
     }
 }

@@ -14,7 +14,7 @@ namespace System.Tests
             Assert.True(GetInvariant(null));
 
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_Invariant")]
-            static extern bool GetInvariant(TimeZoneInfo t);
+            static safe extern bool GetInvariant(TimeZoneInfo t);
         }
 
         [Fact]

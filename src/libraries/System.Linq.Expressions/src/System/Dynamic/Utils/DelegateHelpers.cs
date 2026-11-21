@@ -31,7 +31,7 @@ namespace System.Dynamic.Utils
 
                 [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "CreateObjectArrayDelegate")]
                 [MethodImpl(MethodImplOptions.NoInlining)]
-                static extern Delegate CreateObjectArrayDelegate(
+                static safe extern Delegate CreateObjectArrayDelegate(
                     [UnsafeAccessorType("Internal.Runtime.Augments.DynamicDelegateAugments, System.Private.CoreLib")] object? _,
                     Type delegateType,
                     Func<object?[], object?> invoker);
@@ -196,7 +196,7 @@ namespace System.Dynamic.Utils
                             return ForceAllowDynamicCode(null);
 
                             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name="ForceAllowDynamicCode")]
-                            static extern IDisposable ForceAllowDynamicCode(AssemblyBuilder? _);
+                            static safe extern IDisposable ForceAllowDynamicCode(AssemblyBuilder? _);
                         }
                         return null;
                     }

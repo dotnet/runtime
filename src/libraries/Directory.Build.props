@@ -67,6 +67,9 @@
     <!-- AOT/trim compatibility is enabled by default for test projects, but we don't mark the tests as trimmable -->
     <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == '' and '$(IsTestProject)' == 'true'">true</EnableTrimAnalyzer>
     <EnableAotAnalyzer Condition="'$(EnableAotAnalyzer)' == '' and '$(IsTestProject)' == 'true'">true</EnableAotAnalyzer>
+
+    <!-- Use the updated memory safety rules (unsafe-v2) by default. Projects that aren't migrated yet opt out with MemorySafetyRulesVersion=1. -->
+    <MemorySafetyRulesVersion Condition="'$(MemorySafetyRulesVersion)' == '' and $(MSBuildProjectFullPath.StartsWith('$(MSBuildThisFileDirectory)'))">2</MemorySafetyRulesVersion>
   </PropertyGroup>
 
   <!-- Set up common paths -->
