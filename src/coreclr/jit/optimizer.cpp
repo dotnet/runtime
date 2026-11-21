@@ -3875,6 +3875,25 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     BitVecTraits traits(m_dfsTree->PostOrderTraits());
     BitVec       defExec(BitVecOps::MakeEmpty(&traits));
 
+    // For hoisting profitability, ignore exits into throw blocks: they are only taken on exceptional paths.
+    // Exit canonicalization may route them through an empty block.
+    BasicBlock* exiting   = nullptr;
+    unsigned    exitCount = 0;
+    for (FlowEdge* const exitEdge : loop->ExitEdges())
+    {
+        BasicBlock* target = exitEdge->getDestinationBlock();
+        if (target->KindIs(BBJ_ALWAYS) && target->isEmpty())
+        {
+            target = target->GetTarget();
+        }
+
+        if (!target->KindIs(BBJ_THROW))
+        {
+            exiting = exitEdge->getSourceBlock();
+            exitCount++;
+        }
+    }
+
     // Add the pre-headers of any child loops to the list of blocks to consider for hoisting.
     // Note that these are not necessarily definitely executed. However, it is a heuristic that they will
     // often provide good opportunities for further hoisting since we hoist from inside-out,
@@ -3913,9 +3932,9 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     {
         assert(childLoop->EntryEdges().size() == 1);
         BasicBlock* childPreHead = childLoop->EntryEdge(0)->getSourceBlock();
-        if (loop->ExitEdges().size() == 1)
+        if (exitCount == 1)
         {
-            if (m_domTree->Dominates(childPreHead, loop->ExitEdges()[0]->getSourceBlock()))
+            if (m_domTree->Dominates(childPreHead, exiting))
             {
                 // If the child loop pre-header dominates the exit, it will get added in the dominator tree
                 // loop below.
@@ -3934,9 +3953,8 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         BitVecOps::AddElemD(&traits, defExec, childPreHead->bbPostorderNum);
     }
 
-    if (loop->ExitEdges().size() == 1)
+    if (exitCount == 1)
     {
-        BasicBlock* exiting = loop->ExitEdges()[0]->getSourceBlock();
         JITDUMP("  Considering hoisting in blocks that either dominate exit block " FMT_BB
                 ", or pre-headers of nested loops, if any:\n",
                 exiting->bbNum);
@@ -3953,6 +3971,13 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         // dominated by the header, but may still be part of the loop.
         //
         BasicBlock* cur = exiting;
+
+        // In a top-tested loop, the dominators of the only backedge run on every iteration that reaches it.
+        if ((exiting == loop->GetHeader()) && (loop->BackEdges().size() == 1))
+        {
+            cur = loop->BackEdge(0)->getSourceBlock();
+        }
+
         while ((cur != nullptr) && (cur != loop->GetHeader()) && loop->ContainsBlock(cur))
         {
             JITDUMP("  --  " FMT_BB " (dominate exit block)\n", cur->bbNum);

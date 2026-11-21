@@ -2330,7 +2330,7 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             if (array.Length > 1)
-                SpanHelpers.Reverse(ref MemoryMarshal.GetArrayDataReference(array), (nuint)array.Length);
+                SpanHelpers.Reverse(new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length));
         }
 
         public static void Reverse<T>(T[] array, int index, int length)
@@ -2347,7 +2347,7 @@ namespace System
             if (length <= 1)
                 return;
 
-            SpanHelpers.Reverse(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index), (nuint)length);
+            SpanHelpers.Reverse(new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length).Slice(index, length));
         }
 
         // Sorts the elements of an array. The sort compares the elements to each
