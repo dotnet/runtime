@@ -1633,6 +1633,23 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             Assert.Empty(decoded.ParameterTypes);
         }
 
+        [Theory]
+        [InlineData("", "")]
+        [InlineData("A", "A")]
+        [InlineData("AB", "\u4241")]
+        [InlineData("ABC", "\u4241C")]
+        [InlineData("\u00E9", "\uA9C3")]
+        [InlineData("\U0001F600", "\u9FF0\u8098")]
+        public void LdstrInstruction_AnsiForm_ReinterpretsUtf8AsLittleEndianUtf16(string value, string expected)
+        {
+            string source = DocumentCompilerTestHelpers.MethodSource($"ldstr ansi(\"{value}\")\npop\nret");
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(expected, ReadLdstrValue(pe, reader, "M"));
+        }
+
         [Fact]
         public void LdstrInstruction_ComposedAnsiAndRawForms_EmitExpectedUserStrings()
         {

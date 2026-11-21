@@ -7,7 +7,7 @@ namespace System.Net.Security.Tests;
 
 public class OpenSslErrorTests
 {
-    [Theory]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
     // OpenSSL 1.x: ERR_PACK(ERR_LIB_SSL, SSL_F_SSL_VERIFY_CLIENT_POST_HANDSHAKE, SSL_R_EXTENSION_NOT_RECEIVED)
     [InlineData(0x14268117u, false, 279)]
     // OpenSSL 1.x: ERR_PACK(ERR_LIB_SSL, SSL_F_SSL_RENEGOTIATE, SSL_R_NO_RENEGOTIATION)

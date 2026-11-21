@@ -728,6 +728,20 @@ namespace System.IO.Compression
             _archiveComment = eocd.ArchiveComment;
         }
 
+        private void ValidateArchiveStreamLength()
+        {
+            long length = _archiveStream.Length;
+            if (length == 0)
+            {
+                throw new InvalidDataException(SR.EmptyArchiveStream);
+            }
+
+            if (length < ZipEndOfCentralDirectoryBlock.TotalSize)
+            {
+                throw new InvalidDataException(SR.EOCDNotFound);
+            }
+        }
+
         // This function reads all the EOCD stuff it needs to find the offset to the start of the central directory
         // This offset gets put in _centralDirectoryStart and the number of this disk gets put in _numberOfThisDisk
         // Also does some verification that this isn't a split/spanned archive
@@ -736,6 +750,8 @@ namespace System.IO.Compression
         {
             try
             {
+                ValidateArchiveStreamLength();
+
                 // This seeks backwards almost to the beginning of the EOCD, one byte after where the signature would be
                 // located if the EOCD had the minimum possible size (no file zip comment)
                 _archiveStream.Seek(-ZipEndOfCentralDirectoryBlock.SizeOfBlockWithoutSignature, SeekOrigin.End);

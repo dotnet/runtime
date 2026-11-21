@@ -95,6 +95,7 @@ BOOL isMemoryReadable(const TADDR start, unsigned len)
 }
 
 
+#ifdef TARGET_X86
 /*******************************************************************/
 /* check to see if 'retAddr' is a valid return address (it points to
    someplace that has a 'call' right before it), If possible it is
@@ -108,12 +109,6 @@ bool isRetAddr(TADDR retAddr, TADDR* whereCalled)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-    // don't waste time values clearly out of range
-    if (retAddr < (TADDR)BOT_MEMORY || retAddr > (TADDR)TOP_MEMORY)
-    {
-        return false;
-    }
 
     PTR_BYTE spot = PTR_BYTE(retAddr);
     if (!isMemoryReadable(dac_cast<TADDR>(spot) - 7, 7))
@@ -177,6 +172,7 @@ bool isRetAddr(TADDR retAddr, TADDR* whereCalled)
     // There are other cases, but I don't believe they are used.
     return(false);
 }
+#endif // TARGET_X86
 
 /*
  * The remaining methods are included in debug builds only

@@ -62,6 +62,8 @@ namespace Internal.NativeFormat
             }
             else if ((val & 16) == 0)
             {
+                if (stream + 4 >= streamEnd)
+                    ThrowBadImageFormatException();
                 stream += 1;
                 value = ReadUInt32(ref stream);
             }
@@ -116,6 +118,8 @@ namespace Internal.NativeFormat
             }
             else if ((val & 16) == 0)
             {
+                if (stream + 4 >= streamEnd)
+                    ThrowBadImageFormatException();
                 stream += 1;
                 value = (int)ReadUInt32(ref stream);
             }
@@ -142,6 +146,8 @@ namespace Internal.NativeFormat
             }
             else if ((val & 32) == 0)
             {
+                if (stream + 8 >= streamEnd)
+                    ThrowBadImageFormatException();
                 stream += 1;
                 value = ReadUInt64(ref stream);
             }
@@ -168,6 +174,8 @@ namespace Internal.NativeFormat
             }
             else if ((val & 32) == 0)
             {
+                if (stream + 8 >= streamEnd)
+                    ThrowBadImageFormatException();
                 stream += 1;
                 value = (long)ReadUInt64(ref stream);
             }

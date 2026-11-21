@@ -1703,9 +1703,9 @@ BOOL AppDomain::ContainsAssembly(Assembly * assem)
     WRAPPER_NO_CONTRACT;
     AssemblyIterator i = IterateAssembliesEx((AssemblyIterationFlags)(
         kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
+    CollectibleAssemblyHolder pAssembly;
 
-    while (i.Next(pAssembly.This()))
+    while (i.Next(&pAssembly))
     {
         if (pAssembly == assem)
             return TRUE;
@@ -1897,7 +1897,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
         {
             {
                 GCX_COOP();
-                PEFileListLockHolder lock((PEFileListLock*)m_pList);
+                PEFileListLockHolder lock = static_cast<PEFileListLock*>(m_pList)->TakeLock();
 
 #if _DEBUG
                 BOOL fDbgOnly_SuccessfulUnlink =
@@ -2075,9 +2075,9 @@ BOOL AppDomain::IsLoading(Assembly *pAssembly, FileLoadLevel level)
     {
         FileLoadLock *pLock = NULL;
         {
-            LoadLockHolder lock(this);
+            LoadLockHolder lock = TakeLoadLock();
 
-            pLock = (FileLoadLock *) lock->FindFileLock(pAssembly->GetPEAssembly());
+            pLock = (FileLoadLock *)m_FileLoadLock.FindFileLock(pAssembly->GetPEAssembly());
 
             if (pLock == NULL)
             {
@@ -2112,9 +2112,9 @@ CHECK AppDomain::CheckLoading(Assembly *pAssembly, FileLoadLevel level)
     {
         FileLoadLock *pLock = NULL;
 
-        LoadLockHolder lock(this);
+        LoadLockHolder lock = TakeLoadLock();
 
-        pLock = (FileLoadLock *) lock->FindFileLock(pAssembly->GetPEAssembly());
+        pLock = (FileLoadLock *)m_FileLoadLock.FindFileLock(pAssembly->GetPEAssembly());
 
         if (pLock != NULL
             && pLock->CanAcquire(level))
@@ -2196,18 +2196,19 @@ void AppDomain::LoadAssembly(Assembly *pAssembly,
         GCX_PREEMP();
 
         // Load some more if appropriate
-        LoadLockHolder lock(this);
-
-        FileLoadLock* pLockEntry = (FileLoadLock *) lock->FindFileLock(pAssembly->GetPEAssembly());
-        if (pLockEntry == NULL)
+        FileLoadLock* pLockEntry;
         {
-            _ASSERTE (!pAssembly->IsLoading());
-            return;
+            LoadLockHolder lock = TakeLoadLock();
+
+            pLockEntry = (FileLoadLock *)m_FileLoadLock.FindFileLock(pAssembly->GetPEAssembly());
+            if (pLockEntry == NULL)
+            {
+                _ASSERTE (!pAssembly->IsLoading());
+                return;
+            }
+
+            pLockEntry->AddRef();
         }
-
-        pLockEntry->AddRef();
-
-        lock.Release();
 
         LoadAssembly(pLockEntry, targetLevel);
     }
@@ -2314,10 +2315,10 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
 
     if (result == NULL)
     {
-        LoadLockHolder lock(this);
+        LoadLockHolder lock = TakeLoadLock();
 
         // Find the list lock entry
-        FileLoadLock * fileLock = (FileLoadLock *)lock->FindFileLock(pPEAssembly);
+        FileLoadLock * fileLock = (FileLoadLock *)m_FileLoadLock.FindFileLock(pPEAssembly);
         bool registerNewAssembly = false;
         if (fileLock == NULL)
         {
@@ -2327,7 +2328,7 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
             {
                 // We are the first one in - create the FileLoadLock. Creation of the Assembly will happen at FILE_LOAD_ALLOCATE stage
                 registerNewAssembly = true;
-                fileLock = FileLoadLock::Create(lock, pPEAssembly);
+                fileLock = FileLoadLock::Create(&m_FileLoadLock, pPEAssembly);
             }
         }
         else
@@ -2335,7 +2336,7 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
             fileLock->AddRef();
         }
 
-        lock.Release();
+        lock.Free();
 
         if (result == NULL)
         {
@@ -2656,9 +2657,9 @@ Assembly * AppDomain::FindAssembly(PEAssembly * pPEAssembly, FindAssemblyOptions
         kIncludeLoaded |
         (includeFailedToLoad ? kIncludeFailedToLoad : 0) |
         kIncludeExecution));
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
+    CollectibleAssemblyHolder pAssembly;
 
-    while (i.Next(pAssembly.This()))
+    while (i.Next(&pAssembly))
     {
         PEAssembly * pManifestFile = pAssembly->GetPEAssembly();
         if (pManifestFile &&
@@ -2843,13 +2844,13 @@ BOOL AppDomain::RemoveFileFromCache(PEAssembly * pPEAssembly)
     }
     CONTRACTL_END;
 
-    LoadLockHolder lock(this);
-    FileLoadLock *fileLock = (FileLoadLock *)lock->FindFileLock(pPEAssembly);
+    LoadLockHolder lock = TakeLoadLock();
+    FileLoadLock *fileLock = (FileLoadLock *)m_FileLoadLock.FindFileLock(pPEAssembly);
 
     if (fileLock == NULL)
         return FALSE;
 
-    VERIFY(lock->Unlink(fileLock));
+    VERIFY(m_FileLoadLock.Unlink(fileLock));
 
     fileLock->Release();
 
@@ -3360,8 +3361,8 @@ BOOL AppDomain::NotifyDebuggerLoad(int flags, BOOL attaching)
     // Attach to our assemblies
     LOG((LF_CORDB, LL_INFO100, "AD::NDA: Iterating assemblies\n"));
     i = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeLoading | kIncludeExecution));
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
-    while (i.Next(pAssembly.This()))
+    CollectibleAssemblyHolder pAssembly;
+    while (i.Next(&pAssembly))
     {
         result = (pAssembly->NotifyDebuggerLoad(flags, attaching) ||
                   result);
@@ -3380,10 +3381,10 @@ void AppDomain::NotifyDebuggerUnload()
 
     LOG((LF_CORDB, LL_INFO100, "AD::NDD: Interating domain bound assemblies\n"));
     AssemblyIterator i = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded |  kIncludeLoading  | kIncludeExecution));
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
+    CollectibleAssemblyHolder pAssembly;
 
     // Detach from our assemblies
-    while (i.Next(pAssembly.This()))
+    while (i.Next(&pAssembly))
     {
         LOG((LF_CORDB, LL_INFO100, "AD::NDD: Iterating assemblies\n"));
         pAssembly->NotifyDebuggerUnload();
@@ -3761,7 +3762,7 @@ void AppDomain::RemoveTypesFromTypeIDMap(LoaderAllocator* pLoaderAllocator)
 //
 BOOL
 AppDomain::AssemblyIterator::Next(
-    CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder)
+    CollectibleAssemblyHolder* pAssemblyHolder)
 {
     CONTRACTL {
         NOTHROW;
@@ -3779,7 +3780,7 @@ AppDomain::AssemblyIterator::Next(
 //
 BOOL
 AppDomain::AssemblyIterator::Next_Unlocked(
-    CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder)
+    CollectibleAssemblyHolder* pAssemblyHolder)
 {
     CONTRACTL {
         NOTHROW;
@@ -3885,7 +3886,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
             }
             // Set the holder value to assembly with 0 ref-count without increasing the ref-count (won't
             // call Release either)
-            pAssemblyHolder->Assign(pAssembly, FALSE);
+            pAssemblyHolder->AssignBorrowed(pAssembly);
             return TRUE;
         }
 
@@ -4108,9 +4109,9 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
 
     m_Assemblies.EnumMemoryRegions(flags);
     AssemblyIterator assem = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
+    CollectibleAssemblyHolder pAssembly;
 
-    while (assem.Next(pAssembly.This()))
+    while (assem.Next(&pAssembly))
     {
         pAssembly->EnumMemoryRegions(flags);
     }

@@ -145,6 +145,8 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         // Compare files with the runtime pack
         string objBuildDir = Path.Combine(ProjectDir!, "obj", assertOptions.Configuration.ToString(), assertOptions.BuildOptions.TargetFramework, "wasm", assertOptions.BuildOptions.IsPublish ? "for-publish" : "for-build");
 
+        // CoreCLR runtime packs can be restored through NuGet rather than installed in SDK packs,
+        // so compare against the runtime pack the build actually used.
         string runtimeNativeDir = GetPrelinkedNativeAssetDir(assertOptions.BuildOptions, assertOptions.RuntimePackDir);
 
         string srcDirForNativeFileToCompareAgainst = assertOptions.ExpectedFileType switch

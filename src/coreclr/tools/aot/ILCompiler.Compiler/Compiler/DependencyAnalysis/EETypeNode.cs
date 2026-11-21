@@ -161,7 +161,9 @@ namespace ILCompiler.DependencyAnalysis
                         // these all will be looked at for every unique generic virtual method call in the program.
                         // Having a long list of interesting types affects the compilation throughput heavily.
                         if (slotDecl.OwningType == defType ||
-                            defType.BaseType.ResolveInterfaceMethodTarget(method) != slotDecl)
+                            (method.Signature.IsStatic
+                                ? defType.BaseType.ResolveInterfaceMethodToStaticVirtualMethodOnType(method)
+                                : defType.BaseType.ResolveInterfaceMethodTarget(method)) != slotDecl)
                         {
                             result |= VirtualMethodAnalysisFlags.InterestingForDynamicDependencies
                                 | VirtualMethodAnalysisFlags.NeedsGvmEntries;

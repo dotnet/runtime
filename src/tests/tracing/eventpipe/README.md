@@ -114,8 +114,12 @@ return IpcTraceTest.RunAndValidateEventCounts(
 | Directory | Contents |
 |-----------|----------|
 | `common/` | Shared infrastructure (`IpcTraceTest`, `DiagnosticsClient`, helpers) |
-| `native/` | Native EventPipe and container unit tests, managed launchers, and shared native-test runner |
 | `eventsvalidation/` | Tests that validate specific event types and payloads |
 | `providervalidation/` | Tests that validate provider registration and event counts |
 | `rundownvalidation/` | Tests for rundown event correctness |
 | `config/`, `diagnosticport/`, `reverse*/` | Diagnostic port and configuration tests |
+
+Native component unit tests and their opt-in performance suites are documented
+under [`src/tests/native`](../../native/README.md). The native EventPipe tests
+mirror `src/native/eventpipe`; the native container tests mirror
+`src/native/containers`.

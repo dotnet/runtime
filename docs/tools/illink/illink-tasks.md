@@ -68,7 +68,10 @@ The key does not cover the host's installed runtime directories or the version o
 executing ILLink. Runtime installation changes alone are not guaranteed to invalidate entries;
 clear or isolate the cache when that distinction is required.
 Cache hits replace the output directory without running ILLink.
-Directories are created in the cache only when storing a successful result. Hits do not replay warnings or other linker diagnostics.
+Directories are created in the cache only when storing a successful result. Hits replay the
+original stdout/stderr lines through normal task logging, including warnings. The current
+stream importance, stderr-as-error setting, and MSBuild warning policy apply on every hit
+without changing the cache key, so a cached warning can fail a build under `-warnaserror`.
 
 Caching is bypassed with a diagnostic for arbitrary `ExtraArgs`, custom steps/data,
 dependency-dump options, and explicit task environment overrides. Runtime's library-build

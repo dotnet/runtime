@@ -151,7 +151,10 @@ namespace System.Tests
             MethodInfo opExplicitFromPointer = typeof(nint).GetMethod("op_Explicit", new Type[] { typeof(void*) });
             MethodInfo opExplicitToPointer = methods.Single((methodInfo) => (methodInfo.Name == "op_Explicit") && (methodInfo.ReturnType == typeof(void*)));
 
-            void* v = Pointer.Unbox(opExplicitToPointer.Invoke(null, new object[] { value }));
+            Pointer pointer = Assert.IsType<Pointer>(opExplicitToPointer.Invoke(null, new object[] { value }));
+            Assert.Equal(typeof(void*), pointer.PointerType);
+            void* v = Pointer.Unbox(pointer);
+            Assert.Equal((nint)v, (nint)pointer.Value);
             Assert.Equal(value, (nint)opExplicitFromPointer.Invoke(null, new object[] { Pointer.Box(v, typeof(void*)) }));
 
             value = unchecked((nint)0x7fffffffffffffff);

@@ -1220,9 +1220,9 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_LR, REG_SPBASE, -STACK_ALIGN, INS_OPTS_PRE_INDEX);
     m_compiler->unwindSaveRegPreindexed(REG_LR, -STACK_ALIGN);
 
-    if (genFuncletInfo.fiOutgoingArgSpace > 0)
+    if (genFuncletInfo.fiSpDelta > 0)
     {
-        genStackPointerAdjustment(-(int)genFuncletInfo.fiOutgoingArgSpace, REG_R2, nullptr,
+        genStackPointerAdjustment(-(int)genFuncletInfo.fiSpDelta, REG_R2, nullptr,
                                   /* reportUnwindData */ true);
     }
 
@@ -1246,9 +1246,9 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 
     m_compiler->unwindBegEpilog();
 
-    if (genFuncletInfo.fiOutgoingArgSpace > 0)
+    if (genFuncletInfo.fiSpDelta > 0)
     {
-        genStackPointerAdjustment((int)genFuncletInfo.fiOutgoingArgSpace, REG_R2, nullptr,
+        genStackPointerAdjustment((int)genFuncletInfo.fiSpDelta, REG_R2, nullptr,
                                   /* reportUnwindData */ true);
     }
 
@@ -1286,14 +1286,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     assert(m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT);
 
     assert(m_compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
-    genFuncletInfo.fiOutgoingArgSpace = roundUp(m_compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
+    genFuncletInfo.fiSpDelta = roundUp(m_compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("\n");
         printf("Funclet prolog / epilog info\n");
-        printf("              Outgoing arg space: %u\n", genFuncletInfo.fiOutgoingArgSpace);
+        printf("              Outgoing arg space: %u\n", genFuncletInfo.fiSpDelta);
     }
 #endif // DEBUG
 }

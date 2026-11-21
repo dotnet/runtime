@@ -25,6 +25,7 @@
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/thread.h>
 #include <minipal/time.h>
+#include <minipal/cgroup.h>
 #include <minipal/cpucount.h>
 
 #if HAVE_SWAPCTL
@@ -90,7 +91,6 @@ typedef cpuset_t cpu_set_t;
 #include <errno.h>
 #include <unistd.h> // sysconf
 #include "globals.h"
-#include "cgroup.h"
 
 #ifndef __APPLE__
 #if HAVE_SYSCONF && HAVE__SC_AVPHYS_PAGES
@@ -113,9 +113,6 @@ uint32_t g_totalCpuCount = 0;
 
 // The number of CPUs that are configured in the OS.
 uint32_t g_configuredCpuCount = 0;
-
-size_t GetRestrictedPhysicalMemoryLimit();
-bool GetPhysicalMemoryUsed(size_t* val);
 
 static size_t g_RestrictedPhysicalMemoryLimit = 0;
 
@@ -178,7 +175,7 @@ bool GCToOSInterface::Initialize()
         return false;
     }
 
-    InitializeCGroup();
+    minipal_cgroup_initialize();
 
 #if HAVE_SCHED_GETAFFINITY
 
@@ -287,7 +284,7 @@ bool GCToOSInterface::Initialize()
 // Shutdown the interface implementation
 void GCToOSInterface::Shutdown()
 {
-    CleanupCGroup();
+    minipal_cgroup_cleanup();
 }
 
 // Get numeric id of the current thread if possible on the
@@ -324,6 +321,12 @@ uint32_t GCToOSInterface::GetCurrentProcessorNumber()
     int processorNumber = sched_getcpu();
     assert(processorNumber != -1);
     return processorNumber;
+#elif HAVE_PTHREAD_CPU_NUMBER_NP
+    size_t processorNumber;
+    int error = pthread_cpu_number_np(&processorNumber);
+    assert(error == 0);
+    (void)error;
+    return (uint32_t)processorNumber;
 #else
     assert(false); // This method is expected to be called only if CanGetCurrentProcessorNumber is true
     return 0;
@@ -333,7 +336,7 @@ uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 // Check if the OS supports getting current processor number
 bool GCToOSInterface::CanGetCurrentProcessorNumber()
 {
-    return HAVE_SCHED_GETCPU;
+    return HAVE_SCHED_GETCPU || HAVE_PTHREAD_CPU_NUMBER_NP;
 }
 
 // Break into a debugger. Uses a compiler intrinsic if one is available,
@@ -669,6 +672,104 @@ done:
     return result;
 }
 
+static size_t GetRestrictedPhysicalMemoryLimit()
+{
+#if defined(TARGET_LINUX)
+    uint64_t physical_memory_limit = 0;
+
+    if (!minipal_cgroup_get_memory_limit(&physical_memory_limit))
+         return 0;
+
+    // If there's no memory limit specified on the container this
+    // actually returns 0x7FFFFFFFFFFFF000 (2^63-1 rounded down to
+    // 4k which is a common page size). So we know we are not
+    // running in a memory restricted environment.
+    if (physical_memory_limit > 0x7FFFFFFF00000000)
+    {
+        return 0;
+    }
+
+    struct rlimit curr_rlimit;
+    size_t rlimit_soft_limit = (size_t)RLIM_INFINITY;
+    if (getrlimit(RLIMIT_AS, &curr_rlimit) == 0)
+    {
+        rlimit_soft_limit = curr_rlimit.rlim_cur;
+    }
+    physical_memory_limit = (physical_memory_limit < rlimit_soft_limit) ?
+                            physical_memory_limit : rlimit_soft_limit;
+
+    // Ensure that limit is not greater than real memory size
+    long pages = sysconf(_SC_PHYS_PAGES);
+    if (pages != -1)
+    {
+        long pageSize = sysconf(_SC_PAGE_SIZE);
+        if (pageSize != -1)
+        {
+            physical_memory_limit = (physical_memory_limit < (size_t)pages * pageSize)?
+                                    physical_memory_limit : (size_t)pages * pageSize;
+        }
+    }
+
+    if (physical_memory_limit > SIZE_MAX)
+    {
+        // It is observed in practice when the memory is unrestricted, Linux control
+        // group returns a physical limit that is bigger than the address space
+        return SIZE_MAX;
+    }
+    else
+    {
+        return (size_t)physical_memory_limit;
+    }
+#else // TARGET_LINUX
+    return 0;
+#endif // TARGET_LINUX
+}
+
+static bool GetPhysicalMemoryUsed(size_t* val)
+{
+#if defined(TARGET_LINUX)
+    bool result = false;
+    size_t linelen;
+    char* line = nullptr;
+
+    // Linux uses cgroup usage to trigger oom kills.
+    uint64_t usage;
+    if (minipal_cgroup_get_memory_usage(&usage))
+    {
+        *val = (usage > SIZE_MAX) ? SIZE_MAX : (size_t)usage;
+        return true;
+    }
+
+    // process resident set size.
+    FILE* file = fopen("/proc/self/statm", "r");
+    if (file != nullptr && getline(&line, &linelen, file) != -1)
+    {
+        char* context = nullptr;
+        char* strTok = strtok_r(line, " ", &context);
+        strTok = strtok_r(nullptr, " ", &context);
+
+        errno = 0;
+        *val = strtoull(strTok, nullptr, 0);
+        if (errno == 0)
+        {
+            long pageSize = sysconf(_SC_PAGE_SIZE);
+            if (pageSize != -1)
+            {
+                *val = *val * pageSize;
+                result = true;
+            }
+        }
+    }
+
+    if (file)
+        fclose(file);
+    free(line);
+    return result;
+#else // TARGET_LINUX
+    return false;
+#endif // TARGET_LINUX
+}
+
 static void GetLogicalProcessorCacheSizeFromSysConf(size_t* cacheLevel, size_t* cacheSize)
 {
     assert (cacheLevel != nullptr);
@@ -895,6 +996,12 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 
     // printf("GetCacheSizePerLogicalCpu returns %zu, adjusted size %zu\n", maxSize, maxTrueSize);
     return trueSize ? maxTrueSize : maxSize;
+}
+
+// Check if the OS supports setting thread affinity
+bool GCToOSInterface::CanSetThreadAffinity()
+{
+    return HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP;
 }
 
 // Sets the calling thread's affinity to only run on the processor specified
