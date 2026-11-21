@@ -471,6 +471,10 @@ publishing, and development builds with this property set. Use a wasm-capable
 crossgen2 matching the runtime. Instrumented ReadyToRun images carry their counter
 schemas in section 129, using format 34.2.
 
+Standalone Wasm cross-JITs enable the R2R profiling capability independently of
+the build host OS. Runtime counter storage and publishing remain limited to
+single-threaded Browser/CoreCLR applications.
+
 Run the published app in Chrome (or another supported browser), exercise representative
 workloads, and call:
 
