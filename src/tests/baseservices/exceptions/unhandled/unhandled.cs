@@ -18,6 +18,9 @@ namespace TestUnhandledException
         [DllImport("unhandlednative")]
         public static extern void InvokeCallbackOnNewThread(delegate*unmanaged<void> callBack);
 
+        [DllImport("unhandlednative")]
+        public static extern void NativeTrap();
+
         private const string INTERNAL_CALL = "__internal";
 
         [SuppressGCTransition]
@@ -61,6 +64,10 @@ namespace TestUnhandledException
             else if (args[0] == "foreign")
             {
                 InvokeCallbackOnNewThread(&ThrowException);
+            }
+            else if (args[0] == "nativetrap")
+            {
+                NativeTrap();
             }
             else if (args[0] == "secondary")
             {

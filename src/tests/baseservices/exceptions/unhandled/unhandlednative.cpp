@@ -30,6 +30,11 @@ void* InvokeCallbackUnix(void* callback)
 
 #define AbortIfFail(st) if (st != 0) abort()
 
+extern "C" DLL_EXPORT void NativeTrap()
+{
+    __builtin_trap();
+}
+
 #endif // !_WIN32
 
 extern "C" DLL_EXPORT void InvokeCallbackOnNewThread(PFNACTION1 callback)
