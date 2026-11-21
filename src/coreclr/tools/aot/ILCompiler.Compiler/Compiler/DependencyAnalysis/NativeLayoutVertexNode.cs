@@ -625,10 +625,9 @@ namespace ILCompiler.DependencyAnalysis
             if (method.IsVirtual)
                 return true;
 
-            // MethodImpls for static virtual methods need to store this too
-            // Unfortunately we can't test for "is this a MethodImpl?" here (the method could be a MethodImpl
-            // in a derived class but not in the current class).
-            if (method.Signature.IsStatic && !method.OwningType.IsInterface)
+            // Static methods can implement interface slots, including defaults declared on interfaces.
+            // We cannot tell here whether a method is used as a MethodImpl.
+            if (method.Signature.IsStatic)
                 return true;
 
             return false;

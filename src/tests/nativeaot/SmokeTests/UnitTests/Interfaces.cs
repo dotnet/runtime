@@ -1945,11 +1945,11 @@ public class Interfaces
             // Just to make sure this cannot be devirtualized.
             s_ensure.Enter1<ISimpleCall>("One");
 
-            //Console.WriteLine(s_entry.Enter1<ISimpleCall>("One"));
-            //Console.WriteLine(s_entry.Enter1<ISimpleCallOverride>("One"));
-            //Console.WriteLine(s_entry.Enter1<ISimpleCallGenericOverride<object>>("One"));
+            Console.WriteLine(s_entry.Enter1<ISimpleCall>("One"));
+            Console.WriteLine(s_entry.Enter1<ISimpleCallOverride>("One"));
+            Console.WriteLine(s_entry.Enter1<ISimpleCallGenericOverride<object>>("One"));
             Console.WriteLine(s_entry.Enter1<SimpleCallClass>("One"));
-            //Console.WriteLine(s_entry.Enter1<SimpleCallGenericClass<object>>("One"));
+            Console.WriteLine(s_entry.Enter1<SimpleCallGenericClass<object>>("One"));
             Console.WriteLine(s_entry.Enter1<SimpleCallStruct<object>>("One"));
         }
     }

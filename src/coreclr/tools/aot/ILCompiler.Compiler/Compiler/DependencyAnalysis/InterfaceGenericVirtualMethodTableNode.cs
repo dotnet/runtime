@@ -20,13 +20,13 @@ namespace ILCompiler.DependencyAnalysis
     {
         private ExternalReferencesTableNode _externalReferences;
         private Dictionary<MethodDesc, HashSet<object>> _interfaceGvmSlots;
-        private Dictionary<object, Dictionary<TypeDesc, HashSet<int>>> _interfaceImpls;
+        private Dictionary<object, Dictionary<TypeDesc, HashSet<TypeDesc>>> _interfaceImpls;
 
         public InterfaceGenericVirtualMethodTableNode(ExternalReferencesTableNode externalReferences)
         {
             _externalReferences = externalReferences;
             _interfaceGvmSlots = new Dictionary<MethodDesc, HashSet<object>>();
-            _interfaceImpls = new Dictionary<object, Dictionary<TypeDesc, HashSet<int>>>();
+            _interfaceImpls = new Dictionary<object, Dictionary<TypeDesc, HashSet<TypeDesc>>>();
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -52,8 +52,8 @@ namespace ILCompiler.DependencyAnalysis
 
             // Compute the open method signatures
             MethodDesc openCallingMethod = callingMethod.GetTypicalMethodDefinition();
-            TypeDesc openImplementationType = implementationType.GetTypeDefinition();
 
+            dependencies.Add(factory.NecessaryTypeSymbol(implementationType.GetTypeDefinition()), "Interface GVM implementation type");
             factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, openCallingMethod);
 
             // Implementation could be null if this is a default interface method reabstraction or diamond. We need to record those.
@@ -65,18 +65,8 @@ namespace ILCompiler.DependencyAnalysis
                 factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, openImplementationMethod);
             }
 
-            if (!openImplementationType.IsInterface)
-            {
-                for (int index = 0; index < openImplementationType.RuntimeInterfaces.Length; index++)
-                {
-                    if (openImplementationType.RuntimeInterfaces[index] == callingMethod.OwningType)
-                    {
-                        TypeDesc currentInterface = openImplementationType.RuntimeInterfaces[index];
-                        var currentInterfaceSignature = factory.NativeLayout.TypeSignatureVertex(currentInterface);
-                        dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(currentInterfaceSignature), "interface gvm table interface signature"));
-                    }
-                }
-            }
+            var currentInterfaceSignature = factory.NativeLayout.TypeSignatureVertex(callingMethod.OwningType);
+            dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(currentInterfaceSignature), "interface gvm table interface signature"));
         }
 
         private void AddGenericVirtualMethodImplementation(MethodDesc callingMethod, TypeDesc implementationType, MethodDesc implementationMethod, DefaultInterfaceMethodResolution resolution)
@@ -93,29 +83,14 @@ namespace ILCompiler.DependencyAnalysis
                 _interfaceGvmSlots[openCallingMethod] = new HashSet<object>();
             _interfaceGvmSlots[openCallingMethod].Add(openImplementationMethod);
 
-            // If the implementation method is implementing some interface method, compute which
-            // interface explicitly implemented on the type that the current method implements an interface method for.
-            // We need this because at runtime, the interfaces explicitly implemented on the type will have
-            // runtime-determined signatures that we can use to make generic substitutions and check for interface matching.
-            if (!openImplementationType.IsInterface)
-            {
-                if (!_interfaceImpls.ContainsKey(openImplementationMethod))
-                    _interfaceImpls[openImplementationMethod] = new Dictionary<TypeDesc, HashSet<int>>();
-                if (!_interfaceImpls[openImplementationMethod].ContainsKey(openImplementationType))
-                    _interfaceImpls[openImplementationMethod][openImplementationType] = new HashSet<int>();
+            // Runtime resolution substitutes the implementation type's arguments into this
+            // interface signature, which may name the implementation type itself.
+            if (!_interfaceImpls.ContainsKey(openImplementationMethod))
+                _interfaceImpls[openImplementationMethod] = new Dictionary<TypeDesc, HashSet<TypeDesc>>();
+            if (!_interfaceImpls[openImplementationMethod].ContainsKey(openImplementationType))
+                _interfaceImpls[openImplementationMethod][openImplementationType] = new HashSet<TypeDesc>();
 
-                int numIfacesAdded = 0;
-                for (int index = 0; index < openImplementationType.RuntimeInterfaces.Length; index++)
-                {
-                    if (openImplementationType.RuntimeInterfaces[index] == callingMethod.OwningType)
-                    {
-                        _interfaceImpls[openImplementationMethod][openImplementationType].Add(index);
-                        numIfacesAdded++;
-                    }
-                }
-
-                Debug.Assert(numIfacesAdded > 0);
-            }
+            _interfaceImpls[openImplementationMethod][openImplementationType].Add(callingMethod.OwningType);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -202,11 +177,9 @@ namespace ILCompiler.DependencyAnalysis
 
                             // Emit information on which interfaces the current method entry provides implementations for
                             vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant((uint)currentImpl.Value.Count));
-                            foreach (var ifaceId in currentImpl.Value)
+                            foreach (TypeDesc currentInterface in currentImpl.Value)
                             {
                                 // Emit the signature of the current interface implemented by the method
-                                Debug.Assert(((uint)ifaceId) < implementationType.RuntimeInterfaces.Length);
-                                TypeDesc currentInterface = implementationType.RuntimeInterfaces[ifaceId];
                                 var typeSig = factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.TypeSignatureVertex(currentInterface));
                                 vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant((uint)typeSig.SavedVertex.VertexOffset));
                             }
