@@ -17631,7 +17631,8 @@ bool emitter::OptimizeLdrStr(instruction ins,
     // Don't run IsRedundantLdStr if LastIns and ins have mismatching GC info. Uncommon, but needed for cases like
     // 'foo(object? o) => *(nint*)&o;' where we must stop GC tracking.
     GCtype gcType = EA_IS_GCREF(reg1Attr) ? GCT_GCREF : (EA_IS_BYREF(reg1Attr) ? GCT_BYREF : GCT_NONE);
-    if ((emitLastIns->idGCref() == gcType) && IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+    // The emitted instruction stores an SP base encoded as ZR, so normalize reg2 to match.
+    if ((emitLastIns->idGCref() == gcType) && IsRedundantLdStr(ins, reg1, encodingSPtoZR(reg2), imm, size, fmt))
     {
         return true;
     }
