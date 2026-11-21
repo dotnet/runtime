@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-browser</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TestRuntime>true</TestRuntime>
+    <WasmMainJSPath>$(MSBuildThisFileDirectory)appsettings-main.mjs</WasmMainJSPath>
+    <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
+    <!-- The implementation project reference requires suppressing NU1511 project-wide. -->
+    <NoWarn>$(NoWarn);NU1511</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="AppSettingsTests.cs" />
+    <Content Include="appsettings-main.mjs" />
+    <Content Include="wwwroot\appsettings*.json" CopyToOutputDirectory="PreserveNewest" />
+    <WasmExtraFilesToDeploy Include="wwwroot\appsettings*.json" />
+    <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true" />
+  </ItemGroup>
+
+</Project>

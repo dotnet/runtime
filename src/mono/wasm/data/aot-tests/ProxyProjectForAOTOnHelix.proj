@@ -39,7 +39,9 @@
     <PropertyGroup>
       <WasmAppDir>$(TestRootDir)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName>WasmTestRunner.dll</WasmMainAssemblyFileName>
-      <WasmMainJSPath>$(OriginalPublishDir)test-main.mjs</WasmMainJSPath>
+      <WasmMainJSFileName Condition="'$(_WasmMainJSFileNameForHelix)' == ''">test-main.mjs</WasmMainJSFileName>
+      <WasmMainJSFileName Condition="'$(_WasmMainJSFileNameForHelix)' != ''">$([System.Uri]::UnescapeDataString('$(_WasmMainJSFileNameForHelix)'))</WasmMainJSFileName>
+      <WasmMainJSPath>$(OriginalPublishDir)$(WasmMainJSFileName)</WasmMainJSPath>
       <WasmGenerateRunV8Script Condition="'$(WasmGenerateRunV8Script)' == ''">true</WasmGenerateRunV8Script>
     </PropertyGroup>
 
