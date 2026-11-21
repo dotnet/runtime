@@ -1291,6 +1291,8 @@ namespace ILCompiler.DependencyAnalysis
             return _reflectedDelegates.GetOrAdd(type);
         }
 
+        public readonly DelegateInvokeReflectedOnUnknownTypeNode DelegateInvokeReflectedOnUnknownType = new DelegateInvokeReflectedOnUnknownTypeNode();
+
         private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;
         public ReflectedMethodNode ReflectedMethod(MethodDesc method)
         {
