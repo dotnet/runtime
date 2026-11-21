@@ -8473,6 +8473,30 @@ invoke_foreign_delegate (void *user_data)
 	return NULL;
 }
 
+#else
+static DWORD WINAPI
+invoke_foreign_thread (void* user_data)
+{
+	struct invoke_names *names = (struct invoke_names*)user_data;
+	for (int i = 0; i < 5; ++i) {
+		test_invoke_by_name (names);
+		Sleep (2000);
+	}
+	destroy_invoke_names (names);
+	return 0;
+}
+
+static DWORD WINAPI
+invoke_foreign_delegate (void *user_data)
+{
+	VoidVoidCallback del = (VoidVoidCallback)user_data;
+	for (int i = 0; i < 5; ++i) {
+		del ();
+		Sleep (2000);
+	}
+	return 0;
+}
+
 #endif
 
 
@@ -8495,8 +8519,20 @@ mono_test_attach_invoke_foreign_thread (const char *assm_name, const char *name_
 		return 0;
 	}
 #else
-	// TODO: Win32 version of this test
-	return 1;
+	if (!del) {
+		struct invoke_names *names = make_invoke_names (assm_name, name_space, name, meth_name);
+	 HANDLE t = CreateThread (NULL, 0, invoke_foreign_thread, (void*)names, 0, NULL);
+		g_assert (t != NULL);
+		WaitForSingleObject (t, INFINITE);
+		CloseHandle (t);
+		return 0;
+	} else {
+	 HANDLE t = CreateThread (NULL, 0, invoke_foreign_delegate, (void*)del, 0, NULL);
+		g_assert (t != NULL);
+		WaitForSingleObject (t, INFINITE);
+		CloseHandle (t);
+		return 0;
+	}
 #endif
 }
 
@@ -8531,6 +8567,33 @@ invoke_block_foreign_thread (void *user_data)
 	pthread_mutex_lock (&nm->deadlock_mutex); // blocks forever
 	g_assert_not_reached ();
 }
+#else
+struct names_and_mutex {
+	/* if del is NULL, use names, otherwise just call del */
+	VoidVoidCallback del;
+	struct invoke_names *names;
+	/* event to coordinate test and foreign thread */
+ HANDLE coord_event;
+	/* mutex to block the foreign thread */
+ HANDLE deadlock_mutex;
+};
+
+static DWORD WINAPI
+invoke_block_foreign_thread (void *user_data)
+{
+	// This thread calls into the runtime and then blocks. It should not
+	// prevent the runtime from shutting down.
+	struct names_and_mutex *nm = (struct names_and_mutex *)user_data;
+	if (!nm->del) {
+		test_invoke_by_name (nm->names);
+	} else {
+		nm->del ();
+	}
+	SetEvent (nm->coord_event); /* signal the test thread that we called the runtime */
+
+	WaitForSingleObject (nm->deadlock_mutex, INFINITE); // blocks forever
+	g_assert_not_reached ();
+}
 #endif
 
 LIBTEST_API mono_bool STDCALL
@@ -8562,8 +8625,36 @@ mono_test_attach_invoke_block_foreign_thread (const char *assm_name, const char 
 	pthread_detach (t);
 	return 0;
 #else
-	// TODO: Win32 version of this test
-	return 1;
+	struct names_and_mutex *nm = malloc (sizeof (struct names_and_mutex));
+	nm->del = del;
+	if (!del) {
+		struct invoke_names *names = make_invoke_names (assm_name, name_space, name, meth_name);
+		nm->names = names;
+	} else {
+		nm->names = NULL;
+	}
+	nm->coord_event = CreateEvent (NULL, FALSE, FALSE, NULL);
+	g_assert (nm->coord_event != NULL);
+	nm->deadlock_mutex = CreateMutex (NULL, FALSE, NULL);
+	g_assert (nm->deadlock_mutex != NULL);
+
+	/* lock the mutex and never unlock it. */
+	WaitForSingleObject (nm->deadlock_mutex, INFINITE);
+
+ HANDLE t = CreateThread (NULL, 0, invoke_block_foreign_thread, (void*)nm, 0, NULL);
+	g_assert (t != NULL);
+	/* wait for the foreign thread to finish calling the runtime before
+	 * detaching it and returning
+	 */
+	WaitForSingleObject (nm->coord_event, INFINITE);
+	CloseHandle (nm->coord_event);
+	/* the foreign thread is now blocked on the mutex forever; detach it
+	 * so the runtime can shut down without waiting for it.
+	 */
+	CloseHandle (t);
+	/* the mutex is leaked (and the foreign thread is blocked on it), which
+	 * is the point of the test. */
+	return 0;
 #endif
 }
 
