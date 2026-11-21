@@ -40,6 +40,10 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                     }
                     break;
 
+                case Architecture.Wasm64:
+                    Assert.Equal(Architecture.Wasm64, processArch);
+                    break;
+
                 case Architecture.Wasm:
                     Assert.Equal(Architecture.Wasm, processArch);
                     break;
@@ -73,12 +77,20 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.Equal(processArch, RuntimeInformation.ProcessArchitecture);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
         [PlatformSpecific(TestPlatforms.Browser)]
         public void VerifyBrowserArchitecture()
         {
             Assert.Equal(Architecture.Wasm, RuntimeInformation.OSArchitecture);
             Assert.Equal(Architecture.Wasm, RuntimeInformation.ProcessArchitecture);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [PlatformSpecific(TestPlatforms.Browser)]
+        public void VerifyBrowserWasm64Architecture()
+        {
+            Assert.Equal(Architecture.Wasm64, RuntimeInformation.OSArchitecture);
+            Assert.Equal(Architecture.Wasm64, RuntimeInformation.ProcessArchitecture);
         }
     }
 }
