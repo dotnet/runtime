@@ -19,6 +19,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     [StructLayout(LayoutKind.Explicit, Size = 2 * PaddingHelpers.CACHE_LINE_SIZE)]
     internal struct PaddedInt64
     {
+        /// <safety>The only field of this padding struct, so it never overlaps another field.</safety>
         [FieldOffset(PaddingHelpers.CACHE_LINE_SIZE)]
         internal safe long Value;
     }

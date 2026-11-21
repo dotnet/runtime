@@ -11,10 +11,14 @@ namespace System.Tests
         [Fact]
         public static void IsInvariant()
         {
-            Assert.True(GetInvariant(null));
+            // SAFETY: To be audited
+            unsafe
+            {
+                Assert.True(GetInvariant(null));
+            }
 
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_Invariant")]
-            static safe extern bool GetInvariant(TimeZoneInfo t);
+            static unsafe extern bool GetInvariant(TimeZoneInfo t);
         }
 
         [Fact]

@@ -19,10 +19,14 @@ public class WasmTestRunner : WasmApplicationEntryPoint
 #if TARGET_WASI
     public static int Main(string[] args)
     {
-        return PollWasiEventLoopUntilResolved((Thread)null!, MainAsync(args));
+        // SAFETY: To be audited
+        unsafe
+        {
+            return PollWasiEventLoopUntilResolved((Thread)null!, MainAsync(args));
+        }
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "PollWasiEventLoopUntilResolved")]
-        static safe extern T PollWasiEventLoopUntilResolved<T>(Thread t, Task<T> mainTask);
+        static unsafe extern T PollWasiEventLoopUntilResolved<T>(Thread t, Task<T> mainTask);
     }
 
 

@@ -23,17 +23,17 @@ namespace System.Threading.Channels.Tests
 
             [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
             [return: UnsafeAccessorType(BlockedReadAsyncOperationTypeName)]
-            internal static extern safe object CreateBlockedReadAsyncOperation(
+            internal static extern object CreateBlockedReadAsyncOperation(
                 bool runContinuationsAsynchronously,
                 CancellationToken cancellationToken,
                 bool pooled,
                 Action<object, CancellationToken> cancellationCallback);
 
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "TryReserveCompletionIfCancelable")]
-            internal static extern safe bool TryReserveCompletionIfCancelable([UnsafeAccessorType(AsyncOperationTypeName)] object operation);
+            internal static extern bool TryReserveCompletionIfCancelable([UnsafeAccessorType(AsyncOperationTypeName)] object operation);
 
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "TrySetCanceled")]
-            internal static extern safe bool TrySetCanceled(
+            internal static extern bool TrySetCanceled(
                 [UnsafeAccessorType(AsyncOperationTypeName)] object operation,
                 CancellationToken cancellationToken);
         }
