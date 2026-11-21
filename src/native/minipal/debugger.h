@@ -27,7 +27,7 @@ bool minipal_is_native_debugger_present(void);
 
 /**
  * Send a string to the attached debugger. On Windows this is OutputDebugStringA. Elsewhere there is
- * no debugger channel, so the string is written to stderr when PAL_OUTPUTDEBUGSTRING is set.
+ * no debugger channel, so the string is dropped (WASI writes it to stderr).
  *
  * @param message The string to send.
  */
