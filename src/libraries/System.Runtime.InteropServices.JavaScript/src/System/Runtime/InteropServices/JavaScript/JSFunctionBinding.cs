@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -198,6 +199,26 @@ namespace System.Runtime.InteropServices.JavaScript
             // on wrong thread, in which case we will bind it to UI thread
 
             return JSHostImplementation.BindManagedFunction(fullyQualifiedName, signatureHash, signatures);
+        }
+
+        /// <summary>
+        /// Binds a specific managed function wrapper so that it can later be invoked by JavaScript callers.
+        /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
+        /// </summary>
+        /// <param name="fullyQualifiedName">The fully qualified name of the exported method.</param>
+        /// <param name="signatureHash">The hash of the signature metadata.</param>
+        /// <param name="signatures">The metadata about the signature of the marshaled parameters.</param>
+        /// <param name="callback">The generated wrapper that marshals the arguments and invokes the exported method.</param>
+        /// <returns>The method metadata.</returns>
+        /// <exception cref="PlatformNotSupportedException">The method is executed on architecture other than WebAssembly.</exception>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [DebuggerNonUserCode]
+        public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures, delegate*<JSMarshalerArgument*, void> callback)
+        {
+            if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
+                throw new PlatformNotSupportedException();
+
+            return JSHostImplementation.BindManagedFunction(fullyQualifiedName, signatureHash, signatures, callback);
         }
 
 #if !DEBUG

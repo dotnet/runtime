@@ -40,6 +40,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSObject.References.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSType.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSFunctionBinding.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSExportProvider.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSHostImplementation.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSHostImplementation.Exports.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSHostImplementation.Mono.cs" Condition="'$(RuntimeFlavor)' == 'Mono'" />

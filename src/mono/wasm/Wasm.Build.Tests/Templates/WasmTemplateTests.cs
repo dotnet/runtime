@@ -6,11 +6,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using SL = Microsoft.Build.Logging.StructuredLogger;
 
 #nullable enable
 
@@ -398,6 +400,25 @@ namespace Wasm.Build.Tests
                 PublishProject(info, config, new PublishOptions(AssertAppBundle: useWasmSdk));
             else
                 BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk));
+
+            if (IsCoreClrRuntime && useWasmSdk && isPublish)
+            {
+                SL.Build build = SL.BinaryLog.ReadBuild(Path.Combine(_logPath, $"{info.ProjectName}-publish.binlog"));
+                List<string> linkerArgs = [];
+                build.VisitAllChildren<SL.Task>(task =>
+                {
+                    if (task.Name != "ILLink")
+                        return;
+                    task.VisitAllChildren<SL.Property>(parameter =>
+                    {
+                        if (parameter.Name == "ExtraArgs")
+                            linkerArgs.Add(parameter.Value);
+                    });
+                });
+                string args = Assert.Single(linkerArgs);
+                Match entryAssembly = Assert.Single(Regex.Matches(args, """--typemap-entry-assembly\s+(?:"([^"]+)"|(\S+))""").Cast<Match>());
+                Assert.Equal(info.ProjectName, entryAssembly.Groups[1].Success ? entryAssembly.Groups[1].Value : entryAssembly.Groups[2].Value);
+            }
 
             if (useWasmSdk)
             {

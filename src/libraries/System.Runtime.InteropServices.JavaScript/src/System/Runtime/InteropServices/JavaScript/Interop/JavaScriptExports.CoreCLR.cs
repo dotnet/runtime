@@ -149,14 +149,17 @@ namespace System.Runtime.InteropServices.JavaScript
         [UnmanagedCallersOnly(EntryPoint = "SystemInteropJS_CallJSExport")]
         public static void CallJSExport(int methodHandle, JSMarshalerArgument* argumentsBuffer)
         {
-            ref JSMarshalerArgument argException = ref argumentsBuffer[0]; // initialized by caller in alloc_stack_frame()
-            var ctx = argException.AssertCurrentThreadContext();
-            if (!ctx.TryGetJSExport(methodHandle, out var jsExport))
+            ref JSMarshalerArgument exception = ref argumentsBuffer[0];
+            var ctx = exception.AssertCurrentThreadContext();
+            if (!ctx.TryGetJSExport(methodHandle, out var entry))
             {
-                argException.ToJS(new InvalidOperationException("Unable to resolve JSExport by handle"));
+                exception.ToJS(new InvalidOperationException(SR.JSExportMissingBinding));
                 return;
             }
-            jsExport(new IntPtr(argumentsBuffer));
+            if (entry.Callback == null && !JSHostImplementation.TryBindJSExport(ctx, methodHandle, argumentsBuffer, out entry))
+                return;
+
+            entry.Callback(argumentsBuffer);
         }
     }
 }

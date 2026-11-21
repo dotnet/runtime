@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net12.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\App\Common\TestOutput.cs" Link="TestOutput.cs" />
+  </ItemGroup>
+  <Import Project="..\JSExportTests.targets" />
+</Project>

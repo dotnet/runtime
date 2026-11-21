@@ -3,6 +3,9 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Testing;
+using Microsoft.CodeAnalysis.Testing;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Threading.Tasks;
@@ -90,6 +93,85 @@ namespace JSImportGenerator.Unit.Tests
             // The errors should indicate the AllowUnsafeBlocks is required.
             Assert.True(analyzerDiags.Single(d => d.Id == "SYSLIB1074") != null);
             Assert.True(analyzerDiags.Single(d => d.Id == "SYSLIB1075") != null);
+        }
+
+        [Fact]
+        public async Task JSExportInInaccessibleNestedTypeDoesNotWarn()
+        {
+            string source = """
+                using System.Runtime.InteropServices.JavaScript;
+                partial class Outer
+                {
+                    private partial class Inner
+                    {
+                        [JSExport]
+                        internal static void Export() { }
+                    }
+                }
+                """;
+            await new ExportAnalyzerTest { TestCode = source }.RunAsync();
+        }
+
+        public static IEnumerable<object[]> NonReferenceableExportSources()
+        {
+            yield return
+            [
+                """
+                using System.Runtime.InteropServices.JavaScript;
+                partial class Outer<T>
+                {
+                    [JSExport]
+                    internal static void {|SYSLIB1076:Export|}() { }
+                }
+                """,
+            ];
+            yield return
+            [
+                """
+                using System.Runtime.InteropServices.JavaScript;
+                file partial class FileLocal
+                {
+                    [JSExport]
+                    internal static void {|SYSLIB1076:Export|}() { }
+                }
+                """,
+            ];
+        }
+
+        [Theory]
+        [MemberData(nameof(NonReferenceableExportSources))]
+        public async Task JSExportInNonReferenceableTypeWarns(string source)
+        {
+            await new ExportAnalyzerTest { TestCode = source }.RunAsync();
+        }
+
+        [Fact]
+        public async Task JSExportInAccessibleNestedTypeDoesNotWarn()
+        {
+            string source = """
+                using System.Runtime.InteropServices.JavaScript;
+                public partial class Outer
+                {
+                    internal partial class Inner
+                    {
+                        [JSExport]
+                        internal static void Export() { }
+                    }
+                }
+                """;
+            await new ExportAnalyzerTest { TestCode = source }.RunAsync();
+        }
+
+        private sealed class ExportAnalyzerTest : CSharpAnalyzerTest<Microsoft.Interop.JavaScript.JSExportDiagnosticsAnalyzer, DefaultVerifier>
+        {
+            public ExportAnalyzerTest()
+            {
+                ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
+                TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
+            }
+
+            protected override CompilationOptions CreateCompilationOptions() =>
+                ((CSharpCompilationOptions)base.CreateCompilationOptions()).WithAllowUnsafe(true);
         }
 
         private static Task<ImmutableArray<Diagnostic>> RunAnalyzerAsync(Compilation comp)

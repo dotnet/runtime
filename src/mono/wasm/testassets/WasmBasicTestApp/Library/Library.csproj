@@ -4,4 +4,8 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TestJSExportProviders)' != 'true'">
+    <Compile Remove="JSExports.cs" />
+  </ItemGroup>
+  <Import Project="..\JSExportTests.targets" Condition="'$(TestJSExportProviders)' == 'true'" />
 </Project>

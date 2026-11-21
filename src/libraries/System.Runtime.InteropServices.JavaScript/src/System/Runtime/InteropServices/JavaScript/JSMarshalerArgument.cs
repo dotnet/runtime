@@ -20,6 +20,48 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal JSMarshalerArgumentImpl slot;
 
+        internal unsafe void ReleaseJSExportArgument()
+        {
+            switch (slot.Type)
+            {
+                case MarshalerType.Array:
+                    if (slot.ElementType is MarshalerType.String or MarshalerType.Object or MarshalerType.JSObject)
+                    {
+                        var elements = (JSMarshalerArgument*)slot.IntPtrValue;
+                        for (int index = 0; index < slot.Length; index++)
+                            elements[index].ReleaseJSExportArgument();
+#if !ENABLE_JS_INTEROP_BY_VALUE
+                        if (slot.ElementType is MarshalerType.String or MarshalerType.Object)
+                            Interop.Runtime.DeregisterGCRoot(slot.IntPtrValue);
+#endif
+                    }
+                    NativeMemory.Free((void*)slot.IntPtrValue);
+                    break;
+                case MarshalerType.JSException:
+                    ToManagedContext.CreateCSOwnedProxy(slot.JSHandle);
+                    goto case MarshalerType.String;
+                case MarshalerType.String:
+#if ENABLE_JS_INTEROP_BY_VALUE
+                    NativeMemory.Free((void*)slot.IntPtrValue);
+#endif
+                    break;
+                case MarshalerType.JSObject:
+                case MarshalerType.Function:
+                case MarshalerType.Action:
+                    // Adopt handles for normal proxy finalization without disposing shared proxies.
+                    ToManagedContext.CreateCSOwnedProxy(slot.JSHandle);
+                    break;
+                case MarshalerType.Task:
+                    ToManaged(out System.Threading.Tasks.Task<object?>? _, static (ref JSMarshalerArgument argument, out object? value) =>
+                    {
+                        argument.ReleaseJSExportArgument();
+                        value = null;
+                    });
+                    break;
+            }
+            slot = default;
+        }
+
         // keep in sync with JSMarshalerArgumentOffsets in marshal.ts
         [StructLayout(LayoutKind.Explicit, Pack = 32, Size = 32)]
         internal struct JSMarshalerArgumentImpl

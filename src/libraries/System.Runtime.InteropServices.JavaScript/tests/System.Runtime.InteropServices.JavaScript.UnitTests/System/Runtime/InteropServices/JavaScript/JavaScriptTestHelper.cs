@@ -1302,8 +1302,37 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("setup", "JavaScriptTestHelper")]
         internal static partial Task Setup();
 
+        [JSImport("invokeDeferredFirstTask", "JavaScriptTestHelper")]
+        internal static partial Task<int> InvokeDeferredFirstTask();
+
+        [JSImport("registerPayloadFailure", "JavaScriptTestHelper")]
+        internal static unsafe partial void RegisterPayloadFailure(string assemblyName, int handle, void* signature);
+
+        [JSImport("invokePayloadFailure", "JavaScriptTestHelper")]
+        internal static partial Task<int> InvokePayloadFailure(string assemblyName, bool isAsync);
+
+        [JSImport("probePayloadReentry", "JavaScriptTestHelper")]
+        internal static partial void ProbePayloadReentry(string assemblyName);
+
+        [JSExport]
+        internal static async Task<int> DeferredFirstTask(int value)
+        {
+            await Task.Yield();
+            if (value < 0)
+                throw new InvalidOperationException("Deferred first-call failure");
+
+            return value + 1;
+        }
+
         [JSImport("INTERNAL.forceDisposeProxies")]
         internal static partial void ForceDisposeProxies(bool disposeMethods, bool verbose);
+
+        [JSImport("registerRawExportCatalog", "JavaScriptTestHelper")]
+        internal static partial void RegisterRawExportCatalog(string assemblyName, string[] exportNames);
+
+        [JSImport("inspectRawExportCatalog", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.String>>]
+        internal static partial Task<string> InspectRawExportCatalog(string assemblyName, string typeName);
 
         // [csOwnedByJsHandle, csOwnedByJsvHandle, jsOwnedRegistered, jsOwnedAlive, importWrappers]
         [JSImport("INTERNAL.getProxyCounts")]

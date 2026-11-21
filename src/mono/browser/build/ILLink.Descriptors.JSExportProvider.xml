@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="System.Runtime.InteropServices.JavaScript">
+    <type fullname="System.Runtime.InteropServices.JavaScript.JavaScriptExports">
+      <method name="BindAssemblyExports" />
+    </type>
+  </assembly>
+</linker>

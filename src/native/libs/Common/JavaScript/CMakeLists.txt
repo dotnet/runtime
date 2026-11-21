@@ -102,6 +102,7 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/cancelable-promise.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/cross-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/export-names.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/gc-handles.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/http.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/index.ts"

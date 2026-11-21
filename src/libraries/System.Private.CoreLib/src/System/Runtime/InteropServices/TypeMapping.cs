@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace System.Runtime.InteropServices
 {
@@ -18,9 +19,12 @@ namespace System.Runtime.InteropServices
         /// <typeparam name="TTypeMapGroup">Type map group</typeparam>
         /// <returns>Requested type map</returns>
         /// <remarks>
-        /// Call sites are treated as an intrinsic by the Trimmer and implemented inline.
+        /// Call sites are recognized by the Trimmer to preserve matching type-map entries.
         /// </remarks>
         [RequiresUnreferencedCode("Interop types may be removed by trimming")]
+#if CORECLR
+        [DynamicDependency(nameof(GetExternalTypeMappingForAssembly) + "``1", typeof(TypeMapping))]
+#endif
         public static IReadOnlyDictionary<string, Type> GetOrCreateExternalTypeMapping<TTypeMapGroup>()
         {
 #if MONO
@@ -30,13 +34,23 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
+#if CORECLR
+        [RequiresUnreferencedCode("Interop types may be removed by trimming")]
+        internal static Type? GetExternalTypeMappingForAssembly<TTypeMapGroup>(Assembly assembly, string key)
+        {
+            IReadOnlyDictionary<string, Type> map = TypeMapLazyDictionary.CreateExternalTypeMap(
+                (RuntimeType)typeof(TTypeMapGroup), (RuntimeAssembly)assembly);
+            return map.TryGetValue(key, out Type? type) ? type : null;
+        }
+#endif
+
         /// <summary>
         /// Returns the associated type type map generated for the current application.
         /// </summary>
         /// <typeparam name="TTypeMapGroup">Type map group</typeparam>
         /// <returns>Requested type map</returns>
         /// <remarks>
-        /// Call sites are treated as an intrinsic by the Trimmer and implemented inline.
+        /// Call sites are recognized by the Trimmer to preserve matching type-map entries.
         /// </remarks>
         [RequiresUnreferencedCode("Interop types may be removed by trimming")]
         public static IReadOnlyDictionary<Type, Type> GetOrCreateProxyTypeMapping<TTypeMapGroup>()
@@ -47,5 +61,6 @@ namespace System.Runtime.InteropServices
             return TypeMapLazyDictionary.CreateProxyTypeMap((RuntimeType)typeof(TTypeMapGroup));
 #endif
         }
+
     }
 }
