@@ -49,7 +49,7 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(utf8Json);
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
-            return jsonTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
+            return jsonTypeInfo.SerializeToStreamAsync(utf8Json, new TypedWriteRoot<TValue>(value), cancellationToken);
         }
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
-            return jsonTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
+            return jsonTypeInfo.SerializeToStreamAsync(utf8Json, new TypedWriteRoot<TValue>(value), cancellationToken);
         }
 
         /// <summary>
@@ -350,7 +350,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo<IAsyncEnumerable<TValue>> collectionTypeInfo = GetOrAddIAsyncEnumerableTypeInfoForSerialize(jsonTypeInfo);
-            return collectionTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
+            return collectionTypeInfo.SerializeToStreamAsync(utf8Json, new TypedWriteRoot<IAsyncEnumerable<TValue>>(value), cancellationToken);
         }
 
         /// <summary>
@@ -393,7 +393,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo<IAsyncEnumerable<TValue>> collectionTypeInfo = GetOrAddIAsyncEnumerableTypeInfoForSerialize(jsonTypeInfo);
-            return collectionTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
+            return collectionTypeInfo.SerializeToStreamAsync(utf8Json, new TypedWriteRoot<IAsyncEnumerable<TValue>>(value), cancellationToken);
         }
 
         private static async Task SerializeAsyncEnumerableAsJsonLines<TValue>(

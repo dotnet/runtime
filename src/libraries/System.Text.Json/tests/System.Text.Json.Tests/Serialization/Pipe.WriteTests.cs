@@ -36,6 +36,16 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public void SerializeAsync_IncompatibleUntypedRootValue_ThrowsSynchronously()
+        {
+            JsonTypeInfo intTypeInfo = JsonSerializerOptions.Default.GetTypeInfo(typeof(int));
+            Pipe pipe = new Pipe();
+
+            Assert.Throws<InvalidCastException>(() => { _ = JsonSerializer.SerializeAsync(pipe.Writer, "str", intTypeInfo); });
+            Assert.Throws<JsonException>(() => { _ = JsonSerializer.SerializeAsync(pipe.Writer, null, intTypeInfo); });
+        }
+
+        [Fact]
         public async Task CompletedPipeWithExceptionThrowsFromSerialize()
         {
             Pipe pipe = new Pipe();
