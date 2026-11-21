@@ -1899,7 +1899,7 @@
         ret
     }
 
-    .method public static void Filter.NestedInCatchWithoutCast_Invalid_StackUnexpected() cil managed
+    .method public static void Filter.NestedInCatchWithoutCast_Invalid_StackUnexpected_Validation_Valid() cil managed
     {
         .maxstack 1
 
@@ -1957,7 +1957,7 @@
         ret
     }
 
-    .method public static void Filter.ExceptionLeftOnStack_Invalid_EndfilterStack() cil managed
+    .method public static void Filter.ExceptionLeftOnStack_Invalid_EndfilterStack_Validation_Valid() cil managed
     {
         .maxstack 2
 
