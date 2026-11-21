@@ -3238,7 +3238,10 @@ void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
 
             gc.orThis = pAssembly->GetExposedObject();
 
-            UnmanagedCallersOnlyCaller onAssemblyLoad(METHOD__ASSEMBLYLOADCONTEXT__ON_ASSEMBLY_LOAD);
+            // Preserve stepping into user handlers even inside hidden runtime callbacks.
+            UnmanagedCallersOnlyCaller onAssemblyLoad(
+                METHOD__ASSEMBLYLOADCONTEXT__ON_ASSEMBLY_LOAD,
+                UnmanagedCallersOnlyCaller::VisibleEvenIfNested);
             onAssemblyLoad.InvokeThrowing(&gc.orThis);
 
             GCPROTECT_END();
