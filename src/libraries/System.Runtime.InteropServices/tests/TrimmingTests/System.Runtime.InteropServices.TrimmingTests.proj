@@ -23,8 +23,13 @@
       <DisabledProperties>IlcTrimMetadata</DisabledProperties>
     </TestConsoleAppSourceFiles>
 
-    <TestConsoleAppSourceFiles Include="TypeMap.cs" NativeAotOnly="true">
-      <EnabledProperties>IlcGenerateMstatFile;IlcGenerateDgmlFile</EnabledProperties>
+    <!-- Validate the type map behavior, and the XML output of the retained type maps. -->
+    <TestConsoleAppSourceFiles Include="TypeMap.cs" Condition="'$(UseMonoRuntime)' != 'true'">
+      <EnabledProperties>IlcGenerateMstatFile;IlcGenerateDgmlFile;Optimize</EnabledProperties>
+      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
+      <AdditionalProjectReferences>$(MSBuildProjectDirectory)/Dependencies/TypeMapTestLibrary.csproj</AdditionalProjectReferences>
+      <!-- Item metadata named AdditionalProperties is passed to the MSBuild task as global properties. -->
+      <AdditionalProperties>TypeMapXmlFile=typemaps.xml</AdditionalProperties>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

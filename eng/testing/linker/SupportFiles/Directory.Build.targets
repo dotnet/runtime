@@ -21,4 +21,11 @@
   <!-- Overriding these targets as these projects won't need to binplace -->
   <Target Name="PublishTestAsSelfContained" />
 
+  <!-- Lets a test inspect the type maps written by ILC or ILLink when it sets TypeMapXmlFile. -->
+  <Target Name="CopyTypeMapsForTesting"
+          AfterTargets="Publish"
+          Condition="'$(TypeMapXmlFile)' != ''">
+    <Copy SourceFiles="$(TypeMapXmlFile)" DestinationFiles="$(PublishDir)typemaps.xml" />
+  </Target>
+
 </Project>

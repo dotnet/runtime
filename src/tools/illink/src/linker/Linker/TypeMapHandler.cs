@@ -42,6 +42,10 @@ namespace Mono.Linker
         HashSet<TypeReference> _referencedExternalTypeMaps = null!;
         HashSet<TypeReference> _referencedProxyTypeMaps = null!;
 
+        internal AssemblyDefinition? EntryPointAssembly { get; private set; }
+        internal IEnumerable<TypeReference> ExternalTypeMapGroups => _referencedExternalTypeMaps;
+        internal IEnumerable<TypeReference> ProxyTypeMapGroups => _referencedProxyTypeMaps;
+
         public TypeMapHandler()
         {
         }
@@ -57,6 +61,7 @@ namespace Mono.Linker
         {
             _context = context;
             _markStep = markStep;
+            EntryPointAssembly = entryPointAssembly;
             var typeReferenceEqualityComparer = new TypeReferenceEqualityComparer(context);
             _pendingExternalTypeMapEntries = new(typeReferenceEqualityComparer);
             _pendingProxyTypeMapEntries = new(typeReferenceEqualityComparer);
