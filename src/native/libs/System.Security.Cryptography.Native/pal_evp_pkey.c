@@ -710,10 +710,17 @@ int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey, int32_t* p8size)
 
         // It is a malloc failure. Clear the error queue and set the error
         // as a malloc error so it's the only error in the queue.
+#ifdef NEED_OPENSSL_3_0
+        // OpenSSL 3 frees the error's file name in ERR_clear_error, so there the error is set again without its location.
+        if (OpenSSL_version_num() >= OPENSSL_VERSION_3_0_RTM)
+        {
+            file = NULL;
+            line = 0;
+        }
+#endif
+
         ERR_clear_error();
         ERR_put_error(ERR_GET_LIB(error), 0, ERR_R_MALLOC_FAILURE, file, line);
-
-        // Since ERR_peek_error() matches what exception is thrown, leave the OOM on top.
         return -1;
     }
 

@@ -1896,7 +1896,8 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        // A FIPS provider need not offer KMAC (RHEL's does not), so neither result can be expected there.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOpenSslFipsModeRequested))]
         public void IsSupported_AgreesWithPlatform()
         {
             Assert.Equal(TKmacTrait.IsSupported, PlatformSupportsKmac());

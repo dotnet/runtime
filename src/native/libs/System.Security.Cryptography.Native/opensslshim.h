@@ -1531,6 +1531,58 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 
 #endif
 
+// OpenSSL 3.0 changed how an error code packs the library and the reason, and ERR_GET_LIB, ERR_GET_REASON, ERR_PACK
+// and ERR_R_MALLOC_FAILURE follow the headers the shim is compiled against. So they are redefined to use the layout
+// of the loaded library, chosen once by InitializeErrorLayout (pal_err.c).
+// 1.x: lib << 24 | func << 12 | reason, the reason 12 bits including its flags.
+// 3.0 and later: lib << 23 | reason, the reason 23 bits including its flags, or ERR_SYSTEM_FLAG | errno.
+// Layouts and constants: OpenSSL 1.1.1w and 3.0.0 headers,
+// https://github.com/openssl/openssl/blob/e04bd3433fd84e1861bf258ea37928d9845e6a86/include/openssl/err.h
+// https://github.com/openssl/openssl/blob/89cd17a031e022211684eb7eb41190cf1910f9fa/include/openssl/err.h.in
+#define ERR_X_LIB_MASK 0xFFUL // The same in both layouts.
+#define ERR_1_X_LIB_OFFSET 24
+#define ERR_1_X_FUNC_OFFSET 12
+#define ERR_1_X_FUNC_MASK 0xFFFUL
+#define ERR_1_X_REASON_MASK 0xFFFUL
+#define ERR_1_X_R_MALLOC_FAILURE (1 | 64) // Reason 1 | ERR_R_FATAL.
+#define ERR_3_X_SYSTEM_FLAG 0x80000000UL
+#define ERR_3_X_SYSTEM_MASK 0x7FFFFFFFUL
+#define ERR_3_X_LIB_OFFSET 23
+#define ERR_3_X_REASON_MASK 0x7FFFFFUL
+#define ERR_3_X_R_MALLOC_FAILURE (256 | (0x3 << 18)) // Reason 256 | ERR_RFLAG_FATAL | ERR_RFLAG_COMMON.
+
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
+c_static_assert(ERR_LIB_MASK == ERR_X_LIB_MASK);
+c_static_assert(ERR_SYSTEM_FLAG == ERR_3_X_SYSTEM_FLAG);
+c_static_assert(ERR_SYSTEM_MASK == ERR_3_X_SYSTEM_MASK);
+c_static_assert(ERR_LIB_OFFSET == ERR_3_X_LIB_OFFSET);
+c_static_assert(ERR_REASON_MASK == ERR_3_X_REASON_MASK);
+c_static_assert(ERR_PACK(1, 0xFFFFFFFFUL, 0xFFFFFFFFUL) == ((1UL << ERR_3_X_LIB_OFFSET) | ERR_3_X_REASON_MASK));
+c_static_assert(ERR_R_MALLOC_FAILURE == ERR_3_X_R_MALLOC_FAILURE);
+#else // OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
+c_static_assert(ERR_GET_LIB(0xFFFFFFFFUL) == ERR_X_LIB_MASK);
+c_static_assert(ERR_GET_REASON(0xFFFFFFFFUL) == ERR_1_X_REASON_MASK);
+c_static_assert(ERR_PACK(1, 0, 0) == (1UL << ERR_1_X_LIB_OFFSET));
+c_static_assert(ERR_PACK(0, 0xFFFFFFFFUL, 0) == (ERR_1_X_FUNC_MASK << ERR_1_X_FUNC_OFFSET));
+c_static_assert(ERR_PACK(0, 0, 0xFFFFFFFFUL) == ERR_1_X_REASON_MASK);
+c_static_assert(ERR_R_MALLOC_FAILURE == ERR_1_X_R_MALLOC_FAILURE);
+#endif // OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
+
+void InitializeErrorLayout(void);
+int local_ERR_GET_LIB(unsigned long errcode);
+int local_ERR_GET_REASON(unsigned long errcode);
+unsigned long local_ERR_PACK(int lib, int func, int reason);
+extern int g_errMallocFailureReason;
+
+#undef ERR_GET_LIB
+#undef ERR_GET_REASON
+#undef ERR_PACK
+#undef ERR_R_MALLOC_FAILURE
+#define ERR_GET_LIB(errcode) local_ERR_GET_LIB(errcode)
+#define ERR_GET_REASON(errcode) local_ERR_GET_REASON(errcode)
+#define ERR_PACK(lib, func, reason) local_ERR_PACK(lib, func, reason)
+#define ERR_R_MALLOC_FAILURE g_errMallocFailureReason
+
 
 #else // FEATURE_DISTRO_AGNOSTIC_SSL
 

@@ -50,7 +50,7 @@ int32_t CryptoNative_X25519Available(void)
 
     // X25519 might not be available for two reasons.
     // 1. It was built with `no-ecx` which is available starting in OpenSSL 3.2.
-    // 2. The default Provider is the FIPS provider, and X25519 is not available in the FIPS provider.
+    // 2. It is excluded at run time, for example in FIPS mode.
     // In both cases, ERR_R_UNSUPPORTED is put in the error queue.
     // If we errored for a different reason, we _still_ want to return "yes" for is supported. This will allow for
     // actual use of X25519 to throw the appropriate error.
