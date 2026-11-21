@@ -11383,7 +11383,7 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
     }
 
 #ifndef TARGET_XARCH
-    if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
+    if (!ind->IsVolatile() && ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
         const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
         if (!m_compiler->info.compCompHnd->isObjectImmutable(reinterpret_cast<CORINFO_OBJECT_HANDLE>(handle)))
