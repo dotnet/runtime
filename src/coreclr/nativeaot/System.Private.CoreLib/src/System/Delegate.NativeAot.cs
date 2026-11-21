@@ -296,7 +296,7 @@ namespace System
             return ReflectionAugments.GetDelegateMethod(this);
         }
 
-        internal DiagnosticMethodInfo GetDiagnosticMethodInfo()
+        internal DiagnosticMethodInfo? GetDiagnosticMethodInfo()
         {
             // NOTE: this implementation is mirrored in GetMethodImpl above
 
@@ -323,20 +323,34 @@ namespace System
                 return new DiagnosticMethodInfo(mi.Name, declaringType.FullName, mi.Module.Assembly.FullName);
             }
 
+            StackTraceMetadataCallbacks? stackTraceCallbacks = RuntimeAugments.StackTraceCallbacksIfAvailable;
+            if (stackTraceCallbacks is null)
+                return null;
+
             IntPtr functionPointer;
+            IntPtr stubTarget;
             if (FunctionPointerOps.IsGenericMethodPointer(ldftnResult))
             {
                 unsafe
                 {
                     GenericMethodDescriptor* realTargetData = FunctionPointerOps.ConvertToGenericDescriptor(ldftnResult);
-                    functionPointer = RuntimeAugments.GetTargetOfWrapperStub(realTargetData->MethodFunctionPointer, includeInstantiatingStubs: false);
+                    functionPointer = realTargetData->MethodFunctionPointer;
+                    stubTarget = RuntimeAugments.GetTargetOfWrapperStub(functionPointer, includeInstantiatingStubs: false);
                 }
             }
             else
             {
-                functionPointer = RuntimeAugments.GetTargetOfWrapperStub(ldftnResult, includeInstantiatingStubs: true);
+                functionPointer = ldftnResult;
+                stubTarget = RuntimeAugments.GetTargetOfWrapperStub(functionPointer, includeInstantiatingStubs: true);
             }
-            return RuntimeAugments.StackTraceCallbacksIfAvailable?.TryGetDiagnosticMethodInfoFromFunctionPointer(functionPointer);
+
+            // Look up the stub first. If the method body behind it was folded with the body of a different method,
+            // the information about the body describes the other method.
+            DiagnosticMethodInfo? result = stackTraceCallbacks.TryGetDiagnosticMethodInfoFromFunctionPointer(functionPointer);
+            if (result is null && stubTarget != functionPointer)
+                result = stackTraceCallbacks.TryGetDiagnosticMethodInfoFromFunctionPointer(stubTarget);
+
+            return result;
         }
 
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure) =>

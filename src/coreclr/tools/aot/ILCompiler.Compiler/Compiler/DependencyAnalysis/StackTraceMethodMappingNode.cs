@@ -74,15 +74,21 @@ namespace ILCompiler.DependencyAnalysis
                 Debug.Assert(x.MethodInstantiationArgumentCollectionHandle == y.MethodInstantiationArgumentCollectionHandle);
 
                 // Compare by the method as a tie breaker to get stable sort
-                return TypeSystemComparer.Instance.Compare(x.Method, y.Method);
+                result = TypeSystemComparer.Instance.Compare(x.Method, y.Method);
+                if (result != 0)
+                    return result;
+
+                // Method bodies sort before stubs; multiple stubs can forward to the same method
+                return CompilerComparer.Instance.Compare(x.Stub, y.Stub);
             });
 
             int currentOwningType = 0;
             int currentSignature = 0;
             int currentName = 0;
 
-            // The first int contains the number of entries
-            objData.EmitInt(mapping.Count);
+            // The first int contains the number of entries that are keyed by a method address
+            ObjectDataBuilder.Reservation countReservation = objData.ReserveInt();
+            int count = 0;
 
             foreach (var entry in mapping)
             {
@@ -124,6 +130,24 @@ namespace ILCompiler.DependencyAnalysis
                     command |= StackTraceDataCommand.IsStackTraceHidden;
                 }
 
+                if (entry.Stub != null)
+                {
+                    command |= StackTraceDataCommand.IsStub;
+
+                    // On WASM, stubs don't have a virtual IP. They can only be looked up by their function pointer.
+                    objData.EmitByte(commandReservation, command);
+                    if (factory.Target.IsWasm)
+                    {
+                        objData.EmitReloc(entry.Stub, RelocType.WASM_TABLE_INDEX_I32);
+                    }
+                    else
+                    {
+                        objData.EmitReloc(entry.Stub, RelocType.IMAGE_REL_BASED_RELPTR32);
+                        count++;
+                    }
+                    continue;
+                }
+
                 // On WASM, record the function table index of the method if it can be observed at runtime: either
                 // the method's address was taken, or the method is the target of an unboxing stub (so that results
                 // of RuntimeAugments.GetTargetOfWrapperStub can be mapped back to the method).
@@ -147,11 +171,14 @@ namespace ILCompiler.DependencyAnalysis
                 objData.EmitByte(commandReservation, command);
                 objData.EmitReloc(factory.MethodEntrypoint(entry.Method),
                     factory.Target.IsWasm ? RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32 : RelocType.IMAGE_REL_BASED_RELPTR32);
+                count++;
                 if (functionPointerNode != null)
                 {
                     objData.EmitReloc(functionPointerNode, RelocType.WASM_TABLE_INDEX_I32);
                 }
             }
+
+            objData.EmitInt(countReservation, count);
 
             return objData.ToObjectData();
         }

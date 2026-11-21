@@ -56,6 +56,9 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (StackTraceMapping mapping in factory.MetadataManager.GetStackTraceMapping(factory))
             {
+                if (mapping.Stub != null)
+                    continue;
+
                 if ((factory.MetadataManager.StackTracePolicy.GetMethodVisibility(mapping.Method) & MethodStackTraceVisibilityFlags.HasLineNumbers) == 0)
                     continue;
 

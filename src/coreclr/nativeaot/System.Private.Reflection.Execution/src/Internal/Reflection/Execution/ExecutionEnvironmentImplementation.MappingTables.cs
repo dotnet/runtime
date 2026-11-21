@@ -476,24 +476,40 @@ namespace Internal.Reflection.Execution
             return ldFtnReverseLookup;
         }
 
-        internal unsafe void GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(IntPtr originalLdFtnResult, out IntPtr canonOriginalLdFtnResult, out IntPtr instantiationArgument)
+        internal unsafe void GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(IntPtr originalLdFtnResult, out IntPtr functionPointer, out IntPtr canonOriginalLdFtnResult, out IntPtr instantiationArgument)
         {
             if (FunctionPointerOps.IsGenericMethodPointer(originalLdFtnResult))
             {
                 GenericMethodDescriptor* realTargetData = FunctionPointerOps.ConvertToGenericDescriptor(originalLdFtnResult);
-                canonOriginalLdFtnResult = RuntimeAugments.GetTargetOfWrapperStub(realTargetData->MethodFunctionPointer, includeInstantiatingStubs: false);
+                functionPointer = realTargetData->MethodFunctionPointer;
                 instantiationArgument = realTargetData->InstantiationArgument;
             }
             else
             {
-                canonOriginalLdFtnResult = RuntimeAugments.GetTargetOfWrapperStub(originalLdFtnResult, includeInstantiatingStubs: false);
+                functionPointer = originalLdFtnResult;
                 instantiationArgument = IntPtr.Zero;
             }
+
+            canonOriginalLdFtnResult = RuntimeAugments.GetTargetOfWrapperStub(functionPointer, includeInstantiatingStubs: false);
         }
 
         internal bool TryGetMethodForOriginalLdFtnResult(IntPtr originalLdFtnResult, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(originalLdFtnResult, out IntPtr canonOriginalLdFtnResult, out IntPtr instantiationArgument);
+            GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(originalLdFtnResult, out IntPtr functionPointer, out IntPtr canonOriginalLdFtnResult, out IntPtr instantiationArgument);
+
+            // The invoke map is keyed by the unboxing stubs of valuetype methods. Look up the stub first: if the
+            // method body behind it was folded with bodies of other methods, the address of the body is ambiguous.
+            if (functionPointer != canonOriginalLdFtnResult
+                && TryGetMethodForCanonicalLdFtnResult(functionPointer, instantiationArgument, ref declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
+            {
+                return true;
+            }
+
+            return TryGetMethodForCanonicalLdFtnResult(canonOriginalLdFtnResult, instantiationArgument, ref declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles);
+        }
+
+        private bool TryGetMethodForCanonicalLdFtnResult(IntPtr canonOriginalLdFtnResult, IntPtr instantiationArgument, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        {
             foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetReverseLookups_InvokeMap(isFunctionPointer: true))
             {
                 int startIndex;

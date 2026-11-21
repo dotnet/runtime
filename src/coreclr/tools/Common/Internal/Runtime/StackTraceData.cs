@@ -12,5 +12,9 @@ namespace Internal.Runtime
 
         public const byte IsStackTraceHidden = 0x10;
         public const byte HasFunctionPointer = 0x20;
+
+        // The entry describes a stub that forwards to the method (e.g. an unboxing stub). On WASM, the entry
+        // only has the function pointer of the stub because stubs don't have a virtual IP.
+        public const byte IsStub = 0x40;
     }
 }
