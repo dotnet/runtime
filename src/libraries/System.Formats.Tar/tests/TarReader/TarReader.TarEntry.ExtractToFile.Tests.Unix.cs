@@ -11,7 +11,7 @@ namespace System.Formats.Tar.Tests
     {
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotPrivilegedProcess))]
         [MemberData(nameof(GetBooleanData))]
-        [SkipOnPlatform(TestPlatforms.tvOS, "https://github.com/dotnet/runtime/issues/68360")]
+        [SkipOnPlatform(TestPlatforms.tvOS, "mkfifo fails with EPERM on tvOS devices.")]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "Not supported on Bionic")]
         public async Task SpecialFile_Unelevated_Throws(bool async)
         {
