@@ -445,7 +445,16 @@ namespace System.Collections.Immutable
             /// </returns>
             public IEnumerable<T> Reverse()
             {
-                return new ReverseEnumerable(_root);
+                return ReverseIterator(this);
+
+                static IEnumerable<T> ReverseIterator(Builder builder)
+                {
+                    using Enumerator enumerator = new Enumerator(builder.Root, builder, reverse: true);
+                    while (enumerator.MoveNext())
+                    {
+                        yield return enumerator.Current;
+                    }
+                }
             }
 
             /// <summary>
