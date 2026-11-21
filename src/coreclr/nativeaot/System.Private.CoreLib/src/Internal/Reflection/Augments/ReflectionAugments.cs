@@ -358,7 +358,8 @@ namespace Internal.Reflection.Augments
             while (type != null)
             {
                 MethodInfo? methodInfo = type.GetMethod(method, 0, bindingFlags, parameterTypes);
-                if (methodInfo != null && methodInfo.ReturnType.Equals(invokeMethod.ReturnType))
+                // A static abstract interface method has no implementation to call
+                if (methodInfo != null && !(methodInfo.IsStatic && methodInfo.IsAbstract) && methodInfo.ReturnType.Equals(invokeMethod.ReturnType))
                     return (RuntimeMethodInfo)methodInfo; // This cast is safe since we already verified that containingType is runtime implemented.
 
                 type = type.BaseType;

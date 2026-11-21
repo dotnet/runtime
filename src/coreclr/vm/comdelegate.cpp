@@ -1035,6 +1035,10 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, Me
             if (pCurMethod->IsGenericMethodDefinition())
                 continue;
 
+            // We can't match static abstract methods (since they have no implementation to call).
+            if (pCurMethod->IsStaticAbstract())
+                continue;
+
             // We can't match async variants (since we have only name).
             if (pCurMethod->IsAsyncVariantMethod())
                 continue;
@@ -1117,6 +1121,10 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, Me
     // A generic method had better be instantiated (we can't dispatch to an uninstantiated one).
     if (method->IsGenericMethodDefinition())
         COMPlusThrow(kArgumentException, W("Arg_DlgtTargMeth"));
+
+    // A static abstract method has no implementation to call.
+    if (method->IsStaticAbstract())
+        COMPlusThrow(kMemberAccessException, W("Acc_BindStaticAbstract"));
 
     // get the invoke of the delegate
     MethodDesc* pInvokeMeth = COMDelegate::FindDelegateInvokeMethod(pDelegateMT);
@@ -1245,7 +1253,9 @@ void COMDelegate::BindToMethod(MethodTable* pDelegateMT,
         // We can get virtual delegates closed over null through this code path, so be careful to handle that case (no need to
         // virtualize since we're just going to throw NullRefException at invocation time).
         // </TODO>
-        if (pTargetMethod->IsVirtual()
+        // A static method's first argument is not "this", so never virtualize the call on it.
+        if (!pTargetMethod->IsStatic()
+            && pTargetMethod->IsVirtual()
             && pTargetMT != NULL
             && pTargetMethod->GetMethodTable() != pTargetMT)
         {

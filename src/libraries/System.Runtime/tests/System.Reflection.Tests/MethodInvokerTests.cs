@@ -56,6 +56,36 @@ namespace System.Reflection.Tests
 
         public static ref object? RefReturningArgumentMany(ref object? value, object? a, object? b, object? c, object? d) => ref value;
 
+        [Fact]
+        public void Invoke_StaticAbstract_FixedArguments_ThrowsMemberAccessException()
+        {
+            MethodInvoker noArgs = MethodInvoker.Create(typeof(IStaticAbstractMethods).GetMethod(nameof(IStaticAbstractMethods.NoArgs))!);
+            Assert.Throws<MemberAccessException>(() => noArgs.Invoke(null));
+
+            MethodInvoker oneArg = MethodInvoker.Create(typeof(IStaticAbstractMethods<int>).GetMethod(nameof(IStaticAbstractMethods<int>.OneArg))!);
+            Assert.Throws<MemberAccessException>(() => oneArg.Invoke(null, 42));
+
+            MethodInvoker oneStringArg = MethodInvoker.Create(typeof(IStaticAbstractMethods<string>).GetMethod(nameof(IStaticAbstractMethods<string>.OneArg))!);
+            Assert.Throws<MemberAccessException>(() => oneStringArg.Invoke(null, "abc"));
+
+            MethodInvoker spanReturn = MethodInvoker.Create(typeof(IStaticAbstractMethods).GetMethod(nameof(IStaticAbstractMethods.SpanReturn))!);
+            Assert.Throws<MemberAccessException>(() => spanReturn.Invoke(null));
+
+            MethodInvoker refSpanReturn = MethodInvoker.Create(typeof(IStaticAbstractMethods).GetMethod(nameof(IStaticAbstractMethods.RefSpanReturn))!);
+            Assert.Throws<MemberAccessException>(() => refSpanReturn.Invoke(null));
+        }
+
+        [Fact]
+        public void Invoke_StaticAbstract_WrongArgumentCount_ThrowsTargetParameterCountException()
+        {
+            MethodInvoker oneArg = MethodInvoker.Create(typeof(IStaticAbstractMethods<int>).GetMethod(nameof(IStaticAbstractMethods<int>.OneArg))!);
+            Assert.Throws<MemberAccessException>(() => oneArg.Invoke(null, new Span<object?>(new object?[] { 42 })));
+            Assert.Throws<TargetParameterCountException>(() => oneArg.Invoke(null, Span<object?>.Empty));
+            Assert.Throws<TargetParameterCountException>(() => oneArg.Invoke(null, new Span<object?>(new object?[] { 42, 43 })));
+            Assert.Throws<TargetParameterCountException>(() => oneArg.Invoke(null));
+            Assert.Throws<TargetParameterCountException>(() => oneArg.Invoke(null, 42, 43));
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
