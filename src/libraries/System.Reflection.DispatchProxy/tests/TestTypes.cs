@@ -29,6 +29,22 @@ public interface TestType_IOut_Ref
     void InAttribute_Ref([In] ref string message);
 }
 
+public interface TestType_IRefReadOnlyReturnService
+{
+    ref readonly int GetInt();
+    ref readonly int? GetNullableInt();
+    ref readonly Guid GetGuid();
+    ref readonly string GetString();
+    ref readonly T Echo<T>(T value);
+    ref readonly int ReadOnlyProperty { get; }
+}
+
+public interface TestType_IRefReturnService
+{
+    ref int GetInt();
+    string Hello(string message);
+}
+
 public interface TestType_IGoodbyeService
 {
     string Goodbye(string message);
