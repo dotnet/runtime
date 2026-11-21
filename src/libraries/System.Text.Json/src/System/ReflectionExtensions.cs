@@ -170,22 +170,15 @@ namespace System.Text.Json.Reflection
         /// in gen/Helpers/RoslynExtensions.cs. Any change to the enumeration order or matching
         /// rules MUST be applied on both sides to keep reflection and source-gen behaviour in sync.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The derived type was supplied via [JsonDerivedType] by the user, so its interface " +
-                            "metadata is rooted at the attribute usage site and survives trimming. Callers are " +
-                            "additionally annotated [RequiresUnreferencedCode] to flow this requirement outward.")]
         public static IEnumerable<Type> GetMatchingGenericBaseTypes(this Type type, Type baseTypeDefinition)
         {
             Debug.Assert(baseTypeDefinition.IsGenericTypeDefinition);
 
             if (baseTypeDefinition.IsInterface)
             {
-                foreach (Type iface in type.GetInterfaces())
+                foreach (Type iface in type.GetInterfacesWithSameMetadataDefinitionAs(baseTypeDefinition))
                 {
-                    if (iface.IsGenericType && iface.GetGenericTypeDefinition() == baseTypeDefinition)
-                    {
-                        yield return iface;
-                    }
+                    yield return iface;
                 }
 
                 // Note: do NOT yield break here. Type.GetInterfaces() does not include `type`

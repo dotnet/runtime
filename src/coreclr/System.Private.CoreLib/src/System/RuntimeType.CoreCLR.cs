@@ -2627,6 +2627,36 @@ namespace System
             return new ReadOnlySpan<Type>(candidates).ToArray();
         }
 
+        public override Type[] GetInterfacesWithSameMetadataDefinitionAs(Type interfaceType)
+        {
+            ArgumentNullException.ThrowIfNull(interfaceType);
+            if (!interfaceType.IsInterface || interfaceType.IsConstructedGenericType)
+            {
+                throw new ArgumentException(SR.Arg_MustBeInterfaceOrGenericInterfaceDefinition, nameof(interfaceType));
+            }
+
+            // Filter the cached interface list directly instead of copying it via GetInterfaces. The candidates are
+            // runtime types, so comparing generic type definitions by reference is equivalent to
+            // HasSameMetadataDefinitionAs and cheaper, and an interfaceType that isn't a RuntimeType never matches.
+            RuntimeType[] candidates = Cache.GetInterfaceList(MemberListType.All, null);
+            bool isGenericTypeDefinition = interfaceType.IsGenericTypeDefinition;
+
+            // Usually a single interface matches, which ListBuilder handles without allocating backing storage.
+            // Don't size it for every candidate: that would over-allocate when several interfaces match.
+            ListBuilder<Type> matches = default;
+            foreach (RuntimeType candidate in candidates)
+            {
+                if (isGenericTypeDefinition
+                    ? candidate.IsGenericType && ReferenceEquals(candidate.GetGenericTypeDefinition(), interfaceType)
+                    : ReferenceEquals(candidate, interfaceType))
+                {
+                    matches.Add(candidate);
+                }
+            }
+
+            return matches.ToArray();
+        }
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type[] GetNestedTypes(BindingFlags bindingAttr)
         {
