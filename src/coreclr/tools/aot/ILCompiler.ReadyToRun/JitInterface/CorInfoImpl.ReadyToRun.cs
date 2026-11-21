@@ -2473,13 +2473,26 @@ namespace Internal.JitInterface
                         DictionaryEntryKind entryKind = (constrainedType != null && (constrainedType.IsValueType || !isCallVirt)
                             ? DictionaryEntryKind.ConstrainedMethodEntrySlot
                             : DictionaryEntryKind.MethodEntrySlot);
+                        MethodDesc lookupMethod = originalMethod;
+                        if (resolvedConstraint && !forceUseRuntimeLookup)
+                        {
+                            entryKind = DictionaryEntryKind.MethodEntrySlot;
+                            lookupMethod = targetMethod;
+                        }
 
                         if (isStaticVirtual && exactType.HasInstantiation)
                         {
                             useInstantiatingStub = true;
                         }
 
-                        ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken, originalMethod, HandleToObject(callerHandle), ref pResult->codePointerOrStubLookup);
+                        pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED;
+                        pResult->codePointerOrStubLookup.deferredLookup = new CORINFO_DEFERRED_LOOKUP
+                        {
+                            method = ObjectToHandle(lookupMethod),
+                            entryKind = (uint)entryKind,
+                            reuseResolvedTarget = resolvedConstraint && !forceUseRuntimeLookup,
+                        };
                     }
                 }
                 else
@@ -2562,7 +2575,13 @@ namespace Internal.JitInterface
 
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
-                    ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind.DispatchStubAddrSlot, ref pResolvedToken, null, originalMethod, HandleToObject(callerHandle), ref pResult->codePointerOrStubLookup);
+                    pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED;
+                    pResult->codePointerOrStubLookup.deferredLookup = new CORINFO_DEFERRED_LOOKUP
+                    {
+                        method = ObjectToHandle(originalMethod),
+                        entryKind = (uint)DictionaryEntryKind.DispatchStubAddrSlot,
+                    };
                 }
                 else
                 {
@@ -2883,41 +2902,37 @@ namespace Internal.JitInterface
                     throw new NotImplementedException(pResult->kind.ToString());
             }
 
-            if (pResult->sig.hasTypeArg())
+            pResult->instParamLookup = default;
+            if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
             {
-                if (pResult->exactContextNeedsRuntimeLookup)
+                pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
+                pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED;
+            }
+            else if (pResult->sig.hasTypeArg())
+            {
+                MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (canonMethod.RequiresInstMethodDescArg())
                 {
-                    // Nothing to do... The generic handle lookup gets embedded in to the codegen
-                    // during the jitting of the call.
-                    // (Note: The generic lookup in R2R is performed by a call to a helper at runtime, not by
-                    // codegen emitted at crossgen time)
+                    pResult->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                        ReadyToRunHelperId.MethodDictionary,
+                        ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: constrainedType, unboxing: false)));
                 }
                 else
                 {
-                    MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    if (canonMethod.RequiresInstMethodDescArg())
+                    ISymbolNode instParamLookup;
+                    if (targetMethod.OwningType == exactType && !CanEncodeTypeInSignature(exactType))
                     {
-                        pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                            ReadyToRunHelperId.MethodDictionary,
-                            ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: constrainedType, unboxing: false)));
+                        instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                            ReadyToRunHelperId.DeclaringTypeHandle,
+                            ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType, unboxing: false));
                     }
                     else
                     {
-                        ISymbolNode instParamLookup;
-                        if (targetMethod.OwningType == exactType && !CanEncodeTypeInSignature(exactType))
-                        {
-                            instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                                ReadyToRunHelperId.DeclaringTypeHandle,
-                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType, unboxing: false));
-                        }
-                        else
-                        {
-                            instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                                ReadyToRunHelperId.TypeDictionary,
-                                exactType);
-                        }
-                        pResult->instParamLookup = CreateConstLookupToSymbol(instParamLookup);
+                        instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                            ReadyToRunHelperId.TypeDictionary,
+                            exactType);
                     }
+                    pResult->instParamLookup.constLookup = CreateConstLookupToSymbol(instParamLookup);
                 }
             }
         }
@@ -2979,7 +2994,8 @@ namespace Internal.JitInterface
             CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
             MethodDesc templateMethod,
             MethodDesc callerHandle,
-            ref CORINFO_LOOKUP pResultLookup)
+            ref CORINFO_LOOKUP pResultLookup,
+            bool reuseResolvedTarget = false)
         {
             Debug.Assert(callerHandle != null);
 
@@ -3070,7 +3086,10 @@ namespace Internal.JitInterface
                 // We shouldn't be needing shared generics in resumption stubs - generics info should all be stored in the continuation
                 Debug.Assert(MethodBeingCompiled is not AsyncResumptionStub);
                 _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
-                helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation), constrainedType, unboxing: false, genericContextObject: sharedMethod, forceOwningTypeFromMethodDesc: strippedInstantiation);
+                helperArg = (reuseResolvedTarget && entryKind == DictionaryEntryKind.MethodEntrySlot && constrainedType != null
+                    ? TryGetResolvedConstraintMethodEntry(templateMethod, constrainedType, methodDesc)
+                    : null)
+                    ?? new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation), constrainedType, unboxing: false, genericContextObject: sharedMethod, forceOwningTypeFromMethodDesc: strippedInstantiation);
 
                 if (helperId == ReadyToRunHelperId.TypeHandle && !CanEncodeTypeInSignature(methodDesc.OwningType))
                 {
@@ -3115,6 +3134,66 @@ namespace Internal.JitInterface
 
             // For R2R compilations, we don't generate the dictionary lookup signatures (dictionary lookups are done in a
             // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
+        }
+
+        private MethodWithToken TryGetResolvedConstraintMethodEntry(MethodDesc target, TypeDesc constrainedType, MethodDesc interfaceMethod)
+        {
+            // Only encode the implementation when its body is in the version bubble.
+            // Static DIM resolution has already emitted its override validation fixup.
+            ModuleToken token = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(target, false, false);
+            if (token.IsNull)
+                return null;
+
+            TypeDesc owner = null;
+            TypeDesc ownerDefinition = target.OwningType.GetTypeDefinition();
+            if (constrainedType is RuntimeDeterminedType runtimeDeterminedType)
+            {
+                // The signature variable identifies the owner when the implementation is
+                // declared on the constrained type itself. Walking its canonical bases or
+                // interfaces would lose the caller's runtime-determined context.
+                if (runtimeDeterminedType.CanonicalType.GetTypeDefinition() != ownerDefinition ||
+                    !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(runtimeDeterminedType.CanonicalType))
+                    return null;
+                owner = runtimeDeterminedType;
+            }
+            else if (ownerDefinition.IsInterface)
+            {
+                foreach (DefType iface in constrainedType.RuntimeInterfaces)
+                {
+                    if (iface.GetTypeDefinition() != ownerDefinition)
+                        continue;
+                    // A canonical MethodDesc cannot distinguish multiple instantiations.
+                    if (owner != null)
+                        return null;
+                    owner = iface;
+                }
+            }
+            else
+            {
+                for (owner = constrainedType; owner != null; owner = owner.BaseType)
+                {
+                    // An independently versioned derived type could add a different implementation.
+                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(owner.ConvertToCanonForm(CanonicalFormKind.Specific)))
+                        return null;
+                    if (owner.GetTypeDefinition() == ownerDefinition)
+                        break;
+                }
+            }
+
+            if (owner == null || !CanEncodeTypeInSignature(owner))
+                return null;
+
+            // Recover the owner in the caller's runtime-determined context, not __Canon.
+            MethodDesc method = target.GetTypicalMethodDefinition();
+            if (owner is RuntimeDeterminedType runtimeDeterminedOwner)
+                method = method.Context.GetMethodForRuntimeDeterminedType(method, runtimeDeterminedOwner);
+            else if (owner is InstantiatedType instantiatedOwner)
+                method = method.Context.GetMethodForInstantiatedType(method, instantiatedOwner);
+            if (interfaceMethod.HasInstantiation)
+                method = method.MakeInstantiatedMethod(interfaceMethod.Instantiation);
+
+            return new MethodWithToken(method, token, constrainedType: null, unboxing: false,
+                genericContextObject: null, forceOwningTypeFromMethodDesc: true);
         }
 
         private void ceeInfoEmbedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)

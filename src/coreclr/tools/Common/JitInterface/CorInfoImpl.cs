@@ -1099,6 +1099,38 @@ namespace Internal.JitInterface
             return corInfoType;
         }
 
+        private void prepareCallLookups(ref CORINFO_RESOLVED_TOKEN resolvedToken,
+            CORINFO_RESOLVED_TOKEN* constrainedToken, CORINFO_METHOD_STRUCT_* caller, CORINFO_CALL_INFO* callInfo)
+        {
+#if READYTORUN
+            if (callInfo->kind == CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER ||
+                callInfo->kind == CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB)
+            {
+                Debug.Assert(callInfo->codePointerOrStubLookup.lookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED);
+                CORINFO_DEFERRED_LOOKUP deferred = callInfo->codePointerOrStubLookup.deferredLookup;
+                ComputeRuntimeLookupForSharedGenericToken((Internal.ReadyToRunConstants.DictionaryEntryKind)deferred.entryKind,
+                    ref resolvedToken, callInfo->kind == CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB ? null : constrainedToken,
+                    HandleToObject(deferred.method), HandleToObject(caller),
+                    ref callInfo->codePointerOrStubLookup, deferred.reuseResolvedTarget);
+                return;
+            }
+#endif
+            Debug.Assert((callInfo->sig.callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0 && callInfo->exactContextNeedsRuntimeLookup);
+            CORINFO_CONTEXT_STRUCT* context = callInfo->contextHandle;
+            bool embedParent = ((nuint)context & (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS;
+            CORINFO_GENERICHANDLE_RESULT result = default;
+            if (embedParent && constrainedToken != null &&
+                (CORINFO_CLASS_STRUCT_*)((nuint)context & ~(nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == constrainedToken->hClass)
+            {
+                embedGenericHandle(ref *constrainedToken, false, caller, ref result);
+            }
+            else
+            {
+                embedGenericHandle(ref resolvedToken, embedParent, caller, ref result);
+            }
+            callInfo->instParamLookup = result.lookup;
+        }
+
         private CORINFO_CONTEXT_STRUCT* contextFromMethod(MethodDesc method)
         {
             return (CORINFO_CONTEXT_STRUCT*)(((nuint)ObjectToHandle(method)) | (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_METHOD);

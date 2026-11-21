@@ -1181,6 +1181,7 @@ enum CORINFO_RUNTIME_LOOKUP_KIND
     CORINFO_LOOKUP_METHODPARAM,
     CORINFO_LOOKUP_CLASSPARAM,
     CORINFO_LOOKUP_NOT_SUPPORTED, // Returned for attempts to inline dictionary lookups
+    CORINFO_LOOKUP_DEFERRED,      // Completed by prepareCallLookups before materialization
 };
 
 struct CORINFO_LOOKUP_KIND
@@ -1244,6 +1245,15 @@ struct CORINFO_RUNTIME_LOOKUP
     CORINFO_CONST_LOOKUP helperEntryPoint;
 };
 
+// EE-owned state carried until a deferred call lookup is prepared.
+struct CORINFO_DEFERRED_LOOKUP
+{
+    CORINFO_METHOD_HANDLE method;
+    unsigned              entryKind;
+    unsigned              interfaceIndex;
+    bool                  reuseResolvedTarget;
+};
+
 // Result of calling embedGenericHandle
 struct CORINFO_LOOKUP
 {
@@ -1253,6 +1263,9 @@ struct CORINFO_LOOKUP
     {
         // If kind.needsRuntimeLookup then this indicates how to do the lookup
         CORINFO_RUNTIME_LOOKUP  runtimeLookup;
+
+        // If runtimeLookupKind is CORINFO_LOOKUP_DEFERRED, pass this state back to the EE.
+        CORINFO_DEFERRED_LOOKUP deferredLookup;
 
         // If the handle is obtained at compile-time, then this handle is the "exact" handle (class, method, or field)
         // Otherwise, it's a representative...  If accessType is
@@ -1559,7 +1572,8 @@ struct CORINFO_CALL_INFO
     bool                    exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
 
     // If kind.CORINFO_VIRTUALCALL_STUB then stubLookup will be set.
-    // If kind.CORINFO_CALL_CODE_POINTER then entryPointLookup will be set.
+    // If kind.CORINFO_CALL_CODE_POINTER then codePointerLookup will be set.
+    // Either lookup may require prepareCallLookups before materialization.
     union
     {
         CORINFO_LOOKUP      stubLookup;
@@ -1567,7 +1581,9 @@ struct CORINFO_CALL_INFO
         CORINFO_LOOKUP      codePointerLookup;
     };
 
-    CORINFO_CONST_LOOKUP    instParamLookup;
+    // Lookup for the hidden instantiation argument when sig.hasTypeArg().
+    // Runtime-dependent lookups are populated by prepareCallLookups, after intrinsic expansion.
+    CORINFO_LOOKUP          instParamLookup;
 };
 
 enum CORINFO_DEVIRTUALIZATION_DETAIL
@@ -3420,6 +3436,8 @@ public:
             ) CORINFO_PURE;
 
     // Returns instructions on how to make the call. See code:CORINFO_CALL_INFO for possible return values.
+    // Resolves the target and its signature. Call prepareCallLookups during import if a
+    // deferred lookup is needed, while the resolved tokens are still available.
     CORINFO_VIRTUAL void getCallInfo(
             // Token info (in)
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
@@ -3435,6 +3453,18 @@ public:
 
             // out params
             CORINFO_CALL_INFO       *pResult
+            ) CORINFO_PURE;
+
+    // Completes the runtime-dependent lookups of a call: instParamLookup for a call
+    // with sig.hasTypeArg() and exactContextNeedsRuntimeLookup, codePointerLookup for
+    // CORINFO_CALL_CODE_POINTER, or stubLookup for CORINFO_VIRTUALCALL_STUB.
+    // Other call information is unchanged.
+    // The tokens and caller must match the getCallInfo query that produced pCallInfo.
+    CORINFO_VIRTUAL void prepareCallLookups(
+            CORINFO_RESOLVED_TOKEN*       pResolvedToken,
+            CORINFO_RESOLVED_TOKEN*       pConstrainedResolvedToken,
+            CORINFO_METHOD_HANDLE        callerHandle,
+            CORINFO_CALL_INFO*            pCallInfo
             ) CORINFO_PURE;
 
     //------------------------------------------------------------------------------
