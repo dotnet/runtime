@@ -199,31 +199,21 @@ public class WebcilWasmWrapper
             dataSectionSize += PayloadSegmentHeaderSize + (uint)ulebWebcilPayloadSize.Length;
         }
 
-        // at this point the data section size includes everything except the data section code, the data section size and the webcil payload itself
-        // and any extra padding that we may want to add to segment 0.
-        // So we can compute the offset of the payload within the wasm module.
-        byte[] putativeULEBDataSectionSize = ULEB128Encode(dataSectionSize + _webcilPayloadSize);
-        uint payloadOffset = (uint)WasmWrapperPrefix.Length + 1 + (uint)putativeULEBDataSectionSize.Length + dataSectionSize ;
-
-        uint paddingSize = PadTo(payloadOffset, WebcilPayloadInternalAlignment);
-
-        if (paddingSize > 0)
+        // The size encoding can grow when padding crosses a ULEB128 boundary. Choose padding
+        // using the final encoding rather than assuming that the unpadded length has the same size.
+        uint unpaddedSectionSize = checked(dataSectionSize + _webcilPayloadSize);
+        uint paddingSize = 0;
+        uint payloadOffset;
+        byte[] ulebSectionSize;
+        while (true)
         {
-            checked
-            {
-                dataSectionSize += paddingSize;
-            }
+            ulebSectionSize = ULEB128Encode(checked(unpaddedSectionSize + paddingSize));
+            payloadOffset = checked((uint)WasmWrapperPrefix.Length + 1 + (uint)ulebSectionSize.Length + dataSectionSize + paddingSize);
+            if (payloadOffset % WebcilPayloadInternalAlignment == 0)
+                break;
+            paddingSize++;
         }
 
-        checked
-        {
-            dataSectionSize += _webcilPayloadSize;
-        }
-
-        byte[] ulebSectionSize = ULEB128Encode(dataSectionSize);
-
-        if (putativeULEBDataSectionSize.Length != ulebSectionSize.Length)
-            throw new InvalidOperationException  ("adding padding would cause data section's encoded length to chane"); // TODO: fixme: there's upto one extra byte to encode the section length - take away a padding byte.
         writer.Write((byte)11); // section Data
         writer.Write(ulebSectionSize, 0, ulebSectionSize.Length);
 
@@ -279,14 +269,4 @@ public class WebcilWasmWrapper
         return arr;
     }
 
-    private static uint PadTo (uint value, uint align)
-    {
-        uint newValue = AlignTo(value, align);
-        return newValue - value;
-    }
-
-    private static uint AlignTo (uint value, uint align)
-    {
-        return (value + (align - 1)) & ~(align - 1);
-    }
 }

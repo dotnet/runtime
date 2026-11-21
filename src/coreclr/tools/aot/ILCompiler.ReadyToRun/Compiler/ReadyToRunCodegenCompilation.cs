@@ -19,6 +19,7 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.ObjectWriter;
 using ILCompiler.ReadyToRun;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.TypeSystem.Ecma;
@@ -293,6 +294,7 @@ namespace ILCompiler
         private readonly IEnumerable<string> _inputFiles;
 
         private readonly string _compositeRootPath;
+        private readonly string _webcilComponentBundlePath;
 
         private readonly bool _resilient;
 
@@ -374,7 +376,8 @@ namespace ILCompiler
             bool verifyTypeAndFieldLayout,
             ReadyToRunContainerFormat format,
             WasmDebugInfo wasmDebugInfo,
-            bool deferredWasmCalls)
+            bool deferredWasmCalls,
+            string webcilComponentBundlePath)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -409,6 +412,7 @@ namespace ILCompiler
                 nodeFactory.ImportReferenceProvider.Initialize(SymbolNodeFactory, _tokenManager);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
+            _webcilComponentBundlePath = webcilComponentBundlePath;
             _printReproInstructions = printReproInstructions;
             CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
             if (deferredWasmCalls)
@@ -487,6 +491,7 @@ namespace ILCompiler
                         compiledMethodDefs = _nodeFactory.BuildCompiledMethodDefsSet();
                     }
 
+                    WebcilBundleWriter bundle = _webcilComponentBundlePath is null ? null : new WebcilBundleWriter();
                     foreach (string inputFile in _inputFiles)
                     {
                         string relativeMsilPath = Path.GetRelativePath(_compositeRootPath, inputFile);
@@ -502,14 +507,19 @@ namespace ILCompiler
                             // as "<assembly>.wasm" (matching the browser/wasi external-assembly probe).
                             standaloneMsilOutputFile = Path.ChangeExtension(standaloneMsilOutputFile, ".wasm");
                         }
-                        RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName, compiledMethodDefs: compiledMethodDefs);
+                        RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile,
+                            ownerExecutableName: ownerExecutableName, compiledMethodDefs: compiledMethodDefs,
+                            bundle: bundle, bundleEntryName: Path.ChangeExtension(relativeMsilPath, ".dll"));
                     }
+
+                    bundle?.Write(_webcilComponentBundlePath);
                 }
 
             }
         }
 
-        private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName, HashSet<MethodDesc> compiledMethodDefs)
+        private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName,
+            HashSet<MethodDesc> compiledMethodDefs, WebcilBundleWriter bundle, string bundleEntryName)
         {
             EcmaModule inputModule = NodeFactory.TypeSystemContext.GetModuleFromPath(inputFile);
 
@@ -604,6 +614,16 @@ namespace ILCompiler
             componentGraph.ComputeMarkedNodes();
             componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode);
             componentFactory.SetMarkingComplete();
+            if (bundle is not null)
+            {
+                using MemoryStream payload = new();
+                WebCilObjectWriter writer = new(componentFactory, ObjectWritingOptions.None, outputInfoBuilder: null,
+                    emitNameSection: false, emitPayloadOnly: true);
+                writer.EmitObject(payload, componentGraph.MarkedNodeList, dumper: null, _logger);
+                bundle.Add(bundleEntryName, payload.ToArray());
+                return;
+            }
+
             ReadyToRunObjectWriter.EmitObject(
                 outputFile,
                 componentModule: inputModule,

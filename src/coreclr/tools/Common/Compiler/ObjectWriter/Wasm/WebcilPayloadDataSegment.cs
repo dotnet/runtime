@@ -81,6 +81,12 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(headerSize == HeaderSize);
             outputFileStream.Write(headerBuffer);
 
+            EmitPayloadToStream(outputFileStream);
+            return EncodeSize();
+        }
+
+        public int EmitPayloadToStream(Stream outputFileStream)
+        {
             long payloadStart = outputFileStream.Position;
             WebcilEncoder.EmitHeader(_header, outputFileStream);
 
@@ -105,7 +111,7 @@ namespace ILCompiler.ObjectWriter
                 (int)(payloadEnd - outputFileStream.Position));
             WasmDataSegmentEncoding.EmitPadding(outputFileStream, _paddingBytesCount);
 
-            return EncodeSize();
+            return ContentSize;
         }
 
         public void SetTrailingPadding(int trailingBytesCount)

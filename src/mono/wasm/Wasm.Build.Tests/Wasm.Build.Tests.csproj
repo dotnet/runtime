@@ -54,6 +54,7 @@
     <PackageReference Include="Microsoft.Playwright" Version="1.55.0" />
     <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.10" />
+    <ProjectReference Include="$(RepoRoot)src\coreclr\tools\aot\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
     <ProjectReference Include="$(RepoTasksDir)MonoTargetsTasks\MonoTargetsTasks.csproj" />
     <!-- Only needed to build the task used by GenerateHelixJobsList below. -->

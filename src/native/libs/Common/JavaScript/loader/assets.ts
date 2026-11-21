@@ -181,7 +181,7 @@ async function fetchWebcil(assetInternal: AssetEntryInternal): Promise<void> {
         const webcilPromise = loadResource(assetInternal);
 
         const memory = await wasmMemoryPromiseController.promise;
-        const instancePromise = dotnetBrowserHostExports.instantiateWebcilModule(webcilPromise, memory, assetInternal.virtualPath!, assetInternal.tableSize, assetInternal.payloadSize);
+        const instancePromise = dotnetBrowserHostExports.instantiateWebcilModule(webcilPromise, memory, assetInternal.virtualPath!, assetInternal.tableSize, assetInternal.payloadSize, assetInternal.isBundle);
         await instancePromise;
     } finally {
         onDownloadedAsset(assetInternal);
@@ -609,7 +609,7 @@ function normalizeVirtualPath(asset: AssetEntryInternal): void {
     dotnetAssert.check(asset.virtualPath, "Asset must have virtualPath");
     // Component stubs probe for the composite owner by its crossgen2 name (<entry>.r2r.wasm), so it keeps
     // its .wasm virtual path; it is not a managed assembly (see initializeCoreCLR's TPA).
-    if (!asset.isCompositeImage) {
+    if (!asset.isCompositeImage && !asset.isBundle) {
         asset.virtualPath = asset.virtualPath!.replace(/\.wasm$/, ".dll");
     }
     asset.virtualPath = asset.virtualPath.startsWith("/")

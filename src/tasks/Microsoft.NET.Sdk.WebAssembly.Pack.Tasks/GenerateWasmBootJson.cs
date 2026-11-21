@@ -136,6 +136,7 @@ public class GenerateWasmBootJson : Task
         var webcilSizes = new Dictionary<string, (int tableSize, int payloadSize)>();
         // Routes of composite ReadyToRun owner images, flagged isCompositeImage in the boot config.
         var compositeImages = new HashSet<string>(StringComparer.Ordinal);
+        var webcilBundles = new HashSet<string>(StringComparer.Ordinal);
 
         var result = new BootJsonData
         {
@@ -313,6 +314,13 @@ public class GenerateWasmBootJson : Task
                     MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a composite ReadyToRun image.", resource.ItemSpec);
                     compositeImages.Add(resourceRoute);
+                    resourceList = resourceData.coreAssembly;
+                }
+                else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals("webcilBundle", assetTraitValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
+                    webcilBundles.Add(resourceRoute);
                     resourceList = resourceData.coreAssembly;
                 }
                 else if (string.Equals("runtime", assetTraitValue, StringComparison.OrdinalIgnoreCase))
@@ -538,7 +546,7 @@ public class GenerateWasmBootJson : Task
 
         string? imports = null;
         if (IsTargeting100OrLater())
-            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes, compositeImages, !isMonoRuntime && IsTargeting120OrLater(), FilesystemUsageDetected);
+            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes, compositeImages, webcilBundles, !isMonoRuntime && IsTargeting120OrLater(), FilesystemUsageDetected);
 
         helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith, imports: imports);
 

@@ -27,6 +27,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
+    <WasmBundleCompositeComponents Condition="'$(WasmBundleCompositeComponents)' == ''">true</WasmBundleCompositeComponents>
     <!-- Override only the incompatible SDK default: net11+ defaults ContainerFormat=pe (unloadable on wasm).
          An explicit unsupported value is left as-is and rejected by _WasmCoreClrValidateReadyToRun. -->
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
@@ -62,6 +63,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishR2RDir Condition="'$(_WasmPublishR2RDir)' == ''">$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'R2R'))</_WasmPublishR2RDir>
       <_WasmPublishPrebuiltR2RDirectory>$(_WasmPublishR2RDir)</_WasmPublishPrebuiltR2RDirectory>
       <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
+      <_WasmCompositeBundlePath Condition="'$(PublishReadyToRunComposite)' == 'true' and '$(WasmBundleCompositeComponents)' == 'true'">$(_WasmPublishR2RDir)$(AssemblyName).components.wasm</_WasmCompositeBundlePath>
+      <PublishReadyToRunCrossgen2CompositeExtraArgs Condition="'$(_WasmCompositeBundlePath)' != ''">$(PublishReadyToRunCrossgen2CompositeExtraArgs);--webcil-component-bundle:&quot;$(_WasmCompositeBundlePath)&quot;</PublishReadyToRunCrossgen2CompositeExtraArgs>
     </PropertyGroup>
     <PropertyGroup Condition="'$(_WasmUsePrebuiltReadyToRun)' == 'true' and '$(_WasmCoreClrUnderPublish)' != 'true' and
                               '$(DeployOnBuild)' != 'true' and '$(_WasmEnableWebcil)' == 'true' and '$(WasmPerformanceInstrumentation)' == ''">
@@ -103,6 +106,23 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
     <Error Condition="'@(_WasmCompositeOwnerEntry)' != '' and !$([System.String]::Copy('%(_WasmCompositeOwnerEntry.OutputR2RImage)').EndsWith('.r2r.wasm'))"
            Text="PublishReadyToRunComposite for CoreCLR browser-wasm requires ReadyToRun SDK tasks that name the composite image '&lt;entry&gt;.r2r.wasm', but they planned '$([System.IO.Path]::GetFileName('%(_WasmCompositeOwnerEntry.OutputR2RImage)'))'. Use an SDK with wasm ReadyToRun output naming (dotnet/sdk#56395), or set Crossgen2SdkOverridePropsPath and Crossgen2SdkOverrideTargetsPath to the dotnet/runtime Crossgen2Tasks. To opt out of composite mode, set PublishReadyToRunComposite=false." />
+  </Target>
+
+  <Target Name="_WasmCoreClrExcludeCompositeLazyAssemblies"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true' and '@(BlazorWebAssemblyLazyLoad)' != ''"
+          BeforeTargets="_PrepareForReadyToRunCompilation">
+    <GetCompositeLazyExclusions LazyAssemblies="@(BlazorWebAssemblyLazyLoad)">
+      <Output TaskParameter="Exclusions" ItemName="PublishReadyToRunCompositeExclusions" />
+    </GetCompositeLazyExclusions>
+  </Target>
+
+  <Target Name="_WasmCoreClrValidateCompositeLazyAssemblies"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true' and '@(BlazorWebAssemblyLazyLoad)' != ''"
+          BeforeTargets="_CreateR2RImages">
+    <ValidateCompositeLazyReferences LazyAssemblies="@(BlazorWebAssemblyLazyLoad)"
+                                     CompositeInputs="@(_ReadyToRunCompositeBuildInput);@(_ReadyToRunCompositeUnrootedBuildInput)"
+                                     CompileList="@(_ReadyToRunCompileList)"
+                                     AssemblyCandidates="@(ReferenceCopyLocalPaths);@(IntermediateAssembly)" />
   </Target>
 
   <!-- PublishTrimmed selects the staged closure (untrimmed pack vs linker output) exactly like
@@ -287,7 +307,7 @@ Copyright (c) .NET Foundation. All rights reserved.
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories;_WasmCoreClrConfigureReadyToRunPgo"
           BeforeTargets="_CreateR2RImages">
     <PropertyGroup>
-      <_WasmReadyToRunState>Composite=$(PublishReadyToRunComposite)|PgoFiles=@(PublishReadyToRunPgoFiles->'%(FullPath)', '|')|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)</_WasmReadyToRunState>
+      <_WasmReadyToRunState>Composite=$(PublishReadyToRunComposite)|Bundle=$(WasmBundleCompositeComponents)|Lazy=@(BlazorWebAssemblyLazyLoad, '|')|Inputs=@(_ReadyToRunCompositeBuildInput, '|')|Unrooted=@(_ReadyToRunCompositeUnrootedBuildInput, '|')|PgoFiles=@(PublishReadyToRunPgoFiles->'%(FullPath)', '|')|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)|CompositeArgs=$(PublishReadyToRunCrossgen2CompositeExtraArgs)</_WasmReadyToRunState>
       <!-- The workload targets record settings for steps that rewrite the images in place after crossgen2
            (wasm-opt), so changing them recompiles every image. -->
       <_WasmReadyToRunState Condition="'$(_WasmReadyToRunPostProcessState)' != ''">$(_WasmReadyToRunState)|PostProcess=$(_WasmReadyToRunPostProcessState)</_WasmReadyToRunState>
@@ -301,10 +321,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmReadyToRunStateChanged Condition="'$(_WasmPreviousReadyToRunStateHash)' != '$(_WasmReadyToRunStateHash)'">true</_WasmReadyToRunStateChanged>
     </PropertyGroup>
+    <ItemGroup>
+      <_ReadyToRunCompileList Update="@(_ReadyToRunCompileList)"
+                                Condition="'$(_WasmCompositeBundlePath)' != '' and '%(CreateCompositeImage)' == 'true'"
+                                AdditionalOutputs="$(_WasmCompositeBundlePath)" />
+    </ItemGroup>
     <!-- Output timestamps can be newer than a newly written state file. Delete every batch output on a
          state change so _CreateR2RImages cannot retain a mixture of full and partial images. -->
     <Delete Condition="'$(_WasmReadyToRunStateChanged)' == 'true'"
-            Files="@(_ReadyToRunCompileList->'%(OutputR2RImage)');@(_ReadyToRunCompileList->'%(OutputPDBImage)')" />
+              Files="@(_ReadyToRunCompileList->'%(OutputR2RImage)');@(_ReadyToRunCompileList->'%(OutputPDBImage)');@(_ReadyToRunCompileList->'%(AdditionalOutputs)')" />
     <WriteLinesToFile File="$(_WasmReadyToRunStateFile)"
                       Lines="$(_WasmReadyToRunStateHash)"
                       Overwrite="true"
@@ -315,6 +340,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)crossgen2*;$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
                                  Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
       <FileWrites Include="$(_WasmReadyToRunStateFile)" />
+      <FileWrites Include="$(_WasmCompositeBundlePath)" Condition="'$(_WasmCompositeBundlePath)' != ''" />
     </ItemGroup>
   </Target>
 
@@ -339,7 +365,8 @@ Copyright (c) .NET Foundation. All rights reserved.
            composite mode a <name>.wasm component stub beside the owner for each composite input. -->
       <_WasmEmittedPerAppR2R Include="@(_ReadyToRunCompileList->'%(OutputR2RImage)')" />
       <_WasmEmittedPerAppR2R Include="@(_ReadyToRunCompositeBuildInput->'$(_WasmPublishR2RDir)%(FileName).wasm');@(_ReadyToRunCompositeUnrootedBuildInput->'$(_WasmPublishR2RDir)%(FileName).wasm')"
-                             Condition="'$(PublishReadyToRunComposite)' == 'true'" />
+                             Condition="'$(PublishReadyToRunComposite)' == 'true' and '$(_WasmCompositeBundlePath)' == ''" />
+      <_WasmEmittedPerAppR2R Include="$(_WasmCompositeBundlePath)" Condition="'$(_WasmCompositeBundlePath)' != ''" />
       <!-- Both extensions: ConvertDll probes PrebuiltR2RDirectory for .dll before .wasm (a stock SDK names the
            R2R output <name>.dll), so a surviving .dll would win the probe over the current .wasm. -->
       <!-- Exclude by full path: OutputR2RImage keeps any '..' segments from IntermediateOutputPath (e.g. an

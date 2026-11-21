@@ -183,6 +183,34 @@ public class DebugLevelTests : WasmTemplateTestsBase
         }
     }
 
+    [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [TestCategory("no-workload")]
+    public async Task StackTraceLineNumbersCompositeBundle()
+    {
+        Configuration configuration = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(
+            configuration,
+            aot: false,
+            asset: TestAsset.WasmBasicTestApp,
+            idPrefix: "StackTraceCompositeBundle",
+            extraProperties: """
+                <PublishReadyToRun>true</PublishReadyToRun>
+                <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
+                <PublishTrimmed>true</PublishTrimmed>
+                <WasmBuildNative>false</WasmBuildNative>
+                <CopyOutputSymbolsToPublishDirectory>true</CopyOutputSymbolsToPublishDirectory>
+                <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
+                <DebuggerSupport>true</DebuggerSupport>
+                """);
+
+        PublishProject(info, configuration,
+            new PublishOptions(UseCache: false, ExtraMSBuildArgs: GetR2RBuildArgs(configuration, composite: true)),
+            isNativeBuild: false);
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(configuration, TestScenario: "StackTraceTest"));
+        Assert.Contains(result.TestOutput, line => line.Contains("Source info: True"));
+        Assert.Contains(result.TestOutput, line => line.Contains("Method: Run"));
+    }
+
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
     [InlineData(false)]
     [InlineData(true)]

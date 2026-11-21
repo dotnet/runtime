@@ -254,6 +254,9 @@
       <_WasmNestedPublishCompositeR2RImage Remove="@(_WasmNestedPublishCompositeR2RImage)" />
       <_WasmNestedPublishCompositeR2RImage Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == '_WasmNestedPublishCompositeR2RImage'" />
 
+      <_WasmNestedPublishCompositeBundle Remove="@(_WasmNestedPublishCompositeBundle)" />
+      <_WasmNestedPublishCompositeBundle Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == '_WasmNestedPublishCompositeBundle'" />
+
       <FileWrites Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == 'FileWrites'" />
     </ItemGroup>
   </Target>
@@ -262,7 +265,7 @@
   <Target Name="WasmNestedPublishApp"
           Condition="'$(WasmBuildingForNestedPublish)' == 'true'"
           DependsOnTargets="ResolveRuntimePackAssets;$(_WasmNestedPublishAppPreTarget);$(WasmNestedPublishAppDependsOn);_CoreCLRSetWasmBuildNativeDefaults;_CoreCLRWasmBuildAppCore"
-          Returns="@(WasmNativeAsset);@(WasmAssembliesFinal);@(_WasmNestedPublishCompositeR2RImage);@(FileWrites)">
+          Returns="@(WasmNativeAsset);@(WasmAssembliesFinal);@(_WasmNestedPublishCompositeR2RImage);@(_WasmNestedPublishCompositeBundle);@(FileWrites)">
     <ItemGroup>
       <WasmNativeAsset OriginalItemName="WasmNativeAsset" />
       <WasmAssembliesFinal OriginalItemName="WasmAssembliesFinal" />
@@ -270,6 +273,7 @@
       <_WasmNestedPublishCompositeR2RImage Include="@(_ReadyToRunCompileList->WithMetadataValue('CreateCompositeImage', 'true')->'%(OutputR2RImage)')"
                                            KeepMetadata="OutputR2RImage" />
       <_WasmNestedPublishCompositeR2RImage OriginalItemName="_WasmNestedPublishCompositeR2RImage" />
+      <_WasmNestedPublishCompositeBundle Include="$(_WasmCompositeBundlePath)" Condition="'$(_WasmCompositeBundlePath)' != ''" OriginalItemName="_WasmNestedPublishCompositeBundle" />
       <FileWrites OriginalItemName="FileWrites" />
     </ItemGroup>
   </Target>

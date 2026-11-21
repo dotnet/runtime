@@ -4,6 +4,7 @@
 import type { AssetEntryInternal, CharPtrPtr, VoidPtr } from "../types";
 import { _ems_ } from "../ems-ambient";
 import { browserVirtualAppBase, sizeOfPtr } from "../per-module";
+import { getBundledAssemblyPaths } from "./assets";
 
 const HOST_PROPERTY_RUNTIME_CONTRACT = "HOST_RUNTIME_CONTRACT";
 const HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
@@ -25,9 +26,9 @@ export function initializeCoreCLR(): number {
 
     const assemblyPaths = loaderConfig.resources!.assembly.map(asset => asset.virtualPath.replace(/\.wasm$/, ".dll"));
     const coreAssemblyPaths = loaderConfig.resources!.coreAssembly
-        .filter(asset => !(asset as AssetEntryInternal).isCompositeImage)
+        .filter(asset => !(asset as AssetEntryInternal).isCompositeImage && !(asset as AssetEntryInternal).isBundle)
         .map(asset => asset.virtualPath.replace(/\.wasm$/, ".dll"));
-    const tpa = [...coreAssemblyPaths, ...assemblyPaths].join(":");
+    const tpa = [...coreAssemblyPaths, ...getBundledAssemblyPaths(), ...assemblyPaths].join(":");
     runtimeConfigProperties.set(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, tpa);
     runtimeConfigProperties.set(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, loaderConfig.virtualWorkingDirectory!);
     runtimeConfigProperties.set(HOST_PROPERTY_APP_PATHS, loaderConfig.virtualWorkingDirectory!);

@@ -413,6 +413,10 @@ try {
 
                 const firstJsonLoad = await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
                 testOutput(`firstJsonLoad=${firstJsonLoad}`);
+                if (params.get("loadNoILLazyAssembly") === "true") {
+                    const noILLoad = await INTERNAL.loadLazyAssembly(`NoILLazyLibrary${lazyAssemblyExtension}`);
+                    testOutput(`noILLoad=${noILLoad}`);
+                }
                 if (params.get("loadLazyAssemblyTwice") === "true") {
                     // Regression test: loading the same lazy assembly a second time must be an
                     // idempotent no-op (returns false) and must not throw

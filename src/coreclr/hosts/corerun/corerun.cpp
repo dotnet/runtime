@@ -15,6 +15,7 @@
 
 #ifdef TARGET_BROWSER
 #include <emscripten/emscripten.h>
+extern "C" char* BrowserHost_GetWebcilBundleAssemblyPaths(const char* directory);
 #endif // TARGET_BROWSER
 
 #include <fstream>
@@ -132,6 +133,30 @@ static void wait_for_debugger()
 // (for example, ni's may be preferred over il, even if they appear later). Therefore, when building
 // the TPA only includes the first instance of a simple assembly name to allow users the opportunity to
 // override Framework assemblies by placing dlls in %CORE_LIBRARIES%.
+#ifdef TARGET_BROWSER
+static void add_bundled_assemblies(std::unordered_map<string_t, string_t>& tpa, const string_t& directory)
+{
+    if (directory.empty())
+        return;
+
+    char* paths = BrowserHost_GetWebcilBundleAssemblyPaths(directory.c_str());
+    std::string list(paths);
+    ::free(paths);
+    size_t start = 0;
+    while (start < list.length())
+    {
+        size_t end = list.find('\n', start);
+        if (end == std::string::npos)
+            end = list.length();
+        string_t path = list.substr(start, end - start);
+        size_t name_start = path.find_last_of('/') + 1;
+        string_t name = path.substr(name_start, path.length() - name_start - 4);
+        tpa.emplace(std::move(name), std::move(path));
+        start = end + 1;
+    }
+}
+#endif
+
 static std::unordered_map<string_t, string_t> build_tpa(const string_t& core_root, const string_t& core_libraries)
 {
     static const char_t* const tpa_extensions[] =
@@ -166,6 +191,10 @@ static std::unordered_map<string_t, string_t> build_tpa(const string_t& core_roo
 
                     return tpa.emplace(std::move(file_local), dir + file).second;
                 });
+#ifdef TARGET_BROWSER
+            if (ext_len == 4 && pal::strcmp(ext, W(".dll")) == 0)
+                add_bundled_assemblies(tpa, dir);
+#endif
         }
     }
 
@@ -354,6 +383,9 @@ static bool HOST_CONTRACT_CALLTYPE resolve_assembly_to_path(
 // Paths for external assembly probe
 static char* s_core_libs_path = nullptr;
 static char* s_core_root_path = nullptr;
+#ifdef TARGET_BROWSER
+static pal::string_utf8_t s_app_path;
+#endif // TARGET_BROWSER
 
 #ifdef TARGET_BROWSER
 extern "C" bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
@@ -456,9 +488,16 @@ static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
 #endif // TARGET_WASI
 
     // Try to map the file from our known app assembly paths
-    for (const char* dir : { s_core_libs_path, s_core_root_path })
+    const char* const probe_dirs[] = {
+        s_core_libs_path,
+        s_core_root_path,
+#ifdef TARGET_BROWSER
+        s_app_path.c_str(),
+#endif // TARGET_BROWSER
+    };
+    for (const char* dir : probe_dirs)
     {
-        if (dir == nullptr)
+        if (dir == nullptr || *dir == '\0')
             continue;
 
         std::string full_path = dir;
@@ -539,6 +578,11 @@ static int run(const configuration& config)
 #ifdef TARGET_BROWSER
     use_external_assembly_probe = true;
     use_tpa_callbacks = false;
+    // Install bundles even when the caller provides its own TPA list.
+    std::unordered_map<string_t, string_t> bundled_app_assemblies;
+    add_bundled_assemblies(bundled_app_assemblies, app_path);
+    add_bundled_assemblies(bundled_app_assemblies, core_libs);
+    add_bundled_assemblies(bundled_app_assemblies, core_root);
 #endif // TARGET_BROWSER
     if (use_tpa_callbacks)
     {
@@ -548,7 +592,11 @@ static int run(const configuration& config)
     {
         // Use the TRUSTED_PLATFORM_ASSEMBLIES property to pass the app assemblies to the runtime.
         pal::stringstream_t tpa_list;
-        for (const std::pair<const string_t, string_t>& entry : build_tpa(core_root, core_libs))
+        auto tpa_entries = build_tpa(core_root, core_libs);
+#ifdef TARGET_BROWSER
+        add_bundled_assemblies(tpa_entries, app_path);
+#endif
+        for (const std::pair<const string_t, string_t>& entry : tpa_entries)
             tpa_list << entry.second << pal::env_path_delim;
 
         tpa_property = tpa_list.str();
@@ -565,6 +613,10 @@ static int run(const configuration& config)
 
     if (use_external_assembly_probe)
     {
+#ifdef TARGET_BROWSER
+        s_app_path = pal::convert_to_utf8(app_path.c_str());
+#endif // TARGET_BROWSER
+
         if (!core_libs.empty())
         {
             pal::string_utf8_t core_libs_utf8 = pal::convert_to_utf8(core_libs.c_str());

@@ -283,6 +283,10 @@ export type WebcilAsset = AssemblyAsset & {
      * but is not itself a managed assembly: it keeps its .wasm virtual path and is not a trusted platform assembly.
      */
     isCompositeImage?: boolean;
+    /**
+     * Set on a composite component bundle. Its payload contains separate Webcil assembly images.
+     */
+    isBundle?: boolean;
 };
 export type PdbAsset = Asset & {
     virtualPath: string;

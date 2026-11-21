@@ -125,6 +125,7 @@ namespace Microsoft.NET.Build.Tasks
         public const string CreatePDBCommand = "CreatePDBCommand";
         public const string OutputR2RImage = "OutputR2RImage";
         public const string OutputPDBImage = "OutputPDBImage";
+        public const string AdditionalOutputs = "AdditionalOutputs";
         public const string EmitSymbols = "EmitSymbols";
         public const string IsVersion5 = "IsVersion5";
         public const string CreateCompositeImage = "CreateCompositeImage";

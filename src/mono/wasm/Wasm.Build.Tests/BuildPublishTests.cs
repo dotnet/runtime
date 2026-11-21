@@ -49,6 +49,37 @@ namespace Wasm.Build.Tests
             await RunForPublishWithWebServer(runOptions);
         }
 
+        [Fact]
+        [TestCategory("no-workload")]
+        public void IncrementalPublishRemovesStaleFingerprintedFrameworkAssets()
+        {
+            Configuration config = Configuration.Release;
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "incremental_framework_asset");
+            string sourceAsset = Path.Combine(_projectDir, "wwwroot", "_framework", "custom-framework-asset.wasm");
+            Directory.CreateDirectory(Path.Combine(_projectDir, "wwwroot", "_framework"));
+            File.WriteAllText(sourceAsset, "first version");
+
+            PublishOptions publishOptions = new(UseCache: false, ExtraMSBuildArgs: "-p:WasmFingerprintAssets=true -p:CompressionEnabled=true");
+            PublishProject(info, config, publishOptions);
+
+            string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
+            string initialAsset = Assert.Single(Directory.GetFiles(frameworkDir, "custom-framework-asset*.wasm"));
+            Assert.True(File.Exists(initialAsset + ".br"));
+            Assert.True(File.Exists(initialAsset + ".gz"));
+
+            string updatedSourceAsset = Path.Combine(_projectDir, "wwwroot", "_framework", "custom-framework-asset-updated.wasm");
+            File.Move(sourceAsset, updatedSourceAsset);
+            PublishProject(info, config, publishOptions);
+
+            string updatedAsset = Assert.Single(Directory.GetFiles(frameworkDir, "custom-framework-asset*.wasm"));
+            Assert.NotEqual(initialAsset, updatedAsset);
+            Assert.False(File.Exists(initialAsset), $"Stale static web asset remains: '{initialAsset}'.");
+            Assert.False(File.Exists(initialAsset + ".br"), $"Stale Brotli asset remains: '{initialAsset}.br'.");
+            Assert.False(File.Exists(initialAsset + ".gz"), $"Stale gzip asset remains: '{initialAsset}.gz'.");
+            Assert.True(File.Exists(updatedAsset + ".br"));
+            Assert.True(File.Exists(updatedAsset + ".gz"));
+        }
+
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
         [TestCategory("native"), TestCategory("mono")]
