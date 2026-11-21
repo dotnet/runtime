@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // The throwing dummy stub doesn't reference its target, but the unboxing stub map needs it.
                 // Non-WASM special unboxing thunks maintain this dependency through MethodAssociatedDataNode.
-                sink.Add(factory.MethodEntrypoint(Method), "Non-unboxing method");
+                sink.Add(GetUnderlyingMethodEntrypoint(factory), "Non-unboxing method");
             }
         }
 

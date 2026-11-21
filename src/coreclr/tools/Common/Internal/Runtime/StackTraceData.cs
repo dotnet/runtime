@@ -12,5 +12,9 @@ namespace Internal.Runtime
 
         public const byte IsStackTraceHidden = 0x10;
         public const byte HasFunctionPointer = 0x20;
+
+        // WASM only: the record has no virtual IP because the method body was folded into another one.
+        // Only the function pointer (of the address-taken stub) follows.
+        public const byte IsFunctionPointerOnly = 0x40;
     }
 }

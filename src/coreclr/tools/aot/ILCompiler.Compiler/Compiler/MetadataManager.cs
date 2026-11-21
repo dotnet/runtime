@@ -764,12 +764,22 @@ namespace ILCompiler
             {
                 MethodDesc method = methodBody.Method;
 
-                // If the method will be folded, no need to emit stack trace info for this one
+                StackTraceRecordFlags flags = 0;
+
+                // Code addresses within a folded body map to the surviving body. But if the address of the folded
+                // method was taken, it got a unique jump stub and we need a record to map that address back.
                 ISymbolNode internedBody = factory.ObjectInterner.GetDeduplicatedSymbol(factory, methodBody);
                 if (internedBody != methodBody)
-                    continue;
+                {
+                    if (factory.AddressTakenMethodEntrypoint(method) is not AddressTakenMethodNode { Marked: true })
+                        continue;
 
-                methodBodies.Add(method);
+                    flags |= StackTraceRecordFlags.IsFoldedAddressTaken;
+                }
+                else
+                {
+                    methodBodies.Add(method);
+                }
 
                 // Methods that will end up in the reflection invoke table should not have an entry in stack trace table
                 // We'll try looking them up in reflection data at runtime.
@@ -778,10 +788,15 @@ namespace ILCompiler
 
                 MethodStackTraceVisibilityFlags stackVisibility = _stackTraceEmissionPolicy.GetMethodVisibility(method);
 
-                StackTraceRecordFlags flags = 0;
+                // Jump stubs never show up in stack traces, so only the metadata is useful for them.
+                if ((flags & StackTraceRecordFlags.IsFoldedAddressTaken) != 0
+                    && (stackVisibility & MethodStackTraceVisibilityFlags.HasMetadata) == 0)
+                    continue;
+
                 if ((stackVisibility & MethodStackTraceVisibilityFlags.IsHidden) != 0)
                     flags |= StackTraceRecordFlags.IsHidden;
-                if ((stackVisibility & MethodStackTraceVisibilityFlags.HasLineNumbers) != 0)
+                if ((stackVisibility & MethodStackTraceVisibilityFlags.HasLineNumbers) != 0
+                    && (flags & StackTraceRecordFlags.IsFoldedAddressTaken) == 0)
                     flags |= StackTraceRecordFlags.HasLineNumbers;
 
                 if ((stackVisibility & MethodStackTraceVisibilityFlags.HasMetadata) != 0)
@@ -1346,6 +1361,12 @@ namespace ILCompiler
         None = 0,
         IsHidden = 1,
         HasLineNumbers = 2,
+
+        /// <summary>
+        /// The method body was folded into another body. The record describes the unique
+        /// address-taken jump stub of the method instead of the method body.
+        /// </summary>
+        IsFoldedAddressTaken = 4,
     }
 
     public readonly struct StackTraceRecordData
