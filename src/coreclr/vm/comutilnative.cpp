@@ -1250,6 +1250,7 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
     findCallerData.retAddress = 0;
     GetThread()->StackWalkFrames(FindFailFastCallerCallback, &findCallerData, FUNCTIONSONLY | QUICKUNWIND);
 
+#ifndef TARGET_UNIX
     if (message == NULL || message[0] == W('\0'))
     {
         OutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
@@ -1260,6 +1261,7 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
         OutputDebugString(message);
         OutputDebugString(W("\r\n"));
     }
+#endif // !TARGET_UNIX
 
     LPCWSTR argExceptionString = NULL;
     StackSString msg;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+#include <minipal/thread.h>
 
 #include "frames.h"
 #include "threads.h"
@@ -5967,12 +5968,12 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                         pStack = sStack.GetUTF8();
                     }
 
-                    DWORD tid = GetCurrentThreadId();
+                    size_t tid = minipal_get_current_thread_id();
 
                     BOOL debuggerPresentBeforeAssert = minipal_is_native_debugger_present();
 
 
-                    CONSISTENCY_CHECK_MSGF(false, ("AV in clr at this callstack:\n------\n%s\n-----\n.AV on tid=0x%x (%d), cxr=%p, exr=%p\n",
+                    CONSISTENCY_CHECK_MSGF(false, ("AV in clr at this callstack:\n------\n%s\n-----\n.AV on tid=0x%zx (%zu), cxr=%p, exr=%p\n",
                         pStack, tid, tid, pContext, pExceptionRecord));
 
                     // @todo - this may not be what we want for interop-debugging...
@@ -6764,7 +6765,7 @@ LONG NotifyOfCHFFilterWrapper(
 
 #endif // !DACCESS_COMPILE
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(TARGET_WINDOWS)
 bool DebugIsEECxxExceptionPointer(void* pv)
 {
     CONTRACTL
@@ -6910,7 +6911,7 @@ void *DebugGetCxxException(EXCEPTION_RECORD* pExceptionRecord)
     return NULL;
 }
 
-#endif // _DEBUG
+#endif // _DEBUG && TARGET_WINDOWS
 
 #endif // #ifndef DACCESS_COMPILE
 

@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <minipal/environ.h>
 #include <minipal/utf8.h>
+#include <minipal/thread.h>
 
 #include "holder.h"
 
@@ -193,7 +194,7 @@ bool PalInit()
 
 uint64_t PalGetCurrentOSThreadId()
 {
-    return GetCurrentThreadId();
+    return (uint64_t)minipal_get_current_thread_id();
 }
 
 #if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)

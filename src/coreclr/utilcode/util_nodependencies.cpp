@@ -666,7 +666,8 @@ void TrimWhiteSpace(_Outptr_result_buffer_(*pcch)  LPCWSTR *pwsz, __inout LPDWOR
 void OutputDebugStringUtf8(LPCUTF8 utf8DebugMsg)
 {
 #ifdef TARGET_UNIX
-    OutputDebugStringA(utf8DebugMsg);
+    // There is no debugger channel for these strings.
+    (void)utf8DebugMsg;
 #else
     if (utf8DebugMsg == NULL)
         utf8DebugMsg = "";

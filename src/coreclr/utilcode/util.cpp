@@ -18,6 +18,7 @@
 #include "corinfo.h"
 #include "volatile.h"
 #include <minipal/cpucount.h>
+#include <minipal/time.h>
 #include "mdfileformat.h"
 #include <configuration.h>
 
@@ -566,7 +567,7 @@ DWORD LCM(DWORD u, DWORD v)
         // Some other thread started initialization, just wait until complete
         while (VolatileLoad(&m_initialization) != -1)
         {
-            SwitchToThread();
+            minipal_switch_to_thread(0);
         }
     }
 }

@@ -11,6 +11,7 @@
 #define __UtilCode_h__
 
 #include <type_traits>
+#include <minipal/thread.h>
 #include <algorithm>
 #include <stdio.h>
 #include <limits.h>
@@ -2479,7 +2480,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // not fiber for HOST_UNIX - use the regular thread ID
-        return (void *)(size_t)GetCurrentThreadId();
+        return (void *)minipal_get_current_thread_id();
     }
 
     static void* GetStackBase()

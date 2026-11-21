@@ -8,6 +8,7 @@
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
+#include <minipal/thread.h>
 
 #ifdef HOST_WINDOWS
 #include <windows.h>
@@ -498,11 +499,7 @@ ep_rt_thread_id_t
 ep_rt_aot_current_thread_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-#ifdef TARGET_UNIX
-    return static_cast<ep_rt_thread_id_t>(PalGetCurrentOSThreadId());
-#else
-    return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
-#endif
+    return static_cast<ep_rt_thread_id_t>(minipal_get_current_thread_id());
 }
 
 int64_t

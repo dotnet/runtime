@@ -2148,9 +2148,9 @@ public:
     VOID Init();
 };
 
-#ifdef TARGET_X86
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 bool isRetAddr(TADDR retAddr, TADDR* whereCalled);
-#endif // TARGET_X86
+#endif // TARGET_X86 && TARGET_WINDOWS
 
 #ifdef TARGET_X86
 //------------------------------------------------------------------------

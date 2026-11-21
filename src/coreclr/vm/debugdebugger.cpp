@@ -10,6 +10,7 @@
 ===========================================================*/
 
 #include "common.h"
+#include <minipal/debugger.h>
 
 #include <object.h>
 #include "ceeload.h"
@@ -199,6 +200,7 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     }
     CONTRACTL_END;
 
+#ifndef TARGET_UNIX
     // OutputDebugString will log to native/interop debugger.
     if (pwzModule != NULL)
     {
@@ -219,6 +221,7 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     {
         OutputDebugString(W("\n"));
     }
+#endif // !TARGET_UNIX
 
 
 #ifdef DEBUGGING_SUPPORTED

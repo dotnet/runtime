@@ -12,6 +12,10 @@
 #include "clrnt.h"
 #include "contract.h"
 
+#ifndef HOST_WINDOWS
+#include <dlfcn.h>
+#endif
+
 #if HOST_WINDOWS
 extern "C" IMAGE_DOS_HEADER __ImageBase;
 #else
@@ -43,13 +47,19 @@ void* GetCurrentModuleBase()
 #if HOST_WINDOWS
     return (void*)&__ImageBase;
 #else // HOST_WINDOWS
-    // PAL_GetSymbolModuleBase defers to dladdr, which is typically a hash lookup through symbols.
-    // It should be fairly fast, however it may take a loader lock, so we will cache the result.
+    // dladdr is typically a hash lookup through symbols. It should be fairly fast, however it
+    // may take a loader lock, so we will cache the result.
     void* pRet = VolatileLoadWithoutBarrier(&pImageBase);
+#ifndef __wasi__ // WASI has no dladdr
     if (!pRet)
     {
-        pImageBase = pRet = (void*)PAL_GetSymbolModuleBase((void*)GetClrModuleBase);
+        Dl_info info;
+        if (dladdr((void*)GetClrModuleBase, &info) != 0)
+        {
+            pImageBase = pRet = info.dli_fbase;
+        }
     }
+#endif // !__wasi__
 
     return pRet;
 #endif // HOST_WINDOWS

@@ -12,6 +12,8 @@
 #ifndef __PAL_ASSERT_H__
 #define __PAL_ASSERT_H__
 
+#include <unistd.h>
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
@@ -27,7 +29,7 @@ extern "C" {
                      "\tFunction:   %s\n"                       \
                      "\tProcess:    %d\n",                      \
                      #e, __FILE__, __LINE__, __FUNCTION__,      \
-                     GetCurrentProcessId());                    \
+                     (int)getpid());                            \
             DebugBreak();                                       \
         }                                                       \
     }while (0)
