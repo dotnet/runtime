@@ -6,6 +6,8 @@ using System.IO;
 using System.Collections.Immutable;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Microsoft.NET.WebAssembly.Webcil;
 
@@ -58,6 +60,15 @@ public class WebcilWasmWrapper
     private readonly uint _webcilPayloadSize;
     private readonly bool _selfInstalling;
 
+    /// <summary>
+    /// When true, a WebAssembly tool-conventions <c>producers</c> section and a
+    /// <c>build_id</c> section are appended to the wrapped module.
+    /// </summary>
+    public bool EmitMetadataSections { get; set; }
+
+    /// <summary>Version used for the <c>producers</c> <c>processed-by</c>/<c>sdk</c> fields.</summary>
+    public string ProductVersion { get; set; } = string.Empty;
+
     public WebcilWasmWrapper(Stream webcilPayloadStream)
         : this(webcilPayloadStream, selfInstalling: false)
     {
@@ -81,6 +92,86 @@ public class WebcilWasmWrapper
             WriteDataSection(writer);
         }
         WriteWasmSuffix(outputStream);
+
+        if (EmitMetadataSections)
+            WriteMetadataSections(outputStream);
+    }
+
+    // Appends the tool-conventions producers + build_id custom sections. These must come after the
+    // module's name section (which is part of the suffix), which is why this runs last.
+    private void WriteMetadataSections(Stream outputStream)
+    {
+        byte[]? buildId = ComputePayloadHash();
+        WriteProducersSection(outputStream);
+        if (buildId is not null)
+            WriteBuildIdSection(outputStream, buildId);
+    }
+
+    private void WriteProducersSection(Stream outputStream)
+    {
+        using var payload = new MemoryStream();
+        WriteName(payload, "producers");
+        WriteULEB128(payload, 2);
+        WriteProducerField(payload, "processed-by", "WebCIL", ProductVersion);
+        WriteProducerField(payload, "sdk", ".NET", ProductVersion);
+        WriteCustomSection(outputStream, payload);
+    }
+
+    private static void WriteBuildIdSection(Stream outputStream, byte[] buildId)
+    {
+        using var payload = new MemoryStream();
+        WriteName(payload, "build_id");
+        WriteULEB128(payload, checked((uint)buildId.Length));
+        payload.Write(buildId, 0, buildId.Length);
+        WriteCustomSection(outputStream, payload);
+    }
+
+    private static void WriteProducerField(Stream output, string field, string name, string version)
+    {
+        WriteName(output, field);
+        WriteULEB128(output, 1);
+        WriteName(output, name);
+        WriteName(output, version);
+    }
+
+    private static void WriteName(Stream output, string value)
+    {
+        byte[] utf8 = Encoding.UTF8.GetBytes(value);
+        WriteULEB128(output, checked((uint)utf8.Length));
+        output.Write(utf8, 0, utf8.Length);
+    }
+
+    private static void WriteCustomSection(Stream outputStream, MemoryStream payload)
+    {
+        outputStream.WriteByte(0);
+        WriteULEB128(outputStream, checked((uint)payload.Length));
+        payload.Position = 0;
+        payload.CopyTo(outputStream);
+    }
+
+    private static void WriteULEB128(Stream output, uint value)
+    {
+        byte[] encoded = ULEB128Encode(value);
+        output.Write(encoded, 0, encoded.Length);
+    }
+
+    // Content hash of the webcil payload, used as the build_id when none was supplied explicitly.
+    private byte[]? ComputePayloadHash()
+    {
+        if (!_webcilPayloadStream.CanSeek)
+            return null;
+
+        long savedPosition = _webcilPayloadStream.Position;
+        try
+        {
+            _webcilPayloadStream.Seek(0, SeekOrigin.Begin);
+            using var sha = SHA256.Create();
+            return sha.ComputeHash(_webcilPayloadStream);
+        }
+        finally
+        {
+            _webcilPayloadStream.Seek(savedPosition, SeekOrigin.Begin);
+        }
     }
 
     private
