@@ -326,14 +326,20 @@ namespace System.Reflection.Emit
             // Required modifiers come first.
             if (requiredCustomModifiers != null)
                 AddCustomModifiers(requiredCustomModifiers, isOptional: false, nameof(requiredCustomModifiers));
+            else if (EncodesTypeModifiers)
+                AddCustomModifiers(clsArgument.GetRequiredCustomModifiers(), isOptional: false, paramName: null);
 
             if (optionalCustomModifiers != null)
                 AddCustomModifiers(optionalCustomModifiers, isOptional: true, nameof(optionalCustomModifiers));
+            else if (EncodesTypeModifiers)
+                AddCustomModifiers(clsArgument.GetOptionalCustomModifiers(), isOptional: true, paramName: null);
 
-            AddOneArgTypeHelper(clsArgument);
+            // The overload taking a DynamicScope would write the type's own modifiers again, including those an array
+            // replaced.
+            AddOneArgTypeHelperWorker(clsArgument, lastWasGenericInst: false, null);
         }
 
-        private void AddCustomModifiers(Type[] customModifiers, bool isOptional, string paramName)
+        private void AddCustomModifiers(Type[] customModifiers, bool isOptional, string? paramName)
         {
             // Custom modifiers are in the order GetRequiredCustomModifiers and GetOptionalCustomModifiers
             // return, the reverse of signature order.
@@ -357,9 +363,45 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void AddOneArgTypeHelper(Type clsArgument, DynamicScope? scope = null) { AddOneArgTypeHelperWorker(clsArgument, false, scope); }
+        // Modifier tokens come from m_module, which a DynamicMethod's signature doesn't have.
+        private bool EncodesTypeModifiers => m_module is not null;
+
+        // A modified type's UnderlyingSystemType is its unmodified type, whichever Type implementation it is. A runtime
+        // TypeBuilder's or EnumBuilder's can be its created type or its enum's underlying type, which a token or
+        // signature must not name instead.
+        internal static Type GetUnmodifiedType(Type type) =>
+            type is RuntimeTypeBuilder or RuntimeEnumBuilder ? type : type.UnderlyingSystemType;
+
+        // Reflection returns each kind's modifiers separately, without their interleaving. Required modifiers come
+        // first.
+        private void AddTypeCustomModifiers(Type type)
+        {
+            AddCustomModifiers(type.GetRequiredCustomModifiers(), isOptional: false, paramName: null);
+            AddCustomModifiers(type.GetOptionalCustomModifiers(), isOptional: true, paramName: null);
+        }
+
+        private void AddOneArgTypeHelper(Type clsArgument, DynamicScope? scope = null)
+        {
+            if (EncodesTypeModifiers)
+                AddTypeCustomModifiers(clsArgument);
+
+            AddOneArgTypeHelperWorker(clsArgument, lastWasGenericInst: false, scope);
+        }
+
         private void AddOneArgTypeHelperWorker(Type clsArgument, bool lastWasGenericInst, DynamicScope? scope)
         {
+            // In a module's signature the caller has written the type's modifiers. Custom modifiers can also precede
+            // element and type argument types (docs/design/specs/Ecma-335-Augments.md, "Custom modifiers can go in more
+            // places than specified"), so arrays, pointers, by-refs and constructed generic types stay wrapped and
+            // their parts are written with their own modifiers. A modified method type parameter doesn't report its
+            // declaring method, so unwrapping comes before the generic parameter check.
+            if (EncodesTypeModifiers)
+            {
+                Type unmodifiedType = GetUnmodifiedType(clsArgument);
+                if (!ReferenceEquals(unmodifiedType, clsArgument) && !unmodifiedType.HasElementType && !unmodifiedType.IsConstructedGenericType)
+                    clsArgument = unmodifiedType;
+            }
+
             if (clsArgument.IsGenericParameter)
             {
                 if (clsArgument.DeclaringMethod != null)

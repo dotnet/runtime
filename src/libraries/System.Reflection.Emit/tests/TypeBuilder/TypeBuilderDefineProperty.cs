@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -174,6 +175,27 @@ namespace System.Reflection.Emit.Tests
             Type createdType = type.CreateType();
             object obj = Activator.CreateInstance(createdType);
             Assert.Equal(5, createdType.GetProperty("Property").GetGetMethod().Invoke(obj, null));
+        }
+
+        [Fact]
+        [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
+        public void DefineProperty_ModifiedSignatureType_ModifiersRoundTrip()
+        {
+            Type propertyType = Type.MakeModifiedSignatureType(typeof(int), [typeof(IsConst), typeof(IsVolatile)], [typeof(IsLong)]);
+
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            CallingConventions conventions = CallingConventions.HasThis | CallingConventions.Standard;
+            PropertyBuilder property = type.DefineProperty("Property", PropertyAttributes.None, conventions, propertyType, Type.EmptyTypes);
+            MethodBuilder getMethod = type.DefineMethod("get_Property", MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, conventions, typeof(int), Type.EmptyTypes);
+            ILGenerator ilGenerator = getMethod.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldc_I4, 5);
+            ilGenerator.Emit(OpCodes.Ret);
+            property.SetGetMethod(getMethod);
+            PropertyInfo created = type.CreateType().GetProperty("Property");
+
+            Assert.Equal(typeof(int), created.PropertyType);
+            Assert.Equal([typeof(IsConst), typeof(IsVolatile)], created.GetModifiedPropertyType().GetRequiredCustomModifiers());
+            Assert.Equal([typeof(IsLong)], created.GetModifiedPropertyType().GetOptionalCustomModifiers());
         }
 
         [Theory]
