@@ -1469,6 +1469,17 @@ void WrapICorJitInfo::getCallInfo(
     API_LEAVE(getCallInfo);
 }
 
+void WrapICorJitInfo::prepareCallLookups(
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CALL_INFO* pCallInfo)
+{
+    API_ENTER(prepareCallLookups);
+    wrapHnd->prepareCallLookups(pResolvedToken, pConstrainedResolvedToken, callerHandle, pCallInfo);
+    API_LEAVE(prepareCallLookups);
+}
+
 bool WrapICorJitInfo::getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,

@@ -1450,8 +1450,7 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
         value.stubLookup = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(&pResult->stubLookup);
 
-        value.instParamLookup.accessType = (DWORD)pResult->instParamLookup.accessType;
-        value.instParamLookup.handle     = CastHandle(pResult->instParamLookup.handle);
+        value.instParamLookup = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(&pResult->instParamLookup);
     }
 
     value.exceptionCode = (DWORD)exceptionCode;
@@ -1473,7 +1472,7 @@ void MethodContext::dmpGetCallInfo(const Agnostic_GetCallInfo& key, const Agnost
         " ch-%016" PRIX64 ""
         " ecnrl-%u (%s)"
         " stubLookup{%s}"
-        " ipl{at-%08X (%s) hnd-%016" PRIX64 "}"
+        " ipl{%s}"
         " excp-%08X",
         // input
         SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(),
@@ -1499,9 +1498,7 @@ void MethodContext::dmpGetCallInfo(const Agnostic_GetCallInfo& key, const Agnost
         value.exactContextNeedsRuntimeLookup,
         (bool)value.exactContextNeedsRuntimeLookup ? "true" : "false",
         SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.stubLookup).c_str(),
-        value.instParamLookup.accessType,
-        toString((InfoAccessType)value.instParamLookup.accessType),
-        value.instParamLookup.handle,
+        SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.instParamLookup).c_str(),
         value.exceptionCode);
 }
 void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -1572,8 +1569,7 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             cr->CallTargetTypes->Add(CastPointer(pResult->stubLookup.constLookup.addr),
                 (DWORD)CORINFO_VIRTUALCALL_STUB);
         }
-        pResult->instParamLookup.accessType = (InfoAccessType)value.instParamLookup.accessType;
-        pResult->instParamLookup.handle = (CORINFO_GENERIC_HANDLE)value.instParamLookup.handle;
+        pResult->instParamLookup = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.instParamLookup);
     }
 
     *exceptionCode = (DWORD)value.exceptionCode;
@@ -3191,6 +3187,55 @@ void MethodContext::repEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolve
     pResult->lookup            = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.lookup);
     pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)value.compileTimeHandle;
     pResult->handleType        = (CorInfoGenericHandleType)value.handleType;
+}
+
+void MethodContext::recPrepareCallLookups(CORINFO_RESOLVED_TOKEN* token, CORINFO_RESOLVED_TOKEN* constrainedToken,
+                                   CORINFO_METHOD_HANDLE caller, CORINFO_CALL_INFO* callInfo)
+{
+    if (PrepareCallLookups == nullptr)
+        PrepareCallLookups = new LightWeightMap<Agnostic_PrepareCallLookups, Agnostic_PrepareCallLookupsResult>();
+
+    Agnostic_PrepareCallLookups key;
+    ZeroMemory(&key, sizeof(key));
+    key.ResolvedToken = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(token, PrepareCallLookups);
+    if (constrainedToken != nullptr)
+        key.ConstrainedResolvedToken = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(constrainedToken, PrepareCallLookups);
+    key.context = CastHandle(callInfo->contextHandle);
+    key.callerHandle = CastHandle(caller);
+    Agnostic_PrepareCallLookupsResult value;
+    ZeroMemory(&value, sizeof(value));
+    bool isCodePointer = callInfo->kind == CORINFO_CALL_CODE_POINTER;
+    value.isCodePointer = isCodePointer ? 1 : 0;
+    value.lookup = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(
+        isCodePointer ? &callInfo->codePointerLookup : &callInfo->instParamLookup);
+    PrepareCallLookups->Add(key, value);
+}
+
+void MethodContext::repPrepareCallLookups(CORINFO_RESOLVED_TOKEN* token, CORINFO_RESOLVED_TOKEN* constrainedToken,
+                                   CORINFO_METHOD_HANDLE caller, CORINFO_CALL_INFO* callInfo)
+{
+    AssertMapExistsNoMessage(PrepareCallLookups);
+    Agnostic_PrepareCallLookups key;
+    ZeroMemory(&key, sizeof(key));
+    key.ResolvedToken = SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(token, PrepareCallLookups);
+    if (constrainedToken != nullptr)
+        key.ConstrainedResolvedToken = SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(constrainedToken, PrepareCallLookups);
+    key.context = CastHandle(callInfo->contextHandle);
+    key.callerHandle = CastHandle(caller);
+    Agnostic_PrepareCallLookupsResult value = LookupByKeyOrMissNoMessage(PrepareCallLookups, key);
+    if (value.isCodePointer)
+        callInfo->codePointerLookup = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.lookup);
+    else
+        callInfo->instParamLookup = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.lookup);
+}
+
+void MethodContext::dmpPrepareCallLookups(const Agnostic_PrepareCallLookups& key, const Agnostic_PrepareCallLookupsResult& value)
+{
+    printf("PrepareCallLookups rt{%s} constraint{%s} context-%016" PRIX64 " caller-%016" PRIX64 ", isCodePointer-%u lookup{%s}",
+        SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(),
+        SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ConstrainedResolvedToken).c_str(),
+        key.context, key.callerHandle, value.isCodePointer,
+        SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.lookup).c_str());
 }
 
 void MethodContext::recGetEHinfo(CORINFO_METHOD_HANDLE ftn, unsigned EHnumber, CORINFO_EH_CLAUSE* clause)

@@ -5,125 +5,51 @@
 #include "async.h"
 
 //------------------------------------------------------------------------
-// impGetInstParamArg: compute the hidden instantiation / generic-context argument
-//   for a call whose signature has a type arg (CORINFO_CALLCONV_PARAMTYPE).
+// impGetInstParamArg: compute the hidden instantiation argument from the EE-supplied lookup.
 //
 // Arguments:
-//    pResolvedToken                 - resolved token for the call target
-//    callInfo                       - EE supplied info for the call
-//    exactContextHnd                - the exact (method or class) context for the call
-//    exactContextNeedsRuntimeLookup - whether the exact context needs a runtime lookup
-//    clsFlags                       - flags for the class that owns the called method
-//    isReadonlyCall                 - whether this is a "readonly." prefixed call
+//    pResolvedToken            - resolved call token
+//    pConstrainedResolvedToken - constrained type token, if present
+//    callInfo                  - EE supplied info for the call
+//    clsFlags                  - flags for the class that owns the called method
+//    isReadonlyCall            - whether this is a "readonly." prefixed call
 //
 // Return Value:
-//    The IR node for the instantiation argument. This may be a null-handle constant
-//    for a "readonly." array Address call. Returns nullptr if the importer must abort
-//    the current method, in which case compDonotInline() is set and the caller should
-//    return TYP_UNDEF.
-//
-// Notes:
-//    This is the shared computation for the hidden "extra arg" described at the
-//    hasTypeArg() handling in impImportCall. It is also used by the wasm LDVIRTFTN
-//    path, which dispatches virtual calls (including the array Address accessor) that
-//    can carry a type arg but is otherwise outside the main hasTypeArg() handling.
+//    The instantiation argument, or nullptr if the importer must abandon an inline attempt.
 //
 GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                      CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                       CORINFO_CALL_INFO*      callInfo,
-                                      CORINFO_CONTEXT_HANDLE  exactContextHnd,
-                                      bool                    exactContextNeedsRuntimeLookup,
                                       unsigned                clsFlags,
                                       bool                    isReadonlyCall)
 {
-    GenTree* instParam = nullptr;
-    bool     runtimeLookup;
-
-    // Instantiated generic method
-    if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+    if (compIsForInlining() && (clsFlags & CORINFO_FLG_ARRAY) != 0)
     {
-        assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
-
-        CORINFO_METHOD_HANDLE exactMethodHandle =
-            (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
-
-        if (!exactContextNeedsRuntimeLookup)
-        {
-#ifdef FEATURE_READYTORUN
-            if (IsAot())
-            {
-                instParam = gtNewIconEmbHndNode(&callInfo->instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
-                if (instParam == nullptr)
-                {
-                    assert(compDonotInline());
-                    return nullptr;
-                }
-            }
-            else
-#endif
-            {
-                instParam = gtNewIconEmbMethHndNode(exactMethodHandle);
-            }
-        }
-        else
-        {
-            instParam = impTokenToHandle(pResolvedToken, &runtimeLookup);
-            if (instParam == nullptr)
-            {
-                assert(compDonotInline());
-                return nullptr;
-            }
-        }
+        compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_ARRAY_METHOD);
+        return nullptr;
     }
 
-    // otherwise must be an instance method in a generic struct,
-    // a static method in a generic type, or a runtime-generated array method
-    else
+    if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall)
     {
-        assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-        CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(exactContextHnd);
-
-        if (compIsForInlining() && (clsFlags & CORINFO_FLG_ARRAY) != 0)
-        {
-            compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_ARRAY_METHOD);
-            return nullptr;
-        }
-
-        if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall)
-        {
-            // We indicate "readonly" to the Address operation by using a null
-            // instParam.
-            instParam = gtNewIconNode(0, TYP_REF);
-        }
-        else if (!exactContextNeedsRuntimeLookup)
-        {
-#ifdef FEATURE_READYTORUN
-            if (IsAot())
-            {
-                instParam = gtNewIconEmbHndNode(&callInfo->instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
-                if (instParam == nullptr)
-                {
-                    assert(compDonotInline());
-                    return nullptr;
-                }
-            }
-            else
-#endif
-            {
-                instParam = gtNewIconEmbClsHndNode(exactClassHandle);
-            }
-        }
-        else
-        {
-            instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup);
-            if (instParam == nullptr)
-            {
-                assert(compDonotInline());
-                return nullptr;
-            }
-        }
+        // A null instantiation argument requests readonly array Address semantics.
+        return gtNewIconNode(0, TYP_REF);
     }
 
-    return instParam;
+    CORINFO_CONTEXT_HANDLE context       = callInfo->contextHandle;
+    bool                   methodContext = ((SIZE_T)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
+    CORINFO_GENERIC_HANDLE handle        = methodContext
+                                               ? (CORINFO_GENERIC_HANDLE)((SIZE_T)context & ~CORINFO_CONTEXTFLAGS_MASK)
+                                               : (CORINFO_GENERIC_HANDLE)eeGetClassFromContext(context);
+    GenTreeFlags           flags         = methodContext ? GTF_ICON_METHOD_HDL : GTF_ICON_CLASS_HDL;
+    GenTree*               result        = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, callInfo,
+                                                               &callInfo->instParamLookup, flags, handle);
+    if ((result != nullptr) && callInfo->instParamLookup.lookupKind.needsRuntimeLookup)
+    {
+        result =
+            gtNewRuntimeLookup(handle, methodContext ? CORINFO_HANDLETYPE_METHOD : CORINFO_HANDLETYPE_CLASS, result);
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -717,8 +643,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     }
                     else
                     {
-                        wasmInstParam = impGetInstParamArg(pResolvedToken, callInfo, exactContextHnd,
-                                                           exactContextNeedsRuntimeLookup, clsFlags, isReadonlyCall);
+                        wasmInstParam = impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo,
+                                                           clsFlags, isReadonlyCall);
                         if (wasmInstParam == nullptr)
                         {
                             assert(compDonotInline());
@@ -767,7 +693,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG);
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
-                GenTree* fptr = impLookupToTree(&callInfo->codePointerLookup, GTF_ICON_FTN_ADDR, callInfo->hMethod);
+                GenTree* fptr = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, callInfo,
+                                                    &callInfo->codePointerLookup, GTF_ICON_FTN_ADDR, callInfo->hMethod);
 
                 if (compDonotInline())
                 {
@@ -986,8 +913,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             assert(opcode != CEE_CALLI);
 
-            instParam = impGetInstParamArg(pResolvedToken, callInfo, exactContextHnd, exactContextNeedsRuntimeLookup,
-                                           clsFlags, isReadonlyCall);
+            instParam =
+                impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo, clsFlags, isReadonlyCall);
             if (instParam == nullptr)
             {
                 assert(compDonotInline());
