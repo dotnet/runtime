@@ -15,6 +15,7 @@ namespace System.Reflection
 
         public sealed override bool IsTypeDefinition => false;
         public sealed override bool IsGenericTypeDefinition => false;
+        protected sealed override TypeAttributes GetAttributeFlagsImpl() => TypeAttributes.Public;
         protected sealed override bool HasElementTypeImpl() => false;
         protected sealed override bool IsArrayImpl() => false;
         protected sealed override bool IsByRefImpl() => false;
