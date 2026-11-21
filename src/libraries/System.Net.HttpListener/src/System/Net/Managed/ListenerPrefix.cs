@@ -109,10 +109,11 @@ namespace System.Net
             if (start_host >= length)
                 throw new ArgumentException(SR.net_listener_host);
 
-            int colon = uri.IndexOf(':', start_host, length - start_host);
+            int colon = IndexOfPortSeparator(uri.AsSpan(start_host));
             int root;
-            if (colon > 0)
+            if (colon >= 0)
             {
+                colon += start_host;
                 _host = uri.Substring(start_host, colon - start_host);
                 root = uri.IndexOf('/', colon, length - colon);
                 _port = (ushort)int.Parse(uri.AsSpan(colon + 1, root - colon - 1));
@@ -127,6 +128,24 @@ namespace System.Net
             }
             if (_path.Length != 1)
                 _path = _path.Substring(0, _path.Length - 1);
+
+            // Requests are matched against Uri.Host, which writes an IPv6 literal in canonical form
+            // ("[::1]", lower-case hex), so store the prefix's literal the same way. A literal with a
+            // scope ID is left as written so that HttpEndPointManager can reject it.
+            if (_host.StartsWith('[') && !_host.Contains('%') && IPAddress.TryParse(_host, out IPAddress? address))
+            {
+                _host = $"[{address}]";
+            }
+        }
+
+        // Returns the index of the ':' that separates the host from the port in "host[:port]...",
+        // or -1 if there is none. An IPv6 literal ("[::1]") contains colons of its own, so for a
+        // host that starts with '[' the separator is the first ':' after the closing ']'.
+        internal static int IndexOfPortSeparator(ReadOnlySpan<char> hostAndPort)
+        {
+            int start = hostAndPort.StartsWith('[') ? Math.Max(hostAndPort.IndexOf(']'), 0) : 0;
+            int colon = hostAndPort.Slice(start).IndexOf(':');
+            return colon < 0 ? -1 : start + colon;
         }
     }
 }

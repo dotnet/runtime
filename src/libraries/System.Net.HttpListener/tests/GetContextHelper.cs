@@ -52,6 +52,31 @@ namespace System.Net.Tests
 
         private static bool TypeExists(string name) => typeof(HttpListener).Assembly.GetType(name, throwOnError: false, ignoreCase: false) != null;
 
+        // Whether a test can listen on http://[::1]:port/. Socket.OSSupportsIPv6 can be true on a host where ::1 cannot
+        // be bound (e.g. IPv6 disabled on the loopback interface), and http.sys may refuse to register an IP literal
+        // prefix for a process that is not elevated.
+        public static bool CanListenOnIPv6Loopback { get; } =
+            (IsManagedImplementation || PlatformDetection.IsPrivilegedProcess) && IsIPv6LoopbackAvailable();
+
+        private static bool IsIPv6LoopbackAvailable()
+        {
+            if (!Socket.OSSupportsIPv6)
+            {
+                return false;
+            }
+
+            try
+            {
+                using var socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                socket.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
+                return true;
+            }
+            catch (SocketException)
+            {
+                return false;
+            }
+        }
+
         public static void WaitForSocketShutdown(Socket socket)
         {
             socket.Close();

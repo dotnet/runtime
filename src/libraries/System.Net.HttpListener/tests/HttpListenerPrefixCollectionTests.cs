@@ -264,6 +264,11 @@ namespace System.Net.Tests
                 yield return new object[] { "*" };
                 yield return new object[] { "+" };
             }
+
+            if (Helpers.CanListenOnIPv6Loopback)
+            {
+                yield return new object[] { "[::1]" };
+            }
         }
 
         [Theory]
@@ -352,6 +357,12 @@ namespace System.Net.Tests
             yield return new object[] { "http://localhost:65536/" };
             yield return new object[] { "http://localhost:/" };
             yield return new object[] { "http://localhost:trash/" };
+            yield return new object[] { "http://[::1]:-1/" };
+            yield return new object[] { "http://[::1]:0/" };
+            yield return new object[] { "http://[::1]:65536/" };
+            yield return new object[] { "http://[::1]:/" };
+            yield return new object[] { "http://[::1]:trash/" };
+            yield return new object[] { "http://[::1/" };
             yield return new object[] { "http://localhost/invalid%path/" };
             yield return new object[] { "http://./" };
             yield return new object[] { "http://\\/" };
@@ -381,6 +392,33 @@ namespace System.Net.Tests
                 Assert.Single(listener.Prefixes);
 
                 Assert.Throws<HttpListenerException>(() => listener.Prefixes.Add(uriPrefix));
+            }
+        }
+
+        [Theory]
+        [InlineData("http://[::1%1]:9200/")]
+        [InlineData("http://[::1%25lo]:9200/")]
+        public void Add_ScopedIPv6LiteralPrefix_ThrowsHttpListenerException(string uriPrefix)
+        {
+            using (var listener = new HttpListener())
+            {
+                listener.Prefixes.Add(uriPrefix);
+                AssertRejectedHost(Assert.Throws<HttpListenerException>(() => listener.Start()));
+            }
+
+            using (var factory = new HttpListenerFactory())
+            {
+                AssertRejectedHost(Assert.Throws<HttpListenerException>(() => factory.GetListener().Prefixes.Add(uriPrefix)));
+            }
+
+            static void AssertRejectedHost(HttpListenerException exception)
+            {
+                // The managed implementation rejects the host before it binds anything; a socket error code
+                // would mean the prefix got as far as binding.
+                if (Helpers.IsManagedImplementation)
+                {
+                    Assert.Equal((int)HttpStatusCode.BadRequest, exception.ErrorCode);
+                }
             }
         }
 
