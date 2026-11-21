@@ -5484,8 +5484,6 @@ protected:
         EndsWith
     };
     GenTree* impUtf16StringComparison(StringComparisonKind kind, CORINFO_SIG_INFO* sig, unsigned methodFlags);
-    GenTree* impUtf16SpanContainsChar(CORINFO_SIG_INFO* sig, unsigned methodFlags);
-    GenTree* impConstCharSetContains(GenTreeStrCon* cnsStr, GenTree* value);
     GenTree* impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG_INFO* sig, unsigned methodFlags);
     GenTree* impExpandHalfConstEquals(GenTreeLclVarCommon*   data,
                                       GenTree*         lengthFld,
@@ -6882,6 +6880,11 @@ public:
     PhaseStatus fgVNBasedIntrinsicExpansion();
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
     bool fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
+    bool fgVNBasedIntrinsicExpansionForCall_ConstCharSetContains(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
+
+    bool isConstCharSetContainsHelper(CORINFO_METHOD_HANDLE method);
+    bool isConstCharSetContainsValueTypeHelper(CORINFO_METHOD_HANDLE method);
+    bool isConstCharSetContainsPackedHelper(CORINFO_METHOD_HANDLE method);
 
     PhaseStatus fgLateCastExpansion();
     bool fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);

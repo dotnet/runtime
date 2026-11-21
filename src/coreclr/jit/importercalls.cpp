@@ -5,6 +5,110 @@
 #include "async.h"
 
 //------------------------------------------------------------------------
+// impIsConstCharSetContainsData: Check whether a ContainsValueType search-space
+//   argument is derived from a constant object or static field address. This
+//   is deliberately syntactic: the late VN phase makes the final decision.
+//
+static bool impIsConstCharSetContainsData(GenTree* tree)
+{
+    if (tree == nullptr)
+    {
+        return false;
+    }
+
+    if (tree->OperIs(GT_CNS_STR) || tree->IsIconHandle())
+    {
+        return true;
+    }
+
+    if (tree->OperIs(GT_FIELD_ADDR))
+    {
+        GenTreeFieldAddr* field = tree->AsFieldAddr();
+        return field->IsStatic() || impIsConstCharSetContainsData(field->GetFldObj());
+    }
+
+    if (tree->OperIs(GT_ADD, GT_SUB, GT_CAST))
+    {
+        return impIsConstCharSetContainsData(tree->gtGetOp1()) ||
+               ((tree->OperGet() == GT_CAST) ? false : impIsConstCharSetContainsData(tree->gtGetOp2()));
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// isConstCharSetContains*Helper: Check whether a method is one of the underlying
+//   BCL search helpers that the public Contains APIs lower into. This avoids
+//   adding managed intrinsics or new named intrinsic IDs.
+//
+bool Compiler::isConstCharSetContainsValueTypeHelper(CORINFO_METHOD_HANDLE method)
+{
+    if (method == nullptr)
+    {
+        return false;
+    }
+
+    const char* className              = nullptr;
+    const char* namespaceName          = nullptr;
+    const char* enclosingClassNames[2] = {nullptr};
+    const char* methodName =
+        info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames,
+                                                    ArrLen(enclosingClassNames));
+
+    return (namespaceName != nullptr) && (strcmp(namespaceName, "System") == 0) && (className != nullptr) &&
+           (strcmp(className, "SpanHelpers") == 0) && (methodName != nullptr) &&
+           (strcmp(methodName, "ContainsValueType") == 0);
+}
+
+bool Compiler::isConstCharSetContainsPackedHelper(CORINFO_METHOD_HANDLE method)
+{
+    if (method == nullptr)
+    {
+        return false;
+    }
+
+    const char* className              = nullptr;
+    const char* namespaceName          = nullptr;
+    const char* enclosingClassNames[2] = {nullptr};
+    const char* methodName =
+        info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames,
+                                                    ArrLen(enclosingClassNames));
+
+    return (namespaceName != nullptr) && (strcmp(namespaceName, "System") == 0) && (className != nullptr) &&
+           (strcmp(className, "PackedSpanHelpers") == 0) && (methodName != nullptr) &&
+           (strcmp(methodName, "Contains") == 0);
+}
+
+bool Compiler::isConstCharSetContainsHelper(CORINFO_METHOD_HANDLE method)
+{
+    if (method == nullptr)
+    {
+        return false;
+    }
+
+    if (isConstCharSetContainsValueTypeHelper(method) || isConstCharSetContainsPackedHelper(method))
+    {
+        return true;
+    }
+
+    const char* className              = nullptr;
+    const char* namespaceName          = nullptr;
+    const char* enclosingClassNames[2] = {nullptr};
+    const char* methodName =
+        info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames,
+                                                    ArrLen(enclosingClassNames));
+
+    if ((namespaceName == nullptr) || (strcmp(namespaceName, "System") != 0) || (className == nullptr) ||
+        (methodName == nullptr))
+    {
+        return false;
+    }
+
+    return (strcmp(className, "SpanHelpers") == 0) &&
+           (strcmp(methodName, "NonPackedContainsValueType") == 0);
+}
+
+//------------------------------------------------------------------------
 // impGetInstParamArg: compute the hidden instantiation / generic-context argument
 //   for a call whose signature has a type arg (CORINFO_CALLCONV_PARAMTYPE).
 //
@@ -440,6 +544,14 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         // <NICE> Factor this into getCallInfo </NICE>
         bool isSpecialIntrinsic = false;
+
+        // These BCL helpers are not marked [Intrinsic], but the late VN-based
+        // expansion phase recognizes them by name. Mark the method so the phase runs.
+        if (opts.OptimizationEnabled() && ((mflags & CORINFO_FLG_STATIC) != 0) &&
+            isConstCharSetContainsHelper(methHnd))
+        {
+            setMethodHasSpecialIntrinsics();
+        }
 
         if (isIntrinsic || (!info.compMatchedVM && !RunningSuperPmiReplay()))
         {
@@ -3799,12 +3911,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_Array_Set:
                 retNode = impArrayAccessIntrinsic(clsHnd, sig, memberRef, readonlyCall, ni);
                 break;
-
-            case NI_System_MemoryExtensions_Contains:
-            {
-                retNode = impUtf16SpanContainsChar(sig, methodFlags);
-                break;
-            }
 
             case NI_System_String_Equals:
             {
@@ -9386,6 +9492,18 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     assert(opts.OptEnabled(CLFLG_INLINING));
 
+    // Keep constant-receiver ContainsValueType calls intact so the late VN
+    // phase can replace the whole packed/nonpacked dispatch with one check.
+    if (isConstCharSetContainsValueTypeHelper(call->gtCallMethHnd))
+    {
+        if ((call->gtArgs.CountUserArgs() == 3) &&
+            impIsConstCharSetContainsData(call->gtArgs.GetUserArgByIndex(0)->GetNode()))
+        {
+            inlineResult->NoteFatal(InlineObservation::CALLEE_IS_NOINLINE);
+            return;
+        }
+    }
+
     // Don't inline if not optimizing root method
     if (opts.compDbgCode)
     {
@@ -11903,10 +12021,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "AsSpan") == 0)
                         {
                             result = NI_System_MemoryExtensions_AsSpan;
-                        }
-                        else if (strcmp(methodName, "Contains") == 0)
-                        {
-                            result = NI_System_MemoryExtensions_Contains;
                         }
                         else if (strcmp(methodName, "Equals") == 0)
                         {

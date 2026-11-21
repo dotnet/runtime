@@ -31,6 +31,16 @@ public static class StringContainsChar
     public static void ContainsSpanMask(char c)
         => Assert.Equal(ContainsHexNoInline(c), ContainsSpanHex(c));
 
+    [Theory]
+    [MemberData(nameof(ASCII))]
+    public static void ContainsUtf8Range(char c)
+        => Assert.Equal(ContainsUtf8ABCDEFNoInline((byte)c), ContainsUtf8ABCDEFInline((byte)c));
+
+    [Theory]
+    [MemberData(nameof(ASCII))]
+    public static void ContainsUtf8Mask(char c)
+        => Assert.Equal(ContainsUtf8HexNoInline((byte)c), ContainsUtf8HexInline((byte)c));
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool ContainsABCDEFNoInline(char c) => "ABCDEF".Contains(c);
 
@@ -48,4 +58,16 @@ public static class StringContainsChar
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool ContainsSpanHex(char c) => "0123456789ABCDEF".AsSpan().Contains(c);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool ContainsUtf8ABCDEFNoInline(byte b) => "ABCDEF"u8.Contains(b);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool ContainsUtf8ABCDEFInline(byte b) => "ABCDEF"u8.Contains(b);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool ContainsUtf8HexNoInline(byte b) => "0123456789ABCDEF"u8.Contains(b);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool ContainsUtf8HexInline(byte b) => "0123456789ABCDEF"u8.Contains(b);
 }
