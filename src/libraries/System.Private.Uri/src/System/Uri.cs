@@ -1747,10 +1747,7 @@ namespace System
             if (DisablePathAndQueryCanonicalization != other.DisablePathAndQueryCanonicalization)
                 return false;
 
-            // The same URI string can use different parsers before and after UriParser.Register.
-            // Only use string equality as a shortcut when both URIs share the same parser.
-            bool sameSyntax = _syntax == other._syntax;
-            if (sameSyntax && ReferenceEquals(OriginalString, other.OriginalString))
+            if (ReferenceEquals(OriginalString, other.OriginalString))
             {
                 return true;
             }
@@ -1761,7 +1758,7 @@ namespace System
             if (IsNotAbsoluteUri)
                 return OriginalString.Equals(other.OriginalString);
 
-            if (sameSyntax && (NotAny(Flags.AllUriInfoSet) || other.NotAny(Flags.AllUriInfoSet)))
+            if (NotAny(Flags.AllUriInfoSet) || other.NotAny(Flags.AllUriInfoSet))
             {
                 // Try raw compare for _strings as the last chance to keep the working set small
                 // Keep IPv6 scope IDs case-sensitive even when UNC/DOS paths ignore case.
