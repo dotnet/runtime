@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Security;
+using System.Security.Authentication;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
@@ -18,6 +19,35 @@ namespace System.Net.Quic.Tests
     {
         public MsQuicRemoteExecutorTests()
             : base(null!) { }
+
+        [Fact]
+        public async Task CreateConnectedQuicConnection_WithoutOutput_PreservesConnectionFailure()
+        {
+            TaskCompletionSource callbackStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource completeCallback = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ConnectionOptionsCallback = async (_, _, _) =>
+            {
+                callbackStarted.SetResult();
+                await completeCallback.Task.WaitAsync(PassingTestTimeout);
+                throw new InvalidOperationException("Connection options callback failed.");
+            };
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            Task connectionTask = CreateConnectedQuicConnection(listener);
+            try
+            {
+                await callbackStarted.Task.WaitAsync(PassingTestTimeout);
+                // Complete the pending accept before failing the client handshake.
+                await listener.DisposeAsync();
+            }
+            finally
+            {
+                completeCallback.SetResult();
+            }
+
+            await Assert.ThrowsAsync<AuthenticationException>(() => connectionTask);
+        }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]

@@ -78,7 +78,7 @@ namespace System.Net.Quic.Tests
         public async Task<QuicException> AssertThrowsQuicExceptionAsync(QuicError expectedError, Func<Task> testCode)
         {
             QuicException ex = await Assert.ThrowsAsync<QuicException>(testCode);
-            _output.WriteLine(ex.ToString());
+            _output?.WriteLine(ex.ToString());
             Assert.Equal(expectedError, ex.QuicError);
             return ex;
         }
@@ -226,7 +226,7 @@ namespace System.Net.Quic.Tests
                     }
                     catch (QuicException ex) when (ex.HResult == (int)SocketError.ConnectionRefused)
                     {
-                        _output.WriteLine($"ConnectAsync to {clientOptions.RemoteEndPoint} failed with {ex.Message}");
+                        _output?.WriteLine($"ConnectAsync to {clientOptions.RemoteEndPoint} failed with {ex.Message}");
                         await Task.Delay(delay);
                         delay *= 2;
 
@@ -254,7 +254,8 @@ namespace System.Net.Quic.Tests
                 }
                 if (serverTask.IsCompleted)
                 {
-                    _output.WriteLine($"Server {(serverTask.IsCompletedSuccessfully ? "succeeded" : "failed with " + serverTask.Exception)}");
+                    AggregateException? serverException = serverTask.Exception;
+                    _output?.WriteLine($"Server {(serverTask.IsCompletedSuccessfully ? "succeeded" : "failed with " + serverException)}");
                 }
                 throw;
             }
@@ -327,7 +328,7 @@ namespace System.Net.Quic.Tests
                     }
                     catch (ObjectDisposedException ex)
                     {
-                        _output.WriteLine(ex.ToString());
+                        _output?.WriteLine(ex.ToString());
                     }
                     try
                     {
@@ -335,7 +336,7 @@ namespace System.Net.Quic.Tests
                     }
                     catch (ObjectDisposedException ex)
                     {
-                        _output.WriteLine(ex.ToString());
+                        _output?.WriteLine(ex.ToString());
                     }
                 }
             }
