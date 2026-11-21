@@ -564,14 +564,14 @@ VOID Frame::Pop(Thread *pThread) noexcept
     m_Next = NULL;
 }
 
-#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
 void Frame::PopIfChained() noexcept
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -583,7 +583,7 @@ void Frame::PopIfChained() noexcept
         Pop();
     }
 }
-#endif // TARGET_UNIX && !DACCESS_COMPILE
+#endif // !defined(DACCESS_COMPILE)
 
 #if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
 
