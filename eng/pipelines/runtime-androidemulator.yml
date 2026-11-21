@@ -19,35 +19,34 @@ variables:
   # API-specific container definitions point to this YAML so the API level can be selected by name.
   - name: isAndroidContainerTestBuild
     value: ${{ or(parameters.runAndroidContainerTests, in(variables['Build.DefinitionName'], 'runtime-androidemulator-container', 'runtime-androidemulator-container-24', 'runtime-androidemulator-container-29', 'runtime-androidemulator-container-31', 'runtime-androidemulator-container-35')) }}
-  # Pin new images to their published digests before enabling their pipeline definitions.
   - ${{ if eq(variables['Build.DefinitionName'], 'runtime-androidemulator-container-24') }}:
     - name: androidApiLevel
       value: 24
     - name: androidLegacyHelixQueue
       value: Ubuntu.2204.Amd64.Android.24.Open
     - name: androidContainerHelixQueue
-      value: (Android.24.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-android-24-amd64
+      value: (Android.24.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-android-24-amd64@sha256:bde33b65a666a9d4c584f09515b886e09dd6d3dadf050a5a8fd731960a635972
   - ${{ elseif eq(variables['Build.DefinitionName'], 'runtime-androidemulator-container-31') }}:
     - name: androidApiLevel
       value: 31
     - name: androidLegacyHelixQueue
       value: Ubuntu.2204.Amd64.Android.31.Open
     - name: androidContainerHelixQueue
-      value: (Android.31.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-android-31-amd64
+      value: (Android.31.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-android-31-amd64@sha256:14b98b9b07acab31e4cecd4b03e2f187a0a77548e88d26c6e038bfd95af141ac
   - ${{ elseif eq(variables['Build.DefinitionName'], 'runtime-androidemulator-container-35') }}:
     - name: androidApiLevel
       value: 35
     - name: androidLegacyHelixQueue
       value: Ubuntu.2204.Amd64.Android.35.Open
     - name: androidContainerHelixQueue
-      value: (Android.35.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-android-35-amd64
+      value: (Android.35.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-android-35-amd64@sha256:a316b0c6319a6cf3b0a968930dfdf3953da76a1155211ad7d0b54a594f1d3600
   - ${{ else }}:
     - name: androidApiLevel
       value: 29
     - name: androidLegacyHelixQueue
       value: Ubuntu.2204.Amd64.Android.29.Open
     - name: androidContainerHelixQueue
-      value: (Android.29.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-android-29-amd64@sha256:193e6d0ce33f6d8b9c10170ef8a197683c0fa4fe75fe5f1e3199318e8fb84d03
+      value: (Android.29.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-android-29-amd64@sha256:ba402ea53bca65cdeb70417f729d3de7d4e2afe39ae2b32dd380ef5ad1ded7b1
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml

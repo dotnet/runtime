@@ -209,10 +209,8 @@ default container definition or request a specific API level:
 
 Azure Pipelines comment triggers select a pipeline by name but do not accept
 YAML parameters, so the API level is part of the transition pipeline name.
-The default container definition selects API 29. Each API level must have a
-published container image before the corresponding pipeline definition is
-enabled, and the image should be pinned to an immutable digest after
-publication.
+The default container definition selects API 29. Each API level uses its
+published Ubuntu 26.04 image pinned to an immutable digest.
 
 The container image supplies the Android SDK, system image and AVD.
 `eng/testing/Android/start-emulator.sh` and `stop-emulator.sh` own the work-item
