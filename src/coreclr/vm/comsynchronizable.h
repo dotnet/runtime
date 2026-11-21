@@ -38,13 +38,16 @@ public:
         ThreadSuspended = 64,
         ThreadAbortRequested = 128,
     };
-
-#ifdef FEATURE_MULTITHREADING
-    FCDECL1(static void,        Finalize, ThreadBaseObject* pThis);
-    FCDECL0(static FC_BOOL_RET, CatchAtSafePoint);
-    FCDECL0(static FC_BOOL_RET, CurrentThreadIsFinalizerThread);
-#endif // FEATURE_MULTITHREADING
 };
+
+extern "C"
+{
+#ifdef FEATURE_MULTITHREADING
+    FCDECL1(void,        Thread_InternalFinalize, ThreadBaseObject* pThis);
+    FCDECL0(FC_BOOL_RET, Thread_CatchAtSafePoint);
+    FCDECL0(FC_BOOL_RET, Thread_CurrentThreadIsFinalizerThread);
+#endif // FEATURE_MULTITHREADING
+}
 
 extern "C" void QCALLTYPE ThreadNative_GetQCallSpecialException(INT_PTR status, QCall::ObjectHandleOnStack exception, QCallExceptionStatus* qcallError);
 #ifdef FEATURE_MULTITHREADING
@@ -81,5 +84,8 @@ extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::Threa
 
 extern "C" void QCALLTYPE ObjectHeader_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj, QCallExceptionStatus* qcallError);
 
-FCDECL1(OBJECTHANDLE, ObjectHeader_GetLockHandleIfExists, Object* obj);
+extern "C"
+{
+    FCDECL1(OBJECTHANDLE, ObjectHeader_GetLockHandleIfExists, Object* obj);
+}
 #endif // _COMSYNCHRONIZABLE_H

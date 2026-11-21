@@ -166,7 +166,7 @@ The agent runs read-only. All writes go through `safe-outputs`.
 4. **One area path per issue.** Title each KBE around a single failure shape (assertion text or test family), not a list of pipelines. If a root cause spans multiple area paths, file one KBE per area and cross-link with `Related: dotnet/runtime#<n>`.
 5. **No `Mute` / `Muting` in titles.** Use `Skip`, `Disable`, `Suppress`, or `Exclude` when a title must describe a mitigation; prefer describing the failure itself.
 6. **Every issue title starts with `[ci-scan] `.**
-7. **Every actionable failure becomes a `Known Build Error` issue.** Test failures, hangs, AND build breaks all converge on the same KBE template; Build Analysis matches both via the JSON body. Skip emission entirely for: pre-existing issue/PR matches (shared KBE search flow), unstable signatures (< 2 occurrences in window with no current-run severity), or true infra noise (agent disconnect, pool offline) where no stable signature can be extracted.
+7. **Every actionable failure becomes a `Known Build Error` issue.** Test failures, hangs, AND build breaks all converge on the same KBE template; Build Analysis matches both via the JSON body. Skip emission entirely for: pre-existing issue/PR matches (shared KBE search flow), unstable signatures (< 2 occurrences in window with no current-run severity, except for JIT pipelines defined in Step 2), or true infra noise (agent disconnect, pool offline) where no stable signature can be extracted.
 8. **One signature = one outcome.** No duplicate KBEs. No comments on existing KBEs — Build Analysis already counts occurrences in the issue body, and hand-off comments are `ci-failure-fix`'s job.
 9. **Never mute.** This workflow does not open test-disable PRs and never emits any test annotation, csproj flag, or `[ActiveIssue]`. Disabling a test is a human decision routed through `ci-failure-fix`'s hand-off, not this scan.
 10. **All intermediate state under `/tmp/gh-aw/agent/`.** Each bash invocation is a fresh subshell; persist anything you want to keep.
@@ -209,11 +209,13 @@ Read once at start:
 
 ### Step 2 — Walk pipelines
 
+In the rules below, JIT pipelines are definitions 109, 110, 111, 112, 113, 115, 116, 117, 118, 119, 137, 138, 140, 144, 145, 150, 153, 155, 159, 160, 230, and 235. This covers both daily (109, 138, 144, 150) and weekend or weekly schedules; scan and triage every JIT pipeline on every run regardless of schedule.
+
 For each row in the pipeline table below:
 
 1. Pre-bind the build-list URL to a shell variable, then `curl -s "$url" | tee /tmp/gh-aw/agent/builds_<id>.json`. Fetch at least 25 builds.
-2. Pick `source` = most recent build with `result in {failed, partiallySucceeded}` that has at least one COMPLETED build with a strictly later `finishTime`. That later build is the `follow_up` anchor for Step 3.5; without it, a freshly-fixed regression cannot be distinguished from a still-failing one. (The dnceng-public build-list is sorted DESC by `queueTime`, so `source` will appear AFTER its `follow_up` in the JSON array; "later in time" refers to wall-clock, not array position.)
-3. Skip reasons: `source.finishTime > 14d` -> `pipeline-skipped: stale build window (>14d)`. No `follow_up` (source is the absolute latest) -> `pipeline-skipped: no follow-up build yet — defer to next run`. No qualifying build in 7 days -> `pipeline-skipped: stale`. The 14-day window accommodates JIT-stress family pipelines (defs 109–160, 230, 235) that run on a weekly-or-longer cadence; tightening to 72h blanket-suppresses their actionable failures.
+2. Pick `source` = most recent COMPLETED build with `result in {failed, partiallySucceeded}` that has at least one COMPLETED build with a strictly later `finishTime`. For JIT pipelines, waive the later-build requirement and select the latest completed failed or partially successful build instead. That later build, when available, is the `follow_up` anchor for Step 3.5. (The dnceng-public build-list is sorted DESC by `queueTime`; "later in time" refers to wall-clock, not array position.)
+3. Skip reasons: `source.finishTime > 14d` -> `pipeline-skipped: stale build window (>14d)`. For non-JIT pipelines, no `follow_up` -> `pipeline-skipped: no follow-up build yet — defer to next run`, and no qualifying build in 7 days -> `pipeline-skipped: stale`. JIT pipelines use only the 14-day window so that daily and weekend or weekly schedules are all triaged.
 4. Otherwise pass `source`'s failed timeline records to Step 3.
 
 | Pipeline | Definition ID | Notes |
@@ -313,6 +315,8 @@ If the same signature appears in *every* sampled build (100% failure rate in the
   in Step 4.2 after a miss.
 
 ### Step 3.5 — Follow-up-build presence gate
+
+For JIT pipelines without `follow_up`, skip only the presence check below; still run the build-break merged-PR check. When `follow_up` exists, apply the presence check normally.
 
 For each signature from `source`, check `follow_up`:
 
@@ -428,7 +432,7 @@ No meta / aggregate / outage issues. Every KBE is keyed to a single `(definition
 
 **Branch A — No existing KBE; signature is stable.**
 
-Stable means >= 2 occurrences across >= 2 distinct builds in the ~10-build window, OR a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight). Multiple legs, retries, or work items of the SAME build (same build id) count as a single occurrence, not two — a one-off failure that appears in only one build is NOT stable; record `skipped: < 2 occurrences and not blocking` and let the next run revisit. Emit one `create_issue` using exactly the shared new-KBE template from `.github/workflows/shared/create-kbe.instructions.md` section `<a id="new-kbe-template"></a>` / `## New-KBE template`, including whichever of `<a id="literal-kbe-template"></a>` / `### KBE issue body - literal substring match`, `<a id="regex-kbe-template"></a>` / `### KBE issue body - regex match`, or `<a id="kbe-array-form"></a>` / `### KBE multi-line array form` fits the signature. Apply `Known Build Error` and the blocking label chosen per [KBE label selection](#kbe-label-selection) so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow. Append to the same-run dedup cache (Step 4.0) after emission.
+Stable means one verified occurrence for JIT pipelines, >= 2 occurrences across >= 2 distinct builds in the ~10-build window for other pipelines, OR a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight). Multiple legs, retries, or work items of the SAME build (same build id) count as a single occurrence, not two — a non-JIT one-off failure that appears in only one build is NOT stable; record `skipped: < 2 occurrences and not blocking` and let the next run revisit. Emit one `create_issue` using exactly the shared new-KBE template from `.github/workflows/shared/create-kbe.instructions.md` section `<a id="new-kbe-template"></a>` / `## New-KBE template`, including whichever of `<a id="literal-kbe-template"></a>` / `### KBE issue body - literal substring match`, `<a id="regex-kbe-template"></a>` / `### KBE issue body - regex match`, or `<a id="kbe-array-form"></a>` / `### KBE multi-line array form` fits the signature. Apply `Known Build Error` and the blocking label chosen per [KBE label selection](#kbe-label-selection) so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow. Append to the same-run dedup cache (Step 4.0) after emission.
 
 **Match-count gate.** Reject the emit unless the KBE body contains the collapsed, workflow-identified verification block defined by check #7 of the shared instructions, with `N >= 1`. Treat an absent block or field as `N=0` and record the same skip reason check #7 uses: `skipped: signature did not match failure.log (N=<count>)`. Rationale, log-source caveats, and native-assert handling live in check #7.
 

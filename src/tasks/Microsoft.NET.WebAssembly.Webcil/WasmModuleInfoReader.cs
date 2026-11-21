@@ -57,6 +57,7 @@ internal sealed class WasmModuleInfoReader : WasmModuleReader
     private const byte GlobalImport = 3;
     private const byte I32Const = 0x41;
     private const byte GlobalGet = 0x23;
+    private const byte Return = 0x0f;
     private const byte End = 0x0b;
 
     private readonly WasmModuleInfo _info = new();
@@ -238,8 +239,15 @@ internal sealed class WasmModuleInfoReader : WasmModuleReader
             if (BaseStream.Position < bodyEnd && ReadByte() == I32Const)
             {
                 int candidate = ReadSLEB32();
-                if (BaseStream.Position < bodyEnd && ReadByte() == End && BaseStream.Position == bodyEnd)
-                    value = candidate;
+                if (BaseStream.Position < bodyEnd)
+                {
+                    byte next = ReadByte();
+                    // Unoptimized (Debug) host builds emit an explicit return before the end opcode.
+                    if (next == Return && BaseStream.Position < bodyEnd)
+                        next = ReadByte();
+                    if (next == End && BaseStream.Position == bodyEnd)
+                        value = candidate;
+                }
             }
             _info._definedI32Functions.Add(value);
             BaseStream.Position = bodyEnd;

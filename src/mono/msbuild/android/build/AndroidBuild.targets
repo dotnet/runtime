@@ -75,7 +75,6 @@
   <Target Name="_BeforeAndroidBuild">
     <PropertyGroup>
       <_AndroidRuntimeConfigFilePath Condition="'$(_AndroidRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AndroidBuildDir), '$(AssemblyName).runtimeconfig.json'))</_AndroidRuntimeConfigFilePath>
-      <_ParsedRuntimeConfigFilePath Condition="'$(_ParsedRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AndroidBuildDir), 'runtimeconfig.bin'))</_ParsedRuntimeConfigFilePath>
     </PropertyGroup>
 
     <RemoveDir Directories="$(AndroidBundleDir)" />
@@ -232,8 +231,7 @@
 
 
   <Target Name="_AndroidGenerateAppBundle"
-    Condition="$(AndroidGenerateAppBundle) == 'true'"
-    DependsOnTargets="_AndroidGenerateRuntimeConfig">
+    Condition="$(AndroidGenerateAppBundle) == 'true'">
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <_NativeDependencies Include="$(LibraryOutputPath)" />
@@ -261,6 +259,7 @@
         IsLibraryMode="$(_IsLibraryMode)"
         MainLibraryFileName="$(MainLibraryFileName)"
         RuntimeHeaders="@(RuntimeHeaders)"
+        RuntimeConfigFile="$(_AndroidRuntimeConfigFilePath)"
         NativeDependencies="@(_NativeDependencies)"
         NetworkSecurityConfig="$(NetworkSecurityConfig)"
         NetworkSecurityConfigResourcesDir="$(NetworkSecurityConfigResourcesDir)"
@@ -281,23 +280,6 @@
 
   <Target Name="_AfterAndroidBuild">
 
-  </Target>
-
-  <Target Name="_AndroidGenerateRuntimeConfig"
-          Inputs="$(_AndroidRuntimeConfigFilePath)"
-          Outputs="$(_ParsedRuntimeConfigFilePath)"
-          Condition="Exists('$(_AndroidRuntimeConfigFilePath)')"
-          BeforeTargets="_GenerateBundle">
-    <ItemGroup>
-      <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
-      <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
-    </ItemGroup>
-
-    <RuntimeConfigParserTask
-        RuntimeConfigFile="$(_AndroidRuntimeConfigFilePath)"
-        OutputFile="$(_ParsedRuntimeConfigFilePath)"
-        RuntimeConfigReservedProperties="@(_RuntimeConfigReservedProperties)">
-    </RuntimeConfigParserTask>
   </Target>
 
 </Project>

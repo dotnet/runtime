@@ -3,10 +3,12 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.Pipes.Tests
@@ -769,5 +771,114 @@ namespace System.IO.Pipes.Tests
                 new object[] { CancellationToken.None },
                 new object[] { new CancellationTokenSource().Token },
             };
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation is based on sockets
+        [InlineData(false, false, false)]
+        [InlineData(false, true, false)]
+        [InlineData(true, false, false)]
+        [InlineData(true, true, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, true)]
+        public void PipeHandlesAreFinalizedWhenNotDisposed(bool asyncRead, bool asyncWrite, bool cancellable)
+        {
+            (WeakReference<SafePipeHandle> serverHandle, WeakReference<SafePipeHandle> clientHandle) = ConnectReadAndWrite(asyncRead, asyncWrite, cancellable);
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(serverHandle.TryGetTarget(out _));
+            Assert.False(clientHandle.TryGetTarget(out _));
+
+            // The helper is synchronous on purpose: the state machine of an async helper references the streams
+            // until the thread that completed it is done with it, which races with the GC above.
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static (WeakReference<SafePipeHandle>, WeakReference<SafePipeHandle>) ConnectReadAndWrite(bool asyncRead, bool asyncWrite, bool cancellable)
+            {
+                string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+                NamedPipeServerStream server = new(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, asyncRead ? PipeOptions.Asynchronous : PipeOptions.None);
+                NamedPipeClientStream client = new(".", pipeName, PipeDirection.Out, asyncWrite ? PipeOptions.Asynchronous : PipeOptions.None);
+
+                Task.WaitAll(server.WaitForConnectionAsync(), client.ConnectAsync());
+
+                CancellationToken cancellationToken = default;
+                if (cancellable)
+                {
+                    // The registration makes the server reachable from the cancellation token source.
+                    CancellationTokenSource cts = new();
+                    cts.Token.Register(() => server.Dispose());
+                    cancellationToken = cts.Token;
+                }
+
+                byte[] buffer = new byte[1];
+                Task<int> readTask = server.ReadAsync(buffer, cancellationToken).AsTask();
+                client.WriteAsync(new byte[] { 42 }).AsTask().Wait();
+                Assert.Equal(1, readTask.Result);
+
+                return (new(server.SafePipeHandle, trackResurrection: true), new(client.SafePipeHandle, trackResurrection: true));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // the returned ValueTask is backed by a reusable PipeValueTaskSource only on Windows
+        public async Task GettingResultOfPendingOrConsumedValueTaskThrowsInvalidOperationException()
+        {
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+            using NamedPipeServerStream server = new(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            using NamedPipeClientStream client = new(".", pipeName, PipeDirection.Out, PipeOptions.Asynchronous);
+
+            await Task.WhenAll(server.WaitForConnectionAsync(), client.ConnectAsync());
+
+            ValueTask<int> firstRead = server.ReadAsync(new byte[1]);
+            Assert.Throws<InvalidOperationException>(() => firstRead.Result); // the operation is still in progress
+
+            await client.WriteAsync(new byte[1]);
+            Assert.Equal(1, await firstRead);
+
+            // The second read reuses the source of the first one.
+            ValueTask<int> secondRead = server.ReadAsync(new byte[1]);
+            Assert.Throws<InvalidOperationException>(() => firstRead.Result); // the result was already consumed
+
+            await client.WriteAsync(new byte[1]);
+            Assert.Equal(1, await secondRead);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation is based on sockets
+        public async Task AsyncOperationsDoNotRetainExecutionContext()
+        {
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+            using NamedPipeServerStream server = new(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            using NamedPipeClientStream client = new(".", pipeName, PipeDirection.Out, PipeOptions.Asynchronous);
+
+            await Task.WhenAll(server.WaitForConnectionAsync(), client.ConnectAsync());
+
+            (ValueTask<int> readTask, ValueTask writeTask, WeakReference<object> asyncLocalValue) = StartReadAndWrite(server, client);
+            await writeTask;
+            Assert.Equal(1, await readTask);
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(asyncLocalValue.TryGetTarget(out _));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static (ValueTask<int>, ValueTask, WeakReference<object>) StartReadAndWrite(NamedPipeServerStream server, NamedPipeClientStream client)
+            {
+                // The value is part of the ExecutionContext that flows into the first read and write operations.
+                object value = new();
+                AsyncLocal<object> asyncLocal = new() { Value = value };
+
+                ValueTask<int> readTask = server.ReadAsync(new byte[1]);
+                ValueTask writeTask = client.WriteAsync(new byte[1]);
+
+                asyncLocal.Value = null;
+                return (readTask, writeTask, new WeakReference<object>(value));
+            }
+        }
     }
 }

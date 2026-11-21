@@ -47,7 +47,7 @@ namespace System.Threading.Tasks.Dataflow
         {
             // Validate arguments
             if (batchSize < 1) throw new ArgumentOutOfRangeException(nameof(batchSize), SR.ArgumentOutOfRange_GenericPositive);
-            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            ArgumentNullException.ThrowIfNull(dataflowBlockOptions);
             if (dataflowBlockOptions.BoundedCapacity > 0 && dataflowBlockOptions.BoundedCapacity < batchSize) throw new ArgumentOutOfRangeException(nameof(batchSize), SR.ArgumentOutOfRange_BatchSizeMustBeNoGreaterThanBoundedCapacity);
 
             // Ensure we have options that can't be changed by the caller

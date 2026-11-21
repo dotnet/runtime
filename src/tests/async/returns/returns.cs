@@ -11,6 +11,25 @@ public class Async2Returns
     [Fact]
     public static Task TestEntryPoint() => Returns(new C());
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static async Task NestedAsyncCalls(bool suspend)
+    {
+        Assert.Equal(42, await AddOneAsync(await AddOneAsync(40, suspend), suspend));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<int> AddOneAsync(int value, bool suspend)
+    {
+        if (suspend)
+        {
+            await Task.Yield();
+        }
+
+        return value + 1;
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task Returns(C c)
     {

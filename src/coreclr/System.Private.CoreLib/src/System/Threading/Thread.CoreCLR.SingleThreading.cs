@@ -16,6 +16,7 @@ namespace System.Threading
 
         private static int s_nextManagedThreadId = 1;
         private bool _isBackground;
+        private bool _isPendingInterrupt;
 
         // The managed object for the only thread. Set by the runtime during startup.
         private static Thread? s_currentThread;
@@ -107,7 +108,16 @@ namespace System.Threading
         /// thread is not currently blocked in that manner, it will be interrupted
         /// when it next begins to block.
         /// </summary>
-        public void Interrupt() => WaitSubsystem.Interrupt(this);
+        public void Interrupt() => _isPendingInterrupt = true;
+
+        internal void ThrowIfPendingInterrupt()
+        {
+            if (_isPendingInterrupt)
+            {
+                _isPendingInterrupt = false;
+                throw new ThreadInterruptedException();
+            }
+        }
 
         /// <summary>
         /// Wait for a length of time proportional to 'iterations'. Spinning cannot make

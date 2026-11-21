@@ -666,7 +666,7 @@ namespace System.Text.Json
 
                     if (localSequence.IsSingleSegment)
                     {
-                        result = JsonReaderHelper.UnescapeAndCompare(localSequence.First.Span, other);
+                        result = JsonReaderHelper.UnescapeAndCompare(localSequence.FirstSpan, other);
                     }
                     else
                     {

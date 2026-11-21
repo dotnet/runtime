@@ -40,8 +40,7 @@ namespace System.IO.Packaging
             //Validating the PartUri - this method will do the argument checking required for uri.
             partUri = PackUriHelper.ValidatePartUri(partUri);
 
-            if (contentType == null)
-                throw new ArgumentNullException(nameof(contentType));
+            ArgumentNullException.ThrowIfNull(contentType);
 
             Package.ThrowIfCompressionOptionInvalid(compressionOption);
 

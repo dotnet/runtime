@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             return false;
         }
 
-        public override bool ExplicitCurvesSupported => PlatformDetection.IsNotSymCryptOpenSsl;
+        public override bool ExplicitCurvesSupported => DefaultECDsaProvider.OpenSslExplicitCurvesSupported;
 
     }
 }

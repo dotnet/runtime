@@ -8,9 +8,9 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
-using LabelHandle = ILAssembler.MethodBodyWriter.Label;
+using LabelHandle = Microsoft.DotNet.ILAssembler.MethodBodyWriter.Label;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     internal sealed class EntityRegistry
     {
@@ -24,9 +24,9 @@ namespace ILAssembler
         private readonly Dictionary<string, FileEntity> _seenFiles = new();
         private readonly List<ManifestResourceEntity> _manifestResourceEntities = new();
         private readonly Dictionary<(ExportedTypeEntity? ContainingType, string Namespace, string Name), ExportedTypeEntity> _seenExportedTypes = new();
+        private readonly Dictionary<(TableIndex Table, int RowNumber), List<FakeTypeEntity>> _pendingEntityReferences = new();
         private readonly List<TypeReferenceEntity> _typeReferences = new();
         private readonly List<MemberReferenceEntity> _memberReferences = new();
-        private readonly Dictionary<(EntityBase, BlobBuilder), MethodSpecificationEntity> _seenMethodSpecs = new(new MethodSpecEqualityComparer());
 
         private sealed class BlobBuilderContentEqualityComparer : IEqualityComparer<BlobBuilder>
         {
@@ -69,19 +69,6 @@ namespace ILAssembler
             }
         }
 
-        private sealed class MethodSpecEqualityComparer : IEqualityComparer<(EntityBase, BlobBuilder)>
-        {
-            public bool Equals((EntityBase, BlobBuilder) x, (EntityBase, BlobBuilder) y)
-            {
-                return x.Item1 == y.Item1 && x.Item2.ContentEquals(y.Item2);
-            }
-
-            public int GetHashCode((EntityBase, BlobBuilder) obj)
-            {
-                return (obj.Item1.GetHashCode(), obj.Item2.Count).GetHashCode();
-            }
-        }
-
         public enum WellKnownBaseType
         {
             System_Object,
@@ -94,6 +81,7 @@ namespace ILAssembler
             ModuleType = GetOrCreateTypeDefinition(null, "", "<Module>", moduleType =>
             {
                 moduleType.BaseType = null;
+                moduleType.IsDefined = true;
             });
         }
 
@@ -106,7 +94,7 @@ namespace ILAssembler
             return Array.Empty<EntityBase>();
         }
 
-        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames, bool deterministic, bool fold)
+        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, DataLocation> mappedFieldDataNames, out ImmutableArray<DataLocation> mappedFields, bool deterministic, bool fold)
         {
             // Set the assembly handle early since DeclarativeSecurityAttribute needs it
             // The assembly definition handle is always row 1 (there's only ever one assembly per module)
@@ -226,17 +214,16 @@ namespace ILAssembler
             // that point to local types already have TypeDef handles.
             ResolveTypeReferences();
 
-            // Create a signature rewriter that remaps PseudoHandle-based TypeRef coded indices
-            // in blobs to the resolved real handles via list index lookup.
-            SignatureRewriter signatureRewriter = new(_typeReferences);
+            // Rewrite provisional TypeRef and TypeSpec indices before interning the emitted rows.
+            IReadOnlyList<EntityBase> typeSpecifications = GetSeenEntities(TableIndex.TypeSpec);
+            SignatureRewriter signatureRewriter = new(_typeReferences, typeSpecifications);
 
-            foreach (MemberReferenceEntity memberReferenceEntity in _memberReferences)
-            {
-                ResolveAndRecordMemberReference(memberReferenceEntity);
-            }
+            ResolveTypeSpecifications(builder, signatureRewriter, typeSpecifications);
+            ResolveMemberReferences(builder, signatureRewriter);
+            ResolveMethodSpecifications(builder, signatureRewriter);
 
             // Now that we've recorded all of the entities that wouldn't have had handles before,
-            // we can start writing out the content of the entities.
+            // we can write out the remaining entities.
             Blob mvidFixup = default;
             GuidHandle mvid;
             if (deterministic)
@@ -312,6 +299,7 @@ namespace ILAssembler
                 }
             }
 
+            var mappedFieldLocations = ImmutableArray.CreateBuilder<DataLocation>();
             foreach (FieldDefinitionEntity fieldDef in GetSeenEntities(TableIndex.Field))
             {
                 var fieldAttributes = fieldDef.Attributes;
@@ -339,9 +327,10 @@ namespace ILAssembler
                     builder.AddFieldLayout((FieldDefinitionHandle)fieldDef.Handle, fieldDef.Offset.Value);
                 }
 
-                if (fieldDef.DataDeclarationName is not null && mappedFieldDataNames.TryGetValue(fieldDef.DataDeclarationName, out int dataOffset))
+                if (fieldDef.DataDeclarationName is not null && mappedFieldDataNames.TryGetValue(fieldDef.DataDeclarationName, out DataLocation dataLocation))
                 {
-                    builder.AddFieldRelativeVirtualAddress((FieldDefinitionHandle)fieldDef.Handle, dataOffset);
+                    builder.AddFieldRelativeVirtualAddress((FieldDefinitionHandle)fieldDef.Handle, dataLocation.Offset);
+                    mappedFieldLocations.Add(dataLocation);
                 }
 
                 if (fieldDef.MarshallingDescriptor is { Count: > 0 })
@@ -355,6 +344,7 @@ namespace ILAssembler
                 }
             }
 
+            mappedFields = mappedFieldLocations.ToImmutable();
             var bodyStreamEncoder = new MethodBodyStreamEncoder(ilStream);
             Dictionary<byte[], int>? foldedBodies = fold ? new(new MethodBodyContentEqualityComparer()) : null;
 
@@ -475,30 +465,6 @@ namespace ILAssembler
                     impl.MethodDeclaration.Handle);
             }
 
-            foreach (MemberReferenceEntity memberRef in _memberReferences)
-            {
-                // Skip member references that were resolved to local MethodDef or FieldDef tokens.
-                if (memberRef.Handle.Kind is HandleKind.MethodDefinition or HandleKind.FieldDefinition)
-                {
-                    continue;
-                }
-
-                string name = memberRef.Name;
-                if (memberRef.Parent.Handle.Kind == HandleKind.MethodDefinition)
-                {
-                    var method = (MethodDefinitionEntity)GetSeenEntities(TableIndex.MethodDef)[MetadataTokens.GetRowNumber(memberRef.Parent.Handle) - 1];
-                    if ((method.MethodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.PrivateScope)
-                    {
-                        name = NameHelpers.GetPrivateScopeMetadataName(name, isMethod: true);
-                    }
-                }
-
-                builder.AddMemberReference(
-                    memberRef.Parent.Handle,
-                    builder.GetOrAddString(name),
-                    builder.GetOrAddBlob(RewriteSignatureBlob(memberRef.Signature, signatureRewriter)));
-            }
-
             foreach (DeclarativeSecurityAttributeEntity declSecurity in GetSeenEntities(TableIndex.DeclSecurity))
             {
                 builder.AddDeclarativeSecurityAttribute(
@@ -587,11 +553,6 @@ namespace ILAssembler
                     asmRef.Hash is null ? default : builder.GetOrAddBlob(asmRef.Hash));
             }
 
-            foreach (TypeSpecificationEntity typeSpec in GetSeenEntities(TableIndex.TypeSpec))
-            {
-                builder.AddTypeSpecification(builder.GetOrAddBlob(RewriteTypeSpecBlob(typeSpec.Signature, signatureRewriter)));
-            }
-
             if (Assembly is not null)
             {
                 // Combine the base flags with the architecture bits
@@ -636,11 +597,6 @@ namespace ILAssembler
                     builder.GetOrAddString(resource.Name),
                     resource.Implementation?.Handle ?? default,
                     resource.Offset);
-            }
-
-            foreach (MethodSpecificationEntity methodSpec in GetSeenEntities(TableIndex.MethodSpec))
-            {
-                builder.AddMethodSpecification(methodSpec.Parent.Handle, builder.GetOrAddBlob(RewriteMethodSpecBlob(methodSpec.Signature, signatureRewriter)));
             }
 
             foreach (GenericParameterEntity genericParam in GetSeenEntities(TableIndex.GenericParam))
@@ -750,6 +706,20 @@ namespace ILAssembler
             }
         }
 
+        // Unlike SystemValueTypeType, does not create the TypeRef.
+        public bool IsSystemValueType(TypeEntity? type)
+        {
+            if (IsCoreLibrary && type is TypeDefinitionEntity { ContainingType: null, Namespace: "System", Name: "ValueType" })
+            {
+                return true;
+            }
+            return type is TypeReferenceEntity { Namespace: "System", Name: "ValueType", ResolutionScope: AssemblyReferenceEntity scope }
+                && (scope == FindAssemblyReference("System.Private.CoreLib")
+                    || scope == FindAssemblyReference("System.Runtime")
+                    || scope == FindAssemblyReference("mscorlib")
+                    || scope == FindAssemblyReference("netstandard"));
+        }
+
         private TypeEntity? _systemEnum;
         public TypeEntity SystemEnumType
         {
@@ -765,12 +735,23 @@ namespace ILAssembler
 
         public AssemblyEntity? Assembly { get; set; }
 
-        private TypeReferenceEntity ResolveFromCoreAssembly(string typeName)
+        public bool IsCoreLibrary { get; set; }
+
+        private TypeEntity ResolveFromCoreAssembly(string typeName)
         {
+            if (IsCoreLibrary)
+            {
+                (string typeNamespace, string name) = NameHelpers.SplitDottedNameToNamespaceAndName(typeName);
+                return GetOrCreateTypeDefinition(null, typeNamespace, name, _ => { });
+            }
+
             // Check for assembly refs in order of preference then fall back to creating mscorlib if none found
             AssemblyReferenceEntity coreAsmRef = GetCoreLibAssemblyReference();
             return GetOrCreateTypeReference(coreAsmRef, new TypeName(null, typeName));
         }
+
+        public EntityBase GetCoreLibraryResolutionScope()
+            => IsCoreLibrary ? Module : GetCoreLibAssemblyReference();
 
         public AssemblyReferenceEntity GetCoreLibAssemblyReference()
         {
@@ -781,9 +762,12 @@ namespace ILAssembler
                 ?? GetOrCreateAssemblyReference("mscorlib", new Version(0, 0, 0, 0), culture: null, publicKeyOrToken: null, 0, ProcessorArchitecture.None);
         }
 
-        private static bool IsCoreLibAssemblyName(string name)
+        internal static bool IsCoreLibAssemblyName(string name)
         {
-            return name is "mscorlib" or "System.Runtime" or "System.Private.CoreLib" or "netstandard";
+            return string.Equals(name, "mscorlib", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "System.Runtime", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "netstandard", StringComparison.OrdinalIgnoreCase);
         }
 
         public interface IHasHandle
@@ -799,7 +783,15 @@ namespace ILAssembler
                 _seenEntities[table] = entities = new List<EntityBase>();
             }
             entities.Add(entity);
-            ((IHasHandle)entity).SetHandle(MetadataTokens.EntityHandle(table, entities.Count));
+            int rowNumber = entities.Count;
+            ((IHasHandle)entity).SetHandle(MetadataTokens.EntityHandle(table, rowNumber));
+            if (_pendingEntityReferences.Remove((table, rowNumber), out List<FakeTypeEntity>? pendingReferences))
+            {
+                foreach (FakeTypeEntity reference in pendingReferences)
+                {
+                    entity.AddHandleAlias(reference);
+                }
+            }
         }
 
         private TEntity GetOrCreateEntity<TKey, TEntity>(TKey key, TableIndex table, Dictionary<TKey, TEntity> cache, Func<TKey, TEntity> constructor, Action<TEntity> onCreate)
@@ -906,17 +898,38 @@ namespace ILAssembler
 
         public EntityBase ResolveHandleToEntity(EntityHandle entityHandle)
         {
-            _ = MetadataTokens.TryGetTableIndex(entityHandle.Kind, out var tableIndex);
-            if (_seenEntities.TryGetValue(tableIndex, out var entity))
+            bool hasTableIndex = MetadataTokens.TryGetTableIndex(entityHandle.Kind, out var tableIndex);
+            if (hasTableIndex && _seenEntities.TryGetValue(tableIndex, out var entity))
             {
                 int rowNumber = MetadataTokens.GetRowNumber(entityHandle);
                 if (rowNumber >= 1 && rowNumber <= entity.Count)
                 {
                     return entity[rowNumber - 1];
                 }
+
+                if (rowNumber > entity.Count)
+                {
+                    return CreatePendingEntityReference(tableIndex, rowNumber, entityHandle);
+                }
             }
+            else if (hasTableIndex && MetadataTokens.GetRowNumber(entityHandle) >= 1)
+            {
+                return CreatePendingEntityReference(tableIndex, MetadataTokens.GetRowNumber(entityHandle), entityHandle);
+            }
+
             // Row entry does not exist. Use our FakeTypeEntity type to record the invalid handle.
             return new FakeTypeEntity(entityHandle);
+        }
+
+        private FakeTypeEntity CreatePendingEntityReference(TableIndex table, int rowNumber, EntityHandle entityHandle)
+        {
+            FakeTypeEntity reference = new(entityHandle);
+            if (!_pendingEntityReferences.TryGetValue((table, rowNumber), out List<FakeTypeEntity>? pendingReferences))
+            {
+                _pendingEntityReferences.Add((table, rowNumber), pendingReferences = new List<FakeTypeEntity>());
+            }
+            pendingReferences.Add(reference);
+            return reference;
         }
 
         public TypeReferenceEntity GetOrCreateTypeReference(EntityBase resolutionContext, TypeName name)
@@ -968,14 +981,19 @@ namespace ILAssembler
                     typeRef.PseudoHandle = MetadataTokens.TypeReferenceHandle(_typeReferences.Count);
 
                     StringBuilder builder = new(typeRef.Namespace.Length + typeRef.Name.Length + 1);
-                    builder.AppendFormat("{0}.{1}", typeRef.Namespace, typeRef.Name);
+                    if (typeRef.Namespace.Length > 0)
+                    {
+                        builder.Append(typeRef.Namespace);
+                        builder.Append('.');
+                    }
+                    builder.Append(typeRef.Name);
                     if (resolutionContext is AssemblyReferenceEntity asmRef)
                     {
                         var assemblyNameInfo = new AssemblyNameInfo(
                             asmRef.Name,
                             asmRef.Version,
                             string.IsNullOrEmpty(asmRef.Culture) ? null : asmRef.Culture,
-                            asmRef.PublicKeyOrToken is null ? AssemblyNameFlags.None : AssemblyNameFlags.PublicKey,
+                            (asmRef.Flags & AssemblyFlags.PublicKey) != 0 ? AssemblyNameFlags.PublicKey : AssemblyNameFlags.None,
                             asmRef.PublicKeyOrToken?.ToImmutableArray() ?? []);
                         builder.Append(", ");
                         builder.Append(assemblyNameInfo.FullName);
@@ -1015,9 +1033,14 @@ namespace ILAssembler
             return true;
         }
 
-        public static FieldDefinitionEntity? CreateUnrecordedFieldDefinition(FieldAttributes attributes, TypeDefinitionEntity containingType, string name, BlobBuilder signature)
+        public static FieldDefinitionEntity CreateUnrecordedFieldDefinition(FieldAttributes attributes, TypeDefinitionEntity containingType, string name, BlobBuilder signature)
         {
-            var field = new FieldDefinitionEntity(attributes, containingType, name, signature);
+            return new FieldDefinitionEntity(attributes, containingType, name, signature);
+        }
+
+        public static bool TryAddFieldDefinitionToContainingType(FieldDefinitionEntity field)
+        {
+            // ECMA-335 II.22.15: duplicate identity is owner+name+signature, excluding CompilerControlled fields.
             bool allowDuplicate = (field.Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.PrivateScope;
             if (!allowDuplicate)
             {
@@ -1027,12 +1050,12 @@ namespace ILAssembler
                         && fieldDef.Signature.ContentEquals(field.Signature!)
                         && (fieldDef.Attributes & FieldAttributes.FieldAccessMask) != FieldAttributes.PrivateScope)
                     {
-                        return null;
+                        return false;
                     }
                 }
             }
             field.ContainingType.Fields.Add(field);
-            return field;
+            return true;
         }
 
         public static InterfaceImplementationEntity CreateUnrecordedInterfaceImplementation(TypeDefinitionEntity implementingType, TypeEntity interfaceType)
@@ -1055,13 +1078,28 @@ namespace ILAssembler
         private sealed class SignatureRewriter : ISignatureTypeProvider<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>
         {
             private readonly List<TypeReferenceEntity>? _typeReferences;
+            private readonly IReadOnlyList<EntityBase>? _typeSpecifications;
+            private Dictionary<BlobBuilder, BlobBuilder>? _rewrittenSignatures;
 
             public SignatureRewriter() { }
 
-            public SignatureRewriter(List<TypeReferenceEntity> typeReferences)
+            public SignatureRewriter(List<TypeReferenceEntity> typeReferences, IReadOnlyList<EntityBase> typeSpecifications)
             {
                 _typeReferences = typeReferences;
+                _typeSpecifications = typeSpecifications;
             }
+
+            public BlobBuilder RewriteForComparison(BlobBuilder signature)
+            {
+                _rewrittenSignatures ??= new(new BlobBuilderContentEqualityComparer());
+                if (!_rewrittenSignatures.TryGetValue(signature, out BlobBuilder? rewritten))
+                {
+                    rewritten = RewriteSignatureBlob(signature, this);
+                    _rewrittenSignatures.Add(signature, rewritten);
+                }
+                return rewritten;
+            }
+
             public readonly struct BlobOrHandle
             {
                 public BlobOrHandle(BlobBuilder? blob)
@@ -1230,6 +1268,14 @@ namespace ILAssembler
 
             public BlobOrHandle GetTypeFromSpecification(MetadataReader reader, EmptyGenericContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
             {
+                if (_typeSpecifications is not null)
+                {
+                    int row = MetadataTokens.GetRowNumber(handle);
+                    if (row >= 1 && row <= _typeSpecifications.Count)
+                    {
+                        return new BlobOrHandle(_typeSpecifications[row - 1].Handle, rawTypeKind == (byte)SignatureTypeKind.ValueType);
+                    }
+                }
                 return new BlobOrHandle(handle, rawTypeKind == (byte)SignatureTypeKind.ValueType);
             }
 
@@ -1461,14 +1507,30 @@ namespace ILAssembler
                 fixed (byte* ptr = bytes)
                 {
                     var reader = new BlobReader(ptr, bytes.Length);
-                    var localTypes = decoder.DecodeLocalSignature(ref reader);
-
                     var newBlob = new BlobBuilder();
-                    var encoder = new BlobEncoder(newBlob);
-                    var localsEncoder = encoder.LocalVariableSignature(localTypes.Length);
-                    foreach (var localType in localTypes)
+                    newBlob.WriteByte(reader.ReadByte());
+                    int localCount = reader.ReadCompressedInteger();
+                    newBlob.WriteCompressedInteger(localCount);
+                    for (int i = 0; i < localCount; i++)
                     {
-                        localType.WriteBlobTo(localsEncoder.AddVariable().Builder);
+                        if (reader.RemainingBytes > 0)
+                        {
+                            byte firstByte = reader.ReadByte();
+                            if (firstByte == (byte)SignatureTypeCode.Sentinel)
+                            {
+                                newBlob.WriteByte(firstByte);
+                            }
+                            else
+                            {
+                                reader.Offset--;
+                            }
+                        }
+                        decoder.DecodeType(ref reader).WriteBlobTo(newBlob);
+                    }
+
+                    if (reader.RemainingBytes != 0)
+                    {
+                        throw new BadImageFormatException();
                     }
                     return newBlob;
                 }
@@ -1483,23 +1545,112 @@ namespace ILAssembler
                 fixed (byte* ptr = bytes)
                 {
                     var reader = new BlobReader(ptr, bytes.Length);
-                    var sig = decoder.DecodeMethodSignature(ref reader);
-
                     var newBlob = new BlobBuilder();
-                    var encoder = new BlobEncoder(newBlob);
-                    encoder.PropertySignature(sig.Header.Attributes.HasFlag(SignatureAttributes.Instance))
-                        .Parameters(sig.ParameterTypes.Length, out var retBuilder, out var paramsBuilder);
-                    sig.ReturnType.WriteBlobTo(retBuilder.Builder);
-                    for (int i = 0; i < sig.ParameterTypes.Length; i++)
+                    newBlob.WriteByte(reader.ReadByte());
+                    newBlob.WriteCompressedInteger(reader.ReadCompressedInteger());
+                    decoder.DecodeType(ref reader).WriteBlobTo(newBlob);
+                    // COMPAT: Preserve sentinel bytes, even though ECMA-335 II.23.2.5
+                    // does not include them in property signatures. This retains malformed
+                    // signatures rather than normalizing them.
+                    while (reader.RemainingBytes > 0)
                     {
-                        sig.ParameterTypes[i].WriteBlobTo(paramsBuilder.AddParameter().Builder);
+                        if (reader.ReadByte() == (byte)SignatureTypeCode.Sentinel)
+                        {
+                            newBlob.WriteByte((byte)SignatureTypeCode.Sentinel);
+                        }
+                        else
+                        {
+                            reader.Offset--;
+                            decoder.DecodeType(ref reader).WriteBlobTo(newBlob);
+                        }
                     }
                     return newBlob;
                 }
             }
         }
 
-        private void ResolveAndRecordMemberReference(MemberReferenceEntity memberRef)
+        private void ResolveTypeSpecifications(MetadataBuilder builder, SignatureRewriter rewriter, IReadOnlyList<EntityBase> typeSpecifications)
+        {
+            // ECMA-335 II.22.39: TypeSpec identity is the emitted signature, without a generic context.
+            Dictionary<BlobHandle, TypeSpecificationHandle> handles = new();
+            _seenEntities.Remove(TableIndex.TypeSpec);
+            foreach (TypeSpecificationEntity typeSpec in typeSpecifications)
+            {
+                BlobHandle signature = builder.GetOrAddBlob(RewriteTypeSpecBlob(typeSpec.Signature, rewriter));
+                if (!handles.TryGetValue(signature, out TypeSpecificationHandle handle))
+                {
+                    handle = builder.AddTypeSpecification(signature);
+                    RecordEntityInTable(TableIndex.TypeSpec, typeSpec);
+                    handles.Add(signature, handle);
+                }
+                else
+                {
+                    ((IHasHandle)typeSpec).SetHandle(handle);
+                }
+            }
+        }
+
+        private void ResolveMemberReferences(MetadataBuilder builder, SignatureRewriter rewriter)
+        {
+            // ECMA-335 II.22.25: resolve local definitions and vararg parents before comparing row identities.
+            Dictionary<(EntityHandle Parent, StringHandle Name, BlobHandle Signature), MemberReferenceHandle> handles = new();
+            foreach (MemberReferenceEntity memberRef in _memberReferences)
+            {
+                ResolveMemberReference(memberRef, rewriter);
+                if (memberRef.Handle.Kind is HandleKind.MethodDefinition or HandleKind.FieldDefinition)
+                {
+                    continue;
+                }
+
+                string name = memberRef.Name;
+                if (memberRef.Parent.Handle.Kind == HandleKind.MethodDefinition)
+                {
+                    var method = (MethodDefinitionEntity)GetSeenEntities(TableIndex.MethodDef)[MetadataTokens.GetRowNumber(memberRef.Parent.Handle) - 1];
+                    if ((method.MethodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.PrivateScope)
+                    {
+                        name = NameHelpers.GetPrivateScopeMetadataName(name, isMethod: true);
+                    }
+                }
+
+                (EntityHandle Parent, StringHandle Name, BlobHandle Signature) key = (memberRef.Parent.Handle, builder.GetOrAddString(name),
+                    builder.GetOrAddBlob(RewriteSignatureBlob(memberRef.Signature, rewriter)));
+                if (!handles.TryGetValue(key, out MemberReferenceHandle handle))
+                {
+                    handle = builder.AddMemberReference(key.Parent, key.Name, key.Signature);
+                    RecordEntityInTable(TableIndex.MemberRef, memberRef);
+                    handles.Add(key, handle);
+                }
+                else
+                {
+                    ((IHasHandle)memberRef).SetHandle(handle);
+                }
+            }
+        }
+
+        private void ResolveMethodSpecifications(MetadataBuilder builder, SignatureRewriter rewriter)
+        {
+            // ECMA-335 II.22.29: both the resolved method and the instantiation determine MethodSpec identity.
+            Dictionary<(EntityHandle Method, BlobHandle Instantiation), MethodSpecificationHandle> handles = new();
+            IReadOnlyList<EntityBase> methodSpecifications = GetSeenEntities(TableIndex.MethodSpec);
+            _seenEntities.Remove(TableIndex.MethodSpec);
+            foreach (MethodSpecificationEntity methodSpec in methodSpecifications)
+            {
+                (EntityHandle Method, BlobHandle Instantiation) key =
+                    (methodSpec.Parent.Handle, builder.GetOrAddBlob(RewriteMethodSpecBlob(methodSpec.Signature, rewriter)));
+                if (!handles.TryGetValue(key, out MethodSpecificationHandle handle))
+                {
+                    handle = builder.AddMethodSpecification(key.Method, key.Instantiation);
+                    RecordEntityInTable(TableIndex.MethodSpec, methodSpec);
+                    handles.Add(key, handle);
+                }
+                else
+                {
+                    ((IHasHandle)methodSpec).SetHandle(handle);
+                }
+            }
+        }
+
+        private void ResolveMemberReference(MemberReferenceEntity memberRef, SignatureRewriter rewriter)
         {
             // We need to resolve a MemberReference in a few scenarios:
             // 1. The MemberReference references a local MethodDefinition
@@ -1519,7 +1670,7 @@ namespace ILAssembler
             {
                 if (header.CallingConvention == SignatureCallingConvention.VarArgs)
                 {
-                    UpdateMemberRefForVarargSignatures(memberRef, signature);
+                    UpdateMemberRefForVarargSignatures(memberRef, signature, rewriter);
                 }
                 if (TryResolveMethodReference(memberRef))
                 {
@@ -1533,10 +1684,9 @@ namespace ILAssembler
                     return;
                 }
             }
-            RecordEntityInTable(TableIndex.MemberRef, memberRef);
         }
 
-        private bool TryResolveMethodReference(MemberReferenceEntity memberRef)
+        private bool TryResolveMethodReference(MemberReferenceEntity memberRef, SignatureRewriter? rewriter = null)
         {
             switch (memberRef.Parent)
             {
@@ -1552,6 +1702,26 @@ namespace ILAssembler
                             {
                                 ((IHasHandle)memberRef).SetHandle(method.Handle);
                                 return true;
+                            }
+                        }
+
+                        if (rewriter is not null)
+                        {
+                            // Rewrite only original signatures; compacted TypeSpec indices cannot be rewritten again.
+                            BlobBuilder? rewrittenSignature = null;
+                            foreach (var method in typeDef.Methods)
+                            {
+                                if (method.Name != memberRef.Name)
+                                {
+                                    continue;
+                                }
+
+                                rewrittenSignature ??= rewriter.RewriteForComparison(memberRef.Signature);
+                                if (rewrittenSignature.ContentEquals(rewriter.RewriteForComparison(method.MethodSignature!)))
+                                {
+                                    ((IHasHandle)memberRef).SetHandle(method.Handle);
+                                    return true;
+                                }
                             }
                         }
                     }
@@ -1582,7 +1752,7 @@ namespace ILAssembler
             return false;
         }
 
-        private void UpdateMemberRefForVarargSignatures(MemberReferenceEntity memberRef, byte[] signature)
+        private void UpdateMemberRefForVarargSignatures(MemberReferenceEntity memberRef, byte[] signature, SignatureRewriter rewriter)
         {
             var decoder = new SignatureDecoder<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>(new SignatureRewriter(), null!, default);
             BlobBuilder methodDefSig = new();
@@ -1633,21 +1803,18 @@ namespace ILAssembler
                 // Native ilasm only creates a MethodDef-parented MemberRef when the fixed
                 // signature resolves to a local method. Recording an unresolved helper
                 // MemberRef would create an unused row and shift every subsequent token.
-                if (TryResolveMethodReference(methodRef))
+                if (TryResolveMethodReference(methodRef, rewriter))
                 {
                     memberRef.SetMemberRefParent(methodRef);
                 }
             }
         }
 
-        public MethodSpecificationEntity GetOrCreateMethodSpecification(EntityBase method, BlobBuilder signature)
+        public MethodSpecificationEntity CreateMethodSpecification(EntityBase method, BlobBuilder signature)
         {
-            return GetOrCreateEntity(
-                (method, signature),
-                TableIndex.MethodSpec,
-                _seenMethodSpecs,
-                ((EntityBase method, BlobBuilder signature) value) => new(method, signature),
-                _ => { });
+            var entity = new MethodSpecificationEntity(method, signature);
+            RecordEntityInTable(TableIndex.MethodSpec, entity);
+            return entity;
         }
 
         public StandaloneSignatureEntity GetOrCreateStandaloneSignature(BlobBuilder signature)
@@ -1750,10 +1917,22 @@ namespace ILAssembler
 
         public ExportedTypeEntity GetOrCreateExportedType(EntityBase? implementation, string @namespace, string name, Action<ExportedTypeEntity> onCreateType)
         {
-            // We only key on the implementation if the type is nested (ExportedTypeEntity).
-            // For forwarders, implementation is AssemblyReferenceEntity which is not used in the key.
-            // However, we need to pass the actual implementation to the entity constructor.
-            return GetOrCreateEntity((implementation as ExportedTypeEntity, @namespace, name), TableIndex.ExportedType, _seenExportedTypes, (key) => new(key.Item3, key.Item2, implementation), onCreateType);
+            var key = (implementation as ExportedTypeEntity, @namespace, name);
+            if (implementation is ExportedTypeEntity)
+            {
+                // We only key on the implementation if the type is nested (ExportedTypeEntity).
+                // For forwarders, implementation is AssemblyReferenceEntity which is not used in the key.
+                // However, we need to pass the actual implementation to the entity constructor.
+                return GetOrCreateEntity(key, TableIndex.ExportedType, _seenExportedTypes, key => new(key.Item3, key.Item2, implementation), onCreateType);
+            }
+
+            // Error-tolerant mode preserves top-level duplicates after the caller diagnoses them.
+            // Keep the first declaration for nested exported-type name resolution.
+            var entity = new ExportedTypeEntity(name, @namespace, implementation);
+            RecordEntityInTable(TableIndex.ExportedType, entity);
+            _seenExportedTypes.TryAdd(key, entity);
+            onCreateType(entity);
+            return entity;
         }
 
         public ExportedTypeEntity? FindExportedType(ExportedTypeEntity? containingType, string @namespace, string @name)
@@ -1769,11 +1948,42 @@ namespace ILAssembler
 
         public abstract class EntityBase : IHasHandle
         {
+            private List<Blob>? _placesToWriteResolvedToken;
+            private List<EntityBase>? _handleAliases;
+
             public virtual EntityHandle Handle { get; private set; }
+
+            public void RecordBlobToWriteResolvedToken(Blob blob)
+            {
+                (_placesToWriteResolvedToken ??= new()).Add(blob);
+                var writer = new BlobWriter(blob);
+                writer.WriteInt32(MetadataTokens.GetToken(Handle));
+            }
 
             protected virtual void SetHandle(EntityHandle token)
             {
                 Handle = token;
+                if (_placesToWriteResolvedToken is not null)
+                {
+                    foreach (Blob blob in _placesToWriteResolvedToken)
+                    {
+                        var writer = new BlobWriter(blob);
+                        writer.WriteInt32(MetadataTokens.GetToken(token));
+                    }
+                }
+                if (_handleAliases is not null)
+                {
+                    foreach (EntityBase alias in _handleAliases)
+                    {
+                        alias.SetHandle(token);
+                    }
+                }
+            }
+
+            internal void AddHandleAlias(EntityBase alias)
+            {
+                (_handleAliases ??= new()).Add(alias);
+                alias.SetHandle(Handle);
             }
 
             void IHasHandle.SetHandle(EntityHandle token) => SetHandle(token);
@@ -1781,6 +1991,13 @@ namespace ILAssembler
 
         public abstract class TypeEntity : EntityBase
         {
+        }
+
+        public sealed class LiteralTokenEntity(int token) : EntityBase
+        {
+            public int Token { get; } = token;
+
+            public override EntityHandle Handle => MetadataTokens.EntityHandle(Token);
         }
 
         public interface IHasReflectionNotation
@@ -1849,8 +2066,11 @@ namespace ILAssembler
                     while (containingTypes.Count != 0)
                     {
                         TypeDefinitionEntity containingType = containingTypes.Pop();
-                        builder.Append(containingType.Namespace);
-                        builder.Append('.');
+                        if (containingType.Namespace.Length > 0)
+                        {
+                            builder.Append(containingType.Namespace);
+                            builder.Append('.');
+                        }
                         builder.Append(containingType.Name);
                         if (containingTypes.Count > 0)
                         {
@@ -1865,6 +2085,7 @@ namespace ILAssembler
             public string Name { get; }
             public TypeAttributes Attributes { get; set; }
             public TypeEntity? BaseType { get; set; }
+            public bool IsDefined { get; set; }
 
             public NamedElementList<GenericParameterEntity> GenericParameters { get; } = new();
 
@@ -1918,28 +2139,6 @@ namespace ILAssembler
             /// (e.g., catch clauses, base type references) to get a valid TypeRef handle.
             /// </summary>
             public override EntityHandle Handle => base.Handle.IsNil ? PseudoHandle : base.Handle;
-
-            private readonly List<Blob> _placesToWriteResolvedToken = new();
-
-            /// <summary>
-            /// Records a 4-byte blob location (e.g., in an IL instruction stream) that
-            /// contains the PseudoHandle token and needs to be backpatched with the real
-            /// handle once TypeRef resolution is complete.
-            /// </summary>
-            public void RecordBlobToWriteResolvedToken(Blob blob)
-            {
-                _placesToWriteResolvedToken.Add(blob);
-            }
-
-            protected override void SetHandle(EntityHandle token)
-            {
-                base.SetHandle(token);
-                foreach (var blob in _placesToWriteResolvedToken)
-                {
-                    var writer = new BlobWriter(blob);
-                    writer.WriteInt32(MetadataTokens.GetToken(token));
-                }
-            }
         }
 
         public sealed class TypeSpecificationEntity(BlobBuilder signature) : TypeEntity
@@ -2058,26 +2257,6 @@ namespace ILAssembler
             public EntityBase Parent { get; private set; } = parent;
             public string Name { get; } = name;
             public BlobBuilder Signature { get; } = signature;
-
-            private readonly List<Blob> _placesToWriteResolvedHandle = new();
-
-            public void RecordBlobToWriteResolvedHandle(Blob blob)
-            {
-                _placesToWriteResolvedHandle.Add(blob);
-            }
-
-            protected override void SetHandle(EntityHandle token)
-            {
-                base.SetHandle(token);
-                // Now that we've set the handle, backpatch all the blobs that need to be updated.
-                // This way we can determine the right token to use for the member reference
-                // after we've processed all of the source code.
-                foreach (var blob in _placesToWriteResolvedHandle)
-                {
-                    var writer = new BlobWriter(blob);
-                    writer.WriteInt32(MetadataTokens.GetToken(token));
-                }
-            }
 
             internal void SetMemberRefParent(MemberReferenceEntity parent)
             {
@@ -2247,8 +2426,9 @@ namespace ILAssembler
             }
 
             /// <summary>
-            /// Gets the index in the compilation's <see cref="PdbDocumentTable"/> of the document that was current
-            /// when the directive that produced this point was applied.
+            /// Gets the index in the compilation's <see cref="PdbDocumentTable"/> of the point's document: the
+            /// <c>.il</c> source the instruction is in when no <c>.line</c> directive is in effect, otherwise the
+            /// current document of that source.
             /// </summary>
             public int DocumentIndex { get; }
             public int ILOffset { get; }
@@ -2256,19 +2436,13 @@ namespace ILAssembler
             public int StartColumn { get; }
             public int EndLine { get; }
             public int EndColumn { get; }
-
-            /// <summary>
-            /// Creates a hidden sequence point (used for compiler-generated code).
-            /// </summary>
-            public static SequencePoint Hidden(int documentIndex, int ilOffset) => new(documentIndex, ilOffset, 0xFEEFEE, 0, 0xFEEFEE, 0);
-
-            public bool IsHidden => StartLine == 0xFEEFEE;
+            public bool IsHidden => StartLine == System.Reflection.Metadata.SequencePoint.HiddenLine;
         }
 
         /// <summary>
-        /// Debug information for a method: the sequence points recorded from its <c>.line</c> and <c>#line</c>
-        /// directives, in increasing IL offset order, with at most one point per offset, and the local signature
-        /// of its body. The points of one method may belong to different documents.
+        /// Debug information for a method: the sequence points recorded as its instructions were emitted, in
+        /// increasing IL offset order, with at most one point per offset, and the local signature of its body. The
+        /// points of one method may belong to different documents. Points are recorded only when a PDB is requested.
         /// </summary>
         public sealed class MethodDebugInfo
         {

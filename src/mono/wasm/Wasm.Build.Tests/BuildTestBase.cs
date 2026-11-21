@@ -17,6 +17,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using Microsoft.Build.Logging.StructuredLogger;
+using Microsoft.NET.WebAssembly.Webcil;
 
 #nullable enable
 
@@ -26,12 +27,13 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        private const int TargetMajorVersion = 11; /* net11 */
+        private const int TargetMajorVersion = 12; /* net12 */
         public static readonly string DefaultTargetFramework = $"net{TargetMajorVersion}.0";
         public static readonly string PreviousTargetFramework = $"net{TargetMajorVersion - 1}.0";
         public static readonly string Previous2TargetFramework = $"net{TargetMajorVersion - 2}.0";
         public static readonly string DefaultTargetFrameworkForBlazor = DefaultTargetFramework;
-        public static readonly string DefaultTargetFrameworkForBlazorTemplate = $"net{Environment.Version.Major}.0";
+        public static readonly string DefaultTargetFrameworkForBlazorTemplate =
+            EnvironmentVariables.BlazorTemplateTargetFramework ?? $"net{Environment.Version.Major}.0";
         private const string DefaultEnvironmentLocale = "en-US";
         protected static readonly string s_unicodeChars = "\u9FC0\u8712\u679B\u906B\u486B\u7149";
         protected static readonly bool s_skipProjectCleanup;
@@ -221,9 +223,6 @@ namespace Wasm.Build.Tests
             };
             commandLineArgs.AddRange(buildOptions.ExtraMSBuildArgs);
 
-            if (buildOptions.IsPublish && buildOptions is PublishOptions po && po.BuildOnlyAfterPublish)
-                commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
-
             using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir);
             cmd.WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
@@ -384,6 +383,69 @@ namespace Wasm.Build.Tests
             => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.9-preview.2.2"" />
                 <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.9-preview.2.2"" />
                 <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.56\st\*.a"" />";
+
+        // In the wasm-opt lane, every image crossgen2 compiled into r2rDir is optimized and stamped: each
+        // per-assembly image, or just the composite. An image newer than its stamp was rewritten after wasm-opt
+        // ran and ships unoptimized, and the payload must keep the file alignment crossgen2 gave it for tools
+        // such as R2RDump. Outside the lane, WasmRunWasmOpt stays off and no image is optimized.
+        internal static void AssertReadyToRunWasmOpt(string r2rDir, string buildOutput, bool composite)
+        {
+            const string StampSuffix = ".wasm-opt.stamp";
+            string[] optimized = Directory.EnumerateFiles(r2rDir, $"*{StampSuffix}")
+                .Select(stamp => Path.GetFileName(stamp)[..^StampSuffix.Length])
+                .ToArray();
+
+            if (!EnvironmentVariables.UseWasmOpt)
+            {
+                Assert.DoesNotContain("ReadyToRun image(s) with", buildOutput);
+                Assert.Empty(optimized);
+                return;
+            }
+
+            Assert.Contains("ReadyToRun image(s) with", buildOutput);
+            if (composite)
+                Assert.EndsWith(".r2r.wasm", Assert.Single(optimized));
+            else
+                Assert.Contains("System.Private.CoreLib.wasm", optimized);
+
+            foreach (string image in optimized)
+            {
+                string imagePath = Path.Combine(r2rDir, image);
+                Assert.True(File.GetLastWriteTimeUtc(imagePath) <= File.GetLastWriteTimeUtc(imagePath + StampSuffix),
+                    $"'{imagePath}' is newer than its wasm-opt stamp.");
+                Assert.True(WebcilWasmPayloadAlignment.TryGetPayloadFileOffset(File.ReadAllBytes(imagePath), out long payloadOffset),
+                    $"'{imagePath}' has no Webcil payload segment.");
+                Assert.True(payloadOffset % WebcilWasmPayloadAlignment.PayloadFileAlignment == 0,
+                    $"The Webcil payload of '{imagePath}' starts at unaligned file offset {payloadOffset}.");
+            }
+        }
+
+        // Use the in-build crossgen2 when the test leg provides it. Composite builds also need the
+        // wasm-aware task shim until the base SDK supports wasm R2R output naming.
+        internal static string GetR2RBuildArgs(Configuration config, bool composite = false)
+        {
+            string? baseDir = EnvironmentVariables.BaseDir;
+            if (string.IsNullOrEmpty(baseDir))
+                return string.Empty;
+
+            string hostArch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+            string crossgenDir = Path.Combine(baseDir, "coreclr", $"browser.wasm.{config}", hostArch, "crossgen2");
+            string shimDir = Path.Combine(baseDir, "Crossgen2Tasks", config.ToString());
+            // The shim's build configuration is independent of the app's configuration.
+            if (composite && !Directory.Exists(shimDir))
+                shimDir = Path.Combine(baseDir, "Crossgen2Tasks", config == Configuration.Debug ? "Release" : "Debug");
+            string shimProps = Path.Combine(shimDir, "Microsoft.NET.CrossGen.props");
+            string shimTargets = Path.Combine(shimDir, "Microsoft.NET.CrossGen.targets");
+
+            var args = new List<string>();
+            if (Directory.Exists(crossgenDir))
+                args.Add($"-p:Crossgen2InBuildDir=\"{crossgenDir}\"");
+            if (composite && File.Exists(shimProps))
+                args.Add($"-p:Crossgen2SdkOverridePropsPath=\"{shimProps}\"");
+            if (composite && File.Exists(shimTargets))
+                args.Add($"-p:Crossgen2SdkOverrideTargetsPath=\"{shimTargets}\"");
+            return string.Join(" ", args);
+        }
 
         protected static string s_mainReturns42 = @"
             public class TestClass {

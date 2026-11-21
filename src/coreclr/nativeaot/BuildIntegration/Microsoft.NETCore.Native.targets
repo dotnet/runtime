@@ -17,6 +17,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   <!-- Set defaults for unspecified properties -->
   <PropertyGroup>
     <StripSymbols Condition="'$(StripSymbols)' == '' and '$(_targetOS)' != 'win'">true</StripSymbols>
+    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(_targetArchitecture)' == 'wasm'">true</WasmNativeStrip>
     <NativeLib Condition="'$(OutputType)' == 'Library' and '$(NativeLib)' == '' and '$(IlcMultiModule)' != 'true'">Shared</NativeLib>
     <NativeIntermediateOutputPath Condition="'$(NativeIntermediateOutputPath)' == ''">$(IntermediateOutputPath)native\</NativeIntermediateOutputPath>
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
@@ -35,17 +36,19 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- Set up default feature switches -->
   <PropertyGroup>
+    <CrashInfoSupport Condition="'$(CrashInfoSupport)' == '' and ('$(DebuggerSupport)' == 'false' or '$(WasmNativeStrip)' == 'true')">false</CrashInfoSupport>
     <EventSourceSupport Condition="$(EventSourceSupport) == ''">false</EventSourceSupport>
     <UseWindowsThreadPool Condition="'$(UseWindowsThreadPool)' == '' and '$(_targetOS)' == 'win'">true</UseWindowsThreadPool>
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">false</DynamicCodeSupport>
     <UseSizeOptimizedLinq Condition="'$(UseSizeOptimizedLinq)' == ''">true</UseSizeOptimizedLinq>
   </PropertyGroup>
 
-  <!-- These formats encode function pointers as relative linear-memory addresses, not WASM table indices. -->
-  <PropertyGroup Condition="'$(_targetArchitecture)' == 'wasm'">
-    <IlcDehydrate Condition="'$(IlcDehydrate)' == ''">false</IlcDehydrate>
-    <StackTraceSupport Condition="'$(StackTraceSupport)' == ''">false</StackTraceSupport>
-  </PropertyGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Diagnostics.CrashInfo.IsSupported"
+                                    Condition="'$(CrashInfoSupport)' == 'false'"
+                                    Value="false"
+                                    Trim="true" />
+  </ItemGroup>
 
   <!-- Configure LINQ expressions -->
   <ItemGroup>

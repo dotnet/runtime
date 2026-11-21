@@ -481,7 +481,11 @@ void GCLog (const char *fmt, ... ) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 FILE* CreateLogFile(const GCConfigStringHolder& temp_logfile_name, bool is_config);
 #endif //TRACE_GC || GC_CONFIG_DRIVEN
 
+#ifdef FEATURE_HOST_TRACE
 void log_init_error_to_host (const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
+#else // FEATURE_HOST_TRACE
+#define log_init_error_to_host(...)
+#endif // FEATURE_HOST_TRACE
 
 uint64_t GetHighPrecisionTimeStamp();
 

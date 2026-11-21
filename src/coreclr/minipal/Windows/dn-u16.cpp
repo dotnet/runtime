@@ -21,6 +21,16 @@ int u16_strncmp(const WCHAR* str1, const WCHAR* str2, size_t count)
     return ::wcsncmp(str1, str2, count);
 }
 
+int u16_stricmp(const WCHAR* str1, const WCHAR* str2)
+{
+    return ::_wcsicmp(str1, str2);
+}
+
+int u16_strnicmp(const WCHAR* str1, const WCHAR* str2, size_t count)
+{
+    return ::_wcsnicmp(str1, str2, count);
+}
+
 WCHAR* u16_strcpy_s(WCHAR* dst, size_t dstLen, const WCHAR* src)
 {
     if (0 != ::wcscpy_s(dst, dstLen, src))

@@ -846,11 +846,6 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
     if (ppTH != NULL)
         *ppTH = thOwner;
 
-    // Ensure that the methoddescs dependencies have been walked sufficiently for type forwarders to be resolved.
-    // This method is actually basically a nop for dependencies which are ngen'd, but is real work for jitted
-    // dependencies. (However, this shouldn't be meaningful work that wouldn't happen in any case very soon.)
-    pMethod->PrepareForUseAsADependencyOfANativeImage();
-
     Instantiation inst;
 
     // Instantiate the method if needed, or create a stub to a static method in a generic class.

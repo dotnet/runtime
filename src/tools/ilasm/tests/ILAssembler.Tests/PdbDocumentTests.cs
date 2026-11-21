@@ -8,7 +8,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     /// <summary>
     /// The Portable PDB documents of sequence points: which document each point belongs to, and how a method
@@ -615,7 +615,8 @@ namespace ILAssembler.Tests
         public void MethodWithLocalsButNoLineDirective_HasNoBlob()
         {
             // The spec's nil blob for a method without sequence points: there is no blob, so no LocalSignature,
-            // even though the body has a local signature.
+            // even though the body has a local signature. M2 has no points because M1's .line is still in effect
+            // and M2's instructions share the coordinates of M1's last point.
             using var pdb = PortablePdbTestReader.Compile(Program(
                 MethodWithLocals("M1", "int32 x") +
                 Method("M2", """

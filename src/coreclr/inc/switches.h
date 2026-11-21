@@ -51,9 +51,8 @@
 #endif // FEATURE_TIERED_COMPILATION
 
 #if defined(HOST_UNIX)
-    // In PAL we have a mechanism that reserves memory on start up that is
-    // close to libcoreclr and intercepts calls to VirtualAlloc to serve back
-    // from this area.
+    // Minipal reserves memory near libcoreclr during startup and serves executable
+    // memory allocations from that pool.
     #define USE_LAZY_PREFERRED_RANGE       0
 #else
     // On Windows we lazily try to reserve memory close to coreclr.dll.

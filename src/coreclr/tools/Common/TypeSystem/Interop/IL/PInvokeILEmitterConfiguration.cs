@@ -7,6 +7,9 @@ namespace Internal.IL
 {
     public abstract class PInvokeILEmitterConfiguration
     {
-        public abstract bool GenerateDirectCall(MethodDesc method, out string externName);
+        /// <summary>
+        /// Returns linkage metadata for a direct call, or null for a runtime-resolved call.
+        /// </summary>
+        public abstract LinkageMetadata GetLinkageMetadata(MethodDesc method);
     }
 }

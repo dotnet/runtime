@@ -9,6 +9,8 @@
     <PublishTrimmed>true</PublishTrimmed>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <AotOrSingleFile>true</AotOrSingleFile>
+    <HostBundleIdentifier>com.microsoft.dotnet.ilc</HostBundleIdentifier>
+    <HostBundleName>ilc</HostBundleName>
     <UseBootstrapLayout Condition="'$(UseBootstrap)' == 'true'">true</UseBootstrapLayout>
   </PropertyGroup>
 

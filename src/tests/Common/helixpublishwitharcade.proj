@@ -68,10 +68,10 @@
 
   <!-- WASI: ensure wasmtime is provisioned into $(WasmtimeDir) before the
        correlation payload gets copied for the Helix send job. -->
-  <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'" />
-  <Import Project="$(RepositoryEngineeringDir)AcquireWasiR2RTools.targets" Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" Condition="'$(TargetsWasi)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiR2RTools.targets" Condition="'$(TargetsWasi)' == 'true'" />
 
-  <PropertyGroup Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
+  <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
     <!-- Helix writes a .payload marker into the correlation-payload source
          directory; $(WasmtimeDir) isn't writable, so stage a copy first
          (matches sendtohelix-wasi.targets). -->
@@ -84,7 +84,7 @@
        version-keyed source sentinel so switching to an already-provisioned older version (whose
        .complete may predate the last staging) still re-stages instead of shipping a stale copy. -->
   <Target Name="StageWasmtimeForHelixPayload"
-          Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'"
+          Condition="'$(TargetsWasi)' == 'true'"
           BeforeTargets="CoreTest"
           DependsOnTargets="ProvisionWasmtime"
           Inputs="$(WasmtimeStampFile)"
@@ -103,7 +103,7 @@
        before scenarios are dispatched in parallel. CoreTest also covers direct sends.
        Keep staging version-keyed: Helix writes markers into these writable copies. -->
   <Target Name="StageWasiR2RToolsForHelixPayload"
-          Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' and '$(RunCrossGen2)' == 'true'"
+          Condition="'$(TargetsWasi)' == 'true' and '$(RunCrossGen2)' == 'true'"
           BeforeTargets="PrepareCorrelationPayloadDirectory;CoreTest"
           DependsOnTargets="AcquireWasiR2RTools"
           Inputs="$(BinaryenStampFile);$(WasmToolsStampFile)"
@@ -131,9 +131,9 @@
     <TargetsBrowserOnMono>false</TargetsBrowserOnMono>
     <TargetsBrowserOnMono Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'mono'">true</TargetsBrowserOnMono>
     <TargetsBrowserOnCoreCLR>false</TargetsBrowserOnCoreCLR>
-    <TargetsBrowserOnCoreCLR Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">true</TargetsBrowserOnCoreCLR>
+    <TargetsBrowserOnCoreCLR Condition="'$(TargetsBrowser)' == 'true'">true</TargetsBrowserOnCoreCLR>
     <TargetsWasiOnCoreCLR>false</TargetsWasiOnCoreCLR>
-    <TargetsWasiOnCoreCLR Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">true</TargetsWasiOnCoreCLR>
+    <TargetsWasiOnCoreCLR Condition="'$(TargetsWasi)' == 'true'">true</TargetsWasiOnCoreCLR>
     <!-- Both wasm+CoreCLR flavours follow the desktop test path; the
          mobile/xharness AppBundle path used by Mono wasm/wasi tests
          doesn't apply (see mergedrunner.targets). -->
@@ -180,7 +180,7 @@
         SuperPmiCollect=$(_SuperPmiCollect)
       </_PropertiesToPass>
 
-      <_PropertiesToPass Condition="('$(TargetOS)' == 'browser' and  '$(RuntimeFlavor)' == 'Mono') Or '$(TargetsAndroid)' == 'true' Or '$(TargetsAppleMobile)' == 'true' Or ('$(TargetsWasiOnCoreCLR)' == 'true' and '$(RunCrossGen2)' == 'true')">
+      <_PropertiesToPass Condition="'$(TargetsAndroid)' == 'true' Or '$(TargetsAppleMobile)' == 'true' Or ('$(TargetsWasiOnCoreCLR)' == 'true' and '$(RunCrossGen2)' == 'true')">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
         DotNetCliRuntime=$(DotNetCliRuntime);
@@ -248,6 +248,11 @@
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
   </PropertyGroup>
 
+  <!-- NativeAOT WASI tests run directly under the provisioned wasmtime, without a host dotnet runtime. -->
+  <PropertyGroup Condition="'$(TargetsWasiOnCoreCLR)' == 'true' and '$(NativeAotTest)' == 'true'">
+    <IncludeDotNetCli>false</IncludeDotNetCli>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' Or '$(TargetsAndroid)' == 'true' Or ('$(TargetsWasiOnCoreCLR)' == 'true' and '$(RunCrossGen2)' == 'true')">
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
@@ -286,7 +291,7 @@
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\tieringtest.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(_TieringTest)' == 'true'" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/tieringtest.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(_TieringTest)' == 'true'" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\nativeaottest.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(_NativeAotTest)' == 'true'" />
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/nativeaottest.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(_NativeAotTest)' == 'true'" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/nativeaottest.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(_NativeAotTest)' == 'true' and '$(TargetsWasiOnCoreCLR)' != 'true'" />
 
     <ItemGroup Condition=" '$(SuperPmiCollect)' == 'true' ">
       <!-- We need superpmi.py and its dependencies; this is an over-approximation. The HelixCorrelationPayload directory is CoreRootDirectory, so copy the scripts there. -->
@@ -446,9 +451,7 @@
 
       <HelixCommandLines Include="$(_WorkaroundForNuGetMigrations)" />
 
-      <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
-      <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'minifullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher --aot-lazy-assembly-load" />
-      <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot' and '$(RuntimeVariant)' != 'minifullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher" />
+      <HelixCommandLines Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher" />
 
       <!--
         Bug Fix: GH Issue #85056 - Helix takes the exit code of the last ran executable. Since that spot has now been
@@ -667,6 +670,7 @@
     <HelixPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%\PDB%3B%HELIX_CORRELATION_PAYLOAD%\IL" />
     <HelixPreCommand Include="set RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
     <HelixPreCommand Include="set CompositeBuildMode=1" Condition=" '$(CompositeBuildMode)' == 'true' " />
+    <HelixPreCommand Include="set WholeProgramCompositeBuildMode=1" Condition=" '$(WholeProgramCompositeBuildMode)' == 'true' " />
     <HelixPreCommand Include="set RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
     <HelixPreCommand Include="set RunningGCSimulatorTests=1" Condition=" '$(GcSimulatorTests)' == 'true' " />
     <HelixPreCommand Include="set RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />
@@ -723,6 +727,7 @@
     <HelixPreCommand Include="export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD" />
     <HelixPreCommand Include="export RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
     <HelixPreCommand Include="export CompositeBuildMode=1" Condition=" '$(CompositeBuildMode)' == 'true' " />
+    <HelixPreCommand Include="export WholeProgramCompositeBuildMode=1" Condition=" '$(WholeProgramCompositeBuildMode)' == 'true' " />
     <HelixPreCommand Include="export RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
     <HelixPreCommand Include="export RunningGCSimulatorTests=1" Condition=" '$(GcSimulatorTests)' == 'true' " />
     <HelixPreCommand Include="export RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />
@@ -735,7 +740,7 @@
     <HelixPreCommand Include="export LargeVersionBubble=1" Condition=" '$(LargeVersionBubble)' == 'true' " />
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/runincontext.sh" Condition=" '$(RunInUnloadableContext)' == 'true' " />
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/tieringtest.sh" Condition=" '$(TieringTest)' == 'true' " />
-    <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/nativeaottest.sh" Condition=" '$(NativeAotTest)' == 'true' " />
+    <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/nativeaottest.sh" Condition=" '$(NativeAotTest)' == 'true' and '$(TargetsWasiOnCoreCLR)' != 'true' " />
     <HelixPreCommand Include="export __TestEnv=$HELIX_WORKITEM_PAYLOAD/$(TestEnvFileName)" />
     <HelixPreCommand Include="export __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
     <HelixPreCommand Include="export __TestCollectionTimeoutMins=$(TimeoutPerTestCollectionInMinutes)" Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' " />
@@ -900,37 +905,22 @@
   <Target Name="PrepareAppleMobileBuildOnHelixWorkItems" BeforeTargets="CoreTest" Condition="'$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true'">
     <PropertyGroup>
       <iOSLikeBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'apple', 'build'))</iOSLikeBuildTargetsDir>
-      <iOSLikeLibraryBuilderTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'common'))</iOSLikeLibraryBuilderTargetsDir>
       <CMakeUrl>https://netcorenativeassets.blob.core.windows.net/resource-packages/external/macos/cmake/cmake-3.28.0-macos-universal.tar.gz</CMakeUrl>
 
       <_XHarnessAppleCustomCommand>
         source build-apple-app.sh
       </_XHarnessAppleCustomCommand>
-      <_RuntimeComponentManifestDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'build'))</_RuntimeComponentManifestDir>
     </PropertyGroup>
 
     <ItemGroup>
       <HelixCorrelationPayload Include="cmake" Uri="$(CMakeUrl)"                 Destination="build/cmake" />
       <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                   Destination="build/AppleAppBuilder" />
-      <HelixCorrelationPayload Include="$(LibraryBuilderDir)"                    Destination="build/LibraryBuilder" />
-      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Condition="'$(RuntimeFlavor)' == 'mono'"
-                                                                                Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())" />
-      <HelixCorrelationPayload Include="$(_RuntimeComponentManifestDir)"         Condition="'$(RuntimeFlavor)' == 'mono'"
-                                                                                Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())/runtimes/$(TargetOS)-$(TargetArchitecture.ToLower())/build" />
       <HelixCorrelationPayload Include="$(iOSLikeBuildTargetsDir)"               Destination="build/apple" />
-      <HelixCorrelationPayload Include="$(iOSLikeLibraryBuilderTargetsDir)"      Destination="build/common" />
-      <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Condition="'$(RuntimeFlavor)' == 'mono'"
-                                                                                Destination="build/cross" />
-      <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
-      <HelixCorrelationPayload Include="$(CoreCLRCrossILCompilerDir)"            Condition="'$(RuntimeFlavor)' == 'coreclr'"
-                                                                                Destination="build/ilc" />
-      <HelixCorrelationPayload Include="$(CoreCLRBuildIntegrationDir)"           Condition="'$(RuntimeFlavor)' == 'coreclr'"
-                                                                                Destination="build/BuildIntegration" />
-      <HelixCorrelationPayload Include="$(CoreCLRAotSdkDir)"                     Condition="'$(RuntimeFlavor)' == 'coreclr'"
-                                                                                Destination="build/aotsdk" />
-      <HelixCorrelationPayload Include="$(Crossgen2InBuildDir)"                  Condition="'$(RuntimeFlavor)' == 'coreclr'"
-                                                                                Destination="build/crossgen2" />
+      <HelixCorrelationPayload Include="$(CoreCLRCrossILCompilerDir)"            Destination="build/ilc" />
+      <HelixCorrelationPayload Include="$(CoreCLRBuildIntegrationDir)"           Destination="build/BuildIntegration" />
+      <HelixCorrelationPayload Include="$(CoreCLRAotSdkDir)"                     Destination="build/aotsdk" />
+      <HelixCorrelationPayload Include="$(Crossgen2InBuildDir)"                  Destination="build/crossgen2" />
       <HelixCorrelationPayload Include="$(ToolsILLinkDir)"                       Destination="build" />
     </ItemGroup>
 
@@ -986,7 +976,7 @@
   <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.targets" Condition=" '$(UsesHelixSdk)' != 'true' " />
 
   <!-- This target needs to come after importing the Helix SDK as AfterTargets doesn't work for targets that have yet to be defined. -->
-  <Target Name="ConfigureSOS" AfterTargets="AddDotNetSdk" BeforeTargets="CoreTest" Condition="'$(TestWrapperTargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+  <Target Name="ConfigureSOS" AfterTargets="AddDotNetSdk" BeforeTargets="CoreTest" Condition="'$(TestWrapperTargetsWindows)' == 'true'">
     <PropertyGroup>
       <HelixPreCommands>$(HelixPreCommands);dotnet %25HELIX_CORRELATION_PAYLOAD%25\sos\tools\net$(DotnetSosTargetFrameworkVersion)\any\dotnet-sos.dll install --architecture $(TargetArchitecture)</HelixPreCommands>
     </PropertyGroup>

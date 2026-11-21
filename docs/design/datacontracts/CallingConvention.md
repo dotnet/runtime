@@ -52,12 +52,24 @@ The single API is implemented by walking the shared `ArgIterator`
 the per-argument result into a GCRefMap encoder that mirrors
 `GCRefMapBuilder` (`src/coreclr/inc/gcrefmap.h`).
 
+The encoder reads the target-advertised `StackWalk` version from contract metadata
+without instantiating the stack-walking contract. It uses `VASIG_COOKIE` value 5
+for targets publishing version `c1`, and value 7 for version `c2`, which requires
+R2R 33. This preserves byte-for-byte compatibility with the target runtime;
+consumers decode synthesized blobs using the same target-version distinction.
+
 `TryComputeArgGCRefMapBlob` returns `false` for any method whose
 signature, ABI path, or generic context the encoder hasn't been taught
 yet. The cdacstress harness (`src/coreclr/vm/cdacstress.cpp`,
 `ARGITER` sub-check) uses byte-for-byte comparison of the returned blob
 against the runtime's `ComputeCallRefMap` output as its correctness
 oracle.
+
+By-value byref-like arguments require a complete walk of their nested fields,
+including inline-array elements. If a nested value type's runtime layout cannot
+be resolved, the encoder returns `false` rather than emitting an incomplete map
+that treats an interior pointer as a non-GC slot. The external-memory-handle
+consumer of the shared field walker retains its best-effort behavior.
 
 ## Signature decoding
 
