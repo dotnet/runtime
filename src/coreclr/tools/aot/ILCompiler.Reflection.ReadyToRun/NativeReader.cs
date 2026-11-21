@@ -388,7 +388,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Reads a standard unsigned LEB128 value starting at <paramref name="start"/> and advances
         /// <paramref name="start"/> past the encoded bytes.
         /// </summary>
-        public uint ReadULEB128(ref int start)
+        public ulong ReadULEB128(ref int start)
         {
             // 24 bytes is longer than the longest valid LEB128.
             int bytesToRead = Math.Min(24, (int)_backingStream.Length - start);
@@ -398,7 +398,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             Span<byte> buffer = stackalloc byte[24];
             int readStart = start;
             ReadSpanAt(ref readStart, buffer.Slice(0, bytesToRead));
-            uint result = checked((uint)DwarfHelper.ReadULEB128(buffer.Slice(0, bytesToRead), out int bytesRead));
+            ulong result = DwarfHelper.ReadULEB128(buffer.Slice(0, bytesToRead), out int bytesRead);
             start += bytesRead;
             return result;
         }

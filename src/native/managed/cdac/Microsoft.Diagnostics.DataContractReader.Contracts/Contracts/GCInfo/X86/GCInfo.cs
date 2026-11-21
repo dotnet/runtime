@@ -30,7 +30,7 @@ public enum RegMask
 public record X86GCInfo : IGCInfoDecoder
 {
     private const uint MINIMUM_SUPPORTED_GCINFO_VERSION = 4;
-    private const uint MAXIMUM_SUPPORTED_GCINFO_VERSION = 5;
+    private const uint MAXIMUM_SUPPORTED_GCINFO_VERSION = 6;
 
     private readonly Target _target;
 

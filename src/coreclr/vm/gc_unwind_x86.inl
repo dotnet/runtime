@@ -152,7 +152,7 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     /* Decode the InfoHdr */
 
     InfoHdr header;
-    table = decodeHeader(table, gcInfoToken.Version, &header);
+    table = decodeHeader(table, GCINFO_VERSION, &header);
 
     BOOL hasArgTabOffset = FALSE;
     if (header.untrackedCnt == HAS_UNTRACKED)

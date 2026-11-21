@@ -774,12 +774,12 @@ So on exit from the prolog the stack pointer (`$sp`) will point to the bottom of
 
 ### R2R stack frame layout
 
-R2R methods and funclets that can be interrupted by GC or EH have an unwindable frame. This includes methods and funclets that contain calls. The Wasm unwind blob for each R2R function or funclet contains two ULEB128 values:
+R2R methods and funclets that can be interrupted by GC or EH have an unwindable frame. This includes methods and funclets that contain calls. The Wasm unwind blob for each R2R function or funclet is one ULEB128 value that interleaves two fields:
 
-1. The fixed frame size in bytes.
+1. The fixed frame size, in 16-byte units.
 2. The virtual IP span for the function or funclet, encoded in units of 2.
 
-The runtime recovers the current R2R virtual IP from the current managed `$sp`. The low bit of virtual IP values is reserved to distinguish virtual IPs from interpreter addresses and portable entrypoints, so function-local virtual IPs are stored divided by 2 in the frame and multiplied by 2 by the runtime.
+The runtime recovers the current R2R virtual IP from the current managed `$sp`. The low bit of virtual IP values is reserved to distinguish virtual IPs from interpreter addresses and portable entrypoints, so function-local virtual IPs are stored divided by 2 in the frame and multiplied by 2 by the runtime. EH clause offsets are likewise stored divided by 2, while the GC info code length is in doubled units. NativeAOT uses the same scaling.
 
 For a main R2R method, the fixed frame begins at `$fp`. If the method does not use `localloc`, `$fp` and `$sp` are the same local after the prolog. If the method uses `localloc`, `$fp` remains at the bottom of the fixed frame and `$sp` can move below it. The first two pointer-sized slots are reserved for unwind lookup:
 
