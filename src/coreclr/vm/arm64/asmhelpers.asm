@@ -249,7 +249,11 @@ ThePreStubPatchLabel
     ldr x16, [sp, #192]
     EPILOG_RESTORE_REG_PAIR   fp, lr,   #208!
     cbz     x16, OnHijackTripThreadReturn
-    DCD     0xDAC1161E  ; autib lr, x16 instruction in binary to avoid requiring PAC-enabled assemblers
+    ; Code compiled with return address signing can run on hardware without pointer authentication,
+    ; where autib is undefined. autib1716 is in the hint space, so it is a NOP there.
+    mov     x17, lr
+    DCD     0xD50321DF  ; autib1716 instruction in binary to avoid requiring PAC-enabled assemblers
+    mov     lr, x17
 OnHijackTripThreadReturn
     EPILOG_RETURN
     NESTED_END

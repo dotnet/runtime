@@ -10,6 +10,7 @@
 #include "stdafx.h"
 #include <clrdata.h>
 #include <minipal.h>
+#include <minipal/environ.h>
 #include "typestring.h"
 #include "holder.h"
 #include "debuginfostore.h"
@@ -2830,7 +2831,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     m_globalBase = 0;
     m_refs = 1;
     m_instanceAge = 0;
-    m_debugMode = GetEnvironmentVariableA("MSCORDACWKS_DEBUG", NULL, 0) != 0;
+    m_debugMode = minipal_environ_get_variable("MSCORDACWKS_DEBUG", NULL, 0) != 0;
 
     m_enumMemCb = NULL;
     m_updateMemCb = NULL;

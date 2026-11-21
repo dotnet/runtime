@@ -601,11 +601,21 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHij
         return;
     }
 
+    ICodeManager* codeManager = runtime->GetCodeManagerForAddress(pvAddress);
+
+    // The address can be in the managed code range without being in a method, for example in a
+    // range extension thunk the linker placed between two sections of managed code. Such code
+    // can be neither walked nor hijacked; let the thread run and try again.
+    MethodInfo methodInfo;
+    if (!codeManager->FindMethodInfo(pvAddress, &methodInfo))
+    {
+        return;
+    }
+
     // we may be able to do GC stack walk right where the threads is now,
     // as long as the location is a GC safe point.
-    ICodeManager* codeManager = runtime->GetCodeManagerForAddress(pvAddress);
     if (runtime->IsConservativeStackReportingEnabled() ||
-        codeManager->IsSafePoint(pvAddress))
+        codeManager->IsSafePoint(&methodInfo, pvAddress))
     {
         // IsUnwindable is precise on arm64, but can give false negatives on other architectures.
         // (when IP is on the first instruction of an epilog, we still can unwind,

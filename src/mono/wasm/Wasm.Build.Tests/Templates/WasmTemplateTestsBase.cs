@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Xunit;
@@ -579,8 +580,11 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (runOptions is BlazorRunOptions blazorOp && blazorOp.Test is not null)
             await blazorOp.Test(page);
 
-        _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
-        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(runOptions.TimeoutSeconds ?? 10));
+        // The app may still be downloading assets and booting the runtime at this point,
+        // which can take well over 10s on loaded CI machines (especially untrimmed CoreCLR builds).
+        int timeoutSeconds = runOptions.TimeoutSeconds ?? 60;
+        _testOutput.WriteLine($"Waiting up to {timeoutSeconds}s for the 'WASM EXIT' message");
+        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(timeoutSeconds));
         if (runOptions.ExpectedExitCode is not null && exitCode != runOptions.ExpectedExitCode)
             throw new Exception($"Expected exit code {runOptions.ExpectedExitCode} but got {exitCode}.\nconsoleOutput={string.Join("\n", consoleOutput)}");
 
@@ -623,6 +627,33 @@ public class WasmTemplateTestsBase : BuildTestBase
             runOptions.OnErrorMessage?.Invoke(msg);
         }
     }
+
+	protected void AssertWasmEndpointIntegrity(Configuration config, bool publish)
+	{
+		string manifestPath = Path.Combine(GetObjDir(config), $"staticwebassets.{(publish ? "publish" : "build")}.endpoints.json");
+		using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(manifestPath));
+		JsonElement[] endpoints = manifest.RootElement.GetProperty("Endpoints").EnumerateArray()
+			.Where(endpoint => endpoint.GetProperty("Selectors").GetArrayLength() == 0)
+			.ToArray();
+		JsonElement[] wasmEndpoints = endpoints.Where(endpoint =>
+		{
+			string route = Assert.IsType<string>(endpoint.GetProperty("Route").GetString());
+			return route.StartsWith("_framework/", StringComparison.Ordinal);
+		}).ToArray();
+		Assert.NotEmpty(wasmEndpoints);
+		Assert.All(wasmEndpoints, endpoint =>
+		{
+			Assert.Contains(endpoint.GetProperty("EndpointProperties").EnumerateArray(),
+				property => property.GetProperty("Name").GetString() == "integrity"
+					&& property.GetProperty("Value").GetString() is string hash
+					&& hash.StartsWith("sha256-", StringComparison.Ordinal));
+			Assert.Contains(endpoint.GetProperty("ResponseHeaders").EnumerateArray(),
+				header => string.Equals(header.GetProperty("Name").GetString(), "ETag", StringComparison.OrdinalIgnoreCase));
+		});
+		JsonElement mainScript = Assert.Single(endpoints.Where(endpoint => endpoint.GetProperty("Route").GetString() == "main.js"));
+		Assert.Contains(mainScript.GetProperty("EndpointProperties").EnumerateArray(),
+			property => property.GetProperty("Name").GetString() == "integrity");
+	}
 
     public string GetBinFrameworkDir(Configuration config, bool forPublish, string? framework = null, string? projectDir = null) =>
         _provider.GetBinFrameworkDir(config, forPublish, framework ?? DefaultTargetFramework, projectDir);

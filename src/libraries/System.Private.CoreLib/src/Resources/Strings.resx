@@ -4311,7 +4311,7 @@
     <value>Unable to find an entry point named '{0}' in native library.</value>
   </data>
   <data name="DllNotFound_Windows" xml:space="preserve">
-    <value>Unable to load DLL '{0}' or one of its dependencies: {1}</value>
+    <value>Unable to load DLL '{0}' or one of its dependencies. In order to help diagnose loading problems, consider enabling Show Loader Snaps with the gflags tool and running the application under a debugger: {1}</value>
   </data>
   <data name="DllNotFound_Linux" xml:space="preserve">
     <value>Unable to load shared library '{0}' or one of its dependencies. In order to help diagnose loading problems, consider using a tool like strace. If you're using glibc, consider setting the LD_DEBUG environment variable: {1}</value>

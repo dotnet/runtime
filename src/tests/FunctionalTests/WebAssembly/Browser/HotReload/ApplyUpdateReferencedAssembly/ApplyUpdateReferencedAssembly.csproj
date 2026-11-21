@@ -18,7 +18,5 @@
     <Compile Include="MethodBody1.cs" />
   </ItemGroup>
 
-  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Mono -->
-  <Import Project="$(RepositoryEngineeringDir)testing\hotreload-delta-gen.targets"
-          Condition="'$(RuntimeFlavor)' != 'Mono'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\hotreload-delta-gen.targets" />
 </Project>

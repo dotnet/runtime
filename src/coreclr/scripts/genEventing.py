@@ -19,19 +19,12 @@ class RuntimeFlavor:
     def __init__(self, runtime):
         if runtime.lower() == "coreclr":
             self.coreclr = True
-            self.mono = False
-            self.nativeaot = False
-        elif runtime.lower() == "mono":
-            self.coreclr = False
-            self.mono = True
             self.nativeaot = False
         elif runtime.lower() == "nativeaot":
             self.coreclr = False
-            self.mono = False
             self.nativeaot = True
         else:
             self.coreclr = True
-            self.mono = False
             self.nativeaot = False
 
 stdprolog="""
@@ -80,38 +73,6 @@ coreCLREventPipeDataTypeMapping={
     "BYTE"              : "BYTE",
 }
 
-monoPalDataTypeMapping={
-    #constructed types
-    "win:null"          :" ",
-    "win:Int64"         :"const int64_t",
-    "win:ULong"         :"const uint32_t",
-    "win:count"         :"*",
-    "win:Struct"        :"const void",
-    #actual spec
-    "win:GUID"          :"const uint8_t",
-    "win:AnsiString"    :"const char*",
-    "win:UnicodeString" :"const ep_char8_t*",
-    "win:Double"        :"const double",
-    "win:Int32"         :"const int32_t",
-    "win:Boolean"       :"const bool",
-    "win:UInt64"        :"const uint64_t",
-    "win:UInt32"        :"const uint32_t",
-    "win:UInt16"        :"const uint16_t",
-    "win:UInt8"         :"const uint8_t",
-    "win:Pointer"       :"const void*",
-    "win:Binary"        :"const uint8_t",
-}
-
-monoEventPipeDataTypeMapping={
-    "BOOL"              : "bool",
-    "LPCGUID"           : "const uint8_t*",
-    "UCHAR"             : "uint8_t",
-    "ULONG"             : "uint32_t",
-    "ULONGLONG"         : "uint64_t",
-    "WCHAR"             : "wchar_t",
-    "BYTE"              : "uint8_t",
-}
-
 aotPalDataTypeMapping={
     #constructed types
     "win:null"          :" ",
@@ -147,23 +108,17 @@ aotEventPipeDataTypeMapping={
 def getEventPipeDataTypeMapping(runtimeFlavor):
     if runtimeFlavor.coreclr:
         return coreCLREventPipeDataTypeMapping
-    elif runtimeFlavor.mono:
-        return monoEventPipeDataTypeMapping
     elif runtimeFlavor.nativeaot:
         return aotEventPipeDataTypeMapping
 
 def getPalDataTypeMapping(runtimeFlavor):
     if runtimeFlavor.coreclr:
         return coreCLRPalDataTypeMapping
-    elif runtimeFlavor.mono:
-        return monoPalDataTypeMapping
     elif runtimeFlavor.nativeaot:
         return aotPalDataTypeMapping
 
 def includeProvider(providerName, runtimeFlavor):
-    if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot) and providerName == "Microsoft-DotNETRuntimeMonoProfiler":
-        return False
-    elif runtimeFlavor.nativeaot and providerName == "Microsoft-Windows-DotNETRuntimeStress":
+    if runtimeFlavor.nativeaot and providerName == "Microsoft-Windows-DotNETRuntimeStress":
         return False
     else:
         return True
@@ -182,7 +137,7 @@ def includeEvent(inclusionList, providerName, eventName):
     else:
         return False
 
-def getCoreCLRMonoNativeAotTypeAdaptionDefines():
+def getCoreCLRNativeAotTypeAdaptionDefines():
     return """
 #ifndef W
 #define W(str) L##str
@@ -761,8 +716,6 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, is_host_wi
         Clrallevents.write(stdprolog)
         Clrallevents.write('#include <minipal/guid.h>\n\n')
         if generatedFileType=="header-impl":
-            if runtimeFlavor.mono:
-                Clrallevents.write(getCoreCLRMonoNativeAotTypeAdaptionDefines() + "\n")
             if runtimeFlavor.coreclr or write_xplatheader:
                 Clrallevents.write('#include "clrxplatevents.h"\n')
             Clrallevents.write('#include "clreventpipewriteevents.h"\n')
@@ -1026,10 +979,6 @@ def main(argv):
 
     is_host_windows = targetOS == "windows"
     target_cpp = True
-    if runtimeFlavor.mono:
-        extern = False
-        target_cpp = False
-        write_xplatheader = False
 
     inclusion_list = parseInclusionList(inclusion_filename)
 

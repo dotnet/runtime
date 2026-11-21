@@ -3,27 +3,25 @@
 
 namespace System.Runtime
 {
-#if NATIVEAOT
-    public
-#else
-    internal
-#endif
-    enum ExceptionIDs
+    internal enum ExceptionIDs
     {
         OutOfMemory = 1,
-        Arithmetic = 2,
         ArrayTypeMismatch = 3,
         DivideByZero = 4,
         IndexOutOfRange = 5,
         InvalidCast = 6,
         Overflow = 7,
         NullReference = 8,
+#if !TARGET_WASM
         AccessViolation = 9,
         DataMisaligned = 10,
+#endif
         EntrypointNotFound = 11,
         AmbiguousImplementation = 12,
+#if !TARGET_WASM
         IllegalInstruction = 13,
         PrivilegedInstruction = 14,
         InPageError = 15,
+#endif
     }
 }

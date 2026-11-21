@@ -119,6 +119,7 @@
 #include "threadsuspend.h"
 #include "inlinetracking.h"
 #include "frozenobjectheap.h"
+#include "gcenv.h"
 
 #ifdef PROFILING_SUPPORTED
 #include "profilinghelper.h"
@@ -131,6 +132,7 @@
 
 #ifdef FEATURE_PERFTRACING
 #include "eventpipeadapter.h"
+#include "ProcessEnvironment.h"
 #endif // FEATURE_PERFTRACING
 
 //---------------------------------------------------------------------------------------
@@ -1146,8 +1148,6 @@ bool SaveContainedObjectRef(Object * pBO, void * context)
 //      TRUE=continue
 //      FALSE=stop
 //
-extern bool s_forcedGCInProgress;
-
 bool HeapWalkHelper(Object * pBO, void * pvContext)
 {
     CONTRACTL
@@ -6913,7 +6913,7 @@ HRESULT ProfToEEInterfaceImpl::GetEnvironmentVariable(
 
     if ((pcchValue != nullptr) || (szValue != nullptr))
     {
-        DWORD trueLen = ::GetEnvironmentVariable(szName, szValue, cchValue);
+        uint32_t trueLen = ProcessEnvironment_GetVariable((const CHAR16_T*)szName, (CHAR16_T*)szValue, cchValue);
         if (trueLen == 0)
         {
             hr = HRESULT_FROM_WIN32(GetLastError());
@@ -6957,7 +6957,8 @@ HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const
         return E_INVALIDARG;
     }
 
-    return ::SetEnvironmentVariable(szName, szValue) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+    uint32_t error = ProcessEnvironment_SetVariable((const CHAR16_T*)szName, (const CHAR16_T*)szValue);
+    return HRESULT_FROM_WIN32(error);
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
