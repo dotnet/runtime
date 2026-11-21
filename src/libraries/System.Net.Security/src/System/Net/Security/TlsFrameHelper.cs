@@ -3,8 +3,11 @@
 
 using System.Buffers.Binary;
 using System.Globalization;
+using System.IO;
 using System.Security.Authentication;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Security
 {
@@ -93,6 +96,31 @@ namespace System.Net.Security
 
     internal static class TlsFrameHelper
     {
+        internal sealed class TlsRecordReadBuffer(Memory<byte> buffer)
+        {
+            public int Length { get; private set; }
+            public ReadOnlyMemory<byte> BufferedData => buffer.Slice(0, Length);
+
+            public async ValueTask<bool> FillAsync(Stream stream, int minimumBytes, CancellationToken cancellationToken)
+            {
+                while (Length < minimumBytes)
+                {
+                    int read = await stream.ReadAsync(buffer.Slice(Length, minimumBytes - Length), cancellationToken).ConfigureAwait(false);
+                    if (read == 0)
+                    {
+                        return false;
+                    }
+
+                    // Progress must survive cancellation of the next read.
+                    Length += read;
+                }
+
+                return true;
+            }
+
+            public void Clear() => Length = 0;
+        }
+
         public const int HeaderSize = 5;
 
         [Flags]

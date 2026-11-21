@@ -53,36 +53,46 @@ static nw_endpoint_t _endpoint;
 #define MANAGED_CONTEXT_KEY "GCHANDLE"
 #define SESSION_QUEUE_KEY "SESSIONQUEUE"
 
-static void* FramerCopyPointerValue(nw_framer_t framer, const char* key)
-{
-    void* ptr = NULL;
+@interface NwFramerSessionQueue : NSObject
+@property(nonatomic, readonly, retain) dispatch_queue_t queue;
+- (instancetype)initWithQueue:(dispatch_queue_t)queue;
+@end
 
-    // Options are unavailable once the framer is being torn down, which is exactly when the
-    // cleanup handler runs, so a missing value here is expected rather than a programming error.
+@implementation NwFramerSessionQueue
+@synthesize queue = _queue;
+
+- (instancetype)initWithQueue:(dispatch_queue_t)queue
+{
+    self = [super init];
+    if (self != nil)
+    {
+        dispatch_retain(queue);
+        _queue = queue;
+    }
+    return self;
+}
+
+- (void)dealloc
+{
+    dispatch_release(_queue);
+    [super dealloc];
+}
+@end
+
+static dispatch_queue_t FramerGetSessionQueue(nw_framer_t framer)
+{
     nw_protocol_options_t framer_options = nw_framer_copy_options(framer);
     if (framer_options == NULL)
     {
         return NULL;
     }
 
-    NSNumber* num = nw_framer_options_copy_object_value(framer_options, key);
-    if (num != NULL)
-    {
-        [num getValue:&ptr];
-        [num release];
-    }
-
+    NwFramerSessionQueue* holder = nw_framer_options_copy_object_value(framer_options, SESSION_QUEUE_KEY);
+    dispatch_queue_t queue = [holder queue];
+    [holder release];
     nw_release(framer_options);
 
-    return ptr;
-}
-
-// The connection delivers its state changed handler on the session queue, while
-// nw_framer_async runs on the framer's own queue. Work that has to observe a state
-// change caused by delivered input must therefore be posted to this queue.
-static dispatch_queue_t FramerGetSessionQueue(nw_framer_t framer)
-{
-    return (dispatch_queue_t)FramerCopyPointerValue(framer, SESSION_QUEUE_KEY);
+    return queue;
 }
 
 static void* FramerGetManagedContext(nw_framer_t framer)
@@ -111,11 +121,10 @@ static void FramerOptionsSetManagedContext(nw_protocol_options_t framer_options,
 
 static void FramerOptionsSetSessionQueue(nw_protocol_options_t framer_options, dispatch_queue_t sessionQueue)
 {
-    // Retained for the lifetime of the connection that owns this framer.
-    dispatch_retain(sessionQueue);
-    NSNumber *ref = [NSNumber numberWithLong:(long)sessionQueue];
-    nw_framer_options_set_object_value(framer_options, SESSION_QUEUE_KEY, ref);
-    [ref release];
+    // The options own the retain, including when setup fails before the framer starts.
+    NwFramerSessionQueue* holder = [[NwFramerSessionQueue alloc] initWithQueue:sessionQueue];
+    nw_framer_options_set_object_value(framer_options, SESSION_QUEUE_KEY, holder);
+    [holder release];
 }
 
 static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol palProtocolId)
@@ -644,19 +653,6 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
 
     nw_framer_set_stop_handler(framer, framer_stop_handler);
 
-    // Balance the retain taken in FramerOptionsSetSessionQueue. The queue is captured here, while
-    // the framer options are still readable, rather than looked up from the cleanup handler: options
-    // are gone once teardown starts, and a lookup that returns NULL there would leak the retain.
-    dispatch_queue_t sessionQueue = FramerGetSessionQueue(framer);
-    nw_framer_set_cleanup_handler(framer, ^(nw_framer_t cleanupFramer)
-    {
-        (void)cleanupFramer;
-        if (sessionQueue != NULL)
-        {
-            dispatch_release(sessionQueue);
-        }
-    });
-
     return nw_framer_start_result_ready;
 };
 
@@ -684,13 +680,9 @@ PALEXPORT int32_t AppleCryptoNative_NwFramerDeliverInput(nw_framer_t framer, voi
     {
         nw_framer_deliver_input(framer, buffer, (size_t)bufferLength, message, bufferLength > 0 ? FALSE : TRUE);
 
-        // Delivering the input can drive the connection to nw_connection_state_ready, which
-        // queues the state changed handler that reports HandshakeFinished. That handler runs on
-        // the connection's session queue, not on the framer queue, so completing inline (or via
-        // another nw_framer_async hop) races it. Managed code uses this completion to decide
-        // whether to keep reading from the transport and must not read past the final handshake
-        // record, so hand the completion to the session queue where it is ordered behind any
-        // state change the delivered bytes produced.
+        // Use the connection's queue to observe state changes already queued by delivery.
+        // TLS processing can continue asynchronously, so the managed handshake read still
+        // needs cancellation and must preserve any bytes it consumed before cancellation.
         dispatch_queue_t sessionQueue = FramerGetSessionQueue(framer);
         if (sessionQueue != NULL)
         {

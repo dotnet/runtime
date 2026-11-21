@@ -68,8 +68,7 @@ namespace System.Net.Security
 
         private TaskCompletionSource<Exception?> _handshakeCompletionSource = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        // Cancelled as soon as the handshake completes, so a transport read the loop parked while
-        // still in the handshake phase is abandoned before it can consume application data.
+        // Stops speculative handshake reads at completion; completed-read progress is retained.
         private readonly CancellationTokenSource _handshakeReadCts = new CancellationTokenSource();
 
         // Completed once the framer is available. The transport read loop starts as soon as the
@@ -96,7 +95,7 @@ namespace System.Net.Security
         private readonly TaskCompletionSource _connectionClosedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         private CancellationTokenSource _shutdownCts = new CancellationTokenSource();
 
-        private bool _disposed;
+        private volatile bool _disposed;
         private int _challengeCallbackCompleted;  // 0 = not called, 1 = called
         private IntPtr _selectedClientCertificate;  // Cached result from challenge callback
         private volatile bool _transportEofWithinTlsRecord;
@@ -113,15 +112,13 @@ namespace System.Net.Security
 
         private TaskCompletionSource? _currentWriteCompletionSource;
 
-        // Guards admission of application sends against disposal. Both the publication of
-        // _pendingSendCompletion and the native send itself happen under this, so Dispose cannot
-        // observe "no send in flight" for a send that is about to call into native code.
+        // Serializes native send/receive admission and completion against disposal.
         private readonly object _sendGate = new();
 
-        // Completed once an application send has observed every native callback it triggered
-        // (the nw_connection_send completion and the framer output write). Both resolve the
-        // GCHandle, so Dispose must not free it while one is outstanding.
+        // Completed by the native send callback, not by the managed WriteAsync returning.
+        // Dispose must not free the GCHandle while that callback is outstanding.
         private TaskCompletionSource? _pendingSendCompletion;
+        private TaskCompletionSource? _pendingReceiveCompletion;
 
         public SafeDeleteNwContext(SslStream stream) : base(IntPtr.Zero)
         {
@@ -164,6 +161,7 @@ namespace System.Net.Security
                     try
                     {
                         Memory<byte> readBuffer = new Memory<byte>(buffer);
+                        TlsFrameHelper.TlsRecordReadBuffer handshakeBuffer = new(readBuffer);
                         bool handshakePhase = true;
 
                         using CancellationTokenSource handshakeReadCts = CancellationTokenSource.CreateLinkedTokenSource(
@@ -182,8 +180,9 @@ namespace System.Net.Security
                                 // encapsulation only once AuthenticateAsClient returns - so anything read
                                 // past the final handshake record would be interpreted with the wrong
                                 // framing. Network.framework never asks for input, so this read has to be
-                                // speculative; it is cancelled the moment the handshake completes, which
-                                // abandons it before it can consume a re-framed record.
+                                // speculative; it is cancelled the moment the handshake completes.
+                                // Any bytes already returned by completed reads are retained until
+                                // application I/O starts, then fed to TLS before reading more.
                                 //
                                 // That makes cancellation load bearing for re-framing transports, and it
                                 // cannot be avoided here: the other PALs read on demand because the
@@ -201,13 +200,17 @@ namespace System.Net.Security
                                 // returns an ordinary TLS record.
                                 try
                                 {
-                                    bytesRead = await ReadSingleTlsRecordAsync(readBuffer, handshakeReadCts.Token).ConfigureAwait(false);
+                                    bytesRead = await ReadSingleTlsRecordAsync(handshakeBuffer, handshakeReadCts.Token).ConfigureAwait(false);
                                 }
-                                catch (OperationCanceledException) when (!_shutdownCts.IsCancellationRequested)
+                                catch (OperationCanceledException) when (_handshakeReadCts.IsCancellationRequested && !_shutdownCts.IsCancellationRequested)
                                 {
                                     handshakePhase = false;
                                     await _appIoStartedTcs.Task.WaitAsync(_shutdownCts.Token).ConfigureAwait(false);
-                                    continue;
+                                    bytesRead = handshakeBuffer.Length;
+                                    if (bytesRead == 0)
+                                    {
+                                        continue;
+                                    }
                                 }
                             }
                             else
@@ -226,6 +229,7 @@ namespace System.Net.Security
 
                                 // Process the read data
                                 await WriteInboundWireDataAsync(readBuffer.Slice(0, bytesRead)).ConfigureAwait(false);
+                                handshakeBuffer.Clear();
 
                                 if (handshakePhase && _handshakeCompletionSource.Task.IsCompleted)
                                 {
@@ -248,7 +252,7 @@ namespace System.Net.Security
                             else
                             {
                                 _transportReadTcs.TrySetResult(final: true);
-                                _transportEofWithinTlsRecord = recordTracker.IsMidRecord;
+                                _transportEofWithinTlsRecord = recordTracker.IsMidRecord || handshakeBuffer.Length != 0;
                                 if (_transportEofWithinTlsRecord)
                                 {
                                     _appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_eof)));
@@ -276,7 +280,7 @@ namespace System.Net.Security
                         ArrayPool<byte>.Shared.Return(buffer);
                     }
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException) when (_shutdownCts.IsCancellationRequested)
                 {
                     // Handle cancellation gracefully
                 }
@@ -302,17 +306,16 @@ namespace System.Net.Security
             // The application is driving I/O now, so the transport read loop may resume.
             _appIoStartedTcs.TrySetResult();
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"App sending {buffer.Length} bytes");
-
             // Published before the native send is issued, under the same lock Dispose takes, so a
             // concurrent Dispose either sees this send and waits for it or refuses it outright.
             // Publishing without the lock leaves a window where Dispose reads the field as null,
             // frees the GCHandle, and the send completion then resolves a freed handle.
             TaskCompletionSource sendCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource transportWriteCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            bool sendIssued = false;
 
             try
             {
-                TaskCompletionSource transportWriteCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 ValueTask valueTask;
 
                 using MemoryHandle memoryHandle = buffer.Pin();
@@ -320,44 +323,52 @@ namespace System.Net.Security
                 {
                     ObjectDisposedException.ThrowIf(_disposed, _sslStream);
 
-                    _pendingSendCompletion = sendCompletion;
-                    _currentWriteCompletionSource = transportWriteCompletion;
-
                     bool success = _appWriteTcs.TryGetValueTask(out valueTask, this, CancellationToken.None);
                     Debug.Assert(success, "Concurrent WriteAsync detected");
 
-                    unsafe
+                    if (!valueTask.IsCompleted)
                     {
-                        Interop.NetworkFramework.Tls.NwConnectionSend(ConnectionHandle, StateHandle, memoryHandle.Pointer, buffer.Length, &CompletionCallback);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"App sending {buffer.Length} bytes");
+                        _pendingSendCompletion = sendCompletion;
+                        _currentWriteCompletionSource = transportWriteCompletion;
+                        try
+                        {
+                            unsafe
+                            {
+                                Interop.NetworkFramework.Tls.NwConnectionSend(ConnectionHandle, StateHandle, memoryHandle.Pointer, buffer.Length, &CompletionCallback);
+                            }
+                            sendIssued = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            _appWriteTcs.TrySetException(ex);
+                        }
                     }
                 }
 
-                try
-                {
-                    await valueTask.ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    _currentWriteCompletionSource = null;
-                    transportWriteCompletion.TrySetException(ex);
-                }
+                await valueTask.ConfigureAwait(false);
 
                 // Wait for the transport write to complete
-                await transportWriteCompletion.Task.ConfigureAwait(false);
+                if (sendIssued)
+                {
+                    await transportWriteCompletion.Task.ConfigureAwait(false);
+                }
             }
             finally
             {
-                // Never faulted: this only reports that the native callbacks are done with the
-                // handle, so Dispose can wait on it without observing a write failure.
                 lock (_sendGate)
                 {
-                    if (ReferenceEquals(_pendingSendCompletion, sendCompletion))
+                    if (ReferenceEquals(_currentWriteCompletionSource, transportWriteCompletion))
+                    {
+                        _currentWriteCompletionSource = null;
+                    }
+
+                    if (!sendIssued && ReferenceEquals(_pendingSendCompletion, sendCompletion))
                     {
                         _pendingSendCompletion = null;
+                        sendCompletion.TrySetResult();
                     }
                 }
-
-                sendCompletion.TrySetResult();
             }
 
             [UnmanagedCallersOnly]
@@ -366,13 +377,30 @@ namespace System.Net.Security
                 SafeDeleteNwContext thisContext = ResolveThisHandle(context);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, $"Completing WriteAsync", nameof(WriteAsync));
 
-                if (error != null)
+                lock (thisContext._sendGate)
                 {
-                    thisContext._appWriteTcs.TrySetException(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error));
-                }
-                else
-                {
-                    thisContext._appWriteTcs.TrySetResult();
+                    TaskCompletionSource? completion = thisContext._pendingSendCompletion;
+                    try
+                    {
+                        if (error != null)
+                        {
+                            thisContext._appWriteTcs.TrySetException(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error));
+                        }
+                        else
+                        {
+                            thisContext._appWriteTcs.TrySetResult();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(thisContext, $"Failed to complete connection write: {ex}");
+                        thisContext._appWriteTcs.TrySetException(ex);
+                    }
+                    finally
+                    {
+                        thisContext._pendingSendCompletion = null;
+                        completion?.TrySetResult();
+                    }
                 }
             }
         }
@@ -450,16 +478,33 @@ namespace System.Net.Security
             // The application is driving I/O now, so the transport read loop may resume.
             _appIoStartedTcs.TrySetResult();
 
-            bool success = _appReceiveBufferTcs.TryGetValueTask(out ValueTask valueTask, this, CancellationToken.None);
-            Debug.Assert(success, "Concurrent FillAppDataBufferAsync detected");
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Waiting for read from connection");
-            unsafe
+            lock (_sendGate)
             {
-                Interop.NetworkFramework.Tls.NwConnectionReceive(ConnectionHandle, StateHandle, 16 * 1024, &CompletionCallback);
-            }
+                ObjectDisposedException.ThrowIf(_disposed, _sslStream);
+                bool success = _appReceiveBufferTcs.TryGetValueTask(out ValueTask valueTask, this, CancellationToken.None);
+                Debug.Assert(success, "Concurrent FillAppDataBufferAsync detected");
 
-            return _pendingAppReceiveBufferFillTask = valueTask.AsTask();
+                if (!valueTask.IsCompleted)
+                {
+                    _pendingReceiveCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Waiting for read from connection");
+                    try
+                    {
+                        unsafe
+                        {
+                            Interop.NetworkFramework.Tls.NwConnectionReceive(ConnectionHandle, StateHandle, 16 * 1024, &CompletionCallback);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _pendingReceiveCompletion.TrySetResult();
+                        _pendingReceiveCompletion = null;
+                        _appReceiveBufferTcs.TrySetException(ex);
+                    }
+                }
+
+                return _pendingAppReceiveBufferFillTask = valueTask.AsTask();
+            }
 
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, Interop.NetworkFramework.NetworkFrameworkError* error, byte* data, int length)
@@ -470,43 +515,48 @@ namespace System.Net.Security
                 if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Info(thisContext, $"Completing ConnectionRead, status: {(error != null ? error->ErrorCode : 0)}, len: {length}", nameof(FillAppDataBufferAsync));
 
-                ref ArrayBuffer buffer = ref thisContext._appReceiveBuffer;
-
-                try
+                lock (thisContext._sendGate)
                 {
-                    if (error != null && error->ErrorCode != 0)
+                    ref ArrayBuffer buffer = ref thisContext._appReceiveBuffer;
+                    try
                     {
-                        if (error->ErrorDomain == (int)Interop.NetworkFramework.NetworkFrameworkErrorDomain.POSIX &&
-                            error->ErrorCode == (int)Interop.NetworkFramework.NWErrorDomainPOSIX.OperationCanceled)
+                        if (error != null && error->ErrorCode != 0)
                         {
-                            if (thisContext._transportEofWithinTlsRecord)
+                            if (error->ErrorDomain == (int)Interop.NetworkFramework.NetworkFrameworkErrorDomain.POSIX &&
+                                error->ErrorCode == (int)Interop.NetworkFramework.NWErrorDomainPOSIX.OperationCanceled)
                             {
-                                thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_eof)));
+                                if (thisContext._transportEofWithinTlsRecord)
+                                {
+                                    thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_eof)));
+                                    return;
+                                }
+
+                                // We cancelled the connection, so this is expected as pending read will be cancelled.
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, "Connection read cancelled, no data to process");
+                                thisContext._appReceiveBufferTcs.TrySetResult();
                                 return;
                             }
-
-                            // We cancelled the connection, so this is expected as pending read will be cancelled.
-                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, "Connection read cancelled, no data to process");
-                            thisContext._appReceiveBufferTcs.TrySetResult();
-                            return;
+                            thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error)));
                         }
-                        thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error)));
+                        else
+                        {
+                            buffer.EnsureAvailableSpace(length);
+                            new Span<byte>(data, length).CopyTo(buffer.AvailableSpan);
+                            buffer.Commit(length);
+                            thisContext._appReceiveBufferTcs.TrySetResult();
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        buffer.EnsureAvailableSpace(length);
-                        new Span<byte>(data, length).CopyTo(buffer.AvailableSpan);
-                        buffer.Commit(length);
-                        thisContext._appReceiveBufferTcs.TrySetResult();
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(thisContext, $"Failed to complete connection read: {ex}");
+                        thisContext._appReceiveBufferTcs.TrySetException(ex);
                     }
-                }
-                catch (Exception ex)
-                {
-                    // This runs on a Network.framework thread, so an escaping exception would
-                    // cross back into native code and terminate the process. Report it through
-                    // the pending read instead.
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(thisContext, $"Failed to complete connection read: {ex}");
-                    thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
+                    finally
+                    {
+                        TaskCompletionSource? completion = thisContext._pendingReceiveCompletion;
+                        thisContext._pendingReceiveCompletion = null;
+                        completion?.TrySetResult();
+                    }
                 }
             }
         }
@@ -666,12 +716,19 @@ namespace System.Net.Security
             if (disposing && !_disposed)
             {
                 Task? admittedSend;
+                Task? admittedReceive;
                 lock (_sendGate)
                 {
+                    if (_disposed)
+                    {
+                        return;
+                    }
+
                     // Closes the admission window: once this is set no further send can be
                     // issued, and any send already issued has published itself here.
                     _disposed = true;
                     admittedSend = _pendingSendCompletion?.Task;
+                    admittedReceive = _pendingReceiveCompletion?.Task;
                 }
 
                 Shutdown();
@@ -699,6 +756,10 @@ namespace System.Net.Security
                 if (_pendingAppReceiveBufferFillTask is Task t)
                 {
                     t.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing).GetAwaiter().GetResult();
+                }
+                if (admittedReceive is not null)
+                {
+                    admittedReceive.GetAwaiter().GetResult();
                 }
 
                 // wait for callback signalling connection has been truly closed.
@@ -861,38 +922,27 @@ namespace System.Net.Security
 
         // Reads exactly one TLS record from the transport without consuming a single byte beyond
         // it, so the caller can stop cleanly at the end of the handshake.
-        private async ValueTask<int> ReadSingleTlsRecordAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        private async ValueTask<int> ReadSingleTlsRecordAsync(TlsFrameHelper.TlsRecordReadBuffer buffer, CancellationToken cancellationToken)
         {
-            int read = await TransportStream.ReadAtLeastAsync(
-                buffer.Slice(0, TlsFrameHelper.HeaderSize), TlsFrameHelper.HeaderSize, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-            if (read < TlsFrameHelper.HeaderSize)
+            if (!await buffer.FillAsync(TransportStream, TlsFrameHelper.HeaderSize, cancellationToken).ConfigureAwait(false))
             {
                 return 0;
             }
 
             TlsFrameHeader header = default;
-            if (!TlsFrameHelper.TryGetFrameHeader(buffer.Span.Slice(0, read), ref header) ||
+            if (!TlsFrameHelper.TryGetFrameHeader(buffer.BufferedData.Span, ref header) ||
                 header.Length < TlsFrameHelper.HeaderSize ||
-                header.Length > buffer.Length)
+                header.Length > MaxTlsRecordSize)
             {
                 throw new AuthenticationException(SR.net_frame_read_size);
             }
 
-            int remaining = header.Length - read;
-            if (remaining > 0)
+            if (!await buffer.FillAsync(TransportStream, header.Length, cancellationToken).ConfigureAwait(false))
             {
-                int body = await TransportStream.ReadAtLeastAsync(
-                    buffer.Slice(read, remaining), remaining, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-                if (body < remaining)
-                {
-                    // Truncated record, surface it to the caller as a transport EOF.
-                    return 0;
-                }
-
-                read += body;
+                return 0;
             }
 
-            return read;
+            return buffer.Length;
         }
 
         private void WriteOutboundWireData(ReadOnlySpan<byte> data)

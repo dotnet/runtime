@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
+using System.IO.Tests;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -309,6 +311,137 @@ namespace System.Net.Security.Tests
                 Assert.Equal(0, clientFraming.MisframedReads);
                 Assert.Equal(0, serverFraming.MisframedReads);
             }, new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        [InlineData(18433)]
+        [InlineData(20480)]
+        public async Task Handshake_OversizedRecord_RejectsBeforeReadingBody(int payloadLength)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK", "1");
+            await RemoteExecutor.Invoke(static async lengthValue =>
+            {
+                int length = int.Parse(lengthValue);
+                (NetworkStream clientTransport, NetworkStream peerTransport) = TestHelper.GetConnectedTcpStreams();
+                using (peerTransport)
+                using (clientTransport)
+                {
+                    int largestRead = 0;
+                    using DelegateDelegatingStream transport = new(clientTransport)
+                    {
+                        ReadAsyncMemoryFunc = (destination, token) =>
+                        {
+                            largestRead = Math.Max(largestRead, destination.Length);
+                            return clientTransport.ReadAsync(destination, token);
+                        }
+                    };
+                    using SslStream client = new(transport);
+                    using CancellationTokenSource cts = new(TestConfiguration.PassingTestTimeout);
+                    Task authentication = client.AuthenticateAsClientAsync(
+                        new SslClientAuthenticationOptions { TargetHost = "localhost" }, cts.Token);
+
+                    byte[] header = [22, 3, 3, (byte)(length >> 8), (byte)length];
+                    await peerTransport.WriteAsync(header, cts.Token);
+                    await Assert.ThrowsAsync<AuthenticationException>(() => authentication);
+                    Assert.Equal(TlsFrameHelper.HeaderSize, largestRead);
+                }
+            }, payloadLength.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task PeerClose_RepeatedOperations_DoNotIssueNativeOperations(bool repeatReads)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK", "1");
+            await RemoteExecutor.Invoke(static async repeatReadsValue =>
+            {
+                using NativeOperationListener listener = new();
+                (NetworkStream clientTransport, NetworkStream serverTransport) = TestHelper.GetConnectedTcpStreams();
+                using SslStream client = new(clientTransport);
+                using SslStream server = new(serverTransport);
+                using X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate();
+                using CancellationTokenSource cts = new(TestConfiguration.PassingTestTimeout);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                    {
+                        TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false),
+                        RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                    }, cts.Token),
+                    server.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = certificate,
+                        EnabledSslProtocols = SslProtocols.Tls12,
+                    }, cts.Token));
+
+                serverTransport.Socket.Shutdown(SocketShutdown.Send);
+                Assert.Equal(0, await client.ReadAsync(new byte[1], cts.Token));
+                if (bool.Parse(repeatReadsValue))
+                {
+                    int receives = listener.Receives;
+                    Assert.True(receives > 0);
+                    for (int i = 0; i < 4; i++)
+                    {
+                        Assert.Equal(0, await client.ReadAsync(new byte[1], cts.Token));
+                    }
+                    Assert.Equal(receives, listener.Receives);
+                }
+                else
+                {
+                    await Assert.ThrowsAsync<IOException>(() => client.WriteAsync(new byte[1], cts.Token).AsTask());
+                    int sends = listener.Sends;
+                    Assert.True(sends > 0);
+                    for (int i = 0; i < 4; i++)
+                    {
+                        await Assert.ThrowsAsync<IOException>(() => client.WriteAsync(new byte[1], cts.Token).AsTask());
+                    }
+                    Assert.Equal(sends, listener.Sends);
+                }
+            }, repeatReads.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+        }
+
+        private sealed class NativeOperationListener : EventListener
+        {
+            private int _receives;
+            private int _sends;
+            public int Receives => Volatile.Read(ref _receives);
+            public int Sends => Volatile.Read(ref _sends);
+
+            protected override void OnEventSourceCreated(EventSource source)
+            {
+                if (source.Name == "Private.InternalDiagnostics.System.Net.Security")
+                {
+                    EnableEvents(source, EventLevel.LogAlways, EventKeywords.All);
+                }
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs data)
+            {
+                if (data.EventName != "Info" || data.Payload is null)
+                {
+                    return;
+                }
+
+                foreach (object? item in data.Payload)
+                {
+                    if (item is string message)
+                    {
+                        if (message == "Waiting for read from connection")
+                        {
+                            Interlocked.Increment(ref _receives);
+                        }
+                        else if (message.StartsWith("App sending ", StringComparison.Ordinal))
+                        {
+                            Interlocked.Increment(ref _sends);
+                        }
+                    }
+                }
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
