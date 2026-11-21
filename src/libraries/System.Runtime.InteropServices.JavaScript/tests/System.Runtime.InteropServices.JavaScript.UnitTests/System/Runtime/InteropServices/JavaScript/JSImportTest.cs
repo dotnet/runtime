@@ -86,6 +86,57 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             javaScriptTestHelper.Dispose();
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void JSObjectReacquiredBeforeFinalization(bool disposeExplicitly)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            int handlesBefore = JavaScriptTestHelper.GetProxyCounts()[0];
+
+            WeakReference<JSObject> reference = GetUnrootedProxy();
+            for (int i = 0; i < 3; i++)
+            {
+                GC.Collect();
+                ReacquireProxy(reference, disposeExplicitly && i == 2);
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(reference.TryGetTarget(out _));
+            Assert.True(JavaScriptTestHelper.GetProxyCounts()[0] <= handlesBefore);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static WeakReference<JSObject> GetUnrootedProxy()
+            {
+                return new WeakReference<JSObject>(JSHost.GlobalThis, trackResurrection: true);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void ReacquireProxy(WeakReference<JSObject> reference, bool dispose)
+            {
+                JSObject proxy = JSHost.GlobalThis;
+                Assert.True(reference.TryGetTarget(out JSObject original));
+                Assert.Same(original, proxy);
+
+                GC.WaitForPendingFinalizers();
+
+                Assert.False(proxy.IsDisposed);
+                Assert.True(proxy.HasProperty("Array"));
+                if (dispose)
+                {
+                    proxy.Dispose();
+                    Assert.True(proxy.IsDisposed);
+                    Assert.Throws<ObjectDisposedException>(() => proxy.HasProperty("Array"));
+                    proxy.Dispose();
+                }
+                GC.KeepAlive(proxy);
+            }
+        }
+
         [Fact]
         public unsafe void DotnetInstance()
         {
