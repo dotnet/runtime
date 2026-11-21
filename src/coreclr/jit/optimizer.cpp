@@ -3754,12 +3754,12 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     hoistCtxt->m_loopVarCount      = VarSetOps::Count(this, loopVars);
     hoistCtxt->m_hoistedExprCount  = 0;
 
-#ifndef TARGET_64BIT
-
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
     if (!VarSetOps::IsEmpty(this, lvaLongVars))
     {
         // Since 64-bit variables take up two registers on 32-bit targets, we increase
-        //  the Counts such that each TYP_LONG variable counts twice.
+        //  the Counts such that each TYP_LONG variable counts twice. Wasm is excluded
+        //  because its locals hold 64-bit values natively.
         //
         VARSET_TP loopLongVars(VarSetOps::Intersection(this, loopVars, lvaLongVars));
         VARSET_TP inOutLongVars(VarSetOps::Intersection(this, sideEffs.VarInOut, lvaLongVars));
@@ -3774,7 +3774,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         hoistCtxt->m_loopVarCount += VarSetOps::Count(this, loopLongVars);
         hoistCtxt->m_loopVarInOutCount += VarSetOps::Count(this, inOutLongVars);
     }
-#endif // !TARGET_64BIT
+#endif // !TARGET_64BIT && !TARGET_WASM
 
 #ifdef DEBUG
     if (verbose)
@@ -4006,8 +4006,8 @@ bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
         {
             availRegCount += CNT_CALLEE_TRASH - 1;
         }
-#ifndef TARGET_64BIT
-        // For our 32-bit targets Long types take two registers.
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+        // For our 32-bit targets (other than Wasm) Long types take two registers.
         if (varTypeIsLong(tree->TypeGet()))
         {
             availRegCount = (availRegCount + 1) / 2;
@@ -5171,7 +5171,7 @@ void Compiler::optComputeLoopSideEffects()
 void Compiler::optComputeInterestingVarSets()
 {
     VarSetOps::AssignNoCopy(this, lvaFloatVars, VarSetOps::MakeEmpty(this));
-#ifndef TARGET_64BIT
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
     VarSetOps::AssignNoCopy(this, lvaLongVars, VarSetOps::MakeEmpty(this));
 #endif
 #ifdef FEATURE_MASKED_HW_INTRINSICS
@@ -5187,7 +5187,7 @@ void Compiler::optComputeInterestingVarSets()
             {
                 VarSetOps::AddElemD(this, lvaFloatVars, varDsc->lvVarIndex);
             }
-#ifndef TARGET_64BIT
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
             else if (varTypeIsLong(varDsc->lvType))
             {
                 VarSetOps::AddElemD(this, lvaLongVars, varDsc->lvVarIndex);
