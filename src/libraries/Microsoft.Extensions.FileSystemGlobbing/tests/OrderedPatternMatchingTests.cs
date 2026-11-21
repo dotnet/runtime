@@ -206,5 +206,20 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 "src/Internal/PatternContexts/PatternContext.cs"
             );
         }
+
+        [Fact]
+        public void ReIncludedFileUsesLatestIncludeStem()
+        {
+            var scenario = new FileSystemGlobbingTestContext(@"c:/project/", true)
+                .Include("src/**/*.cs")
+                .Exclude("src/generated/**")
+                .Include("src/generated/*.cs")
+                .Files("src/generated/Generated.cs")
+                .Execute();
+
+            Assert.Equal(
+                new FilePatternMatch("src/generated/Generated.cs", "Generated.cs"),
+                Assert.Single(scenario.Result.Files));
+        }
     }
 }
