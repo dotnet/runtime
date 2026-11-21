@@ -11,6 +11,7 @@
 #include "field.h"
 #include "stublink.h"
 #include "virtualcallstub.h"
+#include "CachedInterfaceDispatchPal.h"
 #include "corjit.h"
 #include "eeconfig.h"
 #include "excep.h"
@@ -10787,6 +10788,14 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED);
     }
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    // Interface call sites pass the dispatch cell to RhpInterfaceDispatch instead of calling through it
+    if (UseCachedInterfaceDispatch())
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_DISPATCH_HELPERS);
+    }
+#endif
+
     // Set optimization flags
     if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT))
     {
@@ -14310,6 +14319,18 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     STRESS_LOG1(LF_ZAP, LL_WARNING, "READYTORUN_HELPER_R2RToInterpreter unsupported for this target: %d\n", helperNum);
                     return FALSE;
 #endif
+
+                case READYTORUN_HELPER_InterfaceDispatch:
+                    // Code using this helper expects the dispatch cells laid out for cached interface dispatch
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && !defined(TARGET_WASM)
+                    if (UseCachedInterfaceDispatch())
+                    {
+                        result = (size_t)GetEEFuncEntryPoint(RhpInterfaceDispatch);
+                        break;
+                    }
+#endif
+                    STRESS_LOG1(LF_ZAP, LL_WARNING, "READYTORUN_HELPER_InterfaceDispatch requires cached interface dispatch: %d\n", helperNum);
+                    return FALSE;
 
                 default:
                     STRESS_LOG1(LF_ZAP, LL_WARNING, "Unknown READYTORUN_HELPER %d\n", helperNum);

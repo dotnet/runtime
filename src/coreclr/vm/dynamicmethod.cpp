@@ -942,25 +942,21 @@ void LCGMethodResolver::RecycleIndCells()
             cellcurr = list->indcell;
             _ASSERTE(cellcurr != NULL);
 
-#if defined (FEATURE_CACHED_INTERFACE_DISPATCH)
-            // Cached dispatch dispatch uses dynamically allocated caches that need to be freed individually
-            if (UseCachedInterfaceDispatch())
-            {
-                InterfaceDispatchCell *pDispatchCell = (InterfaceDispatchCell*)cellcurr;
-                InterfaceDispatchCacheHeader* cellCacheHeader = pDispatchCell->GetCache();
-                if (cellCacheHeader != NULL)
-                {
-                    InterfaceDispatch_DiscardCacheHeader(cellCacheHeader);
-                    pDispatchCell->m_pCache = 0;
-                }
-            }
-#endif
             if (cellprev)
                 *((BYTE**)cellprev) = cellcurr;
 
             list = list->pNext;
             cellprev = cellcurr;
         }
+
+#if defined (FEATURE_CACHED_INTERFACE_DISPATCH)
+        // The global dispatch cache is keyed by the cell address, so it must not return
+        // targets cached for the previous user of a recycled cell.
+        if (UseCachedInterfaceDispatch())
+        {
+            InterfaceDispatch_FlushDispatchCache();
+        }
+#endif
 
         // Insert the linked list to the free list of the VirtualCallStubManager of the current domain.
         // We should use GetLoaderAllocator because that is where the ind cell was allocated.

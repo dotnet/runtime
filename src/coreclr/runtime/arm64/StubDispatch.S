@@ -5,128 +5,110 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-#if defined(__APPLE__)
-    // Currently the build is failing without this due to an issue if the first method in the assembly file has an alternate entry at the start of the file.
-    // Fix, but adding an empty, unused method
-    LEAF_ENTRY RhpStubDispatchDoNotFailToBuild, _TEXT
-       ret
-    LEAF_END RhpStubDispatchDoNotFailToBuild, _TEXT
-#endif
-
-    // Macro that generates code to check a single cache entry.
-    // \adj is the base adjustment already applied to x9.
-    .macro CHECK_CACHE_ENTRY entry, adj=0
-        // Check a single entry in the cache.
-        //  x9   : Cache data structure (possibly adjusted for far entries)
-        //  x10  : Instance MethodTable*
-        //  x11  : Indirection cell address, preserved
-        //  x12, x13  : Trashed
-        //
-        // Use ldp to load both m_pInstanceType and m_pTargetCode in a single instruction.
-        // On ARM64 two separate ldr instructions can be reordered across a control dependency,
-        // which means a concurrent atomic cache entry update (via stlxp) could be observed as a
-        // torn read (new type, old target). ldp is single-copy atomic for the pair on FEAT_LSE2
-        // hardware (ARMv8.4+). The cbz guard ensures correctness on pre-LSE2 hardware too:
-        // a torn read can only produce a zero target (entries go from 0,0 to type,target),
-        // so we treat it as a cache miss.
-        ldp     x12, x13, [x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + (\entry * 16) - \adj)]
-        cmp     x10, x12
-        bne     0f
-#ifndef TARGET_APPLE
-        // Apple ARM64 platforms have FEAT_LSE2, making ldp single-copy atomic for the pair.
-        cbz     x13, 0f
-#endif
-        br      x13
-0:
-    .endm
-
-//
-// Macro that generates a stub consuming a cache with the given number of entries.
-//
-    .macro DEFINE_INTERFACE_DISPATCH_STUB entries
-
-    NESTED_ENTRY "RhpInterfaceDispatch\entries", _TEXT, NoHandler
-
-        // x11 holds the indirection cell address. Load the cache pointer.
-        ldr     x9, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
-
-        // Validate x9 is a cache pointer matching the expected cache size.
-        // This compensates for a race where the stub was updated to expect a larger cache
-        // but we loaded a stale (smaller or non-cache) m_pCache value.
-        // On detection, re-dispatch through the indirection cell to retry with the current
-        // stub and cache pair.
-        tst     x9, #IDC_CACHE_POINTER_MASK
-        bne     LOCAL_LABEL(RaceRetry_\entries)
-        ldr     w12, [x9, #OFFSETOF__InterfaceDispatchCache__m_cEntries]
-        cmp     w12, #\entries
-        bne     LOCAL_LABEL(RaceRetry_\entries)
+// On Input:
+//    x0                     contains the this pointer
+//    x11                    contains the address of the interface dispatch cell
+    LEAF_ENTRY RhpInterfaceDispatch, _TEXT
 
         // Load the MethodTable from the object instance in x0.
-#ifdef TARGET_APPLE
-// Apple's linker has issues which break unwind info if
-// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
-.cfi_endproc
-#endif
-        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
-#ifdef TARGET_APPLE
-.cfi_startproc
-#endif
-        ldr     x10, [x0]
-
-    .global CurrentEntry
-    .set CurrentEntry, 0
-    .set BaseAdj, 0
-
-    .rept \entries
-        // ldp's signed offset must be in [-512,504] for 64-bit register pairs.
-        // When the offset would exceed that, re-base x9 once so subsequent entries stay in range.
-    .if (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (CurrentEntry * 16) - BaseAdj) > 504
-        add     x9, x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + (CurrentEntry * 16) - BaseAdj)
-        .set BaseAdj, (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (CurrentEntry * 16))
-    .endif
-        CHECK_CACHE_ENTRY CurrentEntry, BaseAdj
-        .set CurrentEntry, CurrentEntry + 1
-    .endr
-
-        // x11 still contains the indirection cell address.
-        b C_FUNC(RhpInterfaceDispatchSlow)
-
-LOCAL_LABEL(RaceRetry_\entries):
-        // Race detected: re-dispatch through the indirection cell
-        ldr     x9, [x11]
-        br      x9
-
-    NESTED_END "RhpInterfaceDispatch\entries", _TEXT
-
-    .endm
-
-//
-// Define all the stub routines we currently need.
-//
-// If you change or add any new dispatch stubs, exception handling might need to be aware because it refers to the
-// *AVLocation symbols defined by the dispatch stubs to be able to unwind and blame user code if a NullRef happens
-// during the interface dispatch.
-//
-    DEFINE_INTERFACE_DISPATCH_STUB 1
-    DEFINE_INTERFACE_DISPATCH_STUB 2
-    DEFINE_INTERFACE_DISPATCH_STUB 4
-    DEFINE_INTERFACE_DISPATCH_STUB 8
-    DEFINE_INTERFACE_DISPATCH_STUB 16
-    DEFINE_INTERFACE_DISPATCH_STUB 32
-    DEFINE_INTERFACE_DISPATCH_STUB 64
-
-//
-// Initial dispatch on an interface when we don't have a cache yet.
-//
-    LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
         // Trigger an AV if we're dispatching on a null this.
         // The exception handling infrastructure is aware of the fact that this is the first
-        // instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
+        // instruction of RhpInterfaceDispatch and uses it to translate an AV here
         // to a NullReferenceException at the callsite.
-        ldr     xzr, [x0]
+        ldr     x12, [x0]
 
-        // Just tail call to the cache miss helper.
-        b C_FUNC(RhpInterfaceDispatchSlow)
-    LEAF_END RhpInitialInterfaceDispatch, _TEXT
+        // x11 currently contains the indirection cell address.
+        // Load-acquire ensures that if we observe the cached MethodTable,
+        // the subsequent load of Code will see the value written before it.
+        ldar    x13, [x11]              // load-acquire cached MethodTable
+        cmp     x13, x12                // is this the monomorphic MethodTable?
+        bne     LOCAL_LABEL(Hashtable)
+
+        ldr     x9, [x11, #8]           // load the cached monomorphic resolved code address
+        br      x9
+
+LOCAL_LABEL(Hashtable):
+
+        // x12 = MethodTable, x11 = indirection cell address
+        // Look up the target in the dispatch cache hashtable (see CachedInterfaceDispatch.cpp).
+        // Only volatile scratch registers (x9-x17) are used, so no argument
+        // register spilling is needed.
+
+        // Load the current table.
+        PREPARE_EXTERNAL_VAR_INDIRECT g_pDispatchCache, x13
+        ldr     x13, [x13]
+
+        // Compute 32-bit hash:
+        // hash = IntPtr.GetHashCode(RotateLeft(dispatchCell, 16) ^ objectType)
+        eor     x14, x12, x11, ror #48  // combined = MethodTable ^ RotateLeft(cell, 16)
+        asr     x16, x14, #32           // upper32 = combined >> 32 (arithmetic)
+        eor     w14, w14, w16           // hash = (int)lower32 ^ (int)upper32
+        sxtw    x14, w14                // sign-extend hash to 64-bit
+
+        // HashToBucket: bucket = (hash * 0x9E3779B97F4A7C15) >> hashShift
+        movz    x16, #0x7C15
+        movk    x16, #0x7F4A, lsl #16
+        movk    x16, #0x79B9, lsl #32
+        movk    x16, #0x9E37, lsl #48
+        mul     x14, x14, x16
+        ldrb    w16, [x13, #0x10]       // hashShift from Element[0]
+        lsr     x14, x14, x16           // bucket index
+
+        // Precompute loop-invariant base: table + 0x10 (start of Element data).
+        add     x13, x13, #0x10
+        mov     w15, wzr                // loop counter i = 0
+
+LOCAL_LABEL(ProbeLoop):
+        // Compute entry address: Element(table, index) = base + (index + 1) * 0x20
+        add     w9, w14, #1
+        sbfiz   x9, x9, #5, #32         // sign-extend and shift left by 5 in one instruction
+        add     x9, x13, x9
+
+        // Read version snapshot with load-acquire (seqlock protocol, ARM64 memory model).
+        // This ensures subsequent loads of key and value see data written before this version.
+        ldar    w10, [x9]
+        tbnz    w10, #0, LOCAL_LABEL(ProbeMiss) // skip if odd (entry being written)
+
+        // Compare key (dispatchCell, objectType). The key is not 16-byte aligned, so it is
+        // loaded with two loads instead of a ldp.
+        ldr     x16, [x9, #8]
+        cmp     x16, x11
+        bne     LOCAL_LABEL(ProbeMiss)
+        ldr     x17, [x9, #0x10]
+        cmp     x17, x12
+        bne     LOCAL_LABEL(ProbeMiss)
+
+        // Read the cached code pointer.
+        ldr     x16, [x9, #0x18]
+
+        // Ensure value read completes before version re-read (ARM64 needs explicit barrier).
+        dmb     ishld
+
+        // Re-verify version has not changed.
+        ldr     w17, [x9]
+        cmp     w10, w17
+        bne     LOCAL_LABEL(CacheMiss)
+
+        // Dispatch to cached target.
+        br      x16
+
+LOCAL_LABEL(ProbeMiss):
+        // If version is zero the rest of the bucket is unclaimed - stop probing.
+        cbz     w10, LOCAL_LABEL(CacheMiss)
+
+        // Quadratic reprobe: i++; index = (index + i) & tableMask
+        add     w15, w15, #1
+        add     w14, w14, w15
+        ldr     w9, [x13, #-8]          // table length (at base - 0x10 + 0x08 = base - 0x08)
+        sub     w9, w9, #2              // TableMask = Length - 2
+        and     w14, w14, w9
+        cmp     w15, #8
+        blt     LOCAL_LABEL(ProbeLoop)
+
+LOCAL_LABEL(CacheMiss):
+        // x11 still contains the indirection cell address.
+        b       C_FUNC(RhpInterfaceDispatchSlow)
+
+    LEAF_END RhpInterfaceDispatch, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

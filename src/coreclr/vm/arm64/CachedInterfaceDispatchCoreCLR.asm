@@ -13,51 +13,6 @@
     EXTERN CID_VirtualOpenDelegateDispatchWorker
 
 ;;
-;; Stub dispatch routine for dispatch to a vtable slot
-;;
-    LEAF_ENTRY RhpVTableOffsetDispatch
-
-        ;; x11 currently contains the indirection cell address.
-        ;; Save it in x12 before overwriting, in case we need to re-dispatch on a race.
-        mov     x12, x11
-        ;; load x11 to point to the vtable offset (which is stored in the m_pCache field).
-        ldr     x11, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
-
-        ;; Validate m_pCache has the vtable offset tag (low 2 bits == 0x2).
-        ;; A stale m_pCache from a race will have different low bits.
-        and     w10, w11, #IDC_CACHE_POINTER_MASK
-        cmp     w10, #2
-        bne     RhpVTableOffsetRaceRetry
-
-        ;; x11 now contains the VTableOffset where the upper 32 bits are the offset to adjust
-        ;; to get to the VTable chunk
-        lsr     x10, x11, #32
-
-        ;; Load the MethodTable from the object instance in x0, and add it to the vtable offset
-        ;; to get the address in the vtable chunk list of what we want to dereference
-    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
-        ldr     x9, [x0]
-        add     x9, x10, x9
-
-        ;; Load the target address of the vtable chunk into x9
-        ldr     x9, [x9]
-
-        ;; Compute the chunk offset
-        ubfx    x10, x11, #16, #16
-
-        ;; Load the target address of the virtual function into x9
-        ldr     x9, [x9, x10]
-
-        EPILOG_BRANCH_REG  x9
-
-RhpVTableOffsetRaceRetry
-        ;; Restore cell address and re-dispatch through the indirection cell
-        mov     x11, x12
-        ldr     x9, [x11]
-        br      x9
-    LEAF_END RhpVTableOffsetDispatch
-
-;;
 ;; Cache miss case, call the runtime to resolve the target and update the cache.
 ;; x11 contains the interface dispatch cell address.
 ;;

@@ -107,9 +107,9 @@ extern "C" void STDCALL FixupPrecodeCode_End()
     PORTABILITY_ASSERT("FixupPrecodeCode_End is not implemented on wasm");
 }
 
-extern "C" void RhpInitialInterfaceDispatch()
+extern "C" void RhpInterfaceDispatch()
 {
-    PORTABILITY_ASSERT("RhpInitialInterfaceDispatch is not implemented on wasm");
+    PORTABILITY_ASSERT("RhpInterfaceDispatch is not implemented on wasm");
 }
 
 unsigned FuncEvalFrame::GetFrameAttribs_Impl(void)
@@ -575,46 +575,6 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface)
     return 0;
 }
 
-extern "C" void RhpInterfaceDispatch1()
-{
-    PORTABILITY_ASSERT("RhpInterfaceDispatch1 is not implemented on wasm");
-}
-
-extern "C" void RhpInterfaceDispatch2()
-{
-    PORTABILITY_ASSERT("RhpInterfaceDispatch2 is not implemented on wasm");
-}
-
-extern "C" void RhpInterfaceDispatch4()
-{
-    PORTABILITY_ASSERT("RhpInterfaceDispatch4 is not implemented on wasm");
-}
-
-extern "C" void RhpInterfaceDispatch8()
-{
-    PORTABILITY_ASSERT("RhpInterfaceDispatch8 is not implemented on wasm");
-}
-
-extern "C" void RhpInterfaceDispatch16()
-{
-    PORTABILITY_ASSERT("RhpInterfaceDispatch16 is not implemented on wasm");
-}
-
-extern "C" void RhpInterfaceDispatch32()
-{
-    PORTABILITY_ASSERT("RhpInterfaceDispatch32 is not implemented on wasm");
-}
-
-extern "C" void RhpInterfaceDispatch64()
-{
-    PORTABILITY_ASSERT("RhpInterfaceDispatch64 is not implemented on wasm");
-}
-
-extern "C" void RhpVTableOffsetDispatch()
-{
-    PORTABILITY_ASSERT("RhpVTableOffsetDispatch is not implemented on wasm");
-}
-
 typedef uint8_t CODE_LOCATION;
 CODE_LOCATION RhpAssignRefAVLocation;
 CODE_LOCATION RhpCheckedAssignRefAVLocation;
@@ -622,46 +582,6 @@ CODE_LOCATION RhpCheckedAssignRefAVLocation;
 extern "C" void ThisPtrRetBufPrecodeWorker()
 {
     PORTABILITY_ASSERT("ThisPtrRetBufPrecodeWorker is not implemented on wasm");
-}
-
-extern "C" void RhpInterfaceDispatchAVLocation1()
-{
-    PORTABILITY_ASSERT("RhpInterfaceDispatchAVLocation1 is not implemented on wasm");
-}
-
-extern "C" void RhpInterfaceDispatchAVLocation2()
-{
-    PORTABILITY_ASSERT("RhpInterfaceDispatchAVLocation2 is not implemented on wasm");
-}
-
-extern "C" void RhpInterfaceDispatchAVLocation4()
-{
-    PORTABILITY_ASSERT("RhpInterfaceDispatchAVLocation4 is not implemented on wasm");
-}
-
-extern "C" void RhpInterfaceDispatchAVLocation8()
-{
-    PORTABILITY_ASSERT("RhpInterfaceDispatchAVLocation8 is not implemented on wasm");
-}
-
-extern "C" void RhpInterfaceDispatchAVLocation16()
-{
-    PORTABILITY_ASSERT("RhpInterfaceDispatchAVLocation16 is not implemented on wasm");
-}
-
-extern "C" void RhpInterfaceDispatchAVLocation32()
-{
-    PORTABILITY_ASSERT("RhpInterfaceDispatchAVLocation32 is not implemented on wasm");
-}
-
-extern "C" void RhpInterfaceDispatchAVLocation64()
-{
-    PORTABILITY_ASSERT("RhpInterfaceDispatchAVLocation64 is not implemented on wasm");
-}
-
-extern "C" void RhpVTableOffsetDispatchAVLocation()
-{
-    PORTABILITY_ASSERT("RhpVTableOffsetDispatchAVLocation is not implemented on wasm");
 }
 
 extern "C" void STDCALL ThePreStubPatchLabel(void)

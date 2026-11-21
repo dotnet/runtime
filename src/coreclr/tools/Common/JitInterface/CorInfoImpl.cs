@@ -5039,7 +5039,10 @@ namespace Internal.JitInterface
             flags.Set(CorJitFlag.CORJIT_FLAG_AOT);
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
-#if !READYTORUN
+#if READYTORUN
+            if (_compilation.NodeFactory.UseInterfaceDispatchHelper)
+                flags.Set(CorJitFlag.CORJIT_FLAG_USE_DISPATCH_HELPERS);
+#else
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_DISPATCH_HELPERS);
 #endif
 

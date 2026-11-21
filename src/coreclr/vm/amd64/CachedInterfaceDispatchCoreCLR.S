@@ -7,57 +7,6 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-// Stub dispatch routine for dispatch to a vtable slot
-LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
-
-        // r11 currently contains the indirection cell address.
-        // Save it in r10 before overwriting, in case we need to re-dispatch on a race.
-        mov     r10, r11
-        // load r11 to point to the vtable offset (which is stored in the m_pCache field).
-        mov     r11, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
-
-        // Validate m_pCache has the vtable offset tag (low 2 bits == 0x2).
-        // A stale m_pCache from a race will have different low bits.
-        mov     eax, r11d
-        and     eax, IDC_CACHE_POINTER_MASK
-        cmp     eax, 2
-        jne     LOCAL_LABEL(RhpVTableOffsetRaceRetry)
-
-        // r11 now contains the VTableOffset where the upper 32 bits are the offset to adjust
-        // to get to the VTable chunk
-        mov     rax, r11
-        shr     rax, 32
-
-        // Load the MethodTable from the object instance in rdi, and add it to the vtable offset
-        // to get the address in the vtable chunk list of what we want to dereference
-#ifdef TARGET_APPLE
-// Apple's linker has issues which break unwind info if
-// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/issues/119005
-.cfi_endproc
-#endif
-    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
-#ifdef TARGET_APPLE
-.cfi_startproc
-#endif
-        add     rax, [rdi]
-
-        // Load the target address of the vtable chunk into rax
-        mov     rax, [rax]
-
-        // Compute the chunk offset
-        shr     r11d, 16
-
-        // Load the target address of the virtual function into rax
-        mov     rax, [rax + r11]
-
-        TAILJMP_RAX
-
-LOCAL_LABEL(RhpVTableOffsetRaceRetry):
-        // Restore cell address and re-dispatch through the indirection cell
-        mov     r11, r10
-        jmp     [r11]
-LEAF_END RhpVTableOffsetDispatch, _TEXT
-
 // On Input:
 //    r11                    contains the address of the indirection cell
 //  [rsp+0] m_ReturnAddress: contains the return address of caller to stub
