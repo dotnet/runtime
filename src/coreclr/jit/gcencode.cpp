@@ -1634,6 +1634,16 @@ size_t GCInfo::gcInfoBlockHdrSave(
     }
 
     size_t argCount = compiler->lvaParameterStackSize / REGSIZE_BYTES;
+#ifdef UNIX_X86_ABI
+    // On x86 Unix, caller-pop calling conventions (cdecl-like) leave argument cleanup
+    // to the caller. Recording lvaParameterStackSize in the header made the runtime compute
+    // the caller SP too high by that amount. That breaks funclet parent-frame matching
+    // (m_csfEHClause) and leads to double GC reporting / stale object references.
+    if (IsCallerPop(compiler->info.compCallConv) && !compiler->info.compIsVarArgs)
+    {
+        argCount = 0;
+    }
+#endif // UNIX_X86_ABI
     assert(argCount <= MAX_USHORT_SIZE_T);
     header->argCount = static_cast<unsigned short>(argCount);
 
