@@ -81,6 +81,11 @@ namespace ILLink.Shared.TrimAnalysis
 
             public override bool VisitNamedType(INamedTypeSymbol symbol)
             {
+                if (symbol.ContainingType is { } containingType && Visit(containingType))
+                {
+                    return true;
+                }
+
                 foreach (var arg in symbol.TypeArguments)
                 {
                     if (Visit(arg))
@@ -197,13 +202,22 @@ namespace ILLink.Shared.TrimAnalysis
 
                 case IntrinsicId.TypeMapping_GetOrCreateProxyTypeMapping:
                 case IntrinsicId.TypeMapping_GetOrCreateExternalTypeMapping:
+                case IntrinsicId.TypeMapping_TryGetValue_External:
+                case IntrinsicId.TypeMapping_TryGetValue_Proxy:
                 {
                     ITypeSymbol typeMapGroup = calledMethod.Method.TypeArguments[0];
                     if (HasGenericTypeSymbolsVisitor.Instance.Visit(typeMapGroup))
                     {
-                        // We only support GetOrCreateExternalTypeMapping or GetOrCreateProxyTypeMapping for a fully specified type.
+                        // We only support the type map APIs for a fully specified type.
                         _diagnosticContext.AddDiagnostic(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined,
                             typeMapGroup.GetDisplayName());
+                    }
+
+                    if (intrinsicId is IntrinsicId.TypeMapping_TryGetValue_External or IntrinsicId.TypeMapping_TryGetValue_Proxy
+                        && HasGenericTypeSymbolsVisitor.Instance.Visit(calledMethod.Method.TypeArguments[1]))
+                    {
+                        _diagnosticContext.AddDiagnostic(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined,
+                            calledMethod.Method.TypeArguments[1].GetDisplayName());
                     }
                     break;
                 }

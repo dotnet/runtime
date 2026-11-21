@@ -550,6 +550,41 @@ namespace ILLink.Shared.TrimAnalysis
 #endif
                     break;
                 }
+                case IntrinsicId.TypeMapping_TryGetValue_External:
+                case IntrinsicId.TypeMapping_TryGetValue_Proxy:
+                {
+                    // TODO-ILTRIM: type maps
+#if !ILTRIM
+                    TypeDesc typeMapGroup = calledMethod.Method.Instantiation[0];
+                    TypeDesc valueType = calledMethod.Method.Instantiation[1];
+
+                    // We only support TryGetValue for a fully specified group and value type.
+                    bool groupIsKnown = !typeMapGroup.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true);
+                    bool valueTypeIsKnown = !valueType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true);
+                    if (!groupIsKnown)
+                    {
+                        _diagnosticContext.AddDiagnostic(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined, typeMapGroup.GetDisplayName());
+                    }
+
+                    if (!valueTypeIsKnown)
+                    {
+                        _diagnosticContext.AddDiagnostic(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined, valueType.GetDisplayName());
+                    }
+
+                    if (groupIsKnown && valueTypeIsKnown)
+                    {
+                        if (intrinsicId == IntrinsicId.TypeMapping_TryGetValue_External)
+                        {
+                            _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ExternalTypeMapValuesRequest(typeMapGroup, valueType), "TypeMapping.TryGetValue called on type");
+                        }
+                        else
+                        {
+                            _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ProxyTypeMapValuesRequest(typeMapGroup, valueType), "TypeMapping.TryGetValue called on type");
+                        }
+                    }
+#endif
+                    break;
+                }
                 default:
                     return false;
             }

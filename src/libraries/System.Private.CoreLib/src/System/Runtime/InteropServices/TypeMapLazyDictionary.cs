@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -303,6 +304,75 @@ namespace System.Runtime.InteropServices
                     &NewProxyTypeEntry).ProxyTypeMap;
             }
         }
+
+        // CoreCLR implementation of TypeMapping.TryGetValue: reflection based, using the lazy maps above.
+        // The maps are cached per group type, so a collectible group type does not stay alive because of the cache.
+        private sealed class GroupMaps
+        {
+            public IReadOnlyDictionary<string, Type>? External;
+            public IReadOnlyDictionary<Type, Type>? Proxy;
+        }
+
+        private static readonly ConditionalWeakTable<RuntimeType, GroupMaps> s_groupMaps = new();
+        private static readonly ConcurrentDictionary<(Type Target, Type ValueType), Delegate?> s_valueGetters = new();
+
+        public static bool TryGetValue<TValue>(RuntimeType groupType, string key, [MaybeNullWhen(false)] out TValue value)
+        {
+            GroupMaps maps = s_groupMaps.GetOrCreateValue(groupType);
+            IReadOnlyDictionary<string, Type> map = maps.External ??= CreateExternalTypeMap(groupType);
+            if (!map.TryGetValue(key, out Type? target))
+            {
+                value = default;
+                return false;
+            }
+
+            return TryGetTargetValue(target, out value);
+        }
+
+        public static bool TryGetValue<TValue>(RuntimeType groupType, Type key, [MaybeNullWhen(false)] out TValue value)
+        {
+            GroupMaps maps = s_groupMaps.GetOrCreateValue(groupType);
+            IReadOnlyDictionary<Type, Type> map = maps.Proxy ??= CreateProxyTypeMap(groupType);
+            if (!map.TryGetValue(key, out Type? target))
+            {
+                value = default;
+                return false;
+            }
+
+            return TryGetTargetValue(target, out value);
+        }
+
+        private static bool TryGetTargetValue<TValue>(Type target, [MaybeNullWhen(false)] out TValue value)
+        {
+            // The cache is not collectible, so it can't hold on to types that are.
+            Func<TValue>? getter = target.IsCollectible || typeof(TValue).IsCollectible
+                ? CreateValueGetter<TValue>(target)
+                : (Func<TValue>?)s_valueGetters.GetOrAdd((target, typeof(TValue)), static k => CreateValueGetter<TValue>(k.Target));
+
+            if (getter is null)
+            {
+                value = default;
+                return false;
+            }
+
+            value = getter();
+            return true;
+        }
+
+        private static Func<TValue>? CreateValueGetter<TValue>(Type target)
+        {
+            if (!typeof(ITypeMapValue<TValue>).IsAssignableFrom(target) || target.IsInterface || target.ContainsGenericParameters)
+            {
+                return null;
+            }
+
+            MethodInfo getValueCore = typeof(TypeMapLazyDictionary)
+                .GetMethod(nameof(GetValueCore), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(target, typeof(TValue));
+            return getValueCore.CreateDelegate<Func<TValue>>();
+        }
+
+        private static TValue GetValueCore<T, TValue>() where T : ITypeMapValue<TValue>, allows ref struct => T.Value;
 
         private abstract class LazyTypeLoadDictionary<TKey> : IReadOnlyDictionary<TKey, Type> where TKey : notnull
         {

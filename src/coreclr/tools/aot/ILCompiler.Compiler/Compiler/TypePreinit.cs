@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysis;
 
 using Internal.IL;
@@ -48,8 +49,19 @@ namespace ILCompiler
         private readonly Dictionary<MetadataType, NestedPreinitResult> _nestedPreinitResults = new Dictionary<MetadataType, NestedPreinitResult>();
         private readonly Dictionary<EcmaField, byte[]> _rvaFieldDatas = new Dictionary<EcmaField, byte[]>();
 
-        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations)
+        // When set, structs that contain references or function pointers are modeled field by field (see FieldwiseStructValue).
+        // This is only used when evaluating the getters of type map values: the modeled values are serialized as constant data
+        // and never become part of static fields, so regular preinitialization is not affected.
+        private readonly bool _isTypeMapValueGetter;
+
+        // The static constructor of another type that a getter depends on. It is interpreted like the getter (same restrictions on what the code can do),
+        // but it is allowed to write to the statics of its own type.
+        private readonly bool _isNestedCctor;
+
+        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations, bool isTypeMapValueGetter = false, bool isNestedCctor = false)
         {
+            _isTypeMapValueGetter = isTypeMapValueGetter;
+            _isNestedCctor = isNestedCctor;
             _type = owningType;
             _compilationGroup = compilationGroup;
             _ilProvider = ilProvider;
@@ -115,11 +127,94 @@ namespace ILCompiler
             return new PreinitializationInfo(type, status.FailureReason);
         }
 
+        /// <summary>
+        /// Evaluates a static parameterless method that returns a value type (the getter of a type map value, see ITypeMapValue)
+        /// at compile time. The result is the returned value as constant data.
+        /// </summary>
+        /// <remarks>
+        /// The method can build the returned struct in any way the interpreter understands: fields of the struct can be
+        /// unmanaged data, function pointers (ldftn), strings (ldstr), types (typeof), nested structs.
+        /// The type of the method must not have a static constructor.
+        /// </remarks>
+        public static GetterEvaluationResult ScanGetter(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations, MethodDesc getter)
+        {
+            Debug.Assert(getter.Signature.IsStatic && getter.Signature.Length == 0 && getter.Signature.ReturnType.IsValueType);
+
+            if (getter.OwningType is not MetadataType owningType
+                || owningType.IsGenericDefinition
+                || owningType.IsRuntimeDeterminedSubtype
+                || getter.IsCanonicalMethod(CanonicalFormKind.Any)
+                || getter.HasInstantiation)
+            {
+                return new GetterEvaluationResult("Unsupported getter");
+            }
+
+            if (policy is DisabledPreinitializationPolicy)
+                return new GetterEvaluationResult("Preinitialization is disabled");
+
+            if (owningType.HasStaticConstructor)
+                return new GetterEvaluationResult("The type of the getter has a static constructor");
+
+            if (!policy.CanPreinitialize(owningType))
+                return new GetterEvaluationResult("Disallowed by policy");
+
+            if (RequiresCompiledCode(flowAnnotations, getter))
+                return new GetterEvaluationResult("The getter needs analysis of the compiled code");
+
+            Status status;
+            Value result = null;
+            try
+            {
+                TypePreinit preinit = new TypePreinit(owningType, compilationGroup, ilProvider, policy, readOnlyPolicy, flowAnnotations, isTypeMapValueGetter: true);
+                int instructions = 0;
+                status = preinit.TryScanMethod(getter, Array.Empty<Value>(), null, ref instructions, out result);
+            }
+            catch (TypeSystemException ex)
+            {
+                status = Status.Fail(getter, ex.Message);
+            }
+            catch (UnsupportedLayoutException ex)
+            {
+                status = Status.Fail(getter, ex.Message);
+            }
+
+            // Only values that are data can be part of the image.
+            if (status.IsSuccessful && result is ValueTypeValue or FieldwiseStructValue or VTableLikeStructValue or MethodPointerValue)
+            {
+                // The result is kept for the rest of the compilation: it doesn't need the interpreter that produced it.
+                (result as FieldwiseStructValue)?.Detach();
+                return new GetterEvaluationResult(result);
+            }
+
+            if (status.IsSuccessful && result is not null)
+                return new GetterEvaluationResult("The result is not constant data");
+
+            return new GetterEvaluationResult(status.IsSuccessful ? "No result" : status.FailureReason);
+        }
+
+        public sealed class GetterEvaluationResult
+        {
+            internal GetterEvaluationResult(ISerializableValue value) => Value = value;
+            internal GetterEvaluationResult(string failureReason) => FailureReason = failureReason;
+
+            public ISerializableValue Value { get; }
+            public string FailureReason { get; }
+            public bool IsSuccessful => Value is not null;
+        }
+
         private bool TryGetNestedPreinitResult(MethodDesc callingMethod, MetadataType type, Stack<MethodDesc> recursionProtect, ref int instructionCounter, out NestedPreinitResult result)
         {
             if (!_nestedPreinitResults.TryGetValue(type, out result))
             {
-                TypePreinit nestedPreinit = new TypePreinit(type, _compilationGroup, _ilProvider, _policy, _readOnlyPolicy, _flowAnnotations);
+                TypePreinit nestedPreinit = new TypePreinit(type, _compilationGroup, _ilProvider, _policy, _readOnlyPolicy, _flowAnnotations, _isTypeMapValueGetter, isNestedCctor: _isTypeMapValueGetter);
+
+                // A getter is not compiled, so neither are the static constructors it depends on: they can't need the compiled code either.
+                if (_isTypeMapValueGetter && RequiresCompiledCode(_flowAnnotations, type.GetStaticConstructor()))
+                {
+                    result = default;
+                    return false;
+                }
+
                 recursionProtect ??= new Stack<MethodDesc>();
                 recursionProtect.Push(callingMethod);
 
@@ -147,6 +242,13 @@ namespace ILCompiler
             }
 
             return true;
+        }
+
+        private AllocationSite NewAllocationSite(int instructionCounter)
+        {
+            // The type of a getter doesn't have a static constructor.
+            Debug.Assert(_isTypeMapValueGetter || _type.HasStaticConstructor);
+            return new AllocationSite(_type, instructionCounter);
         }
 
         private byte[] GetFieldRvaData(EcmaField field)
@@ -184,6 +286,9 @@ namespace ILCompiler
 
             if (recursionProtect != null && recursionProtect.Contains(methodIL.OwningMethod))
                 return Status.Fail(methodIL.OwningMethod, "Recursion");
+
+            if (_isTypeMapValueGetter && ReferencesMembersThatRequireCompiledCode(methodIL))
+                return Status.Fail(methodIL.OwningMethod, "References a member that needs analysis of the compiled code");
 
             ILExceptionRegion[] ehRegions = methodIL.GetExceptionRegions();
             if (ehRegions != null && ehRegions.Length > 0)
@@ -309,7 +414,7 @@ namespace ILCompiler
                             return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
                         }
 
-                        AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
+                        AllocationSite allocSite = NewAllocationSite(instructionCounter);
                         stack.Push(new ArrayInstance(elementType.MakeArrayType(), elementCount, allocSite));
                     }
                     break;
@@ -380,6 +485,12 @@ namespace ILCompiler
                             return Status.Fail(methodIL.OwningMethod, opcode, "Store into other static");
                         }
 
+                        if (_isTypeMapValueGetter && !_isNestedCctor)
+                        {
+                            // A getter can run at any time, so its result can't depend on what it did before.
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Store into static in a getter");
+                        }
+
                         if (field.IsThreadStatic || field.HasRva)
                         {
                             return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
@@ -427,6 +538,15 @@ namespace ILCompiler
                             return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
                         }
 
+                        if (_isTypeMapValueGetter
+                            && (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field)
+                                || field.DoesFieldRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _)
+                                || field.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _)
+                                || field.DoesFieldRequire(DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _)))
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Static that needs analysis of the compiled code");
+                        }
+
                         Value fieldValue;
                         if (field.HasRva)
                         {
@@ -441,6 +561,10 @@ namespace ILCompiler
                         }
                         else if (field.OwningType == _type)
                         {
+                            // A getter can run at any time: only the statics that are never written have a known value.
+                            if (_isTypeMapValueGetter && !_isNestedCctor && !_readOnlyPolicy.IsReadOnly(field))
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Load from a static that is written to");
+
                             fieldValue = _fieldValues[field];
                         }
                         else if (_readOnlyPolicy.IsReadOnly(field)
@@ -525,6 +649,11 @@ namespace ILCompiler
                             return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
                         }
 
+                        if (_isTypeMapValueGetter && RequiresCompiledCode(_flowAnnotations, method))
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Call to a method that needs analysis of the compiled code");
+                        }
+
                         Value[] methodParams = new Value[numParams];
                         for (int i = numParams - 1; i >= 0; i--)
                         {
@@ -601,6 +730,11 @@ namespace ILCompiler
                             return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
                         }
 
+                        if (_isTypeMapValueGetter && RequiresCompiledCode(_flowAnnotations, ctor))
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Constructor that needs analysis of the compiled code");
+                        }
+
                         if (owningType.RequiresAlign8())
                         {
                             return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
@@ -612,7 +746,7 @@ namespace ILCompiler
                             ctorParameters[i + 1] = stack.PopIntoLocation(GetArgType(ctor, i + 1));
                         }
 
-                        AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
+                        AllocationSite allocSite = NewAllocationSite(instructionCounter);
 
                         Value instance;
                         if (owningType.IsDelegate)
@@ -661,7 +795,8 @@ namespace ILCompiler
                                 ctorParameters[0] = instance;
                             }
 
-                            if (((DefType)owningType).ContainsGCPointers)
+                            if (((DefType)owningType).ContainsGCPointers
+                                && !(_isTypeMapValueGetter && owningType.IsValueType))
                             {
                                 // We don't want to end up with GC pointers in the frozen region
                                 // because write barriers can't handle that.
@@ -744,7 +879,7 @@ namespace ILCompiler
                         Value value = stack.PopIntoLocation(field.FieldType);
                         StackEntry instance = stack.Pop();
 
-                        if (field.FieldType.IsGCPointer && value != null)
+                        if (field.FieldType.IsGCPointer && value != null && instance.Value is not IAcceptsReferenceFields)
                         {
                             return Status.Fail(methodIL.OwningMethod, opcode, "Reference field");
                         }
@@ -766,13 +901,13 @@ namespace ILCompiler
                     {
                         FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
 
-                        if (field.FieldType.IsGCPointer
-                            || field.IsStatic)
+                        StackEntry instance = stack.Pop();
+
+                        if (field.IsStatic
+                            || (field.FieldType.IsGCPointer && instance.Value is not IAcceptsReferenceFields))
                         {
                             return Status.Fail(methodIL.OwningMethod, opcode);
                         }
-
-                        StackEntry instance = stack.Pop();
 
                         var loadableInstance = instance.Value as IHasInstanceFields;
                         if (loadableInstance == null)
@@ -789,8 +924,10 @@ namespace ILCompiler
                     case ILOpcode.ldflda:
                     {
                         FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
-                        if (field.FieldType.IsGCPointer
-                            || field.IsStatic)
+                        StackEntry instance = stack.Pop();
+
+                        if (field.IsStatic
+                            || (field.FieldType.IsGCPointer && instance.Value is not IAcceptsReferenceFields))
                         {
                             return Status.Fail(methodIL.OwningMethod, opcode);
                         }
@@ -800,15 +937,19 @@ namespace ILCompiler
                             return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
                         }
 
-                        StackEntry instance = stack.Pop();
-
                         var loadableInstance = instance.Value as IHasInstanceFields;
                         if (loadableInstance == null)
                         {
                             return Status.Fail(methodIL.OwningMethod, opcode);
                         }
 
-                        stack.Push(StackValueKind.ByRef, loadableInstance.GetFieldAddress(field));
+                        ByRefValueBase fieldAddress = loadableInstance.GetFieldAddress(field);
+                        if (fieldAddress is null)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported byref");
+                        }
+
+                        stack.Push(StackValueKind.ByRef, fieldAddress);
                     }
                     break;
 
@@ -831,6 +972,13 @@ namespace ILCompiler
                             && popped.ValueKind == StackValueKind.ByRef)
                         {
                             Debug.Assert(popped.Value is ByRefValueBase);
+                            stack.Push(StackValueKind.NativeInt, popped.Value);
+                        }
+                        else if (opcode is ILOpcode.conv_i or ILOpcode.conv_u
+                            && _isTypeMapValueGetter
+                            && popped.Value is MethodPointerValue)
+                        {
+                            // A method pointer is already a native int.
                             stack.Push(StackValueKind.NativeInt, popped.Value);
                         }
                         else if (popped.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
@@ -1037,7 +1185,12 @@ namespace ILCompiler
 
                         var method = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
                         if (method != null)
+                        {
+                            if (_isTypeMapValueGetter && !CanTakeAddressOfMethodForConstantData(method))
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Method pointer target not supported in constant data");
+
                             stack.Push(StackValueKind.NativeInt, new MethodPointerValue(method));
+                        }
                         else
                             ThrowHelper.ThrowInvalidProgramException();
                     }
@@ -1506,6 +1659,12 @@ namespace ILCompiler
                         }
                         else if (value1.ValueKind == StackValueKind.Float && value2.ValueKind == StackValueKind.Float)
                         {
+                            if (_isTypeMapValueGetter)
+                            {
+                                // The interpreter keeps a float in double precision, so it can't tell what the rounding to single precision does.
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Floating point arithmetic");
+                            }
+
                             if (isDivRem && value2.Value.AsDouble() == 0)
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Division by zero");
 
@@ -1706,7 +1865,7 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
 
                             Value value = stack.PopIntoLocation(type);
-                            AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
+                            AllocationSite allocSite = NewAllocationSite(instructionCounter);
                             if (!ObjectInstance.TryBox((DefType)type, value, allocSite, out ObjectInstance boxedResult))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode);
@@ -1858,7 +2017,7 @@ namespace ILCompiler
             return false;
         }
 
-        private static BaseValueTypeValue NewUninitializedLocationValue(TypeDesc locationType, FieldDesc fieldThatOwnsMemory)
+        private BaseValueTypeValue NewUninitializedLocationValue(TypeDesc locationType, FieldDesc fieldThatOwnsMemory)
         {
             if (locationType.IsGCPointer || locationType.IsByRef)
             {
@@ -1880,11 +2039,116 @@ namespace ILCompiler
             {
                 return new ComInterfaceEntryArrayValue(locationType, comInterfaceEntryType);
             }
+            else if (_isTypeMapValueGetter && FieldwiseStructValue.IsCompatible(locationType))
+            {
+                return new FieldwiseStructValue(this, (MetadataType)locationType);
+            }
             else
             {
+                if (_isTypeMapValueGetter && FieldwiseStructValue.IsStructThatRequiresFieldwiseModel(locationType))
+                {
+                    // The struct has references or function pointers, but a layout that the field by field model can't write.
+                    // Modeling it as bytes would let numbers end up where the references are.
+                    throw new UnsupportedLayoutException(locationType);
+                }
+
                 Debug.Assert(locationType.IsValueType || locationType.IsPointer || locationType.IsFunctionPointer);
                 return new ValueTypeValue(locationType);
             }
+        }
+
+        private sealed class UnsupportedLayoutException(TypeDesc type) : Exception
+        {
+            public override string Message => $"The layout of '{type}' is not supported for a type with references or function pointers";
+        }
+
+        // A getter that gets evaluated is not compiled, so the warnings and the dependencies the compiler would produce for its code
+        // (and for the code it calls) would be lost. Anything that would make the compiler analyze the code is left to the compiled code.
+        private static bool RequiresCompiledCode(FlowAnnotations flowAnnotations, MethodDesc method)
+        {
+            return ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(flowAnnotations, method)
+                || ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody(flowAnnotations, method)
+                || method.GetTypicalMethodDefinition().HasCustomAttribute("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute");
+        }
+
+        private static bool RequiresCompiledCode(FlowAnnotations flowAnnotations, FieldDesc field)
+            => ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(flowAnnotations, field)
+                || field.GetTypicalFieldDefinition().HasCustomAttribute("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute");
+
+        private static bool RequiresCompiledCode(FlowAnnotations flowAnnotations, TypeDesc type)
+            => ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(flowAnnotations, type);
+
+        // The compiler looks at the tokens of the code it compiles (the methods it calls, the fields it accesses, the types it refers to):
+        // if any of them needs analysis, the code can't be evaluated instead.
+        private bool ReferencesMembersThatRequireCompiledCode(MethodIL methodIL)
+        {
+            ILReader reader = new ILReader(methodIL.GetILBytes());
+            while (reader.HasNext)
+            {
+                ILOpcode opcode = reader.ReadILOpcode();
+                switch (opcode)
+                {
+                    case ILOpcode.call:
+                    case ILOpcode.callvirt:
+                    case ILOpcode.newobj:
+                    case ILOpcode.ldftn:
+                    case ILOpcode.ldvirtftn:
+                    case ILOpcode.jmp:
+                    case ILOpcode.ldfld:
+                    case ILOpcode.ldflda:
+                    case ILOpcode.stfld:
+                    case ILOpcode.ldsfld:
+                    case ILOpcode.ldsflda:
+                    case ILOpcode.stsfld:
+                    case ILOpcode.ldtoken:
+                    case ILOpcode.newarr:
+                    case ILOpcode.box:
+                    case ILOpcode.unbox:
+                    case ILOpcode.unbox_any:
+                    case ILOpcode.initobj:
+                    case ILOpcode.sizeof_:
+                    case ILOpcode.castclass:
+                    case ILOpcode.isinst:
+                    case ILOpcode.ldobj:
+                    case ILOpcode.stobj:
+                    case ILOpcode.cpobj:
+                    case ILOpcode.ldelem:
+                    case ILOpcode.stelem:
+                    case ILOpcode.ldelema:
+                    case ILOpcode.constrained:
+                    case ILOpcode.mkrefany:
+                    case ILOpcode.refanyval:
+                        object token = methodIL.GetObject(reader.ReadILToken());
+                        if (token is MethodDesc method ? RequiresCompiledCode(_flowAnnotations, method)
+                            : token is FieldDesc field ? RequiresCompiledCode(_flowAnnotations, field)
+                            : token is TypeDesc type && RequiresCompiledCode(_flowAnnotations, type))
+                        {
+                            return true;
+                        }
+                        break;
+
+                    default:
+                        reader.Skip(opcode);
+                        break;
+                }
+            }
+
+            return false;
+        }
+
+        // A method pointer that ends up in constant data is not scanned the way a method pointer in compiled code is:
+        // only plain entry points are supported.
+        private bool CanTakeAddressOfMethodForConstantData(MethodDesc method)
+        {
+            return !(method.IsPInvoke
+                || method.IsAbstract
+                || method.IsIntrinsic
+                || method.IsInternalCall
+                || method.IsRuntimeImplemented
+                || !method.Signature.IsStatic
+                || (method.GetTypicalMethodDefinition() == method && (method.HasInstantiation || method.OwningType.HasInstantiation))
+                || method.IsCanonicalMethod(CanonicalFormKind.Any)
+                || RequiresCompiledCode(_flowAnnotations, method));
         }
 
         private bool TryHandleIntrinsicCall(MethodDesc method, Value[] parameters, out Value retVal)
@@ -2810,6 +3074,342 @@ namespace ILCompiler
             }
         }
 
+        /// <summary>
+        /// Represents a value that can hold references (to strings and types) in its fields. Such values only exist
+        /// when evaluating getters of type map values.
+        /// </summary>
+        private interface IAcceptsReferenceFields { }
+
+        /// <summary>
+        /// A struct modeled field by field, so that it can have fields that are references to strings and types, method pointers
+        /// and any other struct. Only used when evaluating getters of type map values (see ScanGetter).
+        /// The value is serialized as the data of the struct: references are pointers to frozen objects.
+        /// </summary>
+        private sealed class FieldwiseStructValue : BaseValueTypeValue, IAssignableValue, IHasInstanceFields, IAcceptsReferenceFields
+        {
+            private TypePreinit _context;
+            private readonly MetadataType _type;
+            private readonly FieldDesc[] _fields;
+            private readonly Value[] _values;
+
+            // Assigning to or clearing the struct, or storing a method pointer in a field, replaces the value of a field, which would leave a reference to it behind.
+            private bool _fieldAddressTaken;
+
+            // The context is only needed to interpret code that changes the value. Once the value is final it only has to be serialized.
+            public void Detach()
+            {
+                _context = null;
+                foreach (Value value in _values)
+                {
+                    (value as FieldwiseStructValue)?.Detach();
+                }
+            }
+
+            public FieldwiseStructValue(TypePreinit context, MetadataType type)
+            {
+                _context = context;
+                _type = type;
+
+                List<FieldDesc> fields = new List<FieldDesc>();
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (!field.IsStatic)
+                        fields.Add(field);
+                }
+
+                _fields = fields.ToArray();
+                _values = new Value[_fields.Length];
+                for (int i = 0; i < _fields.Length; i++)
+                {
+                    _values[i] = context.NewUninitializedLocationValue(_fields[i].FieldType, _fields[i]);
+                }
+            }
+
+            private FieldwiseStructValue(FieldwiseStructValue other)
+            {
+                _context = other._context;
+                _type = other._type;
+                _fields = other._fields;
+                _values = new Value[_fields.Length];
+                for (int i = 0; i < _values.Length; i++)
+                {
+                    _values[i] = CloneValue(other._values[i]);
+                }
+            }
+
+            private static Value CloneValue(Value value) => value is null or ReferenceTypeValue ? value : value.Clone();
+
+            public override int Size => _type.InstanceFieldSize.AsInt;
+
+            public static bool IsCompatible(TypeDesc type)
+            {
+                return IsStructThatRequiresFieldwiseModel(type)
+                    && HasSupportedLayoutTransitively((MetadataType)type);
+            }
+
+            // Structs that are made of unmanaged data only don't need to be modeled field by field.
+            public static bool IsStructThatRequiresFieldwiseModel(TypeDesc type)
+            {
+                return type.IsValueType
+                    && !type.IsPrimitive
+                    && !type.IsEnum
+                    && !type.IsByRefLike
+                    && type is MetadataType mdType
+                    && RequiresFieldwiseModel(mdType);
+            }
+
+            // The data is written at the offsets of the fields: the layout has to be fully described by them,
+            // and packed structs could have unaligned pointers.
+            private static bool HasSupportedLayout(MetadataType type)
+            {
+                ClassLayoutMetadata layout = type.GetClassLayout();
+                return !type.IsExplicitLayout
+                    && !type.IsExtendedLayout
+                    && !type.IsInlineArray
+                    && layout.Size == 0
+                    && (layout.PackingSize == 0 || layout.PackingSize >= type.Context.Target.PointerSize);
+            }
+
+            // The struct and every struct nested in it that has references or function pointers have to be written field by field.
+            private static bool HasSupportedLayoutTransitively(MetadataType type)
+            {
+                if (!HasSupportedLayout(type))
+                    return false;
+
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (!field.IsStatic
+                        && field.FieldType is MetadataType nested
+                        && IsStructThatRequiresFieldwiseModel(nested)
+                        && !HasSupportedLayoutTransitively(nested))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            private static bool RequiresFieldwiseModel(MetadataType type)
+            {
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (field.IsStatic)
+                        continue;
+
+                    TypeDesc fieldType = field.FieldType;
+
+                    if (fieldType.IsGCPointer || fieldType.IsFunctionPointer || fieldType.IsPointer
+                        || fieldType.IsWellKnownType(WellKnownType.IntPtr) || fieldType.IsWellKnownType(WellKnownType.UIntPtr))
+                    {
+                        return true;
+                    }
+
+                    if (fieldType.IsByRef || fieldType.IsByRefLike)
+                        return false;
+
+                    if (fieldType.IsValueType && !fieldType.IsPrimitive && !fieldType.IsEnum && fieldType is MetadataType nested
+                        && RequiresFieldwiseModel(nested))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            private int IndexOf(FieldDesc field)
+            {
+                for (int i = 0; i < _fields.Length; i++)
+                {
+                    if (_fields[i] == field)
+                        return i;
+                }
+
+                ThrowHelper.ThrowInvalidProgramException();
+                return -1;
+            }
+
+            public override bool TryCompareEquality(Value value, out bool result)
+            {
+                result = false;
+                return false;
+            }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
+
+            public override bool TryCreateByRef(out Value value)
+            {
+                value = new FieldwiseStructReference(this);
+                return true;
+            }
+
+            public override Value Clone() => new FieldwiseStructValue(this);
+
+            bool IAssignableValue.TryAssign(Value value)
+            {
+                if (value is not FieldwiseStructValue other || other._type != _type || _fieldAddressTaken)
+                    return false;
+
+                for (int i = 0; i < _values.Length; i++)
+                {
+                    _values[i] = CloneValue(other._values[i]);
+                }
+
+                return true;
+            }
+
+            private bool TryInitialize()
+            {
+                if (_fieldAddressTaken)
+                    return false;
+
+                for (int i = 0; i < _values.Length; i++)
+                {
+                    _values[i] = _context.NewUninitializedLocationValue(_fields[i].FieldType, _fields[i]);
+                }
+
+                return true;
+            }
+
+            Value IHasInstanceFields.GetField(FieldDesc field) => _values[IndexOf(field)];
+
+            bool IHasInstanceFields.TrySetField(FieldDesc field, Value value)
+            {
+                int index = IndexOf(field);
+                TypeDesc fieldType = field.FieldType;
+
+                if (fieldType.IsGCPointer)
+                {
+                    // The data can only point to frozen objects that don't depend on any code that ran at compile time.
+                    if (value is not (null or StringInstance or RuntimeTypeValue))
+                        return false;
+
+                    _values[index] = value;
+                    return true;
+                }
+
+                if (value is MethodPointerValue)
+                {
+                    if (!_fieldAddressTaken
+                        && (fieldType.IsFunctionPointer || fieldType.IsPointer || fieldType.IsWellKnownType(WellKnownType.IntPtr) || fieldType.IsWellKnownType(WellKnownType.UIntPtr)))
+                    {
+                        _values[index] = value;
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                if (_values[index] is IAssignableValue assignable)
+                    return assignable.TryAssign(value);
+
+                // The previous value might be a method pointer that gets overwritten with a number.
+                if (!_fieldAddressTaken && value is ValueTypeValue && _values[index] is MethodPointerValue)
+                {
+                    _values[index] = value;
+                    return true;
+                }
+
+                return false;
+            }
+
+            ByRefValueBase IHasInstanceFields.GetFieldAddress(FieldDesc field)
+            {
+                Value fieldValue = _values[IndexOf(field)];
+                if (fieldValue is not null && fieldValue.TryCreateByRef(out Value byRef) && byRef is ByRefValueBase byRefBase)
+                {
+                    _fieldAddressTaken = true;
+                    return byRefBase;
+                }
+
+                // A reference or a method pointer in a field can't have its address taken: the caller fails the evaluation.
+                return null;
+            }
+
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
+            {
+                int start = builder.CountBytes;
+
+                // The fields were added in the order of the layout, but the layout is not necessarily sequential.
+                int[] order = new int[_fields.Length];
+                for (int i = 0; i < order.Length; i++)
+                    order[i] = i;
+                Array.Sort(order, (a, b) => _fields[a].Offset.AsInt.CompareTo(_fields[b].Offset.AsInt));
+
+                foreach (int index in order)
+                {
+                    FieldDesc field = _fields[index];
+                    int padding = field.Offset.AsInt - (builder.CountBytes - start);
+                    Debug.Assert(padding >= 0);
+                    builder.EmitZeros(padding);
+
+                    int fieldStart = builder.CountBytes;
+                    Value value = _values[index];
+                    if (value is null)
+                        builder.EmitZeroPointer();
+                    else
+                        value.WriteFieldData(ref builder, factory);
+                    Debug.Assert(builder.CountBytes - fieldStart == field.FieldType.GetElementSize().AsInt);
+                }
+
+                int endPadding = Size - (builder.CountBytes - start);
+                Debug.Assert(endPadding >= 0);
+                builder.EmitZeros(endPadding);
+            }
+
+            private sealed class FieldwiseStructReference : ByRefValueBase, IHasInstanceFields, IAcceptsReferenceFields
+            {
+                private readonly FieldwiseStructValue _parent;
+
+                public FieldwiseStructReference(FieldwiseStructValue parent) => _parent = parent;
+
+                public override bool TryCompareEquality(Value value, out bool result)
+                {
+                    result = value is FieldwiseStructReference other && other._parent == _parent;
+                    return true;
+                }
+
+                public override bool GetRawData(NodeFactory factory, out object data)
+                {
+                    data = null;
+                    return false;
+                }
+
+                public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
+                    => throw new NotImplementedException();
+
+                public override Value Clone() => this;
+
+                public override bool TryInitialize(int size)
+                {
+                    return size == _parent.Size && _parent.TryInitialize();
+                }
+
+                public override bool TryStore(Value value) => ((IAssignableValue)_parent).TryAssign(value);
+
+                public override bool TryLoad(TypeDesc type, out Value value)
+                {
+                    if (type != _parent._type)
+                    {
+                        value = null;
+                        return false;
+                    }
+
+                    value = _parent.Clone();
+                    return true;
+                }
+
+                Value IHasInstanceFields.GetField(FieldDesc field) => ((IHasInstanceFields)_parent).GetField(field);
+                bool IHasInstanceFields.TrySetField(FieldDesc field, Value value) => ((IHasInstanceFields)_parent).TrySetField(field, value);
+                ByRefValueBase IHasInstanceFields.GetFieldAddress(FieldDesc field) => ((IHasInstanceFields)_parent).GetFieldAddress(field);
+            }
+        }
+
         private sealed class RuntimeFieldHandleValue : BaseValueTypeValue, IInternalModelingOnlyValue
         {
             public FieldDesc Field { get; private set; }
@@ -3069,9 +3669,11 @@ namespace ILCompiler
                 return true;
             }
 
+            // Only reached when the pointer is a field of a struct that is serialized as constant data (FieldwiseStructValue).
+            // Everything else rejects values with no external representation before they get here.
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
-                throw new NotSupportedException();
+                builder.EmitPointerReloc(factory.ExactCallableAddressTakenAddress(PointedToMethod, isUnboxingStub: false));
             }
 
             public override bool GetRawData(NodeFactory factory, out object data)
@@ -3204,7 +3806,6 @@ namespace ILCompiler
             public int InstructionCounter { get; }
             public AllocationSite(MetadataType type, int instructionCounter)
             {
-                Debug.Assert(type.HasStaticConstructor);
                 OwningType = type;
                 InstructionCounter = instructionCounter;
             }
