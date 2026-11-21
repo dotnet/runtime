@@ -2861,6 +2861,9 @@ public:
         RSExtSmartPtr<ICorDebugAssembly>* pAssemblies,
         ULONG countAssemblies) = 0;
 
+    // Get the assembly's module, or NULL if it isn't loaded yet.
+    virtual CordbModule * GetLoadedModuleForShim(ICorDebugAssembly * pAssembly) = 0;
+
     // Queue up fake connection events for attach.
     // ICorDebug doesn't expose any enumeration for connections, so the shim needs to call into a
     // private hook to enumerate them for attach.
@@ -3343,6 +3346,9 @@ public:
         ICorDebugAppDomain * pAppDomain,
         RSExtSmartPtr<ICorDebugAssembly>* pAssemblies,
         ULONG countAssemblies);
+
+    // Callback for Shim to get the assembly's module, or NULL if it isn't loaded yet
+    CordbModule * GetLoadedModuleForShim(ICorDebugAssembly * pAssembly);
 
     // Functions to queue fake Connection events on attach.
     static void CountConnectionsCallback(DWORD id, LPCWSTR pName, void * pUserData);

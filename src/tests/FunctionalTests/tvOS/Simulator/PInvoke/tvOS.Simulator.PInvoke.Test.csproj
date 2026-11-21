@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <MonoForceInterpreter>true</MonoForceInterpreter>
-    <RunAOTCompilation>false</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <MainLibraryFileName>tvOS.Simulator.PInvoke.Test.dll</MainLibraryFileName>

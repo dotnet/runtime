@@ -72,7 +72,7 @@ int CEEOpcodeSize(const uint8_t *ip, const uint8_t *codeEnd);
 
 static inline bool InterpOpIsEmitNop(int32_t opcode)
 {
-    return opcode >= INTOP_NOP && opcode != INTOP_MOV_SRC_OFF;
+    return opcode == INTOP_NOP || opcode == INTOP_DEF;
 }
 
 static inline bool InterpOpIsUncondBranch(int32_t opcode)
