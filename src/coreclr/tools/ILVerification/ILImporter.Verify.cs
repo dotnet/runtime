@@ -216,6 +216,9 @@ namespace Internal.IL
 
         public bool SanityChecks { set; private get; }
 
+        // Report the rules that valid IL must follow, and not some rules only for verifiable IL (ECMA-335 III.1.8).
+        public bool ValidationOnly { set; private get; }
+
         public void Verify()
         {
             // Check code size before any other processing
@@ -589,6 +592,42 @@ namespace Internal.IL
             if (!cond)
                 VerificationError(error, found, expected);
             return cond;
+        }
+
+        void UnverifiableError(VerifierError error)
+        {
+            if (!ValidationOnly)
+                VerificationError(error);
+        }
+
+        void UnverifiableError(VerifierError error, object found, object expected)
+        {
+            if (!ValidationOnly)
+                VerificationError(error, found, expected);
+        }
+
+        // Check for a rule that only verifiable IL must follow.
+        bool CheckVerifiable(bool cond, VerifierError error)
+        {
+            if (!cond && !ValidationOnly)
+                VerificationError(error);
+            return cond;
+        }
+
+        // cpblk and initblk take addresses of type native int or & (III.3.30, III.3.36).
+        void CheckIsAddress(StackValue value)
+        {
+            Check(value.Kind == StackValueKind.NativeInt || value.Kind == StackValueKind.ByRef, VerifierError.StackByRef, value);
+        }
+
+        // Their size is an unsigned int32 and the initblk value an unsigned int8, so an int64 is not valid.
+        void CheckIsInt32OrNativeInt(StackValue value)
+        {
+            if (!Check(value.Kind == StackValueKind.Int32 || value.Kind == StackValueKind.NativeInt,
+                VerifierError.ExpectedIntegerType, value))
+            {
+                AbortBasicBlockVerification();
+            }
         }
 
         void CheckIsNumeric(StackValue value)
@@ -1268,7 +1307,7 @@ namespace Internal.IL
 
         void Unverifiable()
         {
-            VerificationError(VerifierError.Unverifiable);
+            UnverifiableError(VerifierError.Unverifiable);
         }
 
         TypeDesc GetWellKnownType(WellKnownType wellKnownType)
@@ -1427,7 +1466,8 @@ namespace Internal.IL
                     // ECMA III 1.7.5 Backward Branch Constraints
                     // if stack is not empty at beginning of this block,
                     // there must exist a predecessor block with lower IL offset.
-                    Check(basicBlock.HasPredecessorWithLowerOffset, VerifierError.BackwardBranch);
+                    // The ECMA-335 augments delete this rule, so it is no longer a validity rule.
+                    CheckVerifiable(basicBlock.HasPredecessorWithLowerOffset, VerifierError.BackwardBranch);
                 }
 
                 // Copy stack state
@@ -1482,7 +1522,7 @@ namespace Internal.IL
             var varType = GetVarType(index, argument);
 
             if (!argument)
-                Check(_initLocals, VerifierError.InitLocals);
+                CheckVerifiable(_initLocals, VerifierError.InitLocals);
 
             CheckIsNotPointer(varType);
 
@@ -1513,7 +1553,7 @@ namespace Internal.IL
             var varType = GetVarType(index, argument);
 
             if (!argument)
-                Check(_initLocals, VerifierError.InitLocals);
+                CheckVerifiable(_initLocals, VerifierError.InitLocals);
 
             Check(!varType.IsByRef, VerifierError.ByrefOfByref);
 
@@ -1550,6 +1590,32 @@ namespace Internal.IL
             Unverifiable();
 
             var method = ResolveMethodToken(token);
+
+            // The validity rules of III.3.37; verification mode reports only that jmp is never verifiable.
+            if (ValidationOnly)
+            {
+                if (_stackTop != 0)
+                    VerificationError(VerifierError.StackUnexpected, _stack[_stackTop - 1]);
+
+                Check(!_currentBasicBlock.TryIndex.HasValue && !_currentBasicBlock.FilterIndex.HasValue &&
+                    !_currentBasicBlock.HandlerIndex.HasValue && !_method.IsSynchronized, VerifierError.JmpInsideER);
+
+                MethodSignature sig = method.Signature;
+                bool matches = sig.Flags == _methodSignature.Flags && sig.Length == _methodSignature.Length;
+                for (int i = 0; matches && i < sig.Length; i++)
+                    matches = sig[i] == _methodSignature[i];
+
+                // The signature does not list an implicit 'this', which must also be passable to the target.
+                if (matches && !sig.IsStatic)
+                {
+                    TypeDesc owner = method.OwningType;
+                    matches = IsAssignable(StackValue.CreateFromType(_thisType),
+                        owner.IsValueType ? StackValue.CreateByRef(owner) : StackValue.CreateObjRef(owner));
+                }
+
+                if (!matches)
+                    VerificationError(VerifierError.StackUnexpected, method, _method);
+            }
         }
 
         void ImportCasting(ILOpcode opcode, int token)
@@ -1590,8 +1656,9 @@ namespace Internal.IL
                         constrained = _constrained;
 
                         // The constrained type must implement the interface declaring the static virtual method
+                        // (a Verifiability rule of the augmented III.2.1).
                         if (!constrained.CanCastTo(method.OwningType))
-                            VerificationError(VerifierError.ConstrainedTypeNoInterfaceImpl, constrained, method.OwningType);
+                            UnverifiableError(VerifierError.ConstrainedTypeNoInterfaceImpl, constrained, method.OwningType);
                     }
                 }
 
@@ -1749,7 +1816,7 @@ namespace Internal.IL
                     {
                         var methodTypeDef = methodType.GetTypeDefinition() as MetadataType; // Method is always considered final if owning type is sealed
                         if (methodTypeDef == null || !methodTypeDef.IsSealed)
-                            Check(actualThis.IsThisPtr && !_modifiesThisPtr, VerifierError.ThisMismatch);
+                            CheckVerifiable(actualThis.IsThisPtr && !_modifiesThisPtr, VerifierError.ThisMismatch);
                     }
                 }
 
@@ -1837,7 +1904,7 @@ namespace Internal.IL
 
         void ImportCalli(int token)
         {
-            // calli is always reported as unverifiable. The runtime does not track the lifetime of function
+            // calli is unverifiable. The runtime does not track the lifetime of function
             // pointers, so the target may be code that has been unloaded. The call site is still checked, and
             // verification goes on.
             Unverifiable();
@@ -1908,7 +1975,7 @@ namespace Internal.IL
                 {
                     ClearPendingPrefix(Prefix.Constrained);
                     if (!_constrained.CanCastTo(method.OwningType))
-                        VerificationError(VerifierError.ConstrainedTypeNoInterfaceImpl, _constrained, method.OwningType);
+                        UnverifiableError(VerifierError.ConstrainedTypeNoInterfaceImpl, _constrained, method.OwningType);
                 }
                 else
                 {
@@ -2012,7 +2079,8 @@ namespace Internal.IL
                     var actualReturnType = Pop();
                     CheckIsAssignable(actualReturnType, StackValue.CreateFromType(expectedReturnType));
 
-                    Check((!expectedReturnType.IsByRef && !expectedReturnType.IsByRefLike) || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
+                    // The lifetime of a returned byref is checked for verification only (III.1.8.1.2.1).
+                    CheckVerifiable((!expectedReturnType.IsByRef && !expectedReturnType.IsByRefLike) || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
                 }
             }
         }
@@ -2769,13 +2837,21 @@ namespace Internal.IL
 
         void ImportLocalAlloc()
         {
-            Unverifiable();
+            // localloc is never verifiable (III.3.47); the checks below are validity rules.
+            UnverifiableError(VerifierError.Unverifiable);
+
+            if (ValidationOnly)
+                Check(!_currentBasicBlock.FilterIndex.HasValue && !_currentBasicBlock.HandlerIndex.HasValue, VerifierError.LocallocInHandler);
 
             var size = Pop();
 
             Check(_stackTop == 0, VerifierError.LocallocStackNotEmpty);
 
-            CheckIsInteger(size);
+            // The size is a native unsigned int or an unsigned int32; verification mode keeps its existing check.
+            if (ValidationOnly)
+                CheckIsIndex(size);
+            else
+                CheckIsInteger(size);
 
             Push(StackValue.CreatePrimitive(StackValueKind.NativeInt));
         }
@@ -2787,7 +2863,8 @@ namespace Internal.IL
 
             var result = Pop(allowUninitThis: true);
             Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected, result);
-            Check(_stackTop == 0, VerifierError.EndfilterStack);
+            // Only the Verifiability paragraph of III.3.34 requires the value to be the only item.
+            CheckVerifiable(_stackTop == 0, VerifierError.EndfilterStack);
         }
 
         void ImportCpBlk()
@@ -2801,9 +2878,17 @@ namespace Internal.IL
             var srcaddr = Pop();
             var dstaddr = Pop();
 
-            CheckIsInteger(size);
-
-            // TODO: Validate srcaddr, dstaddr
+            // The operand types of III.3.30; verification mode reports cpblk as unverifiable and keeps its size check.
+            if (ValidationOnly)
+            {
+                CheckIsAddress(srcaddr);
+                CheckIsAddress(dstaddr);
+                CheckIsInt32OrNativeInt(size);
+            }
+            else
+            {
+                CheckIsInteger(size);
+            }
         }
 
         void ImportInitBlk()
@@ -2817,10 +2902,18 @@ namespace Internal.IL
             var value = Pop();
             var addr = Pop();
 
-            CheckIsInteger(size);
-            CheckIsInteger(value);
-
-            // TODO: Validate addr
+            // The operand types of III.3.36; verification mode reports initblk as unverifiable and keeps its integer checks.
+            if (ValidationOnly)
+            {
+                CheckIsAddress(addr);
+                CheckIsInt32OrNativeInt(size);
+                CheckIsInt32OrNativeInt(value);
+            }
+            else
+            {
+                CheckIsInteger(size);
+                CheckIsInteger(value);
+            }
         }
 
         void ImportRethrow()
