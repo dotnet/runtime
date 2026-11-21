@@ -225,6 +225,12 @@ namespace System.Collections.Immutable
                     return;
                 }
 
+                if (ReferenceEquals(other, this))
+                {
+                    Clear();
+                    return;
+                }
+
                 foreach (T item in other)
                 {
                     this.Root = this.Root.Remove(item, _comparer, out _);
