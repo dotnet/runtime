@@ -6517,7 +6517,11 @@ public:
         if (NeedsConsecutiveRegisters())
         {
             assert(IsMultiRegNode());
-            return (regNumber)(GetRegNum() + idx);
+            assert(genIsValidFloatReg(GetRegNum()));
+            // Factor-in register wraparound from V31 to V0.
+            unsigned fltRegIdx            = (unsigned)(GetRegNum() - REG_FP_FIRST);
+            unsigned consecutiveFltRegIdx = (fltRegIdx + idx) % REG_FP_COUNT;
+            return (regNumber)(consecutiveFltRegIdx + REG_FP_FIRST);
         }
 #endif
         // should only be used to get otherReg
@@ -6548,7 +6552,7 @@ public:
         if (NeedsConsecutiveRegisters())
         {
             assert(IsMultiRegNode());
-            assert(reg == (regNumber)(GetRegNum() + idx));
+            assert(reg == GetRegNumByIdx(idx));
             return;
         }
 #endif

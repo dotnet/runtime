@@ -50,6 +50,7 @@
 
 #define REG_FP_FIRST             REG_V0
 #define REG_FP_LAST              REG_V31
+#define REG_FP_COUNT             (REG_FP_LAST - REG_FP_FIRST + 1)
 #define FIRST_FP_ARGREG          REG_V0
 #define LAST_FP_ARGREG           REG_V15
 #define REG_PREDICATE_FIRST      REG_P0
