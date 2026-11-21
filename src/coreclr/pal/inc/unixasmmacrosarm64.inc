@@ -166,7 +166,7 @@
 .endm
 
 
-// Inlined version of GetThreadEEAllocContext. Target cannot be x0 or x1.
+// Inlined version of GetThreadEEAllocContext. Target cannot be x0, x1 or x2.
 .macro INLINE_GET_ALLOC_CONTEXT_BASE target
         .ifc  \target, x0
                 .error "target cannot be x0"
@@ -190,14 +190,28 @@
         EPILOG_RESTORE_REG_PAIR           x0, x1, 0x10
         EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x30
 #else
+#if !defined(__APPLE__)
+        // Use the thread pointer relative offset when the thread locals are in static TLS (set in InitThreadManager).
+        // Trashes x12.
+        adrp    \target, C_FUNC(g_runtimeThreadLocalsTlsOffset)
+        ldr     \target, [\target, :lo12:C_FUNC(g_runtimeThreadLocalsTlsOffset)]
+        cbz     \target, .LAllocContextBaseTlsDesc\@
+        mrs     x12, tpidr_el0
+        add     \target, \target, x12
+        b       .LAllocContextBaseDone\@
+
+.LAllocContextBaseTlsDesc\@:
+#endif
         PROLOG_SAVE_REG_PAIR_INDEXED      x0, lr, -0x10
         INLINE_GET_TLS_VAR \target, C_FUNC(t_runtime_thread_locals)
+        EPILOG_RESTORE_REG_PAIR_INDEXED   x0, lr, 0x10
 
+#if !defined(__APPLE__)
+.LAllocContextBaseDone\@:
+#endif
         .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
                 add     \target, \target, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
         .endif
-
-        EPILOG_RESTORE_REG_PAIR_INDEXED   x0, lr, 0x10
 #endif
 .endm
 

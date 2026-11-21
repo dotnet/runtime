@@ -144,9 +144,22 @@
     EPILOG_STACK_FREE                 __PWTB_StackAlloc
 .endm
 
-// Inlined version of GetThreadEEAllocContext
+// Inlined version of GetThreadEEAllocContext. Returns the result in a0 and trashes volatile registers.
 .macro INLINE_GET_ALLOC_CONTEXT_BASE
+    // Use the thread pointer relative offset when the thread locals are in static TLS (set in InitThreadManager).
+    lla     a0, C_FUNC(g_runtimeThreadLocalsTlsOffset)
+    ld      a0, 0(a0)
+    beqz    a0, .LAllocContextBaseCall\@
+    add     a0, a0, tp
+    .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
+        addi    a0, a0, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+    .endif
+    j       .LAllocContextBaseDone\@
+
+.LAllocContextBaseCall\@:
     call    C_FUNC(GetThreadEEAllocContext)
+
+.LAllocContextBaseDone\@:
 .endm
 
 // Pushes a TransitionBlock on the stack without saving the argument registers.

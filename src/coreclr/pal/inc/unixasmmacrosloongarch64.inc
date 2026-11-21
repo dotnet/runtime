@@ -119,6 +119,14 @@
                 .error "target cannot be a0"
         .endif
 
+        // Use the thread pointer relative offset when the thread locals are in static TLS (set in InitThreadManager).
+        la.local  \target, g_runtimeThreadLocalsTlsOffset
+        ld.d  \target, \target, 0
+        beqz  \target, .LAllocContextBaseTlsDesc\@
+        add.d  \target, \target, $tp
+        b  .LAllocContextBaseDone\@
+
+.LAllocContextBaseTlsDesc\@:
         // Save $a0, $ra
         PROLOG_SAVE_REG_PAIR_INDEXED   4, 1, 16, 0
 
@@ -126,11 +134,15 @@
         // by the linker (GD->IE/LE relaxation).
         la.tls.desc  $a0, t_runtime_thread_locals
 
-        addi.d  \target, $tp, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
-        add.d  \target, \target, $a0
+        add.d  \target, $tp, $a0
 
         // Restore $a0, $ra
         EPILOG_RESTORE_REG_PAIR_INDEXED 4, 1, 16
+
+.LAllocContextBaseDone\@:
+        .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
+                addi.d  \target, \target, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+        .endif
 .endm
 
 // Pushes a TransitionBlock on the stack without saving the argument registers.
