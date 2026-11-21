@@ -271,7 +271,9 @@ namespace {Namespace}
 
         private void ValidateResult({Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
-            bool succeeded = Helpers.CheckLoadVectorBehavior(firstOp, secondOp, result);
+            bool succeeded = nameof({Isa}.{Method}) == nameof(Sve.LoadVector128AndReplicateToVector)
+                ? Helpers.CheckLoadVector128AndReplicateToVectorBehavior(firstOp, secondOp, result)
+                : Helpers.CheckLoadVectorBehavior(firstOp, secondOp, result);
             if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>, {Op2BaseType}): {method} failed:");
