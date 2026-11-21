@@ -113,7 +113,7 @@ namespace ILCompiler
                     {
                         builder.AddSupportedInstructionSet("aes_v256");
                         if ((flags & Avx512) != 0)
-                            builder.AddSupportedInstructionSet("vaes_v512");
+                            builder.AddSupportedInstructionSet("aes_v512");
                     }
                 }
                 if ((flags & Avx512Vp2intersect) != 0)

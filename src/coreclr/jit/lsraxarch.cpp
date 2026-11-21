@@ -2724,11 +2724,23 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(numArgs == 3);
 
-                tgtPrefUse = BuildUse(op1);
+                SingleTypeRegSet op1RegCandidates = RBM_NONE;
+                SingleTypeRegSet op2RegCandidates = RBM_NONE;
+                SingleTypeRegSet op3RegCandidates = RBM_NONE;
+
+                if (!isEvexCompatible)
+                {
+                    // The VEX encoding cannot address XMM16-XMM31.
+                    op1RegCandidates = BuildEvexIncompatibleMask(op1);
+                    op2RegCandidates = BuildEvexIncompatibleMask(op2);
+                    op3RegCandidates = BuildEvexIncompatibleMask(op3);
+                }
+
+                tgtPrefUse = BuildUse(op1, op1RegCandidates);
                 srcCount += 1;
-                srcCount += BuildDelayFreeUses(op2, op1);
-                srcCount +=
-                    op3->isContained() ? BuildOperandUses(op3, ForceLowGprForApx(op3)) : BuildDelayFreeUses(op3, op1);
+                srcCount += BuildDelayFreeUses(op2, op1, op2RegCandidates);
+                srcCount += op3->isContained() ? BuildOperandUses(op3, ForceLowGprForApx(op3))
+                                               : BuildDelayFreeUses(op3, op1, op3RegCandidates);
 
                 buildUses = false;
                 break;

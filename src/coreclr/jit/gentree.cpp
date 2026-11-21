@@ -23209,6 +23209,11 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp) const
 // Return Value:
 // true if the intrinsic node lowering instruction has an EVEX form
 //
+// Notes:
+//    This needs to be kept in sync with emitter::IsEvexEncodableInstruction. LSRA can assign
+//    xmm16-xmm31, and with APX the extended GPRs, to the operands of an EVEX compatible
+//    intrinsic, and a VEX encoded instruction can't address them.
+//
 bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
 {
     if (OperIsHWIntrinsic())
@@ -23218,8 +23223,27 @@ bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
         switch (intrinsicId)
         {
             case NI_AES_CarrylessMultiply:
+            case NI_AES_V256_CarrylessMultiply:
             {
+                // pclmulqdq can only be EVEX encoded when AES_V512 is supported,
+                // see emitter::IsEvexEncodableInstruction
                 return comp->compOpportunisticallyDependsOn(InstructionSet_AES_V512);
+            }
+
+            case NI_AVXVNNI_MultiplyWideningAndAdd:
+            case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+            {
+                // The AVX-VNNI instructions can only be EVEX encoded when AVX512v3, which includes
+                // AVX512-VNNI, is supported, see emitter::IsEvexEncodableInstruction
+                return comp->compOpportunisticallyDependsOn(InstructionSet_AVX512v3);
+            }
+
+            case NI_AVXVNNIINT_MultiplyWideningAndAdd:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddSaturate:
+            {
+                // The AVX-VNNI-INT8/16 instructions can only be EVEX encoded when AVXVNNIINT_V512
+                // is supported, see emitter::IsEvexEncodableInstruction
+                return comp->compOpportunisticallyDependsOn(InstructionSet_AVXVNNIINT_V512);
             }
 
             default:
