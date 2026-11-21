@@ -47,18 +47,21 @@ namespace System.Reflection.Runtime.MethodInfos
 
         protected internal sealed override object? Invoke(object? thisObject, Span<object?> arguments)
         {
-            // MethodInvoker.Invoke(object, Span<object>) leaves the argument count check to the invoker, unlike its
-            // fixed-arity overloads, which check before calling InvokeDirectWithFewArgs. Check the count here first, as
-            // DynamicInvokeInfo does for other methods, so a wrong count throws TargetParameterCountException.
-            if (arguments.Length != _method.GetParametersAsSpan().Length)
-                throw new TargetParameterCountException(SR.Arg_ParmCnt);
-
+            ValidateArgumentCount(arguments.Length);
             throw CreateException();
         }
 
         protected internal sealed override object? InvokeDirectWithFewArgs(object? thisObject, Span<object?> arguments)
         {
+            ValidateArgumentCount(arguments.Length);
             throw CreateException();
+        }
+
+        // MethodInvoker leaves the argument count check to the invoker.
+        private void ValidateArgumentCount(int argumentCount)
+        {
+            if (argumentCount != _method.GetParametersAsSpan().Length)
+                throw new TargetParameterCountException(SR.Arg_ParmCnt);
         }
 
         public sealed override Delegate CreateDelegate(RuntimeTypeHandle delegateType, object target, bool isStatic, bool isVirtual, bool isOpen)
