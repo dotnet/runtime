@@ -9,6 +9,7 @@ success &= RunTest(DeadCodeElimination.Run);
 success &= RunTest(FeatureSwitches.Run);
 success &= RunTest(ILLinkDescriptor.Run);
 success &= RunTest(DependencyInjectionPattern.Run);
+success &= RunTest(TypeMapValues.Run);
 if (!OperatingSystem.IsWasi())
 {
     success &= RunTest(UnmanagedCallersOnlyAssociatedSourceType.Run);

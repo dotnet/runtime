@@ -27,6 +27,7 @@ namespace ILCompiler.DependencyAnalysis
         public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             sink.Add(context.MethodEntrypoint(ThrowingMethodStub), "Throwing method stub for invalid type map");
+            sink.Add(context.NecessaryTypeSymbol(TypeMapGroup), "Type map group");
         }
 
         public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }

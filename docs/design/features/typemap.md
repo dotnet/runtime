@@ -125,6 +125,31 @@ public static class TypeMapping
     /// </remarks>
     [RequiresUnreferencedCode("Interop types may be removed by trimming")]
     public static IReadOnlyDictionary<Type, Type> GetOrCreateProxyTypeMapping<TTypeMapGroup>();
+
+    /// <summary>
+    /// Tries to get the value that the type mapped by a key in the external type map provides.
+    /// </summary>
+    /// <typeparam name="TTypeMapGroup">Type universe</typeparam>
+    /// <typeparam name="TValue">The type of the value</typeparam>
+    /// <remarks>
+    /// Call sites are treated as an intrinsic by the Trimmer.
+    /// </remarks>
+    [RequiresUnreferencedCode("Interop types may be removed by trimming")]
+    public static bool TryGetValue<TTypeMapGroup, TValue>(string key, [MaybeNullWhen(false)] out TValue value);
+
+    /// <summary>
+    /// Tries to get the value that the type mapped by a key in the proxy type map provides.
+    /// </summary>
+    [RequiresUnreferencedCode("Interop types may be removed by trimming")]
+    public static bool TryGetValue<TTypeMapGroup, TValue>(Type key, [MaybeNullWhen(false)] out TValue value);
+}
+
+/// <summary>
+/// Implemented by the types that are the target of a type map entry (or the proxy of an association) to provide a value of type <typeparamref name="TValue"/>.
+/// </summary>
+public interface ITypeMapValue<TValue>
+{
+    static abstract TValue Value { get; }
 }
 ```
 
@@ -165,6 +190,21 @@ closure.
 
 5. Trimming tools will consider calls to `TypeMapping.GetOrCreateExternalTypeMapping<>` and
 `TypeMapping.GetOrCreateProxyTypeMapping<>` as intrinsics (for example, Java via `JavaTypeMapGroup`). As a result, it is not trim-compatible to call either of these methods with non-fully-instantiated generic (such as a type argument or a type that is instantiated over a type argument).
+
+## Typed values
+
+`GetOrCreate*TypeMapping` return `Type` values, so every mapped type has to be visible to reflection, even if the application only reads a few values from it (for example through attributes).
+`TypeMapping.TryGetValue` returns the data a mapped type provides instead of the type: a mapped type (the target of a `TypeMapAttribute` entry or the proxy of a `TypeMapAssociationAttribute` entry)
+implements `ITypeMapValue<TValue>` for each `TValue` it provides, and `TryGetValue<TTypeMapGroup, TValue>(key, out value)` finds the entry the same way the dictionaries do (a `string` key for the external type map, a `Type` key
+for the proxy type map) and returns the value of its static getter. The mapped type is never exposed, so it doesn't become visible to reflection because of the entry when the application is compiled ahead of time: only what the getter
+references does.
+
+* The entries are included under the same rules as the entries of the dictionaries (below), and the two kinds of APIs can be used with the same group: the group has one table per direction that serves both.
+* `TryGetValue` returns `false` if the key is not in the map or the mapped type doesn't implement `ITypeMapValue<TValue>`. Mapped types that are interfaces or generic type definitions don't provide values.
+* Trimming tools consider calls to `TypeMapping.TryGetValue<,>` as intrinsics too: the group and `TValue` have to be fully instantiated.
+* The getter should be a simple expression without side effects: it can be evaluated by the build, not run at all, or run any number of times, concurrently and on any thread.
+* The implementations are implementation-defined like the maps. For NativeAOT (the flavors of a group, the format of the image and what the compiler evaluates ahead of time) see
+[typemap-typed-values.md](../../../src/coreclr/nativeaot/docs/typemap-typed-values.md).
 
 ## Type Map entry trimming rules
 
