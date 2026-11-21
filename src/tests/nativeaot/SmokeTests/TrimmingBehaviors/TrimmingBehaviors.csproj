@@ -25,6 +25,7 @@
     <Compile Include="Dataflow.cs" />
     <Compile Include="DeadCodeElimination.cs" />
     <Compile Include="DependencyInjectionPattern.cs" />
+    <Compile Include="TypeMapFrozenKeys.cs" />
     <Compile Include="TypeMapValues.cs" />
     <Compile Include="ILLinkDescriptor.cs" />
     <Compile Include="ILLinkLinkAttributes.cs" />

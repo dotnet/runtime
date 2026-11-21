@@ -187,6 +187,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return _cache.GetOrAdd(key, creator);
             }
+
+            public bool TryGetValue(TKey key, out TValue value)
+            {
+                return _cache.TryGetValue(key, out value);
+            }
         }
 
         private void CreateNodeCaches()
@@ -1611,6 +1616,22 @@ namespace ILCompiler.DependencyAnalysis
         public FrozenStringNode SerializedStringObject(string data)
         {
             return _frozenStringNodes.GetOrAdd(data);
+        }
+
+        /// <summary>
+        /// Gets the node of a string that is in the frozen segment of the image, without creating it.
+        /// Only call this after marking is complete: nothing can make a string part of the image anymore.
+        /// </summary>
+        public bool TryGetMarkedSerializedStringObject(string data, out FrozenStringNode node)
+        {
+            Debug.Assert(MarkingComplete);
+            if (_frozenStringNodes.TryGetValue(data, out node) && node.Marked)
+            {
+                return true;
+            }
+
+            node = null;
+            return false;
         }
 
         private NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode> _frozenObjectNodes;

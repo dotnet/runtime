@@ -82,7 +82,7 @@ group, and the compile phase roots exactly them.
 
 The group tuple is `(group, state, payload)`. For a valid group `state` is the set of flavors present (1 = `Types`, 2 = `Values`, 3 = both)
 and `payload` is the hash table. State 0 is an invalid group, with the throwing stub as payload. An entry is the key, the mapped type if the state has
-`Types`, then the data of each typed value flavor (below). The state 1 layout is the layout that existed before typed values.
+`Types`, then the data of each typed value flavor (below). The state 1 layout is the layout that existed before typed values, except for the encoding of the keys of external type maps (see "Keys that are strings of the program").
 
 Entry data: for each typed value flavor (in header order) the entry has a varint `(index << 2) | kind`:
 
@@ -103,6 +103,29 @@ of the method). The runtime copies the bytes into the `TValue` with the regular 
 getter through a stub, as ILC does not create a shared constant object for a getter that could allocate. Like for any other `TValue`, the contract of `ITypeMapValue<TValue>` does not say
 how many times the getter runs or whether it runs at all. The stub is named after the mapped type and the value type, as a mapped type can provide several values. A small struct that wraps
 the reference gets its data at compile time and does not need the stub or the getter code, so it is the better choice when the value is a constant.
+
+### Keys that are strings of the program
+
+This applies to the keys of every external type map, whatever the flavors of the group. The key of an entry is a UTF-8
+string (the length, then the bytes). Programs that use the same string as a literal (for example the runtime class names
+that are also stored in typed values) have it twice: as UTF-8 in the type map and as a frozen string object (UTF-16) in
+the image. When emitting the entries, the key of an entry is instead encoded as a reference to the frozen string object
+if the program already has it:
+
+| first value | meaning |
+|---|---|
+| n > 0 | a UTF-8 string of n bytes follows (unchanged) |
+| 0, then 0 | the empty string (always encoded this way) |
+| 0, then i > 0 | the frozen string object at index i - 1 of the external references (the same table that holds the type and data table entries) |
+
+The compiler never adds a frozen string because of a key (the type map does not depend on it): it only checks, at emission
+time when the marked nodes are final, if the node of the string literal exists and is marked (`TypeMapValueSupport.CreateExternalKey`).
+Keys shorter than 8 UTF-8 bytes are never references (a reference takes up to 8 bytes: the 0, the index and the slot of the table).
+The entries are sorted by key, so the indices of the external references do not depend on the randomized hash codes of strings. The hash
+of the entry is computed from the string, as before, so the layout of the hash table does not depend on the encoding. The
+runtime compares the key it looks up with the frozen string object without allocating (`TypeMapLazyDictionary.TryFindEntry`), for
+`GetOrCreateExternalTypeMapping` and for `TryGetValue`. Proxy type maps (the keys are types) are not affected. Apps that don't use the
+typed values are not affected, except for the encoding and the order of the keys of external type maps.
 
 ### Evaluation
 

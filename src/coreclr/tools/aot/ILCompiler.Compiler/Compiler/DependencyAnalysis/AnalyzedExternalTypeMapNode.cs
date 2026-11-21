@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach ((string key, TypeDesc type) in entries)
             {
-                Vertex entry = TypeMapValueSupport.CreateExternalEntry(writer, externalReferences, flavors, key, type);
+                Vertex entry = TypeMapValueSupport.CreateExternalEntry(factory, writer, externalReferences, flavors, key, type);
                 entry = TypeMapValueSupport.AppendEntryData(factory, writer, entry, valueFlavors, ranks, type);
                 typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(key), section.Place(entry));
             }

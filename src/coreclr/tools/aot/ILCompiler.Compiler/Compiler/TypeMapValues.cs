@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Text;
 
 using ILCompiler.DependencyAnalysis;
 using Internal.IL;
@@ -163,15 +164,49 @@ namespace ILCompiler
         }
 
         /// <summary>
+        /// The smallest UTF-8 length of a key that is encoded as a reference to a frozen string. A reference costs at most 8 bytes
+        /// (with 32 bit relative pointers or 32 bit pointers in the table of external references): the escape (1), the index + 1 (at most 3
+        /// while it is below 2^21) and the slot in the table (4). The UTF-8 form costs at least 1 + length, so a key of at least this length is smaller as a reference.
+        /// </summary>
+        private const int MinFrozenStringKeyUtf8Length = 8;
+
+        /// <summary>
         /// Encodes the key of an external type map entry, followed by the mapped type if the flavors have it. The typed values are appended by <see cref="AppendEntryData"/>.
         /// </summary>
-        public static Vertex CreateExternalEntry(NativeWriter writer, INativeFormatTypeReferenceProvider externalReferences, TypeMapFlavors flavors, string key, TypeDesc target)
+        public static Vertex CreateExternalEntry(NodeFactory factory, NativeWriter writer, INativeFormatTypeReferenceProvider externalReferences, TypeMapFlavors flavors, string key, TypeDesc target)
         {
-            Vertex keyVertex = writer.GetStringConstant(key);
+            Vertex keyVertex = CreateExternalKey(factory, writer, key);
 
             return (flavors & TypeMapFlavors.Types) != 0
                 ? writer.GetTuple(keyVertex, externalReferences.EncodeReferenceToType(writer, target, null))
                 : keyVertex;
+        }
+
+        /// <summary>
+        /// Encodes the key of an entry. This is the UTF-8 string (a non-empty string, the length followed by the bytes). A key that is
+        /// already a string literal in the image is instead a reference to that string object, so its characters are not stored twice:
+        /// a 0 (which a UTF-8 string never starts with), followed by the index + 1 of the string in the table of external references.
+        /// The empty string is always encoded as 0 0. The runtime reader (TypeMapLazyDictionary) has the same encoding.
+        /// </summary>
+        /// <remarks>
+        /// The string objects are never added to the image because of a key: this is only called after marking is complete.
+        /// The hash code of the key does not depend on the encoding.
+        /// </remarks>
+        private static Vertex CreateExternalKey(NodeFactory factory, NativeWriter writer, string key)
+        {
+            if (key.Length == 0)
+            {
+                return writer.GetTuple(writer.GetUnsignedConstant(0), writer.GetUnsignedConstant(0));
+            }
+
+            if (Encoding.UTF8.GetByteCount(key) >= MinFrozenStringKeyUtf8Length
+                && factory.TryGetMarkedSerializedStringObject(key, out FrozenStringNode frozenString))
+            {
+                uint index = factory.GetCommonFixupIndex(frozenString);
+                return writer.GetTuple(writer.GetUnsignedConstant(0), writer.GetUnsignedConstant(index + 1));
+            }
+
+            return writer.GetStringConstant(key);
         }
 
         /// <summary>

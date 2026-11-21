@@ -166,7 +166,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach ((string key, TypeDesc target) in GetMarkedEntries(factory))
             {
-                Vertex entry = TypeMapValueSupport.CreateExternalEntry(writer, externalReferences, Flavors, key, target);
+                Vertex entry = TypeMapValueSupport.CreateExternalEntry(factory, writer, externalReferences, Flavors, key, target);
                 entry = TypeMapValueSupport.AppendEntryData(factory, writer, entry, ValueFlavors, ranks, target);
                 typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(key), section.Place(entry));
             }
@@ -176,7 +176,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public IExternalTypeMapNode ToAnalysisBasedNode(NodeFactory factory)
         {
-            ImmutableDictionary<string, TypeDesc> entries = GetMarkedEntries(factory).ToImmutableDictionary(p => p.Name, p => p.target);
+            // Sorted so that the order of the entries in the image does not depend on the hash codes of the strings (these are randomized).
+            ImmutableSortedDictionary<string, TypeDesc> entries = GetMarkedEntries(factory).ToImmutableSortedDictionary(p => p.Name, p => p.target, StringComparer.Ordinal);
 
             // The values are evaluated once, in the phase that analyzes the program. The result is what ends up in the image.
             List<TypeMapValueFlavor> valueFlavors = [];

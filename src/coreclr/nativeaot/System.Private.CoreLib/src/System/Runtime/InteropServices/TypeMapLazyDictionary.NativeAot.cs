@@ -148,20 +148,54 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        // Finds the entry of a key in the hash table of an external type map. The key of an entry is either a UTF-8 string, or 0 followed by
+        // 0 (the empty string) or by the index + 1 of a frozen string object in the external references (the string of the key is already in the image).
+        // The parser is positioned after the key if the entry is found, see AnalyzedExternalTypeMapNode in ILC.
+        private static bool TryFindEntry(NativeHashtable table, ExternalReferencesTable externalReferences, string key, out NativeParser entryParser)
+        {
+            var lookup = table.Lookup(TypeHashingAlgorithms.ComputeNameHashCode(key));
+            while (!(entryParser = lookup.GetNext()).IsNull)
+            {
+                // A UTF-8 string starts with its length, which is not 0 (the first byte of an integer is only 0 for the value 0).
+                NativeParser keyParser = entryParser;
+                if (keyParser.GetUInt8() != 0)
+                {
+                    if (entryParser.StringEquals(key))
+                    {
+                        entryParser.SkipString();
+                        return true;
+                    }
+
+                    continue;
+                }
+
+                uint reference = keyParser.GetUnsigned();
+                if (reference == 0
+                    ? key.Length == 0
+                    : string.Equals(GetFrozenString(externalReferences, reference - 1), key))
+                {
+                    entryParser = keyParser;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string GetFrozenString(ExternalReferencesTable externalReferences, uint index)
+        {
+            IntPtr address = externalReferences.GetIntPtrFromIndex(index);
+            return Unsafe.As<IntPtr, string>(ref address);
+        }
+
         public static bool TryGetValue<TValue>(RuntimeType typeMapGroup, string key, [MaybeNullWhen(false)] out TValue value)
         {
             GroupTable group = FindCachedGroupWithFlavor(s_externalGroups, ReadyToRunSectionType.ExternalTypeMaps, typeMapGroup, ValuesFlavor);
             int flavor = FindValueFlavor<TValue>(group, typeMapGroup);
 
-            var lookup = group.Table.Lookup(TypeHashingAlgorithms.ComputeNameHashCode(key));
-            NativeParser entryParser;
-            while (!(entryParser = lookup.GetNext()).IsNull)
+            if (TryFindEntry(group.Table, group.ExternalReferences, key, out NativeParser entryParser))
             {
-                if (entryParser.StringEquals(key))
-                {
-                    entryParser.SkipString();
-                    return TryReadValue(group, flavor, ref entryParser, out value);
-                }
+                return TryReadValue(group, flavor, ref entryParser, out value);
             }
 
             value = default;
@@ -295,17 +329,11 @@ namespace System.Runtime.InteropServices
 
             public override  bool TryGetValue(string key, [MaybeNullWhen(false)] out Type value)
             {
-                var lookup = table.Lookup(TypeHashingAlgorithms.ComputeNameHashCode(key));
-                NativeParser entryParser;
-                while (!(entryParser = lookup.GetNext()).IsNull)
+                if (TryFindEntry(table, externalReferences, key, out NativeParser entryParser))
                 {
-                    if (entryParser.StringEquals(key))
-                    {
-                        entryParser.SkipString();
-                        RuntimeTypeHandle typeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                        value = Type.GetTypeFromHandle(typeHandle)!;
-                        return true;
-                    }
+                    RuntimeTypeHandle typeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                    value = Type.GetTypeFromHandle(typeHandle)!;
+                    return true;
                 }
                 value = null;
                 return false;
