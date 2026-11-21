@@ -7,8 +7,6 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 internal sealed class RuntimeFunctionLookup
 {
-    private const uint WasmFuncletFlag = 0x80000000;
-
     public static RuntimeFunctionLookup Create(Target target, bool isWasm = false)
         => new RuntimeFunctionLookup(target, isWasm);
 
@@ -23,16 +21,28 @@ internal sealed class RuntimeFunctionLookup
         _runtimeFunctionSize = Data.RuntimeFunction.GetSize(target);
     }
 
-    public uint GetBeginAddress(Data.RuntimeFunction function)
-        => _isWasm ? function.BeginAddress & ~WasmFuncletFlag : function.BeginAddress;
+    public uint GetBeginAddress(TargetPointer function)
+        => _isWasm
+            ? _target.ProcessedData.GetOrAdd<Data.WasmRuntimeFunction>(function).BeginAddress
+            : _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(function).BeginAddress;
 
-    public bool IsFunclet(Data.RuntimeFunction function)
-        => _isWasm && (function.BeginAddress & WasmFuncletFlag) != 0;
+    public uint GetUnwindData(TargetPointer function)
+        => _isWasm
+            ? _target.ProcessedData.GetOrAdd<Data.WasmRuntimeFunction>(function).UnwindData
+            : _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(function).UnwindData;
 
-    public uint GetFunctionLength(TargetPointer imageBase, Data.RuntimeFunction function)
+    public bool IsSkip(TargetPointer function)
+        => _isWasm && _target.ProcessedData.GetOrAdd<Data.WasmRuntimeFunction>(function).IsSkip;
+
+    public bool IsFunclet(TargetPointer function)
+        => _isWasm && _target.ProcessedData.GetOrAdd<Data.WasmRuntimeFunction>(function).IsFunclet;
+
+    public uint GetFunctionLength(TargetPointer imageBase, TargetPointer functionAddress)
     {
+        Debug.Assert(!_isWasm);
+        Data.RuntimeFunction function = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(functionAddress);
         if (function.EndAddress.HasValue)
-            return function.EndAddress.Value - GetBeginAddress(function);
+            return function.EndAddress.Value - function.BeginAddress;
 
         Data.UnwindInfo unwindInfo = _target.ProcessedData.GetOrAdd<Data.UnwindInfo>(imageBase + function.UnwindData);
         if (unwindInfo.FunctionLength.HasValue)
@@ -52,19 +62,19 @@ internal sealed class RuntimeFunctionLookup
         if (numRuntimeFunctions == 0)
             return false;
 
-        // NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod
-        uint start = 0;
-        uint end = numRuntimeFunctions - 1;
         relativeAddress = CodePointerUtils.CodePointerFromAddress(relativeAddress, _target).AsTargetPointer;
 
-        // Entries are sorted.
-        return BinaryThenLinearSearch.Search(start, end, Compare, Match, out index);
+        if (_isWasm)
+            return TryGetWasmRuntimeFunctionIndexForAddress(runtimeFunctions, numRuntimeFunctions, relativeAddress, out index);
+
+        // NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod. Entries are sorted.
+        return BinaryThenLinearSearch.Search(0, numRuntimeFunctions - 1, Compare, Match, out index);
 
         bool Compare(uint index)
         {
             Data.RuntimeFunction func = GetRuntimeFunction(runtimeFunctions, index);
-            return relativeAddress < GetBeginAddress(func);
-        };
+            return relativeAddress < func.BeginAddress;
+        }
 
         bool Match(uint index)
         {
@@ -72,13 +82,43 @@ internal sealed class RuntimeFunctionLookup
             if (index < numRuntimeFunctions - 1)
             {
                 Data.RuntimeFunction nextFunc = GetRuntimeFunction(runtimeFunctions, index + 1);
-                if (relativeAddress >= GetBeginAddress(nextFunc))
+                if (relativeAddress >= nextFunc.BeginAddress)
                     return false;
             }
 
             Data.RuntimeFunction func = GetRuntimeFunction(runtimeFunctions, index);
-            return relativeAddress >= GetBeginAddress(func);
+            return relativeAddress >= func.BeginAddress;
         }
+    }
+
+    private bool TryGetWasmRuntimeFunctionIndexForAddress(TargetPointer runtimeFunctions, uint numRuntimeFunctions, TargetPointer relativeAddress, out uint index)
+    {
+        // NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod
+        uint low = 0;
+        uint high = numRuntimeFunctions;
+        while (low < high)
+        {
+            uint middle = low + (high - low) / 2;
+            uint candidate = middle;
+            while (candidate > 0 && IsSkip(GetRuntimeFunctionAddress(runtimeFunctions, candidate)))
+                candidate--;
+
+            TargetPointer function = GetRuntimeFunctionAddress(runtimeFunctions, candidate);
+            if (!IsSkip(function) && relativeAddress >= GetBeginAddress(function))
+                low = middle + 1;
+            else
+                high = middle;
+        }
+
+        index = 0;
+        if (low == 0)
+            return false;
+
+        index = low - 1;
+        while (index > 0 && IsSkip(GetRuntimeFunctionAddress(runtimeFunctions, index)))
+            index--;
+
+        return !IsSkip(GetRuntimeFunctionAddress(runtimeFunctions, index));
     }
 
     public TargetPointer GetRuntimeFunctionAddress(TargetPointer runtimeFunctions, uint index)
@@ -86,9 +126,9 @@ internal sealed class RuntimeFunctionLookup
         return runtimeFunctions + (index * _runtimeFunctionSize);
     }
 
-    public Data.RuntimeFunction GetRuntimeFunction(TargetPointer runtimeFunctions, uint index)
+    private Data.RuntimeFunction GetRuntimeFunction(TargetPointer runtimeFunctions, uint index)
     {
-        TargetPointer addr = GetRuntimeFunctionAddress(runtimeFunctions, index);
-        return _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(addr);
+        TargetPointer address = GetRuntimeFunctionAddress(runtimeFunctions, index);
+        return _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(address);
     }
 }

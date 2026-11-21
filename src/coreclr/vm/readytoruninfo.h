@@ -198,6 +198,7 @@ class ReadyToRunInfo
     DWORD                           m_nRuntimeFunctions;
 
 #ifdef TARGET_WASM
+    TADDR                           m_gcInfoBase;
     DWORD                           m_minFunctionTableIndex;
     TADDR                           m_minVirtualIP = 0;
 #endif // TARGET_WASM
@@ -279,6 +280,12 @@ public:
     DWORD GetRuntimeFunctionCount() const { return m_nRuntimeFunctions; }
 
 #ifdef TARGET_WASM
+    TADDR GetGCInfoBase() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(m_gcInfoBase != 0);
+        return m_gcInfoBase;
+    }
     DWORD GetMinFunctionTableIndex() const { return m_minFunctionTableIndex; }
     TADDR GetMinVirtualIP() const
     {
@@ -536,6 +543,7 @@ struct cdac_data<ReadyToRunInfo>
     static constexpr size_t Composite = offsetof(ReadyToRunInfo, m_pComposite);
 #ifdef TARGET_WASM
     static constexpr size_t MinVirtualIP = offsetof(ReadyToRunInfo, m_minVirtualIP);
+    static constexpr size_t GCInfoBase = offsetof(ReadyToRunInfo, m_gcInfoBase);
 #endif // TARGET_WASM
 };
 

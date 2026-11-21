@@ -377,14 +377,12 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (runtimeFunctionPtr == TargetPointer.Null)
             throw new InvalidOperationException("Unable to get runtime function address");
 
-        Data.RuntimeFunction runtimeFunction = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(runtimeFunctionPtr);
-
         // TODO(cdac): EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS, implement iterating over fragments until finding
         // non-fragment RuntimeFunction
 
         uint beginAddress = range.IsVirtualIP
-            ? runtimeFunction.BeginAddress & 0x7fff_ffff
-            : runtimeFunction.BeginAddress;
+            ? _target.ProcessedData.GetOrAdd<Data.WasmRuntimeFunction>(runtimeFunctionPtr).BeginAddress
+            : _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(runtimeFunctionPtr).BeginAddress;
         return CodePointerUtils.AddressFromCodePointer(
             new TargetCodePointer(range.Data.RangeBegin + beginAddress), _target);
     }
@@ -567,12 +565,16 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (range.Data == null)
             throw new InvalidOperationException($"{nameof(RangeSection)} not found for {codeInfoHandle.Address}");
 
-        if (!range.IsVirtualIP)
-            return range.Data.RangeBegin;
+        // Virtual IP ranges are only used for WebAssembly ReadyToRun code. Their unwind data offsets
+        // are relative to the ReadyToRun GC-info base rather than to the start of the range.
+        if (range.IsVirtualIP)
+        {
+            Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(range.Data.R2RModule);
+            Data.ReadyToRunInfo r2rInfo = _target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(module.ReadyToRunInfo);
+            return r2rInfo.GetWasmGCInfoBase();
+        }
 
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(range.Data.R2RModule);
-        Data.ReadyToRunInfo r2rInfo = _target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(module.ReadyToRunInfo);
-        return r2rInfo.LoadedImageBase;
+        return range.Data.RangeBegin;
     }
 
     TargetPointer IExecutionManager.GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte)

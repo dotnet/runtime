@@ -14,6 +14,7 @@ using System.Text;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
 using Internal.Runtime;
+using R2RDump;
 using Xunit;
 using WebCilObjectWriter = crossgen2::ILCompiler.ObjectWriter.WebCilObjectWriter;
 using WebcilConstants = crossgen2::Microsoft.NET.WebAssembly.Webcil.WebcilConstants;
@@ -22,6 +23,242 @@ namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
 internal static class WasmR2RAssert
 {
+    public static void AssertRuntimeFunctionDump(ReadyToRunReader reader)
+    {
+        ReadyToRunSection section = reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
+        string dump = DumpSection(reader, section);
+        bool sawSkip = false;
+        bool sawFunclet = false;
+        for (int ordinal = 0; ordinal < section.Size / sizeof(int); ordinal++)
+        {
+            if (reader.TryReadWasmRuntimeFunction(ordinal, out int beginAddress, out int unwindRva, out bool isFunclet))
+            {
+                string funclet = isFunclet ? "  yes  " : "  no   ";
+                Assert.Contains($"{ordinal,7} | {beginAddress,10} | {funclet} | {unwindRva:X8}", dump);
+                sawFunclet |= isFunclet;
+            }
+            else
+            {
+                Assert.Contains($"{ordinal,7} | (skip)", dump);
+                sawSkip = true;
+            }
+        }
+
+        Assert.True(sawSkip);
+        Assert.True(sawFunclet);
+        Assert.Contains("Sentinel: 0xFFFFFFFF", dump);
+        Assert.Contains($"MinFunctionTableIndex: {reader.WasmMinFunctionTableIndex}", dump);
+
+        ReadyToRunSection invalidSection = section;
+        invalidSection.Size = -128;
+        Assert.Throws<BadImageFormatException>(() => DumpSection(reader, invalidSection));
+        invalidSection.Size = sizeof(uint);
+        Assert.Throws<BadImageFormatException>(() => DumpSection(reader, invalidSection));
+    }
+
+    public static void AssertEmptyRuntimeFunctionDump(ReadyToRunReader reader)
+    {
+        ReadyToRunSection section = reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
+        Assert.Equal(0, section.Size);
+        string dump = DumpSection(reader, section);
+        Assert.Contains("Sentinel: 0xFFFFFFFF", dump);
+        Assert.Contains("MinFunctionTableIndex: 0", dump);
+        Assert.DoesNotContain("(skip)", dump);
+    }
+
+    public static void AssertGCInfoDump(ReadyToRunReader reader)
+    {
+        ReadyToRunSection section = reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.WasmGCInfo];
+        ReadyToRunMethod method = Assert.Single(R2RAssert.GetAllMethods(reader),
+            method => method.SignatureString.Contains(".GcLocalAcrossFinally(", StringComparison.Ordinal));
+        RuntimeFunction root = method.RuntimeFunctions[0];
+        RuntimeFunction funclet = Assert.Single(method.RuntimeFunctions, function => function.WasmIsFunclet);
+        Assert.False(root.WasmIsFunclet);
+        ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo =
+            Assert.IsType<ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo>(method.GcInfo);
+        Assert.Equal(2u, gcInfo.StackBaseRegister);
+
+        string dump = DumpSection(reader, section);
+        string rootDump = FindUnwindDump(root);
+        string funcletDump = FindUnwindDump(funclet);
+        string? rootUnwind = root.UnwindInfo.ToString();
+        string? rootGCInfo = gcInfo.ToString();
+        string? funcletUnwind = funclet.UnwindInfo.ToString();
+        Assert.NotNull(rootUnwind);
+        Assert.NotNull(rootGCInfo);
+        Assert.NotNull(funcletUnwind);
+        Assert.Contains(rootUnwind, rootDump);
+        Assert.Contains(rootGCInfo, rootDump);
+        Assert.Contains("StackBaseRegister: 2", rootDump);
+        Assert.Contains(funcletUnwind, funcletDump);
+        Assert.DoesNotContain("GC info:", funcletDump);
+
+        ReadyToRunSection functions = reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
+        int groupOffset = reader.CompositeReader.GetOffset(functions.RelativeVirtualAddress) + root.Id / 32 * 128;
+        byte[] original = reader.Image.AsSpan(groupOffset, 128).ToArray();
+        try
+        {
+            uint invalidOffset = checked((uint)section.Size);
+            Assert.True(invalidOffset < 0xF0000);
+            int index = root.Id % 32;
+            int shift = index % 2 * 4;
+            Span<byte> group = reader.Image.AsSpan(groupOffset, 128);
+            group[8 + index / 2] = (byte)(((uint)group[8 + index / 2] & ~(0xFu << shift)) | ((invalidOffset >> 16) << shift));
+            group[64 + index] = (byte)(invalidOffset >> 8);
+            group[96 + index] = (byte)invalidOffset;
+            Assert.Throws<BadImageFormatException>(() => DumpSection(reader, section));
+        }
+        finally
+        {
+            original.CopyTo(reader.Image.AsSpan(groupOffset, 128));
+        }
+
+        string FindUnwindDump(RuntimeFunction function)
+        {
+            string marker = $"  Unwind RVA: 0x{function.UnwindRVA:X8}";
+            int start = dump.IndexOf(marker, StringComparison.Ordinal);
+            Assert.True(start >= 0, $"Missing {marker}");
+            Assert.Equal(1, dump.Split(marker, StringSplitOptions.None).Length - 1);
+            int end = dump.IndexOf("Runtime function ", start, StringComparison.Ordinal);
+            return end < 0 ? dump[start..] : dump[start..end];
+        }
+    }
+
+    private static string DumpSection(ReadyToRunReader reader, ReadyToRunSection section)
+    {
+        using StringWriter writer = new(CultureInfo.InvariantCulture);
+        TextDumper dumper = new(reader, writer, disassembler: null, new DumpModel { SectionContents = true });
+        dumper.DumpSection(section);
+        return writer.ToString();
+    }
+
+    public static void AssertRuntimeFunctionGroups(ReadyToRunReader reader)
+    {
+        ReadyToRunSection section = reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
+        ReadyToRunSection gcInfo = reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.WasmGCInfo];
+        Assert.Equal(0, section.RelativeVirtualAddress & 127);
+        Assert.Equal(0, section.Size & 127);
+        ReadOnlySpan<byte> image = reader.Image;
+        int tableOffset = reader.CompositeReader.GetOffset(section.RelativeVirtualAddress);
+        Dictionary<int, (int Begin, int Unwind, bool IsFunclet)> entries = new();
+        uint? previousBegin = null;
+
+        for (int offset = 0; offset < section.Size; offset += 128)
+        {
+            ReadOnlySpan<byte> group = image.Slice(tableOffset + offset, 128);
+            Assert.True(group.Slice(24, 8).SequenceEqual(new byte[8]));
+            uint baseIP = BinaryPrimitives.ReadUInt32LittleEndian(group);
+            uint funcletBits = BinaryPrimitives.ReadUInt32LittleEndian(group.Slice(4));
+            bool seenSkip = false;
+            bool previousIsFunclet = false;
+            for (int index = 0; index < 32; index++)
+            {
+                bool isFunclet = (funcletBits & (1u << index)) != 0;
+                if (group[32 + index] == byte.MaxValue)
+                {
+                    Assert.NotEqual(0, index);
+                    Assert.Equal(previousIsFunclet, isFunclet);
+                    seenSkip = true;
+                    continue;
+                }
+
+                Assert.False(seenSkip);
+                uint begin = checked(baseIP + group[32 + index] + (uint)index * 4);
+                if (previousBegin.HasValue)
+                {
+                    Assert.True(begin >= previousBegin.Value + 4);
+                }
+                previousBegin = begin;
+                previousIsFunclet = isFunclet;
+                uint high = (uint)(group[8 + index / 2] >> ((index & 1) * 4)) & 0xF;
+                uint unwind = ((uint)group[64 + index] << 8) | group[96 + index];
+                if (high == 0xF)
+                {
+                    Assert.NotEqual(31, index);
+                    Assert.Equal(byte.MaxValue, group[32 + 31]);
+                    unwind |= ((uint)group[64 + 31] << 24) | ((uint)group[96 + 31] << 16);
+                    Assert.True(unwind >= 0xF0000);
+                }
+                else
+                {
+                    unwind |= high << 16;
+                }
+                Assert.InRange(unwind, 0u, checked((uint)gcInfo.Size - 1));
+                entries.Add(offset / 4 + index,
+                    (checked((int)begin), checked(gcInfo.RelativeVirtualAddress + (int)unwind), isFunclet));
+            }
+        }
+
+        foreach (ReadyToRunMethod method in R2RAssert.GetAllMethods(reader))
+        {
+            foreach (RuntimeFunction function in method.RuntimeFunctions)
+            {
+                Assert.True(entries.TryGetValue(function.Id, out var expected));
+                Assert.Equal(expected.Begin, function.StartAddress);
+                Assert.Equal(expected.Unwind, function.UnwindRVA);
+                Assert.Equal(expected.IsFunclet, function.WasmIsFunclet);
+            }
+        }
+
+        AssertRuntimeFunctionEncodingBoundaries(reader, tableOffset);
+    }
+
+    private static void AssertRuntimeFunctionEncodingBoundaries(ReadyToRunReader reader, int tableOffset)
+    {
+        byte[] original = reader.Image.AsSpan(tableOffset, 128).ToArray();
+        try
+        {
+            foreach (int index in new[] { 0, 1, 15, 16, 30, 31 })
+            {
+                foreach (uint unwind in new uint[] { 0, 0xEFFFF, 0xF0000, 0xFFFFF, 0x100000, 0x12345678 })
+                {
+                    Span<byte> group = reader.Image.AsSpan(tableOffset, 128);
+                    group.Clear();
+                    BinaryPrimitives.WriteUInt32LittleEndian(group, 0x100);
+                    BinaryPrimitives.WriteUInt32LittleEndian(group.Slice(4), 1u << index);
+                    bool escaped = unwind >= 0xF0000;
+                    uint high = escaped ? 0xF : unwind >> 16;
+                    group[8 + index / 2] = (byte)(high << ((index & 1) * 4));
+                    group[64 + index] = (byte)(unwind >> 8);
+                    group[96 + index] = (byte)unwind;
+                    if (escaped && index != 31)
+                    {
+                        group[32 + 31] = byte.MaxValue;
+                        group[64 + 31] = (byte)(unwind >> 24);
+                        group[96 + 31] = (byte)(unwind >> 16);
+                    }
+
+                    if (escaped && index == 31)
+                    {
+                        Assert.Throws<BadImageFormatException>(() =>
+                            reader.TryReadWasmRuntimeFunction(index, out _, out _, out _));
+                        continue;
+                    }
+
+                    Assert.True(reader.TryReadWasmRuntimeFunction(index, out int begin, out int unwindRva, out bool isFunclet));
+                    Assert.Equal(0x100 + index * 4, begin);
+                    Assert.Equal(reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.WasmGCInfo].RelativeVirtualAddress + (int)unwind, unwindRva);
+                    Assert.True(isFunclet);
+                    if ((index == 0 && unwind == 0x12345678) || (index == 31 && unwind == 0xEFFFF))
+                    {
+                        string dump = DumpSection(reader, reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions]);
+                        Assert.Contains($"{index,7} | {begin,10} |   yes   | {unwindRva:X8}", dump);
+                    }
+                    group[32 + index] = byte.MaxValue;
+                    Assert.False(reader.TryReadWasmRuntimeFunction(index, out _, out _, out _));
+                }
+            }
+
+            Assert.Throws<BadImageFormatException>(() => reader.TryReadWasmRuntimeFunction(-1, out _, out _, out _));
+            int entryCount = reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions].Size / 4;
+            Assert.Throws<BadImageFormatException>(() => reader.TryReadWasmRuntimeFunction(entryCount, out _, out _, out _));
+        }
+        finally
+        {
+            original.CopyTo(reader.Image.AsSpan(tableOffset, 128));
+        }
+    }
+
     public static void AssertFrameIdentityPrologs(WebcilImageReader reader)
     {
         ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();

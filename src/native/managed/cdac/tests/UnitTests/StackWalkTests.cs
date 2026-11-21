@@ -2340,7 +2340,7 @@ public unsafe class StackWalkTests
             frameBuilder => icf = frameBuilder.AddInlinedCallFrame(callerReturnAddress: 1, datum: 0, callSiteSP: 0, calleeSavedFP: 0xBAD0),
             configureTarget: targetBuilder =>
             {
-                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0010_0000, 0x0010_4000);
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_4000);
                 AddWasmR2RFunction(targetBuilder, allocator, FunctionTableIndex, MinVirtualIP, FunctionBeginAddress);
                 uint frameIdentity = AddWasmPortableEntryPoint(targetBuilder, allocator, FunctionTableIndex);
 
@@ -2385,7 +2385,7 @@ public unsafe class StackWalkTests
             runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
             configureTarget: targetBuilder =>
             {
-                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0010_0000, 0x0010_4000);
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_4000);
                 AddWasmR2RFunction(targetBuilder, allocator, functionTableIndex: 5, minVirtualIP: 0x0005_0000, functionBeginAddress: 0x100);
                 AddWasmNullDebugger(targetBuilder, allocator);
             });
@@ -2669,7 +2669,7 @@ public unsafe class StackWalkTests
         IExecutionManager executionManager = CreateInterpreterExecutionManager(
             [InterpIp1, InterpIp2],
             managedIps: [R2RCallerIp, OuterR2RCallerIp],
-            unwindInfo: () => (runtimeFunctionAddress, TargetPointer.Null));
+            unwindInfo: () => (runtimeFunctionAddress, new TargetPointer(WasmGCInfoBase)));
         TestPlaceholderTarget target = CreateTarget(
             wasmArch,
             threadBuilder => thread = threadBuilder.AddThread(1, 1234),
@@ -2810,7 +2810,7 @@ public unsafe class StackWalkTests
                 unwindInfo: () =>
                 {
                     unwindInfoLookups++;
-                    return (runtimeFunctionAddress, TargetPointer.Null);
+                    return (runtimeFunctionAddress, new TargetPointer(WasmGCInfoBase));
                 }));
 
         IStackWalk stackWalk = target.Contracts.StackWalk;
@@ -2937,6 +2937,8 @@ public unsafe class StackWalkTests
         targetBuilder.AddContract<IDebugger>(version: "c1");
     }
 
+    private const ulong WasmGCInfoBase = 0x001f_0000;
+
     private static TargetPointer AddWasmR2RFunction(
         TestPlaceholderTarget.Builder targetBuilder,
         MockMemorySpace.BumpAllocator allocator,
@@ -2947,7 +2949,7 @@ public unsafe class StackWalkTests
         => AddWasmR2RFunctions(targetBuilder, allocator, functionTableIndex, minVirtualIP, [(functionBeginAddress, frameSize)]);
 
     // Registers one R2R module whose RUNTIME_FUNCTIONs occupy consecutive function-table indices
-    // starting at minFunctionTableIndex. BeginAddress bit 31 marks a funclet.
+    // starting at minFunctionTableIndex. BeginAddress bit 31 marks a funclet in the fixture input.
     private static TargetPointer AddWasmR2RFunctions(
         TestPlaceholderTarget.Builder targetBuilder,
         MockMemorySpace.BumpAllocator allocator,
@@ -2961,10 +2963,6 @@ public unsafe class StackWalkTests
         int hashMapStride = MockHashMap.CreateLayout(arch).Size;
         var moduleLayout = MockLoaderModule.CreateLayout(arch);
         var r2rInfoLayout = MockReadyToRunInfo.CreateLayout(arch, hashMapStride, isWasm: true);
-        TargetTestHelpers.LayoutResult runtimeFunctionLayout = helpers.LayoutFields([
-            new(nameof(Data.RuntimeFunction.BeginAddress), DataType.uint32),
-            new(nameof(Data.RuntimeFunction.UnwindData), DataType.uint32),
-        ]);
         TargetTestHelpers.LayoutResult rangeSectionLayout = helpers.LayoutFields([
             new(nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex), DataType.uint32),
             new(nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions), DataType.uint32),
@@ -2972,30 +2970,34 @@ public unsafe class StackWalkTests
             new(nameof(Data.FunctionTableIndexRangeSection.Next), DataType.pointer),
         ]);
 
-        MockMemorySpace.HeapFragment runtimeFunctions = allocator.Allocate(runtimeFunctionLayout.Stride * (ulong)functions.Length, "RuntimeFunctions");
+        MockWasmRuntimeFunctions.Entry[] entries = new MockWasmRuntimeFunctions.Entry[functions.Length];
         for (int i = 0; i < functions.Length; i++)
         {
-            Span<byte> entry = runtimeFunctions.Data.AsSpan(i * (int)runtimeFunctionLayout.Stride, (int)runtimeFunctionLayout.Stride);
-            helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), functions[i].BeginAddress);
             Assert.True(functions[i].FrameSize < 0x80);
             MockMemorySpace.HeapFragment unwindData = allocator.Allocate(2, "UnwindData");
             unwindData.Data[0] = functions[i].FrameSize;
             unwindData.Data[1] = 3;
-            helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.UnwindData)].Offset, sizeof(uint)), (uint)unwindData.Address);
+            entries[i] = new(
+                functions[i].BeginAddress & ~MockWasmRuntimeFunctions.FuncletFlag,
+                checked((uint)(unwindData.Address - WasmGCInfoBase)),
+                IsFunclet: (functions[i].BeginAddress & MockWasmRuntimeFunctions.FuncletFlag) != 0);
         }
+        (ulong runtimeFunctions, uint runtimeFunctionCount) =
+            MockWasmRuntimeFunctions.Add(targetBuilder.MemoryBuilder, allocator, entries);
 
         MockReadyToRunInfo r2rInfo = r2rInfoLayout.Create(allocator.Allocate((ulong)r2rInfoLayout.Size, "ReadyToRunInfo"));
         r2rInfo.CompositeInfo = r2rInfo.Address;
-        r2rInfo.NumRuntimeFunctions = (uint)functions.Length;
-        r2rInfo.RuntimeFunctions = runtimeFunctions.Address;
+        r2rInfo.NumRuntimeFunctions = runtimeFunctionCount;
+        r2rInfo.RuntimeFunctions = runtimeFunctions;
         r2rInfo.MinVirtualIP = minVirtualIP;
+        r2rInfo.GCInfoBase = WasmGCInfoBase;
 
         MockLoaderModule module = moduleLayout.Create(allocator.Allocate((ulong)moduleLayout.Size, "Module"));
         module.ReadyToRunInfo = r2rInfo.Address;
 
         MockMemorySpace.HeapFragment section = allocator.Allocate(rangeSectionLayout.Stride, "FunctionTableIndexRangeSection");
         helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex)].Offset, sizeof(uint)), minFunctionTableIndex);
-        helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions)].Offset, sizeof(uint)), (uint)functions.Length);
+        helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions)].Offset, sizeof(uint)), runtimeFunctionCount);
         helpers.WritePointer(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.R2RModule)].Offset, helpers.PointerSize), module.Address);
 
         MockMemorySpace.HeapFragment listSlot = allocator.Allocate((ulong)helpers.PointerSize, "FunctionTableIndexRangeListSlot");
@@ -3004,14 +3006,15 @@ public unsafe class StackWalkTests
         targetBuilder
             .AddTypes(new Dictionary<DataType, Target.TypeInfo>
             {
-                [DataType.RuntimeFunction] = new() { Fields = runtimeFunctionLayout.Fields, Size = runtimeFunctionLayout.Stride },
+                [DataType.RuntimeFunction] = TargetTestHelpers.CreateTypeInfo(MockWasmRuntimeFunctions.CreateRuntimeFunctionLayout(arch)),
+                [DataType.WasmRuntimeFunctionGroup] = TargetTestHelpers.CreateTypeInfo(MockWasmRuntimeFunctions.CreateGroupLayout(arch)),
                 [DataType.ReadyToRunInfo] = TargetTestHelpers.CreateTypeInfo(r2rInfoLayout),
                 [DataType.Module] = TargetTestHelpers.CreateTypeInfo(moduleLayout),
                 [DataType.FunctionTableIndexRangeSection] = new() { Fields = rangeSectionLayout.Fields, Size = rangeSectionLayout.Stride },
             })
             .AddGlobals((Constants.Globals.FunctionTableIndexRangeList, listSlot.Address));
 
-        return runtimeFunctions.Address;
+        return runtimeFunctions;
     }
 
     /// <summary>

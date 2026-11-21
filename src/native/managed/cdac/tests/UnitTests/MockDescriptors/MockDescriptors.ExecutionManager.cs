@@ -440,6 +440,7 @@ internal sealed class MockReadyToRunInfo : TypedView
     private const string ImportSectionsFieldName = "ImportSections";
     private const string NumImportSectionsFieldName = "NumImportSections";
     private const string MinVirtualIPFieldName = "MinVirtualIP";
+    private const string GCInfoBaseFieldName = "GCInfoBase";
 
     public static Layout<MockReadyToRunInfo> CreateLayout(MockTarget.Architecture architecture, int hashMapStride, bool isWasm = false)
     {
@@ -464,7 +465,8 @@ internal sealed class MockReadyToRunInfo : TypedView
             .AddPointerField(CompositeFieldName);
         if (isWasm)
         {
-            builder.AddPointerField(MinVirtualIPFieldName);
+            builder.AddPointerField(MinVirtualIPFieldName)
+                .AddPointerField(GCInfoBaseFieldName);
         }
         return builder.Build<MockReadyToRunInfo>();
     }
@@ -543,6 +545,12 @@ internal sealed class MockReadyToRunInfo : TypedView
     {
         get => ReadPointerField(MinVirtualIPFieldName);
         set => WritePointerField(MinVirtualIPFieldName, value);
+    }
+
+    public ulong GCInfoBase
+    {
+        get => ReadPointerField(GCInfoBaseFieldName);
+        set => WritePointerField(GCInfoBaseFieldName, value);
     }
 }
 
@@ -742,7 +750,8 @@ internal sealed class MockExecutionManagerBuilder
     internal Layout<MockLoaderModule> ModuleLayout { get; }
     internal Layout<MockCodeRangeMapRangeList> CodeRangeMapRangeListLayout { get; }
     internal Layout<MockImageDataDirectory> ImageDataDirectoryLayout { get; }
-    internal Layout<MockRuntimeFunction> RuntimeFunctionLayout => _runtimeFunctions.RuntimeFunctionLayout;
+    internal Layout<MockRuntimeFunction> RuntimeFunctionLayout { get; }
+    internal Layout? WasmRuntimeFunctionGroupLayout { get; }
     internal Layout<MockUnwindInfo> UnwindInfoLayout => _runtimeFunctions.UnwindInfoLayout;
     internal (string Name, ulong Value)[] Globals { get; private set; }
     internal ulong EEJitManagerAddress { get; }
@@ -750,6 +759,7 @@ internal sealed class MockExecutionManagerBuilder
     internal ulong RangeSectionMapTopLevelAddress => _rangeSectionMapTopLevelAddress;
 
     private readonly MockRuntimeFunctionsBuilder _runtimeFunctions;
+    private readonly MockMemorySpace.BumpAllocator? _wasmRuntimeFunctionsAllocator;
     private readonly MockMemorySpace.BumpAllocator _rangeSectionMapAllocator;
     private readonly MockMemorySpace.BumpAllocator _nibbleMapAllocator;
     private readonly MockMemorySpace.BumpAllocator _allocator;
@@ -773,6 +783,14 @@ internal sealed class MockExecutionManagerBuilder
         Version = version;
         Builder = builder;
         _runtimeFunctions = new MockRuntimeFunctionsBuilder(builder, includeEndAddress: !isWasm);
+        RuntimeFunctionLayout = isWasm
+            ? MockWasmRuntimeFunctions.CreateRuntimeFunctionLayout(builder.TargetTestHelpers.Arch)
+            : _runtimeFunctions.RuntimeFunctionLayout;
+        if (isWasm)
+        {
+            WasmRuntimeFunctionGroupLayout = MockWasmRuntimeFunctions.CreateGroupLayout(builder.TargetTestHelpers.Arch);
+            _wasmRuntimeFunctionsAllocator = builder.CreateAllocator(0x7000_0000, 0x7080_0000, minAlign: MockWasmRuntimeFunctions.GroupSize);
+        }
         _rangeSectionMapAllocator = Builder.CreateAllocator(allocationRange.RangeSectionMapStart, allocationRange.RangeSectionMapEnd);
         _nibbleMapAllocator = Builder.CreateAllocator(allocationRange.NibbleMapStart, allocationRange.NibbleMapEnd);
         _allocator = Builder.CreateAllocator(allocationRange.ExecutionManagerStart, allocationRange.ExecutionManagerEnd);
@@ -1109,7 +1127,27 @@ internal sealed class MockExecutionManagerBuilder
 
     public MockReadyToRunInfo AddReadyToRunInfo(uint[] runtimeFunctions, uint[] hotColdMap)
     {
-        ulong runtimeFunctionsAddress = _runtimeFunctions.AddRuntimeFunctions(runtimeFunctions);
+        ulong runtimeFunctionsAddress;
+        uint runtimeFunctionCount;
+        if (_wasmRuntimeFunctionsAllocator is not null)
+        {
+            MockWasmRuntimeFunctions.Entry[] entries = new MockWasmRuntimeFunctions.Entry[runtimeFunctions.Length];
+            for (int i = 0; i < entries.Length; i++)
+            {
+                uint entry = runtimeFunctions[i];
+                entries[i] = entry == uint.MaxValue
+                    ? new(0, IsSkip: true)
+                    : new(entry & ~MockWasmRuntimeFunctions.FuncletFlag, IsFunclet: (entry & MockWasmRuntimeFunctions.FuncletFlag) != 0);
+            }
+
+            (runtimeFunctionsAddress, runtimeFunctionCount) =
+                MockWasmRuntimeFunctions.Add(Builder, _wasmRuntimeFunctionsAllocator, entries);
+        }
+        else
+        {
+            runtimeFunctionsAddress = _runtimeFunctions.AddRuntimeFunctions(runtimeFunctions);
+            runtimeFunctionCount = checked((uint)runtimeFunctions.Length);
+        }
         ulong hotColdMapAddress = 0;
         if (hotColdMap.Length > 0)
         {
@@ -1124,7 +1162,7 @@ internal sealed class MockExecutionManagerBuilder
 
         MockReadyToRunInfo readyToRunInfo = AllocateAndCreate(ReadyToRunInfoLayout, "ReadyToRunInfo");
         readyToRunInfo.CompositeInfo = readyToRunInfo.Address;
-        readyToRunInfo.NumRuntimeFunctions = checked((uint)runtimeFunctions.Length);
+        readyToRunInfo.NumRuntimeFunctions = runtimeFunctionCount;
         readyToRunInfo.RuntimeFunctions = runtimeFunctionsAddress;
         if (readyToRunInfo.HasHotColdMap)
         {
@@ -1134,6 +1172,10 @@ internal sealed class MockExecutionManagerBuilder
         else if (hotColdMap.Length != 0)
         {
             throw new InvalidOperationException("Hot/cold code is not supported by this target.");
+        }
+        else
+        {
+            readyToRunInfo.GCInfoBase = MockWasmRuntimeFunctions.DefaultGCInfoBase;
         }
         return readyToRunInfo;
     }
@@ -1148,6 +1190,12 @@ internal sealed class MockExecutionManagerBuilder
 
     public void SetRuntimeFunctionUnwindData(MockReadyToRunInfo readyToRunInfo, uint index, uint unwindData)
     {
+        if (_wasmRuntimeFunctionsAllocator is not null)
+        {
+            MockWasmRuntimeFunctions.SetUnwindData(Builder, readyToRunInfo.RuntimeFunctions, index, unwindData);
+            return;
+        }
+
         ulong address = readyToRunInfo.RuntimeFunctions + (index * (uint)RuntimeFunctionLayout.Size);
         Span<byte> runtimeFunction = Builder.BorrowAddressRange(address, RuntimeFunctionLayout.Size);
         LayoutField unwindDataField = RuntimeFunctionLayout.GetField("UnwindData");

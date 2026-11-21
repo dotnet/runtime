@@ -164,3 +164,122 @@ internal sealed class MockRuntimeFunctionsBuilder
         => Array.Exists(UnwindInfoLayout.Fields, static field => field.Name == "FunctionLength");
 
 }
+
+internal static class MockWasmRuntimeFunctions
+{
+    public const int EntrySize = 4;
+    public const int EntriesPerGroup = 32;
+    public const int GroupSize = EntrySize * EntriesPerGroup;
+    public const uint FuncletFlag = 0x8000_0000;
+    public const ulong DefaultGCInfoBase = 0x00a0_0000;
+
+    public readonly record struct Entry(uint BeginAddress, uint UnwindData = 0, bool IsFunclet = false, bool IsSkip = false);
+
+    public static Layout<MockRuntimeFunction> CreateRuntimeFunctionLayout(MockTarget.Architecture arch)
+        => new LayoutBuilder("RuntimeFunction", arch) { Size = EntrySize }.Build<MockRuntimeFunction>();
+
+    public static Layout CreateGroupLayout(MockTarget.Architecture arch)
+        => new LayoutBuilder("WasmRuntimeFunctionGroup", arch) { Size = GroupSize }
+            .AddField("VirtualIPBase", 0, 4)
+            .AddField("IsFuncletBits", 4, 4)
+            .AddField("HighBitsOfUnwindOffset", 8, 16)
+            .AddField("VirtualIPOffsets", 32, 32)
+            .AddField("MidBitsOfUnwindOffset", 64, 32)
+            .AddField("LowBitsOfUnwindOffset", 96, 32)
+            .Build();
+
+    public static (ulong Address, uint Count) Add(
+        MockMemorySpace.Builder builder,
+        MockMemorySpace.BumpAllocator allocator,
+        Entry[] entries)
+    {
+        int groupCount = checked((entries.Length + EntriesPerGroup - 1) / EntriesPerGroup);
+        if (groupCount == 0)
+            return (0, 0);
+
+        int size = checked(groupCount * GroupSize);
+        MockMemorySpace.HeapFragment fragment = allocator.Allocate((ulong)(size + GroupSize - 1), "Wasm runtime-function groups");
+        ulong address = (fragment.Address + GroupSize - 1) & ~(ulong)(GroupSize - 1);
+        Span<byte> data = fragment.Data.AsSpan((int)(address - fragment.Address), size);
+        TargetTestHelpers helpers = builder.TargetTestHelpers;
+
+        for (int groupIndex = 0; groupIndex < groupCount; groupIndex++)
+        {
+            Span<byte> group = data.Slice(groupIndex * GroupSize, GroupSize);
+            group.Slice(32, EntriesPerGroup).Fill(byte.MaxValue);
+            uint baseAddress = uint.MaxValue;
+            for (int index = 0; index < EntriesPerGroup && groupIndex * EntriesPerGroup + index < entries.Length; index++)
+            {
+                Entry entry = entries[groupIndex * EntriesPerGroup + index];
+                if (!entry.IsSkip)
+                    baseAddress = Math.Min(baseAddress, checked(entry.BeginAddress - (uint)(index * EntrySize)));
+            }
+
+            if (baseAddress == uint.MaxValue)
+                continue;
+
+            helpers.Write(group.Slice(0, sizeof(uint)), baseAddress);
+            uint funcletBits = 0;
+            for (int index = 0; index < EntriesPerGroup && groupIndex * EntriesPerGroup + index < entries.Length; index++)
+            {
+                Entry entry = entries[groupIndex * EntriesPerGroup + index];
+                if (entry.IsSkip)
+                    continue;
+
+                uint residual = checked(entry.BeginAddress - baseAddress - (uint)(index * EntrySize));
+                if (residual >= byte.MaxValue)
+                    throw new InvalidOperationException("The Wasm runtime-function group cannot encode these begin addresses.");
+
+                group[32 + index] = (byte)residual;
+                if (entry.IsFunclet)
+                    funcletBits |= 1u << index;
+            }
+
+            helpers.Write(group.Slice(4, sizeof(uint)), funcletBits);
+            for (int index = 0; index < EntriesPerGroup && groupIndex * EntriesPerGroup + index < entries.Length; index++)
+            {
+                Entry entry = entries[groupIndex * EntriesPerGroup + index];
+                if (!entry.IsSkip)
+                    SetUnwindData(group, index, entry.UnwindData);
+            }
+        }
+
+        return (address, checked((uint)(groupCount * EntriesPerGroup)));
+    }
+
+    public static void SetUnwindData(MockMemorySpace.Builder builder, ulong tableAddress, uint index, uint unwindData)
+    {
+        ulong groupAddress = tableAddress + (index / EntriesPerGroup) * GroupSize;
+        Span<byte> group = builder.BorrowAddressRange(groupAddress, GroupSize);
+        SetUnwindData(group, (int)(index % EntriesPerGroup), unwindData);
+    }
+
+    private static void SetUnwindData(Span<byte> group, int index, uint unwindData)
+    {
+        uint high = unwindData >> 16;
+        if (high >= 0xF)
+        {
+            if (index == EntriesPerGroup - 1 || group[32 + EntriesPerGroup - 1] != byte.MaxValue)
+                throw new InvalidOperationException("A Wasm unwind escape requires a skipped final slot.");
+
+            for (int other = 0; other < EntriesPerGroup - 1; other++)
+            {
+                int otherHigh = (group[8 + other / 2] >> ((other & 1) * 4)) & 0xF;
+                if (other != index && otherHigh == 0xF &&
+                    ((group[64 + EntriesPerGroup - 1] << 8) | group[96 + EntriesPerGroup - 1]) != high)
+                {
+                    throw new InvalidOperationException("Wasm unwind escapes in a group must share their upper bits.");
+                }
+            }
+
+            group[64 + EntriesPerGroup - 1] = (byte)(high >> 8);
+            group[96 + EntriesPerGroup - 1] = (byte)high;
+            high = 0xF;
+        }
+
+        int shift = (index & 1) * 4;
+        group[8 + index / 2] = (byte)(((uint)group[8 + index / 2] & ~(0xFu << shift)) | (high << shift));
+        group[64 + index] = (byte)(unwindData >> 8);
+        group[96 + index] = (byte)unwindData;
+    }
+}

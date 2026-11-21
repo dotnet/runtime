@@ -506,51 +506,33 @@ namespace R2RDump
                     }
                     break;
                 case ReadyToRunSectionType.RuntimeFunctions:
+                    if (_r2r.Machine == WasmMachine.Wasm32)
+                    {
+                        DumpWasmRuntimeFunctions(section);
+                        break;
+                    }
+
                     int rtfOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
                     int rtfEndOffset = rtfOffset + section.Size;
                     int rtfIndex = 0;
-                    bool isWasmRtf = _r2r.Machine == WasmMachine.Wasm32;
-                    if (isWasmRtf)
-                    {
-                        _writer.WriteLine("  Index | VirtualIP  | Funclet | UnwindRVA");
-                        _writer.WriteLine("-------------------------------------------");
-                    }
-                    else
-                    {
-                        _writer.WriteLine("  Index | StartRVA |  EndRVA  | UnwindRVA");
-                        _writer.WriteLine("-----------------------------------------");
-                    }
+                    _writer.WriteLine("  Index | StartRVA |  EndRVA  | UnwindRVA");
+                    _writer.WriteLine("-----------------------------------------");
                     while (rtfOffset < rtfEndOffset)
                     {
                         int startRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
-                        if (isWasmRtf)
+                        int endRva = -1;
+                        if (_r2r.Machine == Machine.Amd64)
                         {
-                            bool isFunclet = (startRva & unchecked((int)0x80000000)) != 0;
-                            int virtualIP = startRva & 0x7FFFFFFF;
-                            int unwindRvaW = _r2r.ImageReader.ReadInt32(ref rtfOffset);
-                            _writer.WriteLine($"{rtfIndex,7} | {virtualIP,10} | {(isFunclet ? "  yes  " : "  no   ")} | {unwindRvaW:X8}");
+                            endRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
                         }
-                        else
-                        {
-                            int endRva = -1;
-                            if (_r2r.Machine == Machine.Amd64)
-                            {
-                                endRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
-                            }
-                            int unwindRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
-                            string endRvaText = (endRva != -1 ? endRva.ToString("x8") : "        ");
-                            _writer.WriteLine($"{rtfIndex,7} | {startRva:X8} | {endRvaText} | {unwindRva:X8}");
-                        }
+                        int unwindRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
+                        string endRvaText = (endRva != -1 ? endRva.ToString("x8") : "        ");
+                        _writer.WriteLine($"{rtfIndex,7} | {startRva:X8} | {endRvaText} | {unwindRva:X8}");
                         rtfIndex++;
                     }
-                    if (isWasmRtf)
-                    {
-                        // After the section, read sentinel (0xFFFFFFFF) and the min function table index
-                        int sentinel = _r2r.ImageReader.ReadInt32(ref rtfOffset);
-                        int minFuncTableIndex = _r2r.ImageReader.ReadInt32(ref rtfOffset);
-                        _writer.WriteLine($"Sentinel: 0x{sentinel:X8}");
-                        _writer.WriteLine($"MinFunctionTableIndex: {minFuncTableIndex}");
-                    }
+                    break;
+                case ReadyToRunSectionType.WasmGCInfo:
+                    DumpWasmGCInfo(section);
                     break;
                 case ReadyToRunSectionType.CompilerIdentifier:
                     _writer.WriteLine(_r2r.CompilerIdentifier);
@@ -748,6 +730,79 @@ namespace R2RDump
                 default:
                     _writer.WriteLine("Unsupported section type {0}", section.Type);
                     break;
+            }
+        }
+
+        private void DumpWasmRuntimeFunctions(ReadyToRunSection section)
+        {
+            int count = ReadyToRunReader.GetWasmRuntimeFunctionCount(section);
+            _writer.WriteLine("  Index | VirtualIP  | Funclet | UnwindRVA");
+            _writer.WriteLine("-------------------------------------------");
+            for (int ordinal = 0; ordinal < count; ordinal++)
+            {
+                if (_r2r.TryReadWasmRuntimeFunction(ordinal, out int virtualIP, out int unwindRva, out bool isFunclet))
+                {
+                    _writer.WriteLine($"{ordinal,7} | {virtualIP,10} | {(isFunclet ? "  yes  " : "  no   ")} | {unwindRva:X8}");
+                }
+                else
+                {
+                    _writer.WriteLine($"{ordinal,7} | (skip)");
+                }
+            }
+
+            int offset = checked(_r2r.GetOffset(section.RelativeVirtualAddress) + section.Size);
+            uint sentinel = _r2r.ImageReader.ReadUInt32(ref offset);
+            uint minFuncTableIndex = _r2r.ImageReader.ReadUInt32(ref offset);
+            _writer.WriteLine($"Sentinel: 0x{sentinel:X8}");
+            _writer.WriteLine($"MinFunctionTableIndex: {minFuncTableIndex}");
+        }
+
+        private void DumpWasmGCInfo(ReadyToRunSection section)
+        {
+            if (_r2r.Machine != WasmMachine.Wasm32)
+            {
+                throw new BadImageFormatException("WasmGCInfo section found in a non-Wasm image.");
+            }
+
+            if (!_r2r.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection runtimeFunctions))
+            {
+                throw new BadImageFormatException("WasmGCInfo section has no runtime function table.");
+            }
+
+            int count = ReadyToRunReader.GetWasmRuntimeFunctionCount(runtimeFunctions);
+            int gcInfoVersion = BaseGcInfo.ReadyToRunVersionToGcInfoVersion(
+                _r2r.ReadyToRunHeader.MajorVersion, _r2r.ReadyToRunHeader.MinorVersion);
+            using MemoryStream stream = new(_r2r.Image, _r2r.GetOffset(section.RelativeVirtualAddress), section.Size, writable: false);
+            NativeReader reader = new(stream);
+            HashSet<(int UnwindRva, bool IsFunclet)> dumped = new();
+
+            for (int ordinal = 0; ordinal < count; ordinal++)
+            {
+                if (!_r2r.TryReadWasmRuntimeFunction(ordinal, out _, out int unwindRva, out bool isFunclet))
+                {
+                    continue;
+                }
+
+                int offset = checked(unwindRva - section.RelativeVirtualAddress);
+                if ((uint)offset >= (uint)section.Size)
+                {
+                    throw new BadImageFormatException("Wasm runtime function points outside the GC info section.");
+                }
+                if (!dumped.Add((unwindRva, isFunclet)))
+                {
+                    continue;
+                }
+
+                ILCompiler.Reflection.ReadyToRun.Wasm32.UnwindInfo unwindInfo = new(reader, offset);
+                _writer.WriteLine($"Runtime function {ordinal} ({(isFunclet ? "funclet" : "root")}):");
+                _writer.WriteLine($"  Unwind RVA: 0x{unwindRva:X8}");
+                _writer.Write(unwindInfo);
+                if (!isFunclet)
+                {
+                    ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo = new(reader, offset + unwindInfo.Size, _r2r.Machine, gcInfoVersion);
+                    _writer.WriteLine("  GC info:");
+                    _writer.Write(gcInfo);
+                }
             }
         }
 

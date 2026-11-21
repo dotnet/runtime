@@ -86,6 +86,7 @@ namespace Internal.Runtime
         TypeMapAssemblyTargets      = 126, // Added in V18.3
         WasmAsyncResumeInfo         = 127, // Added in V29
         AuxiliaryModuleMetadata     = 128, // Added in V34.1
+        WasmGCInfo                  = 129,
 
         //
         // NativeAOT ReadyToRun sections

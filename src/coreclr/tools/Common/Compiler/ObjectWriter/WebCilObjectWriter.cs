@@ -258,20 +258,20 @@ namespace ILCompiler.ObjectWriter
         private protected override void EmitSectionsAndLayout()
         {
 #if READYTORUN
-            int expectedTableSlot = -1;
+            int firstTableSlot = -1;
             foreach (ILCompiler.DependencyAnalysis.ReadyToRun.MethodWithGCInfo method in _nodeFactory.EnumerateCompiledMethods())
             {
                 Utf8String methodName = new(method.GetMangledName(_nodeFactory.NameMangler));
                 int tableSlot = GetTableSlot(methodName);
 
-                if (expectedTableSlot == -1)
+                if (firstTableSlot == -1)
                 {
-                    expectedTableSlot = tableSlot;
+                    firstTableSlot = tableSlot;
                 }
 
+                int expectedTableSlot = firstTableSlot + _nodeFactory.RuntimeFunctionsTable.GetIndex(method);
                 Debug.Assert(tableSlot == expectedTableSlot,
                     $"R2R method {method.Method} has wasm table slot {tableSlot}, expected {expectedTableSlot}");
-                expectedTableSlot += method.FrameInfos.Length;
             }
 #endif
 

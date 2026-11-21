@@ -151,9 +151,11 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 GenericsInstContextStackSlot = _gcInfoTypes.DenormalizeStackSlot(imageReader.DecodeVarLengthSigned(_gcInfoTypes.GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE, ref bitOffset));
             }
 
-            if (_hasStackBaseRegister && !_slimHeader)
+            if (_hasStackBaseRegister)
             {
-                StackBaseRegister = _gcInfoTypes.DenormalizeStackBaseRegister(imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.STACK_BASE_REGISTER_ENCBASE, ref bitOffset));
+                // A slim header implicitly encodes the normalized register as zero.
+                uint normalizedRegister = _slimHeader ? 0 : imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.STACK_BASE_REGISTER_ENCBASE, ref bitOffset);
+                StackBaseRegister = _gcInfoTypes.DenormalizeStackBaseRegister(normalizedRegister);
             }
 
             if (_hasSizeOfEditAndContinuePreservedArea)
@@ -280,6 +282,10 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                     sb.AppendLine($"    StackBaseRegister: {(RiscV64.Registers)StackBaseRegister}");
                 }
                 sb.AppendLine($"    Has Tailcalls: {_wantsReportOnlyLeaf}");
+            }
+            else if (_machine == WasmMachine.Wasm32 && StackBaseRegister != 0xffffffff)
+            {
+                sb.AppendLine($"    StackBaseRegister: {StackBaseRegister}");
             }
 
             sb.AppendLine($"    Size of parameter area: 0x{SizeOfStackOutgoingAndScratchArea:X}");

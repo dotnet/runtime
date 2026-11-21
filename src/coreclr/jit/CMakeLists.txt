@@ -1,5 +1,9 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+if (CLR_CMAKE_HOST_ARCH_WASM)
+  return()
+endif()
+
 include_directories("./jitstd")
 include_directories("../inc")
 include_directories("../jitshared")

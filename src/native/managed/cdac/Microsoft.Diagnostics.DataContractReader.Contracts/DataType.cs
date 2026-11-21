@@ -153,6 +153,7 @@ public enum DataType
     ReadyToRunCoreInfo,
     ImageDataDirectory,
     RuntimeFunction,
+    WasmRuntimeFunctionGroup,
     HashMap,
     Bucket,
     UnwindInfo,

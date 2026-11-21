@@ -73,6 +73,11 @@ A struct described in [READYTORUN_IMPORT_SECTION](../../inc/readytorun.h). Curre
 
 A array of RVAs. For x64, each RuntimeFunction has RVAs to the start of the assembly, end of the assembly, and start of the UnwindInfo. For x86/Arm/Arm64, each RuntimeFunction has RVAs to the start of the assembly, and start of the UnwindInfo.
 
+For WebAssembly, runtime functions are stored in 128-byte groups of 32 slots.
+`--sc` shows each slot's virtual IP, funclet flag and unwind RVA, including
+padding slots. The `WasmGCInfo` section dump decodes the referenced unwind
+records and root-method GC information.
+
 ### READYTORUN_SECTION_METHODDEF_ENTRYPOINTS
 
 A [NativeArray](../aot/ILCompiler.Reflection.ReadyToRun/NativeArray.cs) used for finding the index of the entrypoint RuntimeFunction for each method. The NativeArray is index by is the rowId-1 of a method. Each element in the NativeArray is an offset pointing to the RuntimeFunction index.

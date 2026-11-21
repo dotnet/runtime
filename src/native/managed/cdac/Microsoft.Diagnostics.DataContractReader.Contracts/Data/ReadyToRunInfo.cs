@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
@@ -22,11 +23,20 @@ internal sealed partial class ReadyToRunInfo : IData<ReadyToRunInfo>
 
     // WASM-only: base virtual IP for this module's R2R function table (m_minVirtualIP).
     [Field] public partial TargetPointer? MinVirtualIP { get; }
+    [Field] public partial TargetPointer? GCInfoBase { get; }
     [CustomInit(nameof(InitRuntimeFunctions))] public partial TargetPointer RuntimeFunctions { get; }
     [CustomInit(nameof(InitHotColdMap))] public partial TargetPointer HotColdMap { get; }
     [CustomInit(nameof(InitImportSections))] public partial TargetPointer ImportSections { get; }
     [CustomInit(nameof(InitEntryPointToMethodDescMap))] public partial TargetPointer EntryPointToMethodDescMap { get; }
     [CustomInit(nameof(InitLoadedImageBase))] public partial TargetPointer LoadedImageBase { get; }
+
+    public TargetPointer GetWasmGCInfoBase()
+    {
+        if (GCInfoBase is not TargetPointer baseAddress || baseAddress == TargetPointer.Null)
+            throw new InvalidOperationException("The Wasm ReadyToRun GC-info base is missing.");
+
+        return baseAddress;
+    }
 
     [DataDescriptorDependency(nameof(NumRuntimeFunctions), "uint32")]
     [DataDescriptorDependency(nameof(RuntimeFunctions), "pointer")]
