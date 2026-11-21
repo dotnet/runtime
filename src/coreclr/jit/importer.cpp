@@ -13814,8 +13814,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     {
         // impInlineInitVars has already matched the IL arguments with the
         // call arguments and recorded their signature types.
-        const unsigned firstArg = pInlineInfo->iciCall->gtArgs.HasThisPointer() ? 1 : 0;
-        for (unsigned argNum = firstArg; argNum < pInlineInfo->argCnt; argNum++)
+        for (unsigned argNum = 0; argNum < pInlineInfo->argCnt; argNum++)
         {
             const InlLclVarInfo& lclInfo = pInlineInfo->lclVarInfo[argNum];
             GenTree*             argNode = pInlineInfo->inlArgInfo[argNum].arg->GetEarlyNode();
