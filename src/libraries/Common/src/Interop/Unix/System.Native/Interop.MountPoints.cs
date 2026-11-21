@@ -39,7 +39,7 @@ internal static partial class Interop
         internal static string[] GetAllMountPoints()
         {
             // Prefer using proc mountinfo as the mount point paths are relative to the process's root.
-            if (OperatingSystem.IsLinux())
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid())
             {
                 if (File.Exists(Interop.procfs.ProcMountInfoFilePath))
                 {

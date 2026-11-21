@@ -2,6 +2,7 @@
   <PropertyGroup>
     <RuntimeFlavor>CoreCLR</RuntimeFlavor>
     <BuildNativeAOTRuntimePack>true</BuildNativeAOTRuntimePack>
+    <UseMibcProjectReference>true</UseMibcProjectReference>
     <OutDirName>naot-pack</OutDirName>
   </PropertyGroup>
 

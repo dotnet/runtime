@@ -24,7 +24,8 @@ HRESULT GetInternalWithRWFormat(
     ULONG       cbData,
     DWORD       flags,                  // [IN] MDInternal_OpenForRead or MDInternal_OpenForENC
     REFIID      riid,                   // [in] The interface desired.
-    void        **ppIUnk);              // [out] Return interface on success.
+    void        **ppIUnk,               // [out] Return interface on success.
+    bool        fIsDelta);              // Is this metadata being loaded to apply an EnC delta.
 
 //*****************************************************************************
 // CheckFileFormat
@@ -189,7 +190,7 @@ STDAPI GetMDInternalInterface(
     {
         // Found a not-fully-compressed, ENC format.
         _ASSERTE( format == MDFormat_ReadWrite );
-        IfFailGo( GetInternalWithRWFormat( pData, cbData, flags, riid, ppIUnk ) );
+        IfFailGo( GetInternalWithRWFormat( pData, cbData, flags, riid, ppIUnk, false ) );
     }
 
 ErrExit:

@@ -1134,7 +1134,7 @@ extends:
             # components are Mach-O and unusable here. The cross components are built from source
             # instead - they target the build host (linux-x64), not iOS, so no Apple SDK is needed.
             # libs.sfx rather than libs, because libs.native does require the Apple SDK.
-            buildArgs: -s clr.crossarchtools+clr.corelib+libs.sfx -rf CoreCLR -lc Release -c $(_BuildConfig)
+            buildArgs: -s clr.crossarchtools+clr.corelib+libs.sfx -lc Release -c $(_BuildConfig)
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
             postBuildSteps:
@@ -1142,7 +1142,7 @@ extends:
               # Subsets.props, so a single build would run the tests before their inputs exist.
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
-                  buildArgs: -s clr.r2rtests -rf CoreCLR -lc Release -c $(_BuildConfig) -test
+                  buildArgs: -s clr.r2rtests -lc Release -c $(_BuildConfig) -test
                   displayName: Build and run R2R tests
             condition: >-
               or(
@@ -1316,7 +1316,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_NativeAOT_Smoke
-            buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
+            buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:ContinuousIntegrationBuild=true
             timeoutInMinutes: 180
             useNativeAOTRuntime: true
             condition: >-
@@ -1406,7 +1406,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_NativeAOT_Smoke
-            buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=adhoc /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
+            buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=adhoc /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:ContinuousIntegrationBuild=true
             timeoutInMinutes: 180
             useNativeAOTRuntime: true
             condition: >-
