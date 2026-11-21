@@ -346,7 +346,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
         }
 
         [Kept]
-        [ExpectedWarning("IL2124", "Type 'T' must not contain signature variables to be used as a type map group.")]
+        [ExpectedWarning("IL2124", "Type 'T' must not contain signature variables to be used as a type argument of a type map API.")]
         private static IReadOnlyDictionary<string, Type> GetExternalTypeMap<T>()
         {
             return TypeMapping.GetOrCreateExternalTypeMapping<T>();

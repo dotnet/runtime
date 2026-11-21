@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
@@ -15,11 +16,21 @@ namespace ILCompiler.DependencyAnalysis
     {
         private readonly IEnumerable<KeyValuePair<string, TypeMapMetadata.ExternalTypeMapEntry>> _mapEntries;
 
-        public ExternalTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<string, TypeMapMetadata.ExternalTypeMapEntry>> mapEntries)
+        /// <param name="flavors">
+        /// The values the entries of the map carry. A node in the dependency graph has a single flavor. A node
+        /// with more flavors only exists at emission time and describes all flavors requested for a group.
+        /// </param>
+        /// <param name="valueFlavors">The typed value flavors (if <paramref name="flavors"/> has <see cref="TypeMapFlavors.Values"/>).</param>
+        public ExternalTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<string, TypeMapMetadata.ExternalTypeMapEntry>> mapEntries, TypeMapFlavors flavors = TypeMapFlavors.Types, IReadOnlyList<TypeMapValueFlavor> valueFlavors = null)
         {
             _mapEntries = mapEntries;
             TypeMapGroup = typeMapGroup;
+            Flavors = flavors;
+            ValueFlavors = valueFlavors ?? [];
+            Debug.Assert(((flavors & TypeMapFlavors.Values) != 0) == (ValueFlavors.Count != 0));
         }
+
+        public IReadOnlyList<TypeMapValueFlavor> ValueFlavors { get; }
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
 
@@ -31,6 +42,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public TypeDesc TypeMapGroup { get; }
 
+        public TypeMapFlavors Flavors { get; }
+
+        public IEnumerable<KeyValuePair<string, TypeMapMetadata.ExternalTypeMapEntry>> MapEntries => _mapEntries;
+
         public override void AddConditionalDependencies(DependencySink sink, NodeFactory context)
         {
             foreach (var entry in _mapEntries)
@@ -41,10 +56,20 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     IEETypeNode effectiveTrimTargetType = GetEffectiveTrimTargetType(context, trimmingTargetType);
 
-                    sink.Add(new CombinedDependencyListEntry(
-                        context.MetadataTypeSymbol(targetType),
-                        effectiveTrimTargetType,
-                        "Type in external type map is cast target"));
+                    if ((Flavors & TypeMapFlavors.Types) != 0)
+                    {
+                        sink.Add(new CombinedDependencyListEntry(
+                            context.MetadataTypeSymbol(targetType),
+                            effectiveTrimTargetType,
+                            "Type in external type map is cast target"));
+                    }
+
+                    foreach (TypeMapValueFlavor valueFlavor in ValueFlavors)
+                    {
+                        object dependency = valueFlavor.Evaluate(targetType).GetDependencyNode(context, TypeMapGroup, isProxy: false);
+                        if (dependency is not null)
+                            sink.Add(new CombinedDependencyListEntry(dependency, effectiveTrimTargetType, "Typed value of type in external type map is cast target"));
+                    }
 
                     RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(sink, context, effectiveTrimTargetType, "External type map trim target that could be loaded at runtime");
                 }
@@ -54,31 +79,62 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
+            sink.Add(context.NecessaryTypeSymbol(TypeMapGroup), "Type map group");
+
             foreach (var entry in _mapEntries)
             {
                 TypeDesc targetType = entry.Value.Type;
                 TypeDesc trimmingTargetType = entry.Value.TrimmingType;
                 if (trimmingTargetType is null)
                 {
-                    sink.Add(
-                        context.MetadataTypeSymbol(targetType),
-                        "External type map entry target type");
+                    if ((Flavors & TypeMapFlavors.Types) != 0)
+                    {
+                        sink.Add(
+                            context.MetadataTypeSymbol(targetType),
+                            "External type map entry target type");
+                    }
+
+                    foreach (TypeMapValueFlavor valueFlavor in ValueFlavors)
+                    {
+                        object dependency = valueFlavor.Evaluate(targetType).GetDependencyNode(context, TypeMapGroup, isProxy: false);
+                        if (dependency is not null)
+                            sink.Add(dependency, "Type map value");
+                    }
                 }
             }
         }
 
         public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
-        protected override string GetName(NodeFactory context) => $"External type map: {TypeMapGroup}";
+        protected override string GetName(NodeFactory context) => Flavors == TypeMapFlavors.Types
+            ? $"External type map: {TypeMapGroup}"
+            : $"External type map ({Flavors}{string.Concat(ValueFlavors.Select(f => ", " + f.ValueType))}): {TypeMapGroup}";
 
         public override int ClassCode => -785190502;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             ExternalTypeMapNode otherEntry = (ExternalTypeMapNode)other;
-            return comparer.Compare(TypeMapGroup, otherEntry.TypeMapGroup);
+            int result = comparer.Compare(TypeMapGroup, otherEntry.TypeMapGroup);
+            if (result != 0)
+                return result;
+
+            result = Flavors.CompareTo(otherEntry.Flavors);
+            if (result != 0)
+                return result;
+
+            // Nodes for different typed value flavors of a group are different nodes.
+            for (int i = 0; i < ValueFlavors.Count && i < otherEntry.ValueFlavors.Count; i++)
+            {
+                result = comparer.Compare(ValueFlavors[i].ValueType, otherEntry.ValueFlavors[i].ValueType);
+                if (result != 0)
+                    return result;
+            }
+
+            return ValueFlavors.Count.CompareTo(otherEntry.ValueFlavors.Count);
         }
 
-        private IEnumerable<(string Name, IEETypeNode target)> GetMarkedEntries(NodeFactory factory)
+        // The entries of all flavors are present under the same conditions, so one set of entries serves all of them.
+        private IEnumerable<(string Name, TypeDesc target)> GetMarkedEntries(NodeFactory factory)
         {
             foreach (var entry in _mapEntries)
             {
@@ -88,9 +144,14 @@ namespace ILCompiler.DependencyAnalysis
                 if (trimmingTargetType is null
                     || GetEffectiveTrimTargetType(factory, trimmingTargetType).Marked)
                 {
-                    IEETypeNode targetNode = factory.MetadataTypeSymbol(targetType);
-                    Debug.Assert(targetNode.Marked);
-                    yield return (entry.Key, targetNode);
+                    if ((Flavors & TypeMapFlavors.Types) != 0)
+                        Debug.Assert(factory.MetadataTypeSymbol(targetType).Marked);
+                    foreach (TypeMapValueFlavor valueFlavor in ValueFlavors)
+                    {
+                        object dependency = valueFlavor.Evaluate(targetType).GetDependencyNode(factory, TypeMapGroup, isProxy: false);
+                        Debug.Assert(dependency is null || ((DependencyNodeCore<NodeFactory>)dependency).Marked);
+                    }
+                    yield return (entry.Key, targetType);
                 }
             }
         }
@@ -101,25 +162,33 @@ namespace ILCompiler.DependencyAnalysis
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
             VertexHashtable typeMapHashTable = new();
+            var ranks = TypeMapValueSupport.GetRanks(factory, TypeMapGroup, isProxy: false, ValueFlavors);
 
-            foreach ((string key, IEETypeNode valueNode) in GetMarkedEntries(factory))
+            foreach ((string key, TypeDesc target) in GetMarkedEntries(factory))
             {
-                Vertex keyVertex = writer.GetStringConstant(key);
-                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, valueNode.Type, null);
-                Vertex entry = writer.GetTuple(keyVertex, valueVertex);
+                Vertex entry = TypeMapValueSupport.CreateExternalEntry(writer, externalReferences, Flavors, key, target);
+                entry = TypeMapValueSupport.AppendEntryData(factory, writer, entry, ValueFlavors, ranks, target);
                 typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(key), section.Place(entry));
             }
 
-            Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
-            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup, null);
-            Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
-            return section.Place(tuple);
+            return section.Place(TypeMapValueSupport.CreateGroupHeader(factory, writer, externalReferences, TypeMapGroup, isProxy: false, Flavors, ValueFlavors, typeMapHashTable));
         }
 
         public IExternalTypeMapNode ToAnalysisBasedNode(NodeFactory factory)
-            => new AnalyzedExternalTypeMapNode(
-                    TypeMapGroup,
-                    GetMarkedEntries(factory)
-                    .ToImmutableDictionary(p => p.Name, p => p.target.Type));
+        {
+            ImmutableDictionary<string, TypeDesc> entries = GetMarkedEntries(factory).ToImmutableDictionary(p => p.Name, p => p.target);
+
+            // The values are evaluated once, in the phase that analyzes the program. The result is what ends up in the image.
+            List<TypeMapValueFlavor> valueFlavors = [];
+            foreach (TypeMapValueFlavor flavor in ValueFlavors)
+            {
+                Dictionary<TypeDesc, TypeMapValueEvaluation> evaluations = [];
+                foreach (TypeDesc target in entries.Values)
+                    evaluations[target] = flavor.Evaluate(target);
+                valueFlavors.Add(new TypeMapValueFlavor(flavor.ValueType, target => evaluations[target]));
+            }
+
+            return new AnalyzedExternalTypeMapNode(TypeMapGroup, Flavors, entries, valueFlavors);
+        }
     }
 }

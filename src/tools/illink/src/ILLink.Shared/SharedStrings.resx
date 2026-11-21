@@ -1129,7 +1129,7 @@
     <value>The provided generic argument cannot be statically determined.</value>
   </data>
   <data name="TypeMapGroupTypeCannotBeStaticallyDeterminedMessage" xml:space="preserve">
-    <value>Type '{0}' must not contain signature variables to be used as a type map group.</value>
+    <value>Type '{0}' must not contain signature variables to be used as a type argument of a type map API.</value>
   </data>
   <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
     <value>Avoid accessing Assembly file path when publishing as a single file</value>

@@ -26,6 +26,8 @@
     <TestConsoleAppSourceFiles Include="TypeMap.cs" NativeAotOnly="true">
       <EnabledProperties>IlcGenerateMstatFile;IlcGenerateDgmlFile</EnabledProperties>
     </TestConsoleAppSourceFiles>
+    <!-- Validate that the values of the mapped types are found when the mapped types are trimmed. -->
+    <TestConsoleAppSourceFiles Include="TypeMapTryGetValue.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
