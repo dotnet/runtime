@@ -1636,7 +1636,8 @@ DONE_CALL:
                 assert(call == origCall);
 
                 assert(opts.OptEnabled(CLFLG_INLINING));
-                assert(!isFatPointerCandidate); // We should not try to inline calli.
+                // Fat pointer calls can only reach this path as GDV candidates.
+                assert(!isFatPointerCandidate || isGuardedDevirtualizationCandidate);
 
                 // Make the call its own tree (spill the stack if needed).
                 // Do not consume the debug info here. This is particularly
@@ -8268,8 +8269,8 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
 //    call            - the call (either virtual or cast helper)
 //    ilOffset        - exact IL offset of the call
 //    isInterface     - whether or not the call target is defined on an interface
-//    classGuesses    - [out] the classes to guess for (mutually exclusive with methodGuess)
-//    methodGuesses   - [out] the methods to guess for (mutually exclusive with classGuess)
+//    classGuesses    - [out] the classes to guess for
+//    methodGuesses   - [out] the methods to guess for
 //    candidatesCount - [out] number of guesses
 //    likelihoods     - [out] estimates of the likelihoods that the guesses will succeed
 //    verboseLogging  - whether or not to do verbose logging
@@ -8291,8 +8292,9 @@ void Compiler::pickGDV(GenTreeCall*           call,
 
     const int               maxLikelyClasses = MAX_GDV_TYPE_CHECKS;
     LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
-    unsigned                numberOfClasses = 0;
-    if (call->IsVirtualStub() || call->IsVirtualVtable() || call->IsHelperCall())
+    unsigned                numberOfClasses  = 0;
+    bool                    isGenericVirtual = call->IsGenericVirtual(this);
+    if (call->IsVirtualStub() || call->IsVirtualVtable() || call->IsHelperCall() || isGenericVirtual)
     {
         numberOfClasses = getLikelyClasses(likelyClasses, maxLikelyClasses, pgoInfo.PgoSchema, pgoInfo.PgoSchemaCount,
                                            pgoInfo.PgoData, ilOffset);
@@ -8309,7 +8311,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
     // impDevirtualizeCall and what happens in
     // GuardedDevirtualizationTransformer::CreateThen for method GDV.
     //
-    if (!IsAot() && (call->IsVirtualVtable() || call->IsDelegateInvoke()))
+    if (!IsAot() && (call->IsVirtualVtable() || call->IsDelegateInvoke() || isGenericVirtual))
     {
         assert(!call->IsHelperCall());
         numberOfMethods = getLikelyMethods(likelyMethods, maxLikelyMethods, pgoInfo.PgoSchema, pgoInfo.PgoSchemaCount,
@@ -8349,7 +8351,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
         }
     }
 
-    if ((numberOfClasses < 1) && (numberOfMethods < 1))
+    if ((numberOfClasses < 1) && ((numberOfMethods < 1) || isGenericVirtual))
     {
         if (verboseLogging)
         {
@@ -8387,8 +8389,8 @@ void Compiler::pickGDV(GenTreeCall*           call,
 
     if ((verbose || JitConfig.EnableExtraSuperPmiQueries()) && (numberOfMethods > 0))
     {
-        assert(call->gtCallType == CT_USER_FUNC);
-        const char* baseMethName = eeGetMethodFullName(call->gtCallMethHnd);
+        assert(call->gtCallType == CT_USER_FUNC || isGenericVirtual);
+        const char* baseMethName = isGenericVirtual ? "<generic virtual>" : eeGetMethodFullName(call->gtCallMethHnd);
         JITDUMP("Likely methods for call [%06u] to method %s\n", dspTreeID(call), baseMethName);
 
         for (UINT32 i = 0; i < numberOfMethods; i++)
@@ -8432,10 +8434,16 @@ void Compiler::pickGDV(GenTreeCall*           call,
         //
         CLRRandom* const random =
             impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-        unsigned index = static_cast<unsigned>(random->Next(static_cast<int>(numberOfClasses + numberOfMethods)));
+        unsigned guessCount = isGenericVirtual ? numberOfClasses : numberOfClasses + numberOfMethods;
+        unsigned index      = static_cast<unsigned>(random->Next(static_cast<int>(guessCount)));
         if (index < numberOfClasses)
         {
-            classGuesses[0]  = (CORINFO_CLASS_HANDLE)likelyClasses[index].handle;
+            classGuesses[0] = (CORINFO_CLASS_HANDLE)likelyClasses[index].handle;
+            if (isGenericVirtual && (numberOfMethods > 0))
+            {
+                int methodIndex  = random->Next(static_cast<int>(numberOfMethods));
+                methodGuesses[0] = (CORINFO_METHOD_HANDLE)likelyMethods[methodIndex].handle;
+            }
             likelihoods[0]   = 100;
             *candidatesCount = 1;
             // TODO: report multiple random candidates. For now we don't do it because with the current impl
@@ -8603,12 +8611,22 @@ void Compiler::pickGDV(GenTreeCall*           call,
 
     if (numberOfMethods > 0)
     {
+        // GVM can only be GDV'd if we have a class guess;
+        // the method profile only identifies the instantiation.
+        if (isGenericVirtual && (*candidatesCount == 0))
+        {
+            JITDUMP("Not guessing for generic virtual method; no class guess available\n");
+            return;
+        }
+
         // For method guessing we only support a single target for now
         unsigned likelihoodThreshold = 30;
         if (likelyMethods[0].likelihood >= likelihoodThreshold)
         {
+            // Both the receiver and the instantiation must match a GVM guard.
             methodGuesses[0] = (CORINFO_METHOD_HANDLE)likelyMethods[0].handle;
-            likelihoods[0]   = likelyMethods[0].likelihood;
+            likelihoods[0] =
+                isGenericVirtual ? min(likelihoods[0], likelyMethods[0].likelihood) : likelyMethods[0].likelihood;
             *candidatesCount = 1;
             return;
         }
@@ -8768,12 +8786,6 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         return;
     }
 
-    if (call->IsGenericVirtual(this))
-    {
-        JITDUMP("Generic virtual methods are not supported by guarded devirtualization, sorry.\n");
-        return;
-    }
-
     bool hasPgoData = true;
 
     CORINFO_CLASS_HANDLE  likelyClasses[MAX_GDV_TYPE_CHECKS] = {};
@@ -8881,7 +8893,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
                                                     clsAttrs, likelyHood, &dvInfo.instParamLookup, baseMethod,
-                                                    &dvInfo.resolvedTokenDevirtualizedMethod,
+                                                    NO_METHOD_HANDLE, &dvInfo.resolvedTokenDevirtualizedMethod,
                                                     &dvInfo.resolvedTokenDevirtualizedUnboxedMethod);
             }
 
@@ -8912,6 +8924,17 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         CORINFO_RESOLVED_TOKEN* pResolvedToken        = nullptr;
         CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken = nullptr;
 
+        CORINFO_METHOD_HANDLE guardedBaseMethod = NO_METHOD_HANDLE;
+        if (call->IsGenericVirtual(this) && (likelyMethod != NO_METHOD_HANDLE))
+        {
+            if (!info.compCompHnd->haveSameMethodDefinition(baseMethod, likelyMethod))
+            {
+                JITDUMP("Skipping GVM instantiation from a different declaration (stale profile)\n");
+                continue;
+            }
+            guardedBaseMethod = likelyMethod;
+        }
+
         CORINFO_CONTEXT_HANDLE        likelyContext = originalContext;
         CORINFO_DEVIRTUALIZATION_INFO dvInfo;
 
@@ -8933,9 +8956,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
             // Figure out which method will be called.
             //
-            dvInfo.virtualMethod               = baseMethod;
-            dvInfo.objClass                    = likelyClass;
-            dvInfo.context                     = originalContext;
+            dvInfo.virtualMethod = (guardedBaseMethod != NO_METHOD_HANDLE) ? guardedBaseMethod : baseMethod;
+            dvInfo.objClass      = likelyClass;
+            dvInfo.context       = originalContext;
             dvInfo.pResolvedTokenVirtualMethod = nullptr;
 
             JITDUMP("GDV likely: resolveVirtualMethod (method %p class %p context %p)\n", dvInfo.virtualMethod,
@@ -9032,7 +9055,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         //
         addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs,
                                             likelyClassAttribs, likelihood, pInstParamLookup, baseMethod,
-                                            pResolvedToken, pUnboxedResolvedToken);
+                                            guardedBaseMethod, pResolvedToken, pUnboxedResolvedToken);
     }
 }
 
@@ -9059,6 +9082,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    likelihood - odds that this class is the class seen at runtime
 //    instParamLookup - lookup to use if the target signature requires an instantiation argument
 //    originalMethodHandle - method handle of base method (before devirt)
+//    guardedBaseMethodHandle - profiled GVM instantiation required by the guard, if any
 //    pResolvedToken - resolved token for methodHandle, used to get R2R call info; nullptr when unavailable
 //    pUnboxedResolvedToken - resolved token for the unboxed entry, paired with pResolvedToken
 //
@@ -9071,11 +9095,12 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
                                                    unsigned                likelihood,
                                                    const CORINFO_LOOKUP*   instParamLookup,
                                                    CORINFO_METHOD_HANDLE   originalMethodHandle,
+                                                   CORINFO_METHOD_HANDLE   guardedBaseMethodHandle,
                                                    CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                                    CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken)
 {
     // This transformation only makes sense for delegate and virtual calls
-    assert(call->IsDelegateInvoke() || call->IsVirtual());
+    assert(call->IsDelegateInvoke() || call->IsVirtual() || call->IsGenericVirtual(this));
 
     // Only mark calls if the feature is enabled.
     const bool isEnabled = JitConfig.JitEnableGuardedDevirtualization() > 0;
@@ -9133,14 +9158,15 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     //
     InlineCandidateInfo* pInfo = new (this, CMK_Inlining) InlineCandidateInfo{};
 
-    pInfo->guardedMethodHandle  = methodHandle;
-    pInfo->guardedClassHandle   = classHandle;
-    pInfo->likelihood           = likelihood;
-    pInfo->exactContextHandle   = contextHandle;
-    pInfo->originalMethodHandle = originalMethodHandle;
-    pInfo->clsAttr              = classAttr;
-    pInfo->methAttr             = methodAttr;
-    pInfo->preexistingSpillTemp = BAD_VAR_NUM;
+    pInfo->guardedMethodHandle     = methodHandle;
+    pInfo->guardedBaseMethodHandle = guardedBaseMethodHandle;
+    pInfo->guardedClassHandle      = classHandle;
+    pInfo->likelihood              = likelihood;
+    pInfo->exactContextHandle      = contextHandle;
+    pInfo->originalMethodHandle    = originalMethodHandle;
+    pInfo->clsAttr                 = classAttr;
+    pInfo->methAttr                = methodAttr;
+    pInfo->preexistingSpillTemp    = BAD_VAR_NUM;
 
     // The call only carries its IL offset in debug builds, and not this early.
     //
@@ -9447,7 +9473,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
-    // Ignore indirect calls, unless they are indirect virtual stub calls with profile info.
+    // Ignore indirect calls, unless they are indirect virtual stub calls or generic virtual calls with profile info.
     //
     if (call->gtCallType == CT_INDIRECT)
     {
@@ -9458,7 +9484,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         }
         else
         {
-            assert(call->IsVirtualStub());
+            assert(call->IsVirtualStub() || call->IsGenericVirtual(this));
         }
     }
 
@@ -10747,7 +10773,7 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
     bool createTypeHistogram = false;
     if (JitConfig.JitClassProfiling() > 0)
     {
-        createTypeHistogram = call->IsVirtualStub() || call->IsVirtualVtable();
+        createTypeHistogram = call->IsVirtualStub() || call->IsVirtualVtable() || call->IsGenericVirtual(this);
 
         // Cast helpers may conditionally (depending on whether the class is
         // exact or not) have probes. For those helpers we do not use this
@@ -10757,8 +10783,10 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
                                                       (call->gtHandleHistogramProfileCandidateInfo != nullptr));
     }
 
-    bool createMethodHistogram = ((JitConfig.JitDelegateProfiling() > 0) && call->IsDelegateInvoke()) ||
-                                 ((JitConfig.JitVTableProfiling() > 0) && call->IsVirtualVtable());
+    bool createMethodHistogram =
+        ((JitConfig.JitDelegateProfiling() > 0) && call->IsDelegateInvoke()) ||
+        ((JitConfig.JitVTableProfiling() > 0) && call->IsVirtualVtable()) ||
+        ((JitConfig.JitGenericVirtualProfiling() > 0) && createTypeHistogram && call->IsGenericVirtual(this));
 
     if (createTypeHistogram && createMethodHistogram)
     {

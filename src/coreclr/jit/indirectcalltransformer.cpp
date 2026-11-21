@@ -103,16 +103,17 @@ private:
 
         for (Statement* const stmt : block->Statements())
         {
-            if (m_compiler->doesMethodHaveFatPointer() && ContainsFatCalli(stmt))
+            // NativeAOT GVM calls may require both transformations. Expand GDV first so that
+            // fat pointer handling is only applied to the residual indirect call.
+            if (m_compiler->doesMethodHaveGuardedDevirtualization() && ContainsGuardedDevirtualizationCandidate(stmt))
             {
-                FatPointerCallTransformer transformer(m_compiler, block, stmt);
+                GuardedDevirtualizationTransformer transformer(m_compiler, block, stmt);
                 transformer.Run();
                 count++;
             }
-            else if (m_compiler->doesMethodHaveGuardedDevirtualization() &&
-                     ContainsGuardedDevirtualizationCandidate(stmt))
+            else if (m_compiler->doesMethodHaveFatPointer() && ContainsFatCalli(stmt))
             {
-                GuardedDevirtualizationTransformer transformer(m_compiler, block, stmt);
+                FatPointerCallTransformer transformer(m_compiler, block, stmt);
                 transformer.Run();
                 count++;
             }
@@ -221,6 +222,14 @@ private:
                 for (GenTree** use : m_origCall->UseEdges())
                 {
                     GenTree* node = *use;
+
+                    // GDV evaluates the dispatch lookup on the fallback path. A fat pointer check needs it here.
+                    if ((use == &m_origCall->gtControlExpr) && (use != useToSpill) &&
+                        m_origCall->IsGenericVirtual(m_compiler))
+                    {
+                        break;
+                    }
+
                     if (((node->gtFlags & GTF_ALL_EFFECT) != 0) ||
                         (!m_compiler->impIsInvariant(node) && m_compiler->gtHasLocalsWithAddrOp(node)))
                     {
@@ -707,6 +716,20 @@ private:
             CallArg* thisArg = m_origCall->gtArgs.GetThisArg();
             SplitCall(m_checkBlock, &thisArg->EarlyNodeRef());
 
+            InlineCandidateInfo* guardedInfo      = m_origCall->GetGDVCandidateInfo(checkIdx);
+            GenTree*             runtimeGvmMethod = nullptr;
+            if (guardedInfo->guardedBaseMethodHandle != NO_METHOD_HANDLE)
+            {
+                assert(m_origCall->gtControlExpr->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR));
+                GenTreeCall* lookupCall      = m_origCall->gtControlExpr->AsCall();
+                CallArg*     methodHandleArg = lookupCall->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
+
+                // Evaluate the instantiation after the call arguments and share it with the fallback lookup.
+                SpillUseToTemp(m_checkBlock, &methodHandleArg->EarlyNodeRef());
+                m_compiler->gtUpdateNodeSideEffects(lookupCall);
+                runtimeGvmMethod = m_compiler->gtCloneExpr(methodHandleArg->GetEarlyNode());
+            }
+
             GenTree* thisTree = m_compiler->gtCloneExpr(thisArg->GetNode());
 
             // Remember the current last statement. If we're doing a chained GDV, we'll clone/copy
@@ -728,8 +751,6 @@ private:
                 return;
             }
 
-            InlineCandidateInfo* guardedInfo = m_origCall->GetGDVCandidateInfo(checkIdx);
-
             // Create comparison. On success we will jump to do the indirect call.
             GenTree* compare;
             if (guardedInfo->guardedClassHandle != NO_CLASS_HANDLE)
@@ -741,6 +762,18 @@ private:
                 GenTree*             targetMethodTable = m_compiler->gtNewIconEmbClsHndNode(clsHnd);
 
                 compare = m_compiler->gtNewOperNode(GT_NE, TYP_INT, targetMethodTable, methodTable);
+
+                if (runtimeGvmMethod != nullptr)
+                {
+                    GenTree* targetGvmMethod =
+                        m_compiler->gtNewIconEmbMethHndNode(guardedInfo->guardedBaseMethodHandle);
+                    GenTree* methodCompare =
+                        m_compiler->gtNewOperNode(GT_NE, TYP_INT, targetGvmMethod, runtimeGvmMethod);
+                    GenTree* combinedCompare = m_compiler->gtNewOperNode(GT_OR, TYP_INT, compare, methodCompare);
+                    GenTree* zero            = m_compiler->gtNewIconNode(0, TYP_INT);
+                    compare                  = m_compiler->gtNewOperNode(GT_NE, TYP_INT, combinedCompare, zero);
+                }
+
                 m_compiler->Metrics.ClassGDV++;
             }
             else
