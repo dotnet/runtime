@@ -12,7 +12,6 @@ namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties to decompress data using Zstandard decompression.</summary>
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardDecoder : IDisposable
     {
         private SafeZstdDecompressHandle _context;
@@ -143,7 +142,11 @@ namespace System.IO.Compression
         [MemberNotNull(nameof(_context))]
         private void InitializeDecoder()
         {
-            _context = Interop.Zstd.ZSTD_createDCtx();
+            // SAFETY: To be audited
+            unsafe
+            {
+                _context = Interop.Zstd.ZSTD_createDCtx();
+            }
             if (_context.IsInvalid)
             {
                 throw new OutOfMemoryException();
@@ -183,6 +186,7 @@ namespace System.IO.Compression
                 return OperationStatus.DestinationTooSmall;
             }
 
+            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* sourcePtr = &MemoryMarshal.GetReference(source))
@@ -252,6 +256,7 @@ namespace System.IO.Compression
                 return true;
             }
 
+            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* dataPtr = &MemoryMarshal.GetReference(data))
@@ -287,6 +292,7 @@ namespace System.IO.Compression
                 return false;
             }
 
+            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* sourcePtr = &MemoryMarshal.GetReference(source))
@@ -326,12 +332,13 @@ namespace System.IO.Compression
                 return false;
             }
 
-            using var dctx = Interop.Zstd.ZSTD_createDCtx();
+            using var dctx = /* SAFETY: To be audited */ unsafe(Interop.Zstd.ZSTD_createDCtx());
             if (dctx.IsInvalid)
             {
                 throw new OutOfMemoryException();
             }
 
+            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* sourcePtr = &MemoryMarshal.GetReference(source))
@@ -353,6 +360,7 @@ namespace System.IO.Compression
         }
 
         /// <summary>Resets the decoder session, allowing reuse for decompressing the next Zstandard frame.</summary>
+        /// <remarks>Clears any prefix and restores the dictionary supplied when the decoder was constructed.</remarks>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         /// <exception cref="IOException">Failed to reset the decoder session.</exception>
         public void Reset()
@@ -364,7 +372,11 @@ namespace System.IO.Compression
         }
 
         /// <summary>References a prefix for the next decompression operation.</summary>
-        /// <remarks>The prefix will be used only for the next decompression frame and will be removed when <see cref="Reset"/> is called. The referenced data must remain valid and unmodified for the duration of the decompression operation.</remarks>
+        /// <remarks>
+        /// The prefix will be used only for the next decompression frame and will be removed when <see cref="Reset"/> is called.
+        /// The prefix replaces any dictionary supplied when the decoder was constructed until <see cref="Reset"/> restores that dictionary.
+        /// The referenced data must remain valid and unmodified for the duration of the decompression operation.
+        /// </remarks>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The decoder is in an invalid state for setting a prefix.</exception>
         public void SetPrefix(ReadOnlyMemory<byte> prefix)
@@ -406,7 +418,12 @@ namespace System.IO.Compression
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(maxWindowLog2, ZstandardUtils.WindowLog_Max, nameof(maxWindowLog2));
             }
 
-            nuint result = Interop.Zstd.ZSTD_DCtx_setParameter(_context, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindowLog2);
+            nuint result;
+            // SAFETY: To be audited
+            unsafe
+            {
+                result = Interop.Zstd.ZSTD_DCtx_setParameter(_context, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindowLog2);
+            }
             ZstandardUtils.ThrowIfError(result);
         }
 

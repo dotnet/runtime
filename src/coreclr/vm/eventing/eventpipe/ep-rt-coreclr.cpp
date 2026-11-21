@@ -76,8 +76,18 @@ stack_walk_callback (
 
 	EP_ASSERT (control_pc != 0);
 
+	MethodDesc *method = frame->GetFunction ();
+#ifdef FEATURE_MULTITHREADING
+	if (ep_stack_contents_is_empty (stack_contents) &&
+		(method == CoreLibBinder::GetExistingMethod (METHOD__THREAD__POLLGC) ||
+		 method == CoreLibBinder::GetExistingMethod (METHOD__THREAD__POLLGC_WORKER))) {
+		// Omit leading polling transitions, preserving the caller and the event.
+		return SWA_CONTINUE;
+	}
+#endif // FEATURE_MULTITHREADING
+
 	// Add the IP to the captured stack.
-	ep_stack_contents_append (stack_contents, control_pc, frame->GetFunction ());
+	ep_stack_contents_append (stack_contents, control_pc, method);
 
 	// Continue the stack walk.
 	return SWA_CONTINUE;
@@ -183,9 +193,8 @@ ep_rt_coreclr_session_stopping (void)
 	// session, so ep_event_is_enabled_for_current_thread tests that session's mask and the events emitted by
 	// the flush route only to it (dotnet-pgo drops a method once data arrives after its final chunk, so a
 	// single destination is required).
-	extern EventPipeEvent *EventPipeEventJitInstrumentationDataVerbose;
-	if (EventPipeEventJitInstrumentationDataVerbose != NULL &&
-		ep_event_is_enabled_for_current_thread (EventPipeEventJitInstrumentationDataVerbose))
+	extern EventPipeEvent *EventPipeGetEventJitInstrumentationDataVerbose (void);
+	if (ep_event_is_enabled_for_current_thread (EventPipeGetEventJitInstrumentationDataVerbose ()))
 	{
 		EX_TRY
 		{

@@ -7,6 +7,8 @@
     <Nullable>enable</Nullable>
     <UseAppHost>false</UseAppHost>
     <RollForward>LatestMajor</RollForward>
+    <!-- WasmAppHost serves the target application's static-web-assets manifest, not assets from this project. -->
+    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
   </PropertyGroup>
 
   <ItemGroup>

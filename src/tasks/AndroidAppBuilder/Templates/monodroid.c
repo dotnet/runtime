@@ -67,8 +67,6 @@ static MonoAssembly* g_assembly = NULL;
 #error Unknown architecture
 #endif
 
-#define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
-
 static MonoAssembly*
 mono_droid_load_assembly (const char *name, const char *culture)
 {
@@ -223,13 +221,6 @@ log_callback (const char *log_domain, const char *log_level, const char *message
 void register_aot_modules (void);
 #endif
 
-static void
-cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
-{
-    free (args);
-    free (user_data);
-}
-
 static int
 mono_droid_runtime_init (const char* executable, int local_date_time_offset)
 {
@@ -265,24 +256,6 @@ mono_droid_runtime_init (const char* executable, int local_date_time_offset)
     char local_date_time_offset_buffer[32];
     snprintf (local_date_time_offset_buffer, sizeof(local_date_time_offset_buffer), "%d", local_date_time_offset);
     appctx_values[2] = strdup (local_date_time_offset_buffer);
-
-    char *file_name = RUNTIMECONFIG_BIN_FILE;
-    int str_len = strlen (g_bundle_path) + strlen (file_name) + 1; // +1 is for the "/"
-    char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
-    int num_char = snprintf (file_path, (str_len + 1), "%s/%s", g_bundle_path, file_name);
-    struct stat buffer;
-
-    LOG_INFO ("file_path: %s\n", file_path);
-    assert (num_char > 0 && num_char == str_len);
-
-    if (stat (file_path, &buffer) == 0) {
-        MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
-        arg->kind = 0;
-        arg->runtimeconfig.name.path = file_path;
-        monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
-    } else {
-        free (file_path);
-    }
 
     LOG_INFO ("Calling monovm_initialize");
     int rv = monovm_initialize(3, appctx_keys, appctx_values);

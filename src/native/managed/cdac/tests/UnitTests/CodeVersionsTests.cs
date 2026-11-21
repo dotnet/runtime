@@ -81,6 +81,9 @@ internal static class MockExtensions
             .Returns(handle);
         mock.Setup(e => e.GetStartAddress(handle)).Returns(block.StartAddress.AsTargetPointer);
         mock.Setup(e => e.GetMethodDesc(handle)).Returns(block.MethodDesc.Address);
+        // Entry points that are not interpreter precodes / portable entry points map to themselves.
+        mock.Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(It.IsAny<TargetCodePointer>()))
+            .Returns<TargetCodePointer>(entryPoint => entryPoint);
     }
 
     public static void AddModule(this Mock<ILoader> mock, CodeVersionsMockModule module)
@@ -280,6 +283,50 @@ public class CodeVersionsTests
             TargetCodePointer actualCodeStart = codeVersions.GetNativeCode(handle);
             Assert.Equal(codeBlockStart, actualCodeStart);
         }
+    }
+
+    // Interpreted methods: the MethodDesc native code slot holds an InterpreterPrecode while the code block
+    // (and therefore the IP-derived start address) is the bytecode. The entry point must be mapped to its
+    // code start before comparing, as the native DAC does with GetInterpreterCodeFromEntryPointIfPresent.
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNativeCodeVersion_Interpreted_MapsPrecodeToBytecode(MockTarget.Architecture arch)
+    {
+        var builder = new MockCodeVersions(arch);
+        MockMethodDescVersioningState methodDescVersioningState = builder.AddMethodDescVersioningState();
+        methodDescVersioningState.NativeCodeVersionNode = 0;
+        methodDescVersioningState.Flags = MockMethodDescVersioningState.IsDefaultVersionActiveChildFlag;
+        TargetCodePointer bytecodeStart = new TargetCodePointer(0x0a0a_0000);
+        TargetCodePointer interpreterPrecode = new TargetCodePointer(0x0b0b_0000);
+        CodeVersionsMockMethodDesc oneMethod = CodeVersionsMockMethodDesc.CreateVersionable(
+            selfAddress: new TargetPointer(0x1a0a_0000),
+            methodDescVersioningState: new TargetPointer(methodDescVersioningState.Address),
+            nativeCode: interpreterPrecode);
+        MockCodeBlockStart oneBlock = new MockCodeBlockStart()
+        {
+            StartAddress = bytecodeStart,
+            Length = 0x40,
+            MethodDesc = oneMethod,
+        };
+
+        Mock<IExecutionManager> mockExecutionManager = new Mock<IExecutionManager>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+        mockExecutionManager.AddCodeBlock(oneBlock);
+        mockExecutionManager.Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(It.IsAny<TargetCodePointer>()))
+            .Returns<TargetCodePointer>(entryPoint => entryPoint == interpreterPrecode ? bytecodeStart : entryPoint);
+        mockRuntimeTypeSystem.AddMethodDesc(oneMethod);
+
+        var target = CreateTarget(
+            arch,
+            builder,
+            mockExecutionManager: mockExecutionManager,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
+
+        var codeVersions = target.Contracts.CodeVersions;
+        NativeCodeVersionHandle handle = codeVersions.GetNativeCodeVersionForIP(bytecodeStart + 0x20);
+        Assert.True(handle.Valid);
+        Assert.Equal(oneMethod.Address, handle.MethodDescAddress);
+        Assert.Equal(TargetPointer.Null, handle.CodeVersionNodeAddress);
     }
 
     [Theory]

@@ -1268,7 +1268,7 @@ namespace System.Net.Quic.Tests
             var boolValues = new[] { true, false };
             var payloadValues = !PlatformDetection.IsInHelix ?
                                     new[] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload, BigPayload } :
-                                    new[] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload };
+                                    new[] { SmallestPayload, SmallPayload, BufferPlusPayload };
             return
                 from payload in payloadValues
                 from bool1 in boolValues

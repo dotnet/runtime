@@ -281,7 +281,18 @@ namespace System.Net.WebSockets
                 handler.PooledConnectionLifetime = TimeSpan.Zero;
                 handler.CookieContainer = options.Cookies;
                 handler.UseCookies = options.Cookies != null;
-                handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
+                if (OperatingSystem.IsWasi())
+                {
+                    // System.Net.Security isn't supported on WASI.
+                    if (options.RemoteCertificateValidationCallback is not null || options._clientCertificates?.Count > 0)
+                    {
+                        throw new PlatformNotSupportedException();
+                    }
+                }
+                else
+                {
+                    handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
+                }
 
                 handler.Credentials = options.UseDefaultCredentials ?
                     CredentialCache.DefaultCredentials :
@@ -296,7 +307,7 @@ namespace System.Net.WebSockets
                     handler.Proxy = options.Proxy;
                 }
 
-                if (options._clientCertificates?.Count > 0) // use field to avoid lazily initializing the collection
+                if (!OperatingSystem.IsWasi() && options._clientCertificates?.Count > 0) // use field to avoid lazily initializing the collection
                 {
                     Debug.Assert(handler.SslOptions.ClientCertificates == null);
                     handler.SslOptions.ClientCertificates = new X509Certificate2Collection();

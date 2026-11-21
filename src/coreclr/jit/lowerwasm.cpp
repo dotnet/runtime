@@ -157,6 +157,22 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
         verifyLclFldDoNotEnregister(storeLoc->GetLclNum());
     }
 
+    // Record blocks with local-to-local copies for fgWasmForwardLocalCopies.
+    if (m_compiler->opts.OptimizationEnabled() && storeLoc->OperIs(GT_STORE_LCL_VAR) &&
+        storeLoc->Data()->OperIs(GT_LCL_VAR))
+    {
+        ArrayStack<BasicBlock*>*& copyBlocks = m_compiler->m_wasmLocalCopyBlocks;
+        if (copyBlocks == nullptr)
+        {
+            copyBlocks = new (m_compiler, CMK_Lower) ArrayStack<BasicBlock*>(m_compiler->getAllocator(CMK_Lower));
+        }
+
+        if (copyBlocks->Empty() || (copyBlocks->Top() != m_block))
+        {
+            copyBlocks->Push(m_block);
+        }
+    }
+
     ContainCheckStoreLoc(storeLoc);
     return storeLoc->gtNext;
 }
@@ -415,8 +431,13 @@ void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
     }
     else
     {
-        // Use the wasm `memory.fill` instruction.
+        // Use a native Wasm store or memory.fill.
         blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+        if (src->IsIntegralConst(0))
+        {
+            // Codegen picks the constant's type for scalar zero stores.
+            src->SetContained();
+        }
     }
 
     if ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) || ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0))
@@ -580,15 +601,14 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 
     // Contain a relocatable address constant so it folds into the load's memarg offset.
     //
-    // Codegen for such a constant is "global.get $imageBase; i32.const <reloc>; i32.add"; containing it lets
-    // genCodeForIndir emit just the image base and put the relocated address in the memarg instead. Only loads
-    // can do this: the parent emits the base in place of the address, and a store cannot because its value
-    // operand has already been pushed. A multiply-used address is excluded because codegen re-materializes it
-    // from a register that would no longer hold the full address.
+    // The load emits the address base and puts the relocated address in the memarg. A store cannot contain
+    // its address because its value operand has already been pushed. Multiply-used addresses are excluded
+    // because codegen re-materializes them from registers that must still hold the full address.
     //
-    GenTree* addr = indirNode->Addr();
+    GenTree* addr                    = indirNode->Addr();
+    bool     isNativeFunctionAddress = m_compiler->IsNativeAot() && addr->IsIconHandle(GTF_ICON_FTN_ADDR);
     if (indirNode->OperIs(GT_IND) && !indirNode->TypeIs(TYP_SIMD12) && addr->IsIconHandle() &&
-        addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler) &&
+        !isNativeFunctionAddress && addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler) &&
         ((addr->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None))
     {
         MakeSrcContained(indirNode, addr);
@@ -689,6 +709,43 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //
 void Lowering::ContainCheckSelect(GenTreeOp* node)
 {
+}
+
+//------------------------------------------------------------------------
+// TryMoveWasmSelectCondition: Move the condition tree to the top of the
+// Wasm value stack when it can be evaluated after both value operands.
+//
+void Lowering::TryMoveWasmSelectCondition(GenTreeConditional* select)
+{
+    GenTree* condition = select->gtCond;
+    if (condition->gtNext == select)
+    {
+        return;
+    }
+
+    bool               isClosed;
+    LIR::ReadOnlyRange range = BlockRange().GetTreeRange(condition, &isClosed);
+    if (!isClosed)
+    {
+        return;
+    }
+
+    for (GenTree* node : range)
+    {
+        if ((node->gtLIRFlags & LIR::Flags::MultiplyUsed) != 0)
+        {
+            return;
+        }
+    }
+
+    if (!IsRangeInvariantInRange(range.FirstNode(), range.LastNode(), select, nullptr))
+    {
+        return;
+    }
+
+    JITDUMP("Moving select condition to Wasm stack order\n");
+    LIR::Range conditionRange = BlockRange().Remove(std::move(range));
+    BlockRange().InsertBefore(select, std::move(conditionRange));
 }
 
 //------------------------------------------------------------------------

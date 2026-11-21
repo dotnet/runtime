@@ -30,8 +30,12 @@ public class WasmUnwinderTests
         public Dictionary<uint, ulong> VirtualIpBases { get; } = new();
         public Dictionary<ulong, ulong> UnwindData { get; } = new();
 
-        public bool TryGetVirtualIPBase(uint frameIdentity, out ulong baseVirtualIP)
-            => VirtualIpBases.TryGetValue(frameIdentity, out baseVirtualIP);
+        public bool TryGetVirtualIPBase(uint frameIdentity, out ulong baseVirtualIP, out TargetPointer unwindDataAddress)
+        {
+            bool found = VirtualIpBases.TryGetValue(frameIdentity, out baseVirtualIP);
+            unwindDataAddress = new TargetPointer(UnwindData.GetValueOrDefault(baseVirtualIP, BlobsBase + 0x100));
+            return found;
+        }
 
         public bool TryGetUnwindData(TargetCodePointer controlPC, out TargetPointer unwindDataAddress)
         {
@@ -49,29 +53,20 @@ public class WasmUnwinderTests
     {
         public Dictionary<ulong, (TargetPointer RuntimeFunction, TargetPointer BaseAddress)> UnwindInfo { get; } = new();
 
-        public bool TryGetUnwindInfo(
-            TargetCodePointer controlPC,
-            out TargetPointer runtimeFunction,
-            out TargetPointer unwindInfoBaseAddress)
-        {
-            if (UnwindInfo.TryGetValue(
-                controlPC.Value,
-                out (TargetPointer RuntimeFunction, TargetPointer BaseAddress) info))
-            {
-                runtimeFunction = info.RuntimeFunction;
-                unwindInfoBaseAddress = info.BaseAddress;
-                return true;
-            }
+        public CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip)
+            => UnwindInfo.ContainsKey(ip.Value) ? new CodeBlockHandle(ip.AsTargetPointer) : null;
 
-            runtimeFunction = TargetPointer.Null;
-            unwindInfoBaseAddress = TargetPointer.Null;
-            return false;
-        }
+        public TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle)
+            => UnwindInfo[codeInfoHandle.Address.Value].RuntimeFunction;
+
+        public TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle)
+            => UnwindInfo[codeInfoHandle.Address.Value].BaseAddress;
     }
 
     private static TestPlaceholderTarget CreateTarget(MockMemorySpace.HeapFragment[] fragments)
     {
         TestPlaceholderTarget.Builder builder = new(WasmArch);
+        builder.MemoryBuilder.AddHeapFragment(Blob(BlobsBase + 0x100, [0, 3], "defaultMultiIPUnwind"));
         foreach (MockMemorySpace.HeapFragment fragment in fragments)
             builder.MemoryBuilder.AddHeapFragment(fragment);
         return builder.Build();
@@ -202,6 +197,24 @@ public class WasmUnwinderTests
         Assert.Equal(VirtualIpBase + 6, unwinder.GetVirtualIP(new TargetPointer(FramesBase)).Value);
     }
 
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(uint.MaxValue)]
+    public void GetVirtualIP_SingleVirtualIP_IgnoresUninitializedSlot(uint slotValue)
+    {
+        FakeWasmR2RInfo info = new();
+        info.VirtualIpBases[FuncIndexLeaf] = VirtualIpBase;
+        info.UnwindData[VirtualIpBase] = BlobsBase;
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexLeaf, slotValue, "leaf"),
+            Blob(BlobsBase, [0x80, 1, 2], "singleIPUnwind"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+
+        Assert.Equal(VirtualIpBase + 2, unwinder.GetVirtualIP(new TargetPointer(FramesBase)).Value);
+    }
+
     [Fact]
     public void TryUnwindOneFrame_AdvancesBySingleByteFrameSize_AndYieldsCallerVirtualIP()
     {
@@ -225,6 +238,36 @@ public class WasmUnwinderTests
         Assert.True(unwinder.TryUnwindOneFrame(ref sp, new TargetCodePointer(LeafControlPc), out TargetCodePointer ip));
         Assert.Equal(callerBase, sp.Value);
         Assert.Equal(VirtualIpBase + 14, ip.Value); // caller local VIP 7*2
+    }
+
+    [Fact]
+    public void WasmContext_UnwindCallerWithoutVirtualIp_PreservesStackPointerAndClearsIPAndFP()
+    {
+        const uint leafFrameSize = 0x20;
+        ulong callerBase = FramesBase + leafFrameSize;
+
+        FakeWasmR2RInfo info = new();
+        info.UnwindData[LeafControlPc] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexLeaf, 3, "leaf"),
+            Frame(callerBase, FuncIndexCaller, 7, "nonR2RCaller"),
+            Blob(BlobsBase, [(byte)leafFrameSize], "leafUnwind"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+        WasmContext context = new()
+        {
+            StackPointer = new TargetPointer(FramesBase),
+            InstructionPointer = new TargetCodePointer(LeafControlPc),
+            FramePointer = new TargetPointer(FramesBase),
+        };
+
+        context.Unwind(unwinder);
+
+        Assert.Equal(callerBase, context.StackPointer.Value);
+        Assert.Equal(TargetCodePointer.Null, context.InstructionPointer);
+        Assert.Equal(TargetPointer.Null, context.FramePointer);
     }
 
     [Fact]
@@ -499,10 +542,11 @@ public class WasmUnwinderTests
         FakeExecutionManager executionManager = new();
         for (int i = 0; i < functions.Length; i++)
         {
-            // Unwind data is the ULEB128 fixed frame size, addressed as LoadedImageBase (0) + UnwindData.
+            // Unwind data holds the frame size and virtual IP extent, both ULEB128.
             Assert.True(functions[i].FrameSize < 0x80);
-            MockMemorySpace.HeapFragment unwindData = allocator.Allocate(1, "UnwindData");
+            MockMemorySpace.HeapFragment unwindData = allocator.Allocate(2, "UnwindData");
             unwindData.Data[0] = (byte)functions[i].FrameSize;
+            unwindData.Data[1] = 0x60;
 
             Span<byte> entry = runtimeFunctions.Data.AsSpan(i * (int)runtimeFunctionLayout.Stride, (int)runtimeFunctionLayout.Stride);
             helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), functions[i].BeginAddress);

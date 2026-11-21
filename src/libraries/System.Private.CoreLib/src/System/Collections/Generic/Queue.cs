@@ -327,7 +327,6 @@ namespace System.Collections.Generic
             _array = newarray;
             _head = 0;
             _tail = (_size == capacity) ? 0 : _size;
-            _version++;
         }
 
         // Increments the index wrapping it if necessary.

@@ -170,6 +170,14 @@ typedef uint8_t CODE_LOCATION;
     FCIMPL_RENAME_ARGSIZE(_rettype, _method, 24) \
     EXTERN_C _rettype F_CALL_CONV _method##_FCall (c, b, a) \
     {
+#define FCIMPL3_FII(_rettype, _method, a, b, c) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 12) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, b, c) \
+    {
+#define FCIMPL3_DII(_rettype, _method, a, b, c) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 16) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, b, c) \
+    {
 #define FCIMPL3_ILL(_rettype, _method, a, b, c) \
     FCIMPL_RENAME_ARGSIZE(_rettype, _method, 20) \
     EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, c, b) \
@@ -196,6 +204,8 @@ typedef uint8_t CODE_LOCATION;
 #define FCIMPL2_DI FCIMPL2
 #define FCIMPL3_FFF FCIMPL3
 #define FCIMPL3_DDD FCIMPL3
+#define FCIMPL3_FII FCIMPL3
+#define FCIMPL3_DII FCIMPL3
 #define FCIMPL3_ILL FCIMPL3
 
 #define FCDECL2_RAW(_rettype, _method, a, b) _rettype F_CALL_CONV _method(a, b)
@@ -233,6 +243,12 @@ typedef uint8_t CODE_LOCATION;
     EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b, c) \
     {
 #define FCIMPL3_DDD(_rettype, _method, a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b, c) \
+    {
+#define FCIMPL3_FII(_rettype, _method, a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b, c) \
+    {
+#define FCIMPL3_DII(_rettype, _method, a, b, c) \
     EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b, c) \
     {
 #define FCIMPL3_ILL(_rettype, _method, a, b, c) \

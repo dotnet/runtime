@@ -1033,7 +1033,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-                if (target == null) throw new ArgumentNullException(nameof(target));
+                ArgumentNullException.ThrowIfNull(target);
 
                 TOutput? valueToClone;
                 lock (OutgoingLock) // We may currently be calling out under this lock to the target; requires it to be reentrant
@@ -1073,7 +1073,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-                if (target == null) throw new ArgumentNullException(nameof(target));
+                ArgumentNullException.ThrowIfNull(target);
 
                 lock (OutgoingLock)
                 {
@@ -1100,7 +1100,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-                if (target == null) throw new ArgumentNullException(nameof(target));
+                ArgumentNullException.ThrowIfNull(target);
 
                 lock (OutgoingLock)
                 {

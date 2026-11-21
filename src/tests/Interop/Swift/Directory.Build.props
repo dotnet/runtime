@@ -3,6 +3,6 @@
 
   <PropertyGroup>
     <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' != 'true' and '$(TargetsAppleMobile)' != 'true'">true</CLRTestTargetUnsupported>
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'x64'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'x64'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 </Project>

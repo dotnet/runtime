@@ -131,7 +131,7 @@
 
     <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
       <XHarnessAppBundleToTest Update="@(XHarnessAppBundleToTest)"
-                              Condition="$([System.String]::Copy('%(Filename)').StartsWith('iOS.InProcCrashReport.'))">
+                              Condition="$([System.String]::Copy('%(Filename)').StartsWith('InProcCrashReport.'))">
         <ExpectedExitCode>100</ExpectedExitCode>
       </XHarnessAppBundleToTest>
     </ItemGroup>

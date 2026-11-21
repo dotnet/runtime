@@ -32,11 +32,6 @@ public struct CodeBlockHandle
     // GetCodeBlockHandle. Other addresses are returned unchanged.
     TargetCodePointer GetDiagnosticCodeStartFromEntryPoint(TargetCodePointer entryPoint);
 
-    // Finds the unwind info for the function containing controlPC without resolving its method.
-    bool TryGetUnwindInfo(
-        TargetCodePointer controlPC,
-        out TargetPointer runtimeFunction,
-        out TargetPointer unwindInfoBaseAddress);
     // Gets the unwind info of the code block at the specified code pointer
     TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle);
     // Gets the base address the UnwindInfo of codeInfoHandle is relative to
@@ -275,7 +270,7 @@ virtual-IP ranges bypass native thunk classification.
 | `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | `pointer` | Pointer to an `ImageDataDirectory` for the delay load method call thunks; absent on WebAssembly |
 | `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
 | `ReadyToRunInfo` | `HotColdMap` | `pointer` | Pointer to an array of 32-bit integers; present only with `FEATURE_COLD_R2R_CODE` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
-| `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
+| `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image; unset for component assemblies of a composite image, so it is read from the `CompositeInfo` |
 | `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base virtual IP assigned to the ReadyToRun module on WebAssembly |
 | `ReadyToRunInfo` | `NumHotColdMap` | `uint32` | Number of entries in the `HotColdMap`; absent without `FEATURE_COLD_R2R_CODE`, meaning no hot/cold mapping |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
@@ -403,7 +398,7 @@ bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddre
     // Find the relative address that we are looking for
     TargetCodePointer addr = /* code pointer from jittedCodeAddress using PlatformMetadata.GetCodePointerFlags */
     TargetPointer codeBase = /* RangeSection.RangeBegin, or ReadyToRunInfo.MinVirtualIP on WebAssembly */;
-    TargetPointer loadedImageBase = /* ReadyToRunInfo.LoadedImageBase on WebAssembly, otherwise codeBase */;
+    TargetPointer loadedImageBase = /* LoadedImageBase of r2rInfo.CompositeInfo on WebAssembly, otherwise codeBase */;
     TargetPointer relativeAddr = addr - codeBase;
 
     TargetPointer runtimeFunctions = Target.ReadPointer(r2rInfo + /* ReadyToRunInfo::RuntimeFunctions offset */);
@@ -615,9 +610,7 @@ The `GetMethodDesc`, `GetStartAddress`, and `GetRelativeOffset` APIs extract fie
     }
 ```
 
-`IExecutionManager.TryGetUnwindInfo` maps a control PC directly to its Windows-style unwind data in the form of a `RUNTIME_FUNCTION` pointer and the base address to which that entry's relative fields apply. It finds the owning range and delegates to the same per-JIT-manager unwind lookup used by `GetUnwindInfo`, but does not resolve a method or create a `CodeBlockHandle`. It returns false, with both outputs null, when the address has no owning managed range or its code kind has no native unwind information.
-
-`IExecutionManager.GetUnwindInfo` gets the same platform-dependent `RUNTIME_FUNCTION` for an existing `CodeBlockHandle`. The ExecutionManager delegates to the JitManager implementations as the unwind infos are stored differently on jitted and R2R code.
+`IExecutionManager.GetUnwindInfo` gets the platform-dependent `RUNTIME_FUNCTION` for an existing `CodeBlockHandle`. The ExecutionManager delegates to the JitManager implementations as the unwind infos are stored differently on jitted and R2R code.
 
 * For jitted code (`EEJitManager`) a list of sorted `RUNTIME_FUNCTION` are stored on the `RealCodeHeader` which is accessed in the same was as `GetMethodInfo` described above. The correct `RUNTIME_FUNCTION` is found by binary searching the list based on IP.
 

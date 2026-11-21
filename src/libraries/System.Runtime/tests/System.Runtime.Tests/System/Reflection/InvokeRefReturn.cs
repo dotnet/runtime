@@ -57,6 +57,8 @@ namespace System.Reflection.Tests
             Assert.True(rv is Pointer);
             int* actual = (int*)(Pointer.Unbox(rv));
             Assert.Equal((IntPtr)expected, (IntPtr)actual);
+            Assert.Equal(typeof(int*), ((Pointer)rv).PointerType);
+            Assert.Equal((IntPtr)expected, (IntPtr)((Pointer)rv).Value);
         }
 
         [Fact]

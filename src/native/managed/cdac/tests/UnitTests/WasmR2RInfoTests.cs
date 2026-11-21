@@ -36,28 +36,18 @@ public class WasmR2RInfoTests
         public TargetPointer RuntimeFunction { get; set; }
         public TargetPointer UnwindInfoBaseAddress { get; set; }
 
-        public bool TryGetUnwindInfo(
-            TargetCodePointer controlPC,
-            out TargetPointer runtimeFunction,
-            out TargetPointer unwindInfoBaseAddress)
-        {
-            if (controlPC == ControlPC && RuntimeFunction != TargetPointer.Null)
-            {
-                runtimeFunction = RuntimeFunction;
-                unwindInfoBaseAddress = UnwindInfoBaseAddress;
-                return true;
-            }
+        public CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip)
+            => ip == ControlPC ? new CodeBlockHandle(ip.AsTargetPointer) : null;
 
-            runtimeFunction = TargetPointer.Null;
-            unwindInfoBaseAddress = TargetPointer.Null;
-            return false;
-        }
+        public TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle) => RuntimeFunction;
+
+        public TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle) => UnwindInfoBaseAddress;
     }
 
     // Builds a target whose FunctionTableIndexRangeList global points at a *slot* (pointer-to-pointer),
     // matching the CDAC_GLOBAL_POINTER contract. WasmR2RInfo must dereference the slot to reach the
     // list head; walking from the slot address directly reads garbage and finds nothing.
-    private static TestPlaceholderTarget CreateTarget(bool emptyList = false, ulong minVirtualIP = MinVirtualIP)
+    private static TestPlaceholderTarget CreateTarget(bool emptyList = false, ulong minVirtualIP = MinVirtualIP, byte virtualIPLength = 3)
     {
         TargetTestHelpers helpers = new(WasmArch);
         var targetBuilder = new TestPlaceholderTarget.Builder(WasmArch);
@@ -120,6 +110,12 @@ public class WasmR2RInfoTests
             Data = portableEntryPointData,
             Name = "PortableEntryPoint",
         });
+        builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = LoadedImageBase + FunctionUnwindData,
+            Data = [16, virtualIPLength],
+            Name = "UnwindData",
+        });
 
         var types = new Dictionary<DataType, Target.TypeInfo>
         {
@@ -165,6 +161,21 @@ public class WasmR2RInfoTests
         Assert.False(info.TryGetVirtualIPBase(CoreLibFrameIdentity(1), out _));
     }
 
+    [Theory]
+    [InlineData((uint)PortableEntryPointAddress, MinVirtualIP)]
+    [InlineData(FunctionTableIndex * 2 + 1, MinVirtualIP)]
+    [InlineData(uint.MaxValue, 0x8000_0001ul)]
+    public void SingleVirtualIP_FrameIdentitySuppliesUnwindExtent(uint frameIdentity, ulong minVirtualIP)
+    {
+        TestPlaceholderTarget target = CreateTarget(minVirtualIP: minVirtualIP, virtualIPLength: 2);
+
+        Assert.True(new WasmR2RInfo(target, new FakeExecutionManager()).TryGetVirtualIPBase(
+            frameIdentity, out ulong baseVirtualIP, out TargetPointer unwindData));
+        Assert.Equal(minVirtualIP + FunctionBeginAddress, baseVirtualIP);
+        Assert.Equal(LoadedImageBase + FunctionUnwindData, unwindData.Value);
+        Assert.Equal(2, target.Read<byte>(unwindData + 1));
+    }
+
     [Fact]
     public void TryGetUnwindData_ReturnsImageBasePlusUnwindData()
     {
@@ -181,6 +192,35 @@ public class WasmR2RInfoTests
             executionManager.ControlPC,
             out TargetPointer unwindData));
         Assert.Equal(LoadedImageBase + FunctionUnwindData, unwindData.Value);
+    }
+
+    [Theory]
+    [InlineData(0x102u, 0x40u)]
+    [InlineData(0x122u, 0x80u)]
+    public void TryGetUnwindData_ExecutionManager_ResolvesRootAndFunclet(uint offset, uint expectedUnwindData)
+    {
+        const ulong MethodDescAddress = 0x0101_aaa0;
+        const ulong JitManagerAddress = 0x000b_ff00;
+        MockExecutionManagerBuilder emBuilder = new(
+            "c1", WasmArch, MockExecutionManagerBuilder.DefaultAllocationRange, isWasm: true);
+        var virtualIPRange = emBuilder.AllocateJittedCodeRange(SyntheticMinVirtualIP, 0x400);
+        MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([0x100, 0x8000_0120, 0x180], []);
+        r2rInfo.MinVirtualIP = SyntheticMinVirtualIP;
+        r2rInfo.LoadedImageBase = LoadedImageBase;
+        emBuilder.SetRuntimeFunctionUnwindData(r2rInfo, 0, 0x40);
+        emBuilder.SetRuntimeFunctionUnwindData(r2rInfo, 1, 0x80);
+        new MockHashMapBuilder(emBuilder.Builder).PopulatePtrMap(
+            r2rInfo.EntryPointToMethodDescMapAddress,
+            [(SyntheticMinVirtualIP + FunctionBeginAddress, MethodDescAddress)]);
+        MockLoaderModule module = emBuilder.AddReadyToRunModule(r2rInfo.Address);
+        emBuilder.AddVirtualIPRangeSection(virtualIPRange, JitManagerAddress, module.Address);
+        Target target = ExecutionManager.ExecutionManagerTests.CreateTarget(
+            emBuilder, targetArchitecture: RuntimeInfoArchitecture.Wasm);
+        WasmR2RInfo info = new(target);
+
+        Assert.True(info.TryGetUnwindData(
+            new TargetCodePointer(SyntheticMinVirtualIP + offset), out TargetPointer unwindData));
+        Assert.Equal(new TargetPointer(LoadedImageBase + expectedUnwindData), unwindData);
     }
 
     [Fact]
@@ -251,6 +291,13 @@ public class WasmR2RInfoTests
         r2rInfo.RuntimeFunctions = runtimeFuncTableFrag.Address;
         r2rInfo.LoadedImageBase = LoadedImageBase;
         r2rInfo.MinVirtualIP = SyntheticMinVirtualIP;
+
+        builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = LoadedImageBase,
+            Data = [16, 2],
+            Name = "SyntheticSingleIPUnwindData",
+        });
 
         MockLoaderModule module = moduleLayout.Create(allocator.Allocate((ulong)moduleLayout.Size, "Module"));
         module.ReadyToRunInfo = r2rInfo.Address;

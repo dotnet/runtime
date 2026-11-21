@@ -7,7 +7,7 @@ Documentation can be found at https://learn.microsoft.com/dotnet/api/system.io.c
 [../../native/libs/System.IO.Compression.Native](../../native/libs/System.IO.Compression.Native) contains the PAL (Platform Abstraction Layer) of the zlib library used by System.IO.Compression.
 
 ## Zstandard support
-Zstandard (zstd) compression and decompression is supported on all platforms except browser and WASI. The Zstandard source files are located in the `Zstandard` subdirectory.
+Zstandard (zstd) compression and decompression is supported on all platforms except browser. The Zstandard source files are located in the `Zstandard` subdirectory.
 
 ### Dictionaries
 

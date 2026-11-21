@@ -105,35 +105,9 @@
 #define CONTEXT_DEBUG_SIZE   120 // (8*4)+(8*8)+(2*4)+(2*8)
 
 #define CONTEXT_XSTATEFEATURESMASK_OFFSET CONTEXT_DEBUG_OFFSET+CONTEXT_DEBUG_SIZE
+#define CONTEXT_Size         0x3a0
 
-// TODO-SVE: Support Vector register sizes >128bit
-
-#define CONTEXT_SVE_OFFSET   CONTEXT_XSTATEFEATURESMASK_OFFSET+8
-#define CONTEXT_VL_OFFSET    0
-
-// SVE register offsets are multiples of the vector length
-#define CONTEXT_SVE_REGS_OFFSET   CONTEXT_VL_OFFSET+4
-#define CONTEXT_FFR_VL       0
-#define CONTEXT_P0_VL        CONTEXT_FFR_VL+1
-#define CONTEXT_P1_VL        CONTEXT_P0_VL+1
-#define CONTEXT_P2_VL        CONTEXT_P1_VL+1
-#define CONTEXT_P3_VL        CONTEXT_P2_VL+1
-#define CONTEXT_P4_VL        CONTEXT_P3_VL+1
-#define CONTEXT_P5_VL        CONTEXT_P4_VL+1
-#define CONTEXT_P6_VL        CONTEXT_P5_VL+1
-#define CONTEXT_P7_VL        CONTEXT_P6_VL+1
-#define CONTEXT_P8_VL        CONTEXT_P7_VL+1
-#define CONTEXT_P9_VL        CONTEXT_P8_VL+1
-#define CONTEXT_P10_VL       CONTEXT_P9_VL+1
-#define CONTEXT_P11_VL       CONTEXT_P10_VL+1
-#define CONTEXT_P12_VL       CONTEXT_P11_VL+1
-#define CONTEXT_P13_VL       CONTEXT_P12_VL+1
-#define CONTEXT_P14_VL       CONTEXT_P13_VL+1
-#define CONTEXT_P15_VL       CONTEXT_P14_VL+1
-
-#define CONTEXT_SVE_REGS_SIZE     ((CONTEXT_P15_VL+1) * 4)
-#define CONTEXT_SVE_SIZE     CONTEXT_SVE_REGS_SIZE + 8
-
-#define CONTEXT_Size         CONTEXT_SVE_OFFSET + CONTEXT_SVE_SIZE
+#define CONTEXT_SVE_STATE_HEADER_VectorLengthInBytes 0
+#define CONTEXT_SVE_STATE_HEADER_Size                16
 
 #endif

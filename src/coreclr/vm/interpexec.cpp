@@ -904,6 +904,72 @@ NOINLINE static void InterpThrow(InterpMethodContextFrame* pFrame, const int32_t
     COMPlusThrow(exType);
 }
 
+NOINLINE static void InterpHandleThreadTrap()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    Thread* pThread = GetThread();
+    if (pThread->IsAbortRequested())
+    {
+        CallWithSEHWrapper(
+        [&pThread]() {
+            pThread->HandleThreadAbort();
+            return 0;
+        });
+    }
+
+    GCX_PREEMP_REGION_BEGIN();
+    GCX_PREEMP_REGION_END();
+}
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+NOINLINE static void InterpTryActivateDelayedR2RCode(InterpreterFrame* pInterpreterFrame,
+                                                     InterpMethodContextFrame* pFrame,
+                                                     InterpMethod* pMethod, const int32_t* ip)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+    // entry[0] is the INTOP_SAFEPOINT_TRY_ACTIVATE opcode; entry[1] is the readiness flag pointer.
+    // A debugger breakpoint on this instruction replaces entry[0] and dispatches the saved opcode, and
+    // a concurrent activation may already have rewritten entry[0] after this thread dispatched it.
+    int32_t* entry = const_cast<int32_t*>(ip);
+    _ASSERTE(entry[0] == INTOP_SAFEPOINT_TRY_ACTIVATE || entry[0] == INTOP_BREAKPOINT ||
+             entry[0] == INTOP_SAFEPOINT_AND_SKIP);
+
+    // Reentrant calls interpret while activation is in progress. If activation throws, leave
+    // the flag cleared so later calls do not retry it.
+    entry[1] = 0;
+    uint32_t* nextActivationFlag;
+    {
+        GCX_PREEMP_REGION_BEGIN();
+        nextActivationFlag = CallWithSEHWrapper([pMethod]() {
+            return pMethod->methodHnd->TryActivateDelayedR2RCode(CallerGCMode::Coop);
+        });
+        GCX_PREEMP_REGION_END();
+    }
+    // Checked after activation because the debugger can patch entry[0] with INTOP_BREAKPOINT while this
+    // thread is in preemptive mode. The breakpoint dispatches the saved opcode, so leave it in place.
+    if (nextActivationFlag == nullptr && entry[0] == INTOP_SAFEPOINT_TRY_ACTIVATE)
+        entry[0] = INTOP_SAFEPOINT_AND_SKIP;
+
+    // A non-null flag means another module is still pending.
+    entry[1] = static_cast<int32_t>(reinterpret_cast<uintptr_t>(nextActivationFlag));
+}
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
 #define NULL_CHECK(o) do { if ((o) == NULL) { INTERP_THROW(kNullReferenceException); } } while (0)
 #define INTERP_THROW(exType) InterpThrow(pFrame, ip, exType)
 
@@ -1421,6 +1487,9 @@ static void UpdateFrameForTailCall(InterpMethodContextFrame *pFrame, PTR_InterpB
 // Returns the interpreter code pointer, or NULL if the method cannot be interpreted.
 static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, InterpMethodContextFrame* pFrame, InterpreterFrame* pInterpreterFrame, const int32_t* ip)
 {
+    // Preserve last error, same way as normal JIT entry does in PreStubWorker
+    PreserveLastErrorHolder preserveLastError;
+
     _ASSERTE(targetMethod != NULL);
 
     // This is an optimization to ensure that the stack walk will not have to search
@@ -2093,23 +2162,32 @@ SWITCH_OPCODE:
                     INTOP_NEXT;
                 }
 
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+                INTOP_CASE(INTOP_SAFEPOINT_TRY_ACTIVATE)
+                {
+                    pFrame->ip = ip;
+                    if (g_TrapReturningThreads)
+                        InterpHandleThreadTrap();
+
+                    uint32_t* flag = reinterpret_cast<uint32_t*>(static_cast<uintptr_t>(static_cast<uint32_t>(ip[1])));
+                    if (flag != nullptr && VolatileLoad(flag) != 0)
+                        InterpTryActivateDelayedR2RCode(pInterpreterFrame, pFrame, pMethod, ip);
+                    ip += 2;
+                    INTOP_NEXT;
+                }
+
+                INTOP_CASE(INTOP_SAFEPOINT_AND_SKIP)
+                    pFrame->ip = ip;
+                    if (g_TrapReturningThreads)
+                        InterpHandleThreadTrap();
+                    ip += 2;
+                    INTOP_NEXT;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
                 INTOP_CASE(INTOP_SAFEPOINT)
                     pFrame->ip = ip;
                     if (g_TrapReturningThreads)
-                    {
-                        Thread *pThread = GetThread();
-                        if (pThread->IsAbortRequested())
-                        {
-                            CallWithSEHWrapper(
-                            [&pThread]() {
-                                pThread->HandleThreadAbort();
-                                return 0;
-                            });
-                        }
-                        // Transition into preemptive mode to allow the GC to suspend us
-                        GCX_PREEMP_REGION_BEGIN();
-                        GCX_PREEMP_REGION_END();
-                    }
+                        InterpHandleThreadTrap();
                     ip++;
                     INTOP_NEXT;
 
@@ -4966,6 +5044,7 @@ do                                                                      \
                 INTOP_CASE(INTOP_NOP)
                 INTOP_CASE(INTOP_DEF)
                 INTOP_CASE(INTOP_MOV_SRC_OFF)
+                INTOP_CASE(INTOP_LDIND_THIS_OFFSET)
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unimplemented or invalid interpreter opcode\n"));
                     INTOP_NEXT;
 #else
@@ -4980,8 +5059,12 @@ do                                                                      \
     }
     catch (const ResumeAfterCatchException& ex)
     {
-        GCX_COOP_NO_DTOR();
         ex.GetResumeContext(&resumeSP, &resumeIP);
+    }
+
+RESUME_AFTER_CATCH:
+    {
+        GCX_COOP_NO_DTOR();
         _ASSERTE(resumeSP != 0 && resumeIP != 0);
 
         InterpMethodContextFrame* pResumeFrame = (InterpMethodContextFrame*)resumeSP;
@@ -5017,16 +5100,43 @@ do                                                                      \
 
         pInterpreterFrame->SetIsFaulting(false);
 
-        void* abortAddress = COMPlusCheckForAbort(resumeIP);
-        if (abortAddress != NULL)
-        {
-            // Record the resume IP in the pFrame so that the exception handling unwinds from there
-            pFrame->ip = ip;
-            DispatchManagedException(kThreadAbortException);
-        }
+        // If the thread is being aborted, the abort has to be raised again now that the catch handler is done, like
+        // EECodeManager::ResumeAfterCatch does for compiled code.
 
-        goto MAIN_LOOP;
+        // Record the resume IP in the pFrame so that the exception handling unwinds from there
+        pFrame->ip = ip;
+
+        // COMPlusCheckForAbort expects Thread::m_OSContext to describe the place where the execution resumes. It
+        // uses that context to find out whether the thread can be aborted there.
+        pInterpreterFrame->SetContextToInterpMethodContextFrame(GetThread()->m_OSContext);
+
+        if (COMPlusCheckForAbort(resumeIP) == NULL)
+        {
+            goto MAIN_LOOP;
+        }
     }
+
+    // Raise the abort again at the resume IP. It has a try block of its own: when a frame of this InterpExecMethod
+    // catches the abort, the ResumeAfterCatchException that resumes that frame is caught here.
+    try
+    {
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        // Look up the handlers at the resume IP itself, as INTOP_THROW does, rather than at the instruction before
+        // it, as for a return address. After a catch, the resume IP is the catch leave island, which is covered by the
+        // try regions that enclose the catch's try region and not by the catch's own try region.
+        pInterpreterFrame->SetIsFaulting(true);
+        DispatchManagedException(kThreadAbortException);
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    }
+    catch (const ResumeAfterCatchException& ex)
+    {
+        ex.GetResumeContext(&resumeSP, &resumeIP);
+        goto RESUME_AFTER_CATCH;
+    }
+
+    UNREACHABLE();
 
 EXIT_FRAME:
     // Exit the current frame, MAKE CERTAIN not to trigger any GC between here and the return, since the interpreter

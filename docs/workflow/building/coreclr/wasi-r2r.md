@@ -40,6 +40,9 @@ of the number of function definitions; table slots may contain duplicate or non-
 references.
 Non-composite R2R and `WasmSingleFileBundle` are not supported by this path.
 
+Relaxed SIMD is a default WASI instruction set. Hosts without relaxed SIMD fail to load the composite; publish with
+`-p:PublishReadyToRunInstructionSet=-relaxed-simd` for them.
+
 ## Runtime tests
 
 The WASI runtime-test pipeline keeps separate interpreter and `R2R_CG2` jobs. The R2R job uses
@@ -63,6 +66,14 @@ same composition task through `CORE_ROOT/wasi-r2r/WasiR2RComposer.proj`. It laun
 Without `RunCrossGen2`, the wrapper uses the original host and does not probe those stubs.
 Composition failures fail the test rather than silently falling back to interpretation.
 Helix receives the composition tools through a separate correlation payload.
+
+A WASI guest cannot start processes, so a merged runner does not launch its out-of-process tests
+itself. As on browser, its wrapper first runs the runner to write a plan of those tests, then runs
+each test's own wrapper, and finally runs the runner again to import the results into its report.
+Each test still composes its own ReadyToRun host. A test that calls into its own native code also
+gets a test-specific `corerun.wasm`, linked from the `corerun-link` kit that the `clr.hosts` build
+exports (see `src/tests/Common/CLRTest.WasmCorerun.targets`), and its composite is composed into
+that host.
 
 ## Composer diagnostics
 
