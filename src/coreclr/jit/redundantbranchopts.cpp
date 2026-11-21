@@ -194,15 +194,15 @@ RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, target_ssize_t bound1, genTree
         }
     };
 
-    constexpr target_ssize_t minValue = TARGET_POINTER_SIZE == 4 ? INT32_MIN : INT64_MIN;
-    constexpr target_ssize_t maxValue = TARGET_POINTER_SIZE == 4 ? INT32_MAX : INT64_MAX;
+    target_ssize_t minValue = TargetFromHost<target_ssize_t>(TARGET_POINTER_SIZE == 4 ? INT32_MIN : INT64_MIN);
+    target_ssize_t maxValue = TargetFromHost<target_ssize_t>(TARGET_POINTER_SIZE == 4 ? INT32_MAX : INT64_MAX);
 
     // Start with the widest possible ranges
     IntegralRange range1 = {minValue, maxValue};
     IntegralRange range2 = {minValue, maxValue};
 
     // Update ranges based on inputs
-    auto setRange = [](genTreeOps oper, target_ssize_t bound, IntegralRange* range) -> bool {
+    auto setRange = [minValue, maxValue](genTreeOps oper, target_ssize_t bound, IntegralRange* range) -> bool {
         switch (oper)
         {
             case GT_LT:
@@ -656,11 +656,11 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
 
     // Dominating "X relop CNS"
     const genTreeOps     domOper = static_cast<genTreeOps>(domFunc);
-    const target_ssize_t domCns  = vnStore->CoercedConstantValue<target_ssize_t>(domOp2);
+    const target_ssize_t domCns  = TargetFromHost<target_ssize_t>(vnStore->CoercedConstantValue<ssize_t>(domOp2));
 
     // Dominated "X relop CNS"
     const genTreeOps     treeOper = static_cast<genTreeOps>(treeFunc);
-    const target_ssize_t treeCns  = vnStore->CoercedConstantValue<target_ssize_t>(treeOp2);
+    const target_ssize_t treeCns  = TargetFromHost<target_ssize_t>(vnStore->CoercedConstantValue<ssize_t>(treeOp2));
 
     // Example:
     //

@@ -2393,25 +2393,21 @@ GenTree* Compiler::impImplicitIorI4Cast(GenTree* tree, var_types dstTyp, bool ze
             {
                 tree->gtType = TYP_I_IMPL;
             }
-#ifdef TARGET_64BIT
-            else if (currType == TYP_INT)
+            else if (TargetArchitecture::Is64Bit && (currType == TYP_INT))
             {
                 tree->gtType = TYP_I_IMPL;
             }
-#endif // TARGET_64BIT
         }
-#ifdef TARGET_64BIT
-        else if (varTypeIsI(wantedType) && (currType == TYP_INT))
+        else if (TargetArchitecture::Is64Bit && varTypeIsI(wantedType) && (currType == TYP_INT))
         {
             // Note that this allows TYP_INT to be cast to a TYP_I_IMPL when wantedType is a TYP_BYREF or TYP_REF
             tree = gtNewCastNode(TYP_I_IMPL, tree, zeroExtend, TYP_I_IMPL);
         }
-        else if ((wantedType == TYP_INT) && varTypeIsI(currType))
+        else if (TargetArchitecture::Is64Bit && (wantedType == TYP_INT) && varTypeIsI(currType))
         {
             // Note that this allows TYP_BYREF or TYP_REF to be cast to a TYP_INT
             tree = gtNewCastNode(TYP_INT, tree, false, TYP_INT);
         }
-#endif // TARGET_64BIT
     }
 
     return tree;
@@ -3929,7 +3925,7 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
     if (runtimeLookup)
     {
-        node = gtNewHelperCallNode(CORINFO_HELP_INITCLASS, HelperInitClassRetType, node);
+        node = gtNewHelperCallNode(CORINFO_HELP_INITCLASS, HelperInitClassReturnType(), node);
     }
     else
     {
@@ -4120,8 +4116,8 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
             return nullptr;
         }
 
-        const int bufferSize         = TARGET_POINTER_SIZE;
-        uint8_t   buffer[bufferSize] = {0};
+        const unsigned bufferSize               = TARGET_POINTER_SIZE;
+        uint8_t        buffer[sizeof(uint64_t)] = {0};
 
         if ((totalSize > bufferSize) || !info.compCompHnd->getStaticFieldContent(field, buffer, totalSize))
         {
@@ -4400,19 +4396,20 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
         {
             bool isStaticReadOnlyInitedRef = false;
 
-#ifdef TARGET_64BIT
-            // TODO-CQ: enable this optimization for 32 bit targets.
-            if (!isBoxedStatic && (lclTyp == TYP_REF) && ((access & CORINFO_ACCESS_GET) != 0) &&
-                ((*pIndirFlags & GTF_IND_VOLATILE) == 0))
+            if (TargetArchitecture::Is64Bit)
             {
-                bool isSpeculative = true;
-                if ((info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField, &isSpeculative) !=
-                     NO_CLASS_HANDLE))
+                // TODO-CQ: enable this optimization for 32 bit targets.
+                if (!isBoxedStatic && (lclTyp == TYP_REF) && ((access & CORINFO_ACCESS_GET) != 0) &&
+                    ((*pIndirFlags & GTF_IND_VOLATILE) == 0))
                 {
-                    isStaticReadOnlyInitedRef = !isSpeculative;
+                    bool isSpeculative = true;
+                    if ((info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField, &isSpeculative) !=
+                         NO_CLASS_HANDLE))
+                    {
+                        isStaticReadOnlyInitedRef = !isSpeculative;
+                    }
                 }
             }
-#endif // TARGET_64BIT
 
             assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
             size_t       fldAddr = reinterpret_cast<size_t>(pFieldInfo->fieldLookup.addr);
@@ -5432,8 +5429,7 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
 
         type = TYP_BYREF;
     }
-#ifdef TARGET_64BIT
-    else if ((genActualType(op1) == TYP_I_IMPL) || (genActualType(op2) == TYP_I_IMPL))
+    else if (TargetArchitecture::Is64Bit && ((genActualType(op1) == TYP_I_IMPL) || (genActualType(op2) == TYP_I_IMPL)))
     {
         assert(!varTypeIsFloating(op1) && !varTypeIsFloating(op2));
 
@@ -5462,8 +5458,7 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
 
         type = TYP_I_IMPL;
     }
-#else  // 32-bit TARGET
-    else if ((genActualType(op1) == TYP_LONG) || (genActualType(op2) == TYP_LONG))
+    else if (!TargetArchitecture::Is64Bit && ((genActualType(op1) == TYP_LONG) || (genActualType(op2) == TYP_LONG)))
     {
         assert(!varTypeIsFloating(op1) && !varTypeIsFloating(op2));
 
@@ -5472,7 +5467,6 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
 
         type = TYP_LONG;
     }
-#endif // TARGET_64BIT
     else
     {
         // int + int => gives an int
@@ -8062,16 +8056,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     uns  = false;
                 }
 
-#ifdef TARGET_64BIT
-                if (varTypeIsI(op1) && genActualTypeIsInt(op2))
+                if (TargetArchitecture::Is64Bit)
                 {
-                    op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
+                    if (varTypeIsI(op1) && genActualTypeIsInt(op2))
+                    {
+                        op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
+                    }
+                    else if (varTypeIsI(op2) && genActualTypeIsInt(op1))
+                    {
+                        op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL);
+                    }
                 }
-                else if (varTypeIsI(op2) && genActualTypeIsInt(op1))
-                {
-                    op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL);
-                }
-#endif // TARGET_64BIT
 
                 assertImp(genActualType(op1) == genActualType(op2) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
                           (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
@@ -8161,17 +8156,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
 
-#ifdef TARGET_64BIT
-                // TODO-Review: this differs in the extending behavior from plain relop import. Why?
-                if (op1->TypeIs(TYP_I_IMPL) && genActualTypeIsInt(op2))
+                if (TargetArchitecture::Is64Bit)
                 {
-                    op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL, uns);
+                    // TODO-Review: this differs in the extending behavior from plain relop import. Why?
+                    if (op1->TypeIs(TYP_I_IMPL) && genActualTypeIsInt(op2))
+                    {
+                        op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL, uns);
+                    }
+                    else if (op2->TypeIs(TYP_I_IMPL) && genActualTypeIsInt(op1))
+                    {
+                        op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, uns);
+                    }
                 }
-                else if (op2->TypeIs(TYP_I_IMPL) && genActualTypeIsInt(op1))
-                {
-                    op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, uns);
-                }
-#endif // TARGET_64BIT
 
                 assertImp((genActualType(op1) == genActualType(op2)) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
                           (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
@@ -8415,15 +8411,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_CONV_U2:
                 lclTyp = TYP_USHORT;
                 goto CONV;
-#if (REGSIZE_BYTES == 8)
             case CEE_CONV_U:
                 lclTyp = TYP_U_IMPL;
-                goto CONV_UN;
-#else
-            case CEE_CONV_U:
-                lclTyp = TYP_U_IMPL;
+                if (REGSIZE_BYTES == 8)
+                {
+                    goto CONV_UN;
+                }
                 goto CONV;
-#endif
             case CEE_CONV_U4:
                 lclTyp = TYP_UINT;
                 goto CONV;
@@ -8812,14 +8806,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val; // address to load from
                 impBashVarAddrsToI(op1);
 
-#ifdef TARGET_64BIT
-                // Allow an upcast of op1 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility
-                //
-                if (genActualType(op1->gtType) == TYP_INT)
+                if (TargetArchitecture::Is64Bit)
                 {
-                    op1 = gtNewCastNode(TYP_I_IMPL, op1, false, TYP_I_IMPL);
+                    // Allow an upcast of op1 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility
+                    //
+                    if (genActualType(op1->gtType) == TYP_INT)
+                    {
+                        op1 = gtNewCastNode(TYP_I_IMPL, op1, false, TYP_I_IMPL);
+                    }
                 }
-#endif
 
                 assertImp(genActualType(op1->gtType) == TYP_I_IMPL || op1->TypeIs(TYP_BYREF));
 
@@ -10087,33 +10082,34 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         assert(!"Unexpected fieldAccessor");
                 }
 
-                    /* V4.0 allows stores of i4 constant values to i8 type vars when IL verifier is bypassed (full
-                    trust apps). The reason this works is that JIT stores an i4 constant in GenTree union during
-                    importation and reads from the union as if it were a long during code generation. Though this
-                    can potentially read garbage, one can get lucky to have this working correctly.
+                /* V4.0 allows stores of i4 constant values to i8 type vars when IL verifier is bypassed (full
+                trust apps). The reason this works is that JIT stores an i4 constant in GenTree union during
+                importation and reads from the union as if it were a long during code generation. Though this
+                can potentially read garbage, one can get lucky to have this working correctly.
 
-                    This code pattern is generated by Dev10 MC++ compiler while storing to fields when compiled with
-                    /O2 switch (default when compiling retail configs in Dev10) and a customer app has taken a
-                    dependency on it. To be backward compatible, we will explicitly add an upward cast here so that
-                    it works correctly always.
+                This code pattern is generated by Dev10 MC++ compiler while storing to fields when compiled with
+                /O2 switch (default when compiling retail configs in Dev10) and a customer app has taken a
+                dependency on it. To be backward compatible, we will explicitly add an upward cast here so that
+                it works correctly always.
 
-                    Note that this is limited to x86 alone as there is no back compat to be addressed for Arm JIT
-                    for V4.0.
-                    */
+                Note that this is limited to x86 alone as there is no back compat to be addressed for Arm JIT
+                for V4.0.
+                */
 
-#ifndef TARGET_64BIT
-                // In UWP6.0 and beyond (post-.NET Core 2.0), we decided to let this cast from int to long be
-                // generated for ARM as well as x86, so the following IR will be accepted:
-                // STMTx (IL 0x... ???)
-                //   *  STORE_LCL_VAR long
-                //   \--*  CNS_INT   int    2
-
-                if ((lclTyp != op2->TypeGet()) && op2->OperIsConst() && varTypeIsIntOrI(op2->TypeGet()) &&
-                    (lclTyp == TYP_LONG))
+                if (!TargetArchitecture::Is64Bit)
                 {
-                    op2 = gtNewCastNode(lclTyp, op2, false, lclTyp);
+                    // In UWP6.0 and beyond (post-.NET Core 2.0), we decided to let this cast from int to long be
+                    // generated for ARM as well as x86, so the following IR will be accepted:
+                    // STMTx (IL 0x... ???)
+                    //   *  STORE_LCL_VAR long
+                    //   \--*  CNS_INT   int    2
+
+                    if ((lclTyp != op2->TypeGet()) && op2->OperIsConst() && varTypeIsIntOrI(op2->TypeGet()) &&
+                        (lclTyp == TYP_LONG))
+                    {
+                        op2 = gtNewCastNode(lclTyp, op2, false, lclTyp);
+                    }
                 }
-#endif
                 // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatibility.
                 // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility.
                 op2 = impImplicitIorI4Cast(op2, lclTyp);
@@ -12744,44 +12740,44 @@ SPILLSTACK:
                 reimportSpillClique = true;
             }
 
-#ifdef TARGET_64BIT
-            if ((genActualType(tree) == TYP_I_IMPL) && tempDsc->TypeIs(TYP_INT))
+            if (TargetArchitecture::Is64Bit)
             {
-                // Some other block in the spill clique set this to "int", but now we have "native int".
-                // Change the type and go back to re-import any blocks that used the wrong type.
-                tempDsc->lvType     = TYP_I_IMPL;
-                reimportSpillClique = true;
-            }
-            else if ((genActualType(tree) == TYP_INT) && tempDsc->TypeIs(TYP_I_IMPL))
-            {
-                // Spill clique has decided this should be "native int", but this block only pushes an "int".
-                // Insert a sign-extension to "native int" so we match the clique.
-                stackState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
-            }
+                if ((genActualType(tree) == TYP_I_IMPL) && tempDsc->TypeIs(TYP_INT))
+                {
+                    // Some other block in the spill clique set this to "int", but now we have "native int".
+                    // Change the type and go back to re-import any blocks that used the wrong type.
+                    tempDsc->lvType     = TYP_I_IMPL;
+                    reimportSpillClique = true;
+                }
+                else if ((genActualType(tree) == TYP_INT) && tempDsc->TypeIs(TYP_I_IMPL))
+                {
+                    // Spill clique has decided this should be "native int", but this block only pushes an "int".
+                    // Insert a sign-extension to "native int" so we match the clique.
+                    stackState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
+                }
 
-            // Consider the case where one branch left a 'byref' on the stack and the other leaves
-            // an 'int'. On 32-bit, this is allowed (in non-verifiable code) since they are the same
-            // size. JIT64 managed to make this work on 64-bit. For compatibility, we support JIT64
-            // behavior instead of asserting and then generating bad code (where we save/restore the
-            // low 32 bits of a byref pointer to an 'int' sized local). If the 'int' side has been
-            // imported already, we need to change the type of the local and reimport the spill clique.
-            // If the 'byref' side has imported, we insert a cast from int to 'native int' to match
-            // the 'byref' size.
-            if ((genActualType(tree) == TYP_BYREF) && tempDsc->TypeIs(TYP_INT))
-            {
-                // Some other block in the spill clique set this to "int", but now we have "byref".
-                // Change the type and go back to re-import any blocks that used the wrong type.
-                tempDsc->lvType     = TYP_BYREF;
-                reimportSpillClique = true;
+                // Consider the case where one branch left a 'byref' on the stack and the other leaves
+                // an 'int'. On 32-bit, this is allowed (in non-verifiable code) since they are the same
+                // size. JIT64 managed to make this work on 64-bit. For compatibility, we support JIT64
+                // behavior instead of asserting and then generating bad code (where we save/restore the
+                // low 32 bits of a byref pointer to an 'int' sized local). If the 'int' side has been
+                // imported already, we need to change the type of the local and reimport the spill clique.
+                // If the 'byref' side has imported, we insert a cast from int to 'native int' to match
+                // the 'byref' size.
+                if ((genActualType(tree) == TYP_BYREF) && tempDsc->TypeIs(TYP_INT))
+                {
+                    // Some other block in the spill clique set this to "int", but now we have "byref".
+                    // Change the type and go back to re-import any blocks that used the wrong type.
+                    tempDsc->lvType     = TYP_BYREF;
+                    reimportSpillClique = true;
+                }
+                else if ((genActualType(tree) == TYP_INT) && tempDsc->TypeIs(TYP_BYREF))
+                {
+                    // Spill clique has decided this should be "byref", but this block only pushes an "int".
+                    // Insert a sign-extension to "native int" so we match the clique size.
+                    stackState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
+                }
             }
-            else if ((genActualType(tree) == TYP_INT) && tempDsc->TypeIs(TYP_BYREF))
-            {
-                // Spill clique has decided this should be "byref", but this block only pushes an "int".
-                // Insert a sign-extension to "native int" so we match the clique size.
-                stackState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
-            }
-
-#endif // TARGET_64BIT
 
             if (tree->TypeIs(TYP_DOUBLE) && (tempDsc->lvType == TYP_FLOAT))
             {
@@ -14442,8 +14438,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 }
                 *pInlArgNode = inlArgNode;
             }
-#ifdef TARGET_64BIT
-            else if (genTypeSize(genActualType(inlArgNode->gtType)) < genTypeSize(sigType))
+            else if (TargetArchitecture::Is64Bit &&
+                     (genTypeSize(genActualType(inlArgNode->gtType)) < genTypeSize(sigType)))
             {
                 // This should only happen for int -> native int widening
                 inlArgNode = gtNewCastNode(genActualType(sigType), inlArgNode, false, sigType);
@@ -14457,7 +14453,6 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 }
                 *pInlArgNode = inlArgNode;
             }
-#endif // TARGET_64BIT
         }
     }
 

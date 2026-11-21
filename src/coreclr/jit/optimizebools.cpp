@@ -417,7 +417,7 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 
             *isTestCondition = true;
         }
-        else if (condOp1->OperIs(GT_AND) && isPow2(static_cast<target_size_t>(condOp2Value)) &&
+        else if (condOp1->OperIs(GT_AND) && isPow2(TargetFromHost<target_size_t>(condOp2Value)) &&
                  condOp1->gtGetOp2()->IsIntegralConst(condOp2Value))
         {
             // Found a EQ/NE(AND(...,n),n) which will be optimized to tbz/tbnz during lowering.

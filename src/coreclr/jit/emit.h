@@ -3995,7 +3995,13 @@ inline unsigned emitter::emitSpecifiedOffset(unsigned insCount, unsigned igSize)
     return codePos;
 }
 
+#ifdef TARGET_WASM
+extern const unsigned short emitTypeSizes32[TYP_COUNT];
+extern const unsigned short emitTypeSizes64[TYP_COUNT];
+#define emitTypeSizes (TargetArchitecture::Is64Bit ? emitTypeSizes64 : emitTypeSizes32)
+#else
 extern const unsigned short emitTypeSizes[TYP_COUNT];
+#endif
 
 template <class T>
 inline emitAttr emitTypeSize(T type)
@@ -4005,7 +4011,13 @@ inline emitAttr emitTypeSize(T type)
     return (emitAttr)emitTypeSizes[TypeGet(type)];
 }
 
+#ifdef TARGET_WASM
+extern const unsigned short emitTypeActSz32[TYP_COUNT];
+extern const unsigned short emitTypeActSz64[TYP_COUNT];
+#define emitTypeActSz (TargetArchitecture::Is64Bit ? emitTypeActSz64 : emitTypeActSz32)
+#else
 extern const unsigned short emitTypeActSz[TYP_COUNT];
+#endif
 
 template <class T>
 inline emitAttr emitActualTypeSize(T type)

@@ -1040,7 +1040,9 @@ void ClassLayoutBuilder::SetGCPtrType(unsigned slot, var_types type)
         case TYP_BYREF:
             SetGCPtr(slot, TYPE_GC_BYREF);
             break;
-        case TYP_I_IMPL:
+        case TYP_INT:
+        case TYP_LONG:
+            assert(type == TYP_I_IMPL);
             SetGCPtr(slot, TYPE_GC_NONE);
             break;
         default:

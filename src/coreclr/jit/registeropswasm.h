@@ -13,12 +13,12 @@ enum class WasmValueType : unsigned
     Count,
 
     First = I32,
-#ifdef TARGET_64BIT
-    I = I64,
-#else
-    I = I32,
-#endif
 };
+
+inline WasmValueType WasmNativeIntType()
+{
+    return TargetArchitecture::Is64Bit ? WasmValueType::I64 : WasmValueType::I32;
+}
 
 inline WasmValueType& operator++(WasmValueType& type)
 {

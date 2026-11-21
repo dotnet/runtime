@@ -158,11 +158,9 @@ private:
     void LowerPEPCall(GenTreeCall* call);
     void TryMoveWasmSelectCondition(GenTreeConditional* select);
 #endif
-    void MovePutArgNodesUpToCall(GenTreeCall* call);
-    void MovePutArgUpToCall(GenTreeCall* call, GenTree* node);
-#ifndef TARGET_64BIT
+    void     MovePutArgNodesUpToCall(GenTreeCall* call);
+    void     MovePutArgUpToCall(GenTreeCall* call, GenTree* node);
     GenTree* DecomposeLongCompare(GenTree* cmp);
-#endif
     GenTree* OptimizeConstCompare(GenTree* cmp);
     GenTree* LowerCompare(GenTree* cmp);
     GenTree* LowerJTrue(GenTreeOp* jtrue);

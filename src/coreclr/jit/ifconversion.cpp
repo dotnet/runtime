@@ -675,10 +675,10 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
             JITDUMP("Skipping if-conversion: branchy form fits in ~2 insns; Zicond would need 5+\n");
             return true;
         }
-#elif !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#else
         // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
         // handle contained relops efficiently after decomposition.
-        if (varTypeIsLong(select))
+        if (!TargetArchitecture::Is64Bit && !TargetArchitecture::IsWasm && varTypeIsLong(select))
         {
             JITDUMP("Abort: SELECT of type Long on 32-bit system\n");
             return true;

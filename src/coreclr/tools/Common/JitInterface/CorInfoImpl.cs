@@ -4975,6 +4975,8 @@ namespace Internal.JitInterface
                     return (uint)CorInfoArch.CORINFO_ARCH_RISCV64;
                 case TargetArchitecture.Wasm32:
                     return (uint)CorInfoArch.CORINFO_ARCH_WASM32;
+                case TargetArchitecture.Wasm64:
+                    return (uint)CorInfoArch.CORINFO_ARCH_WASM64;
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }

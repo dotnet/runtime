@@ -745,7 +745,7 @@ inline unsigned int unsigned_abs(int x)
     return ((unsigned int)std::abs(x));
 }
 
-#ifdef TARGET_64BIT
+#ifdef HOST_64BIT
 inline size_t unsigned_abs(ssize_t x)
 {
     return ((size_t)std::abs((int64_t)x));
@@ -757,7 +757,7 @@ inline size_t unsigned_abs(int64_t x)
     return ((size_t)std::abs(x));
 }
 #endif // __APPLE__ || __OpenBSD__
-#endif // TARGET_64BIT
+#endif // HOST_64BIT
 
 /*****************************************************************************/
 

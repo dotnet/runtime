@@ -173,10 +173,10 @@ static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
 static bool IsBitwiseInstruction(instruction ins);
 
-#ifdef TARGET_64BIT
+#ifdef TARGET_AMD64
 bool AreUpperBitsZero(regNumber reg, emitAttr size);
 bool AreUpperBitsSignExtended(regNumber reg, emitAttr size);
-#endif // TARGET_64BIT
+#endif // TARGET_AMD64
 
 bool IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2);
 

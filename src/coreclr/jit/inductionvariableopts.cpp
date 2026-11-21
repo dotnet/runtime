@@ -2923,13 +2923,11 @@ PhaseStatus Compiler::optInductionVariables()
         // IV widening is generally only profitable for x64 because arm64
         // addressing modes can include the zero/sign-extension of the index
         // for free.
-#if defined(TARGET_XARCH) && defined(TARGET_64BIT)
-        if (optWidenIVs(scevContext, loop, &loopInfo))
+        if (TargetArchitecture::IsX64 && optWidenIVs(scevContext, loop, &loopInfo))
         {
             Metrics.LoopsIVWidened++;
             changed = true;
         }
-#endif
 
         if (optRemoveUnusedIVs(loop, &loopInfo))
         {

@@ -807,9 +807,7 @@ protected:
     void genCodeForDivModOverflowCheck(GenTreeOp* tree);
 #endif // TARGET_ARMARCH
 
-#if !defined(TARGET_64BIT)
     void genLongToIntCast(GenTree* treeNode);
-#endif
 
     // Generate code for a GT_BITCAST that is not contained.
     void genCodeForBitCast(GenTreeOp* treeNode);
@@ -825,11 +823,9 @@ public:
             CHECK_NONE,
             CHECK_SMALL_INT_RANGE,
             CHECK_POSITIVE,
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             CHECK_UINT_RANGE,
             CHECK_POSITIVE_INT_RANGE,
             CHECK_INT_RANGE,
-#endif
         };
 
         enum ExtendKind
@@ -837,16 +833,12 @@ public:
             COPY,
             ZERO_EXTEND_SMALL_INT,
             SIGN_EXTEND_SMALL_INT,
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             ZERO_EXTEND_INT,
             SIGN_EXTEND_INT,
-#endif
             LOAD_ZERO_EXTEND_SMALL_INT,
             LOAD_SIGN_EXTEND_SMALL_INT,
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             LOAD_ZERO_EXTEND_INT,
             LOAD_SIGN_EXTEND_INT,
-#endif
             LOAD_SOURCE
         };
 
@@ -919,6 +911,9 @@ protected:
 
     void genCompareFloat(GenTreeOp* treeNode);
     void genCompareInt(GenTreeOp* treeNode);
+#ifdef TARGET_WASM
+    void genWidenCompareResult(GenTreeOp* treeNode);
+#endif // TARGET_WASM
 #ifdef TARGET_XARCH
     bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, emitAttr opSize);
     GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
@@ -1069,13 +1064,9 @@ protected:
 
 #endif // FEATURE_HW_INTRINSICS
 
-#if !defined(TARGET_64BIT)
-
     // CodeGen for Long Ints
 
     void genStoreLongLclVar(GenTree* treeNode);
-
-#endif // !defined(TARGET_64BIT)
 
     //-------------------------------------------------------------------------
     // genUpdateLifeStore: Do liveness update after tree store instructions

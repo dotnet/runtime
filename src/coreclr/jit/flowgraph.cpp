@@ -763,7 +763,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             break;
 
         case CORINFO_HELP_INITCLASS:
-            type = HelperInitClassRetType;
+            type = HelperInitClassReturnType();
             break;
 
         default:

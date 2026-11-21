@@ -5617,7 +5617,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             else
             {
                 assert(sizeof(size_t) == sizeof(target_size_t));
-                target_size_t imm = (target_size_t)distVal;
+                target_size_t imm = TargetFromHost<target_size_t>(distVal);
                 if (ins == INS_movw)
                 {
                     imm &= 0xffff;
@@ -6230,7 +6230,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (!id->idIsReloc())
             {
                 assert(sizeof(size_t) == sizeof(target_size_t));
-                imm = (target_size_t)(size_t)addr;
+                imm = TargetFromHost<target_size_t>((size_t)addr);
                 if (ins == INS_movw)
                 {
                     imm &= 0xffff;
@@ -8103,7 +8103,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
     if (intConst)
     {
-        emitIns_R_I(ins, attr, dst->GetRegNum(), (target_ssize_t)intConst->IconValue());
+        emitIns_R_I(ins, attr, dst->GetRegNum(), TargetFromHost<target_ssize_t>(intConst->IconValue()));
         return dst->GetRegNum();
     }
     else
@@ -8190,8 +8190,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
     if (intConst != nullptr)
     {
-        emitIns_R_R_I(ins, attr, dst->GetRegNum(), nonIntReg->GetRegNum(), (target_ssize_t)intConst->IconValue(),
-                      flags);
+        emitIns_R_R_I(ins, attr, dst->GetRegNum(), nonIntReg->GetRegNum(),
+                      TargetFromHost<target_ssize_t>(intConst->IconValue()), flags);
     }
     else
     {

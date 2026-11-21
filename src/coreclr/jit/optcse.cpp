@@ -489,9 +489,10 @@ unsigned optCSEKeyToHashIndex(size_t key, size_t optCSEhashSize)
     unsigned hash;
 
     hash = (unsigned)key;
-#ifdef TARGET_64BIT
-    hash ^= (unsigned)(key >> 32);
-#endif
+    if (TargetArchitecture::Is64Bit)
+    {
+        hash ^= (unsigned)(key >> 32);
+    }
     hash *= (unsigned)(optCSEhashSize + 1);
     hash >>= 7;
 
@@ -2134,9 +2135,11 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             break;
 
         case GT_CNS_LNG:
-#ifndef TARGET_64BIT
-            return false; // Don't CSE 64-bit constants on 32-bit platforms
-#endif
+            if (!TargetArchitecture::Is64Bit)
+            {
+                return false; // Don't CSE 64-bit constants on 32-bit platforms
+            }
+            FALLTHROUGH;
         case GT_CNS_INT:
         case GT_CNS_DBL:
         case GT_CNS_STR:
@@ -3401,12 +3404,13 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
         {
             enregCount++;
 
-#ifndef TARGET_64BIT
-            if (varTyp == TYP_LONG)
+            if (!TargetArchitecture::Is64Bit)
             {
-                enregCount++; // on 32-bit targets longs use two registers
+                if (varTyp == TYP_LONG)
+                {
+                    enregCount++; // on 32-bit targets longs use two registers
+                }
             }
-#endif // TARGET_64BIT
         }
     }
 
@@ -4419,12 +4423,13 @@ void CSE_Heuristic::Initialize()
         {
             enregCountInt++;
 
-#ifndef TARGET_64BIT
-            if (varTyp == TYP_LONG)
+            if (!TargetArchitecture::Is64Bit)
             {
-                enregCountInt++; // on 32-bit targets longs use two registers
+                if (varTyp == TYP_LONG)
+                {
+                    enregCountInt++; // on 32-bit targets longs use two registers
+                }
             }
-#endif // TARGET_64BIT
 
             enregCount         = enregCountInt;
             cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG;

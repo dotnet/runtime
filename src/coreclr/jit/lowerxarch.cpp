@@ -4122,13 +4122,14 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         for (GenTree* arg : node->Operands())
         {
-#if !defined(TARGET_64BIT)
-            if (arg->OperIsLong())
+            if (!TargetArchitecture::Is64Bit)
             {
-                BlockRange().Remove(arg->gtGetOp1());
-                BlockRange().Remove(arg->gtGetOp2());
+                if (arg->OperIsLong())
+                {
+                    BlockRange().Remove(arg->gtGetOp1());
+                    BlockRange().Remove(arg->gtGetOp2());
+                }
             }
-#endif // !TARGET_64BIT
             BlockRange().Remove(arg);
         }
 
@@ -8284,13 +8285,14 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
         }
     }
 
-#if !defined(TARGET_64BIT)
-    if (varTypeIsLong(srcType))
+    if (!TargetArchitecture::Is64Bit)
     {
-        noway_assert(castOp->OperIs(GT_LONG));
-        castOp->SetContained();
+        if (varTypeIsLong(srcType))
+        {
+            noway_assert(castOp->OperIs(GT_LONG));
+            castOp->SetContained();
+        }
     }
-#endif // !defined(TARGET_64BIT)
 }
 
 //------------------------------------------------------------------------

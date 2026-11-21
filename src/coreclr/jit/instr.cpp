@@ -916,9 +916,10 @@ void CodeGen::inst_set_SV_var(GenTree* tree)
 void CodeGen::inst_RV_IV(
     instruction ins, regNumber reg, target_ssize_t val, emitAttr size, insFlags flags /* = INS_FLAGS_DONT_CARE */)
 {
-#if !defined(TARGET_64BIT)
-    assert(size != EA_8BYTE);
-#endif
+    if (!TargetArchitecture::Is64Bit)
+    {
+        assert(size != EA_8BYTE);
+    }
 
 #ifdef TARGET_ARM
     if (arm_Valid_Imm_For_Instr(ins, val, flags))
@@ -950,7 +951,7 @@ void CodeGen::inst_RV_IV(
     if (size == EA_8BYTE && ins == INS_mov && ((val & 0xFFFFFFFF00000000LL) == 0))
     {
         size = EA_4BYTE;
-        GetEmitter()->emitIns_R_I(ins, size, reg, val);
+        GetEmitter()->emitIns_R_I(ins, size, reg, TargetToHost(val));
     }
     else if (EA_SIZE(size) == EA_8BYTE && ins != INS_mov && (((int)val != val) || EA_IS_CNS_RELOC(size)))
     {
@@ -959,7 +960,7 @@ void CodeGen::inst_RV_IV(
     else
 #endif // TARGET_AMD64
     {
-        GetEmitter()->emitIns_R_I(ins, size, reg, val);
+        GetEmitter()->emitIns_R_I(ins, size, reg, TargetToHost(val));
     }
 #endif // !TARGET_ARM
 }
@@ -2653,12 +2654,15 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
         }
         else
         {
-#if defined(TARGET_64BIT)
-            assert(dstSize == 8);
-            dstType = TYP_DOUBLE;
-#else
-            unreached();
-#endif
+            if (TargetArchitecture::Is64Bit)
+            {
+                assert(dstSize == 8);
+                dstType = TYP_DOUBLE;
+            }
+            else
+            {
+                unreached();
+            }
         }
 
         return ins_Store(dstType, aligned);
@@ -2693,12 +2697,15 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
         }
         else
         {
-#if defined(TARGET_64BIT)
-            assert(dstSize == 8);
-            dstType = TYP_LONG;
-#else
-            unreached();
-#endif
+            if (TargetArchitecture::Is64Bit)
+            {
+                assert(dstSize == 8);
+                dstType = TYP_LONG;
+            }
+            else
+            {
+                unreached();
+            }
         }
     }
     else

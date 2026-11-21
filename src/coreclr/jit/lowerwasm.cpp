@@ -59,7 +59,7 @@ void Lowering::AddWasmPortableEntryPointArg(GenTreeCall* call, GenTree* value)
     call->gtArgs.PushLateBack(arg);
 
     unsigned  argIndex = call->gtArgs.CountArgs() - 1;
-    regNumber argReg   = MakeWasmReg(argIndex, WasmValueType::I);
+    regNumber argReg   = MakeWasmReg(argIndex, WasmNativeIntType());
     arg->AbiInfo =
         ABIPassingInformation::FromSegmentByValue(m_compiler,
                                                   ABIPassingSegment::InRegister(argReg, 0, TARGET_POINTER_SIZE));

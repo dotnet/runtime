@@ -219,13 +219,13 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
     return false;
 #endif
 
-    GenTree*    variableNode                    = nullptr;
-    ssize_t     cns                             = 0;
-    BasicBlock* trueTarget                      = nullptr;
-    BasicBlock* falseTarget                     = nullptr;
-    int         testValueIndex                  = 0;
-    ssize_t     testValues[SWITCH_MAX_DISTANCE] = {};
-    weight_t    falseLikelihood                 = firstBlock->GetFalseEdge()->getLikelihood();
+    GenTree*    variableNode                     = nullptr;
+    ssize_t     cns                              = 0;
+    BasicBlock* trueTarget                       = nullptr;
+    BasicBlock* falseTarget                      = nullptr;
+    int         testValueIndex                   = 0;
+    ssize_t     testValues[sizeof(uint64_t) * 8] = {};
+    weight_t    falseLikelihood                  = firstBlock->GetFalseEdge()->getLikelihood();
 
     // The algorithm is simple - we check that the given block is a constant test block
     // and then try to accumulate as many constant test blocks as possible. Once we hit

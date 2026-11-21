@@ -428,6 +428,20 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
 
     switch (type)
     {
+        case TYP_LONG:
+        case TYP_DOUBLE:
+            if (!TargetArchitecture::Is64Bit)
+            {
+                this->vlType             = VLT_STK2;
+                this->vlStk2.vls2BaseReg = baseReg;
+                this->vlStk2.vls2Offset  = offset;
+                if (!isFramePointerUsed && this->vlStk2.vls2BaseReg == REG_SPBASE)
+                {
+                    this->vlStk2.vls2BaseReg = (regNumber)ICorDebugInfo::REGNUM_AMBIENT_SP;
+                }
+                break;
+            }
+            FALLTHROUGH;
         case TYP_INT:
         case TYP_REF:
         case TYP_BYREF:
@@ -442,10 +456,6 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
         case TYP_SIMD64:
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
-#ifdef TARGET_64BIT
-        case TYP_LONG:
-        case TYP_DOUBLE:
-#endif // TARGET_64BIT
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -470,19 +480,6 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
                 this->vlStk.vlsBaseReg = (regNumber)ICorDebugInfo::REGNUM_AMBIENT_SP;
             }
             break;
-
-#ifndef TARGET_64BIT
-        case TYP_LONG:
-        case TYP_DOUBLE:
-            this->vlType             = VLT_STK2;
-            this->vlStk2.vls2BaseReg = baseReg;
-            this->vlStk2.vls2Offset  = offset;
-            if (!isFramePointerUsed && this->vlStk2.vls2BaseReg == REG_SPBASE)
-            {
-                this->vlStk2.vls2BaseReg = (regNumber)ICorDebugInfo::REGNUM_AMBIENT_SP;
-            }
-            break;
-#endif // !TARGET_64BIT
 
         default:
             noway_assert(!"Invalid type");
@@ -519,16 +516,17 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         case TYP_INT:
         case TYP_REF:
         case TYP_BYREF:
-#ifdef TARGET_64BIT
-        case TYP_LONG:
-#endif // TARGET_64BIT
             this->vlType       = VLT_REG;
             this->vlReg.vlrReg = varDsc->GetRegNum();
             break;
 
-#ifndef TARGET_64BIT
         case TYP_LONG:
-            if (varDsc->GetOtherReg() != REG_STK)
+            if (TargetArchitecture::Is64Bit)
+            {
+                this->vlType       = VLT_REG;
+                this->vlReg.vlrReg = varDsc->GetRegNum();
+            }
+            else if (varDsc->GetOtherReg() != REG_STK)
             {
                 this->vlType            = VLT_REG_REG;
                 this->vlRegReg.vlrrReg1 = varDsc->GetRegNum();
@@ -546,12 +544,19 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
                 this->vlRegStk.vlrsStk.vlrssOffset = offset + sizeof(int);
             }
             break;
-#endif // !TARGET_64BIT
 
-#ifdef TARGET_64BIT
         case TYP_FLOAT:
         case TYP_DOUBLE:
         {
+            if (!TargetArchitecture::Is64Bit)
+            {
+                if (isFloatRegType(type))
+                {
+                    this->vlType         = VLT_FPSTK;
+                    this->vlFPstk.vlfReg = varDsc->GetRegNum();
+                }
+                break;
+            }
             ICorDebugInfo::RegNum debugReg = mapRegNumToDebugRegNum(varDsc->GetRegNum());
             if (debugReg == ICorDebugInfo::REGNUM_COUNT)
             {
@@ -563,19 +568,6 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
             this->vlReg.vlrReg = static_cast<regNumber>(debugReg);
             break;
         }
-
-#else // !TARGET_64BIT
-
-        case TYP_FLOAT:
-        case TYP_DOUBLE:
-            if (isFloatRegType(type))
-            {
-                this->vlType         = VLT_FPSTK;
-                this->vlFPstk.vlfReg = varDsc->GetRegNum();
-            }
-            break;
-
-#endif // !TARGET_64BIT
 
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
