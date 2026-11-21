@@ -73,6 +73,20 @@ struct VirtualRegReferences
     VirtualRegReferences* Prev = nullptr;
 };
 
+struct Interval
+{
+    int       start;
+    int       end;
+    regNumber virtReg;
+
+    Interval(regNumber virtReg)
+        : start(INT_MAX)
+        , end(INT_MIN)
+        , virtReg(virtReg)
+    {
+    }
+};
+
 class WasmRegAlloc : public RegAllocInterface
 {
     Compiler*         m_compiler;
@@ -93,6 +107,7 @@ class WasmRegAlloc : public RegAllocInterface
             , m_lastVirtualRegRefsCount(0)
             , m_virtualRegRefs(nullptr)
             , m_physicalRegAssignments(comp->lvaTrackedCount, REG_STK, comp->getAllocator(CMK_LSRA))
+            , m_intervals(comp->lvaTrackedCount, nullptr, comp->getAllocator(CMK_LSRA))
         {
         }
 
@@ -114,6 +129,9 @@ class WasmRegAlloc : public RegAllocInterface
         // Map from local tracked index to phys reg for that local, in this funclet.
         //
         jitstd::vector<regNumber> m_physicalRegAssignments;
+
+        // Map from local tracked index to live interval for this local, in this funclet
+        jitstd::vector<Interval*> m_intervals;
     };
 
     jitstd::vector<PerFuncletData*> m_perFuncletData;
@@ -130,6 +148,7 @@ public:
 #endif // TRACK_LSRA_STATS
 
     bool isRegCandidate(LclVarDsc* varDsc);
+    bool isIntervalCandidate(LclVarDsc* varDsc, PerFuncletData* funcletData);
     bool isContainableMemoryOp(GenTree* node);
     void checkForDNER(unsigned lclNum, LclVarDsc* varDsc);
 
@@ -166,6 +185,10 @@ private:
     void      RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node);
     regNumber RequestInternalRegister(GenTree* node, var_types type);
     void      ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const char* reason));
+
+    void BuildIntervals();
+    void BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* funcletData);
+    void DumpIntervals();
 
     void ResolveReferences();
 
