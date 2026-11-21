@@ -519,6 +519,11 @@ void Compiler::gsParamsToShadows()
             CORINFO_METHOD_HANDLE copyHelper =
                 info.compCompHnd->getSpecialCopyHelper(varDsc->GetLayout()->GetClassHandle());
             GenTreeCall* call = gtNewCallNode(CT_USER_FUNC, copyHelper, TYP_VOID);
+#ifdef UNIX_X86_ABI
+            // Managed calls on Unix x86 are caller-pop. The importer sets this flag for
+            // managed calls (impImportCall), but calls created here bypass it.
+            call->gtFlags |= GTF_CALL_POP_ARGS;
+#endif // UNIX_X86_ABI
 
             GenTree* src = gtNewLclVarAddrNode(lclNum);
             GenTree* dst = gtNewLclVarAddrNode(shadowVarNum);

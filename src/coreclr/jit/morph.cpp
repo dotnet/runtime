@@ -5431,6 +5431,11 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
                                                       CORINFO_METHOD_HANDLE dispatcherHnd)
 {
     GenTreeCall* callDispatcherNode = gtNewCallNode(CT_USER_FUNC, dispatcherHnd, TYP_VOID, fgMorphStmt->GetDebugInfo());
+#ifdef UNIX_X86_ABI
+    // Managed calls on Unix x86 are caller-pop. The importer sets this flag for
+    // managed calls (impImportCall), but calls created here bypass it.
+    callDispatcherNode->gtFlags |= GTF_CALL_POP_ARGS;
+#endif // UNIX_X86_ABI
     // The dispatcher has signature
     // void DispatchTailCalls(void* callersRetAddrSlot, void* callTarget, ref byte retValue)
 

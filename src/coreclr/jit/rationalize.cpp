@@ -42,6 +42,11 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
     // Create the call node
     GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->TypeGet());
+#ifdef UNIX_X86_ABI
+    // Managed calls on Unix x86 are caller-pop. The importer sets this flag for
+    // managed calls (impImportCall), but calls created here bypass it.
+    call->gtFlags |= GTF_CALL_POP_ARGS;
+#endif // UNIX_X86_ABI
 
     if (isSpecialIntrinsic)
     {

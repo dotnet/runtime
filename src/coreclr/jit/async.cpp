@@ -136,6 +136,11 @@ PhaseStatus Compiler::SaveAsyncContexts()
             CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
 
             GenTreeCall* capture = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
+#ifdef UNIX_X86_ABI
+            // Managed calls on Unix x86 are caller-pop. The importer sets this flag for
+            // managed calls (impImportCall), but calls created here bypass it.
+            capture->gtFlags |= GTF_CALL_POP_ARGS;
+#endif // UNIX_X86_ABI
             capture->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(syncCtxLclNum, 0)));
             capture->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(execCtxLclNum, 0)));
 
@@ -175,6 +180,11 @@ PhaseStatus Compiler::SaveAsyncContexts()
             }
 
             GenTreeCall* restore = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
+#ifdef UNIX_X86_ABI
+            // Managed calls on Unix x86 are caller-pop. The importer sets this flag for
+            // managed calls (impImportCall), but calls created here bypass it.
+            restore->gtFlags |= GTF_CALL_POP_ARGS;
+#endif // UNIX_X86_ABI
             restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(syncCtxLclNum)));
             restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(execCtxLclNum)));
             restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(suspendedLclNum)));
@@ -1522,6 +1532,11 @@ void AsyncTransformation::FillInGCPointersOnSuspension(GenTreeCall*             
         GenTree*     flagsPlaceholder          = m_comp->gtNewZeroConNode(TYP_BYREF);
         GenTreeCall* captureCall =
             m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureContinuationContextMethHnd, TYP_VOID);
+#ifdef UNIX_X86_ABI
+        // Managed calls on Unix x86 are caller-pop. The importer sets this flag for
+        // managed calls (impImportCall), but calls created here bypass it.
+        captureCall->gtFlags |= GTF_CALL_POP_ARGS;
+#endif // UNIX_X86_ABI
 
         captureCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(flagsPlaceholder));
         captureCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(contextElementPlaceholder));
@@ -1572,6 +1587,11 @@ void AsyncTransformation::FillInGCPointersOnSuspension(GenTreeCall*             
     {
         GenTreeCall* captureExecContext =
             m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureExecutionContextMethHnd, TYP_REF);
+#ifdef UNIX_X86_ABI
+        // Managed calls on Unix x86 are caller-pop. The importer sets this flag for
+        // managed calls (impImportCall), but calls created here bypass it.
+        captureExecContext->gtFlags |= GTF_CALL_POP_ARGS;
+#endif // UNIX_X86_ABI
 
         m_comp->compCurBB = suspendBB;
         m_comp->fgMorphTree(captureExecContext);
@@ -1866,6 +1886,11 @@ void AsyncTransformation::RestoreFromGCPointersOnResumption(unsigned            
         GenTree*     valuePlaceholder = m_comp->gtNewZeroConNode(TYP_REF);
         GenTreeCall* restoreCall =
             m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreExecutionContextMethHnd, TYP_VOID);
+#ifdef UNIX_X86_ABI
+        // Managed calls on Unix x86 are caller-pop. The importer sets this flag for
+        // managed calls (impImportCall), but calls created here bypass it.
+        restoreCall->gtFlags |= GTF_CALL_POP_ARGS;
+#endif // UNIX_X86_ABI
         restoreCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(valuePlaceholder));
 
         m_comp->compCurBB = resumeBB;
