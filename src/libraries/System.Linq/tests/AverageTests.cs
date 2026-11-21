@@ -660,5 +660,97 @@ namespace System.Linq.Tests
 
             Assert.Equal(expected, source.Average(e => e.num));
         }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(100)]
+        public void Average_Selector_AllSourceTypes_ProperAverageReturned(int count)
+        {
+            // The first item has no value, so the nullable overloads have to skip to the first one that does.
+            (int Value, bool HasValue)[] items = Enumerable.Range(1, count).Select(i => (i, i % 3 != 1)).ToArray();
+
+            long sum = 0;
+            long nullableSum = 0;
+            int nullableCount = 0;
+            foreach ((int value, bool hasValue) in items)
+            {
+                sum += value;
+                if (hasValue)
+                {
+                    nullableSum += value;
+                    nullableCount++;
+                }
+            }
+
+            double expected = (double)sum / count;
+            decimal expectedDecimal = (decimal)sum / count;
+            double? expectedNullable = nullableCount == 0 ? null : (double)nullableSum / nullableCount;
+            decimal? expectedNullableDecimal = nullableCount == 0 ? null : (decimal)nullableSum / nullableCount;
+
+            foreach (IEnumerable<(int Value, bool HasValue)> source in CreateSources(items))
+            {
+                Assert.Equal(expected, source.Average(x => x.Value));
+                Assert.Equal(expected, source.Average(x => (long)x.Value));
+                Assert.Equal((float)expected, source.Average(x => (float)x.Value));
+                Assert.Equal(expected, source.Average(x => (double)x.Value));
+                Assert.Equal(expectedDecimal, source.Average(x => (decimal)x.Value));
+
+                Assert.Equal(expectedNullable, source.Average(x => x.HasValue ? x.Value : (int?)null));
+                Assert.Equal(expectedNullable, source.Average(x => x.HasValue ? x.Value : (long?)null));
+                Assert.Equal((float?)expectedNullable, source.Average(x => x.HasValue ? x.Value : (float?)null));
+                Assert.Equal(expectedNullable, source.Average(x => x.HasValue ? x.Value : (double?)null));
+                Assert.Equal(expectedNullableDecimal, source.Average(x => x.HasValue ? x.Value : (decimal?)null));
+            }
+        }
+
+        [Fact]
+        public void Average_Selector_AllSourceTypes_NoValues()
+        {
+            foreach (IEnumerable<int> source in CreateSources(Array.Empty<int>()))
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Average(x => x));
+                Assert.Throws<InvalidOperationException>(() => source.Average(x => (long)x));
+                Assert.Throws<InvalidOperationException>(() => source.Average(x => (float)x));
+                Assert.Throws<InvalidOperationException>(() => source.Average(x => (double)x));
+                Assert.Throws<InvalidOperationException>(() => source.Average(x => (decimal)x));
+
+                Assert.Null(source.Average(x => (int?)x));
+                Assert.Null(source.Average(x => (long?)x));
+                Assert.Null(source.Average(x => (float?)x));
+                Assert.Null(source.Average(x => (double?)x));
+                Assert.Null(source.Average(x => (decimal?)x));
+            }
+
+            foreach (IEnumerable<int> source in CreateSources(new[] { 1, 2, 3 }))
+            {
+                Assert.Null(source.Average(x => (int?)null));
+                Assert.Null(source.Average(x => (long?)null));
+                Assert.Null(source.Average(x => (float?)null));
+                Assert.Null(source.Average(x => (double?)null));
+                Assert.Null(source.Average(x => (decimal?)null));
+            }
+        }
+
+        [Fact]
+        public void Average_Selector_AllSourceTypes_Overflow()
+        {
+            foreach (IEnumerable<int> source in CreateSources(new[] { 1, 2 }))
+            {
+                Assert.Throws<OverflowException>(() => source.Average(x => long.MaxValue));
+                Assert.Throws<OverflowException>(() => source.Average(x => (long?)long.MaxValue));
+                Assert.Throws<OverflowException>(() => source.Average(x => decimal.MaxValue));
+                Assert.Throws<OverflowException>(() => source.Average(x => (decimal?)decimal.MaxValue));
+
+                // Int32 and Single values are added up in a wider type, so their sum doesn't overflow.
+                Assert.Equal((double)int.MaxValue, source.Average(x => int.MaxValue));
+                Assert.Equal((double?)int.MaxValue, source.Average(x => (int?)int.MaxValue));
+                Assert.Equal(float.MaxValue, source.Average(x => float.MaxValue));
+                Assert.Equal((float?)float.MaxValue, source.Average(x => (float?)float.MaxValue));
+
+                Assert.True(double.IsPositiveInfinity(source.Average(x => double.MaxValue)));
+                Assert.True(double.IsPositiveInfinity(source.Average(x => (double?)double.MaxValue).Value));
+            }
+        }
     }
 }
