@@ -16,6 +16,7 @@ import { collectCpuSamples } from "./dotnet-cpu-profiler";
 import { collectPgoTrace } from "./dotnet-pgo-trace";
 import { connectDSRouter, ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send, initializeDS } from "./diagnostic-server";
 import { ds_rt_browser_performance_measure } from "./browser-profiler";
+import { downloadBlob } from "./common";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
@@ -25,6 +26,13 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
 
     if (runtimeApi.runtimeBuildInfo.gitHash && runtimeApi.runtimeBuildInfo.gitHash !== GitHash) {
         throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, Diagnostics: ${GitHash}`);
+    }
+
+    if (internals[InternalExchangeIndex.WorkerRuntimeContext]?.role === "ui") {
+        dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
+        registerExit();
+        installLoggingProxy();
+        return;
     }
 
     internals[InternalExchangeIndex.DiagnosticsExportsTable] = diagnosticsExportsToTable({
@@ -40,7 +48,9 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
 
     registerExit();
-    installLoggingProxy();
+    if (internals[InternalExchangeIndex.WorkerRuntimeContext]?.role !== "worker") {
+        installLoggingProxy();
+    }
     initializeDS();
 
     dotnetApi.collectCpuSamples = collectCpuSamples;
@@ -48,6 +58,12 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     dotnetApi.collectGcDump = collectGcDump;
     dotnetApi.collectPgoTrace = collectPgoTrace;
     dotnetApi.connectDSRouter = connectDSRouter;
+    Object.assign(dotnetApi.INTERNAL ??= {}, {
+        collectCpuSamples, collectMetrics, collectGcDump, collectPgoTrace, connectDSRouter,
+    });
+    if (internals[InternalExchangeIndex.WorkerRuntimeContext]?.role !== "worker") {
+        Object.assign(dotnetApi.INTERNAL.TARGET ??= {}, { downloadBlob });
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     function diagnosticsExportsToTable(map: DiagnosticsExports): DiagnosticsExportsTable {

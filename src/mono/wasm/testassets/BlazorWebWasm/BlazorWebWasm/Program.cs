@@ -18,6 +18,9 @@ var cacheTestRequest = -1;
 
 app.Use(async (context, next) =>
 {
+    // Temporary isolation for the CoreCLR worker-default coverage experiment.
+    context.Response.Headers["Cross-Origin-Opener-Policy"] = "same-origin";
+    context.Response.Headers["Cross-Origin-Embedder-Policy"] = "require-corp";
     if (HttpMethods.IsGet(context.Request.Method) &&
         context.Request.Path.Value is { } path &&
         cacheTestAsset is not null &&
@@ -56,11 +59,7 @@ app.Use(async (context, next) =>
 });
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseWebAssemblyDebugging();
-}
-else
+if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.

@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { LoaderConfigInternal } from "./types";
-import { dotnetLogger, dotnetLoaderExports, dotnetApi, dotnetRuntimeExports } from "./cross-module";
+import { dotnetLogger, dotnetLoaderExports, dotnetApi, dotnetRuntimeExports, dotnetInternals } from "./cross-module";
+import { InternalExchangeIndex } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB } from "./per-module";
 import { teardownProxyConsole } from "./console-proxy";
 
@@ -15,7 +16,9 @@ export function registerExit() {
     if (!loaderConfig) {
         return;
     }
-    installUnhandledErrorHandler();
+    if (dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]?.role !== "worker") {
+        installUnhandledErrorHandler();
+    }
 
     dotnetLoaderExports.addOnExitListener(onExit);
 }
@@ -26,6 +29,9 @@ function onExit(exitCode: number, reason: any, silent: boolean): boolean {
     }
     if (exitCode === 0 && loaderConfig.interopCleanupOnExit) {
         dotnetRuntimeExports.forceDisposeProxies(true, true);
+    }
+    if (dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]?.role === "worker") {
+        return true;
     }
     uninstallUnhandledErrorHandler();
     if (loaderConfig.logExitCode) {

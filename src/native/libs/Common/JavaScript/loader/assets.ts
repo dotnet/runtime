@@ -10,6 +10,7 @@ import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
 import { fetchLike, responseLike } from "./polyfills";
 import { loaderConfig } from "./config";
 import { loaderCallbacks } from "./callbacks";
+import { InternalExchangeIndex } from "../types";
 import type { AppSettings } from "./types";
 import { storeAppSettingsBytes } from "../appsettings";
 
@@ -17,6 +18,8 @@ let throttlingPCS: PromiseCompletionSource<void> | undefined;
 let currentParallelDownloads = 0;
 let downloadedAssetsCount = 0;
 let totalAssetsToDownload = 0;
+let workerDownloadedAssetsCount = 0;
+let workerTotalAssetsToDownload = 0;
 let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
 const loadedLazyAssemblies = new Set<string>();
 let mainWasmAsset: WasmAsset | null = null;
@@ -52,24 +55,33 @@ export async function loadJSModule(asset: JsAsset): Promise<any> {
     }
     totalAssetsToDownload++;
     if (!mod) {
-        if (assetInternal.name && !asset.resolvedUrl) {
-            asset.resolvedUrl = locateFile(assetInternal.name, true);
-        }
         assetInternal.behavior = "js-module-dotnet";
-        if (typeof loadBootResourceCallback === "function") {
-            const blazorType = behaviorToBlazorAssetTypeMap[assetInternal.behavior];
-            dotnetAssert.check(blazorType, `Unsupported asset behavior: ${assetInternal.behavior}`);
-            const customLoadResult = loadBootResourceCallback(blazorType, assetInternal.name, asset.resolvedUrl!, assetInternal.hash ?? "", assetInternal.behavior);
-            dotnetAssert.check(typeof customLoadResult === "string", "loadBootResourceCallback for JS modules must return string URL");
-            asset.resolvedUrl = makeURLAbsoluteWithApplicationBase(customLoadResult);
-        }
-
-        if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
+        const context = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext];
+        asset.resolvedUrl = context?.resolveModuleResource
+            ? await context.resolveModuleResource(assetInternal)
+            : resolveModuleResource(asset);
         mod = await import(/* webpackIgnore: true */ asset.resolvedUrl);
         asset.moduleExports = mod;
     }
     onDownloadedAsset(assetInternal);
     return mod;
+}
+
+export function resolveModuleResource(asset: JsAsset): string {
+    const assetInternal = asset as AssetEntryInternal;
+    if (assetInternal.name && !asset.resolvedUrl) asset.resolvedUrl = locateFile(assetInternal.name, true);
+    assetInternal.behavior = "js-module-dotnet";
+    if (typeof loadBootResourceCallback === "function") {
+        const blazorType = behaviorToBlazorAssetTypeMap[assetInternal.behavior];
+        dotnetAssert.check(blazorType, `Unsupported asset behavior: ${assetInternal.behavior}`);
+        const result = loadBootResourceCallback(blazorType, assetInternal.name, asset.resolvedUrl!, assetInternal.hash ?? "", assetInternal.behavior);
+        if (result !== null && result !== undefined) {
+            dotnetAssert.check(typeof result === "string", "loadBootResourceCallback for JS modules must return string URL");
+            asset.resolvedUrl = makeURLAbsoluteWithApplicationBase(result);
+        }
+    }
+    if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
+    return asset.resolvedUrl;
 }
 
 export async function callLibraryInitializerOnRuntimeConfigLoaded(asset: JsAsset): Promise<any> {
@@ -536,7 +548,7 @@ function finishThrottling(asset: AssetEntryInternal) {
     }
 }
 
-async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
+export async function loadResourceFetch(asset: AssetEntryInternal, signal?: AbortSignal): Promise<Response> {
     const expectedContentType = behaviorToContentTypeMap[asset.behavior];
     dotnetAssert.check(expectedContentType, `Unsupported asset behavior: ${asset.behavior}`);
     if (asset.buffer) {
@@ -553,6 +565,8 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
     if (asset.pendingDownload) {
         return asset.pendingDownload.response;
     }
+    const context = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext];
+    if (context?.loadResource) return context.loadResource(asset);
     if (typeof loadBootResourceCallback === "function") {
         const blazorType = behaviorToBlazorAssetTypeMap[asset.behavior];
         dotnetAssert.check(blazorType, `Unsupported asset behavior: ${asset.behavior}`);
@@ -565,6 +579,7 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
     }
     dotnetAssert.check(asset.resolvedUrl, "Bad asset.resolvedUrl");
     const fetchOptions: RequestInit = {};
+    if (signal) fetchOptions.signal = signal;
 
     if (asset.cache) {
         // If the asset definition specifies a cache mode, use it.
@@ -595,10 +610,21 @@ function onDownloadedAsset(asset: AssetEntryInternal): void {
         finishThrottling(asset);
     }
     ++downloadedAssetsCount;
-    loaderCallbacks.downloadResourceProgress?.(downloadedAssetsCount, totalAssetsToDownload);
+    notifyDownloadProgress();
     // release memory
     asset.buffer = null!;
     asset.pendingDownload = undefined;
+}
+
+export function updateWorkerDownloadProgress(loaded: number, total: number): void {
+    workerDownloadedAssetsCount = loaded;
+    workerTotalAssetsToDownload = total;
+    notifyDownloadProgress();
+}
+
+function notifyDownloadProgress(): void {
+    loaderCallbacks.downloadResourceProgress?.(
+        downloadedAssetsCount + workerDownloadedAssetsCount, totalAssetsToDownload + workerTotalAssetsToDownload);
 }
 
 export function verifyAllAssetsDownloaded(): void {
