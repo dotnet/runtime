@@ -36,6 +36,7 @@ namespace System.Net
         private WebHeaderCollection _webHeaderCollection = new WebHeaderCollection();
 
         private readonly Uri _requestUri = null!;
+        private Uri? _responseUri;
         private string _originVerb = HttpMethod.Get.Method;
 
         private int _continueTimeout = DefaultContinueTimeout;
@@ -344,7 +345,7 @@ namespace System.Net
         {
             get
             {
-                return _requestUri;
+                return _responseUri ?? _requestUri;
             }
         }
 
@@ -365,7 +366,8 @@ namespace System.Net
             get
             {
                 Uri hostUri = _hostUri ?? Address;
-                return (_hostUri == null || !_hostHasPort) && Address.IsDefaultPort ?
+                Uri portUri = _hostUri is null ? Address : _requestUri;
+                return (_hostUri == null || !_hostHasPort) && portUri.IsDefaultPort ?
                     hostUri.Host :
                     $"{hostUri.Host}:{hostUri.Port}";
             }
@@ -1000,6 +1002,12 @@ namespace System.Net
                 return;
             }
 
+            // Cancellation callbacks can run before HandleResponse finishes.
+            if (_sendRequestMessage?.RequestUri is Uri requestUri)
+            {
+                _responseUri = requestUri;
+            }
+
             // .NET Desktop behavior requires us to invoke outstanding callbacks
             // before returning if used in either the BeginGetRequestStream or
             // BeginGetResponse methods.
@@ -1268,16 +1276,16 @@ namespace System.Net
                 requestStream.Complete();
             }
 
-            if (_sendRequestTask is null && _requestStream is RequestBufferingStream requestBufferingStream)
-            {
-                ArraySegment<byte> buffer = requestBufferingStream.GetBuffer();
-                _sendRequestTask = SendRequest(async, new ByteArrayContent(buffer.Array!, buffer.Offset, buffer.Count));
-            }
-
-            _sendRequestTask ??= SendRequest(async);
-
             try
             {
+                if (_sendRequestTask is null && _requestStream is RequestBufferingStream requestBufferingStream)
+                {
+                    ArraySegment<byte> buffer = requestBufferingStream.GetBuffer();
+                    _sendRequestTask = SendRequest(async, new ByteArrayContent(buffer.Array!, buffer.Offset, buffer.Count));
+                }
+
+                _sendRequestTask ??= SendRequest(async);
+
                 HttpResponseMessage responseMessage = await _sendRequestTask.ConfigureAwait(false);
                 HttpWebResponse response = new(responseMessage, _requestUri, _cookieContainer);
 
@@ -1295,6 +1303,7 @@ namespace System.Net
             }
             finally
             {
+                _responseUri = _sendRequestMessage?.RequestUri;
                 _sendRequestMessage?.Dispose();
                 if (_requestStream is RequestBufferingStream bufferStream)
                 {
