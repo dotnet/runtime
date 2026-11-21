@@ -312,3 +312,16 @@ uint64_t SystemNative_GetCurrentThreadId(void)
 {
     return minipal_get_current_thread_id();
 }
+
+int32_t SystemNative_TgKill(int32_t pid, int32_t tid, int32_t signal)
+{
+#if defined(TARGET_LINUX) && defined(SYS_tgkill)
+    return (int32_t)syscall(SYS_tgkill, pid, tid, signal);
+#else
+    (void)pid;
+    (void)tid;
+    (void)signal;
+    errno = ENOSYS;
+    return -1;
+#endif
+}
