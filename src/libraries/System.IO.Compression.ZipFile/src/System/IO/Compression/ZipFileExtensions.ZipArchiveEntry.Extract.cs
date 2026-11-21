@@ -91,20 +91,11 @@ namespace System.IO.Compression
         // corrupted if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
         private static void ExtractToFileCore(ZipArchiveEntry source, string destinationFileName, bool overwrite, FileStreamOptions fileStreamOptions, ReadOnlySpan<char> password, bool usePassword)
         {
-            string extractPath = destinationFileName;
-            string? tempPath = null;
-
-            if (overwrite && File.Exists(destinationFileName))
-            {
-                // Use GetTempFileName for a unique temp file in the system temp directory.
-                // This avoids conflicts; we attempt to delete the temp file if extraction fails.
-                tempPath = Path.GetTempFileName();
-                extractPath = tempPath;
-            }
+            FileStream fs = ExtractToFileCreateFileStream(destinationFileName, overwrite, fileStreamOptions, out string? tempPath);
 
             try
             {
-                using (FileStream fs = new FileStream(extractPath, fileStreamOptions))
+                using (fs)
                 {
                     using (Stream es = usePassword ? source.Open(password) : source.Open(FileAccess.Read))
                         es.CopyTo(fs);
@@ -128,6 +119,19 @@ namespace System.IO.Compression
                 }
                 throw;
             }
+        }
+
+        private static FileStream ExtractToFileCreateFileStream(string destinationFileName, bool overwrite, FileStreamOptions fileStreamOptions, out string? tempPath)
+        {
+            tempPath = null;
+            if (overwrite && File.Exists(destinationFileName))
+            {
+                // Stage beside the destination to preserve directory access restrictions and avoid cross-filesystem copies.
+                tempPath = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(destinationFileName))!, Path.GetRandomFileName());
+                fileStreamOptions.Mode = FileMode.CreateNew;
+            }
+
+            return new FileStream(tempPath ?? destinationFileName, fileStreamOptions);
         }
 
         private static void ExtractToFileInitialize(ZipArchiveEntry source, string destinationFileName, bool overwrite, bool useAsync, out FileStreamOptions fileStreamOptions)
