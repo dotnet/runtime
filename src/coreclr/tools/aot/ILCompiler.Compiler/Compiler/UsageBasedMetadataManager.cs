@@ -298,15 +298,28 @@ namespace ILCompiler
 
             if (type.IsDelegate)
             {
-                // We've decided as a policy that delegate Invoke methods will be generated in full.
-                // The libraries (e.g. System.Linq.Expressions) have trimming warning suppressions
-                // in places where they assume IL-level trimming (where the method cannot be removed).
-                // We ask for a full reflectable method with its method body instead of just the
-                // metadata.
+                // The libraries (e.g. System.Linq.Expressions) and the reflection stack implementing APIs
+                // like Delegate.DynamicInvoke or MethodInfo.CreateDelegate have trimming warning suppressions
+                // in places where they look up the Invoke method by name on a delegate type that is not
+                // statically known, assuming IL-level trimming (where the method cannot be removed).
+                // Dataflow also models GetType on System.Delegate as typeof(Delegate), which misses Invoke.
+                // We ask for a full reflectable method with its method body instead of just the metadata.
+                // When dataflow sees the whole program, it detects these patterns, so we only need to do this
+                // if one of them is present. Otherwise (or when all metadata is generated) we always do it.
                 MethodDesc invokeMethod = type.GetMethod("Invoke"u8, null);
                 if (!IsReflectionBlocked(invokeMethod))
                 {
-                    dependencies.Add(factory.ReflectedMethod(invokeMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Delegate invoke method is always reflectable");
+                    ReflectedMethodNode reflectedInvokeMethod = factory.ReflectedMethod(invokeMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
+                    if ((_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0
+                        && (_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) == 0
+                        && factory.CompilationModuleGroup.IsSingleFileCompilation)
+                    {
+                        dependencies.AddConditional(reflectedInvokeMethod, factory.DelegateInvokeReflectedOnUnknownType, "Delegate invoke method is reflectable because Invoke of unknown delegate types is reflected on");
+                    }
+                    else
+                    {
+                        dependencies.Add(reflectedInvokeMethod, "Delegate invoke method is always reflectable");
+                    }
                 }
             }
 

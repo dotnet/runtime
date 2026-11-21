@@ -393,6 +393,31 @@ namespace ILLink.Shared.TrimAnalysis
                     break;
 
                 //
+                // System.Type
+                //
+                // GetMethod(string, ...)
+                // GetMember(string, ...)
+                //
+                // System.Reflection.RuntimeReflectionExtensions
+                //
+                // GetRuntimeMethod(this Type, string, Type[])
+                //
+                case IntrinsicId.Type_GetMethod:
+                case IntrinsicId.Type_GetMember:
+                case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod:
+#if !ILTRIM
+                    // Looking up "Invoke" on a type that is not statically known (e.g. delegateType.GetMethod("Invoke"))
+                    // relies on the Invoke method of every delegate type being reflectable.
+                    if (intrinsicId == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod)
+                        MarkDelegateInvokeReflectedOnUnknownType(argumentValues[0], argumentValues[1]);
+                    else
+                        MarkDelegateInvokeReflectedOnUnknownType(instanceValue, argumentValues[0]);
+#endif
+
+                    // This intrinsic is relevant to both trimming and AOT - call into trimming logic as well.
+                    return TryHandleSharedIntrinsic(calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
+
+                //
                 // System.Object
                 //
                 // GetType()
@@ -454,8 +479,13 @@ namespace ILLink.Shared.TrimAnalysis
                             {
                                 // We can treat this one the same as if it was a typeof() expression
 
-                                // We can allow Object.GetType to be modeled as System.Delegate because we keep all methods
-                                // on delegates anyway so reflection on something this approximation would miss is actually safe.
+                                // We can allow Object.GetType to be modeled as System.Delegate because the only
+                                // reflectable method this approximation would miss is Invoke, which we keep for all
+                                // delegate types when we see this pattern.
+#if !ILTRIM
+                                if (staticType.IsTypeOf("System", "Delegate"))
+                                    _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.DelegateInvokeReflectedOnUnknownType, "GetType called on System.Delegate");
+#endif
 
                                 // We ignore the fact that the type can be annotated (see below for handling of annotated types)
                                 // This means the annotations (if any) won't be applied - instead we rely on the exact knowledge
@@ -562,6 +592,27 @@ namespace ILLink.Shared.TrimAnalysis
                 maybeMethodReturnValue = (maybeMethodReturnValue is null) ? value : MultiValueLattice.Meet((MultiValue)maybeMethodReturnValue, value);
             }
         }
+
+#if !ILTRIM
+        private void MarkDelegateInvokeReflectedOnUnknownType(MultiValue typeValue, MultiValue nameValue)
+        {
+            foreach (var value in typeValue.AsEnumerable())
+            {
+                // Lookups on known types are handled precisely by the shared analysis
+                if (value is SystemTypeValue or NullValue)
+                    continue;
+
+                foreach (var stringParam in nameValue.AsEnumerable())
+                {
+                    if (stringParam is KnownStringValue { Contents: "Invoke" })
+                    {
+                        _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.DelegateInvokeReflectedOnUnknownType, "Invoke method looked up on an unknown type");
+                        return;
+                    }
+                }
+            }
+        }
+#endif
 
         private static void AddDependenciesFromConstraintUse(ReflectionMarker marker, Instantiation inst)
         {
