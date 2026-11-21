@@ -36,7 +36,17 @@ namespace System
         }
 
         public bool Contains(char value)
-            => SpanHelpers.ContainsValueType(ref Unsafe.As<char, short>(ref _firstChar), (short)value, Length);
+        {
+            if (RuntimeHelpers.IsKnownConstant(this))
+            {
+                // When the string is a known constant (e.g. a literal), route through the
+                // span overload so the JIT can fold the membership test into a range check
+                // or a bitmask test.
+                return this.AsSpan().Contains(value);
+            }
+
+            return SpanHelpers.ContainsValueType(ref Unsafe.As<char, short>(ref _firstChar), (short)value, Length);
+        }
 
         public bool Contains(char value, StringComparison comparisonType)
         {
