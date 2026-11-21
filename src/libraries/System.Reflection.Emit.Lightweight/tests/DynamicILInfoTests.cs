@@ -644,6 +644,32 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(ret, CallGM());
         }
 
+        private static int Int32Sum(int a, int b) => a + b;
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31857", TestRuntimes.Mono)]
+        public unsafe void FunctionPointerParameterAndLocal_Success()
+        {
+            DynamicMethod dynamicMethod = new DynamicMethod("Test", typeof(int), [typeof(delegate*<int, int, int>)], typeof(DynamicILInfoTests), false);
+            DynamicILInfo dynamicILInfo = dynamicMethod.GetDynamicILInfo();
+
+            SignatureHelper sigHelper = SignatureHelper.GetLocalVarSigHelper();
+            sigHelper.AddArgument(typeof(delegate*<int, int, int>), false);
+            dynamicILInfo.SetLocalSignature(sigHelper.GetSignature());
+
+            SignatureHelper calliSigHelper = SignatureHelper.GetMethodSigHelper(CallingConventions.Standard, typeof(int));
+            calliSigHelper.AddArgument(typeof(int));
+            calliSigHelper.AddArgument(typeof(int));
+
+            // ldarg.0; stloc.0; ldc.i4.s 10; ldc.i4.s 5; ldloc.0; calli <signature>; ret
+            byte[] code = { 0x02, 0x0a, 0x1f, 0x0a, 0x1f, 0x05, 0x06, 0x29, 0x00, 0x00, 0x00, 0x00, 0x2a };
+            PutInteger4(dynamicILInfo.GetTokenFor(calliSigHelper.GetSignature()), 0x0008, code);
+            dynamicILInfo.SetCode(code, 3);
+
+            object ret = dynamicMethod.Invoke(null, [((Func<int, int, int>)Int32Sum).Method.MethodHandle.GetFunctionPointer()]);
+            Assert.Equal(15, ret);
+        }
+
         private static void PutInteger4(int value, int startPos, byte[] array)
         {
             array[startPos++] = (byte)value;
