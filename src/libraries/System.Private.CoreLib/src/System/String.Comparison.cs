@@ -743,6 +743,73 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Returns a hash code for the specified character span using an ordinal comparison and a fast, non-cryptographic algorithm.
+        /// </summary>
+        /// <param name="value">The character span to hash.</param>
+        /// <returns>A 32-bit signed integer hash code.</returns>
+        /// <remarks>
+        /// <para>
+        /// This method is faster than <see cref="GetHashCode(ReadOnlySpan{char})"/>, but its hash codes are more likely to collide,
+        /// and it doesn't protect against inputs crafted to cause collisions. Use it only when the inputs are trusted.
+        /// </para>
+        /// <para>
+        /// The hash code for a given value can differ between processes. Don't persist it or use it outside the process that computed it.
+        /// </para>
+        /// </remarks>
+        public static int GetHashCodeWeak(ReadOnlySpan<char> value) => GetNonRandomizedHashCode(value, WeakHashCodeSeed.Value);
+
+        /// <summary>
+        /// Returns a hash code for the specified character span using the specified comparison rules and a fast, non-cryptographic algorithm.
+        /// </summary>
+        /// <param name="value">The character span to hash.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the hash computation. Only <see cref="StringComparison.Ordinal"/> and <see cref="StringComparison.OrdinalIgnoreCase"/> are supported.</param>
+        /// <returns>A 32-bit signed integer hash code.</returns>
+        /// <exception cref="ArgumentException"><paramref name="comparisonType"/> is not <see cref="StringComparison.Ordinal"/> or <see cref="StringComparison.OrdinalIgnoreCase"/>.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method is faster than <see cref="GetHashCode(ReadOnlySpan{char}, StringComparison)"/>, but its hash codes are more likely to collide,
+        /// and it doesn't protect against inputs crafted to cause collisions. Use it only when the inputs are trusted.
+        /// </para>
+        /// <para>
+        /// The hash code for a given value can differ between processes. Don't persist it or use it outside the process that computed it.
+        /// </para>
+        /// </remarks>
+        public static int GetHashCodeWeak(ReadOnlySpan<char> value, StringComparison comparisonType)
+        {
+            switch (comparisonType)
+            {
+                case StringComparison.Ordinal:
+                    return GetNonRandomizedHashCode(value, WeakHashCodeSeed.Value);
+
+                case StringComparison.OrdinalIgnoreCase:
+                    return GetNonRandomizedHashCodeOrdinalIgnoreCase(value, WeakHashCodeSeed.Value);
+
+                default:
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.NotSupported_StringComparison, ExceptionArgument.comparisonType);
+                    return default;
+            }
+        }
+
+        /// <summary>
+        /// Holds the per-process seed for <see cref="GetHashCodeWeak(ReadOnlySpan{char})"/>, so that its hash codes aren't stable across processes.
+        /// </summary>
+        /// <remarks>
+        /// The seed is separate from <see cref="Marvin.DefaultSeed"/>, as weak hash codes may reveal it. It's in a nested class so
+        /// that it's only generated on first use, rather than when <see cref="string"/> is initialized.
+        /// </remarks>
+        private static class WeakHashCodeSeed
+        {
+            internal static readonly uint Value = GenerateSeed();
+
+            private static unsafe uint GenerateSeed()
+            {
+                uint seed;
+                Interop.GetRandomBytes((byte*)&seed, sizeof(uint));
+                return seed;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int GetHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> value)
         {
@@ -795,9 +862,13 @@ namespace System
             }
         }
 
-        internal static unsafe int GetNonRandomizedHashCode(ReadOnlySpan<char> span)
+        private const uint NonRandomizedHashCodeSeed = (5381 << 16) + 5381;
+
+        internal static int GetNonRandomizedHashCode(ReadOnlySpan<char> span) => GetNonRandomizedHashCode(span, NonRandomizedHashCodeSeed);
+
+        private static unsafe int GetNonRandomizedHashCode(ReadOnlySpan<char> span, uint seed)
         {
-            uint hash1 = (5381 << 16) + 5381;
+            uint hash1 = seed;
             uint hash2 = hash1;
 
             int length = span.Length;
@@ -904,9 +975,11 @@ namespace System
             return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(hash1, hash2, this.AsSpan(Length - length));
         }
 
-        internal static unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> span)
+        internal static int GetNonRandomizedHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> span) => GetNonRandomizedHashCodeOrdinalIgnoreCase(span, NonRandomizedHashCodeSeed);
+
+        private static unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> span, uint seed)
         {
-            uint hash1 = (5381 << 16) + 5381;
+            uint hash1 = seed;
             uint hash2 = hash1;
 
             uint p0, p1;
