@@ -250,6 +250,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             string path = loader.GetPath(handle);
             if (string.IsNullOrEmpty(path))
             {
+                // Match the native DAC: assign an empty name so callers can distinguish "no file name" from "not read".
+                hr = StringHolderAssignCopy(pStrFilename, string.Empty);
                 *pResult = Interop.BOOL.FALSE;
             }
             else

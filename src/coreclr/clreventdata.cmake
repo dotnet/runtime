@@ -12,45 +12,45 @@ if(CLR_CMAKE_SKIP_DOTNET)
   set(FEATURE_EVENT_TRACE 0)
   set(FEATURE_PERFTRACING 0)
   set(FEATURE_EVENTSOURCE_XPLAT 0)
-elseif(NOT CLR_DOTNET_HOST_PATH)
+  return()
+endif()
+
+if(NOT CLR_DOTNET_HOST_PATH)
   message(FATAL_ERROR "CLR_DOTNET_HOST_PATH is required to generate the eventing sources. Build with "
     "build.sh/build.cmd or build-runtime.sh/.cmd, which pass it, or pass -skipdotnet to build-runtime.sh/.cmd.")
 endif()
 
-function(_get_event_data_provider FLAVOR PROVIDER_VAR)
+# The Visual Studio environment sets Platform to the target architecture, which MSBuild would build the tool for.
+set(EVENT_DATA_DOTNET "${CMAKE_COMMAND}" -E env --unset=Platform "${CLR_DOTNET_HOST_PATH}")
+
+# Build the generator once, so the per-flavor generation steps (which may run in parallel) only run it.
+set(EVENT_DATA_GENERATOR_TIMESTAMP ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/event_data_generator.timestamp)
+add_custom_command(
+  OUTPUT ${EVENT_DATA_GENERATOR_TIMESTAMP}
+  COMMAND ${EVENT_DATA_DOTNET} build "${EVENT_DATA_GENERATOR}" -c Release
+  COMMAND ${CMAKE_COMMAND} -E touch ${EVENT_DATA_GENERATOR_TIMESTAMP}
+  DEPENDS ${EVENT_DATA_GENERATOR}
+  COMMENT "Building the eventing source generator"
+  VERBATIM)
+add_custom_target(event_data_generator DEPENDS ${EVENT_DATA_GENERATOR_TIMESTAMP})
+
+# add_event_data_target(<target> FLAVOR <coreclr|nativeaot> OUTPUT_DIR <dir> [INCLUSION_LIST <file>] OUTPUTS <var>)
+# Adds <target>, which generates the eventing sources for FLAVOR into OUTPUT_DIR, and sets <var> to the generated files.
+function(add_event_data_target TARGET)
+  cmake_parse_arguments(ARG "" "FLAVOR;OUTPUT_DIR;INCLUSION_LIST;OUTPUTS" "" ${ARGN})
+
   # eventtracebase.h picks the ETW implementation by host, which includes the Windows-hosted cross-OS DAC.
   if(CLR_CMAKE_HOST_WIN32)
-    set(${PROVIDER_VAR} etw PARENT_SCOPE)
-  elseif(FEATURE_EVENTSOURCE_XPLAT AND FLAVOR STREQUAL "coreclr")
-    set(${PROVIDER_VAR} lttng PARENT_SCOPE)
+    set(provider etw)
+  elseif(FEATURE_EVENTSOURCE_XPLAT AND ARG_FLAVOR STREQUAL "coreclr")
+    set(provider lttng)
   else()
-    set(${PROVIDER_VAR} none PARENT_SCOPE)
+    set(provider none)
   endif()
-endfunction()
 
-function(_get_event_data_command FLAVOR OUTPUT_DIR INCLUSION_LIST COMMAND_VAR)
-  _get_event_data_provider(${FLAVOR} provider)
-
-  # The Visual Studio environment sets Platform to the target architecture, which MSBuild would build the tool for.
-  set(command "${CMAKE_COMMAND}" -E env --unset=Platform
-    "${CLR_DOTNET_HOST_PATH}" run --file "${EVENT_DATA_GENERATOR}" -c Release --
-    --flavor ${FLAVOR} --provider ${provider}
-    --manifest "${EVENT_MANIFEST}" --exclusion-list "${EVENT_EXCLUSIONS}" --output "${OUTPUT_DIR}")
-  if(INCLUSION_LIST)
-    list(APPEND command --inclusion-list "${INCLUSION_LIST}")
-  endif()
-  set(${COMMAND_VAR} ${command} PARENT_SCOPE)
-endfunction()
-
-# get_event_data_outputs(FLAVOR <coreclr|nativeaot> OUTPUT_DIR <dir> OUTPUTS <var>)
-# Sets <var> to the files generated for FLAVOR into OUTPUT_DIR. The list is fixed here rather than queried from the
-# generator at configure time, which would cost a `dotnet run` per flavor; keep it in sync with EventDataGenerator.cs
-# (its --dry-run option prints what it writes).
-function(get_event_data_outputs)
-  cmake_parse_arguments(ARG "" "FLAVOR;OUTPUT_DIR;OUTPUTS" "" ${ARGN})
-  _get_event_data_provider(${ARG_FLAVOR} provider)
-
-  # One file set per provider in ClrEtwAll.man; NativeAOT's inclusion list leaves out DotNETRuntimeStress.
+  # The generated files are listed here rather than queried from the generator at configure time, which would cost a
+  # `dotnet run` per flavor; keep them in sync with EventDataGenerator.cs (its --dry-run option prints what it writes).
+  # There is one file set per provider in ClrEtwAll.man; NativeAOT's inclusion list leaves out DotNETRuntimeStress.
   set(providers dotnetruntime dotnetruntimerundown dotnetruntimeprivate)
   if(ARG_FLAVOR STREQUAL "coreclr")
     list(APPEND providers dotnetruntimestress)
@@ -74,19 +74,14 @@ function(get_event_data_outputs)
   if(provider STREQUAL "etw")
     list(APPEND files etw/ClrEtwAll.h etw/ClrEtwAll.rc etw/ClrEtwAll_MSG00001.bin etw/ClrEtwAllTEMP.bin etw/etwmacros.h)
   endif()
-
   list(TRANSFORM files PREPEND "${ARG_OUTPUT_DIR}/" OUTPUT_VARIABLE outputs)
-  set_source_files_properties(${outputs} PROPERTIES GENERATED TRUE)
-  set(${ARG_OUTPUTS} ${outputs} PARENT_SCOPE)
-endfunction()
 
-# add_event_data_target(<target> FLAVOR <coreclr|nativeaot> OUTPUT_DIR <dir> [INCLUSION_LIST <file>] OUTPUTS <var>)
-# Adds <target>, which generates the eventing sources for FLAVOR into OUTPUT_DIR, and sets <var> to the generated files.
-function(add_event_data_target TARGET)
-  cmake_parse_arguments(ARG "" "FLAVOR;OUTPUT_DIR;INCLUSION_LIST;OUTPUTS" "" ${ARGN})
-
-  get_event_data_outputs(FLAVOR ${ARG_FLAVOR} OUTPUT_DIR "${ARG_OUTPUT_DIR}" OUTPUTS outputs)
-  _get_event_data_command(${ARG_FLAVOR} "${ARG_OUTPUT_DIR}" "${ARG_INCLUSION_LIST}" command)
+  set(command ${EVENT_DATA_DOTNET} run --file "${EVENT_DATA_GENERATOR}" -c Release --no-build --
+    --flavor ${ARG_FLAVOR} --provider ${provider}
+    --manifest "${EVENT_MANIFEST}" --exclusion-list "${EVENT_EXCLUSIONS}" --output "${ARG_OUTPUT_DIR}")
+  if(ARG_INCLUSION_LIST)
+    list(APPEND command --inclusion-list "${ARG_INCLUSION_LIST}")
+  endif()
 
   # Unchanged files are not rewritten, so track the run with a timestamp to avoid rerunning it on every build.
   set(timestamp ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${TARGET}.timestamp)
@@ -100,5 +95,7 @@ function(add_event_data_target TARGET)
     VERBATIM)
 
   add_custom_target(${TARGET} DEPENDS ${timestamp})
+  add_dependencies(${TARGET} event_data_generator)
+  set_source_files_properties(${outputs} PROPERTIES GENERATED TRUE)
   set(${ARG_OUTPUTS} ${outputs} PARENT_SCOPE)
 endfunction()
