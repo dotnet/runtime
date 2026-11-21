@@ -148,8 +148,12 @@ namespace ILCompiler.ObjectWriter
 
         partial void PrepareForUnwindInfo() => CreateEhSections();
 
-        partial void EmitUnwindInfoForNode(ObjectNode node, Utf8String currentSymbolName, SectionWriter sectionWriter)
+        private protected virtual void RecordCodeRange(ObjectNode node, SectionWriter sectionWriter, int length) { }
+
+        partial void EmitUnwindInfoForNode(ObjectNode node, Utf8String currentSymbolName, SectionWriter sectionWriter, int length)
         {
+            RecordCodeRange(node, sectionWriter, length);
+
             if (node is INodeWithCodeInfo nodeWithCodeInfo)
             {
                 EmitUnwindInfo(sectionWriter, nodeWithCodeInfo, currentSymbolName);
