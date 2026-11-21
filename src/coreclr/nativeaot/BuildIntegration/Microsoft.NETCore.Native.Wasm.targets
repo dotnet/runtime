@@ -12,7 +12,6 @@
       <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">$(WASI_SDK_PATH)/bin/clang$(_WasiToolExeSuffix)</CppCompilerAndLinker>
       <CppLinker>$(CppCompilerAndLinker)</CppLinker>
       <CppLibCreator>$(WASI_SDK_PATH)/bin/llvm-ar$(_WasiToolExeSuffix)</CppLibCreator>
-      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == ''">8388608</IlcDefaultStackSize>
       <EventPipeName>libeventpipe-disabled</EventPipeName>
       <EventPipeName Condition="'$(EventSourceSupport)' == 'true'">libeventpipe-enabled</EventPipeName>
@@ -28,6 +27,11 @@
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
     </ItemGroup>
 
+    <!-- WIT worlds for framework libraries that import WASI interfaces directly. Unused imports are dropped from the component. -->
+    <ItemGroup>
+      <NetCoreAppComponentType Include="WasiHttpWorld_component_type" />
+    </ItemGroup>
+
     <ItemGroup>
       <DirectPInvoke Include="@(NetCoreAppNativeLibrary)" />
     </ItemGroup>
@@ -36,7 +40,7 @@
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'$(IlcFrameworkNativePath)lib%(Identity).a')" />
       <NativeLibrary Include="$(IlcSdkPath)libbootstrapper.o" Condition="'$(NativeLib)' == '' and '$(CustomNativeMain)' != 'true'" />
       <NativeLibrary Include="$(IlcSdkPath)libbootstrapperdll.o" Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'" />
-      <NativeLibrary Include="$(IlcSdkPath)libPortableRuntime.a" />
+      <NativeLibrary Include="$(IlcSdkPath)libRuntime.WorkstationGC.a" />
       <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName).a" />
       <NativeLibrary Include="$(IlcSdkPath)libstandalonegc-disabled.a" />
       <NativeLibrary Include="$(IlcSdkPath)libaotminipal.a" />
@@ -53,6 +57,7 @@
       <LinkerArg Include="--sysroot=&quot;$(WASI_SDK_PATH)/share/wasi-sysroot&quot;" />
       <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
       <LinkerArg Include="-Wl,-z,stack-size=$(IlcDefaultStackSize)" />
+      <LinkerArg Include="@(NetCoreAppComponentType->'-Wl,--component-type,&quot;$(IlcFrameworkNativePath)%(Identity).wit&quot;')" />
       <LinkerArg Include="-lwasi-emulated-process-clocks;-lwasi-emulated-signal;-lwasi-emulated-mman;-lwasi-emulated-getpid" />
       <LinkerArg Include="-lstdc++" Condition="'$(LinkStandardCPlusPlusLibrary)' == 'true'" />
       <LinkerArg Include="-g" Condition="'$(NativeDebugSymbols)' == 'true'" />

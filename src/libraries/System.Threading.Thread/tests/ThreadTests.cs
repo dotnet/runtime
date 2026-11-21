@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.Claims;
@@ -129,6 +130,53 @@ namespace System.Threading.Threads.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new Thread(() => { }, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new Thread(state => { }, -1));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.Browser & ~TestPlatforms.Wasi)]
+        [SkipOnMono("Tests CoreCLR's memory-pressure accounting.")]
+        [SkipOnCoreClr("GC stress can advance memory-pressure history during the test.", RuntimeTestModes.AnyGCStress)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void UnattachedThreadDoesNotRemoveMemoryPressure(bool failConstructor)
+        {
+            RemoteExecutor.Invoke(static failConstruction =>
+            {
+                // Losing candidates never run a constructor; failed public constructors also leave no native thread.
+                Thread thread = (Thread)RuntimeHelpers.GetUninitializedObject(typeof(Thread));
+                if (bool.Parse(failConstruction))
+                {
+                    ConstructorInfo constructor = typeof(Thread).GetConstructor(new[] { typeof(ThreadStart) });
+                    TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() =>
+                        constructor.Invoke(thread, new object[] { null }));
+                    Assert.IsType<ArgumentNullException>(exception.InnerException);
+                }
+                GC.SuppressFinalize(thread);
+
+                MethodInfo finalize = typeof(Thread).GetMethod("Finalize", BindingFlags.Instance | BindingFlags.NonPublic);
+                Type pressureType = typeof(GC).GetNestedType("MemoryPressure", BindingFlags.NonPublic);
+                long[] removed = (long[])pressureType.GetField("s_removePressure", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.RemoveMemoryPressure(1);
+                long before = 0;
+                foreach (long value in removed)
+                {
+                    before += value;
+                }
+
+                finalize.Invoke(thread, null);
+                finalize.Invoke(thread, null);
+
+                long after = 0;
+                foreach (long value in removed)
+                {
+                    after += value;
+                }
+
+                Assert.Equal(before, after);
+            }, failConstructor.ToString()).Dispose();
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]

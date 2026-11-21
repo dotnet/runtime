@@ -613,9 +613,9 @@ void SyncBlockCache::Grow()
 
     STRESS_LOG0(LF_SYNC, LL_INFO10000, "SyncBlockCache::NewSyncBlockSlot growing SyncBlockCache \n");
 
-    NewArrayHolder<SyncTableEntry> newSyncTable (NULL);
-    NewArrayHolder<DWORD>          newBitMap    (NULL);
-    DWORD *                        oldBitMap;
+    NewArrayHolder<SyncTableEntry> newSyncTable;
+    NewArrayHolder<DWORD> newBitMap;
+    DWORD* oldBitMap;
 
     // Compute the size of the new synctable. Normally, we double it - unless
     // doing so would create slots with indices too high to fit within the
@@ -645,10 +645,6 @@ void SyncBlockCache::Grow()
         //! Any operation that could fail must occur before this point.
         CANNOTTHROWCOMPLUSEXCEPTION();
 
-        newSyncTable.SuppressRelease();
-        newBitMap.SuppressRelease();
-
-
         // We chain old table because we can't delete
         // them before all the threads are stopped
         // (next GC)
@@ -664,14 +660,14 @@ void SyncBlockCache::Grow()
                     BitMapSize (m_SyncTableSize)*sizeof (DWORD));
 
         oldBitMap = m_EphemeralBitmap;
-        m_EphemeralBitmap = newBitMap;
+        m_EphemeralBitmap = newBitMap.Detach();
         delete[] oldBitMap;
 
         _ASSERTE((m_SyncTableSize & MASK_SYNCBLOCKINDEX) == m_SyncTableSize);
         // note: we do not care if another thread does not see the new size
         // however we really do not want it to see the new size without seeing the new array
         //@TODO do we still leak here if two threads come here at the same time ?
-        InterlockedExchangeT(&SyncTableEntry::GetSyncTableEntryByRef(), newSyncTable.GetValue());
+        InterlockedExchangeT(&SyncTableEntry::GetSyncTableEntryByRef(), newSyncTable.Detach());
 
         m_FreeSyncTableIndex++;
 
@@ -1447,16 +1443,19 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
 //
 // This holder really just meets GetSyncBlock()'s special requirements. It's not a general purpose holder.
 
-
-// Do not inline this call. (fyuan)
-// SyncBlockMemoryHolder is normally a check for empty pointer and return. Inlining VoidDeleteSyncBlockMemory adds expensive exception handling.
-void VoidDeleteSyncBlockMemory(SyncBlock* psb)
+struct SyncBlockMemoryTraits final
 {
-    LIMITED_METHOD_CONTRACT;
-    SyncBlockCache::GetSyncBlockCache()->DeleteSyncBlockMemory(psb);
-}
+    using Type = SyncBlock*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (value != NULL)
+            SyncBlockCache::GetSyncBlockCache()->DeleteSyncBlockMemory(value);
+    }
+};
 
-typedef Wrapper<SyncBlock*, DoNothing<SyncBlock*>, VoidDeleteSyncBlockMemory, 0> SyncBlockMemoryHolder;
+using SyncBlockMemoryHolder = LifetimeHolder<SyncBlockMemoryTraits>;
 
 
 // get the sync block for an existing object
@@ -1507,7 +1506,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
             //! failable operation called.
             CANNOTTHROWCOMPLUSEXCEPTION();
 
-            syncBlockMemoryHolder.SuppressRelease();
+            syncBlockMemoryHolder.Detach();
 
             new (syncBlock) SyncBlock(indx);
 

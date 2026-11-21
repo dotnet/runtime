@@ -5719,7 +5719,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     {
         codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(false); // Disable using new frames
     }
-    else if ((opts.compJitSaveFpLrWithCalleeSavedRegisters == 2) || (opts.compJitSaveFpLrWithCalleeSavedRegisters == 3))
+    else if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 2)
     {
         codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true); // Force using new frames
     }

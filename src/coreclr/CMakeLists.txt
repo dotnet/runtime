@@ -44,10 +44,6 @@ if(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions(_WASI_EMULATED_MMAN)
   add_compile_definitions(_WASI_EMULATED_GETPID)
   include_directories(BEFORE SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/pal/src/include/pal/wasi)
-  # Cross-compile try_run() answers — wasm32 binaries cannot execute on
-  # the build host, so pre-seed the cache.
-  set(REALPATH_SUPPORTS_NONEXISTENT_FILES_EXITCODE 1 CACHE STRING "" FORCE)
-  set(HAVE_PROCFS_STATM_EXITCODE 1 CACHE STRING "" FORCE)
 endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
@@ -104,7 +100,6 @@ if(NOT CLR_CROSS_COMPONENTS_BUILD)
   set(STATIC_LIBS_ONLY 1)
   if(CLR_CMAKE_TARGET_BROWSER)
     set(GEN_PINVOKE 1)
-    set(BUILD_LIBS_NATIVE_BROWSER 1)
     set(STATIC_LIB_DESTINATION ${CMAKE_BINARY_DIR}/libs-native)
     set(CORERUN_LIBS_ONLY 1)
   endif()
@@ -139,10 +134,6 @@ if(CLR_CMAKE_HOST_UNIX)
     endif()
 
     add_subdirectory(pal)
-else()
-    if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
-        add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
-    endif()
 endif()
 
 #----------------------------------------------------

@@ -352,6 +352,7 @@ internal partial class StackWalk_1 : IStackWalk
                         if (!IsManaged(gcFrame.Frame.Context.InstructionPointer, out CodeBlockHandle? cbh))
                             throw new InvalidOperationException("Expected managed code");
 
+                        bool isFunclet = _eman.IsFunclet(cbh.Value);
                         GcSlotEnumerationOptions gcOptions = new()
                         {
                             IsActiveFrame = gcFrame.Frame.IsActiveFrame,
@@ -362,7 +363,8 @@ internal partial class StackWalk_1 : IStackWalk
                             // native CrawlFrame::GetCodeManagerFlags (stackwalk.h).
                             IsExecutionAborted = gcFrame.IsInterrupted,
                             IsParentOfFuncletStackFrame = gcFrame.ShouldParentToFuncletSkipReportingGCReferences,
-                            SuppressUntrackedSlots = _eman.IsFilterFunclet(cbh.Value),
+                            IsFunclet = isFunclet,
+                            SuppressUntrackedSlots = isFunclet && _eman.IsFilterFunclet(cbh.Value),
                         };
 
                         uint? relOffsetOverride = null;
@@ -1072,7 +1074,7 @@ internal partial class StackWalk_1 : IStackWalk
         return handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value;
     }
 
-    byte[] IStackWalk.GetRawContext(IStackDataFrameHandle stackDataFrameHandle)
+    ReadOnlySpan<byte> IStackWalk.GetRawContext(IStackDataFrameHandle stackDataFrameHandle)
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
         return handle.Context.GetBytes();
@@ -1413,7 +1415,7 @@ internal partial class StackWalk_1 : IStackWalk
             {
                 context.Clear();
                 _frameHelpers.UpdateContextFromFrame(iterator.CurrentFrame, context);
-                return context.GetBytes();
+                return context.GetBytes().ToArray();
             }
 
             // For other frames, look for the first (deepest) frame that yields a context
@@ -1424,7 +1426,7 @@ internal partial class StackWalk_1 : IStackWalk
             if (context.StackPointer.Value != 0 && context.InstructionPointer.Value != 0)
             {
                 context.RawContextFlags = context.FullContextFlags;
-                return context.GetBytes();
+                return context.GetBytes().ToArray();
             }
 
             iterator.Next();
@@ -1432,7 +1434,7 @@ internal partial class StackWalk_1 : IStackWalk
 
         // The thread is not running managed code: return a zeroed context.
         context.Clear();
-        return context.GetBytes();
+        return context.GetBytes().ToArray();
     }
 
     TargetPointer IStackWalk.GetRedirectedContextPointer(ThreadData threadData)

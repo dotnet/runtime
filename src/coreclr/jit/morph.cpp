@@ -826,7 +826,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         if (!treatLikeCall && (argx->gtFlags & GTF_EXCEPT) && (argCount > 1) && comp->opts.compDbgCode)
         {
             exceptionFlags = comp->gtCollectExceptions(argx);
-            if ((exceptionFlags & (ExceptionSetFlags::IndexOutOfRangeException |
+            if ((exceptionFlags & (ExceptionSetFlags::IndexOutOfRangeException | ExceptionSetFlags::ArgumentException |
+                                   ExceptionSetFlags::ArgumentOutOfRangeException |
                                    ExceptionSetFlags::OverflowException)) != ExceptionSetFlags::None)
             {
                 for (CallArg& otherArg : Args())
@@ -907,11 +908,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #endif
             }
         }
-        else if ((argx->gtFlags & GTF_EXCEPT) != 0)
+        else if ((argx->gtFlags & (GTF_EXCEPT | GTF_ORDER_SIDEEFF)) != 0)
         {
-            // If a previous arg may throw a different exception than this arg
-            // then we evaluate all previous arguments with GTF_EXCEPT to temps
-            // to avoid reordering them in our sort later.
+            // An ordered argument may depend on null checks in previous arguments,
+            // even if it cannot throw itself. Otherwise, only preserve exception
+            // order when the arguments may throw different exceptions.
             if (prevExceptionTree != nullptr)
             {
                 if (prevExceptionFlags == ExceptionSetFlags::None)
@@ -927,10 +928,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 bool exactlyOneKnown =
                     isPow2(static_cast<unsigned>(exceptionFlags)) &&
                     ((exceptionFlags & ExceptionSetFlags::UnknownException) == ExceptionSetFlags::None);
-                bool throwsSameAsPrev = exactlyOneKnown && (exceptionFlags == prevExceptionFlags);
-                if (!throwsSameAsPrev)
+                bool canReorder = ((argx->gtFlags & GTF_ORDER_SIDEEFF) == 0) && exactlyOneKnown &&
+                                  (exceptionFlags == prevExceptionFlags);
+                if (!canReorder)
                 {
-                    JITDUMP("Exception set for arg [%06u] interferes with previous tree [%06u]; must evaluate previous "
+                    JITDUMP("Effects for arg [%06u] interfere with previous tree [%06u]; must evaluate previous "
                             "trees with exceptions to temps\n",
                             Compiler::dspTreeID(argx), Compiler::dspTreeID(prevExceptionTree));
 
@@ -964,8 +966,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
             }
 
-            prevExceptionTree  = argx;
-            prevExceptionFlags = exceptionFlags;
+            if ((argx->gtFlags & GTF_EXCEPT) != 0)
+            {
+                prevExceptionTree  = argx;
+                prevExceptionFlags = exceptionFlags;
+            }
         }
     }
 
@@ -2882,6 +2887,26 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
 #endif
 
 //------------------------------------------------------------------------
+// fgTreeMayModifyLocal: Check whether evaluating a tree may modify a local.
+//
+// Arguments:
+//    tree   - The tree to check
+//    lclNum - The local
+//
+// Return Value:
+//    True if evaluating the tree may modify the local.
+//
+bool Compiler::fgTreeMayModifyLocal(GenTree* tree, unsigned lclNum)
+{
+    if ((tree->gtFlags & (GTF_ASG | GTF_CALL)) == 0)
+    {
+        return false;
+    }
+
+    return lvaGetDesc(lclNum)->IsAddressExposed() || gtHasRef(tree, lclNum);
+}
+
+//------------------------------------------------------------------------
 // fgMorphIndexAddr: Expand a GT_INDEX_ADDR node and fully morph the child operands.
 //
 // We expand the GT_INDEX_ADDR node into a larger tree that evaluates the array
@@ -2905,7 +2930,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     const int MAX_INDEX_COMPLEXITY = 4;
 
     var_types            elemTyp        = indexAddr->gtElemType;
-    unsigned             elemSize       = indexAddr->gtElemSize;
+    ValueSize            elemSize       = indexAddr->gtElemSize;
     uint8_t              elemOffs       = static_cast<uint8_t>(indexAddr->gtElemOffset);
     CORINFO_CLASS_HANDLE elemStructType = indexAddr->gtStructElemClass;
 
@@ -2978,7 +3003,8 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         //
         if (((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) != 0) ||
             gtComplexityExceeds(arrRef, MAX_ARR_COMPLEXITY, countNode) || arrRef->OperIs(GT_LCL_FLD) ||
-            (arrRef->OperIs(GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(arrRef->AsLclVar()->GetLclNum())))
+            (arrRef->OperIs(GT_LCL_VAR) && (lvaIsLocalImplicitlyAccessedByRef(arrRef->AsLclVar()->GetLclNum()) ||
+                                            fgTreeMayModifyLocal(index, arrRef->AsLclVar()->GetLclNum()))))
         {
             unsigned arrRefTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
             arrRefDefn            = gtNewTempStore(arrRefTmpNum, arrRef);
@@ -3053,10 +3079,10 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     }
 #endif // TARGET_64BIT
 
-    /* Scale the index value if necessary */
-    if (elemSize > 1)
+    // Scale the index value if necessary.
+    if (!elemSize.IsExact() || (elemSize.GetExact() > 1))
     {
-        GenTree* size = gtNewIconNode(elemSize, TYP_I_IMPL);
+        GenTree* multiplier = gtNewValueSize(elemSize, TYP_I_IMPL);
 
         // Fix 392756 WP7 Crossgen
         //
@@ -3064,10 +3090,9 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         // is a constant and is not capable of handling CSE'ing the elemSize constant into a lclvar.
         // Hence to prevent the constant from becoming a CSE we mark it as NO_CSE.
         //
-        size->gtFlags |= GTF_DONT_CSE;
-
+        multiplier->gtFlags |= GTF_DONT_CSE;
         /* Multiply by the array element size */
-        addr = gtNewOperNode(GT_MUL, TYP_I_IMPL, index, size);
+        addr = gtNewOperNode(GT_MUL, TYP_I_IMPL, index, multiplier);
     }
     else
     {
@@ -6009,8 +6034,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 
     // Transform recursive tail call into a loop.
 
-    Statement*       earlyArgInsertionPoint = lastStmt;
-    const DebugInfo& callDI                 = lastStmt->GetDebugInfo();
+    const DebugInfo& callDI = lastStmt->GetDebugInfo();
 
     // All arguments whose trees may involve caller parameter local variables need to be assigned to temps first;
     // then the temps need to be assigned to the method parameters. This is done so that the caller
@@ -6060,9 +6084,9 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         GenTree* earlyArg = arg.GetEarlyNode();
         if (arg.GetLateNode() != nullptr)
         {
-            // This is a setup node so we need to hoist it.
+            // Hoist setup nodes before any parameter assignments.
             Statement* earlyArgStmt = gtNewStmt(earlyArg, callDI);
-            fgInsertStmtBefore(block, earlyArgInsertionPoint, earlyArgStmt);
+            fgInsertStmtBefore(block, tmpAssignmentInsertionPoint, earlyArgStmt);
         }
         else
         {
@@ -8229,7 +8253,7 @@ DONE_MORPHING_CHILDREN:
             GenTree* op1SideEffects = nullptr;
             // The addition of "GTF_MAKE_CSE" below prevents us from throwing away (for example)
             // hoisted expressions in loops.
-            gtExtractSideEffList(op1, &op1SideEffects, (GTF_SIDE_EFFECT | GTF_MAKE_CSE));
+            gtExtractSideEffList(op1, &op1SideEffects, (GTF_OBS_EFFECT | GTF_MAKE_CSE));
             if (op1SideEffects)
             {
                 // Replace the left hand side with the side effect list.
@@ -10198,7 +10222,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 var_types  op1SimdBaseType = op1Intrin->GetSimdBaseType();
 
                 if ((op1Oper == GT_NEG) && !op1IsScalar &&
-                    (varTypeToSigned(simdBaseType) == varTypeToSigned(op1SimdBaseType)))
+                    (varTypeToSigned(simdBaseType) == varTypeToSigned(op1SimdBaseType)) &&
+                    gtCanSwapOrder(op1, op2Intrin))
                 {
                     op1 = ExtractEffectiveOp(GT_NEG, op1Intrin, /* destroyNodes */ true);
 
@@ -11366,7 +11391,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                     op1->ChangeOper(GT_MUL);
 
                     add->AsIntCon()->SetIconValue(imul);
-                    fgValueNumberTreeConst(add);
+                    fgUpdateConstTreeValueNumber(add);
                 }
             }
 
@@ -12837,7 +12862,11 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
 {
     // Active dependent assertions are killed here
     //
-    ASSERT_TP killed = GetAssertionDep(lclNum);
+    ASSERT_TP killed = optAssertionDep->Get(lclNum);
+    if (BitVecOps::MayBeUninit(killed))
+    {
+        return;
+    }
 
 #ifdef DEBUG
     bool hasKills = !BitVecOps::IsEmptyIntersection(apTraits, apLocal, killed);
@@ -13297,13 +13326,16 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
             if (block->hasProfileWeight())
             {
+                // A self-edge can change the block weight as we visit its successors.
+                weight_t blockWeight = block->bbWeight;
+
                 // Use unique successor edges, as duplicate jump table entries share an edge.
                 for (FlowEdge* const succEdge : block->SuccEdges())
                 {
                     BasicBlock* const targetBlock = succEdge->getDestinationBlock();
                     if (targetBlock->hasProfileWeight())
                     {
-                        targetBlock->decreaseBBProfileWeight(succEdge->getLikelyWeight());
+                        targetBlock->decreaseBBProfileWeight(succEdge->getLikelihood() * blockWeight);
                         profileInconsistent |= (targetBlock->NumSucc() > 0);
                     }
                 }
@@ -15896,7 +15928,15 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
             unsigned rank      = arrElem->gtArrRank;
 
             // We are going to multiply reference the array object; create a new local var if necessary.
-            if (arrObj->OperIs(GT_LCL_VAR))
+            // A local can be reused only if evaluating the indices cannot modify it.
+            bool canReuseArrLcl = arrObj->OperIs(GT_LCL_VAR);
+            for (unsigned i = 0; canReuseArrLcl && anyIdxWithSideEffects && (i < rank); i++)
+            {
+                canReuseArrLcl =
+                    !m_compiler->fgTreeMayModifyLocal(arrElem->gtArrInds[i], arrObj->AsLclVar()->GetLclNum());
+            }
+
+            if (canReuseArrLcl)
             {
                 arrLcl = arrObj->AsLclVar()->GetLclNum();
             }

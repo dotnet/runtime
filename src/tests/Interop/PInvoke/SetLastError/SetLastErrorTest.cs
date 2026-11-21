@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 using TestLibrary;
@@ -61,6 +62,18 @@ public class SetLastErrorTest
         SetLastErrorNative.SetError_True(error, shouldSetError: false);
         int actual = Marshal.GetLastPInvokeError();
         Assert.Equal(0, actual);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReadLastSystemError() => Marshal.GetLastSystemError();
+
+    [Fact]
+    public static void ColdCallPreservesLastSystemError()
+    {
+        const int ExpectedError = 1234;
+        Marshal.SetLastSystemError(ExpectedError);
+        int actual = ReadLastSystemError();
+        Assert.Equal(ExpectedError, actual);
     }
 
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]

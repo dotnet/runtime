@@ -364,6 +364,8 @@ GTNODE(SWIFT_ERROR_RET  , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE) // Retu
 //  Wasm specific nodes:
 //-----------------------------------------------------------------------------
 
+// Conditional select with operands in Wasm stack order: true value, false value, condition.
+GTNODE(WASM_SELECT      , GenTreeConditional ,0,0,GTK_SPECIAL|DBK_NOTHIR)
 GTNODE(WASM_JEXCEPT     , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // Special jump for Wasm exception handling
 GTNODE(WASM_THROW_REF   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // Wasm rethrow host exception (exception is an implicit operand)
 

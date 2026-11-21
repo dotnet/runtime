@@ -150,10 +150,10 @@ void FixContext(PCONTEXT pContextRecord)
 #undef FIXUPREG
 }
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
 BOOL HandleHardwareException(PAL_SEHException* ex);
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && !TARGET_WASM
 
 static inline void UpdatePerformanceMetrics(CrawlFrame *pcfThisFrame, BOOL bIsRethrownException, BOOL bIsNewException)
 {
@@ -170,13 +170,13 @@ void InitializeExceptionHandling()
 
     CLRAddVectoredHandlers();
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
     // Register handler of hardware exceptions like null reference in PAL
     PAL_SetHardwareExceptionHandler(HandleHardwareException, IsSafeToHandleHardwareException);
 
     // Register handler for determining whether the specified IP has code that is a GC marker for GCCover
     PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && !TARGET_WASM
 }
 
 //static
@@ -1243,6 +1243,7 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 }
 #endif // TARGET_AMD64
 
+#ifndef TARGET_WASM
 BOOL IsSafeToCallExecutionManager()
 {
     Thread *pThread = GetThreadNULLOk();
@@ -1458,6 +1459,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 
     return FALSE;
 }
+#endif // !TARGET_WASM
 
 #endif // TARGET_UNIX
 
@@ -2338,7 +2340,7 @@ bool ExInfo::IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * pCF, PTR_Ex
     CallerStackFrame csfToCheck;
     if (pCF->IsFrameless())
     {
-        csfToCheck = CallerStackFrame::FromRegDisplay(pCF->GetRegisterSet());
+        csfToCheck = pCF->GetCallerStackFrame();
     }
     else
     {
@@ -2446,13 +2448,20 @@ bool ExInfo::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
     // Enumerate all (nested) exception trackers and see if any of them has unwound the
     // specified CrawlFrame.
     Thread * pTargetThread = pCF->pThread;
+    PTR_ExInfo pTopExInfo = (PTR_ExInfo)pTargetThread->GetExceptionState()->GetCurrentExceptionTracker();
+    if (pTopExInfo == NULL)
+    {
+        return false;
+    }
+
     bool fHasFrameBeenUnwound = false;
 
+    if (StressLog::StressLogOn(LF_EH | LF_GCROOTS, LL_INFO100))
     {
         CallerStackFrame csfToCheck;
         if (pCF->IsFrameless())
         {
-            csfToCheck = CallerStackFrame::FromRegDisplay(pCF->GetRegisterSet());
+            csfToCheck = pCF->GetCallerStackFrame();
         }
         else
         {
@@ -2462,7 +2471,6 @@ bool ExInfo::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
                     pCF, pCF->IsFrameless() ? "Yes" : "No", pCF->IsFrameless() ? "CallerSP" : "Address", (void*)csfToCheck.SP);
     }
 
-    PTR_ExInfo pTopExInfo = (PTR_ExInfo)pTargetThread->GetExceptionState()->GetCurrentExceptionTracker();
     for (PTR_ExInfo pCurrentExInfo = pTopExInfo; pCurrentExInfo != NULL; pCurrentExInfo = dac_cast<PTR_ExInfo>(pCurrentExInfo->m_pPrevNestedInfo))
     {
         STRESS_LOG2(LF_EH|LF_GCROOTS, LL_INFO100, "Checking lower bound %p, upper bound %p\n", (void*)pCurrentExInfo->m_ScannedStackRange.GetLowerBound().SP, (void*)pCurrentExInfo->m_ScannedStackRange.GetUpperBound().SP);
@@ -2510,7 +2518,7 @@ StackFrame ExInfo::GetStackFrameForParentCheck(CrawlFrame * pCF)
     // any dynamic stack allocation.  The stackwalker uses the current SP, i.e. the SP after all
     // dynamic stack allocations.  Thus, we cannot do an equality check.  Instead, we get the
     // CallerStackFrame, which is the caller SP.
-    sfResult = (StackFrame)CallerStackFrame::FromRegDisplay(pCF->GetRegisterSet());
+    sfResult = (StackFrame)pCF->GetCallerStackFrame();
 
     return sfResult;
 }
@@ -2540,7 +2548,6 @@ bool ExInfo::IsUnwoundToTargetParentFrame(CrawlFrame * pCF, StackFrame sfParent)
         MODE_ANY;
         PRECONDITION( CheckPointer(pCF, NULL_NOT_OK) );
         PRECONDITION( pCF->IsFrameless() );
-        PRECONDITION( pCF->GetRegisterSet()->IsCallerContextValid );
     }
     CONTRACTL_END;
 
@@ -2649,14 +2656,9 @@ StackFrame ExInfo::GetCallerSPOfParentOfNonExceptionallyInvokedFunclet(CrawlFram
     }
     CONTRACTL_END;
 
-    PREGDISPLAY pRD = pCF->GetRegisterSet();
-
-    // Ensure that the caller Context is valid.
-    _ASSERTE(pRD->IsCallerContextValid);
-
     // Make a copy of the caller context
     T_CONTEXT tempContext;
-    CopyOSContext(&tempContext, pRD->pCallerContext);
+    CopyOSContext(&tempContext, pCF->GetCallerContext());
 
     // Now unwind it to get the context of the caller's caller.
     pCF->GetCodeManager()->UnwindStackFrame(&tempContext);
@@ -2686,11 +2688,9 @@ StackFrame ExInfo::FindParentStackFrameHelper(CrawlFrame* pCF,
     CONTRACTL_END;
 
     StackFrame sfResult;
-    REGDISPLAY* pRegDisplay = pCF->GetRegisterSet();
 
-    // At this point, we need a valid caller SP and the CallerStackFrame::FromRegDisplay
-    // asserts that the RegDisplay contains one.
-    CallerStackFrame csfCurrent = CallerStackFrame::FromRegDisplay(pRegDisplay);
+    // At this point, we need a valid caller SP.
+    CallerStackFrame csfCurrent = pCF->GetCallerStackFrame();
     bool fIsFilterFunclet = pCF->IsFilterFunclet();
 
     // We can't do this on an unmanaged thread.
@@ -2704,7 +2704,7 @@ StackFrame ExInfo::FindParentStackFrameHelper(CrawlFrame* pCF,
     // Check for out-of-line finally funclets.  Filter funclets can't be out-of-line.
     if (!fIsFilterFunclet)
     {
-        PCODE callerIP = dac_cast<PCODE>(GetIP(pRegDisplay->pCallerContext));
+        PCODE callerIP = dac_cast<PCODE>(GetIP(pCF->GetCallerContext()));
         BOOL fIsCallerInVM = FALSE;
 
         // Check if the caller IP is in runtime native code.  If it is not, then it is an out-of-line finally.
@@ -2838,9 +2838,7 @@ StackWalkAction ExInfo::RareFindParentStackFrameCallback(CrawlFrame* pCF, LPVOID
     // At this point, we are done.
     pState->m_sfParent        = ExInfo::GetStackFrameForParentCheck(pCF);
     pState->m_dwParentOffset  = pCF->GetRelOffset();
-
-    _ASSERTE(pRegDisplay->IsCallerContextValid);
-    pState->m_uParentCallerSP = GetSP(pRegDisplay->pCallerContext);
+    pState->m_uParentCallerSP = pCF->GetCallerSp();
 
     return SWA_ABORT;
 }
@@ -3085,10 +3083,9 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
         forbidGCModeSwitch = ResumeTargetVerifiesGCModeTransitions(exInfo->m_frameIter.m_crawl.GetRegisterSet()->ControlPC);
 #endif // _DEBUG
 #ifdef _DEBUG
-        pCodeManager->EnsureCallerContextIsValid(pvRegDisplay);
-        _ASSERTE(exInfo->m_sfCallerOfActualHandlerFrame == GetSP(pvRegDisplay->pCallerContext));
+        _ASSERTE(exInfo->m_sfCallerOfActualHandlerFrame == exInfo->m_frameIter.m_crawl.GetCallerSp());
 #endif
-        exInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(exInfo->m_frameIter.m_crawl.GetRegisterSet());
+        exInfo->m_csfEnclosingClause = exInfo->m_frameIter.m_crawl.GetCallerStackFrame();
 
         MethodDesc *pMD = exInfo->m_frameIter.m_crawl.GetFunction();
         // Profiler, debugger and ETW events
@@ -3269,8 +3266,7 @@ void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
     pExInfo->m_ScannedStackRange.ExtendUpperBound(targetSp);
 
-    pExInfo->m_frameIter.m_crawl.GetCodeManager()->EnsureCallerContextIsValid(pvRegDisplay);
-    PopExplicitFrames(pThread, (void*)targetSp, (void*)CallerStackFrame::FromRegDisplay(pvRegDisplay).SP);
+    PopExplicitFrames(pThread, (void*)targetSp, (void*)pExInfo->m_frameIter.m_crawl.GetCallerStackFrame().SP);
 
     // This must be done before we pop the ExInfos.
     BOOL fIntercepted = pThread->GetExceptionState()->GetFlags()->DebuggerInterceptInfo();
@@ -3317,7 +3313,7 @@ void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exIn
     Thread* pThread = GetThread();
     pThread->DecPreventAbort();
 
-    exInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(exInfo->m_frameIter.m_crawl.GetRegisterSet());
+    exInfo->m_csfEnclosingClause = exInfo->m_frameIter.m_crawl.GetCallerStackFrame();
 
     MethodDesc *pMD = exInfo->m_frameIter.m_crawl.GetFunction();
     // Profiler, debugger and ETW events
@@ -3351,7 +3347,7 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
 
     ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
-    pExInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(pExInfo->m_frameIter.m_crawl.GetRegisterSet());
+    pExInfo->m_csfEnclosingClause = pExInfo->m_frameIter.m_crawl.GetCallerStackFrame();
     MethodDesc *pMD = pExInfo->m_frameIter.m_crawl.GetFunction();
     // Profiler, debugger and ETW events
     TADDR spForDebugger = GetSpForDiagnosticReporting(pvRegDisplay);
@@ -3607,8 +3603,7 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
         pExInfo->m_csfEnclosingClause.Clear();
         if (pExInfo->m_idxCurClause != 0xffffffff) //  the reverse pinvoke case doesn't have the m_idxCurClause set
         {
-            pExInfo->m_frameIter.m_crawl.GetCodeManager()->EnsureCallerContextIsValid(pRD, NULL);
-            pExInfo->m_sfCallerOfActualHandlerFrame = CallerStackFrame::FromRegDisplay(pRD);
+            pExInfo->m_sfCallerOfActualHandlerFrame = pExInfo->m_frameIter.m_crawl.GetCallerStackFrame();
 
             // the 1st pass has just ended, so the m_CurrentClause is the catch clause
             pExInfo->m_ClauseForCatch = pExInfo->m_CurrentClause;

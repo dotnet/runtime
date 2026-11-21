@@ -743,6 +743,204 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             Assert.Equal("Outer.Inner", reader.GetString(typeDef.Namespace));
         }
 
+        [Theory]
+        [InlineData(null, "TestType", "", "TestType")]
+        [InlineData(null, ".TestType", "", ".TestType")]
+        [InlineData(null, "..TestType", "", ".TestType")]
+        [InlineData(null, "...TestType", ".", ".TestType")]
+        [InlineData(null, "N..TestType", "N", ".TestType")]
+        [InlineData(null, "N...TestType", "N.", ".TestType")]
+        [InlineData(null, "ILDisassembler.TestStruct", "ILDisassembler", "TestStruct")]
+        [InlineData(null, "Library.Not+Nested", "Library", "Not+Nested")]
+        [InlineData(null, "<StartupCode$FSharp-Core>.$Prim-types", "<StartupCode$FSharp-Core>", "$Prim-types")]
+        [InlineData(null, ".GlobalStructStartingWithDot", "", ".GlobalStructStartingWithDot")]
+        [InlineData("", "TestType", "", "TestType")]
+        [InlineData(".N", "TestType", ".N", "TestType")]
+        [InlineData(".", "TestType", "", ".TestType")]
+        [InlineData("..", "TestType", ".", ".TestType")]
+        [InlineData("..N", "TestType", "..N", "TestType")]
+        [InlineData("N.M", "TestType", "N.M", "TestType")]
+        [InlineData("N.M.", "TestType", "N.M", ".TestType")]
+        [InlineData("N.M..", "TestType", "N.M.", ".TestType")]
+        [InlineData("N", ".TestType", "N", ".TestType")]
+        [InlineData("N.", ".TestType", "N.", ".TestType")]
+        [InlineData(".", ".TestType", ".", ".TestType")]
+        [InlineData("A.B.C", "D.E.F", "A.B.C.D.E", "F")]
+        public void NamespaceAndTypeName_SplitsBasedOnFullName(
+            string? namespaceName,
+            string className,
+            string expectedNamespace,
+            string expectedTypeName)
+        {
+            string fullName = string.IsNullOrEmpty(namespaceName) ? className : $"{namespaceName}.{className}";
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly extern Other { }
+                .assembly Test { }
+                .class public Holder
+                {
+                    .field public class '{{fullName}}' Local
+                    .field public class [Other]'{{fullName}}' External
+                }
+                {{(namespaceName is null ? "" : $".namespace '{namespaceName}' {{")}}
+                .class public '{{className}}' { }
+                {{(namespaceName is null ? "" : "}")}}
+                .class extern forwarder '{{fullName}}'
+                {
+                    .assembly extern Other
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+
+            Assert.Equal(3, reader.TypeDefinitions.Count);
+            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle(3);
+            TypeDefinition typeDefinition = reader.GetTypeDefinition(typeHandle);
+            Assert.Equal(expectedNamespace, reader.GetString(typeDefinition.Namespace));
+            Assert.Equal(expectedTypeName, reader.GetString(typeDefinition.Name));
+
+            BlobReader localSignature = reader.GetBlobReader(reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1)).Signature);
+            Assert.Equal(SignatureKind.Field, localSignature.ReadSignatureHeader().Kind);
+            Assert.Equal(SignatureTypeCode.TypeHandle, localSignature.ReadSignatureTypeCode());
+            Assert.Equal((EntityHandle)typeHandle, localSignature.ReadTypeHandle());
+            Assert.Equal(0, localSignature.RemainingBytes);
+
+            BlobReader externalSignature = reader.GetBlobReader(reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(2)).Signature);
+            Assert.Equal(SignatureKind.Field, externalSignature.ReadSignatureHeader().Kind);
+            Assert.Equal(SignatureTypeCode.TypeHandle, externalSignature.ReadSignatureTypeCode());
+            EntityHandle externalHandle = externalSignature.ReadTypeHandle();
+            Assert.Equal(HandleKind.TypeReference, externalHandle.Kind);
+            Assert.Equal(0, externalSignature.RemainingBytes);
+            TypeReference typeReference = reader.GetTypeReference((TypeReferenceHandle)externalHandle);
+            Assert.Equal(expectedNamespace, reader.GetString(typeReference.Namespace));
+            Assert.Equal(expectedTypeName, reader.GetString(typeReference.Name));
+
+            ExportedType exportedType = reader.GetExportedType(Assert.Single(reader.ExportedTypes));
+            Assert.Equal(expectedNamespace, reader.GetString(exportedType.Namespace));
+            Assert.Equal(expectedTypeName, reader.GetString(exportedType.Name));
+        }
+
+        [Fact]
+        public void EmptyNamespaceNames_EmitExpectedMetadata()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public A { .method public hidebysig specialname rtspecialname instance void .ctor() { ret } }
+                .namespace '.N'
+                {
+                    .class public B { .method public hidebysig specialname rtspecialname instance void .ctor() { ret } }
+                }
+                .namespace '.'
+                {
+                    .class public C { .method public hidebysig specialname rtspecialname instance void .ctor() { ret } }
+                }
+                .namespace '..'
+                {
+                    .class public D { .method public hidebysig specialname rtspecialname instance void .ctor() { ret } }
+                }
+                .namespace '..N'
+                {
+                    .class public E { .method public hidebysig specialname rtspecialname instance void .ctor() { ret } }
+                }
+                .namespace N.M
+                {
+                    .class public F { .method public hidebysig specialname rtspecialname instance void .ctor() { ret } }
+                }
+                .namespace 'N.M.'
+                {
+                    .class public G { .method public hidebysig specialname rtspecialname instance void .ctor() { ret } }
+                }
+                .namespace 'N.M..'
+                {
+                    .class public H { .method public hidebysig specialname rtspecialname instance void .ctor() { ret } }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.Equal(
+                new[]
+                {
+                    ("", "<Module>"), ("", "A"), (".N", "B"), ("", ".C"), (".", ".D"),
+                    ("..N", "E"), ("N.M", "F"), ("N.M", ".G"), ("N.M.", ".H")
+                },
+                reader.TypeDefinitions.Select(handle =>
+                {
+                    TypeDefinition type = reader.GetTypeDefinition(handle);
+                    return (reader.GetString(type.Namespace), reader.GetString(type.Name));
+                }));
+        }
+
+        [Theory]
+        [InlineData("Inner", "", "Inner")]
+        [InlineData(".Inner", "", ".Inner")]
+        [InlineData("..Inner", "", ".Inner")]
+        [InlineData("...Inner", ".", ".Inner")]
+        [InlineData("N.Inner", "N", "Inner")]
+        [InlineData("N..Inner", "N", ".Inner")]
+        public void NestedTypeName_SplitsNamespaceAndName_WithoutCurrentNamespace(
+            string className,
+            string expectedNamespace,
+            string expectedTypeName)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .namespace Ignored
+                {
+                    .class public Outer
+                    {
+                        .class nested public '{{className}}' { }
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.Equal(3, reader.TypeDefinitions.Count);
+            TypeDefinition nestedType = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(3));
+            Assert.Equal(expectedNamespace, reader.GetString(nestedType.Namespace));
+            Assert.Equal(expectedTypeName, reader.GetString(nestedType.Name));
+            Assert.Equal(MetadataTokens.TypeDefinitionHandle(2), nestedType.GetDeclaringType());
+        }
+
+        [Theory]
+        [InlineData(".", "T", "", ".T", "", ".T")]
+        [InlineData("N.", "T", "N", ".T", "N", ".T")]
+        [InlineData("N", "..T", "N..", "T", "N.", ".T")]
+        [InlineData("A.B.C", "D.E.F", "A.B.C.D.E", "F", "A.B.C.D.E", "F")]
+        public void NormalizedTypeDefinitions_Merge(
+            string firstNamespace,
+            string firstName,
+            string secondNamespace,
+            string secondName,
+            string expectedNamespace,
+            string expectedTypeName)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .namespace '{{firstNamespace}}'
+                {
+                    .class public '{{firstName}}' { .field public int32 X }
+                }
+                .namespace '{{secondNamespace}}'
+                {
+                    .class public '{{secondName}}' { .field public int32 Y }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.Equal(2, reader.TypeDefinitions.Count);
+            TypeDefinition type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal(expectedNamespace, reader.GetString(type.Namespace));
+            Assert.Equal(expectedTypeName, reader.GetString(type.Name));
+            Assert.Equal(new[] { "X", "Y" }, type.GetFields().Select(handle => reader.GetString(reader.GetFieldDefinition(handle).Name)));
+        }
+
 
         [Fact]
         public void LeadingDotInTypeName_Preserved()
@@ -914,12 +1112,12 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         }
 
         [Fact]
-        public void QuotedTypeName_WithConsecutiveDots_SplitsAtLastDot()
+        public void QuotedTypeName_WithConsecutiveDots_PreservesLeadingDotInName()
         {
             string source = """
                 .assembly extern mscorlib { }
                 .assembly test { }
-                .class public auto ansi beforefieldinit 'Contoso.Tools..ctor' extends [mscorlib]System.Object
+                .class public auto ansi beforefieldinit 'Contoso.Tools..Nested' extends [mscorlib]System.Object
                 {
                 }
                 """;
@@ -929,10 +1127,10 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
             var typeDef = reader.TypeDefinitions
                 .Select(handle => reader.GetTypeDefinition(handle))
-                .Single(type => reader.GetString(type.Name) == "ctor");
+                .Single(type => reader.GetString(type.Name) == ".Nested");
 
-            Assert.Equal("ctor", reader.GetString(typeDef.Name));
-            Assert.Equal("Contoso.Tools.", reader.GetString(typeDef.Namespace));
+            Assert.Equal(".Nested", reader.GetString(typeDef.Name));
+            Assert.Equal("Contoso.Tools", reader.GetString(typeDef.Namespace));
         }
 
         [Fact]

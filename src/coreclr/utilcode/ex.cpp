@@ -126,14 +126,13 @@ Exception *Exception::Clone()
     }
     CONTRACTL_END;
 
-    NewHolder<Exception> retExcep(CloneHelper());
+    NewHolder<Exception> retExcep{ CloneHelper() };
     if (m_innerException)
     {
         retExcep->m_innerException = m_innerException->Clone();
     }
 
-    retExcep.SuppressRelease();
-    return retExcep;
+    return retExcep.Detach();
 }
 
 Exception *Exception::CloneHelper()
@@ -147,14 +146,13 @@ Exception *Exception::DomainBoundClone()
 {
     STANDARD_VM_CONTRACT;
 
-    NewHolder<Exception> retExcep(DomainBoundCloneHelper());
+    NewHolder<Exception> retExcep{ DomainBoundCloneHelper() };
     if (m_innerException)
     {
         retExcep->m_innerException = m_innerException->DomainBoundClone();
     }
 
-    retExcep.SuppressRelease();
-    return retExcep;
+    return retExcep.Detach();
 }
 
 BOOL Exception::IsTerminal()
@@ -936,7 +934,7 @@ Exception *DelegatingException::Clone()
 
     // Clone the base exception, this will also take care of cloning the inner
     // exception if there is one.
-    NewHolder<DelegatingException> retExcep((DelegatingException*)Exception::Clone());
+    NewHolder<DelegatingException> retExcep{ static_cast<DelegatingException*>(Exception::Clone()) };
 
     // If there is a valid delegating exception...
     if (IsDelegateValid())
@@ -948,8 +946,7 @@ Exception *DelegatingException::Clone()
         retExcep->m_delegatedException = m_delegatedException;
     }
 
-    retExcep.SuppressRelease();
-    return retExcep;
+    return retExcep.Detach();
 } // virtual Exception *DelegatingException::Clone()
 
 //==============================================================================

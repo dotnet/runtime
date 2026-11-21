@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Xunit;
 
@@ -57,6 +58,17 @@ public class OffsetLimit
     {
         int sum = 0;
         for (int i = 0; i < n - 4; i++)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int VarMinusLargeKStrideMax(int[] a, int start, int limit)
+    {
+        int sum = 0;
+        for (int i = start; i < limit + (int.MinValue + 100); i += int.MaxValue)
         {
             sum += a[i];
         }
@@ -137,6 +149,18 @@ public class OffsetLimit
         for (int i = 0; i <= a.Length - 5; i += 2)
         {
             sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int SpanStride4ArrayLengthPlusLargeOffset(short[] data, int[] limit, int start)
+    {
+        Span<byte> span = MemoryMarshal.AsBytes(data.AsSpan());
+        int sum = 0;
+        for (int i = start; i < limit.Length + (int.MaxValue - 2); i += 4)
+        {
+            sum += span[i];
         }
         return sum;
     }
@@ -240,6 +264,12 @@ public class OffsetLimit
         Assert.Equal(want, got);
     }
 
+    [Fact]
+    public static void VarMinusLargeKStrideMaxOverflowTest()
+    {
+        Assert.Throws<IndexOutOfRangeException>(() => VarMinusLargeKStrideMax(new int[128], 32, int.MinValue + 3));
+    }
+
     [Theory]
     [InlineData((ushort)0, 1000)]
     [InlineData((ushort)64535, 65535)]
@@ -309,6 +339,26 @@ public class OffsetLimit
             nameof(DecNeArrayLengthPlusMaxValue) => DecNeArrayLengthPlusMaxValue(a, limit),
             _ => throw new ArgumentOutOfRangeException(nameof(methodName)),
         });
+    }
+
+    // The span is int.MaxValue - 1 bytes long, so the loop limit equals the span length and
+    // i += 4 wraps negative after the first access. The loop must throw instead of running
+    // in a bounds-check-free clone.
+    [Fact]
+    public static void SpanStride4ArrayLengthPlusLargeOffsetTest()
+    {
+        short[] data;
+        try
+        {
+            data = new short[int.MaxValue / 2];
+        }
+        catch (OutOfMemoryException)
+        {
+            return;
+        }
+
+        Assert.Throws<IndexOutOfRangeException>(() =>
+            SpanStride4ArrayLengthPlusLargeOffset(data, new int[1], int.MaxValue - 3));
     }
 
     [Theory]

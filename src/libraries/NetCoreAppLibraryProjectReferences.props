@@ -1,0 +1,47 @@
+<Project>
+
+  <PropertyGroup>
+    <_NetCoreAppLibrariesRuntimeFlavor>$([MSBuild]::ValueOrDefault('$(LibrariesRuntimeFlavor)', '$(RuntimeFlavor)'))</_NetCoreAppLibrariesRuntimeFlavor>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <_NetCoreAppLibrarySourceProject Include="$(LibrariesProjectRoot)*\src\*.*proj"
+                                     Exclude="@(ProjectExclusions);
+                                              $(LibrariesProjectRoot)*\src\*.shproj" />
+    <_NonNetCoreAppLibrarySourceProject Include="@(_NetCoreAppLibrarySourceProject)"
+                                        Exclude="@(NetCoreAppLibrary->'$(LibrariesProjectRoot)%(Identity)\src\%(Identity).csproj');
+                                                 $(LibrariesProjectRoot)Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj" />
+
+    <_NetCoreAppLibraryShimProject Include="$(LibrariesProjectRoot)shims\*\src\*.csproj"
+                                   OriginalIdentity="%(Identity)" />
+    <_NetCoreAppLibraryShimProjectName Include="@(_NetCoreAppLibraryShimProject->Metadata('Filename'))" />
+    <_NonNetCoreAppLibraryShimProjectName Include="@(_NetCoreAppLibraryShimProjectName)"
+                                          Exclude="@(NetCoreAppLibrary)" />
+    <_IncludedNetCoreAppLibraryShimProjectName Include="@(_NetCoreAppLibraryShimProjectName)"
+                                               Exclude="@(_NonNetCoreAppLibraryShimProjectName)" />
+
+    <NetCoreAppLibrarySourceProject Include="@(_NetCoreAppLibrarySourceProject);
+                                             $(CoreLibProject);
+                                             @(_IncludedNetCoreAppLibraryShimProjectName->Metadata('OriginalIdentity'))"
+                                    Exclude="@(_NonNetCoreAppLibrarySourceProject)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_NetCoreAppLibraryGeneratorProject Include="$(LibrariesProjectRoot)*\gen\**\*.*proj"
+                                        Exclude="@(ProjectExclusions)"
+                                        OriginalIdentity="%(Identity)" />
+    <_NetCoreAppLibraryGeneratorProjectName Include="@(_NetCoreAppLibraryGeneratorProject->Metadata('Filename'))" />
+    <_NonNetCoreAppLibraryGeneratorProjectName Include="@(_NetCoreAppLibraryGeneratorProjectName)"
+                                               Exclude="@(NetCoreAppLibraryGenerator)" />
+    <_IncludedNetCoreAppLibraryGeneratorProjectName Include="@(_NetCoreAppLibraryGeneratorProjectName)"
+                                                    Exclude="@(_NonNetCoreAppLibraryGeneratorProjectName)" />
+    <NetCoreAppLibraryGeneratorProject Include="@(_IncludedNetCoreAppLibraryGeneratorProjectName->Metadata('OriginalIdentity'))" />
+  </ItemGroup>
+
+  <Target Name="ValidateNetCoreAppLibraryShimProjects"
+          BeforeTargets="Build"
+          Condition="'@(_NonNetCoreAppLibraryShimProjectName)' != ''">
+    <Error Text="Shared framework shim projects must be listed in NetCoreAppLibrary.props: @(_NonNetCoreAppLibraryShimProjectName, ', ')" />
+  </Target>
+
+</Project>
