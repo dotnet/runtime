@@ -5331,8 +5331,7 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
 
     unsigned op1TempNum = BAD_VAR_NUM;
     // Preserve the source vector across value-operand side effects.
-    if ((simdSize > 16) && op1->OperIs(GT_LCL_VAR) &&
-        ((op3->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0))
+    if ((simdSize > 16) && op1->OperIs(GT_LCL_VAR) && !IsInvariantInRange(op1, op3))
     {
         op1TempNum = m_compiler->lvaGrabTemp(true DEBUGARG("WithElement source vector"));
     }
