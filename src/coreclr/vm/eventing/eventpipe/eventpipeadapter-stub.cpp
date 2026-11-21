@@ -107,7 +107,7 @@ void EventPipeAdapter::AddProviderToSession(EventPipeSessionProvider *, EventPip
     STATIC_CONTRACT_NOTHROW;
 }
 
-EventPipeProvider * EventPipeAdapter::CreateProvider(const WCHAR *, EventPipeCallback, void *)
+EventPipeProvider * EventPipeAdapter::CreateProvider(const WCHAR *, EventPipeCallback, void *, const EventPipeEventTable *)
 {
     STATIC_CONTRACT_NOTHROW;
     return nullptr;

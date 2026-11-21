@@ -209,7 +209,7 @@ public:
     static FILETIME GetSessionStartTime(EventPipeSession *session);
     static LONGLONG GetSessionStartTimestamp(EventPipeSession *session);
     static void AddProviderToSession(EventPipeSessionProvider *provider, EventPipeSession *session);
-    static EventPipeProvider * CreateProvider(const WCHAR* providerName, EventPipeCallback callback, void* callbackContext = nullptr);
+    static EventPipeProvider * CreateProvider(const WCHAR* providerName, EventPipeCallback callback, void* callbackContext = nullptr, const EventPipeEventTable *eventTable = nullptr);
     static void DeleteProvider(EventPipeProvider *provider);
     static EventPipeProvider * GetProvider(LPCWSTR providerName);
     static EventPipeSessionProvider * CreateSessionProvider(const EventPipeProviderConfigurationAdapter &providerConfig);
