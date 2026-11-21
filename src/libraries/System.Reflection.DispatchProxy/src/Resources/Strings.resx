@@ -123,9 +123,6 @@
   <data name="DispatchProxy_Method_Invocation_Cannot_Be_Static" xml:space="preserve">
     <value>DispatchProxy does not support invocation of static virtual members.</value>
   </data>
-  <data name="DispatchProxy_Method_Ref_Return_Not_Supported" xml:space="preserve">
-    <value>DispatchProxy does not support invocation of '{0}.{1}' because it returns by writable reference.</value>
-  </data>
   <data name="BaseType_Must_Have_Default_Ctor" xml:space="preserve">
     <value>The base type '{0}' must have a public parameterless constructor.</value>
   </data>

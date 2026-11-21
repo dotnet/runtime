@@ -42,7 +42,6 @@ public interface TestType_IRefReadOnlyReturnService
 public interface TestType_IRefReturnService
 {
     ref int GetInt();
-    string Hello(string message);
 }
 
 public interface TestType_IGoodbyeService
