@@ -65,7 +65,7 @@ namespace Mono.Linker
             if (!(provider is IMemberDefinition member))
                 return null;
 
-            if (!(member is MethodDefinition || member is FieldDefinition))
+            if (!(member is TypeDefinition || member is MethodDefinition || member is FieldDefinition))
                 return null;
 
             // Don't honor the Condition until we have figured out the behavior for DynamicDependencyAttribute:

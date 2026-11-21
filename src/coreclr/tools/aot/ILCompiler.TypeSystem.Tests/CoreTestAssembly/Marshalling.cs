@@ -12,6 +12,17 @@ namespace Marshalling
     {
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public class ClassWithReferenceField
+    {
+        public SimpleEmptyClass value;
+    }
+
+    public struct StructWithReferenceField
+    {
+        public SimpleEmptyClass value;
+    }
+
     public class SimpleByteClass
     {
         public byte x;

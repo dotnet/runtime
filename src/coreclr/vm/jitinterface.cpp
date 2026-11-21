@@ -6666,11 +6666,9 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__UNSAFE));
+    _ASSERTE(CoreLibBinder::IsClassIfExist(ftn->GetMethodTable(), CLASS__UNSAFE));
 
-    mdMethodDef tk = ftn->GetMemberDef();
-
-    if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__AS_POINTER)->GetMemberDef())
+    if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__AS_POINTER))
     {
         // Return the argument that was passed in.
         static const BYTE ilcode[] =
@@ -6684,9 +6682,9 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_AS)->GetMemberDef() ||
-             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__OBJECT_AS)->GetMemberDef() ||
-             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__AS_REF_IN)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_AS) ||
+             CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__OBJECT_AS) ||
+             CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__AS_REF_IN))
     {
         // Return the argument that was passed in.
         static const BYTE ilcode[] =
@@ -6699,8 +6697,8 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_ADD)->GetMemberDef() ||
-             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_ADD)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_ADD) ||
+             CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__PTR_ADD))
     {
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
@@ -6719,8 +6717,8 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_ADD)->GetMemberDef() ||
-             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_UINTPTR_ADD)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_INTPTR_ADD) ||
+             CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_UINTPTR_ADD))
     {
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
@@ -6738,8 +6736,8 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_ADD_BYTE_OFFSET)->GetMemberDef() ||
-        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_UINTPTR_ADD_BYTE_OFFSET)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_INTPTR_ADD_BYTE_OFFSET) ||
+        CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_UINTPTR_ADD_BYTE_OFFSET))
     {
         static const BYTE ilcode[] =
         {
@@ -6753,7 +6751,7 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_ARE_SAME)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_ARE_SAME))
     {
         // Compare the two arguments
         static const BYTE ilcode[] =
@@ -6768,8 +6766,8 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_BYREF_COPY)->GetMemberDef() ||
-        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_PTR_COPY)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__PTR_BYREF_COPY) ||
+        CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_PTR_COPY))
     {
         _ASSERTE(ftn->HasMethodInstantiation());
         Instantiation inst = ftn->GetMethodInstantiation();
@@ -6789,8 +6787,8 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_COPY_BLOCK)->GetMemberDef() ||
-        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_COPY_BLOCK)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__PTR_COPY_BLOCK) ||
+        CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_COPY_BLOCK))
     {
         static const BYTE ilcode[] =
         {
@@ -6805,8 +6803,8 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_COPY_BLOCK_UNALIGNED)->GetMemberDef() ||
-        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_COPY_BLOCK_UNALIGNED)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__PTR_COPY_BLOCK_UNALIGNED) ||
+        CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_COPY_BLOCK_UNALIGNED))
     {
         static const BYTE ilcode[] =
         {
@@ -6822,7 +6820,7 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_ADDRESS_GREATER_THAN)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_IS_ADDRESS_GREATER_THAN))
     {
         // Compare the two arguments
         static const BYTE ilcode[] =
@@ -6837,7 +6835,7 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_ADDRESS_LESS_THAN)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_IS_ADDRESS_LESS_THAN))
     {
         // Compare the two arguments
         static const BYTE ilcode[] =
@@ -6852,7 +6850,7 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_NULLREF)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_NULLREF))
     {
         static const BYTE ilcode[] =
         {
@@ -6865,7 +6863,7 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_NULL)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_IS_NULL))
     {
         // 'ldnull' opcode would produce type o, and we can't compare & against o (ECMA-335, Table III.4).
         // However, we can compare & against native int, so we'll use that instead.
@@ -6883,8 +6881,8 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INIT_BLOCK)->GetMemberDef() ||
-            tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_INIT_BLOCK)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_INIT_BLOCK) ||
+            CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__PTR_INIT_BLOCK))
     {
         static const BYTE ilcode[] =
         {
@@ -6899,8 +6897,8 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INIT_BLOCK_UNALIGNED)->GetMemberDef() ||
-            tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_INIT_BLOCK_UNALIGNED)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_INIT_BLOCK_UNALIGNED) ||
+            CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__PTR_INIT_BLOCK_UNALIGNED))
     {
         static const BYTE ilcode[] =
         {
@@ -6916,7 +6914,7 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_BYTE_OFFSET)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_BYTE_OFFSET))
     {
         static const BYTE ilcode[] =
         {
@@ -6930,8 +6928,8 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_READ_UNALIGNED)->GetMemberDef() ||
-             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_READ_UNALIGNED)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_READ_UNALIGNED) ||
+             CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__PTR_READ_UNALIGNED))
     {
         _ASSERTE(ftn->HasMethodInstantiation());
         Instantiation inst = ftn->GetMethodInstantiation();
@@ -6950,8 +6948,8 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_WRITE_UNALIGNED)->GetMemberDef() ||
-             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_WRITE_UNALIGNED)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_WRITE_UNALIGNED) ||
+             CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__PTR_WRITE_UNALIGNED))
     {
         _ASSERTE(ftn->HasMethodInstantiation());
         Instantiation inst = ftn->GetMethodInstantiation();
@@ -6971,7 +6969,7 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__READ)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__READ))
     {
         _ASSERTE(ftn->HasMethodInstantiation());
         Instantiation inst = ftn->GetMethodInstantiation();
@@ -6989,7 +6987,7 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__SKIPINIT)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__SKIPINIT))
     {
         static const BYTE ilcode[] =
         {
@@ -7000,8 +6998,8 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INT_SUBTRACT)->GetMemberDef() ||
-             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_INT_SUBTRACT)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_INT_SUBTRACT) ||
+             CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__PTR_INT_SUBTRACT))
     {
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
@@ -7020,8 +7018,8 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT)->GetMemberDef() ||
-             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT) ||
+             CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT))
     {
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
@@ -7039,8 +7037,8 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT_BYTE_OFFSET)->GetMemberDef() ||
-        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT_BYTE_OFFSET) ||
+        CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET))
     {
         static const BYTE ilcode[] =
         {
@@ -7054,7 +7052,7 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__WRITE)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__WRITE))
     {
         _ASSERTE(ftn->HasMethodInstantiation());
         Instantiation inst = ftn->GetMethodInstantiation();
@@ -7073,7 +7071,7 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__UNBOX)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__UNSAFE__UNBOX))
     {
         _ASSERTE(ftn->HasMethodInstantiation());
         Instantiation inst = ftn->GetMethodInstantiation();
@@ -7103,7 +7101,7 @@ static bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
     _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__INTERLOCKED));
 
     // We are only interested if ftn's token and CompareExchange<T> token match
-    if (ftn->GetMemberDef() != CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_T)->GetMemberDef())
+    if (!CoreLibBinder::IsMethod(ftn, METHOD__INTERLOCKED__COMPARE_EXCHANGE_T))
         return false;
 
     // Determine the type of the generic T method parameter
@@ -7215,9 +7213,7 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
     MethodDesc* ftn = cxt.Method;
     _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__RUNTIME_HELPERS));
 
-    mdMethodDef tk = ftn->GetMemberDef();
-
-    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__IS_BITWISE_EQUATABLE)->GetMemberDef())
+    if (CoreLibBinder::IsMethod(ftn, METHOD__RUNTIME_HELPERS__IS_BITWISE_EQUATABLE))
     {
         _ASSERTE(ftn->HasMethodInstantiation());
         Instantiation inst = ftn->GetMethodInstantiation();
@@ -7251,7 +7247,7 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
             || methodTable == CoreLibBinder::GetClass(CLASS__INTPTR)
             || methodTable == CoreLibBinder::GetClass(CLASS__UINTPTR)
             || methodTable == CoreLibBinder::GetClass(CLASS__GUID)
-            || methodTable == CoreLibBinder::GetClass(CLASS__RUNE)
+            || CoreLibBinder::IsClassIfExist(methodTable, CLASS__RUNE)
             || methodTable->IsEnum()
             || IsBitwiseEquatable(typeHandle, methodTable))
         {
@@ -7271,7 +7267,7 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
     }
 
 #if FEATURE_IJW
-    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__COPY_CONSTRUCT)->GetMemberDef())
+    if (CoreLibBinder::IsMethod(ftn, METHOD__RUNTIME_HELPERS__COPY_CONSTRUCT))
     {
         if (!GenerateCopyConstructorHelper(ftn, &cxt.TransientResolver, &cxt.Header))
             ThrowHR(COR_E_BADIMAGEFORMAT);
@@ -7283,7 +7279,7 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
     }
 #endif // FEATURE_IJW
 
-    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ENUM_EQUALS)->GetMemberDef())
+    if (CoreLibBinder::IsMethod(ftn, METHOD__RUNTIME_HELPERS__ENUM_EQUALS))
     {
         // Normally we would follow the above pattern and unconditionally replace the IL,
         // relying on generic type constraints to guarantee that it will only ever be instantiated
@@ -7324,7 +7320,7 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
             return true;
         }
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ENUM_COMPARE_TO)->GetMemberDef())
+    else if (CoreLibBinder::IsMethod(ftn, METHOD__RUNTIME_HELPERS__ENUM_COMPARE_TO))
     {
         // The comment above on why this is not an unconditional replacement.  This case handles
         // Enums backed by 8 byte values.
@@ -7387,10 +7383,9 @@ static bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__ACTIVATOR));
+    _ASSERTE(CoreLibBinder::IsClassIfExist(ftn->GetMethodTable(), CLASS__ACTIVATOR));
 
-    // We are only interested if ftn's token and CreateInstance<T> token match
-    if (ftn->GetMemberDef() != CoreLibBinder::GetMethod(METHOD__ACTIVATOR__CREATE_INSTANCE_OF_T)->GetMemberDef())
+    if (!CoreLibBinder::IsMethod(ftn, METHOD__ACTIVATOR__CREATE_INSTANCE_OF_T))
         return false;
 
     _ASSERTE(ftn->HasMethodInstantiation());
@@ -7450,7 +7445,7 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
 
         if (ftn->IsIntrinsic())
         {
-            if (CoreLibBinder::IsClass(pMT, CLASS__UNSAFE))
+            if (CoreLibBinder::IsClassIfExist(pMT, CLASS__UNSAFE))
             {
                 fILIntrinsic = getILIntrinsicImplementationForUnsafe(ftn, methInfo);
             }
@@ -7462,11 +7457,11 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
             {
                 fILIntrinsic = getILIntrinsicImplementationForRuntimeHelpers(cxt, methInfo, &localSig);
             }
-            else if (CoreLibBinder::IsClass(pMT, CLASS__ACTIVATOR))
+            else if (CoreLibBinder::IsClassIfExist(pMT, CLASS__ACTIVATOR))
             {
                 fILIntrinsic = getILIntrinsicImplementationForActivator(ftn, methInfo, &localSig);
             }
-            else if (CoreLibBinder::IsClass(pMT, CLASS__INSTANCE_CALLI_HELPER))
+            else if (CoreLibBinder::IsClassIfExist(pMT, CLASS__INSTANCE_CALLI_HELPER))
             {
                 // We can ignore the existing header, since we are going to generate a new one.
                 cxt.Header = NULL;

@@ -6,6 +6,7 @@
 
   <PropertyGroup>
     <_ILLinkRuntimeRootDescriptorFilePath>$(ILLinkDescriptorsXml)</_ILLinkRuntimeRootDescriptorFilePath>
+    <_ILLinkRuntimeRootLinkAttributesFilePath>$(IntermediateOutputPath)ILLink.RuntimeRoots.LinkAttributes.xml</_ILLinkRuntimeRootLinkAttributesFilePath>
     <_NamespaceFilePath Condition=" '$(_NamespaceFilePath)' == '' ">$(MSBuildThisFileDirectory)..\vm\namespace.h</_NamespaceFilePath>
     <_MscorlibFilePath Condition=" '$(_MscorlibFilePath)' == '' ">$(MSBuildThisFileDirectory)..\vm\corelib.h</_MscorlibFilePath>
     <_CortypeFilePath Condition=" '$(_CortypeFilePath)' == '' ">$(MSBuildThisFileDirectory)..\inc\cortypeinfo.h</_CortypeFilePath>
@@ -14,6 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ILLinkLinkAttributesXmls Include="$(_ILLinkRuntimeRootLinkAttributesFilePath)" />
     <_ILLinkDescriptorsFilePaths Include="$(ILLinkDirectory)ILLink.Descriptors.Shared.xml" />
     <_ILLinkDescriptorsFilePaths Condition="'$(TargetsWindows)' == 'true'" Include="$(ILLinkDirectory)ILLink.Descriptors.Windows.xml" />
     <_ILLinkDescriptorsFilePaths Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
@@ -32,9 +34,10 @@
              TaskFactory="TaskHostFactory"
              Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_CreateILLinkRuntimeRootDescriptorFile"
+          BeforeTargets="_CombineILLinkLinkAttributesXmls"
           DependsOnTargets="_CombineILLinkTrimXmlFilePaths;ResolveProjectReferences"
           Inputs="$(MSBuildThisFileFullPath);$(ILLinkTasksAssembly);$(_NamespaceFilePath);$(_MscorlibFilePath);$(_CortypeFilePath);$(_RexcepFilePath);$(_ILLinkDescriptorsIntermediatePath)"
-          Outputs="$(_ILLinkRuntimeRootDescriptorFilePath)">
+          Outputs="$(_ILLinkRuntimeRootDescriptorFilePath);$(_ILLinkRuntimeRootLinkAttributesFilePath)">
     <Message Text="Generating ILLink roots file: $(_ILLinkRuntimeRootDescriptorFilePath)" />
     <CreateRuntimeRootILLinkDescriptorFile NamespaceFilePath="$(_NamespaceFilePath)"
                                            MscorlibFilePath="$(_MscorlibFilePath)"
@@ -42,7 +45,20 @@
                                            RexcepFilePath="$(_RexcepFilePath)"
                                            ILLinkTrimXmlFilePath="$(_ILLinkDescriptorsIntermediatePath)"
                                            DefineConstants="$(DefineConstants);FOR_ILLINK"
-                                           RuntimeRootDescriptorFilePath="$(_ILLinkRuntimeRootDescriptorFilePath)" />
+                                           RuntimeRootDescriptorFilePath="$(_ILLinkRuntimeRootDescriptorFilePath)"
+                                           RuntimeRootLinkAttributesFilePath="$(_ILLinkRuntimeRootLinkAttributesFilePath)" />
+    <ItemGroup>
+      <FileWrites Include="$(_ILLinkRuntimeRootDescriptorFilePath);$(_ILLinkRuntimeRootLinkAttributesFilePath)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Library-build trimming ignores embedded link attributes, but must honor runtime dependencies. -->
+  <Target Name="_AddRuntimeRootLinkAttributesForLibraryBuild"
+          BeforeTargets="ILLinkTrimAssembly"
+          DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile">
+    <PropertyGroup>
+      <ILLinkArgs>$(ILLinkArgs) --link-attributes "$(_ILLinkRuntimeRootLinkAttributesFilePath)"</ILLinkArgs>
+    </PropertyGroup>
   </Target>
 
   <UsingTask TaskName="CombineLinkerXmlFiles"

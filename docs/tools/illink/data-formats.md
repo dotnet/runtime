@@ -41,7 +41,7 @@ Descriptor XML can also be passed to the trimmer on the command via the [`-x` pa
   <assembly fullname="AssemblyA" preserve="all" />
 
   <!-- No "preserve" attribute and no types specified means preserve all -->
-  <assembly fullname="AssemblyB"/> 
+  <assembly fullname="AssemblyB"/>
 </linker>
 ```
 
@@ -63,12 +63,12 @@ The `required` attribute specifies that if the type is not marked, during the ma
 <linker>
   <assembly fullname="Assembly">
     <type fullname="Assembly.A" preserve="all" />
-    
+
     <!-- No "preserve" attribute and no members specified means preserve all members -->
-    <type fullname="Assembly.B" /> 
-    
+    <type fullname="Assembly.B" />
+
     <!-- Preserve the type declaration only -->
-    <type fullname="Assembly.C" preserve="nothing" /> 
+    <type fullname="Assembly.C" preserve="nothing" />
 
     <!-- Preserve a nested type -->
     <type fullname="Assembly.D/Nested" preserve="all" />
@@ -90,12 +90,12 @@ The `required` attribute specifies that if the type is not marked, during the ma
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    
+
     <!-- Preserve all fields on a type -->
     <type fullname="Assembly.A" preserve="fields" />
-    
+
     <!-- Preserve all methods on a type -->
-    <type fullname="Assembly.B" preserve="methods" /> 
+    <type fullname="Assembly.B" preserve="methods" />
   </assembly>
 </linker>
 ```
@@ -105,12 +105,12 @@ The `required` attribute specifies that if the type is not marked, during the ma
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    
+
     <!-- Preserves all types who's fully qualified type name matches the regular expression -->
     <type fullname="Assembly.Namespace*" />
-    
+
     <!-- Preserve all types within the specified namespace -->
-    <namespace fullname="Assembly.Namespace" /> 
+    <namespace fullname="Assembly.Namespace" />
   </assembly>
 </linker>
 ```
@@ -122,7 +122,7 @@ The `required` attribute specifies that if the type is not marked, during the ma
   <assembly fullname="Assembly">
     <type fullname="Assembly.A">
       <field signature="System.Int32 field1" />
-      
+
       <!-- Field by name rather than signature -->
       <field name="field2" />
 
@@ -161,17 +161,17 @@ The `required` attribute specifies that if the type is not marked, during the ma
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">      
-      <!-- Preserve the property, its backing field (if present), getter, and setter methods -->    
+    <type fullname="Assembly.A">
+      <!-- Preserve the property, its backing field (if present), getter, and setter methods -->
       <property signature="System.Int32 Property1" />
 
       <property signature="System.Int32 Property2" accessors="all" />
-     
+
       <!-- Preserve the property, its backing field (if present), and getter method -->
       <property signature="System.Int32 Property3" accessors="get" />
-      
+
       <!--Preserve a property, it's backing field (if present), and setter method -->
-      <property signature="System.Int32 Property4" accessors="set" /> 
+      <property signature="System.Int32 Property4" accessors="set" />
 
       <!-- Preserve a property by name rather than signature -->
       <property name="Property5" />
@@ -315,7 +315,7 @@ Attribute annotation XML can be embedded in an assembly by including it as an em
   </ItemGroup>
 ```
 
-Embedded attribute annotations should only address methods from the containing assembly. Whereas attribute annotations specified on the command line via the [`--link-attributes` parameter](illink-options.md#supplementary-custom-attributes) can alter types and members in any assembly.
+Embedded attribute annotations should only address types and members from the containing assembly. Whereas attribute annotations specified on the command line via the [`--link-attributes` parameter](illink-options.md#supplementary-custom-attributes) can alter types and members in any assembly.
 
 The attribute element requires 'fullname' attribute without it trimmer will generate a warning and skip the attribute. Optionally you can use the 'assembly' attribute to point to certain assembly to look
 for the attribute, if not specified the trimmer will look up the attribute in any loaded assembly.
