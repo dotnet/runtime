@@ -9113,8 +9113,11 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
     supportsMemoryOp = supportsMemoryOp && (operandSize >= expectedSize);
     supportsSIMDLoad = supportsSIMDLoad && supportsMemoryOp;
 
-    // SIMD16 loads are containable on non-VEX hardware only if the address is aligned.
-    bool supportsUnalignedLoad = (expectedSize < genTypeSize(TYP_SIMD16)) || m_compiler->canUseVexEncoding();
+    // SIMD16 loads are containable for legacy encoded instructions only if the address is aligned. This is the
+    // case on non-VEX hardware and for intrinsics that only have the legacy encoding, such as SHA.
+    bool supportsUnalignedLoad =
+        (expectedSize < genTypeSize(TYP_SIMD16)) ||
+        (m_compiler->canUseVexEncoding() && !HWIntrinsicInfo::HasLegacyEncodingOnly(parentIntrinsicId));
     *supportsRegOptional = supportsMemoryOp && supportsUnalignedLoad && IsSafeToMarkRegOptional(parentNode, childNode);
 
     if (!childNode->OperIsHWIntrinsic())
@@ -9194,13 +9197,20 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             // For debug code, we need to ensure that an unaligned address will fault when an explicit LoadAligned is
             // used. Non-VEX encoded instructions will fault if an unaligned SIMD16 load is contained but will not for
             // scalar loads, and VEX-encoded instructions will not fault for unaligned loads in any case.
+            // Intrinsics that only have the legacy encoding, such as SHA, are an exception because not every
+            // processor checks the alignment of their memory operand.
             //
             // When optimizations are enabled, we want to contain any aligned load that is large enough for the parent's
             // requirement.
+            //
+            // Either way, containing the load moves it to the parent, so it must be safe to move it past the nodes in
+            // between, which may write the memory it reads, such as an atomic operation in a later operand.
 
-            return (supportsSIMDLoad &&
-                    (m_compiler->opts.OptimizationEnabled() ||
-                     (!m_compiler->canUseVexEncoding() && expectedSize == genTypeSize(TYP_SIMD16))));
+            return supportsSIMDLoad &&
+                   (m_compiler->opts.OptimizationEnabled() ||
+                    (!m_compiler->canUseVexEncoding() && (expectedSize == genTypeSize(TYP_SIMD16)) &&
+                     !HWIntrinsicInfo::HasLegacyEncodingOnly(parentIntrinsicId))) &&
+                   IsSafeToContainMem(parentNode, hwintrinsic);
         }
 
         case NI_X86Base_LoadScalarVector128:
@@ -9208,7 +9218,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             // These take only pointer operands.
             assert(hwintrinsic->OperIsMemoryLoad());
 
-            return supportsSIMDScalarLoad;
+            // Containing the load moves it to the parent, see the aligned loads above.
+            return supportsSIMDScalarLoad && IsSafeToContainMem(parentNode, hwintrinsic);
         }
 
         case NI_X86Base_MoveAndDuplicate:
@@ -9276,8 +9287,10 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             assert(hwintrinsic->OperIsMemoryLoad());
             assert(varTypeIsFloating(childBaseType));
 
+            // Containing the load moves it to the parent, see the aligned loads above.
             return (parentBaseType == childBaseType) &&
-                   parentNode->isEmbeddedBroadcastCompatibleHWIntrinsic(m_compiler);
+                   parentNode->isEmbeddedBroadcastCompatibleHWIntrinsic(m_compiler) &&
+                   IsSafeToContainMem(parentNode, hwintrinsic);
         }
 
         default:
@@ -10528,6 +10541,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             case NI_X86Base_BlendVariable:
                             case NI_AVX_BlendVariable:
                             case NI_AVX2_BlendVariable:
+                            case NI_SHA_Sha256TwoRounds:
                             {
                                 TryMakeSrcContainedOrRegOptional(node, op2);
                                 break;
@@ -10824,6 +10838,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_GFNI_V256_GaloisFieldAffineTransformInverse:
                         case NI_GFNI_V512_GaloisFieldAffineTransform:
                         case NI_GFNI_V512_GaloisFieldAffineTransformInverse:
+                        case NI_SHA_Sha1FourRounds:
                         {
                             if (!isContainedImm)
                             {

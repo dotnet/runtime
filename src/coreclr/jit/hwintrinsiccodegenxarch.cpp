@@ -328,6 +328,14 @@ static unsigned GetImmediateMaxAndMask(instruction ins, unsigned simdSize, unsig
             break;
         }
 
+        // sha1rnds4 uses bits [1:0] to select the logical function and the round constant.
+        case INS_sha1rnds4:
+        {
+            mask = 0b00000011;
+            max  = mask;
+            break;
+        }
+
         // The following instructions use documented ranges of bits with gaps in them.
         case INS_dppd:
         {
@@ -410,7 +418,30 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
     assert(!HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) || !varTypeIsSmall(node->GetSimdBaseType()));
-#endif
+
+    if (HWIntrinsicInfo::HasLegacyEncodingOnly(intrinsicId))
+    {
+        // Intel documents that these instructions fault on a misaligned 16-byte memory operand, but not every
+        // processor checks its alignment, so this can't be left to the tests. The only operands that may be
+        // folded into them are vector constants, which the data section aligns, and, when optimizing, explicitly
+        // aligned loads. A 256-bit or 512-bit aligned load whose GetLower was removed by lowering qualifies too,
+        // since its alignment implies 16-byte alignment. Unoptimized code must fault on a misaligned address
+        // passed to an explicitly aligned load, so it doesn't fold such loads. Their operands are also never reg
+        // optional, since a spill temp may be misaligned.
+        for (GenTree* operand : node->Operands())
+        {
+            if (varTypeIsSIMD(operand))
+            {
+                assert(!operand->IsRegOptional());
+                assert(!operand->isContained() || operand->IsCnsVec() ||
+                       (m_compiler->opts.OptimizationEnabled() &&
+                        (operand->OperIsHWIntrinsic(NI_X86Base_LoadAlignedVector128) ||
+                         operand->OperIsHWIntrinsic(NI_AVX_LoadAlignedVector256) ||
+                         operand->OperIsHWIntrinsic(NI_AVX512_LoadAlignedVector512))));
+            }
+        }
+    }
+#endif // DEBUG
 
     bool    isTableDriven = HWIntrinsicInfo::genIsTableDrivenHWIntrinsic(intrinsicId, category);
     insOpts instOptions   = INS_OPTS_NONE;
@@ -615,6 +646,22 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     if (isTableDriven)
     {
         genConsumeMultiOpOperands(node);
+
+        if (((node->gtFlags & GTF_HW_VZEROUPPER_SAFE) != 0) && GetEmitter()->Contains256bitOrMoreAVX() &&
+            !GetEmitter()->IsRedundantVzeroupper())
+        {
+            // This instruction only has the legacy encoding. Some processors, such as Intel ones since Golden Cove
+            // and AMD Zen 2 and Zen 3, run it many times slower when it is mixed with VEX encoded instructions while
+            // the upper bits of the YMM and ZMM registers are dirty (see "Instruction Sequence Slowdowns" in the Intel
+            // optimization manual), which they can be since this method uses 256-bit or 512-bit instructions, so
+            // clear them first. This is skipped when the emitter can confirm that an earlier vzeroupper is still in
+            // effect, since vzeroupper itself takes several cycles on some processors. LSRA only marks the node
+            // when no 256-bit or 512-bit value is live across it, since the vzeroupper would corrupt it. Otherwise,
+            // the instruction runs slowly. This is done after consuming the operands, since reloading a 256-bit
+            // operand would dirty the upper bits again. The instruction only reads the lower 128 bits of its operands.
+            assert(HWIntrinsicInfo::HasLegacyEncodingOnly(intrinsicId));
+            instGen(INS_vzeroupper);
+        }
 
         if (embMaskOp != nullptr)
         {
@@ -896,6 +943,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX_BlendVariable:
                         case NI_AVX2_BlendVariable:
                         case NI_AVX512_BlendVariableMask:
+                        case NI_SHA_Sha256TwoRounds:
                         {
                             genHWIntrinsic_R_R_RM_R(node, ins, simdSize, instOptions);
                             break;

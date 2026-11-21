@@ -945,7 +945,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_GFNI, LAST_NI_GFNI },                            // GFNI
     { FIRST_NI_GFNI_V256, LAST_NI_GFNI_V256 },                  // GFNI_V256
     { FIRST_NI_GFNI_V512, LAST_NI_GFNI_V512 },                  // GFNI_V512
-    { NI_Illegal, NI_Illegal },                                 //      SHA
+    { FIRST_NI_SHA, LAST_NI_SHA },                              // SHA
     { NI_Illegal, NI_Illegal },                                 //      WAITPKG
     { FIRST_NI_X86Serialize, LAST_NI_X86Serialize },            // X86Serialize
     { FIRST_NI_Vector, LAST_NI_Vector },                        // Vector128

@@ -138,6 +138,12 @@
     <type fullname="System.Runtime.Intrinsics.X86.Popcnt/X64">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Sha">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Sha/X64">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
     <type fullname="System.Runtime.Intrinsics.X86.Sse">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>

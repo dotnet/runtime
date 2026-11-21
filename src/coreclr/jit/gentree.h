@@ -534,6 +534,11 @@ enum GenTreeFlags : unsigned
 #ifdef FEATURE_HW_INTRINSICS
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
     GTF_HW_USER_CALL              = 0x20000000, // GT_HWINTRINSIC -- node is implemented via a user call
+#ifdef TARGET_XARCH
+    GTF_HW_VZEROUPPER_SAFE        = 0x40000000, // GT_HWINTRINSIC -- node only has the legacy encoding and no 256-bit or
+                                                //                   512-bit value is live in a register across it, so a
+                                                //                   vzeroupper can precede it
+#endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 };
 

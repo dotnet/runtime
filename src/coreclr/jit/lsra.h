@@ -2026,6 +2026,7 @@ private:
     bool isRMWRegOper(GenTree* tree);
     int  BuildMul(GenTree* tree);
     void SetContainsAVXFlags(unsigned sizeOfSIMDVector = 0);
+    bool IsLargeVectorLiveAcrossNode();
 #endif // defined(TARGET_XARCH)
 
 #if defined(TARGET_X86)
