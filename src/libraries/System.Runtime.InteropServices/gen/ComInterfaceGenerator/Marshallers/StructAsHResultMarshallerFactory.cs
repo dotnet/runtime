@@ -22,7 +22,7 @@ namespace Microsoft.Interop
 
         private sealed class Marshaller : IUnboundMarshallingGenerator
         {
-            public ManagedTypeInfo AsNativeType(TypePositionInfo info) => SpecialTypeInfo.Int32;
+            public ManagedTypeInfo AsNativeType(TypePositionInfo info) => WellKnownTypeInfo.Int32;
 
             public void Generate(IndentedTextWriter writer, TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
             {

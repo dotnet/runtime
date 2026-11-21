@@ -110,7 +110,7 @@ namespace Microsoft.Interop
         {
             string arguments = string.Join(", ", marshallers.NativeParameterMarshallers.Select(marshaller => marshaller.AsArgument(context)));
             string invoke = $"{expressionToInvoke}({arguments});\r\n";
-            if (marshallers.NativeReturnMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void)
+            if (marshallers.NativeReturnMarshaller.TypeInfo.ManagedType == WellKnownTypeInfo.Void)
             {
                 return invoke;
             }
@@ -124,7 +124,7 @@ namespace Microsoft.Interop
         {
             string arguments = string.Join(", ", marshallers.ManagedParameterMarshallers.Select(marshaller => marshaller.AsManagedArgument(context)));
             string invoke = $"{expressionToInvoke}({arguments});\r\n";
-            if (marshallers.ManagedReturnMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void)
+            if (marshallers.ManagedReturnMarshaller.TypeInfo.ManagedType == WellKnownTypeInfo.Void)
             {
                 return invoke;
             }

@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
     public sealed class Utf16CharMarshaller : IUnboundMarshallingGenerator
     {
-        private static readonly ManagedTypeInfo s_nativeType = SpecialTypeInfo.UInt16;
+        private static readonly ManagedTypeInfo s_nativeType = WellKnownTypeInfo.UInt16;
 
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
@@ -30,7 +29,7 @@ namespace Microsoft.Interop
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
-            Debug.Assert(info.ManagedType is SpecialTypeInfo {SpecialType: SpecialType.System_Char });
+            Debug.Assert(info.ManagedType is WellKnownTypeInfo {SpecialType: WellKnownType.System_Char });
             return s_nativeType;
         }
 

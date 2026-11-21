@@ -114,7 +114,7 @@ namespace Microsoft.Interop.JavaScript
             ImmutableArray<TypePositionInfo>.Builder typeInfoBuilder = ImmutableArray.CreateBuilder<TypePositionInfo>(originalElementInfo.Length + NumImplicitArguments);
 
             TypePositionInfo nativeOnlyParameterTemplate = new TypePositionInfo(
-                SpecialTypeInfo.Void,
+                WellKnownTypeInfo.Void,
                 new JSMarshallingInfo(NoMarshallingInfo.Instance, new JSInvalidTypeInfo()))
             {
                 ManagedIndex = TypePositionInfo.UnsetIndex,
@@ -144,7 +144,7 @@ namespace Microsoft.Interop.JavaScript
 
                 if (info.IsManagedReturnPosition)
                 {
-                    hasReturn = info.ManagedType != SpecialTypeInfo.Void;
+                    hasReturn = info.ManagedType != WellKnownTypeInfo.Void;
                 }
 
                 typeInfoBuilder.Add(info.IsNativeReturnPosition
