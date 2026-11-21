@@ -32,6 +32,7 @@ namespace System.Runtime.CompilerServices
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
             state.StackState->Notifier = awaiter;
+            state.StackState->NotifierKind = SuspensionNotifierKind.Notifier;
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
@@ -46,6 +47,7 @@ namespace System.Runtime.CompilerServices
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
             state.StackState->AwaiterContinuation = &AwaiterOnCompletedFromContinuation<TAwaiter>;
             state.StackState->AwaiterOffset = offset;
+            state.StackState->NotifierKind = SuspensionNotifierKind.AwaiterContinuation;
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
@@ -82,11 +84,12 @@ namespace System.Runtime.CompilerServices
             // for this case.
             if (typeof(TAwaiter) == typeof(YieldAwaitable.YieldAwaiter))
             {
-                state.StackState->CriticalNotifier = RuntimeAsyncYielder.Instance;
+                state.StackState->NotifierKind = SuspensionNotifierKind.Yield;
             }
             else
             {
-                state.StackState->CriticalNotifier = awaiter;
+                state.StackState->Notifier = awaiter;
+                state.StackState->NotifierKind = SuspensionNotifierKind.CriticalNotifier;
             }
 
             state.CaptureContexts();
@@ -103,6 +106,7 @@ namespace System.Runtime.CompilerServices
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
             state.StackState->AwaiterContinuation = &UnsafeAwaiterOnCompletedFromContinuation<TAwaiter>;
             state.StackState->AwaiterOffset = offset;
+            state.StackState->NotifierKind = SuspensionNotifierKind.AwaiterContinuation;
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
@@ -249,32 +253,12 @@ namespace System.Runtime.CompilerServices
         public static void Await(ConfiguredTaskAwaitable configuredAwaitable)
         {
             ConfiguredTaskAwaitable.ConfiguredTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
-            if ((awaiter.m_options & ConfigureAwaitOptions.SuppressThrowing) != 0)
-            {
-                TailAwait();
-                AwaitTaskWithRareOptions(awaiter);
-                return;
-            }
-
             if (!awaiter.IsCompleted)
             {
+                // Suspend handles all options, including SuppressThrowing and ForceYielding.
                 TailAwait();
                 Suspend(awaiter.m_task, awaiter.m_options);
                 return;
-            }
-
-            awaiter.GetResult();
-        }
-
-        [Intrinsic]
-        [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.NoInlining)]
-        [StackTraceHidden]
-        private static void AwaitTaskWithRareOptions(ConfiguredTaskAwaitable.ConfiguredTaskAwaiter awaiter)
-        {
-            if (!awaiter.IsCompleted)
-            {
-                UnsafeAwaitAwaiter(awaiter);
             }
 
             awaiter.GetResult();
