@@ -53,6 +53,7 @@ set __BuildTypeChecked=0
 set __BuildTypeRelease=0
 
 set __PgoInstrument=0
+set __SkipDotNet=0
 set __PgoOptimize=0
 set __EnforcePgo=0
 
@@ -152,6 +153,7 @@ REM -ninja is a no-op option since Ninja is now the default generator on Windows
 if /i "%1" == "-ninja"               (shift&goto Arg_Loop)
 if /i "%1" == "-msbuild"             (set __Ninja=0&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
+if /i "%1" == "-skipdotnet"          (set __SkipDotNet=1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
 if /i "%1" == "-pgodatapath"         (set __PgoOptDataPath=%~2&set __PgoOptimize=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "-component"           (set __RequestedBuildComponents=%__RequestedBuildComponents%-%2&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
@@ -300,6 +302,9 @@ REM ============================================================================
 set __IntermediatesIncDir=%__IntermediatesDir%\src\inc
 set __IntermediatesEventingDir=%__ArtifactsIntermediatesDir%\Eventing\%__TargetArch%\%__BuildType%
 
+REM Python is only needed for pgocheck.py
+if %__EnforcePgo% NEQ 1 goto SkipLocatePython
+
 REM Find python and set it to the variable PYTHON
 set _C=-c "import sys; sys.stdout.write(sys.executable)"
 set __PythonLocation=
@@ -316,6 +321,8 @@ if NOT DEFINED PYTHON (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Could not find a Python installation.
     goto ExitWithError
 )
+
+:SkipLocatePython
 
 set __CMakeTarget=
 set __BuildAllJitsCommunity=0
@@ -409,7 +416,21 @@ if %__BuildNative% EQU 1 (
     )
 
     set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_CMAKE_TARGET_ARCH=%__TargetArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%"
-    set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLI_CMAKE_FALLBACK_OS=%__HostFallbackOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%"
+    set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLI_CMAKE_FALLBACK_OS=%__HostFallbackOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCLR_CMAKE_SKIP_DOTNET=%__SkipDotNet%"
+
+    REM Some components, such as eventing, generate sources with .NET while building. build.cmd passes its .NET host;
+    REM when this script is run directly, use the repo's .NET SDK unless -skipdotnet was passed.
+    if %__SkipDotNet% EQU 0 (
+        echo !__CMakeArgs! | findstr /i /c:"-DCLR_DOTNET_HOST_PATH=" >nul
+        if errorlevel 1 (
+            if exist "%__RepoRootDir%\.dotnet\dotnet.exe" (
+                set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_DOTNET_HOST_PATH=%__RepoRootDir%\.dotnet\dotnet.exe"
+            ) else (
+                echo %__ErrMsgPrefix%%__MsgPrefix%Error: No .NET SDK found in %__RepoRootDir%\.dotnet. Restore it by running dotnet.cmd --version, or pass -skipdotnet to skip the components that need it.
+                exit /b 1
+            )
+        )
+    )
 
     if "%__HostOS%" == "" (
         set "__HostOS=!__TargetOS!"
@@ -613,6 +634,7 @@ echo -component ^<name^> : specify this option one or more times to limit compon
 echo                     Allowed ^<name^>: hosts jit alljits runtime paltests iltools nativeaot spmi cdac
 echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
+echo -skipdotnet: skip the components that need .NET to build ^(e.g. eventing^), when no .NET SDK is restored.
 echo -cmakeargs: user-settable additional arguments passed to CMake.
 echo -configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
 echo -skipconfigure: skip CMake ^(default: CMake is run^)
