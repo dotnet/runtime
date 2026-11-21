@@ -5,7 +5,6 @@
 #define HAVE_MINIPAL_IS_NATIVE_DEBUGGER_PRESENT_H
 
 #include <stdbool.h>
-#include <minipal/types.h>
 
 #ifdef __cplusplus
 extern "C" {
