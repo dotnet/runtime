@@ -44,4 +44,12 @@
     <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
              Link="CommonTest\System\Threading\ThreadTestHelpers.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LowLevelCrossProcessMutex.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.LowLevelCrossProcessMutex.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Threading.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Threading.cs" />
+  </ItemGroup>
 </Project>
