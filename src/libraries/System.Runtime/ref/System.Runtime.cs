@@ -15123,6 +15123,11 @@ namespace System.Runtime.CompilerServices
         public ReferenceAssemblyAttribute(string? description) { }
         public string? Description { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Interface, Inherited=false, AllowMultiple=false)]
+    public sealed partial class ReflectionBlockedAttribute : System.Attribute
+    {
+        public ReflectionBlockedAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Module, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class RefSafetyRulesAttribute : System.Attribute

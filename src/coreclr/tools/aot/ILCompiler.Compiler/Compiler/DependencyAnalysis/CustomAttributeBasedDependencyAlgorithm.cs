@@ -117,7 +117,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (!mdManager.GeneratesAttributeMetadata(constructor.OwningType))
                         continue;
 
-                    if (mdManager.IsReflectionBlocked(constructor))
+                    if (mdManager.IsReflectionBlocked(constructor) || mdManager.IsReflectionBlockedOrMentionsStripped(constructor.OwningType))
                         continue;
 
                     CustomAttributeValue<TypeDesc> decodedValue = attribute.DecodeValue(attributeTypeProvider);
@@ -261,7 +261,7 @@ namespace ILCompiler.DependencyAnalysis
         private static bool AddDependenciesFromCustomAttributeArgument(IDependencySink dependencies, NodeFactory factory, TypeDesc type, object value)
         {
             // If this is an initializer that refers to e.g. a blocked enum, we can't encode this attribute.
-            if (factory.MetadataManager.IsReflectionBlocked(type))
+            if (factory.MetadataManager.IsReflectionBlockedOrMentionsStripped(type))
                 return false;
 
             // Reflection will need to be able to allocate this type at runtime
@@ -292,7 +292,7 @@ namespace ILCompiler.DependencyAnalysis
 
             TypeDesc typeofType = (TypeDesc)value;
 
-            if (factory.MetadataManager.IsReflectionBlocked(typeofType))
+            if (factory.MetadataManager.IsReflectionBlockedOrMentionsStripped(typeofType))
                 return false;
 
             // Grab the metadata nodes that will be necessary to represent the typeof in the metadata blob

@@ -187,6 +187,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+                // Generic types nested in a type blocked with [ReflectionBlocked] (closures, iterators) have no metadata.
+                if (GenericTypeDefinitionTypeInfo is RuntimeBlockedTypeInfo)
+                    throw new NotSupportedException(SR.Reflection_TypeBlocked);
+
                 return (RuntimeNamedTypeInfo)GenericTypeDefinitionTypeInfo;
             }
         }

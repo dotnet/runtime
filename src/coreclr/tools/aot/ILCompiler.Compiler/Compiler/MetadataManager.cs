@@ -574,6 +574,12 @@ namespace ILCompiler
             {
                 GetMetadataDependenciesDueToReflectability(dependencies, factory, type);
             }
+            else if (type is MetadataType { IsInterface: true } dynamicInterfaceCastableImplementation && dynamicInterfaceCastableImplementation.IsDynamicInterfaceCastableImplementation())
+            {
+                // The runtime only needs the MethodTable of the implementation type that IDynamicInterfaceCastable returns,
+                // so it needs to be constructed even if it has no metadata (see TypeMetadataNode.GetMetadataDependencies).
+                dependencies.Add(factory.ReflectedType(type), "Reflected IDynamicInterfaceCastableImplementation");
+            }
         }
 
         internal virtual void GetDependenciesDueToModuleUse(IDependencySink dependencies, NodeFactory factory, ModuleDesc module)
@@ -777,6 +783,10 @@ namespace ILCompiler
                     continue;
 
                 MethodStackTraceVisibilityFlags stackVisibility = _stackTraceEmissionPolicy.GetMethodVisibility(method);
+
+                // Methods of types blocked from reflection ([ReflectionBlocked]) don't get names in stack traces.
+                if (method.OwningType is MetadataType stackTraceOwningType && IsStripped(stackTraceOwningType))
+                    stackVisibility &= ~MethodStackTraceVisibilityFlags.HasMetadata;
 
                 StackTraceRecordFlags flags = 0;
                 if ((stackVisibility & MethodStackTraceVisibilityFlags.IsHidden) != 0)
@@ -1009,6 +1019,17 @@ namespace ILCompiler
 
         public int GetMetadataHandleForMethod(NodeFactory factory, MethodDesc method)
         {
+            if (method.HasInstantiation && method.OwningType is MetadataType genericMethodOwner)
+            {
+                // The runtime identifies generic methods that need the type loader by their metadata. Methods that don't have
+                // metadata, and methods of the same type whose signatures only differ by stripped types, can't be told apart.
+                if (IsStripped(genericMethodOwner))
+                    throw new InvalidOperationException($"Generic method '{method}' on a type that is blocked from reflection ([ReflectionBlocked]) is needed at runtime by the type loader, which is not supported.");
+
+                if (MentionsStrippedType(method.GetTypicalMethodDefinition().Signature))
+                    throw new InvalidOperationException($"Generic method '{method}' has a signature that mentions a type that is blocked from reflection ([ReflectionBlocked]), which is not supported.");
+            }
+
             if (!CanGenerateMetadata(method))
             {
                 // We can end up here with reflection disabled or multifile compilation.
@@ -1155,7 +1176,20 @@ namespace ILCompiler
             return _templateMethodEntries;
         }
 
-        public bool IsReflectionBlocked(TypeDesc type)
+        /// <summary>
+        /// Returns true if the type has no reflection metadata. Types annotated as [ReflectionBlocked] ("stripped") don't make
+        /// the types that merely mention them (generic instantiations over them, arrays of them, ...) blocked.
+        /// Types that are blocked for other reasons still do.
+        /// </summary>
+        public bool IsReflectionBlocked(TypeDesc type) => IsReflectionBlockedCore(type, nested: false, strict: false);
+
+        /// <summary>
+        /// Same as <see cref="IsReflectionBlocked(TypeDesc)"/>, but a type that mentions a stripped type is blocked too.
+        /// Used where metadata would have to refer to the stripped type by name (for example custom attribute arguments).
+        /// </summary>
+        public bool IsReflectionBlockedOrMentionsStripped(TypeDesc type) => IsReflectionBlockedCore(type, nested: false, strict: true);
+
+        private bool IsReflectionBlockedCore(TypeDesc type, bool nested, bool strict)
         {
             switch (type.Category)
             {
@@ -1168,44 +1202,100 @@ namespace ILCompiler
                     if (parameterType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                         return false;
 
-                    return IsReflectionBlocked(parameterType);
+                    return IsReflectionBlockedCore(parameterType, nested: true, strict);
 
                 case TypeFlags.FunctionPointer:
                     MethodSignature pointerSignature = ((FunctionPointerType)type).Signature;
 
                     for (int i = 0; i < pointerSignature.Length; i++)
-                        if (IsReflectionBlocked(pointerSignature[i]))
+                        if (IsReflectionBlockedCore(pointerSignature[i], nested: true, strict))
                             return true;
 
-                    return IsReflectionBlocked(pointerSignature.ReturnType);
+                    return IsReflectionBlockedCore(pointerSignature.ReturnType, nested: true, strict);
 
                 default:
                     Debug.Assert(type.IsDefType);
 
+                    // A stripped type is only blocked if it's the type itself that is being asked about.
+                    bool ignoreStripped = nested && !strict;
+
                     TypeDesc typeDefinition = type.GetTypeDefinition();
                     if (type != typeDefinition)
                     {
-                        if (_blockingPolicy.IsBlocked((MetadataType)typeDefinition))
+                        if (IsDefinitionBlocked((MetadataType)typeDefinition, ignoreStripped))
                             return true;
 
-                        if (IsReflectionBlocked(type.Instantiation))
-                            return true;
+                        foreach (TypeDesc argument in type.Instantiation)
+                        {
+                            if (IsReflectionBlockedCore(argument, nested: true, strict) && !argument.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                                return true;
+                        }
 
                         return false;
                     }
 
-                    return _blockingPolicy.IsBlocked((MetadataType)type);
+                    return IsDefinitionBlocked((MetadataType)type, ignoreStripped);
             }
+
+            bool IsDefinitionBlocked(MetadataType definition, bool ignoreStripped)
+                => ignoreStripped ? _blockingPolicy.IsHardBlocked(definition) : _blockingPolicy.IsBlocked(definition);
         }
 
         protected bool IsReflectionBlocked(Instantiation instantiation)
         {
             foreach (TypeDesc type in instantiation)
             {
-                if (IsReflectionBlocked(type) && !type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                if (IsReflectionBlockedCore(type, nested: true, strict: false) && !type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                     return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Returns true if the type is annotated as [ReflectionBlocked] (it or a type that contains it).
+        /// </summary>
+        public bool IsStripped(MetadataType type) => _blockingPolicy.IsStripped(type);
+
+        private bool MentionsStrippedType(MethodSignature signature)
+        {
+            if (MentionsStrippedType(signature.ReturnType))
+                return true;
+
+            for (int i = 0; i < signature.Length; i++)
+            {
+                if (MentionsStrippedType(signature[i]))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private bool MentionsStrippedType(TypeDesc type)
+        {
+            switch (type.Category)
+            {
+                case TypeFlags.SzArray:
+                case TypeFlags.Array:
+                case TypeFlags.Pointer:
+                case TypeFlags.ByRef:
+                    return MentionsStrippedType(((ParameterizedType)type).ParameterType);
+
+                case TypeFlags.FunctionPointer:
+                    return MentionsStrippedType(((FunctionPointerType)type).Signature);
+
+                case TypeFlags.SignatureMethodVariable:
+                case TypeFlags.SignatureTypeVariable:
+                    return false;
+
+                default:
+                    foreach (TypeDesc argument in type.Instantiation)
+                    {
+                        if (MentionsStrippedType(argument))
+                            return true;
+                    }
+
+                    return type.GetTypeDefinition() is MetadataType definition && IsStripped(definition);
+            }
         }
 
         public bool IsReflectionBlocked(FieldDesc field)

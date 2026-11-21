@@ -284,6 +284,11 @@ namespace ILCompiler
             {
                 return _blockingPolicy.IsBlocked(methodDef);
             }
+
+            public bool IsStripped(MetadataType typeDef)
+            {
+                return _blockingPolicy.IsStripped(typeDef);
+            }
         }
     }
 

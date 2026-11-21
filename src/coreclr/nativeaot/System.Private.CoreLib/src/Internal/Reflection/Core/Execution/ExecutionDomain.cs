@@ -34,6 +34,10 @@ namespace Internal.Reflection.Core.Execution
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle();
             RuntimeNamedMethodInfo? runtimeNamedMethodInfo = null;
 
+            // Members of types blocked with [ReflectionBlocked] have no metadata.
+            if (contextTypeInfo is RuntimeBlockedTypeInfo)
+                throw new NotSupportedException(SR.Reflection_TypeBlocked);
+
             if (methodHandle.IsNativeFormatMetadataBased)
             {
                 MethodHandle nativeFormatMethodHandle = methodHandle.NativeFormatHandle;
@@ -90,7 +94,11 @@ namespace Internal.Reflection.Core.Execution
         //=======================================================================================
         internal static RuntimeTypeInfo GetNamedTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            QTypeDefinition qTypeDefinition = ReflectionCoreExecution.ExecutionEnvironment.GetMetadataForNamedType(typeHandle);
+            if (!ReflectionCoreExecution.ExecutionEnvironment.TryGetMetadataForNamedType(typeHandle, out QTypeDefinition qTypeDefinition))
+            {
+                // The type was blocked from reflection ([ReflectionBlocked]) and has no metadata.
+                return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle);
+            }
 #if ECMA_METADATA_SUPPORT
             if (qTypeDefinition.IsNativeFormatMetadataBased)
 #endif

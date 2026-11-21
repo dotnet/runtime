@@ -27,6 +27,18 @@ namespace ILCompiler
         /// Returns true if field definition '<paramref name="field"/>' is reflection blocked.
         /// </summary>
         public abstract bool IsBlocked(FieldDesc field);
+
+        /// <summary>
+        /// Returns true if type definition '<paramref name="type"/>' was blocked on the request of its author ([ReflectionBlocked]).
+        /// Such a type is blocked (<see cref="IsBlocked(MetadataType)"/> returns true), but unlike types that are blocked for other reasons,
+        /// generic instantiations and arrays that merely mention it are not blocked.
+        /// </summary>
+        public virtual bool IsStripped(MetadataType type) => false;
+
+        /// <summary>
+        /// Returns true if type definition '<paramref name="type"/>' is blocked for a reason other than <see cref="IsStripped(MetadataType)"/>.
+        /// </summary>
+        public virtual bool IsHardBlocked(MetadataType type) => IsBlocked(type);
     }
 
     public class FullyBlockedMetadataBlockingPolicy : MetadataBlockingPolicy

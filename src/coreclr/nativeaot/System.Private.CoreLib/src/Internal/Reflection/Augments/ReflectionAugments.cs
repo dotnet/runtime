@@ -196,6 +196,11 @@ namespace Internal.Reflection.Augments
         private static RuntimeFieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle();
+
+            // Members of types blocked with [ReflectionBlocked] have no metadata.
+            if (contextTypeInfo is RuntimeBlockedTypeInfo)
+                throw new NotSupportedException(SR.Reflection_TypeBlocked);
+
             NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();
 
             // RuntimeFieldHandles always yield FieldInfo's whose ReflectedType equals the DeclaringType.
