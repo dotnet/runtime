@@ -384,6 +384,46 @@ namespace System
             return GetRuntimeTypeInfo().GetInterfaces();
         }
 
+        public override Type[] GetInterfacesWithSameMetadataDefinitionAs(Type interfaceType)
+        {
+            ArgumentNullException.ThrowIfNull(interfaceType);
+            if (!interfaceType.IsInterface || interfaceType.IsConstructedGenericType)
+            {
+                throw new ArgumentException(SR.Arg_MustBeInterfaceOrGenericInterfaceDefinition, nameof(interfaceType));
+            }
+
+            // The interfaces of a runtime type are runtime types, so an interfaceType that isn't a RuntimeType never matches.
+            if (interfaceType is not RuntimeType runtimeInterfaceType)
+            {
+                return EmptyTypes;
+            }
+
+            MethodTable* pEEType = _pUnderlyingEEType;
+            MethodTable* pInterfaceEEType = runtimeInterfaceType._pUnderlyingEEType;
+            if (pEEType == null || pEEType->IsGenericTypeDefinition || pInterfaceEEType == null)
+            {
+                return base.GetInterfacesWithSameMetadataDefinitionAs(interfaceType);
+            }
+
+            // Compare MethodTables directly and only create Type objects for the matches.
+            // Usually a single interface matches, which ListBuilder handles without allocating backing storage.
+            bool isGenericTypeDefinition = pInterfaceEEType->IsGenericTypeDefinition;
+            ListBuilder<Type> matches = default;
+            int count = pEEType->NumInterfaces;
+            for (int i = 0; i < count; i++)
+            {
+                MethodTable* pImplementedEEType = pEEType->InterfaceMap[i];
+                if (isGenericTypeDefinition
+                    ? pImplementedEEType->IsGeneric && pImplementedEEType->GenericDefinition == pInterfaceEEType
+                    : pImplementedEEType == pInterfaceEEType)
+                {
+                    matches.Add(GetTypeFromMethodTable(pImplementedEEType));
+                }
+            }
+
+            return matches.ToArray();
+        }
+
         public override bool IsTypeDefinition
         {
             get
