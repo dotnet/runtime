@@ -680,6 +680,77 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void SaveFieldWithModifiedType()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("TestAssembly"));
+                ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
+                Type modifiedInt = Type.MakeModifiedSignatureType(typeof(int), [typeof(IsConst), typeof(IsVolatile)], [typeof(CallConvCdecl)]);
+
+                TypeBuilder tb = mb.DefineType("TypeWithModifiedFields", TypeAttributes.Class | TypeAttributes.Public);
+                FieldBuilder fromType = tb.DefineField("FromType", modifiedInt, FieldAttributes.Public | FieldAttributes.Static);
+                // A modifier array replaces only the type's own modifiers of that kind.
+                FieldBuilder requiredFromArray = tb.DefineField("RequiredFromArray", modifiedInt, [typeof(InAttribute)], null, FieldAttributes.Public | FieldAttributes.Static);
+                FieldBuilder optionalFromEmptyArray = tb.DefineField("OptionalFromEmptyArray", modifiedInt, null, Type.EmptyTypes, FieldAttributes.Public | FieldAttributes.Static);
+                FieldBuilder fromReflection = tb.DefineField("FromReflection", typeof(ClassWithVolatileField).GetField(nameof(ClassWithVolatileField.Value)).GetModifiedFieldType(),
+                    FieldAttributes.Public | FieldAttributes.Static);
+
+                TypeBuilder genericType = mb.DefineType("GenericTypeWithModifiedField", TypeAttributes.Class | TypeAttributes.Public);
+                genericType.DefineGenericParameters("T");
+                FieldBuilder genericField = genericType.DefineField("Field", modifiedInt, FieldAttributes.Public | FieldAttributes.Static);
+                FieldInfo instantiatedField = TypeBuilder.GetField(genericType.MakeGenericType(typeof(string)), genericField);
+                MethodBuilder readMethod = tb.DefineMethod("ReadGenericField", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+                ILGenerator il = readMethod.GetILGenerator();
+                il.Emit(OpCodes.Ldsfld, instantiatedField);
+                il.Emit(OpCodes.Ret);
+
+                // Check the getters directly: where no array was passed, the signature writer's fallback to the field
+                // type's modifiers would hide a getter returning null.
+                AssertBuilderModifiers(fromType, [typeof(IsConst), typeof(IsVolatile)], [typeof(CallConvCdecl)]);
+                AssertBuilderModifiers(requiredFromArray, [typeof(InAttribute)], [typeof(CallConvCdecl)]);
+                AssertBuilderModifiers(optionalFromEmptyArray, [typeof(IsConst), typeof(IsVolatile)], []);
+                AssertBuilderModifiers(fromReflection, [typeof(IsVolatile)], []);
+                AssertBuilderModifiers(instantiatedField, [typeof(IsConst), typeof(IsVolatile)], [typeof(CallConvCdecl)]);
+
+                tb.CreateType();
+                genericType.CreateType();
+                assemblyBuilder.Save(file.Path);
+
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.GetType(tb.Name);
+                    AssertModifiers(typeFromDisk.GetField("FromType"), [typeof(IsConst), typeof(IsVolatile)], [typeof(CallConvCdecl)]);
+                    AssertModifiers(typeFromDisk.GetField("RequiredFromArray"), [typeof(InAttribute)], [typeof(CallConvCdecl)]);
+                    AssertModifiers(typeFromDisk.GetField("OptionalFromEmptyArray"), [typeof(IsConst), typeof(IsVolatile)], []);
+                    AssertModifiers(typeFromDisk.GetField("FromReflection"), [typeof(IsVolatile)], []);
+                    AssertModifiers(assemblyFromDisk.GetType(genericType.Name).GetField("Field"), [typeof(IsConst), typeof(IsVolatile)], [typeof(CallConvCdecl)]);
+                }
+
+                // The member reference to the generic type's field must match the field's signature.
+                TestAssemblyLoadContext context = new();
+                Type loadedType = context.LoadFromAssemblyPath(file.Path).GetType(tb.Name, throwOnError: true);
+                Assert.Equal(0, loadedType.GetMethod("ReadGenericField").Invoke(null, null));
+                context.Unload();
+            }
+
+            static void AssertModifiers(FieldInfo field, Type[] required, Type[] optional)
+            {
+                Type fieldType = field.GetModifiedFieldType();
+                Assert.Equal(typeof(int).FullName, fieldType.UnderlyingSystemType.FullName);
+                Assert.Equal(required.Select(t => t.FullName), fieldType.GetRequiredCustomModifiers().Select(t => t.FullName));
+                Assert.Equal(optional.Select(t => t.FullName), fieldType.GetOptionalCustomModifiers().Select(t => t.FullName));
+            }
+
+            static void AssertBuilderModifiers(FieldInfo field, Type[] required, Type[] optional)
+            {
+                Assert.Equal(required, field.GetRequiredCustomModifiers());
+                Assert.Equal(optional, field.GetOptionalCustomModifiers());
+            }
+        }
+
+        [Fact]
         public void SaveMultipleGenericTypeParametersToEnsureSortingWorks()
         {
             using (TempFile file = TempFile.Create())
@@ -1079,6 +1150,11 @@ namespace System.Reflection.Emit.Tests
     {
         public EmptyTestClass field1;
         public byte field2;
+    }
+
+    public class ClassWithVolatileField
+    {
+        public static volatile int Value;
     }
 
     public unsafe class ClassWithFunctionPointerMembers
