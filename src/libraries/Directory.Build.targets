@@ -1,9 +1,10 @@
 <Project>
-  <!-- Set this after the project body has finalized IsTestProject. Do not propagate the
-       resulting value through project references; each referenced project must decide
-       independently whether it is a WebAssembly test app that should be published with R2R. -->
-  <PropertyGroup Condition="'$(TestWasmReadyToRun)' == 'true' and '$(IsTestProject)' == 'true' and ('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' == ''">
-    <PublishReadyToRun>true</PublishReadyToRun>
+  <!-- Select test mode after IsTestProject is finalized, before the app publish default.
+       Do not propagate this implicit value through project references. -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' == '' and
+                            ('$(TargetsBrowser)' == 'true' or ('$(TargetsWasi)' == 'true' and '$(TestWasmReadyToRun)' == 'true'))">
+    <PublishReadyToRun Condition="'$(TestWasmReadyToRun)' == 'true'">true</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(TestWasmReadyToRun)' != 'true'">false</PublishReadyToRun>
     <_TestWasmReadyToRunImplicit>true</_TestWasmReadyToRunImplicit>
   </PropertyGroup>
 

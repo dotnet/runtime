@@ -86,7 +86,7 @@ jobs:
         ${{ if eq(parameters.readyToRun, true) }}:
           value: /p:TestWasmReadyToRun=true /p:EnableAggressiveTrimming=true
         ${{ else }}:
-          value: ''
+          value: /p:TestWasmReadyToRun=false
 
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}

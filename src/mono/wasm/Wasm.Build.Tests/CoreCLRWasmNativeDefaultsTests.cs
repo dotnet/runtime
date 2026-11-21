@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Xunit;
 using Xunit.Abstractions;
@@ -145,6 +146,81 @@ namespace Wasm.Build.Tests
 
             Assert.NotNull(line);
             Assert.Contains("** WasmBuildNative: 'true'", line);
+        }
+
+        [Theory]
+        [InlineData(Configuration.Debug, null, true, true)]
+        [InlineData(Configuration.Release, null, true, false)]
+        [InlineData(Configuration.Debug, null, false, false)]
+        [InlineData(Configuration.Release, null, false, false)]
+        [InlineData(Configuration.Debug, "false", true, false)]
+        [InlineData(Configuration.Release, "false", true, false)]
+        [InlineData(Configuration.Release, "true", true, true)]
+        [TestCategory("no-workload")]
+        public void ReadyToRunDefaultsPreserveBuildSelection(Configuration config, string? readyToRun, bool webcil, bool expectPrebuilt)
+        {
+            string readyToRunProperty = readyToRun is null ? "" : $"<PublishReadyToRun>{readyToRun}</PublishReadyToRun>";
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_r2r_defaults",
+                extraProperties: $"{readyToRunProperty}<WasmEnableWebcil>{webcil.ToString().ToLowerInvariant()}</WasmEnableWebcil>",
+                insertAtEnd: $$"""
+                    <Target Name="CheckReadyToRunDefaults" DependsOnTargets="_WasmCoreClrSelectR2RDirectories">
+                        <Error Condition="'$(PublishReadyToRun)' != '{{readyToRun ?? "true"}}'" Text="Unexpected publish R2R selection: $(PublishReadyToRun)" />
+                        <Error Condition="'$(_WasmUsePrebuiltReadyToRun)' != '{{expectPrebuilt.ToString().ToLowerInvariant()}}'" Text="Unexpected build R2R selection: $(_WasmUsePrebuiltReadyToRun)" />
+                        <Error Text="Stopping after validating ReadyToRun defaults" />
+                    </Target>
+                    """);
+
+            (string _, string output) = BuildProject(
+                info,
+                config,
+                new BuildOptions(ExpectSuccess: false, ExtraMSBuildArgs: "-t:CheckReadyToRunDefaults"));
+
+            Assert.Contains("Stopping after validating ReadyToRun defaults", output);
+
+            Assert.NotNull(_projectDir);
+            using JsonDocument assets = JsonDocument.Parse(File.ReadAllText(Path.Combine(_projectDir, "obj", "project.assets.json")));
+            bool restoresCrossgen2 = assets.RootElement.GetProperty("project").GetProperty("frameworks").EnumerateObject()
+                .SelectMany(framework => framework.Value.GetProperty("downloadDependencies").EnumerateArray())
+                .Any(dependency => dependency.GetProperty("name").GetString()?.StartsWith("Microsoft.NETCore.App.Crossgen2.", StringComparison.Ordinal) == true);
+            Assert.Equal(readyToRun is not "false", restoresCrossgen2);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [TestCategory("no-workload")]
+        public void PublishPreloadSkipsNativeNestedPublish(bool nestedPublish)
+        {
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_publish_preload",
+                extraProperties: $"""
+                    <WasmBuildingForNestedPublish>{nestedPublish.ToString().ToLowerInvariant()}</WasmBuildingForNestedPublish>
+                    <_WasmPreloadAssets>true</_WasmPreloadAssets>
+                    """,
+                insertAtEnd: """
+                    <Target Name="CheckPublishPreload" DependsOnTargets="_AddWasmPreloadPublishProperties">
+                        <Error Text="Publish boot configuration was skipped" />
+                    </Target>
+                    <Target Name="DetectPublishBootConfiguration" BeforeTargets="_ResolvePublishWasmBootJsonInputs">
+                        <Error Text="Publish boot configuration was requested" />
+                    </Target>
+                    """);
+
+            (string _, string output) = BuildProject(
+                info,
+                Configuration.Debug,
+                new BuildOptions(ExpectSuccess: false, ExtraMSBuildArgs: "-t:CheckPublishPreload"));
+
+            Assert.Contains(
+                nestedPublish ? "Publish boot configuration was skipped" : "Publish boot configuration was requested",
+                output);
         }
 
         [Fact]

@@ -974,7 +974,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <StaticWebAssetEndpoint Include="@(_UpdatedWasmPreloadBuildAssetEndpoint)" />
     </ItemGroup>
   </Target>
-  <Target Name="_AddWasmPreloadPublishProperties" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
+  <Target Name="_AddWasmPreloadPublishProperties" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'">
 
     <FilterStaticWebAssetEndpoints
       Endpoints="@(StaticWebAssetEndpoint)"

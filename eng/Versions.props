@@ -29,6 +29,8 @@
     <_DotnetSdkVersion>$(MicrosoftDotNetGenAPITaskPackageVersion)</_DotnetSdkVersion>
     <SdkVersionForWorkloadTesting Condition="$([System.String]::Compare('$(_GlobalJsonSdkVersion)', '$(_DotnetSdkVersion)')) &lt;= 0">$(_DotnetSdkVersion)</SdkVersionForWorkloadTesting>
     <SdkVersionForWorkloadTesting Condition="'$(SdkVersionForWorkloadTesting)' == ''">$(_GlobalJsonSdkVersion)</SdkVersionForWorkloadTesting>
+    <!-- Minimum SDK for the CoreCLR browser R2R restore default. -->
+    <SdkVersionForWorkloadTesting Condition="$([System.String]::Compare('$(SdkVersionForWorkloadTesting)', '12.0.100-alpha.1.26565.104')) &lt; 0">12.0.100-alpha.1.26565.104</SdkVersionForWorkloadTesting>
     <SdkMajorVersion>$([System.String]::Copy('$(SdkVersionForWorkloadTesting)').Split('.')[0])</SdkMajorVersion>
     <SdkBandVersion>$(SdkMajorVersion).0.100</SdkBandVersion>
     <SdkPreReleaseLabel>$([System.Text.RegularExpressions.Regex]::Match($(SdkVersionForWorkloadTesting), '-(?!rtm|servicing)(.+)\.[^.]+\.[^.]+$').Groups[1].Value)</SdkPreReleaseLabel>
