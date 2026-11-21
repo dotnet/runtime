@@ -18,6 +18,11 @@ public:
     {
     }
 
+    const int Size() const
+    {
+        return static_cast<int>(data.size());
+    }
+
     const T& Top() const
     {
         assert(!data.empty());

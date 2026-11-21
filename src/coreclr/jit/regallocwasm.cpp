@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "algorithm.h"
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -1281,6 +1282,71 @@ unsigned int WasmRegAlloc::ComputeIndexBase(FuncInfoDsc* funcInfo, regNumber spV
     return indexBase;
 }
 
+void WasmRegAlloc::AssignIntervals(jitstd::vector<Interval*>* intervals, PhysicalRegBank* regBankMap)
+{
+    struct PhysRegPool
+    {
+        jitstd::vector<regNumber>* Regs;
+    };
+
+    PhysRegPool physRegPoolMap[static_cast<unsigned>(WasmValueType::Count)]{};
+    for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
+    {
+        physRegPoolMap[static_cast<unsigned>(type)].Regs = new (m_compiler->getAllocator(CMK_LSRA)) jitstd::vector<regNumber>(m_compiler->getAllocator(CMK_LSRA));
+    }
+
+    auto numAvail = [&](WasmValueType type) 
+    {
+        return physRegPoolMap[static_cast<unsigned>(type)].Regs->size();
+    };
+
+    auto nextReg = [&](WasmValueType type) 
+    {
+        jitstd::vector<regNumber>* regs = physRegPoolMap[static_cast<unsigned>(type)].Regs;
+        assert(!regs->empty());
+        regNumber reg = regs->back();
+        regs->pop_back();
+        return reg;
+    };
+
+    auto laterEnd = [](Interval* a, Interval* b) {
+        return a->end > b->end;
+    };
+    PriorityQueue<Interval*, decltype(laterEnd)> activeQueue(m_compiler->getAllocator(CMK_LSRA), laterEnd);
+
+    auto expireOld = [&](Interval* current) {
+        while (activeQueue.Size() > 0 && activeQueue.Top()->end <= current->start)
+        {
+            JITDUMP("Expiring interval [%d, %d]:virtReg%d\n", activeQueue.Top()->start, activeQueue.Top()->end, activeQueue.Top()->virtReg);
+            Interval* interval = activeQueue.Top();
+            activeQueue.Pop();
+            assert(genIsValidReg(interval->physReg));
+            physRegPoolMap[static_cast<unsigned>(WasmRegToType(interval->virtReg))].Regs->push_back(interval->physReg);
+        }
+    };
+
+    jitstd::sort(intervals->begin(), intervals->end(), [](Interval* a, Interval* b) {
+        return a->start < b->start;
+    });
+
+    for (Interval* interval : *intervals)
+    {
+        JITDUMP("Assigning reg for interval: [%d, %d]:virtReg %d\n", interval->start, interval->end, interval->virtReg);
+        expireOld(interval);
+        WasmValueType type = WasmRegToType(interval->virtReg);
+        if (numAvail(type) == 0)
+        {
+            interval->physReg = regBankMap[static_cast<unsigned>(type)].AllocPhysReg(interval->virtReg);
+        }
+        else
+        {
+            interval->physReg = nextReg(type);
+        }
+
+        activeQueue.Push(interval);
+    }
+}
+
 //------------------------------------------------------------------------
 // ResolveReferences: Translate virtual registers to physical ones (WASM locals).
 //
@@ -1313,13 +1379,6 @@ void WasmRegAlloc::ResolveReferences()
             allocatedTemporaryRegs.Regs[i] = AllocateVirtualRegister(type);
         }
     }
-
-    struct PhysicalRegBank
-    {
-        unsigned DeclaredCount;
-        unsigned IndexBase;
-        unsigned Index;
-    };
 
     auto canReuseAbiReg = [](regNumber virtReg, regNumber abiReg) {
         return genIsValidReg(virtReg) && (WasmRegToType(virtReg) == WasmRegToType(abiReg));
@@ -1355,15 +1414,6 @@ void WasmRegAlloc::ResolveReferences()
                 return true;
             }
             return false;
-        };
-
-        // Create a new phys reg in the regbank for the given virtReg
-        auto allocPhysReg = [&](regNumber virtReg) {
-            WasmValueType type         = WasmRegToType(virtReg);
-            unsigned      physRegIndex = regBankByType[static_cast<unsigned>(type)].Index++;
-            regBankByType[static_cast<unsigned>(type)].DeclaredCount++;
-            regNumber physReg                    = MakeWasmReg(physRegIndex, type);
-            return physReg;
         };
 
         auto allocABIReg = [&](regNumber virtReg, LclVarDsc* varDsc) 
@@ -1416,7 +1466,7 @@ void WasmRegAlloc::ResolveReferences()
             // a new phys reg now
             if (physReg == REG_NA)
             {
-                physReg = allocPhysReg(virtReg);
+                physReg = regBankByType[static_cast<unsigned>(WasmRegToType(virtReg))].AllocPhysReg(virtReg);
             }
 
             assert(genIsValidReg(physReg));
@@ -1459,6 +1509,29 @@ void WasmRegAlloc::ResolveReferences()
                 }
             }
         }
+
+        // At this point, physRegBankByType should reflect the declaration count necessary for all locals needed to home
+        // ABI parameters. Each local index remains relative to the IndexBase, which is unset at this point. We can't set it
+        // until we know how many locals we will actually need. Therefore, the below regNum assignments for enregistered locals
+        // represent Wasm-type relative local indices. Assign (index relative) physical registers to each interval
+        jitstd::vector<Interval*>* intervals = new (m_compiler->getAllocator(CMK_LSRA)) jitstd::vector<Interval*>(m_compiler->getAllocator());
+        for (size_t i = 0; i < intervals->size(); i++)
+        {
+            if (data->m_intervals[i] != nullptr)
+            {
+                intervals->push_back(data->m_intervals[i]);
+            }
+        }
+        AssignIntervals(intervals, regBankByType);
+
+        //
+        // We will update the LclVarDsc at the end of this method to be the assignments
+        // for the main method.
+        //
+        // Then when codegen calls back to the allocator via recordVarLocationsAtStartOfBB
+        // we will either verify the assignments are correct for the block, or update them
+        // using the per-funclet mappings kept in the per-funclet m_physicalRegAssignments.
+        //
 
 
         // Allocate temporary regs to physical regs for each wasm value type

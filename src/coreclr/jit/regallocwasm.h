@@ -78,11 +78,13 @@ struct Interval
     int       start;
     int       end;
     regNumber virtReg;
+    regNumber physReg;
 
     Interval(regNumber virtReg)
         : start(INT_MAX)
         , end(INT_MIN)
         , virtReg(virtReg)
+        , physReg(REG_NA)
     {
     }
 };
@@ -191,9 +193,29 @@ private:
     void BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* funcletData);
     void DumpIntervals();
 
+    struct PhysicalRegBank
+    {
+        unsigned DeclaredCount;
+        unsigned IndexBase;
+        unsigned Index;
+
+
+        // Create a new phys reg in the regbank for the given virtReg
+        regNumber AllocPhysReg(regNumber virtReg) {
+            WasmValueType type         = WasmRegToType(virtReg);
+            unsigned      physRegIndex = Index++;
+            DeclaredCount++;
+            regNumber physReg                    = MakeWasmReg(physRegIndex, type);
+            return physReg;
+        }
+
+    };
+
     void ResolveReferences();
+    void AssignIntervals(jitstd::vector<Interval*>* intervals, PhysicalRegBank* regBankByType);
 
     void PublishAllocationResults();
+
 };
 
 using RegAllocImpl = WasmRegAlloc;
