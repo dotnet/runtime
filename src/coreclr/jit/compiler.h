@@ -8518,6 +8518,7 @@ public:
 
     BitVecTraits* optReachableBitVecTraits;
     BitVec        optReachableBitVec;
+    bool          optRboNeedsSsaRebuild = false; // RBO must rebuild SSA and VNs (set by jump threading)
     void          optRelopImpliesRelop(RelopImplicationInfo* rii);
     bool          optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
                                                       const VNFuncApp&      treeApp,
