@@ -11,7 +11,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #include "jitpch.h"
-#include <minipal/debugger.h>
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -341,10 +340,12 @@ int vflogf(FILE* file, const char* fmt, va_list args)
     char      buffer[BUFF_SIZE];
     int       written = _vsnprintf_s(&buffer[0], BUFF_SIZE, _TRUNCATE, fmt, args);
 
+#ifdef HOST_WINDOWS
     if (JitConfig.JitDumpToDebugger())
     {
-        minipal_output_debug_string(buffer);
+        OutputDebugStringA(buffer);
     }
+#endif // HOST_WINDOWS
 
     if (file == procstdout())
     {

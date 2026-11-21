@@ -13,7 +13,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #include "jitpch.h"
-#include <minipal/debugger.h>
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -11401,7 +11400,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /******************************** NYI *******************************/
 
             case 0xCC:
-                minipal_output_debug_string("CLR: Invalid x86 breakpoint in IL stream\n");
+#ifdef HOST_WINDOWS
+                OutputDebugStringA("CLR: Invalid x86 breakpoint in IL stream\n");
+#endif // HOST_WINDOWS
                 FALLTHROUGH;
 
             case CEE_ILLEGAL:

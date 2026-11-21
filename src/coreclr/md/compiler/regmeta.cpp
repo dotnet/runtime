@@ -9,7 +9,6 @@
 //
 //*****************************************************************************
 #include "stdafx.h"
-#include <minipal/debugger.h>
 #include "regmeta.h"
 #include "metadata.h"
 #include "corerror.h"
@@ -744,14 +743,14 @@ ErrExit:
 
 int DumpMD_Write(_In_ _In_z_ const char *str)
 {
-    minipal_output_debug_string(str);
+    OutputDebugStringUtf8(str);
     return 0; // strlen(str);
 } // int DumpMD_Write()
 
 int DumpMD_WriteLine(_In_ _In_z_ const char *str)
 {
-    minipal_output_debug_string(str);
-    minipal_output_debug_string("\n");
+    OutputDebugStringUtf8(str);
+    OutputDebugStringUtf8("\n");
     return 0; // strlen(str);
 } // int DumpMD_Write()
 
@@ -773,7 +772,7 @@ int DumpMD_VWriteMarker(_In_ _In_z_ const char *str, va_list marker)
         va_end(markerCopy);
         i *= 2;
     }
-    minipal_output_debug_string((LPCSTR)m_output.Ptr());
+    OutputDebugStringUtf8((LPCSTR)m_output.Ptr());
     return count;
 } // int DumpMD_VWriteMarker()
 

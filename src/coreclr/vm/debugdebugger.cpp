@@ -200,16 +200,17 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     }
     CONTRACTL_END;
 
+#ifndef TARGET_UNIX
     // OutputDebugString will log to native/interop debugger.
     if (pwzModule != NULL)
     {
-        minipal_output_debug_string_utf16((const CHAR16_T*)pwzModule);
-        minipal_output_debug_string(" : ");
+        OutputDebugString(pwzModule);
+        OutputDebugString(W(" : "));
     }
 
     if (pwzMessage != NULL)
     {
-        minipal_output_debug_string_utf16((const CHAR16_T*)pwzMessage);
+        OutputDebugString(pwzMessage);
     }
 
     // If we're not logging a module prefix, then don't log the newline either.
@@ -218,8 +219,9 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     // already prepending that to the message, so we append a newline for readability.
     if (pwzModule != NULL)
     {
-        minipal_output_debug_string("\n");
+        OutputDebugString(W("\n"));
     }
+#endif // !TARGET_UNIX
 
 
 #ifdef DEBUGGING_SUPPORTED

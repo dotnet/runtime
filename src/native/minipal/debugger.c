@@ -162,27 +162,3 @@ bool minipal_is_native_debugger_present(void)
     return false;
 #endif
 }
-
-void minipal_output_debug_string(const char* message)
-{
-#if defined(_WIN32)
-    OutputDebugStringA(message);
-#elif defined(__wasi__)
-    if (message != NULL)
-    {
-        fputs(message, stderr);
-    }
-#else
-    // There is no debugger channel for these strings.
-    (void)message;
-#endif
-}
-
-void minipal_output_debug_string_utf16(const CHAR16_T* message)
-{
-#if defined(_WIN32)
-    OutputDebugStringW(message);
-#else
-    (void)message;
-#endif
-}

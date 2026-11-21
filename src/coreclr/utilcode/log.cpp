@@ -5,7 +5,6 @@
 // Simple Logging Facility
 //
 #include "stdafx.h"
-#include <minipal/debugger.h>
 #include <minipal/thread.h>
 
 //
@@ -348,7 +347,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 
     if (LogFlags & LOG_ENABLE_DEBUGGER_LOGGING)
     {
-        minipal_output_debug_string(pBuffer);
+        OutputDebugStringUtf8(pBuffer);
     }
 
     LeaveLogLock();

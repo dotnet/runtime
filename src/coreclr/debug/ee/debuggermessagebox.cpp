@@ -124,9 +124,6 @@ static int UtilMessageBoxNonLocalized(
             1024,                   // event identifier
             NULL,                   // no user security identifier
             message.GetUnicode());
-
-        minipal_output_debug_string_utf16((const CHAR16_T*)lpTitle);
-        minipal_output_debug_string_utf16((const CHAR16_T*)lpText);
 #endif // HOST_UNIX
 #endif //!defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 

@@ -25,21 +25,6 @@ bool minipal_can_check_for_native_debugger(void);
  */
 bool minipal_is_native_debugger_present(void);
 
-/**
- * Send a string to the attached debugger. On Windows this is OutputDebugStringA. Elsewhere there is
- * no debugger channel, so the string is dropped (WASI writes it to stderr).
- *
- * @param message The string to send.
- */
-void minipal_output_debug_string(const char* message);
-
-/**
- * UTF-16 version of minipal_output_debug_string. On Windows this is OutputDebugStringW.
- *
- * @param message The string to send.
- */
-void minipal_output_debug_string_utf16(const CHAR16_T* message);
-
 #ifdef __cplusplus
 }
 #endif

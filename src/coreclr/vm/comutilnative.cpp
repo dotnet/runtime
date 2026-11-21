@@ -9,7 +9,6 @@
 ===========================================================*/
 
 #include "common.h"
-#include <minipal/debugger.h>
 #include "object.h"
 #include "excep.h"
 #include "vars.hpp"
@@ -1251,16 +1250,18 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
     findCallerData.retAddress = 0;
     GetThread()->StackWalkFrames(FindFailFastCallerCallback, &findCallerData, FUNCTIONSONLY | QUICKUNWIND);
 
+#ifndef TARGET_UNIX
     if (message == NULL || message[0] == W('\0'))
     {
-        minipal_output_debug_string("CLR: Managed code called FailFast without specifying a reason.\r\n");
+        OutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
     }
     else
     {
-        minipal_output_debug_string("CLR: Managed code called FailFast.\r\n");
-        minipal_output_debug_string_utf16((const CHAR16_T*)message);
-        minipal_output_debug_string("\r\n");
+        OutputDebugString(W("CLR: Managed code called FailFast.\r\n"));
+        OutputDebugString(message);
+        OutputDebugString(W("\r\n"));
     }
+#endif // !TARGET_UNIX
 
     LPCWSTR argExceptionString = NULL;
     StackSString msg;
