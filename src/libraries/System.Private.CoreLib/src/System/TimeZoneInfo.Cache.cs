@@ -687,6 +687,82 @@ namespace System
         }
 
         /// <summary>
+        /// Adds the transitions produced by a recurring daylight saving rule, starting at the end of the last added transition
+        /// (or at the rule start if later) and continuing in chronological order until at least <paramref name="coverageEnd"/>.
+        /// </summary>
+        /// <remarks>
+        /// The rule may take effect at any instant of a year, possibly while daylight saving time is active,
+        /// so the state at the start is derived from the rule's last transition at or before that instant rather than from a calendar year.
+        /// </remarks>
+        /// <param name="transitions">The array of transitions.</param>
+        /// <param name="count">The current count of transitions.</param>
+        /// <param name="rule">The recurring adjustment rule, with its DateStart in UTC.</param>
+        /// <param name="coverageEnd">The UTC time that must be covered by the added transitions.</param>
+        private void AddRecurringRuleTransitions(ref TimeTransition[] transitions, ref int count, AdjustmentRule rule, DateTime coverageEnd)
+        {
+            Debug.Assert(!rule.NoDaylightTransitions);
+
+            long cursor = count > 0 ? Math.Max(transitions[count - 1].DateEnd.Ticks + 1, rule.DateStart.Ticks) : rule.DateStart.Ticks;
+            if (cursor > DateTime.MaxTicks)
+            {
+                return;
+            }
+
+            int firstYear = Math.Max(1, new DateTime(cursor).Year - 1);
+            int lastYear = Math.Max(firstYear, Math.Min(MaxYear, coverageEnd.Year + 1));
+
+            // Each year contributes a daylight start and a daylight end, converted to UTC using the offset in effect just before each one.
+            const int StackAllocThreshold = 32;
+            int changeCount = 2 * (lastYear - firstYear + 1);
+            Span<RecurringRuleChange> changes = changeCount <= StackAllocThreshold ?
+                stackalloc RecurringRuleChange[StackAllocThreshold] :
+                new RecurringRuleChange[changeCount];
+            changes = changes.Slice(0, changeCount);
+
+            int changeIndex = 0;
+            for (int y = firstYear; y <= lastYear; y++)
+            {
+                changes[changeIndex++] = new RecurringRuleChange(GetUtcDateTimeFromLocalTicks(StartTransitionTimeToDateTime(y, rule).Ticks, rule).Ticks, DaylightSavingOn: true);
+                changes[changeIndex++] = new RecurringRuleChange(GetUtcDateTimeFromLocalTicks(EndTransitionTimeToDateTime(y, rule).Ticks, rule, includeDaylightDelta: true).Ticks, DaylightSavingOn: false);
+            }
+
+            changes.Sort(static (left, right) => left.Ticks.CompareTo(right.Ticks));
+
+            int index = 0;
+            bool daylightSavingOn = !changes[0].DaylightSavingOn;
+            while (index < changeCount && changes[index].Ticks <= cursor)
+            {
+                daylightSavingOn = changes[index++].DaylightSavingOn;
+            }
+
+            while (true)
+            {
+                while (index < changeCount && changes[index].DaylightSavingOn == daylightSavingOn)
+                {
+                    index++;
+                }
+
+                long end = index < changeCount ? changes[index].Ticks - 1 : DateTime.MaxTicks;
+                AddTransition(ref transitions, ref count,
+                    new TimeTransition(
+                        SafeCreateDateTimeFromTicks(cursor),
+                        SafeCreateDateTimeFromTicks(end),
+                        daylightSavingOn ? GetRuleFullUtcOffset(rule) : rule.BaseUtcOffsetDelta,
+                        daylightSavingOn && rule.HasDaylightSaving));
+
+                if (index >= changeCount || end >= coverageEnd.Ticks)
+                {
+                    break;
+                }
+
+                cursor = changes[index].Ticks;
+                daylightSavingOn = changes[index++].DaylightSavingOn;
+            }
+        }
+
+        private readonly record struct RecurringRuleChange(long Ticks, bool DaylightSavingOn);
+
+        /// <summary>
         /// Caches the time zone transitions for a specific year.
         /// </summary>
         /// <param name="year">The year for which to cache transitions.</param>
@@ -861,78 +937,19 @@ namespace System
                         else
                         {
                             //
-                            // Next Rule is Windows style with local start and end dates
+                            // Next Rule is Windows style with local start and end dates. This is the recurring rule built from
+                            // the TZif footer, and it takes effect at the UTC instant stored in its DateStart.
                             //
 
-                            int nextYear = Math.Min(year + 1, nextRule.DateStart.Year);
-                            DateTime nextYearStart = StartTransitionTimeToDateTime(nextYear, nextRule); // in local time
-                            DateTime nextYearEnd = EndTransitionTimeToDateTime(nextYear, nextRule);     // in local time
-
-                            if (nextYearStart < nextYearEnd)
+                            if (allTransitions[transitionCount - 1].DateEnd.Ticks < nextRule.DateStart.Ticks - 1)
                             {
-                                //
-                                // Next year has one transition
-                                //
-
-                                // Get next rule start in UTC coordinates
-                                DateTime nextYearStartUtc = GetUtcDateTimeFromLocalTicks(nextYearStart.Ticks, nextRule);
-                                if (allTransitions[transitionCount - 1].DateEnd.Ticks < nextYearStartUtc.Ticks - 1)
-                                {
-                                    // Fill the transition gap between the previous year transition end and next year transition start
-                                    AddTransition(ref allTransitions, ref transitionCount,
-                                        new TimeTransition(allTransitions[transitionCount - 1].DateEnd.AddTicks(1), nextYearStartUtc.AddTicks(-1), nextRule.BaseUtcOffsetDelta, false));
-                                }
-
-                                // Add next year transition
                                 AddTransition(ref allTransitions, ref transitionCount,
-                                    new TimeTransition(
-                                            nextYearStartUtc,
-                                            GetUtcDateTimeFromLocalTicks(nextYearEnd.Ticks, nextRule, includeDaylightDelta: true, tickAdjustment: -1),
-                                            GetRuleFullUtcOffset(nextRule),
-                                            nextRule.HasDaylightSaving));
-                            }
-                            else // nextYearStart > nextYearEnd
-                            {
-                                //
-                                // Next year has two transitions, the first start at the beginning of the year and the second ends at the end of the year
-                                //
-
-                                // The daylight should be starting from the beginning in the year and then go till next year transition end date.
-                                DateTime nextYearEndUtc = GetUtcDateTimeFromLocalTicks(nextYearEnd.Ticks, nextRule, includeDaylightDelta: true, tickAdjustment: -1);
-                                DateTime nextBeginningOfYearUtc = GetUtcDateTimeFromLocalTicks(new DateTime(year + 1, 1, 1).Ticks, nextRule, includeDaylightDelta: true);
-
-                                if (allTransitions[transitionCount - 1].DateEnd.Ticks < nextBeginningOfYearUtc.Ticks - 1)
-                                {
-                                    // Fill the gap between the previous year transition end and next year transition start
-                                    AddTransition(ref allTransitions, ref transitionCount,
-                                        // Use previous year rule, daylight included as the year started with the daylight
-                                        new TimeTransition(allTransitions[transitionCount - 1].DateEnd.AddTicks(1), nextBeginningOfYearUtc.AddTicks(-1), GetRuleFullUtcOffset(rule), rule.HasDaylightSaving));
-                                }
-
-                                if (allTransitions[transitionCount - 1].DateEnd < nextYearEndUtc)
-                                {
-                                    AddTransition(ref allTransitions, ref transitionCount,
-                                        new TimeTransition(
-                                                allTransitions[transitionCount - 1].DateEnd.AddTicks(1),
-                                                nextYearEndUtc,
-                                                GetRuleFullUtcOffset(nextRule),
-                                                nextRule.HasDaylightSaving));
-                                }
+                                    new TimeTransition(allTransitions[transitionCount - 1].DateEnd.AddTicks(1), nextRule.DateStart.AddTicks(-1), nextRule.BaseUtcOffsetDelta, false));
                             }
 
-                            if (allTransitions[transitionCount - 1].DateEnd < endOfCurrentYear)
-                            {
-                                // Ensure covering up to and including the end of the year in local and Utc time
-                                if (nextRule.BaseUtcOffsetDelta.Ticks > 0)
-                                {
-                                    endOfCurrentYear = SafeCreateDateTimeFromTicks(endOfCurrentYear.Ticks + nextRule.BaseUtcOffsetDelta.Ticks);
-                                }
+                            AddRecurringRuleTransitions(ref allTransitions, ref transitionCount, nextRule, SafeCreateDateTimeFromTicks(endOfCurrentYear.Ticks + TimeSpan.TicksPerDay));
 
-                                AddTransition(ref allTransitions, ref transitionCount,
-                                    new TimeTransition(allTransitions[transitionCount - 1].DateEnd.AddTicks(1), endOfCurrentYear, nextRule.BaseUtcOffsetDelta, false));
-                            }
-
-                            break; // We know Windows Rules cover the whole year
+                            break; // The recurring rule covers the rest of the year
                         }
                     }
                     else
