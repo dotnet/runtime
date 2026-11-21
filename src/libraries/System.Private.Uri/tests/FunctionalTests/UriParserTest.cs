@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.PrivateUri.Tests
@@ -603,6 +604,105 @@ namespace System.PrivateUri.Tests
                 Assert.Same(uri1.OriginalString, uri2.OriginalString);
                 Assert.Equal("foo", uri1.Host);
                 Assert.Equal("foo", uri2.Host);
+            }
+        }
+
+        [Theory]
+        [InlineData("[fe80::1%1]", "[fe80::1%2]", false, true)]
+        [InlineData("[fe80::1%1]", "[fe80::1]", true, true)]
+        [InlineData("[fe80::1%1]", "[fe80::1%1]", true, false)]
+        [InlineData("first.test", "[fe80::1]", true, true)]
+        public static void CustomParser_EqualsAndGetHashCode_UseRequestUrl(string firstHost, string secondHost, bool useHttpScheme, bool expected)
+        {
+            bool rewriteHost = firstHost == "first.test";
+            string scheme = $"custom-ipv6-scope-{useHttpScheme}-{rewriteHost}-{expected}";
+            var parser = new CustomParser_FormatsRequestUrlWithoutParsingHost(rewriteHost ? "[fe80::1%1]" : null);
+            UriParser.Register(parser, scheme, 80);
+
+            var firstUri = new Uri($"{scheme}://{firstHost}/");
+            var secondUri = new Uri($"{(useHttpScheme ? Uri.UriSchemeHttp : scheme)}://{secondHost}/");
+            Assert.Equal(expected, firstUri.Equals(secondUri));
+            Assert.Equal(expected, secondUri.Equals(firstUri));
+
+            int firstHashCode = firstUri.GetHashCode();
+            var uris = new HashSet<Uri> { firstUri, secondUri };
+            Assert.Equal(firstUri.GetComponents(UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped).GetHashCode(), firstHashCode);
+            Assert.Equal(0, parser.HostRequests);
+            Assert.Equal(0, parser.PortRequests);
+
+            Assert.Equal("fe80::1%1", firstUri.IdnHost);
+            Assert.Equal(firstHashCode, firstUri.GetHashCode());
+            Assert.Equal(expected, firstUri.Equals(secondUri));
+            Assert.Equal(expected, secondUri.Equals(firstUri));
+            Assert.Equal(expected ? 1 : 2, uris.Count);
+            Assert.Contains(firstUri, uris);
+            if (expected)
+            {
+                Assert.Equal(firstHashCode, secondUri.GetHashCode());
+            }
+        }
+
+        [Theory]
+        [InlineData("2", false)]
+        [InlineData("1", true)]
+        public static void RegisteredSimpleParser_EqualsAndGetHashCode_IncludeIPv6ScopeId(string secondScopeId, bool expected)
+        {
+            string scheme = $"simple-ipv6-scope-{secondScopeId}";
+            UriParser.Register(new GenericUriParser(GenericUriParserOptions.Default), scheme, 80);
+
+            var firstUri = new Uri($"{scheme}://[fe80::1%1]/");
+            var secondUri = new Uri($"{scheme}://[FE80:0:0:0:0:0:0:1%{secondScopeId}]/");
+            Assert.Equal(expected, firstUri.Equals(secondUri));
+            Assert.Equal(expected, secondUri.Equals(firstUri));
+            Assert.Equal(expected ? 1 : 2, new HashSet<Uri> { firstUri, secondUri }.Count);
+            if (expected)
+            {
+                Assert.Equal(firstUri.GetHashCode(), secondUri.GetHashCode());
+            }
+        }
+
+        private sealed class CustomParser_FormatsRequestUrlWithoutParsingHost(string? hostOverride) : GenericUriParser(GenericUriParserOptions.Default)
+        {
+            public int HostRequests;
+            public int PortRequests;
+
+            protected override void InitializeAndValidate(Uri uri, out UriFormatException? parsingError)
+            {
+                if (hostOverride is not null)
+                {
+                    parsingError = null;
+                }
+                else
+                {
+                    base.InitializeAndValidate(uri, out parsingError);
+                }
+            }
+
+            protected override string GetComponents(Uri uri, UriComponents components, UriFormat format)
+            {
+                if (components == UriComponents.HttpRequestUrl)
+                {
+                    return "http://[fe80::1]/";
+                }
+
+                if (components == UriComponents.Host)
+                {
+                    HostRequests++;
+                    if (hostOverride is not null)
+                    {
+                        return hostOverride;
+                    }
+                }
+                else if (components == UriComponents.StrongPort)
+                {
+                    PortRequests++;
+                    if (hostOverride is not null)
+                    {
+                        return "80";
+                    }
+                }
+
+                return base.GetComponents(uri, components, format);
             }
         }
 
