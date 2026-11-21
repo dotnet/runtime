@@ -18,6 +18,7 @@ namespace Internal.IL
             ReadOnly = 1 << 1,
             PermanentHome = 1 << 2,
             ThisPtr = 1 << 3,
+            UnknownClass = 1 << 4,
         }
         private StackValueFlags Flags;
 
@@ -65,6 +66,11 @@ namespace Internal.IL
             get { return (Flags & StackValueFlags.ThisPtr) == StackValueFlags.ThisPtr; }
         }
 
+        public bool IsUnknownClass
+        {
+            get { return (Flags & StackValueFlags.UnknownClass) == StackValueFlags.UnknownClass; }
+        }
+
         public bool IsNullReference
         {
             get { return Kind == StackValueKind.ObjRef && Type == null; }
@@ -104,6 +110,13 @@ namespace Internal.IL
         static public StackValue CreateObjRef(TypeDesc type)
         {
             return new StackValue(StackValueKind.ObjRef, type);
+        }
+
+        // An object reference whose class is not known, such as one that ldind.ref loads through an unmanaged pointer.
+        // Unlike null, it can be the target of a closed delegate.
+        static public StackValue CreateObjRefOfUnknownClass()
+        {
+            return new StackValue(StackValueKind.ObjRef, null, null, StackValueFlags.UnknownClass);
         }
 
         static public StackValue CreateValueType(TypeDesc type)

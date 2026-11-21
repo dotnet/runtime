@@ -23,6 +23,8 @@ All Classes and Methods in C:\test\hello.dll Verified.
 
 Note that `ILVerify` requires all dependencies of assembly that is being verified to be explicitly specified on the command line.
 
+With `--validation-only`, ILVerify reports invalid IL. It accepts valid IL that is unverifiable because it uses unmanaged pointers, `localloc`, `calli` or other instructions that are never verifiable. Managed references are still checked for type safety, except in patterns that the C# compiler emits in unsafe code. Where ILVerify cannot tell whether IL is valid, it still reports it: for example, any managed pointer passed in a tail call.
+
 ## Other tools
 Historically on .NET Framework IL generators used PEVerify to make sure that they generated correct IL. PEVerify has some major limitations (e.g. it is tied to the .NET Framework, it cannot verify mscorlib.dll, etc.), which initiated this project.
 
@@ -74,6 +76,17 @@ The method name must contain 2 '`_`' characters.
  3. part: the expected [VerifierErrors](../ILVerification/VerifierError.cs) as string separated by '.'. We assert on these errors; the test fails if ILVerify does not report these errors.
 
  E.g.: ```SimpleAdd_Invalid_ExpectedNumericType```
+
+### Validation-only mode:
+
+Every Valid and Invalid method is also verified with `VerifierOptions.ValidationOnly` set. In this mode, some errors for valid but unverifiable IL are not reported. A Valid method is expected to have no errors in this mode too. An Invalid method is expected to have the same errors, unless its name ends with a suffix that gives the errors expected in this mode:
+```
+[FriendlyName]_Invalid_[ExpectedVerifierError1]....[ExpectedVerifierErrorN]_Validation_[Valid | ExpectedVerifierError1....ExpectedVerifierErrorN]
+```
+
+ E.g.: ```LocAlloc_Invalid_Unverifiable_Validation_Valid```
+
+A malformed suffix fails the tests: a second suffix, a suffix on a method that is not Invalid, or an error name that is not a `VerifierError`.
 
 ### Methods with special names:
 
