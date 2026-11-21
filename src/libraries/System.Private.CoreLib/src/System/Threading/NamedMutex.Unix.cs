@@ -197,6 +197,12 @@ namespace System.Threading
 
         internal static unsafe SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>? CreateOrOpen(string name, bool isUserScope, bool createIfNotExist, bool acquireLockIfCreated, out bool created)
         {
+            if (acquireLockIfCreated)
+            {
+                // Allocate before acquiring the underlying lock: failing after acquisition would leave the lock held without an ownership chain entry.
+                Thread.CurrentThread.WaitInfo.EnsureNamedMutexOwnershipChain();
+            }
+
             WaitSubsystem.LockHolder creationDeletionProcessLock = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
             try
             {
@@ -694,6 +700,9 @@ namespace System.Threading
             public int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, ref LockHolder lockHolder)
             {
                 lockHolder.Dispose();
+
+                // Allocate before acquiring the underlying lock: failing after acquisition would leave the lock held without an ownership chain entry.
+                waitInfo.EnsureNamedMutexOwnershipChain();
 
                 NamedMutexProcessDataBase.UnrecordedMutexAcquisition acquisition = _processDataHeader._processData!.TryAcquireLock(timeoutMilliseconds);
                 LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
