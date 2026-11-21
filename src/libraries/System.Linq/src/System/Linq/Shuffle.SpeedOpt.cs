@@ -205,8 +205,10 @@ namespace System.Linq
 
                 if (source is IList<TSource> list)
                 {
+                    // ShuffleIterator.Take only uses this iterator for a list with more than takeCount elements,
+                    // but the list may have been changed since then, so go by the number of elements it has now.
                     int listCount = list.Count;
-                    Debug.Assert(listCount > takeCount, "Known listCount <= takeCount should have been handled by Iterator.Take override");
+                    takeCount = Math.Min(takeCount, listCount);
 
                     reservoir = new(takeCount);
 
