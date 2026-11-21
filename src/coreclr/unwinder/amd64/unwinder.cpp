@@ -3,7 +3,11 @@
 
 //
 
+#if defined(NATIVEAOT)
+#include "UnwinderPal.h"
+#else
 #include "stdafx.h"
+#endif
 #include "unwinder.h"
 
 typedef DPTR(M128A)  PTR_M128A;

@@ -251,6 +251,22 @@ namespace ILCompiler
                 var dehydratedDataNode = new DehydratedDataNode();
                 header.Add(ReadyToRunSectionType.DehydratedData, dehydratedDataNode);
             }
+
+            // Unix targets describe managed frames with compact unwind descriptors instead of DWARF CFI or ARM EHABI.
+            // Mach-O objects don't share code, so each module of a multi-file compilation has a table.
+            if (!nodeFactory.Target.IsWindows && !nodeFactory.Target.IsWasm)
+            {
+                if (nodeFactory.CompilationModuleGroup.IsSingleFileCompilation || nodeFactory.Target.IsApplePlatform)
+                {
+                    nodeFactory.CompactUnwindTable = new CompactUnwindTableNode();
+                    header.Add(ReadyToRunSectionType.CompactUnwindTable, nodeFactory.CompactUnwindTable);
+                }
+                else
+                {
+                    nodeFactory.CompactUnwindRecords = new CompactUnwindRecordsNode();
+                    header.Add(ReadyToRunSectionType.CompactUnwindRecords, nodeFactory.CompactUnwindRecords);
+                }
+            }
         }
 
         protected virtual void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)

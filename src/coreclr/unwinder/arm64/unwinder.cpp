@@ -3,7 +3,9 @@
 
 //
 
-#if defined(NATIVEAOT)
+#if defined(NATIVEAOT) && defined(TARGET_UNIX)
+#include "UnwinderPal.h"
+#elif defined(NATIVEAOT)
 #include "common.h"
 #include <windows.h>
 #include "rhassert.h"
@@ -32,7 +34,9 @@
 #include "crosscomp.h"
 #endif
 
+#if !defined(NATIVEAOT) || !defined(TARGET_UNIX)
 #include "clrnt.h"
+#endif
 #include "unwinder.h"
 
 #define NOTHING
@@ -2447,6 +2451,39 @@ ExecuteCodes:
             //
             // TODO: Implement support for UnwindFlags RTL_VIRTUAL_UNWIND2_VALIDATE_PAC.
             //
+        }
+
+        //
+        // save_regp_rev (11111001|pf0xxxxx|00zzzzzz): NativeAOT extension in the
+        //      reserved range below. Save the pair <r(19+#X+1), r(19+#X)>, or with f
+        //      the pair <d(8+#X+1), d(8+#X)>, in that order at [sp+#Z*8], or with p
+        //      at [sp-(#Z+1)*8]!.
+        //
+
+        else if (CurCode == 0xf9) {
+            if (AccumulatedSaveNexts != 0) {
+                return STATUS_UNWIND_INVALID_SEQUENCE;
+            }
+            NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
+            ULONG Offset = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr + 1) & 0x3f;
+            UnwindCodePtr += 2;
+            BOOLEAN PreIndexed = (NextCode & 0x80) != 0;
+            ULONG FirstRegister = NextCode & 0x1f;
+            LONG LowOffset = PreIndexed ? 0 : 8 * Offset;
+            LONG HighOffset = PreIndexed ? -8 * (LONG)(Offset + 1) : 8 * Offset + 8;
+
+            // The higher register is at the lower address, so restore the lower register at the higher address first
+            if ((NextCode & 0x40) != 0) {
+                Status = RtlpUnwindRestoreFpRegisterRange(ContextRecord, LowOffset + 8, 8 + FirstRegister, 1, UnwindParams);
+                if (Status == STATUS_SUCCESS) {
+                    Status = RtlpUnwindRestoreFpRegisterRange(ContextRecord, PreIndexed ? HighOffset : LowOffset, 9 + FirstRegister, 1, UnwindParams);
+                }
+            } else {
+                Status = RtlpUnwindRestoreRegisterRange(ContextRecord, LowOffset + 8, 19 + FirstRegister, 1, UnwindParams);
+                if (Status == STATUS_SUCCESS) {
+                    Status = RtlpUnwindRestoreRegisterRange(ContextRecord, PreIndexed ? HighOffset : LowOffset, 20 + FirstRegister, 1, UnwindParams);
+                }
+            }
         }
 
         //

@@ -9824,11 +9824,8 @@ public:
 
     bool generateCFIUnwindCodes()
     {
-#if defined(FEATURE_CFI_SUPPORT)
-        return TargetOS::IsUnix && IsTargetAbi(CORINFO_NATIVEAOT_ABI);
-#else
+        // NativeAOT on Unix describes managed frames with Windows unwind codes, like CoreCLR does for JIT'ed code
         return false;
-#endif
     }
 
     // Debugging support - Line number info
@@ -10199,10 +10196,13 @@ public:
     void unwindSaveRegPreindexed(regNumber reg, int offset);                      // str reg, [sp, #offset]!
     void unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset);           // stp reg1, reg2, [sp, #offset]
     void unwindSaveRegPairPreindexed(regNumber reg1, regNumber reg2, int offset); // stp reg1, reg2, [sp, #offset]!
-    void unwindSaveNext();                                                        // unwind code: save_next
-    void unwindPacSignLR();                                                       // unwind code: pac_sign_lr
-    void unwindReturn(regNumber reg);                                             // ret lr
-#endif                                                                            // defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
+    void unwindSaveRegPairReversed(regNumber reg, int z, bool preindexed); // stp reg + 1, reg
+#endif
+    void unwindSaveNext();            // unwind code: save_next
+    void unwindPacSignLR();           // unwind code: pac_sign_lr
+    void unwindReturn(regNumber reg); // ret lr
+#endif                                // defined(TARGET_ARM64)
 
 #if defined(TARGET_LOONGARCH64)
     void unwindNop();

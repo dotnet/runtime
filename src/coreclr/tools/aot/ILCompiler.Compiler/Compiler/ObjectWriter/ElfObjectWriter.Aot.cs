@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -13,7 +12,6 @@ using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
 using static ILCompiler.DependencyAnalysis.RelocType;
-using static ILCompiler.ObjectWriter.EabiNative;
 using static ILCompiler.ObjectWriter.ElfNative;
 
 namespace ILCompiler.ObjectWriter
@@ -35,9 +33,7 @@ namespace ILCompiler.ObjectWriter
     /// </remarks>
     internal sealed partial class ElfObjectWriter : UnixObjectWriter
     {
-        private Dictionary<int, (SectionWriter ExidxSectionWriter, SectionWriter ExtabSectionWriter)> _armUnwindSections;
-        private static readonly ObjectNodeSection ArmUnwindIndexSection = new ObjectNodeSection(".ARM.exidx", SectionType.UnwindData);
-        private static readonly ObjectNodeSection ArmUnwindTableSection = new ObjectNodeSection(".ARM.extab", SectionType.ReadOnly);
+        private static readonly ObjectNodeSection CompactUnwindRecordsSection = new ObjectNodeSection(CompactUnwindRecordsNode.SectionName, SectionType.ReadOnly);
 
         // GNU ld and lld place arm64 range extension thunks between input sections. Only arm64 opts in:
         // the split has not been validated with the arm and loongarch64 linkers and runtime.
@@ -45,121 +41,43 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void CreateEhSections()
         {
-            // ARM creates the EHABI sections lazily in EmitUnwindInfo
-            if (_machine is not EM_ARM)
+            base.CreateEhSections();
+
+            if (_nodeFactory.CompactUnwindRecords is not null)
             {
-                base.CreateEhSections();
+                _hiddenUndefinedSymbols.Add(CompactUnwindRecordsNode.StartSymbolName);
+                _hiddenUndefinedSymbols.Add(CompactUnwindRecordsNode.StopSymbolName);
             }
         }
 
-        private protected override void EmitUnwindInfo(
-            SectionWriter sectionWriter,
-            INodeWithCodeInfo nodeWithCodeInfo,
-            Utf8String currentSymbolName)
+        private protected override void AddCompactUnwindRecords(SectionWriter codeSectionWriter, INodeWithCodeInfo nodeWithCodeInfo, Utf8String currentSymbolName, bool shareSymbol, Utf8String[] lsdaSymbolNames)
         {
-            if (_machine is not EM_ARM)
+            FrameInfo[] frameInfos = nodeWithCodeInfo.FrameInfos;
+
+            // The records of a method belong to its COMDAT group so that the linker keeps them with the method
+            SectionWriter recordsSectionWriter = shareSymbol ?
+                GetOrCreateSection(CompactUnwindRecordsSection, currentSymbolName, Utf8String.Concat("_cunwind0"u8, currentSymbolName.AsSpan())) :
+                GetOrCreateSection(CompactUnwindRecordsSection);
+            recordsSectionWriter.EmitAlignment(4);
+
+            Span<byte> i_str = stackalloc byte[16];
+            for (int i = 0; i < frameInfos.Length; i++)
             {
-                base.EmitUnwindInfo(sectionWriter, nodeWithCodeInfo, currentSymbolName);
-                return;
-            }
+                FrameInfo frameInfo = frameInfos[i];
 
-            if (nodeWithCodeInfo.FrameInfos is FrameInfo[] frameInfos &&
-                nodeWithCodeInfo is ISymbolDefinitionNode)
-            {
-                SectionWriter exidxSectionWriter;
-                SectionWriter extabSectionWriter;
-
-                if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo))
+                // ARM method symbols include the Thumb bit, while the record refers to the first instruction
+                Utf8String codeSymbolName = currentSymbolName;
+                long codeOffset = frameInfo.StartOffset;
+                if (_machine is EM_ARM)
                 {
-                    exidxSectionWriter = GetOrCreateSection(ArmUnwindIndexSection, currentSymbolName, Utf8String.Concat("_unwind0"u8, currentSymbolName.AsSpan()));
-                    extabSectionWriter = GetOrCreateSection(ArmUnwindTableSection, currentSymbolName, Utf8String.Concat("_extab0"u8, currentSymbolName.AsSpan()));
-                    _sections[exidxSectionWriter.SectionIndex].LinkSection = _sections[sectionWriter.SectionIndex];
-                }
-                else
-                {
-                    _armUnwindSections ??= new();
-                    if (_armUnwindSections.TryGetValue(sectionWriter.SectionIndex, out var unwindSections))
-                    {
-                        exidxSectionWriter = unwindSections.ExidxSectionWriter;
-                        extabSectionWriter = unwindSections.ExtabSectionWriter;
-                    }
-                    else
-                    {
-                        string sectionName = _sections[sectionWriter.SectionIndex].Name;
-                        exidxSectionWriter = GetOrCreateSection(new ObjectNodeSection($"{ArmUnwindIndexSection.Name}{sectionName}", ArmUnwindIndexSection.Type));
-                        extabSectionWriter = GetOrCreateSection(new ObjectNodeSection($"{ArmUnwindTableSection.Name}{sectionName}", ArmUnwindTableSection.Type));
-                        _sections[exidxSectionWriter.SectionIndex].LinkSection = _sections[sectionWriter.SectionIndex];
-                        _armUnwindSections.Add(sectionWriter.SectionIndex, (exidxSectionWriter, extabSectionWriter));
-                    }
+                    codeSymbolName = _utf8StringBuilder.Clear().Append("_fram"u8).Append(FormatUtf8Int(i_str, i)).Append(currentSymbolName).ToUtf8String();
+                    codeSectionWriter.EmitSymbolDefinition(codeSymbolName, frameInfo.StartOffset);
+                    codeOffset = 0;
                 }
 
-                long mainLsdaOffset = 0;
-                Span<byte> unwindWord = stackalloc byte[4];
-                Span<byte> i_str = stackalloc byte[16];
-                for (int i = 0; i < frameInfos.Length; i++)
-                {
-                    FrameInfo frameInfo = frameInfos[i];
-                    int start = frameInfo.StartOffset;
-                    int end = frameInfo.EndOffset;
-                    byte[] blob = frameInfo.BlobData;
-
-                    Utf8String framSymbolName = _utf8StringBuilder.Clear().Append("_fram"u8).Append(FormatUtf8Int(i_str, i)).Append(currentSymbolName).ToUtf8String();
-                    Utf8String extabSymbolName = _utf8StringBuilder.Clear().Append("_extab"u8).Append(FormatUtf8Int(i_str, i)).Append(currentSymbolName).ToUtf8String();
-
-                    sectionWriter.EmitSymbolDefinition(framSymbolName, start);
-
-                    // Emit the index info
-                    exidxSectionWriter.EmitSymbolReference(IMAGE_REL_ARM_PREL31, framSymbolName);
-                    exidxSectionWriter.EmitSymbolReference(IMAGE_REL_ARM_PREL31, extabSymbolName);
-
-                    Span<byte> armUnwindInfo = EabiUnwindConverter.ConvertCFIToEabi(blob);
-                    string personalitySymbolName;
-
-                    if (armUnwindInfo.Length <= 3)
-                    {
-                        personalitySymbolName = "__aeabi_unwind_cpp_pr0";
-                        unwindWord[3] = 0x80;
-                        unwindWord[2] = (byte)(armUnwindInfo.Length > 0 ? armUnwindInfo[0] : 0xB0);
-                        unwindWord[1] = (byte)(armUnwindInfo.Length > 1 ? armUnwindInfo[1] : 0xB0);
-                        unwindWord[0] = (byte)(armUnwindInfo.Length > 2 ? armUnwindInfo[2] : 0xB0);
-                        armUnwindInfo = Span<byte>.Empty;
-                    }
-                    else
-                    {
-                        Debug.Assert(armUnwindInfo.Length <= 1024);
-                        personalitySymbolName = "__aeabi_unwind_cpp_pr1";
-                        unwindWord[3] = 0x81;
-                        unwindWord[2] = (byte)(((armUnwindInfo.Length - 2) + 3) / 4);
-                        unwindWord[1] = armUnwindInfo[0];
-                        unwindWord[0] = armUnwindInfo[1];
-                        armUnwindInfo = armUnwindInfo.Slice(2);
-                    }
-
-                    extabSectionWriter.EmitAlignment(4);
-                    extabSectionWriter.EmitSymbolDefinition(extabSymbolName);
-
-                    // ARM EHABI requires emitting a dummy relocation to the personality routine
-                    // to tell the linker to preserve it.
-                    extabSectionWriter.EmitRelocation(0, unwindWord, IMAGE_REL_BASED_ABSOLUTE, new Utf8String(personalitySymbolName), 0);
-
-                    // Emit the unwinding code. First word specifies the personality routine,
-                    // format and first few bytes of the unwind code. For longer unwind codes
-                    // the other words follow. They are padded with the "finish" instruction
-                    // (0xB0).
-                    extabSectionWriter.Write(unwindWord);
-                    while (armUnwindInfo.Length > 0)
-                    {
-                        unwindWord[3] = (byte)(armUnwindInfo.Length > 0 ? armUnwindInfo[0] : 0xB0);
-                        unwindWord[2] = (byte)(armUnwindInfo.Length > 1 ? armUnwindInfo[1] : 0xB0);
-                        unwindWord[1] = (byte)(armUnwindInfo.Length > 2 ? armUnwindInfo[2] : 0xB0);
-                        unwindWord[0] = (byte)(armUnwindInfo.Length > 3 ? armUnwindInfo[3] : 0xB0);
-                        extabSectionWriter.Write(unwindWord);
-                        armUnwindInfo = armUnwindInfo.Length > 3 ? armUnwindInfo.Slice(4) : Span<byte>.Empty;
-                    }
-
-                    // Emit our LSDA info directly into the exception table
-                    EmitLsda(nodeWithCodeInfo, frameInfos, i, extabSectionWriter, ref mainLsdaOffset);
-                }
+                recordsSectionWriter.EmitSymbolReference(IMAGE_REL_BASED_RELPTR32, codeSymbolName, codeOffset);
+                recordsSectionWriter.WriteLittleEndian<uint>((uint)(frameInfo.EndOffset - frameInfo.StartOffset));
+                recordsSectionWriter.EmitSymbolReference(IMAGE_REL_BASED_RELPTR32, lsdaSymbolNames[i]);
             }
         }
     }

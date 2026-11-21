@@ -267,10 +267,26 @@ bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
     return true;
 }
 
+#if defined(TARGET_UNIX) && !defined(FEATURE_PORTABLE_HELPERS)
+extern "C" bool RhpAddCompactUnwindTable(ICodeManager* pCodeManager, void* pTable, int length);
+extern "C" bool RhpSetCompactUnwindRecords(ICodeManager* pCodeManager, void* pHeader, int length);
+#endif
+
 FCIMPL4(TypeManagerHandle, RhpCreateTypeManager, HANDLE osModule, void* pModuleHeader, PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions)
 {
     TypeManager * typeManager = TypeManager::Create(osModule, pModuleHeader, pClasslibFunctions, nClasslibFunctions);
     GetRuntimeInstance()->RegisterTypeManager(typeManager);
+
+#if defined(TARGET_UNIX) && !defined(FEATURE_PORTABLE_HELPERS)
+    int compactUnwindLength;
+    void* pCompactUnwindTable = typeManager->GetModuleSection(ReadyToRunSectionType::CompactUnwindTable, &compactUnwindLength);
+    if (pCompactUnwindTable != NULL && !RhpAddCompactUnwindTable(GetRuntimeInstance()->GetCodeManager(), pCompactUnwindTable, compactUnwindLength))
+        RhFailFast();
+
+    void* pCompactUnwindRecords = typeManager->GetModuleSection(ReadyToRunSectionType::CompactUnwindRecords, &compactUnwindLength);
+    if (pCompactUnwindRecords != NULL && !RhpSetCompactUnwindRecords(GetRuntimeInstance()->GetCodeManager(), pCompactUnwindRecords, compactUnwindLength))
+        RhFailFast();
+#endif
 
     return TypeManagerHandle::Create(typeManager);
 }
