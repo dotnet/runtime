@@ -170,6 +170,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_LoadCustomIcuData Condition="'$(_LoadCustomIcuData)' == ''">false</_LoadCustomIcuData>
       <_BlazorIcuDataFileName Condition="'$(_LoadCustomIcuData)' == 'true' AND Exists('$(BlazorIcuDataFileName)')">$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
       <_BlazorIcuDataFileName Condition="'$(_LoadCustomIcuData)' == 'true' AND !Exists('$(BlazorIcuDataFileName)') AND !$([System.IO.Path]::IsPathRooted($(BlazorIcuDataFileName)))">$(_RuntimePackNativeDir)$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
+      <_BlazorIcuDataFileName Condition="'$(_LoadCustomIcuData)' == 'true' AND !Exists('$(_BlazorIcuDataFileName)') AND '$(_WasmPrecompressedNativeDirectory)' != '' AND !$([System.IO.Path]::IsPathRooted($(BlazorIcuDataFileName))) AND Exists('$(_WasmPrecompressedNativeDirectory)$(BlazorIcuDataFileName)')">$(_WasmPrecompressedNativeDirectory)$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' != 'true'">$(BlazorWebAssemblyLoadAllGlobalizationData)</_BlazorWebAssemblyLoadAllGlobalizationData>
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(_BlazorWebAssemblyLoadAllGlobalizationData)' == ''">false</_BlazorWebAssemblyLoadAllGlobalizationData>
     </PropertyGroup>

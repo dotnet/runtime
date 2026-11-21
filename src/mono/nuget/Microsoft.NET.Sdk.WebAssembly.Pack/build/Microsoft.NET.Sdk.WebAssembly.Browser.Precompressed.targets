@@ -1,0 +1,117 @@
+<Project>
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ResolvePrecompressedWasmRuntimeAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ResolvePrecompressedWasmAssemblies" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.DefinePrecompressedWasmAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
+
+  <Target Name="_ResolvePrecompressedWasmRuntimeAssets"
+          AfterTargets="ResolveRuntimePackAssets">
+    <ItemGroup>
+      <_WasmCoreRuntimePack Include="@(ResolvedRuntimePack)" Condition="'%(FrameworkName)' == 'Microsoft.NETCore.App'" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_WasmPrecompressedPackDirectory>$(MicrosoftNetCoreAppRuntimePackDir)</_WasmPrecompressedPackDirectory>
+      <_WasmPrecompressedPackDirectory Condition="'$(_WasmPrecompressedPackDirectory)' == ''">@(_WasmCoreRuntimePack->'%(PackageDirectory)')</_WasmPrecompressedPackDirectory>
+      <_WasmPrecompressedManifest>$(_WasmPrecompressedPackDirectory)/data/PrecompressedAssets.xml</_WasmPrecompressedManifest>
+      <_WasmPrecompressedNativeDirectory Condition="Exists('$(_WasmPrecompressedManifest)')">$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'precompressed-native'))</_WasmPrecompressedNativeDirectory>
+    </PropertyGroup>
+    <ResolvePrecompressedWasmRuntimeAssets Condition="Exists('$(_WasmPrecompressedManifest)')"
+        RuntimePackDirectory="$(_WasmPrecompressedPackDirectory)"
+        OutputPath="$(_WasmPrecompressedNativeDirectory)"
+        RuntimeAssets="@(RuntimePackAsset)" CopyLocalAssets="@(ReferenceCopyLocalPaths)">
+      <Output TaskParameter="UpdatedRuntimeAssets" ItemName="_WasmPrecompressedRuntimeAssets" />
+      <Output TaskParameter="UpdatedCopyLocalAssets" ItemName="_WasmPrecompressedCopyLocalAssets" />
+      <Output TaskParameter="Representations" ItemName="_WasmPrecompressedNativeRepresentations" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </ResolvePrecompressedWasmRuntimeAssets>
+    <ItemGroup Condition="Exists('$(_WasmPrecompressedManifest)')">
+      <RuntimePackAsset Remove="@(RuntimePackAsset)" />
+      <RuntimePackAsset Include="@(_WasmPrecompressedRuntimeAssets)" />
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
+      <ReferenceCopyLocalPaths Include="@(_WasmPrecompressedCopyLocalAssets)" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <_WasmWebcilStampProperty Include="_WasmPrecompressedSelectionStamp" />
+  </ItemGroup>
+
+  <!-- Native relinking and the ReadyToRun directory are known only after candidate computation. -->
+  <Target Name="_ResolvePrecompressedWasmAssemblies"
+          AfterTargets="_ComputeWasmBuildCandidates"
+          Condition="Exists('$(_WasmPrecompressedManifest)')">
+    <PropertyGroup>
+      <_WasmUsePrecompressedAssets>false</_WasmUsePrecompressedAssets>
+      <_WasmUsePrecompressedAssets Condition="'$(Configuration)' == 'Debug' and '$(_WasmEnableWebcil)' == 'true' and
+          '$(_WasmWebcilVersion)' != '0' and '$(BlazorIcuDataFileName)' == '' and '$(WasmPerformanceInstrumentation)' == '' and
+          '$(PublishReadyToRun)' != 'true' and '$(WasmBuildNative)' != 'true' and '$(RunAOTCompilation)' != 'true' and
+          '$(_IsPublishing)' != 'true' and '$(DeployOnBuild)' != 'true' and
+          '$(WasmBuildOnlyAfterPublish)' != 'true' and '$(WasmBuildingForNestedPublish)' != 'true'">true</_WasmUsePrecompressedAssets>
+      <_WasmPrecompressedPackR2RDirectory>$([MSBuild]::NormalizeDirectory('$(_WasmPrecompressedPackDirectory)', 'runtimes', 'browser-wasm', 'native', 'r2r'))</_WasmPrecompressedPackR2RDirectory>
+      <!-- The pack ships ReadyToRun images only as gzip; decode them when the SDK stages them without reuse. -->
+      <_WasmMaterializePrecompressedR2R Condition="'$(_WasmUsePrecompressedAssets)' != 'true' and
+          '$(_WasmBuildPrebuiltR2RDirectory)' == '$(_WasmPrecompressedPackR2RDirectory)'">true</_WasmMaterializePrecompressedR2R>
+    </PropertyGroup>
+    <ResolvePrecompressedWasmRuntimeAssets Condition="'$(_WasmMaterializePrecompressedR2R)' == 'true'"
+        RuntimePackDirectory="$(_WasmPrecompressedPackDirectory)"
+        OutputPath="$(_WasmPrecompressedNativeDirectory)" IncludeReadyToRun="true">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </ResolvePrecompressedWasmRuntimeAssets>
+    <PropertyGroup Condition="'$(_WasmMaterializePrecompressedR2R)' == 'true'">
+      <_WasmRuntimePackR2RDir>$([MSBuild]::NormalizeDirectory('$(_WasmPrecompressedNativeDirectory)', 'r2r'))</_WasmRuntimePackR2RDir>
+      <_WasmBuildPrebuiltR2RDirectory>$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
+    </PropertyGroup>
+    <ResolvePrecompressedWasmAssemblies Condition="'$(_WasmUsePrecompressedAssets)' == 'true'"
+        RuntimePackDirectory="$(_WasmPrecompressedPackDirectory)"
+        OutputPath="$(_WasmBuildWebcilPath)"
+        PrebuiltR2RDirectory="$(_WasmBuildPrebuiltR2RDirectory)"
+        WebcilVersion="$(_WasmWebcilVersion)"
+        Candidates="@(_WasmDllBuildCandidates)">
+      <Output TaskParameter="UpdatedCandidates" ItemName="_WasmPrecompressedAssemblyCandidates" />
+      <Output TaskParameter="ConversionCandidates" ItemName="_WasmPrecompressedConversionCandidates" />
+      <Output TaskParameter="Representations" ItemName="_WasmPrecompressedAssemblyRepresentations" />
+      <Output TaskParameter="SelectionStamp" PropertyName="_WasmPrecompressedSelectionStamp" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </ResolvePrecompressedWasmAssemblies>
+    <ItemGroup Condition="'$(_WasmUsePrecompressedAssets)' == 'true'">
+      <_WasmDllBuildCandidatesNonCulture Remove="@(_WasmDllBuildCandidatesNonCulture)" />
+      <_WasmDllBuildCandidatesNonCulture Include="@(_WasmPrecompressedAssemblyCandidates)" Condition="'%(AssetTraitName)' != 'Culture'" />
+      <_WasmDllBuildCandidatesCulture Remove="@(_WasmDllBuildCandidatesCulture)" />
+      <_WasmDllBuildCandidatesCulture Include="@(_WasmPrecompressedAssemblyCandidates)" Condition="'%(AssetTraitName)' == 'Culture'" />
+      <_WasmDllBuildCandidates Remove="@(_WasmDllBuildCandidates)" />
+      <_WasmDllBuildCandidates Include="@(_WasmPrecompressedConversionCandidates)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_DefinePrecompressedWasmAssets"
+          AfterTargets="_AddWasmStaticWebAssets"
+          Condition="'$(_WasmUsePrecompressedAssets)' == 'true' and '$(DisableBuildCompression)' != 'true' and Exists('$(_WasmPrecompressedManifest)')">
+    <DefinePrecompressedWasmAssets
+        Representations="@(_WasmPrecompressedNativeRepresentations);@(_WasmPrecompressedAssemblyRepresentations)"
+        Assets="@(StaticWebAsset)" Endpoints="@(StaticWebAssetEndpoint)"
+        FrameworkAssets="@(_WasmFrameworkAssets)" MaterializedFrameworkAssets="@(_WasmMaterializedFrameworkAssets)">
+      <Output TaskParameter="GzipAssets" ItemName="_WasmPrecompressedGzipCandidates" />
+    </DefinePrecompressedWasmAssets>
+    <DefineStaticWebAssets CandidateAssets="@(_WasmPrecompressedGzipCandidates)">
+      <Output TaskParameter="Assets" ItemName="_WasmPrecompressedGzipAssets" />
+    </DefineStaticWebAssets>
+    <UpdatePackageStaticWebAssets
+        Assets="@(_WasmPrecompressedGzipAssets)"
+        IntermediateOutputPath="$(IntermediateOutputPath)"
+        ProjectPackageId="$(PackageId)"
+        ProjectBasePath="$(StaticWebAssetBasePath)">
+      <Output TaskParameter="UpdatedAssets" ItemName="_WasmPrecompressedMaterializedGzipAssets" />
+    </UpdatePackageStaticWebAssets>
+    <ItemGroup>
+      <_WasmPrecompressedMaterializedGzipAssets Update="@(_WasmPrecompressedMaterializedGzipAssets)" AssetMode="All" />
+      <FileWrites Include="@(_WasmPrecompressedMaterializedGzipAssets)" />
+    </ItemGroup>
+    <DefineStaticWebAssetEndpoints CandidateAssets="@(_WasmPrecompressedMaterializedGzipAssets)"
+        ExistingEndpoints="@(StaticWebAssetEndpoint)" ContentTypeMappings="@(StaticWebAssetContentTypeMapping)">
+      <Output TaskParameter="Endpoints" ItemName="_WasmPrecompressedGzipEndpoints" />
+    </DefineStaticWebAssetEndpoints>
+    <ItemGroup>
+      <StaticWebAsset Include="@(_WasmPrecompressedMaterializedGzipAssets)" />
+      <StaticWebAssetEndpoint Include="@(_WasmPrecompressedGzipEndpoints)" />
+    </ItemGroup>
+  </Target>
+</Project>
