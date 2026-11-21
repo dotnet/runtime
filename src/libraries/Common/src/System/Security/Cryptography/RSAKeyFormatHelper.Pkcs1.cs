@@ -20,6 +20,11 @@ namespace System.Security.Cryptography
         {
             ValueRSAPrivateKeyAsn.Decode(keyData, ruleSet, out ValueRSAPrivateKeyAsn key);
 
+            if (key.Version < 0)
+            {
+                throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
+            }
+
             const int MaxSupportedVersion = 0;
 
             if (key.Version > MaxSupportedVersion)

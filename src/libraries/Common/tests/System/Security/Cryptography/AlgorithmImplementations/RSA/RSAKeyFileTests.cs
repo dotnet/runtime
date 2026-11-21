@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
 using System.Security.Cryptography.Encryption.RC2.Tests;
 using System.Security.Cryptography.Tests;
 using System.Text;
@@ -17,6 +18,36 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         public bool Supports384BitPrivateKeyAndRC2 => RSAFactory.Supports384PrivateKey && RC2Factory.IsSupported;
         public bool SupportsLargeExponent => RSAFactory.SupportsLargeExponent;
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(1)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void ImportRSAPrivateKey_InvalidVersion(int version)
+        {
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                AsnReader reader = new AsnReader(rsa.ExportRSAPrivateKey(), AsnEncodingRules.DER).ReadSequence();
+                Assert.Equal(0, reader.ReadInteger());
+
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                writer.PushSequence();
+                writer.WriteInteger(version);
+
+                while (reader.HasData)
+                {
+                    writer.WriteEncodedValue(reader.ReadEncodedValue().Span);
+                }
+
+                writer.PopSequence();
+                byte[] pkcs1 = writer.Encode();
+                int bytesRead = -1;
+
+                Assert.Throws<CryptographicException>(() => rsa.ImportRSAPrivateKey(pkcs1, out bytesRead));
+                Assert.Equal(-1, bytesRead);
+                Assert.Throws<CryptographicException>(() => rsa.ImportFromPem(PemEncoding.WriteString("RSA PRIVATE KEY", pkcs1)));
+            }
+        }
 
         [Theory]
         [InlineData(false)]
