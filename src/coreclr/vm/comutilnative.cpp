@@ -1253,13 +1253,13 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
 
     if (message == NULL || message[0] == W('\0'))
     {
-        minipal_output_debug_string_utf16((const CHAR16_T*)W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
+        minipal_output_debug_string("CLR: Managed code called FailFast without specifying a reason.\r\n");
     }
     else
     {
-        minipal_output_debug_string_utf16((const CHAR16_T*)W("CLR: Managed code called FailFast.\r\n"));
+        minipal_output_debug_string("CLR: Managed code called FailFast.\r\n");
         minipal_output_debug_string_utf16((const CHAR16_T*)message);
-        minipal_output_debug_string_utf16((const CHAR16_T*)W("\r\n"));
+        minipal_output_debug_string("\r\n");
     }
 
     LPCWSTR argExceptionString = NULL;

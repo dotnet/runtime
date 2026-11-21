@@ -204,7 +204,7 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     if (pwzModule != NULL)
     {
         minipal_output_debug_string_utf16((const CHAR16_T*)pwzModule);
-        minipal_output_debug_string_utf16((const CHAR16_T*)W(" : "));
+        minipal_output_debug_string(" : ");
     }
 
     if (pwzMessage != NULL)
@@ -218,7 +218,7 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     // already prepending that to the message, so we append a newline for readability.
     if (pwzModule != NULL)
     {
-        minipal_output_debug_string_utf16((const CHAR16_T*)W("\n"));
+        minipal_output_debug_string("\n");
     }
 
 
