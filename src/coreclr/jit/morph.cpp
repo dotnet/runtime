@@ -2887,6 +2887,26 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
 #endif
 
 //------------------------------------------------------------------------
+// fgTreeMayModifyLocal: Check whether evaluating a tree may modify a local.
+//
+// Arguments:
+//    tree   - The tree to check
+//    lclNum - The local
+//
+// Return Value:
+//    True if evaluating the tree may modify the local.
+//
+bool Compiler::fgTreeMayModifyLocal(GenTree* tree, unsigned lclNum)
+{
+    if ((tree->gtFlags & (GTF_ASG | GTF_CALL)) == 0)
+    {
+        return false;
+    }
+
+    return lvaGetDesc(lclNum)->IsAddressExposed() || gtHasRef(tree, lclNum);
+}
+
+//------------------------------------------------------------------------
 // fgMorphIndexAddr: Expand a GT_INDEX_ADDR node and fully morph the child operands.
 //
 // We expand the GT_INDEX_ADDR node into a larger tree that evaluates the array
@@ -2983,7 +3003,8 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         //
         if (((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) != 0) ||
             gtComplexityExceeds(arrRef, MAX_ARR_COMPLEXITY, countNode) || arrRef->OperIs(GT_LCL_FLD) ||
-            (arrRef->OperIs(GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(arrRef->AsLclVar()->GetLclNum())))
+            (arrRef->OperIs(GT_LCL_VAR) && (lvaIsLocalImplicitlyAccessedByRef(arrRef->AsLclVar()->GetLclNum()) ||
+                                            fgTreeMayModifyLocal(index, arrRef->AsLclVar()->GetLclNum()))))
         {
             unsigned arrRefTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
             arrRefDefn            = gtNewTempStore(arrRefTmpNum, arrRef);
@@ -15907,7 +15928,15 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
             unsigned rank      = arrElem->gtArrRank;
 
             // We are going to multiply reference the array object; create a new local var if necessary.
-            if (arrObj->OperIs(GT_LCL_VAR))
+            // A local can be reused only if evaluating the indices cannot modify it.
+            bool canReuseArrLcl = arrObj->OperIs(GT_LCL_VAR);
+            for (unsigned i = 0; canReuseArrLcl && anyIdxWithSideEffects && (i < rank); i++)
+            {
+                canReuseArrLcl =
+                    !m_compiler->fgTreeMayModifyLocal(arrElem->gtArrInds[i], arrObj->AsLclVar()->GetLclNum());
+            }
+
+            if (canReuseArrLcl)
             {
                 arrLcl = arrObj->AsLclVar()->GetLclNum();
             }
