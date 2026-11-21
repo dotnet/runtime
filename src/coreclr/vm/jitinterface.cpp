@@ -14545,12 +14545,13 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             {
                 if (pDeclMethod->IsStatic())
                 {
-                    pImplMethodRuntime = thImpl.GetMethodTable()->ResolveVirtualStaticMethod(
-                        pDeclMethod->GetMethodTable(),
-                        pDeclMethod,
-                        ResolveVirtualStaticMethodFlags::AllowNullResult |
-                        ResolveVirtualStaticMethodFlags::AllowVariantMatches |
-                        ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc);
+                    // Shared callers can encode canonical interfaces. Validate the same
+                    // stable target proof used when refining the constrained call.
+                    BOOL forceRuntimeLookup = FALSE;
+                    pImplMethodRuntime = thImpl.GetMethodTable()->TryResolveConstraintMethodApprox(
+                        TypeHandle(pDeclMethod->GetMethodTable()), pDeclMethod, &forceRuntimeLookup);
+                    if (forceRuntimeLookup)
+                        pImplMethodRuntime = NULL;
                 }
                 else
                 {
