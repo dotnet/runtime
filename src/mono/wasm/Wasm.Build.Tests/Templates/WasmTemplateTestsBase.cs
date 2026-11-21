@@ -588,8 +588,11 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (runOptions is BlazorRunOptions blazorOp && blazorOp.Test is not null)
             await blazorOp.Test(page);
 
-        _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
-        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(runOptions.TimeoutSeconds ?? 10));
+        // The app may still be downloading assets and booting the runtime at this point,
+        // which can take well over 10s on loaded CI machines (especially untrimmed CoreCLR builds).
+        int timeoutSeconds = runOptions.TimeoutSeconds ?? 60;
+        _testOutput.WriteLine($"Waiting up to {timeoutSeconds}s for the 'WASM EXIT' message");
+        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(timeoutSeconds));
         if (runOptions.ExpectedExitCode is not null && exitCode != runOptions.ExpectedExitCode)
             throw new Exception($"Expected exit code {runOptions.ExpectedExitCode} but got {exitCode}.\nconsoleOutput={string.Join("\n", consoleOutput)}");
 

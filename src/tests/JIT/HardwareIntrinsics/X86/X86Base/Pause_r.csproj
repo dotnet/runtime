@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AssemblyName>X86_Pause_r</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
