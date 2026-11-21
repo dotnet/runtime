@@ -438,7 +438,10 @@ public:
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
     void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
 
-    static GenTree* CreateCounterIncrement(Compiler* comp, uint8_t* counterAddr, var_types countType);
+    static GenTree* CreateCounterIncrement(Compiler* comp,
+                                           uint8_t*  counterBase,
+                                           size_t    counterOffset,
+                                           var_types countType);
 };
 
 //------------------------------------------------------------------------
@@ -583,11 +586,12 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     // When we have both interlocked and scalable profile modes enabled, we will
     // count both ways, so allocate two count slots per probe.
     //
-    if ((JitConfig.JitScalableProfiling() > 0) && (JitConfig.JitInterlockedProfiling() > 0))
+    if (!m_compiler->compR2RPgoInstrumentation() && (JitConfig.JitScalableProfiling() > 0) &&
+        (JitConfig.JitInterlockedProfiling() > 0))
     {
         numCountersPerProbe = 2;
     }
-    else if (JitConfig.JitCounterPadding() > 0)
+    else if (!m_compiler->compR2RPgoInstrumentation() && (JitConfig.JitCounterPadding() > 0))
     {
         numCountersPerProbe = (unsigned)JitConfig.JitCounterPadding();
     }
@@ -641,11 +645,10 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
     assert(block->bbCodeOffs == (IL_OFFSET)entry.ILOffset);
     assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
            (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
-    uint8_t* addrOfCurrentExecutionCount = entry.Offset + profileMemory;
-
 #ifdef DEBUG
-    if (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0)
+    if ((JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0) && !m_compiler->compR2RPgoInstrumentation())
     {
+        uint8_t* addrOfCurrentExecutionCount = entry.Offset + profileMemory;
         // Write the current synthesized count as the profile data
         //
         weight_t blockWeight = block->bbWeight;
@@ -666,7 +669,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
     var_types typ =
         entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
 
-    GenTree* incCount = CreateCounterIncrement(m_compiler, addrOfCurrentExecutionCount, typ);
+    GenTree* incCount = CreateCounterIncrement(m_compiler, profileMemory, entry.Offset, typ);
 
     if (block->HasFlag(BBF_TAILCALL_SUCCESSOR))
     {
@@ -704,16 +707,36 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 //
 // Arguments:
 //   comp        - compiler instance
-//   counterAddr - address of counter to increment
+//   counterBase - profile slab, or the R2R import cell containing its address
+//   counterOffset - counter offset relative to the slab
 //   countType   - type of counter
 //
 // Returns:
 //   A node that increments the specified count.
 //
-GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t* counterAddr, var_types countType)
+GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp,
+                                                        uint8_t*  counterBase,
+                                                        size_t    counterOffset,
+                                                        var_types countType)
 {
-    const bool interlocked = JitConfig.JitInterlockedProfiling() > 0;
-    const bool scalable    = JitConfig.JitScalableProfiling() > 0;
+    // The initial R2R implementation supports single-threaded Browser applications.
+    const bool interlocked = !comp->compR2RPgoInstrumentation() && (JitConfig.JitInterlockedProfiling() > 0);
+    const bool scalable    = !comp->compR2RPgoInstrumentation() && (JitConfig.JitScalableProfiling() > 0);
+
+    auto counterAddress = [comp, counterBase, &counterOffset]() -> GenTree* {
+#ifdef FEATURE_R2R_PGO
+        if (comp->compR2RPgoInstrumentation())
+        {
+            GenTree* base =
+                comp->gtNewIndOfIconHandleNode(TYP_I_IMPL, reinterpret_cast<size_t>(counterBase), GTF_ICON_BBC_PTR);
+            base->gtFlags |= GTF_IND_NONFAULTING;
+            return counterOffset == 0
+                       ? base
+                       : comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, base, comp->gtNewIconNode(counterOffset));
+        }
+#endif // FEATURE_R2R_PGO
+        return comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterBase) + counterOffset, GTF_ICON_BBC_PTR);
+    };
 
     if (interlocked || scalable)
     {
@@ -722,7 +745,7 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
         if (interlocked)
         {
             // Form counter address
-            GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+            GenTree* addressNode = counterAddress();
 
             // Interlocked increment
             result = comp->gtNewAtomicNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
@@ -733,11 +756,11 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
             if (interlocked)
             {
                 assert(result != nullptr);
-                counterAddr += (countType == TYP_INT) ? 4 : 8;
+                counterOffset += (countType == TYP_INT) ? 4 : 8;
             }
 
             // Form counter address
-            GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+            GenTree* addressNode = counterAddress();
 
             // Scalable increment
             GenTree* scalableNode = comp->gtNewHelperCallNode((countType == TYP_INT) ? CORINFO_HELP_COUNTPROFILE32
@@ -762,14 +785,22 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
 
     // Read Basic-Block count value
     GenTree* valueNode =
-        comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+        comp->compR2RPgoInstrumentation()
+            ? comp->gtNewIndir(countType, counterAddress(), GTF_IND_NONFAULTING)
+            : comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterBase) + counterOffset,
+                                             GTF_ICON_BBC_PTR);
 
     // Increment value by 1
     GenTree* incValueNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
 
     // Write new Basic-Block count value
-    GenTree* counterAddrNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+    GenTree* counterAddrNode = counterAddress();
     GenTree* updateNode      = comp->gtNewStoreIndNode(countType, counterAddrNode, incValueNode);
+    if (comp->compR2RPgoInstrumentation())
+    {
+        updateNode->gtFlags |= GTF_IND_NONFAULTING;
+        updateNode->gtFlags &= ~GTF_EXCEPT;
+    }
 
     return updateNode;
 }
@@ -1684,11 +1715,12 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
     // When we have both interlocked and scalable profile modes enabled, we will
     // count both ways, so allocate two count slots per probe.
     //
-    if ((JitConfig.JitScalableProfiling() > 0) && (JitConfig.JitInterlockedProfiling() > 0))
+    if (!m_compiler->compR2RPgoInstrumentation() && (JitConfig.JitScalableProfiling() > 0) &&
+        (JitConfig.JitInterlockedProfiling() > 0))
     {
         numCountersPerProbe = 2;
     }
-    else if (JitConfig.JitCounterPadding() > 0)
+    else if (!m_compiler->compR2RPgoInstrumentation() && (JitConfig.JitCounterPadding() > 0))
     {
         numCountersPerProbe = (unsigned)JitConfig.JitCounterPadding();
     }
@@ -1787,11 +1819,10 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
         assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount) ||
                (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount));
 
-        uint8_t* addrOfCurrentExecutionCount = profileMemory + entry.Offset;
-
 #ifdef DEBUG
-        if (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0)
+        if ((JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0) && !m_compiler->compR2RPgoInstrumentation())
         {
+            uint8_t* addrOfCurrentExecutionCount = profileMemory + entry.Offset;
             // Write the current synthesized count as the profile data
             //
             // Todo: handle pseudo edges!
@@ -1848,7 +1879,7 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
             entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount ? TYP_INT : TYP_LONG;
 
         GenTree* incCount =
-            BlockCountInstrumentor::CreateCounterIncrement(m_compiler, addrOfCurrentExecutionCount, typ);
+            BlockCountInstrumentor::CreateCounterIncrement(m_compiler, profileMemory, entry.Offset, typ);
         m_compiler->fgNewStmtAtBeg(instrumentedBlock, incCount);
 
         if (probe->kind != EdgeKind::Duplicate)
@@ -2531,6 +2562,18 @@ void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* p
 }
 
 //------------------------------------------------------------------------
+// compR2RPgoInstrumentation: whether counter addresses are resolved through R2R imports.
+//
+bool Compiler::compR2RPgoInstrumentation() const
+{
+#ifdef FEATURE_R2R_PGO
+    return IsAot() && opts.IsInstrumented() && !JitConfig.WasmPgoInstrumentation().isEmpty();
+#else
+    return false;
+#endif // FEATURE_R2R_PGO
+}
+
+//------------------------------------------------------------------------
 // fgPrepareToInstrumentMethod: prepare for instrumentation
 //
 // Notes:
@@ -2553,13 +2596,13 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     // We enable edge profiling by default, except when:
     //
     // * disabled by option
-    // * we are AOT compiling
+    // * we are AOT compiling without R2R instrumentation support
     //
-    const bool edgesEnabled    = (JitConfig.JitEdgeProfiling() > 0);
-    const bool prejit          = IsAot();
-    const bool useEdgeProfiles = edgesEnabled && !prejit;
-    const bool minimalProfiling =
-        prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
+    const bool edgesEnabled     = (JitConfig.JitEdgeProfiling() > 0);
+    const bool prejit           = IsAot();
+    const bool useEdgeProfiles  = edgesEnabled && (!prejit || compR2RPgoInstrumentation());
+    const bool minimalProfiling = !compR2RPgoInstrumentation() && (prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0)
+                                                                          : (JitConfig.JitMinimalJitProfiling() > 0));
 
     // Intrinsic recognition must not prevent ordinary managed implementations from
     // benefiting from profiles. Exclude compiler primitives and explicit SIMD APIs,
@@ -2632,22 +2675,30 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         }
     }
 
-    if (minimalProfiling && (fgBBcount < 2))
+#ifdef FEATURE_R2R_PGO
+    if (compR2RPgoInstrumentation() &&
+        !JitConfig.WasmPgoInstrumentation().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
-        // Don't instrument small single-block methods.
-        JITDUMP("Not using any block profiling (fgBBcount < 2)\n");
         fgCountInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
-    else if (useEdgeProfiles)
-    {
-        JITDUMP("Using edge profiling\n");
-        fgCountInstrumentor = new (this, CMK_Pgo) EfficientEdgeCountInstrumentor(this, minimalProfiling);
-    }
     else
-    {
-        JITDUMP("Using block profiling, because %s\n", prejit ? "prejitting" : "edge profiling disabled");
-        fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
-    }
+#endif // FEATURE_R2R_PGO
+        if (minimalProfiling && (fgBBcount < 2))
+        {
+            // Don't instrument small single-block methods.
+            JITDUMP("Not using any block profiling (fgBBcount < 2)\n");
+            fgCountInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+        }
+        else if (useEdgeProfiles)
+        {
+            JITDUMP("Using edge profiling\n");
+            fgCountInstrumentor = new (this, CMK_Pgo) EfficientEdgeCountInstrumentor(this, minimalProfiling);
+        }
+        else
+        {
+            JITDUMP("Using block profiling, because %s\n", prejit ? "prejitting" : "edge profiling disabled");
+            fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
+        }
 
     // Enable class profiling by default, when jitting.
     // Todo: we may also want this on by default for prejitting.
@@ -2802,7 +2853,11 @@ PhaseStatus Compiler::fgInstrumentMethodCore()
     //
     bool minimalProbeMode = false;
 
-    if (IsAot())
+    if (compR2RPgoInstrumentation())
+    {
+        minimalProbeMode = false;
+    }
+    else if (IsAot())
     {
         minimalProbeMode = (JitConfig.JitMinimalPrejitProfiling() > 0);
     }

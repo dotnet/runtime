@@ -160,6 +160,21 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument);
         private bool IsSet<T>(Option<T> option) => _command.Result.GetResult(option) != null;
 
+        private static bool IsWasmInterpretedMethodRange(string architecture, int pointerSize,
+            ulong startAddress, int methodSize, MethodFlags flags, int methodToken)
+        {
+            // ExecutionManager::IsVirtualIP reserves the high and low bits for Wasm R2R code.
+            const ulong WasmVirtualIpMask = 0x80000001;
+            return (string.Equals(architecture, "wasm", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(architecture, "wasm32", StringComparison.OrdinalIgnoreCase)) &&
+                pointerSize == 4 && startAddress != 0 && startAddress <= uint.MaxValue && methodSize > 0 &&
+                (startAddress & WasmVirtualIpMask) != WasmVirtualIpMask &&
+                (flags & MethodFlags.Jitted) != 0 &&
+                (flags & (MethodFlags.Dynamic | MethodFlags.JitHelper)) == 0 &&
+                (methodToken & unchecked((int)0xFF000000)) == 0x06000000 &&
+                (methodToken & 0x00FFFFFF) != 0;
+        }
+
         private static int Main(string[] args) =>
             new PgoRootCommand(args)
                 .UseVersion()
@@ -1039,7 +1054,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 {
                     string etlxFileName = Path.ChangeExtension(etlFileName, ".etlx");
                     PrintMessage($"Creating ETLX file {etlxFileName} from {etlFileName}");
-                    TraceLog.CreateFromEventPipeDataFile(etlFileName, etlxFileName);
+                    TraceLog.CreateFromEventPipeDataFile(etlFileName, etlxFileName,
+                        new TraceLogOptions { KeepAllEvents = Get(_command.IncludeInterpretedRundown) });
                     etlFileName = etlxFileName;
                 }
             }
@@ -1141,9 +1157,38 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     return -5;
                 }
 
-                if (!p.EventsInProcess.ByEventType<MethodJittingStartedTraceData>().Any() &&
+                bool includeInterpretedRundown = Get(_command.IncludeInterpretedRundown);
+                TraceEvent processInformation = p.EventsInProcess.Filter(t => t.EventName == "ProcessInfo").FirstOrDefault();
+                string traceArchitecture = processInformation?.PayloadByName("ArchInformation")?.ToString();
+                if (includeInterpretedRundown &&
+                    (string.IsNullOrEmpty(traceArchitecture) ||
+                     string.Equals(traceArchitecture, "unknown", StringComparison.OrdinalIgnoreCase)))
+                {
+                    PrintWarning("The trace has no architecture metadata. --include-interpreted-rundown asserts that this is a CoreCLR Browser/Wasm trace; interpreter classification is not valid on other platforms.");
+                    traceArchitecture = "wasm";
+                }
+                if (includeInterpretedRundown &&
+                    (traceLog.PointerSize != 4 ||
+                     (!string.Equals(traceArchitecture, "wasm", StringComparison.OrdinalIgnoreCase) &&
+                      !string.Equals(traceArchitecture, "wasm32", StringComparison.OrdinalIgnoreCase))))
+                {
+                    PrintError("--include-interpreted-rundown requires a 32-bit CoreCLR Browser/Wasm trace.");
+                    return -5;
+                }
+                if (includeInterpretedRundown &&
+                    !p.EventsInProcess.ByEventType<MethodLoadUnloadTraceData>().Any() &&
+                    !p.EventsInProcess.ByEventType<MethodLoadUnloadVerboseTraceData>().Any())
+                {
+                    PrintError("No method-load/rundown ranges are available. Pass the original .nettrace with --include-interpreted-rundown; an existing .etlx may have discarded these events.");
+                    return -5;
+                }
+
+                if (!includeInterpretedRundown &&
+                    !p.EventsInProcess.ByEventType<MethodJittingStartedTraceData>().Any() &&
                     !p.EventsInProcess.ByEventType<R2RGetEntryPointTraceData>().Any() &&
-                    !p.EventsInProcess.ByEventType< SampledProfileTraceData>().Any())
+                    !p.EventsInProcess.ByEventType<SampledProfileTraceData>().Any() &&
+                    !p.EventsInProcess.ByEventType<JitInstrumentationDataTraceData>().Any() &&
+                    !p.EventsInProcess.ByEventType<JitInstrumentationDataVerboseTraceData>().Any())
                 {
                     PrintError($"No data in trace for process\nWas the trace collected with provider at least \"Microsoft-Windows-DotNETRuntime:0x4000080018:5\"?");
                     return -5;
@@ -1366,6 +1411,34 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 Regex excludeEventsAfterJittingMethod = !string.IsNullOrEmpty(Get(_command.ExcludeEventsAfterJittingMethod)) ? new Regex(Get(_command.ExcludeEventsAfterJittingMethod)) : null;
                 Regex includeMethods = !string.IsNullOrEmpty(Get(_command.IncludeMethods)) ? new Regex(Get(_command.IncludeMethods)) : null;
                 Regex excludeMethods = !string.IsNullOrEmpty(Get(_command.ExcludeMethods)) ? new Regex(Get(_command.ExcludeMethods)) : null;
+                int unresolvedInterpretedRanges = 0;
+
+                void AddInterpretedMethodPresence(int eventClrInstanceId, long methodId, ulong startAddress,
+                    int methodSize, MethodFlags flags, int methodToken, long eventIndex, double timestamp, string methodName)
+                {
+                    if (eventClrInstanceId != clrInstanceId || timestamp < excludeEventsBefore || timestamp > excludeEventsAfter ||
+                        !IsWasmInterpretedMethodRange(traceArchitecture, traceLog.PointerSize, startAddress, methodSize, flags, methodToken))
+                    {
+                        return;
+                    }
+
+                    MethodDesc method = idParser.ResolveMethodID(methodId, out _, throwIfNotFound: false);
+                    if (method is null)
+                    {
+                        unresolvedInterpretedRanges++;
+                        return;
+                    }
+                    if (method.GetTypicalMethodDefinition() is not EcmaMethod definition ||
+                        definition.MetadataReader.GetMethodDefinition(definition.Handle).RelativeVirtualAddress == 0 ||
+                        !PassesMethodFilter(includeMethods, excludeMethods, methodName ?? method.ToString()))
+                    {
+                        return;
+                    }
+
+                    methodsToAttemptToPrepare.TryAdd(eventIndex,
+                        new ProcessedMethodData(timestamp, method, "InterpretedCodePresence"));
+                    PrintDetailedMessage($"InterpretedCodePresence MethodID=0x{methodId:x} {method}");
+                }
 
                 // Find all the R2RLoad events.
                 if (_command.ProcessR2REvents)
@@ -1483,6 +1556,27 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     {
                         PrintError($"Exclude events before timestamp: \"{excludeEventsBefore}\" can't be later than exclude events after timestamp: \"{excludeEventsAfter}\"");
                         return -1;
+                    }
+                }
+
+                if (includeInterpretedRundown)
+                {
+                    foreach (var e in p.EventsInProcess.ByEventType<MethodLoadUnloadTraceData>())
+                    {
+                        AddInterpretedMethodPresence(e.ClrInstanceID, e.MethodID, e.MethodStartAddress,
+                            e.MethodSize, e.MethodFlags, e.MethodToken, (int)e.EventIndex, e.TimeStampRelativeMSec, null);
+                    }
+                    foreach (var e in p.EventsInProcess.ByEventType<MethodLoadUnloadVerboseTraceData>())
+                    {
+                        int parametersStart = e.MethodSignature.IndexOf('(');
+                        string parameters = parametersStart >= 0 ? e.MethodSignature.Substring(parametersStart) : e.MethodSignature;
+                        AddInterpretedMethodPresence(e.ClrInstanceID, e.MethodID, e.MethodStartAddress,
+                            e.MethodSize, e.MethodFlags, e.MethodToken, (int)e.EventIndex, e.TimeStampRelativeMSec,
+                            e.MethodNamespace + "." + e.MethodName + parameters);
+                    }
+                    if (unresolvedInterpretedRanges != 0)
+                    {
+                        PrintWarning($"Skipped {unresolvedInterpretedRanges} interpreted code-range records without resolvable method identities. Check matching IL references and collect with an up-to-date PGO collector that emits MethodDetails before rundown.");
                     }
                 }
 
@@ -1642,15 +1736,20 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 foreach (var e in p.EventsInProcess.ByEventType<JitInstrumentationDataVerboseTraceData>())
                 {
-                    AddToInstrumentationData(e.ClrInstanceID, e.MethodID, e.MethodFlags, e.Data);
+                    int parametersStart = e.MethodSignature.IndexOf('(');
+                    string parameters = parametersStart >= 0 ? e.MethodSignature.Substring(parametersStart) : e.MethodSignature;
+                    AddToInstrumentationData(e.ClrInstanceID, e.MethodID, e.MethodFlags, e.Data,
+                        (int)e.EventIndex, e.TimeStampRelativeMSec, e.MethodNamespace + "." + e.MethodName + parameters);
                 }
                 foreach (var e in p.EventsInProcess.ByEventType<JitInstrumentationDataTraceData>())
                 {
-                    AddToInstrumentationData(e.ClrInstanceID, e.MethodID, e.MethodFlags, e.Data);
+                    AddToInstrumentationData(e.ClrInstanceID, e.MethodID, e.MethodFlags, e.Data,
+                        (int)e.EventIndex, e.TimeStampRelativeMSec, null);
                 }
 
                 // Local function used with the above two loops as the behavior is supposed to be identical
-                void AddToInstrumentationData(int eventClrInstanceId, long methodID, int methodFlags, byte[] data)
+                void AddToInstrumentationData(int eventClrInstanceId, long methodID, int methodFlags, byte[] data,
+                    long eventIndex, double timestamp, string methodName)
                 {
                     if (eventClrInstanceId != clrInstanceId)
                     {
@@ -1683,7 +1782,15 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         perMethodChunks.LastChunk = perMethodChunks.InstrumentationData.Count;
                         perMethodChunks.InstrumentationData.Add(data);
                         if ((methodFlags & FinalChunkFlag) == FinalChunkFlag)
+                        {
                             perMethodChunks.Done = true;
+                            if (timestamp >= excludeEventsBefore && timestamp <= excludeEventsAfter &&
+                                PassesMethodFilter(includeMethods, excludeMethods, methodName ?? method.ToString()))
+                            {
+                                methodsToAttemptToPrepare.TryAdd(eventIndex,
+                                    new ProcessedMethodData(timestamp, method, "InstrumentationData"));
+                            }
+                        }
                     }
                 }
 

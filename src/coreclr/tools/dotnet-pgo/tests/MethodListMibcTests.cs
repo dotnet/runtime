@@ -5,10 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 
 using Microsoft.Diagnostics.Tools.Pgo;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 
 using Xunit;
 
@@ -21,6 +23,30 @@ namespace DotNetPgo.Tests
             ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator);
         private static readonly string s_testAssemblyPath = typeof(MethodListMibcTests).Assembly.Location;
         private static readonly string s_testAssemblyName = typeof(MethodListMibcTests).Assembly.GetName().Name;
+
+        [Theory]
+        [InlineData("wasm", 4, 0x123400UL, 32, MethodFlags.Jitted, 0x06000001, true)]
+        [InlineData("wasm32", 4, 0x123400UL, 32, MethodFlags.Jitted | MethodFlags.Generic, 0x06000001, true)]
+        [InlineData("x86", 4, 0x123400UL, 32, MethodFlags.Jitted, 0x06000001, false)]
+        [InlineData("wasm", 8, 0x123400UL, 32, MethodFlags.Jitted, 0x06000001, false)]
+        [InlineData("wasm", 4, 0UL, 32, MethodFlags.Jitted, 0x06000001, false)]
+        [InlineData("wasm", 4, 0x123400UL, 0, MethodFlags.Jitted, 0x06000001, false)]
+        [InlineData("wasm", 4, 0x80000001UL, 32, MethodFlags.Jitted, 0x06000001, false)]
+        [InlineData("wasm", 4, 0x123400UL, 32, MethodFlags.None, 0x06000001, false)]
+        [InlineData("wasm", 4, 0x123400UL, 32, MethodFlags.Jitted | MethodFlags.Dynamic, 0x06000001, false)]
+        [InlineData("wasm", 4, 0x123400UL, 32, MethodFlags.Jitted | MethodFlags.JitHelper, 0x06000001, false)]
+        [InlineData("wasm", 4, 0x100000000UL, 32, MethodFlags.Jitted, 0x06000001, false)]
+        [InlineData("wasm", 4, 0x123400UL, 32, MethodFlags.Jitted, 0x0A000001, false)]
+        [InlineData("wasm", 4, 0x123400UL, 32, MethodFlags.Jitted, 0x06000000, false)]
+        [InlineData("wasm", 4, 0x123400UL, 32, MethodFlags.Jitted, 0, false)]
+        public void InterpretedPresenceRequiresWasmCodeRangeAndMetadataIdentity(string architecture, int pointerSize,
+            ulong startAddress, int methodSize, MethodFlags flags, int methodToken, bool expected)
+        {
+            Type program = typeof(PgoFileType).Assembly.GetType("Microsoft.Diagnostics.Tools.Pgo.Program", throwOnError: true);
+            MethodInfo classify = program.GetMethod("IsWasmInterpretedMethodRange", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.Equal(expected, (bool)classify.Invoke(null,
+                [architecture, pointerSize, startAddress, methodSize, flags, methodToken]));
+        }
 
         [Fact]
         public void CreatesDeterministicMibcAndRoundTripsThroughDump()
@@ -264,6 +290,10 @@ namespace DotNetPgo.Tests
 
         private static CommandResult Run(params string[] arguments)
         {
+            using var directory = new TemporaryDirectory();
+            string responseFile = Path.Combine(directory.Path, "arguments.rsp");
+            // TPA references can exceed the Windows process command-line limit.
+            File.WriteAllLines(responseFile, arguments.Select(argument => "\"" + argument.Replace("\"", "\\\"") + "\""));
             var startInfo = new ProcessStartInfo
             {
                 FileName = Environment.ProcessPath,
@@ -272,10 +302,7 @@ namespace DotNetPgo.Tests
                 UseShellExecute = false,
             };
             startInfo.ArgumentList.Add(s_dotnetPgoPath);
-            foreach (string argument in arguments)
-            {
-                startInfo.ArgumentList.Add(argument);
-            }
+            startInfo.ArgumentList.Add("@" + responseFile);
 
             using Process process = Process.Start(startInfo);
             string standardOutput = process.StandardOutput.ReadToEnd();
@@ -289,7 +316,7 @@ namespace DotNetPgo.Tests
         {
             public TemporaryDirectory()
             {
-                Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.IO.Path.GetRandomFileName());
+                Path = System.IO.Path.Combine(AppContext.BaseDirectory, "test-artifacts", System.IO.Path.GetRandomFileName());
                 Directory.CreateDirectory(Path);
             }
 

@@ -2490,6 +2490,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (compIsForInlining())
     {
+#ifdef FEATURE_R2R_PGO
+        // Inlinees build profiling schemas even though they do not generate code independently.
+        opts.compCollect64BitCounts = compR2RPgoInstrumentation();
+#endif // FEATURE_R2R_PGO
         return;
     }
 
@@ -2986,6 +2990,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #else
     opts.compCollect64BitCounts = false;
 #endif
+
+#ifdef FEATURE_R2R_PGO
+    if (compR2RPgoInstrumentation())
+    {
+        opts.compCollect64BitCounts = true;
+    }
+#endif // FEATURE_R2R_PGO
 
 #ifdef DEBUG
 

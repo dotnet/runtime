@@ -1211,6 +1211,13 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(" (METHOD_HANDLE)");
                     break;
 
+                case ReadyToRunFixupKind.PgoInstrumentationData:
+                    ParseMethod(builder);
+                    builder.Append(" (PGO_INSTRUMENTATION_DATA schema ");
+                    builder.Append(ReadUInt());
+                    builder.Append(')');
+                    break;
+
                 case ReadyToRunFixupKind.FieldHandle:
                     ParseField(builder);
                     builder.Append(" (FIELD_HANDLE)");

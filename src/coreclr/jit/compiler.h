@@ -7256,6 +7256,8 @@ protected:
     bool        fgIncorporateEdgeCounts();
 
 public:
+    bool compR2RPgoInstrumentation() const;
+
     const char*                            fgPgoFailReason;
     bool                                   fgPgoDisabled = false;
     ICorJitInfo::PgoSource                 fgPgoSource;

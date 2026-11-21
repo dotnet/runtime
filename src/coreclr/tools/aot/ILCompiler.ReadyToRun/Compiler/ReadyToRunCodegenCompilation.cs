@@ -312,6 +312,7 @@ namespace ILCompiler
         private readonly ProfileDataManager _profileData;
         private readonly FileLayoutOptimizer _fileLayoutOptimizer;
         private readonly HashSet<MethodDesc> _methodsWhichNeedMutableILBodies = new HashSet<MethodDesc>();
+        private readonly HashSet<MethodDesc> _pgoTokensNeeded = new();
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
         private HashSet<MethodDesc> _directManagedHelpers;
         private HashSet<MethodDesc> _deniedManagedHelpers;
@@ -749,6 +750,14 @@ namespace ILCompiler
             public int MethodsCompiled;
         }
 
+        public void RequestPgoInstrumentationToken(MethodDesc method)
+        {
+            lock (_methodsToRecompile)
+            {
+                _pgoTokensNeeded.Add(method.GetTypicalMethodDefinition());
+            }
+        }
+
         // SuperPMI collection runs crossgen2 with parallelism 1 and requires ObjectToHandle
         // handles to remain stable across compilation waves, so retain this state between calls.
         private WorkerState _singleThreadedWorkerState;
@@ -917,6 +926,13 @@ namespace ILCompiler
 
         private void ProcessMutableMethodBodiesList()
         {
+            MethodDesc[] methods = new MethodDesc[_pgoTokensNeeded.Count];
+            _pgoTokensNeeded.CopyTo(methods);
+            _pgoTokensNeeded.Clear();
+            Array.Sort(methods, TypeSystemComparer.Instance);
+            foreach (MethodDesc method in methods)
+                _tokenManager.EnsureDefTokensAreAvailable(method, ((EcmaMethod)method).Module, false);
+
             MethodDesc[] mutableMethodBodyNeedList = new MethodDesc[_methodsWhichNeedMutableILBodies.Count];
             _methodsWhichNeedMutableILBodies.CopyTo(mutableMethodBodyNeedList);
             _methodsWhichNeedMutableILBodies.Clear();

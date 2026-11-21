@@ -436,45 +436,133 @@ globalThis.getDotnetRuntime(0).collectPgoTrace()
 globalThis.getDotnetRuntime(0).collectPgoTrace({durationSeconds: 30})
 ```
 
-This captures a startup PGO trace on the CoreCLR interpreter. To arm the trace before the first
-managed method compiles, set `DOTNET_DiagnosticPorts=js://pgo`. The trace always contains the method
-list; to also capture **block counts** the interpreter must be instrumented, which is enabled with
-`DOTNET_InterpPGO=1`:
+#### CoreCLR profile-guided ReadyToRun publishing
+
+`WasmPgoInstrumentation` enables 64-bit sparse-edge counters for selected CoreCLR
+ReadyToRun methods, including inlined bodies. It uses the standard MethodSet format:
+`all` is translated to `*`, `*` selects every method, and an empty value disables
+instrumentation. For example, `*MyApplication*:*` selects methods on matching types.
+This setting is independent of `WasmPerformanceInstrumentation`, which controls CPU
+sampling; either can be enabled alone or both can be enabled together.
+
+Configure the producer application:
+
+```xml
+<PropertyGroup>
+  <UseMonoRuntime>false</UseMonoRuntime>
+  <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+  <PublishReadyToRun>true</PublishReadyToRun>
+  <EnableDiagnostics>true</EnableDiagnostics>
+  <WasmEnableThreads>false</WasmEnableThreads>
+  <WasmPgoInstrumentation>all</WasmPgoInstrumentation>
+</PropertyGroup>
+```
+
+Publish, rather than running a development build:
+
+```console
+dotnet publish -c Release
+```
+
+The publish compiles both application and framework assemblies with instrumentation.
+It does not substitute uninstrumented prebuilt framework images. The build rejects
+Mono, other runtime identifiers, threads, disabled diagnostics, non-ReadyToRun
+publishing, and development builds with this property set. Use a wasm-capable
+crossgen2 matching the runtime. Instrumented ReadyToRun images carry their counter
+schemas in section 129, using format 34.2.
+
+Run the published app in Chrome (or another supported browser), exercise representative
+workloads, and call:
+
+```js
+await globalThis.getDotnetRuntime(0).collectPgoTrace({ durationSeconds: 30 })
+```
+
+Counters start accumulating at startup, independently of CPU sampling. Stopping the
+PGO session exports the accumulated counters along with the module/method information
+needed by the profile tool. To arm the startup trace before managed execution, use:
 
 ```xml
 <ItemGroup>
   <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="js://pgo" />
-  <WasmEnvironmentVariable Include="DOTNET_InterpPGO" Value="1" />
 </ItemGroup>
 ```
 
-Instrumentation can be scoped to a subset of methods with `DOTNET_InterpPGOMethods` (standard MethodSet
-filter format; empty = all methods) to bound overhead during bring-up.
+Compiled bodies produce ordinary `EdgeLongCount` schemas, using the JIT's sparse
+spanning-tree instrumentation and flow reconstruction. The source key is stored
+in `ILOffset` and the destination key in `Other`; JIT-internal blocks can use
+synthetic keys. Method entry counts and branch likelihoods are reconstructed from
+these measured edges. Intrinsic expansion does not fabricate a separate callee
+invocation profile.
+
+The publish property selects R2R instrumentation in crossgen2. It does not enable
+interpreter counter probes. The interpreter retains its separate, optional
+`DOTNET_InterpPGO` and `DOTNET_InterpPGOMethods` settings; they are not required for
+this workflow. Coarse interpreter block profiles must not be mixed with R2R
+edge profiles for the same method.
+
+Use the conversion option below to include metadata-backed interpreter methods
+from existing method-load/rundown events. These are method-presence roots for the
+next compilation, not measured invocation counts or internal branch statistics.
+Prepared interpreter code need not have executed. Dynamic stubs and methods
+without usable IL bodies are excluded; shared generics retain their canonical
+identity.
+
+The PGO collector requests capture-state metadata before the runtime provider
+stops, so method/type identities are available even for methods without counters.
+This is a one-time enumeration, not interpreter execution instrumentation.
 
 Convert the downloaded `xxx.nettrace` into an `.mibc` with `dotnet-pgo` (installed via
 `dotnet tool install --global dotnet-pgo`, or from `artifacts/bin/coreclr/<host-os>.<arch>.<config>/dotnet-pgo/`
-in a runtime build):
+in a runtime build). Use a tool version supporting interpreter rundown roots:
 
 ```console
-dotnet-pgo create-mibc --trace xxx.nettrace --reference <trimmed-IL-dlls>/*.dll --output app.mibc
+dotnet-pgo create-mibc --include-interpreted-rundown --trace xxx.nettrace --reference "<matching-IL-directory>/*.dll" --output app.mibc
+dotnet-pgo dump --input app.mibc --output app.json
 ```
 
-The resulting `.mibc` drives a profile-guided crossgen2 build.
+Disable producer instrumentation for the consumer publish and provide the measured profile:
 
-#### Referencing the right (IL-trimmed) assemblies
+```xml
+<ItemGroup>
+  <PublishReadyToRunPgoFiles Include="app.mibc" />
+</ItemGroup>
+```
+
+```console
+dotnet publish -c Release -p:WasmPgoInstrumentation=
+```
+
+Keep the same application IL and runtime-pack IL between producer and consumer.
+The consumer uses measured edge profiles where available and interpreter presence
+for method selection. The rundown option is only for CoreCLR Browser/Wasm traces;
+when architecture metadata is missing, specifying it asserts that input contract.
+Convert the original `.nettrace` with this option: a previously converted `.etlx`
+may already have discarded the required events. Changing the filter, profile inputs, composite
+setting, crossgen2 arguments, or ReadyToRun postprocessing settings invalidates
+the incremental ReadyToRun outputs.
+
+#### Referencing the matching IL assemblies
 
 `--reference` must point at assemblies whose **MVID** matches the modules recorded in the trace, otherwise
 `dotnet-pgo` reports `Dll mismatch ...` (or `Unknown ModuleID` for the affected methods). On browser/wasm
-the assemblies loaded by the runtime are the **IL-trimmed** ones: `PublishTrimmed`/ILLink rewrites each
+with trimming enabled, the assemblies loaded by the runtime are the **IL-trimmed** ones: ILLink rewrites each
 assembly and **generates a fresh MVID**, then those trimmed DLLs are converted to the fingerprinted
 `*.wasm` files in `_framework` (webcil preserves the MVID byte-for-byte). So the trace records the
 **trimmed** MVIDs, which do **not** match the untrimmed assemblies in the runtime pack
-(`microsoft.netcore.app.runtime.browser-wasm/.../runtimes/browser-wasm/native/*.dll`).
+(`microsoft.netcore.app.runtime.browser-wasm/.../runtimes/browser-wasm/lib/<TFM>/*.dll`).
 
 Point `--reference` at the ILLink trim output instead:
 
 - Published app: `obj/<Config>/<TFM>/browser-wasm/linked/*.dll`
 - In this repo's WASM samples: `artifacts/obj/mono/<App>/browser.wasm.<Config>/linked/*.dll`
+
+With `PublishTrimmed=false`, use the unchanged app build DLLs and the IL DLLs from
+the runtime pack actually selected for publishing. Do not assume the pack's TFM
+matches the app TFM. Read the boot-listed Webcil assets to discover their assembly
+names and MVIDs, then match those against candidate IL assemblies. Composite owner
+images and unlisted compiler artifacts are not original IL-reference assemblies;
+exclude them rather than treating a zero MVID as a matching reference.
 
 If a method's assembly is not among the references, `dotnet-pgo` skips it with an `Unknown ModuleID`
 warning; pass every trimmed assembly the app exercised to capture all of them. `dotnet-pgo dump --input app.mibc`
