@@ -5072,9 +5072,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // to pinned stack slots so the objects aren't moved.
     //
     DoPhase(this, PHASE_WASM_SPILL_REFS, &Compiler::fgWasmSpillRefs);
+
 #endif
 
     FinalizeEH();
+
+#ifdef TARGET_WASM
+    // Reorder blocks for wasm and figure out wasm control flow nesting.
+    // Note: This phase is ordered after FinalizeEH since the
+    // pass shouldn't alter EH structure.
+    DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
+#endif
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
@@ -5093,11 +5101,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Copied from rpPredictRegUse()
     SetFullPtrRegMapRequired(codeGen->GetInterruptible() || !codeGen->isFramePointerUsed());
 
-#ifdef TARGET_WASM
-    // Reorder blocks for wasm and figure out wasm control flow nesting
-    //
-    DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
-#else
+#ifndef TARGET_WASM
     if (opts.OptimizationEnabled())
     {
         // We won't introduce new blocks from here on out,

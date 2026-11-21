@@ -3,8 +3,12 @@
 
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.ServiceProcess;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Internal;
@@ -109,6 +113,33 @@ namespace Microsoft.Extensions.Hosting
             AssertServiceDeleted(serviceName);
         }
 
+        [ConditionalFact(typeof(UseWindowsServiceTests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        public async Task CanWaitForServiceDeletionWhenHandleCloses()
+        {
+            string serviceName = $"{nameof(CanWaitForServiceDeletionWhenHandleCloses)}_{Guid.NewGuid():N}";
+            using WindowsServiceTester serviceTester = WindowsServiceTester.Create(static () => { }, serviceName);
+            using SafeHandle observerHandle = serviceTester.ServiceHandle;
+            serviceTester.Dispose();
+
+            var assertionStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Task assertion = Task.Factory.StartNew(() =>
+            {
+                assertionStarted.SetResult(true);
+                AssertServiceDeleted(serviceName);
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+            try
+            {
+                await assertionStarted.Task;
+                Assert.NotSame(assertion, await Task.WhenAny(assertion, Task.Delay(TimeSpan.FromMilliseconds(250))));
+            }
+            finally
+            {
+                observerHandle.Dispose();
+                await assertion;
+            }
+        }
+
         [Fact]
         public void ServiceCollectionExtensionMethodDefaultsToOffOutsideOfService()
         {
@@ -176,10 +207,31 @@ namespace Microsoft.Extensions.Hosting
 
         private static void AssertServiceDeleted(string serviceName)
         {
+            const int PollIntervalMilliseconds = 250;
             using var controller = new ServiceController(serviceName);
-            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => controller.Status);
-            Win32Exception win32Exception = Assert.IsType<Win32Exception>(exception.InnerException);
-            Assert.Equal(Interop.Errors.ERROR_SERVICE_DOES_NOT_EXIST, win32Exception.NativeErrorCode);
+            TimeSpan timeout = WindowsServiceTester.WaitForStatusTimeout;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            while (true)
+            {
+                controller.Refresh();
+                ServiceControllerStatus status;
+                try
+                {
+                    status = controller.Status;
+                }
+                catch (InvalidOperationException exception) when (
+                    exception.InnerException is Win32Exception { NativeErrorCode: Interop.Errors.ERROR_SERVICE_DOES_NOT_EXIST })
+                {
+                    Assert.IsType<InvalidOperationException>(exception);
+                    Assert.IsType<Win32Exception>(exception.InnerException);
+                    return;
+                }
+
+                Assert.True(stopwatch.Elapsed < timeout,
+                    $"Service '{serviceName}' was not deleted within {timeout}. Last observed status: {status}.");
+                Thread.Sleep(PollIntervalMilliseconds);
+            }
         }
 
         private void AddWindowsServiceLifetime(IServiceCollection services, Action<WindowsServiceLifetimeOptions> configure = null)

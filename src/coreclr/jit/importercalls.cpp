@@ -4504,6 +4504,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #endif
                 {
                     assert(sig->numArgs == 2);
+
+                    // Like a call, the atomic may modify memory, including address-exposed locals,
+                    // so spill pending reads that must observe the value before the update.
+                    impSpillSideEffects(true, stackState.esStackDepth - sig->numArgs DEBUGARG("Interlocked intrinsic"));
+
                     GenTree*   op2 = impPopStack().val;
                     GenTree*   op1 = impPopStack().val;
                     genTreeOps op  = (ni == NI_System_Threading_Interlocked_Or) ? GT_XORR : GT_XAND;
@@ -4543,6 +4548,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                 assert(callType != TYP_STRUCT);
                 assert(sig->numArgs == 3);
+
+                // Like a call, the atomic may modify memory, including address-exposed locals,
+                // so spill pending reads that must observe the value before the update.
+                impSpillSideEffects(true, stackState.esStackDepth - sig->numArgs DEBUGARG("Interlocked intrinsic"));
 
                 GenTree* op3 = impPopStack().val; // comparand
                 if (varTypeIsSmall(callType))
@@ -4587,6 +4596,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 assert(callType != TYP_STRUCT);
                 assert(sig->numArgs == 2);
                 assert((genTypeSize(retType) >= 4) || (ni == NI_System_Threading_Interlocked_Exchange));
+
+                // Like a call, the atomic may modify memory, including address-exposed locals,
+                // so spill pending reads that must observe the value before the update.
+                impSpillSideEffects(true, stackState.esStackDepth - sig->numArgs DEBUGARG("Interlocked intrinsic"));
 
                 GenTree* op2 = impPopStack().val;
                 GenTree* op1 = impPopStack().val;
@@ -8084,10 +8097,10 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
     GenTree* syncNode       = gtCloneExpr(syncArg->GetNode());
     call->gtFlags |=
         (resumedUseNode->gtFlags | resumedDefNode->gtFlags | execNode->gtFlags | syncNode->gtFlags) & GTF_ALL_EFFECT;
-    call->gtArgs.PushFront(this, NewCallArg::Primitive(syncNode).WellKnown(WellKnownArg::AsyncSynchronizationContext));
-    call->gtArgs.PushFront(this, NewCallArg::Primitive(execNode).WellKnown(WellKnownArg::AsyncExecutionContext));
-    call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedUseNode).WellKnown(WellKnownArg::AsyncResumedUse));
-    call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedDefNode).WellKnown(WellKnownArg::AsyncResumedDef));
+    call->gtArgs.PushBack(this, NewCallArg::Primitive(resumedDefNode).WellKnown(WellKnownArg::AsyncResumedDef));
+    call->gtArgs.PushBack(this, NewCallArg::Primitive(resumedUseNode).WellKnown(WellKnownArg::AsyncResumedUse));
+    call->gtArgs.PushBack(this, NewCallArg::Primitive(execNode).WellKnown(WellKnownArg::AsyncExecutionContext));
+    call->gtArgs.PushBack(this, NewCallArg::Primitive(syncNode).WellKnown(WellKnownArg::AsyncSynchronizationContext));
 
     // The inlining call may carry further sets describing the frames enclosing it, which
     // this call inherits as well: it ends up in the same frame, so a suspension in it has
