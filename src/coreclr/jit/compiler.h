@@ -4391,7 +4391,7 @@ public:
 #ifdef DEBUG
     VARSET_TP lvaTrackedVars; // set of tracked variables
 #endif
-#ifndef TARGET_64BIT
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
     VARSET_TP lvaLongVars; // set of long (64-bit) variables
 #endif
     VARSET_TP lvaFloatVars; // set of floating-point (32-bit and 64-bit) or SIMD variables
