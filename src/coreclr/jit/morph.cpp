@@ -11391,7 +11391,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                     op1->ChangeOper(GT_MUL);
 
                     add->AsIntCon()->SetIconValue(imul);
-                    fgValueNumberTreeConst(add);
+                    fgUpdateConstTreeValueNumber(add);
                 }
             }
 
