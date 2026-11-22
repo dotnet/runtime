@@ -373,6 +373,11 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(EffectiveConverter.Type);
                 }
 
+                if (!IgnoreNullTokensOnRead && !IsSetNullable && Options.RespectNullableAnnotations)
+                {
+                    ThrowHelper.ThrowJsonException_PropertySetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
+                }
+
                 value = default(T);
                 success = true;
             }
@@ -384,13 +389,42 @@ namespace System.Text.Json.Serialization.Metadata
                     // CanUseDirectReadOrWrite == false when using streams
                     Debug.Assert(!state.IsContinuation);
 
-                    value = EffectiveConverter.Read(ref reader, PropertyType, Options);
+                    if (!isNullToken || !IgnoreNullTokensOnRead || default(T) is not null)
+                    {
+                        T? fastValue = EffectiveConverter.Read(ref reader, PropertyType, Options);
+
+                        if (fastValue is null && !IsSetNullable && Options.RespectNullableAnnotations)
+                        {
+                            ThrowHelper.ThrowJsonException_PropertySetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
+                        }
+
+                        value = fastValue;
+                    }
+                    else
+                    {
+                        value = default(T);
+                    }
+
                     success = true;
                 }
                 else
                 {
-                    success = EffectiveConverter.TryRead(ref reader, PropertyType, Options, ref state, out T? typedValue, out _);
-                    value = typedValue;
+                    if (!isNullToken || !IgnoreNullTokensOnRead || default(T) is not null || state.IsContinuation)
+                    {
+                        success = EffectiveConverter.TryRead(ref reader, PropertyType, Options, ref state, out T? typedValue, out _);
+
+                        if (success && typedValue is null && !IsSetNullable && Options.RespectNullableAnnotations)
+                        {
+                            ThrowHelper.ThrowJsonException_PropertySetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
+                        }
+
+                        value = typedValue;
+                    }
+                    else
+                    {
+                        value = default(T);
+                        success = true;
+                    }
                 }
             }
 
