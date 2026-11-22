@@ -74,11 +74,8 @@ namespace ILCompiler.PortableCallHelpers
                     _entrypoints.Add(new PInvokeInfo(name, "QCall", (EcmaMethod)method, wasmLinkage: false));
                 }
 
-                // String constructors are keyed on their static factory signature. The checked-in wasm32
-                // tables already contain those signatures, so only generate them for wasm64.
+                // String constructors run as static factories, so they are keyed on that lowered signature.
                 bool isStringConstructor = method.IsConstructor && method.OwningType.IsWellKnownType(WellKnownType.String);
-                if (isStringConstructor && method.Context.Target.PointerSize == 4)
-                    continue;
 
                 // A generic has no single signature to generate a thunk from, so the interpreter
                 // would find none at call time - and a release build does not even assert on the

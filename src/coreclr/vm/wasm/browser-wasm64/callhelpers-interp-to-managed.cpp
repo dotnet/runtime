@@ -12,7 +12,7 @@
 
 // Arguments are passed on the stack with each argument aligned to INTERP_STACK_SLOT_SIZE.
 #define ARG_ADDR(i) (pArgs + (i * INTERP_STACK_SLOT_SIZE))
-#define ARG_IND(i) reinterpret_cast<int64_t>(ARG_ADDR(i))
+#define ARG_IND(i) ((int64_t)((int64_t*)ARG_ADDR(i)))
 #define ARG_I32(i) (*(int32_t*)ARG_ADDR(i))
 #define ARG_I64(i) (*(int64_t*)ARG_ADDR(i))
 #define ARG_F32(i) (*(float*)ARG_ADDR(i))

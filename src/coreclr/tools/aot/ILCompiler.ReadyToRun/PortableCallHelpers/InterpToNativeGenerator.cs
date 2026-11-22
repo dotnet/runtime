@@ -47,7 +47,7 @@ namespace ILCompiler.PortableCallHelpers
 
             // Arguments are passed on the stack with each argument aligned to INTERP_STACK_SLOT_SIZE.
             #define ARG_ADDR(i) (pArgs + (i * INTERP_STACK_SLOT_SIZE))
-            #define ARG_IND(i) {{(pointerSize == 8 ? "reinterpret_cast<int64_t>(ARG_ADDR(i))" : "((int32_t)((int32_t*)ARG_ADDR(i)))")}}
+            #define ARG_IND(i) (({{InteropSignature.PointerNativeType(pointerSize)}})(({{InteropSignature.PointerNativeType(pointerSize)}}*)ARG_ADDR(i)))
             #define ARG_I32(i) (*(int32_t*)ARG_ADDR(i))
             #define ARG_I64(i) (*(int64_t*)ARG_ADDR(i))
             #define ARG_F32(i) (*(float*)ARG_ADDR(i))
@@ -84,9 +84,7 @@ namespace ILCompiler.PortableCallHelpers
                     RemoveAsyncCallMarker(tokens);
 
                     List<string> args = Args(tokens);
-                    string argTypes = string.Join(", ", args.Select(token =>
-                        pointerSize == 8 && token[0] is 'S' or 'A' or 'T'
-                            ? "int64_t" : InteropSignature.TokenToNativeType(token)));
+                    string argTypes = string.Join(", ", args.Select(token => InteropSignature.TokenToNativeType(token, pointerSize)));
 
                     string portableEntryPointComma = args.Count > 0 ? ", " : "";
                     string portableEntrypointDeclaration = isPortableEntryPointCall ? portableEntryPointComma + "PCODE" : "";
@@ -154,21 +152,20 @@ namespace ILCompiler.PortableCallHelpers
                     if (token[0] == 'A')
                         slot = (slot + 1) & ~1;
 
-                    string arg = pointerSize == 8 && token[0] == 'T' ? "ARG_I64" : InteropSignature.TokenToArgType(token);
-                    result.Add($"{arg}({slot})");
+                    result.Add($"{InteropSignature.TokenToArgType(token, pointerSize)}({slot})");
                     slot += InteropSignature.TokenToSlotCount(token);
                 }
 
                 return result;
             }
 
-            static (bool IsVoid, string NativeType) Result(string returnToken)
+            (bool IsVoid, string NativeType) Result(string returnToken)
             {
                 // For struct returns, use the typedef so emcc generates the correct sret ABI
                 if (returnToken[0] == 'S' && returnToken.Length > 1)
                     return (false, $"portable_callhelper_ret_S{InteropSignature.GetStructSize(returnToken)}");
 
-                return (returnToken == "v", InteropSignature.TokenToNativeType(returnToken));
+                return (returnToken == "v", InteropSignature.TokenToNativeType(returnToken, pointerSize));
             }
 
             static bool IsPortableEntryPointCall(List<string> tokens)
