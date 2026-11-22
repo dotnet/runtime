@@ -175,6 +175,13 @@ namespace System
                     span = span.Slice(TReverser.Count);
                     span = span.Slice(0, span.Length - TReverser.Count);
                 }
+
+                if (TReverser.CanOverlap && span.Length >= TReverser.Count)
+                {
+                    // Both overlapping chunks are read before either is written.
+                    TReverser.ReverseAndSwap(span, span.Slice(span.Length - TReverser.Count));
+                    return default;
+                }
             }
             return span;
         }
@@ -185,6 +192,10 @@ namespace System
 
             static abstract int Count { get; }
 
+            // Whether the last two chunks may overlap. Worth it only for bytes: for wider elements, the scalar tail
+            // is short and partially overlapping stores can cause store-forwarding stalls.
+            static abstract bool CanOverlap { get; }
+
             // Reverses the first Count elements of both spans and swaps them.
             static abstract void ReverseAndSwap(Span<TElem> first, Span<TElem> last);
         }
@@ -194,6 +205,8 @@ namespace System
             public static bool IsSupported => Vector512.IsHardwareAccelerated;
 
             public static int Count => Vector512<TElem>.Count;
+
+            public static bool CanOverlap => false;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void ReverseAndSwap(Span<TElem> first, Span<TElem> last)
@@ -236,6 +249,8 @@ namespace System
 
             public static int Count => Vector256<TElem>.Count;
 
+            public static bool CanOverlap => false;
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void ReverseAndSwap(Span<TElem> first, Span<TElem> last)
             {
@@ -273,6 +288,8 @@ namespace System
 
             public static int Count => Vector128<TElem>.Count;
 
+            public static bool CanOverlap => false;
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void ReverseAndSwap(Span<TElem> first, Span<TElem> last)
             {
@@ -309,6 +326,8 @@ namespace System
 
             public static int Count => sizeof(ulong) / sizeof(TElem);
 
+            public static bool CanOverlap => typeof(TElem) == typeof(byte);
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void ReverseAndSwap(Span<TElem> first, Span<TElem> last)
             {
@@ -342,6 +361,8 @@ namespace System
             public static bool IsSupported => sizeof(TElem) < sizeof(uint);
 
             public static int Count => sizeof(uint) / sizeof(TElem);
+
+            public static bool CanOverlap => typeof(TElem) == typeof(byte);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void ReverseAndSwap(Span<TElem> first, Span<TElem> last)
