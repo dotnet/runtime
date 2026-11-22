@@ -155,6 +155,7 @@
     <TargetBits Condition="'$(TargetArchitecture)'=='arm64'">64</TargetBits>
     <TargetBits Condition="'$(TargetArchitecture)'=='loongarch64'">64</TargetBits>
     <TargetBits Condition="'$(TargetArchitecture)'=='riscv64'">64</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='wasm64'">64</TargetBits>
   </PropertyGroup>
 
   <PropertyGroup>
