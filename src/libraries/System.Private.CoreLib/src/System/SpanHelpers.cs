@@ -129,13 +129,33 @@ namespace System
         private static void ReverseValueType<T, TElem>(Span<T> span)
             where TElem : struct
         {
-            if (span.Length >= 4)
+            Debug.Assert(span.Length > 1);
+
+            if (Vector128.IsHardwareAccelerated || sizeof(TElem) < sizeof(ulong))
             {
+                if (span.Length < 4)
+                {
+                    // Length is 2 or 3: only a single swap is needed.
+                    TElem firstElem = Unsafe.BitCast<T, TElem>(span[0]);
+                    int endIdx = span.Length - 1;
+                    span[0] = span[endIdx];
+                    span[endIdx] = Unsafe.BitCast<TElem, T>(firstElem);
+                    return;
+                }
+
                 // TElem may be more strictly aligned than T, so the reinterpreted span is only accessed via
                 // IChunkReverser, which doesn't require alignment.
-                int reversed = ReverseChunks(Unsafe.BitCast<Span<T>, Span<TElem>>(span));
-                span = span.Slice(reversed);
-                span = span.Slice(0, span.Length - reversed);
+                int remaining = ReverseChunks(Unsafe.BitCast<Span<T>, Span<TElem>>(span));
+                Debug.Assert(remaining is >= 0 and <= 3);
+                if (remaining > 1)
+                {
+                    int firstIdx = (span.Length - remaining) >> 1;
+                    int lastIdx = span.Length - 1 - firstIdx;
+                    TElem temp = Unsafe.BitCast<T, TElem>(span[firstIdx]);
+                    span[firstIdx] = span[lastIdx];
+                    span[lastIdx] = Unsafe.BitCast<TElem, T>(temp);
+                }
+                return;
             }
 
             while (span.Length > 1)
@@ -150,46 +170,81 @@ namespace System
         }
 
         // Reverses chunks from both ends, from the widest to the narrowest reverser, and returns
-        // the number of elements reversed at each end.
+        // the number of remaining middle elements (< 4).
         private static int ReverseChunks<TElem>(Span<TElem> span)
             where TElem : struct
         {
-            Span<TElem> remaining = ReverseChunks<TElem, Vector512Reverser<TElem>>(span);
-            remaining = ReverseChunks<TElem, Vector256Reverser<TElem>>(remaining);
-            remaining = ReverseChunks<TElem, Vector128Reverser<TElem>>(remaining);
-            remaining = ReverseChunks<TElem, UInt64Reverser<TElem>>(remaining);
-            remaining = ReverseChunks<TElem, UInt32Reverser<TElem>>(remaining);
-            return (span.Length - remaining.Length) / 2;
+            if (Vector512.IsHardwareAccelerated)
+            {
+                span = ReverseChunksLoop<TElem, Vector512Reverser<TElem>>(span);
+            }
+            if (Vector256.IsHardwareAccelerated)
+            {
+                span = Vector512.IsHardwareAccelerated
+                    ? ReverseChunkOnce<TElem, Vector256Reverser<TElem>>(span)
+                    : ReverseChunksLoop<TElem, Vector256Reverser<TElem>>(span);
+            }
+            if (Vector128.IsHardwareAccelerated)
+            {
+                span = Vector256.IsHardwareAccelerated
+                    ? ReverseChunkOnce<TElem, Vector128Reverser<TElem>>(span)
+                    : ReverseChunksLoop<TElem, Vector128Reverser<TElem>>(span);
+            }
+            if (sizeof(TElem) < sizeof(ulong))
+            {
+                span = Vector128.IsHardwareAccelerated
+                    ? ReverseChunkOnce<TElem, UInt64Reverser<TElem>>(span)
+                    : ReverseChunksLoop<TElem, UInt64Reverser<TElem>>(span);
+            }
+            if (sizeof(TElem) < sizeof(uint))
+            {
+                span = ReverseChunkOnce<TElem, UInt32Reverser<TElem>>(span);
+            }
+            return span.Length;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Span<TElem> ReverseChunks<TElem, TReverser>(Span<TElem> span)
+        private static Span<TElem> ReverseChunksLoop<TElem, TReverser>(Span<TElem> span)
             where TReverser : IChunkReverser<TElem>
         {
-            if (TReverser.IsSupported)
+            if (span.Length >= 4 * TReverser.Count)
             {
-                while (span.Length >= 2 * TReverser.Count)
+                while (span.Length >= 4 * TReverser.Count)
                 {
-                    Span<TElem> last = span.Slice(span.Length - TReverser.Count);
-                    TReverser.ReverseAndSwap(span, last);
-                    span = span.Slice(TReverser.Count);
-                    span = span.Slice(0, span.Length - TReverser.Count);
-                }
-
-                if (TReverser.CanOverlap && span.Length >= TReverser.Count)
-                {
-                    // Both overlapping chunks are read before either is written.
-                    TReverser.ReverseAndSwap(span, span.Slice(span.Length - TReverser.Count));
-                    return default;
+                    Span<TElem> lastTwo = span.Slice(span.Length - 2 * TReverser.Count);
+                    TReverser.ReverseAndSwap(span, lastTwo.Slice(TReverser.Count));
+                    TReverser.ReverseAndSwap(span.Slice(TReverser.Count), lastTwo);
+                    span = span.Slice(2 * TReverser.Count);
+                    span = span.Slice(0, span.Length - 2 * TReverser.Count);
                 }
             }
+
+            return ReverseChunkOnce<TElem, TReverser>(span);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Span<TElem> ReverseChunkOnce<TElem, TReverser>(Span<TElem> span)
+            where TReverser : IChunkReverser<TElem>
+        {
+            if (span.Length >= 2 * TReverser.Count)
+            {
+                TReverser.ReverseAndSwap(span, span.Slice(span.Length - TReverser.Count));
+                span = span.Slice(TReverser.Count);
+                span = span.Slice(0, span.Length - TReverser.Count);
+            }
+
+            if (typeof(TElem) == typeof(byte) && TReverser.CanOverlap && span.Length >= TReverser.Count)
+            {
+                // Both overlapping chunks are read before either is written.
+                TReverser.ReverseAndSwap(span, span.Slice(span.Length - TReverser.Count));
+                return default;
+            }
+
             return span;
         }
 
         private interface IChunkReverser<TElem>
         {
-            static abstract bool IsSupported { get; }
-
             static abstract int Count { get; }
 
             // Whether the last two chunks may overlap. Worth it only for bytes: for wider elements, the scalar tail
@@ -202,8 +257,6 @@ namespace System
 
         private readonly struct Vector512Reverser<TElem> : IChunkReverser<TElem>
         {
-            public static bool IsSupported => Vector512.IsHardwareAccelerated;
-
             public static int Count => Vector512<TElem>.Count;
 
             public static bool CanOverlap => false;
@@ -245,8 +298,6 @@ namespace System
 
         private readonly struct Vector256Reverser<TElem> : IChunkReverser<TElem>
         {
-            public static bool IsSupported => Vector256.IsHardwareAccelerated;
-
             public static int Count => Vector256<TElem>.Count;
 
             public static bool CanOverlap => false;
@@ -284,8 +335,6 @@ namespace System
 
         private readonly struct Vector128Reverser<TElem> : IChunkReverser<TElem>
         {
-            public static bool IsSupported => Vector128.IsHardwareAccelerated;
-
             public static int Count => Vector128<TElem>.Count;
 
             public static bool CanOverlap => false;
@@ -322,11 +371,13 @@ namespace System
         private readonly struct UInt64Reverser<TElem> : IChunkReverser<TElem>
             where TElem : struct
         {
-            public static bool IsSupported => sizeof(TElem) < sizeof(ulong);
-
             public static int Count => sizeof(ulong) / sizeof(TElem);
 
-            public static bool CanOverlap => typeof(TElem) == typeof(byte);
+            public static bool CanOverlap
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => typeof(TElem) == typeof(byte);
+            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void ReverseAndSwap(Span<TElem> first, Span<TElem> last)
@@ -346,23 +397,24 @@ namespace System
                 {
                     return BinaryPrimitives.ReverseEndianness(value);
                 }
-                value = ulong.RotateLeft(value, 32);
                 if (typeof(TElem) == typeof(ushort))
                 {
-                    value = ((value >> 16) & 0x0000FFFF0000FFFF) | ((value & 0x0000FFFF0000FFFF) << 16);
+                    return ((ulong)uint.RotateLeft((uint)value, 16) << 32) | uint.RotateLeft((uint)(value >> 32), 16);
                 }
-                return value;
+                return ulong.RotateLeft(value, 32);
             }
         }
 
         private readonly struct UInt32Reverser<TElem> : IChunkReverser<TElem>
             where TElem : struct
         {
-            public static bool IsSupported => sizeof(TElem) < sizeof(uint);
-
             public static int Count => sizeof(uint) / sizeof(TElem);
 
-            public static bool CanOverlap => typeof(TElem) == typeof(byte);
+            public static bool CanOverlap
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => typeof(TElem) == typeof(byte);
+            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void ReverseAndSwap(Span<TElem> first, Span<TElem> last)
