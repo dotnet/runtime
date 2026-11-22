@@ -13580,8 +13580,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     lclFld->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclFld->TypeGet()));
                 }
 
-                // Known nonnegative loads can serve as symbolic bounds.
-                if (tree->TypeIs(TYP_INT) && IntegralRange::ForNode(tree, this).IsNonNegative())
+                // Treat Span lengths like array lengths: comparisons against them are worth analyzing.
+                if (gtIsSpanLength(tree))
                 {
                     ValueNum lenVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
                     if (!vnStore->IsVNConstant(lenVN))
@@ -13818,8 +13818,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
             }
 
-            // Known nonnegative loads can serve as symbolic bounds.
-            if (tree->TypeIs(TYP_INT) && IntegralRange::ForNode(tree, this).IsNonNegative())
+            // Treat Span lengths like array lengths: comparisons against them are worth analyzing.
+            if (gtIsSpanLength(tree))
             {
                 ValueNum lenVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
                 if (!vnStore->IsVNConstant(lenVN))
