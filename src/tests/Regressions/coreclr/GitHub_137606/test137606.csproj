@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- The tests rely on the JIT keeping objects in callee-saved registers -->
+    <Optimize>true</Optimize>
+    <!-- Needed for CLRTestTargetUnsupported -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- The stale context comes from the Windows OS unwinder; ControlledExecution is supported on CoreCLR only -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr' OR '$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test137606.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The spin methods with explicit tail calls -->
+    <ProjectReference Include="test137606tailcalls.ilproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

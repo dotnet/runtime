@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- The test relies on the JIT keeping objects in callee-saved registers -->
+    <Optimize>true</Optimize>
+    <!-- Needed for CLRTestTargetUnsupported, and so the test runs from its own folder, without the dependency -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- The stale context comes from the Windows OS unwinder -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr' OR '$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <!-- The test runs without one of its dependencies, so it is not compatible with AOT -->
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- crossgen2 would compile the test without the dependency among its inputs. The holders and UseDependency are
+         AggressiveOptimization, which crossgen2 never compiles, so little coverage is lost -->
+    <CrossGenTest>false</CrossGenTest>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test137606prestub.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Compiled against but not copied to the output folder, so the JIT cannot load it at run time -->
+    <ProjectReference Include="test137606dependency.csproj" Private="false" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

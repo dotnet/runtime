@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- The test relies on the JIT keeping objects in callee-saved registers -->
+    <Optimize>true</Optimize>
+    <!-- Needed for CLRTestTargetUnsupported -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- The stale context comes from the Windows OS unwinder -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr' OR '$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test137606noabort.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>
