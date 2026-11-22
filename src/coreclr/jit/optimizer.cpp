@@ -3857,7 +3857,9 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
 
     // Find the set of definitely-executed blocks.
     // Ideally, the definitely-executed blocks are the ones that post-dominate the entry block.
-    // Until we have post-dominators, we'll special-case for single-exit blocks.
+    // Until we have post-dominators, we use the blocks that dominate the only back edge (they run on
+    // every iteration but the last, regardless of other exits, e.g. into throw blocks), or else the
+    // blocks that dominate the only exit.
     //
     // Todo: it is not clear if this is a correctness requirement or a profitability heuristic.
     // It seems like the latter. Ideally there are enough safeguards to prevent hoisting exception
@@ -3875,23 +3877,14 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     BitVecTraits traits(m_dfsTree->PostOrderTraits());
     BitVec       defExec(BitVecOps::MakeEmpty(&traits));
 
-    // For hoisting profitability, ignore exits into throw blocks: they are only taken on exceptional paths.
-    // Exit canonicalization may route them through an empty block.
-    BasicBlock* exiting   = nullptr;
-    unsigned    exitCount = 0;
-    for (FlowEdge* const exitEdge : loop->ExitEdges())
+    BasicBlock* defExecBottom = nullptr;
+    if (loop->BackEdges().size() == 1)
     {
-        BasicBlock* target = exitEdge->getDestinationBlock();
-        if (target->KindIs(BBJ_ALWAYS) && target->isEmpty())
-        {
-            target = target->GetTarget();
-        }
-
-        if (!target->KindIs(BBJ_THROW))
-        {
-            exiting = exitEdge->getSourceBlock();
-            exitCount++;
-        }
+        defExecBottom = loop->BackEdge(0)->getSourceBlock();
+    }
+    else if (loop->ExitEdges().size() == 1)
+    {
+        defExecBottom = loop->ExitEdges()[0]->getSourceBlock();
     }
 
     // Add the pre-headers of any child loops to the list of blocks to consider for hoisting.
@@ -3932,11 +3925,11 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     {
         assert(childLoop->EntryEdges().size() == 1);
         BasicBlock* childPreHead = childLoop->EntryEdge(0)->getSourceBlock();
-        if (exitCount == 1)
+        if (defExecBottom != nullptr)
         {
-            if (m_domTree->Dominates(childPreHead, exiting))
+            if (m_domTree->Dominates(childPreHead, defExecBottom))
             {
-                // If the child loop pre-header dominates the exit, it will get added in the dominator tree
+                // If the child loop pre-header dominates defExecBottom, it will get added in the dominator tree
                 // loop below.
                 continue;
             }
@@ -3953,11 +3946,11 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         BitVecOps::AddElemD(&traits, defExec, childPreHead->bbPostorderNum);
     }
 
-    if (exitCount == 1)
+    if (defExecBottom != nullptr)
     {
-        JITDUMP("  Considering hoisting in blocks that either dominate exit block " FMT_BB
+        JITDUMP("  Considering hoisting in blocks that either dominate " FMT_BB
                 ", or pre-headers of nested loops, if any:\n",
-                exiting->bbNum);
+                defExecBottom->bbNum);
 
         // Push dominators, until we reach the header or exit the loop.
         //
@@ -3970,29 +3963,23 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         // try-begin then blocks inside the catch may not necessarily be fully
         // dominated by the header, but may still be part of the loop.
         //
-        BasicBlock* cur = exiting;
-
-        // In a top-tested loop, the dominators of the only backedge run on every iteration that reaches it.
-        if ((exiting == loop->GetHeader()) && (loop->BackEdges().size() == 1))
-        {
-            cur = loop->BackEdge(0)->getSourceBlock();
-        }
-
+        BasicBlock* cur = defExecBottom;
         while ((cur != nullptr) && (cur != loop->GetHeader()) && loop->ContainsBlock(cur))
         {
-            JITDUMP("  --  " FMT_BB " (dominate exit block)\n", cur->bbNum);
+            JITDUMP("  --  " FMT_BB " (definitely executed)\n", cur->bbNum);
             BitVecOps::AddElemD(&traits, defExec, cur->bbPostorderNum);
             cur = cur->bbIDom;
         }
 
         assert((cur == loop->GetHeader()) || bbIsTryBeg(loop->GetHeader()));
     }
-    else // More than one exit
+    else // More than one back edge and exit
     {
         // We'll assume that only the entry block is definitely executed.
         // We could in the future do better.
 
-        JITDUMP("  Considering hoisting in entry block " FMT_BB " because " FMT_LP " has more than one exit\n",
+        JITDUMP("  Considering hoisting in entry block " FMT_BB " because " FMT_LP
+                " has more than one back edge and exit\n",
                 loop->GetHeader()->bbNum, loop->GetIndex());
     }
 

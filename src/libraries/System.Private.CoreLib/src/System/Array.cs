@@ -2330,7 +2330,7 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             if (array.Length > 1)
-                SpanHelpers.Reverse(new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length));
+                SpanHelpers.Reverse(AsSpanUnchecked(array));
         }
 
         public static void Reverse<T>(T[] array, int index, int length)
@@ -2347,7 +2347,7 @@ namespace System
             if (length <= 1)
                 return;
 
-            SpanHelpers.Reverse(new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length).Slice(index, length));
+            SpanHelpers.Reverse(AsSpanUnchecked(array).Slice(index, length));
         }
 
         // Sorts the elements of an array. The sort compares the elements to each
@@ -2548,7 +2548,7 @@ namespace System
 
             if (array.Length > 1)
             {
-                var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
+                Span<T> span = AsSpanUnchecked(array);
                 ArraySortHelper<T>.Default.Sort(span, null);
             }
         }
@@ -2639,7 +2639,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
             }
 
-            var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
+            Span<T> span = AsSpanUnchecked(array);
             ArraySortHelper<T>.Sort(span, comparison);
         }
 
@@ -3107,6 +3107,10 @@ namespace System
 
         private static Span<T> UnsafeArrayAsSpan<T>(Array array, int adjustedIndex, int length) =>
             new Span<T>(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(array)), array.Length).Slice(adjustedIndex, length);
+
+        // Unlike AsSpan, skips the array covariance check: only for callers that reorder existing elements.
+        private static Span<T> AsSpanUnchecked<T>(T[] array) =>
+            new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
 
         public IEnumerator GetEnumerator()
         {
