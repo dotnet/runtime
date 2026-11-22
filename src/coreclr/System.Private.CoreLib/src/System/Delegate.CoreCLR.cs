@@ -208,8 +208,16 @@ namespace System
                 : _helperObject as MethodInfo ?? GetMethodImplUncached();
         }
 
+        // The method of the delegate for the diagnostics, which is also a method that is not available to reflection (see DisablePrivateReflectionAttribute).
+        internal MethodInfo GetMethodForDiagnostics()
+        {
+            return TryGetInvocations(out ReadOnlySpan<Wrapper> invocations)
+                ? invocations[^1].Value!.GetMethodForDiagnostics()
+                : _helperObject as MethodInfo ?? GetMethodImplUncached(forDiagnostics: true);
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private unsafe MethodInfo GetMethodImplUncached()
+        private unsafe MethodInfo GetMethodImplUncached(bool forDiagnostics = false)
         {
             // should be handled by GetMethodImpl
             Debug.Assert(HasSingleTarget);
@@ -262,6 +270,14 @@ namespace System
                         || _target!.GetType().IsCOMObject
                         || declaringType.IsInterface, "The class hierarchy should declare the method or be a DIM");
                 }
+            }
+
+            // A method that is not available to reflection is not cached with the delegate, as that is what Delegate.Method returns.
+            if (forDiagnostics && RuntimeType.IsMethodHiddenFromReflection(IRuntimeMethodInfo.GetValue(method)))
+            {
+                MethodBase? hiddenMethod = RuntimeType.GetMethodBaseForDiagnostics(method, declaringType);
+                GC.KeepAlive(method);
+                return (MethodInfo)hiddenMethod!;
             }
 
             MethodInfo? methodInfo = (MethodInfo?)RuntimeType.GetMethodBase(declaringType, method);

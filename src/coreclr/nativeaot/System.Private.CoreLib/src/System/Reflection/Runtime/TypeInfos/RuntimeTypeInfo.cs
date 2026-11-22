@@ -264,7 +264,13 @@ namespace System.Reflection.Runtime.TypeInfos
             // If this has a RuntimeTypeHandle, let the underlying runtime engine have the first crack. If it refuses, fall back to metadata.
             RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
             if (!typeHandle.IsNull() && !IsGenericTypeDefinition)
+            {
+                // Generic type definitions that have no metadata (see DisablePrivateReflectionAttribute) have nothing to report.
+                if (IsBlockedGenericTypeDefinition)
+                    return [];
+
                 return ToType().GetInterfaces();
+            }
 
             ArrayBuilder<Type> result = default;
 
@@ -459,9 +465,16 @@ namespace System.Reflection.Runtime.TypeInfos
             return this.GetByRefType().ToType();
         }
 
+        // Only the MethodTable of a generic type definition that has no metadata knows that it is one.
+        private bool IsBlockedGenericTypeDefinition => this is RuntimeBlockedTypeInfo && RuntimeAugments.IsGenericTypeDefinition(InternalTypeHandleIfAvailable);
+
         public Type MakeGenericType(Type[] typeArguments)
         {
             ArgumentNullException.ThrowIfNull(typeArguments);
+
+            // A generic type definition that has no metadata (see DisablePrivateReflectionAttribute) can't be instantiated.
+            if (IsBlockedGenericTypeDefinition)
+                throw new NotSupportedException(SR.Reflection_TypeBlocked);
 
             if (!IsGenericTypeDefinition)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
@@ -501,6 +514,10 @@ namespace System.Reflection.Runtime.TypeInfos
             for (int i = 0; i < typeArguments.Length; i++)
             {
                 RuntimeTypeInfo runtimeTypeArgument = runtimeTypeArguments[i]!;
+
+                // Its generic parameters are not available to be the type arguments.
+                if (runtimeTypeArgument.IsBlockedGenericTypeDefinition)
+                    throw new NotSupportedException(SR.Reflection_TypeBlocked);
 
                 // Desktop compatibility: Treat generic type definitions as a constructed generic type using the generic parameters as type arguments.
                 if (runtimeTypeArgument.IsGenericTypeDefinition)

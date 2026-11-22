@@ -127,7 +127,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
                 compilationGroup,
                 typeSystemContext,
-                new NoMetadataBlockingPolicy(),
+                new DisablePrivateReflectionMetadataBlockingPolicy(new NoMetadataBlockingPolicy()),
                 new ManifestResourceBlockingPolicy(logger, options.FeatureSwitches, new Dictionary<ModuleDesc, IReadOnlySet<string>>()),
                 logFile: null,
                 stackTracePolicy: new NoStackTraceEmissionPolicy(),

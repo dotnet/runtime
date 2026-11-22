@@ -187,7 +187,7 @@ namespace System.Reflection
                 if (methodHandle == null)
                     return null;
 
-                return (MethodInfo?)RuntimeType.GetMethodBase(methodHandle);
+                return (MethodInfo?)RuntimeType.GetMethodBaseOrNullIfReflectionBlocked(methodHandle);
             }
         }
 

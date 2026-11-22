@@ -94,6 +94,125 @@ namespace ILCompiler.Metadata
             return rec;
         }
 
+        private bool ContainsStrippedType(Cts.TypeDesc type)
+        {
+            switch (type.Category)
+            {
+                case Cts.TypeFlags.SzArray:
+                case Cts.TypeFlags.Array:
+                case Cts.TypeFlags.ByRef:
+                case Cts.TypeFlags.Pointer:
+                    return ContainsStrippedType(((Cts.ParameterizedType)type).ParameterType);
+
+                case Cts.TypeFlags.FunctionPointer:
+                    {
+                        Cts.MethodSignature pointerSignature = ((Cts.FunctionPointerType)type).Signature;
+
+                        if (ContainsStrippedType(pointerSignature.ReturnType))
+                            return true;
+
+                        for (int i = 0; i < pointerSignature.Length; i++)
+                            if (ContainsStrippedType(pointerSignature[i]))
+                                return true;
+
+                        return false;
+                    }
+
+                case Cts.TypeFlags.SignatureTypeVariable:
+                case Cts.TypeFlags.SignatureMethodVariable:
+                    return false;
+
+                default:
+                    Debug.Assert(type.IsDefType);
+
+                    if (!type.IsTypeDefinition)
+                    {
+                        if (ContainsStrippedType(type.GetTypeDefinition()))
+                            return true;
+
+                        foreach (var arg in type.Instantiation)
+                            if (ContainsStrippedType(arg))
+                                return true;
+
+                        return false;
+                    }
+
+                    return type is Cts.MetadataType typeDef && _policy.IsStripped(typeDef);
+            }
+        }
+
+        public override MetadataRecord HandleTypeWithRealNames(Cts.TypeDesc type)
+        {
+            if (!ContainsStrippedType(type))
+                return HandleType(type);
+
+            switch (type.Category)
+            {
+                case Cts.TypeFlags.SzArray:
+                    return new TypeSpecification
+                    {
+                        Signature = new SZArraySignature { ElementType = HandleTypeWithRealNames(((Cts.ArrayType)type).ElementType) },
+                    };
+                case Cts.TypeFlags.Array:
+                    return new TypeSpecification
+                    {
+                        Signature = new ArraySignature
+                        {
+                            ElementType = HandleTypeWithRealNames(((Cts.ArrayType)type).ElementType),
+                            Rank = ((Cts.ArrayType)type).Rank,
+                            LowerBounds = Array.Empty<int>(),
+                            Sizes = Array.Empty<int>(),
+                        },
+                    };
+                case Cts.TypeFlags.ByRef:
+                    return new TypeSpecification
+                    {
+                        Signature = new ByReferenceSignature { Type = HandleTypeWithRealNames(((Cts.ByRefType)type).ParameterType) },
+                    };
+                case Cts.TypeFlags.Pointer:
+                    return new TypeSpecification
+                    {
+                        Signature = new PointerSignature { Type = HandleTypeWithRealNames(((Cts.PointerType)type).ParameterType) },
+                    };
+                case Cts.TypeFlags.FunctionPointer:
+                    return new TypeSpecification
+                    {
+                        Signature = new FunctionPointerSignature { Signature = HandleMethodSignatureWithRealNames(((Cts.FunctionPointerType)type).Signature) },
+                    };
+                default:
+                    {
+                        if (!type.IsTypeDefinition)
+                        {
+                            var instantiationSignature = new TypeInstantiationSignature
+                            {
+                                GenericType = HandleTypeWithRealNames(type.GetTypeDefinition()),
+                            };
+
+                            for (int i = 0; i < type.Instantiation.Length; i++)
+                                instantiationSignature.GenericTypeArguments.Add(HandleTypeWithRealNames(type.Instantiation[i]));
+
+                            return new TypeSpecification { Signature = instantiationSignature };
+                        }
+
+                        return HandleTypeReferenceWithRealNames((Cts.MetadataType)type);
+                    }
+            }
+        }
+
+        // A reference with the names of the type and of the types that contain it. The record is not shared with the reference that
+        // HandleType creates, which uses a placeholder name for a type that is not available to reflection.
+        private TypeReference HandleTypeReferenceWithRealNames(Cts.MetadataType entity)
+        {
+            var record = new TypeReference { TypeName = HandleString(entity.GetName()) };
+
+            if (entity.ContainingType is Cts.MetadataType containingType)
+                record.NamespaceOrEnclosingType = HandleTypeReferenceWithRealNames(containingType);
+            else
+                record.NamespaceOrEnclosingType = HandleNamespaceReference(entity.Module, entity.GetNamespace());
+
+            return record;
+        }
+
         private void InitializeSzArray(Cts.ArrayType entity, TypeSpecification record)
         {
             record.Signature = new SZArraySignature
@@ -213,6 +332,17 @@ namespace ILCompiler.Metadata
         private void InitializeTypeRef(Cts.MetadataType entity, TypeReference record)
         {
             Debug.Assert(entity.IsTypeDefinition);
+
+            if (_policy.IsStripped(entity))
+            {
+                // The type is blocked from reflection: its name is not part of the metadata. The references to these types are told
+                // apart (generic methods are identified by their signature), but the names are not meaningful. The hash code of the type
+                // is how the runtime finds its MethodTable in the type map (when the type has one, for example when a custom attribute mentions it).
+                record.NamespaceOrEnclosingType = HandleNamespaceReference(entity.Module, string.Empty);
+                int row = entity is Cts.Ecma.EcmaType ecmaType ? System.Reflection.Metadata.Ecma335.MetadataTokens.GetRowNumber(ecmaType.Handle) : 0;
+                record.TypeName = HandleString("<stripped>" + entity.GetHashCode().ToString("X8") + row.ToString("X"));
+                return;
+            }
 
             if (entity.ContainingType != null)
             {

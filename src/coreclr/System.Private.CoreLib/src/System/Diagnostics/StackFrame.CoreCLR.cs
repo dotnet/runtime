@@ -10,12 +10,18 @@ namespace System.Diagnostics
 {
     public partial class StackFrame
     {
+        // The method of the frame if it is not available to reflection (see DisablePrivateReflectionAttribute), for the diagnostics only
+        // (GetMethod() does not return it).
+        private MethodBase? _diagnosticMethod;
+
+        internal MethodBase? DiagnosticMethod => _diagnosticMethod;
         /// <summary>
         /// Called from the class "StackTrace"
         /// </summary>
         internal StackFrame(StackFrameHelper stackFrameHelper, int skipFrames, bool needFileInfo)
         {
             _method = stackFrameHelper.GetMethodBase(skipFrames);
+            _diagnosticMethod = _method is null ? stackFrameHelper.GetMethodBaseForDiagnostics(skipFrames) : null;
             _nativeOffset = stackFrameHelper.GetOffset(skipFrames);
             _ilOffset = stackFrameHelper.GetILOffset(skipFrames);
             _isLastFrameFromForeignExceptionStackTrace = stackFrameHelper.IsLastFrameFromForeignExceptionStackTrace(skipFrames);
@@ -41,6 +47,7 @@ namespace System.Diagnostics
             if ((iNumOfFrames - skipFrames) > 0)
             {
                 _method = StackF.GetMethodBase(skipFrames);
+                _diagnosticMethod = _method is null ? StackF.GetMethodBaseForDiagnostics(skipFrames) : null;
                 _nativeOffset = StackF.GetOffset(skipFrames);
                 _ilOffset = StackF.GetILOffset(skipFrames);
                 if (needFileInfo)
@@ -74,7 +81,7 @@ namespace System.Diagnostics
             if (method.Value == IntPtr.Zero)
                 return null;
 
-            return RuntimeType.GetMethodBase(null, method);
+            return RuntimeType.GetMethodBaseOrNullIfReflectionBlocked(null, method);
         }
     }
 }

@@ -1095,6 +1095,7 @@ class ReflectModuleBaseObject : public Object
     OBJECTREF          m_runtimeType;
     OBJECTREF          m_runtimeAssembly;
     Module*            m_pData;         // Pointer to the Module
+    SIZE_T             m_privateReflectionState;   // Managed only: caches if private reflection is disabled for the assembly
 
   protected:
     ReflectModuleBaseObject() {LIMITED_METHOD_CONTRACT;}

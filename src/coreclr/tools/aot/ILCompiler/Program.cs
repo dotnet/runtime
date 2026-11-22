@@ -431,7 +431,7 @@ namespace ILCompiler
             UsageBasedMetadataGenerationOptions metadataGenerationOptions = default;
             if (supportsReflection)
             {
-                mdBlockingPolicy = new NoMetadataBlockingPolicy();
+                mdBlockingPolicy = new DisablePrivateReflectionMetadataBlockingPolicy(new NoMetadataBlockingPolicy());
 
                 resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches, resourceBlocks);
 

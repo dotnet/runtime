@@ -114,10 +114,10 @@ namespace ILCompiler.DependencyAnalysis
                     uint targetTypeId = _externalReferences.GetIndex(factory.NecessaryTypeSymbol(implementationType));
                     vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant(targetTypeId));
 
-                    int callingMethodToken = factory.MetadataManager.GetMetadataHandleForMethod(factory, callingMethod);
+                    int callingMethodToken = factory.MetadataManager.GetMetadataHandleForNativeLayout(factory, callingMethod);
                     vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant((uint)callingMethodToken));
 
-                    int implementationMethodToken = factory.MetadataManager.GetMetadataHandleForMethod(factory, implementationMethod);
+                    int implementationMethodToken = factory.MetadataManager.GetMetadataHandleForNativeLayout(factory, implementationMethod);
                     vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant((uint)implementationMethodToken));
 
                     int hashCode = callingMethod.OwningType.GetHashCode();

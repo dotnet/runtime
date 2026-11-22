@@ -138,6 +138,8 @@ DEFINE_METHOD(ASSEMBLY,             CTOR,                   .ctor,              
 
 DEFINE_CLASS(ASYNCCALLBACK,         System,                 AsyncCallback)
 
+DEFINE_CLASS(ATTRIBUTE,             System,                 Attribute)
+
 DEFINE_CLASS_U(System,              Signature,          SignatureNative)
 
 DEFINE_CLASS(BINDER,                Reflection,             Binder)
@@ -554,6 +556,7 @@ DEFINE_CLASS_U(Reflection,             RuntimeModule,               ReflectModul
 DEFINE_FIELD_U(m_runtimeType,               ReflectModuleBaseObject,    m_runtimeType)
 DEFINE_FIELD_U(m_runtimeAssembly,           ReflectModuleBaseObject,    m_runtimeAssembly)
 DEFINE_FIELD_U(m_pData,                     ReflectModuleBaseObject,    m_pData)
+DEFINE_FIELD_U(m_privateReflectionState,    ReflectModuleBaseObject,    m_privateReflectionState)
 DEFINE_CLASS(MODULE,                Reflection,             RuntimeModule)
 
 DEFINE_CLASS(TYPE_BUILDER,          ReflectionEmit,         TypeBuilder)

@@ -62,7 +62,12 @@ namespace System
 
         public virtual IDictionary Data => _data ??= CreateDataContainer();
 
+#if CORECLR
+        // The exception types that are not available to reflection (see DisablePrivateReflectionAttribute) are named in the diagnostics.
+        private string GetClassName() => ((RuntimeType)GetType()).GetToStringForDiagnostics();
+#else
         private string GetClassName() => GetType().ToString();
+#endif
 
         // Retrieves the lowest exception (inner most) for the given Exception.
         // This will traverse exceptions using the innerException property.
@@ -95,7 +100,11 @@ namespace System
         {
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "The API will return <unknown> if the metadata for current method cannot be established.")]
+#if CORECLR
+            get => _source ??= HasBeenThrown ? ((TargetSite ?? TargetSiteForDiagnostics)?.Module.Assembly.GetName().Name ?? "<unknown>") : null;
+#else
             get => _source ??= HasBeenThrown ? (TargetSite?.Module.Assembly.GetName().Name ?? "<unknown>") : null;
+#endif
             set => _source = value;
         }
 

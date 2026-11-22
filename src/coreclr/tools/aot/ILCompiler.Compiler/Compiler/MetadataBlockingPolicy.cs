@@ -27,6 +27,32 @@ namespace ILCompiler
         /// Returns true if field definition '<paramref name="field"/>' is reflection blocked.
         /// </summary>
         public abstract bool IsBlocked(FieldDesc field);
+
+        /// <summary>
+        /// Returns true if type definition '<paramref name="type"/>' was blocked because it is not public in an assembly that disables private reflection.
+        /// Such a type is blocked (<see cref="IsBlocked(MetadataType)"/> returns true), but unlike types that are blocked for other reasons,
+        /// generic instantiations and arrays that merely mention it are not blocked.
+        /// </summary>
+        public virtual bool IsStripped(MetadataType type) => false;
+
+        /// <summary>
+        /// Returns true if method definition '<paramref name="method"/>' is not available to reflection because it is not public
+        /// in an assembly that disables private reflection (this includes the methods of stripped types).
+        /// Such a method is blocked (<see cref="IsBlocked(MethodDesc)"/> returns true).
+        /// </summary>
+        public virtual bool IsStripped(MethodDesc method) => false;
+
+        /// <summary>
+        /// Returns true if field definition '<paramref name="field"/>' is not available to reflection because it is not public
+        /// in an assembly that disables private reflection (this includes the fields of stripped types).
+        /// Such a field is blocked (<see cref="IsBlocked(FieldDesc)"/> returns true).
+        /// </summary>
+        public virtual bool IsStripped(FieldDesc field) => false;
+
+        /// <summary>
+        /// Returns true if type definition '<paramref name="type"/>' is blocked for a reason other than <see cref="IsStripped(MetadataType)"/>.
+        /// </summary>
+        public virtual bool IsHardBlocked(MetadataType type) => IsBlocked(type);
     }
 
     public class FullyBlockedMetadataBlockingPolicy : MetadataBlockingPolicy

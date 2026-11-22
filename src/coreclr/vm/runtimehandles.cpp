@@ -731,6 +731,241 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsVisible(QCall::TypeHandle pTypeHan
     return fIsExternallyVisible;
 }
 
+namespace
+{
+    bool HasGenericParameters(IMDInternalImport* pImport, mdToken token)
+    {
+        STANDARD_VM_CONTRACT;
+
+        HENUMInternalHolder hEnum(pImport);
+        if (FAILED(hEnum.EnumInitNoThrow(mdtGenericParam, token)))
+            return false;
+
+        return hEnum.EnumGetCount() != 0;
+    }
+
+    bool IsEnumOrDelegate(IMDInternalImport* pImport, mdTypeDef typeDef)
+    {
+        STANDARD_VM_CONTRACT;
+
+        DWORD dwAttrs;
+        mdToken tkExtends;
+        if (FAILED(pImport->GetTypeDefProps(typeDef, &dwAttrs, &tkExtends)))
+            return false;
+
+        LPCSTR szNamespace = nullptr;
+        LPCSTR szName = nullptr;
+        if (IsNilToken(tkExtends))
+        {
+            return false;
+        }
+        else if (TypeFromToken(tkExtends) == mdtTypeRef)
+        {
+            if (FAILED(pImport->GetNameOfTypeRef(tkExtends, &szNamespace, &szName)))
+                return false;
+        }
+        else if (TypeFromToken(tkExtends) == mdtTypeDef)
+        {
+            if (FAILED(pImport->GetNameOfTypeDef(tkExtends, &szName, &szNamespace)))
+                return false;
+        }
+        else
+        {
+            return false;
+        }
+
+        return strcmp(szNamespace, "System") == 0 && (strcmp(szName, "Enum") == 0 || strcmp(szName, "MulticastDelegate") == 0);
+    }
+
+    bool HasGenericVirtualMethod(IMDInternalImport* pImport, mdTypeDef typeDef)
+    {
+        STANDARD_VM_CONTRACT;
+
+        HENUMInternalHolder hEnum(pImport);
+        if (FAILED(hEnum.EnumInitNoThrow(mdtMethodDef, typeDef)))
+            return false;
+
+        mdMethodDef methodDef;
+        while (hEnum.EnumNext(&methodDef))
+        {
+            DWORD dwAttrs;
+            if (SUCCEEDED(pImport->GetMethodDefProps(methodDef, &dwAttrs)) && IsMdVirtual(dwAttrs) && HasGenericParameters(pImport, methodDef))
+                return true;
+        }
+
+        return false;
+    }
+
+    // Enums, delegates and types with generic virtual methods need their metadata at runtime in NativeAOT, so they are not hidden from
+    // reflection. This also applies to the types that contain them: the metadata of a nested type requires the metadata of its containing type.
+    bool NeedsMetadataInNativeAot(IMDInternalImport* pImport, mdTypeDef typeDef)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (IsEnumOrDelegate(pImport, typeDef) || HasGenericVirtualMethod(pImport, typeDef))
+            return true;
+
+        ULONG nestedCount;
+        if (FAILED(pImport->GetCountNestedClasses(typeDef, &nestedCount)) || nestedCount == 0)
+            return false;
+
+        NewArrayHolder<mdTypeDef> nestedTypes(new mdTypeDef[nestedCount]);
+        ULONG enumeratedCount;
+        if (FAILED(pImport->GetNestedClasses(typeDef, nestedTypes, nestedCount, &enumeratedCount)))
+            return false;
+
+        ULONG count = min(enumeratedCount, nestedCount);
+        for (ULONG i = 0; i < count; i++)
+        {
+            if (NeedsMetadataInNativeAot(pImport, nestedTypes[i]))
+                return true;
+        }
+
+        return false;
+    }
+
+    // Attributes are meant to be read, and the compiler embeds some in every assembly (for example NullableAttribute) to describe
+    // the public types, so the top-level ones are not hidden (nested types are checked by the caller).
+    bool IsAttributeClass(MethodTable* pMT)
+    {
+        STANDARD_VM_CONTRACT;
+
+        MethodTable* pAttributeMT = CoreLibBinder::GetClass(CLASS__ATTRIBUTE);
+        for (MethodTable* pParentMT = pMT->GetParentMethodTable(); pParentMT != nullptr; pParentMT = pParentMT->GetParentMethodTable())
+        {
+            if (pParentMT == pAttributeMT)
+                return true;
+        }
+
+        return false;
+    }
+
+    // Must match DisablePrivateReflectionMetadataBlockingPolicy in ILC. The MethodTable of the type is optional.
+    bool IsTypeDefReflectionBlocked(Module* pModule, mdTypeDef typeDef, MethodTable* pMT = nullptr)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (!pModule->IsPrivateReflectionDisabled())
+            return false;
+
+        // The global <Module> type is not subject to this: the runtime itself refers to it (for example for the lazy binding of P/Invokes
+        // and Assembly.GetExecutingAssembly()).
+        if (typeDef == COR_GLOBAL_PARENT_TOKEN)
+            return false;
+
+        IMDInternalImport* pImport = pModule->GetMDImport();
+
+        DWORD dwAttrs;
+        mdToken tkExtends;
+        IfFailThrow(pImport->GetTypeDefProps(typeDef, &dwAttrs, &tkExtends));
+
+        if (IsTypeDefExternallyVisible(typeDef, pModule, dwAttrs))
+            return false;
+
+        mdTypeDef tkEnclosing = mdTypeDefNil;
+        bool isNested = IsTdNested(dwAttrs) && SUCCEEDED(pImport->GetNestedClassProps(typeDef, &tkEnclosing));
+        bool hasGenericParameters = HasGenericParameters(pImport, typeDef);
+
+        // Generic types are only hidden when they are nested in a hidden type (like the closures of the generic methods of that type).
+        if (hasGenericParameters && !isNested)
+            return false;
+
+        if (NeedsMetadataInNativeAot(pImport, typeDef))
+            return false;
+
+        if (hasGenericParameters)
+            return IsTypeDefReflectionBlocked(pModule, tkEnclosing);
+
+        if (isNested)
+            return true;
+
+        if (pMT == nullptr)
+            pMT = ClassLoader::LoadTypeDefThrowing(pModule, typeDef, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef).AsMethodTable();
+
+        return !IsAttributeClass(pMT);
+    }
+
+    // What DisablePrivateReflectionAttribute hides of a type: bit 0 is set if the type itself is not available, and the other bits are the
+    // ReflectionMemberVisibility of the members of the type (0: all of them are available, 1: only the public ones, 2: none, 3: the constructors,
+    // fields and properties and the public ones). The members of a type are available if they are public, and none is if the type is not
+    // externally visible. Not subject to this are the enums and the delegates (the runtime needs their members), and the attribute classes
+    // keep the members that attributes are instantiated through (constructors, fields and property setters, whatever their accessibility).
+    // Must match DisablePrivateReflectionMetadataBlockingPolicy in ILC.
+    INT32 GetTypeReflectionVisibility(MethodTable* pMT)
+    {
+        STANDARD_VM_CONTRACT;
+
+        const INT32 blockedBit = 1;
+        const INT32 publicOnly = 1 << 1;
+        const INT32 none = 2 << 1;
+        const INT32 attributeMembers = 3 << 1;
+
+        Module* pModule = pMT->GetModule();
+        mdTypeDef typeDef = pMT->GetCl();
+
+        if (!pModule->IsPrivateReflectionDisabled() || typeDef == COR_GLOBAL_PARENT_TOKEN)
+            return 0;
+
+        if (IsTypeDefReflectionBlocked(pModule, typeDef, pMT))
+            return blockedBit | none;
+
+        IMDInternalImport* pImport = pModule->GetMDImport();
+
+        if (IsEnumOrDelegate(pImport, typeDef))
+            return 0;
+
+        if (IsAttributeClass(pMT))
+            return attributeMembers;
+
+        DWORD dwAttrs;
+        mdToken tkExtends;
+        IfFailThrow(pImport->GetTypeDefProps(typeDef, &dwAttrs, &tkExtends));
+
+        return IsTypeDefExternallyVisible(typeDef, pModule, dwAttrs) ? publicOnly : none;
+    }
+}
+
+extern "C" INT32 QCALLTYPE RuntimeTypeHandle_GetReflectionVisibility(QCall::TypeHandle pTypeHandle, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    INT32 visibility = 0;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
+
+    _ASSERTE(!typeHandle.IsNull());
+
+    if (!typeHandle.IsTypeDesc() && !typeHandle.IsArray())
+        visibility = GetTypeReflectionVisibility(typeHandle.AsMethodTable());
+
+    END_QCALL;
+
+    return visibility;
+}
+
+// True if the method is not available to reflection because of DisablePrivateReflectionAttribute (see GetTypeReflectionVisibility).
+bool IsMethodHiddenFromReflection(MethodDesc* pMD)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (pMD->GetMethodTable()->IsArray() || !pMD->GetModule()->IsPrivateReflectionDisabled())
+        return false;
+
+    INT32 memberVisibility = GetTypeReflectionVisibility(pMD->GetMethodTable()) >> 1;
+
+    if (memberVisibility == 0)
+        return false;
+
+    DWORD dwAttrs = pMD->GetAttrs();
+
+    if (memberVisibility == 3)
+        return !IsMdPublic(dwAttrs) && !IsMdSpecialName(dwAttrs) && !IsMdRTSpecialName(dwAttrs);
+
+    return memberVisibility == 2 || !IsMdPublic(dwAttrs);
+}
+
 FCIMPL1(LPCUTF8, RuntimeTypeHandle_GetUtf8NameInternal, MethodTable* pMT)
 {
     CONTRACTL
@@ -2437,6 +2672,21 @@ extern "C" INT32 QCALLTYPE ModuleHandle_GetToken(QCall::ModuleHandle pModule)
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
     return pModule->GetMDImport()->GetModuleFromScope();
+}
+
+extern "C" BOOL QCALLTYPE ModuleHandle_IsPrivateReflectionDisabled(QCall::ModuleHandle pModule, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    BOOL fIsDisabled = FALSE;
+
+    BEGIN_QCALL;
+
+    fIsDisabled = pModule->IsPrivateReflectionDisabled();
+
+    END_QCALL;
+
+    return fIsDisabled;
 }
 
 extern "C" void QCALLTYPE ModuleHandle_ResolveType(QCall::ModuleHandle pModule, INT32 tkType, TypeHandle *typeArgs, INT32 typeArgsCount, TypeHandle *methodArgs, INT32 methodArgsCount, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError)

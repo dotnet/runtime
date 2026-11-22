@@ -627,6 +627,7 @@ extern "C" {
     void RuntimeHelper_ModuleHandle_GetModuleType (void *, void *, void *) __asm__("ModuleHandle_GetModuleType");
     void RuntimeHelper_ModuleHandle_GetPEKind (void *, void *, void *, void *) __asm__("ModuleHandle_GetPEKind");
     int32_t RuntimeHelper_ModuleHandle_GetToken (void *) __asm__("ModuleHandle_GetToken");
+    int32_t RuntimeHelper_ModuleHandle_IsPrivateReflectionDisabled (void *, void *) __asm__("ModuleHandle_IsPrivateReflectionDisabled");
     void RuntimeHelper_ModuleHandle_ResolveField (void *, int32_t, void *, int32_t, void *, int32_t, void *, void *) __asm__("ModuleHandle_ResolveField");
     void * RuntimeHelper_ModuleHandle_ResolveMethod (void *, int32_t, void *, int32_t, void *, int32_t, void *) __asm__("ModuleHandle_ResolveMethod");
     void RuntimeHelper_ModuleHandle_ResolveType (void *, int32_t, void *, int32_t, void *, int32_t, void *, void *) __asm__("ModuleHandle_ResolveType");
@@ -753,6 +754,7 @@ extern "C" {
     void RuntimeHelper_RuntimeTypeHandle_GetNextIntroducedMethod (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetNextIntroducedMethod");
     int32_t RuntimeHelper_RuntimeTypeHandle_GetNumVirtuals (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetNumVirtuals");
     int32_t RuntimeHelper_RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals (void *, void *) __asm__("RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals");
+    int32_t RuntimeHelper_RuntimeTypeHandle_GetReflectionVisibility (void *, void *) __asm__("RuntimeTypeHandle_GetReflectionVisibility");
     void RuntimeHelper_RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow (void *, void *, void *) __asm__("RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow");
     int32_t RuntimeHelper_RuntimeTypeHandle_GetToken (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetToken");
     void * RuntimeHelper_RuntimeTypeHandle_GetUtf8NameInternal (uintptr_t, void *, uintptr_t) __asm__("RuntimeTypeHandle_GetUtf8NameInternal");
@@ -1133,6 +1135,7 @@ static const Entry s_RuntimeHelpers[] = {
     { "ModuleHandle_GetModuleType", (void*)&RuntimeHelper_ModuleHandle_GetModuleType },
     { "ModuleHandle_GetPEKind", (void*)&RuntimeHelper_ModuleHandle_GetPEKind },
     { "ModuleHandle_GetToken", (void*)&RuntimeHelper_ModuleHandle_GetToken },
+    { "ModuleHandle_IsPrivateReflectionDisabled", (void*)&RuntimeHelper_ModuleHandle_IsPrivateReflectionDisabled },
     { "ModuleHandle_ResolveField", (void*)&RuntimeHelper_ModuleHandle_ResolveField },
     { "ModuleHandle_ResolveMethod", (void*)&RuntimeHelper_ModuleHandle_ResolveMethod },
     { "ModuleHandle_ResolveType", (void*)&RuntimeHelper_ModuleHandle_ResolveType },
@@ -1259,6 +1262,7 @@ static const Entry s_RuntimeHelpers[] = {
     { "RuntimeTypeHandle_GetNextIntroducedMethod", (void*)&RuntimeHelper_RuntimeTypeHandle_GetNextIntroducedMethod },
     { "RuntimeTypeHandle_GetNumVirtuals", (void*)&RuntimeHelper_RuntimeTypeHandle_GetNumVirtuals },
     { "RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals", (void*)&RuntimeHelper_RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals },
+    { "RuntimeTypeHandle_GetReflectionVisibility", (void*)&RuntimeHelper_RuntimeTypeHandle_GetReflectionVisibility },
     { "RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow", (void*)&RuntimeHelper_RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow },
     { "RuntimeTypeHandle_GetToken", (void*)&RuntimeHelper_RuntimeTypeHandle_GetToken },
     { "RuntimeTypeHandle_GetUtf8NameInternal", (void*)&RuntimeHelper_RuntimeTypeHandle_GetUtf8NameInternal },

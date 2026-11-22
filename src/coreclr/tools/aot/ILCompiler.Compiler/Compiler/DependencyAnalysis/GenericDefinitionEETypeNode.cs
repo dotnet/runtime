@@ -45,6 +45,8 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsByRefLike)
                 flags |= (uint)EETypeFlagsEx.IsByRefLikeFlag;
 
+            flags |= ComputeStrippedTypeFlags(factory, _type);
+
             dataBuilder.EmitUInt(flags);
             dataBuilder.EmitInt(checked((ushort)_type.Instantiation.Length)); // Base size (we put instantiation length)
             dataBuilder.EmitZeroPointer();  // No related type

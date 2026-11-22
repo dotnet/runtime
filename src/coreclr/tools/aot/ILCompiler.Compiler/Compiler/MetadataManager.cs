@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 
@@ -73,6 +74,9 @@ namespace ILCompiler
         private readonly SortedSet<TypeDesc> _typesWithEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithConstructedEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _reflectableMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
+
+        // Methods that are not available to reflection (see MetadataBlockingPolicy.IsStripped) but have a metadata record that the runtime type loader needs
+        private readonly SortedSet<MethodDesc> _detachedMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<IMethodBodyNode> _methodBodiesGenerated = new SortedSet<IMethodBodyNode>(CompilerComparer.Instance);
         private readonly SortedSet<UnboxingStubNode> _unboxingStubsGenerated = new SortedSet<UnboxingStubNode>(CompilerComparer.Instance);
         private readonly SortedSet<FrozenObjectNode> _frozenObjects = new SortedSet<FrozenObjectNode>(CompilerComparer.Instance);
@@ -288,6 +292,11 @@ namespace ILCompiler
             if (reflectedMethodNode != null)
             {
                 _reflectableMethods.Add(reflectedMethodNode.Method);
+            }
+
+            if (obj is DetachedMethodMetadataNode detachedMethodNode)
+            {
+                _detachedMethods.Add(detachedMethodNode.Method);
             }
 
             if (obj is NonGCStaticsNode nonGcStaticSectionNode)
@@ -574,6 +583,13 @@ namespace ILCompiler
             {
                 GetMetadataDependenciesDueToReflectability(dependencies, factory, type);
             }
+            else if (type is MetadataType { IsInterface: true } dynamicInterfaceCastableImplementation && IsStripped(dynamicInterfaceCastableImplementation) && dynamicInterfaceCastableImplementation.IsDynamicInterfaceCastableImplementation())
+            {
+                // The runtime only needs the MethodTable of the implementation type that IDynamicInterfaceCastable returns,
+                // so it needs to be constructed even if it has no metadata (see TypeMetadataNode.GetMetadataDependencies). Only the types that have no
+                // metadata because they are stripped need this, the other ones get their MethodTable together with their metadata.
+                dependencies.Add(factory.ReflectedType(type), "Reflected IDynamicInterfaceCastableImplementation");
+            }
         }
 
         internal virtual void GetDependenciesDueToModuleUse(IDependencySink dependencies, NodeFactory factory, ModuleDesc module)
@@ -772,8 +788,9 @@ namespace ILCompiler
                 methodBodies.Add(method);
 
                 // Methods that will end up in the reflection invoke table should not have an entry in stack trace table
-                // We'll try looking them up in reflection data at runtime.
-                if (methodsWithMappings.Contains(method))
+                // We'll try looking them up in reflection data at runtime. The exception is a method that mentions a type that is not
+                // available to reflection, as the reflection data has a placeholder for it.
+                if (methodsWithMappings.Contains(method) && !transform.SignatureContainsStrippedType(method.GetTypicalMethodDefinition().Signature))
                     continue;
 
                 MethodStackTraceVisibilityFlags stackVisibility = _stackTraceEmissionPolicy.GetMethodVisibility(method);
@@ -802,6 +819,15 @@ namespace ILCompiler
             }
 
             var ms = new MemoryStream();
+
+            // Methods that are not available to reflection but that the type loader needs to identify get a record that is not part of any type
+            var detachedMethodRecords = new List<KeyValuePair<MethodDesc, Method>>();
+            foreach (MethodDesc detachedMethod in _detachedMethods)
+            {
+                Method detachedRecord = transform.HandleDetachedMethod(detachedMethod);
+                detachedMethodRecords.Add(new KeyValuePair<MethodDesc, Method>(detachedMethod, detachedRecord));
+                writer.AdditionalRootRecords.Add(detachedRecord);
+            }
 
             // .NET metadata is UTF-16 and UTF-16 contains code points that don't translate to UTF-8.
             var noThrowUtf8Encoding = new UTF8Encoding(false, false);
@@ -848,6 +874,9 @@ namespace ILCompiler
 
             foreach (var methodMapping in transformed.GetTransformedMethodDefinitions())
                 methodMetadataMappings[methodMapping.Key] = writer.GetRecordHandle(methodMapping.Value);
+
+            foreach (var detachedMapping in detachedMethodRecords)
+                methodMetadataMappings[detachedMapping.Key] = writer.GetRecordHandle(detachedMapping.Value);
 
             foreach (var method in GetReflectableMethods())
             {
@@ -938,8 +967,8 @@ namespace ILCompiler
             MethodDesc methodToGenerateMetadataFor = method.GetTypicalMethodDefinition();
 
             ConstantStringValue name = (ConstantStringValue)methodToGenerateMetadataFor.GetName();
-            MetadataRecord signature = transform.HandleMethodSignature(methodToGenerateMetadataFor.Signature);
-            MetadataRecord owningType = transform.HandleType(methodToGenerateMetadataFor.OwningType);
+            MetadataRecord signature = transform.HandleMethodSignatureWithRealNames(methodToGenerateMetadataFor.Signature);
+            MetadataRecord owningType = transform.HandleTypeWithRealNames(methodToGenerateMetadataFor.OwningType);
 
             // If we're generating record for a method on a generic type, the owning type
             // should appear as if instantiated over its formals
@@ -1020,6 +1049,30 @@ namespace ILCompiler
             EnsureMetadataGenerated(factory);
             return _methodHandleMap[method];
         }
+
+        /// <summary>
+        /// Gets the metadata handle of a method for the use of the runtime type loader (generic methods, generic virtual methods
+        /// and so on), which identifies methods by their metadata. Unlike <see cref="GetMetadataHandleForMethod"/>, this returns
+        /// a handle also for a method that is not available to reflection (see <see cref="MetadataBlockingPolicy.IsStripped(MethodDesc)"/>).
+        /// The handle is not part of the type, so the reflection APIs don't find the method; the runtime rejects it when it is used
+        /// to create a <c>MethodBase</c> (for example for the ldtoken in shared generic code).
+        /// </summary>
+        public int GetMetadataHandleForNativeLayout(NodeFactory factory, MethodDesc method)
+        {
+            if (_detachedMethods.Contains(method))
+            {
+                EnsureMetadataGenerated(factory);
+                return _methodHandleMap[method];
+            }
+
+            // The detached methods are collected when the dependency analysis marks a stripped generic method as needing native layout.
+            Debug.Assert(!method.HasInstantiation || !IsStripped(method));
+            return GetMetadataHandleForMethod(factory, method);
+        }
+
+        public IEnumerable<MethodDesc> GetDetachedMethods() => _detachedMethods;
+
+        protected void AddDetachedMethod(MethodDesc method) => _detachedMethods.Add(method);
 
         public IEnumerable<MetadataMapping<FieldDesc>> GetFieldMapping(NodeFactory factory)
         {
@@ -1155,7 +1208,15 @@ namespace ILCompiler
             return _templateMethodEntries;
         }
 
-        public bool IsReflectionBlocked(TypeDesc type)
+        /// <summary>
+        /// Returns true if the type has no reflection metadata. Types that disable private reflection ("stripped") don't make
+        /// the types that merely mention them (generic instantiations over them, arrays of them, ...) blocked.
+        /// Types that are blocked for other reasons still do.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="mentioned">True if the type is only mentioned (for example as the argument of a custom attribute), so
+        /// it is not blocked if it is stripped.</param>
+        public bool IsReflectionBlocked(TypeDesc type, bool mentioned = false)
         {
             switch (type.Category)
             {
@@ -1168,16 +1229,16 @@ namespace ILCompiler
                     if (parameterType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                         return false;
 
-                    return IsReflectionBlocked(parameterType);
+                    return IsReflectionBlocked(parameterType, mentioned: true);
 
                 case TypeFlags.FunctionPointer:
                     MethodSignature pointerSignature = ((FunctionPointerType)type).Signature;
 
                     for (int i = 0; i < pointerSignature.Length; i++)
-                        if (IsReflectionBlocked(pointerSignature[i]))
+                        if (IsReflectionBlocked(pointerSignature[i], mentioned: true))
                             return true;
 
-                    return IsReflectionBlocked(pointerSignature.ReturnType);
+                    return IsReflectionBlocked(pointerSignature.ReturnType, mentioned: true);
 
                 default:
                     Debug.Assert(type.IsDefType);
@@ -1185,28 +1246,44 @@ namespace ILCompiler
                     TypeDesc typeDefinition = type.GetTypeDefinition();
                     if (type != typeDefinition)
                     {
-                        if (_blockingPolicy.IsBlocked((MetadataType)typeDefinition))
+                        if (IsDefinitionBlocked((MetadataType)typeDefinition, mentioned))
                             return true;
 
-                        if (IsReflectionBlocked(type.Instantiation))
-                            return true;
+                        foreach (TypeDesc argument in type.Instantiation)
+                        {
+                            if (IsReflectionBlocked(argument, mentioned: true) && !argument.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                                return true;
+                        }
 
                         return false;
                     }
 
-                    return _blockingPolicy.IsBlocked((MetadataType)type);
+                    return IsDefinitionBlocked((MetadataType)type, mentioned);
             }
+
+            bool IsDefinitionBlocked(MetadataType definition, bool ignoreStripped)
+                => ignoreStripped ? _blockingPolicy.IsHardBlocked(definition) : _blockingPolicy.IsBlocked(definition);
         }
 
         protected bool IsReflectionBlocked(Instantiation instantiation)
         {
             foreach (TypeDesc type in instantiation)
             {
-                if (IsReflectionBlocked(type) && !type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                if (IsReflectionBlocked(type, mentioned: true) && !type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                     return true;
             }
             return false;
         }
+
+        /// <summary>
+        /// Returns true if the type is stripped, that is if it is not public in an assembly that disables private reflection.
+        /// </summary>
+        public bool IsStripped(MetadataType type) => _blockingPolicy.IsStripped(type);
+
+        /// <summary>
+        /// Returns true if the method is not available to reflection because it is not public in an assembly that disables private reflection.
+        /// </summary>
+        public bool IsStripped(MethodDesc method) => _blockingPolicy.IsStripped(method.GetTypicalMethodDefinition());
 
         public bool IsReflectionBlocked(FieldDesc field)
         {

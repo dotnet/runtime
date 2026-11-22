@@ -349,8 +349,13 @@ namespace System.Threading.Tasks
             IsCompletedSuccessfully ? "" + m_result : SR.TaskT_DebuggerNoResult;
 
         // Debugger support
+#if CORECLR
+        private string DebuggerDisplayMethodDescription =>
+            m_action?.GetMethodForDiagnostics().ToString() ?? "{null}";
+#else
         private string DebuggerDisplayMethodDescription =>
             m_action?.Method.ToString() ?? "{null}";
+#endif
 
 
         // internal helper function breaks out logic used by TaskCompletionSource

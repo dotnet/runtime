@@ -129,29 +129,45 @@ namespace Internal.Runtime.TypeLoader
             {
                 MetadataReader metadataReader = qTypeDefinition.NativeFormatReader;
                 TypeDefinitionHandle typeDefHandle = qTypeDefinition.NativeFormatHandle;
-                int hashCode = typeDefHandle.ComputeHashCode(metadataReader);
 
-                NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoForMetadataReader(metadataReader);
+                return TryGetNamedTypeForHandle(metadataReader, typeDefHandle, typeDefHandle.ComputeHashCode(metadataReader), out runtimeTypeHandle);
+            }
 
-                NativeReader typeMapReader;
-                if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.TypeMap, out typeMapReader))
+            runtimeTypeHandle = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Return the RuntimeTypeHandle for a type that is described by a TypeReference in metadata that does not have a definition
+        /// (the type has no reflection metadata, see DisablePrivateReflectionAttribute). The type is found by its hash code.
+        /// </summary>
+        public static bool TryGetNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeReferenceHandle, int typeHashCode, out RuntimeTypeHandle runtimeTypeHandle)
+        {
+            return TryGetNamedTypeForHandle(metadataReader, typeReferenceHandle, typeHashCode, out runtimeTypeHandle);
+        }
+
+        private static unsafe bool TryGetNamedTypeForHandle(MetadataReader metadataReader, Handle handle, int hashCode, out RuntimeTypeHandle runtimeTypeHandle)
+        {
+            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoForMetadataReader(metadataReader);
+
+            NativeReader typeMapReader;
+            if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.TypeMap, out typeMapReader))
+            {
+                NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
+                NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
+
+                ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                externalReferences.InitializeCommonFixupsTable(module);
+
+                var lookup = typeHashtable.Lookup(hashCode);
+                NativeParser entryParser;
+                while (!(entryParser = lookup.GetNext()).IsNull)
                 {
-                    NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
-                    NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
-
-                    ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-                    externalReferences.InitializeCommonFixupsTable(module);
-
-                    var lookup = typeHashtable.Lookup(hashCode);
-                    NativeParser entryParser;
-                    while (!(entryParser = lookup.GetNext()).IsNull)
+                    var foundTypeIndex = entryParser.GetUnsigned();
+                    if (entryParser.GetUnsigned().AsHandle().Equals(handle))
                     {
-                        var foundTypeIndex = entryParser.GetUnsigned();
-                        if (entryParser.GetUnsigned().AsHandle().Equals(typeDefHandle))
-                        {
-                            runtimeTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundTypeIndex);
-                            return true;
-                        }
+                        runtimeTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundTypeIndex);
+                        return true;
                     }
                 }
             }

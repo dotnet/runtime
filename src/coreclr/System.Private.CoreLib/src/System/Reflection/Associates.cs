@@ -94,11 +94,18 @@ namespace System.Reflection
                     {
                         int slot = RuntimeMethodHandle.GetSlot(associateMethodHandle);
 
-                        // Find the override visible from the reflected type
-                        associateMethodHandle = RuntimeTypeHandle.GetMethodAt(reflectedType, slot);
+                        // Find the override visible from the reflected type, unless it is not available to reflection
+                        // (see DisablePrivateReflectionAttribute).
+                        RuntimeMethodHandleInternal overrideHandle = RuntimeTypeHandle.GetMethodAt(reflectedType, slot);
+                        if (!RuntimeType.IsMethodHiddenFromReflection(overrideHandle))
+                            associateMethodHandle = overrideHandle;
                     }
                 }
             }
+
+            // An accessor that is not available to reflection is not part of the property or event.
+            if (declaredType.MemberVisibility != ReflectionMemberVisibility.All && RuntimeType.IsMethodHiddenFromReflection(associateMethodHandle))
+                return null;
 
             RuntimeMethodInfo? associateMethod =
                 RuntimeType.GetMethodBase(reflectedType, associateMethodHandle) as RuntimeMethodInfo;

@@ -125,6 +125,15 @@ namespace System
                     m_runtimeTypeCache = runtimeTypeCache;
                 }
 
+                // Members of types that are not reflectable and the ones that are not public in an assembly annotated with
+                // DisablePrivateReflectionAttribute are not available. A type that is reflectable can have a base type that is not
+                // (for example a generic type derived from a type that is not public), so the base types are checked as well.
+                // The reflected type is checked with its cache.
+                private ReflectionMemberVisibility GetMemberVisibility(RuntimeType declaringType)
+                {
+                    return declaringType == ReflectedType ? m_runtimeTypeCache.MemberVisibility : declaringType.MemberVisibility;
+                }
+
                 internal MethodBase AddMethod(RuntimeType declaringType, RuntimeMethodHandleInternal method, CacheType cacheType)
                 {
                     // First, see if we've already cached an RuntimeMethodInfo or
@@ -169,8 +178,13 @@ namespace System
                         }
                     }
 
+                    if (declaringType.MemberVisibility == ReflectionMemberVisibility.None)
+                        throw new NotSupportedException(declaringType.IsReflectionBlocked ? SR.Reflection_TypeBlocked : SR.Reflection_MemberBlocked);
+
                     T[] list = null!;
                     MethodAttributes methodAttributes = RuntimeMethodHandle.GetAttributes(method);
+                    if (ReflectionMember.IsHidden(declaringType.MemberVisibility, methodAttributes))
+                        throw new NotSupportedException(SR.Reflection_MemberBlocked);
                     bool isPublic = (methodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
                     bool isStatic = (methodAttributes & MethodAttributes.Static) != 0;
                     bool isInherited = declaringType != ReflectedType;
@@ -227,6 +241,10 @@ namespace System
                     bool isPublic = (fieldAttributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;
                     bool isStatic = (fieldAttributes & FieldAttributes.Static) != 0;
                     RuntimeType approxDeclaringType = RuntimeFieldHandle.GetApproxDeclaringType(field);
+                    if (approxDeclaringType.IsReflectionBlocked)
+                        throw new NotSupportedException(SR.Reflection_TypeBlocked);
+                    if (ReflectionMember.IsHidden(approxDeclaringType.MemberVisibility, fieldAttributes))
+                        throw new NotSupportedException(SR.Reflection_MemberBlocked);
                     bool isInherited = RuntimeFieldHandle.AcquiresContextFromThis(field) ?
                         !RuntimeTypeHandle.CompareCanonicalHandles(approxDeclaringType, ReflectedType) :
                         approxDeclaringType != ReflectedType;
@@ -502,6 +520,10 @@ namespace System
 
                     if (declaringType.IsActualInterface)
                     {
+                        ReflectionMemberVisibility interfaceMemberVisibility = GetMemberVisibility(declaringType);
+                        if (interfaceMemberVisibility == ReflectionMemberVisibility.None)
+                            return [];
+
                         #region IsInterface
 
                         foreach (RuntimeMethodHandleInternal methodHandle in RuntimeTypeHandle.GetIntroducedMethods(declaringType))
@@ -525,6 +547,9 @@ namespace System
                             if ((methodAttributes & MethodAttributes.RTSpecialName) != 0)
                                 continue;
                             #endregion
+
+                            if (ReflectionMember.IsHidden(interfaceMemberVisibility, methodAttributes))
+                                continue;
 
                             if (MetadataUpdater.IsSupported &&
                                 RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
@@ -567,6 +592,13 @@ namespace System
 
                         do
                         {
+                            ReflectionMemberVisibility memberVisibility = GetMemberVisibility(declaringType);
+                            if (memberVisibility == ReflectionMemberVisibility.None)
+                            {
+                                declaringType = declaringType.GetParentType()!;
+                                continue;
+                            }
+
                             int vtableSlots = RuntimeTypeHandle.GetNumVirtuals(declaringType);
 
                             foreach (RuntimeMethodHandleInternal methodHandle in RuntimeTypeHandle.GetIntroducedMethods(declaringType))
@@ -592,6 +624,9 @@ namespace System
                                 if ((methodAttributes & MethodAttributes.RTSpecialName) != 0)
                                     continue;
                                 #endregion
+
+                                if (ReflectionMember.IsHidden(memberVisibility, methodAttributes))
+                                    continue;
 
                                 #region Continue if this is a private declared on a base type
                                 bool isVirtual = false;
@@ -671,7 +706,8 @@ namespace System
 
                 private RuntimeConstructorInfo[] PopulateConstructors(Filter filter)
                 {
-                    if (ReflectedType.IsGenericParameter)
+                    ReflectionMemberVisibility memberVisibility = m_runtimeTypeCache.MemberVisibility;
+                    if (ReflectedType.IsGenericParameter || memberVisibility == ReflectionMemberVisibility.None)
                     {
                         return [];
                     }
@@ -693,6 +729,9 @@ namespace System
                         Debug.Assert(!methodHandle.IsNullHandle());
 
                         if ((methodAttributes & MethodAttributes.RTSpecialName) == 0)
+                            continue;
+
+                        if (ReflectionMember.IsHidden(memberVisibility, methodAttributes))
                             continue;
 
                         // Constructors should not be virtual or abstract
@@ -774,6 +813,10 @@ namespace System
 
                 private unsafe void PopulateRtFields(Filter filter, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
+                    ReflectionMemberVisibility memberVisibility = GetMemberVisibility(declaringType);
+                    if (memberVisibility == ReflectionMemberVisibility.None)
+                        return;
+
                     Span<IntPtr> result = stackalloc IntPtr[64];
                     int count;
                     while (!RuntimeTypeHandle.GetFields(declaringType, result, out count))
@@ -784,12 +827,12 @@ namespace System
 
                     if (count > 0)
                     {
-                        PopulateRtFields(filter, result.Slice(0, count), declaringType, ref list);
+                        PopulateRtFields(filter, result.Slice(0, count), declaringType, memberVisibility, ref list);
                     }
                 }
 
                 private void PopulateRtFields(Filter filter,
-                    ReadOnlySpan<IntPtr> fieldHandles, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
+                    ReadOnlySpan<IntPtr> fieldHandles, RuntimeType declaringType, ReflectionMemberVisibility memberVisibility, ref ListBuilder<RuntimeFieldInfo> list)
                 {
                     Debug.Assert(declaringType != null);
                     Debug.Assert(ReflectedType != null);
@@ -811,6 +854,9 @@ namespace System
 
                         FieldAttributes fieldAttributes = RuntimeFieldHandle.GetAttributes(runtimeFieldHandle);
                         FieldAttributes fieldAccess = fieldAttributes & FieldAttributes.FieldAccessMask;
+
+                        if (ReflectionMember.IsHidden(memberVisibility, fieldAttributes))
+                            continue;
 
                         if (isInherited)
                         {
@@ -846,6 +892,10 @@ namespace System
                     Debug.Assert(declaringType != null);
                     Debug.Assert(ReflectedType != null);
 
+                    ReflectionMemberVisibility memberVisibility = GetMemberVisibility(declaringType);
+                    if (memberVisibility == ReflectionMemberVisibility.None)
+                        return;
+
                     int tkDeclaringType = RuntimeTypeHandle.GetToken(declaringType);
 
                     // Our policy is that TypeDescs do not have metadata tokens
@@ -869,6 +919,9 @@ namespace System
 
                         if ((fieldAttributes & FieldAttributes.Literal) != 0)
                         {
+                            if (ReflectionMember.IsHidden(memberVisibility, fieldAttributes))
+                                continue;
+
                             bool isInherited = declaringType != ReflectedType;
                             if (isInherited)
                             {
@@ -1027,7 +1080,9 @@ namespace System
                     ListBuilder<RuntimeType> list = default;
 
                     ModuleHandle moduleHandle = new ModuleHandle(RuntimeTypeHandle.GetModule(declaringType));
-                    MetadataImport scope = moduleHandle.GetRuntimeModule().MetadataImport;
+                    RuntimeModule module = moduleHandle.GetRuntimeModule();
+                    MetadataImport scope = module.MetadataImport;
+                    bool hideBlockedTypes = module.IsPrivateReflectionDisabled;
 
                     scope.EnumNestedTypes(tkEnclosingType, out MetadataEnumResult tkNestedClasses);
 
@@ -1045,6 +1100,9 @@ namespace System
                             // has not been baked and hence cannot be loaded.
                             continue;
                         }
+
+                        if (hideBlockedTypes && RuntimeTypeHandle.IsReflectionBlocked(nestedType))
+                            continue;
 
                         if (filter.RequiresStringComparison())
                         {
@@ -1094,6 +1152,10 @@ namespace System
                 private void PopulateEvents(
                     Filter filter, RuntimeType declaringType, Dictionary<string, RuntimeEventInfo>? csEventInfos, ref ListBuilder<RuntimeEventInfo> list)
                 {
+                    ReflectionMemberVisibility memberVisibility = GetMemberVisibility(declaringType);
+                    if (memberVisibility == ReflectionMemberVisibility.None)
+                        return;
+
                     int tkDeclaringType = RuntimeTypeHandle.GetToken(declaringType);
 
                     // Arrays, Pointers, ByRef types and others generated only the fly by the RT do not have tokens.
@@ -1129,6 +1191,10 @@ namespace System
 
                         RuntimeEventInfo eventInfo = new RuntimeEventInfo(
                             tkEvent, declaringType, m_runtimeTypeCache, out bool isPrivate);
+
+                        // An event is available if one of its accessors is (see DisablePrivateReflectionAttribute)
+                        if (memberVisibility != ReflectionMemberVisibility.All && !eventInfo.HasAccessors)
+                            continue;
 
                         #region Remove Inherited Privates
                         if (declaringType != m_runtimeTypeCache.GetRuntimeType() && isPrivate)
@@ -1206,6 +1272,10 @@ namespace System
                     bool isInterface,
                     ref ListBuilder<RuntimePropertyInfo> list)
                 {
+                    ReflectionMemberVisibility memberVisibility = GetMemberVisibility(declaringType);
+                    if (memberVisibility == ReflectionMemberVisibility.None)
+                        return;
+
                     int tkDeclaringType = RuntimeTypeHandle.GetToken(declaringType);
 
                     // Arrays, Pointers, ByRef types and others generated only the fly by the RT do not have tokens.
@@ -1248,6 +1318,10 @@ namespace System
                         RuntimePropertyInfo propertyInfo =
                             new RuntimePropertyInfo(
                             tkProperty, declaringType, m_runtimeTypeCache, out bool isPrivate);
+
+                        // A property is available if one of its accessors is (see DisablePrivateReflectionAttribute)
+                        if (memberVisibility != ReflectionMemberVisibility.All && !propertyInfo.HasAccessors)
+                            continue;
 
                         // If this is a class, not an interface
                         if (!isInterface)
@@ -1375,6 +1449,12 @@ namespace System
             private string? m_toString;
             private string? m_namespace;
             private readonly bool m_isGlobal;
+            // The type is not externally visible and its assembly is annotated with DisablePrivateReflectionAttribute.
+            private readonly bool m_isReflectionBlocked;
+            // Which members of the type are available to reflection (see DisablePrivateReflectionAttribute).
+            private readonly ReflectionMemberVisibility m_memberVisibility;
+            // The instance fields of a type of an assembly annotated with DisablePrivateReflectionAttribute, also the ones that reflection does not provide (for ValueType.Equals).
+            internal FieldInfo[]? m_instanceFieldsIgnoringHiding;
             private MemberInfoCache<RuntimeMethodInfo>? m_methodInfoCache;
             private MemberInfoCache<RuntimeConstructorInfo>? m_constructorInfoCache;
             private MemberInfoCache<RuntimeFieldInfo>? m_fieldInfoCache;
@@ -1396,7 +1476,16 @@ namespace System
             {
                 m_typeCode = TypeCode.Empty;
                 m_runtimeType = runtimeType;
-                m_isGlobal = RuntimeTypeHandle.GetModule(runtimeType).RuntimeType == runtimeType;
+
+                RuntimeModule module = RuntimeTypeHandle.GetModule(runtimeType);
+                m_isGlobal = module.RuntimeType == runtimeType;
+
+                if (module.IsPrivateReflectionDisabled)
+                {
+                    int visibility = RuntimeTypeHandle.GetReflectionVisibility(runtimeType);
+                    m_isReflectionBlocked = (visibility & 1) != 0;
+                    m_memberVisibility = (ReflectionMemberVisibility)(visibility >> 1);
+                }
             }
             #endregion
 
@@ -1404,7 +1493,9 @@ namespace System
             // This is the slow path for construction. Mark it to avoid inlining it into the caller.
             [MethodImpl(MethodImplOptions.NoInlining)]
             private string ConstructName(ref string? name, TypeNameFormatFlags formatFlags) =>
-                name = new RuntimeTypeHandle(m_runtimeType).ConstructName(formatFlags);
+                name = m_isReflectionBlocked
+                    ? $"<PrivateType 0x{RuntimeHelpers.GetHashCode(m_runtimeType):X8}>"
+                    : new RuntimeTypeHandle(m_runtimeType).ConstructName(formatFlags);
 
             private T[] GetMemberList<T>(ref MemberInfoCache<T>? m_cache, MemberListType listType, string? name, CacheType cacheType)
                 where T : MemberInfo
@@ -1472,16 +1563,40 @@ namespace System
             // No full instantiation and assembly.
             internal string GetToString() => m_toString ?? ConstructName(ref m_toString, TypeNameFormatFlags.FormatNamespace)!;
 
+            // The names for the diagnostics APIs, which are not affected by DisablePrivateReflectionAttribute (they are not cached).
+            internal string GetNameForDiagnostics()
+                => m_isReflectionBlocked ? new RuntimeTypeHandle(m_runtimeType).ConstructName(TypeNameFormatFlags.FormatBasic) : GetName();
+
+            internal string GetToStringForDiagnostics()
+                => m_isReflectionBlocked ? new RuntimeTypeHandle(m_runtimeType).ConstructName(TypeNameFormatFlags.FormatNamespace) : GetToString();
+
+            internal string? GetFullNameForDiagnostics()
+                => !m_isReflectionBlocked ? GetFullName() :
+                    IsFullNameRoundtripCompatible(m_runtimeType)
+                        ? new RuntimeTypeHandle(m_runtimeType).ConstructName(TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst)
+                        : null;
+
             internal string? GetAssemblyQualifiedName() => m_assemblyQualifiedName ??
                 (IsFullNameRoundtripCompatible(m_runtimeType)
-                    ? ConstructName(ref m_assemblyQualifiedName, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst | TypeNameFormatFlags.FormatAssembly)
+                    ? ConstructAssemblyQualifiedName()
                     : null);
+
+            private string ConstructAssemblyQualifiedName()
+            {
+                if (m_isReflectionBlocked)
+                    throw new NotSupportedException(SR.Reflection_TypeBlocked);
+
+                return ConstructName(ref m_assemblyQualifiedName, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst | TypeNameFormatFlags.FormatAssembly);
+            }
 
             internal string? GetNamespace()
             {
                 // @Optimization - Use ConstructName to populate m_namespace
                 if (m_namespace == null)
                 {
+                    if (m_isReflectionBlocked)
+                        return null;
+
                     Type type = m_runtimeType.GetRootElementType();
                     if (type.IsFunctionPointer)
                         return null;
@@ -1508,7 +1623,7 @@ namespace System
                 if (m_enclosingType == null)
                 {
                     // Use void as a marker of null enclosing type
-                    RuntimeType? enclosingType = RuntimeTypeHandle.GetDeclaringType(GetRuntimeType());
+                    RuntimeType? enclosingType = m_isReflectionBlocked ? null : RuntimeTypeHandle.GetDeclaringType(GetRuntimeType());
                     Debug.Assert(enclosingType != typeof(void));
                     m_enclosingType = enclosingType ?? (RuntimeType)typeof(void);
                 }
@@ -1519,6 +1634,10 @@ namespace System
             internal RuntimeType GetRuntimeType() => m_runtimeType;
 
             internal bool IsGlobal => m_isGlobal;
+
+            internal bool IsReflectionBlocked => m_isReflectionBlocked;
+
+            internal ReflectionMemberVisibility MemberVisibility => m_memberVisibility;
 
             internal void InvalidateCachedNestedType() => m_nestedClassesCache = null;
 
@@ -1581,9 +1700,13 @@ namespace System
             internal MethodInfo GetGenericMethodInfo(RuntimeMethodHandleInternal genericMethod)
             {
                 LoaderAllocator la = RuntimeMethodHandle.GetLoaderAllocator(genericMethod);
+                RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(genericMethod);
+
+                if (IsMethodHiddenFromReflection(genericMethod))
+                    throw new NotSupportedException(declaringType.IsReflectionBlocked ? SR.Reflection_TypeBlocked : SR.Reflection_MemberBlocked);
 
                 RuntimeMethodInfo rmi = new RuntimeMethodInfo(
-                    genericMethod, RuntimeMethodHandle.GetDeclaringType(genericMethod), this,
+                    genericMethod, declaringType, this,
                     RuntimeMethodHandle.GetAttributes(genericMethod), (BindingFlags)(-1), la);
 
                 RuntimeMethodInfo crmi;
@@ -1730,6 +1853,63 @@ namespace System
             MethodBase? retval = GetMethodBase(reflectedType, IRuntimeMethodInfo.GetValue(methodHandle));
             GC.KeepAlive(methodHandle);
             return retval;
+        }
+
+        // Used where the methods of types that are not reflectable (see DisablePrivateReflectionAttribute) are not an error, like
+        // the stack trace and exception APIs and the walks over the base types.
+        internal static MethodBase? GetMethodBaseOrNullIfReflectionBlocked(IRuntimeMethodInfo methodHandle)
+        {
+            MethodBase? retval = GetMethodBaseOrNullIfReflectionBlocked(null, IRuntimeMethodInfo.GetValue(methodHandle));
+            GC.KeepAlive(methodHandle);
+            return retval;
+        }
+
+        internal static MethodBase? GetMethodBaseOrNullIfReflectionBlocked(RuntimeType? reflectedType, RuntimeMethodHandleInternal methodHandle)
+        {
+            if (IsMethodHiddenFromReflection(methodHandle))
+                return null;
+
+            return GetMethodBase(reflectedType, methodHandle);
+        }
+
+        // For the diagnostics APIs (stack traces), which are not affected by DisablePrivateReflectionAttribute: the same as GetMethodBase, except
+        // that a method that is not available to reflection is returned in a MethodBase that is not shared with the reflection APIs (it is not
+        // in the member caches of the type, so reflection can't get to it).
+        internal static MethodBase? GetMethodBaseForDiagnostics(IRuntimeMethodInfo methodHandle, RuntimeType? reflectedType = null)
+        {
+            MethodBase? retval = GetMethodBaseForDiagnostics(IRuntimeMethodInfo.GetValue(methodHandle), reflectedType);
+            GC.KeepAlive(methodHandle);
+            return retval;
+        }
+
+        internal static MethodBase? GetMethodBaseForDiagnostics(RuntimeMethodHandleInternal handle, RuntimeType? reflectedType = null)
+        {
+            if (!IsMethodHiddenFromReflection(handle))
+                return GetMethodBase(reflectedType, handle);
+
+            RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(handle);
+            RuntimeType[]? methodInstantiation = null;
+
+            // The handle of the method of a delegate is on the canonical instantiation, and the one of the debugger on the generic definition
+            if (reflectedType is not null && reflectedType != declaringType && reflectedType.IsGenericType && declaringType.IsGenericType &&
+                reflectedType.GetGenericTypeDefinition() == declaringType.GetGenericTypeDefinition())
+            {
+                if (!RuntimeMethodHandle.IsGenericMethodDefinition(handle))
+                    methodInstantiation = RuntimeMethodHandle.GetMethodInstantiationInternal(handle);
+
+                handle = RuntimeMethodHandle.GetMethodFromCanonical(handle, reflectedType);
+                declaringType = reflectedType;
+            }
+
+            RuntimeMethodHandleInternal stub = RuntimeMethodHandle.GetStubIfNeeded(handle, declaringType, methodInstantiation);
+            MethodAttributes attributes = RuntimeMethodHandle.GetAttributes(stub);
+            RuntimeTypeCache cache = (reflectedType ?? declaringType).Cache;
+            MethodBase result = RuntimeMethodHandle.IsConstructor(stub)
+                ? new RuntimeConstructorInfo(stub, declaringType, cache, attributes, (BindingFlags)(-1))
+                : new RuntimeMethodInfo(stub, declaringType, cache, attributes, (BindingFlags)(-1), RuntimeMethodHandle.GetLoaderAllocator(stub));
+
+            GC.KeepAlive(methodInstantiation);
+            return result;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
@@ -2384,6 +2564,63 @@ namespace System
             }
         }
 
+        // True if the type is not externally visible and its assembly is annotated with DisablePrivateReflectionAttribute.
+        // The members, the custom attributes and the name of such a type are not available to reflection, and it can't be found by name.
+        // The check is cheap for types that have a cache already and for types of assemblies that are not annotated.
+        internal bool IsReflectionBlocked => CacheIfExists?.IsReflectionBlocked ?? (GetRuntimeModule().IsPrivateReflectionDisabled && Cache.IsReflectionBlocked);
+
+        // Which members of the type are available to reflection (all of them, unless the assembly is annotated with
+        // DisablePrivateReflectionAttribute). The check is cheap for types that have a cache already and for types of assemblies that are not annotated.
+        internal ReflectionMemberVisibility MemberVisibility
+            => CacheIfExists?.MemberVisibility ?? (GetRuntimeModule().IsPrivateReflectionDisabled ? Cache.MemberVisibility : ReflectionMemberVisibility.All);
+
+        // True if the method is not available to reflection because of DisablePrivateReflectionAttribute.
+        internal static bool IsMethodHiddenFromReflection(RuntimeMethodHandleInternal method)
+        {
+            // The method table of a dynamic method is not a type of its module that has metadata
+            if (RuntimeMethodHandle.IsDynamicMethod(method))
+                return false;
+
+            ReflectionMemberVisibility visibility = RuntimeMethodHandle.GetDeclaringType(method).MemberVisibility;
+            return visibility != ReflectionMemberVisibility.All && ReflectionMember.IsHidden(visibility, RuntimeMethodHandle.GetAttributes(method));
+        }
+
+        // For the diagnostics APIs (stack traces), which are not affected by DisablePrivateReflectionAttribute: the names, the declaring type and
+        // the custom attributes of the types that are not available to reflection are the real ones.
+        internal string GetNameForDiagnostics() => Cache.GetNameForDiagnostics();
+
+        internal string GetToStringForDiagnostics() => Cache.GetToStringForDiagnostics();
+
+        internal string? GetFullNameForDiagnostics() => Cache.GetFullNameForDiagnostics();
+
+        internal RuntimeType? GetDeclaringTypeForDiagnostics()
+            => IsReflectionBlocked ? RuntimeTypeHandle.GetDeclaringType(this) : (RuntimeType?)DeclaringType;
+
+        internal bool IsDefinedForDiagnostics(RuntimeType attributeType)
+            => IsReflectionBlocked ? RuntimeCustomAttribute.IsDefinedIgnoringReflectionBlocking(this, attributeType) : IsDefined(attributeType, inherit: false);
+
+        // All the methods declared by the type, also the ones that are not available to reflection. They are not shared with the
+        // reflection APIs.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "The methods are the ones of a type that is on the stack of the caller.")]
+        internal MethodInfo[] GetDeclaredMethodsForDiagnostics()
+        {
+            if (MemberVisibility == ReflectionMemberVisibility.All)
+                return GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+            ListBuilder<MethodInfo> methods = default;
+
+            foreach (RuntimeMethodHandleInternal methodHandle in RuntimeTypeHandle.GetIntroducedMethods(this))
+            {
+                MethodAttributes attributes = RuntimeMethodHandle.GetAttributes(methodHandle);
+
+                if ((attributes & MethodAttributes.RTSpecialName) == 0 && GetMethodBaseForDiagnostics(new RuntimeMethodInfoStub(methodHandle, this)) is MethodInfo method)
+                    methods.Add(method);
+            }
+
+            return methods.ToArray();
+        }
+
         private RuntimeTypeCache Cache
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2620,6 +2857,45 @@ namespace System
             return GetFieldCandidates(null, bindingAttr, false).ToArray();
         }
 
+        // For ValueType.Equals, which needs to see the instance fields of the types of assemblies annotated with DisablePrivateReflectionAttribute
+        // as well, whatever their accessibility.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "ValueType.Equals needs the fields of the type it is called on, which are preserved with the type.")]
+        internal FieldInfo[] GetInstanceFieldsIgnoringReflectionBlocking()
+        {
+            if (MemberVisibility == ReflectionMemberVisibility.All)
+                return GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+
+            // The result is cached, as ValueType.Equals asks for it each time it is called
+            RuntimeTypeCache cache = Cache;
+            if (cache.m_instanceFieldsIgnoringHiding is { } cachedFields)
+                return cachedFields;
+
+            Span<IntPtr> handles = stackalloc IntPtr[64];
+            int count;
+            while (!RuntimeTypeHandle.GetFields(this, handles, out count))
+            {
+                Debug.Assert(count > handles.Length);
+                handles = new IntPtr[count];
+            }
+
+            ListBuilder<FieldInfo> fields = default;
+
+            foreach (IntPtr handle in handles.Slice(0, count))
+            {
+                RuntimeFieldHandleInternal fieldHandle = new RuntimeFieldHandleInternal(handle);
+                FieldAttributes attributes = RuntimeFieldHandle.GetAttributes(fieldHandle);
+
+                if ((attributes & FieldAttributes.Static) != 0)
+                    continue;
+
+                bool isPublic = (attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;
+                fields.Add(new RtFieldInfo(fieldHandle, this, cache, FilterPreCalculate(isPublic, isInherited: false, isStatic: false)));
+            }
+
+            return cache.m_instanceFieldsIgnoringHiding = fields.ToArray();
+        }
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
         {
@@ -2704,6 +2980,10 @@ namespace System
                 if (ifaceRtMethodHandle.IsNullHandle())
                     continue;
 
+                // The interface methods that are not available to reflection are not in the map
+                if (IsMethodHiddenFromReflection(ifaceRtMethodHandle))
+                    continue;
+
                 // GetMethodBase will convert this to the instantiating/unboxing stub if necessary
                 MethodBase ifaceMethodBase = GetMethodBase(ifaceRtType, ifaceRtMethodHandle)!;
                 Debug.Assert(ifaceMethodBase is RuntimeMethodInfo);
@@ -2724,6 +3004,9 @@ namespace System
                     reflectedType = this;
 
                 // GetMethodBase will convert this to the instantiating/unboxing stub if necessary
+                if (IsMethodHiddenFromReflection(classRtMethodHandle))
+                    throw new NotSupportedException(SR.Reflection_MemberBlocked);
+
                 MethodBase? rtTypeMethodBase = GetMethodBase(reflectedType, classRtMethodHandle);
                 // a class may not implement all the methods of an interface (abstract class) so null is a valid value
                 Debug.Assert(rtTypeMethodBase is null || rtTypeMethodBase is RuntimeMethodInfo);
@@ -2956,7 +3239,8 @@ namespace System
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeType iface = cache[i];
-                if (FilterApplyType(iface, bindingAttr, name, false, ns))
+                // The interfaces that are not reflectable (see DisablePrivateReflectionAttribute) can't be found by name.
+                if (FilterApplyType(iface, bindingAttr, name, false, ns) && !iface.IsReflectionBlocked)
                 {
                     if (match != null)
                         throw ThrowHelper.GetAmbiguousMatchException(match);
@@ -3231,7 +3515,9 @@ namespace System
                 if (declaringMethod == null)
                     return null;
 
-                return GetMethodBase(RuntimeMethodHandle.GetDeclaringType(declaringMethod), declaringMethod);
+                MethodBase? result = GetMethodBaseOrNullIfReflectionBlocked(RuntimeMethodHandle.GetDeclaringType(declaringMethod), IRuntimeMethodInfo.GetValue(declaringMethod));
+                GC.KeepAlive(declaringMethod);
+                return result;
             }
         }
         #endregion
@@ -3320,6 +3606,9 @@ namespace System
         {
             get
             {
+                if (IsReflectionBlocked)
+                    throw new NotSupportedException(SR.Reflection_TypeBlocked);
+
                 TypeHandle th = GetNativeTypeHandle();
                 if (th.IsTypeDesc || th.AsMethodTable()->IsArray)
                 {
@@ -3559,6 +3848,15 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(typeArguments);
 
+            return MakeGenericTypeCore(typeArguments, throwIfBlocked: true);
+        }
+
+        // The runtime itself instantiates the generic types that are not reflectable, for example to read the custom attributes that mention them.
+        internal Type MakeGenericTypeIgnoringReflectionBlocking(Type[] typeArguments)
+            => MakeGenericTypeCore(typeArguments, throwIfBlocked: false);
+
+        private Type MakeGenericTypeCore(Type[] typeArguments, bool throwIfBlocked)
+        {
             if (!IsGenericTypeDefinition)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
@@ -3566,8 +3864,16 @@ namespace System
             if (genericParameters.Length != typeArguments.Length)
                 throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(typeArguments));
 
+            // The generic type definitions that are not reflectable (see DisablePrivateReflectionAttribute) can't be instantiated, and
+            // they can't be the type arguments of another generic type either.
+            if (throwIfBlocked && IsReflectionBlocked)
+                throw new NotSupportedException(SR.Reflection_TypeBlocked);
+
             if (typeArguments.Length == 1 && typeArguments[0] is RuntimeType rt)
             {
+                if (throwIfBlocked && rt.IsGenericTypeDefinition && rt.IsReflectionBlocked)
+                    throw new NotSupportedException(SR.Reflection_TypeBlocked);
+
                 ThrowIfTypeNeverValidGenericArgument(rt);
                 try
                 {
@@ -3596,6 +3902,10 @@ namespace System
                     {
                         foundSigType = true;
                     }
+                }
+                else if (throwIfBlocked && rtInstantiationElem.IsGenericTypeDefinition && rtInstantiationElem.IsReflectionBlocked)
+                {
+                    throw new NotSupportedException(SR.Reflection_TypeBlocked);
                 }
 
                 instantiationRuntimeType[i] = rtInstantiationElem!;
@@ -3969,7 +4279,7 @@ namespace System
 
             ActivatorCache cache = GetOrCreateCacheEntry<ActivatorCache>();
 
-            if (!cache.CtorIsPublic && publicOnly)
+            if (!cache.CtorIsPublicToReflection && (publicOnly || cache.CtorIsHiddenFromReflection))
             {
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
             }
@@ -4357,6 +4667,44 @@ namespace System
             => Encoding.UTF8.GetString(new ReadOnlySpan<byte>(m_pStringHeap, m_StringHeapByteLength));
     }
     #endregion
+
+    // Which members of a type are available to reflection (see DisablePrivateReflectionAttribute). The values must match the ones
+    // that RuntimeTypeHandle_GetReflectionVisibility returns.
+    internal enum ReflectionMemberVisibility : byte
+    {
+        // All the members are available
+        All = 0,
+
+        // Only the public members are available
+        PublicOnly = 1,
+
+        // No member is available
+        None = 2,
+
+        // The constructors, fields and properties (attributes are instantiated through them) and the public members are available
+        AttributeMembers = 3,
+    }
+
+    internal static class ReflectionMember
+    {
+        internal static bool IsHidden(ReflectionMemberVisibility visibility, MethodAttributes attributes)
+            => visibility switch
+            {
+                ReflectionMemberVisibility.All => false,
+                ReflectionMemberVisibility.None => true,
+                ReflectionMemberVisibility.AttributeMembers => (attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public &&
+                    (attributes & (MethodAttributes.SpecialName | MethodAttributes.RTSpecialName)) == 0,
+                _ => (attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public,
+            };
+
+        internal static bool IsHidden(ReflectionMemberVisibility visibility, FieldAttributes attributes)
+            => visibility switch
+            {
+                ReflectionMemberVisibility.All or ReflectionMemberVisibility.AttributeMembers => false,
+                ReflectionMemberVisibility.None => true,
+                _ => (attributes & FieldAttributes.FieldAccessMask) != FieldAttributes.Public,
+            };
+    }
 }
 
 namespace System.Reflection

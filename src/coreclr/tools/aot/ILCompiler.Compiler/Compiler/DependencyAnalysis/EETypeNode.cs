@@ -800,10 +800,29 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 ushort flagsEx = EETypeBuilderHelpers.ComputeFlagsEx(_type);
+                flagsEx |= ComputeStrippedTypeFlags(factory, _type);
                 flags |= flagsEx;
             }
 
             objData.EmitUInt(flags);
+        }
+
+        // Types that have no reflection metadata because they are stripped (see DisablePrivateReflectionAttribute) can't tell reflection
+        // if they are abstract or sealed, so the MethodTable does. Only these types have the flags, so that other types don't change.
+        protected static ushort ComputeStrippedTypeFlags(NodeFactory factory, TypeDesc type)
+        {
+            ushort flags = 0;
+
+            if (type.GetTypeDefinition() is MetadataType definition && factory.MetadataManager.IsStripped(definition))
+            {
+                if (definition.IsAbstract)
+                    flags |= (ushort)EETypeFlagsEx.StrippedIsAbstractFlag;
+
+                if (definition.IsSealed)
+                    flags |= (ushort)EETypeFlagsEx.StrippedIsSealedFlag;
+            }
+
+            return flags;
         }
 
         protected virtual int BaseSize

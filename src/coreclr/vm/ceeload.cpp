@@ -1243,6 +1243,41 @@ BOOL Module::IsRuntimeMarshallingEnabled()
     return hr != S_OK;
 }
 
+BOOL Module::IsPrivateReflectionDisabled()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    if (m_dwPersistedFlags & PRIVATE_REFLECTION_DISABLED_IS_CACHED)
+    {
+        return !!(m_dwPersistedFlags & PRIVATE_REFLECTION_DISABLED);
+    }
+
+    BOOL isDisabled = FALSE;
+
+    // Dynamic assemblies are never subject to this
+    if (!GetAssembly()->IsDynamic())
+    {
+        IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
+
+        mdToken token;
+        if (SUCCEEDED(mdImport->GetAssemblyFromScope(&token)))
+        {
+            isDisabled = mdImport->GetCustomAttributeByName(token, g_DisablePrivateReflectionAttribute, nullptr, nullptr) == S_OK;
+        }
+    }
+
+    InterlockedOr((LONG*)&m_dwPersistedFlags, PRIVATE_REFLECTION_DISABLED_IS_CACHED |
+        (isDisabled ? PRIVATE_REFLECTION_DISABLED : 0));
+
+    return isDisabled;
+}
+
 BOOL Module::OptsIntoRefSafetyRulesV11()
 {
     STANDARD_VM_CONTRACT;

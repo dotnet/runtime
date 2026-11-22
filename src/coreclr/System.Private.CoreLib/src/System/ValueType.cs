@@ -46,7 +46,7 @@ namespace System
                     RuntimeHelpers.GetMethodTable(this)->GetNumInstanceFieldBytes());
             }
 
-            FieldInfo[] thisFields = GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            FieldInfo[] thisFields = ((RuntimeType)GetType()).GetInstanceFieldsIgnoringReflectionBlocking();
 
             for (int i = 0; i < thisFields.Length; i++)
             {

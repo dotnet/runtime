@@ -33,7 +33,7 @@ namespace System.Diagnostics
                 Type? declaringType = _method.DeclaringType;
                 if (declaringType is { IsConstructedGenericType: true })
                     declaringType = declaringType.GetGenericTypeDefinition();
-                return declaringType?.FullName;
+                return declaringType is null ? null : StackTrace.GetFullNameForStackTrace(declaringType);
             }
         }
 
@@ -54,8 +54,12 @@ namespace System.Diagnostics
             if (!StackTrace.IsSupported)
                 return null;
 
+#if CORECLR
+            // The target can be a method that is not available to reflection (see DisablePrivateReflectionAttribute).
+            return new DiagnosticMethodInfo(@delegate.GetMethodForDiagnostics());
+#else
             return new DiagnosticMethodInfo(@delegate.Method);
-
+#endif
         }
 
         /// <summary>
@@ -74,6 +78,9 @@ namespace System.Diagnostics
                 return null;
 
             MethodBase? method = frame.GetMethod();
+#if CORECLR
+            method ??= frame.DiagnosticMethod;
+#endif
             if (method != null)
                 return new DiagnosticMethodInfo(method);
 

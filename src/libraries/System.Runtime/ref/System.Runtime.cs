@@ -14784,7 +14784,6 @@ namespace System.Runtime.CompilerServices
         public System.Runtime.CompilerServices.LoadHint LoadHint { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
-    [System.ObsoleteAttribute("DisablePrivateReflectionAttribute has no effect in .NET 6.0+.", DiagnosticId="SYSLIB0015", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class DisablePrivateReflectionAttribute : System.Attribute
     {
         public DisablePrivateReflectionAttribute() { }

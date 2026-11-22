@@ -98,7 +98,19 @@ namespace Internal.Runtime
         /// <summary>
         /// This type requires 8-byte alignment for its fields on certain platforms (ARM32, WASM)
         /// </summary>
-        RequiresAlign8Flag = 0x1000
+        RequiresAlign8Flag = 0x1000,
+
+        /// <summary>
+        /// The type is abstract. Only set for the types that have no reflection metadata because the assembly is annotated with
+        /// DisablePrivateReflectionAttribute, which have no other way to tell reflection.
+        /// </summary>
+        StrippedIsAbstractFlag = 0x2000,
+
+        /// <summary>
+        /// The type is sealed. Only set for the types that have no reflection metadata because the assembly is annotated with
+        /// DisablePrivateReflectionAttribute, which have no other way to tell reflection.
+        /// </summary>
+        StrippedIsSealedFlag = 0x4000,
     }
 
     internal static class ValueTypeFieldPaddingConsts

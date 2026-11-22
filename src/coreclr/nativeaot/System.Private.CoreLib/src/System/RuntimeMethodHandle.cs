@@ -47,7 +47,8 @@ namespace System
 
             if (!thisInfo->DeclaringType.Equals(thatInfo->DeclaringType))
                 return false;
-            if (!thisInfo->Handle.Equals(thatInfo->Handle))
+            // Methods that don't have metadata (see DisablePrivateReflectionAttribute) can only be equal if they are the same handle
+            if (thisInfo->Handle.IsNil || !thisInfo->Handle.Equals(thatInfo->Handle))
                 return false;
             if (thisInfo->NumGenericArgs != thatInfo->NumGenericArgs)
                 return false;

@@ -79,7 +79,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (isReturnDroppingAsyncThunk)
                     flags |= GenericMethodsHashtableConstants.IsReturnDroppingAsyncThunk;
 
-                int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, methodForMetadata);
+                int token = factory.MetadataManager.GetMetadataHandleForNativeLayout(factory, methodForMetadata);
 
                 int flagsAndToken = (token & MetadataManager.MetadataOffsetMask) | flags;
 

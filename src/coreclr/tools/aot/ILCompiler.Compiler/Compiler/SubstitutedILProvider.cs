@@ -1066,7 +1066,10 @@ namespace ILCompiler
 
                 // If we can have metadata for the type the comparison could succeed even if no MethodTable present.
                 // (This is the case of metadata-only types, where we were able to optimize the MethodTable away.)
-                if (_metadataManager != null && knownType.GetTypeDefinition() is MetadataType mdType && _metadataManager.CanGenerateMetadata(mdType))
+                // A type that has no metadata because it is stripped (see DisablePrivateReflectionAttribute) can still have a Type object
+                // without a constructed MethodTable: typeof gives one that is made out of a MethodTable that is not constructed.
+                if (_metadataManager != null && knownType.GetTypeDefinition() is MetadataType mdType
+                    && (_metadataManager.CanGenerateMetadata(mdType) || _metadataManager.IsStripped(mdType)))
                     return false;
 
                 constant = 0;

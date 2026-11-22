@@ -69,12 +69,22 @@ namespace System.Reflection.Runtime.TypeInfos
                         fullName.Append(',');
 
                     fullName.Append('[');
-                    fullName.Append(genericTypeArguments[i].AssemblyQualifiedName);
+                    fullName.Append(GetNameOfGenericArgument(genericTypeArguments[i]));
                     fullName.Append(']');
                 }
                 fullName.Append(']');
                 return fullName.ToString();
             }
+        }
+
+        private static string GetNameOfGenericArgument(RuntimeTypeInfo genericTypeArgument)
+        {
+            RuntimeTypeInfo rootType = genericTypeArgument;
+            while (rootType.HasElementType)
+                rootType = rootType.InternalRuntimeElementType;
+
+            // The assembly of a type that has no metadata is not available (see DisablePrivateReflectionAttribute).
+            return rootType is RuntimeBlockedTypeInfo ? genericTypeArgument.FullName : genericTypeArgument.AssemblyQualifiedName;
         }
 
         public sealed override Type GetGenericTypeDefinition()
@@ -187,7 +197,8 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return (RuntimeNamedTypeInfo)GenericTypeDefinitionTypeInfo;
+                // Generic types nested in a type that has no reflection metadata (closures, iterators) have no metadata either.
+                return GenericTypeDefinitionTypeInfo as RuntimeNamedTypeInfo;
             }
         }
 

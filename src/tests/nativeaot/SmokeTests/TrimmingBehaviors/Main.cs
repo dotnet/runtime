@@ -3,12 +3,18 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+[assembly: TypeMapAssemblyTarget<PrivateReflectionUniverse>("DisablePrivateReflectionLibrary")]
 
 bool success = RunTest(Dataflow.Run);
 success &= RunTest(DeadCodeElimination.Run);
 success &= RunTest(FeatureSwitches.Run);
 success &= RunTest(ILLinkDescriptor.Run);
 success &= RunTest(DependencyInjectionPattern.Run);
+success &= RunTest(DisablePrivateReflectionTests.Run);
+success &= RunTest(DisablePrivateReflectionConsumer.Run);
+success &= RunTest(DisablePrivateReflectionTests.RunTypeMap);
 if (!OperatingSystem.IsWasi())
 {
     success &= RunTest(UnmanagedCallersOnlyAssociatedSourceType.Run);

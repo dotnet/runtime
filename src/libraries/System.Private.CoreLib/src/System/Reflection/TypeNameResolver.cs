@@ -115,6 +115,12 @@ namespace System.Reflection
                 genericTypes[i] = genericArg;
             }
 
+#if CORECLR
+            // The generic types that are not reflectable (see DisablePrivateReflectionAttribute) can be instantiated here, but not by users.
+            if (type is RuntimeType runtimeType)
+                return runtimeType.MakeGenericTypeIgnoringReflectionBlocking(genericTypes);
+#endif
+
             return type.MakeGenericType(genericTypes);
         }
     }

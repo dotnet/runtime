@@ -235,6 +235,12 @@ namespace System
             }
         }
 
+        // The compiler removes the metadata of the types that are not reflectable (see DisablePrivateReflectionAttribute),
+        // so there is nothing to check at run time. Shared code that is compiled for CoreCLR as well refers to this.
+#pragma warning disable CA1822 // Mark members as static
+        internal bool IsReflectionBlocked => false;
+#pragma warning restore CA1822
+
         internal unsafe bool IsActualInterface
         {
             get

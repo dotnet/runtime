@@ -58,6 +58,8 @@ namespace System.Reflection
         }
 
         internal BindingFlags BindingFlags => m_bindingFlags;
+
+        internal bool HasAccessors => m_addMethod is not null || m_removeMethod is not null || m_raiseMethod is not null || m_otherMethod is not null;
         #endregion
 
         #region Object Overrides

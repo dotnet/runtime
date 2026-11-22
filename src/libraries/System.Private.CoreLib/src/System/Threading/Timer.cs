@@ -514,7 +514,14 @@ namespace System.Threading
         {
             get
             {
-                string? typeName = _timerCallback.Method.DeclaringType?.FullName;
+#if CORECLR
+                // The callback can be a method that is not available to reflection (see DisablePrivateReflectionAttribute).
+                System.Reflection.MethodInfo callbackMethod = _timerCallback.GetMethodForDiagnostics();
+                string? typeName = callbackMethod.DeclaringType is Type declaringType ? StackTrace.GetFullNameForStackTrace(declaringType) : null;
+#else
+                System.Reflection.MethodInfo callbackMethod = _timerCallback.Method;
+                string? typeName = callbackMethod.DeclaringType?.FullName;
+#endif
                 if (typeName is not null)
                 {
                     typeName += ".";
@@ -523,7 +530,7 @@ namespace System.Threading
                 return
                     "DueTime = " + (_dueTime == Timeout.UnsignedInfinite ? "(not set)" : TimeSpan.FromMilliseconds(_dueTime)) + ", " +
                     "Period = " + (_period == Timeout.UnsignedInfinite ? "(not set)" : TimeSpan.FromMilliseconds(_period)) + ", " +
-                    typeName + _timerCallback.Method.Name + "(" + (_state?.ToString() ?? "null") + ")";
+                    typeName + callbackMethod.Name + "(" + (_state?.ToString() ?? "null") + ")";
             }
         }
 

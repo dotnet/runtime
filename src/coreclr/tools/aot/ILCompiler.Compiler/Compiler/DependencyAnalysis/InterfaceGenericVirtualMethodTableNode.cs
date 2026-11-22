@@ -151,7 +151,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Emit the method signature and containing type of the current interface method
                 uint typeId = _externalReferences.GetIndex(factory.NecessaryTypeSymbol(callingMethod.OwningType));
-                int callingMethodToken = factory.MetadataManager.GetMetadataHandleForMethod(factory, callingMethod);
+                int callingMethodToken = factory.MetadataManager.GetMetadataHandleForNativeLayout(factory, callingMethod);
                 Vertex vertex = nativeFormatWriter.GetTuple(
                     nativeFormatWriter.GetUnsignedConstant(typeId),
                     nativeFormatWriter.GetUnsignedConstant((uint)callingMethodToken));
@@ -162,7 +162,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (impl is MethodDesc implementationMethod)
                     {
-                        int implementationMethodToken = factory.MetadataManager.GetMetadataHandleForMethod(factory, implementationMethod);
+                        int implementationMethodToken = factory.MetadataManager.GetMetadataHandleForNativeLayout(factory, implementationMethod);
                         typeId = _externalReferences.GetIndex(factory.NecessaryTypeSymbol(implementationMethod.OwningType));
                         vertex = nativeFormatWriter.GetTuple(
                             vertex,

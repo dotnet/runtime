@@ -114,7 +114,7 @@ public static partial class Debugger
             RuntimeType type = (RuntimeType)module.ResolveType(token);
             if (arguments.Length != 0 || (!allowUninstantiated && type.IsGenericTypeDefinition))
             {
-                type = (RuntimeType)type.MakeGenericType(arguments);
+                type = (RuntimeType)type.MakeGenericTypeIgnoringReflectionBlocking(arguments);
             }
 
             return type;

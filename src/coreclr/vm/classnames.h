@@ -75,5 +75,6 @@
 #define g_CriticalFinalizerObjectName "CriticalFinalizerObject"
 
 #define g_DisableRuntimeMarshallingAttribute "System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute"
+#define g_DisablePrivateReflectionAttribute "System.Runtime.CompilerServices.DisablePrivateReflectionAttribute"
 
 #endif //!__CLASSNAMES_H__

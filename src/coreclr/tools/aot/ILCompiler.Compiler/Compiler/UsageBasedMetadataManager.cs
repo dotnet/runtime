@@ -252,6 +252,11 @@ namespace ILCompiler
             {
                 dependencies.Add(factory.LimitedMethodMetadata(method.GetTypicalMethodDefinition()), "Method referenced from native layout");
             }
+            else if (_blockingPolicy.IsStripped(method.GetTypicalMethodDefinition()))
+            {
+                // The method is not available to reflection, but the type loader still needs to identify it.
+                dependencies.Add(factory.DetachedMethodMetadata(method.GetTypicalMethodDefinition()), "Method referenced from native layout that is not available to reflection");
+            }
             else
             {
                 // We can end up here with reflection disabled or multifile compilation.
@@ -919,7 +924,7 @@ namespace ILCompiler
             return new AnalysisBasedMetadataManager(
                 _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy, FlowAnnotations,
                 _modulesWithMetadata, _typesWithForcedEEType, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
-                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, _parametersWithMetadata, _options);
+                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, _parametersWithMetadata, GetDetachedMethods(), _options);
         }
 
         private void AddDataflowDependency(IDependencySink dependencies, NodeFactory factory, MethodIL methodIL, string reason)
@@ -1059,6 +1064,11 @@ namespace ILCompiler
             public bool IsBlocked(MethodDesc methodDef)
             {
                 return _blockingPolicy.IsBlocked(methodDef);
+            }
+
+            public bool IsStripped(MetadataType typeDef)
+            {
+                return _blockingPolicy.IsStripped(typeDef);
             }
         }
 

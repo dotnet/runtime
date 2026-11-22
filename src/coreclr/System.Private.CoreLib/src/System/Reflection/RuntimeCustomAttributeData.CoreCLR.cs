@@ -46,6 +46,8 @@ namespace System.Reflection
     internal sealed partial class RuntimeCustomAttributeData : CustomAttributeData
     {
         #region Private Static Methods
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "We're getting the constructors of attributes that we found in the metadata. The attribute constructors won't be trimmed.")]
         private static IList<CustomAttributeData> GetCustomAttributes(QCustomAttributeList attributeList)
         {
             RuntimeModule module = attributeList.Module;
@@ -56,8 +58,32 @@ namespace System.Reflection
             }
 
             CustomAttributeData[] customAttributes = new CustomAttributeData[records.Length];
+            int count = 0;
             for (int i = 0; i < records.Length; i++)
-                customAttributes[i] = new RuntimeCustomAttributeData(module, records[i].tkCtor, in records[i].blob);
+            {
+                IRuntimeMethodInfo ctorHandle = new ModuleHandle(module).ResolveMethodHandle(records[i].tkCtor).GetMethodInfo();
+
+                // An attribute whose type is not available to reflection (the attribute type is not externally visible in an assembly annotated with
+                // DisablePrivateReflectionAttribute, which is not necessarily the assembly of the attributed member) is not available either.
+                // The constructors of an attribute class that is available are available as well.
+                if (RuntimeMethodHandle.GetDeclaringType(IRuntimeMethodInfo.GetValue(ctorHandle)).IsReflectionBlocked)
+                {
+                    GC.KeepAlive(ctorHandle);
+                    continue;
+                }
+
+                customAttributes[count++] = new RuntimeCustomAttributeData(module, records[i].tkCtor, in records[i].blob, (RuntimeConstructorInfo)RuntimeType.GetMethodBase(ctorHandle)!);
+            }
+
+            if (count == 0)
+            {
+                return Array.Empty<CustomAttributeData>();
+            }
+
+            if (count != customAttributes.Length)
+            {
+                Array.Resize(ref customAttributes, count);
+            }
 
             return Array.AsReadOnly(customAttributes);
         }
@@ -129,6 +155,12 @@ namespace System.Reflection
         internal static bool IsAttributeDefined(RuntimeModule decoratedModule, int decoratedMetadataToken, int attributeCtorToken)
         {
             return IsCustomAttributeDefined(new QCustomAttributeList(decoratedModule, decoratedMetadataToken), null, attributeCtorToken: attributeCtorToken);
+        }
+
+        // For the runtime itself, which needs to know about the attributes of types that are not reflectable (see DisablePrivateReflectionAttribute).
+        internal static bool IsDefinedIgnoringReflectionBlocking(RuntimeType type, RuntimeType attributeType)
+        {
+            return IsCustomAttributeDefined(new QCustomAttributeList(type), attributeType);
         }
 
         internal static bool IsCustomAttributeDefined(
@@ -217,6 +249,10 @@ namespace System.Reflection
 
             // Test attribute type against user provided attribute type filter
             if (!MatchesTypeFilter(attributeType, attributeFilterType))
+                return false;
+
+            // Attributes whose type is not reflectable are not available (see DisablePrivateReflectionAttribute)
+            if (attributeType.IsReflectionBlocked)
                 return false;
 
             // Ensure if attribute type must be inheritable that it is inheritable

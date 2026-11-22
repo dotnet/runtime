@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.TypeInfos;
 
@@ -146,7 +147,23 @@ namespace System.Reflection.Runtime.General
                                 return null;
                             genericTypeArguments.Add(genericTypeArgument);
                         }
-                        return genericTypeDefinition.GetConstructedGenericTypeNoConstraintCheck(genericTypeArguments.ToArray());
+                        RuntimeTypeInfo constructedType = genericTypeDefinition.GetConstructedGenericTypeNoConstraintCheck(genericTypeArguments.ToArray());
+
+                        // An instance of a generic type that has no metadata (see DisablePrivateReflectionAttribute) is the blocked type of its MethodTable,
+                        // like the instances that come from a MethodTable are (see ExecutionDomain.GetRuntimeTypeInfo). Without one there is nothing to represent it with.
+                        if (genericTypeDefinition is RuntimeBlockedTypeInfo)
+                        {
+                            RuntimeTypeHandle instanceHandle = constructedType.InternalTypeHandleIfAvailable;
+                            if (instanceHandle.IsNull())
+                            {
+                                exception = new NotSupportedException(SR.Reflection_TypeBlocked);
+                                return null;
+                            }
+
+                            return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(instanceHandle);
+                        }
+
+                        return constructedType;
                     }
 
                 case HandleType.TypeReference:
@@ -164,6 +181,8 @@ namespace System.Reflection.Runtime.General
                     throw new NotSupportedException(); // Unexpected Type signature type.
             }
         }
+
+        private const string StrippedTypeNamePrefix = "<stripped>";
 
         //
         // Main routine to resolve a typeReference.
@@ -206,6 +225,22 @@ namespace System.Reflection.Runtime.General
             if (parentType == HandleType.NamespaceReference)
             {
                 NamespaceReferenceHandle namespaceReferenceHandle = parent.ToNamespaceReferenceHandle(reader);
+
+                // Placeholder emitted by the compiler for types that have no reflection metadata (see DisablePrivateReflectionAttribute).
+                // The name has the hash code of the type, which finds its MethodTable if it has one (for example if a custom attribute mentions it).
+                if (name.StartsWith(StrippedTypeNamePrefix, StringComparison.Ordinal))
+                {
+                    if (name.Length >= StrippedTypeNamePrefix.Length + 8 &&
+                        int.TryParse(name.AsSpan(StrippedTypeNamePrefix.Length, 8), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out int typeHashCode) &&
+                        ReflectionCoreExecution.ExecutionEnvironment.TryGetNamedTypeForTypeReference(reader, typeReferenceHandle, typeHashCode, out RuntimeTypeHandle blockedTypeHandle))
+                    {
+                        return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(blockedTypeHandle);
+                    }
+
+                    exception = new NotSupportedException(SR.Reflection_TypeBlocked);
+                    return null;
+                }
+
                 string fullName = namespaceReferenceHandle.ToFullyQualifiedTypeName(name, reader);
                 ScopeReferenceHandle scopeReferenceHandle = namespaceReferenceHandle.GetNamespaceReference(reader).Scope;
 
