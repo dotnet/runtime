@@ -100,11 +100,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)
         {
             Debug.Assert(_thunkKind == ImportThunkKind.DelayLoadHelper);
-            bool is64Bit = instructionEncoder.Is64Bit;
-            WasmValueType ptr = is64Bit ? WasmValueType.I64 : WasmValueType.I32;
-            CorInfoWasmType ptrType = is64Bit ? CorInfoWasmType.CORINFO_WASM_TYPE_I64 : CorInfoWasmType.CORINFO_WASM_TYPE_I32;
-            WasmExpr PtrConst(int value) => is64Bit ? I64.Const(value) : I32.Const(value);
-            WasmExpr ptrAdd = is64Bit ? I64.Add : I32.Add;
+            WasmTargetPtr ptr = instructionEncoder.Ptr;
+            CorInfoWasmType ptrType = ptr.CorInfoType;
 
             // WASM-TODO! This is NOT an efficient way to implement this thunk. Currently it writes all the arguments to the stack, not just the ones which need to be saved for GC purposes.
             // At some point we'll want to only write the arguments which need GC tracking, and skip the save/restore for other arguments. This might require changes to code
@@ -123,23 +120,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             List<WasmExpr> expressions = new List<WasmExpr>();
             // local.get 0
             expressions.Add(Local.Get(0));
-            expressions.Add(PtrConst(sizeOfStoredLocals));
-            expressions.Add(is64Bit ? I64.Sub : I32.Sub);
+            expressions.Add(ptr.Const(sizeOfStoredLocals));
+            expressions.Add(ptr.Sub);
             // local.set 0
             expressions.Add(Local.Set(0));
 
             // Initialize m_ReturnAddress to 0 at offset 0 of the transition block
             // The 0 indicates that the return address is computed from m_StackPointer.
             expressions.Add(Local.Get(0));
-            expressions.Add(PtrConst(0));
-            expressions.Add(Memory.Store(ptr, 0));
+            expressions.Add(ptr.Const(0));
+            expressions.Add(ptr.Store(0));
 
             // Store the original caller's frame pointer (SP before allocation).
             expressions.Add(Local.Get(0));
             expressions.Add(Local.Get(0));
-            expressions.Add(PtrConst(sizeOfStoredLocals));
-            expressions.Add(ptrAdd);
-            expressions.Add(Memory.Store(ptr, (ulong)factory.Target.PointerSize));
+            expressions.Add(ptr.Const(sizeOfStoredLocals));
+            expressions.Add(ptr.Add);
+            expressions.Add(ptr.Store((ulong)ptr.Size));
 
             // Stash the arguments in the transition block
             foreach (WasmThunkArg arg in layout.Args)
@@ -156,10 +153,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     // memory.fill: (dst, val, len) -> ()
                     expressions.Add(Local.Get(0));
-                    expressions.Add(PtrConst(arg.Offset));
-                    expressions.Add(ptrAdd);
+                    expressions.Add(ptr.Const(arg.Offset));
+                    expressions.Add(ptr.Add);
                     expressions.Add(I32.Const(0));
-                    expressions.Add(PtrConst(fillSize));
+                    expressions.Add(ptr.Const(fillSize));
                     expressions.Add(Memory.Fill());
                     continue;
                 }
@@ -188,7 +185,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Load the helper function address and dispatch
             // global.get {module base}
             expressions.Add(Global.Get(WebCilObjectWriter.ImageBaseGlobalIndex)); // Module base used to load the helper function address
-            expressions.Add(is64Bit ? I64.LoadWithRVAOffset(_helperCell) : I32.LoadWithRVAOffset(_helperCell));
+            expressions.Add(ptr.LoadWithRVAOffset(_helperCell));
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
 
             // local.set (PortableEntrypointThunk)  / At this point we can overwrite with the incoming portable entrypoint local, since the old value will no longer be used
@@ -197,8 +194,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // ;Setup sp arg for the final call, with the call address now coming from the portable entrypoint
             // local.get 0
             expressions.Add(Local.Get(0));
-            expressions.Add(PtrConst(sizeOfStoredLocals));
-            expressions.Add(ptrAdd);
+            expressions.Add(ptr.Const(sizeOfStoredLocals));
+            expressions.Add(ptr.Add);
 
             // Reload the arguments for the final call
             foreach (WasmThunkArg arg in layout.Args)
@@ -224,7 +221,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // ; Load the actual target to jump to
             // local.get (PortableEntrypointThunk)
             expressions.Add(Local.Get(portableEntrypointLocalIndex));
-            expressions.Add(Memory.Load(ptr, 0));
+            expressions.Add(ptr.Load(0));
             // return_call_indirect (actual type index)  ; We can use return_call_index here, or call_index. Semantically they are identical
             expressions.Add(ControlFlow.CallIndirect(_typeNode, 0));
 

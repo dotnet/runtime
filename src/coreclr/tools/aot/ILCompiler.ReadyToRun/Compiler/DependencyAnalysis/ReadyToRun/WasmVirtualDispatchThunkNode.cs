@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)
         {
-            bool is64Bit = instructionEncoder.Is64Bit;
+            WasmTargetPtr ptr = instructionEncoder.Ptr;
             MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
             Debug.Assert(!methodSignature.IsStatic);
 
@@ -81,38 +81,37 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             int targetPortableEntrypointLocalIndex = _typeNode.Type.Params.Types.Length;
             int targetCodeLocalIndex = targetPortableEntrypointLocalIndex + 1;
             const int ThisLocalIndex = 1;
-            ulong packedDispatchOffsetsField = (ulong)factory.Target.PointerSize;
+            ulong packedDispatchOffsetsField = (ulong)ptr.Size;
             ulong initialEntryField = 2 * packedDispatchOffsetsField;
-            WasmValueType pointerType = is64Bit ? WasmValueType.I64 : WasmValueType.I32;
 
             List<WasmExpr> expressions = new List<WasmExpr>();
 
             // targetPEP = *(*(*(this) + pep->offsetOfIndirection) + pep->offsetAfterIndirection)
             expressions.Add(Local.Get(ThisLocalIndex));
-            expressions.Add(LoadPointer(0));
+            expressions.Add(ptr.Load(0));
             expressions.Add(Local.Get(portableEntrypointLocalIndex));
-            expressions.Add(LoadOffset(packedDispatchOffsetsField));
-            expressions.Add(is64Bit ? I64.Add : I32.Add);
-            expressions.Add(LoadPointer(0));
+            expressions.Add(ptr.Load16_u(packedDispatchOffsetsField));
+            expressions.Add(ptr.Add);
+            expressions.Add(ptr.Load(0));
             expressions.Add(Local.Get(portableEntrypointLocalIndex));
-            expressions.Add(LoadOffset(packedDispatchOffsetsField + sizeof(ushort)));
-            expressions.Add(is64Bit ? I64.Add : I32.Add);
-            expressions.Add(LoadPointer(0));
+            expressions.Add(ptr.Load16_u(packedDispatchOffsetsField + sizeof(ushort)));
+            expressions.Add(ptr.Add);
+            expressions.Add(ptr.Load(0));
             expressions.Add(Local.Set(targetPortableEntrypointLocalIndex));
 
             expressions.Add(Local.Get(targetPortableEntrypointLocalIndex));
-            expressions.Add(LoadPointer(0));
+            expressions.Add(ptr.Load(0));
             expressions.Add(Local.Set(targetCodeLocalIndex));
 
             // Redispatch through the original entrypoint if this receiver's target is not yet callable from R2R.
             expressions.Add(Local.Get(targetCodeLocalIndex));
-            expressions.Add(is64Bit ? I64.Eqz : I32.Eqz);
+            expressions.Add(ptr.Eqz);
             expressions.Add(Block.If(WasmBlockType.Empty));
             expressions.Add(Local.Get(portableEntrypointLocalIndex));
-            expressions.Add(LoadPointer(initialEntryField));
+            expressions.Add(ptr.Load(initialEntryField));
             expressions.Add(Local.Set(targetPortableEntrypointLocalIndex));
             expressions.Add(Local.Get(targetPortableEntrypointLocalIndex));
-            expressions.Add(LoadPointer(0));
+            expressions.Add(ptr.Load(0));
             expressions.Add(Local.Set(targetCodeLocalIndex));
             expressions.Add(Block.End);
 
@@ -126,11 +125,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             instructionEncoder.FunctionBody = new WasmFunctionBody(
                 _typeNode.Type,
-                new[] { pointerType, pointerType },
+                new[] { ptr.Type, ptr.Type },
                 expressions.ToArray());
-
-            WasmExpr LoadPointer(ulong offset) => is64Bit ? I64.Load(offset) : I32.Load(offset);
-            WasmExpr LoadOffset(ulong offset) => is64Bit ? I64.Load16_u(offset) : I32.Load16_u(offset);
         }
 
         protected override void EmitCode(NodeFactory factory, ref X64.X64Emitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }

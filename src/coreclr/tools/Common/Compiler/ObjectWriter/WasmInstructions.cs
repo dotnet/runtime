@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
+using Internal.JitInterface;
 
 // This namespace implements encodings for certain Wasm expressions (instructions)
 // which are used in the object writer.
@@ -879,6 +880,35 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         public static WasmExpr Load16_u(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.I64Load16_u, 2, new WasmEncodableULong(offset));
         public static WasmExpr LoadWithRVAOffset(ISymbolNode symbolNode) => new WasmMemoryArgInstruction<WasmEncodableSymbol>(WasmExprKind.I64Load, 8, new WasmEncodableSymbol(symbolNode, RelocType.WASM_MEMORY_ADDR_REL_LEB));
         public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.I64Store, 8, new WasmEncodableULong(offset));
+    }
+
+    /// <summary>
+    /// Pointer-width instructions for the target: i32 on Wasm32 and i64 on Wasm64.
+    /// </summary>
+    internal readonly struct WasmTargetPtr
+    {
+        public WasmTargetPtr(int pointerSize)
+        {
+            Debug.Assert(pointerSize is 4 or 8);
+            Is64Bit = pointerSize == 8;
+        }
+
+        public bool Is64Bit { get; }
+        public int Size => Is64Bit ? 8 : 4;
+        public WasmValueType Type => Is64Bit ? WasmValueType.I64 : WasmValueType.I32;
+        public CorInfoWasmType CorInfoType => Is64Bit ? CorInfoWasmType.CORINFO_WASM_TYPE_I64 : CorInfoWasmType.CORINFO_WASM_TYPE_I32;
+        public WasmExprKind ConstKind => Is64Bit ? WasmExprKind.I64Const : WasmExprKind.I32Const;
+
+        public WasmExpr Const(long value) => Is64Bit ? I64.Const(value) : I32.Const(value);
+        public WasmExpr Add => Is64Bit ? I64.Add : I32.Add;
+        public WasmExpr Sub => Is64Bit ? I64.Sub : I32.Sub;
+        public WasmExpr Eqz => Is64Bit ? I64.Eqz : I32.Eqz;
+        public WasmExpr Load(ulong offset) => Is64Bit ? I64.Load(offset) : I32.Load(offset);
+        public WasmExpr LoadWithRVAOffset(ISymbolNode symbolNode) => Is64Bit ? I64.LoadWithRVAOffset(symbolNode) : I32.LoadWithRVAOffset(symbolNode);
+        public WasmExpr Store(ulong offset) => Is64Bit ? I64.Store(offset) : I32.Store(offset);
+
+        /// <summary>Loads a 16-bit unsigned value, zero-extended to pointer width.</summary>
+        public WasmExpr Load16_u(ulong offset) => Is64Bit ? I64.Load16_u(offset) : I32.Load16_u(offset);
     }
 
     internal static class F32

@@ -75,14 +75,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             int targetEntryPointLocalIndex = parameters.Length;
             List<WasmExpr> expressions = new List<WasmExpr>(parameters.Length + 8);
 
-            bool is64Bit = instructionEncoder.Is64Bit;
-            WasmValueType pointerType = is64Bit ? WasmValueType.I64 : WasmValueType.I32;
+            WasmTargetPtr ptr = instructionEncoder.Ptr;
 
             // The target PEP is stored immediately before this stub's PEP.
             expressions.Add(Local.Get(portableEntryPointIndex));
-            expressions.Add(is64Bit ? I64.Const(factory.Target.PointerSize) : I32.Const(factory.Target.PointerSize));
-            expressions.Add(is64Bit ? I64.Sub : I32.Sub);
-            expressions.Add(is64Bit ? I64.Load(0) : I32.Load(0));
+            expressions.Add(ptr.Const(ptr.Size));
+            expressions.Add(ptr.Sub);
+            expressions.Add(ptr.Load(0));
             expressions.Add(Local.Set(targetEntryPointLocalIndex));
 
             expressions.Add(Local.Get(0)); // shadow stack pointer
@@ -96,12 +95,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             expressions.Add(Local.Get(targetEntryPointLocalIndex));
             expressions.Add(Local.Get(targetEntryPointLocalIndex));
-            expressions.Add(is64Bit ? I64.Load(0) : I32.Load(0));
+            expressions.Add(ptr.Load(0));
             expressions.Add(ControlFlow.CallIndirect(_typeNode, 0));
 
             instructionEncoder.FunctionBody = new WasmFunctionBody(
                 _signature.FuncType,
-                new[] { pointerType },
+                new[] { ptr.Type },
                 expressions.ToArray());
         }
 

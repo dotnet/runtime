@@ -45,9 +45,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _context = factory.TypeSystemContext;
             _wasmSignature = wasmSignature;
             _targetTypeNode = factory.WasmTypeNode(wasmSignature);
-            bool is64Bit = factory.Target.PointerSize == 8;
-            WasmValueType ptr = is64Bit ? WasmValueType.I64 : WasmValueType.I32;
-            _thunkSignature = new WasmSignature(new WasmFuncType(new([ptr, ptr, ptr]), new([])), is64Bit ? "vlll" : "viii");
+            WasmTargetPtr ptr = new WasmTargetPtr(factory.Target.PointerSize);
+            _thunkSignature = new WasmSignature(new WasmFuncType(new([ptr.Type, ptr.Type, ptr.Type]), new([])), ptr.Is64Bit ? "vlll" : "viii");
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -81,9 +80,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)
         {
-            bool is64Bit = instructionEncoder.Is64Bit;
-            WasmValueType ptr = is64Bit ? WasmValueType.I64 : WasmValueType.I32;
-            WasmExpr PtrConst(int value) => is64Bit ? I64.Const(value) : I32.Const(value);
+            WasmTargetPtr ptr = instructionEncoder.Ptr;
 
             ISymbolNode targetTypeIndex = _targetTypeNode;
 
@@ -111,14 +108,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Allocate frame space: sp -= FrameSize
             expressions.Add(Local.Get(LocalSavedSp));
-            expressions.Add(PtrConst(FrameSize));
-            expressions.Add(is64Bit ? I64.Sub : I32.Sub);
+            expressions.Add(ptr.Const(FrameSize));
+            expressions.Add(ptr.Sub);
             expressions.Add(Global.Set(WebCilObjectWriter.StackPointerGlobalIndex));
 
             // Write TERMINATE_R2R_STACK_WALK (1) into the framePointer at new SP
             expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
-            expressions.Add(PtrConst(TerminateR2RStackWalk));
-            expressions.Add(Memory.Store(ptr, 0));
+            expressions.Add(ptr.Const(TerminateR2RStackWalk));
+            expressions.Add(ptr.Store(0));
 
             // If there is a wasm return value, push pRet underneath all the call args
             // so that after call_indirect the stack is [pRet, return_value] for the store.
@@ -141,14 +138,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 else if (arg.Kind == WasmThunkArgKind.AsyncContinuation)
                 {
-                    expressions.Add(PtrConst(0));
+                    expressions.Add(ptr.Const(0));
                 }
                 else if (arg.IsIndirectStruct)
                 {
                     // Byreference struct — pass a pointer into the incoming pArgs buffer
                     expressions.Add(Local.Get(LocalPArgs));
-                    expressions.Add(PtrConst(interpOffset));
-                    expressions.Add(is64Bit ? I64.Add : I32.Add);
+                    expressions.Add(ptr.Const(interpOffset));
+                    expressions.Add(ptr.Add);
                 }
                 else
                 {
@@ -166,7 +163,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // call_indirect with the target R2R function's type signature
             expressions.Add(Local.Get(LocalPortableEntrypoint));
-            expressions.Add(Memory.Load(ptr, 0)); // load the actual function index from the portable entrypoint
+            expressions.Add(ptr.Load(0)); // load the actual function index from the portable entrypoint
             expressions.Add(ControlFlow.CallIndirect(targetTypeIndex, 0));
 
             // Handle wasm return value — pRet is already on the stack under the return value
@@ -188,7 +185,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             instructionEncoder.FunctionBody = new WasmFunctionBody(
                 _thunkSignature.FuncType,
-                new[] { ptr },
+                new[] { ptr.Type },
                 expressions.ToArray());
         }
 
