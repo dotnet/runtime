@@ -130,30 +130,44 @@ namespace System
             where TElem : struct
         {
             Debug.Assert(span.Length > 1);
+            Debug.Assert(sizeof(T) == sizeof(TElem) && !RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 
             if (Vector128.IsHardwareAccelerated || sizeof(TElem) < sizeof(ulong))
             {
                 if (span.Length < 4)
                 {
                     // Length is 2 or 3: only a single swap is needed.
-                    TElem firstElem = Unsafe.BitCast<T, TElem>(span[0]);
-                    int endIdx = span.Length - 1;
-                    span[0] = span[endIdx];
-                    span[endIdx] = Unsafe.BitCast<TElem, T>(firstElem);
+                    // SAFETY: T and TElem have the same size and T has no GC references, so T's bits round-trip through TElem.
+                    unsafe
+                    {
+                        TElem firstElem = Unsafe.BitCast<T, TElem>(span[0]);
+                        int endIdx = span.Length - 1;
+                        span[0] = span[endIdx];
+                        span[endIdx] = Unsafe.BitCast<TElem, T>(firstElem);
+                    }
                     return;
                 }
 
-                // TElem may be more strictly aligned than T, so the reinterpreted span is only accessed via
-                // IChunkReverser, which doesn't require alignment.
-                int remaining = ReverseChunks(Unsafe.BitCast<Span<T>, Span<TElem>>(span));
+                int remaining;
+                // SAFETY: T and TElem have the same size and T has no GC references, so the reinterpreted span covers exactly
+                // the same bytes. TElem may be more strictly aligned than T, so it's only accessed via IChunkReverser,
+                // which uses unaligned loads and stores.
+                unsafe
+                {
+                    remaining = ReverseChunks(Unsafe.BitCast<Span<T>, Span<TElem>>(span));
+                }
                 Debug.Assert(remaining is >= 0 and <= 3);
                 if (remaining > 1)
                 {
                     int firstIdx = (span.Length - remaining) >> 1;
                     int lastIdx = span.Length - 1 - firstIdx;
-                    TElem temp = Unsafe.BitCast<T, TElem>(span[firstIdx]);
-                    span[firstIdx] = span[lastIdx];
-                    span[lastIdx] = Unsafe.BitCast<TElem, T>(temp);
+                    // SAFETY: T and TElem have the same size and T has no GC references, so T's bits round-trip through TElem.
+                    unsafe
+                    {
+                        TElem temp = Unsafe.BitCast<T, TElem>(span[firstIdx]);
+                        span[firstIdx] = span[lastIdx];
+                        span[lastIdx] = Unsafe.BitCast<TElem, T>(temp);
+                    }
                 }
                 return;
             }
@@ -161,9 +175,13 @@ namespace System
             while (span.Length > 1)
             {
                 // Hold the temporary as TElem to avoid field-by-field copies of T; elements are still accessed as T.
-                TElem first = Unsafe.BitCast<T, TElem>(span[0]);
-                span[0] = span[span.Length - 1];
-                span[span.Length - 1] = Unsafe.BitCast<TElem, T>(first);
+                // SAFETY: T and TElem have the same size and T has no GC references, so T's bits round-trip through TElem.
+                unsafe
+                {
+                    TElem first = Unsafe.BitCast<T, TElem>(span[0]);
+                    span[0] = span[span.Length - 1];
+                    span[span.Length - 1] = Unsafe.BitCast<TElem, T>(first);
+                }
                 span = span.Slice(1);
                 span = span.Slice(0, span.Length - 1);
             }
