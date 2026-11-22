@@ -3943,9 +3943,11 @@ bool Compiler::fgWasmIsRematerializableValue(GenTree* node)
         return true;
     }
 
+    // Volatile loads have ordering side effects and must not move.
     const GenTreeFlags invariantLoad = GTF_IND_INVARIANT | GTF_IND_NONFAULTING;
+    const GenTreeFlags unmovable     = GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF | GTF_IND_VOLATILE;
     return node->OperIs(GT_IND) && ((node->gtFlags & invariantLoad) == invariantLoad) &&
-           ((node->gtFlags & GTF_SIDE_EFFECT) == 0) && node->AsIndir()->Addr()->IsInvariant();
+           ((node->gtFlags & unmovable) == 0) && node->AsIndir()->Addr()->IsInvariant();
 }
 
 //-----------------------------------------------------------------------------
