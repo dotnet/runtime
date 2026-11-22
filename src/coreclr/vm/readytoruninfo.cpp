@@ -1082,16 +1082,12 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
 
 #ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
     if (m_isComponentAssembly)
-    {
         m_pAuxiliaryModuleMetadata = m_pCompositeInfo->GetAuxiliaryModuleMetadata();
-    }
-    else
+
+    IMAGE_DATA_DIRECTORY *auxiliaryModuleMetadata = m_component.FindSection(ReadyToRunSectionType::AuxiliaryModuleMetadata);
+    if (m_pAuxiliaryModuleMetadata == nullptr && auxiliaryModuleMetadata != NULL)
     {
-        IMAGE_DATA_DIRECTORY *auxiliaryModuleMetadata = m_component.FindSection(ReadyToRunSectionType::AuxiliaryModuleMetadata);
-        if (auxiliaryModuleMetadata != NULL)
-        {
-            m_pAuxiliaryModuleMetadata = (ReadyToRun_AuxiliaryModuleMetadata*)m_pComposite->GetImage()->GetDirectoryData(auxiliaryModuleMetadata);
-        }
+        m_pAuxiliaryModuleMetadata = (ReadyToRun_AuxiliaryModuleMetadata*)m_pComposite->GetImage()->GetDirectoryData(auxiliaryModuleMetadata);
     }
 #endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 }
