@@ -1,0 +1,41 @@
+<Project>
+  <PropertyGroup>
+    <UsePkgProjTargets>false</UsePkgProjTargets>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.Build.NoTargets" />
+
+  <PropertyGroup Condition="'$(BuildIdentityPackage)' == ''">
+    <BuildIdentityPackage>true</BuildIdentityPackage>
+    <BuildIdentityPackage Condition="'$(BuildingAnOfficialBuildLeg)' == 'true' and ('$(OS)' != 'Windows_NT' or '$(TargetArchitecture)' != 'x64')">false</BuildIdentityPackage>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>Microsoft.NETCore.ILAsm</PackageId>
+    <PackageDescription>The .NET IL Assembler.</PackageDescription>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <BeforePack>$(BeforePack);GenerateILAsmRuntimeDependencies</BeforePack>
+  </PropertyGroup>
+
+  <Import Project="..\package-rids.props" />
+
+  <ItemGroup>
+    <None Include="$(IntermediateOutputPath)runtime.json" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <UsingTask TaskName="GenerateRuntimeDependencies"
+             AssemblyFile="$(InstallerTasksAssemblyPath)"
+             Runtime="NET"
+             TaskFactory="TaskHostFactory" />
+
+  <Target Name="GenerateILAsmRuntimeDependencies">
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <GenerateRuntimeDependencies RuntimeIdentifiers="@(BuildRID)"
+                              PackageId="$(PackageId)"
+                              PackageVersion="$(PackageVersion)"
+                              OutputPath="$(IntermediateOutputPath)runtime.json" />
+  </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" />
+</Project>

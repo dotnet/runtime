@@ -215,10 +215,10 @@ namespace TestLibrary
             {
                 // Some distros might not have the /proc/pid/task/tid/children entry enabled in the kernel
                 // attempt to use pgrep then
-                var pgrepInfo = new ProcessStartInfo("pgrep");
+                var pgrepInfo = new ProcessStartInfo("pgrep", ["-P", process.Id.ToString()]);
+                pgrepInfo.InheritedHandles = [];
                 pgrepInfo.RedirectStandardOutput = true;
                 pgrepInfo.RedirectStandardError = true;
-                pgrepInfo.Arguments = $"-P {process.Id}";
 
                 string[] pidStrings = Process.RunAndCaptureText(pgrepInfo).StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
@@ -620,23 +620,26 @@ namespace TestLibrary
             using (var errorWriter = new StreamWriter(errorStream))
             using (Process process = new Process())
             {
+                ProcessStartInfo startInfo = process.StartInfo;
+
                 // Windows can run the executable implicitly
                 if (OperatingSystem.IsWindows())
                 {
-                    process.StartInfo.FileName = executable;
+                    startInfo.FileName = executable;
                 }
                 // Non-windows needs to be told explicitly to run through /bin/bash shell
                 else
                 {
-                    process.StartInfo.FileName = "/bin/bash";
-                    process.StartInfo.Arguments = executable;
+                    startInfo.FileName = "/bin/bash";
+                    startInfo.ArgumentList.Add(executable);
                 }
 
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.RedirectStandardError = true;
-                process.StartInfo.EnvironmentVariables.Add("__Category", category);
-                process.StartInfo.EnvironmentVariables.Add("__TestBinaryBase", testBinaryBase);
-                process.StartInfo.EnvironmentVariables.Add("__OutputDir", outputDir);
+                startInfo.RedirectStandardOutput = true;
+                startInfo.RedirectStandardError = true;
+                startInfo.InheritedHandles = [];
+                startInfo.EnvironmentVariables.Add("__Category", category);
+                startInfo.EnvironmentVariables.Add("__TestBinaryBase", testBinaryBase);
+                startInfo.EnvironmentVariables.Add("__OutputDir", outputDir);
 
                 DateTime startTime = DateTime.Now;
                 process.Start();
@@ -645,10 +648,9 @@ namespace TestLibrary
                 Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
                 Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream, 4096, cts.Token);
 
-                if (process.WaitForExit(timeout))
+                if (process.TryWaitForExitStatus(TimeSpan.FromMilliseconds(timeout), out ProcessExitStatus? status))
                 {
-                    // Process completed. Check process.ExitCode here.
-                    exitCode = process.ExitCode;
+                    exitCode = status.ExitCode;
                     Task.WaitAll(copyOutput, copyError);
                 }
                 else
@@ -729,15 +731,16 @@ namespace TestLibrary
             string command = "wmic process get Name, ProcessId, ParentProcessId";
 
             // Start the process and capture the output
-            Process process = new Process();
-            process.StartInfo.FileName = "cmd.exe";
-            process.StartInfo.Arguments = $"/c {command}";
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.CreateNoWindow = true;
+            ProcessStartInfo startInfo = new ProcessStartInfo("cmd.exe", ["/c", command])
+            {
+                InheritedHandles = [],
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
 
             // Start the process and read the output
-            string output = Process.RunAndCaptureText(process.StartInfo).StandardOutput;
+            string output = Process.RunAndCaptureText(startInfo).StandardOutput;
 
             // Output the result
             return output;

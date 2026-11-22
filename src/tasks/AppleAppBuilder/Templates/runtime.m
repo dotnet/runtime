@@ -28,8 +28,6 @@ static bool pinvoke_override_enabled = false;
 
 #define APPLE_RUNTIME_IDENTIFIER "//%APPLE_RUNTIME_IDENTIFIER%"
 
-#define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
-
 const char *
 get_bundle_path (void)
 {
@@ -242,13 +240,6 @@ handle_pinvoke_override (const char *libraryName, const char *entrypointName)
         return NULL;
 }
 
-void
-cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
-{
-    free (args);
-    free (user_data);
-}
-
 #if FORCE_INTERPRETER || FORCE_AOT || (!TARGET_OS_SIMULATOR && !TARGET_OS_MACCATALYST)
 void mono_jit_set_aot_mode (MonoAotMode mode);
 void register_aot_modules (void);
@@ -295,23 +286,6 @@ mono_ios_runtime_init (void)
         bundle,
         pinvoke_override,
     };
-
-    char *file_name = RUNTIMECONFIG_BIN_FILE;
-    unsigned long str_len = strlen (bundle) + strlen (file_name) + 2;
-    char *file_path = (char *)malloc (sizeof (char) * str_len);
-    int num_char = snprintf (file_path, str_len, "%s/%s", bundle, file_name);
-    struct stat buffer;
-
-    assert (num_char > 0 && num_char < str_len);
-
-    if (stat (file_path, &buffer) == 0) {
-        MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
-        arg->kind = 0;
-        arg->runtimeconfig.name.path = file_path;
-        monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
-    } else {
-        free (file_path);
-    }
 
     const char* executable = "%EntryPointLibName%";
     if (executable [0] == '\0') {

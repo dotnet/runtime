@@ -20,10 +20,10 @@ namespace System.Security.Cryptography.Tests
             using X25519DiffieHellman xdh = X25519DiffieHellman.GenerateKey();
 
             byte[] publicKey = xdh.ExportPublicKey();
-            AssertExtensions.GreaterThanOrEqualTo(publicKey.IndexOfAnyExcept((byte)0), 0);
+            AssertExtensions.TrueExpression(publicKey.AsSpan().ContainsAnyExcept((byte)0));
 
             byte[] privateKey = xdh.ExportPrivateKey();
-            AssertExtensions.GreaterThanOrEqualTo(privateKey.IndexOfAnyExcept((byte)0), 0);
+            AssertExtensions.TrueExpression(privateKey.AsSpan().ContainsAnyExcept((byte)0));
 
             Assert.Equal(X25519DiffieHellman.PublicKeySizeInBytes, publicKey.Length);
             Assert.Equal(X25519DiffieHellman.PrivateKeySizeInBytes, privateKey.Length);

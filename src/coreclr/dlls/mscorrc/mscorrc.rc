@@ -152,7 +152,7 @@ BEGIN
     IDS_EE_NDIRECT_BADNATL_CALLCONV         "Invalid PInvoke or UnmanagedFunctionPointer calling convention."
     IDS_EE_NDIRECT_BADNATL_VARARGS_CALLCONV "Invalid PInvoke calling convention. Vararg functions must use the cdecl calling convention."
     IDS_EE_NDIRECT_BADNATL_THISCALL         "Invalid PInvoke calling convention. Thiscall requires that the first parameter is present and can be enregistered."
-    IDS_EE_NDIRECT_LOADLIB_WIN              "Unable to load DLL '%1' or one of its dependencies: %2"
+    IDS_EE_NDIRECT_LOADLIB_WIN              "Unable to load DLL '%1' or one of its dependencies. In order to help diagnose loading problems, consider enabling Show Loader Snaps with the gflags tool and running the application under a debugger: %2"
     IDS_EE_NDIRECT_LOADLIB_LINUX            "Unable to load shared library '%1' or one of its dependencies. In order to help diagnose loading problems, consider using a tool like strace. If you're using glibc, consider setting the LD_DEBUG environment variable: %2"
     IDS_EE_NDIRECT_LOADLIB_MAC              "Unable to load shared library '%1' or one of its dependencies. In order to help diagnose loading problems, consider setting the DYLD_PRINT_LIBRARIES environment variable: %2"
     IDS_EE_NDIRECT_GETPROCADDRESS_WIN       "Unable to find an entry point named '%2' in DLL '%1'."
@@ -312,6 +312,7 @@ BEGIN
 #endif
 
     IDS_CLASSLOAD_GENERAL                   "Could not load type '%1' from assembly '%2'."
+    IDS_CLASSLOAD_TYPE_NOT_CREATED          "Could not load type '%1' from assembly '%2' because it has not been created. Call CreateType() on its TypeBuilder or EnumBuilder before using it."
     IDS_CLASSLOAD_TYPESPEC                  "Could not load TypeSpec from assembly '%2'."
     IDS_CLASSLOAD_SEALEDPARENT              "Could not load type '%1' from assembly '%2' because the parent type is sealed."
     IDS_CLASSLOAD_BADFORMAT                 "Could not load type '%1' from assembly '%2' because the format is invalid."
@@ -445,8 +446,6 @@ BEGIN
     IDS_EE_THREAD_INTERRUPTED               "Thread was interrupted from a waiting state."
     IDS_EE_OUT_OF_MEMORY                    "Insufficient memory to continue the execution of the program."
 
-    IDS_EE_OUT_OF_MEMORY_WITHIN_RANGE       "Insufficient memory within specified address space range to continue the execution of the program."
-
     IDS_EE_ARRAY_DIMENSIONS_EXCEEDED        "Array dimensions exceeded supported range."
 
     IDS_EE_OUT_OF_SYNCBLOCKS                "Internal limitation: attempt to create more than 2^26 SyncBlocks."
@@ -511,7 +510,7 @@ BEGIN
     IDS_E_METHODACCESS                      "Attempt by method '%1' to access method '%2' failed.%3"
     IDS_E_TYPEACCESS                        "Attempt by method '%1' to access type '%2' failed.%3"
 
-    IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD "Cannot set initonly static field '%1%' after type '%2' is initialized."
+    IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD "Cannot set initonly static field '%1' after type '%2' is initialized."
 END
 
 // These strings are used for Event Log Entry

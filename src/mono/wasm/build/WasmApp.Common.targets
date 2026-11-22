@@ -80,6 +80,7 @@
       - $(WasmEnableExceptionHandling)      - Enable support for the WASM post MVP Exception Handling runtime extension.
       - $(WasmEnableSIMD)                   - Enable support for the WASM post MVP SIMD runtime extension.
       - $(WasmEnableWebcil)                 - Enable conversion of assembly .dlls to Webcil wrapped in .wasm (default: true)
+      - $(WasmEnableIntegrityCheck)         - Opt in to integrity checks for resources fetched by the runtime loader.
       - $(WasmIncludeFullIcuData)           - Loads full ICU data (icudt.dat). Defaults to false. Only applicable when InvariantGlobalization=false.
       - $(WasmIcuDataFileName)              - Name/path of ICU globalization file loaded to app. Only when InvariantGloblization=false and WasmIncludeFullIcuData=false.
       - $(WasmAllowUndefinedSymbols)        - Controls whether undefined symbols are allowed or not,
@@ -392,17 +393,7 @@
     </ItemGroup>
   </Target>
 
-  <UsingTask TaskName="ReadWasmProps" AssemblyFile="$(MonoTargetsTasksAssemblyPath)"
-             TaskFactory="JsonToItemsTaskFactory.JsonToItemsTaskFactory">
-    <ParameterGroup>
-      <EmccProperties ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <WasmOptConfigurationFlags ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <EmccDefaultExportedFunctions ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <EmccDefaultExportedRuntimeMethods ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <EmccDefaultIncomingModuleJSAPI ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <PropertiesThatTriggerRelinking ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-    </ParameterGroup>
-  </UsingTask>
+  <UsingTask TaskName="ReadWasmProps" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
   <Target Name="_ReadWasmProps" Condition="'$(_IsToolchainMissing)' != 'true'">
     <ReadWasmProps JsonFilePath="$(_WasmRuntimePackSrcDir)wasm-props.json">

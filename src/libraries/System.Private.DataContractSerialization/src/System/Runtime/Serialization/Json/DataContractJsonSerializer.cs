@@ -570,9 +570,9 @@ namespace System.Runtime.Serialization.Json
             Type typeToCheck = knownType;
             while (CollectionDataContract.IsCollection(typeToCheck, out itemType))
             {
-                if (itemType.IsGenericType && (itemType.GetGenericTypeDefinition() == Globals.TypeOfKeyValue))
+                if (itemType.IsGenericType && (itemType.GetGenericTypeDefinition() == typeof(KeyValue<,>)))
                 {
-                    itemType = Globals.TypeOfKeyValuePair.MakeGenericType(itemType.GenericTypeArguments);
+                    itemType = typeof(System.Collections.Generic.KeyValuePair<,>).MakeGenericType(itemType.GenericTypeArguments);
                 }
                 this.knownTypeList!.Add(itemType);
                 typeToCheck = itemType;

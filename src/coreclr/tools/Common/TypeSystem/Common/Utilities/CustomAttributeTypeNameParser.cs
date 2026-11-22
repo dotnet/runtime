@@ -18,7 +18,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Parses the string '<paramref name="name"/>' and returns the type corresponding to the parsed type name.
         /// The type name string should be in the 'SerString' format as defined by the ECMA-335 standard.
-        /// This is the inverse of what <see cref="CustomAttributeTypeNameFormatter"/> does.
+        /// This is the inverse of what <c>CustomAttributeTypeNameFormatter</c> does.
         /// </summary>
         public static TypeDesc GetTypeByCustomAttributeTypeName(this ModuleDesc module, string name, bool throwIfNotFound = true,
             Func<ModuleDesc, string, TypeDesc> canonGenericResolver = null)

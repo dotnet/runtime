@@ -15,7 +15,7 @@ namespace System.IO.Pipes
             internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
 
             internal readonly PreAllocatedOverlapped _preallocatedOverlapped;
-            internal readonly PipeStream _pipeStream;
+            internal PipeStream? _pipeStream; // null while the instance is cached for reuse
             internal MemoryHandle _memoryHandle;
             internal ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
             internal NativeOverlapped* _overlapped;
@@ -31,7 +31,7 @@ namespace System.IO.Pipes
             {
                 _pipeStream = pipeStream;
                 _source.RunContinuationsAsynchronously = true;
-                _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, null);
+                _preallocatedOverlapped = PreAllocatedOverlapped.UnsafeCreate(s_ioCallback, this, null);
             }
 
             internal void Dispose()
@@ -44,6 +44,7 @@ namespace System.IO.Pipes
             {
                 _result = 0;
                 _memoryHandle = memory.Pin();
+                Debug.Assert(_pipeStream is not null);
                 _overlapped = _pipeStream._threadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
             }
 
@@ -58,8 +59,20 @@ namespace System.IO.Pipes
                 }
                 finally
                 {
-                    // The instance is ready to be reused
-                    _pipeStream.TryToReuse(this);
+                    // Return the instance for reuse only when this call consumed the result of a completed operation.
+                    // Getting a stale result (the instance may already be used by another operation) or the result
+                    // of an operation that is still in progress must not affect the instance.
+                    if (token == _source.Version && _source.GetStatus(token) != ValueTaskSourceStatus.Pending)
+                    {
+                        // The cached instance is rooted by its PreAllocatedOverlapped, so it must not reference the stream
+                        // or the cancellation token source the operation was registered with.
+                        // Otherwise, the stream and its handle could never be collected.
+                        _cancellationRegistration = default;
+                        PipeStream? pipeStream = _pipeStream;
+                        Debug.Assert(pipeStream is not null);
+                        _pipeStream = null;
+                        pipeStream.TryToReuse(this);
+                    }
                 }
             }
 
@@ -75,6 +88,7 @@ namespace System.IO.Pipes
                         _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) =>
                         {
                             PipeValueTaskSource vts = (PipeValueTaskSource)s!;
+                            Debug.Assert(vts._pipeStream is not null);
                             if (vts._pipeStream.InternalHandle is { IsClosed: false } handle)
                             {
                                 try
@@ -107,6 +121,7 @@ namespace System.IO.Pipes
                 // Free the overlapped.
                 if (_overlapped != null)
                 {
+                    Debug.Assert(_pipeStream is not null);
                     _pipeStream._threadPoolBinding!.FreeNativeOverlapped(_overlapped);
                     _overlapped = null;
                 }
@@ -164,6 +179,8 @@ namespace System.IO.Pipes
 
             private protected override void CompleteCore(uint errorCode, uint numBytes)
             {
+                Debug.Assert(_pipeStream is not null);
+
                 if (!_isWrite)
                 {
                     bool messageCompletion = true;
@@ -212,6 +229,8 @@ namespace System.IO.Pipes
 
             private protected override void CompleteCore(uint errorCode, uint numBytes)
             {
+                Debug.Assert(_pipeStream is not null);
+
                 switch (errorCode)
                 {
                     case 0:

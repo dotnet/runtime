@@ -275,7 +275,7 @@ TADDR PEAssembly::GetIL(RVA il)
 
 #ifndef DACCESS_COMPILE
 
-#ifdef PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
 void PEAssembly::OpenImporter()
 {
     CONTRACTL
@@ -299,7 +299,7 @@ void PEAssembly::OpenImporter()
     if (InterlockedCompareExchangeT(&m_pImporter, pIMDImport, NULL) != NULL)
         pIMDImport->Release();
 }
-#endif // PROFILING_SUPPORTED
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
 void PEAssembly::ConvertMDInternalToReadWrite()
 {
@@ -318,7 +318,7 @@ void PEAssembly::ConvertMDInternalToReadWrite()
     // Take a local copy of *ppImport.  This may be a pointer to an RO
     //  or to an RW MDInternalXX.
     pOld = m_pMDImport;
-#ifdef PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
     IMetaDataImport *pIMDImport = m_pImporter;
     if (pIMDImport != NULL)
     {
@@ -334,7 +334,7 @@ void PEAssembly::ConvertMDInternalToReadWrite()
         }
     }
     else
-#endif // PROFILING_SUPPORTED
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
     {
         // If an RO, convert to an RW, return S_OK.  If already RW, no conversion
         //  needed, return S_FALSE.
@@ -397,7 +397,7 @@ void PEAssembly::OpenMDImport()
     m_pMDImport->AddRef();
 }
 
-#ifdef PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
 void PEAssembly::OpenEmitter()
 {
     CONTRACTL
@@ -421,7 +421,7 @@ void PEAssembly::OpenEmitter()
     if (InterlockedCompareExchangeT(&m_pEmitter, pIMDEmit, NULL) != NULL)
         pIMDEmit->Release();
 }
-#endif // PROFILING_SUPPORTED
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
 // ------------------------------------------------------------
 // PE file access
@@ -648,10 +648,10 @@ PEAssembly::PEAssembly(
       m_PEImage{NULL}
     , m_MDImportIsRW_Debugger_Use_Only{FALSE}
     , m_pMDImport{NULL}
-#ifdef PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_METADATA_UPDATER)
     , m_pImporter{NULL}
     , m_pEmitter{NULL}
-#endif // PROFILING_SUPPORTED
+#endif // PROFILING_SUPPORTED_DATA || FEATURE_METADATA_UPDATER
     , m_pMDInternalEmit{NULL}
     , m_refCount{1}
     , m_pHostAssembly{nullptr}
@@ -736,7 +736,7 @@ PEAssembly::~PEAssembly()
 
     GCX_PREEMP();
 
-#ifdef PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
     if (m_pImporter != NULL)
     {
         m_pImporter->Release();
@@ -748,7 +748,7 @@ PEAssembly::~PEAssembly()
         m_pEmitter->Release();
         m_pEmitter = NULL;
     }
-#endif // PROFILING_SUPPORTED
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
     if (m_pMDInternalEmit != NULL)
     {

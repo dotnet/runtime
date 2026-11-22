@@ -104,7 +104,11 @@ interface DotnetHostBuilder {
      */
     withDownloadResourceProgress(callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder;
     /**
-     * Sets a callback that is invoked after the runtime configuration is loaded.
+     * Adds a callback that is invoked after the runtime configuration is loaded.
+     * Callbacks run in registration order, awaiting each callback before invoking the next.
+     * If a callback throws or rejects, subsequent callbacks are not invoked and startup fails.
+     * Callbacks registered during invocation are not included in the current invocation.
+     * Passing undefined has no effect.
      */
     withConfigLoaded(callback?: (config: LoaderConfig) => void | Promise<void>): DotnetHostBuilder;
     /**
@@ -266,6 +270,7 @@ interface Assets {
     modulesAfterRuntimeReady?: JsAsset[];
     extensions?: ResourceExtensions;
     vfs?: VfsAsset[];
+    appsettings?: AppSettings[];
 }
 type Asset = {
     /**
@@ -317,6 +322,9 @@ type VfsAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+};
+type AppSettings = VfsAsset & {
+    loadIntoVfs: boolean;
 };
 type IcuAsset = Asset & {
     virtualPath: string;
@@ -403,6 +411,10 @@ type AssetBehaviors = SingleAssetBehaviors |
  * Load asset into the virtual filesystem (for fopen, File.Open, etc).
  */
  | "vfs"
+/**
+ * Retain application settings in JavaScript memory and optionally install them into VFS.
+ */
+ | "appsettings"
 /**
  * The javascript module that came from nuget package .
  */
@@ -721,4 +733,4 @@ declare global {
 }
 
 export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };
-export type { AssemblyAsset, Asset, AssetBehaviors, Assets, BootModule, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, IcuAsset, JsAsset, LoadBootResourceCallback, LoaderConfig, LoadingResource, ModuleAPI, PdbAsset, ResourceExtensions, ResourceList, RuntimeAPI, SymbolsAsset, VfsAsset, WasmAsset, WebAssemblyBootResourceType };
+export type { AppSettings, AssemblyAsset, Asset, AssetBehaviors, Assets, BootModule, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, IcuAsset, JsAsset, LoadBootResourceCallback, LoaderConfig, LoadingResource, ModuleAPI, PdbAsset, ResourceExtensions, ResourceList, RuntimeAPI, SymbolsAsset, VfsAsset, WasmAsset, WebAssemblyBootResourceType };

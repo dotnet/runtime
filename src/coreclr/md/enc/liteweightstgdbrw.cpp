@@ -120,7 +120,8 @@ __checkReturn
 HRESULT CLiteWeightStgdbRW::InitOnMem(
     ULONG       cbData,                 // count of bytes in pData
     LPCVOID     pData,                  // points to meta data section in memory
-    int         bReadOnly)              // If true, read-only.
+    int         bReadOnly,              // If true, read-only.
+    bool        fIsDelta)               // Is this metadata being loaded to apply an EnC delta?
 {
     StgIO       *pStgIO = NULL;         // For file i/o.
     HRESULT     hr = NOERROR;
@@ -138,7 +139,7 @@ HRESULT CLiteWeightStgdbRW::InitOnMem(
         NULL)   // LPSecurityAttributes
          );
 
-    IfFailGo( InitFileForRead(pStgIO, bReadOnly) );
+    IfFailGo( InitFileForRead(pStgIO, bReadOnly, fIsDelta) );
 
 ErrExit:
     if (SUCCEEDED(hr))
@@ -162,7 +163,8 @@ __checkReturn
 HRESULT
 CLiteWeightStgdbRW::InitFileForRead(
     StgIO * pStgIO,     // For file i/o.
-    int     bReadOnly)  // If read-only open.
+    int     bReadOnly,  // If read-only open.
+    bool    fIsDelta)   // Is this metadata being loaded to apply an EnC delta?
 {
     TiggerStorage * pStorage = NULL;
     void          * pvData;
@@ -264,7 +266,7 @@ CLiteWeightStgdbRW::InitFileForRead(
     {
         IfFailGo(pStorage->OpenStream(ENC_MODEL_STREAM, &cbData, &pvData));
     }
-    IfFailGo(m_MiniMd.InitOnMem(pvData, cbData, bReadOnly));
+    IfFailGo(m_MiniMd.InitOnMem(pvData, cbData, bReadOnly, fIsDelta));
     IfFailGo(m_MiniMd.PostInit(0));
 
 ErrExit:

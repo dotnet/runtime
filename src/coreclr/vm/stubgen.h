@@ -1,11 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: StubGen.h
-//
-
-//
-
 
 #ifndef __STUBGEN_H__
 #define __STUBGEN_H__
@@ -735,9 +729,6 @@ protected:
         INT16       iStackDelta;
         UINT_PTR    uArg;
     };
-
-    static void PatchInstructionArgument(ILCodeLabel* pLabel, UINT_PTR uNewArg
-        DEBUG_ARG(UINT16 uExpectedInstruction));
 
 #ifdef _DEBUG
     bool IsInCodeStreamList(ILCodeStream* pcs);

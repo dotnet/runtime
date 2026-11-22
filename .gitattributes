@@ -109,6 +109,15 @@ src/coreclr/vm/wasm/wasi/callhelpers-*.cpp linguist-generated
 src/coreclr/ilasm/prebuilt/asmparse.cpp linguist-generated
 src/libraries/Common/tests/System/Security/Cryptography/HpkeTestData.*.cs linguist-generated
 src/libraries/Microsoft.Extensions.Configuration.Binder/tests/SourceGenerationTests/Baselines/**/*.generated.txt linguist-generated
+src/libraries/System.Private.CoreLib/src/System/Globalization/CharUnicodeInfoData.cs linguist-generated
+src/libraries/System.Text.Encodings.Web/src/System/Text/Unicode/UnicodeHelpers.generated.cs linguist-generated
+src/libraries/System.Text.Encodings.Web/src/System/Text/Unicode/UnicodeRanges.generated.cs linguist-generated
+src/libraries/System.Text.Encodings.Web/tests/UnicodeRangesTests.generated.cs linguist-generated
+src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexCaseEquivalences.Data.cs linguist-generated
+src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/Symbolic/UnicodeCategoryRanges.cs linguist-generated
 src/mono/mono/cil/opcode.def linguist-generated
+src/native/minipal/unicodedata.c linguist-generated
 src/tools/ilasm/src/ILAssembler/gen/CILLexer.cs linguist-generated
 src/tools/ilasm/src/ILAssembler/gen/CILParser.cs linguist-generated
+src/tools/ilasm/src/ILAssembler/gen/CIL.interp linguist-generated
+src/tools/ilasm/src/ILAssembler/gen/CILLexer.interp linguist-generated

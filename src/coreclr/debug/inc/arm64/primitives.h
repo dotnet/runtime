@@ -16,7 +16,6 @@
 #include "executableallocator.h"
 #endif
 
-typedef NEON128                     FPRegister64;
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
@@ -132,13 +131,13 @@ constexpr CorDebugRegister g_JITToCorDbgReg[] =
     REGISTER_ARM64_V31,
 };
 
-inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID eip) {
+inline void CORDbgSetIP(T_CONTEXT *context, LPVOID eip) {
     LIMITED_METHOD_CONTRACT;
 
     context->Pc = (DWORD64)eip;
 }
 
-inline CORDB_ADDRESS CORDbgGetSP(const DT_CONTEXT * context) {
+inline CORDB_ADDRESS CORDbgGetSP(const T_CONTEXT * context) {
     LIMITED_METHOD_CONTRACT;
 
     return (CORDB_ADDRESS)(context->Sp);
@@ -204,19 +203,19 @@ inline PRD_TYPE CORDbgGetInstruction(UNALIGNED CORDB_ADDRESS_TYPE* address)
 }
 
 
-inline void SetSSFlag(DT_CONTEXT *pContext)
+inline void SetSSFlag(T_CONTEXT *pContext)
 {
     _ASSERTE(pContext != NULL);
     pContext->Cpsr |= 0x00200000;
 }
 
-inline void UnsetSSFlag(DT_CONTEXT *pContext)
+inline void UnsetSSFlag(T_CONTEXT *pContext)
 {
     _ASSERTE(pContext != NULL);
     pContext->Cpsr &= ~0x00200000;
 }
 
-inline bool IsSSFlagEnabled(DT_CONTEXT * pContext)
+inline bool IsSSFlagEnabled(T_CONTEXT * pContext)
 {
     _ASSERTE(pContext != NULL);
     return (pContext->Cpsr & 0x00200000) != 0;

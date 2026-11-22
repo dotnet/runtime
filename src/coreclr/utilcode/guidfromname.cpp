@@ -116,13 +116,12 @@ inline USHORT NetworkToHostShort(USHORT netshort)
 }
 
 //=============================================================================
-// GuidFromName(GUID * pGuidResult, REFGUID refGuidNsid,
+// GuidFromName(REFGUID refGuidNsid,
 //              const void * pvName, DWORD dwcbName);
 //=============================================================================
 
-void GuidFromName
+static GUID GuidFromName
 (
-    GUID *  pGuidResult,        // resulting GUID
     REFGUID refGuidNsid,        // Name Space GUID, so identical names from
                                 // different name spaces generate different GUIDs
     const void * pvName,        // the name from which to generate a GUID
@@ -179,13 +178,8 @@ void GuidFromName
     guidTemp.Data4[0] &= 0x3F;  // clear variant bits
     guidTemp.Data4[0] |= 0x80;  // set variant = 100b
 
-    // If two GuidFromName calls were made from different threads with the same parameters,
-    // we may get incorrect result even though the expected result is the same, because
-    // GuidFromName is operating on the same pGuidResult buffer.
-    // Fix this problem by using a temp GUID buffer and then copy to the pGuidResult buffer.
-    memcpy(pGuidResult, &guidTemp, sizeof(GUID));
+    return guidTemp;
 }
-
 
 // This guid is used for calling GuidFromName function as CLR uniqualifier
 //
@@ -193,17 +187,15 @@ void GuidFromName
 static const GUID CLR_UNIQUALIFIER_GUID = {0x69f9cbc9, 0xda05, 0x11d1,
         {0x94, 0x8, 0x0, 0x0, 0xf8, 0x8, 0x34, 0x60}};
 
-void CorGuidFromNameW
+GUID CorGuidFromNameW
 (
-    GUID *  pGuidResult,        // resulting GUID
     LPCWSTR wzName,             // the unicode name from which to generate a GUID
     SIZE_T  cchName             // name length in count of unicode character
 )
 {
     WRAPPER_NO_CONTRACT;
 
-    GuidFromName(
-        pGuidResult,
+    return GuidFromName(
         CLR_UNIQUALIFIER_GUID,
         wzName,
         (DWORD)((cchName == (SIZE_T) -1 ? (u16_strlen(wzName)+1) : cchName) * sizeof(WCHAR)));

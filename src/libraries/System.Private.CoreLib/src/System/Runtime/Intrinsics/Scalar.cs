@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics
 {
+    [SuppressReadyToRunCanonicalRooting]
     internal static class Scalar<T>
     {
         public static bool IsFloatingPoint

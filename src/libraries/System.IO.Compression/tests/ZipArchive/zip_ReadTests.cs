@@ -979,6 +979,151 @@ namespace System.IO.Compression.Tests
             await DisposeZipArchive(async, archive);
         }
 
+        public static IEnumerable<object[]> EncryptionMethod_Header_Data()
+        {
+            foreach (bool async in _bools)
+            foreach (ZipArchiveMode mode in new[] { ZipArchiveMode.Read, ZipArchiveMode.Update })
+            foreach (ushort flags in new ushort[] { 0, 1, 0x40, 0x41 })
+            foreach (ushort method in new ushort[] { 0, 8, 99 })
+            foreach (byte strength in new byte[] { 1, 2, 3 })
+            foreach (ushort vendorVersion in new ushort[] { 1, 2 })
+            {
+                yield return new object[] { async, mode, flags, method, strength, vendorVersion };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethod_Header_Data))]
+        public static async Task EncryptionMethod_RequiresEncryptionFlagAndAesMethod(
+            bool async, ZipArchiveMode mode, ushort flags, ushort method, byte strength, ushort vendorVersion)
+        {
+            using LocalMemoryStream original = await LocalMemoryStream.ReadAppFileAsync(passwordProtected("PasswordProtected_DifferentPasswords.zip"));
+            byte[] bytes = original.ToArray();
+            (int headerOffset, int aesOffset) = GetFirstAesCentralDirectoryOffsets(bytes);
+
+            const int FlagsOffset = 8;
+            const int MethodOffset = 10;
+            const int VendorVersionOffset = 4;
+            const int StrengthOffset = 8;
+            BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(headerOffset + FlagsOffset), flags);
+            BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(headerOffset + MethodOffset), method);
+            BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(aesOffset + VendorVersionOffset), vendorVersion);
+            bytes[aesOffset + StrengthOffset] = strength;
+
+            using MemoryStream stream = new MemoryStream(bytes);
+            ZipArchive archive = await CreateZipArchive(async, stream, mode);
+            try
+            {
+                ZipArchiveEntry entry = archive.Entries[0];
+                bool isEncrypted = (flags & 1) != 0;
+                bool isAes = isEncrypted && method == 99;
+                ZipEncryptionMethod expectedEncryption = !isEncrypted ? ZipEncryptionMethod.None :
+                    isAes ? strength switch
+                    {
+                        1 => ZipEncryptionMethod.Aes128,
+                        2 => ZipEncryptionMethod.Aes192,
+                        3 => ZipEncryptionMethod.Aes256,
+                        _ => throw new InvalidOperationException()
+                    } :
+                    (flags & 0x40) != 0 ? ZipEncryptionMethod.Unknown : ZipEncryptionMethod.ZipCrypto;
+                const int ActualCompressionMethodOffset = 9;
+                ZipCompressionMethod expectedCompression = (ZipCompressionMethod)(isAes
+                    ? BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(aesOffset + ActualCompressionMethodOffset))
+                    : method);
+
+                Assert.Equal(isEncrypted, entry.IsEncrypted);
+                Assert.Equal(expectedEncryption, entry.EncryptionMethod);
+                Assert.Equal(expectedCompression, entry.CompressionMethod);
+            }
+            finally
+            {
+                await DisposeZipArchive(async, archive);
+            }
+        }
+
+        public static IEnumerable<object[]> EncryptionMethod_InvalidAesExtraField_Data()
+        {
+            foreach (bool async in _bools)
+            foreach (ZipArchiveMode mode in new[] { ZipArchiveMode.Read, ZipArchiveMode.Update })
+            {
+                yield return new object[] { async, mode, 0, (ushort)0 }; // Unrecognized tag.
+                yield return new object[] { async, mode, 2, (ushort)6 }; // Short payload.
+                yield return new object[] { async, mode, 2, ushort.MaxValue }; // Truncated payload.
+                yield return new object[] { async, mode, 4, (ushort)0 }; // Invalid vendor versions.
+                yield return new object[] { async, mode, 4, (ushort)3 };
+                yield return new object[] { async, mode, 6, (ushort)0 }; // Invalid vendor ID.
+                yield return new object[] { async, mode, 8, (ushort)0 }; // Invalid strengths.
+                yield return new object[] { async, mode, 8, (ushort)4 };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethod_InvalidAesExtraField_Data))]
+        public static async Task EncryptionMethod_AesRequiresValidExtraField(
+            bool async, ZipArchiveMode mode, int fieldOffset, ushort value)
+        {
+            using LocalMemoryStream original = await LocalMemoryStream.ReadAppFileAsync(passwordProtected("PasswordProtected_DifferentPasswords.zip"));
+            byte[] bytes = original.ToArray();
+            (_, int aesOffset) = GetFirstAesCentralDirectoryOffsets(bytes);
+            if (fieldOffset == 8)
+            {
+                bytes[aesOffset + fieldOffset] = (byte)value;
+            }
+            else
+            {
+                BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(aesOffset + fieldOffset), value);
+            }
+
+            using MemoryStream stream = new MemoryStream(bytes);
+            await Assert.ThrowsAsync<InvalidDataException>(async () =>
+            {
+                ZipArchive archive = await CreateZipArchive(async, stream, mode);
+                try
+                {
+                    _ = archive.Entries;
+                }
+                finally
+                {
+                    await DisposeZipArchive(async, archive);
+                }
+            });
+        }
+
+        private static (int HeaderOffset, int AesOffset) GetFirstAesCentralDirectoryOffsets(byte[] bytes)
+        {
+            ReadOnlySpan<byte> endSignature = [0x50, 0x4B, 0x05, 0x06];
+            ReadOnlySpan<byte> headerSignature = [0x50, 0x4B, 0x01, 0x02];
+            const int CentralDirectoryOffset = 16;
+            const int FilenameLengthOffset = 28;
+            const int ExtraFieldLengthOffset = 30;
+            const int HeaderLength = 46;
+            const int ExtraFieldHeaderLength = 4;
+            const ushort AesTag = 0x9901;
+
+            int endOffset = bytes.AsSpan().LastIndexOf(endSignature);
+            Assert.True(endOffset >= 0);
+            int headerOffset = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(endOffset + CentralDirectoryOffset));
+            Assert.True(bytes.AsSpan(headerOffset).StartsWith(headerSignature));
+            int filenameLength = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(headerOffset + FilenameLengthOffset));
+            int extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(headerOffset + ExtraFieldLengthOffset));
+            int extraFieldOffset = headerOffset + HeaderLength + filenameLength;
+            int extraFieldEnd = extraFieldOffset + extraFieldLength;
+            while (extraFieldOffset + ExtraFieldHeaderLength <= extraFieldEnd)
+            {
+                ushort tag = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(extraFieldOffset));
+                int size = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(extraFieldOffset + sizeof(ushort)));
+                Assert.InRange(size, 0, extraFieldEnd - extraFieldOffset - ExtraFieldHeaderLength);
+                if (tag == AesTag)
+                {
+                    return (headerOffset, extraFieldOffset);
+                }
+
+                extraFieldOffset += ExtraFieldHeaderLength + size;
+            }
+
+            throw new InvalidOperationException("The test archive must contain an AES extra field.");
+        }
+
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]

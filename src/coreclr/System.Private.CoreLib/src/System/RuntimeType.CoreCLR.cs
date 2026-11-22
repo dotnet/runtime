@@ -3531,13 +3531,12 @@ namespace System
                 {
                     // The open generic Nullable<> is also classified as Nullable, and a constructed
                     // Nullable<T> instantiated over a generic variable holds a TypeDesc (not a
-                    // MethodTable*) in InstantiationArg0(). Fall back to managed reflection in
-                    // those cases.
+                    // MethodTable*) for its argument. Fall back to managed reflection in those cases.
                     if (pMT->ContainsGenericVariables)
                     {
                         return GetGenericArguments()[0];
                     }
-                    RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->InstantiationArg0());
+                    RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->NullableType.AsMethodTable());
                     GC.KeepAlive(this);
                     return result;
                 }
@@ -3744,10 +3743,10 @@ namespace System
             }
         }
 
-        private CheckValueStatus TryChangeTypeSpecial(ref object value)
+        private unsafe CheckValueStatus TryChangeTypeSpecial(ref object value)
         {
             Pointer? pointer = value as Pointer;
-            RuntimeType srcType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
+            RuntimeType srcType = pointer != null ? (RuntimeType)pointer.PointerType : (RuntimeType)value.GetType();
             if (!CanValueSpecialCast(srcType, this))
             {
                 return CheckValueStatus.ArgumentException;
@@ -3755,7 +3754,7 @@ namespace System
 
             if (pointer != null)
             {
-                value = pointer.GetPointerValue(); // Convert source pointer to IntPtr
+                value = (IntPtr)pointer.Value; // Convert source pointer to IntPtr
             }
             else
             {

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -39,7 +40,7 @@ namespace System.Formats.Tar.Tests
             // the public ReadOnlyDictionary façade and constructor validation. This allows
             // intentionally-invalid archives (negative realsize) to be constructed for tests.
             var ea = (Dictionary<string, string>)ReadOnlyDictionaryAccessors<string, string>.GetInnerDictionary((ReadOnlyDictionary<string, string>)entry.ExtendedAttributes);
-            ea["GNU.sparse.realsize"] = realSize.ToString();
+            ea["GNU.sparse.realsize"] = realSize.ToString(CultureInfo.InvariantCulture);
             entry.DataStream = new MemoryStream(rawSparseData);
             writer.WriteEntry(entry);
         }
@@ -49,17 +50,21 @@ namespace System.Formats.Tar.Tests
         // pairs; packed data for each segment is filled with its 1-based index value.
         private static (MemoryStream archive, byte[] rawPackedData) BuildSparseArchive(
             string realName, long realSize,
-            (long Offset, long Length)[] segments)
+            (long Offset, long Length)[] segments, int? expectedMapLength = null)
         {
             // Build the sparse map text: numSegs\n, then pairs offset\n length\n
             var sb = new StringBuilder();
-            sb.Append(segments.Length).Append('\n');
+            sb.Append(segments.Length.ToString(CultureInfo.InvariantCulture)).Append('\n');
             foreach (var (off, len) in segments)
             {
-                sb.Append(off).Append('\n');
-                sb.Append(len).Append('\n');
+                sb.Append(off.ToString(CultureInfo.InvariantCulture)).Append('\n');
+                sb.Append(len.ToString(CultureInfo.InvariantCulture)).Append('\n');
             }
             byte[] mapText = Encoding.ASCII.GetBytes(sb.ToString());
+            if (expectedMapLength is int mapLength)
+            {
+                Assert.Equal(mapLength, mapText.Length);
+            }
 
             // Pad to the next 512-byte block boundary, then append placeholder packed data.
             int padding = (512 - (mapText.Length % 512)) % 512;
@@ -159,6 +164,70 @@ namespace System.Formats.Tar.Tests
             VerifyExpandedContent(buf, realSize, segments);
         }
 
+        public static IEnumerable<object[]> SparseMapSizeTestCases()
+        {
+            (int SegmentCount, long FirstOffset, long FirstLength, int MapLength)[] layouts =
+            [
+                (73, 0, 1, 511),
+                (73, 10, 1, 512),
+                (73, 100, 1, 513),
+                (143, 100, 100, 1006),
+                (146, 0, 1, 1023),
+                (146, 10, 1, 1024),
+                (146, 100, 1, 1025),
+                (151, 100, 100, 1062),
+                (1170, 10, 1, 8193),
+            ];
+
+            foreach ((int segmentCount, long firstOffset, long firstLength, int mapLength) in layouts)
+            {
+                foreach (object[] booleans in GetDataAndBooleanData(GetTwoBooleansData()))
+                {
+                    yield return new object[]
+                    {
+                        segmentCount, firstOffset, firstLength, mapLength,
+                        (bool)booleans[0], (bool)booleans[1], (bool)booleans[2],
+                    };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(SparseMapSizeTestCases))]
+        public async Task SparseMapSpanningRecords_ExpandsCorrectly(
+            int segmentCount, long firstOffset, long firstLength, int mapLength, bool copyData, bool seekableSource, bool useAsync)
+        {
+            var segments = CreateSparseMapSegments(segmentCount, firstOffset, firstLength);
+            long realSize = segments[segments.Length - 1].Offset;
+            using MemoryStream archive = BuildSparseArchive("file.bin", realSize, segments, mapLength).archive;
+            using Stream readerStream = seekableSource ? archive : new NonSeekableStream(archive);
+            using var reader = new TarReader(readerStream);
+
+            TarEntry? entry = useAsync
+                ? await reader.GetNextEntryAsync(copyData)
+                : reader.GetNextEntry(copyData);
+            Assert.NotNull(entry);
+            Assert.Equal("file.bin", entry.Name);
+            Assert.Equal(realSize, entry.Length);
+            Assert.NotNull(entry.DataStream);
+            Assert.Equal(realSize, entry.DataStream.Length);
+
+            byte[] content = new byte[(int)realSize];
+            Array.Fill(content, (byte)0xff);
+            if (useAsync)
+            {
+                await entry.DataStream.ReadExactlyAsync(content);
+                Assert.Equal(0, await entry.DataStream.ReadAsync(new byte[1]));
+            }
+            else
+            {
+                entry.DataStream.ReadExactly(content);
+                Assert.Equal(-1, entry.DataStream.ReadByte());
+            }
+            VerifyExpandedContent(content, realSize, segments);
+            Assert.Null(useAsync ? await reader.GetNextEntryAsync() : reader.GetNextEntry());
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -219,19 +288,30 @@ namespace System.Formats.Tar.Tests
             for (int i = 0; i < read; i++) Assert.Equal(0, buf[i]);
         }
 
-        [Fact]
-        public void AdvancePastEntry_DoesNotCorruptNextEntry()
+        [Theory]
+        [InlineData(0, false, false)]
+        [InlineData(0, false, true)]
+        [InlineData(0, true, false)]
+        [InlineData(0, true, true)]
+        [InlineData(11, false, false)]
+        [InlineData(11, false, true)]
+        [InlineData(11, true, false)]
+        [InlineData(11, true, true)]
+        [InlineData(3338, false, false)]
+        [InlineData(3338, false, true)]
+        [InlineData(3338, true, false)]
+        [InlineData(3338, true, true)]
+        public async Task AdvancePastEntry_DoesNotCorruptNextEntry(int bytesToRead, bool seekableSource, bool useAsync)
         {
-            // Write two entries in a PAX archive: first a sparse entry, then a regular entry.
-            // Verify that after reading the first entry without consuming its DataStream,
-            // the second entry is still readable with correct content.
             const string RegularName = "regular.txt";
             byte[] regularContent = Encoding.UTF8.GetBytes("Hello, world!");
 
-            var (sparseArchive, _) = BuildSparseArchive("sparse.bin", 256, [(0L, 256L)]);
+            var segments = CreateSparseMapSegments(1170, 10);
+            long realSize = segments[segments.Length - 1].Offset;
+            using MemoryStream sparseArchive = BuildSparseArchive("sparse.bin", realSize, segments, expectedMapLength: 8193).archive;
 
             // Re-create the archive with the sparse entry followed by a regular entry.
-            var archive = new MemoryStream();
+            using var archive = new MemoryStream();
             using (var writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
             {
                 sparseArchive.Position = 0;
@@ -248,32 +328,81 @@ namespace System.Formats.Tar.Tests
             }
 
             archive.Position = 0;
-            using var reader = new TarReader(archive);
+            using Stream readerStream = seekableSource ? archive : new NonSeekableStream(archive);
+            using var reader = new TarReader(readerStream);
 
-            // Read the sparse entry but don't consume its DataStream.
-            TarEntry? first = reader.GetNextEntry(copyData: false);
+            TarEntry? first = useAsync
+                ? await reader.GetNextEntryAsync(copyData: false)
+                : reader.GetNextEntry(copyData: false);
             Assert.NotNull(first);
             Assert.Equal("sparse.bin", first.Name);
+            Assert.NotNull(first.DataStream);
 
-            // Read the next entry without having consumed the sparse DataStream.
-            TarEntry? second = reader.GetNextEntry(copyData: false);
+            if (bytesToRead > 0)
+            {
+                byte[] sparseContent = new byte[bytesToRead];
+                Array.Fill(sparseContent, (byte)0xff);
+                if (useAsync)
+                {
+                    await first.DataStream.ReadExactlyAsync(sparseContent);
+                }
+                else
+                {
+                    first.DataStream.ReadExactly(sparseContent);
+                }
+
+                if (bytesToRead == realSize)
+                {
+                    VerifyExpandedContent(sparseContent, realSize, segments);
+                }
+                else
+                {
+                    for (int i = 0; i < sparseContent.Length - 1; i++)
+                    {
+                        Assert.Equal(0, sparseContent[i]);
+                    }
+                    Assert.Equal(1, sparseContent[sparseContent.Length - 1]);
+                }
+            }
+
+            TarEntry? second = useAsync
+                ? await reader.GetNextEntryAsync(copyData: false)
+                : reader.GetNextEntry(copyData: false);
             Assert.NotNull(second);
             Assert.Equal(RegularName, second.Name);
 
             Assert.NotNull(second.DataStream);
             byte[] buf = new byte[regularContent.Length];
-            second.DataStream.ReadExactly(buf);
+            if (useAsync)
+            {
+                await second.DataStream.ReadExactlyAsync(buf);
+            }
+            else
+            {
+                second.DataStream.ReadExactly(buf);
+            }
             Assert.Equal(regularContent, buf);
+            Assert.Null(useAsync ? await reader.GetNextEntryAsync() : reader.GetNextEntry());
         }
 
         // --- Corrupted format tests ---
 
         public static IEnumerable<object[]> CorruptedSparseMapTestCases()
         {
+            var truncatedMap = new StringBuilder("256\n");
+            for (int i = 0; i < 255; i++)
+            {
+                truncatedMap.Append("0\n0\n");
+            }
+            truncatedMap.Append("0\n");
+
             string[] corruptedMaps =
             [
                 "abc\n0\n256\n",       // non-numeric segment count
                 "\n0\n256\n",          // empty segment count line
+                "-1\n",                // negative segment count
+                "1000001\n",           // segment count exceeds allocation limit
+                new string('0', 1025) + "\n", // numeric line exceeds buffer capacity
                 "1\nabc\n256\n",       // non-numeric offset
                 "1\n0\nabc\n",         // non-numeric length
                 "1\n-1\n256\n",        // negative offset
@@ -282,7 +411,8 @@ namespace System.Formats.Tar.Tests
                 "1\n",                 // truncated: missing offset and length lines
                 "1\n0\n2048\n",        // segment extends past realSize
                 "2\n256\n256\n0\n256\n", // segments not in ascending order
-                "2\n" + new string('A', 512) + "\n256\n", // line exceeding buffer capacity
+                "2\n" + new string('A', 512) + "\n256\n", // non-numeric line spanning records
+                truncatedMap.ToString(), // missing length after multiple records
             ];
 
             foreach (string map in corruptedMaps)
@@ -541,6 +671,60 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public async Task ExtractSparseEntry_LargeMap_ExpandsCorrectly(bool extractToDirectory, bool seekableSource, bool useAsync)
+        {
+            const string RealName = "sparse-extract.bin";
+            var segments = CreateSparseMapSegments(1170, 10);
+            long realSize = segments[segments.Length - 1].Offset;
+            using MemoryStream archive = BuildSparseArchive(RealName, realSize, segments, expectedMapLength: 8193).archive;
+            using Stream readerStream = seekableSource ? archive : new NonSeekableStream(archive);
+            using var destinationDirectory = new TempDirectory();
+            string destinationFile = Path.Join(destinationDirectory.Path, RealName);
+
+            if (extractToDirectory)
+            {
+                if (useAsync)
+                {
+                    await TarFile.ExtractToDirectoryAsync(readerStream, destinationDirectory.Path, overwriteFiles: false);
+                }
+                else
+                {
+                    TarFile.ExtractToDirectory(readerStream, destinationDirectory.Path, overwriteFiles: false);
+                }
+            }
+            else
+            {
+                using var reader = new TarReader(readerStream);
+                TarEntry? entry = useAsync
+                    ? await reader.GetNextEntryAsync()
+                    : reader.GetNextEntry();
+                Assert.NotNull(entry);
+                Assert.Equal(realSize, entry.Length);
+
+                if (useAsync)
+                {
+                    await entry.ExtractToFileAsync(destinationFile, overwrite: false);
+                }
+                else
+                {
+                    entry.ExtractToFile(destinationFile, overwrite: false);
+                }
+            }
+
+            byte[] extracted = File.ReadAllBytes(destinationFile);
+            Assert.Equal(realSize, extracted.Length);
+            VerifyExpandedContent(extracted, realSize, segments);
+        }
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void GnuSparse10Pax_SparseBig_NameAndLength(bool copyData)
@@ -557,6 +741,19 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(60000000000L, entry.Length);
             Assert.NotNull(entry.DataStream);
             Assert.Equal(60000000000L, entry.DataStream.Length);
+        }
+
+        private static (long Offset, long Length)[] CreateSparseMapSegments(int segmentCount, long firstOffset, long firstLength = 1)
+        {
+            var segments = new (long Offset, long Length)[segmentCount];
+            segments[0] = (firstOffset, firstLength);
+            // Four-digit offsets keep the map length predictable without a large expanded file.
+            for (int i = 1; i < segments.Length; i++)
+            {
+                segments[i] = (1000 + i * 2, i == segments.Length - 1 ? 0 : 1);
+            }
+
+            return segments;
         }
 
         private static (long Offset, long Length)[] PairsToSegments(long[] pairs)

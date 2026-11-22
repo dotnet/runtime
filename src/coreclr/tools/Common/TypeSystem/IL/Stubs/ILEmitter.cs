@@ -539,7 +539,7 @@ namespace Internal.IL.Stubs
     }
 
     /// <summary>
-    /// Represent a token. Use one of the overloads of <see cref="ILEmitter.NewToken"/>
+    /// Represent a token. Use one of the <c>NewToken</c> overloads of <see cref="ILEmitter"/>
     /// to create a new token.
     /// </summary>
     public enum ILToken { }

@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     process.cpp
 
 Abstract:
-
     Implementation of process object and functions related to processes.
-
 --*/
 
 #include "pal/dbgmsg.h"
@@ -18,7 +14,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 
 #include "pal/procobj.hpp"
 #include "pal/thread.hpp"
-#include "pal/file.hpp"
 #include "pal/handlemgr.hpp"
 #include "pal/module.h"
 #include "procprivate.hpp"
@@ -27,13 +22,13 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/init.h"
 #include "pal/debug.h"
 #include "pal/utils.h"
-#include "pal/environ.h"
-#include "pal/virtual.h"
 #include "pal/stackstring.hpp"
 #include "pal/signal.hpp"
 
+
 #include <generatedumpflags.h>
 #include <clrconfignocache.h>
+#include <minipal/time.h>
 
 #include <errno.h>
 #if HAVE_POLL
@@ -174,7 +169,6 @@ Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 
 // Function to call instead of exec'ing the createdump binary.  Used by single-file and native AOT hosts.
 Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
-
 // Function to call to log the managed callstack for a signal. Used by Android since CoreCLR doesn't support CreateDump on Android.
 Volatile<PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK> g_logManagedCallstackForSignalCallback = nullptr;
 
@@ -222,11 +216,6 @@ struct UnambiguousProcessDescriptor
     DWORD m_processId;
 };
 #pragma pack(pop)
-
-static
-DWORD
-StartupHelperThread(
-    LPVOID p);
 
 static
 BOOL
@@ -512,7 +501,6 @@ PAL_SetCreateDumpCallback(
     _ASSERTE(g_createdumpCallback == nullptr);
     g_createdumpCallback = callback;
 }
-
 /*++
 Function:
   PAL_SetLogManagedCallstackForSignalCallback
@@ -580,13 +568,20 @@ static uint64_t HashSemaphoreName(uint64_t a, uint64_t b)
 #endif
 
 static const char *const TwoWayNamedPipePrefix = "clr-debug-pipe";
-static const char* IpcNameFormat = "%s-%d-%llu-%s";
+
+#ifndef __ANDROID__
+#define TEMP_DIRECTORY_PATH "/tmp/"
+#else
+// On Android, "/tmp/" doesn't exist; temporary files should go to
+// /data/local/tmp/
+#define TEMP_DIRECTORY_PATH "/data/local/tmp/"
+#endif
 
 #ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
 static const char* RuntimeStartupPipeName = "st";
 static const char* RuntimeContinuePipeName = "co";
 
-#define PIPE_OPEN_RETRY_DELAY_NS 500000000 // 500 ms
+#define PIPE_OPEN_RETRY_DELAY_MS 500
 
 typedef enum
 {
@@ -620,7 +615,7 @@ OpenPipe(const char* name, int mode)
         {
             if (mode == O_WRONLY && errno == ENXIO)
             {
-                PAL_nanosleep(PIPE_OPEN_RETRY_DELAY_NS);
+                minipal_sleep(PIPE_OPEN_RETRY_DELAY_MS);
                 continue;
             }
             else if (errno == EINTR)
@@ -1162,12 +1157,11 @@ PAL_GetTransportName(
     IN const char *suffix)
 {
     *name = '\0';
-    DWORD dwRetVal = 0;
     UINT64 disambiguationKey = 0;
-    PathCharString formatBufferString;
+    PathCharString directoryString;
     BOOL ret = GetProcessIdDisambiguationKey(id, &disambiguationKey);
-    char *formatBuffer = formatBufferString.OpenStringBuffer(MAX_TRANSPORT_NAME_LENGTH-1);
-    if (formatBuffer == nullptr)
+    char *directoryBuffer = directoryString.OpenStringBuffer(MAX_TRANSPORT_NAME_LENGTH-1);
+    if (directoryBuffer == nullptr)
     {
         ERROR("Out Of Memory");
         return;
@@ -1189,16 +1183,16 @@ PAL_GetTransportName(
         }
 
         // In sandbox, all IPC files (locks, pipes) should be written to the application group
-        // container. The path returned by GetTempPathA will be unique for each process and cannot
+        // container. $TMPDIR will be unique for each process and cannot
         // be used for IPC between two different processes
-        if (!GetApplicationContainerFolder(formatBufferString, applicationGroupId, applicationGroupIdLength))
+        if (!GetApplicationContainerFolder(directoryString, applicationGroupId, applicationGroupIdLength))
         {
             ERROR("Out Of Memory");
             return;
         }
 
         // Verify the size of the path won't exceed maximum allowed size
-        if (formatBufferString.GetCount() >= MAX_TRANSPORT_NAME_LENGTH)
+        if (directoryString.GetCount() >= MAX_TRANSPORT_NAME_LENGTH)
         {
             ERROR("GetApplicationContainerFolder returned a path that was larger than MAX_TRANSPORT_NAME_LENGTH");
             return;
@@ -1207,28 +1201,31 @@ PAL_GetTransportName(
     else
 #endif // __APPLE__
     {
-        // Get a temp file location
-        dwRetVal = ::GetTempPathA(MAX_TRANSPORT_NAME_LENGTH, formatBuffer);
-        if (dwRetVal == 0)
+        // Must match the out-of-process clients that compute the same names (Path.GetTempPath() rules).
+        const char* tmpDir = getenv("TMPDIR");
+        if (tmpDir == nullptr || tmpDir[0] == '\0')
         {
-            ERROR("GetTempPath failed (0x%08x)", ::GetLastError());
+            tmpDir = TEMP_DIRECTORY_PATH;
+        }
+
+        const char* slash = (tmpDir[strlen(tmpDir) - 1] == '/') ? "" : "/";
+        int len = snprintf(directoryBuffer, MAX_TRANSPORT_NAME_LENGTH, "%s%s", tmpDir, slash);
+        if (len < 0 || (unsigned int)len >= MAX_TRANSPORT_NAME_LENGTH)
+        {
+            ERROR("TMPDIR is longer than MAX_TRANSPORT_NAME_LENGTH");
             return;
         }
-        if (dwRetVal > MAX_TRANSPORT_NAME_LENGTH)
-        {
-            ERROR("GetTempPath returned a path that was larger than MAX_TRANSPORT_NAME_LENGTH");
-            return;
-        }
+        directoryString.CloseBuffer(len);
     }
 
-    if (strncat_s(formatBuffer, MAX_TRANSPORT_NAME_LENGTH, IpcNameFormat, strlen(IpcNameFormat)) == STRUNCATE)
+    int chars = snprintf(name, MAX_TRANSPORT_NAME_LENGTH, "%s%s-%d-%llu-%s",
+                         directoryString.GetString(), prefix, (int)id, (unsigned long long)disambiguationKey, suffix);
+    if (chars < 0 || (unsigned int)chars >= MAX_TRANSPORT_NAME_LENGTH)
     {
         ERROR("TransportPipeName was larger than MAX_TRANSPORT_NAME_LENGTH");
+        *name = '\0';
         return;
     }
-
-    int chars = snprintf(name, MAX_TRANSPORT_NAME_LENGTH, formatBuffer, prefix, id, disambiguationKey, suffix);
-    _ASSERTE(chars > 0 && (unsigned int)chars < MAX_TRANSPORT_NAME_LENGTH);
 }
 
 /*++
@@ -1547,7 +1544,7 @@ PROCLaunchCreateDump(
         else
         {
             // Execute the createdump program
-            if (execve(argv[0], (char**)argv, palEnvironment) == -1)
+            if (execv(argv[0], (char**)argv) == -1)
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
                 _exit(EXIT_FAILURE);
@@ -2074,17 +2071,6 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     abort();
 }
 
-#define FATAL_ASSERT(e, msg) \
-    do \
-    { \
-        if (!(e)) \
-        { \
-            fprintf(stderr, "FATAL ERROR: " msg); \
-            PROCAbort(); \
-        } \
-    } \
-    while(0)
-
 /*++
 Function:
   CreateInitialProcessAndThreadObjects
@@ -2107,7 +2093,6 @@ CorUnix::CreateInitialProcessAndThreadObjects(
 {
     PAL_ERROR palError = NO_ERROR;
     HANDLE hThread;
-    CObjectAttributes oa;
 
     //
     // Create initial thread object
@@ -2192,7 +2177,6 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
     if(locked && PALIsInitialized())
     {
         PROCNotifyProcessShutdown();
-        PALCommonCleanup();
     }
 }
 

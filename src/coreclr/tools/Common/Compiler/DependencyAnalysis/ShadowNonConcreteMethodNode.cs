@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class ShadowNonConcreteMethodNode : ShadowMethodNode, IMethodNode, ISymbolNodeWithLinkage
     {
-        public ShadowNonConcreteMethodNode(MethodDesc method, IMethodNode canonicalMethod)
+        public ShadowNonConcreteMethodNode(MethodDesc method, IMethodBodyNode canonicalMethod)
             : base(method, canonicalMethod)
         {
             Debug.Assert(method.IsSharedByGenericInstantiations);

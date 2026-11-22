@@ -27,6 +27,7 @@
     <Compile Include="FinalCoverageTests.cs" />
     <Compile Include="FinalCoverageTests2.cs" />
     <Compile Include="FinalBranchCoverageTests.cs" />
+    <Compile Include="HasSameMetadataDefinitionAsTests.cs" />
     <Compile Include="InheritedPropertyInfoTests.cs" />
     <Compile Include="InteritedMethodInfoTests.cs" />
     <Compile Include="MethodBodyTests.cs" />

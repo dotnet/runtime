@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -16,24 +14,22 @@ namespace System.Threading
         private static ExecutionContextCallbackArgs? t_executionContextCallbackArgs;
 
         private static ContextCallback? s_executionContextCallback;
-        private static OverlappedData[]? s_dataArray;
-        private static int s_dataCount;   // Current number of valid entries in _dataArray
-        private static IntPtr s_freeList; // Lock-free linked stack of free ThreadPoolNativeOverlapped instances.
 
         private NativeOverlapped _overlapped; // must be first, so we can cast to and from NativeOverlapped.
-        private IntPtr _nextFree; // if this instance if free, points to the next free instance.
-        private int _dataIndex; // Index in _dataArray of this instance's OverlappedData.
+        private GCHandle _dataHandle;
 
         internal OverlappedData Data
         {
-            get { return s_dataArray![_dataIndex]; }
+            get { return (OverlappedData)_dataHandle.Target!; }
         }
 
         internal static unsafe Win32ThreadPoolNativeOverlapped* Allocate(IOCompletionCallback callback, object? state, object? pinData, PreAllocatedOverlapped? preAllocated, bool flowExecutionControl)
         {
-            Win32ThreadPoolNativeOverlapped* overlapped = AllocateNew();
+            Win32ThreadPoolNativeOverlapped* overlapped =
+                (Win32ThreadPoolNativeOverlapped*)NativeMemory.AllocZeroed((nuint)sizeof(Win32ThreadPoolNativeOverlapped));
             try
             {
+                overlapped->_dataHandle = GCHandle.Alloc(new OverlappedData());
                 overlapped->SetData(callback, state, pinData, preAllocated, flowExecutionControl);
             }
             catch
@@ -42,75 +38,6 @@ namespace System.Threading
                 throw;
             }
             return overlapped;
-        }
-
-        private static unsafe Win32ThreadPoolNativeOverlapped* AllocateNew()
-        {
-            IntPtr freePtr;
-            Win32ThreadPoolNativeOverlapped* overlapped;
-            OverlappedData data;
-
-            // Find a free Overlapped
-            while ((freePtr = Volatile.Read(ref s_freeList)) != IntPtr.Zero)
-            {
-                overlapped = (Win32ThreadPoolNativeOverlapped*)freePtr;
-
-                if (Interlocked.CompareExchange(ref s_freeList, overlapped->_nextFree, freePtr) != freePtr)
-                    continue;
-
-                overlapped->_nextFree = IntPtr.Zero;
-                return overlapped;
-            }
-
-            // None are free; allocate a new one.
-            overlapped = (Win32ThreadPoolNativeOverlapped*)NativeMemory.Alloc((nuint)sizeof(Win32ThreadPoolNativeOverlapped));
-            *overlapped = default(Win32ThreadPoolNativeOverlapped);
-
-            // Allocate a OverlappedData object, and an index at which to store it in _dataArray.
-            data = new OverlappedData();
-            int dataIndex = Interlocked.Increment(ref s_dataCount) - 1;
-
-            // Make sure we didn't wrap around.
-            if (dataIndex < 0)
-                Environment.FailFast("Too many outstanding Win32ThreadPoolNativeOverlapped instances");
-
-            while (true)
-            {
-                OverlappedData[]? dataArray = Volatile.Read(ref s_dataArray);
-                int currentLength = dataArray == null ? 0 : dataArray.Length;
-
-                // If the current array is too small, create a new, larger one.
-                if (currentLength <= dataIndex)
-                {
-                    int newLength = currentLength;
-                    if (newLength == 0)
-                        newLength = 128;
-                    while (newLength <= dataIndex)
-                        newLength = (newLength * 3) / 2;
-
-                    OverlappedData[]? newDataArray = dataArray;
-                    Array.Resize(ref newDataArray, newLength);
-
-                    if (Interlocked.CompareExchange(ref s_dataArray, newDataArray, dataArray) != dataArray)
-                        continue; // Someone else got the free one, try again
-
-                    dataArray = newDataArray;
-                }
-
-                // If we haven't stored this object in the array yet, do so now.  Then we need to make another pass through
-                // the loop, in case another thread resized the array before we made this update.
-                if (s_dataArray![dataIndex] == null)
-                {
-                    // Full fence so this write can't move past subsequent reads.
-                    Interlocked.Exchange(ref dataArray![dataIndex], data);
-                    continue;
-                }
-
-                // We're already in the array, so we're done.
-                Debug.Assert(dataArray![dataIndex] == data);
-                overlapped->_dataIndex = dataIndex;
-                return overlapped;
-            }
         }
 
         private void SetData(IOCompletionCallback callback, object? state, object? pinData, PreAllocatedOverlapped? preAllocated, bool flowExecutionContext)
@@ -132,44 +59,38 @@ namespace System.Threading
             {
                 if (pinData is object[] objArray && objArray.GetType() == typeof(object[]))
                 {
-                    if (data._pinnedData == null || data._pinnedData.Length < objArray.Length)
-                        Array.Resize(ref data._pinnedData, objArray.Length);
-
+                    data._pinnedData = new GCHandle[objArray.Length];
                     for (int i = 0; i < objArray.Length; i++)
-                    {
-                        if (!data._pinnedData[i].IsAllocated)
-                            data._pinnedData[i] = GCHandle.Alloc(objArray[i], GCHandleType.Pinned);
-                        else
-                            data._pinnedData[i].Target = objArray[i];
-                    }
+                        data._pinnedData[i] = GCHandle.Alloc(objArray[i], GCHandleType.Pinned);
                 }
                 else
                 {
-                    data._pinnedData ??= new GCHandle[1];
-
-                    if (!data._pinnedData[0].IsAllocated)
-                        data._pinnedData[0] = GCHandle.Alloc(pinData, GCHandleType.Pinned);
-                    else
-                        data._pinnedData[0].Target = pinData;
+                    data._pinnedData = new GCHandle[1];
+                    data._pinnedData[0] = GCHandle.Alloc(pinData, GCHandleType.Pinned);
                 }
             }
         }
 
         internal static unsafe void Free(Win32ThreadPoolNativeOverlapped* overlapped)
         {
-            // Reset all data.
-            overlapped->Data.Reset();
-            overlapped->_overlapped = default(NativeOverlapped);
-
-            // Add to the free list.
-            while (true)
+            if (overlapped->_dataHandle.IsAllocated)
             {
-                IntPtr freePtr = Volatile.Read(ref s_freeList);
-                overlapped->_nextFree = freePtr;
+                OverlappedData data = overlapped->Data;
+                Debug.Assert(data._boundHandle is null);
 
-                if (Interlocked.CompareExchange(ref s_freeList, (IntPtr)overlapped, freePtr) == freePtr)
-                    break;
+                if (data._pinnedData is GCHandle[] pinnedData)
+                {
+                    for (int i = 0; i < pinnedData.Length; i++)
+                    {
+                        if (pinnedData[i].IsAllocated)
+                            pinnedData[i].Free();
+                    }
+                }
+
+                overlapped->_dataHandle.Free();
             }
+
+            NativeMemory.Free(overlapped);
         }
 
         internal static unsafe NativeOverlapped* ToNativeOverlapped(Win32ThreadPoolNativeOverlapped* overlapped)

@@ -85,12 +85,8 @@ class CLiteWeightStgdbRW : public CLiteWeightStgdb<CMiniMdRW>
     friend class RegMeta;
     friend HRESULT TranslateSigHelper(
             IMDInternalImport*      pImport,
-            IMDInternalImport*      pAssemImport,
-            const void*             pbHashValue,
-            ULONG                   cbHashValue,
             PCCOR_SIGNATURE         pbSigBlob,
             ULONG                   cbSigBlob,
-            IMDInternalEmit*        pAssemEmit,
             IMDInternalEmit*        emit,
             CQuickBytes*            pqkSigEmit,
             ULONG*                  pcbSig);
@@ -115,7 +111,8 @@ public:
     HRESULT InitOnMem(
         ULONG   cbData,
         LPCVOID pbData,
-        int     bReadOnly);
+        int     bReadOnly,
+        bool    fIsDelta = false);
 
     __checkReturn
     HRESULT GetSaveSize(
@@ -208,7 +205,8 @@ protected:
     __checkReturn
     HRESULT InitFileForRead(
         StgIO       *pStgIO,            // For file i/o.
-        int         bReadOnly=true);    // If read-only.
+        int         bReadOnly=true,     // If read-only.
+        bool        fIsDelta=false);    // Is this metadata being loaded to apply an EnC delta?
 
     // Set file name of this database (makes copy of the file name).
     __checkReturn HRESULT SetFileName(const WCHAR * wszFileName);
