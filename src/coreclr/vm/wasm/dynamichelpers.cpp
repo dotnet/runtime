@@ -65,9 +65,9 @@ extern "C" PCODE g_pMethodWithSlotAndModule;
 extern "C" PCODE g_pClassWithSlotAndModule;
 
 #ifdef TARGET_WASM64
-// The table64 call_indirect lives here rather than in dynamichelpers.S because the standalone
-// assembler type-checks call_indirect there as a table32 instruction. ReadyToRun callers do not
-// publish their stack pointer to __stack_pointer, so this bridge must stay naked and stackless.
+// Inline asm because LLVM's assembler type-checks the call_indirect index as i32 even for
+// table64 (https://github.com/llvm/llvm-project/issues/242985); inline asm skips that check.
+// ReadyToRun callers do not publish __stack_pointer, so this must stay naked and stackless.
 extern "C" TADDR __attribute__((naked)) CallDictionaryLookupHelper(TADDR stackPointer, TADDR context, GenericHandleArgs* args, PCODE entryPoint)
 {
     asm ("local.get 0\n"
