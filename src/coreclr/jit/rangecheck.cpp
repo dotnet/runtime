@@ -50,6 +50,7 @@ RangeCheck::RangeCheck(Compiler* pCompiler)
     : m_preferredBound(ValueNumStore::NoVN)
     , m_pRangeMap(nullptr)
     , m_pSearchPath(nullptr)
+    , m_pRejectNegativeSearchPath(nullptr)
     , m_compiler(pCompiler)
     , m_alloc(pCompiler->getAllocator(CMK_RangeCheck))
     , m_nVisitBudget(MAX_VISIT_BUDGET)
@@ -95,6 +96,20 @@ void RangeCheck::ClearSearchPath()
     {
         m_pSearchPath->RemoveAll();
     }
+
+    if (m_pRejectNegativeSearchPath != nullptr)
+    {
+        m_pRejectNegativeSearchPath->RemoveAll();
+    }
+}
+
+RangeCheck::SearchPath* RangeCheck::GetRejectNegativeSearchPath()
+{
+    if (m_pRejectNegativeSearchPath == nullptr)
+    {
+        m_pRejectNegativeSearchPath = new (m_alloc) SearchPath(m_alloc);
+    }
+    return m_pRejectNegativeSearchPath;
 }
 
 // Get the length of the array vn, if it is new.
@@ -392,20 +407,29 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     }
     m_nVisitBudget--;
 
-    // Add hashtable entry for expr.
-    bool alreadyPresent = GetSearchPath()->Set(expr, nullptr, SearchPath::Overwrite);
+    // Add hashtable entry for expr. A tree visited without rejectNegativeConst may
+    // still have a negative constant input, so track the two kinds of walks separately.
+    SearchPath* const searchPath     = rejectNegativeConst ? GetRejectNegativeSearchPath() : GetSearchPath();
+    bool              alreadyPresent = searchPath->Set(expr, nullptr, SearchPath::Overwrite);
     if (alreadyPresent)
     {
         return true;
     }
 
     // Remove hashtable entry for expr when we exit the present scope.
-    auto code = [this, expr] {
-        GetSearchPath()->Remove(expr);
+    auto code = [searchPath, expr] {
+        searchPath->Remove(expr);
     };
     jitstd::utility::scoped_code<decltype(code)> finally(code);
 
-    if (GetSearchPath()->GetCount() > MAX_SEARCH_DEPTH)
+    // Both search paths may have been consulted, so the recursion depth is their combined size.
+    unsigned depth = GetSearchPath()->GetCount();
+    if (HasRejectNegativeSearchPath())
+    {
+        depth += GetRejectNegativeSearchPath()->GetCount();
+    }
+
+    if (depth > MAX_SEARCH_DEPTH)
     {
         return false;
     }
@@ -440,7 +464,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
         for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
         {
             // If the arg is already in the path, skip.
-            if (GetSearchPath()->Lookup(use.GetNode()))
+            if (searchPath->Lookup(use.GetNode()))
             {
                 continue;
             }
