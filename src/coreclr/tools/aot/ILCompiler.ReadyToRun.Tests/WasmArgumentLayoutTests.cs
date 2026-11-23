@@ -205,7 +205,9 @@ public class WasmArgumentLayoutTests
     [InlineData("", 0)]
     [InlineData("*", 2)]
     [InlineData("Callbacks:Inlinee", 1)]
-    public void InlineeProfilingPreservesInlining(string filter, int expectedProbeCount)
+    [InlineData("*", 0, "JitMinimalPrejitProfiling=1")]
+    [InlineData("*", 2, "JitCollect64BitCounts=0")]
+    public void InlineeProfilingPreservesInlining(string filter, int expectedProbeCount, string? counterOption = null)
     {
         string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "inlinee-profiling", Path.GetRandomFileName()));
         Directory.CreateDirectory(directory);
@@ -239,6 +241,8 @@ public class WasmArgumentLayoutTests
                 $"--codegenopt:JitStdOutFile={listingPath}",
                 "--out", Path.Combine(directory, "caller.wasm"),
             ];
+            if (counterOption is not null)
+                args.Add($"--codegenopt:{counterOption}");
             R2RCompilationResult result = new R2RDriver(_output).Compile(args);
             Assert.True(result.Success, result.StandardOutput + result.StandardError);
             string listing = File.ReadAllText(listingPath);
@@ -326,7 +330,8 @@ public class WasmArgumentLayoutTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void EdgeProfilePreservesLikelihoods(bool longCounts)
+    [InlineData(true, true)]
+    public void EdgeProfilePreservesLikelihoods(bool longCounts, bool instrument = false)
     {
         string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "mixed-edge-profile", Path.GetRandomFileName()));
         Directory.CreateDirectory(directory);
@@ -365,8 +370,13 @@ public class WasmArgumentLayoutTests
                 new() { InstrumentationKind = edgeKind, ILOffset = secondOffset, Other = 0, Count = 1, DataLong = 70 },
             ];
 
-            string listing = CompileCountProfile(input, context, method, schema, directory);
+            string listing = instrument
+                ? CompileCountProfile(input, context, method, schema, directory, "--codegenopt:WasmPgoInstrumentation=*",
+                    "--codegenopt:JitPropagateSynthesizedCountsToProfileData=1")
+                : CompileCountProfile(input, context, method, schema, directory);
             AssertCountProfile(listing, entryCount: 100, firstLikelihood: 0.3, secondLikelihood: 0.7);
+            if (instrument)
+                Assert.Contains("i64.add", listing);
         }
         finally
         {
@@ -375,7 +385,7 @@ public class WasmArgumentLayoutTests
     }
 
     private string CompileCountProfile(string input, ReadyToRunCompilerContext context, EcmaMethod method,
-        List<CompilerPgo.PgoSchemaElem> schema, string directory)
+        List<CompilerPgo.PgoSchemaElem> schema, string directory, params string[] instrumentationOptions)
     {
         string profile = Path.Combine(directory, "profile.mibc");
         WriteCountProfile(context, method, schema, profile);
@@ -397,6 +407,7 @@ public class WasmArgumentLayoutTests
             $"--codegenopt:JitDisasm=Callbacks:{methodName}",
             $"--codegenopt:JitStdOutFile={listingPath}",
             "--out", Path.Combine(directory, "profile.wasm"),
+            .. instrumentationOptions,
         ]);
         Assert.True(result.Success, result.StandardOutput + result.StandardError);
 

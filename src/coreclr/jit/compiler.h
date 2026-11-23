@@ -7257,6 +7257,9 @@ protected:
 
 public:
     bool compR2RPgoInstrumentation() const;
+#ifdef DEBUG
+    bool fgShouldWriteSynthesizedCounts() const;
+#endif
 
     const char*                            fgPgoFailReason;
     bool                                   fgPgoDisabled = false;
@@ -11767,6 +11770,11 @@ public:
 
         // Collect 64 bit counts for PGO data.
         bool compCollect64BitCounts;
+
+        bool     compPgoInterlocked;
+        bool     compPgoScalable;
+        bool     compPgoMinimal;
+        unsigned compPgoCounterSlots;
 
         // Allow inlining of methods with EH.
         bool compInlineMethodsWithEH;

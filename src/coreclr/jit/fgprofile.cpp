@@ -581,21 +581,6 @@ void BlockCountInstrumentor::RelocateProbes()
 //
 void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
-    unsigned numCountersPerProbe = 1;
-
-    // When we have both interlocked and scalable profile modes enabled, we will
-    // count both ways, so allocate two count slots per probe.
-    //
-    if (!m_compiler->compR2RPgoInstrumentation() && (JitConfig.JitScalableProfiling() > 0) &&
-        (JitConfig.JitInterlockedProfiling() > 0))
-    {
-        numCountersPerProbe = 2;
-    }
-    else if (!m_compiler->compR2RPgoInstrumentation() && (JitConfig.JitCounterPadding() > 0))
-    {
-        numCountersPerProbe = (unsigned)JitConfig.JitCounterPadding();
-    }
-
     // Remember the schema index for this block.
     //
     assert(block->bbCountSchemaIndex == -1);
@@ -608,7 +593,7 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     assert((int)offset >= 0);
 
     ICorJitInfo::PgoInstrumentationSchema schemaElem;
-    schemaElem.Count               = numCountersPerProbe;
+    schemaElem.Count               = m_compiler->opts.compPgoCounterSlots;
     schemaElem.Other               = 0;
     schemaElem.InstrumentationKind = m_compiler->opts.compCollect64BitCounts
                                          ? ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount
@@ -646,7 +631,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
     assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
            (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
 #ifdef DEBUG
-    if ((JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0) && !m_compiler->compR2RPgoInstrumentation())
+    if (m_compiler->fgShouldWriteSynthesizedCounts())
     {
         uint8_t* addrOfCurrentExecutionCount = entry.Offset + profileMemory;
         // Write the current synthesized count as the profile data
@@ -719,9 +704,8 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp,
                                                         size_t    counterOffset,
                                                         var_types countType)
 {
-    // The initial R2R implementation supports single-threaded Browser applications.
-    const bool interlocked = !comp->compR2RPgoInstrumentation() && (JitConfig.JitInterlockedProfiling() > 0);
-    const bool scalable    = !comp->compR2RPgoInstrumentation() && (JitConfig.JitScalableProfiling() > 0);
+    const bool interlocked = comp->opts.compPgoInterlocked;
+    const bool scalable    = comp->opts.compPgoScalable;
 
     auto counterAddress = [comp, counterBase, &counterOffset]() -> GenTree* {
 #ifdef FEATURE_R2R_PGO
@@ -1710,21 +1694,6 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 //
 void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
-    unsigned numCountersPerProbe = 1;
-
-    // When we have both interlocked and scalable profile modes enabled, we will
-    // count both ways, so allocate two count slots per probe.
-    //
-    if (!m_compiler->compR2RPgoInstrumentation() && (JitConfig.JitScalableProfiling() > 0) &&
-        (JitConfig.JitInterlockedProfiling() > 0))
-    {
-        numCountersPerProbe = 2;
-    }
-    else if (!m_compiler->compR2RPgoInstrumentation() && (JitConfig.JitCounterPadding() > 0))
-    {
-        numCountersPerProbe = (unsigned)JitConfig.JitCounterPadding();
-    }
-
     // Walk the bbSparseProbeList, emitting one schema element per...
     //
     for (Probe* probe = (Probe*)block->bbSparseProbeList; probe != nullptr; probe = probe->next)
@@ -1751,7 +1720,7 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         int32_t targetKey = EfficientEdgeCountBlockToKey(target);
 
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
-        schemaElem.Count               = numCountersPerProbe;
+        schemaElem.Count               = m_compiler->opts.compPgoCounterSlots;
         schemaElem.Other               = targetKey;
         schemaElem.InstrumentationKind = m_compiler->opts.compCollect64BitCounts
                                              ? ICorJitInfo::PgoInstrumentationKind::EdgeLongCount
@@ -1778,8 +1747,8 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 {
     // What type of probe(s) will we emit?
     //
-    const bool interlocked    = JitConfig.JitInterlockedProfiling() > 0;
-    const bool scalable       = JitConfig.JitScalableProfiling() > 0;
+    const bool interlocked    = m_compiler->opts.compPgoInterlocked;
+    const bool scalable       = m_compiler->opts.compPgoScalable;
     const bool unsynchronized = !interlocked && !scalable;
     const bool dual           = interlocked && scalable;
 
@@ -1820,7 +1789,7 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
                (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount));
 
 #ifdef DEBUG
-        if ((JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0) && !m_compiler->compR2RPgoInstrumentation())
+        if (m_compiler->fgShouldWriteSynthesizedCounts())
         {
             uint8_t* addrOfCurrentExecutionCount = profileMemory + entry.Offset;
             // Write the current synthesized count as the profile data
@@ -2573,6 +2542,14 @@ bool Compiler::compR2RPgoInstrumentation() const
 #endif // FEATURE_R2R_PGO
 }
 
+#ifdef DEBUG
+bool Compiler::fgShouldWriteSynthesizedCounts() const
+{
+    // R2R profile addresses are symbolic imports, not writable storage at compile time.
+    return (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0) && !compR2RPgoInstrumentation();
+}
+#endif // DEBUG
+
 //------------------------------------------------------------------------
 // fgPrepareToInstrumentMethod: prepare for instrumentation
 //
@@ -2591,6 +2568,20 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    const bool r2rPgo = compR2RPgoInstrumentation();
+    const bool prejit = IsAot();
+
+    // Browser R2R uses direct single-threaded updates, and its profiles merge one count per edge.
+    opts.compPgoInterlocked  = !r2rPgo && (JitConfig.JitInterlockedProfiling() > 0);
+    opts.compPgoScalable     = !r2rPgo && (JitConfig.JitScalableProfiling() > 0);
+    opts.compPgoCounterSlots = r2rPgo ? 1 : static_cast<unsigned>(max(1, JitConfig.JitCounterPadding()));
+    if (opts.compPgoInterlocked && opts.compPgoScalable)
+    {
+        opts.compPgoCounterSlots = 2;
+    }
+    opts.compPgoMinimal =
+        prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
+
     // Choose instrumentation technology.
     //
     // We enable edge profiling by default, except when:
@@ -2599,10 +2590,8 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     // * we are AOT compiling without R2R instrumentation support
     //
     const bool edgesEnabled     = (JitConfig.JitEdgeProfiling() > 0);
-    const bool prejit           = IsAot();
-    const bool useEdgeProfiles  = edgesEnabled && (!prejit || compR2RPgoInstrumentation());
-    const bool minimalProfiling = !compR2RPgoInstrumentation() && (prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0)
-                                                                          : (JitConfig.JitMinimalJitProfiling() > 0));
+    const bool useEdgeProfiles  = edgesEnabled && (!prejit || r2rPgo);
+    const bool minimalProfiling = opts.compPgoMinimal;
 
     // Intrinsic recognition must not prevent ordinary managed implementations from
     // benefiting from profiles. Exclude compiler primitives and explicit SIMD APIs,
@@ -2676,7 +2665,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     }
 
 #ifdef FEATURE_R2R_PGO
-    if (compR2RPgoInstrumentation() &&
+    if (r2rPgo &&
         !JitConfig.WasmPgoInstrumentation().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         fgCountInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
@@ -2851,22 +2840,7 @@ PhaseStatus Compiler::fgInstrumentMethodCore()
     //
     // For jitting, no information is conveyed by the count in a single=block method.
     //
-    bool minimalProbeMode = false;
-
-    if (compR2RPgoInstrumentation())
-    {
-        minimalProbeMode = false;
-    }
-    else if (IsAot())
-    {
-        minimalProbeMode = (JitConfig.JitMinimalPrejitProfiling() > 0);
-    }
-    else
-    {
-        minimalProbeMode = (JitConfig.JitMinimalJitProfiling() > 0);
-    }
-
-    if (minimalProbeMode && (fgCountInstrumentor->SchemaCount() == 1) &&
+    if (opts.compPgoMinimal && (fgCountInstrumentor->SchemaCount() == 1) &&
         (fgHistogramInstrumentor->SchemaCount() == 0) && (fgValueInstrumentor->SchemaCount() == 0))
     {
         JITDUMP("Not instrumenting method: minimal probing enabled, and method has only one counter and no class and "
@@ -2992,8 +2966,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     // Or run synthesis and save the data out as the actual profile data
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) &&
-        (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0))
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && fgShouldWriteSynthesizedCounts())
     {
         JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");
         ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);

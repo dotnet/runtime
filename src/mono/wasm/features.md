@@ -475,6 +475,11 @@ Standalone Wasm cross-JITs enable the R2R profiling capability independently of
 the build host OS. Runtime counter storage and publishing remain limited to
 single-threaded Browser/CoreCLR applications.
 
+R2R profiling uses one direct 64-bit counter per probe. Inlinees share their
+root compilation's counter width. The compiler can use the ordinary minimal
+prejit profiling option, but it cannot initialize counter values during
+compilation: the import cell resolves to runtime storage only when loaded.
+
 Run the published app in Chrome (or another supported browser), exercise representative
 workloads, and call:
 
