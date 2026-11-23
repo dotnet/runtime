@@ -88,10 +88,6 @@ extern "C"
             abort();                                                        \
         }                                                                   \
     } while (false)
-
-// On macOS 26, sem_open fails if debugger and debugee are signed with different team ids.
-// Use fifos instead of semaphores to avoid this issue, https://github.com/dotnet/runtime/issues/116545
-#define ENABLE_RUNTIME_EVENTS_OVER_PIPES
 #endif // __APPLE__
 
 #ifdef __NetBSD__
@@ -142,28 +138,6 @@ SIZE_T g_crashingThreadId = 0;
 // Process ID of this process.
 DWORD gPID = (DWORD) -1;
 
-// Application group ID for this process
-#ifdef __APPLE__
-LPCSTR gApplicationGroupId = nullptr;
-int gApplicationGroupIdLength = 0;
-#endif // __APPLE__
-
-// The lowest common supported semaphore length, including null character
-// NetBSD-7.99.25: 15 characters
-// MacOSX 10.11: 31 -- Core 1.0 RC2 compatibility
-#if defined(__NetBSD__)
-#define CLR_SEM_MAX_NAMELEN 15
-#elif defined(__APPLE__)
-#define CLR_SEM_MAX_NAMELEN 31
-#elif defined(NAME_MAX)
-#define CLR_SEM_MAX_NAMELEN (NAME_MAX - 4)
-#else
-// On Solaris, MAXNAMLEN is 512, which is higher than MAX_PATH defined by pal.h
-#define CLR_SEM_MAX_NAMELEN MAX_PATH
-#endif
-
-static_assert(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
-
 // Function to call during PAL/process shutdown/abort
 Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 
@@ -192,71 +166,11 @@ static Volatile<PINPROCCRASHREPORT_CALLBACK> g_inProcCrashReportCallback = nullp
 //
 pthread_key_t CorUnix::thObjKey;
 
-#pragma pack(push,1)
-// When creating the semaphore name on Mac running in a sandbox, We reference this structure as a byte array
-// in order to encode its data into a string. Its important to make sure there is no padding between the fields
-// and also at the end of the buffer. Hence, this structure is defined inside a pack(1)
-struct UnambiguousProcessDescriptor
-{
-    UnambiguousProcessDescriptor()
-    {
-    }
-
-    UnambiguousProcessDescriptor(DWORD processId, UINT64 disambiguationKey)
-    {
-        Init(processId, disambiguationKey);
-    }
-
-    void Init(DWORD processId, UINT64 disambiguationKey)
-    {
-        m_processId = processId;
-        m_disambiguationKey = disambiguationKey;
-    }
-    UINT64 m_disambiguationKey;
-    DWORD m_processId;
-};
-#pragma pack(pop)
-
-static
-BOOL
-GetProcessIdDisambiguationKey(
-    IN DWORD processId,
-    OUT UINT64 *disambiguationKey);
-
-
-static
-void
-CreateSemaphoreName(
-    char semName[CLR_SEM_MAX_NAMELEN],
-    LPCSTR semaphoreName,
-    const UnambiguousProcessDescriptor& unambiguousProcessDescriptor,
-    LPCSTR applicationGroupId);
-
 static BOOL PROCEndProcess(UINT uExitCode, BOOL bTerminateUnconditionally);
 
 static bool TryEnterCrashDumpGate(CrashDumpSerializeMode serializeMode);
 
 static void ExitCrashDumpGate(CrashDumpSerializeMode serializeMode);
-
-/*++
-Function:
-  GetCurrentProcessId
-
-See MSDN doc.
---*/
-DWORD
-PALAPI
-GetCurrentProcessId(
-            VOID)
-{
-    PERF_ENTRY(GetCurrentProcessId);
-    ENTRY("GetCurrentProcessId()\n" );
-
-    LOGEXIT("GetCurrentProcessId returns DWORD %#x\n", gPID);
-    PERF_EXIT(GetCurrentProcessId);
-    return gPID;
-}
-
 
 /*++
 Function:
@@ -298,9 +212,9 @@ ExitProcess(
     PERF_ENTRY_ONLY(ExitProcess);
     ENTRY("ExitProcess(uExitCode=0x%x)\n", uExitCode );
 
-    old_terminator = InterlockedCompareExchange(&terminator, GetCurrentThreadId(), 0);
+    old_terminator = InterlockedCompareExchange(&terminator, (DWORD)THREADSilentGetCurrentThreadId(), 0);
 
-    if (GetCurrentThreadId() == old_terminator)
+    if ((DWORD)THREADSilentGetCurrentThreadId() == old_terminator)
     {
         // This thread has already initiated termination. This can happen
         // in two ways:
@@ -541,716 +455,6 @@ PAL_SetInProcCrashReportCallback(
     g_inProcCrashReportCallback = callback;
 }
 
-// Build the semaphore names using the PID and a value that can be used for distinguishing
-// between processes with the same PID (which ran at different times). This is to avoid
-// cases where a prior process with the same PID exited abnormally without having a chance
-// to clean up its semaphore.
-// Note to anyone modifying these names in the future: Semaphore names on OS X are limited
-// to SEM_NAME_LEN characters, including null. SEM_NAME_LEN is 31 (at least on OS X 10.11).
-// NetBSD limits semaphore names to 15 characters, including null (at least up to 7.99.25).
-// Keep 31 length for Core 1.0 RC2 compatibility
-#if defined(__NetBSD__)
-static const char* RuntimeSemaphoreNameFormat = "/clr%s%08llx";
-#else
-static const char* RuntimeSemaphoreNameFormat = "/clr%s%08x%016llx";
-#endif
-
-static const char* RuntimeStartupSemaphoreName = "st";
-static const char* RuntimeContinueSemaphoreName = "co";
-
-#if defined(__NetBSD__)
-static uint64_t HashSemaphoreName(uint64_t a, uint64_t b)
-{
-    return (a ^ b) & 0xffffffff;
-}
-#else
-#define HashSemaphoreName(a,b) a,b
-#endif
-
-static const char *const TwoWayNamedPipePrefix = "clr-debug-pipe";
-
-#ifndef __ANDROID__
-#define TEMP_DIRECTORY_PATH "/tmp/"
-#else
-// On Android, "/tmp/" doesn't exist; temporary files should go to
-// /data/local/tmp/
-#define TEMP_DIRECTORY_PATH "/data/local/tmp/"
-#endif
-
-#ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
-static const char* RuntimeStartupPipeName = "st";
-static const char* RuntimeContinuePipeName = "co";
-
-#define PIPE_OPEN_RETRY_DELAY_MS 500
-
-typedef enum
-{
-    RuntimeEventsOverPipes_Disabled = 0,
-    RuntimeEventsOverPipes_Succeeded = 1,
-    RuntimeEventsOverPipes_Failed = 2,
-} RuntimeEventsOverPipes;
-
-typedef enum
-{
-    RuntimeEvent_Unknown = 0,
-    RuntimeEvent_Started = 1,
-    RuntimeEvent_Continue = 2,
-} RuntimeEvent;
-
-static
-int
-OpenPipe(const char* name, int mode)
-{
-    int fd = -1;
-    int flags = mode | O_NONBLOCK;
-
-#if defined(FD_CLOEXEC)
-    flags |= O_CLOEXEC;
-#endif
-
-    while (fd == -1)
-    {
-        fd = open(name, flags);
-        if (fd == -1)
-        {
-            if (mode == O_WRONLY && errno == ENXIO)
-            {
-                minipal_sleep(PIPE_OPEN_RETRY_DELAY_MS);
-                continue;
-            }
-            else if (errno == EINTR)
-            {
-                continue;
-            }
-            else
-            {
-                break;
-            }
-        }
-    }
-
-    if (fd != -1)
-    {
-        flags = fcntl(fd, F_GETFL);
-        if (flags != -1)
-        {
-            flags &= ~O_NONBLOCK;
-            if (fcntl(fd, F_SETFL, flags) == -1)
-            {
-                close(fd);
-                fd = -1;
-            }
-        }
-        else
-        {
-            close(fd);
-            fd = -1;
-        }
-    }
-
-    return fd;
-}
-
-static
-void
-ClosePipe(int fd)
-{
-    if (fd != -1)
-    {
-        while (close(fd) < 0 && errno == EINTR);
-    }
-}
-
-static
-RuntimeEventsOverPipes
-NotifyRuntimeUsingPipes()
-{
-    RuntimeEventsOverPipes result = RuntimeEventsOverPipes_Disabled;
-    char startupPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
-    char continuePipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
-    int startupPipeFd = -1;
-    int continuePipeFd = -1;
-    size_t offset = 0;
-
-    LPCSTR applicationGroupId = PAL_GetApplicationGroupId();
-
-    PAL_GetTransportPipeName(continuePipeName, gPID, applicationGroupId, RuntimeContinuePipeName);
-    TRACE("NotifyRuntimeUsingPipes: opening continue '%s' pipe\n", continuePipeName);
-
-    continuePipeFd = OpenPipe(continuePipeName, O_RDONLY);
-    if (continuePipeFd == -1)
-    {
-        if (errno == ENOENT || errno == EACCES)
-        {
-            TRACE("NotifyRuntimeUsingPipes: pipe %s not found/accessible, runtime events over pipes disabled\n", continuePipeName);
-        }
-        else
-        {
-            TRACE("NotifyRuntimeUsingPipes: open(%s) failed: %d (%s)\n", continuePipeName, errno, strerror(errno));
-            result = RuntimeEventsOverPipes_Failed;
-        }
-
-        goto exit;
-    }
-
-    PAL_GetTransportPipeName(startupPipeName, gPID, applicationGroupId, RuntimeStartupPipeName);
-    TRACE("NotifyRuntimeUsingPipes: opening startup '%s' pipe\n", startupPipeName);
-
-    startupPipeFd = OpenPipe(startupPipeName, O_WRONLY);
-    if (startupPipeFd == -1)
-    {
-        if (errno == ENOENT || errno == EACCES)
-        {
-            TRACE("NotifyRuntimeUsingPipes: pipe %s not found/accessible, runtime events over pipes disabled\n", startupPipeName);
-        }
-        else
-        {
-            TRACE("NotifyRuntimeUsingPipes: open(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
-            result = RuntimeEventsOverPipes_Failed;
-        }
-
-        goto exit;
-    }
-
-    TRACE("NotifyRuntimeUsingPipes: sending started event\n");
-
-    {
-        unsigned char event = (unsigned char)RuntimeEvent_Started;
-        unsigned char *buffer = &event;
-        int bytesToWrite = sizeof(event);
-        int bytesWritten = 0;
-
-        do
-        {
-            bytesWritten = write(startupPipeFd, buffer + offset, bytesToWrite - offset);
-            if (bytesWritten > 0)
-            {
-                offset += bytesWritten;
-            }
-        }
-        while ((bytesWritten > 0 && offset < bytesToWrite) || (bytesWritten == -1 && errno == EINTR));
-
-        if (offset != bytesToWrite)
-        {
-            TRACE("NotifyRuntimeUsingPipes: write(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
-            goto exit;
-        }
-    }
-
-    TRACE("NotifyRuntimeUsingPipes: waiting on continue event\n");
-
-    {
-        unsigned char event = (unsigned char)RuntimeEvent_Unknown;
-        unsigned char *buffer = &event;
-        int bytesToRead = sizeof(event);
-        int bytesRead = 0;
-
-        offset = 0;
-        do
-        {
-            bytesRead = read(continuePipeFd, buffer + offset, bytesToRead - offset);
-            if (bytesRead > 0)
-            {
-                offset += bytesRead;
-            }
-        }
-        while ((bytesRead > 0 && offset < bytesToRead) || (bytesRead == -1 && errno == EINTR));
-
-        if (offset == bytesToRead && event == (unsigned char)RuntimeEvent_Continue)
-        {
-            TRACE("NotifyRuntimeUsingPipes: received continue event\n");
-        }
-        else
-        {
-            TRACE("NotifyRuntimeUsingPipes: received invalid event\n");
-            goto exit;
-        }
-    }
-
-    result = RuntimeEventsOverPipes_Succeeded;
-
-exit:
-
-    if (startupPipeFd != -1)
-    {
-        ClosePipe(startupPipeFd);
-    }
-
-    if (continuePipeFd != -1)
-    {
-        ClosePipe(continuePipeFd);
-    }
-
-    return result;
-}
-#endif // ENABLE_RUNTIME_EVENTS_OVER_PIPES
-
-static
-BOOL
-NotifyRuntimeUsingSemaphores()
-{
-    char startupSemName[CLR_SEM_MAX_NAMELEN];
-    char continueSemName[CLR_SEM_MAX_NAMELEN];
-    sem_t *startupSem = SEM_FAILED;
-    sem_t *continueSem = SEM_FAILED;
-    BOOL launched = FALSE;
-
-    UINT64 processIdDisambiguationKey = 0;
-    BOOL ret = GetProcessIdDisambiguationKey(gPID, &processIdDisambiguationKey);
-
-    // If GetProcessIdDisambiguationKey failed for some reason, it should set the value
-    // to 0. We expect that anyone else making the semaphore name will also fail and thus
-    // will also try to use 0 as the value.
-    _ASSERTE(ret == TRUE || processIdDisambiguationKey == 0);
-
-    UnambiguousProcessDescriptor unambiguousProcessDescriptor(gPID, processIdDisambiguationKey);
-    LPCSTR applicationGroupId = PAL_GetApplicationGroupId();
-    CreateSemaphoreName(startupSemName, RuntimeStartupSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
-    CreateSemaphoreName(continueSemName, RuntimeContinueSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
-
-    TRACE("NotifyRuntimeUsingSemaphores: opening continue '%s' startup '%s'\n", continueSemName, startupSemName);
-
-    // Open the debugger startup semaphore. If it doesn't exists, then we do nothing and return
-    startupSem = sem_open(startupSemName, 0);
-    if (startupSem == SEM_FAILED)
-    {
-        TRACE("NotifyRuntimeUsingSemaphores: sem_open(%s) failed: %d (%s)\n", startupSemName, errno, strerror(errno));
-        goto exit;
-    }
-
-    continueSem = sem_open(continueSemName, 0);
-    if (continueSem == SEM_FAILED)
-    {
-        ASSERT("sem_open(%s) failed: %d (%s)\n", continueSemName, errno, strerror(errno));
-        goto exit;
-    }
-
-    // Wake up the debugger waiting for startup
-    if (sem_post(startupSem) != 0)
-    {
-        ASSERT("sem_post(startupSem) failed: errno is %d (%s)\n", errno, strerror(errno));
-        goto exit;
-    }
-
-    // Now wait until the debugger's runtime startup notification is finished
-    while (sem_wait(continueSem) != 0)
-    {
-        if (EINTR == errno)
-        {
-            TRACE("NotifyRuntimeUsingSemaphores: sem_wait() failed with EINTR; re-waiting");
-            continue;
-        }
-        ASSERT("sem_wait(continueSem) failed: errno is %d (%s)\n", errno, strerror(errno));
-        goto exit;
-    }
-
-    // Returns that the runtime was successfully launched for debugging
-    launched = TRUE;
-
-exit:
-    if (startupSem != SEM_FAILED)
-    {
-        sem_close(startupSem);
-    }
-    if (continueSem != SEM_FAILED)
-    {
-        sem_close(continueSem);
-    }
-    return launched;
-}
-
-/*++
-    PAL_NotifyRuntimeStarted
-
-    Signals the debugger waiting for runtime startup notification to continue and
-    waits until the debugger signals us to continue.
-
-Parameters:
-    None
-
-Return value:
-    TRUE - successfully launched by debugger, FALSE - not launched or some failure in the handshake
---*/
-BOOL
-PALAPI
-PAL_NotifyRuntimeStarted()
-{
-#ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
-    // Test pipes as runtime event transport.
-    RuntimeEventsOverPipes result = NotifyRuntimeUsingPipes();
-    switch (result)
-    {
-    case RuntimeEventsOverPipes_Disabled:
-        TRACE("PAL_NotifyRuntimeStarted: pipe handshake disabled, try semaphores\n");
-        return NotifyRuntimeUsingSemaphores();
-    case RuntimeEventsOverPipes_Failed:
-        TRACE("PAL_NotifyRuntimeStarted: pipe handshake failed\n");
-        return FALSE;
-    case RuntimeEventsOverPipes_Succeeded:
-        TRACE("PAL_NotifyRuntimeStarted: pipe handshake succeeded\n");
-        return TRUE;
-    default:
-        // Unexpected result.
-        return FALSE;
-    }
-#else
-    return NotifyRuntimeUsingSemaphores();
-#endif // ENABLE_RUNTIME_EVENTS_OVER_PIPES
-}
-
-LPCSTR
-PALAPI
-PAL_GetApplicationGroupId()
-{
-#ifdef __APPLE__
-    return gApplicationGroupId;
-#else
-    return nullptr;
-#endif
-}
-
-#ifdef __APPLE__
-
-// We use 7bits from each byte, so this computes the extra size we need to encode a given byte count
-constexpr int GetExtraEncodedAreaSize(UINT rawByteCount)
-{
-    return (rawByteCount+6)/7;
-}
-const int SEMAPHORE_ENCODED_NAME_EXTRA_LENGTH = GetExtraEncodedAreaSize(sizeof(UnambiguousProcessDescriptor));
-const int SEMAPHORE_ENCODED_NAME_LENGTH =
-    sizeof(UnambiguousProcessDescriptor) + /* For process ID + disambiguationKey */
-    SEMAPHORE_ENCODED_NAME_EXTRA_LENGTH; /* For base 255 extra encoding space */
-
-static_assert(MAX_APPLICATION_GROUP_ID_LENGTH
-    + 1 /* For / */
-    + 2 /* For ST/CO name prefix */
-    + SEMAPHORE_ENCODED_NAME_LENGTH /* For encoded name string */
-    + 1 /* For null terminator */
-    <= CLR_SEM_MAX_NAMELEN);
-
-// In Apple we are limited by the length of the semaphore name. However, the characters which can be used in the
-// name can be anything between 1 and 255 (since 0 will terminate the string). Thus, we encode each byte b in
-// unambiguousProcessDescriptor as b ? b : 1, and mark an additional bit indicating if b is 0 or not. We use 7 bits
-// out of each extra byte so 1 bit will always be '1'. This will ensure that our extra bytes are never 0 which are
-// invalid characters. Thus we need an extra byte for each 7 input bytes. Hence, only extra 2 bytes for the name string.
-void EncodeSemaphoreName(char *encodedSemName, const UnambiguousProcessDescriptor& unambiguousProcessDescriptor)
-{
-    const unsigned char *buffer = (const unsigned char *)&unambiguousProcessDescriptor;
-    char *extraEncodingBits = encodedSemName + sizeof(UnambiguousProcessDescriptor);
-
-    // Reset the extra encoding bit area
-    for (int i=0; i<SEMAPHORE_ENCODED_NAME_EXTRA_LENGTH; i++)
-    {
-        extraEncodingBits[i] = 0x80;
-    }
-
-    // Encode each byte in unambiguousProcessDescriptor
-    for (int i=0; i<sizeof(UnambiguousProcessDescriptor); i++)
-    {
-        unsigned char b = buffer[i];
-        encodedSemName[i] = b ? b : 1;
-        extraEncodingBits[i/7] |= (b ? 0 : 1) << (i%7);
-    }
-}
-#endif
-
-void CreateSemaphoreName(char semName[CLR_SEM_MAX_NAMELEN], LPCSTR semaphoreName, const UnambiguousProcessDescriptor& unambiguousProcessDescriptor, LPCSTR applicationGroupId)
-{
-    int length = 0;
-
-#ifdef __APPLE__
-    if (applicationGroupId != nullptr)
-    {
-        // We assume here that applicationGroupId has been already tested for length and is less than MAX_APPLICATION_GROUP_ID_LENGTH
-        length = sprintf_s(semName, CLR_SEM_MAX_NAMELEN, "%s/%s", applicationGroupId, semaphoreName);
-        _ASSERTE(length > 0 && length < CLR_SEM_MAX_NAMELEN);
-
-        EncodeSemaphoreName(semName+length, unambiguousProcessDescriptor);
-        length += SEMAPHORE_ENCODED_NAME_LENGTH;
-        semName[length] = 0;
-    }
-    else
-#endif // __APPLE__
-    {
-        length = sprintf_s(
-            semName,
-            CLR_SEM_MAX_NAMELEN,
-            RuntimeSemaphoreNameFormat,
-            semaphoreName,
-            HashSemaphoreName(unambiguousProcessDescriptor.m_processId, unambiguousProcessDescriptor.m_disambiguationKey));
-    }
-
-    _ASSERTE(length > 0 && length < CLR_SEM_MAX_NAMELEN );
-}
-
-/*++
- Function:
-  GetProcessIdDisambiguationKey
-
-  Get a numeric value that can be used to disambiguate between processes with the same PID,
-  provided that one of them is still running. The numeric value can mean different things
-  on different platforms, so it should not be used for any other purpose. Under the hood,
-  it is implemented based on the creation time of the process.
---*/
-BOOL
-GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
-{
-    if (disambiguationKey == nullptr)
-    {
-        _ASSERTE(!"disambiguationKey argument cannot be null!");
-        return FALSE;
-    }
-
-    *disambiguationKey = 0;
-
-#if defined(__APPLE__) || defined(__FreeBSD__)
-
-    // On OS X, we return the process start time expressed in Unix time (the number of seconds
-    // since the start of the Unix epoch).
-    struct kinfo_proc info = {};
-    size_t size = sizeof(info);
-    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)processId };
-    int ret = ::sysctl(mib, sizeof(mib)/sizeof(*mib), &info, &size, nullptr, 0);
-
-    if (ret == 0)
-    {
-#if defined(__APPLE__)
-        timeval procStartTime = info.kp_proc.p_starttime;
-#else // __FreeBSD__
-        timeval procStartTime = info.ki_start;
-#endif
-        long secondsSinceEpoch = procStartTime.tv_sec;
-
-        *disambiguationKey = secondsSinceEpoch;
-        return TRUE;
-    }
-    else
-    {
-        _ASSERTE(!"Failed to get start time of a process.");
-        return FALSE;
-    }
-
-#elif defined(__NetBSD__)
-
-    // On NetBSD, we return the process start time expressed in Unix time (the number of seconds
-    // since the start of the Unix epoch).
-    kvm_t *kd;
-    int cnt;
-    struct kinfo_proc2 *info;
-
-    kd = kvm_open(nullptr, nullptr, nullptr, KVM_NO_FILES, "kvm_open");
-    if (kd == nullptr)
-    {
-        _ASSERTE(!"Failed to get start time of a process.");
-        return FALSE;
-    }
-
-    info = kvm_getproc2(kd, KERN_PROC_PID, processId, sizeof(struct kinfo_proc2), &cnt);
-    if (info == nullptr || cnt < 1)
-    {
-        kvm_close(kd);
-        _ASSERTE(!"Failed to get start time of a process.");
-        return FALSE;
-    }
-
-    kvm_close(kd);
-
-    long secondsSinceEpoch = info->p_ustart_sec;
-    *disambiguationKey = secondsSinceEpoch;
-
-    return TRUE;
-
-#elif defined(__HAIKU__)
-
-    // On Haiku, we return the process start time expressed in microseconds since boot time.
-
-    team_info info;
-
-    if (get_team_info(processId, &info) == B_OK)
-    {
-        *disambiguationKey = info.start_time;
-        return TRUE;
-    }
-    else
-    {
-        WARN("Failed to get start time of a process.");
-        return FALSE;
-    }
-
-#elif HAVE_PROCFS_STAT
-
-    // Here we read /proc/<pid>/stat file to get the start time for the process.
-    // We return this value (which is expressed in jiffies since boot time).
-
-    // Making something like: /proc/123/stat
-    char statFileName[64];
-
-    INDEBUG(int chars = )
-    snprintf(statFileName, sizeof(statFileName), "/proc/%d/stat", processId);
-    _ASSERTE(chars > 0 && chars <= (int)sizeof(statFileName));
-
-    FILE *statFile = fopen(statFileName, "r");
-    if (statFile == nullptr)
-    {
-        TRACE("GetProcessIdDisambiguationKey: fopen() FAILED");
-        SetLastError(ERROR_INVALID_HANDLE);
-        return FALSE;
-    }
-
-    char *line = nullptr;
-    size_t lineLen = 0;
-    if (getline(&line, &lineLen, statFile) == -1)
-    {
-        TRACE("GetProcessIdDisambiguationKey: getline() FAILED");
-        SetLastError(ERROR_INVALID_HANDLE);
-        free(line);
-        fclose(statFile);
-        return FALSE;
-    }
-
-    unsigned long long starttime;
-
-    // According to `man proc`, the second field in the stat file is the filename of the executable,
-    // in parentheses. Tokenizing the stat file using spaces as separators breaks when that name
-    // has spaces in it, so we start using sscanf_s after skipping everything up to and including the
-    // last closing paren and the space after it.
-    char *scanStartPosition = strrchr(line, ')') + 2;
-
-    // All the format specifiers for the fields in the stat file are provided by 'man proc'.
-    int sscanfRet = sscanf_s(scanStartPosition,
-        "%*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %*u %*u %*d %*d %*d %*d %*d %*d %llu \n",
-         &starttime);
-
-    free(line);
-    fclose(statFile);
-
-    if (sscanfRet != 1)
-    {
-        _ASSERTE(!"Failed to parse stat file contents with sscanf_s.");
-        return FALSE;
-    }
-
-    *disambiguationKey = starttime;
-    return TRUE;
-
-#else
-    // If this is not OS X and we don't have /proc, we just return FALSE.
-    WARN("GetProcessIdDisambiguationKey was called but is not implemented on this platform!");
-    return FALSE;
-#endif
-}
-
-/*++
- Function:
-  PAL_GetTransportName
-
-  Builds the transport IPC names from the process id.
---*/
-VOID
-PALAPI
-PAL_GetTransportName(
-    const unsigned int MAX_TRANSPORT_NAME_LENGTH,
-    OUT char *name,
-    IN const char *prefix,
-    IN DWORD id,
-    IN const char *applicationGroupId,
-    IN const char *suffix)
-{
-    *name = '\0';
-    UINT64 disambiguationKey = 0;
-    PathCharString directoryString;
-    BOOL ret = GetProcessIdDisambiguationKey(id, &disambiguationKey);
-    char *directoryBuffer = directoryString.OpenStringBuffer(MAX_TRANSPORT_NAME_LENGTH-1);
-    if (directoryBuffer == nullptr)
-    {
-        ERROR("Out Of Memory");
-        return;
-    }
-
-    // If GetProcessIdDisambiguationKey failed for some reason, it should set the value
-    // to 0. We expect that anyone else making the pipe name will also fail and thus will
-    // also try to use 0 as the value.
-    _ASSERTE(ret == TRUE || disambiguationKey == 0);
-#ifdef __APPLE__
-    if (nullptr != applicationGroupId)
-    {
-        // Verify the length of the application group ID
-        int applicationGroupIdLength = strlen(applicationGroupId);
-        if (applicationGroupIdLength > MAX_APPLICATION_GROUP_ID_LENGTH)
-        {
-            ERROR("The length of applicationGroupId is larger than MAX_APPLICATION_GROUP_ID_LENGTH");
-            return;
-        }
-
-        // In sandbox, all IPC files (locks, pipes) should be written to the application group
-        // container. $TMPDIR will be unique for each process and cannot
-        // be used for IPC between two different processes
-        if (!GetApplicationContainerFolder(directoryString, applicationGroupId, applicationGroupIdLength))
-        {
-            ERROR("Out Of Memory");
-            return;
-        }
-
-        // Verify the size of the path won't exceed maximum allowed size
-        if (directoryString.GetCount() >= MAX_TRANSPORT_NAME_LENGTH)
-        {
-            ERROR("GetApplicationContainerFolder returned a path that was larger than MAX_TRANSPORT_NAME_LENGTH");
-            return;
-        }
-    }
-    else
-#endif // __APPLE__
-    {
-        // Must match the out-of-process clients that compute the same names (Path.GetTempPath() rules).
-        const char* tmpDir = getenv("TMPDIR");
-        if (tmpDir == nullptr || tmpDir[0] == '\0')
-        {
-            tmpDir = TEMP_DIRECTORY_PATH;
-        }
-
-        const char* slash = (tmpDir[strlen(tmpDir) - 1] == '/') ? "" : "/";
-        int len = snprintf(directoryBuffer, MAX_TRANSPORT_NAME_LENGTH, "%s%s", tmpDir, slash);
-        if (len < 0 || (unsigned int)len >= MAX_TRANSPORT_NAME_LENGTH)
-        {
-            ERROR("TMPDIR is longer than MAX_TRANSPORT_NAME_LENGTH");
-            return;
-        }
-        directoryString.CloseBuffer(len);
-    }
-
-    int chars = snprintf(name, MAX_TRANSPORT_NAME_LENGTH, "%s%s-%d-%llu-%s",
-                         directoryString.GetString(), prefix, (int)id, (unsigned long long)disambiguationKey, suffix);
-    if (chars < 0 || (unsigned int)chars >= MAX_TRANSPORT_NAME_LENGTH)
-    {
-        ERROR("TransportPipeName was larger than MAX_TRANSPORT_NAME_LENGTH");
-        *name = '\0';
-        return;
-    }
-}
-
-/*++
- Function:
-  PAL_GetTransportPipeName
-
-  Builds the transport pipe names from the process id.
---*/
-VOID
-PALAPI
-PAL_GetTransportPipeName(
-    OUT char *name,
-    IN DWORD id,
-    IN const char *applicationGroupId,
-    IN const char *suffix)
-{
-    PAL_GetTransportName(
-        MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH,
-        name,
-        TwoWayNamedPipePrefix,
-        id,
-        applicationGroupId,
-        suffix);
-}
-
 /*++
 Function
   PROCNotifyProcessShutdown
@@ -1299,7 +503,7 @@ PROCFormatInt(ULONG32 value)
     char* buffer = (char*)malloc(128);
     if (buffer != nullptr)
     {
-        if (sprintf_s(buffer, 128, "%d", value) == -1)
+        if (snprintf(buffer, 128, "%d", value) < 0)
         {
             free(buffer);
             buffer = nullptr;
@@ -1321,7 +525,7 @@ PROCFormatInt64(ULONG64 value)
     char* buffer = (char*)malloc(128);
     if (buffer != nullptr)
     {
-        if (sprintf_s(buffer, 128, "%lld", value) == -1)
+        if (snprintf(buffer, 128, "%lld", (long long)value) < 0)
         {
             free(buffer);
             buffer = nullptr;
@@ -1361,23 +565,11 @@ PROCBuildCreateDumpCommandLine(
     {
         return FALSE;
     }
-    if (strcpy_s(program, programLen, g_szCoreCLRPath) != SAFECRT_SUCCESS)
-    {
-        return FALSE;
-    }
-    char *last = strrchr(program, '/');
-    if (last != nullptr)
-    {
-        *(last + 1) = '\0';
-    }
-    else
-    {
-        program[0] = '\0';
-    }
-    if (strcat_s(program, programLen, DumpGeneratorName) != SAFECRT_SUCCESS)
-    {
-        return FALSE;
-    }
+    // createdump lives next to libcoreclr.
+    const char *last = strrchr(g_szCoreCLRPath, '/');
+    size_t directoryLen = last != nullptr ? (size_t)(last - g_szCoreCLRPath + 1) : 0;
+    memcpy(program, g_szCoreCLRPath, directoryLen);
+    strcpy(program + directoryLen, DumpGeneratorName);
 
     int argc = 0;
     argv[argc++] = program;
@@ -1470,7 +662,7 @@ PROCLaunchCreateDump(
     {
         if (errorMessageBuffer != nullptr)
         {
-            sprintf_s(errorMessageBuffer, cbErrorMessageBuffer, "Problem launching createdump: pipe() FAILED %s (%d)\n", strerror(errno), errno);
+            snprintf(errorMessageBuffer, cbErrorMessageBuffer, "Problem launching createdump: pipe() FAILED %s (%d)\n", strerror(errno), errno);
         }
         return false;
     }
@@ -1490,7 +682,7 @@ PROCLaunchCreateDump(
     {
         if (errorMessageBuffer != nullptr)
         {
-            sprintf_s(errorMessageBuffer, cbErrorMessageBuffer, "Problem launching createdump: fork() FAILED %s (%d)\n", strerror(errno), errno);
+            snprintf(errorMessageBuffer, cbErrorMessageBuffer, "Problem launching createdump: fork() FAILED %s (%d)\n", strerror(errno), errno);
         }
         for (int i = 0; i < 4; i++)
         {
@@ -2139,9 +1331,9 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
     BOOL locked;
     DWORD old_terminator;
 
-    old_terminator = InterlockedCompareExchange(&terminator, GetCurrentThreadId(), 0);
+    old_terminator = InterlockedCompareExchange(&terminator, (DWORD)THREADSilentGetCurrentThreadId(), 0);
 
-    if (0 != old_terminator && GetCurrentThreadId() != old_terminator)
+    if (0 != old_terminator && (DWORD)THREADSilentGetCurrentThreadId() != old_terminator)
     {
         /* another thread has already initiated the termination process. we
            could just block on the PALInitLock critical section, but then
@@ -2178,19 +1370,3 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
         PROCNotifyProcessShutdown();
     }
 }
-
-
-#ifdef __APPLE__
-bool GetApplicationContainerFolder(PathCharString& buffer, const char *applicationGroupId, int applicationGroupIdLength)
-{
-    const char *homeDir = getpwuid(getuid())->pw_dir;
-    int homeDirLength = strlen(homeDir);
-
-    // The application group container folder is defined as:
-    // /user/{loginname}/Library/Group Containers/{AppGroupId}/
-    return buffer.Set(homeDir, homeDirLength)
-        && buffer.Append(APPLICATION_CONTAINER_BASE_PATH_SUFFIX)
-        && buffer.Append(applicationGroupId, applicationGroupIdLength)
-        && buffer.Append('/');
-}
-#endif // __APPLE__

@@ -161,8 +161,6 @@ function_name() to call the system's implementation
 #include "pal.h"
 #include "palprivate.h"
 
-#include "mbusafecrt.h"
-
 #ifdef _VAC_
 #undef CHAR_BIT
 #undef va_arg
@@ -214,16 +212,6 @@ function_name() to call the system's implementation
 #undef assert
 #define assert (Use__ASSERTE_instead_of_assert) assert
 
-#ifdef __APPLE__
-#define APPLICATION_CONTAINER_BASE_PATH_SUFFIX "/Library/Group Containers/"
-
-// Not much to go with, but Max semaphore length on Mac is 31 characters. In a sandbox, the semaphore name
-// must be prefixed with an application group ID. This will be 10 characters for developer ID and extra 2
-// characters for group name. For example ABCDEFGHIJ.MS. We still need some characters left
-// for the actual semaphore names.
-#define MAX_APPLICATION_GROUP_ID_LENGTH 13
-#endif // __APPLE__
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -243,11 +231,6 @@ typedef enum _TimeConversionConstants
 
 #ifdef __cplusplus
 }
-
-#ifdef __APPLE__
-bool
-GetApplicationContainerFolder(PathCharString& buffer, const char *applicationGroupId, int applicationGroupIdLength);
-#endif // __APPLE__
 
 /* This is duplicated in utilcode.h for CLR, with cooler type-traits */
 template <typename T>
