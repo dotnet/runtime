@@ -5,6 +5,10 @@
 {
 }
 
+.assembly extern ReturnTests
+{
+}
+
 .assembly CallTests
 {
 }
@@ -73,9 +77,102 @@
     }
 }
 
+.class public sequential ansi sealed beforefieldinit LegacyCarrier
+        extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
+    .field public int32 Value
+    .field public int32& Item
+
+    .method public hidebysig instance void Legacy.CaptureThis_Invalid_Unverifiable() cil managed
+    {
+        ldarg.0
+        ldarg.0
+        ldflda int32 LegacyCarrier::Value
+        stfld int32& LegacyCarrier::Item
+        ret
+    }
+
+    .method public hidebysig instance int32& Legacy.ReturnField_Invalid_ReturnPtrToStack() cil managed
+    {
+        ldarg.0
+        ldflda int32 LegacyCarrier::Value
+        ret
+    }
+
+    .method public hidebysig instance int32& Legacy.UnscopedThis_Valid() cil managed
+    {
+        .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.UnscopedRefAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldflda int32 LegacyCarrier::Value
+        ret
+    }
+
+    .method public hidebysig static valuetype LegacyCarrier Legacy.Identity_Valid(valuetype LegacyCarrier input) cil managed
+    {
+        ldarg.0
+        ret
+    }
+
+    .method public hidebysig instance valuetype LegacyCarrier Legacy.Copy_Valid() cil managed
+    {
+        ldarg.0
+        ldobj LegacyCarrier
+        ret
+    }
+
+    .method public hidebysig static int32& Legacy.ByRefIdentity_Valid(int32& input) cil managed
+    {
+        ldarg.0
+        ret
+    }
+}
+
 .class public auto ansi beforefieldinit CallTestsType
         extends [System.Runtime]System.Object
 {
+    .method public hidebysig static valuetype LegacyCarrier Call.LegacyReceiverValue_Valid() cil managed
+    {
+        .locals init ([0] valuetype LegacyCarrier)
+        ldloca.s 0
+        call instance valuetype LegacyCarrier LegacyCarrier::Legacy.Copy_Valid()
+        ret
+    }
+
+    .method public hidebysig static valuetype LegacyCarrier Call.LegacyReceiverContentsEscape_Invalid_ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype LegacyCarrier)
+        ldloca.s 1
+        ldloca.s 0
+        stfld int32& LegacyCarrier::Item
+        ldloca.s 1
+        call instance valuetype LegacyCarrier LegacyCarrier::Legacy.Copy_Valid()
+        ret
+    }
+
+    .method public hidebysig static int32& Call.LegacyUnscopedReceiverEscape_Invalid_ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] valuetype LegacyCarrier)
+        ldloca.s 0
+        call instance int32& LegacyCarrier::Legacy.UnscopedThis_Valid()
+        ret
+    }
+
+    .method public hidebysig static int32& Call.PropertyEscape_Invalid_ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] valuetype [ReturnTests]UnscopedAccessor)
+        ldloca.s 0
+        call instance int32& [ReturnTests]UnscopedAccessor::get_Value()
+        ret
+    }
+
+    .method public hidebysig static int32& Call.PropertyReference_Valid(valuetype [ReturnTests]UnscopedAccessor& input) cil managed
+    {
+        ldarg.0
+        call instance int32& [ReturnTests]UnscopedAccessor::get_Value()
+        ret
+    }
+
     .method public hidebysig instance void Call.IntToStringManagedPtr_Valid() cil managed
     {
         .locals init (
