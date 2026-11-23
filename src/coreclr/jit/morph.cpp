@@ -3293,8 +3293,7 @@ GenTree* Compiler::fgMorphLeafLocal(GenTreeLclVarCommon* lclNode)
     // normalized on store. If this is one of the former, insert a narrowing cast on the load.
     //         ie. Convert: var-short --> cast-short(var-int)
     //
-    if (fgGlobalMorph && lclNode->OperIs(GT_LCL_VAR) && varDsc->lvNormalizeOnLoad() &&
-        /* TODO-ASG: delete this zero-diff quirk */ lclNode->CanCSE())
+    if (fgGlobalMorph && lclNode->OperIs(GT_LCL_VAR) && varDsc->lvNormalizeOnLoad())
     {
         var_types lclVarType = varDsc->TypeGet();
 
@@ -3314,6 +3313,8 @@ GenTree* Compiler::fgMorphLeafLocal(GenTreeLclVarCommon* lclNode)
         }
 
         lclNode->gtType = TYP_INT;
+        // Only the enclosing cast defines the normalized value. Do not capture the widened read on its own.
+        lclNode->SetDoNotCSE();
         fgMorphTreeDone(lclNode);
         GenTree* cast = gtNewCastNode(TYP_INT, lclNode, false, lclVarType);
         fgMorphTreeDone(cast);

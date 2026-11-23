@@ -2168,12 +2168,6 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
                 return false;
             }
 
-            // A widened local under a normalizing cast can share a VN with a full int load.
-            // gtNewTempStore would read only the local's declared width.
-            if (varDsc->lvNormalizeOnLoad() && !tree->TypeIs(varDsc->TypeGet()))
-            {
-                return false;
-            }
             break;
         }
 
@@ -5296,9 +5290,11 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             }
         }
 
-        // Create a store of the value to the temp
+        // Morph marks unnormalized local reads DONT_CSE, so capturing a candidate must preserve its type.
+        INDEBUG(const var_types valueType = val->TypeGet());
         GenTree* store     = m_compiler->gtNewTempStore(cseLclVarNum, val);
         GenTree* origStore = store;
+        assert(val->TypeIs(valueType));
 
         if (!store->OperIs(GT_STORE_LCL_VAR))
         {
