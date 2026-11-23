@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -147,6 +148,17 @@ public class Program
             return 13;
         }
 
+        // The System.Array base class describes the number of elements, the members of array types follow it.
+        (ulong arrayBaseSize, List<(string Name, ulong Offset)> arrayBaseMembers) = GetClassLayout(llvmDwarfDumpPath, "S_P_CoreLib_System_Array");
+        (_, List<(string Name, ulong Offset)> intArrayMembers) = GetClassLayout(llvmDwarfDumpPath, "__Array<Int32>");
+        if (!arrayBaseMembers.Exists(m => m.Name == "_numComponents") ||
+            intArrayMembers.Count == 0 ||
+            intArrayMembers.Exists(m => m.Offset < arrayBaseSize))
+        {
+            Console.Error.WriteLine($"Unexpected array layout. System.Array: size {arrayBaseSize}, members {string.Join(", ", arrayBaseMembers)}. int[]: members {string.Join(", ", intArrayMembers)}.");
+            return 14;
+        }
+
         return 100;
     }
 
@@ -157,6 +169,7 @@ public class Program
     {
         StaticFields.Initialize();
         new ThreadStaticHolder<string>().Set(42);
+        GC.KeepAlive(new int[] { 1, 2, 3 });
     }
 
     private static ProcessTextOutput RunLlvmDwarfDump(string llvmDwarfDumpPath, params string[] arguments)
@@ -196,6 +209,47 @@ public class Program
         }
 
         return null;
+    }
+
+    // Returns the size and the instance fields of the complete class types with the given name.
+    private static (ulong Size, List<(string Name, ulong Offset)> Members) GetClassLayout(string llvmDwarfDumpPath, string className)
+    {
+        ProcessTextOutput result = RunLlvmDwarfDump(llvmDwarfDumpPath, "--debug-info", "--show-children", $"--name={className}");
+
+        ulong size = 0;
+        List<(string Name, ulong Offset)> members = new();
+        string tag = null;
+        string memberName = null;
+        foreach (string rawLine in result.StandardOutput.Split('\n'))
+        {
+            string line = rawLine.Trim();
+            if (line.Contains("DW_TAG_") || line.EndsWith("NULL"))
+            {
+                tag = line.Substring(line.IndexOf(' ') + 1).Trim();
+                memberName = null;
+            }
+            else if (tag == "DW_TAG_class_type" && line.StartsWith("DW_AT_byte_size"))
+            {
+                // Forward declarations have no size, the complete type has.
+                size = Math.Max(size, ParseAttributeValue(line));
+            }
+            else if (tag == "DW_TAG_member" && line.StartsWith("DW_AT_name"))
+            {
+                memberName = line.Substring(line.IndexOf('"') + 1).TrimEnd(')', '"');
+            }
+            else if (tag == "DW_TAG_member" && line.StartsWith("DW_AT_data_member_location"))
+            {
+                members.Add((memberName, ParseAttributeValue(line)));
+            }
+        }
+
+        return (size, members);
+
+        static ulong ParseAttributeValue(string line)
+        {
+            string value = line.Substring(line.IndexOf('(') + 1).TrimEnd(')');
+            return Convert.ToUInt64(value, 16);
+        }
     }
 }
 
