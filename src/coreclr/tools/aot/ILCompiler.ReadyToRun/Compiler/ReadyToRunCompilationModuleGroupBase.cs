@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Threading;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
@@ -69,6 +70,7 @@ namespace ILCompiler
         private bool CompileAllPossibleCrossModuleCode = false;
         private InstructionSetSupport _instructionSetSupport;
         private readonly DirectPInvokeSet _directPInvokes;
+        private readonly ConcurrentDictionary<EcmaModule, HashSet<string>> _wasmIncompatibleDirectEntryPoints = new();
 
         public ReadyToRunCompilationModuleGroupBase(ReadyToRunCompilationModuleGroupConfig config)
         {
@@ -119,7 +121,55 @@ namespace ILCompiler
                 return true;
             }
 
-            return _directPInvokes.TryGetDirectEntryPoint(method, out _);
+            if (!_directPInvokes.TryGetDirectEntryPoint(method, out _))
+            {
+                return false;
+            }
+
+            // The wasm call-helper table skips entry points it can't declare with a single native signature, so calls to
+            // them fail at run time. Don't bind them directly: a direct call's fixup would fail the whole calling method.
+            return !method.Context.Target.IsWasm
+                || method.GetTypicalMethodDefinition() is not EcmaMethod ecmaMethod
+                || !_wasmIncompatibleDirectEntryPoints.GetOrAdd(ecmaMethod.Module, GetWasmIncompatibleDirectEntryPoints).Contains(GetEntryPointName(method));
+        }
+
+        private static string GetEntryPointName(MethodDesc method) => method.GetPInvokeMethodMetadata().Name ?? method.GetName();
+
+        private HashSet<string> GetWasmIncompatibleDirectEntryPoints(EcmaModule module)
+        {
+            var methodsByEntryPoint = new Dictionary<string, List<MethodDesc>>(StringComparer.Ordinal);
+            foreach (MethodDefinitionHandle handle in module.MetadataReader.MethodDefinitions)
+            {
+                MethodDesc method = module.GetMethod(handle);
+                if (!method.IsPInvoke
+                    || method.HasCustomAttribute("System.Runtime.InteropServices", "WasmImportLinkageAttribute")
+                    || method.GetPInvokeMethodMetadata().Module == "QCall"
+                    || !_directPInvokes.TryGetDirectEntryPoint(method, out _))
+                {
+                    continue;
+                }
+
+                string entryPoint = GetEntryPointName(method);
+                if (!methodsByEntryPoint.TryGetValue(entryPoint, out List<MethodDesc> methods))
+                    methodsByEntryPoint[entryPoint] = methods = [];
+                methods.Add(method);
+            }
+
+            var incompatible = new HashSet<string>(StringComparer.Ordinal);
+            foreach ((string entryPoint, List<MethodDesc> methods) in methodsByEntryPoint)
+            {
+                try
+                {
+                    if (PortableCallHelpers.PInvokeTableGenerator.HasIncompatibleSignatures(methods))
+                        incompatible.Add(entryPoint);
+                }
+                catch (TypeSystemException)
+                {
+                    // A signature that doesn't resolve fails the P/Invoke when it is compiled or called.
+                }
+            }
+
+            return incompatible;
         }
 
         public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)

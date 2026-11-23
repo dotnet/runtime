@@ -105,9 +105,14 @@ namespace ILCompiler.PortableCallHelpers
             {
                 PInvokeInfo[] candidates = group.Distinct().ToArray();
                 PInvokeInfo first = candidates[0];
-                if (ShouldTreatAsVariadic(candidates))
+                // A P/Invoke failing to bind is a runtime error, so skip what can't be declared rather than failing
+                // the build. ReadyToRun doesn't bind these directly either (see IsDirectPInvoke).
+                MethodDesc[] methods = candidates.Select(c => (MethodDesc)c.Method).ToArray();
+                bool variadic = IsVariadic(methods);
+                if (variadic || LowerToDifferentSignatures(methods))
                 {
-                    log.Warning("WASM0001", $"Found a native function ({first.EntryPoint}) with varargs in {first.Module}." +
+                    string problem = variadic ? "with varargs" : "with signatures that lower to different WebAssembly signatures";
+                    log.Warning("WASM0001", $"Found a native function ({first.EntryPoint}) {problem} in {first.Module}." +
                                      " Calling such functions is not supported, and will fail at runtime." +
                                     $" Managed DllImports: {Environment.NewLine}{ListImports(candidates)}");
 
@@ -115,13 +120,6 @@ namespace ILCompiler.PortableCallHelpers
                         candidate.Skip = true;
 
                     continue;
-                }
-
-                // ReadyToRun binds these directly, so skipping them would break their callers' fixups.
-                if (HasConflictingSignatures(candidates))
-                {
-                    throw new LogAsErrorException($"Native function '{first.EntryPoint}' is declared with signatures that lower to different WebAssembly signatures." +
-                                                  $" Managed DllImports: {Environment.NewLine}{ListImports(candidates)}");
                 }
 
                 // The table holds one address per entry point, so declare it once per linkage.
@@ -226,42 +224,43 @@ namespace ILCompiler.PortableCallHelpers
                 => string.Join(Environment.NewLine, candidates.Select(
                     p => $"    {p.Method} (in [{((EcmaAssembly)p.Method.Module).GetName().Name}] {p.Method.OwningType})"));
 
-            static bool HasConflictingSignatures(PInvokeInfo[] candidates)
-            {
-                if (candidates.Length < 2)
-                    return false;
-
-                // Compare the native function types: the richer interpreter signature also records
-                // struct sizes that don't change how the struct is passed.
-                WasmFuncType first = WasmLowering.GetSignature(candidates[0].Method.Signature, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly).FuncType;
-                for (int i = 1; i < candidates.Length; i++)
-                {
-                    if (!WasmLowering.GetSignature(candidates[i].Method.Signature, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly).FuncType.Equals(first))
-                        return true;
-                }
-
-                return false;
-            }
-
-            static bool ShouldTreatAsVariadic(PInvokeInfo[] candidates)
-            {
-                if (candidates.Length < 2)
-                    return false;
-
-                // Detect possible vararg entrypoint usage, where the same entrypoint is used with
-                // different numbers of arguments.
-                int firstNumArgs = candidates[0].Method.Signature.Length;
-                for (int i = 1; i < candidates.Length; i++)
-                {
-                    if (candidates[i].Method.Signature.Length != firstNumArgs)
-                        return true;
-                }
-
-                return false;
-            }
-
             static string ListRefs(IGrouping<string, PInvokeInfo> group)
                 => string.Join(", ", group.Select(c => ((EcmaAssembly)c.Method.Module).GetName().Name).Distinct().OrderBy(n => n, StringComparer.Ordinal));
+        }
+
+        /// <summary>
+        /// Whether the P/Invokes of one native entry point can't share the single declaration the table holds:
+        /// they differ in arity, which suggests C varargs, or lower to different WebAssembly signatures.
+        /// </summary>
+        internal static bool HasIncompatibleSignatures(IReadOnlyList<MethodDesc> methods)
+            => IsVariadic(methods) || LowerToDifferentSignatures(methods);
+
+        private static bool IsVariadic(IReadOnlyList<MethodDesc> methods)
+        {
+            for (int i = 1; i < methods.Count; i++)
+            {
+                if (methods[i].Signature.Length != methods[0].Signature.Length)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool LowerToDifferentSignatures(IReadOnlyList<MethodDesc> methods)
+        {
+            if (methods.Count < 2)
+                return false;
+
+            // Compare the native function types: the richer interpreter signature also records
+            // struct sizes that don't change how the struct is passed.
+            WasmFuncType first = WasmLowering.GetSignature(methods[0].Signature, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly).FuncType;
+            for (int i = 1; i < methods.Count; i++)
+            {
+                if (!WasmLowering.GetSignature(methods[i].Signature, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly).FuncType.Equals(first))
+                    return true;
+            }
+
+            return false;
         }
 
         private void EmitQCallTable(TextWriter w, TargetDetails target, List<PInvokeInfo> qcallImports)

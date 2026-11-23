@@ -146,18 +146,24 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-        [BuildAndRun(aot: false, config: Configuration.Release)]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true })]
         [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
-        public void DirectPInvokeRejectsConflictingSignatures(Configuration config, bool aot)
+        public async Task DirectPInvokeSkipsIncompatibleSignatures(Configuration config, bool aot, bool readyToRun)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "directpinvoke_conflict",
-                extraProperties: "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><DefineConstants>$(DefineConstants);DIRECT_PINVOKE_CONFLICT</DefineConstants>",
-                extraItems: "<DirectPInvoke Include=\"libc!strlen\" /><DirectPInvoke Include=\"libc!llabs\" />");
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"directpinvoke_incompatible_{readyToRun}",
+                extraProperties: $"<PublishReadyToRun>{readyToRun}</PublishReadyToRun><AllowUnsafeBlocks>true</AllowUnsafeBlocks><DefineConstants>$(DefineConstants);DIRECT_PINVOKE_CONFLICT</DefineConstants>",
+                extraItems: "<DirectPInvoke Include=\"libc!strlen\" /><DirectPInvoke Include=\"libc!llabs\" /><DirectPInvoke Include=\"libc!open\" />");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DirectPInvoke.cs"));
+            ReplaceMainJsWithMinimalRunMain();
 
-            (_, string output) = PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false, ExpectSuccess: false,
+            (_, string output) = PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false,
                 ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)), isNativeBuild: true);
-            Assert.Contains("Native function 'llabs' is declared with signatures that lower to different WebAssembly signatures", output);
+            Assert.Contains("Found a native function (llabs) with signatures that lower to different WebAssembly signatures in libc", output);
+            Assert.Contains("Found a native function (open) with varargs in libc", output);
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains(result.TestOutput, line => line.Contains("DirectPInvoke sample passed", StringComparison.Ordinal));
         }
 
         // Only Mono's generator rejects a non-blittable callback signature; crossgen2 leaves the

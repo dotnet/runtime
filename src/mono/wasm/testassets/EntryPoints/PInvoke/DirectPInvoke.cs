@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 if (Imports.StrLen("hello") != 5)
@@ -36,13 +37,38 @@ catch (DllNotFoundException)
 #endif
 
 #if DIRECT_PINVOKE_CONFLICT
-// One native function declared with signatures that lower to different wasm types.
-Imports.LLAbs(-1);
-Imports.LLAbsInt32(-1);
+// Native functions that can't be declared with one signature: llabs lowers to different wasm types,
+// and open is declared at two arities (C varargs). They build, and fail only when called.
+if (Incompatible.Call(false) != 7)
+    return 6;
+
+try
+{
+    Incompatible.Call(true);
+    return 7;
+}
+catch (DllNotFoundException)
+{
+}
 #endif
 
 Console.WriteLine("TestOutput -> DirectPInvoke sample passed");
 return 42;
+
+#if DIRECT_PINVOKE_CONFLICT
+static unsafe class Incompatible
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static long Call(bool call)
+    {
+        if (!call)
+            return 7;
+
+        fixed (byte* path = "/missing\0"u8)
+            return Imports.LLAbs(-1) + Imports.LLAbsInt32(-1) + Imports.Open2(path, 0) + Imports.Open3(path, 0, 0);
+    }
+}
+#endif
 
 struct Chars
 {
@@ -70,6 +96,12 @@ static class Imports
 
     [DllImport("libc", EntryPoint = "llabs")]
     public static extern int LLAbsInt32(int value);
+
+    [DllImport("libc", EntryPoint = "open")]
+    public static extern unsafe int Open2(byte* path, int flags);
+
+    [DllImport("libc", EntryPoint = "open")]
+    public static extern unsafe int Open3(byte* path, int flags, int mode);
 #endif
 
 #if !DIRECT_PINVOKE_WHOLE_MODULE
