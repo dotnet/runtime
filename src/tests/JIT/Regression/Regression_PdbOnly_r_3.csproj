@@ -3,7 +3,7 @@
     <DebugType>PdbOnly</DebugType>
     <HasMergedInTests>True</HasMergedInTests>
     <!-- ActiveIssue https://github.com/dotnet/runtime/issues/132855 -->
-    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm'">true</R2RIncompatible>
+    <R2RIncompatible Condition="'$(TargetsWasmArch)' == 'true'">true</R2RIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CLR-x86-JIT\V1-M12-Beta2\b80764\b80764.cs" />

@@ -3,7 +3,7 @@
     <NumberOfStripesToUseInStress>8</NumberOfStripesToUseInStress>
 
     <!-- Wasm-specific intrinsics are only supported when targeting the Wasm architecture. -->
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'wasm'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWasmArch)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <ItemGroup>

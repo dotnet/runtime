@@ -274,6 +274,22 @@ extends:
               eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
               eq(variables['isRollingBuild'], true))
 
+      - template: /eng/pipelines/common/templates/browser-wasm-coreclr-runtime-tests.yml
+        parameters:
+          platforms:
+          - browser_wasm64
+          nameSuffix: CoreCLR_ReleaseLibraries
+          # browser-wasm64 runs on the interpreter until ReadyToRun support is added.
+          runReadyToRunTests: false
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+          condition: >-
+            or(
+              eq(variables['wasmDarcDependenciesChanged'], true),
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+              eq(variables['isRollingBuild'], true))
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
