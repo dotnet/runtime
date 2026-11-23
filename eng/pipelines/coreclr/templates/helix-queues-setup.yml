@@ -73,9 +73,9 @@ jobs:
     # Browser and WASI wasm
     - ${{ if in(parameters.platform, 'browser_wasm', 'wasi_wasm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Ubuntu.2604.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:ad1f7dcade2316b01be4f731474775e2d82e7bf40f8e54c9af848b5a66a7b735
+        - (Ubuntu.2604.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:be558e17efcb831c6a81d403baf5aa9f679d627c220e39373553f567ec204b4a
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Ubuntu.2604.Amd64)AzureLinux.4.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:ad1f7dcade2316b01be4f731474775e2d82e7bf40f8e54c9af848b5a66a7b735
+        - (Ubuntu.2604.Amd64)AzureLinux.4.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:be558e17efcb831c6a81d403baf5aa9f679d627c220e39373553f567ec204b4a
 
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
@@ -108,23 +108,23 @@ jobs:
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.324.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64@sha256:69ad1feec51f3f93d08efd4927717e5ed073406478fe637b19adc858f28b807c
+        - (Alpine.324.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64@sha256:d46a51c17ffbd686948b39b8e0af8aa8e4a3704550083f28ab2fc2cb9e7bc566
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.324.Amd64)AzureLinux.4.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64@sha256:69ad1feec51f3f93d08efd4927717e5ed073406478fe637b19adc858f28b807c
+        - (Alpine.324.Amd64)AzureLinux.4.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64@sha256:d46a51c17ffbd686948b39b8e0af8aa8e4a3704550083f28ab2fc2cb9e7bc566
 
     # Linux musl arm32
     - ${{ if eq(parameters.platform, 'linux_musl_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.324.Arm32.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7@sha256:ef1084813385f7250db566177f0a23877bd7b8fa33571586167b723dd6b95d2e
+        - (Alpine.324.Arm32.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7@sha256:4a9b7a2a31a9ee333004b49e22e475703f1225ed5777a283d30319ec03589c7e
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.324.Arm32)AzureLinux.4.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7@sha256:ef1084813385f7250db566177f0a23877bd7b8fa33571586167b723dd6b95d2e
+        - (Alpine.324.Arm32)AzureLinux.4.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7@sha256:4a9b7a2a31a9ee333004b49e22e475703f1225ed5777a283d30319ec03589c7e
 
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'linux_musl_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.324.Arm64.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8@sha256:0d25764d0d70f7be99b5f9457e3b986b0571f2639645db20bca99b2b152944af
+        - (Alpine.324.Arm64.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8@sha256:7d944708cd5e7220952027e22e00043b85916627f2624640d00a632d8192bf18
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.324.Arm64)AzureLinux.4.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8@sha256:0d25764d0d70f7be99b5f9457e3b986b0571f2639645db20bca99b2b152944af
+        - (Alpine.324.Arm64)AzureLinux.4.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8@sha256:7d944708cd5e7220952027e22e00043b85916627f2624640d00a632d8192bf18
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
