@@ -5207,7 +5207,7 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
     }
 
     // Fast path when we have a VN
-    if (!optLocalAssertionProp && vnStore->IsKnownNonNull(op->gtVNPair.GetConservative()))
+    if (!optLocalAssertionProp && vnStore->IsKnownNonNull(vnStore->VNConservativeNormalValue(op->gtVNPair)))
     {
         return true;
     }
