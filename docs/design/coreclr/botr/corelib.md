@@ -38,6 +38,196 @@ The managed mechanism for calling into native code must also support the special
 
 The CLR provides a [`mscorlib` binder](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/binder.cpp) internally, providing a mapping between unmanaged types and fields to managed types and fields. The binder will look up and load classes and allows the calling of managed methods. It also performs simple verification to ensure the correctness of any layout information specified in both managed and native code. The binder ensures that the managed class attempting to load exists in mscorlib, has been loaded, and the field offsets are correct. It also needs the ability to differentiate between method overloads with different signatures.
 
+## Conditional binder declarations
+
+Declarations in `corelib.h` are mandatory trimming roots by default.
+`DEFINE_CLASS_OPTIONAL` and `DEFINE_CLASS_U_OPTIONAL` opt audited managed types into
+conditional preservation: native-required members and layout survive only when the
+managed type is otherwise reachable. They expand to the ordinary declarations for
+native consumers, preserving binder IDs, indexed caches, lookup behavior, and failure
+contracts. A native `GetClass`, `GetMethod`, or `GetField` still requires its target to exist.
+
+The descriptor generator merges aliases by managed type identity within each feature-switch
+group. A mandatory declaration dominates an optional alias, and layout obligations are
+combined regardless of declaration order. Groups remain separate so a disabled feature
+cannot turn an unconditional optional declaration into a mandatory root. Methods remain
+name-based, preserving all matching overloads. Optional field-bearing types use
+`required="false" preserve="fields"` without explicit field children: explicit fields
+would immediately root their declaring type under the linker's descriptor semantics.
+This intentionally preserves all fields of a surviving optional type.
+
+Checked/debug consistency checks consult metadata, not the already-loaded type cache,
+before accepting an absent optional type. Present optional types still undergo normal
+layout and member checks; mandatory entries remain mandatory.
+
+`HandleRef` and `ArrayWithOffset` are conditional because the marshaller reads their fields
+only for reachable signatures using those types. `ArrayWithOffset` can remain reachable
+through `UnmanagedType.AsAny`; the declaration expresses the native reachability contract
+regardless of whether it saves space. `CriticalHandle` and `SafeHandle` are also conditional.
+Their marshalling classification checks use a non-loading lookup: a loaded subtype has
+already loaded its base, so unrelated signatures need not load either base type. Actual
+handle marshalling still uses the strict binder field/class lookups. The
+`StubHelpers` and `HandleMarshaler` SafeHandle helper roots are conditional on
+`SafeHandle` retention, rather than independently retaining it through their signatures.
+The CriticalHandle field-change helper is similarly conditional on `CriticalHandle`.
+The compiler's interop classification also allows either handle base type to be absent,
+including during ReadyToRun blittability checks after trimming. Compiler lookups for
+actual handle marshalling remain strict.
+
+These helper edges do not guarantee removal of `SafeHandle`. On Windows, mandatory
+assembly-load-context satellite probing reaches `FileSystem.FileExists` and file handles,
+independently retaining it even for an otherwise empty application.
+
+Cross-type dependencies use `DEFINE_CLASS_CONDITIONAL`, `DEFINE_METHOD_CONDITIONAL`,
+and `DEFINE_FIELD_CONDITIONAL`. Their last two arguments are a trigger kind (`CLASS`,
+`METHOD`, or `FIELD`) and the corresponding binder ID without its kind prefix.
+For example:
+
+```cpp
+DEFINE_METHOD_CONDITIONAL(STUBHELPERS, SAFE_HANDLE_RELEASE, SafeHandleRelease, SM_SafeHandle_RetVoid, CLASS, SAFE_HANDLE)
+```
+
+Method and field triggers use `classId__memberId`. Declarations may refer to later
+triggers. Native consumers still see exactly one ordinary declaration, in the same
+position; there are no new binder lookup failure modes or release-time dependency
+tables. Additional aliases can supply alternative triggers without duplicating an ID.
+
+The generator emits `DynamicDependencyAttribute` annotations into the existing
+`ILLink.LinkAttributes.xml` resource, retaining the feature-switch assembly groups.
+A trigger's actual marking activates the dependencies, including
+when a type is retained only by a field or method signature. Merely declaring an edge
+does not mark either endpoint. Multiple edges are alternatives, cascades reach a fixed
+point, and cycles with no independently reachable entry stay dead. Unconditional roots
+remain authoritative regardless of conditional aliases or disabled features.
+Class dependencies root the type; its ordinary optional member and layout obligations
+still apply whenever that type survives, even through another path. A conditional member
+roots its declaring type as well as that member. Method triggers match by name,
+including all overloads, just like ordinary binder descriptor declarations. Conditional
+method targets use DynamicDependency signature syntax: the generated bare-name selector
+matches non-generic overloads. Native helpers with generic method bodies retain ordinary
+member obligations on their optional declaring type instead.
+Class targets use `DynamicallyAccessedMemberTypes.None` to retain only the type itself.
+No new descriptor XML elements or separate conditional-edge marking loop are needed.
+ILLink honors injected dependencies on types as well as methods and fields; the public
+attribute's source-code targets are unchanged.
+CoreLib's own library-build trim also receives the generated annotations explicitly,
+because that pass ignores embedded link attributes.
+
+Stream's APM methods and `IAsyncResult`, which their native binder signatures reference,
+are conditional on `Stream.HasOverriddenSlow`. Native signature resolution still uses
+strict binder lookups when this override check is reached.
+
+`ICustomMarshaler` is optional, and the `MngdRefCustomMarshaler` stub helpers are
+conditional on it. Any custom-marshaled signature retains the interface, as does the
+Windows COM interop helper for implicitly marshaled `IEnumerator` parameters.
+`ICustomAdapter` is a required binder class only when `FEATURE_COMINTEROP` is enabled,
+matching the strict lookup used during COM interface dispatch.
+
+`DEFINE_METHOD_OPTIONAL` registers a recognition-only binder identity without rooting
+the method or any overload, even if its declaring type survives. It can also serve as a
+conditional dependency trigger. Native intrinsic recognition uses `IsMethod`, which
+matches an existing method's declaring type, name, and hardcoded signature without
+demanding missing sibling methods. `NoSig` retains its existing unique-name contract.
+Successful matches cache the typical method definition; `GetMethod` remains a strict
+lookup for helpers that generated IL or native callers actually need. Debug consistency
+checks test optional overload presence against metadata and the hardcoded signature,
+not the loaded-method cache.
+
+The Unsafe declarations and RuntimeHelpers' bitwise/enum recognition methods are
+optional. Activator and InstanceCalliHelper are optional classes; the reflection caller
+stack walker compares them without loading them for unrelated frames.
+`Activator.CreateInstance<T>` is optional, while its transient-IL default-value helper
+is required whenever Activator survives. Rune's intrinsic identity is also
+optional. RuntimeHelpers itself, StructureMarshaler, the IJW copy-constructor helper,
+and Interlocked's emitted CompareExchange targets remain required. CompareExchange
+descriptor roots still match by name, so those required overloads conservatively
+retain the generic recognition overload too.
+
+Reflection caller classification uses one table of invocation types, caching and
+comparing only already loaded types without forcing any type to load.
+MethodBase, ConstructorInfo, EventInfo, TypeDelegator, MethodBaseInvoker, and
+IntrinsicInvokeHelper, along with RuntimeConstructorInfo and RuntimeEventInfo, have
+optional binder registrations because their only native use is classifying already
+executing frames. RuntimeConstructorInfo's field-layout obligations apply whenever
+the type survives. Managed dependencies can independently retain these types.
+MethodInfo, FieldInfo, and PropertyInfo remain required for native signatures;
+InitHelpers and StaticsHelpers remain required for emitted helpers. These signatures
+and helper declarations reference the class IDs through macros.
+
+Applications using these CoreLib annotations must also use the matching linker build.
+Rebuilding runtime packs does not replace the SDK-selected linker. When testing local
+packs outside this repository, set `ILLinkTasksAssembly` to the matching built
+`ILLink.Tasks.dll`; its sibling `illink.dll` supplies type-trigger and type-only
+dependency support. Verify the effective linker path in the publish binlog, including
+nested WebAssembly publishes. An older linker can report IL2037 for `None` and fail
+to preserve a type-only dependency; suppressing the warning does not make it safe.
+
+Method triggers that have no existing binder declaration can use an optional method
+declaration or a conditional self-edge. Neither independently roots the method.
+Trigger-only declarations live alongside their corresponding
+types and members under `#if defined(FOR_ILLINK) || defined(DEBUG)`: descriptor generation
+and debug/Checked consistency checks need their identities, but release binder tables do not.
+
+Additional native dependencies use these triggers:
+
+- The three `StubHelpers` va_list helpers depend on `ArgIterator` retention. Its native
+  layout remains an optional obligation, including its nested signature pointer.
+- `RuntimeExceptionHandlingClause` and `RuntimeLocalVariableInfo` depend on
+  `RuntimeMethodHandle.GetMethodBody`, retaining their constructors and native-written
+  fields whenever present. `RuntimeMethodBody` remains mandatory because COM classification
+  looks it up independently.
+- Stream's `BeginRead`, `EndRead`, `BeginWrite`, and `EndWrite` depend on
+  `Stream.HasOverriddenSlow`. Every native override probe reads all four slots.
+- Comparer implementation types depend on their respective `Comparer<T>` or
+  `EqualityComparer<T>` base type. These conservative type triggers cover both JIT
+  specialization and managed/ReadyToRun factory paths without coupling the two families.
+- `UTF8BufferMarshaler` depends on `StringBuilder`. StringBuilder's other native member
+  obligations are preserved when that type survives; its declaration is optional.
+  Managed formatting and AsAny marshalling can independently retain StringBuilder.
+
+Debug checks inspect trigger metadata without loading it. Missing active targets are
+still errors; an inactive conditional member can be absent even when its declaring type
+survives. A conditional class with a native layout alias must use `DEFINE_CLASS_U_OPTIONAL`
+unless an independent mandatory layout obligation is intended. This is CoreCLR's ILLink
+descriptor mechanism, not a NativeAOT native dependency graph; NativeAOT builds its own
+CoreLib and does not generate roots from `corelib.h`.
+
+`DynamicMethod`, `DynamicResolver`, and `Resolver` are conditional together. The reflection
+caller stack walker checks `DynamicMethod` without loading it for unrelated frames.
+Managed code creates a resolver before passing it to native dynamic-method creation;
+the resolver's native callbacks and `DynamicResolver.m_method` field are preserved when
+their declaring types survive. DAC reads that field only after finding a live managed
+resolver for a dynamic method.
+
+`GCMemoryInfoData` supplies conditional-layout coverage because
+managed code allocates it before the native GC fills it. Runtime counters, array-pool
+pressure handling, and thread-pool code can retain it; conditional layout is not a promise
+of a minimal-application size reduction. Startup types, independently created native
+objects, and incidental classification dependencies need separate semantic audits before
+using these annotations. In particular, WeakReference and CallConvSwift are
+not made conditional by this mechanism.
+
+Additional conditional declarations cover managed-created objects and values:
+
+- `Delegate.Wrapper`: the multicast invocation stub consumes the array created by managed
+  delegate combination.
+- `ConditionalWeakTable<TKey, TValue>`, its `Container` and `Entry`, and `List<T>`:
+  native diagnostic/interop readers inspect existing managed collections rather than
+  constructing them.
+- `ExecutionContext`: native context capture inspects an existing managed context before
+  accessing the flow-suppressed default. Both its binder and layout aliases are conditional.
+- `StackFrameHelper`: managed stack-trace capture allocates the helper passed to the QCall.
+- `ComWrappers.ReferenceTrackerNativeObjectWrapper`, `GCHandleSet` and its `Entry`,
+  `ObjectiveCMarshal.ObjcTrackingInformation`, and `TypeMapLazyDictionary.CallbackContext`:
+  native consumers receive managed-created tracking objects or a managed stack context.
+
+These are reachability contracts, not guaranteed removals. For example, a rooted method
+signature can keep its parameter type reachable even when the application never calls its
+constructor. `ComWrappers` itself remains mandatory because DAC resolves its table fields
+before checking for live wrappers. Native-created reflection results and unconditional
+classification dependencies likewise cannot be made conditional solely because their
+constructors are implemented in managed code.
+
 # Calling from managed to native code
 
 Two techniques exist for calling into the CLR from managed code. FCall allows you to call directly into the CLR code, and provides a lot of flexibility in terms of manipulating objects, though it is easy to cause GC holes by not tracking object references correctly. QCall also allows you to call into the CLR via the P/Invoke, but is much harder to accidentally mis-use. FCalls are identified in managed code as extern methods with the [`MethodImplOptions.InternalCall`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.methodimploptions) bit set. QCalls are marked `static extern` methods similar to regular P/Invokes, but are directed toward a library called `"QCall"`.

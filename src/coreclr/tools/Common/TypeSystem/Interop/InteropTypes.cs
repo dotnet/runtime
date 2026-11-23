@@ -71,12 +71,12 @@ namespace Internal.TypeSystem.Interop
 
         public static bool IsSafeHandle(TypeSystemContext context, TypeDesc type)
         {
-            return IsOrDerivesFromType(type, GetSafeHandle(context));
+            return IsOrDerivesFromType(type, context.SystemModule.GetType("System.Runtime.InteropServices"u8, "SafeHandle"u8, throwIfNotFound: false));
         }
 
         public static bool IsCriticalHandle(TypeSystemContext context, TypeDesc type)
         {
-            return IsOrDerivesFromType(type, GetCriticalHandle(context));
+            return IsOrDerivesFromType(type, context.SystemModule.GetType("System.Runtime.InteropServices"u8, "CriticalHandle"u8, throwIfNotFound: false));
         }
 
         private static bool IsCoreNamedType(TypeSystemContext context, TypeDesc type, ReadOnlySpan<byte> @namespace, ReadOnlySpan<byte> name)
@@ -169,6 +169,9 @@ namespace Internal.TypeSystem.Interop
 
         private static bool IsOrDerivesFromType(TypeDesc type, MetadataType targetType)
         {
+            if (targetType is null)
+                return false;
+
             while (type != null)
             {
                 if (type == targetType)

@@ -11,4 +11,9 @@
     <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="$(RepoRoot)src\coreclr\vm\corelib.h" Link="RuntimeRoots\corelib.h" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(RepoRoot)src\coreclr\vm\namespace.h" Link="RuntimeRoots\namespace.h" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

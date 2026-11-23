@@ -45,6 +45,7 @@
       <EnabledProperties>InvariantTimezone</EnabledProperties>
       <EnabledFeatureSwitches>System.TimeZoneInfo.Invariant</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="OptionalCoreLibIntrinsics.cs" />
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
       <!-- There is a bug with the linker where it is corrupting the pdbs while trimming
       causing the framework to not be able to get source line info any longer. This

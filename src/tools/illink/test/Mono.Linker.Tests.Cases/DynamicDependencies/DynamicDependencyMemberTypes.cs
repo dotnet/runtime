@@ -303,6 +303,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
             public delegate int PublicDelegate();
         }
 
+        [Kept(By = Tool.Trimmer)]
         public class TypeWithNone
         {
             public void Method() { }

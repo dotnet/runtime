@@ -157,6 +157,11 @@ class CoreLibBinder
     // Get the class only if it has been loaded already
     static PTR_MethodTable GetClassIfExist(BinderClassID id);
 
+    static FORCEINLINE BOOL IsClassIfExist(MethodTable *pMT, BinderClassID id)
+    {
+        return dac_cast<TADDR>(GetClassIfExist(id)) == dac_cast<TADDR>(pMT);
+    }
+
     static LPCUTF8 GetClassNameSpace(BinderClassID id);
     static LPCUTF8 GetClassName(BinderClassID id);
 
@@ -165,6 +170,9 @@ class CoreLibBinder
     //
     static LPCUTF8 GetMethodName(BinderMethodID id);
     static LPHARDCODEDMETASIG GetMethodSig(BinderMethodID id);
+
+    // Match an existing method without demanding trimmed sibling methods or overloads.
+    static bool IsMethod(MethodDesc *pMethod, BinderMethodID id);
 
     static Signature GetMethodSignature(BinderMethodID id)
     {

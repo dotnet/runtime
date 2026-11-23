@@ -1189,13 +1189,10 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         return strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0;
     }
 
-    /* List of types that should be skipped to identify true caller */
     static const BinderClassID reflectionInvocationTypes[] = {
         CLASS__METHOD,
-        CLASS__METHOD_BASE,
         CLASS__METHOD_INFO,
         CLASS__CONSTRUCTOR,
-        CLASS__CONSTRUCTOR_INFO,
         CLASS__CLASS,
         CLASS__TYPE_HANDLE,
         CLASS__METHOD_HANDLE,
@@ -1205,32 +1202,35 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__RT_FIELD_INFO,
         CLASS__FIELD_INFO,
         CLASS__EVENT,
-        CLASS__EVENT_INFO,
         CLASS__PROPERTY,
         CLASS__PROPERTY_INFO,
-        CLASS__ACTIVATOR,
         CLASS__ARRAY,
         CLASS__ASSEMBLYBASE,
         CLASS__ASSEMBLY,
-        CLASS__TYPE_DELEGATOR,
         CLASS__RUNTIME_HELPERS,
-        CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
-        CLASS__METHODBASEINVOKER,
-        CLASS__INSTANCE_CALLI_HELPER,
-        CLASS__INTRINSIC_INVOKE_HELPER,
         CLASS__INITHELPERS,
         CLASS__STATICSHELPERS,
+        CLASS__DYNAMICMETHOD,
+        CLASS__ACTIVATOR,
+        CLASS__INSTANCE_CALLI_HELPER,
+        CLASS__METHOD_BASE,
+        CLASS__CONSTRUCTOR_INFO,
+        CLASS__EVENT_INFO,
+        CLASS__TYPE_DELEGATOR,
+        CLASS__METHODBASEINVOKER,
+        CLASS__INTRINSIC_INVOKE_HELPER,
     };
 
     static bool fInited = false;
 
     if (!VolatileLoad(&fInited))
     {
-        // Make sure all types are loaded so that we can use faster GetExistingClass()
+        // Cache already loaded types without requiring optional invocation types to survive trimming.
+        GCX_PREEMP();
         for (unsigned i = 0; i < ARRAY_SIZE(reflectionInvocationTypes); i++)
         {
-            CoreLibBinder::GetClass(reflectionInvocationTypes[i]);
+            CoreLibBinder::GetClassIfExist(reflectionInvocationTypes[i]);
         }
 
         VolatileStore(&fInited, true);
@@ -1238,9 +1238,11 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
 
     if (!pCaller->HasInstantiation())
     {
+        // A non-loading lookup can still acquire loader locks.
+        GCX_PREEMP();
         for (unsigned i = 0; i < ARRAY_SIZE(reflectionInvocationTypes); i++)
         {
-            if (CoreLibBinder::GetExistingClass(reflectionInvocationTypes[i]) == pCaller)
+            if (CoreLibBinder::IsClassIfExist(pCaller, reflectionInvocationTypes[i]))
                 return true;
         }
     }
