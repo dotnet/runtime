@@ -1381,10 +1381,7 @@ namespace System.Xml
             Continue:
                 chars = _ps.chars;
 
-                while (XmlCharType.IsAttributeValueChar(chars[pos]))
-                {
-                    pos++;
-                }
+                pos += XmlCharType.FindAttributeValueEnd(chars.AsSpan(pos, _ps.charsUsed - pos));
 
                 if (_ps.chars[pos] == quoteChar)
                 {
@@ -2545,11 +2542,8 @@ namespace System.Xml
                 attr.SetLineInfo2(_ps.LineNo, _ps.LinePos);
 
                 // parse attribute value
-                char tmpch3;
-                while (XmlCharType.IsAttributeValueChar(tmpch3 = chars[pos]))
-                {
-                    pos++;
-                }
+                pos += XmlCharType.FindAttributeValueEnd(chars.AsSpan(pos, _ps.charsUsed - pos));
+                char tmpch3 = chars[pos];
 
                 if (tmpch3 == quoteChar)
                 {
@@ -2645,10 +2639,7 @@ namespace System.Xml
             while (true)
             {
                 // parse the rest of the attribute value
-                while (XmlCharType.IsAttributeValueChar(chars[pos]))
-                {
-                    pos++;
-                }
+                pos += XmlCharType.FindAttributeValueEnd(chars.AsSpan(pos, _ps.charsUsed - pos));
 
                 if (pos - _ps.charPos > 0)
                 {
@@ -3150,7 +3141,7 @@ namespace System.Xml
         // Parses a chunk of text starting at ps.charPos.
         //   startPos .... start position of the text chunk that has been parsed (can differ from ps.charPos before the call)
         //   endPos ...... end position of the text chunk that has been parsed (can differ from ps.charPos after the call)
-        //   ourOrChars .. all parsed character bigger or equal to 0x20 or-ed (|) into a single int. It can be used for whitespace detection
+        //   outOrChars .. accumulator for whitespace detection
         //                 (the text has a non-whitespace character if outOrChars > 0x20).
         // Returns true when the whole value has been parsed. Return false when it needs to be called again to get a next chunk of value.
 
@@ -3276,11 +3267,8 @@ namespace System.Xml
             {
                 char c;
                 // parse text content
-                while (XmlCharType.IsTextChar(c = chars[pos]))
-                {
-                    orChars |= (int)c;
-                    pos++;
-                }
+                pos += XmlCharType.FindTextEnd(chars.AsSpan(pos, _ps.charsUsed - pos), ref orChars);
+                c = chars[pos];
 
                 switch (c)
                 {

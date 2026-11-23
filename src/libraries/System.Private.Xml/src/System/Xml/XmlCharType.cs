@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Xml
 {
@@ -49,6 +50,7 @@ namespace System.Xml
         internal const uint NCNameXml4e = 32;
         internal const uint Text = 64;
         internal const uint AttrValue = 128;
+        private const int MinSearchLength = 16;
 
         // bitmap for public ID characters - 1 bit per character 0x0 - 0x80; no character > 0x80 is a PUBLIC ID char
         private const string PublicIdBitmap = "\u2400\u0000\uffbb\uafff\uffff\u87ff\ufffe\u07ff";
@@ -60,6 +62,68 @@ namespace System.Xml
         private static readonly SearchValues<char> s_publicIdChars = SearchValues.Create(PublicIdChars);
         private static readonly SearchValues<char> s_asciiCharDataChars = SearchValues.Create(AsciiCharDataChars);
         private static readonly SearchValues<char> s_whitespaceChars = SearchValues.Create(WhiteSpaceChars);
+        private static readonly SearchValues<char> s_asciiAttributeValueChars = CreateAsciiSearchValues(AttrValue);
+        private static readonly SearchValues<char> s_asciiTextChars = CreateAsciiSearchValues(Text);
+
+        private static SearchValues<char> CreateAsciiSearchValues(uint charType)
+        {
+            Span<char> values = stackalloc char[128];
+            int count = 0;
+            for (int i = 0; i < 128; i++)
+            {
+                if ((GetCharProperties((char)i) & charType) != 0)
+                {
+                    values[count++] = (char)i;
+                }
+            }
+            return SearchValues.Create(values.Slice(0, count));
+        }
+
+        internal static int FindAttributeValueEnd(ReadOnlySpan<char> value)
+        {
+            int offset = 0;
+            if (Vector128.IsHardwareAccelerated && value.Length >= MinSearchLength)
+            {
+                offset = value.IndexOfAnyExcept(s_asciiAttributeValueChars);
+                if (offset < 0)
+                {
+                    return value.Length;
+                }
+            }
+
+            // Non-ASCII characters still need the full XML character classification.
+            while (offset < value.Length && IsAttributeValueChar(value[offset]))
+            {
+                offset++;
+            }
+            return offset;
+        }
+
+        internal static int FindTextEnd(ReadOnlySpan<char> value, ref int orChars)
+        {
+            int offset = 0;
+            if (Vector128.IsHardwareAccelerated && value.Length >= MinSearchLength)
+            {
+                offset = value.IndexOfAnyExcept(s_asciiTextChars);
+                if (offset < 0)
+                {
+                    offset = value.Length;
+                }
+
+                // Tab, CR and LF are not text chars, so space is the only whitespace in this prefix. Callers only
+                // compare the accumulator against 0x20, so any other char marks the value as text.
+                if (offset > 0 && orChars <= 0x20)
+                {
+                    orChars |= value.Slice(0, offset).ContainsAnyExcept(' ') ? 0xFF : 0x20;
+                }
+            }
+
+            while (offset < value.Length && IsTextChar(value[offset]))
+            {
+                orChars |= value[offset++];
+            }
+            return offset;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsWhiteSpace(char ch) => (GetCharProperties(ch) & Whitespace) != 0u;
