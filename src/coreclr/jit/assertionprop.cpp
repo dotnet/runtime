@@ -4464,20 +4464,21 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
         changed = true;
     }
 
-    if (tree->OperIs(GT_DIV, GT_MOD) && (op1IsNotNegative || op2IsNotNegative) &&
-        ((tree->gtFlags & GTF_DIV_MOD_NO_OVERFLOW) == 0))
+    if (tree->OperIs(GT_DIV, GT_MOD))
     {
-        JITDUMP("DIV/MOD is proven to never overflow...\n")
-        tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
-        tree->SetHasOrderingSideEffect();
-        changed = true;
-    }
-
-    if (op1IsNotNegative && op2IsNotNegative && tree->OperIs(GT_DIV, GT_MOD))
-    {
-        JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
-        tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
-        changed = true;
+        if (op1IsNotNegative && op2IsNotNegative)
+        {
+            JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
+            tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
+            changed = true;
+        }
+        else if ((op1IsNotNegative || op2IsNotNegative) && ((tree->gtFlags & GTF_DIV_MOD_NO_OVERFLOW) == 0))
+        {
+            JITDUMP("DIV/MOD is proven to never overflow...\n")
+            tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
+            tree->SetHasOrderingSideEffect();
+            changed = true;
+        }
     }
 
     return changed ? optAssertionProp_Update(tree, tree, stmt) : nullptr;
