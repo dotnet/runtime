@@ -18,12 +18,7 @@ namespace System.Diagnostics.CodeAnalysis
         AttributeTargets.Parameter,
         AllowMultiple = false,
         Inherited = false)]
-#if SYSTEM_PRIVATE_CORELIB
-    public
-#else
-    internal
-#endif
-        sealed class RequireNamedArgumentsAttribute : Attribute
+    public sealed class RequireNamedArgumentsAttribute : Attribute
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="RequireNamedArgumentsAttribute"/> class.
