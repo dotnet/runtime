@@ -264,10 +264,9 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
     return mem;
 }
 
-inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
+inline void ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
     minipal_flush_instruction_cache(pCodeAddr, sizeOfCode);
-    return TRUE;
 }
 
 //------------------------------------------------------------------------

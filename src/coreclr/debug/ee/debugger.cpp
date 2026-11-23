@@ -1369,10 +1369,8 @@ DWORD WINAPI DbgInteropStressProc(void * lpParameter)
         }
         else
         {
-#ifndef TARGET_UNIX
             // Generate the occasional oob-event.
             OutputDebugString(W("Ping from DbgInteropStressProc"));
-#endif // !TARGET_UNIX
         }
 
         // This helps parallelize if we have a lot of threads, and keeps us from
@@ -1421,10 +1419,8 @@ DWORD WINAPI DbgInteropOOBStressProc(void * lpParameter)
         }
         else
         {
-#ifndef TARGET_UNIX
             // Generate the occasional oob-event.
             OutputDebugString(W("OOB ping from "));
-#endif // !TARGET_UNIX
         }
 
         minipal_sleep(3000);

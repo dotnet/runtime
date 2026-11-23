@@ -3,12 +3,13 @@
 
 #include <pal.h>
 #include <unistd.h>
+#include <minipal/thread.h>
 #include <minipal/transportname.h>
 #include "processdescriptor.h"
 
 ProcessDescriptor ProcessDescriptor::FromCurrentProcess()
 {
-    return Create(getpid(), nullptr);
+    return Create(minipal_get_current_process_id(), nullptr);
 }
 
 void GetTransportPipeName(

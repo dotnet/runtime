@@ -42,7 +42,6 @@ if(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions(_WASI_EMULATED_SIGNAL)
   add_compile_definitions(_WASI_EMULATED_PROCESS_CLOCKS)
   add_compile_definitions(_WASI_EMULATED_MMAN)
-  add_compile_definitions(_WASI_EMULATED_GETPID)
   include_directories(BEFORE SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/pal/src/include/pal/wasi)
 endif()
 

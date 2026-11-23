@@ -513,7 +513,7 @@ struct HijackArgs
 // Currently ClrFlushInstructionCache has no effect on AMD64
 //
 
-inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
+inline void ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
     if (hasCodeExecutedBefore)
     {
@@ -523,7 +523,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
     {
         MemoryBarrier();
     }
-    return TRUE;
 }
 
 #endif // __cgencpu_h__

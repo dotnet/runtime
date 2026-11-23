@@ -943,7 +943,7 @@ SetThreadDescription(
     {
         // Ignore requests to set the main thread name because
         // it causes the value returned by Process.ProcessName to change.
-        if ((pid_t)pTargetThread->GetThreadId() != getpid())
+        if (pTargetThread->GetThreadId() != minipal_get_current_process_id())
         {
             nameSize = lpThreadDescription != NULL ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpThreadDescription, minipal_u16_strlen((const CHAR16_T*)lpThreadDescription) + 1, 0) : 0;
             if (nameSize > 0)

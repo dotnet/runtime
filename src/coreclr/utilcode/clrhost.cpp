@@ -54,7 +54,7 @@ void* GetCurrentModuleBase()
     if (!pRet)
     {
         Dl_info info;
-        if (dladdr((void*)GetClrModuleBase, &info) != 0)
+        if (dladdr((void*)GetCurrentModuleBase, &info) != 0)
         {
             pImageBase = pRet = info.dli_fbase;
         }
