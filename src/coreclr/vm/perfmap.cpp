@@ -9,6 +9,7 @@
 #if defined(FEATURE_PERFMAP) && !defined(DACCESS_COMPILE)
 #include <clrconfignocache.h>
 #include "perfmap.h"
+#include "perfjitdump.h"
 #include "ProcessEnvironment.h"
 #include "pal.h"
 #include <dn-stdio.h>
@@ -133,14 +134,14 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
             InitializeConfiguration();
 
-            int currentPid = GetCurrentProcessId();
+            int currentPid = getpid();
             s_Current->OpenFileForPid(currentPid, basePath);
             s_enabled = true;
         }
 
-        if (!PAL_PerfJitDump_IsStarted() && (type == PerfMapType::ALL || type == PerfMapType::JITDUMP))
+        if (!PerfJitDump_IsStarted() && (type == PerfMapType::ALL || type == PerfMapType::JITDUMP))
         {
-            PAL_PerfJitDump_Start(basePath);
+            PerfJitDump_Start(basePath);
 
             InitializeConfiguration();
 
@@ -260,8 +261,8 @@ void PerfMap::Disable()
             s_Current = nullptr;
         }
 
-        // PAL_PerfJitDump_Finish is lock protected and can safely be called multiple times
-        PAL_PerfJitDump_Finish();
+        // PerfJitDump_Finish is lock protected and can safely be called multiple times
+        PerfJitDump_Finish();
     }
 }
 
@@ -380,7 +381,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
                 s_Current->WriteLine(line);
             }
 
-            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
+            PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
         }
     }
     EX_CATCH{} EX_END_CATCH
@@ -421,7 +422,7 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
         if (methodRegionInfo.hotSize > 0)
         {
             CrstHolder ch(&(s_csPerfMap));
-            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
+            PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
         }
 
         if (methodRegionInfo.coldSize > 0)
@@ -434,7 +435,7 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
 
             CrstHolder ch(&(s_csPerfMap));
 
-            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
+            PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
         }
     }
     EX_CATCH{} EX_END_CATCH
@@ -544,7 +545,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
             // Even when the memory is committed, block-level stubs are reported at commit time
             // before the actual stub code has been written, so the code bytes would be zeros or
             // uninitialized. We therefore skip code bytes for block allocations entirely.
-            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/ stubAllocationType != PerfMapStubType::Block);
+            PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/ stubAllocationType != PerfMapStubType::Block);
         }
     }
     EX_CATCH{} EX_END_CATCH

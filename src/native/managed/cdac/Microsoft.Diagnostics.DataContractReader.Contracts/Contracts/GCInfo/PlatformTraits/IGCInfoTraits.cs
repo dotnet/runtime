@@ -54,6 +54,12 @@ internal interface IGCInfoTraits
 
     static abstract bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA { get; }
 
+    // Fields that are only present in GC info versions before 4 (R2R images before 11.0).
+    static virtual int SIZE_OF_RETURN_KIND_IN_SLIM_HEADER => 2;
+    static virtual int SIZE_OF_RETURN_KIND_IN_FAT_HEADER => 4;
+    static virtual int PSP_SYM_STACK_SLOT_ENCBASE => 6;
+    static virtual int SECURITY_OBJECT_STACK_SLOT_ENCBASE => 6;
+
     // False for encodings whose code is never interruptible (Wasm R2R).
     static virtual bool HAS_INTERRUPTIBLE_RANGES => true;
 

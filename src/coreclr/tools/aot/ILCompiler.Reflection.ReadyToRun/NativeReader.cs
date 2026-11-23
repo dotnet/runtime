@@ -20,6 +20,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         private readonly bool _littleEndian = littleEndian;
 
         /// <summary>
+        /// Length in bytes of the underlying data
+        /// </summary>
+        public long Length => _backingStream.Length;
+
+        /// <summary>
         /// Reads a byte from the image at the specified index
         /// </summary>
         public int this[int index]

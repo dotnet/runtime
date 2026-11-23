@@ -316,9 +316,6 @@ void SEHCleanupSignals(bool isChildProcess)
         if (g_registered_signal_handlers)
         {
             restore_signal(SIGILL, &g_previous_sigill);
-#if !HAVE_MACH_EXCEPTIONS
-            restore_signal(SIGTRAP, &g_previous_sigtrap);
-#endif
             restore_signal(SIGFPE, &g_previous_sigfpe);
             restore_signal(SIGBUS, &g_previous_sigbus);
             restore_signal(SIGSEGV, &g_previous_sigsegv);
@@ -339,10 +336,21 @@ void SEHCleanupSignals(bool isChildProcess)
         }
     }
 
-    // Restore only the SIGABRT so that abort that ends up the process can actually end it
+    // Restore only the signals that abort() may use to end the process. The other
+    // hardware exception handlers stay installed so that threads that crash
+    // concurrently still go through them.
     if (g_registered_signal_handlers)
     {
         restore_signal(SIGABRT, &g_previous_sigabrt);
+#if !HAVE_MACH_EXCEPTIONS
+        // If SIGABRT doesn't end the process, glibc abort() falls back to a trap
+        // instruction. That happens when the process is PID 1, because the kernel
+        // drops SIGABRT for init when it has the default disposition. On architectures
+        // where that instruction raises SIGTRAP (arm64, loongarch64, riscv64), our
+        // handler would return to it and loop forever. With the original handler
+        // restored, the kernel ends the process.
+        restore_signal(SIGTRAP, &g_previous_sigtrap);
+#endif
     }
 }
 

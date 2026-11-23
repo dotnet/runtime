@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection.PortableExecutable;
 using ILCompiler.Reflection.ReadyToRun;
-using ILCompiler.Reflection.ReadyToRun.Amd64;
+using ILCompiler.Reflection.ReadyToRun.Cdac;
 using Xunit;
 
 namespace ILCompiler.ReadyToRun.Tests;
@@ -28,13 +28,13 @@ public class GcInfoDecoderTests
             ? [0x08, 0xC0, (byte)(rootFlags << 7), (byte)(rootFlags >> 1), 0x00, 0x00, 0x00, 0x00]
             : [0x08, 0xC0, (byte)(rootFlags << 3), 0x00, 0x00, 0x00, 0x00, 0x00];
         using MemoryStream stream = new(encoded);
-        GcInfo info = new(new NativeReader(stream), 0, Machine.Amd64, version);
+        CdacGcInfo info = Decode(stream, Machine.Amd64, version);
 
-        Assert.Equal(1u, info.SlotTable.NumRegisters);
-        Assert.Equal(0u, info.SlotTable.NumStackSlots);
-        Assert.Equal(0u, info.SlotTable.NumUntracked);
-        GcSlotTable.GcSlot slot = Assert.Single(info.SlotTable.GcSlots);
-        Assert.Equal(0, slot.RegisterNumber);
+        Assert.Equal(1u, info.NumRegisters);
+        Assert.Equal(0u, info.NumStackSlots);
+        Assert.Equal(0u, info.NumUntrackedSlots);
+        CdacGcSlot slot = Assert.Single(info.Slots);
+        Assert.Equal(0u, slot.RegisterNumber);
         Assert.Null(slot.StackSlot);
         Assert.Equal((GcSlotFlags)rootFlags, slot.Flags);
     }
@@ -42,7 +42,7 @@ public class GcInfoDecoderTests
     public static IEnumerable<object[]> RegisterSlotCases()
     {
         foreach (Machine machine in new[] { Machine.Amd64, Machine.ArmThumb2, Machine.Arm64,
-            Machine.I386, Machine.LoongArch64, Machine.RiscV64 })
+            Machine.LoongArch64, Machine.RiscV64 })
         {
             foreach (int version in new[] { 5, 6 })
             {
@@ -56,12 +56,7 @@ public class GcInfoDecoderTests
     [MemberData(nameof(RegisterSlotCases))]
     public void RegisterSlotsUseFlagsFirstAndBoundedIntegers(Machine machine, int version, int flags)
     {
-        int maxRegister = machine switch
-        {
-            Machine.I386 => 7,
-            Machine.ArmThumb2 => 15,
-            _ => 31,
-        };
+        int maxRegister = machine == Machine.ArmThumb2 ? 15 : 31;
         for (int first = 0; first <= maxRegister; first++)
         {
             for (int last = first; last <= maxRegister; last++)
@@ -92,23 +87,22 @@ public class GcInfoDecoderTests
         SlotTableWriter writer = new(machine);
         writer.WriteCounts(0, 0, registers.Count);
         writer.WriteRegisters(registers, version);
-        writer.WriteUnsigned(0, 3);
         using MemoryStream stream = new(writer.ToArray());
-        GcInfo info = new(new NativeReader(stream), 0, machine, version);
-        Assert.Equal((uint)registers.Count, info.SlotTable.NumRegisters);
-        Assert.Equal(registers.Count, info.SlotTable.GcSlots.Count);
+        CdacGcInfo info = Decode(stream, machine, version);
+        Assert.Equal((uint)registers.Count, info.NumRegisters);
+        Assert.Equal(registers.Count, info.Slots.Count);
         for (int i = 0; i < registers.Count; i++)
         {
-            Assert.Equal(registers[i].Register, info.SlotTable.GcSlots[i].RegisterNumber);
-            Assert.Equal((GcSlotFlags)registers[i].Flags, info.SlotTable.GcSlots[i].Flags);
-            Assert.Null(info.SlotTable.GcSlots[i].StackSlot);
+            Assert.Equal((uint)registers[i].Register, info.Slots[i].RegisterNumber);
+            Assert.Equal((GcSlotFlags)registers[i].Flags, info.Slots[i].Flags);
+            Assert.Null(info.Slots[i].StackSlot);
         }
         Assert.Equal((writer.BitCount + 7) / 8, info.Size);
     }
 
     public static IEnumerable<object[]> StackSlotFlagCases()
     {
-        Machine[] machines = [Machine.Amd64, Machine.ArmThumb2, Machine.Arm64, Machine.I386,
+        Machine[] machines = [Machine.Amd64, Machine.ArmThumb2, Machine.Arm64,
             Machine.LoongArch64, Machine.RiscV64, WasmMachine.Wasm32];
         foreach (Machine machine in machines)
         {
@@ -139,15 +133,13 @@ public class GcInfoDecoderTests
         }
         writer.WriteCounts(tracked ? numSlots : 0, tracked ? 0 : numSlots);
         writer.WriteStackSlots(counts);
-        if (tracked && numSlots != 0)
-            writer.WriteUnsigned(0, 3); // No lifetime chunk pointers.
 
         using MemoryStream stream = new(writer.ToArray());
-        GcInfo info = new(new NativeReader(stream), 0, machine, 6);
-        Assert.Equal(0u, info.SlotTable.NumRegisters);
-        Assert.Equal(tracked ? (uint)numSlots : 0u, info.SlotTable.NumStackSlots);
-        Assert.Equal(tracked ? 0u : (uint)numSlots, info.SlotTable.NumUntracked);
-        Assert.Equal(numSlots, info.SlotTable.GcSlots.Count);
+        CdacGcInfo info = Decode(stream, machine, 6);
+        Assert.Equal(0u, info.NumRegisters);
+        Assert.Equal(tracked ? (uint)numSlots : 0u, info.NumStackSlots);
+        Assert.Equal(tracked ? 0u : (uint)numSlots, info.NumUntrackedSlots);
+        Assert.Equal(numSlots, info.Slots.Count);
         Assert.Equal((writer.BitCount + 7) / 8, info.Size);
 
         int slotIndex = 0;
@@ -156,7 +148,7 @@ public class GcInfoDecoderTests
             int flags = encodedFlags ^ (machine == WasmMachine.Wasm32 ? 2 : 0);
             for (int i = 0; i < counts[flags]; i++)
             {
-                GcSlotTable.GcSlot slot = info.SlotTable.GcSlots[slotIndex++];
+                CdacGcSlot slot = info.Slots[slotIndex++];
                 Assert.Equal(writer.DenormalizeOffset(writer.GetStackOffset(i, count)), slot.StackSlot.SpOffset);
                 Assert.Equal(writer.GetStackBase(i, count), slot.StackSlot.Base);
                 Assert.Equal((GcSlotFlags)flags | (tracked ? 0 : GcSlotFlags.GC_SLOT_UNTRACKED), slot.Flags);
@@ -178,12 +170,12 @@ public class GcInfoDecoderTests
         Assert.Equal(28 + 4 * count, writer.BitCount);
 
         using MemoryStream stream = new(writer.ToArray());
-        GcInfo info = new(new NativeReader(stream), 0, WasmMachine.Wasm32, 6);
-        Assert.Equal((uint)count, info.SlotTable.NumUntracked);
-        Assert.Equal(count, info.SlotTable.GcSlots.Count);
+        CdacGcInfo info = Decode(stream, WasmMachine.Wasm32, 6);
+        Assert.Equal((uint)count, info.NumUntrackedSlots);
+        Assert.Equal(count, info.Slots.Count);
         for (int i = 0; i < count; i++)
         {
-            GcSlotTable.GcSlot slot = info.SlotTable.GcSlots[i];
+            CdacGcSlot slot = info.Slots[i];
             Assert.Equal(GcSlotFlags.GC_SLOT_PINNED | GcSlotFlags.GC_SLOT_UNTRACKED, slot.Flags);
             Assert.Equal(4 * (-8 + i), slot.StackSlot.SpOffset);
             Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, slot.StackSlot.Base);
@@ -195,7 +187,6 @@ public class GcInfoDecoderTests
     [InlineData(Machine.Amd64)]
     [InlineData(Machine.ArmThumb2)]
     [InlineData(Machine.Arm64)]
-    [InlineData(Machine.I386)]
     [InlineData(Machine.LoongArch64)]
     [InlineData(Machine.RiscV64)]
     public void LegacyStackSlotFlagsRemainReadable(Machine machine)
@@ -204,16 +195,15 @@ public class GcInfoDecoderTests
         writer.WriteCounts(8, 8);
         writer.WriteLegacySlots();
         writer.WriteLegacySlots();
-        writer.WriteUnsigned(0, 3);
 
         using MemoryStream stream = new(writer.ToArray());
-        GcInfo info = new(new NativeReader(stream), 0, machine, 5);
-        Assert.Equal(8u, info.SlotTable.NumStackSlots);
-        Assert.Equal(8u, info.SlotTable.NumUntracked);
-        Assert.Equal(16, info.SlotTable.GcSlots.Count);
+        CdacGcInfo info = Decode(stream, machine, 5);
+        Assert.Equal(8u, info.NumStackSlots);
+        Assert.Equal(8u, info.NumUntrackedSlots);
+        Assert.Equal(16, info.Slots.Count);
         for (int i = 0; i < 16; i++)
         {
-            GcSlotTable.GcSlot slot = info.SlotTable.GcSlots[i];
+            CdacGcSlot slot = info.Slots[i];
             Assert.Equal(writer.DenormalizeOffset(-8 + i % 8), slot.StackSlot.SpOffset);
             Assert.Equal((GcStackSlotBase)(i % 8 % 3), slot.StackSlot.Base);
             Assert.Equal((GcSlotFlags)(3 - i % 8 / 2) | (i < 8 ? 0 : GcSlotFlags.GC_SLOT_UNTRACKED), slot.Flags);
@@ -238,16 +228,15 @@ public class GcInfoDecoderTests
         counts[flags] = 2;
         writer.WriteStackSlots(counts);
         writer.WriteStackSlots(counts);
-        writer.WriteUnsigned(0, 3);
 
         using MemoryStream stream = new(writer.ToArray());
-        GcInfo info = new(new NativeReader(stream), 0, machine, 6);
-        Assert.Equal(4, info.SlotTable.GcSlots.Count);
+        CdacGcInfo info = Decode(stream, machine, 6);
+        Assert.Equal(4, info.Slots.Count);
         for (int i = 0; i < 4; i++)
         {
-            Assert.Equal(writer.DenormalizeOffset(writer.GetStackOffset(i % 2, 2)), info.SlotTable.GcSlots[i].StackSlot.SpOffset);
-            Assert.Equal(writer.GetStackBase(i % 2, 2), info.SlotTable.GcSlots[i].StackSlot.Base);
-            Assert.Equal((GcSlotFlags)flags | (i < 2 ? 0 : GcSlotFlags.GC_SLOT_UNTRACKED), info.SlotTable.GcSlots[i].Flags);
+            Assert.Equal(writer.DenormalizeOffset(writer.GetStackOffset(i % 2, 2)), info.Slots[i].StackSlot.SpOffset);
+            Assert.Equal(writer.GetStackBase(i % 2, 2), info.Slots[i].StackSlot.Base);
+            Assert.Equal((GcSlotFlags)flags | (i < 2 ? 0 : GcSlotFlags.GC_SLOT_UNTRACKED), info.Slots[i].Flags);
         }
         Assert.Equal((writer.BitCount + 7) / 8, info.Size);
     }
@@ -270,11 +259,11 @@ public class GcInfoDecoderTests
         writer.WriteStackSlots(counts, [0, 0, 15, 256]);
 
         using MemoryStream stream = new(writer.ToArray());
-        GcInfo info = new(new NativeReader(stream), 0, machine, 6);
-        Assert.Equal(4, info.SlotTable.GcSlots.Count);
+        CdacGcInfo info = Decode(stream, machine, 6);
+        Assert.Equal(4, info.Slots.Count);
         int[] offsets = [0, 0, 15, 256];
         for (int i = 0; i < offsets.Length; i++)
-            Assert.Equal(writer.DenormalizeOffset(offsets[i]), info.SlotTable.GcSlots[i].StackSlot.SpOffset);
+            Assert.Equal(writer.DenormalizeOffset(offsets[i]), info.Slots[i].StackSlot.SpOffset);
         Assert.Equal((writer.BitCount + 7) / 8, info.Size);
     }
 
@@ -283,33 +272,33 @@ public class GcInfoDecoderTests
     {
         byte[] encoded = [0x0A, 0x80, 0xB0, 0x10, 0x88, 0x00];
         using MemoryStream stream = new(encoded);
-        GcInfo info = new(new NativeReader(stream), 0, Machine.Amd64, 5);
+        CdacGcInfo info = Decode(stream, Machine.Amd64, 5);
 
         Assert.Equal(2, info.CodeLength);
-        Assert.Equal(2u, info.SlotTable.NumUntracked);
-        Assert.Equal(64, info.SlotTable.GcSlots[0].StackSlot.SpOffset);
-        Assert.Equal(GcStackSlotBase.GC_SP_REL, info.SlotTable.GcSlots[0].StackSlot.Base);
-        Assert.Equal(128, info.SlotTable.GcSlots[1].StackSlot.SpOffset);
-        Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, info.SlotTable.GcSlots[1].StackSlot.Base);
-        Assert.All(info.SlotTable.GcSlots, slot => Assert.Equal(GcSlotFlags.GC_SLOT_UNTRACKED, slot.Flags));
+        Assert.Equal(2u, info.NumUntrackedSlots);
+        Assert.Equal(64, info.Slots[0].StackSlot.SpOffset);
+        Assert.Equal(GcStackSlotBase.GC_SP_REL, info.Slots[0].StackSlot.Base);
+        Assert.Equal(128, info.Slots[1].StackSlot.SpOffset);
+        Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, info.Slots[1].StackSlot.Base);
+        Assert.All(info.Slots, slot => Assert.Equal(GcSlotFlags.GC_SLOT_UNTRACKED, slot.Flags));
         Assert.Equal(encoded.Length, info.Size);
     }
 
     [Theory]
     [InlineData(Machine.Amd64, 5, 0x0A, 5u)]
-    [InlineData(Machine.Amd64, 5, 0x08, uint.MaxValue)]
+    [InlineData(Machine.Amd64, 5, 0x08, null)]
     [InlineData(Machine.Amd64, 6, 0x0A, 5u)]
-    [InlineData(Machine.Amd64, 6, 0x08, uint.MaxValue)]
+    [InlineData(Machine.Amd64, 6, 0x08, null)]
     [InlineData(WasmMachine.Wasm32, 6, 0x04, 2u)]
-    public void SlimHeaderUsesImplicitDefaultFrameRegister(Machine machine, int version, byte header, uint frameRegister)
+    public void SlimHeaderUsesImplicitDefaultFrameRegister(Machine machine, int version, byte header, uint? frameRegister)
     {
         byte[] encoded = [header, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         using MemoryStream stream = new(encoded);
-        GcInfo info = new(new NativeReader(stream), 0, machine, version);
+        CdacGcInfo info = Decode(stream, machine, version);
 
         Assert.Equal(2, info.CodeLength);
         Assert.Equal(frameRegister, info.StackBaseRegister);
-        Assert.Empty(info.SlotTable.GcSlots);
+        Assert.Empty(info.Slots);
         Assert.Equal(machine == WasmMachine.Wasm32 ? 1 : 2, info.Size);
     }
 
@@ -319,13 +308,13 @@ public class GcInfoDecoderTests
     public void WasmFatHeaderPreservesGenericContext(byte[] encoded)
     {
         using MemoryStream stream = new(encoded);
-        GcInfo info = new(new NativeReader(stream), 0, WasmMachine.Wasm32, 6);
+        CdacGcInfo info = Decode(stream, WasmMachine.Wasm32, 6);
 
         Assert.Equal(2, info.CodeLength);
         Assert.Equal(2u, info.StackBaseRegister);
-        Assert.Equal(8, info.GenericsInstContextStackSlot);
+        Assert.Equal(8, info.Header.GenericsInstContext?.SpOffset);
         Assert.Equal(1u, info.ValidRangeStart);
-        Assert.Empty(info.SlotTable.GcSlots);
+        Assert.Empty(info.Slots);
         Assert.Equal(encoded.Length, info.Size);
     }
 
@@ -339,23 +328,22 @@ public class GcInfoDecoderTests
         int reversePInvokeOffset, uint safePoints)
     {
         using MemoryStream stream = new(encoded);
-        GcInfo info = new(new NativeReader(stream), 0, WasmMachine.Wasm32, 6);
+        CdacGcInfo info = Decode(stream, WasmMachine.Wasm32, 6);
 
         Assert.Equal(2, info.CodeLength);
         Assert.Equal(2u, info.StackBaseRegister);
-        Assert.Equal(cookieOffset, info.GSCookieStackSlot);
-        Assert.Equal(preservedArea, info.SizeOfEditAndContinuePreservedArea);
-        Assert.Equal(reversePInvokeOffset, info.ReversePInvokeFrameStackSlot);
-        Assert.Equal(safePoints, info.NumSafePoints);
-        Assert.Equal((int)safePoints, info.SafePointOffsets.Count);
+        Assert.Equal(cookieOffset == -1 ? null : (int?)cookieOffset, info.Header.GSCookie?.SpOffset);
+        Assert.Equal(preservedArea == uint.MaxValue ? null : (uint?)preservedArea, info.SizeOfEditAndContinuePreservedArea);
+        Assert.Equal(reversePInvokeOffset == -1 ? null : (int?)reversePInvokeOffset, info.ReversePInvokeFrameStackSlot);
+        Assert.Equal((int)safePoints, info.SafePoints.Count);
         if (safePoints != 0)
-            Assert.Equal(0u, Assert.Single(info.SafePointOffsets).Value);
+            Assert.Equal(0u, Assert.Single(info.SafePoints));
         if (cookieOffset != -1)
         {
             Assert.Equal(1u, info.ValidRangeStart);
             Assert.Equal(2u, info.ValidRangeEnd);
         }
-        Assert.Empty(info.SlotTable.GcSlots);
+        Assert.Empty(info.Slots);
         Assert.Equal(encoded.Length, info.Size);
     }
 
@@ -381,6 +369,11 @@ public class GcInfoDecoderTests
         Assert.Equal(encoded.Length, info.Size);
     }
 
+    private static CdacGcInfo Decode(Stream stream, Machine machine, int version)
+    {
+        return Assert.IsType<CdacGcInfo>(CdacGcInfo.Decode(new NativeReader(stream), 0, machine, version));
+    }
+
     private sealed class SlotTableWriter
     {
         private readonly Machine _machine;
@@ -396,7 +389,6 @@ public class GcInfoDecoderTests
             WriteUnsigned(2, machine switch
             {
                 WasmMachine.Wasm32 => 5,
-                Machine.I386 => 6,
                 Machine.ArmThumb2 => 7,
                 _ => 8,
             });
@@ -405,7 +397,6 @@ public class GcInfoDecoderTests
                 WriteUnsigned(0, machine switch
                 {
                     Machine.Amd64 => 2,
-                    Machine.I386 => 4,
                     _ => 3,
                 });
             }
@@ -414,7 +405,6 @@ public class GcInfoDecoderTests
         public int DenormalizeOffset(int offset) => offset * (_machine switch
         {
             WasmMachine.Wasm32 or Machine.ArmThumb2 => 4,
-            Machine.I386 => 1,
             _ => 8,
         });
 
@@ -431,14 +421,13 @@ public class GcInfoDecoderTests
                 return;
             WriteUnsigned(tracked, _machine switch
             {
-                WasmMachine.Wasm32 or Machine.I386 => 5,
+                WasmMachine.Wasm32 => 5,
                 Machine.ArmThumb2 => 3,
                 _ => 2,
             });
             WriteUnsigned(untracked, _machine switch
             {
                 WasmMachine.Wasm32 => 7,
-                Machine.I386 => 5,
                 Machine.ArmThumb2 => 3,
                 _ => 1,
             });
@@ -450,12 +439,10 @@ public class GcInfoDecoderTests
             int deltaBase = _machine switch
             {
                 Machine.ArmThumb2 => 1,
-                Machine.I386 => 3,
                 _ => 2,
             };
             int registerBits = _machine switch
             {
-                Machine.I386 => 3,
                 Machine.ArmThumb2 => 4,
                 _ => 5,
             };

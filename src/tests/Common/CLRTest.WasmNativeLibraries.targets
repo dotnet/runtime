@@ -14,6 +14,16 @@
            $(OutDir) by CopyNativeProjectBinaries. -->
       <_WasmNativeTestLib Include="$(OutDir)*$(StaticLibSuffix)" />
 
+      <!-- Every test archive with the module name [DllImport] uses for it: the archive name without
+           the static library prefix. Archives the project lists as NativeFileReference items are
+           marked, since only the NativeAOT build links those. -->
+      <_WasmNativeTestArchive Include="@(_WasmNativeTestLib)" IsNativeFileReference="false" />
+      <_WasmNativeTestArchive Include="@(NativeFileReference)" Condition="'%(Extension)' == '$(StaticLibSuffix)'" IsNativeFileReference="true" />
+      <_WasmNativeTestArchive Update="@(_WasmNativeTestArchive)">
+        <ModuleName>%(Filename)</ModuleName>
+        <ModuleName Condition="$([System.String]::Copy('%(Filename)').StartsWith('$(StaticLibPrefix)'))">$([System.String]::Copy('%(Filename)').Substring($(StaticLibPrefix.Length)))</ModuleName>
+      </_WasmNativeTestArchive>
+
       <!-- src/tests/Common/Platform is the shared native helper library for tests, and several of
            the CMake projects that produce a test library link it (Interop, Runtime_101046,
            Runtime_76194, exceptioninterop). It installs into the common bin directory instead of

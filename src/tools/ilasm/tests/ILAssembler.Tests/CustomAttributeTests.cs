@@ -1207,6 +1207,27 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         }
 
         [Theory]
+        [InlineData("mdtoken(0x02000002)")]
+        [InlineData("method mdtoken(0x02000002)")]
+        [InlineData("method NumericOwner")]
+        public void PseudoCustomAttribute_NumericTypeOwner_LowersToFlag(string owner)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object { }
+                .typedef method mdtoken(0x02000002) as NumericOwner
+                .custom ({{owner}}) instance void [mscorlib]System.SerializableAttribute::.ctor() = ( 01 00 00 00 )
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            TypeDefinition type = GetTestType(pe.GetMetadataReader());
+
+            Assert.Equal(TypeAttributes.Serializable, type.Attributes & TypeAttributes.Serializable);
+            Assert.Empty(type.GetCustomAttributes());
+        }
+
+        [Theory]
         [InlineData("System.Runtime.InteropServices.GuidAttribute", ".ctor(string)", "( 01 00 24 30 31 32 33 34 35 36 37 2D 30 31 32 33 2D 30 31 32 33 2D 30 31 32 33 2D 30 30 31 31 32 32 33 33 34 34 35 35 00 00 )")]
         [InlineData("System.Runtime.InteropServices.InterfaceTypeAttribute", ".ctor(int16)", "( 01 00 01 00 00 00 )")]
         [InlineData("System.Runtime.InteropServices.InterfaceTypeAttribute", ".ctor(int16)", "( 01 00 03 00 00 00 )")]

@@ -769,6 +769,7 @@ namespace
         ToSlotsV128, // Passed by value as several v128 slots (Vector256<T>, Vector512<T>)
         ToStruct,   // S<N>/A<N> — multi-field struct passed by pointer
         ToEmpty,    // e — empty struct, takes no wasm argument
+        ToPointer = TARGET_POINTER_SIZE == 8 ? ToI64 : ToI32,
     };
 
     struct ConvertResult
@@ -1122,7 +1123,8 @@ namespace
         uint32_t maxSize,
         bool wasmCallingConventionOnly = false,
         bool suppressGenericContext = false,
-        bool encodeReturnBuffer = false)
+        bool encodeReturnBuffer = false,
+        bool stringConstructorFactory = false)
     {
         CONTRACTL
         {
@@ -1142,7 +1144,11 @@ namespace
         }
 
         bool hasReturnBuffer = false;
-        if (sig.IsReturnTypeVoid())
+        if (stringConstructorFactory)
+        {
+            pos += AppendWasmTypeCode(ConvertType::ToPointer, keyBuffer, pos, maxSize);
+        }
+        else if (sig.IsReturnTypeVoid())
         {
             if (pos < maxSize)
                 keyBuffer[pos] = 'v';
@@ -1199,7 +1205,7 @@ namespace
         if (wasmCallingConventionOnly)
             pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
 
-        if (sig.HasThis())
+        if (sig.HasThis() && !stringConstructorFactory)
         {
             if (wasmCallingConventionOnly)
             {
@@ -1295,12 +1301,6 @@ namespace
         return pos;
     }
 
-    static uint32_t GetSignatureKey(MetaSig& sig, char prefix, char* keyBuffer, uint32_t maxSize)
-    {
-        char prefixString[] = { prefix, '\0' };
-        return GetSignatureKey(sig, prefixString, keyBuffer, maxSize);
-    }
-
     typedef StringToThunkHash StringToPortableSigThunkHash;
     static StringToPortableSigThunkHash* thunkCache = nullptr;
 
@@ -1339,7 +1339,7 @@ namespace
     }
 
     // This is a simple signature computation routine for signatures currently supported in the wasm environment.
-    static InterpreterCalliCookie ComputeCalliSigThunk(MetaSig& sig)
+    static InterpreterCalliCookie ComputeCalliSigThunk(MetaSig& sig, bool stringConstructorFactory = false)
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(sizeof(int32_t) == sizeof(void*));
@@ -1361,7 +1361,7 @@ namespace
         char fixedBuffer[64];
         char* keyBuffer = fixedBuffer;
         uint32_t keyBufferLen = sizeof(fixedBuffer);
-        uint32_t needed = GetSignatureKey(sig, 'M', keyBuffer, keyBufferLen);
+        uint32_t needed = GetSignatureKey(sig, "M", keyBuffer, keyBufferLen, false, false, false, stringConstructorFactory);
         if (needed == UINT32_MAX)
             return NULL;
         if (needed >= keyBufferLen)
@@ -1369,7 +1369,7 @@ namespace
             keyBufferLen = needed + 1;
             keyBuffer = (char*)alloca(keyBufferLen);
             sig.Reset();
-            needed = GetSignatureKey(sig, 'M', keyBuffer, keyBufferLen);
+            needed = GetSignatureKey(sig, "M", keyBuffer, keyBufferLen, false, false, false, stringConstructorFactory);
             if (needed == UINT32_MAX || needed >= keyBufferLen)
                 return NULL;
         }
@@ -1387,7 +1387,7 @@ namespace
         return thunk;
     }
 
-    static void* ComputePortableEntryPointThunk(MetaSig& sig, const char* prefix, bool wasmCallingConventionOnly = false)
+    static void* ComputePortableEntryPointThunk(MetaSig& sig, const char* prefix, bool wasmCallingConventionOnly = false, bool stringConstructorFactory = false)
     {
         CONTRACTL
         {
@@ -1412,7 +1412,7 @@ namespace
         char fixedBuffer[64];
         char* keyBuffer = fixedBuffer;
         uint32_t keyBufferLen = sizeof(fixedBuffer);
-        uint32_t needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen, wasmCallingConventionOnly);
+        uint32_t needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen, wasmCallingConventionOnly, false, false, stringConstructorFactory);
         if (needed == UINT32_MAX)
             return NULL;
         if (needed >= keyBufferLen)
@@ -1420,7 +1420,7 @@ namespace
             keyBufferLen = needed + 1;
             keyBuffer = (char*)alloca(keyBufferLen);
             sig.Reset();
-            needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen, wasmCallingConventionOnly);
+            needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen, wasmCallingConventionOnly, false, false, stringConstructorFactory);
             if (needed == UINT32_MAX || needed >= keyBufferLen)
                 return NULL;
         }
@@ -1552,50 +1552,8 @@ InterpreterCalliCookie GetCookieForManagedMethod(MethodDesc *pMD)
 
     MetaSig metaSig(pMD);
 
-    if (pMD->IsStringCtor())
-    {
-        const char *thunkKey = nullptr;
-
-        if (metaSig.NumFixedArgs() == 1)
-        {
-            MetaSig ctorSig = metaSig;
-            if (ctorSig.NextArg() == ELEMENT_TYPE_VALUETYPE)
-            {
-                thunkKey = "MiS8p"; // String constructor with a single argument of type System.ReadOnlySpan<char>
-            }
-        }
-
-        if (thunkKey == nullptr)
-        {
-            switch (metaSig.NumFixedArgs())
-            {
-                case 1:
-                    thunkKey = "Miip";
-                    break;
-                case 2:
-                    thunkKey = "Miiip";
-                    break;
-                case 3:
-                    thunkKey = "Miiiip";
-                    break;
-                case 4:
-                    thunkKey = "Miiiiip";
-                    break;
-                default:
-                    _ASSERT(!"GetCookieForManagedMethod: unknown thunk for string constructor");
-                    return nullptr;
-            }
-        }
-
-        InterpreterCalliCookie stringCtorThunk = LookupManagedThunk(thunkKey);
-        if (stringCtorThunk == NULL)
-        {
-            _ASSERT(!"GetCookieForManagedMethod: unknown thunk signature");
-        }
-        return stringCtorThunk;
-    }
-
-    InterpreterCalliCookie thunk = ComputeCalliSigThunk(metaSig);
+    // String constructors run as static factories returning the new string; key them on that signature.
+    InterpreterCalliCookie thunk = ComputeCalliSigThunk(metaSig, pMD->IsStringCtor());
     if (thunk == NULL)
     {
         _ASSERT(!"GetCookieForManagedMethod: unknown thunk signature");
@@ -1660,47 +1618,9 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     }
 
     MetaSig sig(pMD);
-    void* thunk;
-
-    if (pMD->IsStringCtor())
-    {
-        const char *thunkKey = nullptr;
-
-        // String constructors are special-cased in the interpreter and have special thunks that don't match the normal signature.
-        if (sig.NumFixedArgs() == 1 && sig.NextArg() == ELEMENT_TYPE_VALUETYPE)
-        {
-            thunkKey = "IiS8p"; // String constructor with a single argument of type System.ReadOnlySpan<char>
-        }
-        else
-        {
-            switch (sig.NumFixedArgs())
-            {
-                case 1:
-                    thunkKey = "Iiip";
-                    break;
-                case 2:
-                    thunkKey = "Iiiip";
-                    break;
-                case 3:
-                    thunkKey = "Iiiiip";
-                    break;
-                case 4:
-                    thunkKey = "Iiiiiip";
-                    break;
-                default:
-                    _ASSERT(!"GetPortableEntryPointToInterpreterThunk: unknown signature of a string constructor");
-                    return nullptr;
-            }
-        }
-
-        thunk = LookupPortableEntryPointThunk(thunkKey);
-    }
-    else
-    {
-        thunk = ComputePortableEntryPointThunk(sig, "I");
-    }
-
-    return thunk;
+    // String constructors run as static factories returning the new string, so key the thunk on
+    // that lowered signature, as crossgen2 does.
+    return ComputePortableEntryPointThunk(sig, "I", false, pMD->IsStringCtor());
 }
 
 void* GetVirtualDispatchThunk(MethodDesc *pMD)

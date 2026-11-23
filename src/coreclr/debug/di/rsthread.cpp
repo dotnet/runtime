@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "stdafx.h"
+#include <minipal/thread.h>
 #include "primitives.h"
 #include <float.h>
 #include <tls.h>
@@ -1468,17 +1469,17 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
     event.SetIP.fIsIL = fIsIL;
 
 
-    LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: Info:thread:0x%zx"
+    LOG((LF_CORDB, LL_INFO10000, "[%zx] CT::SIP: Info:thread:0x%zx"
         "mod:0x%zx  MethodDef:0x%x offset:0x%zx  il?:0x%x\n",
-         GetCurrentThreadId(),
+         minipal_get_current_thread_id(),
          (size_t)VmPtrToCookie(m_vmThreadToken),
          (size_t)VmPtrToCookie(vmAssembly),
          pNativeCode->GetMetadataToken(),
          offset,
          fIsIL));
 
-    LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: sizeof(DebuggerIPCEvent):0x%zx **********\n",
-        GetCurrentThreadId(), sizeof(DebuggerIPCEvent)));
+    LOG((LF_CORDB, LL_INFO10000, "[%zx] CT::SIP: sizeof(DebuggerIPCEvent):0x%zx **********\n",
+        minipal_get_current_thread_id(), sizeof(DebuggerIPCEvent)));
 
     HRESULT hr = GetProcess()->m_cordb->SendIPCEvent(GetProcess(), &event, sizeof(DebuggerIPCEvent));
 
@@ -7551,35 +7552,30 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
         break;
 
     case ICorDebugInfo::VLT_REG_REG:
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         {
-            const ICorDebugInfo::RegNum lowReg  = pNativeVarInfo->loc.vlRegReg.vlrrReg1;
-            const ICorDebugInfo::RegNum highReg = pNativeVarInfo->loc.vlRegReg.vlrrReg2;
-            const bool lowIsFloat  = lowReg >= ICorDebugInfo::REGNUM_FP_FIRST;
-            const bool highIsFloat = highReg >= ICorDebugInfo::REGNUM_FP_FIRST;
+            const CorDebugRegister lowReg = m_nativeFrame->ConvertJitRegToCorDebugRegister(
+                pNativeVarInfo->loc.vlRegReg.vlrrReg1);
+            const CorDebugRegister highReg = m_nativeFrame->ConvertJitRegToCorDebugRegister(
+                pNativeVarInfo->loc.vlRegReg.vlrrReg2);
+            IDacDbiInterface::TargetInfo targetInfo;
+            IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+            const bool lowIsFloat =
+                (targetInfo.arch == IDacDbiInterface::kArchAMD64 && lowReg >= REGISTER_AMD64_XMM0 && lowReg <= REGISTER_AMD64_XMM15) ||
+                (targetInfo.arch == IDacDbiInterface::kArchArm64 && lowReg >= REGISTER_ARM64_V0 && lowReg <= REGISTER_ARM64_V31);
+            const bool highIsFloat =
+                (targetInfo.arch == IDacDbiInterface::kArchAMD64 && highReg >= REGISTER_AMD64_XMM0 && highReg <= REGISTER_AMD64_XMM15) ||
+                (targetInfo.arch == IDacDbiInterface::kArchArm64 && highReg >= REGISTER_ARM64_V0 && highReg <= REGISTER_ARM64_V31);
 
             if (lowIsFloat || highIsFloat)
             {
-                // AMD64/ARM64 extend RegNum with FP registers (XMM/V), so
-                // VLT_REG_REG can represent mixed int/fp pairs. FP register
-                // indices for GetLocalTwoRegisterValue are 0-based.
                 hr = m_nativeFrame->GetLocalTwoRegisterValue(
-                    lowIsFloat ? (CorDebugRegister)(REGISTER_AMD64_XMM0 + (lowReg - ICorDebugInfo::REGNUM_FP_FIRST))
-                               : m_nativeFrame->ConvertJitRegToCorDebugRegister(lowReg),
-                    lowIsFloat,
-                    highIsFloat ? (CorDebugRegister)(REGISTER_AMD64_XMM0 + (highReg - ICorDebugInfo::REGNUM_FP_FIRST))
-                                : m_nativeFrame->ConvertJitRegToCorDebugRegister(highReg),
-                    highIsFloat,
-                    type,
-                    ppValue);
-                break;
+                    lowReg, lowIsFloat, highReg, highIsFloat, type, ppValue);
+            }
+            else
+            {
+                hr = m_nativeFrame->GetLocalDoubleRegisterValue(highReg, lowReg, type, ppValue);
             }
         }
-#endif
-        hr = m_nativeFrame->GetLocalDoubleRegisterValue(
-                            m_nativeFrame->ConvertJitRegToCorDebugRegister(pNativeVarInfo->loc.vlRegReg.vlrrReg2),
-                            m_nativeFrame->ConvertJitRegToCorDebugRegister(pNativeVarInfo->loc.vlRegReg.vlrrReg1),
-                            type, ppValue);
         break;
 
     case ICorDebugInfo::VLT_REG_STK:

@@ -4,10 +4,6 @@ include ../wasm.mk
 
 override MSBUILD_ARGS+=/p:WasmEnableThreads=true
 
-ifneq ($(AOT),)
-override MSBUILD_ARGS+=/p:RunAOTCompilation=true
-endif
-
 PROJECT_NAME=Wasm.Browser.Threads.Sample.csproj
 
 run: run-browser

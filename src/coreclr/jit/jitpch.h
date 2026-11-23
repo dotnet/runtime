@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <windows.h>
+#include <dn-safecrt.h>
 #include <wchar.h>
 #include <stdio.h>
 #include <stddef.h>

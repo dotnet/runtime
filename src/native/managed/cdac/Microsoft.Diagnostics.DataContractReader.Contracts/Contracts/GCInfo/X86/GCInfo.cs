@@ -29,7 +29,10 @@ public enum RegMask
 
 public record X86GCInfo : IGCInfoDecoder
 {
-    private const uint MINIMUM_SUPPORTED_GCINFO_VERSION = 4;
+    // Versions 1 through 4 share the same x86 encoding. R2RDump can encounter versions before 4
+    // in older ReadyToRun images. The cDAC also decodes ReadyToRun images, but only supports
+    // .NET 11 and later, so it does not encounter those older versions.
+    private const uint MINIMUM_SUPPORTED_GCINFO_VERSION = 1;
     private const uint MAXIMUM_SUPPORTED_GCINFO_VERSION = 6;
 
     private readonly Target _target;
@@ -91,7 +94,8 @@ public record X86GCInfo : IGCInfoDecoder
     private ImmutableArray<int> SortedTransitionOffsets => _sortedTransitionOffsets.Value;
     private readonly Lazy<ImmutableArray<int>> _sortedTransitionOffsets;
 
-    private ImmutableArray<NoGCRegion> NoGCRegions => _noGCRegions.Value;
+    // Internal (rather than private) so ILCompiler.Reflection.ReadyToRun can display the table.
+    internal ImmutableArray<NoGCRegion> NoGCRegions => _noGCRegions.Value;
     private readonly Lazy<ImmutableArray<NoGCRegion>> _noGCRegions;
 
     internal readonly record struct NoGCRegion(uint Offset, uint Size);
@@ -333,8 +337,7 @@ public record X86GCInfo : IGCInfoDecoder
         // stack offset. On EBP-frames the offset is EBP-relative; on ESP-frames it is
         // ESP-relative. Double-aligned frames use a hybrid encoding: offsets that lie
         // above the frame are EBP-relative even when the rest of the frame is ESP-based.
-        // Reference: gc_unwind_x86.inl (EnumGcRefsX86 untracked path) and
-        // ILCompiler.Reflection.ReadyToRun/x86/GcSlotTable.cs (DecodeUntracked).
+        // Reference: gc_unwind_x86.inl (EnumGcRefsX86 untracked path).
         uint calleeSavedRegsCount = 0;
         if (Header.DoubleAlign)
         {
@@ -390,8 +393,7 @@ public record X86GCInfo : IGCInfoDecoder
         // Each entry is three unsigned varints: (varOffs, begOffs, endOffs).
         // varOffs is absolute; begOffs is delta-from-previous-begOffs; endOffs is delta-from-begOffs.
         // Low 2 bits of varOffs are flags matching LiveSlot.GcFlags (0x1 = byref/interior, 0x2 = pinned).
-        // Reference: gc_unwind_x86.inl varPtrTable processing and
-        // ILCompiler.Reflection.ReadyToRun/x86/GcSlotTable.cs (DecodeFrameVariableLifetimeTable).
+        // Reference: gc_unwind_x86.inl varPtrTable processing.
         ImmutableArray<VarPtrLifetime>.Builder builder = ImmutableArray.CreateBuilder<VarPtrLifetime>((int)Header.VarPtrTableSize);
         uint curOffs = 0;
         for (uint i = 0; i < Header.VarPtrTableSize; i++)

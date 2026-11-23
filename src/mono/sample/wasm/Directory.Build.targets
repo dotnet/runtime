@@ -1,8 +1,4 @@
 <Project>
-  <PropertyGroup>
-    <!-- RuntimeFlavor must be set during evaluation to import correct targets -->
-    <RuntimeFlavor Condition="'$(Nested_RuntimeFlavor)' != ''">$(Nested_RuntimeFlavor)</RuntimeFlavor>
-  </PropertyGroup>
 
   <Import Project="../Directory.Build.targets" />
   <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets" />
@@ -35,7 +31,6 @@
     <NestedBuildProperty Include="PublishTrimmed" />
     <NestedBuildProperty Include="PublishReadyToRun" />
     <NestedBuildProperty Include="PublishReadyToRunComposite" />
-    <NestedBuildProperty Include="RunAOTCompilation" />
     <NestedBuildProperty Include="UsingNativeAOT" />
     <NestedBuildProperty Include="WasmBuildNative" />
     <NestedBuildProperty Include="WasmEmitSourceMap" />
@@ -60,9 +55,7 @@
       <_MonoBuildDir>$(ArtifactsObjDir)mono\browser.wasm.$(Configuration)\out\lib\</_MonoBuildDir>
       <_CoreCLRBuildDir>$(ArtifactsObjDir)coreclr\browser.wasm.$(Configuration)\libs-native\</_CoreCLRBuildDir>
     </PropertyGroup>
-    <Error Condition="'$(RuntimeFlavor)' == 'Mono' and !Exists('$(_MonoBuildDir)')"
-           Text="Mono build not found at '$(_MonoBuildDir)'. Build Mono for browser-wasm first: ./build.sh mono+libs -os browser -c $(Configuration)" />
-    <Error Condition="'$(RuntimeFlavor)' == 'CoreCLR' and !Exists('$(_CoreCLRBuildDir)')"
+    <Error Condition="!Exists('$(_CoreCLRBuildDir)')"
            Text="CoreCLR build not found at '$(_CoreCLRBuildDir)'. Build CoreCLR for browser-wasm first: ./build.sh clr+libs+host -os browser -c $(Configuration)" />
   </Target>
 

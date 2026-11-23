@@ -7,6 +7,7 @@
 // run on the ARM platform.
 
 #include "common.h"
+#include <minipal/instructioncache.h>
 #include "jitinterface.h"
 #include "comdelegate.h"
 #include "invokeutil.h"
@@ -530,7 +531,7 @@ void FlushWriteBarrierInstructionCache()
     BYTE *pbAlteredRange;
     DWORD cbAlteredRange;
     ComputeWriteBarrierRange(&pbAlteredRange, &cbAlteredRange);
-    FlushInstructionCache(GetCurrentProcess(), pbAlteredRange, cbAlteredRange);
+    minipal_flush_instruction_cache(pbAlteredRange, cbAlteredRange);
 }
 
 #endif // !DACCESS_COMPILE

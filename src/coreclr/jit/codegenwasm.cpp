@@ -1160,6 +1160,17 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForJTrue(treeNode->AsOp());
             break;
 
+        case GT_WASM_SELECT:
+        {
+            GenTreeConditional* select = treeNode->AsConditional();
+            genConsumeRegs(select->gtOp1);
+            genConsumeRegs(select->gtOp2);
+            genConsumeRegs(select->gtCond);
+            GetEmitter()->emitIns(INS_select);
+            WasmProduceReg(treeNode);
+            break;
+        }
+
         case GT_SWITCH:
             genTableBasedSwitch(treeNode);
             break;
