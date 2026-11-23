@@ -225,7 +225,7 @@ namespace ILCompiler.PortableCallHelpers
                 {
                     signature = WasmLowering.GetSignature(calliSignature, WasmLowering.LoweringFlags.None).SignatureString;
                     foreach (string token in InteropSignature.ParseSignatureTokens(signature))
-                        InteropSignature.TokenToNativeType(token);
+                        InteropSignature.TokenToNativeType(token, method.Context.Target.PointerSize);
                 }
                 catch (Exception ex) when (ex is InvalidSignatureCharException or LogAsErrorException or TypeSystemException)
                 {

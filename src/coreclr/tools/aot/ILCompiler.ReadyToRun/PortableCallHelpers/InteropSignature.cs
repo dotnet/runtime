@@ -125,7 +125,13 @@ namespace ILCompiler.PortableCallHelpers
                 throw new LogAsErrorException($"Multi-slot signature token '{token}' is not supported in interop thunks");
         }
 
-        public static string TokenToNativeType(string token)
+        /// <summary>
+        /// The C integer type of a target pointer, used for 'this' and for the address of a struct
+        /// passed by reference.
+        /// </summary>
+        public static string PointerNativeType(int pointerSize) => pointerSize == 8 ? "int64_t" : "int32_t";
+
+        public static string TokenToNativeType(string token, int pointerSize)
         {
             RejectMultiSlotToken(token);
             return token[0] switch
@@ -135,7 +141,7 @@ namespace ILCompiler.PortableCallHelpers
                 'l' => "int64_t",
                 'f' => "float",
                 'd' => "double",
-                'S' or 'A' or 'T' => "int32_t",
+                'S' or 'A' or 'T' => PointerNativeType(pointerSize),
                 'p' => "PCODE",
                 _ => throw new InvalidSignatureCharException(token[0])
             };
@@ -158,13 +164,14 @@ namespace ILCompiler.PortableCallHelpers
             };
         }
 
-        public static string TokenToArgType(string token)
+        public static string TokenToArgType(string token, int pointerSize)
         {
             RejectMultiSlotToken(token);
             return token[0] switch
             {
-                'i' or 'T' => "ARG_I32",
+                'i' => "ARG_I32",
                 'l' => "ARG_I64",
+                'T' => pointerSize == 8 ? "ARG_I64" : "ARG_I32",
                 'f' => "ARG_F32",
                 'd' => "ARG_F64",
                 'S' or 'A' => "ARG_IND",

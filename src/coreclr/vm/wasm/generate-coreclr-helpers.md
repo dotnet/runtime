@@ -34,6 +34,15 @@ Each run emits three files into the output directory:
 - `callhelpers-reverse.cpp`
 - `callhelpers-interp-to-managed.cpp`
 
+For browser-wasm64, invoke the project directly with
+`-p:CallHelperTargetOS=browser -p:CallHelperTargetArchitecture=wasm64`. Use
+`-p:BrowserScanPath=/path/to/il/` to supply a directory containing the wasm64 IL
+CoreLib and its managed framework closure. The output goes to `browser-wasm64/`
+and does not replace the browser wasm32 tables. Build the browser crossgen2
+host tool first with `./build.sh clr.tools -os browser -arch wasm -c Release`.
+This helper build uses crossgen2 only for signature lowering and helper
+generation.
+
 ## The shared QCall/FCall table
 
 `callhelpers-pinvoke.cpp` contains an entrypoint table for all P/Invokes in the application, as well as all [QCalls and FCalls in System.Private.CoreLib](../../../../docs/design/coreclr/botr/corelib.md#Calling-from-managed-to-native-code). A few specialized FCalls have separate internal runtime implementations that are not included in this table. The QCalls and FCalls are discovered by scanning the members of System.Private.CoreLib to find the corresponding methods.
