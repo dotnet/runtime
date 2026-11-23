@@ -918,8 +918,23 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                     ValueNum base2 = op2VN;
                     int      cns1  = 0;
                     int      cns2  = 0;
-                    comp->vnStore->IsVNBinFuncWithConst(op1VN, VNF_ADD, &base1, &cns1);
-                    comp->vnStore->IsVNBinFuncWithConst(op2VN, VNF_ADD, &base2, &cns2);
+                    if (!result.IsSingleValueConstant())
+                    {
+                        comp->vnStore->IsVNBinFuncWithConst(op1VN, VNF_ADD, &base1, &cns1);
+                        comp->vnStore->IsVNBinFuncWithConst(op2VN, VNF_ADD, &base2, &cns2);
+
+                        // "(t + c) vs t" where t is itself "X + c'": use t as the common base.
+                        if ((base1 != base2) && (base1 == op2VN))
+                        {
+                            base2 = op2VN;
+                            cns2  = 0;
+                        }
+                        else if ((base1 != base2) && (base2 == op1VN))
+                        {
+                            base1 = op1VN;
+                            cns1  = 0;
+                        }
+                    }
 
                     if (!result.IsSingleValueConstant() && (base1 == base2) &&
                         (comp->vnStore->TypeOfVN(base1) == TYP_INT))
