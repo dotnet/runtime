@@ -109,7 +109,7 @@ jobs:
         - name: logRootNameArg
           value: '-log:'
 
-      - ${{ if eq(parameters.archType, 'wasm') }}:
+      - ${{ if or(eq(parameters.archType, 'wasm'), eq(parameters.archType, 'wasm64')) }}:
         - name: wasmDarcDependenciesChanged
           value: $[ or(
                       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
