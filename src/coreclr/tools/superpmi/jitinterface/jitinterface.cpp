@@ -11,6 +11,14 @@
 #include <stdio.h>
 #include <new>
 
+#ifdef _WIN32
+// Not windows.h, which redefines STDMETHODCALLTYPE of dllexport.h (C4005).
+extern "C" __declspec(dllimport) int __stdcall QueryThreadCycleTime(void* threadHandle, unsigned long long* cycleTime);
+extern "C" __declspec(dllimport) void* __stdcall GetCurrentThread();
+#else
+#include <time.h>
+#endif
+
 #ifdef _MSC_VER
 #include <excpt.h>
 #define NOINLINE __declspec(noinline)
@@ -261,6 +269,20 @@ DLL_EXPORT const char* GetJitMetric(int index, JitMetricType* type)
 }
 
 static volatile uint64_t s_globalZero = 0;
+
+// The CPU time used by the current thread: in cycles on Windows, and elsewhere in nanoseconds.
+DLL_EXPORT uint64_t GetThreadCycleTime()
+{
+#ifdef _WIN32
+    unsigned long long cycles = 0;
+    QueryThreadCycleTime(GetCurrentThread(), &cycles);
+    return cycles;
+#else
+    struct timespec ts;
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+    return (uint64_t)ts.tv_sec * 1000000000 + (uint64_t)ts.tv_nsec;
+#endif
+}
 
 // A dynamic instrumentor can rewrite this function to provide the precise instruction counts that SuperPMI
 // reports in its metrics. The volatile read tells the compiler that something might actually happen here.

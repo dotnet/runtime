@@ -64,6 +64,9 @@ internal static unsafe partial class ShimInterop
     public static partial uint Shim_GetClassGCLayoutLength(IntPtr comp, CORINFO_CLASS_STRUCT_* cls);
 
     [LibraryImport(Library)]
+    public static partial byte* Shim_GetProcessCommandLine();
+
+    [LibraryImport(Library)]
     public static partial int Shim_HostGetIntConfigValue(IntPtr host, byte* name, int defaultValue);
 
     [LibraryImport(Library)]

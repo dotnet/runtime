@@ -44,35 +44,8 @@ internal static unsafe partial class SpmiJitInterface
     public static partial void Instrumentor_GetInsCount(ulong* result);
 
     // The CPU time used by the current thread: in cycles on Windows, and elsewhere in nanoseconds.
-    public static ulong GetThreadCycleTime()
-    {
-        if (OperatingSystem.IsWindows())
-        {
-            QueryThreadCycleTime(GetCurrentThread(), out ulong cycles);
-            return cycles;
-        }
-
-        Timespec ts;
-        clock_gettime(OperatingSystem.IsMacOS() ? 16 : OperatingSystem.IsFreeBSD() ? 14 : 3, &ts); // CLOCK_THREAD_CPUTIME_ID
-        return (ulong)ts.tv_sec * 1_000_000_000 + (ulong)ts.tv_nsec;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct Timespec
-    {
-        public nint tv_sec;
-        public nint tv_nsec;
-    }
-
-    [LibraryImport("libc")]
-    private static partial int clock_gettime(int clockId, Timespec* ts);
-
-    [LibraryImport("kernel32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool QueryThreadCycleTime(IntPtr thread, out ulong cycles);
-
-    [LibraryImport("kernel32.dll")]
-    private static partial IntPtr GetCurrentThread();
+    [LibraryImport(Library)]
+    public static partial ulong GetThreadCycleTime();
 
     // The level is 0 for errors, 1 for warnings, and 2 for everything else.
     [LibraryImport(Library)]

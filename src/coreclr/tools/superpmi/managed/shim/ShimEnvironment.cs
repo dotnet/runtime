@@ -97,23 +97,8 @@ internal static partial class ShimEnvironment
         }
     }
 
-    // The command line as the process got it: Environment.CommandLine is rebuilt from the arguments.
-    [LibraryImport("kernel32.dll")]
-    private static partial IntPtr GetCommandLineW();
+    // Read once: the native side builds it in a static buffer.
+    private static readonly unsafe string s_processCommandLine = Marshal.PtrToStringUTF8((IntPtr)ShimInterop.Shim_GetProcessCommandLine());
 
-    public static string GetProcessCommandLine()
-    {
-        if (OperatingSystem.IsWindows())
-            return Marshal.PtrToStringUni(GetCommandLineW());
-
-        try
-        {
-            // The arguments are separated by NULs, which are converted to spaces.
-            return File.ReadAllText("/proc/self/cmdline").TrimEnd('\0').Replace('\0', ' ');
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return "";
-        }
-    }
+    public static string GetProcessCommandLine() => s_processCommandLine;
 }

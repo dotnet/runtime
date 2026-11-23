@@ -24,6 +24,10 @@
 #include <excpt.h>
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "jitfaultguard.h"
 #include "jitinterface_generated.h"
 #include "../../../inc/corjithost.h"
@@ -753,4 +757,36 @@ extern "C" const char* Shim_HostGetStringConfigValue(ICorJitHost* host, const ch
 extern "C" void Shim_HostFreeStringConfigValue(ICorJitHost* host, const char* value)
 {
     host->freeStringConfigValue(value);
+}
+
+extern "C" const char* Shim_GetProcessCommandLine()
+{
+#ifdef _WIN32
+    return ::GetCommandLineA();
+#else
+    static std::string result;
+    FILE* fp = fopen("/proc/self/cmdline", "r");
+    if (fp != NULL)
+    {
+        char*  cmdLine = nullptr;
+        size_t size    = 0;
+
+        while (getdelim(&cmdLine, &size, '\0', fp) != -1)
+        {
+            // /proc/self/cmdline uses \0 as delimiter, convert it to space
+            if (!result.empty())
+                result += ' ';
+
+            result += cmdLine;
+
+            free(cmdLine);
+            cmdLine = nullptr;
+            size    = 0;
+        }
+
+        fclose(fp);
+    }
+
+    return result.c_str();
+#endif
 }
