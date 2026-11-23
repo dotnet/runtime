@@ -105,41 +105,6 @@ PhaseStatus Compiler::optRedundantBranches()
     OptRedundantBranchesDomTreeVisitor visitor(this);
     visitor.WalkTree(m_domTree);
 
-    // If we jump threaded, recompute the flow graph annotations, SSA and value numbers.
-    //
-    if (optRboNeedsSsaRebuild)
-    {
-        JITDUMP("Jump threading modified the flow graph; rebuilding SSA and value numbers\n");
-
-        fgResetForSsa(/* deepClean */ true);
-        vnStore                    = nullptr;
-        m_blockToEHPreds           = nullptr;
-        m_dominancePreds           = nullptr;
-        m_nodeToLoopMemoryBlockMap = nullptr;
-        fgSsaPassesCompleted       = 0;
-        fgVNPassesCompleted        = 0;
-
-        // Tree VNs refer to the old ValueNumStore.
-        //
-        for (BasicBlock* const block : Blocks())
-        {
-            for (Statement* const stmt : block->Statements())
-            {
-                for (GenTree* const tree : stmt->TreeList())
-                {
-                    tree->ClearVN();
-                }
-            }
-        }
-
-        fgDfsBlocksAndRemove();
-        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
-        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-
-        fgSsaBuild();
-        fgValueNumber();
-    }
-
     // BBF_STALE_PREDICATE is only meaningful while this phase runs, since it is tied to
     // the dominator info we started with. Clear it so a later run sees a clean slate.
     //
@@ -160,6 +125,22 @@ PhaseStatus Compiler::optRedundantBranches()
 
     // DFS tree is always considered invalid after RBO.
     fgInvalidateDfsTree();
+
+    // If we jump threaded, SSA and value numbers are stale and will be rebuilt
+    // by the phases that follow. Recompute the flow graph annotations they need.
+    //
+    if (optRboNeedsSsaRebuild)
+    {
+        JITDUMP("Jump threading modified the flow graph; SSA and value numbers must be rebuilt\n");
+
+        fgDfsBlocksAndRemove();
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+
+        // Jump threading can leave loops non-canonical.
+        //
+        optLoopsCanonical = false;
+    }
 
     return visitor.madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -2648,7 +2629,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
             JITDUMP("\n");
 
             // Ancestors of the use may now have stale VNs; they are fixed when SSA and VNs
-            // are rebuilt at the end of the phase.
+            // are rebuilt after the phase.
             //
             use->SetVNs(newVNPair);
         }
