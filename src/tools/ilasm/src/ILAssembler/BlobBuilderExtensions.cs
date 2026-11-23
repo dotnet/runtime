@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     internal static class BlobBuilderExtensions
     {

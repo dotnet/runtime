@@ -43,7 +43,10 @@ internal class GcScanner
         TargetNUInt relativeOffset = _eman.GetRelativeOffset(cbh);
         _eman.GetGCInfo(cbh, out TargetPointer gcInfoAddr, out uint gcVersion);
 
-        IGCInfoHandle handle = _gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
+        bool isInterpreted = _eman.GetCodeKind(context.InstructionPointer) == CodeKind.Interpreter;
+        IGCInfoHandle handle = isInterpreted
+            ? _gcInfo.DecodeInterpreterGCInfo(gcInfoAddr, gcVersion)
+            : _gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
 
         GCInfoHeader header = _gcInfo.GetHeader(handle);
         uint stackBaseRegister = header.StackBaseRegister;
@@ -67,6 +70,20 @@ internal class GcScanner
                     continue;
                 GcScanSlotLocation loc = new((int)slot.RegisterNumber, 0, false);
                 scanContext.GCEnumCallback(new TargetPointer(regValue.Value), scanFlags, loc);
+            }
+            else if (isInterpreted)
+            {
+                // Mirrors TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot (gcinfodecoder.cpp): interpreter
+                // slots are always frame-relative, where the frame pointer is the InterpMethodContextFrame's stack.
+                if (slot.SpBase != 2)
+                    continue;
+
+                TargetPointer addr = new(context.FramePointer.Value + (ulong)(long)slot.SpOffset);
+                if (IsInInterpreterCalleeFrame(context, addr))
+                    continue;
+
+                GcScanSlotLocation loc = new((int)stackBaseRegister, slot.SpOffset, true);
+                scanContext.GCEnumCallback(addr, scanFlags, loc);
             }
             else
             {
@@ -108,6 +125,18 @@ internal class GcScanner
         }
     }
 
+    // A slot in the argument area of an active callee belongs to the callee's frame and is not reported
+    // by the caller. The stack pointer of an interpreted frame is its InterpMethodContextFrame.
+    private bool IsInInterpreterCalleeFrame(IPlatformAgnosticContext context, TargetPointer slotAddress)
+    {
+        Data.InterpMethodContextFrame frame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(context.StackPointer);
+        if (frame.NextPtr == TargetPointer.Null)
+            return false;
+
+        Data.InterpMethodContextFrame callee = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(frame.NextPtr);
+        return callee.Ip != TargetPointer.Null && callee.Stack <= slotAddress;
+    }
+
     /// <summary>
     /// Scans GC roots for a capital "F" Frame based on its type.
     /// Port of native Frame::GcScanRoots (frames.cpp).
@@ -130,9 +159,11 @@ internal class GcScanner
                 TargetPointer gcRefMap = sdf.Indirection != TargetPointer.Null
                     ? _frameHelpers.FindGCRefMap(sdf.Indirection)
                     : TargetPointer.Null;
+                if (gcRefMap == TargetPointer.Null)
+                    gcRefMap = _frameHelpers.GetGCRefMapForFrame(frameAddress);
 
                 if (gcRefMap != TargetPointer.Null)
-                    PromoteCallerStackUsingGCRefMap(fmf.TransitionBlockPtr, gcRefMap, scanContext);
+                    PromoteCallerStackUsingGCRefMap(fmf.TransitionBlockPtr, gcRefMap, scanContext, frameAddress);
                 else
                     PromoteCallerStack(frameAddress, scanContext);
                 break;
@@ -148,7 +179,7 @@ internal class GcScanner
                     : TargetPointer.Null;
 
                 if (gcRefMap != TargetPointer.Null)
-                    PromoteCallerStackUsingGCRefMap(fmf.TransitionBlockPtr, gcRefMap, scanContext);
+                    PromoteCallerStackUsingGCRefMap(fmf.TransitionBlockPtr, gcRefMap, scanContext, frameAddress);
                 else
                     PromoteCallerStack(frameAddress, scanContext);
                 break;
@@ -165,7 +196,22 @@ internal class GcScanner
             case FrameType.CallCountingHelperFrame:
             case FrameType.PrestubMethodFrame:
             {
-                PromoteCallerStack(frameAddress, scanContext);
+                Data.FramedMethodFrame frame = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
+                TargetPointer gcRefMap = _frameHelpers.GetGCRefMapForFrame(frameAddress);
+                if (gcRefMap != TargetPointer.Null)
+                    PromoteCallerStackUsingGCRefMap(frame.TransitionBlockPtr, gcRefMap, scanContext, frameAddress);
+                else
+                    PromoteCallerStack(frameAddress, scanContext);
+                break;
+            }
+
+            case FrameType.InterpreterFrame:
+            {
+                // Runtimes without the InterpreterFrame.Continuation descriptor entry do not expose the
+                // continuation slot, so its root is not reported for them.
+                Data.InterpreterFrame interpreterFrame = _target.ProcessedData.GetOrAdd<Data.InterpreterFrame>(frameAddress);
+                if (interpreterFrame.ContinuationAddress is TargetPointer continuationAddress)
+                    scanContext.GCReportCallback(continuationAddress, GcScanFlags.None);
                 break;
             }
 
@@ -189,17 +235,19 @@ internal class GcScanner
     private void PromoteCallerStackUsingGCRefMap(
         TargetPointer transitionBlock,
         TargetPointer gcRefMapBlob,
-        GcScanContext scanContext)
+        GcScanContext scanContext,
+        TargetPointer frameAddress)
     {
         Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
         GCRefMapDecoder decoder = new(_target, gcRefMapBlob);
-        EnumerateGCRefMapTokens(ref decoder, tb, scanContext);
+        EnumerateGCRefMapTokens(ref decoder, tb, scanContext, frameAddress);
     }
 
     private void EnumerateGCRefMapTokens(
         ref GCRefMapDecoder decoder,
         Data.TransitionBlock tb,
-        GcScanContext scanContext)
+        GcScanContext scanContext,
+        TargetPointer frameAddress = default)
     {
         if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
             decoder.ReadStackPop();
@@ -219,6 +267,13 @@ internal class GcScanner
                     break;
                 case GCRefMapToken.Interior:
                     scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
+                    break;
+                case GCRefMapToken.ThisRef:
+                case GCRefMapToken.ThisByRef:
+                    bool fallback = token is GCRefMapToken.ThisByRef;
+                    bool interior = frameAddress == TargetPointer.Null ? fallback :
+                        _frameHelpers.ThisIsInterior(frameAddress, fallback);
+                    scanContext.GCReportCallback(slotAddress, interior ? GcScanFlags.GC_CALL_INTERIOR : GcScanFlags.None);
                     break;
                 case GCRefMapToken.MethodParam:
                 case GCRefMapToken.TypeParam:
@@ -261,13 +316,14 @@ internal class GcScanner
     private void PromoteCallerStack(TargetPointer frameAddress, GcScanContext scanContext)
     {
         Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
-        if (fmf.MethodDescPtr == TargetPointer.Null)
+        TargetPointer method = _frameHelpers.GetMethodDescPtr(frameAddress);
+        if (method == TargetPointer.Null)
         {
             scanContext.RecordDeferredFrame(frameAddress);
             return;
         }
 
-        MethodDescHandle md = _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(fmf.MethodDescPtr);
+        MethodDescHandle md = _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(method);
         if (!_target.Contracts.CallingConvention.TryComputeArgGCRefMapBlob(md, out byte[] blob) || blob.Length == 0)
         {
             scanContext.RecordDeferredFrame(frameAddress);
@@ -275,7 +331,7 @@ internal class GcScanner
         }
 
         Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(fmf.TransitionBlockPtr);
-        GCRefMapDecoder decoder = new(blob);
+        GCRefMapDecoder decoder = new(blob, legacyTokens: GCRefMapDecoder.UsesLegacyTokens(_target));
         EnumerateGCRefMapTokens(ref decoder, tb, scanContext);
     }
 

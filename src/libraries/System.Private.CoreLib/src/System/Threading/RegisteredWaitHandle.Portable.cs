@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
@@ -56,7 +55,9 @@ namespace System.Threading
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
             int millisecondsTimeout, bool repeating)
         {
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+#if !FEATURE_MULTITHREADING
+            throw new PlatformNotSupportedException();
+#else
 #if TARGET_WINDOWS
             Debug.Assert(!ThreadPool.UseWindowsThreadPool);
 #endif
@@ -70,6 +71,7 @@ namespace System.Threading
             {
                 RestartTimeout();
             }
+#endif
         }
 
         private static AutoResetEvent RentEvent() =>

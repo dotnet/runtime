@@ -11,8 +11,6 @@
     <!-- GCStress runs collections very frequently and allocates its own objects, which changes
          when the program runs out of memory. As a result the small allocations test becomes unreliable. -->
     <GCStressIncompatible>true</GCStressIncompatible>
-    <!-- Mono doesn't enforce DOTNET_GCHeapHardLimit as a GC heap limit -->
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="OutOfMemoryException.cs" />

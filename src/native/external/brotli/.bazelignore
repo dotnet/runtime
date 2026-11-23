@@ -1,0 +1,6 @@
+# Exclude Bazel roots (workspaces)
+c/fuzz
+go
+java
+js
+research

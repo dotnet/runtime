@@ -11,6 +11,7 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.JitInterface;
 using Internal.NativeFormat;
 using Internal.ReadyToRunConstants;
@@ -130,6 +131,8 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected virtual bool CanFold(MethodDesc method) => false;
+
+        protected virtual bool RequiresAddressTakenTracking => false;
 
         public TypeMapManager TypeMapManager
         {
@@ -274,15 +277,27 @@ namespace ILCompiler.DependencyAnalysis
 
             _directPInvokes = new NodeCache<MethodDesc, ExternFunctionSymbolNode>((MethodDesc key) =>
             {
-                Utf8String externName = new Utf8String(InteropStubManager.GetDirectCallExternName(key));
+                LinkageMetadata linkage = InteropStubManager.GetLinkageMetadata(key);
+                Utf8String externName = linkage.Symbol;
+                if (externName.IsNull)
+                {
+                    // If metadata doesn't provide symbol name, mangle as a normal method.
+                    // We need to however mangle differently from the potential marshalling thunk;
+                    // this method is the raw P/invoke method so mangle as that.
+                    MethodDesc nativeTarget = key is PInvokeTargetNativeMethod
+                        ? key
+                        : new PInvokeTargetNativeMethod(key, key.Signature);
+                    externName = NameMangler.GetMangledMethodName(nativeTarget);
+                }
                 externName = NameMangler.NodeMangler.ExternMethod(externName, key);
 
-                return new ExternFunctionSymbolNode(externName, key.Signature, isUnmanagedCallersOnly: true, isAsyncCall: false, hasGenericContextArg: false);
+                return new ExternFunctionSymbolNode(externName, key.Signature, isUnmanagedCallersOnly: true, isAsyncCall: false, hasGenericContextArg: false,
+                    linkageMetadata: linkage);
             });
 
             _externIndirectFunctionSymbols = new NodeCache<Utf8String, ExternFunctionSymbolNode>((Utf8String name) =>
             {
-                return new ExternFunctionSymbolNode(name, signature: null, false, false, false, isIndirection: true);
+                return new ExternFunctionSymbolNode(name, signature: null, false, false, false, new LinkageMetadata(name, isIndirection: true));
             });
             _externDataSymbols = new NodeCache<Utf8String, ExternDataSymbolNode>((Utf8String name) =>
             {
@@ -438,10 +453,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _r2rHelpers = new NodeCache<ReadyToRunHelper, ISymbolNode>((ReadyToRunHelper id) =>
             {
+                Utf8String name = KnownExternFunctions.GetName(id, TypeSystemContext.Target);
                 return new ExternFunctionSymbolNode(
-                    KnownExternFunctions.GetName(id, TypeSystemContext.Target),
+                    name,
                     KnownExternFunctions.GetSignature(id, TypeSystemContext),
-                    isUnmanagedCallersOnly: false, isAsyncCall: false, hasGenericContextArg: false);
+                    isUnmanagedCallersOnly: false, isAsyncCall: false, hasGenericContextArg: false,
+                    linkageMetadata: new LinkageMetadata(name));
             });
 
             _readyToRunHelpers = new NodeCache<ReadyToRunHelperKey, ISymbolNode>(CreateReadyToRunHelperNode);
@@ -632,6 +649,11 @@ namespace ILCompiler.DependencyAnalysis
             _proxyTypeMapRequests = new NodeCache<TypeDesc, ProxyTypeMapRequestNode>(type =>
             {
                 return new ProxyTypeMapRequestNode(type);
+            });
+
+            _typeLoaderArgumentGates = new NodeCache<(TypeDesc, int), TypeLoaderArgumentGateNode>(key =>
+            {
+                return new TypeLoaderArgumentGateNode(key.Item1, key.Item2);
             });
 
             _analysisCharacteristics = new NodeCache<string, AnalysisCharacteristicNode>(c =>
@@ -1169,7 +1191,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IMethodNode FatAddressTakenFunctionPointer(MethodDesc method, bool isUnboxingStub = false)
         {
-            if (!CanFold(method))
+            if (!RequiresAddressTakenTracking && !CanFold(method))
                 return FatFunctionPointer(method, isUnboxingStub);
 
             return _fatAddressTakenFunctionPointers.GetOrAdd(new MethodKey(method, isUnboxingStub));
@@ -1235,7 +1257,7 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<MethodDesc, AddressTakenMethodNode> _addressTakenMethods;
         public IMethodNode AddressTakenMethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {
-            if (unboxingStub || !CanFold(method))
+            if (unboxingStub || (!RequiresAddressTakenTracking && !CanFold(method)))
                 return MethodEntrypoint(method, unboxingStub);
 
             return _addressTakenMethods.GetOrAdd(method);
@@ -1318,7 +1340,7 @@ namespace ILCompiler.DependencyAnalysis
             protected override bool CompareKeyToValue(MethodDesc key, ShadowConcreteMethodNode value) => key == value.Method;
             protected override bool CompareValueToValue(ShadowConcreteMethodNode value1, ShadowConcreteMethodNode value2) => value1.Method == value2.Method;
             protected override ShadowConcreteMethodNode CreateValueFromKey(MethodDesc key) =>
-                new ShadowConcreteMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                new ShadowConcreteMethodNode(key, (IMethodBodyNode)_factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(ShadowConcreteMethodNode value) => value.Method.GetHashCode();
         }
@@ -1336,7 +1358,7 @@ namespace ILCompiler.DependencyAnalysis
             protected override bool CompareKeyToValue(MethodDesc key, ShadowNonConcreteMethodNode value) => key == value.Method;
             protected override bool CompareValueToValue(ShadowNonConcreteMethodNode value1, ShadowNonConcreteMethodNode value2) => value1.Method == value2.Method;
             protected override ShadowNonConcreteMethodNode CreateValueFromKey(MethodDesc key) =>
-                new ShadowNonConcreteMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                new ShadowNonConcreteMethodNode(key, (IMethodBodyNode)_factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(ShadowNonConcreteMethodNode value) => value.Method.GetHashCode();
         }
@@ -1625,6 +1647,13 @@ namespace ILCompiler.DependencyAnalysis
         public ExternalTypeMapRequestNode ExternalTypeMapRequest(TypeDesc type)
         {
             return _externalTypeMapRequests.GetOrAdd(type);
+        }
+
+        private NodeCache<(TypeDesc, int), TypeLoaderArgumentGateNode> _typeLoaderArgumentGates;
+
+        public TypeLoaderArgumentGateNode TypeLoaderArgumentGate(TypeDesc type, int argumentIndex)
+        {
+            return _typeLoaderArgumentGates.GetOrAdd((type, argumentIndex));
         }
 
         private NodeCache<TypeDesc, ProxyTypeMapRequestNode> _proxyTypeMapRequests;

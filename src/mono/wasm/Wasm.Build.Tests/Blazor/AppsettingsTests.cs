@@ -23,7 +23,7 @@ public class AppsettingsTests : BlazorWasmTestBase
     public async Task FileInVfs()
     {
         Configuration config = Configuration.Debug;
-        ProjectInfo info = CreateWasmTemplateProject(Template.BlazorWasm, config, aot: false, "blazor");
+        ProjectInfo info = CreateWasmTemplateProject(Template.BlazorWasm, config, aot: false, "blazor", addFrameworkArg: true);
         UpdateHomePage();
         string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
         File.WriteAllText(Path.Combine(projectDirectory, "wwwroot", "appsettings.json"), $"{{ \"Id\": \"{info.ProjectName}\" }}");
@@ -53,5 +53,36 @@ public class AppsettingsTests : BlazorWasmTestBase
 
         Assert.True(existsChecked, "File '/appsettings.json' wasn't found");
         Assert.True(contentChecked, "Content of '/appsettings.json' is not matched");
+    }
+}
+
+public class CurrentRuntimeAppsettingsTests : BlazorWasmTestBase
+{
+    public CurrentRuntimeAppsettingsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+        : base(output, buildContext)
+    {
+        _enablePerTestCleanup = true;
+    }
+
+    [Fact]
+    public async Task InternalApi()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "appsettings");
+        string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
+        string settings = $"{{ \"Id\": \"{info.ProjectName}\" }}";
+        File.WriteAllText(Path.Combine(projectDirectory, "wwwroot", "appsettings.json"), settings);
+        File.WriteAllText(Path.Combine(projectDirectory, "wwwroot", "appsettings.Development.json"), "{}");
+        File.WriteAllText(Path.Combine(projectDirectory, "wwwroot", "appsettings.Production.json"), "{}");
+
+        BlazorBuild(info, config);
+        await RunForBuildWithDotnetRun(new BlazorRunOptions(
+            config,
+            Test: async page => {
+                string[] files = await page.EvaluateAsync<string[]>("() => getDotnetRuntime(0).INTERNAL.getAppSettingsFiles()");
+                Assert.Equal(new[] { "appsettings.json", "appsettings.Development.json" }, files);
+                string content = await page.EvaluateAsync<string>("() => new TextDecoder().decode(getDotnetRuntime(0).INTERNAL.getAppSettingsBytes('appsettings.json'))");
+                Assert.Equal(settings, content);
+            }));
     }
 }

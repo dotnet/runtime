@@ -36,6 +36,8 @@ internal static class TestPaths
 
     public static bool IsXArchTarget => TargetArchitecture is "x64" or "x86";
 
+    public static bool SupportsVectorT => IsXArchTarget || TargetArchitecture is "arm64" or "wasm";
+
     public static bool IsWindowsTarget => TargetOS is "windows" or "win";
 
     public static bool IsIosArm64Target => TargetOS is "ios" && TargetArchitecture is "arm64";

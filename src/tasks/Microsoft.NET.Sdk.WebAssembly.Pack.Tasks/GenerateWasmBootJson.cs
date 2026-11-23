@@ -54,6 +54,8 @@ public class GenerateWasmBootJson : Task
 
     public ITaskItem[] ConfigurationFiles { get; set; }
 
+    public bool FilesystemUsageDetected { get; set; }
+
     public ITaskItem[] EnvVariables { get; set; }
 
     public ITaskItem[] Extensions { get; set; }
@@ -89,6 +91,8 @@ public class GenerateWasmBootJson : Task
     public string? UseMonoRuntime { get; set; }
 
     public bool FingerprintAssets { get; set; }
+
+    public string? EnableIntegrityCheck { get; set; }
 
     public string ApplicationEnvironment { get; set; }
 
@@ -137,6 +141,15 @@ public class GenerateWasmBootJson : Task
         {
             resources = new ResourcesData(),
         };
+
+        if (!string.IsNullOrEmpty(EnableIntegrityCheck))
+        {
+            result.disableIntegrityCheck = !bool.Parse(EnableIntegrityCheck);
+        }
+        else if (!isMonoRuntime && IsTargeting120OrLater())
+        {
+            result.disableIntegrityCheck = true;
+        }
 
         if (IsTargeting100OrLater())
         {
@@ -525,7 +538,7 @@ public class GenerateWasmBootJson : Task
 
         string? imports = null;
         if (IsTargeting100OrLater())
-            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes, compositeImages);
+            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes, compositeImages, !isMonoRuntime && IsTargeting120OrLater(), FilesystemUsageDetected);
 
         helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith, imports: imports);
 
@@ -585,6 +598,7 @@ public class GenerateWasmBootJson : Task
     private static readonly Version version90 = new Version(9, 0);
     private static readonly Version version100 = new Version(10, 0);
     private static readonly Version version110 = new Version(11, 0);
+    private static readonly Version version120 = new Version(12, 0);
 
     private Version? parsedTargetFrameworkVersion;
     private Version ParsedTargetFrameworkVersion
@@ -612,6 +626,7 @@ public class GenerateWasmBootJson : Task
     private bool IsTargeting90OrLater() => ParsedTargetFrameworkVersion >= version90;
     private bool IsTargeting100OrLater() => ParsedTargetFrameworkVersion >= version100;
     private bool IsTargeting110OrLater() => ParsedTargetFrameworkVersion >= version110;
+    private bool IsTargeting120OrLater() => ParsedTargetFrameworkVersion >= version120;
 
     /// <summary>
     /// Reads the main runtimeconfig.json and merges <c>configProperties</c> from the companion

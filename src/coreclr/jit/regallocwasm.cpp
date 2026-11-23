@@ -181,13 +181,12 @@ void WasmRegAlloc::IdentifyCandidates()
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
             varIsRegCandidate = false;
         }
-        // We also need to ensure that any GC refs are not stored in wasm locals until we have support for
-        // spilling them to the stack before calls.
-        // TODO-WASM: Add support for spilling GC refs in order to relax this second restriction.
-        if (varTypeIsGC(varDsc->lvType))
+        // GC-exposed candidates also need an up-to-date pinned shadow-stack home.
+        if (varIsRegCandidate && varTypeIsGC(varDsc->lvType))
         {
-            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
-            varIsRegCandidate = false;
+            varDsc->lvWasmGCWriteThru =
+                !VarSetOps::IsMember(m_compiler, *m_compiler->m_wasmGCRefCandidates, varDsc->lvVarIndex);
+            anyFrameLocals |= varDsc->lvWasmGCWriteThru;
         }
         if (varIsRegCandidate)
         {
@@ -448,6 +447,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             {
                 assert(node->OperIs(GT_STORE_LCL_VAR));
                 CollectReference(node->AsLclVarCommon());
+                if (varDsc->lvWasmGCWriteThru)
+                {
+                    RewriteLocalStackStore(node->AsLclVarCommon());
+                }
             }
             else
             {
@@ -777,7 +780,8 @@ void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* nod
 }
 
 //------------------------------------------------------------------------
-// RewriteLocalStackStore: rewrite a store to the stack to STOREIND(LCL_ADDR, ...).
+// RewriteLocalStackStore: rewrite a stack store to STOREIND(LCL_ADDR, ...),
+//   retaining the local definition for a write-through candidate.
 //
 // This is needed to obey WASM stack ordering constraints: as in IR, the
 // address operands comes first and we can't insert that into the middle
@@ -808,23 +812,53 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     bool         isStruct = storeType == TYP_STRUCT;
     uint16_t     offset   = lclNode->GetLclOffs();
     ClassLayout* layout   = isStruct ? lclNode->GetLayout(m_compiler) : nullptr;
-    lclNode->SetOper(GT_LCL_ADDR);
-    lclNode->ChangeType(TYP_I_IMPL);
-    lclNode->AsLclFld()->SetLclOffs(offset);
+    GenTree*     addr;
+    GenTree*     storeAfter;
+    if (m_compiler->lvaGetDesc(lclNode)->lvWasmGCWriteThru)
+    {
+        assert(lclNode->OperIs(GT_STORE_LCL_VAR) && varTypeIsGC(storeType));
+        // Before:                         After:
+        //
+        //                                 addr = LCL_ADDR dst
+        // ... RHS evaluation ...          ... RHS evaluation ...
+        // rhs = ...                       rhs = ...
+        // STORE_LCL_VAR dst(rhs)           STORE_LCL_VAR dst(rhs)
+        //                                 cached = LCL_VAR dst
+        //                                 STOREIND(addr, cached)
+        //
+        // The address precedes the first RHS node so it sits below the value on the Wasm stack.
+        // The retained local definition updates the cache; the final store updates its pinned home.
+        // The adjacent local.set/get folds to local.tee.
+        addr  = m_compiler->gtNewLclAddrNode(lclNode->GetLclNum(), 0);
+        value = m_compiler->gtNewLclVarNode(lclNode->GetLclNum(), storeType);
+        CurrentRange().InsertAfter(lclNode, value);
+        storeAfter = value;
+    }
+    else
+    {
+        lclNode->SetOper(GT_LCL_ADDR);
+        lclNode->ChangeType(TYP_I_IMPL);
+        lclNode->AsLclFld()->SetLclOffs(offset);
+        addr       = lclNode;
+        storeAfter = lclNode;
+    }
 
     GenTree*     store;
     GenTreeFlags indFlags = GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
     if (isStruct)
     {
-        store = m_compiler->gtNewStoreBlkNode(layout, lclNode, value, indFlags);
+        store = m_compiler->gtNewStoreBlkNode(layout, addr, value, indFlags);
     }
     else
     {
-        store = m_compiler->gtNewStoreIndNode(storeType, lclNode, value, indFlags);
+        store = m_compiler->gtNewStoreIndNode(storeType, addr, value, indFlags);
     }
-    CurrentRange().InsertAfter(lclNode, store);
-    CurrentRange().Remove(lclNode);
-    CurrentRange().InsertBefore(insertionPoint, lclNode);
+    CurrentRange().InsertAfter(storeAfter, store);
+    if (addr == lclNode)
+    {
+        CurrentRange().Remove(lclNode);
+    }
+    CurrentRange().InsertBefore(insertionPoint, addr);
 
     LIR::ReadOnlyRange storeRange(store, store);
     m_compiler->GetLowering()->LowerRange(m_currentBlock, storeRange);
@@ -910,8 +944,7 @@ void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
 
     if (node->OperIs(GT_LCL_VAR) && m_compiler->lvaGetDesc(node->AsLclVar())->lvIsRegCandidate())
     {
-        // Will be allocated into its own register, no need for a temporary.
-        node->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
+        // No temporary is needed, but codegen must know this IR use emits multiple reads.
         return;
     }
 
@@ -938,6 +971,11 @@ void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
 void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const char* reason))
 {
     if ((operand->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None)
+    {
+        return;
+    }
+
+    if (operand->OperIs(GT_LCL_VAR) && m_compiler->lvaGetDesc(operand->AsLclVar())->lvIsRegCandidate())
     {
         return;
     }
@@ -1011,6 +1049,10 @@ void WasmRegAlloc::ResolveReferences()
         unsigned Index;
     };
 
+    auto canReuseAbiReg = [](regNumber virtReg, regNumber abiReg) {
+        return genIsValidReg(virtReg) && (WasmRegToType(virtReg) == WasmRegToType(abiReg));
+    };
+
     // Resolve funclet by funclet, in reverse order, so that we process the main method region last.
     //
     for (FuncInfoDsc* const funcInfo : m_compiler->Funcs().Reverse())
@@ -1050,7 +1092,8 @@ void WasmRegAlloc::ResolveReferences()
                             indexBase              = max(indexBase, argIndex + 1);
 
                             LclVarDsc* argVarDsc = m_compiler->lvaGetDesc(argLclNum);
-                            if ((argVarDsc->GetRegNum() == argReg) || (argLclNum == m_compiler->lvaWasmSpArg))
+                            if (canReuseAbiReg(argVarDsc->GetRegNum(), argReg) ||
+                                (argLclNum == m_compiler->lvaWasmSpArg))
                             {
                                 assert(abiInfo.HasExactlyOneRegisterSegment());
                                 virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
@@ -1059,7 +1102,7 @@ void WasmRegAlloc::ResolveReferences()
                             const ParameterRegisterLocalMapping* mapping =
                                 m_compiler->FindParameterRegisterLocalMappingByRegister(argReg);
                             if ((mapping != nullptr) &&
-                                (m_compiler->lvaGetDesc(mapping->LclNum)->GetRegNum() == argReg))
+                                canReuseAbiReg(m_compiler->lvaGetDesc(mapping->LclNum)->GetRegNum(), argReg))
                             {
                                 virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
                             }
@@ -1119,7 +1162,7 @@ void WasmRegAlloc::ResolveReferences()
                     const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
                     assert(abiInfo.HasExactlyOneRegisterSegment());
                     regNumber abiReg = abiInfo.Segment(0).GetRegister();
-                    if (WasmRegToType(virtReg) == WasmRegToType(abiReg))
+                    if (canReuseAbiReg(virtReg, abiReg))
                     {
                         physReg = abiReg;
                     }
@@ -1131,7 +1174,7 @@ void WasmRegAlloc::ResolveReferences()
                         m_compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
                     assert(mapping != nullptr);
                     regNumber abiReg = mapping->RegisterSegment->GetRegister();
-                    if (WasmRegToType(virtReg) == WasmRegToType(abiReg))
+                    if (canReuseAbiReg(virtReg, abiReg))
                     {
                         physReg = abiReg;
                     }
@@ -1284,6 +1327,7 @@ void WasmRegAlloc::ResolveReferences()
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {
             PhysicalRegBank& physRegs = virtToPhysRegMap[static_cast<unsigned>(type)];
+            assert(physRegs.Index <= physRegs.IndexBase + physRegs.DeclaredCount);
             if (physRegs.DeclaredCount != 0)
             {
                 decls->push_back({type, physRegs.DeclaredCount});
@@ -1316,8 +1360,8 @@ void WasmRegAlloc::ResolveReferences()
             // While register allocations are fixed per-funclet, they are unlikely
             // to agree across all funclets.
             //
-            varDsc->lvRegister = (m_compiler->compFuncCount() == 1);
-            varDsc->lvOnFrame  = false;
+            varDsc->lvRegister = !varDsc->lvWasmGCWriteThru && (m_compiler->compFuncCount() == 1);
+            varDsc->lvOnFrame  = varDsc->lvWasmGCWriteThru;
 
             if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget)
             {

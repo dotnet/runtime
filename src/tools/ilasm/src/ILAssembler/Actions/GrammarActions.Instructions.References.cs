@@ -6,13 +6,13 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Antlr4.Runtime;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed partial class GrammarActions
 {
     internal void EmitMethodReferenceInstruction(IToken opcodeToken, CILParser.MethodRefContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
         {
             return;
         }
@@ -24,7 +24,14 @@ internal sealed partial class GrammarActions
         try
         {
             method.Definition.MethodBody.OpCode(opcode);
-            WriteInstructionToken(method, MaterializeMethodReference(context));
+            if (context.Value is TokenMethodReferenceValue token)
+            {
+                method.Definition.MethodBody.Token(token.Token);
+            }
+            else
+            {
+                WriteInstructionToken(method, MaterializeMethodReference(context));
+            }
         }
         finally
         {
@@ -37,7 +44,7 @@ internal sealed partial class GrammarActions
 
     internal void EmitFieldReferenceInstruction(IToken opcodeToken, CILParser.FieldRefContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
         {
             return;
         }
@@ -48,29 +55,36 @@ internal sealed partial class GrammarActions
 
     internal void EmitMetadataTokenInstruction(IToken opcodeToken, CILParser.MdtokenContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
         {
             return;
         }
 
         instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
-        WriteInstructionToken(instruction.Method, ResolveMetadataToken(context));
+        instruction.Method.Definition.MethodBody.Token(context.Value);
     }
 
     internal void EmitTypeReferenceInstruction(IToken opcodeToken, CILParser.TypeSpecContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
         {
             return;
         }
 
         instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
-        WriteInstructionToken(instruction.Method, ResolveTypeSpecification(context));
+        if (context.Value is ClassTypeSpecificationValue { ClassName: TokenClassNameValue token })
+        {
+            instruction.Method.Definition.MethodBody.Token(token.Token);
+        }
+        else
+        {
+            WriteInstructionToken(instruction.Method, ResolveTypeSpecification(context));
+        }
     }
 
     internal void EmitCalliInstruction(IToken opcodeToken, CILParser.CalliSignatureContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
         {
             return;
         }
@@ -84,31 +98,39 @@ internal sealed partial class GrammarActions
 
     internal void EmitOwnerTokenInstruction(IToken opcodeToken, CILParser.OwnerTypeContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
         {
             return;
         }
 
         instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
-        WriteInstructionToken(instruction.Method, MaterializeOwnerType(context));
+        if (context.Value switch
+        {
+            MemberOwnerValue { Member: TokenMemberReferenceValue token } => token.Token,
+            MemberOwnerValue { Member: MethodMemberReferenceValue { Method: TokenMethodReferenceValue token } } => token.Token,
+            TypeOwnerValue { Type: ClassTypeSpecificationValue { ClassName: TokenClassNameValue token } } => token.Token,
+            _ => (int?)null
+        } is int rawToken)
+        {
+            instruction.Method.Definition.MethodBody.Token(rawToken);
+        }
+        else
+        {
+            WriteInstructionToken(instruction.Method, MaterializeOwnerType(context));
+        }
     }
 
     private static void WriteInstructionToken(CurrentMethodContext method, EntityRegistry.EntityBase entity)
     {
-        if (entity is EntityRegistry.TypeReferenceEntity typeReference)
+        if (entity is EntityRegistry.LiteralTokenEntity literal)
         {
-            typeReference.RecordBlobToWriteResolvedToken(
-                method.Definition.MethodBody.CodeBuilder.ReserveBytes(sizeof(int)));
+            // IL operands can contain arbitrary values that are not valid metadata handles.
+            method.Definition.MethodBody.Token(literal.Token);
+            return;
         }
-        else if (entity is EntityRegistry.MemberReferenceEntity memberReference)
-        {
-            memberReference.RecordBlobToWriteResolvedHandle(
-                method.Definition.MethodBody.CodeBuilder.ReserveBytes(sizeof(int)));
-        }
-        else
-        {
-            method.Definition.MethodBody.Token(entity.Handle);
-        }
+
+        entity.RecordBlobToWriteResolvedToken(
+            method.Definition.MethodBody.CodeBuilder.ReserveBytes(sizeof(int)));
     }
 
 }

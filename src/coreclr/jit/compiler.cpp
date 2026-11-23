@@ -859,13 +859,6 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
             useType           = TYP_UNKNOWN;
         }
     }
-#elif UNIX_X86_ABI
-    if (callConv != CorInfoCallConvExtension::Managed && !isNativePrimitiveStructType(clsHnd))
-    {
-        canReturnInRegister = false;
-        howToReturnStruct   = SPK_ByReference;
-        useType             = TYP_UNKNOWN;
-    }
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
@@ -1206,12 +1199,19 @@ void DisplayNowayAssertMap()
         }
 
         // Iterate noway assert map, create sorted table by occurrence, dump it.
-        unsigned             count = NowayAssertMap->GetCount();
-        NowayAssertCountMap* nacp  = new NowayAssertCountMap[count];
-        unsigned             i     = 0;
+        unsigned             count         = NowayAssertMap->GetCount();
+        HostAllocator        hostAllocator = HostAllocator::getHostAllocator();
+        NowayAssertCountMap* nacp          = hostAllocator.allocate<NowayAssertCountMap>(count);
+        if (nacp == nullptr)
+        {
+            throw std::bad_alloc{};
+        }
+
+        unsigned i = 0;
 
         for (FileLineToCountMap::Node* const iter : FileLineToCountMap::KeyValueIteration(NowayAssertMap))
         {
+            new (&nacp[i], jitstd::placement_t()) NowayAssertCountMap();
             nacp[i].count = iter->GetValue();
             nacp[i].fl    = iter->GetKey();
             ++i;
@@ -1237,6 +1237,8 @@ void DisplayNowayAssertMap()
             fclose(fout);
             fout = nullptr;
         }
+
+        hostAllocator.deallocate(nacp);
     }
 }
 
@@ -2900,13 +2902,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // CONFIGURABLE_ARM_ABI
 
     opts.compScopeInfo = opts.compDbgInfo;
-
-#ifdef TARGET_WASM
-    // Wasm uses virtual registers that cannot be encoded in the
-    // ICorDebugInfo register scheme, and there is no native debugger
-    // to consume scope info, so disable it entirely.
-    opts.compScopeInfo = false;
-#endif
 
 #ifdef LATE_DISASM
     codeGen->getDisAssembler().disOpenForLateDisAsm(info.compMethodName, info.compClassName,
@@ -5018,6 +5013,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Transform any strongly connected components into reducible flow.
     //
     DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
+
+    // Insert EventPipe CPU-sampling samplepoints before lowering.
+    //
+    DoPhase(this, PHASE_WASM_PROF_INSTRUMENT, &Compiler::fgWasmProfInstrument);
 #endif
 
     // Assign registers to variables, etc.
@@ -5044,18 +5043,35 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_LCLVARLIVENESS, &Compiler::fgLateLiveness);
 
 #ifdef TARGET_WASM
+    // Forward single-use local copies recorded by lowering, using the
+    // ref counts and last-use flags computed by late liveness.
+    //
+    DoPhase(this, PHASE_WASM_FORWARD_LOCAL_COPIES, &Compiler::fgWasmForwardLocalCopies);
+
     // Determine if a Virtual IP is needed and add code as needed to
     // keep the Virtual IP updated.
     //
     DoPhase(this, PHASE_WASM_VIRTUAL_IP, &Compiler::fgWasmVirtualIP);
 
+    // Identify GC ref local candidates for wasm.
+    //
+    DoPhase(this, PHASE_WASM_IDENTIFY_GCSAFE_LOCALS, &Compiler::fgWasmFindGCRefCandidates);
+
     // Ensure that any refs or byrefs live at call sites are spilled
     // to pinned stack slots so the objects aren't moved.
     //
     DoPhase(this, PHASE_WASM_SPILL_REFS, &Compiler::fgWasmSpillRefs);
+
 #endif
 
     FinalizeEH();
+
+#ifdef TARGET_WASM
+    // Reorder blocks for wasm and figure out wasm control flow nesting.
+    // Note: This phase is ordered after FinalizeEH since the
+    // pass shouldn't alter EH structure.
+    DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
+#endif
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
@@ -5074,11 +5090,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Copied from rpPredictRegUse()
     SetFullPtrRegMapRequired(codeGen->GetInterruptible() || !codeGen->isFramePointerUsed());
 
-#ifdef TARGET_WASM
-    // Reorder blocks for wasm and figure out wasm control flow nesting
-    //
-    DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
-#else
+#ifndef TARGET_WASM
     if (opts.OptimizationEnabled())
     {
         // We won't introduce new blocks from here on out,
@@ -6138,6 +6150,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64SveAes() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_SveAes);
+        }
+
+        if (JitConfig.EnableArm64SvePmull128() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SvePmull128);
         }
 
         if (JitConfig.EnableArm64SveSha3() != 0)

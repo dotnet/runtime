@@ -87,12 +87,6 @@ namespace CorUnix
         HANDLE *phThread
         );
 
-    BOOL
-    GetThreadTimesInternal(
-        IN HANDLE hThread,
-        OUT LPFILETIME lpKernelTime,
-        OUT LPFILETIME lpUserTime);
-
 #if HAVE_MACH_EXCEPTIONS
 
     // Structure used to return data about a single handler to a caller.
@@ -249,6 +243,7 @@ namespace CorUnix
         void* m_stackLimit;
         // Signal handler's alternate stack to help with stack overflow
         void* m_alternateStack;
+        size_t m_alternateStackSize;
 
         //
         // The thread entry routine (called from InternalCreateThread)
@@ -301,7 +296,8 @@ namespace CorUnix
             m_fStartStatusSet(FALSE),
             m_stackBase(NULL),
             m_stackLimit(NULL),
-            m_alternateStack(NULL)
+            m_alternateStack(NULL),
+            m_alternateStackSize(0)
         {
         };
 

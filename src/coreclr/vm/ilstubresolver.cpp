@@ -324,7 +324,8 @@ ILStubResolver::ILStubResolver() :
     m_pCompileTimeState(dac_cast<PTR_CompileTimeState>(ILNotYetGenerated)),
     m_pStubMD(dac_cast<PTR_MethodDesc>(nullptr)),
     m_pStubTargetMD(dac_cast<PTR_MethodDesc>(nullptr)),
-    m_jitFlags()
+    m_jitFlags(),
+    m_pNextCollectibleResolver(dac_cast<PTR_ILStubResolver>(nullptr))
 {
     LIMITED_METHOD_CONTRACT;
 }
@@ -395,12 +396,12 @@ void ILStubResolver::SetStubTargetMethodSig(
     STANDARD_VM_CONTRACT;
     _ASSERTE(m_pCompileTimeState != NULL);
 
-    NewArrayHolder<BYTE> pNewSig = new BYTE[cbStubTargetSigLength];
+    NewArrayHolder<BYTE> pNewSig{ new BYTE[cbStubTargetSigLength] };
 
     memcpyNoGCRefs((void *)pNewSig, pStubTargetMethodSig, cbStubTargetSigLength);
 
     m_pCompileTimeState->m_StubTargetMethodSig = SigPointer(pNewSig, cbStubTargetSigLength);
-    pNewSig.SuppressRelease();
+    pNewSig.Detach();
 }
 
 static COR_ILMETHOD_DECODER CreateILHeader(size_t cbCode, UINT maxStack, BYTE* pNewILCodeBuffer, BYTE* pNewLocalSig, DWORD cbLocalSig)
@@ -447,7 +448,7 @@ COR_ILMETHOD_DECODER* ILStubResolver::AllocGeneratedIL(
     CONSISTENCY_CHECK(ILNotYetGenerated == (UINT_PTR)pPrevCompileTimeState);
     (void*)pPrevCompileTimeState;
 
-    memory.SuppressRelease();
+    memory.Detach();
     return pILHeader;
 
 } // ILStubResolver::AllocGeneratedIL

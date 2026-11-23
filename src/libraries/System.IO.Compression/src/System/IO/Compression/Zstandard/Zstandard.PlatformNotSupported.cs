@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 namespace System.IO.Compression
 {
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardDecompressionOptions
     {
         public ZstandardDecompressionOptions() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
@@ -15,7 +14,6 @@ namespace System.IO.Compression
     }
 
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardCompressionOptions
     {
         public ZstandardCompressionOptions() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
@@ -40,7 +38,6 @@ namespace System.IO.Compression
     }
 
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardDecoder : IDisposable
     {
         public ZstandardDecoder() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
@@ -58,7 +55,6 @@ namespace System.IO.Compression
     }
 
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardDictionary : IDisposable
     {
         internal ZstandardDictionary() { }
@@ -70,7 +66,6 @@ namespace System.IO.Compression
     }
 
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardEncoder : IDisposable
     {
         public ZstandardEncoder() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
@@ -92,7 +87,6 @@ namespace System.IO.Compression
     }
 
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed partial class ZstandardStream : Stream
     {
         public ZstandardStream(Stream stream, CompressionLevel compressionLevel) : base() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);

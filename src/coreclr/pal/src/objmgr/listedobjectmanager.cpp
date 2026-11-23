@@ -56,7 +56,6 @@ CListedObjectManager::Initialize(
 
     ENTRY("CListedObjectManager::Initialize (this=%p)\n", this);
 
-    InitializeListHead(&m_leNamedObjects);
     InitializeListHead(&m_leAnonymousObjects);
 
     minipal_mutex_init(&m_csListLock);
@@ -105,13 +104,6 @@ CListedObjectManager::Shutdown(
         pshmobj->CleanupForProcessShutdown(pthr);
     }
 
-    while (!IsListEmpty(&m_leNamedObjects))
-    {
-        ple = RemoveTailList(&m_leNamedObjects);
-        pshmobj = CListedObject::GetObjectFromListLink(ple);
-        pshmobj->CleanupForProcessShutdown(pthr);
-    }
-
     minipal_mutex_leave(&m_csListLock);
 
     LOGEXIT("CListedObjectManager::Shutdown returns %d\n", NO_ERROR);
@@ -128,7 +120,6 @@ Function:
 Parameters:
   pthr -- thread data for calling thread
   pot -- type of object to allocate
-  poa -- attributes (name and SD) of object to allocate
   ppobjNew -- on success, receives a reference to the new object
 --*/
 
@@ -136,7 +127,6 @@ PAL_ERROR
 CListedObjectManager::AllocateObject(
     CPalThread *pthr,
     CObjectType *pot,
-    CObjectAttributes *poa,
     IPalObject **ppobjNew            // OUT
     )
 {
@@ -145,15 +135,13 @@ CListedObjectManager::AllocateObject(
 
     _ASSERTE(NULL != pthr);
     _ASSERTE(NULL != pot);
-    _ASSERTE(NULL != poa);
     _ASSERTE(NULL != ppobjNew);
 
     ENTRY("CListedObjectManager::AllocateObject "
-        "(this=%p, pthr=%p, pot=%p, poa=%p, ppobjNew=%p)\n",
+        "(this=%p, pthr=%p, pot=%p, ppobjNew=%p)\n",
         this,
         pthr,
         pot,
-        poa,
         ppobjNew
         );
 
@@ -161,7 +149,7 @@ CListedObjectManager::AllocateObject(
 
     if (NULL != pshmobj)
     {
-        palError = pshmobj->Initialize(pthr, poa);
+        palError = pshmobj->Initialize(pthr);
         if (NO_ERROR == palError)
         {
             *ppobjNew = static_cast<IPalObject*>(pshmobj);
@@ -181,15 +169,7 @@ CListedObjectManager::AllocateObject(
 Function:
   CListedObjectManager::RegisterObject
 
-  Registers a newly-allocated object instance. If the object to be registered
-  has a name, and a previously registered object has the same name the new
-  object will not be registered.
-
-Distinguished return values:
-  ERROR_ALREADY_EXISTS -- an object of a compatible type was already registered
-    with the specified name
-  ERROR_INVALID_HANDLE -- an object of an incompatible type was already
-    registered with the specified name
+  Registers a newly-allocated object instance.
 
 Parameters:
   pthr -- thread data for calling thread
@@ -212,9 +192,6 @@ CListedObjectManager::RegisterObject(
 {
     PAL_ERROR palError = NO_ERROR;
     CListedObject *pshmobj = static_cast<CListedObject*>(pobjToRegister);
-    CObjectAttributes *poa;
-    CObjectType *potObj;
-    IPalObject *pobjExisting;
 
     _ASSERTE(NULL != pthr);
     _ASSERTE(NULL != pobjToRegister);
@@ -233,78 +210,13 @@ CListedObjectManager::RegisterObject(
         ppobjRegistered
         );
 
-    poa = pobjToRegister->GetObjectAttributes();
-    _ASSERTE(NULL != poa);
-
-    potObj = pobjToRegister->GetObjectType();
-
     minipal_mutex_enter(&m_csListLock);
 
-    if (0 != poa->sObjectName.GetStringLength())
-    {
-        //
-        // Check if an object by this name already exists
-        //
+    //
+    // Place the object on the anonymous object list
+    //
 
-        palError = LocateObject(
-            pthr,
-            &poa->sObjectName,
-            paot,
-            &pobjExisting
-            );
-
-        if (NO_ERROR == palError)
-        {
-            //
-            // Obtain a new handle to the existing object
-            //
-
-            palError = ObtainHandleForObject(
-                pthr,
-                pobjExisting,
-                pHandle
-                );
-
-            if (NO_ERROR == palError)
-            {
-                //
-                // Transfer object reference to out param
-                //
-
-                *ppobjRegistered = pobjExisting;
-                palError = ERROR_ALREADY_EXISTS;
-            }
-            else
-            {
-                pobjExisting->ReleaseReference(pthr);
-            }
-
-            goto RegisterObjectExit;
-        }
-        else if (ERROR_INVALID_NAME != palError)
-        {
-            //
-            // Something different than an object not found error
-            // occurred. This is most likely due to a type conflict.
-            //
-
-            goto RegisterObjectExit;
-        }
-
-        //
-        // Insert the object on the named object lists
-        //
-
-        InsertTailList(&m_leNamedObjects, pshmobj->GetObjectListLink());
-    }
-    else
-    {
-        //
-        // Place the object on the anonymous object list
-        //
-
-        InsertTailList(&m_leAnonymousObjects, pshmobj->GetObjectListLink());
-    }
+    InsertTailList(&m_leAnonymousObjects, pshmobj->GetObjectListLink());
 
     //
     // Obtain a handle for the new object
@@ -326,8 +238,6 @@ CListedObjectManager::RegisterObject(
         pobjToRegister = NULL;
     }
 
-RegisterObjectExit:
-
     minipal_mutex_leave(&m_csListLock);
 
     if (NULL != pobjToRegister)
@@ -336,127 +246,6 @@ RegisterObjectExit:
     }
 
     LOGEXIT("CListedObjectManager::RegisterObject return %d\n", palError);
-
-    return palError;
-}
-
-/*++
-Function:
-  CListedObjectManager::LocateObject
-
-  Search for a previously registered object with a give name and type
-
-Distinguished return values:
-  ERROR_INVALID_NAME -- no object with the specified name was previously
-    registered
-  ERROR_INVALID_HANDLE -- an object with the specified name was previously
-    registered, but its type is not compatible
-
-Parameters:
-  pthr -- thread data for calling thread
-  psObjectToLocate -- the name of the object to locate
-  paot -- acceptable types for the object
-  ppobj -- on success, receives a reference to the object instance
---*/
-
-PAL_ERROR
-CListedObjectManager::LocateObject(
-    CPalThread *pthr,
-    CPalString *psObjectToLocate,
-    CAllowedObjectTypes *paot,
-    IPalObject **ppobj               // OUT
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-    IPalObject *pobjExisting = NULL;
-    LPWSTR pwsz = NULL;
-
-    _ASSERTE(NULL != pthr);
-    _ASSERTE(NULL != psObjectToLocate);
-    _ASSERTE(NULL != psObjectToLocate->GetString());
-    _ASSERTE(PAL_wcslen(psObjectToLocate->GetString()) == psObjectToLocate->GetStringLength());
-    _ASSERTE(NULL != ppobj);
-
-    ENTRY("CListedObjectManager::LocateObject "
-        "(this=%p, pthr=%p, psObjectToLocate=%p, paot=%p, "
-        "ppobj=%p)\n",
-        this,
-        pthr,
-        psObjectToLocate,
-        paot,
-        ppobj
-        );
-
-    TRACE("Searching for object name %S\n", psObjectToLocate->GetString());
-
-    minipal_mutex_enter(&m_csListLock);
-
-    //
-    // Search the local named object list for this object
-    //
-
-    for (PLIST_ENTRY ple = m_leNamedObjects.Flink;
-         ple != &m_leNamedObjects;
-         ple = ple->Flink)
-    {
-        CObjectAttributes *poa;
-        CListedObject *pshmobj =
-            CListedObject::GetObjectFromListLink(ple);
-
-        poa = pshmobj->GetObjectAttributes();
-        _ASSERTE(NULL != poa);
-
-        if (poa->sObjectName.GetStringLength() != psObjectToLocate->GetStringLength())
-        {
-            continue;
-        }
-
-        if (0 != PAL_wcscmp(poa->sObjectName.GetString(), psObjectToLocate->GetString()))
-        {
-            continue;
-        }
-
-        //
-        // This object has the name we're looking for
-        //
-
-        pobjExisting = static_cast<IPalObject*>(pshmobj);
-        break;
-    }
-
-    if (NULL != pobjExisting)
-    {
-        //
-        //  Validate the located object's type
-        //
-
-        if (paot->IsTypeAllowed(
-                pobjExisting->GetObjectType()->GetId()
-                ))
-        {
-            TRACE("Local object exists with compatible type\n");
-
-            //
-            // Add a reference to the found object
-            //
-
-            pobjExisting->AddReference();
-            *ppobj = pobjExisting;
-        }
-        else
-        {
-            TRACE("Local object exists w/ incompatible type\n");
-            palError = ERROR_INVALID_HANDLE;
-        }
-
-        goto LocateObjectExit;
-    }
-
-LocateObjectExit:
-
-    minipal_mutex_leave(&m_csListLock);
-
-    LOGEXIT("CListedObjectManager::LocateObject returns %d\n", palError);
 
     return palError;
 }

@@ -28,7 +28,7 @@
   </PropertyGroup>
 
   <!-- Same opt-in as Apple mobile (tests.mobile.targets). These switches are substituted at trim
-       time, so they apply even though wasihost doesn't read runtimeconfig yet. -->
+       time and carried into the per-app wasihost property table. -->
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">
     <_DefaultValueAttributeSupport>true</_DefaultValueAttributeSupport>
     <_DesignerHostSupport>true</_DesignerHostSupport>

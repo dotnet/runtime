@@ -231,6 +231,9 @@
   <data name="ExpectedNumericType" xml:space="preserve">
     <value>Expected numeric type on the stack.</value>
   </data>
+  <data name="ExpectedSignatureToken" xml:space="preserve">
+    <value>Expected signature token.</value>
+  </data>
   <data name="ExpectedStaticField" xml:space="preserve">
     <value>Expected static field.</value>
   </data>
@@ -335,6 +338,9 @@
   </data>
   <data name="ReadOnlyIllegalWrite" xml:space="preserve">
     <value>Illegal write to readonly ByRef.</value>
+  </data>
+  <data name="ReadOnlyInMkrefany" xml:space="preserve">
+    <value>A readonly ByRef cannot be used with mkrefany.</value>
   </data>
   <data name="ReadonlyUnexpectedCallee" xml:space="preserve">
     <value>The readonly prefix may only be applied to calls to array methods returning ByRefs.</value>

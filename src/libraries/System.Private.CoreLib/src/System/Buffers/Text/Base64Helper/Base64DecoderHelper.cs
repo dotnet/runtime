@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -20,6 +21,7 @@ namespace System.Buffers.Text
     // Vector128 version based on https://github.com/aklomp/base64/tree/e516d769a2a432c08404f1981e73b431566057be/lib/arch/ssse3
     internal static partial class Base64Helper
     {
+        [SuppressReadyToRunCanonicalRooting]
         internal static unsafe OperationStatus DecodeFrom<TBase64Decoder, T>(TBase64Decoder decoder, ReadOnlySpan<T> source, Span<byte> bytes,
             out int bytesConsumed, out int bytesWritten, bool isFinalBlock, bool ignoreWhiteSpace)
             where TBase64Decoder : IBase64Decoder<T>
@@ -45,6 +47,16 @@ namespace System.Buffers.Text
                 {
                     // For overflow see comment below
                     maxSrcLength = destLength / 3 * 4;
+                }
+                // Base64Url final blocks can have remainder 1 or 2. With decodedLength - 2 destination bytes,
+                // the final AVX2 or AdvSimd store exceeds the destination. Limit only the SIMD input here; the
+                // scalar input limit is recalculated below. The type checks preserve standard Base64 codegen.
+                else if (typeof(TBase64Decoder) != typeof(Base64DecoderByte) &&
+                    typeof(TBase64Decoder) != typeof(Base64DecoderChar) &&
+                    destLength == decodedLength - 2 &&
+                    (srcLength & 0x3) is 1 or 2)
+                {
+                    maxSrcLength--;
                 }
 
                 T* src = srcBytes;
@@ -278,6 +290,7 @@ namespace System.Buffers.Text
                     OperationStatus.InvalidData;
             }
 
+            [SuppressReadyToRunCanonicalRooting]
             static OperationStatus InvalidDataFallback(TBase64Decoder decoder, ReadOnlySpan<T> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock)
             {
                 source = source.Slice(bytesConsumed);
@@ -334,6 +347,7 @@ namespace System.Buffers.Text
             }
         }
 
+        [SuppressReadyToRunCanonicalRooting]
         internal static unsafe OperationStatus DecodeFromUtf8InPlace<TBase64Decoder>(TBase64Decoder decoder, Span<byte> buffer, out int bytesWritten, bool ignoreWhiteSpace)
             where TBase64Decoder : IBase64Decoder<byte>
         {
@@ -507,6 +521,7 @@ namespace System.Buffers.Text
             }
         }
 
+        [SuppressReadyToRunCanonicalRooting]
         internal static unsafe OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<byte> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
             where TBase64Decoder : IBase64Decoder<byte>
         {
@@ -612,6 +627,7 @@ namespace System.Buffers.Text
             return status;
         }
 
+        [SuppressReadyToRunCanonicalRooting]
         internal static unsafe OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<ushort> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
             where TBase64Decoder : IBase64Decoder<ushort>
         {
@@ -717,6 +733,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static int GetPaddingCount<TBase64Decoder>(TBase64Decoder decoder, ref byte ptrToLastElement)
             where TBase64Decoder : IBase64Decoder<byte>
         {
@@ -736,6 +753,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static int GetPaddingCount<TBase64Decoder>(TBase64Decoder decoder, ref ushort ptrToLastElement)
             where TBase64Decoder : IBase64Decoder<ushort>
         {
@@ -754,6 +772,7 @@ namespace System.Buffers.Text
             return padding;
         }
 
+        [SuppressReadyToRunCanonicalRooting]
         private static unsafe OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(TBase64Decoder decoder, Span<byte> source, ref int destIndex, uint sourceIndex)
             where TBase64Decoder : IBase64Decoder<byte>
         {
@@ -836,6 +855,7 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512BW))]
         [CompExactlyDependsOn(typeof(Avx512Vbmi))]
+        [SuppressReadyToRunCanonicalRooting]
         private static unsafe void Avx512Decode<TBase64Decoder, T>(TBase64Decoder decoder, ref T* srcBytes, ref byte* destBytes, T* srcEnd, int sourceLength, int destLength, T* srcStart, byte* destStart)
             where TBase64Decoder : IBase64Decoder<T>
             where T : unmanaged
@@ -903,6 +923,7 @@ namespace System.Buffers.Text
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
+        [SuppressReadyToRunCanonicalRooting]
         private static unsafe void Avx2Decode<TBase64Decoder, T>(TBase64Decoder decoder, ref T* srcBytes, ref byte* destBytes, T* srcEnd, int sourceLength, int destLength, T* srcStart, byte* destStart)
             where TBase64Decoder : IBase64Decoder<T>
             where T : unmanaged
@@ -1029,6 +1050,7 @@ namespace System.Buffers.Text
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [SuppressReadyToRunCanonicalRooting]
         private static unsafe void AdvSimdDecode<TBase64Decoder, T>(TBase64Decoder decoder, ref T* srcBytes, ref byte* destBytes, T* srcEnd, int sourceLength, int destLength, T* srcStart, byte* destStart)
             where TBase64Decoder : IBase64Decoder<T>
             where T : unmanaged
@@ -1155,7 +1177,7 @@ namespace System.Buffers.Text
                 Vector128<byte> res3 = ((str3 << 6) | str4);
 
                 // Step 6: Interleave and store decoded results.
-                AssertWrite<Vector128<byte>>(dest, destStart, destLength);
+                AssertWrite(dest, destStart, destLength, 48);
                 AdvSimd.Arm64.StoreVectorAndZip(dest, (res1, res2, res3));
 
                 src += 64;
@@ -1171,6 +1193,7 @@ namespace System.Buffers.Text
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
+        [SuppressReadyToRunCanonicalRooting]
         private static unsafe void Vector128Decode<TBase64Decoder, T>(TBase64Decoder decoder, ref T* srcBytes, ref byte* destBytes, T* srcEnd, int sourceLength, int destLength, T* srcStart, byte* destStart)
             where TBase64Decoder : IBase64Decoder<T>
             where T : unmanaged
@@ -1658,6 +1681,7 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [SuppressReadyToRunCanonicalRooting]
             public OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<byte> utf8,
                 Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
                 where TBase64Decoder : IBase64Decoder<byte> =>
@@ -1875,6 +1899,7 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [SuppressReadyToRunCanonicalRooting]
             public OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<ushort> source,
                 Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true) where TBase64Decoder : IBase64Decoder<ushort> =>
                 DecodeWithWhiteSpaceBlockwise(default(Base64DecoderChar), source, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);

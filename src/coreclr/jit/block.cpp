@@ -518,7 +518,6 @@ void BasicBlock::dspFlags() const
         {BBF_REMOVED, "del"},
         {BBF_DONT_REMOVE, "keep"},
         {BBF_INTERNAL, "internal"},
-        {BBF_HAS_SUPPRESSGC_CALL, "sup-gc"},
         {BBF_HAS_LABEL, "label"},
         {BBF_HAS_JMP, "jmp"},
         {BBF_HAS_CALL, "hascall"},
@@ -961,12 +960,21 @@ GenTree* BasicBlock::lastNode() const
 //    If the first block has a predecessor (which it may have, if it is the target of
 //    a backedge), we never want to consider it "unique" because the prolog is an
 //    implicit predecessor.
+//
+//    Similarly, a handler or filter's entry block may appear to have a unique
+//    explicit predecessor (for example, a filter's BBJ_EHFILTERRET block, or a
+//    single BBJ_CALLFINALLY reaching an unclonable finally), but that edge does
+//    not capture all of the ways control can actually reach the block: exception
+//    dispatch (and any intervening two-pass "finally" funclets it runs) can enter
+//    the handler without any explicit flow edge. So we never want to consider such
+//    a block's predecessor "unique" either.
 
 BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 {
     assert(compiler->fgPredsComputed);
 
-    if ((bbPreds == nullptr) || (bbPreds->getNextPredEdge() != nullptr) || (this == compiler->fgFirstBB))
+    if ((bbPreds == nullptr) || (bbPreds->getNextPredEdge() != nullptr) || (this == compiler->fgFirstBB) ||
+        compiler->bbIsHandlerBeg(this))
     {
         return nullptr;
     }

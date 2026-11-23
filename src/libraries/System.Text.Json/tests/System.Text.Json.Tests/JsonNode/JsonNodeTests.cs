@@ -3,12 +3,90 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
 {
     public static partial class JsonNodeTests
     {
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static async Task LazyInitialization_ConcurrentReads_PreserveChildIdentity(bool isArray)
+        {
+            const int ReaderCount = 4;
+            const int IterationCount = 10;
+            // Widen the initialization window so the synchronized readers contend on publication.
+            const int ElementCount = 10_000;
+
+            JsonNode template = isArray ? new JsonArray() : new JsonObject();
+            for (int i = 0; i < ElementCount; i++)
+            {
+                if (template is JsonArray array)
+                {
+                    array.Add(i + 1);
+                }
+                else
+                {
+                    template[$"item{i}"] = i + 1;
+                }
+            }
+
+            string json = template.ToJsonString();
+            var parents = new JsonNode[IterationCount];
+            for (int i = 0; i < parents.Length; i++)
+            {
+                parents[i] = JsonNode.Parse(json)!;
+            }
+
+            using var barrier = new Barrier(ReaderCount);
+            var readers = new Task<JsonNode[]>[ReaderCount];
+            for (int i = 0; i < readers.Length; i++)
+            {
+                readers[i] = Task.Factory.StartNew(() =>
+                {
+                    var children = new JsonNode[IterationCount];
+                    for (int iteration = 0; iteration < children.Length; iteration++)
+                    {
+                        Assert.True(barrier.SignalAndWait(TimeSpan.FromSeconds(60)));
+                        children[iteration] = parents[iteration][0]!;
+                    }
+
+                    return children;
+                }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            }
+
+            JsonNode[][] results = await Task.WhenAll(readers);
+            for (int iteration = 0; iteration < parents.Length; iteration++)
+            {
+                JsonNode parent = parents[iteration];
+                JsonNode expectedChild = parent[0]!;
+                foreach (JsonNode[] children in results)
+                {
+                    JsonNode child = children[iteration];
+                    Assert.Same(expectedChild, child);
+                    Assert.Same(parent, child.Parent);
+                    Assert.Equal(1, child.GetValue<int>());
+                    Assert.Equal(isArray ? "$[0]" : "$.item0", child.GetPath());
+
+                    if (isArray)
+                    {
+                        Assert.Equal(0, child.GetElementIndex());
+                    }
+                    else
+                    {
+                        Assert.Equal("item0", child.GetPropertyName());
+                    }
+                }
+
+                expectedChild.ReplaceWith(-1);
+                Assert.Null(expectedChild.Parent);
+                Assert.Equal(-1, parent[0]!.GetValue<int>());
+            }
+        }
+
         [Fact]
         public static void JsonTypes_Deserialize()
         {

@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Xunit;
@@ -103,6 +104,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             .EnsureSuccessful();
 
         AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+        AddWasmOptProjectProperties(ref extraProperties);
 
         string projectFilePath = Path.Combine(_projectDir, $"{projectName}.csproj");
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
@@ -140,12 +142,13 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
 
         AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+        AddWasmOptProjectProperties(ref extraProperties);
 
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
     }
 
-    private void UpdateProjectFile(string projectFilePath, bool runAnalyzers, string extraProperties, string extraItems, string insertAtEnd)
+    protected void UpdateProjectFile(string projectFilePath, bool runAnalyzers, string extraProperties, string extraItems, string insertAtEnd)
     {
         extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
         if (runAnalyzers)
@@ -153,7 +156,13 @@ public class WasmTemplateTestsBase : BuildTestBase
         AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
     }
 
-    private static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
+    protected static void AddWasmOptProjectProperties(ref string extraProperties)
+    {
+        if (EnvironmentVariables.UseWasmOpt)
+            extraProperties += "<WasmRunWasmOpt>true</WasmRunWasmOpt>";
+    }
+
+    protected static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
     {
         if (!s_buildEnv.IsCoreClrRuntime)
             return;
@@ -164,29 +173,32 @@ public class WasmTemplateTestsBase : BuildTestBase
         """
             <UseMonoRuntime>false</UseMonoRuntime>
         """;
-        extraItems +=
-        $$"""
-            <KnownFrameworkReference Update="Microsoft.NETCore.App"
-                                     Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
-              <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</TargetingPackVersion>
-              <LatestRuntimeFrameworkVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</LatestRuntimeFrameworkVersion>
-              <RuntimePackRuntimeIdentifiers Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{DefaultTargetFramework}}'">browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
-            </KnownFrameworkReference>
-        """;
-        insertAtEnd +=
-        $$"""
-            <Target Name="_UpdateKnownCoreClrWebAssemblyPacks" BeforeTargets="ProcessFrameworkReferences"
-                    Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
-                <ItemGroup>
-                <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
-                    <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</WebAssemblySdkPackVersion>
-                </KnownWebAssemblySdkPack>
-                <KnownCrossgen2Pack Update="@(KnownCrossgen2Pack)">
-                    <Crossgen2PackVersion Condition="'%(KnownCrossgen2Pack.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</Crossgen2PackVersion>
-                </KnownCrossgen2Pack>
-                </ItemGroup>
-            </Target>
-        """;
+        foreach (string targetFramework in new[] { DefaultTargetFramework, DefaultTargetFrameworkForBlazorTemplate }.Distinct())
+        {
+            extraItems +=
+            $$"""
+                <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                                         Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+                  <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</TargetingPackVersion>
+                  <LatestRuntimeFrameworkVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</LatestRuntimeFrameworkVersion>
+                  <RuntimePackRuntimeIdentifiers Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{targetFramework}}'">browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
+                </KnownFrameworkReference>
+            """;
+            insertAtEnd +=
+            $$"""
+                <Target Name="_UpdateKnownCoreClrWebAssemblyPacks_{{targetFramework.Replace('.', '_')}}" BeforeTargets="ProcessFrameworkReferences"
+                        Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+                    <ItemGroup>
+                    <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
+                        <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</WebAssemblySdkPackVersion>
+                    </KnownWebAssemblySdkPack>
+                    <KnownCrossgen2Pack Update="@(KnownCrossgen2Pack)">
+                        <Crossgen2PackVersion Condition="'%(KnownCrossgen2Pack.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</Crossgen2PackVersion>
+                    </KnownCrossgen2Pack>
+                    </ItemGroup>
+                </Target>
+            """;
+        }
     }
 
     /// <summary>
@@ -568,8 +580,11 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (runOptions is BlazorRunOptions blazorOp && blazorOp.Test is not null)
             await blazorOp.Test(page);
 
-        _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
-        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(runOptions.TimeoutSeconds ?? 10));
+        // The app may still be downloading assets and booting the runtime at this point,
+        // which can take well over 10s on loaded CI machines (especially untrimmed CoreCLR builds).
+        int timeoutSeconds = runOptions.TimeoutSeconds ?? 60;
+        _testOutput.WriteLine($"Waiting up to {timeoutSeconds}s for the 'WASM EXIT' message");
+        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(timeoutSeconds));
         if (runOptions.ExpectedExitCode is not null && exitCode != runOptions.ExpectedExitCode)
             throw new Exception($"Expected exit code {runOptions.ExpectedExitCode} but got {exitCode}.\nconsoleOutput={string.Join("\n", consoleOutput)}");
 
@@ -612,6 +627,33 @@ public class WasmTemplateTestsBase : BuildTestBase
             runOptions.OnErrorMessage?.Invoke(msg);
         }
     }
+
+	protected void AssertWasmEndpointIntegrity(Configuration config, bool publish)
+	{
+		string manifestPath = Path.Combine(GetObjDir(config), $"staticwebassets.{(publish ? "publish" : "build")}.endpoints.json");
+		using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(manifestPath));
+		JsonElement[] endpoints = manifest.RootElement.GetProperty("Endpoints").EnumerateArray()
+			.Where(endpoint => endpoint.GetProperty("Selectors").GetArrayLength() == 0)
+			.ToArray();
+		JsonElement[] wasmEndpoints = endpoints.Where(endpoint =>
+		{
+			string route = Assert.IsType<string>(endpoint.GetProperty("Route").GetString());
+			return route.StartsWith("_framework/", StringComparison.Ordinal);
+		}).ToArray();
+		Assert.NotEmpty(wasmEndpoints);
+		Assert.All(wasmEndpoints, endpoint =>
+		{
+			Assert.Contains(endpoint.GetProperty("EndpointProperties").EnumerateArray(),
+				property => property.GetProperty("Name").GetString() == "integrity"
+					&& property.GetProperty("Value").GetString() is string hash
+					&& hash.StartsWith("sha256-", StringComparison.Ordinal));
+			Assert.Contains(endpoint.GetProperty("ResponseHeaders").EnumerateArray(),
+				header => string.Equals(header.GetProperty("Name").GetString(), "ETag", StringComparison.OrdinalIgnoreCase));
+		});
+		JsonElement mainScript = Assert.Single(endpoints.Where(endpoint => endpoint.GetProperty("Route").GetString() == "main.js"));
+		Assert.Contains(mainScript.GetProperty("EndpointProperties").EnumerateArray(),
+			property => property.GetProperty("Name").GetString() == "integrity");
+	}
 
     public string GetBinFrameworkDir(Configuration config, bool forPublish, string? framework = null, string? projectDir = null) =>
         _provider.GetBinFrameworkDir(config, forPublish, framework ?? DefaultTargetFramework, projectDir);

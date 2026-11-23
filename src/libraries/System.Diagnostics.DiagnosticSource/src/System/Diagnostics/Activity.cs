@@ -187,7 +187,11 @@ namespace System.Diagnostics
         public string DisplayName
         {
             get => _displayName ?? OperationName;
-            set => _displayName = value ?? throw new ArgumentNullException(nameof(value));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _displayName = value;
+            }
         }
 
         /// <summary>Get the ActivitySource object associated with this Activity.</summary>
@@ -261,7 +265,7 @@ namespace System.Diagnostics
         /// <summary>
         /// If the parent for this activity comes from outside the process, the activity
         /// does not have a Parent Activity but MAY have a ParentId (which was deserialized from
-        /// from the parent).   This accessor fetches the parent ID if it exists at all.
+        /// the parent).   This accessor fetches the parent ID if it exists at all.
         /// Note this can be null if this is a root Activity (it has no parent)
         /// <para/>
         /// See <see href="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
@@ -297,7 +301,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Root Id is substring from Activity.Id (or ParentId) between '|' (or beginning) and first '.'.
-        /// Filtering by root Id allows to find all Activities involved in operation processing.
+        /// Filtering by root Id allows you to find all Activities involved in operation processing.
         /// RootId may be null if Activity has neither ParentId nor Id.
         /// See <see href="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
@@ -1139,7 +1143,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// SetCustomProperty allow attaching any custom object to this Activity object.
-        /// If the property name was previously associated with other object, SetCustomProperty will update to use the new propert value instead.
+        /// If the property name was previously associated with other object, SetCustomProperty will update to use the new property value instead.
         /// </summary>
         /// <param name="propertyName"> The name to associate the value with.<see cref="OperationName"/></param>
         /// <param name="propertyValue">The object to attach and map to the property name.</param>
