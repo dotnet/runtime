@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <!-- Requires JIT compilation and threading support -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
+    <!-- MakeGenericType over value types made at run time -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test117138.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The JIT reads the arrays' lengths in optimized code -->
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+  </ItemGroup>
+</Project>
