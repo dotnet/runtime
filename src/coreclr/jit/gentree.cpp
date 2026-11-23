@@ -36038,31 +36038,6 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
 }
 
 //------------------------------------------------------------------------
-// IsNeverNegativeOne: returns true if the given tree is known to never be
-//                     be negative one. Only valid for integral types.
-//
-// Arguments:
-//    comp - Compiler object, needed for IsNeverNegative
-//
-// Return Value:
-//    true if the given tree is known to never be negative one
-//
-bool GenTree::IsNeverNegativeOne(Compiler* comp) const
-{
-    assert(varTypeIsIntegral(this));
-
-    if (this->IsNeverNegative(comp))
-        return true;
-
-    if (this->IsIntegralConst())
-    {
-        return !this->IsIntegralConst(-1);
-    }
-
-    return false;
-}
-
-//------------------------------------------------------------------------
 // IsNeverZero: returns true if the given tree is known to never be zero.
 //              Only valid for integral types.
 //
@@ -36097,22 +36072,26 @@ void GenTree::SetDivModExceptionFlags(Compiler* comp)
 {
     assert(OperIs(GT_DIV, GT_MOD, GT_UDIV, GT_UMOD));
 
+    ExceptionSetFlags exceptions = OperExceptions(comp);
     if (!varTypeIsFloating(this))
     {
-        GenTree* divisor = gtGetOp2()->gtSkipReloadOrCopy();
-
-        if (divisor->IsNeverZero())
+        if ((exceptions & ExceptionSetFlags::DivideByZeroException) == ExceptionSetFlags::None)
         {
             gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
         }
 
-        if (OperIs(GT_DIV, GT_MOD) && divisor->IsNeverNegativeOne(comp))
+        // OperExceptions handles constants. Either operand being nonnegative also rules out MinValue / -1.
+        if (OperIs(GT_DIV, GT_MOD) &&
+            (((exceptions & ExceptionSetFlags::ArithmeticException) == ExceptionSetFlags::None) ||
+             gtGetOp2()->gtSkipReloadOrCopy()->IsNeverNegative(comp) ||
+             gtGetOp1()->gtSkipReloadOrCopy()->IsNeverNegative(comp)))
         {
             gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
+            exceptions &= ~ExceptionSetFlags::ArithmeticException;
         }
     }
 
-    if (OperMayThrow(comp))
+    if (exceptions != ExceptionSetFlags::None)
     {
         gtFlags |= GTF_EXCEPT;
         return;

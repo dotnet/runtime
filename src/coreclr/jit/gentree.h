@@ -2499,7 +2499,6 @@ public:
     bool IsVectorPerElementMask(class Compiler* comp, var_types simdBaseType, unsigned simdSize) const;
 
     bool IsNeverNegative(Compiler* comp) const;
-    bool IsNeverNegativeOne(Compiler* comp) const;
     bool IsNeverZero() const;
     void SetDivModExceptionFlags(Compiler* comp);
 
