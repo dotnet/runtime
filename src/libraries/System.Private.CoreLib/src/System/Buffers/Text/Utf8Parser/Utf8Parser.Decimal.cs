@@ -49,7 +49,7 @@ namespace System.Buffers.Text
 
             Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.Decimal, stackalloc byte[Number.DecimalNumberBufferLength]);
 
-            if (!TryParseNumber(source, ref number, out bytesConsumed, options, out bool textUsedExponentNotation))
+            if (!TryParseNumber(source, ref number, out bytesConsumed, options, out bool textUsedExponentNotation, out _))
             {
                 value = default;
                 return false;

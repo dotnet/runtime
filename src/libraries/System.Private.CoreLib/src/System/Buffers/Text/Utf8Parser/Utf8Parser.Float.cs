@@ -95,7 +95,7 @@ namespace System.Buffers.Text
                 default:
                     return ParserHelpers.TryParseThrowFormatException(out bytesConsumed);
             }
-            if (!TryParseNumber(source, ref number, out bytesConsumed, options, out bool textUsedExponentNotation))
+            if (!TryParseNumber(source, ref number, out bytesConsumed, options, out bool textUsedExponentNotation, out int trailingZeroCount))
             {
                 return false;
             }
@@ -104,6 +104,19 @@ namespace System.Buffers.Text
                 bytesConsumed = 0;
                 return false;
             }
+
+            if (!number.HasNonZeroTail)
+            {
+                // Trim trailing fractional zeros so we match Number.TryParseNumber.
+                int numberOfFractionalDigits = number.DigitsCount - Math.Max(number.Scale, 0);
+                if (numberOfFractionalDigits > 0)
+                {
+                    number.DigitsCount -= Math.Min(trailingZeroCount, numberOfFractionalDigits);
+                    number.Digits[number.DigitsCount] = 0;
+                }
+                number.CheckConsistency();
+            }
+
             return true;
         }
 

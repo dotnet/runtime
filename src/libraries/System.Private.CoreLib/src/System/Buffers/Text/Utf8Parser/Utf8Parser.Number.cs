@@ -13,7 +13,7 @@ namespace System.Buffers.Text
             AllowExponent = 0x00000001,
         }
 
-        private static bool TryParseNumber(ReadOnlySpan<byte> source, ref Number.NumberBuffer number, out int bytesConsumed, ParseNumberOptions options, out bool textUsedExponentNotation)
+        private static bool TryParseNumber(ReadOnlySpan<byte> source, ref Number.NumberBuffer number, out int bytesConsumed, ParseNumberOptions options, out bool textUsedExponentNotation, out int numberOfTrailingZeros)
         {
             Debug.Assert(number.DigitsCount == 0);
             Debug.Assert(number.Scale == 0);
@@ -22,6 +22,7 @@ namespace System.Buffers.Text
 
             number.CheckConsistency();
             textUsedExponentNotation = false;
+            numberOfTrailingZeros = 0;
 
             if (source.Length == 0)
             {
@@ -92,7 +93,7 @@ namespace System.Buffers.Text
                 srcIndex++;
                 digitCount++;
 
-                if (digitCount >= maxDigitCount)
+                if (digitCount > maxDigitCount)
                 {
                     // For decimal and binary floating-point numbers, we only
                     // need to store digits up to maxDigCount. However, we still
@@ -102,6 +103,10 @@ namespace System.Buffers.Text
                     // results.
 
                     hasNonZeroTail |= value;
+                }
+                else
+                {
+                    numberOfTrailingZeros = value == 0 ? numberOfTrailingZeros + 1 : 0;
                 }
             }
             number.HasNonZeroTail = (hasNonZeroTail != 0);
@@ -134,6 +139,18 @@ namespace System.Buffers.Text
                 srcIndex++;
                 int startIndexDigitsAfterDecimal = srcIndex;
 
+                if (dstIndex == 0)
+                {
+                    // Not copied any digits to the Number struct yet. This means we must continue discarding leading zeroes even though they appeared after the decimal point.
+                    while (srcIndex < source.Length && source[srcIndex] == '0')
+                    {
+                        number.Scale--;
+                        srcIndex++;
+                    }
+                }
+
+                int startIndexOfDigitsAfterDecimalToCopy = srcIndex;
+
                 while (srcIndex < source.Length)
                 {
                     c = source[srcIndex];
@@ -147,7 +164,7 @@ namespace System.Buffers.Text
                     srcIndex++;
                     digitCount++;
 
-                    if (digitCount >= maxDigitCount)
+                    if (digitCount > maxDigitCount)
                     {
                         // For decimal and binary floating-point numbers, we only
                         // need to store digits up to maxDigCount. However, we still
@@ -158,21 +175,14 @@ namespace System.Buffers.Text
 
                         hasNonZeroTail |= value;
                     }
+                    else
+                    {
+                        numberOfTrailingZeros = value == 0 ? numberOfTrailingZeros + 1 : 0;
+                    }
                 }
                 number.HasNonZeroTail = (hasNonZeroTail != 0);
 
                 numDigitsAfterDecimal = srcIndex - startIndexDigitsAfterDecimal;
-
-                int startIndexOfDigitsAfterDecimalToCopy = startIndexDigitsAfterDecimal;
-                if (dstIndex == 0)
-                {
-                    // Not copied any digits to the Number struct yet. This means we must continue discarding leading zeroes even though they appeared after the decimal point.
-                    while (startIndexOfDigitsAfterDecimalToCopy < srcIndex && source[startIndexOfDigitsAfterDecimalToCopy] == '0')
-                    {
-                        number.Scale--;
-                        startIndexOfDigitsAfterDecimalToCopy++;
-                    }
-                }
 
                 int numDigitsAfterDecimalToCopy = Math.Min(srcIndex - startIndexOfDigitsAfterDecimalToCopy, maxDigitCount - dstIndex);
                 source.Slice(startIndexOfDigitsAfterDecimalToCopy, numDigitsAfterDecimalToCopy).CopyTo(digits.Slice(dstIndex));
