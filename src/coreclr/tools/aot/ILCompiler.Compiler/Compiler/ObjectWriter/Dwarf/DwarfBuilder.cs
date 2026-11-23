@@ -216,6 +216,12 @@ namespace ILCompiler.ObjectWriter
 
                 foreach (DwarfStaticVariableInfo staticField in _staticFields)
                 {
+                    // Static fields without a static base, like thread statics, have no location.
+                    if (staticField.Name.IsNull)
+                    {
+                        continue;
+                    }
+
                     (Utf8String sectionSymbolName, long address) = resolveStaticVariable(staticField.Name);
                     if (!sectionSymbolName.IsNull)
                     {

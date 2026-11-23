@@ -593,7 +593,6 @@ namespace ILCompiler
 
             Utf8String nonGcStaticDataName = NodeFactory.NameMangler.NodeMangler.NonGCStatics(type);
             Utf8String gcStaticDataName = NodeFactory.NameMangler.NodeMangler.GCStatics(type);
-            Utf8String threadStaticDataName = NodeFactory.NameMangler.NodeMangler.ThreadStatics(type);
             bool isNativeAOT = Abi == TargetAbi.NativeAot;
 
             bool hasNonGcStatics = NodeFactory.MetadataManager.HasNonGcStaticBase(defType);
@@ -690,8 +689,9 @@ namespace ILCompiler
                         field.Offset = 0xFFFFFFFF;
 
                         if (fieldDesc.IsThreadStatic) {
-                            staticDesc.StaticDataName = threadStaticDataName;
-                            staticDesc.IsStaticDataInObject = isNativeAOT ? 1 : 0;
+                            // The storage of thread statics is looked up at runtime for the current thread,
+                            // which a location expression can't describe. The field has no location.
+                            staticDesc.StaticDataName = default;
                             threadStaticsDescs.Add(staticDesc);
                         } else if (fieldDesc.HasGCStaticBase) {
                             staticDesc.StaticDataName = gcStaticDataName;

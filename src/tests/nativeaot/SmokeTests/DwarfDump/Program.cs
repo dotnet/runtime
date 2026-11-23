@@ -137,6 +137,16 @@ public class Program
             return 12;
         }
 
+        // The storage of thread statics can't be described by a location expression, they are only declared.
+        ProcessTextOutput threadStaticResult = RunLlvmDwarfDump(llvmDwarfDumpPath, "--debug-info", $"--name={nameof(ThreadStaticHolder<string>.ThreadStaticField)}");
+        if (!threadStaticResult.StandardOutput.Contains("DW_TAG_member") ||
+            GetStaticFieldLocation(llvmDwarfDumpPath, nameof(ThreadStaticHolder<string>.ThreadStaticField)) is not null)
+        {
+            Console.Error.WriteLine($"Unexpected debug info for {nameof(ThreadStaticHolder<string>.ThreadStaticField)}:");
+            Console.Error.WriteLine(threadStaticResult.StandardOutput);
+            return 13;
+        }
+
         return 100;
     }
 
@@ -146,6 +156,7 @@ public class Program
     private static void UseTypesUnderTest()
     {
         StaticFields.Initialize();
+        new ThreadStaticHolder<string>().Set(42);
     }
 
     private static ProcessTextOutput RunLlvmDwarfDump(string llvmDwarfDumpPath, params string[] arguments)
@@ -201,4 +212,15 @@ static class StaticFields
         GcStaticDeclaredFirst = "gc";
         NonGcStaticDeclaredSecond = 42;
     }
+}
+
+// Thread statics of types sharing code with other instantiations are not inlined in the thread local storage
+// of the module, they are reached through the thread static base of the type.
+class ThreadStaticHolder<T>
+{
+    [ThreadStatic]
+    public static int ThreadStaticField;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public void Set(int value) => ThreadStaticField = value;
 }
