@@ -166,9 +166,10 @@ test("worker boot resolves the shared UI culture after config callbacks and befo
 });
 
 test("native worker forwards stdout and stderr during preload and startup", async () => {
-    for (const downloadOnly of [false, true]) {
+    for (const [downloadOnly, commandName] of [[true], [false, "RUN_MAIN"], [false, "RUN_MAIN_AND_EXIT"], [false, "EXIT"]]) {
         const messages = [];
         const Module = {};
+        let onCommand, signal;
         const emit = () => {
             Module.out("native stdout");
             Module.err("native stderr");
@@ -177,7 +178,11 @@ test("native worker forwards stdout and stderr during preload and startup", asyn
         };
         const load = createWorkerModuleLoader(createContext({
             Atomics, SharedArrayBuffer, Error,
-            self: { addEventListener() {}, postMessage: message => messages.push(structuredClone(message)) },
+            self: {
+                addEventListener: (type, handler) => { if (type === "message") onCommand = handler; },
+                postMessage: message => messages.push(structuredClone(message)),
+                close: () => assert.fail("The UI must drain output before terminating the native worker"),
+            },
         }), {
             "./cross-module": {
                 dotnetApi: { INTERNAL: {} }, dotnetInternals: {}, Module,
@@ -188,12 +193,17 @@ test("native worker forwards stdout and stderr during preload and startup", asyn
             "./host-builder": { HostBuilder: class {
                 async create() {
                     emit();
-                    return { runtimeBuildInfo: {}, INTERNAL: { nativeBoundary: { getProxyCounts: () => [] } } };
+                    return {
+                        runtimeBuildInfo: {}, INTERNAL: { nativeBoundary: { getProxyCounts: () => [] } },
+                        runMain: async () => { emit(); return 0; },
+                        runMainAndExit: async () => { emit(); return 0; },
+                        exit: () => { emit(); },
+                    };
                 }
                 async download() { emit(); }
             } },
             "./worker-native": { createNativeCallBuffer: () => new SharedArrayBuffer(16),
-                createNativeChannel: () => ({ listen() {}, stop() {} }), NativeOperation: {} },
+                createNativeChannel: received => { signal = received; return { listen() {}, stop() {} }; }, NativeOperation: {} },
             "./worker-assets": { loadWorkerResource() {}, resolveWorkerModule() {} },
             "./callbacks": { loaderCallbacks: {} },
             "./assets": { fetchLazyAssembly() {}, fetchSatelliteAssemblies() {} },
@@ -211,6 +221,24 @@ test("native worker forwards stdout and stderr during preload and startup", asyn
             { type: "output", stream: "err", text: "first line\nsecond line \u{1f30d}" },
         ]);
         assert.equal(messages[4].type, downloadOnly ? "preloaded" : "ready");
+        if (!downloadOnly) {
+            const shared = (await load("./shared-signaling")).namespace;
+            messages.length = 0;
+            onCommand({ data: { type: "command", commandId: shared.CommandId[commandName], promiseId: 42 } });
+            await new Promise(resolve => setImmediate(resolve));
+            assert.deepEqual(messages, [
+                { type: "output", stream: "out", text: "native stdout" },
+                { type: "output", stream: "err", text: "native stderr" },
+                { type: "output", stream: "out", text: "" },
+                { type: "output", stream: "err", text: "first line\nsecond line \u{1f30d}" },
+                { type: "command-completed", promiseId: 42 },
+            ]);
+            assert.equal(Atomics.load(signal, shared.OFFSET_COMMAND_SIGNAL), shared.SignalState.DONE);
+            assert.equal(Atomics.load(signal, shared.OFFSET_COMMAND_PROMISE_ID), 42);
+            assert.equal(Atomics.load(signal, shared.OFFSET_COMMAND_RESULT), 0);
+            assert.equal(Atomics.load(signal, shared.OFFSET_WORKER_STATE),
+                commandName === "RUN_MAIN" ? shared.SignalState.IDLE : shared.SignalState.DONE);
+        }
     }
 });
 
@@ -278,7 +306,11 @@ test("UI dispatches worker output to configured callbacks and surfaces callback 
 });
 
 test("worker startup failure notifies normal exit listeners before teardown and preserves successful exit codes", async () => {
-    for (const scenario of ["symbols 404", "symbols network", "symbols preload", "initializer failure", "exit", "runMainAndExit"]) {
+    for (const [scenario, completionFirst] of [
+        ["symbols 404"], ["symbols network"], ["symbols preload"], ["initializer failure"],
+        ["exit", false], ["exit", true], ["runMainAndExit", false], ["runMainAndExit", true],
+        ["cancel runMain", false], ["cancel runMain", true],
+    ]) {
         const events = [];
         const beforeAttach = scenario.startsWith("symbols");
         const failed = beforeAttach || scenario === "initializer failure";
@@ -326,10 +358,28 @@ test("worker startup failure notifies normal exit listeners before teardown and 
                         type: "ready", runtimeBuildInfo: {}, workerProxyCounts: [], appSettings: [],
                     } }));
                     if (message.type === "command") {
-                        Atomics.store(signal, shared.OFFSET_COMMAND_RESULT, 0);
-                        Atomics.store(signal, shared.OFFSET_COMMAND_PROMISE_ID, message.promiseId);
-                        Atomics.store(signal, shared.OFFSET_COMMAND_SIGNAL, shared.SignalState.DONE);
-                        shared.wakeMain(signal);
+                        const completeShared = () => {
+                            assert.equal(events.includes("terminate"), false);
+                            Atomics.store(signal, shared.OFFSET_COMMAND_RESULT, 0);
+                            Atomics.store(signal, shared.OFFSET_COMMAND_PROMISE_ID, message.promiseId);
+                            Atomics.store(signal, shared.OFFSET_COMMAND_SIGNAL, shared.SignalState.DONE);
+                            shared.wakeMain(signal);
+                        };
+                        if (message.commandId === shared.CommandId.RUN_MAIN) {
+                            completeShared();
+                            setTimeout(() => this.onmessage?.({ data: {
+                                type: "command-completed", promiseId: message.promiseId,
+                            } }), 0);
+                            return;
+                        }
+                        const deliverMessages = () => {
+                            this.onmessage?.({ data: { type: "output", stream: "out", text: "final stdout" } });
+                            this.onmessage?.({ data: { type: "output", stream: "err", text: "final stderr" } });
+                            this.onmessage?.({ data: { type: "command-completed", promiseId: message.promiseId } });
+                            if (completionFirst) setTimeout(completeShared, 0);
+                        };
+                        if (!completionFirst) completeShared();
+                        setTimeout(deliverMessages, 0);
                     }
                 }
                 terminate() { events.push("terminate"); }
@@ -339,7 +389,9 @@ test("worker startup failure notifies normal exit listeners before teardown and 
             "./icu": { getIcuResourceName() {} },
             "./bootstrap": { scriptUrl: "https://example.test/dotnet.js" },
             "./cross-module": {
-                dotnetApi, dotnetInternals, Module: {},
+                dotnetApi, dotnetInternals, Module: {
+                    out: text => events.push(text), err: text => events.push(text),
+                },
                 dotnetUpdateInternals: () => events.push("diagnostics subscribed"),
                 dotnetUpdateInternalsSubscriber() {},
                 dotnetRuntimeExports: { abortInteropTimers() {
@@ -434,11 +486,28 @@ test("worker startup failure notifies normal exit listeners before teardown and 
             if (scenario === "exit") {
                 api.exit(0);
                 while (!events.includes("terminate")) await new Promise(resolve => setImmediate(resolve));
+            } else if (scenario === "cancel runMain") {
+                const main = api.runMain();
+                await Promise.resolve();
+                await assert.rejects(api.runMain(), /another command is already running/);
+                await assert.rejects(api.runMainAndExit(), /another command is already running/);
+                const reason = new TypeError("Explicit exit cancelled the pending command");
+                const rejected = assert.rejects(main, error => error === reason);
+                api.exit(0, reason);
+                await rejected;
+                while (!events.includes("terminate")) await new Promise(resolve => setImmediate(resolve));
+                assert.equal(dotnetInternals[0].exitError, reason);
             } else assert.equal(await api.runMainAndExit(), 0);
         }
         assert.equal(events.filter(value => value === "exit listener").length, 1);
         assert.equal(events.filter(value => value === "terminate").length, 1);
         assert.ok(events.indexOf("exit listener") < events.indexOf("terminate"));
+        if (!failed) {
+            assert.equal(events.filter(value => value === "final stdout").length, 1);
+            assert.equal(events.filter(value => value === "final stderr").length, 1);
+            assert.ok(events.indexOf("final stdout") < events.indexOf("exit listener"));
+            assert.ok(events.indexOf("final stderr") < events.indexOf("exit listener"));
+        }
         if (beforeAttach) assert.equal(events.includes("stop channel"), false);
         else assert.ok(events.indexOf("exit listener") < events.indexOf("stop channel"));
         assert.equal(dotnetInternals[0].memory instanceof WebAssembly.Memory, !beforeAttach);

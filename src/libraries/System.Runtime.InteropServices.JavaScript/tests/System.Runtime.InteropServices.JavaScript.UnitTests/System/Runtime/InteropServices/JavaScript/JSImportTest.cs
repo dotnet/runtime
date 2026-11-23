@@ -460,6 +460,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("invokeNested", nameof(WorkerInteropTest))]
         private static partial int InvokeNestedOnUI(int value);
 
+        [JSImport("invokeNestedFromEventLoop", nameof(WorkerInteropTest))]
+        private static partial Task<int> InvokeNestedFromEventLoopOnUI(int value);
+
         [JSImport("echoAsync", nameof(WorkerInteropTest))]
         private static partial Task<int> EchoAsyncOnUI(int value);
 
@@ -486,6 +489,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [JSImport("nestedString", nameof(WorkerInteropTest))]
         private static partial string NestedStringOnUI(string value);
+
+        [JSImport("nestedStringFromEventLoop", nameof(WorkerInteropTest))]
+        private static partial Task<string> NestedStringFromEventLoopOnUI(string value);
 
         [JSImport("failString", nameof(WorkerInteropTest))]
         private static partial string FailStringOnUI(string value);
@@ -906,9 +912,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(0)]
         [InlineData(4)]
         [InlineData(15)]
-        public void NestedSynchronousCalls(int depth)
+        public async Task NestedSynchronousCalls(int depth)
         {
-            Assert.Equal(depth, InvokeNestedOnUI(depth));
+            Assert.Equal(depth, await InvokeNestedFromEventLoopOnUI(depth));
         }
 
         [Theory]
@@ -976,10 +982,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(0)]
         [InlineData(4)]
         [InlineData(15)]
-        public void NestedStringCalls(int depth)
+        public async Task NestedStringCalls(int depth)
         {
             string value = new string('x', depth);
-            Assert.Equal(value, NestedStringOnUI(value));
+            Assert.Equal(value, await NestedStringFromEventLoopOnUI(value));
         }
 
         [Fact]

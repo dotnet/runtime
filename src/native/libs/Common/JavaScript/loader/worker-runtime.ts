@@ -35,6 +35,7 @@ export type WorkerToMainMessage =
     | { type: "error", error: WorkerError }
     | WorkerResourceRequest
     | { type: "output"; stream: "out" | "err"; text: string }
+    | { type: "command-completed"; promiseId: number }
     | { type: "diagnostic-download"; chunks: Uint8Array[] }
     | { type: "download-progress"; loaded: number; total: number };
 
@@ -129,9 +130,10 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage, bootCon
             if (request.commandId !== CommandId.RUN_MAIN) {
                 closing = true;
                 Atomics.store(signal, OFFSET_WORKER_STATE, SignalState.DONE);
-                self.close();
             }
             wakeMain(signal);
+            // The UI terminates the worker only after this FIFO output barrier is handled.
+            self.postMessage({ type: "command-completed", promiseId: request.promiseId } satisfies WorkerToMainMessage);
         }, fail);
     });
 

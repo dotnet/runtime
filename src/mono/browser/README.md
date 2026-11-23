@@ -186,8 +186,10 @@ The existing loader handles URL overrides, default loading and Response promises
 response streams are transferred to the worker without buffering whole WASM
 images. Progress combines UI and worker assets. Native JS modules are imported
 only in the worker, even when their URLs are selected by a UI callback.
-Native stdout/stderr writes use the UI's configured output callbacks. The
-diagnostics module initializes UI exit/logging hooks separately from worker-owned
+Native stdout/stderr writes use the UI's configured output callbacks. Terminal
+command completion waits for preceding output messages to reach UI
+before shutdown clears the worker's message handlers.
+The diagnostics module initializes UI exit/logging hooks separately from worker-owned
 collection and router services, so startup failures report through the normal
 exit listeners and DOM hooks.
 Shutdown aborts loader-owned fetches and cancels late custom response bodies.

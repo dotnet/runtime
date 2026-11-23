@@ -202,6 +202,10 @@ export async function setup(runtime) {
             return result;
         },
         invokeNested: value => exports.Nested(value),
+        invokeNestedFromEventLoop: async value => {
+            await new Promise(resolve => setTimeout(resolve, 0));
+            return exports.Nested(value);
+        },
         echoAsync: async value => {
             await new Promise(resolve => setTimeout(resolve, 0));
             return value;
@@ -219,6 +223,11 @@ export async function setup(runtime) {
         },
         invokeStringAsync: value => exports.EchoStringAsync(value),
         nestedString: value => exports.NestedString(value),
+        nestedStringFromEventLoop: async value => {
+            // Measure the full entry budget after the enclosing managed completion unwinds.
+            await new Promise(resolve => setTimeout(resolve, 0));
+            return exports.NestedString(value);
+        },
         failString: value => exports.ThrowString(value),
         failStringAsync: async () => {
             throw new Error("UI async string failure");

@@ -74,6 +74,7 @@ async function createWorkerSession(config: LoaderConfig, preload: boolean): Prom
     let channel: ReturnType<typeof createNativeChannel> | undefined;
     let exited: Error | undefined;
     let pending: AbortController | undefined;
+    let commandCompletion: { promiseId: number; resolve(): void } | undefined;
     let exitRequested = false;
     let uiAttached = false;
     const resourceAbort = new AbortController();
@@ -238,11 +239,16 @@ async function createWorkerSession(config: LoaderConfig, preload: boolean): Prom
         const controller = new AbortController();
         pending = controller;
         const promiseId = allocatePromiseId();
+        const completed = createPromiseCompletionSource<void>();
+        const completion = { promiseId, resolve: completed.resolve };
+        commandCompletion = completion;
+        const abortCompletion = () => completed.reject(controller.signal.reason);
+        controller.signal.addEventListener("abort", abortCompletion, { once: true });
         Atomics.store(activeSignal, OFFSET_COMMAND_SIGNAL, SignalState.PENDING);
         const command: WorkerCommandMessage = { type: "command", commandId, promiseId, mainAssemblyName, args, exitCode, reason };
         try {
             worker.postMessage(command);
-            return await new Promise<number>((resolve, reject) => {
+            const result = new Promise<number>((resolve, reject) => {
                 const check = () => {
                     if (controller.signal.aborted) {
                         reject(controller.signal.reason); return;
@@ -264,8 +270,13 @@ async function createWorkerSession(config: LoaderConfig, preload: boolean): Prom
                 controller.signal.addEventListener("abort", check, { once: true });
                 check();
             });
+            // Shared DONE can wake the UI before queued output; the FIFO message drains it.
+            const [code] = await Promise.all([result, completed.promise]);
+            return code;
         } finally {
+            controller.signal.removeEventListener("abort", abortCompletion);
             if (pending === controller) pending = undefined;
+            if (commandCompletion === completion) commandCompletion = undefined;
         }
     }
 
@@ -279,6 +290,8 @@ async function createWorkerSession(config: LoaderConfig, preload: boolean): Prom
                 dotnetLogger.error("runInWorker: output callback failed", error);
                 terminate(error instanceof Error ? error : new Error(String(error)));
             }
+        } else if (message.type === "command-completed") {
+            if (commandCompletion?.promiseId === message.promiseId) commandCompletion.resolve();
         } else if (message.type === "diagnostic-download") {
             try {
                 const download = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]?.downloadDiagnosticData;
