@@ -735,14 +735,8 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         {
             // Use the context in the FaultingExceptionFrame as a temporary store for unwinding to the first managed frame
             CopyOSContext((&fef)->GetExceptionContext(), pExceptionInfo->ContextRecord);
-            PCODE controlPc = Thread::VirtualUnwindToFirstManagedCallFrame((&fef)->GetExceptionContext());
-            if (EECodeInfo(controlPc).IsInterpretedCode())
-            {
-                // The unwind switched to the interpreted frames of the topmost InterpreterFrame. The stack walker
-                // reaches them through that InterpreterFrame, so a FaultingExceptionFrame would make them be walked twice.
-                pExceptionContext = NULL;
-            }
-            else if (GetSP((&fef)->GetExceptionContext()) > (TADDR)pThread->GetFrame())
+            Thread::VirtualUnwindToFirstManagedCallFrame((&fef)->GetExceptionContext());
+            if (GetSP((&fef)->GetExceptionContext()) > (TADDR)pThread->GetFrame())
             {
                 // If the unwind has crossed any explicit frame, use the original exception context.
                 pExceptionContext = pExceptionInfo->ContextRecord;
@@ -754,10 +748,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             }
         }
 #endif
-        if (pExceptionContext != NULL)
-        {
-            fef.InitAndLink(pExceptionContext);
-        }
+        fef.InitAndLink(pExceptionContext);
     }
 
     // Dump stack trace only for the first thread failing with stack overflow to prevent mixing

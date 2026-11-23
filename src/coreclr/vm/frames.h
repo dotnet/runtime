@@ -1037,6 +1037,10 @@ public:
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
 
+#ifdef FEATURE_INTERPRETER
+    BOOL IsInInterpreter();
+#endif // FEATURE_INTERPRETER
+
     friend struct ::cdac_data<FaultingExceptionFrame>;
 };
 
