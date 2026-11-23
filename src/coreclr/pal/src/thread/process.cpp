@@ -28,6 +28,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 
 #include <generatedumpflags.h>
 #include <clrconfignocache.h>
+#include <minipal/time.h>
 
 #include <errno.h>
 #if HAVE_POLL
@@ -580,7 +581,7 @@ static const char *const TwoWayNamedPipePrefix = "clr-debug-pipe";
 static const char* RuntimeStartupPipeName = "st";
 static const char* RuntimeContinuePipeName = "co";
 
-#define PIPE_OPEN_RETRY_DELAY_NS 500000000 // 500 ms
+#define PIPE_OPEN_RETRY_DELAY_MS 500
 
 typedef enum
 {
@@ -614,7 +615,7 @@ OpenPipe(const char* name, int mode)
         {
             if (mode == O_WRONLY && errno == ENXIO)
             {
-                PAL_nanosleep(PIPE_OPEN_RETRY_DELAY_NS);
+                minipal_sleep(PIPE_OPEN_RETRY_DELAY_MS);
                 continue;
             }
             else if (errno == EINTR)
@@ -2062,8 +2063,7 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
 
     PROCCreateCrashDumpIfEnabled(signal, siginfo, context, CrashDumpSerialize_WaitInfinite);
 
-    // Restore all signals; the SIGABORT handler to prevent recursion and
-    // the others to prevent multiple core dumps from being generated.
+    // Restore the signals that abort() relies on to end the process. See SEHCleanupSignals.
     SEHCleanupSignals(false /* isChildProcess */);
 
     // Abort the process after waiting for the core dump to complete
@@ -2092,7 +2092,6 @@ CorUnix::CreateInitialProcessAndThreadObjects(
 {
     PAL_ERROR palError = NO_ERROR;
     HANDLE hThread;
-    CObjectAttributes oa;
 
     //
     // Create initial thread object

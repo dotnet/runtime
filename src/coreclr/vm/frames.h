@@ -2148,7 +2148,9 @@ public:
     VOID Init();
 };
 
+#ifdef TARGET_X86
 bool isRetAddr(TADDR retAddr, TADDR* whereCalled);
+#endif // TARGET_X86
 
 #ifdef TARGET_X86
 //------------------------------------------------------------------------
@@ -2397,6 +2399,7 @@ struct cdac_data<InterpreterFrame>
 {
     static constexpr size_t TopInterpMethodContextFrame = offsetof(InterpreterFrame, m_pTopInterpMethodContextFrame);
     static constexpr size_t IsFaulting = offsetof(InterpreterFrame, m_isFaulting);
+    static constexpr size_t Continuation = offsetof(InterpreterFrame, m_continuation);
 };
 
 #endif // FEATURE_INTERPRETER
