@@ -111,7 +111,8 @@ public:
     HRESULT InitOnMem(
         ULONG   cbData,
         LPCVOID pbData,
-        int     bReadOnly);
+        int     bReadOnly,
+        bool    fIsDelta = false);
 
     __checkReturn
     HRESULT GetSaveSize(
@@ -204,7 +205,8 @@ protected:
     __checkReturn
     HRESULT InitFileForRead(
         StgIO       *pStgIO,            // For file i/o.
-        int         bReadOnly=true);    // If read-only.
+        int         bReadOnly=true,     // If read-only.
+        bool        fIsDelta=false);    // Is this metadata being loaded to apply an EnC delta?
 
     // Set file name of this database (makes copy of the file name).
     __checkReturn HRESULT SetFileName(const WCHAR * wszFileName);
