@@ -482,7 +482,8 @@ namespace ILVerify
             {
                 var importer = new ILImporter(method, methodIL)
                 {
-                    SanityChecks = _verifierOptions.SanityChecks
+                    SanityChecks = _verifierOptions.SanityChecks,
+                    ValidationOnly = _verifierOptions.ValidationOnly
                 };
 
                 importer.ReportVerificationError = (args, code) =>
@@ -709,5 +710,16 @@ namespace ILVerify
         /// Respect IgnoresAccessChecksToAttribute. Off by default, since code that relies on it is not verifiable.
         /// </summary>
         public bool AllowIgnoresAccessChecksTo { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value that indicates whether the verifier checks only that the IL is valid, and skips most
+        /// rules that only verifiable IL must follow (ECMA-335 Partition III, 1.8).
+        /// </summary>
+        /// <remarks>
+        /// For example, unmanaged pointers, <c>localloc</c> and <c>calli</c> are not reported, and values on the stack
+        /// are mostly compared only by stack type. IL whose validity the verifier cannot decide is still reported. The
+        /// default is <see langword="false"/>.
+        /// </remarks>
+        public bool ValidationOnly { get; set; }
     }
 }
