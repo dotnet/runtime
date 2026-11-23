@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="SyncReaderGeneratorTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" />
+    <ProjectReference Include="..\gen\System.Private.DataContractSerialization.Generators.csproj" />
+  </ItemGroup>
+</Project>
