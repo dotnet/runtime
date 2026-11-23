@@ -39,7 +39,7 @@
       CopyToPublishDirectory="PreserveNewest"
       ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="$(SingleJitLibraryName)"
-      Condition="'$(CrossHostArch)' != '' and '$(CopyAllJitLibrariesToAotCompilerOutput)' != 'true'"
+      Condition="'$(CrossHostArch)' != '' and '$(CopyAllJitLibrariesToAotCompilerOutput)' != 'true' and '$(TargetsWasm64)' != 'true'"
       />
   </ItemGroup>
 
