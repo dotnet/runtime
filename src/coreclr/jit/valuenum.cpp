@@ -7253,7 +7253,7 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
         VNFuncApp funcApp;
         if (GetVNFunc(vn, &funcApp))
         {
-            // Array length can never be negative.
+            // Array lengths are nonnegative, including for arrays with negative lower bounds.
             if (funcApp.FuncIs(VNF_ARR_LENGTH, VNF_MDArrLength))
             {
                 return VNVisit::Continue;
@@ -7296,7 +7296,6 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_GT_UN:
                 case VNF_LE_UN:
                 case VNF_LT_UN:
-                case VNF_MDArrLowerBound:
                 {
                     return VNVisit::Continue;
                 }
@@ -11815,7 +11814,7 @@ void ValueNumStore::RunTests(Compiler* comp)
     VNFuncApp fa2a;
     bool      b = vns->GetVNFunc(vnForFunc2a, &fa2a);
     assert(b);
-    assert(fa2a.FuncIs(VNF_Add) && fa2a.GetArity() == 2 && fa2a.GetArg(0) == vnFor1 && fa2a.GetArg(1) == vnRandom1);
+    assert(fa2a.FuncIs(VNF_Add) && fa2a.GetArity() == 2 && fa2a.GetArg(0) == vnRandom1 && fa2a.GetArg(1) == vnFor1);
 
     ValueNum vnForFunc2b = vns->VNForFunc(TYP_INT, VNF_Add, vnFor1, vnFor100);
     assert(vnForFunc2b == vns->VNForFunc(TYP_INT, VNF_Add, vnFor1, vnFor100));
@@ -11823,6 +11822,11 @@ void ValueNumStore::RunTests(Compiler* comp)
     assert(vns->TypeOfVN(vnForFunc2b) == TYP_INT);
     assert(vns->IsVNConstant(vnForFunc2b));
     assert(vns->ConstantValue<int>(vnForFunc2b) == 101);
+
+    ValueNum array = vns->VNForExpr(nullptr, TYP_REF);
+    ValueNum dim   = vns->VNForIntCon(0);
+    assert(vns->IsVNNeverNegative(vns->VNForFunc(TYP_INT, VNF_MDArrLength, array, dim)));
+    assert(!vns->IsVNNeverNegative(vns->VNForFunc(TYP_INT, VNF_MDArrLowerBound, array, dim)));
 
     // printf("Did ValueNumStore::RunTests.\n");
 }
