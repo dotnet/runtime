@@ -23,7 +23,7 @@ public:
     MDInternalRW();
     virtual ~MDInternalRW();
     __checkReturn
-    HRESULT Init(LPVOID pData, ULONG cbData, int bReadOnly);
+    HRESULT Init(LPVOID pData, ULONG cbData, int bReadOnly, bool fIsDelta = false);
     __checkReturn
     HRESULT InitWithStgdb(IUnknown *pUnk, CLiteWeightStgdbRW *pStgdb);
     __checkReturn

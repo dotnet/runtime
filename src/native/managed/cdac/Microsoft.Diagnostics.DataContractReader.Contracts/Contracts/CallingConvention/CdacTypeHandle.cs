@@ -179,9 +179,31 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
 
     public FpStructInRegistersInfo GetFpStructInRegistersInfo(Internal.TypeSystem.TargetArchitecture architecture)
     {
-        // TODO(riscv-loongarch): Implement RISC-V/LoongArch64 FP struct classification.
-        // Structs with 1-2 floating-point fields can be passed in FP registers.
-        throw new NotImplementedException("RISC-V/LoongArch64 FP struct classification is not yet implemented.");
+        FpStructInRegistersInfo info = default;
+        if (ExactTypeHandle is null
+            || !Rts.TryGetFpStructInRegistersClassification(ExactTypeHandle, out FpStructInRegistersClassification classification))
+            return info;
+
+        FpStructField first = classification.First;
+        info.offset1st = first.Offset;
+        info.flags = (FpStruct)(SizeShift(first.Size) << (int)FpStruct.PosSizeShift1st);
+        if (classification.Second is not FpStructField second)
+        {
+            info.flags |= FpStruct.OnlyOne;
+            return info;
+        }
+
+        info.offset2nd = second.Offset;
+        info.flags |= (FpStruct)(SizeShift(second.Size) << (int)FpStruct.PosSizeShift2nd);
+        info.flags |= (first.IsFloatingPoint, second.IsFloatingPoint) switch
+        {
+            (true, true) => FpStruct.BothFloat,
+            (true, false) => FpStruct.FloatInt,
+            _ => FpStruct.IntFloat,
+        };
+        return info;
+
+        static int SizeShift(byte size) => size switch { 1 => 0, 2 => 1, 4 => 2, _ => 3 };
     }
 
     public bool IsTrivialPointerSizedStruct()
