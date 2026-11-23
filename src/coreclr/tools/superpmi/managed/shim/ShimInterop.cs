@@ -84,8 +84,10 @@ internal static unsafe partial class ShimInterop
     [LibraryImport(Library)]
     private static partial IntPtr Shim_GetForwarders();
 
-    [LibraryImport(Library)]
-    public static partial void Shim_SetUnloadCallback(delegate* unmanaged<void> callback);
+    // superpmi-shim-counter: counts the calls of the forwarding JIT and JIT host, and writes the counts to 'fileName'
+    // when the shim is unloaded.
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)]
+    public static partial void Shim_EnableCallCounting(string fileName);
 
     [LibraryImport(Library)]
     public static partial IntPtr Shim_AllocError(uint code);
@@ -96,13 +98,12 @@ internal static unsafe partial class ShimInterop
     [LibraryImport(Library)]
     public static partial void Shim_FreeException(IntPtr exception);
 
-    // The JIT and the JIT host of the forwarding shims, which call 'onCall' (if not null) with the name of each method
-    // that the runtime or the JIT calls.
+    // The JIT and the JIT host of the forwarding shims, which count the calls if Shim_EnableCallCounting was called.
     [LibraryImport(Library)]
-    public static partial IntPtr Shim_CreateForwardingJitCompiler(IntPtr jit, delegate* unmanaged<byte*, void> onCall);
+    public static partial IntPtr Shim_CreateForwardingJitCompiler(IntPtr jit);
 
     [LibraryImport(Library)]
-    public static partial IntPtr Shim_CreateForwardingJitHost(IntPtr original, delegate* unmanaged<byte*, void> onCall);
+    public static partial IntPtr Shim_CreateForwardingJitHost(IntPtr original);
 
     [LibraryImport(Library)]
     public static partial IntPtr Shim_CreateRecordingJitCompiler(IntPtr jit, IntPtr thisHandle, RecordingCompilerCallbacks* callbacks);

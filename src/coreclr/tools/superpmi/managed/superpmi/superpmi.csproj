@@ -25,6 +25,8 @@
 
   <ItemGroup>
     <DirectPInvoke Include="superpmi-jitinterface" />
+    <!-- clock_gettime, for the CPU time of the replay thread. -->
+    <DirectPInvoke Include="libc" Condition="'$(TargetsWindows)' != 'true'" />
     <NativeLibrary Include="$(RuntimeBinDir)superpmi-lib\$(LibPrefix)superpmi-jitinterface$(StaticLibSuffix)" />
   </ItemGroup>
 

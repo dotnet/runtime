@@ -7,7 +7,6 @@ include_directories(../../aot/jitinterface)
 add_library_clr(superpmi-jitinterface
     STATIC
     jitinterface.cpp
-    threadtime.cpp
     ../../aot/jitinterface/jithost.cpp
 )
 

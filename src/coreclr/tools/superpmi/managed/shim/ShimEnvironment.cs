@@ -15,7 +15,7 @@ internal static partial class ShimEnvironment
     private const int MAX_PATH = 260;
 
     private static readonly string s_defaultRealJitName =
-        OperatingSystem.IsWindows() ? "clrjit2.dll" : OperatingSystem.IsMacOS() ? "libclrjit2.dylib" : "libclrjit2.so";
+        OperatingSystem.IsWindows() ? "clrjit.dll" : OperatingSystem.IsMacOS() ? "libclrjit.dylib" : "libclrjit.so";
 
     private static string s_homeDirectory;
     private static string s_defaultRealJitPath;

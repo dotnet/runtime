@@ -6,7 +6,7 @@ using System;
 namespace SuperPmi.Shim;
 
 // The shims that forward all the JIT-EE interface calls between the runtime and the real JIT (SuperPMIShimPath),
-// optionally counting them. The native side forwards the calls; managed code only counts them.
+// optionally counting them. The native side forwards the calls, and counts them for superpmi-shim-counter.
 internal static unsafe class ForwardingShim
 {
     static ForwardingShim()
@@ -15,12 +15,6 @@ internal static unsafe class ForwardingShim
         if (logFilePath != null)
             Logger.OpenLogFile(logFilePath);
     }
-
-    // Counts the calls, with the name of the method, for the counter shim.
-    public static delegate* unmanaged<byte*, void> OnCall { get; set; }
-
-    // Called once the real JIT is loaded, before the shim's objects are created.
-    public static Action OnStartup { get; set; }
 
     public static void JitStartup(IntPtr host)
     {
@@ -37,8 +31,7 @@ internal static unsafe class ForwardingShim
             return;
         }
 
-        OnStartup?.Invoke();
-        realJitStartup(ShimInterop.Shim_CreateForwardingJitHost(host, OnCall));
+        realJitStartup(ShimInterop.Shim_CreateForwardingJitHost(host));
     }
 
     public static IntPtr GetJit()
@@ -64,7 +57,6 @@ internal static unsafe class ForwardingShim
         }
 
         // The JIT is used for the lifetime of the process.
-        OnStartup?.Invoke();
-        return ShimInterop.Shim_CreateForwardingJitCompiler(original, OnCall);
+        return ShimInterop.Shim_CreateForwardingJitCompiler(original);
     }
 }

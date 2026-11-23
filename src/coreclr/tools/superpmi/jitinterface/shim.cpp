@@ -15,7 +15,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <map>
+#include <mutex>
 #include <new>
+#include <string>
+#include <unordered_map>
 
 #ifdef _MSC_VER
 #include <excpt.h>
@@ -468,7 +472,8 @@ struct RecordingCompilerCallbacks
 };
 
 // The ICorJitCompiler of the collector, which compiles with the real JIT and records the JIT-EE calls of the
-// compilation with RecordingJitInfo. Managed code is never on the stack while the JIT compiles.
+// compilation with RecordingJitInfo. RecordingJitInfo calls the EE from native code before the managed collector
+// records the call, so the EE's exceptions never unwind through managed frames.
 class RecordingJitCompiler : public ICorJitCompiler
 {
     ICorJitCompiler* _jit;
@@ -593,21 +598,59 @@ public:
     }
 };
 
-// Called when the shim is unloaded (at the end of the process).
-static void (*s_unloadCallback)();
-
-static struct UnloadNotifier
+// superpmi-shim-counter: counts the calls of the forwarding shims by the name of the method, and writes the counts to a
+// .csv file when the shim is unloaded (at the end of the process), without running managed code then.
+namespace CallCounter
 {
-    ~UnloadNotifier()
+    static std::mutex s_lock;
+    // By the address of the name, a string literal of this file; never freed, as it is used until the end.
+    static std::unordered_map<const char*, long>* s_counts;
+    static std::string s_fileName;
+
+    static void Count(const char* name)
     {
-        if (s_unloadCallback != nullptr)
-            s_unloadCallback();
+        std::lock_guard<std::mutex> lock(s_lock);
+        (*s_counts)[name]++;
     }
-} s_unloadNotifier;
 
-extern "C" void Shim_SetUnloadCallback(void (*callback)())
+    static OnCallCallback GetCallback()
+    {
+        return s_counts != nullptr ? &Count : nullptr;
+    }
+
+    static struct Writer
+    {
+        ~Writer()
+        {
+            if (s_counts == nullptr)
+                return;
+
+            std::lock_guard<std::mutex> lock(s_lock);
+            FILE* file = fopen(s_fileName.c_str(), "w");
+            if (file == nullptr)
+            {
+                fprintf(stderr, "ERROR: Couldn't open file '%s'\n", s_fileName.c_str());
+                return;
+            }
+
+            // Ordered by name, as the names of the different call sites of a method are different literals.
+            std::map<std::string, long> byName;
+            for (const auto& count : *s_counts)
+                byName[count.first] += count.second;
+
+            fprintf(file, "FunctionName,Count\n");
+            for (const auto& count : byName)
+                fprintf(file, "%s,%ld\n", count.first.c_str(), count.second);
+            fclose(file);
+        }
+    } s_writer;
+}
+
+// Called once, by superpmi-shim-counter, before the forwarding JIT and JIT host are created.
+extern "C" void Shim_EnableCallCounting(const char* fileName)
 {
-    s_unloadCallback = callback;
+    CallCounter::s_fileName = fileName;
+    CallCounter::s_counts = new std::unordered_map<const char*, long>();
 }
 
 extern "C" void* const* Shim_GetForwarders()
@@ -635,14 +678,14 @@ extern "C" void Shim_FreeException(CorInfoExceptionClass* pException)
     delete AsCaptured(pException);
 }
 
-extern "C" ICorJitCompiler* Shim_CreateForwardingJitCompiler(ICorJitCompiler* jit, OnCallCallback onCall)
+extern "C" ICorJitCompiler* Shim_CreateForwardingJitCompiler(ICorJitCompiler* jit)
 {
-    return new ForwardingJitCompiler(jit, onCall);
+    return new ForwardingJitCompiler(jit, CallCounter::GetCallback());
 }
 
-extern "C" ICorJitHost* Shim_CreateForwardingJitHost(ICorJitHost* original, OnCallCallback onCall)
+extern "C" ICorJitHost* Shim_CreateForwardingJitHost(ICorJitHost* original)
 {
-    return new ForwardingJitHost(original, onCall);
+    return new ForwardingJitHost(original, CallCounter::GetCallback());
 }
 
 extern "C" ICorJitCompiler* Shim_CreateRecordingJitCompiler(ICorJitCompiler* jit, void* thisHandle, const RecordingCompilerCallbacks* callbacks)
