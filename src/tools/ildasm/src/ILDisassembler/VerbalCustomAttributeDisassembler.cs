@@ -5,12 +5,12 @@ using System;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Text;
 
 namespace ILDisassembler;
 
-// Verbal custom attribute (/CAVERBAL) and permission set blobs.
+// Shows custom attribute blobs (/CAVERBAL) and permission set blobs as their values. A blob that cannot be shown
+// losslessly is shown as bytes.
 //
 // The blobs are walked with BlobReader instead of being decoded with CustomAttribute.DecodeValue, which cannot
 // produce output that reassembles to the same blob:
@@ -21,72 +21,95 @@ namespace ILDisassembler;
 //    the remaining value.
 //  - It does not report whether the whole blob was consumed, so trailing data would be lost.
 // System.Reflection.Metadata has no decoder for the binary permission set format.
-// A blob that cannot be shown losslessly is dumped as bytes by the callers.
-internal sealed partial class Dasm
+internal sealed class VerbalCustomAttributeDisassembler : ICustomAttributeDisassembler, IPermissionSetDisassembler
 {
+    public static VerbalCustomAttributeDisassembler Instance { get; } = new();
+
+    public void AppendValue(Dasm dasm, StringBuilder line, EntityHandle constructor, byte[] blob)
+    {
+        if (!PrettyPrintCustomAttributeBlob(dasm, constructor, blob, line))
+        {
+            ByteArrayCustomAttributeDisassembler.Instance.AppendValue(dasm, line, constructor, blob);
+        }
+    }
+
+    public void AppendPermissionSet(Dasm dasm, StringBuilder line, BlobHandle permissionSet)
+    {
+        if (!DumpPermissionSetBlob(dasm, line, permissionSet))
+        {
+            ByteArrayCustomAttributeDisassembler.Instance.AppendPermissionSet(dasm, line, permissionSet);
+        }
+    }
+
     // The type of a value in a custom attribute blob.
-    private sealed record CAType(SerializationTypeCode Code, CAType? Element = null, int EnumToken = 0, string? EnumName = null);
+    private sealed record CAType(SerializationTypeCode Code, CAType? Element = null, EntityHandle EnumType = default, string? EnumName = null);
 
     // ---------------------------------------------------------------- reflection notation
 
-    private int FindTypeDef(string ns, string name, int tkEncloser)
+    private static TypeDefinitionHandle FindTypeDef(Dasm dasm, string ns, string name, TypeDefinitionHandle encloser)
     {
-        foreach (TypeDefinitionHandle h in _md.TypeDefinitions)
+        foreach (TypeDefinitionHandle h in dasm.Metadata.TypeDefinitions)
         {
-            TypeDefinition td = _md.GetTypeDefinition(h);
-            TypeDefinitionHandle decl = td.GetDeclaringType();
-            int enc = decl.IsNil ? mdTypeDefNil : Token(decl);
-            if (enc == tkEncloser && Str(td.Name) == name && Str(td.Namespace) == ns)
+            TypeDefinition td = dasm.Metadata.GetTypeDefinition(h);
+            if (td.GetDeclaringType() == encloser && dasm.Str(td.Name) == name && dasm.Str(td.Namespace) == ns)
             {
-                return Token(h);
+                return h;
             }
         }
 
-        return 0;
+        return default;
     }
 
-    private int FindTypeRefByName(string ns, string name, int tkResScope)
+    private static EntityHandle FindTypeRefByName(Dasm dasm, string ns, string name, EntityHandle resolutionScope)
     {
-        foreach (TypeReferenceHandle h in _md.TypeReferences)
+        foreach (TypeReferenceHandle h in dasm.Metadata.TypeReferences)
         {
-            TypeReference tr = _md.GetTypeReference(h);
-            if (Token(tr.ResolutionScope) == tkResScope && Str(tr.Name) == name && Str(tr.Namespace) == ns)
+            TypeReference tr = dasm.Metadata.GetTypeReference(h);
+            if (tr.ResolutionScope == resolutionScope && dasm.Str(tr.Name) == name && dasm.Str(tr.Namespace) == ns)
             {
-                return Token(h);
+                return h;
             }
         }
 
-        return 0;
+        return default;
     }
 
-    private int ResolveTypeDefReflectionNotation(string ns, string name, int tkEncloser)
+    // A nil handle when not found.
+    private static TypeDefinitionHandle ResolveTypeDefReflectionNotation(Dasm dasm, string ns, string name, TypeDefinitionHandle encloser)
     {
         int plus = name.LastIndexOf('+');
         if (plus >= 0)
         {
-            tkEncloser = ResolveTypeDefReflectionNotation(ns, name.Substring(0, plus), tkEncloser);
+            encloser = ResolveTypeDefReflectionNotation(dasm, ns, name.Substring(0, plus), encloser);
+            if (encloser.IsNil)
+            {
+                return default;
+            }
+
             ns = "";
             name = name.Substring(plus + 1);
         }
 
-        return FindTypeDef(ns, name, tkEncloser);
+        return FindTypeDef(dasm, ns, name, encloser);
     }
 
-    private int ResolveTypeRefReflectionNotation(string ns, string name, int tkResScope)
+    // A nil handle when not found. A nested name whose encloser is not found is looked up among the TypeRefs
+    // without a resolution scope.
+    private static EntityHandle ResolveTypeRefReflectionNotation(Dasm dasm, string ns, string name, EntityHandle resolutionScope)
     {
         int plus = name.LastIndexOf('+');
         if (plus >= 0)
         {
-            tkResScope = ResolveTypeRefReflectionNotation(ns, name.Substring(0, plus), tkResScope);
+            resolutionScope = ResolveTypeRefReflectionNotation(dasm, ns, name.Substring(0, plus), resolutionScope);
             ns = "";
             name = name.Substring(plus + 1);
         }
 
-        return FindTypeRefByName(ns, name, tkResScope);
+        return FindTypeRefByName(dasm, ns, name, resolutionScope);
     }
 
-    // "Namespace.Name, Assembly, ..." -> a TypeDef or TypeRef token, or 0.
-    private int ResolveReflectionNotation(string str)
+    // "Namespace.Name, Assembly, ..." -> a TypeDef or TypeRef, or a nil handle.
+    private static EntityHandle ResolveReflectionNotation(Dasm dasm, string str)
     {
         string? assembly = null;
         int comma = str.IndexOf(',');
@@ -109,60 +132,55 @@ internal sealed partial class Dasm
 
         if (assembly is null)
         {
-            int tk = ResolveTypeDefReflectionNotation(ns, name, mdTypeDefNil);
-            if (tk != 0)
+            TypeDefinitionHandle td = ResolveTypeDefReflectionNotation(dasm, ns, name, default);
+            if (!td.IsNil)
             {
-                return tk;
+                return td;
             }
 
             assembly = "mscorlib";
         }
 
-        foreach (AssemblyReferenceHandle h in _md.AssemblyReferences)
+        foreach (AssemblyReferenceHandle h in dasm.Metadata.AssemblyReferences)
         {
-            if (Str(_md.GetAssemblyReference(h).Name) == assembly)
+            if (dasm.Str(dasm.Metadata.GetAssemblyReference(h).Name) == assembly)
             {
-                return ResolveTypeRefReflectionNotation(ns, name, Token(h));
+                return ResolveTypeRefReflectionNotation(dasm, ns, name, h);
             }
         }
 
-        return 0;
+        return default;
     }
 
     // The underlying type of an enum defined in this module, or null (enums of other assemblies cannot be resolved).
-    private PrimitiveTypeCode? UnderlyingTypeOfEnum(int tk)
+    private static PrimitiveTypeCode? UnderlyingTypeOfEnum(Dasm dasm, EntityHandle type)
     {
-        if (TypeFromToken(tk) != mdtTypeDef || !IsValidToken(tk))
+        if (type.Kind != HandleKind.TypeDefinition || !dasm.IsValid(type))
         {
             return null;
         }
 
-        (_, int parent) = GetTypeDefProps(tk);
-        if (RidFromToken(parent) == 0 || !IsValidToken(parent))
+        TypeDefinition td = dasm.Metadata.GetTypeDefinition((TypeDefinitionHandle)type);
+        if (!dasm.IsValid(td.BaseType))
         {
             return null;
         }
 
-        (string name, string ns) = TypeFromToken(parent) switch
-        {
-            mdtTypeDef => GetNameOfTypeDef(parent),
-            mdtTypeRef => GetNameOfTypeRef(parent),
-            _ => ("", ""),
-        };
+        (string name, string ns) = dasm.GetNameOfType(td.BaseType);
         if (name != "Enum" || ns != "System")
         {
             return null;
         }
 
-        foreach (FieldDefinitionHandle fh in _md.GetTypeDefinition((TypeDefinitionHandle)Handle(tk)).GetFields())
+        foreach (FieldDefinitionHandle fh in td.GetFields())
         {
-            FieldDefinition fd = _md.GetFieldDefinition(fh);
+            FieldDefinition fd = dasm.Metadata.GetFieldDefinition(fh);
             if ((fd.Attributes & FieldAttributes.Static) != 0)
             {
                 continue;
             }
 
-            BlobReader sig = _md.GetBlobReader(fd.Signature);
+            BlobReader sig = dasm.Metadata.GetBlobReader(fd.Signature);
             if (sig.ReadSignatureHeader().Kind != SignatureKind.Field)
             {
                 return null;
@@ -205,7 +223,7 @@ internal sealed partial class Dasm
                     return new CAType(SerializationTypeCode.Type);
                 case (SignatureTypeCode)SignatureTypeKind.ValueType:
                     // Only an enum is valid here.
-                    return new CAType(SerializationTypeCode.Enum, EnumToken: Token(sig.ReadTypeHandle()));
+                    return new CAType(SerializationTypeCode.Enum, EnumType: sig.ReadTypeHandle());
                 default:
                     return IsPrimitive((SerializationTypeCode)b) ? new CAType((SerializationTypeCode)b) : throw new BadImageFormatException();
             }
@@ -260,34 +278,34 @@ internal sealed partial class Dasm
         _ => throw new BadImageFormatException(),
     };
 
-    private void AppendResolvedType(StringBuilder out_, string name)
+    private static void AppendResolvedType(Dasm dasm, StringBuilder out_, string name)
     {
-        int tk = ResolveReflectionNotation(name);
-        if (IsNilToken(tk))
+        EntityHandle type = ResolveReflectionNotation(dasm, name);
+        if (type.IsNil)
         {
-            out_.Append(KEYWORD("class ")).Append('\'').Append(UnquotedProperName(name)).Append('\'');
+            out_.Append(dasm.KEYWORD("class ")).Append('\'').Append(dasm.UnquotedProperName(name)).Append('\'');
         }
         else
         {
-            PrettyPrintClass(out_, tk);
+            dasm.PrettyPrintClass(out_, type);
         }
     }
 
     // The type of a named argument: "int32", "string[]", "type", "object[]", "enum class 'N.E'"...
-    private void AppendEncodedType(StringBuilder out_, CAType t)
+    private static void AppendEncodedType(Dasm dasm, StringBuilder out_, CAType t)
     {
         switch (t.Code)
         {
             case SerializationTypeCode.SZArray:
-                AppendEncodedType(out_, t.Element!);
+                AppendEncodedType(dasm, out_, t.Element!);
                 out_.Append("[]");
                 break;
             case SerializationTypeCode.Enum:
-                out_.Append(KEYWORD("enum "));
-                AppendResolvedType(out_, t.EnumName!);
+                out_.Append(dasm.KEYWORD("enum "));
+                AppendResolvedType(dasm, out_, t.EnumName!);
                 break;
             default:
-                out_.Append(KEYWORD(Keyword(t.Code)));
+                out_.Append(dasm.KEYWORD(Keyword(t.Code)));
                 break;
         }
     }
@@ -296,7 +314,7 @@ internal sealed partial class Dasm
 
     // Appends a value of type t, such as "int32(5)", "string[2]('a' nullref)" or "object(type(class C))",
     // read from r, which must not go past end.
-    private void AppendValue(ref BlobReader r, int end, CAType t, StringBuilder out_)
+    private static void AppendArgument(Dasm dasm, ref BlobReader r, int end, CAType t, StringBuilder out_)
     {
         if (r.Offset >= end)
         {
@@ -320,8 +338,8 @@ internal sealed partial class Dasm
         }
 
         // An enum value is shown as its underlying type.
-        SerializationTypeCode code = t.Code == SerializationTypeCode.Enum ? UnderlyingTypeOfEnumValue(t, end - r.Offset, isArray) : t.Code;
-        out_.Append(KEYWORD(Keyword(code))).Append(appendix).Append('(');
+        SerializationTypeCode code = t.Code == SerializationTypeCode.Enum ? UnderlyingTypeOfEnumValue(dasm, t, end - r.Offset, isArray) : t.Code;
+        out_.Append(dasm.KEYWORD(Keyword(code))).Append(appendix).Append('(');
         for (int i = 0; i < count; i++)
         {
             if (i != 0)
@@ -329,7 +347,7 @@ internal sealed partial class Dasm
                 out_.Append(' ');
             }
 
-            AppendElement(ref r, end, code, out_);
+            AppendElement(dasm, ref r, end, code, out_);
             if (r.Offset > end)
             {
                 throw new BadImageFormatException();
@@ -339,9 +357,9 @@ internal sealed partial class Dasm
         out_.Append(')');
     }
 
-    private SerializationTypeCode UnderlyingTypeOfEnumValue(CAType t, int remaining, bool isArray)
+    private static SerializationTypeCode UnderlyingTypeOfEnumValue(Dasm dasm, CAType t, int remaining, bool isArray)
     {
-        PrimitiveTypeCode? underlying = UnderlyingTypeOfEnum(t.EnumToken != 0 ? t.EnumToken : ResolveReflectionNotation(t.EnumName!));
+        PrimitiveTypeCode? underlying = UnderlyingTypeOfEnum(dasm, !t.EnumType.IsNil ? t.EnumType : ResolveReflectionNotation(dasm, t.EnumName!));
         if (underlying is not null)
         {
             return (SerializationTypeCode)underlying.Value;
@@ -358,13 +376,13 @@ internal sealed partial class Dasm
         };
     }
 
-    private void AppendElement(ref BlobReader r, int end, SerializationTypeCode code, StringBuilder out_)
+    private static void AppendElement(Dasm dasm, ref BlobReader r, int end, SerializationTypeCode code, StringBuilder out_)
     {
         CultureInfo inv = CultureInfo.InvariantCulture;
         switch (code)
         {
             case SerializationTypeCode.Boolean:
-                out_.Append(KEYWORD(r.ReadByte() switch
+                out_.Append(dasm.KEYWORD(r.ReadByte() switch
                 {
                     0 => "false",
                     1 => "true",
@@ -398,8 +416,8 @@ internal sealed partial class Dasm
             case SerializationTypeCode.Single:
             {
                 uint bits = r.ReadUInt32();
-                string s = FormatG(BitConverter.UInt32BitsToSingle(bits), 8, alternate: true);
-                if (BitConverter.SingleToUInt32Bits((float)Atof(s)) != bits || IsSpecialNumber(s))
+                string s = Dasm.FormatG(BitConverter.UInt32BitsToSingle(bits), 8, alternate: true);
+                if (BitConverter.SingleToUInt32Bits((float)Dasm.Atof(s)) != bits || Dasm.IsSpecialNumber(s))
                 {
                     s = "0x" + bits.ToString("X8", inv);
                 }
@@ -411,8 +429,8 @@ internal sealed partial class Dasm
             case SerializationTypeCode.Double:
             {
                 ulong bits = r.ReadUInt64();
-                string s = FormatG(BitConverter.UInt64BitsToDouble(bits), 17, alternate: true);
-                if (BitConverter.DoubleToUInt64Bits(Atof(s)) != bits || IsSpecialNumber(s))
+                string s = Dasm.FormatG(BitConverter.UInt64BitsToDouble(bits), 17, alternate: true);
+                if (BitConverter.DoubleToUInt64Bits(Dasm.Atof(s)) != bits || Dasm.IsSpecialNumber(s))
                 {
                     s = "0x" + bits.ToString("X", inv);
                 }
@@ -426,11 +444,11 @@ internal sealed partial class Dasm
                 string? s = ReadString(ref r);
                 if (s is null)
                 {
-                    out_.Append(KEYWORD("nullref"));
+                    out_.Append(dasm.KEYWORD("nullref"));
                 }
                 else
                 {
-                    out_.Append('\'').Append(UnquotedProperName(s)).Append('\'');
+                    out_.Append('\'').Append(dasm.UnquotedProperName(s)).Append('\'');
                 }
 
                 break;
@@ -441,18 +459,18 @@ internal sealed partial class Dasm
                 string? s = ReadString(ref r);
                 if (s is null)
                 {
-                    out_.Append(KEYWORD("nullref"));
+                    out_.Append(dasm.KEYWORD("nullref"));
                 }
                 else
                 {
-                    AppendResolvedType(out_, s);
+                    AppendResolvedType(dasm, out_, s);
                 }
 
                 break;
             }
 
             case SerializationTypeCode.TaggedObject:
-                AppendValue(ref r, end, ReadEncodedType(ref r), out_);
+                AppendArgument(dasm, ref r, end, ReadEncodedType(ref r), out_);
                 break;
             default:
                 throw new BadImageFormatException();
@@ -460,7 +478,7 @@ internal sealed partial class Dasm
     }
 
     // Appends count named arguments, one per line, which must end exactly at end.
-    private void AppendNamedArguments(ref BlobReader r, int count, int end, StringBuilder out_)
+    private static void AppendNamedArguments(Dasm dasm, ref BlobReader r, int count, int end, StringBuilder out_)
     {
         for (int i = 0; i < count; i++)
         {
@@ -469,17 +487,17 @@ internal sealed partial class Dasm
                 throw new BadImageFormatException();
             }
 
-            out_.Append(KEYWORD((CustomAttributeNamedArgumentKind)r.ReadByte() switch
+            out_.Append(dasm.KEYWORD((CustomAttributeNamedArgumentKind)r.ReadByte() switch
             {
                 CustomAttributeNamedArgumentKind.Field => "field ",
                 CustomAttributeNamedArgumentKind.Property => "property ",
                 _ => throw new BadImageFormatException(),
             }));
             CAType t = ReadEncodedType(ref r);
-            AppendEncodedType(out_, t);
+            AppendEncodedType(dasm, out_, t);
             string name = ReadString(ref r) ?? throw new BadImageFormatException();
-            out_.Append(" '").Append(UnquotedProperName(name)).Append("' = ");
-            AppendValue(ref r, end, t, out_);
+            out_.Append(" '").Append(dasm.UnquotedProperName(name)).Append("' = ");
+            AppendArgument(dasm, ref r, end, t, out_);
             out_.Append('\n');
         }
 
@@ -492,18 +510,10 @@ internal sealed partial class Dasm
     // ---------------------------------------------------------------- custom attributes
 
     // Appends " = {...}" to line (possibly emitting preceding lines); returns false if the blob cannot be shown verbally.
-    private bool PrettyPrintCustomAttributeBlob(int tkType, byte[] blob, StringBuilder line)
+    private static bool PrettyPrintCustomAttributeBlob(Dasm dasm, EntityHandle ctor, byte[] blob, StringBuilder line)
     {
-        byte[] sig;
-        if (TypeFromToken(tkType) == mdtMemberRef)
-        {
-            sig = GetMemberRefProps(tkType).Sig;
-        }
-        else if (TypeFromToken(tkType) == mdtMethodDef)
-        {
-            sig = GetSigOfMethodDef(tkType);
-        }
-        else
+        byte[]? sig = dasm.GetMethodSig(ctor);
+        if (sig is null)
         {
             return false;
         }
@@ -512,7 +522,7 @@ internal sealed partial class Dasm
         int numElements;
         try
         {
-            numElements = AppendCustomAttributeValue(sig, blob, out_);
+            numElements = AppendCustomAttributeValue(dasm, sig, blob, out_);
         }
         catch (BadImageFormatException)
         {
@@ -521,20 +531,20 @@ internal sealed partial class Dasm
 
         string[] segments = out_.ToString().Split('\n');
         int init = line.Length;
-        if (Utf8Length(line) > 80)
+        if (Dasm.Utf8Length(line) > 80)
         {
-            PrintLine(line);
+            dasm.PrintLine(line);
             line.Clear();
-            line.Append(Indent).Append("        ");
+            line.Append(dasm.Indent).Append("        ");
             init = line.Length;
         }
 
         line.Append(segments[0]);
         init += 4;
-        int bl = Indent.Length;
+        int bl = dasm.Indent.Length;
         for (int n = 1; n < numElements; n++)
         {
-            PrintLine(line);
+            dasm.PrintLine(line);
             line.Length = init;
             for (int i = bl; i < init; i++)
             {
@@ -545,21 +555,21 @@ internal sealed partial class Dasm
         }
 
         line.Append('}');
-        if (_options.ShowBytes)
+        if (dasm.Options.ShowBytes)
         {
-            PrintLine(line);
-            PushIndent("  //    ");
+            dasm.PrintLine(line);
+            dasm.PushIndent("  //    ");
             line.Clear();
-            line.Append(Indent).Append(" = ( ");
-            DumpByteArray(line, blob);
-            PopIndent(8);
+            line.Append(dasm.Indent).Append(" = ( ");
+            dasm.DumpByteArray(line, blob);
+            dasm.PopIndent(8);
         }
 
         return true;
     }
 
     // Appends the constructor arguments and named arguments, one per line; returns their number.
-    private unsafe int AppendCustomAttributeValue(byte[] signature, byte[] blob, StringBuilder out_)
+    private static unsafe int AppendCustomAttributeValue(Dasm dasm, byte[] signature, byte[] blob, StringBuilder out_)
     {
         fixed (byte* pSig = signature, pBlob = blob)
         {
@@ -587,12 +597,12 @@ internal sealed partial class Dasm
             int argsEnd = blob.Length - 2; // the number of named arguments follows
             for (int i = 0; i < numArgs; i++)
             {
-                AppendValue(ref r, argsEnd, ReadParameterType(ref sig), out_);
+                AppendArgument(dasm, ref r, argsEnd, ReadParameterType(ref sig), out_);
                 out_.Append('\n');
             }
 
             int numPairs = r.ReadUInt16();
-            AppendNamedArguments(ref r, numPairs, blob.Length, out_);
+            AppendNamedArguments(dasm, ref r, numPairs, blob.Length, out_);
             return numArgs + numPairs;
         }
     }
@@ -600,12 +610,12 @@ internal sealed partial class Dasm
     // ---------------------------------------------------------------- permission sets
 
     // DumpPermissionSetBlob: the binary (".") permission set format, shown as attribute-like name/value pairs.
-    private bool DumpPermissionSetBlob(StringBuilder line, BlobHandle permissionSet)
+    private static bool DumpPermissionSetBlob(Dasm dasm, StringBuilder line, BlobHandle permissionSet)
     {
         StringBuilder out_ = new();
         try
         {
-            BlobReader r = _md.GetBlobReader(permissionSet);
+            BlobReader r = dasm.Metadata.GetBlobReader(permissionSet);
             if (r.Length == 0 || r.ReadByte() != '.')
             {
                 return false;
@@ -615,14 +625,14 @@ internal sealed partial class Dasm
             int nAttrs = r.ReadCompressedInteger();
             for (int iAttr = 0; iAttr < nAttrs; iAttr++)
             {
-                AppendResolvedType(out_, ReadString(ref r) ?? throw new BadImageFormatException());
+                AppendResolvedType(dasm, out_, ReadString(ref r) ?? throw new BadImageFormatException());
                 out_.Append(" = {");
                 int l = r.ReadCompressedInteger();
                 if (l > 0)
                 {
                     int end = r.Offset + l;
                     int props = r.ReadCompressedInteger();
-                    AppendNamedArguments(ref r, props, end, out_);
+                    AppendNamedArguments(dasm, ref r, props, end, out_);
                     if (props > 0)
                     {
                         out_.Length--; // the last newline
@@ -652,7 +662,7 @@ internal sealed partial class Dasm
         {
             line.Length = szptr;
             line.Append(sz, 0, pc + 2);
-            PrintLine(line);
+            dasm.PrintLine(line);
             sz = sz.Substring(pc + 3);
             if (szptr == prefixLen)
             {

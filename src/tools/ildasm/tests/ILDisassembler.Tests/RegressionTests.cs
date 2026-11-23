@@ -195,9 +195,15 @@ public class RegressionTests
     public void LineNumbersComeFromThePortablePdb()
     {
         string path = typeof(RegressionTests).Assembly.Location;
-        using Disassembler disassembler = new(path, new Options { ShowLineNumbers = true });
+        Options options = new()
+        {
+            ShowLineNumbers = true,
+            InputFileName = path,
+            PdbFileStreamProvider = pdbPath => File.Exists(pdbPath) ? File.OpenRead(pdbPath) : null,
+        };
+        using Disassembler disassembler = new(File.OpenRead(path), options);
         StringWriter writer = new();
-        Assert.True(disassembler.Disassemble(writer, TextWriter.Null, outputFilePath: null));
+        Assert.True(disassembler.Disassemble(writer, TextWriter.Null));
         string il = writer.ToString();
         Assert.Contains(".line ", il);
         Assert.Contains("RegressionTests.cs'", il);
@@ -257,7 +263,7 @@ public class RegressionTests
               .custom instance void A::.ctor(string) = ( 01 00 03 61 00 62 00 00 )
             }
             """);
-        string il = RoundTripTests.Disassemble(original, new Options { CustomAttributesVerbal = true });
+        string il = RoundTripTests.Disassemble(original, new Options { CustomAttributeDisassembler = VerbalCustomAttributeDisassembler.Instance });
         Assert.DoesNotContain("string('a')", il);
         Assert.Equal(CustomAttributeValues(original), CustomAttributeValues(RoundTripTests.Assemble(il)));
     }
@@ -305,7 +311,7 @@ public class RegressionTests
               .custom instance {{attribute}}
             }
             """);
-        string il = RoundTripTests.Disassemble(original, new Options { CustomAttributesVerbal = true });
+        string il = RoundTripTests.Disassemble(original, new Options { CustomAttributeDisassembler = VerbalCustomAttributeDisassembler.Instance });
         Assert.Contains(expected, il);
         Assert.DoesNotContain(il.Split('\n'), l => l.Contains("A::.ctor") && l.Contains("= ( ")); // not dumped as bytes
         Assert.Equal(CustomAttributeValues(original), CustomAttributeValues(RoundTripTests.Assemble(il)));
@@ -394,10 +400,11 @@ public class RegressionTests
     {
         BlobBuilder image = new();
         new NoMetadataPEBuilder().Serialize(image);
-        using Disassembler disassembler = new(new MemoryStream(image.ToArray()), new Options { Headers = true });
+        Options options = new() { MetadataDisassemblers = [new HeadersDisassembler()] };
+        using Disassembler disassembler = new(new MemoryStream(image.ToArray()), options);
         StringWriter writer = new();
         StringWriter error = new();
-        Assert.False(disassembler.Disassemble(writer, error, outputFilePath: null));
+        Assert.False(disassembler.Disassemble(writer, error));
         Assert.Contains("// ----- DOS Header:", writer.ToString());
         Assert.Contains("has no valid CLR header", error.ToString());
     }

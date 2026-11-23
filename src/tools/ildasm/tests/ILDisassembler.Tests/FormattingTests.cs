@@ -76,6 +76,6 @@ public class FormattingTests
             .module test.dll
             """);
         return new Dasm(new System.Reflection.PortableExecutable.PEReader(new System.IO.MemoryStream(image)), options,
-            System.IO.TextWriter.Null, System.IO.TextWriter.Null, toFile: false, outputFileName: "");
+            System.IO.TextWriter.Null, System.IO.TextWriter.Null);
     }
 }

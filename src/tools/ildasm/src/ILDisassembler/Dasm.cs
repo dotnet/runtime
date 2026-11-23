@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
@@ -27,22 +28,22 @@ internal sealed partial class Dasm
 
     private sealed class MethodImplRecord
     {
-        public int TkClass;
-        public int TkBody;
-        public int TkDecl;
-        public int TkBodyParent;
+        public TypeDefinitionHandle Class;
+        public EntityHandle Body;
+        public EntityHandle Decl;
+        public EntityHandle BodyParent;
     }
 
     private struct VTableRef
     {
-        public int Tok;
+        public EntityHandle Method;
         public int Entry;
         public int Slot;
     }
 
     private struct EATableRef
     {
-        public int Tok;
+        public EntityHandle Method;
         public string? Name;
     }
 
@@ -52,11 +53,14 @@ internal sealed partial class Dasm
     private readonly Options _options;
     private readonly TextWriter _out;
     private readonly TextWriter _error;
-    private readonly bool _toFile;
-    private readonly string _outputFileName;
-    private readonly bool _html;
-    private readonly bool _rtf;
+    private readonly string _inputFileName;
     private readonly string _newLine;
+    private readonly string _lineTerminator;
+    private readonly IOutputFormatter _formatter;
+    private readonly ICustomAttributeDisassembler _customAttributeDisassembler;
+    private readonly IPermissionSetDisassembler _permissionSetDisassembler;
+    private readonly IReadOnlyList<IMetadataDisassembler> _metadataDisassemblers;
+    private readonly ResourceExtractor? _resourceExtractor;
 
     private readonly bool _rawEHOption;
     private readonly bool _limitedVisibility;
@@ -66,26 +70,23 @@ internal sealed partial class Dasm
     private readonly string _classToDumpName = "";
     private readonly string _methodToDump = "";
     private readonly string _sigToDump = "";
-    private int _classToDump;
+    private TypeDefinitionHandle _classToDump;
+    private EntityHandle _entryPoint;
 
-    private readonly List<int> _classList = new();
-    private readonly List<int> _classEnclosing = new();
+    // The classes (all but the global <Module> type) and their enclosing classes (nil for top level ones).
+    private readonly List<TypeDefinitionHandle> _classList = new();
+    private readonly List<TypeDefinitionHandle> _classEnclosing = new();
     private readonly List<MethodImplRecord> _methodImpls = new();
-    private readonly HashSet<int> _dups = new();
-    private readonly List<TypeDefDescr> _typedefs = new();
-    private readonly HashSet<int> _caDumped = new();
-    private readonly Dictionary<int, uint> _fieldOffsets = new();
+    private readonly HashSet<EntityHandle> _dups = new();
+    private readonly HashSet<CustomAttributeHandle> _caDumped = new();
+    private readonly Dictionary<FieldDefinitionHandle, uint> _fieldOffsets = new();
     private readonly List<VTableRef> _vtableRefs = new();
     private readonly List<EATableRef> _eatRefs = new();
     private int _eatBase;
     private string?[] _asmRefNames = Array.Empty<string?>();
 
-    // Data referenced through field RVAs and vtable fixups, dumped as .data at the end.
-    private readonly List<(uint Rva, uint Size)> _ptrTags = new();
-
-    public Dasm(PEReader pe, Options options, TextWriter output, TextWriter error, bool toFile, string outputFileName, string newLine = "\n")
+    public Dasm(PEReader pe, Options options, TextWriter output, TextWriter error)
     {
-        _newLine = newLine;
         _pe = pe;
         // A PE file without metadata is only accepted for /HEADERS; DumpFile stops after the headers without using metadata.
         if (options.R2RNativeMetadata)
@@ -105,11 +106,20 @@ internal sealed partial class Dasm
         _options = options;
         _out = output;
         _error = error;
-        _toFile = toFile;
+        _inputFileName = options.InputFileName ?? "<stream>";
+        _newLine = options.NewLine;
+        _formatter = options.Formatter;
+        _lineTerminator = _formatter.LineTerminator(_newLine);
+        _customAttributeDisassembler = options.CustomAttributeDisassembler;
+        _permissionSetDisassembler = options.PermissionSetDisassembler;
+        _metadataDisassemblers = options.MetadataDisassemblers;
+        // Resource files are saved by the extractor as the manifest lists them.
+        foreach (IMetadataDisassembler d in _metadataDisassemblers)
+        {
+            _resourceExtractor ??= d as ResourceExtractor;
+        }
+
         _rawEHOption = options.RawExceptionHandling;
-        _outputFileName = outputFileName;
-        _html = toFile && options.Html && !options.Rtf;
-        _rtf = toFile && options.Rtf;
 
         string? vis = options.Visibility;
         if (options.PublicOnly || !string.IsNullOrEmpty(vis))
@@ -176,39 +186,54 @@ internal sealed partial class Dasm
 
     private bool ShowCustomAttributes => !_options.NoCustomAttributes;
 
+    internal Options Options => _options;
+
+    internal PEReader PE => _pe;
+
+    internal MetadataReader Metadata => _md;
+
+    // The classes, all but the global <Module> type.
+    internal IReadOnlyList<TypeDefinitionHandle> Classes => _classList;
+
+    // Runs the metadata disassemblers of a phase; false if there are none.
+    private bool RunMetadataDisassemblers(DisassemblyPhase phase)
+    {
+        bool any = false;
+        foreach (IMetadataDisassembler d in _metadataDisassemblers)
+        {
+            if (d.Phase == phase)
+            {
+                d.Disassemble(this);
+                any = true;
+            }
+        }
+
+        return any;
+    }
+
     // ---------------------------------------------------------------- PE access
 
-    private byte[]? GetBytesAtRva(uint rva, int length)
+    // The bytes from rva to the end of its section (at most length of them), without copying them; false when rva is not
+    // in a section.
+    internal bool TryGetBytesAtRva(uint rva, int length, out ReadOnlySpan<byte> bytes)
     {
-        if (rva == 0)
+        bytes = SpanAtRva(rva);
+        if (bytes.IsEmpty)
         {
-            return null;
+            return false;
         }
 
-        PEMemoryBlock block;
-        try
+        // A negative length is the whole section.
+        if ((uint)length < (uint)bytes.Length)
         {
-            block = _pe.GetSectionData((int)rva);
-        }
-        catch (Exception e) when (e is ArgumentOutOfRangeException or BadImageFormatException)
-        {
-            return null;
+            bytes = bytes.Slice(0, length);
         }
 
-        if (block.Length == 0)
-        {
-            return null;
-        }
-
-        ImmutableArray<byte> content = block.GetContent();
-        int n = length < 0 ? content.Length : Math.Min(length, content.Length);
-        byte[] b = new byte[n];
-        content.CopyTo(0, b, 0, n);
-        return b;
+        return true;
     }
 
     // The bytes from rva to the end of its section, without copying them; empty when rva is not in a section.
-    private unsafe ReadOnlySpan<byte> SpanAtRva(uint rva)
+    internal unsafe ReadOnlySpan<byte> SpanAtRva(uint rva)
     {
         if (rva == 0)
         {
@@ -241,204 +266,49 @@ internal sealed partial class Dasm
         return null;
     }
 
+    // The raw bytes of a section, read from the file: what is past the end of the file reads as zeros.
+    private ReadOnlySpan<byte> RawSectionBytes(SectionHeader sh, uint rva, uint count)
+    {
+        long fileOffset = sh.PointerToRawData + (rva - (uint)sh.VirtualAddress);
+        ReadOnlySpan<byte> image = Image.AsSpan();
+        if (fileOffset + count <= image.Length)
+        {
+            return image.Slice((int)fileOffset, (int)count);
+        }
+
+        byte[] result = new byte[count];
+        if (fileOffset < image.Length)
+        {
+            image.Slice((int)fileOffset).CopyTo(result);
+        }
+
+        return result;
+    }
+
     // Section names are compared as C strings: ilasm pads them with garbage after the terminating NUL.
-    private static string CSectionName(SectionHeader sh)
+    internal static string CSectionName(SectionHeader sh)
     {
         int z = sh.Name.IndexOf('\0');
         return z < 0 ? sh.Name : sh.Name.Substring(0, z);
-    }
-
-    private static string DataLabelPrefix(SectionHeader sh) => CSectionName(sh) switch
-    {
-        ".tls" => "T_",
-        ".text" => "I_",
-        _ => "D_",
-    };
-
-    // DumpDataPtr: the label of data at rva, registering it for the .data dump at the end.
-    private void DumpDataPtr(StringBuilder sb, uint ptr, uint size)
-    {
-        SectionHeader? sh = SectionOf(ptr);
-        if (sh is not null)
-        {
-            // The computed size can over-estimate (auto layout); the data cannot extend past its section.
-            ulong sectionEnd = (ulong)(uint)sh.Value.VirtualAddress + (uint)sh.Value.VirtualSize;
-            if (size != UnknownSize && ptr + (ulong)size > sectionEnd)
-            {
-                size = (uint)(sectionEnd - ptr);
-            }
-
-            int j = _ptrTags.FindIndex(t => t.Rva == ptr);
-            if (j < 0)
-            {
-                _ptrTags.Add((ptr, size));
-            }
-            else if (_ptrTags[j].Size < size)
-            {
-                _ptrTags[j] = (ptr, size);
-            }
-
-            sb.Append(DataLabelPrefix(sh.Value)).Append(ptr.ToString("X8", CultureInfo.InvariantCulture));
-        }
-        else
-        {
-            sb.Append(ERRORMSG($"0x{ptr:X8} /* WARNING: rogue pointer! (size 0x{size:X8}) */"));
-        }
-    }
-
-    // ---------------------------------------------------------------- field sizes
-
-    // The size of the data of an RVA field, computed from the layout like the runtime does for sequential and
-    // explicit layout (an upper bound for auto layout, which only ever packs tighter). 0xFFFFFFFF means unknown: the data then extends to the next label.
-    private const uint UnknownSize = 0xFFFFFFFF;
-
-    private readonly Dictionary<int, (uint Size, uint Align)> _valueTypeLayouts = new();
-
-    private uint SizeOfField(int tk)
-    {
-        if (TypeFromToken(tk) != mdtFieldDef || RidFromToken(tk) == 0)
-        {
-            return UnknownSize;
-        }
-
-        byte[] sig = GetSigOfFieldDef(tk);
-        try
-        {
-            int p = 0;
-            if (sig.Length == 0 || !IsCallConv(UncompressData(sig, ref p), IMAGE_CEE_CS_CALLCONV_FIELD))
-            {
-                return UnknownSize;
-            }
-
-            return LayoutOfType(sig, ref p, 0).Size;
-        }
-        catch (IndexOutOfRangeException)
-        {
-            return UnknownSize;
-        }
-    }
-
-    private (uint Size, uint Align) LayoutOfType(byte[] sig, ref int p, int depth)
-    {
-        uint ptrSize = IsPE32 ? 4u : 8u;
-        while (true)
-        {
-            byte typ = sig[p++];
-            switch (typ)
-            {
-                case ELEMENT_TYPE_BOOLEAN:
-                case ELEMENT_TYPE_I1:
-                case ELEMENT_TYPE_U1:
-                    return (1, 1);
-                case ELEMENT_TYPE_CHAR:
-                case ELEMENT_TYPE_I2:
-                case ELEMENT_TYPE_U2:
-                    return (2, 2);
-                case ELEMENT_TYPE_I4:
-                case ELEMENT_TYPE_U4:
-                case ELEMENT_TYPE_R4:
-                    return (4, 4);
-                case ELEMENT_TYPE_I8:
-                case ELEMENT_TYPE_U8:
-                case ELEMENT_TYPE_R8:
-                    return (8, 8);
-                case ELEMENT_TYPE_OBJECT:
-                case ELEMENT_TYPE_STRING:
-                case ELEMENT_TYPE_CLASS:
-                case ELEMENT_TYPE_PTR:
-                case ELEMENT_TYPE_BYREF:
-                case ELEMENT_TYPE_FNPTR:
-                case ELEMENT_TYPE_I:
-                case ELEMENT_TYPE_U:
-                case ELEMENT_TYPE_SZARRAY:
-                case ELEMENT_TYPE_ARRAY:
-                    return (ptrSize, ptrSize);
-                case ELEMENT_TYPE_TYPEDBYREF:
-                    return (ptrSize * 2, ptrSize);
-                case ELEMENT_TYPE_VALUETYPE:
-                    return depth > 64 ? (UnknownSize, 1) : LayoutOfValueType(UncompressToken(sig, ref p), depth + 1);
-                case ELEMENT_TYPE_CMOD_OPT:
-                case ELEMENT_TYPE_CMOD_REQD:
-                    UncompressToken(sig, ref p);
-                    continue;
-                case ELEMENT_TYPE_PINNED:
-                    continue;
-                default:
-                    // void, generic parameters and instantiations, and anything unexpected.
-                    return (UnknownSize, 1);
-            }
-        }
-    }
-
-    private (uint Size, uint Align) LayoutOfValueType(int tk, int depth)
-    {
-        if (TypeFromToken(tk) != mdtTypeDef || !IsValidToken(tk))
-        {
-            return (UnknownSize, 1);
-        }
-
-        if (_valueTypeLayouts.TryGetValue(tk, out (uint, uint) known))
-        {
-            return known;
-        }
-
-        // Guards against cycles through invalid metadata.
-        _valueTypeLayouts[tk] = (UnknownSize, 1);
-        TypeDefinition td = _md.GetTypeDefinition((TypeDefinitionHandle)Handle(tk));
-        int a = (int)td.Attributes;
-        bool hasLayout = HasClassLayoutRow(tk);
-        TypeLayout layout = td.GetLayout();
-        uint pack = hasLayout && layout.PackingSize != 0 ? (uint)layout.PackingSize : 8;
-        uint classSize = hasLayout ? (uint)layout.Size : 0;
-        bool isExplicit = (a & 0x18) == 0x10;
-        uint size = 0;
-        uint align = 1;
-        foreach (FieldDefinitionHandle fh in td.GetFields())
-        {
-            FieldDefinition fd = _md.GetFieldDefinition(fh);
-            if ((fd.Attributes & (FieldAttributes.Static | FieldAttributes.Literal)) != 0)
-            {
-                continue;
-            }
-
-            byte[] fsig = Blob(fd.Signature);
-            int p = 1;
-            (uint fieldSize, uint fieldAlign) = LayoutOfType(fsig, ref p, depth);
-            if (fieldSize == UnknownSize)
-            {
-                return _valueTypeLayouts[tk] = (UnknownSize, 1);
-            }
-
-            fieldAlign = Math.Min(fieldAlign, pack);
-            align = Math.Max(align, fieldAlign);
-            if (isExplicit)
-            {
-                int offset = fd.GetOffset();
-                size = Math.Max(size, (offset < 0 ? 0 : (uint)offset) + fieldSize);
-            }
-            else
-            {
-                size = (size + fieldAlign - 1) / fieldAlign * fieldAlign + fieldSize;
-            }
-        }
-
-        size = (size + align - 1) / align * align;
-        size = Math.Max(Math.Max(size, classSize), 1);
-        return _valueTypeLayouts[tk] = (size, align);
     }
 
     // ---------------------------------------------------------------- enumeration
 
     private void EnumClasses()
     {
-        ImmutableArray<TypeDefinitionHandle> all = Arr(_md.TypeDefinitions);
-        // IMDInternalImport::EnumTypeDefInit skips the global <Module> type (the first row).
-        for (int i = 1; i < all.Length; i++)
+        bool first = true;
+        foreach (TypeDefinitionHandle h in _md.TypeDefinitions)
         {
-            _classList.Add(Token(all[i]));
+            // COMPAT: skip the global <Module> type (the first row).
+            if (!first)
+            {
+                _classList.Add(h);
+            }
+
+            first = false;
         }
 
-        foreach (int cl in _classList)
+        foreach (TypeDefinitionHandle cl in _classList)
         {
             if (_mode is DumpMode.Class or DumpMode.ClassMethod or DumpMode.ClassMethodSig)
             {
@@ -457,40 +327,42 @@ internal sealed partial class Dasm
                 }
             }
 
-            int enclosing = GetEnclosingClass(cl);
-            _classEnclosing.Add(RidFromToken(enclosing) != 0 ? enclosing : mdTypeDefNil);
+            TypeDefinition td = _md.GetTypeDefinition(cl);
+            _classEnclosing.Add(td.GetDeclaringType());
 
-            TypeDefinition td = _md.GetTypeDefinition((TypeDefinitionHandle)Handle(cl));
             foreach (MethodImplementationHandle mih in td.GetMethodImplementations())
             {
                 MethodImplementation mi = _md.GetMethodImplementation(mih);
-                int body = Token(mi.MethodBody);
-                int decl = Token(mi.MethodDeclaration);
-                int bodyParent = GetParentToken(body);
-                _methodImpls.Add(new MethodImplRecord { TkClass = cl, TkBody = body, TkDecl = decl, TkBodyParent = bodyParent });
+                _methodImpls.Add(new MethodImplRecord
+                {
+                    Class = cl,
+                    Body = mi.MethodBody,
+                    Decl = mi.MethodDeclaration,
+                    BodyParent = GetParent(mi.MethodBody),
+                });
             }
         }
 
         // nesting consistency
         for (int i = 0; i < _classList.Count; i++)
         {
-            int tkThis = _classList[i];
-            int tkEncloser = _classEnclosing[i];
-            int tkPrevLevel = tkThis;
-            while (tkEncloser != mdTypeDefNil)
+            TypeDefinitionHandle tkThis = _classList[i];
+            TypeDefinitionHandle tkEncloser = _classEnclosing[i];
+            TypeDefinitionHandle tkPrevLevel = tkThis;
+            while (!tkEncloser.IsNil)
             {
                 if (tkThis == tkEncloser)
                 {
-                    PrintError($"error : class {tkThis:X8} is nested in itself");
-                    _classEnclosing[i] = mdTypeDefNil;
+                    PrintError($"error : class {Token(tkThis):X8} is nested in itself");
+                    _classEnclosing[i] = default;
                     break;
                 }
 
                 int j = _classList.IndexOf(tkEncloser);
                 if (j < 0)
                 {
-                    PrintError($"error : class {tkPrevLevel:X8} is nested in missing class {tkEncloser:x8}");
-                    _classEnclosing[i] = mdTypeDefNil;
+                    PrintError($"error : class {Token(tkPrevLevel):X8} is nested in missing class {Token(tkEncloser):x8}");
+                    _classEnclosing[i] = default;
                     break;
                 }
 
@@ -506,12 +378,12 @@ internal sealed partial class Dasm
 
         // class dups
         (string n0, string ns0) = GetNameOfTypeDef(_classList[0]);
-        if (_classEnclosing[0] == mdTypeDefNil && n0 == "<Module>" && ns0.Length == 0)
+        if (_classEnclosing[0].IsNil && n0 == "<Module>" && ns0.Length == 0)
         {
             _dups.Add(_classList[0]);
         }
 
-        Dictionary<(int, string, string), int> seen = new();
+        Dictionary<(TypeDefinitionHandle, string, string), int> seen = new();
         seen[(_classEnclosing[0], n0, ns0)] = 0;
         for (int i = 1; i < _classList.Count; i++)
         {
@@ -525,161 +397,47 @@ internal sealed partial class Dasm
         // field and method dups, including the global ones
         for (int i = 0; i <= _classList.Count; i++)
         {
-            TypeDefinition td = i == 0 ? GlobalType() : _md.GetTypeDefinition((TypeDefinitionHandle)Handle(_classList[i - 1]));
+            TypeDefinition td = i == 0 ? GlobalType() : _md.GetTypeDefinition(_classList[i - 1]);
             if (i == 0 && RowCount(TableIndex.TypeDef) == 0)
             {
                 continue;
             }
 
-            HashSet<(string, ByteArrayKey)> methods = new();
+            HashSet<(string, ImmutableArray<byte>)> methods = new(s_nameAndSignatureComparer);
             foreach (MethodDefinitionHandle h in td.GetMethods())
             {
                 MethodDefinition m = _md.GetMethodDefinition(h);
-                if (!methods.Add((Str(m.Name), new ByteArrayKey(Blob(m.Signature)))))
+                if (!methods.Add((Str(m.Name), _md.GetBlobContent(m.Signature))))
                 {
-                    _dups.Add(Token(h));
+                    _dups.Add(h);
                 }
             }
 
-            HashSet<(string, ByteArrayKey)> fields = new();
+            HashSet<(string, ImmutableArray<byte>)> fields = new(s_nameAndSignatureComparer);
             foreach (FieldDefinitionHandle h in td.GetFields())
             {
                 FieldDefinition f = _md.GetFieldDefinition(h);
-                if (!fields.Add((Str(f.Name), new ByteArrayKey(Blob(f.Signature)))))
+                if (!fields.Add((Str(f.Name), _md.GetBlobContent(f.Signature))))
                 {
-                    _dups.Add(Token(h));
+                    _dups.Add(h);
                 }
             }
         }
     }
 
-    private readonly struct ByteArrayKey : IEquatable<ByteArrayKey>
-    {
-        private readonly byte[] _b;
-
-        public ByteArrayKey(byte[] b) => _b = b;
-
-        public bool Equals(ByteArrayKey other) => _b.AsSpan().SequenceEqual(other._b);
-
-        public override bool Equals(object? obj) => obj is ByteArrayKey k && Equals(k);
-
-        public override int GetHashCode()
-        {
-            HashCode h = default;
-            h.AddBytes(_b);
-            return h.ToHashCode();
-        }
-    }
-
-    private void EnumTypedefs()
-    {
-        foreach (TypeSpecificationHandle h in AllTypeSpecs())
-        {
-            byte[] sig = Blob(_md.GetTypeSpecification(h).Signature);
-            if (sig.Length == 0 || sig[0] != ELEMENT_TYPE_TYPEDEF)
-            {
-                continue;
-            }
-
-            int z = Array.IndexOf(sig, (byte)0, 1);
-            if (z < 0)
-            {
-                continue;
-            }
-
-            TypeDefDescr td = new()
-            {
-                Name = Encoding.UTF8.GetString(sig, 1, z - 1),
-                TkSelf = Token(h),
-            };
-            int l = z + 1;
-            td.TkTypeSpec = l + 4 <= sig.Length ? (int)ReadUInt32(sig, l) : 0;
-            if (TypeFromToken(td.TkTypeSpec) == mdtTypeSpec && IsValidToken(td.TkTypeSpec))
-            {
-                td.Sig = GetTypeSpecSig(td.TkTypeSpec);
-            }
-            else if (TypeFromToken(td.TkTypeSpec) == mdtCustomAttribute)
-            {
-                l += 4;
-                td.Sig = sig.AsSpan(Math.Min(l, sig.Length)).ToArray();
-            }
-
-            _typedefs.Add(td);
-        }
-    }
-
-    private IEnumerable<TypeSpecificationHandle> AllTypeSpecs()
-    {
-        int n = RowCount(TableIndex.TypeSpec);
-        for (int i = 1; i <= n; i++)
-        {
-            yield return MetadataTokens.TypeSpecificationHandle(i);
-        }
-    }
-
-    private void DumpTypedefs()
-    {
-        PrintLine("");
-        foreach (TypeDefDescr td in _typedefs.ToArray())
-        {
-            StringBuilder sb = new();
-            sb.Append(Indent).Append(ANCHORPT(KEYWORD(".typedef"), td.TkSelf)).Append(' ');
-            if (_options.ShowTokens)
-            {
-                sb.Append(COMMENT($"/*{td.TkSelf:X8}*/ "));
-            }
-
-            int tk = td.TkTypeSpec;
-            switch (TypeFromToken(tk))
-            {
-                case mdtCustomAttribute:
-                {
-                    PrintLine(sb);
-                    PushIndent("        ");
-                    byte[] s = td.Sig ?? Array.Empty<byte>();
-                    int tkType = s.Length >= 4 ? (int)ReadUInt32(s, 0) : 0;
-                    int tkOwner = s.Length >= 8 ? (int)ReadUInt32(s, 4) : 0;
-                    byte[] blob = s.Length > 8 ? s.AsSpan(8).ToArray() : Array.Empty<byte>();
-                    DumpCustomAttributeProps(0, tkType, tkOwner, blob, RidFromToken(tkOwner) != 0);
-                    PrintLine($"{Indent} {KEYWORD("as")} {ProperName(td.Name)}");
-                    PopIndent(8);
-                    continue;
-                }
-
-                case mdtMethodDef:
-                    sb.Append(KEYWORD("method "));
-                    break;
-                case mdtFieldDef:
-                    sb.Append(KEYWORD("field "));
-                    break;
-                case mdtMemberRef:
-                    sb.Append(KEYWORD(IsValidToken(tk) && IsFieldMemberRef(tk) ? "field " : "method "));
-                    break;
-            }
-
-            List<TypeDefDescr> saved = new(_typedefs);
-            _typedefs.Clear();
-            try
-            {
-                PrettyPrintToken(sb, tk);
-            }
-            finally
-            {
-                _typedefs.AddRange(saved);
-            }
-
-            sb.Append(' ').Append(KEYWORD("as")).Append(' ').Append(ProperName(td.Name));
-            PrintLine(sb);
-        }
-    }
+    // Members are duplicates when they have the same name and signature bytes.
+    private static readonly IEqualityComparer<(string Name, ImmutableArray<byte> Signature)> s_nameAndSignatureComparer =
+        EqualityComparer<(string Name, ImmutableArray<byte> Signature)>.Create(
+            (a, b) => a.Name == b.Name && a.Signature.AsSpan().SequenceEqual(b.Signature.AsSpan()),
+            x => HashCode.Combine(x.Name, x.Signature.Length));
 
     private void DumpMscorlib()
     {
-        if (FindTypeDefByName("System", "Object", out int tk))
+        if (FindTypeDefByName("System", "Object", out TypeDefinitionHandle obj))
         {
-            (TypeAttributes attrs, int extends) = GetTypeDefProps(tk);
-            bool isClass = (attrs & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Class;
-            if (isClass && !IsValidToken(extends))
+            TypeDefinition td = _md.GetTypeDefinition(obj);
+            bool isClass = (td.Attributes & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Class;
+            if (isClass && !IsValid(td.BaseType))
             {
                 PrintLine("");
                 PrintLine($"{Indent}{KEYWORD(".mscorlib")} ");
@@ -688,32 +446,13 @@ internal sealed partial class Dasm
         }
     }
 
-    private void DumpTypelist()
-    {
-        if (_classList.Count > 1)
-        {
-            PrintLine("");
-            PrintLine($"{Indent}{KEYWORD(".typelist")} ");
-            PrintLine(Indent + SCOPE());
-            PushIndent();
-            foreach (int cl in _classList)
-            {
-                PrintLine(Indent + PrettyPrintClass(cl));
-            }
-
-            PopIndent();
-            PrintLine(Indent + UNSCOPE());
-            PrintLine("");
-        }
-    }
-
     // ---------------------------------------------------------------- the whole file
 
-    public bool DumpFile(string inputFileName)
+    public bool DumpFile()
     {
         try
         {
-            return DumpFileCore(inputFileName);
+            return DumpFileCore();
         }
         finally
         {
@@ -723,34 +462,16 @@ internal sealed partial class Dasm
         }
     }
 
-    private bool DumpFileCore(string inputFileName)
+    private bool DumpFileCore()
     {
-        if (_html)
-        {
-            PrintLine("<HTML>");
-            PrintLine("<HEAD>");
-            PrintLine($"<TITLE> {inputFileName} - IL DASM</TITLE>");
-            PrintLine("</HEAD>");
-            PrintLine("<BODY>");
-            PrintLine("<FONT SIZE=3 FACE=\"Arial\">");
-            PrintLine("<PRE>");
-        }
-        else if (_rtf)
-        {
-            DumpRTFPrefix();
-        }
-
+        _out.Write(_formatter.Prolog(_inputFileName, _newLine));
         DumpPreamble();
 
         CorHeader? cor = _pe.PEHeaders.CorHeader;
         if (cor is null)
         {
-            PrintError($"error : '{inputFileName}' has no valid CLR header and cannot be disassembled");
-            if (_options.Headers)
-            {
-                DumpHeader();
-            }
-
+            PrintError($"error : '{_inputFileName}' has no valid CLR header and cannot be disassembled");
+            RunMetadataDisassemblers(DisassemblyPhase.Headers);
             return false;
         }
 
@@ -761,58 +482,35 @@ internal sealed partial class Dasm
             return false;
         }
 
-        int entryPoint = cor.EntryPointTokenOrRelativeVirtualAddress;
-        OpenPdb(inputFileName);
+        _entryPoint = TryGetHandle(cor.EntryPointTokenOrRelativeVirtualAddress, out EntityHandle entryPoint) ? entryPoint : default;
+        OpenPdb();
 
         EnumClasses();
-        EnumTypedefs();
 
-        // Header, statistics and metadata info go inside a "multiline comment" block (empty without HTML/RTF).
+        // The headers, statistics and metadata info go inside a "multiline comment" block (empty in plain text).
         PrintLine(CommentPrefix);
-        if (_options.Headers)
-        {
-            DumpHeader();
-            DumpHeaderDetails();
-        }
-        else
+        if (!RunMetadataDisassemblers(DisassemblyPhase.Headers))
         {
             DumpVTables();
         }
 
-        if (_options.Stats)
-        {
-            DumpStatistics();
-        }
-
-        if (_options.ClassList)
-        {
-            PrintClassList();
-        }
-
-        if (_options.Metadata)
-        {
-            DumpMetaInfo();
-        }
-
+        RunMetadataDisassemblers(DisassemblyPhase.Summary);
         PrintLine(CommentPostfix);
 
         if (!_options.NoIL)
         {
-            if (_classToDump != 0)
+            if (!_classToDump.IsNil)
             {
-                DumpClass(TopEncloser(_classToDump), entryPoint, 7);
+                DumpClass(TopEncloser(_classToDump), ClassParts.All);
                 PrintLine(COMMENT("// *********** DISASSEMBLY COMPLETE ***********************"));
                 return FinishFile();
             }
 
             DumpMscorlib();
-            if (_options.TypeList)
-            {
-                DumpTypelist();
-            }
+            RunMetadataDisassemblers(DisassemblyPhase.BeforeManifest);
 
             DumpManifest();
-            DumpTypedefs();
+            PrintLine("");
 
             if (_options.ForwardDeclarations && _classList.Count != 0)
             {
@@ -821,9 +519,9 @@ internal sealed partial class Dasm
                 PrintLine(COMMENT("//"));
                 for (int i = 0; i < _classList.Count; i++)
                 {
-                    if (_classEnclosing[i] == mdTypeDefNil)
+                    if (_classEnclosing[i].IsNil)
                     {
-                        DumpClass(_classList[i], entryPoint, 2);
+                        DumpClass(_classList[i], ClassParts.NestedClasses);
                     }
                 }
 
@@ -833,7 +531,7 @@ internal sealed partial class Dasm
             }
 
             DumpGlobalFields();
-            DumpGlobalMethods(entryPoint);
+            DumpGlobalMethods();
 
             if (_classList.Count != 0)
             {
@@ -848,9 +546,9 @@ internal sealed partial class Dasm
                 PrintLine("");
                 for (int i = 0; i < _classList.Count; i++)
                 {
-                    if (_classEnclosing[i] == mdTypeDefNil)
+                    if (_classEnclosing[i].IsNil)
                     {
-                        DumpClass(_classList[i], entryPoint, 7);
+                        DumpClass(_classList[i], ClassParts.All);
                     }
                 }
 
@@ -861,12 +559,11 @@ internal sealed partial class Dasm
 
             if (ShowCustomAttributes)
             {
-                int n = RowCount(TableIndex.CustomAttribute);
-                for (int i = 1; i <= n; i++)
+                foreach (CustomAttributeHandle h in _md.CustomAttributes)
                 {
-                    if (!_caDumped.Contains(i))
+                    if (!_caDumped.Contains(h))
                     {
-                        DumpCustomAttribute(mdtCustomAttribute | i, withOwner: true);
+                        DumpCustomAttribute(h, withOwner: true);
                     }
                 }
             }
@@ -880,50 +577,23 @@ internal sealed partial class Dasm
 
     private bool FinishFile()
     {
-        if (_toFile)
-        {
-            DumpWin32Resources();
-        }
-
-        if (_html)
-        {
-            PrintLine("</PRE>");
-            PrintLine("</BODY>");
-            PrintLine("</HTML>");
-        }
-        else if (_rtf)
-        {
-            DumpRTFPostfix();
-        }
-
+        RunMetadataDisassemblers(DisassemblyPhase.End);
+        _out.Write(_formatter.Epilog(_newLine));
         return true;
-    }
-
-    private void DumpRTFPrefix()
-    {
-        _out.Write("{\\rtf1\\ansi\n");
-        _out.Write("{\\fonttbl{\\f0\\fmodern\\fprq1\\fcharset1 Courier New;}{\\f1\\fswiss\\fcharset1 Arial;}}\n");
-        _out.Write("{\\colortbl ;\\red0\\green0\\blue128;\\red0\\green128\\blue0;\\red255\\green0\\blue0;}\n");
-        _out.Write("\\viewkind4\\uc1\\pard\\f0\\fs20\n");
-    }
-
-    private void DumpRTFPostfix()
-    {
-        _out.Write("}\n");
     }
 
     private void DumpPreamble()
     {
         PrintLine("");
-        if (_html)
+        if (_formatter.TitlePrefix is string titlePrefix)
         {
-            PrintLine("<FONT SIZE=4><B>");
+            PrintLine(titlePrefix);
         }
 
         PrintLine(COMMENT("//  .NET IL Disassembler.  Version " + ProductVersion));
-        if (_html)
+        if (_formatter.TitlePostfix is string titlePostfix)
         {
-            PrintLine("</B></FONT>");
+            PrintLine(titlePostfix);
         }
 
         PrintLine("");
@@ -951,189 +621,30 @@ internal sealed partial class Dasm
     {
         get
         {
-            string? v = typeof(Dasm).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-            if (v is null)
-            {
-                return "0.0.0";
-            }
-
+            // The SDK always generates the attribute.
+            string v = typeof(Dasm).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
             int plus = v.IndexOf('+');
             return plus >= 0 ? v.Substring(0, plus) : v;
         }
     }
 
-    // .data sections for everything referenced via DumpDataPtr.
-    private void DumpDataSections()
-    {
-        if (_ptrTags.Count == 0)
-        {
-            return;
-        }
-
-        List<(uint Rva, uint Size)> tags = new(_ptrTags);
-        // Sorted by RVA with a stable sort.
-        tags.Sort((x, y) => x.Rva.CompareTo(y.Rva));
-        for (int j = 0; j < tags.Count; j++)
-        {
-            uint fromPtr = tags[j].Rva;
-            SectionHeader? shn = SectionOf(fromPtr);
-            if (shn is null)
-            {
-                PrintLine($"ERROR: One of used pointers references undefined data (D_{fromPtr:X8})");
-                break;
-            }
-
-            SectionHeader sh = shn.Value;
-            uint secEnd = (uint)sh.VirtualAddress + (uint)sh.VirtualSize;
-            string prefix = DataLabelPrefix(sh);
-            uint toPtr = j == tags.Count - 1 ? secEnd : Math.Min(tags[j + 1].Rva, secEnd);
-            if (toPtr - fromPtr > tags[j].Size)
-            {
-                toPtr = fromPtr + tags[j].Size;
-            }
-
-            uint limPtr = Math.Min(toPtr, (uint)sh.VirtualAddress + (uint)sh.SizeOfRawData);
-            while (true)
-            {
-                StringBuilder sb = new();
-                sb.Append(Indent).Append(KEYWORD(".data")).Append(' ');
-                if (prefix == "T_")
-                {
-                    sb.Append(KEYWORD("tls "));
-                }
-                else if (prefix == "I_")
-                {
-                    sb.Append(KEYWORD("cil "));
-                }
-
-                if (fromPtr >= limPtr)
-                {
-                    sb.Append(prefix).Append(fromPtr.ToString("X8", CultureInfo.InvariantCulture)).Append(" = ").Append(KEYWORD("int8")).Append('[').Append(((int)(toPtr - fromPtr)).ToString(CultureInfo.InvariantCulture)).Append(']');
-                    PrintLine(sb);
-                }
-                else
-                {
-                    sb.Append(prefix).Append(fromPtr.ToString("X8", CultureInfo.InvariantCulture)).Append(" = ").Append(KEYWORD("bytearray")).Append(" (");
-                    PrintLine(sb);
-                    byte[] data = GetRawSectionBytes(sh, fromPtr, limPtr - fromPtr);
-                    DumpHexbytes(data, fromPtr, toPtr, limPtr);
-                }
-
-                if (limPtr == toPtr && j < tags.Count - 1 && toPtr < tags[j + 1].Rva)
-                {
-                    uint stptr = tags[j + 1].Rva;
-                    uint align = 1;
-                    while ((align & stptr) == 0)
-                    {
-                        align <<= 1;
-                    }
-
-                    align -= 1;
-                    if ((toPtr & align) != 0)
-                    {
-                        fromPtr = toPtr;
-                        toPtr = (toPtr + align) & ~align;
-                        continue;
-                    }
-                }
-
-                break;
-            }
-        }
-    }
-
-    private byte[] GetRawSectionBytes(SectionHeader sh, uint rva, uint count)
-    {
-        byte[] result = new byte[count];
-        long fileOffset = sh.PointerToRawData + (rva - (uint)sh.VirtualAddress);
-        ImmutableArray<byte> content = Image;
-        for (int i = 0; i < count && fileOffset + i < content.Length; i++)
-        {
-            result[i] = content[(int)(fileOffset + i)];
-        }
-
-        return result;
-    }
-
-    private void DumpHexbytes(byte[] data, uint fromPtr, uint toPtr, uint limPtr)
-    {
-        StringBuilder sb = new();
-        sb.Append(Indent).Append("                ");
-        StringBuilder sz = new();
-        int k = 0;
-        bool printsz = false;
-        for (uint curPtr = fromPtr; curPtr < toPtr; curPtr++, k++)
-        {
-            if (k == 16)
-            {
-                if (printsz)
-                {
-                    sb.Append(COMMENT("  // " + sz));
-                }
-
-                PrintLine(sb);
-                sb.Clear();
-                sb.Append(Indent).Append("                ");
-                k = 0;
-                sz.Clear();
-                printsz = false;
-            }
-
-            byte b = curPtr >= limPtr ? (byte)0 : data[curPtr - fromPtr];
-            sb.Append(' ').Append(b.ToString("X2", CultureInfo.InvariantCulture));
-            if (IsPrint(b))
-            {
-                if (_rtf)
-                {
-                    if (b == '\\' || b == '{' || b == '}')
-                    {
-                        sz.Append('\\');
-                    }
-
-                    sz.Append((char)b);
-                }
-                else if (_html)
-                {
-                    // Other characters are dropped in HTML mode.
-                    if (b == '<')
-                    {
-                        sz.Append(LTN());
-                    }
-                    else if (b == '>')
-                    {
-                        sz.Append(GTN());
-                    }
-                }
-                else
-                {
-                    sz.Append((char)b);
-                }
-
-                printsz = true;
-            }
-            else
-            {
-                sz.Append('.');
-            }
-        }
-
-        sb.Append(") ");
-        if (printsz)
-        {
-            for (int i = k; i < 16; i++)
-            {
-                sb.Append("   ");
-            }
-
-            sb.Append(COMMENT("// " + sz));
-        }
-
-        PrintLine(sb);
-    }
-
     // ---------------------------------------------------------------- vtable fixups and exports
 
-    private void DumpVTables()
+    // The COR_VTABLE_* flags of a vtable fixup (IMAGE_COR_VTABLEFIXUP.Type); SRM does not define them.
+    [Flags]
+    private enum VTableFixupFlags : ushort
+    {
+        Int32 = 0x01,
+        Int64 = 0x02,
+        FromUnmanaged = 0x04,
+        FromUnmanagedRetainAppDomain = 0x08,
+        CallMostDerived = 0x10,
+    }
+
+    // IMAGE_COR_VTABLEFIXUP: RVA (4), Count (2), Type (2).
+    private const int VTableFixupSize = 8;
+
+    internal void DumpVTables()
     {
         CorHeader cor = _pe.PEHeaders.CorHeader!;
         DirectoryEntry dir = cor.VtableFixupsDirectory;
@@ -1143,9 +654,8 @@ internal sealed partial class Dasm
         }
 
         PrintLine("// VTableFixup Directory:");
-        int count = dir.Size / 8;
-        byte[]? fixups = GetBytesAtRva((uint)dir.RelativeVirtualAddress, dir.Size);
-        if (fixups is null || fixups.Length < dir.Size)
+        int count = dir.Size / VTableFixupSize;
+        if (!TryGetBytesAtRva((uint)dir.RelativeVirtualAddress, dir.Size, out ReadOnlySpan<byte> fixups) || fixups.Length < dir.Size)
         {
             PrintLine("// Failed to get vtable fix-up table.");
             PrintLine("");
@@ -1154,15 +664,16 @@ internal sealed partial class Dasm
 
         for (int i = 0; i < count; i++)
         {
-            uint rva = ReadUInt32(fixups, i * 8);
-            ushort n = (ushort)(fixups[i * 8 + 4] | fixups[i * 8 + 5] << 8);
-            ushort type = (ushort)(fixups[i * 8 + 6] | fixups[i * 8 + 7] << 8);
+            ReadOnlySpan<byte> fixup = fixups.Slice(i * VTableFixupSize);
+            uint rva = BinaryPrimitives.ReadUInt32LittleEndian(fixup);
+            ushort n = BinaryPrimitives.ReadUInt16LittleEndian(fixup.Slice(4));
+            VTableFixupFlags type = (VTableFixupFlags)BinaryPrimitives.ReadUInt16LittleEndian(fixup.Slice(6));
             PrintLine($"//   IMAGE_COR_VTABLEFIXUP[{i}]:");
             PrintLine($"//       RVA:               0x{rva:x8}");
             PrintLine($"//       Count:             0x{n:x4}");
-            PrintLine($"//       Type:              0x{type:x4}");
-            byte[]? slots = GetBytesAtRva(rva, -1);
-            if (slots is null)
+            PrintLine($"//       Type:              0x{(ushort)type:x4}");
+            ReadOnlySpan<byte> slots = SpanAtRva(rva);
+            if (slots.IsEmpty)
             {
                 PrintLine("// Bogus RVA for entry.");
                 continue;
@@ -1171,29 +682,28 @@ internal sealed partial class Dasm
             int p = 0;
             for (int s = 0; s < n; s++)
             {
-                if ((type & 0x01) != 0)
+                if ((type & VTableFixupFlags.Int32) != 0)
                 {
                     uint tok = ReadUInt32(slots, p);
                     PrintLine($"//         [0x{s:x4}]            (0x{tok:x8})");
                     p += 4;
-                    if (!IsValidToken((int)tok))
+                    if (!TryGetHandle((int)tok, out Handle h))
                     {
                         PrintError($"error :  invalid token ({tok:x8})");
                     }
-                    else if (TypeFromToken((int)tok) != mdtMethodDef)
+                    else if (h.Kind != HandleKind.MethodDefinition)
                     {
-                        PrintError($"error : unexpected token type, expected {mdtMethodDef >> 24:x2}, got {TypeFromToken((int)tok) >> 24:x2}");
+                        PrintError($"error : unexpected token type, expected {(int)HandleKind.MethodDefinition:x2}, got {(int)h.Kind:x2}");
                     }
                 }
                 else
                 {
-                    ulong v = BitConverter.ToUInt64(slots, p);
+                    ulong v = BinaryPrimitives.ReadUInt64LittleEndian(slots.Slice(p));
                     PrintLine($"//         [0x{s:x4}]            (0x{v,16:x})");
-                    uint tok = (uint)v;
                     p += 8;
-                    if (!IsValidToken((int)tok))
+                    if (!TryGetHandle((int)(uint)v, out Handle _))
                     {
-                        PrintError($"error :  invalid token ({tok:x8})");
+                        PrintError($"error :  invalid token ({(uint)v:x8})");
                     }
                 }
             }
@@ -1219,26 +729,36 @@ internal sealed partial class Dasm
             PrintLine($"{Indent}{KEYWORD(".stackreserve")} 0x{pe.SizeOfStackReserve:x16}");
         }
 
-        int subsystem = (int)pe.Subsystem;
-        string[] names =
-        [
-            "// UNKNOWN", "// NATIVE", "// WINDOWS_GUI", "// WINDOWS_CUI", "// <illegal value>", "// OS2_CUI", "// <illegal value>",
-            "// POSIX_CUI", "// NATIVE_WINDOWS", "// WINDOWS_CE_GUI", "// EFI_APPLICATION", "// EFI_BOOT_SERVICE_DRIVER",
-            "// EFI_RUNTIME_DRIVER", "// EFI_ROM", "// XBOX",
-        ];
-        PrintLine($"{Indent}{KEYWORD(".subsystem")} 0x{subsystem:x4}       {COMMENT(names[subsystem > 14 ? 4 : subsystem])}");
+        string subsystem = pe.Subsystem switch
+        {
+            Subsystem.Unknown => "// UNKNOWN",
+            Subsystem.Native => "// NATIVE",
+            Subsystem.WindowsGui => "// WINDOWS_GUI",
+            Subsystem.WindowsCui => "// WINDOWS_CUI",
+            Subsystem.OS2Cui => "// OS2_CUI",
+            Subsystem.PosixCui => "// POSIX_CUI",
+            Subsystem.NativeWindows => "// NATIVE_WINDOWS",
+            Subsystem.WindowsCEGui => "// WINDOWS_CE_GUI",
+            Subsystem.EfiApplication => "// EFI_APPLICATION",
+            Subsystem.EfiBootServiceDriver => "// EFI_BOOT_SERVICE_DRIVER",
+            Subsystem.EfiRuntimeDriver => "// EFI_RUNTIME_DRIVER",
+            Subsystem.EfiRom => "// EFI_ROM",
+            Subsystem.Xbox => "// XBOX",
+            _ => "// <illegal value>",
+        };
+        PrintLine($"{Indent}{KEYWORD(".subsystem")} 0x{(int)pe.Subsystem:x4}       {COMMENT(subsystem)}");
 
-        uint flags = (uint)cor.Flags;
+        CorFlags flags = cor.Flags;
         StringBuilder sb = new();
-        sb.Append(Indent).Append(KEYWORD(".corflags")).Append(" 0x").Append(flags.ToString("x8", CultureInfo.InvariantCulture));
+        sb.Append(Indent).Append(KEYWORD(".corflags")).Append(" 0x").Append(((uint)flags).ToString("x8", CultureInfo.InvariantCulture));
         if (flags != 0)
         {
             StringBuilder c = new("    // ");
-            if ((flags & 0x1) != 0) c.Append(" ILONLY");
-            if ((flags & 0x00000002) != 0 && (flags & 0x00020000) == 0) c.Append(" 32BITREQUIRED");
-            if ((flags & 0x00000002) != 0 && (flags & 0x00020000) != 0) c.Append(" 32BITPREFERRED");
-            if ((flags & 0x4) != 0) c.Append(" IL_LIBRARY");
-            if ((flags & 0x10000) != 0) c.Append(" TRACKDEBUGDATA");
+            if ((flags & CorFlags.ILOnly) != 0) c.Append(" ILONLY");
+            if ((flags & CorFlags.Requires32Bit) != 0 && (flags & CorFlags.Prefers32Bit) == 0) c.Append(" 32BITREQUIRED");
+            if ((flags & CorFlags.Requires32Bit) != 0 && (flags & CorFlags.Prefers32Bit) != 0) c.Append(" 32BITPREFERRED");
+            if ((flags & CorFlags.ILLibrary) != 0) c.Append(" IL_LIBRARY");
+            if ((flags & CorFlags.TrackDebugData) != 0) c.Append(" TRACKDEBUGDATA");
             sb.Append(COMMENT(c.ToString()));
         }
 
@@ -1256,57 +776,57 @@ internal sealed partial class Dasm
                 return;
             }
 
-            byte[] entries = GetRawSectionBytes(shn.Value, (uint)vt.RelativeVirtualAddress, (uint)vt.Size);
+            ReadOnlySpan<byte> entries = RawSectionBytes(shn.Value, (uint)vt.RelativeVirtualAddress, (uint)vt.Size);
             int k = 0;
-            for (int j = vt.Size; j > 0; j -= 8, k++)
+            for (int j = vt.Size; j > 0; j -= VTableFixupSize, k++)
             {
-                int off = k * 8;
-                if (off + 8 > entries.Length)
+                int off = k * VTableFixupSize;
+                if (off + VTableFixupSize > entries.Length)
                 {
                     break;
                 }
 
-                uint addr = ReadUInt32(entries, off);
-                ushort count = (ushort)(entries[off + 4] | entries[off + 5] << 8);
-                ushort type = (ushort)(entries[off + 6] | entries[off + 7] << 8);
+                uint addr = BinaryPrimitives.ReadUInt32LittleEndian(entries.Slice(off));
+                ushort count = BinaryPrimitives.ReadUInt16LittleEndian(entries.Slice(off + 4));
+                VTableFixupFlags type = (VTableFixupFlags)BinaryPrimitives.ReadUInt16LittleEndian(entries.Slice(off + 6));
                 sb.Clear();
                 sb.Append(Indent).Append(KEYWORD(".vtfixup")).Append(" [").Append(count.ToString(CultureInfo.InvariantCulture)).Append("] ");
                 uint size = (uint)count * 4;
-                if ((type & 0x01) != 0)
+                if ((type & VTableFixupFlags.Int32) != 0)
                 {
                     sb.Append(KEYWORD("int32 "));
                 }
-                else if ((type & 0x02) != 0)
+                else if ((type & VTableFixupFlags.Int64) != 0)
                 {
                     sb.Append(KEYWORD("int64 "));
                     size <<= 1;
                 }
 
-                if ((type & 0x04) != 0) sb.Append(KEYWORD("fromunmanaged "));
-                if ((type & 0x10) != 0) sb.Append(KEYWORD("callmostderived "));
-                if ((type & 0x08) != 0) sb.Append(KEYWORD("retainappdomain "));
+                if ((type & VTableFixupFlags.FromUnmanaged) != 0) sb.Append(KEYWORD("fromunmanaged "));
+                if ((type & VTableFixupFlags.CallMostDerived) != 0) sb.Append(KEYWORD("callmostderived "));
+                if ((type & VTableFixupFlags.FromUnmanagedRetainAppDomain) != 0) sb.Append(KEYWORD("retainappdomain "));
                 sb.Append(KEYWORD("at "));
                 DumpDataPtr(sb, addr, size);
-                byte[]? slots = GetBytesAtRva(addr, -1);
-                if (slots is not null)
+                ReadOnlySpan<byte> slots = SpanAtRva(addr);
+                if (!slots.IsEmpty)
                 {
                     StringBuilder c = new(" //");
                     int p = 0;
                     for (int s = 0; s < count; s++)
                     {
-                        int tok = (int)ReadUInt32(slots, p);
-                        if ((type & 0x01) != 0)
+                        uint tok = ReadUInt32(slots, p);
+                        if ((type & VTableFixupFlags.Int32) != 0)
                         {
-                            c.Append(' ').Append(((uint)tok).ToString("X8", CultureInfo.InvariantCulture));
+                            c.Append(' ').Append(tok.ToString("X8", CultureInfo.InvariantCulture));
                             p += 4;
                         }
                         else
                         {
-                            c.Append(' ').Append(BitConverter.ToUInt64(slots, p).ToString("X16", CultureInfo.InvariantCulture));
+                            c.Append(' ').Append(BinaryPrimitives.ReadUInt64LittleEndian(slots.Slice(p)).ToString("X16", CultureInfo.InvariantCulture));
                             p += 8;
                         }
 
-                        _vtableRefs.Add(new VTableRef { Tok = tok, Entry = k, Slot = s });
+                        _vtableRefs.Add(new VTableRef { Method = TryGetHandle((int)tok, out EntityHandle m) ? m : default, Entry = k, Slot = s });
                     }
 
                     sb.Append(COMMENT(c.ToString()));
@@ -1321,6 +841,8 @@ internal sealed partial class Dasm
         }
     }
 
+    // The export directory (IMAGE_EXPORT_DIRECTORY), which SRM does not read: exported methods are reached through
+    // stubs that hold the address of their vtable fixup slot.
     private void DumpEATEntries()
     {
         try
@@ -1332,8 +854,7 @@ internal sealed partial class Dasm
                 return;
             }
 
-            byte[]? table = GetBytesAtRva((uint)exportDir.RelativeVirtualAddress, 40);
-            if (table is null || table.Length < 40)
+            if (!TryGetBytesAtRva((uint)exportDir.RelativeVirtualAddress, 40, out ReadOnlySpan<byte> table) || table.Length < 40)
             {
                 return;
             }
@@ -1346,22 +867,20 @@ internal sealed partial class Dasm
             uint ordTable = ReadUInt32(table, 36);
             if (numAT != 0 && addrTable != 0)
             {
-                byte[]? addrs = GetBytesAtRva(addrTable, (int)numAT * 4);
+                TryGetBytesAtRva(addrTable, (int)numAT * 4, out ReadOnlySpan<byte> addrs);
                 _eatRefs.Clear();
                 for (int j = 0; j < numAT; j++)
                 {
                     EATableRef r = new();
-                    uint entryRva = ReadUInt32(addrs!, j * 4);
-                    byte[]? cont = GetBytesAtRva(entryRva, 10);
-                    if (cont is not null)
+                    uint entryRva = ReadUInt32(addrs, j * 4);
+                    if (TryGetBytesAtRva(entryRva, 10, out ReadOnlySpan<byte> cont))
                     {
                         uint tokRva = IsPE32
                             ? ReadUInt32(cont, 2) - (uint)pe.ImageBase
-                            : (uint)(BitConverter.ToUInt64(cont, 2) - (uint)pe.ImageBase);
-                        byte[]? tok = GetBytesAtRva(tokRva, 4);
-                        if (tok is not null)
+                            : (uint)(BinaryPrimitives.ReadUInt64LittleEndian(cont.Slice(2)) - (uint)pe.ImageBase);
+                        if (TryGetBytesAtRva(tokRva, 4, out ReadOnlySpan<byte> tok) && TryGetHandle((int)ReadUInt32(tok, 0), out EntityHandle m))
                         {
-                            r.Tok = (int)ReadUInt32(tok, 0);
+                            r.Method = m;
                         }
                     }
 
@@ -1371,30 +890,30 @@ internal sealed partial class Dasm
 
             if (numNames != 0 && namePtr != 0 && ordTable != 0)
             {
-                byte[]? names = GetBytesAtRva(namePtr, (int)numAT * 4);
-                byte[]? ords = GetBytesAtRva(ordTable, (int)numAT * 2);
+                TryGetBytesAtRva(namePtr, (int)numAT * 4, out ReadOnlySpan<byte> names);
+                TryGetBytesAtRva(ordTable, (int)numAT * 2, out ReadOnlySpan<byte> ords);
                 for (int j = 0; j < numAT; j++)
                 {
-                    uint nameRva = ReadUInt32(names!, j * 4);
-                    int ord = ords![j * 2] | ords[j * 2 + 1] << 8;
-                    byte[]? nameBytes = GetBytesAtRva(nameRva, -1);
+                    uint nameRva = ReadUInt32(names, j * 4);
+                    int ord = BinaryPrimitives.ReadUInt16LittleEndian(ords.Slice(j * 2));
+                    ReadOnlySpan<byte> nameBytes = SpanAtRva(nameRva);
                     string? name = null;
-                    if (nameBytes is not null)
+                    if (!nameBytes.IsEmpty)
                     {
-                        int z = Array.IndexOf(nameBytes, (byte)0);
-                        name = Encoding.UTF8.GetString(nameBytes, 0, z < 0 ? nameBytes.Length : z);
+                        int z = nameBytes.IndexOf((byte)0);
+                        name = Encoding.UTF8.GetString(z < 0 ? nameBytes : nameBytes.Slice(0, z));
                     }
 
                     if (ord < _eatRefs.Count)
                     {
-                        _eatRefs[ord] = new EATableRef { Tok = _eatRefs[ord].Tok, Name = name };
+                        _eatRefs[ord] = new EATableRef { Method = _eatRefs[ord].Method, Name = name };
                     }
                 }
             }
 
             _eatBase = (int)ordinalBase;
         }
-        catch (Exception e) when (e is IndexOutOfRangeException or ArgumentException or NullReferenceException)
+        catch (Exception e) when (e is IndexOutOfRangeException or ArgumentException)
         {
             PrintError("// ERROR READING EXPORT ADDRESS TABLE");
             _eatRefs.Clear();

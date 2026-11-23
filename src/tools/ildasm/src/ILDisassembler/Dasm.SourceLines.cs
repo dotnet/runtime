@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
 using System.Text;
 
 namespace ILDisassembler;
@@ -19,16 +18,17 @@ internal sealed partial class Dasm
     private MetadataReaderProvider? _pdbProvider;
     private string _wasFileName = "";
 
-    private void OpenPdb(string inputFileName)
+    private void OpenPdb()
     {
-        if (!_options.ShowLineNumbers || inputFileName == "<stream>")
+        if (!_options.ShowLineNumbers || _options.InputFileName is null)
         {
             return;
         }
 
         try
         {
-            if (_pe.TryOpenAssociatedPortablePdb(inputFileName, path => File.Exists(path) ? File.OpenRead(path) : null, out _pdbProvider, out _))
+            Func<string, Stream?> openPdb = _options.PdbFileStreamProvider ?? (_ => null);
+            if (_pe.TryOpenAssociatedPortablePdb(_options.InputFileName, openPdb, out _pdbProvider, out _))
             {
                 _pdb = _pdbProvider!.GetMetadataReader();
             }
@@ -39,18 +39,14 @@ internal sealed partial class Dasm
         }
     }
 
-    private List<SequencePoint>? GetSequencePoints(int methodToken)
+    private List<SequencePoint>? GetSequencePoints(MethodDefinitionHandle method)
     {
-        if (_pdb is null)
+        if (_pdb is null || MetadataTokens.GetRowNumber(method) > _pdb.MethodDebugInformation.Count)
         {
             return null;
         }
 
-        MethodDebugInformationHandle h = MetadataTokens.MethodDebugInformationHandle(RidFromToken(methodToken));
-        if (RidFromToken(methodToken) > _pdb.MethodDebugInformation.Count)
-        {
-            return null;
-        }
+        MethodDebugInformationHandle h = method.ToDebugInformationHandle();
 
         List<SequencePoint> points = new();
         try

@@ -13,12 +13,23 @@ namespace ILDisassembler;
 // /METADATA[=<specifier>]: the MetaInfo dump. The metadata is read with System.Reflection.Metadata; the raw dumps
 // (RAW, SCHEMA, MDHEADER, CSV, STATS, HEAPS) also show the stored layout of the tables and heaps. If the metadata cannot
 // be read, the dump stops with an error line and the rest of the disassembly goes on.
-internal sealed partial class Dasm
+internal sealed class MetaInfoDisassembler : IMetadataDisassembler
 {
-    private void DumpMetaInfo()
+    private readonly string[] _filters;
+
+    /// <param name="filters">What to show (MDHEADER, HEX, CSV, UNREX, SCHEMA, RAW, HEAPS, VALIDATE, STATS), recognized by
+    /// their first three characters.</param>
+    public MetaInfoDisassembler(string[] filters)
+    {
+        _filters = filters;
+    }
+
+    public DisassemblyPhase Phase => DisassemblyPhase.Summary;
+
+    public void Disassemble(Dasm dasm)
     {
         uint filter = 0;
-        foreach (string spec in _options.MetadataFilters)
+        foreach (string spec in _filters)
         {
             // The specifier is recognized by its first 3 characters.
             string s = spec.Length >= 3 ? spec.Substring(0, 3).ToLowerInvariant() : spec.ToLowerInvariant();
@@ -37,10 +48,10 @@ internal sealed partial class Dasm
             };
         }
 
-        MetaInfo mi = new(this, filter);
-        PrintLine("// ================================= M E T A I N F O ================================================\n");
+        MetaInfo mi = new(dasm, filter);
+        dasm.PrintLine("// ================================= M E T A I N F O ================================================\n");
         mi.DisplayMD();
-        PrintLine("// ================================= END OF METAINFO ================================================\n");
+        dasm.PrintLine("// ================================= END OF METAINFO ================================================\n");
     }
 
     private sealed class MetaInfo
@@ -73,8 +84,8 @@ internal sealed partial class Dasm
         {
             _dasm = dasm;
             _filter = filter;
-            _md = dasm._md;
-            _entryPoint = (uint)(dasm._pe.PEHeaders.CorHeader?.EntryPointTokenOrRelativeVirtualAddress ?? 0);
+            _md = dasm.Metadata;
+            _entryPoint = (uint)(dasm.PE.PEHeaders.CorHeader?.EntryPointTokenOrRelativeVirtualAddress ?? 0);
         }
 
         // ================================================================ output (DumpMI)
@@ -347,30 +358,32 @@ internal sealed partial class Dasm
 
         private static readonly int[] s_codedBits = [0, 1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5];
 
-        private const uint mdtModule = 0x00000000;
-        private const uint mdtTypeRef = 0x01000000;
-        private const uint mdtTypeDef = 0x02000000;
-        private const uint mdtFieldDef = 0x04000000;
-        private const uint mdtMethodDef = 0x06000000;
-        private const uint mdtParamDef = 0x08000000;
-        private const uint mdtInterfaceImpl = 0x09000000;
-        private const uint mdtMemberRef = 0x0a000000;
-        private const uint mdtCustomAttribute = 0x0c000000;
-        private const uint mdtPermission = 0x0e000000;
-        private const uint mdtSignature = 0x11000000;
-        private const uint mdtEvent = 0x14000000;
-        private const uint mdtProperty = 0x17000000;
-        private const uint mdtModuleRef = 0x1a000000;
-        private const uint mdtTypeSpec = 0x1b000000;
-        private const uint mdtAssembly = 0x20000000;
-        private const uint mdtAssemblyRef = 0x23000000;
-        private const uint mdtFile = 0x26000000;
-        private const uint mdtExportedType = 0x27000000;
-        private const uint mdtManifestResource = 0x28000000;
-        private const uint mdtGenericParam = 0x2a000000;
-        private const uint mdtMethodSpec = 0x2b000000;
-        private const uint mdtGenericParamConstraint = 0x2c000000;
-        private const uint mdtString = 0x70000000;
+        // The dump works on the raw tokens and coded indexes stored in the tables: the token types of the tables.
+        private const uint mdtModule = (uint)TableIndex.Module << 24;
+        private const uint mdtTypeRef = (uint)TableIndex.TypeRef << 24;
+        private const uint mdtTypeDef = (uint)TableIndex.TypeDef << 24;
+        private const uint mdtFieldDef = (uint)TableIndex.Field << 24;
+        private const uint mdtMethodDef = (uint)TableIndex.MethodDef << 24;
+        private const uint mdtParamDef = (uint)TableIndex.Param << 24;
+        private const uint mdtInterfaceImpl = (uint)TableIndex.InterfaceImpl << 24;
+        private const uint mdtMemberRef = (uint)TableIndex.MemberRef << 24;
+        private const uint mdtCustomAttribute = (uint)TableIndex.CustomAttribute << 24;
+        private const uint mdtPermission = (uint)TableIndex.DeclSecurity << 24;
+        private const uint mdtSignature = (uint)TableIndex.StandAloneSig << 24;
+        private const uint mdtEvent = (uint)TableIndex.Event << 24;
+        private const uint mdtProperty = (uint)TableIndex.Property << 24;
+        private const uint mdtModuleRef = (uint)TableIndex.ModuleRef << 24;
+        private const uint mdtTypeSpec = (uint)TableIndex.TypeSpec << 24;
+        private const uint mdtAssembly = (uint)TableIndex.Assembly << 24;
+        private const uint mdtAssemblyRef = (uint)TableIndex.AssemblyRef << 24;
+        private const uint mdtFile = (uint)TableIndex.File << 24;
+        private const uint mdtExportedType = (uint)TableIndex.ExportedType << 24;
+        private const uint mdtManifestResource = (uint)TableIndex.ManifestResource << 24;
+        private const uint mdtGenericParam = (uint)TableIndex.GenericParam << 24;
+        private const uint mdtMethodSpec = (uint)TableIndex.MethodSpec << 24;
+        private const uint mdtGenericParamConstraint = (uint)TableIndex.GenericParamConstraint << 24;
+        private const uint mdtString = (uint)HandleKind.UserString << 24;
+        // The fourth (invalid) TypeDefOrRefOrSpecEncoded tag.
         private const uint mdtBaseType = 0x72000000;
 
         private static uint TypeOf(uint tk) => tk & 0xFF000000;
@@ -815,7 +828,7 @@ internal sealed partial class Dasm
             int n = 1;
             foreach (uint md in EnumMethods(td))
             {
-                WriteLine("\tMethod #" + D(n++) + " (" + x8(md) + ") " + (md == _entryPoint ? "[ENTRYPOINT]" : ""));
+                WriteLine("\tMethod #" + D(n++) + " (" + Dasm.x8(md) + ") " + (md == _entryPoint ? "[ENTRYPOINT]" : ""));
                 WriteLine("\t" + Dashes);
                 uint flags = DisplayMethodInfo(md);
                 DisplayParams(md);
@@ -846,7 +859,7 @@ internal sealed partial class Dasm
             byte[] sig = Blob(m.Signature);
             int cbSig = sig.Length;
 
-            WriteLine("\t\tMethodName: " + name + " (" + X8(md) + ")");
+            WriteLine("\t\tMethodName: " + name + " (" + Dasm.X8(md) + ")");
 
             StringBuilder sb = new();
             uint access = flags & 7;
@@ -885,8 +898,8 @@ internal sealed partial class Dasm
 
             Flag(sb, (flags & 0x4000) != 0, "HasSecurity");
             Flag(sb, (flags & 0x8000) != 0, "RequireSecObject");
-            WriteLine("\t\tFlags     : " + sb + " (" + x8(flags) + ")");
-            WriteLine("\t\tRVA       : 0x" + x8(rva));
+            WriteLine("\t\tFlags     : " + sb + " (" + Dasm.x8(flags) + ")");
+            WriteLine("\t\tRVA       : 0x" + Dasm.x8(rva));
 
             sb.Clear();
             uint codeType = implFlags & 3;
@@ -901,7 +914,7 @@ internal sealed partial class Dasm
             Flag(sb, (implFlags & 0x1000) != 0, "InternalCall");
             Flag(sb, (implFlags & 0x20) != 0, "Synchronized");
             Flag(sb, (implFlags & 0x8) != 0, "NoInlining");
-            WriteLine("\t\tImplFlags : " + NoneIfEmpty(sb) + " (" + x8(implFlags) + ")");
+            WriteLine("\t\tImplFlags : " + NoneIfEmpty(sb) + " (" + Dasm.x8(implFlags) + ")");
 
             if (cbSig != 0)
             {
@@ -950,7 +963,7 @@ internal sealed partial class Dasm
             Flag(sb, (flags & 0x10) != 0, "Optional");
             Flag(sb, (flags & 0x1000) != 0, "HasDefault");
             Flag(sb, (flags & 0x2000) != 0, "HasFieldMarshal");
-            Write("\t\t\t(" + U(seq) + ") ParamToken : (" + x8(pd) + ") Name : " + name + " flags: " + NoneIfEmpty(sb) + " (" + x8(flags) + ")");
+            Write("\t\t\t(" + U(seq) + ") ParamToken : (" + Dasm.x8(pd) + ") Name : " + name + " flags: " + NoneIfEmpty(sb) + " (" + Dasm.x8(flags) + ")");
             WriteLine("");
             DisplayCustomAttributes(pd, "\t\t\t");
         }
@@ -977,7 +990,7 @@ internal sealed partial class Dasm
             uint flags = (uint)p.Attributes;
             uint owner = Token(p.Parent);
             string name = Str(p.Name);
-            WriteLine(prefix + "\t(" + U(seq) + ") GenericParamToken : (" + x8(gp) + ") Name : " + name + " flags: " + x8(flags) + " Owner: " + x8(owner));
+            WriteLine(prefix + "\t(" + U(seq) + ") GenericParamToken : (" + Dasm.x8(gp) + ") Name : " + name + " flags: " + Dasm.x8(flags) + " Owner: " + Dasm.x8(owner));
 
             List<uint> constraints = new();
             foreach (GenericParameterConstraintHandle c in p.GetConstraints())
@@ -996,7 +1009,7 @@ internal sealed partial class Dasm
                 Write(prefix + "\t\t");
                 for (int j = i; j < constraints.Count && j < i + 4; j++)
                 {
-                    Write(x8(constraints[j]) + "  ");
+                    Write(Dasm.x8(constraints[j]) + "  ");
                 }
 
                 WriteLine("");
@@ -1013,7 +1026,7 @@ internal sealed partial class Dasm
             int n = 1;
             foreach (uint fd in EnumFields(td))
             {
-                WriteLine("\tField #" + D(n++) + " (" + x8(fd) + ")");
+                WriteLine("\tField #" + D(n++) + " (" + Dasm.x8(fd) + ")");
                 WriteLine("\t" + Dashes);
                 FieldDefinition field = _md.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle((int)RidOf(fd)));
                 DisplayFieldInfo(fd, field);
@@ -1022,13 +1035,13 @@ internal sealed partial class Dasm
                 DisplayFieldMarshal(field.GetMarshallingDescriptor());
                 if (td == 0)
                 {
-                    WriteLine("\t\tRVA       : 0x" + x8((uint)field.GetRelativeVirtualAddress()));
+                    WriteLine("\t\tRVA       : 0x" + Dasm.x8((uint)field.GetRelativeVirtualAddress()));
                 }
 
                 // A PinvokeImpl field has no P/Invoke data to show: ImplMap rows only map methods.
                 if (offsets is not null && offsets.TryGetValue(RidOf(fd), out uint offset))
                 {
-                    WriteLine("\t\tOffset : 0x" + x8(offset));
+                    WriteLine("\t\tOffset : 0x" + Dasm.x8(offset));
                 }
 
                 WriteLine("");
@@ -1058,8 +1071,8 @@ internal sealed partial class Dasm
             Flag(sb, (flags & 0x400) != 0, "RTSpecialName");
             Flag(sb, (flags & 0x2000) != 0, "PinvokeImpl");
             Flag(sb, (flags & 0x8000) != 0, "HasDefault");
-            WriteLine("\t\tField Name: " + name + " (" + X8(fd) + ")");
-            WriteLine("\t\tFlags     : " + NoneIfEmpty(sb) + " (" + x8(flags) + ")");
+            WriteLine("\t\tField Name: " + name + " (" + Dasm.X8(fd) + ")");
+            WriteLine("\t\tFlags     : " + NoneIfEmpty(sb) + " (" + Dasm.x8(flags) + ")");
             if (cbSig == 0)
             {
                 WriteLine("\t\tERROR: no valid signature ");
@@ -1088,7 +1101,7 @@ internal sealed partial class Dasm
                 }
 
                 uint mr = Token(h);
-                WriteLine(prefix + "\tMemberRef #" + D(n++) + " (" + x8(mr) + ")");
+                WriteLine(prefix + "\tMemberRef #" + D(n++) + " (" + Dasm.x8(mr) + ")");
                 WriteLine(prefix + "\t" + Dashes);
                 DisplayMemberRefInfo(mr, prefix);
             }
@@ -1099,7 +1112,7 @@ internal sealed partial class Dasm
             string name = MemberRefName(mr);
             byte[] sig = Blob(_md.GetMemberReference(MetadataTokens.MemberReferenceHandle((int)RidOf(mr))).Signature);
             int cbSig = sig.Length;
-            WriteLine(prefix + "\t\tMember: (" + x8(mr) + ") " + name + ": ");
+            WriteLine(prefix + "\t\tMember: (" + Dasm.x8(mr) + ") " + name + ": ");
             if (cbSig != 0)
             {
                 DisplaySignature(sig, (uint)cbSig, prefix);
@@ -1120,7 +1133,7 @@ internal sealed partial class Dasm
             for (uint rid = 2; rid <= Rows(TblTypeDef); rid++)
             {
                 uint td = rid | mdtTypeDef;
-                WriteLine("TypeDef #" + D(n++) + " (" + x8(td) + ")");
+                WriteLine("TypeDef #" + D(n++) + " (" + Dasm.x8(td) + ")");
                 WriteLine(Dashes);
                 DisplayTypeDefInfo(td);
                 WriteLine("");
@@ -1133,9 +1146,9 @@ internal sealed partial class Dasm
             uint flags = (uint)t.Attributes;
             uint extends = t.BaseType.IsNil ? mdtTypeRef : Token(t.BaseType);
 
-            WriteLine("\tTypDefName: " + name + "  (" + X8(td) + ")");
-            WriteLine("\tFlags     : " + ClassFlags(flags) + " (" + x8(flags) + ")");
-            WriteLine("\tExtends   : " + X8(extends) + " [" + TokenTypeName(extends) + "] " + TypeDeforRefName(extends));
+            WriteLine("\tTypDefName: " + name + "  (" + Dasm.X8(td) + ")");
+            WriteLine("\tFlags     : " + ClassFlags(flags) + " (" + Dasm.x8(flags) + ")");
+            WriteLine("\tExtends   : " + Dasm.X8(extends) + " [" + TokenTypeName(extends) + "] " + TypeDeforRefName(extends));
 
             TypeLayout layout = t.GetLayout();
             if (HasClassLayout(td, layout))
@@ -1149,7 +1162,7 @@ internal sealed partial class Dasm
                 if (!enclosing.IsNil)
                 {
                     uint tk = Token(enclosing);
-                    WriteLine("\tEnclosingClass : " + TypeDeforRefName(tk) + " (" + X8(tk) + ")");
+                    WriteLine("\tEnclosingClass : " + TypeDeforRefName(tk) + " (" + Dasm.X8(tk) + ")");
                 }
                 else
                 {
@@ -1215,10 +1228,10 @@ internal sealed partial class Dasm
             {
                 uint ii = Token(h);
                 uint itf = Token(_md.GetInterfaceImplementation(h).Interface);
-                WriteLine("\tInterfaceImpl #" + D(n++) + " (" + x8(ii) + ")");
+                WriteLine("\tInterfaceImpl #" + D(n++) + " (" + Dasm.x8(ii) + ")");
                 WriteLine("\t" + Dashes);
                 WriteLine("\t\tClass     : " + TypeDeforRefName(td));
-                WriteLine("\t\tToken     : " + X8(itf) + " [" + TokenTypeName(itf) + "] " + TypeDeforRefName(itf));
+                WriteLine("\t\tToken     : " + Dasm.X8(itf) + " [" + TokenTypeName(itf) + "] " + TypeDeforRefName(itf));
                 DisplayCustomAttributes(ii, "\t\t");
                 DisplayPermissions(ii, "\t");
                 WriteLine("");
@@ -1231,11 +1244,11 @@ internal sealed partial class Dasm
             foreach (MethodImplementationHandle h in t.GetMethodImplementations())
             {
                 MethodImplementation impl = _md.GetMethodImplementation(h);
-                WriteLine("\n\tMethodImpl #" + D(n) + " (" + x8((uint)n) + ")");
+                WriteLine("\n\tMethodImpl #" + D(n) + " (" + Dasm.x8((uint)n) + ")");
                 n++;
                 WriteLine("\t" + Dashes);
-                WriteLine("\t\tMethod Body Token : 0x" + x8(Token(impl.MethodBody)));
-                WriteLine("\t\tMethod Declaration Token : 0x" + x8(Token(impl.MethodDeclaration)));
+                WriteLine("\t\tMethod Body Token : 0x" + Dasm.x8(Token(impl.MethodBody)));
+                WriteLine("\t\tMethod Declaration Token : 0x" + Dasm.x8(Token(impl.MethodDeclaration)));
                 WriteLine("");
             }
         }
@@ -1248,7 +1261,7 @@ internal sealed partial class Dasm
             foreach (PropertyDefinitionHandle h in t.GetProperties())
             {
                 uint prop = Token(h);
-                WriteLine("\tProperty #" + D(n++) + " (" + x8(prop) + ")");
+                WriteLine("\tProperty #" + D(n++) + " (" + Dasm.x8(prop) + ")");
                 WriteLine("\t" + Dashes);
                 DisplayPropertyInfo(prop, _md.GetPropertyDefinition(h));
                 DisplayPermissions(prop, "\t");
@@ -1265,12 +1278,12 @@ internal sealed partial class Dasm
             uint setter = Token(accessors.Setter), getter = Token(accessors.Getter);
             uint others = (uint)accessors.Others.Length;
             string name = Str(p.Name);
-            WriteLine("\t\tProp.Name : " + name + " (" + X8(prop) + ")");
+            WriteLine("\t\tProp.Name : " + name + " (" + Dasm.X8(prop) + ")");
             StringBuilder sb = new();
             Flag(sb, (flags & 0x200) != 0, "SpecialName");
             Flag(sb, (flags & 0x400) != 0, "RTSpecialName");
             Flag(sb, (flags & 0x1000) != 0, "HasDefault");
-            WriteLine("\t\tFlags     : " + NoneIfEmpty(sb) + " (" + x8(flags) + ")");
+            WriteLine("\t\tFlags     : " + NoneIfEmpty(sb) + " (" + Dasm.x8(flags) + ")");
             if (cbSig != 0)
             {
                 DisplaySignature(sig, (uint)cbSig, "");
@@ -1280,8 +1293,8 @@ internal sealed partial class Dasm
                 WriteLine("\t\tERROR: no valid signature ");
             }
 
-            WriteLine("\t\tSetter    : (" + x8(setter) + ") " + MemberDeforRefName(setter));
-            WriteLine("\t\tGetter    : (" + x8(getter) + ") " + MemberDeforRefName(getter));
+            WriteLine("\t\tSetter    : (" + Dasm.x8(setter) + ") " + MemberDeforRefName(setter));
+            WriteLine("\t\tGetter    : (" + Dasm.x8(getter) + ") " + MemberDeforRefName(getter));
             WriteLine("\t\t" + U(others) + " Others");
             DisplayCustomAttributes(prop, "\t\t");
         }
@@ -1292,7 +1305,7 @@ internal sealed partial class Dasm
             foreach (EventDefinitionHandle h in t.GetEvents())
             {
                 uint ev = Token(h);
-                WriteLine("\tEvent #" + D(n++) + " (" + x8(ev) + ")");
+                WriteLine("\tEvent #" + D(n++) + " (" + Dasm.x8(ev) + ")");
                 WriteLine("\t" + Dashes);
                 DisplayEventInfo(ev, _md.GetEventDefinition(h));
                 DisplayPermissions(ev, "\t");
@@ -1308,15 +1321,15 @@ internal sealed partial class Dasm
             uint addOn = Token(accessors.Adder), removeOn = Token(accessors.Remover), fire = Token(accessors.Raiser);
             uint others = (uint)accessors.Others.Length;
             string name = Str(e.Name);
-            WriteLine("\t\tName      : " + name + " (" + X8(ev) + ")");
+            WriteLine("\t\tName      : " + name + " (" + Dasm.X8(ev) + ")");
             StringBuilder sb = new();
             Flag(sb, (flags & 0x200) != 0, "SpecialName");
             Flag(sb, (flags & 0x400) != 0, "RTSpecialName");
-            WriteLine("\t\tFlags     : " + NoneIfEmpty(sb) + " (" + x8(flags) + ")");
-            WriteLine("\t\tEventType : " + X8(eventType) + " [" + TokenTypeName(eventType) + "]");
-            WriteLine("\t\tAddOnMethd: (" + x8(addOn) + ") " + MemberDeforRefName(addOn));
-            WriteLine("\t\tRmvOnMethd: (" + x8(removeOn) + ") " + MemberDeforRefName(removeOn));
-            WriteLine("\t\tFireMethod: (" + x8(fire) + ") " + MemberDeforRefName(fire));
+            WriteLine("\t\tFlags     : " + NoneIfEmpty(sb) + " (" + Dasm.x8(flags) + ")");
+            WriteLine("\t\tEventType : " + Dasm.X8(eventType) + " [" + TokenTypeName(eventType) + "]");
+            WriteLine("\t\tAddOnMethd: (" + Dasm.x8(addOn) + ") " + MemberDeforRefName(addOn));
+            WriteLine("\t\tRmvOnMethd: (" + Dasm.x8(removeOn) + ") " + MemberDeforRefName(removeOn));
+            WriteLine("\t\tFireMethod: (" + Dasm.x8(fire) + ") " + MemberDeforRefName(fire));
             WriteLine("\t\t" + U(others) + " OtherMethods");
             DisplayCustomAttributes(ev, "\t\t");
         }
@@ -1331,7 +1344,7 @@ internal sealed partial class Dasm
             int n = 1;
             foreach (CustomAttributeHandle h in EnumCustomAttributes(tk))
             {
-                WriteLine(prefix + "CustomAttribute #" + D(n++) + " (" + x8(Token(h)) + ")");
+                WriteLine(prefix + "CustomAttribute #" + D(n++) + " (" + Dasm.x8(Token(h)) + ")");
                 WriteLine(prefix + Dashes);
                 DisplayCustomAttributeInfo(_md.GetCustomAttribute(h), prefix);
             }
@@ -1342,7 +1355,7 @@ internal sealed partial class Dasm
             uint type = Token(ca.Constructor);
             byte[] value = Blob(ca.Value);
             int cbValue = value.Length;
-            WriteLine(prefix + "\tCustomAttribute Type: " + x8(type));
+            WriteLine(prefix + "\tCustomAttribute Type: " + Dasm.x8(type));
 
             uint tk = type;
             string? methName = null;
@@ -1643,7 +1656,7 @@ internal sealed partial class Dasm
             foreach (DeclarativeSecurityAttributeHandle h in list)
             {
                 uint perm = Token(h);
-                WriteLine(prefix + "\tPermission #" + D(n++) + " (" + x8(perm) + ")");
+                WriteLine(prefix + "\tPermission #" + D(n++) + " (" + Dasm.x8(perm) + ")");
                 WriteLine(prefix + "\t" + Dashes);
                 DisplayPermissionInfo(perm, _md.GetDeclarativeSecurityAttribute(h), prefix);
                 WriteLine("");
@@ -1971,7 +1984,7 @@ internal sealed partial class Dasm
             uint moduleRef = Token(import.Module);
             WriteLine("\t\tPinvoke Map Data:");
             WriteLine("\t\tEntry point:      " + name);
-            WriteLine("\t\tModule ref:       " + x8(moduleRef));
+            WriteLine("\t\tModule ref:       " + Dasm.x8(moduleRef));
             StringBuilder sb = new();
             Flag(sb, (flags & 0x1) != 0, "NoMangle");
             uint charSet = flags & 0x6;
@@ -1994,7 +2007,7 @@ internal sealed partial class Dasm
             Flag(sb, throwOn == 0x1000, "ThrowOnUnmappableCharEnabled");
             Flag(sb, throwOn == 0x2000, "ThrowOnUnmappableCharDisabled");
             Flag(sb, throwOn == 0, "ThrowOnUnmappableCharUseAssem");
-            WriteLine("\t\tMapping flags:    " + NoneIfEmpty(sb) + " (" + x8(flags) + ")");
+            WriteLine("\t\tMapping flags:    " + NoneIfEmpty(sb) + " (" + Dasm.x8(flags) + ")");
         }
 
         // ---------------------------------------------------------------- signatures
@@ -2718,7 +2731,7 @@ internal sealed partial class Dasm
                     o.Append("[module#").Append(D(SigData(sig, ref p))).Append(", token#");
                     uint v = SigData(sig, ref p);
                     uint tk = (v >> 2) | s_sigTokenTypes[v & 3];
-                    o.Append(X8(tk)).Append(']');
+                    o.Append(Dasm.X8(tk)).Append(']');
                     break;
                 }
 
@@ -2821,12 +2834,12 @@ internal sealed partial class Dasm
             for (uint rid = 1; rid <= Rows(TblTypeRef); rid++)
             {
                 uint tr = rid | mdtTypeRef;
-                WriteLine("TypeRef #" + D(n++) + " (" + x8(tr) + ")");
+                WriteLine("TypeRef #" + D(n++) + " (" + Dasm.x8(tr) + ")");
                 WriteLine(Dashes);
                 uint scope = Token(_md.GetTypeReference(MetadataTokens.TypeReferenceHandle((int)rid)).ResolutionScope);
                 string name = TypeRefFullName(tr)!;
-                WriteLine("Token:             0x" + x8(tr));
-                WriteLine("ResolutionScope:   0x" + x8(scope));
+                WriteLine("Token:             0x" + Dasm.x8(tr));
+                WriteLine("ResolutionScope:   0x" + Dasm.x8(scope));
                 WriteLine("TypeRefName:       " + name);
                 DisplayCustomAttributes(tr, "\t");
                 DisplayMemberRefs(tr, "");
@@ -2840,7 +2853,7 @@ internal sealed partial class Dasm
             for (uint rid = 1; rid <= Rows(TblTypeSpec); rid++)
             {
                 uint ts = rid | mdtTypeSpec;
-                WriteLine("TypeSpec #" + D(n++) + " (" + x8(ts) + ")");
+                WriteLine("TypeSpec #" + D(n++) + " (" + Dasm.x8(ts) + ")");
                 WriteLine(Dashes);
                 DisplayTypeSpecInfo(ts, "");
                 DisplayMemberRefs(ts, "");
@@ -2872,13 +2885,13 @@ internal sealed partial class Dasm
             for (uint rid = 1; rid <= Rows(TblMethodSpec); rid++)
             {
                 uint ms = rid | mdtMethodSpec;
-                WriteLine("MethodSpec #" + D(n++) + " (" + x8(ms) + ")");
+                WriteLine("MethodSpec #" + D(n++) + " (" + Dasm.x8(ms) + ")");
                 _sigBuf.Clear();
                 MethodSpecification spec = _md.GetMethodSpecification(MetadataTokens.MethodSpecificationHandle((int)rid));
                 uint parent = Token(spec.Method);
                 byte[] sig = Blob(spec.Signature);
                 int cbSig = sig.Length;
-                WriteLine("\tParent   : 0x" + x8(parent));
+                WriteLine("\tParent   : 0x" + Dasm.x8(parent));
                 DisplaySignature(sig, (uint)cbSig, "");
                 WriteLine("");
             }
@@ -2890,9 +2903,9 @@ internal sealed partial class Dasm
             for (uint rid = 1; rid <= Rows(TblModuleRef); rid++)
             {
                 uint mr = rid | mdtModuleRef;
-                WriteLine("ModuleRef #" + D(n++) + " (" + x8(mr) + ")");
+                WriteLine("ModuleRef #" + D(n++) + " (" + Dasm.x8(mr) + ")");
                 WriteLine(Dashes);
-                WriteLine("\t\tModuleRef: (" + x8(mr) + ") " + Str(_md.GetModuleReference(MetadataTokens.ModuleReferenceHandle((int)rid)).Name) + ": ");
+                WriteLine("\t\tModuleRef: (" + Dasm.x8(mr) + ") " + Str(_md.GetModuleReference(MetadataTokens.ModuleReferenceHandle((int)rid)).Name) + ": ");
                 DisplayCustomAttributes(mr, "\t\t");
                 DisplayMemberRefs(mr, "");
                 WriteLine("");
@@ -2937,10 +2950,10 @@ internal sealed partial class Dasm
         {
             uint major = (uint)version.Major, minor = (uint)version.Minor, build = (uint)version.Build, revision = (uint)version.Revision;
             WriteLine("\tVersion: " + D(major) + "." + D(minor) + "." + D(build) + "." + D(revision));
-            WriteLine("\tMajor Version: 0x" + x8(major));
-            WriteLine("\tMinor Version: 0x" + x8(minor));
-            WriteLine("\tBuild Number: 0x" + x8(build));
-            WriteLine("\tRevision Number: 0x" + x8(revision));
+            WriteLine("\tMajor Version: 0x" + Dasm.x8(major));
+            WriteLine("\tMinor Version: 0x" + Dasm.x8(minor));
+            WriteLine("\tBuild Number: 0x" + Dasm.x8(build));
+            WriteLine("\tRevision Number: 0x" + Dasm.x8(revision));
             WriteLine("\tLocale: " + (locale.Length != 0 ? locale : "<null>"));
         }
 
@@ -2970,12 +2983,12 @@ internal sealed partial class Dasm
             string locale = Str(asm.Culture);
             WriteLine("Assembly");
             WriteLine(Dashes);
-            WriteLine("\tToken: 0x" + x8(mda));
+            WriteLine("\tToken: 0x" + Dasm.x8(mda));
             WriteLine("\tName : " + name);
             DumpHex("\tPublic Key    ", pk, cbPk, false, 24);
-            WriteLine("\tHash Algorithm : 0x" + x8(hashAlg));
+            WriteLine("\tHash Algorithm : 0x" + Dasm.x8(hashAlg));
             DisplayAssemblyMetadata(asm.Version, locale);
-            WriteLine("\tFlags : " + AssemblyFlags(flags) + " (" + x8(flags) + ")");
+            WriteLine("\tFlags : " + AssemblyFlags(flags) + " (" + Dasm.x8(flags) + ")");
             DisplayCustomAttributes(mda, "\t");
             DisplayPermissions(mda, "\t");
             WriteLine("");
@@ -2987,9 +3000,9 @@ internal sealed partial class Dasm
             for (uint rid = 1; rid <= Rows(TblAssemblyRef); rid++)
             {
                 uint ar = rid | mdtAssemblyRef;
-                WriteLine("AssemblyRef #" + D(n++) + " (" + x8(ar) + ")");
+                WriteLine("AssemblyRef #" + D(n++) + " (" + Dasm.x8(ar) + ")");
                 WriteLine(Dashes);
-                WriteLine("\tToken: 0x" + x8(ar));
+                WriteLine("\tToken: 0x" + Dasm.x8(ar));
                 AssemblyReference asmRef = _md.GetAssemblyReference(MetadataTokens.AssemblyReferenceHandle((int)rid));
                 uint flags = (uint)asmRef.Flags;
                 byte[] pk = Blob(asmRef.PublicKeyOrToken);
@@ -3002,7 +3015,7 @@ internal sealed partial class Dasm
                 WriteLine("\tName: " + name);
                 DisplayAssemblyMetadata(asmRef.Version, locale);
                 DumpHex("\tHashValue Blob", hash, cbHash, false, 24);
-                WriteLine("\tFlags: " + AssemblyFlags(flags) + " (" + x8(flags) + ")");
+                WriteLine("\tFlags: " + AssemblyFlags(flags) + " (" + Dasm.x8(flags) + ")");
                 DisplayCustomAttributes(ar, "\t");
                 WriteLine("");
                 WriteLine("");
@@ -3015,9 +3028,9 @@ internal sealed partial class Dasm
             for (uint rid = 1; rid <= Rows(TblFile); rid++)
             {
                 uint file = rid | mdtFile;
-                WriteLine("File #" + D(n++) + " (" + x8(file) + ")");
+                WriteLine("File #" + D(n++) + " (" + Dasm.x8(file) + ")");
                 WriteLine(Dashes);
-                WriteLine("\tToken: 0x" + x8(file));
+                WriteLine("\tToken: 0x" + Dasm.x8(file));
                 AssemblyFile f = _md.GetAssemblyFile(MetadataTokens.AssemblyFileHandle((int)rid));
                 uint flags = f.ContainsMetadata ? 0u : 1u;
                 string name = Str(f.Name);
@@ -3028,7 +3041,7 @@ internal sealed partial class Dasm
                 StringBuilder sb = new();
                 Flag(sb, (flags & 1) == 0, "ContainsMetaData");
                 Flag(sb, (flags & 1) != 0, "ContainsNoMetaData");
-                WriteLine("\tFlags : " + NoneIfEmpty(sb) + " (" + x8(flags) + ")");
+                WriteLine("\tFlags : " + NoneIfEmpty(sb) + " (" + Dasm.x8(flags) + ")");
                 DisplayCustomAttributes(file, "\t");
                 WriteLine("");
                 WriteLine("");
@@ -3041,18 +3054,18 @@ internal sealed partial class Dasm
             for (uint rid = 1; rid <= Rows(TblExportedType); rid++)
             {
                 uint et = rid | mdtExportedType;
-                WriteLine("ExportedType #" + D(n++) + " (" + x8(et) + ")");
+                WriteLine("ExportedType #" + D(n++) + " (" + Dasm.x8(et) + ")");
                 WriteLine(Dashes);
-                WriteLine("\tToken: 0x" + x8(et));
+                WriteLine("\tToken: 0x" + Dasm.x8(et));
                 ExportedType e = _md.GetExportedType(MetadataTokens.ExportedTypeHandle((int)rid));
                 uint flags = (uint)e.Attributes;
                 uint typeDef = (uint)e.GetTypeDefinitionId();
                 string name = MakePath(Str(e.Namespace), Str(e.Name));
                 uint impl = Token(e.Implementation);
                 WriteLine("\tName: " + name);
-                WriteLine("\tImplementation token: 0x" + x8(impl));
-                WriteLine("\tTypeDef token: 0x" + x8(typeDef));
-                WriteLine("\tFlags     : " + ClassFlags(flags) + " (" + x8(flags) + ")");
+                WriteLine("\tImplementation token: 0x" + Dasm.x8(impl));
+                WriteLine("\tTypeDef token: 0x" + Dasm.x8(typeDef));
+                WriteLine("\tFlags     : " + ClassFlags(flags) + " (" + Dasm.x8(flags) + ")");
                 DisplayCustomAttributes(et, "\t");
                 WriteLine("");
                 WriteLine("");
@@ -3065,21 +3078,21 @@ internal sealed partial class Dasm
             for (uint rid = 1; rid <= Rows(TblManifestResource); rid++)
             {
                 uint mr = rid | mdtManifestResource;
-                WriteLine("ManifestResource #" + D(n++) + " (" + x8(mr) + ")");
+                WriteLine("ManifestResource #" + D(n++) + " (" + Dasm.x8(mr) + ")");
                 WriteLine(Dashes);
-                WriteLine("\tToken: 0x" + x8(mr));
+                WriteLine("\tToken: 0x" + Dasm.x8(mr));
                 ManifestResource res = _md.GetManifestResource(MetadataTokens.ManifestResourceHandle((int)rid));
                 uint offset = (uint)res.Offset;
                 uint flags = (uint)res.Attributes;
                 string name = Str(res.Name);
                 uint impl = Token(res.Implementation);
                 WriteLine("Name: " + name);
-                WriteLine("Implementation token: 0x" + x8(impl));
-                WriteLine("Offset: 0x" + x8(offset));
+                WriteLine("Implementation token: 0x" + Dasm.x8(impl));
+                WriteLine("Offset: 0x" + Dasm.x8(offset));
                 StringBuilder sb = new();
                 Flag(sb, (flags & 7) == 1, "Public");
                 Flag(sb, (flags & 7) == 2, "Private");
-                WriteLine("\tFlags: " + NoneIfEmpty(sb) + " (" + x8(flags) + ")");
+                WriteLine("\tFlags: " + NoneIfEmpty(sb) + " (" + Dasm.x8(flags) + ")");
                 DisplayCustomAttributes(mr, "\t");
                 WriteLine("");
                 WriteLine("");
@@ -3370,7 +3383,7 @@ internal sealed partial class Dasm
 
             if (type < iSHORT)
             {
-                return s_codedTokenNames[type - CT] + "[" + x8(ColToken(table, col, rid)) + "]";
+                return s_codedTokenNames[type - CT] + "[" + Dasm.x8(ColToken(table, col, rid)) + "]";
             }
 
             uint val = Col(table, col, rid);
@@ -3383,7 +3396,7 @@ internal sealed partial class Dasm
                     return val.ToString("x4", CultureInfo.InvariantCulture);
                 case iLONG:
                 case iULONG:
-                    return x8(val);
+                    return Dasm.x8(val);
                 case iSTRING:
                 {
                     string s = "string#" + Hx(val);
@@ -3479,7 +3492,7 @@ internal sealed partial class Dasm
 
             uint verLen = U32At(12);
             int header = 16 + (int)verLen;
-            WriteLine("Metadata section: 0x" + x8(U32At(0)) + ", version: " + D(U16At(4)) + "." + D(U16At(6)) + ", extra: " + D(U32At(8))
+            WriteLine("Metadata section: 0x" + Dasm.x8(U32At(0)) + ", version: " + D(U16At(4)) + "." + D(U16At(6)) + ", extra: " + D(U32At(8))
                 + ", version len: " + D(verLen) + ", version: " + CString(_d, 16));
             WriteLine("           flags: 0x" + U8At(header).ToString("x2", CultureInfo.InvariantCulture) + ", streams: " + D(U16At(header + 2)));
             if ((_filter & DumpMoreHex) != 0)
@@ -3623,11 +3636,11 @@ internal sealed partial class Dasm
                 if ((_filter & DumpMoreHex) != 0)
                 {
                     // The entry with its terminating NUL.
-                    DumpHex(x8(offset), s, s.Length + 1, true, 16);
+                    DumpHex(Dasm.x8(offset), s, s.Length + 1, true, 16);
                 }
                 else if (s.Length != 0)
                 {
-                    Write(x8(offset) + ": " + Utf8(s) + "\n");
+                    Write(Dasm.x8(offset) + ": " + Utf8(s) + "\n");
                 }
 
                 uint next = offset + (uint)s.Length + 1;

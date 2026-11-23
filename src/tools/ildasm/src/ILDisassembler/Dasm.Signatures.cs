@@ -4,7 +4,10 @@
 using System;
 using System.Collections.Immutable;
 using System.Globalization;
+using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ILDisassembler;
@@ -12,62 +15,23 @@ namespace ILDisassembler;
 // Signature formatting.
 internal sealed partial class Dasm
 {
-    private const byte ELEMENT_TYPE_END = 0x00;
-    private const byte ELEMENT_TYPE_VOID = 0x01;
-    private const byte ELEMENT_TYPE_BOOLEAN = 0x02;
-    private const byte ELEMENT_TYPE_CHAR = 0x03;
-    private const byte ELEMENT_TYPE_I1 = 0x04;
-    private const byte ELEMENT_TYPE_U1 = 0x05;
-    private const byte ELEMENT_TYPE_I2 = 0x06;
-    private const byte ELEMENT_TYPE_U2 = 0x07;
-    private const byte ELEMENT_TYPE_I4 = 0x08;
-    private const byte ELEMENT_TYPE_U4 = 0x09;
-    private const byte ELEMENT_TYPE_I8 = 0x0a;
-    private const byte ELEMENT_TYPE_U8 = 0x0b;
-    private const byte ELEMENT_TYPE_R4 = 0x0c;
-    private const byte ELEMENT_TYPE_R8 = 0x0d;
-    private const byte ELEMENT_TYPE_STRING = 0x0e;
-    private const byte ELEMENT_TYPE_PTR = 0x0f;
-    private const byte ELEMENT_TYPE_BYREF = 0x10;
-    private const byte ELEMENT_TYPE_VALUETYPE = 0x11;
-    private const byte ELEMENT_TYPE_CLASS = 0x12;
-    private const byte ELEMENT_TYPE_VAR = 0x13;
-    private const byte ELEMENT_TYPE_ARRAY = 0x14;
-    private const byte ELEMENT_TYPE_GENERICINST = 0x15;
-    private const byte ELEMENT_TYPE_TYPEDBYREF = 0x16;
-    private const byte ELEMENT_TYPE_I = 0x18;
-    private const byte ELEMENT_TYPE_U = 0x19;
-    private const byte ELEMENT_TYPE_FNPTR = 0x1b;
-    private const byte ELEMENT_TYPE_OBJECT = 0x1c;
-    private const byte ELEMENT_TYPE_SZARRAY = 0x1d;
-    private const byte ELEMENT_TYPE_MVAR = 0x1e;
-    private const byte ELEMENT_TYPE_CMOD_REQD = 0x1f;
-    private const byte ELEMENT_TYPE_CMOD_OPT = 0x20;
-    private const byte ELEMENT_TYPE_MAX = 0x23;
-    private const byte ELEMENT_TYPE_SENTINEL = 0x41;
-    private const byte ELEMENT_TYPE_PINNED = 0x45;
-    private const byte ELEMENT_TYPE_TYPEDEF = ELEMENT_TYPE_MAX + 1;
+    // ELEMENT_TYPE_CLASS and ELEMENT_TYPE_VALUETYPE, which SignatureTypeCode folds into TypeHandle.
+    private const SignatureTypeCode ClassTypeCode = (SignatureTypeCode)SignatureTypeKind.Class;
+    private const SignatureTypeCode ValueTypeTypeCode = (SignatureTypeCode)SignatureTypeKind.ValueType;
 
-    private const uint IMAGE_CEE_CS_CALLCONV_MASK = 0x0f;
-    private const uint IMAGE_CEE_CS_CALLCONV_FIELD = 0x6;
-    private const uint IMAGE_CEE_CS_CALLCONV_LOCAL_SIG = 0x7;
-    private const uint IMAGE_CEE_CS_CALLCONV_GENERICINST = 0xa;
-    private const uint IMAGE_CEE_CS_CALLCONV_GENERIC = 0x10;
-    private const uint IMAGE_CEE_CS_CALLCONV_HASTHIS = 0x20;
-    private const uint IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS = 0x40;
-
-    private static bool IsCallConv(uint callConv, uint kind) => (callConv & IMAGE_CEE_CS_CALLCONV_MASK) == kind;
+    // The kind of a calling convention value read as a compressed integer.
+    private static SignatureKind KindOf(uint callConv) => (SignatureKind)(callConv & SignatureHeader.CallingConventionOrKindMask);
 
     // The owners used to resolve !n and !!n to generic parameter names.
-    private int _tkVarOwner;
-    private int _tkMVarOwner;
+    private EntityHandle _varOwner;
+    private EntityHandle _mvarOwner;
 
     // Names and attributes of the parameters (or locals) printed with a signature.
     internal struct ParamDescriptor
     {
         public string? Name;
-        public uint Attr;
-        public int Tok;
+        public ParameterAttributes Attr;
+        public ParameterHandle Param;
     }
 
     // Labels of instruction offsets: either a "<prefix>_<n>" name generator or an explicit name table.
@@ -116,11 +80,11 @@ internal sealed partial class Dasm
 
         if (name is not null)
         {
-            uint callConv = sig[p++];
+            SignatureHeader header = new(sig[p++]);
 
-            if (IsCallConv(callConv, IMAGE_CEE_CS_CALLCONV_FIELD))
+            if (header.Kind == SignatureKind.Field)
             {
-                PrettyPrintTypeOrDef(sig, ref p, out_);
+                PrettyPrintType(sig, ref p, out_);
                 if (name.Length != 0)
                 {
                     out_.Append(' ').Append(name);
@@ -129,45 +93,46 @@ internal sealed partial class Dasm
                 return;
             }
 
-            if ((callConv & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS) != 0)
+            if (header.HasExplicitThis)
             {
                 out_.Append(KEYWORD("explicit "));
             }
 
-            if ((callConv & IMAGE_CEE_CS_CALLCONV_HASTHIS) != 0)
+            if (header.IsInstance)
             {
                 out_.Append(KEYWORD("instance "));
             }
 
-            if (IsCallConv(callConv, IMAGE_CEE_CS_CALLCONV_GENERICINST))
+            if (header.Kind == SignatureKind.MethodSpecification)
             {
                 openpar = LTN();
                 closepar = GTN();
             }
             else
             {
-                uint idx = callConv & IMAGE_CEE_CS_CALLCONV_MASK;
-                string? cc = idx switch
+                // Not header.CallingConvention, which is Default for the values it does not define.
+                SignatureCallingConvention callConv = (SignatureCallingConvention)(header.RawValue & SignatureHeader.CallingConventionOrKindMask);
+                string? cc = callConv switch
                 {
-                    0 => "",
-                    1 => "unmanaged cdecl ",
-                    2 => "unmanaged stdcall ",
-                    3 => "unmanaged thiscall ",
-                    4 => "unmanaged fastcall ",
-                    5 => "vararg ",
-                    9 => "unmanaged ",
+                    SignatureCallingConvention.Default => "",
+                    SignatureCallingConvention.CDecl => "unmanaged cdecl ",
+                    SignatureCallingConvention.StdCall => "unmanaged stdcall ",
+                    SignatureCallingConvention.ThisCall => "unmanaged thiscall ",
+                    SignatureCallingConvention.FastCall => "unmanaged fastcall ",
+                    SignatureCallingConvention.VarArgs => "vararg ",
+                    SignatureCallingConvention.Unmanaged => "unmanaged ",
                     _ => null,
                 };
-                out_.Append(KEYWORD(cc ?? $"callconv({idx}) "));
+                out_.Append(KEYWORD(cc ?? $"callconv({(int)callConv}) "));
             }
 
-            if ((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+            if (header.IsGeneric)
             {
                 numTyArgs = UncompressData(sig, ref p);
             }
 
             numArgs = UncompressData(sig, ref p);
-            if (!IsCallConv(callConv, IMAGE_CEE_CS_CALLCONV_GENERICINST))
+            if (header.Kind != SignatureKind.MethodSpecification)
             {
                 // return type
                 if (argNames is not null)
@@ -175,10 +140,10 @@ internal sealed partial class Dasm
                     out_.Append(DumpParamAttr(argNames[ixArg + (int)numArgs].Attr));
                 }
 
-                PrettyPrintTypeOrDef(sig, ref p, out_);
+                PrettyPrintType(sig, ref p, out_);
                 if (argNames is not null)
                 {
-                    out_.Append(' ').Append(DumpMarshaling(argNames[ixArg + (int)numArgs].Tok));
+                    out_.Append(' ').Append(DumpMarshaling(argNames[ixArg + (int)numArgs].Param));
                 }
 
                 if (name.Length != 0)
@@ -194,7 +159,7 @@ internal sealed partial class Dasm
         }
         else
         {
-            p++; // IMAGE_CEE_CS_CALLCONV_LOCAL_SIG
+            p++; // SignatureKind.LocalVariables
             numArgs = UncompressData(sig, ref p);
         }
 
@@ -205,7 +170,7 @@ internal sealed partial class Dasm
         {
             if (name is not null)
             {
-                if (sig[p] == ELEMENT_TYPE_SENTINEL)
+                if ((SignatureTypeCode)sig[p] == SignatureTypeCode.Sentinel)
                 {
                     if (needComma)
                     {
@@ -232,12 +197,12 @@ internal sealed partial class Dasm
                         out_.Append(DumpParamAttr(argNames[ixArg].Attr));
                     }
 
-                    PrettyPrintTypeOrDef(sig, ref p, out_);
+                    PrettyPrintType(sig, ref p, out_);
                     if (label is not null)
                     {
                         if (argNames is not null)
                         {
-                            out_.Append(' ').Append(DumpMarshaling(argNames[ixArg].Tok)).Append(ProperName(argNames[ixArg].Name ?? ""));
+                            out_.Append(' ').Append(DumpMarshaling(argNames[ixArg].Param)).Append(ProperName(argNames[ixArg].Name ?? ""));
                             ixArg++;
                         }
                         else
@@ -256,9 +221,9 @@ internal sealed partial class Dasm
                     break;
                 }
 
-                if (argNames is not null && argNames[ixArg].Attr == 0xFFFFFFFF)
+                if (argNames is not null && (uint)argNames[ixArg].Attr == 0xFFFFFFFF)
                 {
-                    PrettyPrintTypeOrDef(sig, ref p, new StringBuilder());
+                    PrettyPrintType(sig, ref p, new StringBuilder());
                     ixArg++;
                     numArgs--;
                     continue;
@@ -274,7 +239,7 @@ internal sealed partial class Dasm
                     out_.Append('[').Append(((int)argNames[ixArg].Attr).ToString(CultureInfo.InvariantCulture)).Append("] ");
                 }
 
-                PrettyPrintTypeOrDef(sig, ref p, out_);
+                PrettyPrintType(sig, ref p, out_);
                 if (label is not null)
                 {
                     if (argNames is not null)
@@ -301,27 +266,6 @@ internal sealed partial class Dasm
         out_.Append(closepar);
     }
 
-    // PrettyPrintTypeOrDef: prints the type, or the name of a .typedef aliasing exactly these bytes.
-    private void PrettyPrintTypeOrDef(byte[] sig, ref int p, StringBuilder out_)
-    {
-        int begin = p;
-        int len = out_.Length;
-        PrettyPrintType(sig, ref p, out_);
-        if (p > begin && _typedefs.Count > 0)
-        {
-            ReadOnlySpan<byte> bytes = sig.AsSpan(begin, p - begin);
-            foreach (TypeDefDescr td in _typedefs)
-            {
-                if (td.Sig is not null && td.Sig.AsSpan().SequenceEqual(bytes))
-                {
-                    out_.Length = len;
-                    out_.Append(JUMPPT(ProperName(td.Name), td.TkSelf));
-                    break;
-                }
-            }
-        }
-    }
-
     private void PrettyPrintType(byte[] sig, ref int p, StringBuilder out_)
     {
         StringBuilder appendix = new();
@@ -329,27 +273,27 @@ internal sealed partial class Dasm
         do
         {
             reiterate = false;
-            byte typ = sig[p++];
+            SignatureTypeCode typ = (SignatureTypeCode)sig[p++];
             string? str = typ switch
             {
-                ELEMENT_TYPE_VOID => "void",
-                ELEMENT_TYPE_BOOLEAN => "bool",
-                ELEMENT_TYPE_CHAR => "char",
-                ELEMENT_TYPE_I1 => "int8",
-                ELEMENT_TYPE_U1 => "uint8",
-                ELEMENT_TYPE_I2 => "int16",
-                ELEMENT_TYPE_U2 => "uint16",
-                ELEMENT_TYPE_I4 => "int32",
-                ELEMENT_TYPE_U4 => "uint32",
-                ELEMENT_TYPE_I8 => "int64",
-                ELEMENT_TYPE_U8 => "uint64",
-                ELEMENT_TYPE_R4 => "float32",
-                ELEMENT_TYPE_R8 => "float64",
-                ELEMENT_TYPE_U => "native uint",
-                ELEMENT_TYPE_I => "native int",
-                ELEMENT_TYPE_OBJECT => "object",
-                ELEMENT_TYPE_STRING => "string",
-                ELEMENT_TYPE_TYPEDBYREF => "typedref",
+                SignatureTypeCode.Void => "void",
+                SignatureTypeCode.Boolean => "bool",
+                SignatureTypeCode.Char => "char",
+                SignatureTypeCode.SByte => "int8",
+                SignatureTypeCode.Byte => "uint8",
+                SignatureTypeCode.Int16 => "int16",
+                SignatureTypeCode.UInt16 => "uint16",
+                SignatureTypeCode.Int32 => "int32",
+                SignatureTypeCode.UInt32 => "uint32",
+                SignatureTypeCode.Int64 => "int64",
+                SignatureTypeCode.UInt64 => "uint64",
+                SignatureTypeCode.Single => "float32",
+                SignatureTypeCode.Double => "float64",
+                SignatureTypeCode.UIntPtr => "native uint",
+                SignatureTypeCode.IntPtr => "native int",
+                SignatureTypeCode.Object => "object",
+                SignatureTypeCode.String => "string",
+                SignatureTypeCode.TypedReference => "typedref",
                 _ => null,
             };
             if (str is not null)
@@ -360,31 +304,32 @@ internal sealed partial class Dasm
 
             switch (typ)
             {
-                case ELEMENT_TYPE_VALUETYPE:
-                case ELEMENT_TYPE_CLASS:
+                case ValueTypeTypeCode:
+                case ClassTypeCode:
                 {
-                    out_.Append(KEYWORD(typ == ELEMENT_TYPE_VALUETYPE ? "valuetype " : "class "));
+                    out_.Append(KEYWORD(typ == ValueTypeTypeCode ? "valuetype " : "class "));
                     int tk = UncompressToken(sig, ref p);
-                    if (IsNilToken(tk))
+                    // A nil row.
+                    if ((tk & 0xFFFFFF) == 0)
                     {
                         out_.Append("[ERROR! NIL TOKEN]");
                     }
                     else
                     {
-                        PrettyPrintClass(out_, tk);
+                        PrettyPrintSigClass(out_, tk);
                     }
 
                     break;
                 }
 
-                case ELEMENT_TYPE_SZARRAY:
+                case SignatureTypeCode.SZArray:
                     appendix.Insert(0, "[]");
                     reiterate = true;
                     break;
 
-                case ELEMENT_TYPE_ARRAY:
+                case SignatureTypeCode.Array:
                 {
-                    PrettyPrintTypeOrDef(sig, ref p, out_);
+                    PrettyPrintType(sig, ref p, out_);
                     uint rank = UncompressData(sig, ref p);
                     if (rank == 0)
                     {
@@ -450,11 +395,11 @@ internal sealed partial class Dasm
                     break;
                 }
 
-                case ELEMENT_TYPE_VAR:
+                case SignatureTypeCode.GenericTypeParameter:
                 {
                     out_.Append('!');
                     int n = (int)UncompressData(sig, ref p);
-                    if (!PrettyPrintGP(_tkVarOwner, out_, n))
+                    if (!PrettyPrintGP(_varOwner, out_, n))
                     {
                         out_.Append(n.ToString(CultureInfo.InvariantCulture));
                     }
@@ -462,11 +407,11 @@ internal sealed partial class Dasm
                     break;
                 }
 
-                case ELEMENT_TYPE_MVAR:
+                case SignatureTypeCode.GenericMethodParameter:
                 {
                     out_.Append("!!");
                     int n = (int)UncompressData(sig, ref p);
-                    if (!PrettyPrintGP(_tkMVarOwner, out_, n))
+                    if (!PrettyPrintGP(_mvarOwner, out_, n))
                     {
                         out_.Append(n.ToString(CultureInfo.InvariantCulture));
                     }
@@ -474,14 +419,14 @@ internal sealed partial class Dasm
                     break;
                 }
 
-                case ELEMENT_TYPE_FNPTR:
+                case SignatureTypeCode.FunctionPointer:
                     out_.Append(KEYWORD("method "));
                     PrettyPrintSignature(sig, ref p, 0x7FFF, "*", out_, null, false);
                     break;
 
-                case ELEMENT_TYPE_GENERICINST:
+                case SignatureTypeCode.GenericTypeInstance:
                 {
-                    PrettyPrintTypeOrDef(sig, ref p, out_);
+                    PrettyPrintType(sig, ref p, out_);
                     out_.Append(LTN());
                     uint numArgs = UncompressData(sig, ref p);
                     bool needComma = false;
@@ -492,7 +437,7 @@ internal sealed partial class Dasm
                             out_.Append(',');
                         }
 
-                        PrettyPrintTypeOrDef(sig, ref p, out_);
+                        PrettyPrintType(sig, ref p, out_);
                         needComma = true;
                     }
 
@@ -500,38 +445,38 @@ internal sealed partial class Dasm
                     break;
                 }
 
-                case ELEMENT_TYPE_CMOD_OPT:
-                case ELEMENT_TYPE_CMOD_REQD:
+                case SignatureTypeCode.OptionalModifier:
+                case SignatureTypeCode.RequiredModifier:
                 {
                     int tk = UncompressToken(sig, ref p);
                     StringBuilder tmp = new();
-                    tmp.Append(KEYWORD(typ == ELEMENT_TYPE_CMOD_OPT ? " modopt(" : " modreq("));
-                    PrettyPrintClass(tmp, tk);
+                    tmp.Append(KEYWORD(typ == SignatureTypeCode.OptionalModifier ? " modopt(" : " modreq("));
+                    PrettyPrintSigClass(tmp, tk);
                     tmp.Append(')');
                     appendix.Insert(0, tmp.ToString());
                     reiterate = true;
                     break;
                 }
 
-                case ELEMENT_TYPE_PINNED:
+                case SignatureTypeCode.Pinned:
                     appendix.Insert(0, " pinned");
                     reiterate = true;
                     break;
 
-                case ELEMENT_TYPE_PTR:
+                case SignatureTypeCode.Pointer:
                     appendix.Insert(0, "*");
                     reiterate = true;
                     break;
 
-                case ELEMENT_TYPE_BYREF:
+                case SignatureTypeCode.ByReference:
                     appendix.Insert(0, AMP());
                     reiterate = true;
                     break;
 
                 default:
-                    if (typ != 0)
+                    if (typ != SignatureTypeCode.Invalid)
                     {
-                        out_.Append(ERRORMSG($"/* UNKNOWN TYPE (0x{typ:X})*/"));
+                        out_.Append(ERRORMSG($"/* UNKNOWN TYPE (0x{(byte)typ:X})*/"));
                     }
 
                     break;
@@ -542,66 +487,75 @@ internal sealed partial class Dasm
         out_.Append(appendix);
     }
 
-    private string PrettyPrintClass(int tk)
+    internal string PrettyPrintClass(EntityHandle h)
     {
         StringBuilder sb = new();
-        PrettyPrintClass(sb, tk);
+        PrettyPrintClass(sb, h);
         return sb.ToString();
     }
 
-    private void PrettyPrintClass(StringBuilder out_, int tk)
+    // A TypeDefOrRefOrSpecEncoded token read from a signature, which may not refer to an existing row.
+    private void PrettyPrintSigClass(StringBuilder out_, int tk)
     {
-        if (tk == mdTokenNil)
+        if (TryGetHandle(tk, out EntityHandle h))
+        {
+            PrettyPrintClass(out_, h);
+        }
+        else
+        {
+            out_.Append(ERRORMSG($" [ERROR: INVALID TOKEN 0x{tk:X8}] "));
+        }
+    }
+
+    internal void PrettyPrintClass(StringBuilder out_, EntityHandle h)
+    {
+        if (h.IsNil && h.Kind == HandleKind.ModuleDefinition)
         {
             out_.Append("[*]");
             return;
         }
 
-        if (!IsValidToken(tk) && TypeFromToken(tk) != mdtModule)
+        if (!IsValid(h) && h.Kind != HandleKind.ModuleDefinition)
         {
-            out_.Append(ERRORMSG($" [ERROR: INVALID TOKEN 0x{tk:X8}] "));
+            out_.Append(ERRORMSG($" [ERROR: INVALID TOKEN 0x{MetadataTokens.GetToken(h):X8}] "));
             return;
         }
 
-        switch (TypeFromToken(tk))
+        switch (h.Kind)
         {
-            case mdtTypeRef:
-            case mdtTypeDef:
+            case HandleKind.TypeReference:
+            case HandleKind.TypeDefinition:
             {
-                TypeDefDescr? alias = FindTypedefFor(tk);
-                if (alias is not null)
-                {
-                    out_.Append(JUMPPT(ProperName(alias.Name), alias.TkSelf));
-                    break;
-                }
-
                 string name, ns;
-                int tkEncloser;
-                if (TypeFromToken(tk) == mdtTypeRef)
+                EntityHandle encloser;
+                if (h.Kind == HandleKind.TypeReference)
                 {
-                    tkEncloser = GetResolutionScopeOfTypeRef(tk);
-                    (name, ns) = GetNameOfTypeRef(tk);
+                    TypeReference tr = _md.GetTypeReference((TypeReferenceHandle)h);
+                    // A nil resolution scope prints as [*].
+                    encloser = NilAsDefault(tr.ResolutionScope);
+                    (name, ns) = (Str(tr.Name), Str(tr.Namespace));
                 }
                 else
                 {
-                    tkEncloser = GetEnclosingClass(tk);
-                    (name, ns) = GetNameOfTypeDef(tk);
+                    TypeDefinition td = _md.GetTypeDefinition((TypeDefinitionHandle)h);
+                    encloser = td.GetDeclaringType();
+                    (name, ns) = (Str(td.Name), Str(td.Namespace));
                 }
 
-                name = MakeNameIfNone(name, tk);
-                if (tkEncloser == mdTokenNil || RidFromToken(tkEncloser) != 0)
+                name = MakeNameIfNone(name, h);
+                if (encloser.Kind == HandleKind.ModuleDefinition || !encloser.IsNil)
                 {
-                    PrettyPrintClass(out_, tkEncloser);
-                    if (TypeFromToken(tkEncloser) == mdtTypeRef || TypeFromToken(tkEncloser) == mdtTypeDef)
+                    PrettyPrintClass(out_, encloser);
+                    if (encloser.Kind is HandleKind.TypeReference or HandleKind.TypeDefinition)
                     {
                         out_.Append('/');
                     }
                 }
 
-                if (TypeFromToken(tk) == mdtTypeDef)
+                if (h.Kind == HandleKind.TypeDefinition)
                 {
                     string fn = ns.Length != 0 ? ProperName(ns) + "." + ProperName(name) : ProperName(name);
-                    out_.Append(JUMPPT(fn, tk));
+                    out_.Append(JUMPPT(fn, h));
                 }
                 else
                 {
@@ -615,22 +569,23 @@ internal sealed partial class Dasm
 
                 if (_options.ShowTokens)
                 {
-                    out_.Append(COMMENT($"/*{tk:X8}*/"));
+                    out_.Append(COMMENT($"/*{Token(h):X8}*/"));
                 }
 
                 break;
             }
 
-            case mdtAssemblyRef:
+            case HandleKind.AssemblyReference:
             {
-                string? name = RidFromToken(tk) <= _asmRefNames.Length ? _asmRefNames[RidFromToken(tk) - 1] : null;
-                name ??= Str(_md.GetAssemblyReference((AssemblyReferenceHandle)Handle(tk)).Name);
+                int row = MetadataTokens.GetRowNumber(h);
+                string? name = row <= _asmRefNames.Length ? _asmRefNames[row - 1] : null;
+                name ??= Str(_md.GetAssemblyReference((AssemblyReferenceHandle)h).Name);
                 if (name.Length != 0)
                 {
-                    out_.Append('[').Append(JUMPPT(ProperName(name), tk));
+                    out_.Append('[').Append(JUMPPT(ProperName(name), h));
                     if (_options.ShowTokens)
                     {
-                        out_.Append(COMMENT($"/*{tk:X8}*/"));
+                        out_.Append(COMMENT($"/*{Token(h):X8}*/"));
                     }
 
                     out_.Append(']');
@@ -639,15 +594,15 @@ internal sealed partial class Dasm
                 break;
             }
 
-            case mdtAssembly:
+            case HandleKind.AssemblyDefinition:
             {
                 string name = Str(_md.GetAssemblyDefinition().Name);
                 if (name.Length != 0)
                 {
-                    out_.Append('[').Append(JUMPPT(ProperName(name), tk));
+                    out_.Append('[').Append(JUMPPT(ProperName(name), h));
                     if (_options.ShowTokens)
                     {
-                        out_.Append(COMMENT($"/* {tk:X8} */"));
+                        out_.Append(COMMENT($"/* {Token(h):X8} */"));
                     }
 
                     out_.Append(']');
@@ -656,15 +611,15 @@ internal sealed partial class Dasm
                 break;
             }
 
-            case mdtModuleRef:
+            case HandleKind.ModuleReference:
             {
-                string name = Str(_md.GetModuleReference((ModuleReferenceHandle)Handle(tk)).Name);
+                string name = Str(_md.GetModuleReference((ModuleReferenceHandle)h).Name);
                 if (name.Length != 0)
                 {
-                    out_.Append('[').Append(KEYWORD(".module ")).Append(JUMPPT(ProperName(name), tk));
+                    out_.Append('[').Append(KEYWORD(".module ")).Append(JUMPPT(ProperName(name), h));
                     if (_options.ShowTokens)
                     {
-                        out_.Append(COMMENT($"/*{tk:X8}*/"));
+                        out_.Append(COMMENT($"/*{Token(h):X8}*/"));
                     }
 
                     out_.Append(']');
@@ -673,46 +628,37 @@ internal sealed partial class Dasm
                 break;
             }
 
-            case mdtTypeSpec:
+            case HandleKind.TypeSpecification:
             {
-                TypeDefDescr? alias = FindTypedefFor(tk);
-                if (alias is not null)
-                {
-                    out_.Append(JUMPPT(ProperName(alias.Name), alias.TkSelf));
-                }
-                else
-                {
-                    byte[] sig = GetTypeSpecSig(tk);
-                    int p = 0;
-                    PrettyPrintType(sig, ref p, out_);
-                }
-
+                byte[] sig = Blob(_md.GetTypeSpecification((TypeSpecificationHandle)h).Signature);
+                int p = 0;
+                PrettyPrintType(sig, ref p, out_);
                 if (_options.ShowTokens)
                 {
-                    out_.Append(COMMENT($"/*{tk:X8}*/"));
+                    out_.Append(COMMENT($"/*{Token(h):X8}*/"));
                 }
 
                 break;
             }
 
-            case mdtModule:
+            case HandleKind.ModuleDefinition:
                 break;
 
             default:
-                out_.Append(ERRORMSG($" [ERROR: INVALID TOKEN TYPE 0x{tk:X8}] "));
+                out_.Append(ERRORMSG($" [ERROR: INVALID TOKEN TYPE 0x{Token(h):X8}] "));
                 break;
         }
     }
 
     // PrettyPrintGP: prints the name of generic parameter n of owner, unless the name is missing or ambiguous.
-    private bool PrettyPrintGP(int tkOwner, StringBuilder out_, int n)
+    private bool PrettyPrintGP(EntityHandle owner, StringBuilder out_, int n)
     {
-        if (tkOwner == 0 || (TypeFromToken(tkOwner) != mdtTypeDef && TypeFromToken(tkOwner) != mdtMethodDef) || !IsValidToken(tkOwner))
+        if (owner.Kind is not (HandleKind.TypeDefinition or HandleKind.MethodDefinition) || !IsValid(owner))
         {
             return false;
         }
 
-        ImmutableArray<GenericParameterHandle> gps = GetGenericParams(tkOwner);
+        ImmutableArray<GenericParameterHandle> gps = GetGenericParams(owner);
         if (gps.Length <= n)
         {
             return false;
@@ -752,20 +698,20 @@ internal sealed partial class Dasm
 
     // ---------------------------------------------------------------- param attributes and marshaling
 
-    private string DumpParamAttr(uint attr)
+    private string DumpParamAttr(ParameterAttributes attr)
     {
         StringBuilder sb = new();
-        if ((attr & 0x1) != 0)
+        if ((attr & ParameterAttributes.In) != 0)
         {
             sb.Append(KEYWORD("[in]"));
         }
 
-        if ((attr & 0x2) != 0)
+        if ((attr & ParameterAttributes.Out) != 0)
         {
             sb.Append(KEYWORD("[out]"));
         }
 
-        if ((attr & 0x10) != 0)
+        if ((attr & ParameterAttributes.Optional) != 0)
         {
             sb.Append(KEYWORD("[opt]"));
         }
@@ -778,91 +724,143 @@ internal sealed partial class Dasm
         return sb.ToString();
     }
 
-    private const uint NATIVE_TYPE_MAX = 0x50;
-
-    private static string? SimpleNativeType(uint t) => t switch
+    // The native types of marshaling descriptors (CorNativeType). System.Runtime.InteropServices.UnmanagedType has most
+    // of them, but not all (and some are obsolete there).
+    private enum NativeType : uint
     {
-        0x01 => " void",
-        0x02 => " bool",
-        0x03 => " int8",
-        0x04 => " unsigned int8",
-        0x05 => " int16",
-        0x06 => " unsigned int16",
-        0x07 => " int32",
-        0x08 => " unsigned int32",
-        0x09 => " int64",
-        0x0a => " unsigned int64",
-        0x0b => " float32",
-        0x0c => " float64",
-        0x0d => " syschar",
-        0x0e => " variant",
-        0x0f => " currency",
-        0x11 => " decimal",
-        0x12 => " date",
-        0x13 => " bstr",
-        0x14 => " lpstr",
-        0x15 => " lpwstr",
-        0x16 => " lptstr",
-        0x18 => " objectref",
-        0x1b => " struct",
-        0x2d => " error",
-        0x1f => " int",
-        0x20 => " uint",
-        0x21 => " nested struct",
-        0x22 => " byvalstr",
-        0x23 => " ansi bstr",
-        0x24 => " tbstr",
-        0x25 => " variant bool",
-        0x26 => " method",
-        0x28 => " as any",
-        0x2b => " lpstruct",
-        0x10 or 0x1d or 0x2a or 0x17 or 0x1e or 0x1c or 0x19 or 0x1a or 0x2c or 0x00 or NATIVE_TYPE_MAX => "",
+        End = 0x00,
+        Void = 0x01,
+        Boolean = 0x02,
+        I1 = 0x03,
+        U1 = 0x04,
+        I2 = 0x05,
+        U2 = 0x06,
+        I4 = 0x07,
+        U4 = 0x08,
+        I8 = 0x09,
+        U8 = 0x0a,
+        R4 = 0x0b,
+        R8 = 0x0c,
+        SysChar = 0x0d,
+        Variant = 0x0e,
+        Currency = 0x0f,
+        Ptr = 0x10,
+        Decimal = 0x11,
+        Date = 0x12,
+        BStr = 0x13,
+        LPStr = 0x14,
+        LPWStr = 0x15,
+        LPTStr = 0x16,
+        FixedSysString = 0x17,
+        ObjectRef = 0x18,
+        IUnknown = 0x19,
+        IDispatch = 0x1a,
+        Struct = 0x1b,
+        Interface = 0x1c,
+        SafeArray = 0x1d,
+        FixedArray = 0x1e,
+        Int = 0x1f,
+        UInt = 0x20,
+        NestedStruct = 0x21,
+        ByValStr = 0x22,
+        AnsiBStr = 0x23,
+        TBStr = 0x24,
+        VariantBool = 0x25,
+        Func = 0x26,
+        AsAny = 0x28,
+        Array = 0x2a,
+        LPStruct = 0x2b,
+        CustomMarshaler = 0x2c,
+        Error = 0x2d,
+        Max = 0x50,
+    }
+
+    private static string? SimpleNativeType(NativeType t) => t switch
+    {
+        NativeType.Void => " void",
+        NativeType.Boolean => " bool",
+        NativeType.I1 => " int8",
+        NativeType.U1 => " unsigned int8",
+        NativeType.I2 => " int16",
+        NativeType.U2 => " unsigned int16",
+        NativeType.I4 => " int32",
+        NativeType.U4 => " unsigned int32",
+        NativeType.I8 => " int64",
+        NativeType.U8 => " unsigned int64",
+        NativeType.R4 => " float32",
+        NativeType.R8 => " float64",
+        NativeType.SysChar => " syschar",
+        NativeType.Variant => " variant",
+        NativeType.Currency => " currency",
+        NativeType.Decimal => " decimal",
+        NativeType.Date => " date",
+        NativeType.BStr => " bstr",
+        NativeType.LPStr => " lpstr",
+        NativeType.LPWStr => " lpwstr",
+        NativeType.LPTStr => " lptstr",
+        NativeType.ObjectRef => " objectref",
+        NativeType.Struct => " struct",
+        NativeType.Error => " error",
+        NativeType.Int => " int",
+        NativeType.UInt => " uint",
+        NativeType.NestedStruct => " nested struct",
+        NativeType.ByValStr => " byvalstr",
+        NativeType.AnsiBStr => " ansi bstr",
+        NativeType.TBStr => " tbstr",
+        NativeType.VariantBool => " variant bool",
+        NativeType.Func => " method",
+        NativeType.AsAny => " as any",
+        NativeType.LPStruct => " lpstruct",
+        // The types with arguments, handled by FormatMarshaling.
+        NativeType.Ptr or NativeType.SafeArray or NativeType.Array or NativeType.FixedSysString or NativeType.FixedArray
+            or NativeType.Interface or NativeType.IUnknown or NativeType.IDispatch or NativeType.CustomMarshaler
+            or NativeType.End or NativeType.Max => "",
         _ => null,
     };
 
-    private static string? VariantTypeName(uint vt) => vt switch
+    private static string? VariantTypeName(VarEnum vt) => vt switch
     {
-        0 => "",
-        1 => " null",
-        12 => " variant",
-        6 => " currency",
-        24 => " void",
-        11 => " bool",
-        16 => " int8",
-        2 => " int16",
-        3 => " int32",
-        20 => " int64",
-        4 => " float32",
-        5 => " float64",
-        17 => " unsigned int8",
-        18 => " unsigned int16",
-        19 => " unsigned int32",
-        21 => " unsigned int64",
-        26 => " *",
-        14 => " decimal",
-        7 => " date",
-        8 => " bstr",
-        30 => " lpstr",
-        31 => " lpwstr",
-        13 => " iunknown",
-        9 => " idispatch",
-        27 => " safearray",
-        22 => " int",
-        23 => " unsigned int",
-        10 => " error",
-        25 => " hresult",
-        28 => " carray",
-        29 => " userdefined",
-        36 => " record",
-        64 => " filetime",
-        65 => " blob",
-        66 => " stream",
-        67 => " storage",
-        68 => " streamed_object",
-        69 => " stored_object",
-        70 => " blob_object",
-        71 => " cf",
-        72 => " clsid",
+        VarEnum.VT_EMPTY => "",
+        VarEnum.VT_NULL => " null",
+        VarEnum.VT_VARIANT => " variant",
+        VarEnum.VT_CY => " currency",
+        VarEnum.VT_VOID => " void",
+        VarEnum.VT_BOOL => " bool",
+        VarEnum.VT_I1 => " int8",
+        VarEnum.VT_I2 => " int16",
+        VarEnum.VT_I4 => " int32",
+        VarEnum.VT_I8 => " int64",
+        VarEnum.VT_R4 => " float32",
+        VarEnum.VT_R8 => " float64",
+        VarEnum.VT_UI1 => " unsigned int8",
+        VarEnum.VT_UI2 => " unsigned int16",
+        VarEnum.VT_UI4 => " unsigned int32",
+        VarEnum.VT_UI8 => " unsigned int64",
+        VarEnum.VT_PTR => " *",
+        VarEnum.VT_DECIMAL => " decimal",
+        VarEnum.VT_DATE => " date",
+        VarEnum.VT_BSTR => " bstr",
+        VarEnum.VT_LPSTR => " lpstr",
+        VarEnum.VT_LPWSTR => " lpwstr",
+        VarEnum.VT_UNKNOWN => " iunknown",
+        VarEnum.VT_DISPATCH => " idispatch",
+        VarEnum.VT_SAFEARRAY => " safearray",
+        VarEnum.VT_INT => " int",
+        VarEnum.VT_UINT => " unsigned int",
+        VarEnum.VT_ERROR => " error",
+        VarEnum.VT_HRESULT => " hresult",
+        VarEnum.VT_CARRAY => " carray",
+        VarEnum.VT_USERDEFINED => " userdefined",
+        VarEnum.VT_RECORD => " record",
+        VarEnum.VT_FILETIME => " filetime",
+        VarEnum.VT_BLOB => " blob",
+        VarEnum.VT_STREAM => " stream",
+        VarEnum.VT_STORAGE => " storage",
+        VarEnum.VT_STREAMED_OBJECT => " streamed_object",
+        VarEnum.VT_STORED_OBJECT => " stored_object",
+        VarEnum.VT_BLOB_OBJECT => " blob_object",
+        VarEnum.VT_CF => " cf",
+        VarEnum.VT_CLSID => " clsid",
         _ => null,
     };
 
@@ -871,9 +869,9 @@ internal sealed partial class Dasm
     }
 
     // DumpMarshaling: " marshal(...) " for the field or parameter, or "" if it has no marshaling info.
-    private string DumpMarshaling(int tok)
+    private string DumpMarshaling(EntityHandle h)
     {
-        byte[]? blob = GetMarshalBlob(tok);
+        byte[]? blob = GetMarshalBlob(h);
         if (blob is null || blob.Length == 0)
         {
             return "";
@@ -921,7 +919,7 @@ internal sealed partial class Dasm
         string SimpleType(out uint data)
         {
             data = Uncompress();
-            return SimpleNativeType(data) ?? throw new MarshalFormatException();
+            return SimpleNativeType((NativeType)data) ?? throw new MarshalFormatException();
         }
 
         string ReadString()
@@ -969,36 +967,36 @@ internal sealed partial class Dasm
 
         while (cur < cb)
         {
-            ulData = NATIVE_TYPE_MAX;
+            ulData = (uint)NativeType.Max;
             string sz = SimpleType(out ulData);
             if (sz.Length == 0)
             {
-                switch (ulData)
+                switch ((NativeType)ulData)
                 {
-                    case 0x10: // NATIVE_TYPE_PTR
+                    case NativeType.Ptr:
                         addAsterisk = true;
                         break;
 
-                    case 0x1d: // NATIVE_TYPE_SAFEARRAY
+                    case NativeType.SafeArray:
                     {
                         buf.Append(KEYWORD(" safearray"));
-                        ulData = 0; // VT_EMPTY
+                        ulData = (uint)VarEnum.VT_EMPTY;
                         if (cur < cb)
                         {
                             ulData = Uncompress();
                         }
 
-                        string vt = VariantTypeName(ulData & 0x0FFF) ?? throw new MarshalFormatException();
+                        string vt = VariantTypeName((VarEnum)(ulData & 0x0FFF)) ?? throw new MarshalFormatException();
                         buf.Append(KEYWORD(vt));
-                        string suffix = (ulData & 0xF000) switch
+                        string suffix = (VarEnum)(ulData & 0xF000) switch
                         {
-                            0x2000 => "[]",
-                            0x1000 => " vector",
-                            0x4000 => "&",
-                            0x6000 => "&[]",
-                            0x5000 => "& vector",
-                            0x3000 => "[] vector",
-                            0x7000 => "&[] vector",
+                            VarEnum.VT_ARRAY => "[]",
+                            VarEnum.VT_VECTOR => " vector",
+                            VarEnum.VT_BYREF => "&",
+                            VarEnum.VT_BYREF | VarEnum.VT_ARRAY => "&[]",
+                            VarEnum.VT_BYREF | VarEnum.VT_VECTOR => "& vector",
+                            VarEnum.VT_ARRAY | VarEnum.VT_VECTOR => "[] vector",
+                            VarEnum.VT_BYREF | VarEnum.VT_ARRAY | VarEnum.VT_VECTOR => "&[] vector",
                             _ => "",
                         };
                         buf.Append(KEYWORD(suffix));
@@ -1014,11 +1012,11 @@ internal sealed partial class Dasm
                         break;
                     }
 
-                    case 0x2a: // NATIVE_TYPE_ARRAY
+                    case NativeType.Array:
                         addBrackets = true;
                         break;
 
-                    case 0x17: // NATIVE_TYPE_FIXEDSYSSTRING
+                    case NativeType.FixedSysString:
                         buf.Append(KEYWORD(" fixed sysstring")).Append(" [");
                         if (cur < cb)
                         {
@@ -1029,7 +1027,7 @@ internal sealed partial class Dasm
                         buf.Append(']');
                         break;
 
-                    case 0x1e: // NATIVE_TYPE_FIXEDARRAY
+                    case NativeType.FixedArray:
                         buf.Append(KEYWORD(" fixed array")).Append(" [");
                         if (cur < cb)
                         {
@@ -1045,10 +1043,15 @@ internal sealed partial class Dasm
 
                         break;
 
-                    case 0x1c: // NATIVE_TYPE_INTF
-                    case 0x19: // NATIVE_TYPE_IUNKNOWN
-                    case 0x1a: // NATIVE_TYPE_IDISPATCH
-                        buf.Append(KEYWORD(ulData == 0x1c ? " interface" : ulData == 0x19 ? " iunknown" : " idispatch"));
+                    case NativeType.Interface:
+                    case NativeType.IUnknown:
+                    case NativeType.IDispatch:
+                        buf.Append(KEYWORD((NativeType)ulData switch
+                        {
+                            NativeType.Interface => " interface",
+                            NativeType.IUnknown => " iunknown",
+                            _ => " idispatch",
+                        }));
                         sz = " ";
                         if (cur < cb)
                         {
@@ -1058,7 +1061,7 @@ internal sealed partial class Dasm
 
                         break;
 
-                    case 0x2c: // NATIVE_TYPE_CUSTOMMARSHALER
+                    case NativeType.CustomMarshaler:
                     {
                         buf.Append(KEYWORD(" custom")).Append(" (");
                         string guid = ReadString();
@@ -1133,7 +1136,7 @@ internal sealed partial class Dasm
                 }
             }
 
-            if (ulData >= NATIVE_TYPE_MAX)
+            if (ulData >= (uint)NativeType.Max)
             {
                 break;
             }

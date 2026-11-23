@@ -10,210 +10,170 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace ILDisassembler;
 
-// Token level access to the metadata, shaped after the IMDInternalImport calls.
+// Metadata access helpers.
 internal sealed partial class Dasm
 {
-    internal const int mdtModule = 0x00000000;
-    internal const int mdtTypeRef = 0x01000000;
-    internal const int mdtTypeDef = 0x02000000;
-    internal const int mdtFieldDef = 0x04000000;
-    internal const int mdtMethodDef = 0x06000000;
-    internal const int mdtParamDef = 0x08000000;
-    internal const int mdtInterfaceImpl = 0x09000000;
-    internal const int mdtMemberRef = 0x0a000000;
-    internal const int mdtCustomAttribute = 0x0c000000;
-    internal const int mdtPermission = 0x0e000000;
-    internal const int mdtSignature = 0x11000000;
-    internal const int mdtEvent = 0x14000000;
-    internal const int mdtProperty = 0x17000000;
-    internal const int mdtModuleRef = 0x1a000000;
-    internal const int mdtTypeSpec = 0x1b000000;
-    internal const int mdtAssembly = 0x20000000;
-    internal const int mdtAssemblyRef = 0x23000000;
-    internal const int mdtFile = 0x26000000;
-    internal const int mdtExportedType = 0x27000000;
-    internal const int mdtManifestResource = 0x28000000;
-    internal const int mdtGenericParam = 0x2a000000;
-    internal const int mdtMethodSpec = 0x2b000000;
-    internal const int mdtGenericParamConstraint = 0x2c000000;
-    internal const int mdtString = 0x70000000;
-    internal const int mdtBaseType = 0x72000000;
-
-    internal const int mdTokenNil = 0;
-    internal const int mdTypeDefNil = mdtTypeDef;
-    internal const int mdTypeRefNil = mdtTypeRef;
-
-    internal static int TypeFromToken(int tk) => (int)((uint)tk & 0xFF000000);
-
-    internal static int RidFromToken(int tk) => tk & 0x00FFFFFF;
-
-    internal static bool IsNilToken(int tk) => RidFromToken(tk) == 0;
-
+    // The token of a handle, as printed in comments and compared with tokens read from the image; 0 for any nil handle.
     private static int Token(EntityHandle h) => h.IsNil ? 0 : MetadataTokens.GetToken(h);
 
     private static int Token(Handle h) => h.IsNil ? 0 : MetadataTokens.GetToken(h);
 
-    // A nil coded index keeps its table: a nil TypeDefOrRef is a nil TypeDef token.
-    private static int TokenOrNil(EntityHandle h, int nilToken) => h.IsNil ? nilToken : MetadataTokens.GetToken(h);
+    // Whether the handle refers to an existing row.
+    internal bool IsValid(EntityHandle h)
+        => !h.IsNil && MetadataTokens.TryGetTableIndex(h.Kind, out TableIndex table) && MetadataTokens.GetRowNumber(h) <= _md.GetTableRowCount(table);
 
-    private static EntityHandle Handle(int tk) => MetadataTokens.EntityHandle(tk);
+    internal bool IsValid(UserStringHandle h) => MetadataTokens.GetHeapOffset(h) < _md.GetHeapSize(HeapIndex.UserString);
 
-    internal bool IsValidToken(int tk)
+    // A token read from the image (IL, signatures, the CLR header, vtable fixups, exports) as a handle, if it refers to
+    // an existing row. Tokens that do not are only printed.
+    private bool TryGetHandle(int token, out EntityHandle h)
     {
-        int type = TypeFromToken(tk);
-        int rid = RidFromToken(tk);
-        if (type == mdtString)
+        // Rejects user string, heap and virtual tokens, which are not entities.
+        if ((uint)token >> 24 < (uint)HandleKind.UserString)
         {
-            return rid < _md.GetHeapSize(HeapIndex.UserString);
+            h = MetadataTokens.EntityHandle(token);
+            if (IsValid(h))
+            {
+                return true;
+            }
         }
 
-        int table = type >> 24;
-        if (table > (int)TableIndex.CustomDebugInformation || table >= 0x2D)
-        {
-            return false;
-        }
-
-        return rid != 0 && rid <= _md.GetTableRowCount((TableIndex)table);
+        h = default;
+        return false;
     }
 
-    private int RowCount(TableIndex t) => _md.GetTableRowCount(t);
+    // Like TryGetHandle, accepting user strings too (ldstr).
+    private bool TryGetHandle(int token, out Handle h)
+    {
+        if ((uint)token >> 24 == (uint)HandleKind.UserString)
+        {
+            UserStringHandle us = MetadataTokens.UserStringHandle(token & 0xFFFFFF);
+            h = us;
+            return IsValid(us);
+        }
 
-    private byte[] Blob(BlobHandle h) => h.IsNil ? Array.Empty<byte>() : _md.GetBlobBytes(h);
+        bool valid = TryGetHandle(token, out EntityHandle eh);
+        h = eh;
+        return valid;
+    }
 
-    private string Str(StringHandle h) => h.IsNil ? "" : _md.GetString(h);
+    internal int RowCount(TableIndex t) => _md.GetTableRowCount(t);
+
+    // The global <Module> type: the first TypeDef row. COMPAT: its members are printed without their class.
+    private static readonly TypeDefinitionHandle s_moduleType = MetadataTokens.TypeDefinitionHandle(1);
+
+    internal byte[] Blob(BlobHandle h) => h.IsNil ? Array.Empty<byte>() : _md.GetBlobBytes(h);
+
+    internal string Str(StringHandle h) => h.IsNil ? "" : _md.GetString(h);
 
     // ---------------------------------------------------------------- types
 
-    private (string Name, string Namespace) GetNameOfTypeDef(int tk)
+    internal (string Name, string Namespace) GetNameOfTypeDef(TypeDefinitionHandle h)
     {
-        TypeDefinition td = _md.GetTypeDefinition((TypeDefinitionHandle)Handle(tk));
+        TypeDefinition td = _md.GetTypeDefinition(h);
         return (Str(td.Name), Str(td.Namespace));
     }
 
-    private (string Name, string Namespace) GetNameOfTypeRef(int tk)
+    private (string Name, string Namespace) GetNameOfTypeRef(TypeReferenceHandle h)
     {
-        TypeReference tr = _md.GetTypeReference((TypeReferenceHandle)Handle(tk));
+        TypeReference tr = _md.GetTypeReference(h);
         return (Str(tr.Name), Str(tr.Namespace));
     }
 
-    private int GetResolutionScopeOfTypeRef(int tk)
+    // The name of a TypeDef or TypeRef; empty for anything else.
+    internal (string Name, string Namespace) GetNameOfType(EntityHandle h) => h.Kind switch
     {
-        TypeReference tr = _md.GetTypeReference((TypeReferenceHandle)Handle(tk));
-        return Token(tr.ResolutionScope);
-    }
+        HandleKind.TypeDefinition => GetNameOfTypeDef((TypeDefinitionHandle)h),
+        HandleKind.TypeReference => GetNameOfTypeRef((TypeReferenceHandle)h),
+        _ => ("", ""),
+    };
 
-    // GetNestedClassProps: the enclosing class, or mdTypeDefNil.
-    private int GetEnclosingClass(int tk)
-    {
-        TypeDefinition td = _md.GetTypeDefinition((TypeDefinitionHandle)Handle(tk));
-        TypeDefinitionHandle h = td.GetDeclaringType();
-        return h.IsNil ? mdTypeDefNil : Token(h);
-    }
-
-    private (TypeAttributes Attrs, int Extends) GetTypeDefProps(int tk)
-    {
-        TypeDefinition td = _md.GetTypeDefinition((TypeDefinitionHandle)Handle(tk));
-        return (td.Attributes, TokenOrNil(td.BaseType, mdTypeDefNil));
-    }
-
-    private byte[] GetTypeSpecSig(int tk)
-        => Blob(_md.GetTypeSpecification((TypeSpecificationHandle)Handle(tk)).Signature);
-
-    private byte[] GetStandaloneSig(int tk)
-        => Blob(_md.GetStandaloneSignature((StandaloneSignatureHandle)Handle(tk)).Signature);
-
-    private bool FindTypeDefByName(string ns, string name, out int tk)
+    private bool FindTypeDefByName(string ns, string name, out TypeDefinitionHandle found)
     {
         foreach (TypeDefinitionHandle h in _md.TypeDefinitions)
         {
             TypeDefinition td = _md.GetTypeDefinition(h);
             if (td.GetDeclaringType().IsNil && _md.StringComparer.Equals(td.Name, name) && _md.StringComparer.Equals(td.Namespace, ns))
             {
-                tk = Token(h);
+                found = h;
                 return true;
             }
         }
 
-        tk = 0;
+        found = default;
         return false;
     }
 
     // ---------------------------------------------------------------- members
 
-    private string GetNameOfMethodDef(int tk) => Str(_md.GetMethodDefinition((MethodDefinitionHandle)Handle(tk)).Name);
-
-    private MethodAttributes GetMethodDefAttrs(int tk) => _md.GetMethodDefinition((MethodDefinitionHandle)Handle(tk)).Attributes;
-
-    private byte[] GetSigOfMethodDef(int tk) => Blob(_md.GetMethodDefinition((MethodDefinitionHandle)Handle(tk)).Signature);
-
-    private int GetParentOfMethodDef(int tk) => Token(_md.GetMethodDefinition((MethodDefinitionHandle)Handle(tk)).GetDeclaringType());
-
-    private string GetNameOfFieldDef(int tk) => Str(_md.GetFieldDefinition((FieldDefinitionHandle)Handle(tk)).Name);
-
-    private FieldAttributes GetFieldDefAttrs(int tk) => _md.GetFieldDefinition((FieldDefinitionHandle)Handle(tk)).Attributes;
-
-    private byte[] GetSigOfFieldDef(int tk) => Blob(_md.GetFieldDefinition((FieldDefinitionHandle)Handle(tk)).Signature);
-
-    private int GetParentOfFieldDef(int tk) => Token(_md.GetFieldDefinition((FieldDefinitionHandle)Handle(tk)).GetDeclaringType());
-
-    private (string Name, byte[] Sig, int Parent) GetMemberRefProps(int tk)
+    // The signature of a MethodDef or MemberRef, or null for anything else.
+    internal byte[]? GetMethodSig(EntityHandle h) => h.Kind switch
     {
-        MemberReference mr = _md.GetMemberReference((MemberReferenceHandle)Handle(tk));
-        return (Str(mr.Name), Blob(mr.Signature), TokenOrNil(mr.Parent, mdTypeRefNil));
-    }
+        HandleKind.MethodDefinition => Blob(_md.GetMethodDefinition((MethodDefinitionHandle)h).Signature),
+        HandleKind.MemberReference => Blob(_md.GetMemberReference((MemberReferenceHandle)h).Signature),
+        _ => null,
+    };
 
-    private (int Method, byte[] Instantiation) GetMethodSpecProps(int tk)
-    {
-        MethodSpecification ms = _md.GetMethodSpecification((MethodSpecificationHandle)Handle(tk));
-        return (Token(ms.Method), Blob(ms.Signature));
-    }
+    // A nil handle of any table as the nil token (0), which prints as [*] where a type is expected.
+    private static EntityHandle NilAsDefault(EntityHandle h) => h.IsNil ? default : h;
 
-    // GetParentToken for the member kinds that have a parent.
-    private int GetParentToken(int tk)
+    // The parent of a member; a nil MemberRef parent stays a (nil) TypeRef, unlike the other nil parents.
+    private EntityHandle GetParent(EntityHandle h)
     {
-        switch (TypeFromToken(tk))
+        if (h.IsNil)
         {
-            case mdtMethodDef: return GetParentOfMethodDef(tk);
-            case mdtFieldDef: return GetParentOfFieldDef(tk);
-            case mdtMemberRef: return GetMemberRefProps(tk).Parent;
-            case mdtMethodSpec: return GetMethodSpecProps(tk).Method;
-            case mdtParamDef:
+            return default;
+        }
+
+        switch (h.Kind)
+        {
+            case HandleKind.MethodDefinition:
+                return NilAsDefault(_md.GetMethodDefinition((MethodDefinitionHandle)h).GetDeclaringType());
+            case HandleKind.FieldDefinition:
+                return NilAsDefault(_md.GetFieldDefinition((FieldDefinitionHandle)h).GetDeclaringType());
+            case HandleKind.MemberReference:
+            {
+                EntityHandle parent = _md.GetMemberReference((MemberReferenceHandle)h).Parent;
+                return parent.IsNil ? default(TypeReferenceHandle) : parent;
+            }
+
+            case HandleKind.MethodSpecification:
+                return NilAsDefault(_md.GetMethodSpecification((MethodSpecificationHandle)h).Method);
+
+            case HandleKind.Parameter:
                 foreach (MethodDefinitionHandle mh in _md.MethodDefinitions)
                 {
                     foreach (ParameterHandle ph in _md.GetMethodDefinition(mh).GetParameters())
                     {
-                        if (Token(ph) == tk)
+                        if (ph == (ParameterHandle)h)
                         {
-                            return Token(mh);
+                            return mh;
                         }
                     }
                 }
 
-                return 0;
-            case mdtEvent:
-            case mdtProperty:
-                return 0;
+                return default;
             default:
-                return 0;
+                return default;
         }
     }
 
-    private bool IsDup(int tk) => _dups.Contains(tk);
+    private bool IsDup(EntityHandle h) => _dups.Contains(h);
 
-    // MAKE_NAME_IF_NONE: unnamed and duplicate items get synthetic names.
+    // MAKE_NAME_IF_NONE: unnamed and duplicate items get synthetic names, from the table and the row number.
     private static readonly string[] s_stdNamePrefix =
     [
         "MO", "TR", "TD", "", "FD", "", "MD", "", "PA", "II", "MR", "", "CA", "", "PE", "", "", "SG", "", "", "EV",
         "", "", "PR", "", "", "MOR", "TS", "", "", "", "", "AS", "", "", "AR", "", "", "FL", "ET", "MAR",
     ];
 
-    private string MakeNameIfNone(string? name, int tk)
+    internal string MakeNameIfNone(string? name, EntityHandle h)
     {
-        if (string.IsNullOrEmpty(name) || IsDup(tk))
+        if (string.IsNullOrEmpty(name) || IsDup(h))
         {
-            int table = (int)((uint)tk >> 24);
+            int table = (int)h.Kind;
             string prefix = table < s_stdNamePrefix.Length ? s_stdNamePrefix[table] : "";
-            return "$" + prefix + "$" + RidFromToken(tk).ToString("X");
+            return "$" + prefix + "$" + MetadataTokens.GetRowNumber(h).ToString("X");
         }
 
         return name;
@@ -221,20 +181,21 @@ internal sealed partial class Dasm
 
     // ---------------------------------------------------------------- generic parameters
 
-    // Note: default(...HandleCollection) values are not safe to enumerate, hence the arrays. The owner map is built
-    // from the raw table because GetGenericParameters() truncates the count of more than 65535 parameters.
-    private Dictionary<int, List<GenericParameterHandle>>? _genericParamsByOwner;
+    // Note: default(...HandleCollection) values are not safe to enumerate, hence the arrays. The owner map is built from
+    // every row because TypeDefinition/MethodDefinition.GetGenericParameters() truncate the count of more than 65535
+    // parameters and need a sorted table.
+    private Dictionary<EntityHandle, List<GenericParameterHandle>>? _genericParamsByOwner;
 
-    private ImmutableArray<GenericParameterHandle> GetGenericParams(int owner)
+    private ImmutableArray<GenericParameterHandle> GetGenericParams(EntityHandle owner)
     {
         if (_genericParamsByOwner is null)
         {
-            _genericParamsByOwner = new Dictionary<int, List<GenericParameterHandle>>();
+            _genericParamsByOwner = new Dictionary<EntityHandle, List<GenericParameterHandle>>();
             int n = RowCount(TableIndex.GenericParam);
             for (int i = 1; i <= n; i++)
             {
                 GenericParameterHandle h = MetadataTokens.GenericParameterHandle(i);
-                int o = Token(_md.GetGenericParameter(h).Parent);
+                EntityHandle o = _md.GetGenericParameter(h).Parent;
                 if (!_genericParamsByOwner.TryGetValue(o, out List<GenericParameterHandle>? list))
                 {
                     _genericParamsByOwner[o] = list = new List<GenericParameterHandle>();
@@ -251,81 +212,74 @@ internal sealed partial class Dasm
 
     // ---------------------------------------------------------------- custom attributes, constants, marshaling
 
-    private ImmutableArray<CustomAttributeHandle> GetCustomAttributes(int owner)
+    private ImmutableArray<CustomAttributeHandle> GetCustomAttributes(EntityHandle owner)
     {
-        if (!IsValidToken(owner))
+        if (!IsValid(owner))
         {
             return ImmutableArray<CustomAttributeHandle>.Empty;
         }
 
-        return Arr(_md.GetCustomAttributes(Handle(owner)));
+        return Arr(_md.GetCustomAttributes(owner));
     }
 
-    private byte[]? GetMarshalBlob(int tk)
+    private byte[]? GetMarshalBlob(EntityHandle h)
     {
-        if (RidFromToken(tk) == 0)
+        if (h.IsNil)
         {
             return null;
         }
 
-        BlobHandle h = TypeFromToken(tk) switch
+        BlobHandle blob = h.Kind switch
         {
-            mdtFieldDef => _md.GetFieldDefinition((FieldDefinitionHandle)Handle(tk)).GetMarshallingDescriptor(),
-            mdtParamDef => _md.GetParameter((ParameterHandle)Handle(tk)).GetMarshallingDescriptor(),
+            HandleKind.FieldDefinition => _md.GetFieldDefinition((FieldDefinitionHandle)h).GetMarshallingDescriptor(),
+            HandleKind.Parameter => _md.GetParameter((ParameterHandle)h).GetMarshallingDescriptor(),
             _ => default,
         };
-        return h.IsNil ? null : _md.GetBlobBytes(h);
+        return blob.IsNil ? null : _md.GetBlobBytes(blob);
     }
 
-    private ConstantHandle GetConstant(int tk)
+    private ConstantHandle GetConstant(EntityHandle h) => h.Kind switch
     {
-        return TypeFromToken(tk) switch
-        {
-            mdtFieldDef => _md.GetFieldDefinition((FieldDefinitionHandle)Handle(tk)).GetDefaultValue(),
-            mdtParamDef => _md.GetParameter((ParameterHandle)Handle(tk)).GetDefaultValue(),
-            mdtProperty => _md.GetPropertyDefinition((PropertyDefinitionHandle)Handle(tk)).GetDefaultValue(),
-            _ => default,
-        };
-    }
+        HandleKind.FieldDefinition => _md.GetFieldDefinition((FieldDefinitionHandle)h).GetDefaultValue(),
+        HandleKind.Parameter => _md.GetParameter((ParameterHandle)h).GetDefaultValue(),
+        HandleKind.PropertyDefinition => _md.GetPropertyDefinition((PropertyDefinitionHandle)h).GetDefaultValue(),
+        _ => default,
+    };
 
-    private ImmutableArray<DeclarativeSecurityAttributeHandle> GetDeclSecurity(int owner)
+    private ImmutableArray<DeclarativeSecurityAttributeHandle> GetDeclSecurity(EntityHandle owner)
     {
-        if (!IsValidToken(owner))
+        if (!IsValid(owner))
         {
             return ImmutableArray<DeclarativeSecurityAttributeHandle>.Empty;
         }
 
-        return TypeFromToken(owner) switch
+        return owner.Kind switch
         {
-            mdtTypeDef => Arr(_md.GetTypeDefinition((TypeDefinitionHandle)Handle(owner)).GetDeclarativeSecurityAttributes()),
-            mdtMethodDef => Arr(_md.GetMethodDefinition((MethodDefinitionHandle)Handle(owner)).GetDeclarativeSecurityAttributes()),
-            mdtAssembly => Arr(_md.GetAssemblyDefinition().GetDeclarativeSecurityAttributes()),
+            HandleKind.TypeDefinition => Arr(_md.GetTypeDefinition((TypeDefinitionHandle)owner).GetDeclarativeSecurityAttributes()),
+            HandleKind.MethodDefinition => Arr(_md.GetMethodDefinition((MethodDefinitionHandle)owner).GetDeclarativeSecurityAttributes()),
+            HandleKind.AssemblyDefinition => Arr(_md.GetAssemblyDefinition().GetDeclarativeSecurityAttributes()),
             _ => ImmutableArray<DeclarativeSecurityAttributeHandle>.Empty,
         };
     }
 
-    private (MethodImportAttributes Flags, string Name, int ModuleRef)? GetPinvokeMap(int tk)
+    private (MethodImportAttributes Flags, string Name, ModuleReferenceHandle ModuleRef)? GetPinvokeMap(EntityHandle h)
     {
-        MethodImport mi;
-        if (TypeFromToken(tk) == mdtMethodDef)
+        if (h.Kind != HandleKind.MethodDefinition)
         {
-            mi = _md.GetMethodDefinition((MethodDefinitionHandle)Handle(tk)).GetImport();
-        }
-        else
-        {
-            // SRM exposes no ImplMap for fields; find the row by hand.
-            return GetFieldPinvokeMap(tk);
+            return GetFieldPinvokeMap((FieldDefinitionHandle)h);
         }
 
+        MethodImport mi = _md.GetMethodDefinition((MethodDefinitionHandle)h).GetImport();
         if (mi.Module.IsNil && mi.Name.IsNil && mi.Attributes == 0)
         {
             return null;
         }
 
-        return (mi.Attributes, Str(mi.Name), Token(mi.Module));
+        return (mi.Attributes, Str(mi.Name), mi.Module);
     }
 
-    private (MethodImportAttributes Flags, string Name, int ModuleRef)? GetFieldPinvokeMap(int tk)
+    // SRM exposes the ImplMap row of methods only (MethodDefinition.GetImport()): the row of a field is read from the table.
+    private (MethodImportAttributes Flags, string Name, ModuleReferenceHandle ModuleRef)? GetFieldPinvokeMap(FieldDefinitionHandle field)
     {
         int rows = RowCount(TableIndex.ImplMap);
         if (rows == 0)
@@ -347,10 +301,11 @@ internal sealed partial class Dasm
             uint member = memberForwardedSize == 2 ? r.ReadUInt16() : r.ReadUInt32();
             uint nameOffset = stringSize == 2 ? r.ReadUInt16() : r.ReadUInt32();
             uint scope = moduleRefSize == 2 ? r.ReadUInt16() : r.ReadUInt32();
-            if ((member & 1) == 0 && (int)(member >> 1) == RidFromToken(tk))
+            // The MemberForwarded tag of a field is 0.
+            if ((member & 1) == 0 && (int)(member >> 1) == MetadataTokens.GetRowNumber(field))
             {
                 string name = _md.GetString(MetadataTokens.StringHandle((int)nameOffset));
-                return ((MethodImportAttributes)flags, name, (int)scope == 0 ? 0 : mdtModuleRef | (int)scope);
+                return ((MethodImportAttributes)flags, name, MetadataTokens.ModuleReferenceHandle((int)scope));
             }
         }
 
@@ -367,12 +322,6 @@ internal sealed partial class Dasm
 
         return max < (1 << (16 - tagBits)) ? 2 : 4;
     }
-
-    private uint GetFieldRva(int tk)
-        => (uint)_md.GetFieldDefinition((FieldDefinitionHandle)Handle(tk)).GetRelativeVirtualAddress();
-
-    private int GetFieldOffset(int tk)
-        => _md.GetFieldDefinition((FieldDefinitionHandle)Handle(tk)).GetOffset();
 
     // ---------------------------------------------------------------- signature decoding primitives
 
@@ -405,13 +354,21 @@ internal sealed partial class Dasm
         return 0xFFFFFFFF;
     }
 
-    private static readonly int[] s_tokenTypes = [mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType];
+    // The table of the fourth (invalid) TypeDefOrRefOrSpecEncoded tag: it keeps the row number for error messages.
+    private const int InvalidTypeDefOrRefTable = 0x72000000;
 
-    // CorSigUncompressToken
+    // CorSigUncompressToken: the raw token of a TypeDefOrRefOrSpecEncoded value, which may not refer to an existing row.
     private static int UncompressToken(byte[] sig, ref int p)
     {
         uint v = UncompressData(sig, ref p);
-        return (int)(v >> 2) | s_tokenTypes[v & 3];
+        int row = (int)(v >> 2);
+        return (v & 3) switch
+        {
+            0 => (int)TableIndex.TypeDef << 24 | row,
+            1 => (int)TableIndex.TypeRef << 24 | row,
+            2 => (int)TableIndex.TypeSpec << 24 | row,
+            _ => InvalidTypeDefOrRefTable | row,
+        };
     }
 
     // CorSigUncompressSignedInt
@@ -435,11 +392,9 @@ internal sealed partial class Dasm
         return (int)v;
     }
 
-    private static uint ReadUInt32(byte[] b, int p) => (uint)(b[p] | b[p + 1] << 8 | b[p + 2] << 16 | b[p + 3] << 24);
+    internal static uint ReadUInt32(byte[] b, int p) => (uint)(b[p] | b[p + 1] << 8 | b[p + 2] << 16 | b[p + 3] << 24);
 
-    private static uint ReadUInt32(ReadOnlySpan<byte> b, int p) => (uint)(b[p] | b[p + 1] << 8 | b[p + 2] << 16 | b[p + 3] << 24);
-
-    private static bool SigEquals(byte[] a, byte[] b) => a.AsSpan().SequenceEqual(b);
+    internal static uint ReadUInt32(ReadOnlySpan<byte> b, int p) => (uint)(b[p] | b[p + 1] << 8 | b[p + 2] << 16 | b[p + 3] << 24);
 
     private static ImmutableArray<T> Arr<T>(IEnumerable<T> e) => ImmutableArray.CreateRange(e);
 }

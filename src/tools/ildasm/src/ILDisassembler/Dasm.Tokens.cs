@@ -3,6 +3,8 @@
 
 using System;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 
 namespace ILDisassembler;
@@ -10,48 +12,26 @@ namespace ILDisassembler;
 // Token pretty printing.
 internal sealed partial class Dasm
 {
-    // .typedef aliases encoded by ilasm as ELEMENT_TYPE_TYPEDEF TypeSpecs.
-    private sealed class TypeDefDescr
-    {
-        public string Name = "";
-        public int TkTypeSpec;
-        public int TkSelf;
-        public byte[]? Sig;
-    }
-
-    private TypeDefDescr? FindTypedefFor(int tk)
-    {
-        foreach (TypeDefDescr td in _typedefs)
-        {
-            if (td.TkTypeSpec == tk)
-            {
-                return td;
-            }
-        }
-
-        return null;
-    }
-
     // IsGenericInst: whether a TypeSpec is a (possibly decorated) generic instantiation.
-    private bool IsGenericInst(int tk)
+    private bool IsGenericInst(EntityHandle h)
     {
-        if (TypeFromToken(tk) != mdtTypeSpec || !IsValidToken(tk))
+        if (h.Kind != HandleKind.TypeSpecification || !IsValid(h))
         {
             return false;
         }
 
-        byte[] sig = GetTypeSpecSig(tk);
+        byte[] sig = Blob(_md.GetTypeSpecification((TypeSpecificationHandle)h).Signature);
         foreach (byte b in sig)
         {
-            switch (b)
+            switch ((SignatureTypeCode)b)
             {
-                case ELEMENT_TYPE_PTR:
-                case ELEMENT_TYPE_SZARRAY:
-                case ELEMENT_TYPE_ARRAY:
-                case ELEMENT_TYPE_BYREF:
+                case SignatureTypeCode.Pointer:
+                case SignatureTypeCode.SZArray:
+                case SignatureTypeCode.Array:
+                case SignatureTypeCode.ByReference:
                     continue;
                 default:
-                    return b == ELEMENT_TYPE_GENERICINST;
+                    return (SignatureTypeCode)b == SignatureTypeCode.GenericTypeInstance;
             }
         }
 
@@ -63,43 +43,46 @@ internal sealed partial class Dasm
     private static bool IsFdPrivateScope(FieldAttributes a) => (a & FieldAttributes.FieldAccessMask) == FieldAttributes.PrivateScope;
 
     // Returns the full line (prefix + signature) and, in indent, the byte column just after the opening parenthesis.
-    private string PrettyPrintMemberRef(string prefix, int tk, byte[]? instSig, out int indent)
+    private string PrettyPrintMemberRef(string prefix, EntityHandle h, byte[]? instSig, out int indent)
     {
-        int savedVarOwner = _tkVarOwner;
+        EntityHandle savedVarOwner = _varOwner;
         string memberName;
         byte[] sig;
-        int cr;
-        if (IsValidToken(tk))
+        EntityHandle cr;
+        if (IsValid(h))
         {
-            (memberName, sig, cr) = GetMemberRefProps(tk);
+            MemberReference mr = _md.GetMemberReference((MemberReferenceHandle)h);
+            memberName = Str(mr.Name);
+            sig = Blob(mr.Signature);
+            cr = GetParent(h);
         }
         else
         {
-            (memberName, sig, cr) = ("Invalid MemberRef record", Array.Empty<byte>(), mdTypeRefNil);
+            (memberName, sig, cr) = ("Invalid MemberRef record", Array.Empty<byte>(), default(TypeReferenceHandle));
         }
 
-        memberName = MakeNameIfNone(memberName, tk);
+        memberName = MakeNameIfNone(memberName, h);
         MethodAttributes dwAttrs = (MethodAttributes)0xFFFF;
-        int tkMethodDef = 0;
+        MethodDefinitionHandle methodDef = default;
         StringBuilder curPos = new();
-        if (TypeFromToken(cr) == mdtMethodDef)
+        if (cr.Kind == HandleKind.MethodDefinition)
         {
-            dwAttrs = GetMethodDefAttrs(cr);
-            tkMethodDef = cr;
-            cr = GetParentOfMethodDef(cr);
+            methodDef = (MethodDefinitionHandle)cr;
+            dwAttrs = _md.GetMethodDefinition(methodDef).Attributes;
+            cr = GetParent(cr);
         }
 
-        if (RidFromToken(cr) != 0 && cr != 0x02000001)
+        if (!cr.IsNil && cr != s_moduleType)
         {
             curPos.Append(PrettyPrintClass(cr)).Append("::");
             if (IsGenericInst(cr))
             {
-                _tkVarOwner = 0;
+                _varOwner = default;
             }
         }
 
-        string namePart = tkMethodDef != 0 && IsMdPrivateScope(dwAttrs) ? memberName + "$PST" + X8(tkMethodDef) : memberName;
-        curPos.Append(tkMethodDef != 0 ? JUMPPT(ProperName(namePart), tkMethodDef) : ProperName(namePart));
+        string namePart = !methodDef.IsNil && IsMdPrivateScope(dwAttrs) ? memberName + "$PST" + X8(Token(methodDef)) : memberName;
+        curPos.Append(!methodDef.IsNil ? JUMPPT(ProperName(namePart), methodDef) : ProperName(namePart));
 
         if (instSig is not null)
         {
@@ -109,29 +92,30 @@ internal sealed partial class Dasm
         string cur = curPos.ToString();
         string tail = PrettyPrintSig(sig, cur, prefix, printTyArity: instSig is null);
         indent = ComputeIndent(tail, cur);
-        _tkVarOwner = savedVarOwner;
+        _varOwner = savedVarOwner;
         return tail;
     }
 
-    private string PrettyPrintMethodDef(string prefix, int tk, byte[]? instSig, out int indent)
+    private string PrettyPrintMethodDef(string prefix, MethodDefinitionHandle h, byte[]? instSig, out int indent)
     {
-        int savedVarOwner = _tkVarOwner;
-        string memberName = MakeNameIfNone(GetNameOfMethodDef(tk), tk);
-        MethodAttributes dwAttrs = GetMethodDefAttrs(tk);
-        byte[] sig = GetSigOfMethodDef(tk);
-        int cr = GetParentOfMethodDef(tk);
+        EntityHandle savedVarOwner = _varOwner;
+        MethodDefinition md = _md.GetMethodDefinition(h);
+        string memberName = MakeNameIfNone(Str(md.Name), h);
+        MethodAttributes dwAttrs = md.Attributes;
+        byte[] sig = Blob(md.Signature);
+        EntityHandle cr = GetParent(h);
         StringBuilder curPos = new();
-        if (RidFromToken(cr) != 0 && cr != 0x02000001)
+        if (!cr.IsNil && cr != s_moduleType)
         {
             curPos.Append(PrettyPrintClass(cr)).Append("::");
             if (IsGenericInst(cr))
             {
-                _tkVarOwner = 0;
+                _varOwner = default;
             }
         }
 
-        string namePart = IsMdPrivateScope(dwAttrs) ? memberName + "$PST" + X8(tk) : memberName;
-        curPos.Append(JUMPPT(ProperName(namePart), tk));
+        string namePart = IsMdPrivateScope(dwAttrs) ? memberName + "$PST" + X8(Token(h)) : memberName;
+        curPos.Append(JUMPPT(ProperName(namePart), h));
 
         if (instSig is not null)
         {
@@ -141,7 +125,7 @@ internal sealed partial class Dasm
         string cur = curPos.ToString();
         string tail = PrettyPrintSig(sig, cur, prefix, printTyArity: instSig is null);
         indent = ComputeIndent(tail, cur);
-        _tkVarOwner = savedVarOwner;
+        _varOwner = savedVarOwner;
         return tail;
     }
 
@@ -180,28 +164,30 @@ internal sealed partial class Dasm
         return s.Length;
     }
 
-    private void PrettyPrintTokenWithSplit(StringBuilder line, int tk)
+    private void PrettyPrintTokenWithSplit(StringBuilder line, EntityHandle h)
     {
         string prefix = line.ToString();
         string tail;
         int indent;
-        switch (TypeFromToken(tk))
+        switch (h.Kind)
         {
-            case mdtMethodDef:
-                tail = PrettyPrintMethodDef(prefix, tk, null, out indent);
+            case HandleKind.MethodDefinition:
+                tail = PrettyPrintMethodDef(prefix, (MethodDefinitionHandle)h, null, out indent);
                 break;
-            case mdtMemberRef:
-                tail = PrettyPrintMemberRef(prefix, tk, null, out indent);
+            case HandleKind.MemberReference:
+                tail = PrettyPrintMemberRef(prefix, h, null, out indent);
                 break;
-            case mdtMethodSpec:
+            case HandleKind.MethodSpecification:
             {
-                int savedMVarOwner = _tkMVarOwner;
-                _tkMVarOwner = 0;
-                (int meth, byte[] inst) = GetMethodSpecProps(tk);
-                tail = TypeFromToken(meth) == mdtMethodDef
-                    ? PrettyPrintMethodDef(prefix, meth, inst, out indent)
-                    : PrettyPrintMemberRef(prefix, meth, inst, out indent);
-                _tkMVarOwner = savedMVarOwner;
+                EntityHandle savedMVarOwner = _mvarOwner;
+                _mvarOwner = default;
+                MethodSpecification ms = _md.GetMethodSpecification((MethodSpecificationHandle)h);
+                byte[] inst = Blob(ms.Signature);
+                EntityHandle method = NilAsDefault(ms.Method);
+                tail = method.Kind == HandleKind.MethodDefinition
+                    ? PrettyPrintMethodDef(prefix, (MethodDefinitionHandle)method, inst, out indent)
+                    : PrettyPrintMemberRef(prefix, method, inst, out indent);
+                _mvarOwner = savedMVarOwner;
                 break;
             }
 
@@ -209,11 +195,11 @@ internal sealed partial class Dasm
                 return;
         }
 
-        SplitSignatureByCommas(line, tail, tk, indent);
+        SplitSignatureByCommas(line, tail, h, indent);
     }
 
     // Prints all but the last segment of a long member signature, one parameter per line, leaving the rest in line.
-    private void SplitSignatureByCommas(StringBuilder line, string tail, int tk, int indent)
+    private void SplitSignatureByCommas(StringBuilder line, string tail, EntityHandle h, int indent)
     {
         if (indent < Encoding.UTF8.GetByteCount(tail))
         {
@@ -285,119 +271,89 @@ internal sealed partial class Dasm
         line.Append(tail);
         if (_options.ShowTokens)
         {
-            line.Append(COMMENT($" /* {tk:X8} */"));
+            line.Append(COMMENT($" /* {Token(h):X8} */"));
         }
     }
 
     // PrettyPrintToken: appends the formatted token to line (which may emit preceding lines for long signatures).
-    private void PrettyPrintToken(StringBuilder line, int tk)
+    private void PrettyPrintToken(StringBuilder line, EntityHandle h)
     {
-        if (!IsValidToken(tk))
+        if (!IsValid(h))
         {
-            line.Append(ERRORMSG($"<invalid token 0x{tk:x8}>"));
+            line.Append(ERRORMSG($"<invalid token 0x{Token(h):x8}>"));
             return;
         }
 
-        TypeDefDescr? alias = FindTypedefFor(tk);
-        if (alias is not null)
+        switch (h.Kind)
         {
-            line.Append(JUMPPT(ProperName(alias.Name), alias.TkSelf));
-            return;
-        }
-
-        switch (TypeFromToken(tk))
-        {
-            case mdtTypeDef:
-            case mdtTypeRef:
-            case mdtTypeSpec:
-            case mdtAssemblyRef:
-            case mdtAssembly:
-            case mdtModuleRef:
-            case mdtModule:
-                PrettyPrintClass(line, tk);
+            case HandleKind.TypeDefinition:
+            case HandleKind.TypeReference:
+            case HandleKind.TypeSpecification:
+            case HandleKind.AssemblyReference:
+            case HandleKind.AssemblyDefinition:
+            case HandleKind.ModuleReference:
+            case HandleKind.ModuleDefinition:
+                PrettyPrintClass(line, h);
                 break;
 
-            case mdtMethodDef:
-            case mdtMemberRef:
-            case mdtMethodSpec:
-                PrettyPrintTokenWithSplit(line, tk);
+            case HandleKind.MethodDefinition:
+            case HandleKind.MemberReference:
+            case HandleKind.MethodSpecification:
+                PrettyPrintTokenWithSplit(line, h);
                 break;
 
-            case mdtFieldDef:
+            case HandleKind.FieldDefinition:
             {
-                string memberName = MakeNameIfNone(GetNameOfFieldDef(tk), tk);
-                FieldAttributes attrs = GetFieldDefAttrs(tk);
-                byte[] sig = GetSigOfFieldDef(tk);
-                int cr = GetParentOfFieldDef(tk);
+                FieldDefinition fd = _md.GetFieldDefinition((FieldDefinitionHandle)h);
+                string memberName = MakeNameIfNone(Str(fd.Name), h);
+                EntityHandle cr = GetParent(h);
                 StringBuilder curPos = new();
-                if (cr != 0x02000001 && RidFromToken(cr) != 0)
+                if (cr != s_moduleType && !cr.IsNil)
                 {
                     curPos.Append(PrettyPrintClass(cr)).Append("::");
                 }
 
-                string namePart = IsFdPrivateScope(attrs) ? memberName + "$PST" + X8(tk) : memberName;
-                curPos.Append(JUMPPT(ProperName(namePart), tk));
-                string s = PrettyPrintSig(sig, curPos.ToString(), line.ToString());
+                string namePart = IsFdPrivateScope(fd.Attributes) ? memberName + "$PST" + X8(Token(h)) : memberName;
+                curPos.Append(JUMPPT(ProperName(namePart), h));
+                string s = PrettyPrintSig(Blob(fd.Signature), curPos.ToString(), line.ToString());
                 line.Clear();
                 line.Append(s);
                 if (_options.ShowTokens)
                 {
-                    line.Append(COMMENT($" /* {tk:X8} */"));
-                }
-
-                break;
-            }
-
-            case mdtString:
-            {
-                byte[]? bytes = GetUserStringBytes(tk);
-                if (bytes is not null)
-                {
-                    DumpUnicodeString(line, bytes);
-                }
-                else
-                {
-                    line.Clear();
-                    line.Append(ERRORMSG($"INVALID TOKEN: 0x{tk:X8}"));
-                }
-
-                if (_options.ShowTokens)
-                {
-                    line.Append(COMMENT($" /* {tk:X8} */"));
+                    line.Append(COMMENT($" /* {Token(h):X8} */"));
                 }
 
                 break;
             }
 
             default:
-                line.Append(ERRORMSG($"<unknown token type 0x{(byte)((uint)tk >> 24):x2}>"));
+                line.Append(ERRORMSG($"<unknown token type 0x{(byte)h.Kind:x2}>"));
                 break;
         }
     }
 
-    // The UTF-16 bytes of a user string, without the trailing flag byte.
-    private byte[]? GetUserStringBytes(int tk)
+    // A user string (ldstr).
+    private void PrettyPrintUserString(StringBuilder line, UserStringHandle h)
     {
-        if (!IsValidToken(tk))
-        {
-            return null;
-        }
-
-        string s = _md.GetUserString(System.Reflection.Metadata.Ecma335.MetadataTokens.UserStringHandle(RidFromToken(tk)));
-        byte[] b = new byte[s.Length * 2];
+        string s = _md.GetUserString(h);
+        byte[] bytes = new byte[s.Length * 2];
         for (int i = 0; i < s.Length; i++)
         {
-            b[2 * i] = (byte)s[i];
-            b[2 * i + 1] = (byte)(s[i] >> 8);
+            bytes[2 * i] = (byte)s[i];
+            bytes[2 * i + 1] = (byte)(s[i] >> 8);
         }
 
-        return b;
+        DumpUnicodeString(line, bytes);
+        if (_options.ShowTokens)
+        {
+            line.Append(COMMENT($" /* {Token(h):X8} */"));
+        }
     }
 
     // Whether a MemberRef refers to a field (used to pick the 'field' or 'method' keyword).
-    private bool IsFieldMemberRef(int tk)
+    private bool IsFieldMemberRef(MemberReferenceHandle h)
     {
-        byte[] sig = GetMemberRefProps(tk).Sig;
-        return sig.Length > 0 && IsCallConv(sig[0], IMAGE_CEE_CS_CALLCONV_FIELD);
+        BlobReader sig = _md.GetBlobReader(_md.GetMemberReference(h).Signature);
+        return sig.Length > 0 && sig.ReadSignatureHeader().Kind == SignatureKind.Field;
     }
 }

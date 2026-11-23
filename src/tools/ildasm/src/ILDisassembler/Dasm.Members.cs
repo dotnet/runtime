@@ -17,80 +17,42 @@ internal sealed partial class Dasm
 {
     // ---------------------------------------------------------------- custom attributes
 
-    private void DumpCustomAttributes(int tkOwner)
+    private void DumpCustomAttributes(EntityHandle owner)
     {
         if (!ShowCustomAttributes)
         {
             return;
         }
 
-        foreach (CustomAttributeHandle h in GetCustomAttributes(tkOwner))
+        foreach (CustomAttributeHandle h in GetCustomAttributes(owner))
         {
-            DumpCustomAttribute(Token(h), withOwner: false);
+            DumpCustomAttribute(h, withOwner: false);
         }
     }
 
-    private void DumpCustomAttribute(int tkCA, bool withOwner)
+    private void DumpCustomAttribute(CustomAttributeHandle h, bool withOwner)
     {
-        CustomAttribute ca = _md.GetCustomAttribute(MetadataTokens.CustomAttributeHandle(RidFromToken(tkCA)));
-        int tkOwner = Token(ca.Parent);
-        int tkType = Token(ca.Constructor);
-        byte[] blob = Blob(ca.Value);
-        if (RidFromToken(tkOwner) == 0)
+        CustomAttribute ca = _md.GetCustomAttribute(h);
+        if (ca.Parent.IsNil)
         {
             return;
         }
 
-        bool found = false;
-        foreach (TypeDefDescr td in _typedefs)
-        {
-            if (TypeFromToken(td.TkTypeSpec) != mdtCustomAttribute || td.Sig is null || td.Sig.Length < 8)
-            {
-                continue;
-            }
-
-            if ((int)ReadUInt32(td.Sig, 0) != tkType || !td.Sig.AsSpan(8).SequenceEqual(blob))
-            {
-                continue;
-            }
-
-            StringBuilder sb = new();
-            sb.Append(Indent).Append(JUMPPT(ProperName(td.Name), td.TkSelf));
-            if (_options.ShowTokens)
-            {
-                sb.Append(COMMENT($"/*{tkCA:X8}*/ "));
-            }
-
-            PrintLine(sb);
-            found = true;
-            break;
-        }
-
-        if (!found)
-        {
-            DumpCustomAttributeProps(tkCA, tkType, tkOwner, blob, withOwner);
-        }
-
-        _caDumped.Add(RidFromToken(tkCA));
+        DumpCustomAttributeProps(h, ca.Constructor, ca.Parent, Blob(ca.Value), withOwner);
+        _caDumped.Add(h);
     }
 
-    private void DumpCustomAttributeProps(int tkCA, int tkType, int tkOwner, byte[] blob, bool withOwner)
+    private void DumpCustomAttributeProps(CustomAttributeHandle ca, EntityHandle ctor, EntityHandle owner, byte[] blob, bool withOwner)
     {
         bool commentItOut = false;
-        if (TypeFromToken(tkType) == mdtMemberRef || TypeFromToken(tkType) == mdtMethodDef)
+        if (ctor.Kind is HandleKind.MemberReference or HandleKind.MethodDefinition)
         {
-            int tkParent = TypeFromToken(tkType) == mdtMemberRef ? GetMemberRefProps(tkType).Parent : GetParentOfMethodDef(tkType);
-            string? className = null, ns = null;
-            if (TypeFromToken(tkParent) == mdtTypeDef && IsValidToken(tkParent))
+            EntityHandle parent = GetParent(ctor);
+            if (parent.Kind is HandleKind.TypeDefinition or HandleKind.TypeReference && IsValid(parent))
             {
-                (className, ns) = GetNameOfTypeDef(tkParent);
+                (string className, string ns) = GetNameOfType(parent);
+                commentItOut = ns == "System.Diagnostics" && className == "DebuggableAttribute";
             }
-            else if (TypeFromToken(tkParent) == mdtTypeRef && IsValidToken(tkParent))
-            {
-                (className, ns) = GetNameOfTypeRef(tkParent);
-            }
-
-            commentItOut = ns == "System.Diagnostics" && className == "DebuggableAttribute";
         }
 
         if (commentItOut)
@@ -106,24 +68,24 @@ internal sealed partial class Dasm
         {
             if (_options.ShowTokens)
             {
-                sb.Append(COMMENT($"/*{tkCA:X8}*/ "));
+                sb.Append(COMMENT($"/*{Token(ca):X8}*/ "));
             }
 
             sb.Append('(');
-            switch (TypeFromToken(tkOwner))
+            switch (owner.Kind)
             {
-                case mdtTypeDef:
-                case mdtTypeRef:
-                case mdtTypeSpec:
-                    PrettyPrintToken(sb, tkOwner);
+                case HandleKind.TypeDefinition:
+                case HandleKind.TypeReference:
+                case HandleKind.TypeSpecification:
+                    PrettyPrintToken(sb, owner);
                     break;
-                case mdtMemberRef:
-                    sb.Append(KEYWORD(IsFieldMemberRef(tkOwner) ? "field " : "method "));
-                    PrettyPrintToken(sb, tkOwner);
+                case HandleKind.MemberReference:
+                    sb.Append(KEYWORD(IsFieldMemberRef((MemberReferenceHandle)owner) ? "field " : "method "));
+                    PrettyPrintToken(sb, owner);
                     break;
-                case mdtMethodDef:
+                case HandleKind.MethodDefinition:
                     sb.Append(KEYWORD("method "));
-                    PrettyPrintToken(sb, tkOwner);
+                    PrettyPrintToken(sb, owner);
                     break;
                 default:
                     sb.Append(ERRORMSG("UNKNOWN_OWNER"));
@@ -132,23 +94,23 @@ internal sealed partial class Dasm
 
             if (_options.ShowTokens)
             {
-                sb.Append(COMMENT($"/*{tkOwner:X8}*/ "));
+                sb.Append(COMMENT($"/*{Token(owner):X8}*/ "));
             }
 
             sb.Append(") ");
         }
         else if (_options.ShowTokens)
         {
-            sb.Append(COMMENT($"/*{tkCA:X8}:{tkType:X8}*/ "));
+            sb.Append(COMMENT($"/*{Token(ca):X8}:{Token(ctor):X8}*/ "));
         }
 
-        switch (TypeFromToken(tkType))
+        switch (ctor.Kind)
         {
-            case mdtTypeDef:
-            case mdtTypeRef:
-            case mdtMemberRef:
-            case mdtMethodDef:
-                PrettyPrintToken(sb, tkType);
+            case HandleKind.TypeDefinition:
+            case HandleKind.TypeReference:
+            case HandleKind.MemberReference:
+            case HandleKind.MethodDefinition:
+                PrettyPrintToken(sb, ctor);
                 break;
             default:
                 sb.Append(ERRORMSG("UNNAMED_CUSTOM_ATTR"));
@@ -157,11 +119,7 @@ internal sealed partial class Dasm
 
         if (blob.Length != 0)
         {
-            if (!_options.CustomAttributesVerbal || !PrettyPrintCustomAttributeBlob(tkType, blob, sb))
-            {
-                sb.Append(" = ( ");
-                DumpByteArray(sb, blob);
-            }
+            _customAttributeDisassembler.AppendValue(this, sb, ctor, blob);
         }
 
         PrintLine(sb);
@@ -174,9 +132,9 @@ internal sealed partial class Dasm
 
     // ---------------------------------------------------------------- default values
 
-    private void DumpDefaultValue(int tok, StringBuilder sb)
+    private void DumpDefaultValue(EntityHandle parent, StringBuilder sb)
     {
-        ConstantHandle ch = GetConstant(tok);
+        ConstantHandle ch = GetConstant(parent);
         if (ch.IsNil)
         {
             sb.Append(" /* NO CORRESPONDING RECORD IN CONSTANTS TABLE */");
@@ -185,41 +143,40 @@ internal sealed partial class Dasm
 
         Constant c = _md.GetConstant(ch);
         byte[] v = Blob(c.Value);
-        byte type = (byte)c.TypeCode;
         CultureInfo inv = CultureInfo.InvariantCulture;
-        switch (type)
+        switch (c.TypeCode)
         {
-            case ELEMENT_TYPE_I1:
+            case ConstantTypeCode.SByte:
                 sb.Append(" = ").Append(KEYWORD("int8")).Append("(0x").Append(ValueOrZero(v, 1).ToString("X2", inv)).Append(')');
                 break;
-            case ELEMENT_TYPE_U1:
+            case ConstantTypeCode.Byte:
                 sb.Append(" = ").Append(KEYWORD("uint8")).Append("(0x").Append(ValueOrZero(v, 1).ToString("X2", inv)).Append(')');
                 break;
-            case ELEMENT_TYPE_I2:
+            case ConstantTypeCode.Int16:
                 sb.Append(" = ").Append(KEYWORD("int16")).Append("(0x").Append(ValueOrZero(v, 2).ToString("X4", inv)).Append(')');
                 break;
-            case ELEMENT_TYPE_U2:
+            case ConstantTypeCode.UInt16:
                 sb.Append(" = ").Append(KEYWORD("uint16")).Append("(0x").Append(ValueOrZero(v, 2).ToString("X4", inv)).Append(')');
                 break;
-            case ELEMENT_TYPE_I4:
+            case ConstantTypeCode.Int32:
                 sb.Append(" = ").Append(KEYWORD("int32")).Append("(0x").Append(ValueOrZero(v, 4).ToString("X8", inv)).Append(')');
                 break;
-            case ELEMENT_TYPE_U4:
+            case ConstantTypeCode.UInt32:
                 sb.Append(" = ").Append(KEYWORD("uint32")).Append("(0x").Append(ValueOrZero(v, 4).ToString("X8", inv)).Append(')');
                 break;
-            case ELEMENT_TYPE_CHAR:
+            case ConstantTypeCode.Char:
                 sb.Append(" = ").Append(KEYWORD("char")).Append("(0x").Append(ValueOrZero(v, 2).ToString("X4", inv)).Append(')');
                 break;
-            case ELEMENT_TYPE_BOOLEAN:
+            case ConstantTypeCode.Boolean:
                 sb.Append(" = ").Append(KEYWORD("bool")).Append('(').Append(KEYWORD(ValueOrZero(v, 1) != 0 ? "true" : "false")).Append(')');
                 break;
-            case ELEMENT_TYPE_I8:
+            case ConstantTypeCode.Int64:
                 sb.Append(" = ").Append(KEYWORD("int64")).Append("(0x").Append(ValueOrZero(v, 8).ToString("X", inv)).Append(')');
                 break;
-            case ELEMENT_TYPE_U8:
+            case ConstantTypeCode.UInt64:
                 sb.Append(" = ").Append(KEYWORD("uint64")).Append("(0x").Append(ValueOrZero(v, 8).ToString("X", inv)).Append(')');
                 break;
-            case ELEMENT_TYPE_R4:
+            case ConstantTypeCode.Single:
             {
                 uint bits = (uint)ValueOrZero(v, 4);
                 float f = BitConverter.UInt32BitsToSingle(bits);
@@ -237,7 +194,7 @@ internal sealed partial class Dasm
                 break;
             }
 
-            case ELEMENT_TYPE_R8:
+            case ConstantTypeCode.Double:
             {
                 ulong bits = ValueOrZero(v, 8);
                 double d = BitConverter.UInt64BitsToDouble(bits);
@@ -255,17 +212,17 @@ internal sealed partial class Dasm
                 break;
             }
 
-            case ELEMENT_TYPE_STRING:
+            case ConstantTypeCode.String:
                 sb.Append(" = ");
                 DumpUnicodeString(sb, v);
                 break;
 
-            case ELEMENT_TYPE_CLASS when v.Length == 0 || IsAllZero(v):
+            case ConstantTypeCode.NullReference when v.Length == 0 || IsAllZero(v):
                 sb.Append(" = ").Append(KEYWORD("nullref"));
                 break;
 
             default:
-                sb.Append(ERRORMSG($" /* ILLEGAL CONSTANT type:0x{type:X2}, size:{v.Length} bytes, blob: "));
+                sb.Append(ERRORMSG($" /* ILLEGAL CONSTANT type:0x{(byte)c.TypeCode:X2}, size:{v.Length} bytes, blob: "));
                 if (v.Length != 0)
                 {
                     sb.Append('(');
@@ -317,26 +274,27 @@ internal sealed partial class Dasm
         for (int i = ulParams; i < 2 * ulParams + 1; i++)
         {
             int j = i % (ulParams + 1);
-            if (RidFromToken(pd[j].Tok) == 0)
+            ParameterHandle param = pd[j].Param;
+            if (param.IsNil)
             {
                 continue;
             }
 
-            ImmutableArray<CustomAttributeHandle> cas = ShowCustomAttributes ? GetCustomAttributes(pd[j].Tok) : ImmutableArray<CustomAttributeHandle>.Empty;
+            ImmutableArray<CustomAttributeHandle> cas = ShowCustomAttributes ? GetCustomAttributes(param) : ImmutableArray<CustomAttributeHandle>.Empty;
             int ulCAs = ShowCustomAttributes ? cas.Length : 0;
-            bool hasDefault = (pd[j].Attr & 0x1000) != 0;
+            bool hasDefault = (pd[j].Attr & ParameterAttributes.HasDefault) != 0;
             if (ulCAs != 0 || hasDefault)
             {
                 StringBuilder sb = new();
                 sb.Append(Indent).Append(KEYWORD(".param")).Append(" [").Append((i - ulParams).ToString(CultureInfo.InvariantCulture)).Append(']');
                 if (_options.ShowTokens)
                 {
-                    sb.Append(COMMENT($"/*{pd[j].Tok:X8}*/ "));
+                    sb.Append(COMMENT($"/*{Token(param):X8}*/ "));
                 }
 
                 if (hasDefault)
                 {
-                    DumpDefaultValue(pd[j].Tok, sb);
+                    DumpDefaultValue(param, sb);
                 }
 
                 PrintLine(sb);
@@ -344,7 +302,7 @@ internal sealed partial class Dasm
                 {
                     foreach (CustomAttributeHandle h in cas)
                     {
-                        DumpCustomAttribute(Token(h), withOwner: false);
+                        DumpCustomAttribute(h, withOwner: false);
                     }
                 }
             }
@@ -353,32 +311,32 @@ internal sealed partial class Dasm
 
     // ---------------------------------------------------------------- permissions
 
-    private void DumpPermissions(int tkOwner)
+    private void DumpPermissions(EntityHandle owner)
     {
-        foreach (DeclarativeSecurityAttributeHandle h in GetDeclSecurity(tkOwner))
+        foreach (DeclarativeSecurityAttributeHandle h in GetDeclSecurity(owner))
         {
             DeclarativeSecurityAttribute ds = _md.GetDeclarativeSecurityAttribute(h);
             byte[] blob = Blob(ds.PermissionSet);
             StringBuilder sb = new();
             sb.Append(Indent).Append(KEYWORD(".permissionset")).Append(' ');
-            string action = (ushort)ds.Action switch
+            string action = ds.Action switch
             {
-                0 => "",
-                1 => KEYWORD("request"),
-                2 => KEYWORD("demand"),
-                3 => KEYWORD("assert"),
-                4 => KEYWORD("deny"),
-                5 => KEYWORD("permitonly"),
-                6 => KEYWORD("linkcheck"),
-                7 => KEYWORD("inheritcheck"),
-                8 => KEYWORD("reqmin"),
-                9 => KEYWORD("reqopt"),
-                10 => KEYWORD("reqrefuse"),
-                11 => KEYWORD("prejitgrant"),
-                12 => KEYWORD("prejitdeny"),
-                13 => KEYWORD("noncasdemand"),
-                14 => KEYWORD("noncaslinkdemand"),
-                15 => KEYWORD("noncasinheritance"),
+                DeclarativeSecurityAction.None => "",
+                SecurityActionRequest => KEYWORD("request"),
+                DeclarativeSecurityAction.Demand => KEYWORD("demand"),
+                DeclarativeSecurityAction.Assert => KEYWORD("assert"),
+                DeclarativeSecurityAction.Deny => KEYWORD("deny"),
+                DeclarativeSecurityAction.PermitOnly => KEYWORD("permitonly"),
+                DeclarativeSecurityAction.LinkDemand => KEYWORD("linkcheck"),
+                DeclarativeSecurityAction.InheritanceDemand => KEYWORD("inheritcheck"),
+                DeclarativeSecurityAction.RequestMinimum => KEYWORD("reqmin"),
+                DeclarativeSecurityAction.RequestOptional => KEYWORD("reqopt"),
+                DeclarativeSecurityAction.RequestRefuse => KEYWORD("reqrefuse"),
+                SecurityActionPrejitGrant => KEYWORD("prejitgrant"),
+                SecurityActionPrejitDeny => KEYWORD("prejitdeny"),
+                SecurityActionNonCasDemand => KEYWORD("noncasdemand"),
+                SecurityActionNonCasLinkDemand => KEYWORD("noncaslinkdemand"),
+                SecurityActionNonCasInheritance => KEYWORD("noncasinheritance"),
                 _ => ERRORMSG("<UNKNOWN_ACTION>"),
             };
             sb.Append(action);
@@ -387,11 +345,7 @@ internal sealed partial class Dasm
                 PrintLine(sb);
                 sb.Clear();
                 sb.Append(Indent).Append("          ");
-                if (!DumpPermissionSetBlob(sb, ds.PermissionSet))
-                {
-                    sb.Append(KEYWORD("bytearray")).Append(" (");
-                    DumpByteArray(sb, blob);
-                }
+                _permissionSetDisassembler.AppendPermissionSet(this, sb, ds.PermissionSet);
 
                 PrintLine(sb);
             }
@@ -401,16 +355,24 @@ internal sealed partial class Dasm
                 PrintLine(sb);
             }
 
-            DumpCustomAttributes(Token(h));
+            DumpCustomAttributes(h);
         }
     }
 
+    // The CorDeclSecurity actions that DeclarativeSecurityAction does not define.
+    private const DeclarativeSecurityAction SecurityActionRequest = (DeclarativeSecurityAction)1;
+    private const DeclarativeSecurityAction SecurityActionPrejitGrant = (DeclarativeSecurityAction)11;
+    private const DeclarativeSecurityAction SecurityActionPrejitDeny = (DeclarativeSecurityAction)12;
+    private const DeclarativeSecurityAction SecurityActionNonCasDemand = (DeclarativeSecurityAction)13;
+    private const DeclarativeSecurityAction SecurityActionNonCasLinkDemand = (DeclarativeSecurityAction)14;
+    private const DeclarativeSecurityAction SecurityActionNonCasInheritance = (DeclarativeSecurityAction)15;
+
     // ---------------------------------------------------------------- generic parameters
 
-    private string DumpGenericPars(int tok, string prefix, bool split)
+    private string DumpGenericPars(EntityHandle owner, string prefix, bool split)
     {
         StringBuilder sb = new(prefix);
-        ImmutableArray<GenericParameterHandle> gps = GetGenericParams(tok);
+        ImmutableArray<GenericParameterHandle> gps = GetGenericParams(owner);
         if (gps.Length == 0)
         {
             return sb.ToString();
@@ -423,34 +385,34 @@ internal sealed partial class Dasm
         foreach (GenericParameterHandle gph in gps)
         {
             GenericParameter gp = _md.GetGenericParameter(gph);
-            int attr = (int)gp.Attributes;
-            switch (attr & 0x3)
+            GenericParameterAttributes attr = gp.Attributes;
+            switch (attr & GenericParameterAttributes.VarianceMask)
             {
-                case 1: sb.Append("+ "); break;
-                case 2: sb.Append("- "); break;
+                case GenericParameterAttributes.Covariant: sb.Append("+ "); break;
+                case GenericParameterAttributes.Contravariant: sb.Append("- "); break;
             }
 
-            if ((attr & 0x4) != 0)
+            if ((attr & GenericParameterAttributes.ReferenceTypeConstraint) != 0)
             {
                 sb.Append("class ");
             }
 
-            if ((attr & 0x8) != 0)
+            if ((attr & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0)
             {
                 sb.Append("valuetype ");
             }
 
-            if ((attr & 0x20) != 0)
+            if ((attr & GenericParameterAttributes.AllowByRefLike) != 0)
             {
                 sb.Append("byreflike ");
             }
 
-            if ((attr & 0x10) != 0)
+            if ((attr & GenericParameterAttributes.DefaultConstructorConstraint) != 0)
             {
                 sb.Append(".ctor ");
             }
 
-            int unknown = attr & ~(0x3C | 0x3);
+            int unknown = (int)(attr & ~(GenericParameterAttributes.VarianceMask | GenericParameterAttributes.SpecialConstraintMask | GenericParameterAttributes.AllowByRefLike));
             if (unknown != 0)
             {
                 sb.Append("flags(0x").Append(unknown.ToString("x", CultureInfo.InvariantCulture)).Append(") ");
@@ -468,7 +430,7 @@ internal sealed partial class Dasm
                         sb.Append(", ");
                     }
 
-                    sb.Append(PrettyPrintClass(Token(_md.GetGenericParameterConstraint(c).Type)));
+                    sb.Append(PrettyPrintClass(NilAsDefault(_md.GetGenericParameterConstraint(c).Type)));
                 }
 
                 sb.Append(") ");
@@ -501,7 +463,7 @@ internal sealed partial class Dasm
         return sb.ToString();
     }
 
-    private void DumpGenericParsCA(int tok)
+    private void DumpGenericParsCA(EntityHandle owner)
     {
         if (!ShowCustomAttributes)
         {
@@ -509,7 +471,7 @@ internal sealed partial class Dasm
         }
 
         int i = 0;
-        foreach (GenericParameterHandle gph in GetGenericParams(tok))
+        foreach (GenericParameterHandle gph in GetGenericParams(owner))
         {
             GenericParameter gp = _md.GetGenericParameter(gph);
             int tkTyPar = Token(gph);
@@ -537,7 +499,7 @@ internal sealed partial class Dasm
                 PushIndent();
                 foreach (CustomAttributeHandle h in cas)
                 {
-                    DumpCustomAttribute(Token(h), withOwner: false);
+                    DumpCustomAttribute(h, withOwner: false);
                 }
 
                 PopIndent();
@@ -569,12 +531,12 @@ internal sealed partial class Dasm
                     sb.Append(COMMENT($"/*{tkTyPar:X8}*/ "));
                 }
 
-                sb.Append(", ").Append(PrettyPrintClass(Token(c.Type)));
+                sb.Append(", ").Append(PrettyPrintClass(NilAsDefault(c.Type)));
                 PrintLine(sb);
                 PushIndent();
                 foreach (CustomAttributeHandle h in ccas)
                 {
-                    DumpCustomAttribute(Token(h), withOwner: false);
+                    DumpCustomAttribute(h, withOwner: false);
                 }
 
                 PopIndent();
@@ -588,7 +550,7 @@ internal sealed partial class Dasm
 
     private string PrettyPrintMethodSig(StringBuilder line, byte[] sig, string buff, SigLabel? label)
     {
-        int uMaxWidth = _html || _rtf ? 240 : 40;
+        int uMaxWidth = _formatter.SignatureWrapWidth;
         if (buff.Length != 0 && Utf8Length(line) > uMaxWidth)
         {
             PrintLine(line);
@@ -685,36 +647,36 @@ internal sealed partial class Dasm
 
     // ---------------------------------------------------------------- overrides
 
-    private string PrettyPrintOverrideDecl(MethodImplRecord mi, int tkOverrider, out bool overridingTypeSpec)
+    private string PrettyPrintOverrideDecl(MethodImplRecord mi, EntityHandle overrider, out bool overridingTypeSpec)
     {
         StringBuilder sb = new();
         sb.Append(Indent).Append(KEYWORD(".override")).Append(' ');
-        int tkDecl = mi.TkDecl;
-        int tkDeclParent = 0;
+        EntityHandle decl = mi.Decl;
+        EntityHandle declParent = default;
         string tailSig = "";
         string memberName;
         overridingTypeSpec = false;
 
-        if (IsValidToken(tkDecl))
+        if (IsValid(decl))
         {
             bool needsFullTokenPrint = false;
-            bool hasTkDeclParent = false;
-            tkDeclParent = GetParentToken(tkDecl);
-            if (IsValidToken(tkDeclParent) || TypeFromToken(tkDeclParent) == mdtModule)
+            bool hasDeclParent = false;
+            declParent = GetParent(decl);
+            if (IsValid(declParent) || declParent.Kind == HandleKind.ModuleDefinition)
             {
-                if (TypeFromToken(tkDeclParent) == mdtMethodDef)
+                if (declParent.Kind == HandleKind.MethodDefinition)
                 {
-                    tkDeclParent = GetParentOfMethodDef(tkDeclParent);
+                    declParent = GetParent(declParent);
                 }
 
-                if (RidFromToken(tkDeclParent) != 0)
+                if (!declParent.IsNil)
                 {
-                    if (TypeFromToken(tkDeclParent) == mdtTypeSpec)
+                    if (declParent.Kind == HandleKind.TypeSpecification)
                     {
                         needsFullTokenPrint = true;
                     }
 
-                    hasTkDeclParent = true;
+                    hasDeclParent = true;
                 }
             }
             else
@@ -722,24 +684,16 @@ internal sealed partial class Dasm
                 sb.Append(ERRORMSG("INVALID OVERRIDDEN METHOD'S PARENT TOKEN"));
             }
 
-            if (TypeFromToken(tkOverrider) == mdtMethodDef && !needsFullTokenPrint)
+            if (overrider.Kind == HandleKind.MethodDefinition && !needsFullTokenPrint)
             {
-                int declSigTok = tkDecl;
-                if (TypeFromToken(declSigTok) == mdtMethodSpec)
-                {
-                    declSigTok = GetMethodSpecProps(declSigTok).Method;
-                }
-
-                byte[]? declSig = TypeFromToken(declSigTok) switch
-                {
-                    mdtMethodDef => GetSigOfMethodDef(declSigTok),
-                    mdtMemberRef => GetMemberRefProps(declSigTok).Sig,
-                    _ => null,
-                };
-                byte[] bodySig = GetSigOfMethodDef(tkOverrider);
+                EntityHandle declMethod = decl.Kind == HandleKind.MethodSpecification
+                    ? NilAsDefault(_md.GetMethodSpecification((MethodSpecificationHandle)decl).Method)
+                    : decl;
+                byte[]? declSig = GetMethodSig(declMethod);
+                byte[] bodySig = Blob(_md.GetMethodDefinition((MethodDefinitionHandle)overrider).Signature);
                 if (declSig is not null)
                 {
-                    if (!SigEquals(declSig, bodySig))
+                    if (!declSig.AsSpan().SequenceEqual(bodySig))
                     {
                         needsFullTokenPrint = true;
                     }
@@ -753,52 +707,47 @@ internal sealed partial class Dasm
             if (needsFullTokenPrint)
             {
                 sb.Append(' ').Append(KEYWORD("method")).Append(' ');
-                PrettyPrintToken(sb, tkDecl);
+                PrettyPrintToken(sb, decl);
                 overridingTypeSpec = true;
                 return sb.ToString();
             }
 
-            if (hasTkDeclParent)
+            if (hasDeclParent)
             {
-                PrettyPrintToken(sb, tkDeclParent);
+                PrettyPrintToken(sb, declParent);
                 sb.Append("::");
             }
 
-            if (TypeFromToken(tkDecl) == mdtMethodSpec)
+            if (decl.Kind == HandleKind.MethodSpecification)
             {
-                (int meth, byte[] inst) = GetMethodSpecProps(tkDecl);
+                MethodSpecification ms = _md.GetMethodSpecification((MethodSpecificationHandle)decl);
+                byte[] inst = Blob(ms.Signature);
                 if (inst.Length != 0)
                 {
                     tailSig = PrettyPrintSig(inst, "");
                 }
 
-                tkDecl = meth;
+                decl = NilAsDefault(ms.Method);
             }
 
-            if (TypeFromToken(tkDecl) == mdtMethodDef)
+            memberName = decl.Kind switch
             {
-                memberName = GetNameOfMethodDef(tkDecl);
-            }
-            else if (TypeFromToken(tkDecl) == mdtMemberRef)
-            {
-                memberName = GetMemberRefProps(tkDecl).Name;
-            }
-            else
-            {
-                memberName = ERRORMSG($"INVALID TOKEN: 0x{tkDecl:X8}");
-            }
-
-            memberName = MakeNameIfNone(memberName, tkDecl);
+                HandleKind.MethodDefinition => Str(_md.GetMethodDefinition((MethodDefinitionHandle)decl).Name),
+                HandleKind.MemberReference => Str(_md.GetMemberReference((MemberReferenceHandle)decl).Name),
+                _ => ERRORMSG($"INVALID TOKEN: 0x{Token(decl):X8}"),
+            };
+            memberName = MakeNameIfNone(memberName, decl);
         }
         else
         {
-            memberName = ERRORMSG($"INVALID TOKEN: 0x{tkDecl:X8}");
+            memberName = ERRORMSG($"INVALID TOKEN: 0x{Token(decl):X8}");
         }
 
         sb.Append(ProperName(memberName)).Append(tailSig);
         if (_options.ShowTokens)
         {
-            sb.Append(COMMENT($" /*{tkDeclParent:X8}::{mi.TkDecl:X8}*/ "));
+            // A nil MemberRef parent keeps its table.
+            sb.Append(COMMENT($" /*{MetadataTokens.GetToken(declParent):X8}::{Token(mi.Decl):X8}*/ "));
         }
 
         return sb.ToString();
@@ -829,9 +778,9 @@ internal sealed partial class Dasm
 
     // ---------------------------------------------------------------- methods
 
-    private bool DumpMethod(int funcToken, string? className, int entryPointToken, bool dumpBody)
+    private bool DumpMethod(MethodDefinitionHandle method, string? className, bool dumpBody)
     {
-        MethodDefinition md = _md.GetMethodDefinition((MethodDefinitionHandle)Handle(funcToken));
+        MethodDefinition md = _md.GetMethodDefinition(method);
         MethodAttributes attrs = md.Attributes;
         if (IsHiddenMethod(attrs))
         {
@@ -840,7 +789,7 @@ internal sealed partial class Dasm
 
         MethodImplAttributes implAttrs = md.ImplAttributes;
         uint rva = (uint)md.RelativeVirtualAddress;
-        string memberName = MakeNameIfNone(Str(md.Name), funcToken);
+        string memberName = MakeNameIfNone(Str(md.Name), method);
         byte[] sig = Blob(md.Signature);
         if (sig.Length == 0)
         {
@@ -848,15 +797,15 @@ internal sealed partial class Dasm
             return false;
         }
 
-        int savedMVarOwner = _tkMVarOwner;
-        _tkMVarOwner = funcToken;
-        string plainSig = PrettyPrintSig(sig, DumpGenericPars(funcToken, "", false));
+        EntityHandle savedMVarOwner = _mvarOwner;
+        _mvarOwner = method;
+        string plainSig = PrettyPrintSig(sig, DumpGenericPars(method, "", false));
 
         if (_mode is DumpMode.ClassMethod or DumpMode.ClassMethodSig)
         {
             if (memberName != _methodToDump)
             {
-                _tkMVarOwner = savedMVarOwner;
+                _mvarOwner = savedMVarOwner;
                 return false;
             }
 
@@ -868,7 +817,7 @@ internal sealed partial class Dasm
                 _options.ShowTokens = tokens;
                 if (s != _sigToDump)
                 {
-                    _tkMVarOwner = savedMVarOwner;
+                    _mvarOwner = savedMVarOwner;
                     return false;
                 }
             }
@@ -877,15 +826,15 @@ internal sealed partial class Dasm
         if (!dumpBody)
         {
             PrintLine(plainSig);
-            _tkMVarOwner = savedMVarOwner;
+            _mvarOwner = savedMVarOwner;
             return true;
         }
 
         StringBuilder sb = new();
-        sb.Append(Indent).Append(ANCHORPT(KEYWORD(".method"), funcToken)).Append(' ');
+        sb.Append(Indent).Append(ANCHORPT(KEYWORD(".method"), method)).Append(' ');
         if (_options.ShowTokens)
         {
-            sb.Append(COMMENT($"/*{funcToken:X8}*/ "));
+            sb.Append(COMMENT($"/*{Token(method):X8}*/ "));
         }
 
         sb.Append(KeywordPrefix);
@@ -900,24 +849,23 @@ internal sealed partial class Dasm
             case MethodAttributes.PrivateScope: sb.Append("privatescope "); break;
         }
 
-        int a = (int)attrs;
-        if ((a & 0x0080) != 0) sb.Append("hidebysig ");
-        if ((a & 0x0100) != 0) sb.Append("newslot ");
-        if ((a & 0x0800) != 0) sb.Append("specialname ");
-        if ((a & 0x1000) != 0) sb.Append("rtspecialname ");
-        if ((a & 0x0010) != 0) sb.Append("static ");
-        if ((a & 0x0400) != 0) sb.Append("abstract ");
-        if ((a & 0x0200) != 0) sb.Append("strict ");
-        if ((a & 0x0040) != 0) sb.Append("virtual ");
-        if ((a & 0x0020) != 0) sb.Append("final ");
-        if ((a & 0x0008) != 0) sb.Append("unmanagedexp ");
-        if ((a & 0x8000) != 0) sb.Append("reqsecobj ");
+        if ((attrs & MethodAttributes.HideBySig) != 0) sb.Append("hidebysig ");
+        if ((attrs & MethodAttributes.NewSlot) != 0) sb.Append("newslot ");
+        if ((attrs & MethodAttributes.SpecialName) != 0) sb.Append("specialname ");
+        if ((attrs & MethodAttributes.RTSpecialName) != 0) sb.Append("rtspecialname ");
+        if ((attrs & MethodAttributes.Static) != 0) sb.Append("static ");
+        if ((attrs & MethodAttributes.Abstract) != 0) sb.Append("abstract ");
+        if ((attrs & MethodAttributes.CheckAccessOnOverride) != 0) sb.Append("strict ");
+        if ((attrs & MethodAttributes.Virtual) != 0) sb.Append("virtual ");
+        if ((attrs & MethodAttributes.Final) != 0) sb.Append("final ");
+        if ((attrs & MethodAttributes.UnmanagedExport) != 0) sb.Append("unmanagedexp ");
+        if ((attrs & MethodAttributes.RequireSecObject) != 0) sb.Append("reqsecobj ");
         sb.Append(KeywordPostfix);
 
-        if ((a & 0x2000) != 0)
+        if ((attrs & MethodAttributes.PinvokeImpl) != 0)
         {
             sb.Append(KEYWORD("pinvokeimpl")).Append('(');
-            var map = GetPinvokeMap(funcToken);
+            var map = GetPinvokeMap(method);
             if (map is null)
             {
                 sb.Append(COMMENT("/* No map */"));
@@ -930,16 +878,16 @@ internal sealed partial class Dasm
             sb.Append(") ");
         }
 
-        _thisIsInstanceMethod = (a & 0x0010) == 0;
-        string buff = IsMdPrivateScope(attrs) ? memberName + "$PST" + X8(funcToken) : memberName;
-        buff = DumpGenericPars(funcToken, ProperName(buff), false);
+        _thisIsInstanceMethod = (attrs & MethodAttributes.Static) == 0;
+        string buff = IsMdPrivateScope(attrs) ? memberName + "$PST" + X8(Token(method)) : memberName;
+        buff = DumpGenericPars(method, ProperName(buff), false);
 
         // Argument names and attributes: names[n] for parameter n+1, names[numArgs] for the return value.
         int numArgs;
         {
             int p = 0;
             uint callConv = UncompressData(sig, ref p);
-            if ((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+            if ((callConv & (uint)SignatureAttributes.Generic) != 0)
             {
                 UncompressData(sig, ref p);
             }
@@ -977,8 +925,8 @@ internal sealed partial class Dasm
                         }
                     }
 
-                    names[ix].Attr = (uint)prm.Attributes;
-                    names[ix].Tok = Token(ph);
+                    names[ix].Attr = prm.Attributes;
+                    names[ix].Param = ph;
                 }
 
                 j++;
@@ -1002,25 +950,26 @@ internal sealed partial class Dasm
         string line = PrettyPrintMethodSig(sb, sig, buff, label);
         sb.Clear();
         sb.Append(line).Append(KeywordPrefix);
-        int ia = (int)implAttrs;
-        switch (ia & 0x3)
+        MethodImplAttributes codeType = implAttrs & MethodImplAttributes.CodeTypeMask;
+        switch (codeType)
         {
-            case 1: sb.Append(" native"); break;
-            case 0: sb.Append(" cil"); break;
-            case 2: sb.Append(" optil"); break;
-            case 3: sb.Append(" runtime"); break;
+            case MethodImplAttributes.Native: sb.Append(" native"); break;
+            case MethodImplAttributes.IL: sb.Append(" cil"); break;
+            case MethodImplAttributes.OPTIL: sb.Append(" optil"); break;
+            case MethodImplAttributes.Runtime: sb.Append(" runtime"); break;
         }
 
-        sb.Append((ia & 0x4) != 0 ? " unmanaged" : " managed");
-        if ((ia & 0x0080) != 0) sb.Append(" preservesig");
-        if ((ia & 0x0010) != 0) sb.Append(" forwardref");
-        if ((ia & 0x1000) != 0) sb.Append(" internalcall");
-        if ((ia & 0x0020) != 0) sb.Append(" synchronized");
-        if ((ia & 0x0008) != 0) sb.Append(" noinlining");
-        if ((ia & 0x0100) != 0) sb.Append(" aggressiveinlining");
-        if ((ia & 0x0040) != 0) sb.Append(" nooptimization");
-        if ((ia & 0x0200) != 0) sb.Append(" aggressiveoptimization");
-        if ((ia & 0x2000) != 0) sb.Append(" async");
+        bool unmanaged = (implAttrs & MethodImplAttributes.Unmanaged) != 0;
+        sb.Append(unmanaged ? " unmanaged" : " managed");
+        if ((implAttrs & MethodImplAttributes.PreserveSig) != 0) sb.Append(" preservesig");
+        if ((implAttrs & MethodImplAttributes.ForwardRef) != 0) sb.Append(" forwardref");
+        if ((implAttrs & MethodImplAttributes.InternalCall) != 0) sb.Append(" internalcall");
+        if ((implAttrs & MethodImplAttributes.Synchronized) != 0) sb.Append(" synchronized");
+        if ((implAttrs & MethodImplAttributes.NoInlining) != 0) sb.Append(" noinlining");
+        if ((implAttrs & MethodImplAttributes.AggressiveInlining) != 0) sb.Append(" aggressiveinlining");
+        if ((implAttrs & MethodImplAttributes.NoOptimization) != 0) sb.Append(" nooptimization");
+        if ((implAttrs & MethodImplAttributes.AggressiveOptimization) != 0) sb.Append(" aggressiveoptimization");
+        if ((implAttrs & MethodImplAttributes.Async) != 0) sb.Append(" async");
         sb.Append(KeywordPostfix);
         PrintLine(sb);
 
@@ -1049,19 +998,19 @@ internal sealed partial class Dasm
         PrintLine(Indent + SCOPE());
         PushIndent();
 
-        if (funcToken == entryPointToken)
+        if (method == _entryPoint)
         {
             PrintLine(Indent + KEYWORD(".entrypoint"));
         }
 
-        DumpCustomAttributes(funcToken);
-        DumpGenericParsCA(funcToken);
+        DumpCustomAttributes(method);
+        DumpGenericParsCA(method);
         DumpParams(names, retParamIx);
-        DumpPermissions(funcToken);
+        DumpPermissions(method);
 
         foreach (VTableRef vt in _vtableRefs)
         {
-            if (vt.Tok == funcToken)
+            if (vt.Method == method)
             {
                 PrintLine($"{Indent}{KEYWORD(".vtentry")} {vt.Entry + 1} : {vt.Slot + 1}");
                 break;
@@ -1070,7 +1019,7 @@ internal sealed partial class Dasm
 
         for (int j = 0; j < _eatRefs.Count; j++)
         {
-            if (_eatRefs[j].Tok == funcToken)
+            if (_eatRefs[j].Method == method)
             {
                 PrintLine($"{Indent}{KEYWORD(".export")} [{j + _eatBase}] {KEYWORD("as")} {ProperName(_eatRefs[j].Name ?? "")}");
                 break;
@@ -1079,14 +1028,14 @@ internal sealed partial class Dasm
 
         foreach (MethodImplRecord mi in _methodImpls)
         {
-            if (mi.TkBody == funcToken)
+            if (mi.Body == method)
             {
-                PrintLine(PrettyPrintOverrideDecl(mi, funcToken, out _));
+                PrintLine(PrettyPrintOverrideDecl(mi, method, out _));
             }
         }
 
         bool done = false;
-        if ((a & 0x2000) != 0)
+        if ((attrs & MethodAttributes.PinvokeImpl) != 0)
         {
             if (rva != 0)
             {
@@ -1097,7 +1046,7 @@ internal sealed partial class Dasm
             {
                 PopIndent();
                 PrintLine(Indent + UNSCOPE());
-                _tkMVarOwner = savedMVarOwner;
+                _mvarOwner = savedMVarOwner;
                 return true;
             }
 
@@ -1106,9 +1055,9 @@ internal sealed partial class Dasm
 
         if (!done)
         {
-            if ((ia & 0x4) == 0)
+            if (!unmanaged)
             {
-                if ((ia & 0x3) == 0 || (ia & 0x3) == 2)
+                if (codeType is MethodImplAttributes.IL or MethodImplAttributes.OPTIL)
                 {
                     if (_options.ShowBytes)
                     {
@@ -1117,19 +1066,19 @@ internal sealed partial class Dasm
 
                     if (rva != 0)
                     {
-                        DisassembleWrapper(rva, funcToken, names, ulArgs);
+                        DisassembleWrapper(rva, method, names, ulArgs);
                     }
                 }
-                else if ((ia & 0x3) == 1)
+                else if (codeType == MethodImplAttributes.Native)
                 {
                     DumpNativeMethodComment(rva);
                 }
             }
-            else if ((ia & 0x3) == 1)
+            else if (codeType == MethodImplAttributes.Native)
             {
                 PrintLine(COMMENT($"{Indent}//  Unmanaged TargetRVA = 0x{rva:X8}"));
             }
-            else if ((ia & 0x3) == 3)
+            else if (codeType == MethodImplAttributes.Runtime)
             {
                 PrintLine(COMMENT($"{Indent}// Method provided by Runtime"));
             }
@@ -1150,7 +1099,7 @@ internal sealed partial class Dasm
 
         PrintLine(sb);
         PrintLine("");
-        _tkMVarOwner = savedMVarOwner;
+        _mvarOwner = savedMVarOwner;
         return true;
     }
 
@@ -1160,7 +1109,7 @@ internal sealed partial class Dasm
         PrintLine(COMMENT($"{Indent}//  Managed TargetRVA = 0x{rva:X8}"));
     }
 
-    private void DisassembleWrapper(uint rva, int funcToken, ParamDescriptor[]? names, int ulArgs)
+    private void DisassembleWrapper(uint rva, MethodDefinitionHandle method, ParamDescriptor[]? names, int ulArgs)
     {
         MethodBody? body = DecodeMethodBody(rva);
         if (body is null)
@@ -1171,7 +1120,7 @@ internal sealed partial class Dasm
 
         try
         {
-            Disassemble(body, funcToken, names, ulArgs);
+            Disassemble(body, method, names, ulArgs);
         }
         catch (Exception e) when (e is IndexOutOfRangeException or ArgumentOutOfRangeException or ArgumentException or BadImageFormatException)
         {
@@ -1179,11 +1128,9 @@ internal sealed partial class Dasm
         }
     }
 
-    private void DumpPinvokeMap(StringBuilder sb, MethodImportAttributes flags, string? importName, int moduleRef)
+    private void DumpPinvokeMap(StringBuilder sb, MethodImportAttributes flags, string? importName, ModuleReferenceHandle moduleRef)
     {
-        string dll = RidFromToken(moduleRef) != 0 && IsValidToken(moduleRef)
-            ? Str(_md.GetModuleReference((ModuleReferenceHandle)Handle(moduleRef)).Name)
-            : "";
+        string dll = IsValid(moduleRef) ? Str(_md.GetModuleReference(moduleRef).Name) : "";
         if (dll.Length != 0)
         {
             DumpQString(sb, dll, Indent, 80);
@@ -1195,36 +1142,35 @@ internal sealed partial class Dasm
             DumpQString(sb, importName, Indent, 80);
         }
 
-        int f = (int)flags;
         sb.Append(KeywordPrefix);
-        if ((f & 0x0001) != 0) sb.Append(" nomangle");
-        switch (f & 0x0006)
+        if ((flags & MethodImportAttributes.ExactSpelling) != 0) sb.Append(" nomangle");
+        switch (flags & MethodImportAttributes.CharSetMask)
         {
-            case 0x2: sb.Append(" ansi"); break;
-            case 0x4: sb.Append(" unicode"); break;
-            case 0x6: sb.Append(" autochar"); break;
+            case MethodImportAttributes.CharSetAnsi: sb.Append(" ansi"); break;
+            case MethodImportAttributes.CharSetUnicode: sb.Append(" unicode"); break;
+            case MethodImportAttributes.CharSetAuto: sb.Append(" autochar"); break;
         }
 
-        if ((f & 0x0040) != 0) sb.Append(" lasterr");
-        switch (f & 0x0700)
+        if ((flags & MethodImportAttributes.SetLastError) != 0) sb.Append(" lasterr");
+        switch (flags & MethodImportAttributes.CallingConventionMask)
         {
-            case 0x100: sb.Append(" winapi"); break;
-            case 0x200: sb.Append(" cdecl"); break;
-            case 0x400: sb.Append(" thiscall"); break;
-            case 0x500: sb.Append(" fastcall"); break;
-            case 0x300: sb.Append(" stdcall"); break;
+            case MethodImportAttributes.CallingConventionWinApi: sb.Append(" winapi"); break;
+            case MethodImportAttributes.CallingConventionCDecl: sb.Append(" cdecl"); break;
+            case MethodImportAttributes.CallingConventionThisCall: sb.Append(" thiscall"); break;
+            case MethodImportAttributes.CallingConventionFastCall: sb.Append(" fastcall"); break;
+            case MethodImportAttributes.CallingConventionStdCall: sb.Append(" stdcall"); break;
         }
 
-        switch (f & 0x0030)
+        switch (flags & MethodImportAttributes.BestFitMappingMask)
         {
-            case 0x10: sb.Append(" bestfit:on"); break;
-            case 0x20: sb.Append(" bestfit:off"); break;
+            case MethodImportAttributes.BestFitMappingEnable: sb.Append(" bestfit:on"); break;
+            case MethodImportAttributes.BestFitMappingDisable: sb.Append(" bestfit:off"); break;
         }
 
-        switch (f & 0x3000)
+        switch (flags & MethodImportAttributes.ThrowOnUnmappableCharMask)
         {
-            case 0x1000: sb.Append(" charmaperror:on"); break;
-            case 0x2000: sb.Append(" charmaperror:off"); break;
+            case MethodImportAttributes.ThrowOnUnmappableCharEnable: sb.Append(" charmaperror:on"); break;
+            case MethodImportAttributes.ThrowOnUnmappableCharDisable: sb.Append(" charmaperror:off"); break;
         }
 
         sb.Append(KeywordPostfix);
@@ -1232,17 +1178,18 @@ internal sealed partial class Dasm
 
     // ---------------------------------------------------------------- fields
 
-    private bool DumpField(int tk, string? className, bool dumpBody)
+    private bool DumpField(FieldDefinitionHandle field, string? className, bool dumpBody)
     {
-        string psz = MakeNameIfNone(GetNameOfFieldDef(tk), tk);
-        FieldAttributes attrs = GetFieldDefAttrs(tk);
+        FieldDefinition fd = _md.GetFieldDefinition(field);
+        string psz = MakeNameIfNone(Str(fd.Name), field);
+        FieldAttributes attrs = fd.Attributes;
         if (IsHiddenField(attrs))
         {
             return false;
         }
 
-        string memberName = ProperName(IsFdPrivateScope(attrs) ? psz + "$PST" + X8(tk) : psz);
-        byte[] sig = GetSigOfFieldDef(tk);
+        string memberName = ProperName(IsFdPrivateScope(attrs) ? psz + "$PST" + X8(Token(field)) : psz);
+        byte[] sig = Blob(fd.Signature);
         if (sig.Length == 0)
         {
             PrintError($"{Indent}ERROR: field '{memberName}' has no signature");
@@ -1274,19 +1221,18 @@ internal sealed partial class Dasm
         StringBuilder sb = new();
         if (dumpBody)
         {
-            sb.Append(Indent).Append(ANCHORPT(KEYWORD(".field"), tk)).Append(' ');
+            sb.Append(Indent).Append(ANCHORPT(KEYWORD(".field"), field)).Append(' ');
             if (_options.ShowTokens)
             {
-                sb.Append(COMMENT($"/*{tk:X8}*/ "));
+                sb.Append(COMMENT($"/*{Token(field):X8}*/ "));
             }
         }
 
-        if (_fieldOffsets.TryGetValue(tk, out uint offset) && offset != 0xFFFFFFFF)
+        if (_fieldOffsets.TryGetValue(field, out uint offset) && offset != 0xFFFFFFFF)
         {
             sb.Append('[').Append(((int)offset).ToString(CultureInfo.InvariantCulture)).Append("] ");
         }
 
-        int a = (int)attrs;
         sb.Append(KeywordPrefix);
         switch (attrs & FieldAttributes.FieldAccessMask)
         {
@@ -1294,7 +1240,7 @@ internal sealed partial class Dasm
             case FieldAttributes.Private: sb.Append("private "); break;
         }
 
-        if ((a & 0x0010) != 0) sb.Append("static ");
+        if ((attrs & FieldAttributes.Static) != 0) sb.Append("static ");
         switch (attrs & FieldAttributes.FieldAccessMask)
         {
             case FieldAttributes.Family: sb.Append("family "); break;
@@ -1304,17 +1250,19 @@ internal sealed partial class Dasm
             case FieldAttributes.PrivateScope: sb.Append("privatescope "); break;
         }
 
-        if ((a & 0x0020) != 0) sb.Append("initonly ");
-        if ((a & 0x0040) != 0) sb.Append("literal ");
-        if ((a & 0x0080) != 0) sb.Append("notserialized ");
-        if ((a & 0x0200) != 0) sb.Append("specialname ");
-        if ((a & 0x0400) != 0) sb.Append("rtspecialname ");
+        if ((attrs & FieldAttributes.InitOnly) != 0) sb.Append("initonly ");
+        if ((attrs & FieldAttributes.Literal) != 0) sb.Append("literal ");
+#pragma warning disable SYSLIB0050 // Obsolete for formatter-based serialization, still a metadata flag.
+        if ((attrs & FieldAttributes.NotSerialized) != 0) sb.Append("notserialized ");
+#pragma warning restore SYSLIB0050
+        if ((attrs & FieldAttributes.SpecialName) != 0) sb.Append("specialname ");
+        if ((attrs & FieldAttributes.RTSpecialName) != 0) sb.Append("rtspecialname ");
         sb.Append(KeywordPostfix);
 
-        if ((a & 0x2000) != 0)
+        if ((attrs & FieldAttributes.PinvokeImpl) != 0)
         {
             sb.Append(KEYWORD("pinvokeimpl")).Append('(');
-            var map = GetPinvokeMap(tk);
+            var map = GetPinvokeMap(field);
             if (map is null)
             {
                 sb.Append(COMMENT("/* No map */"));
@@ -1327,26 +1275,25 @@ internal sealed partial class Dasm
             sb.Append(") ");
         }
 
-        sb.Append(DumpMarshaling(tk));
+        sb.Append(DumpMarshaling(field));
         sb.Append(szStr);
 
-        if ((a & 0x0100) != 0)
+        if ((attrs & FieldAttributes.HasFieldRVA) != 0)
         {
             sb.Append(KEYWORD(" at "));
-            uint fieldRva = GetFieldRva(tk);
-            DumpDataPtr(sb, fieldRva, SizeOfField(tk));
+            DumpDataPtr(sb, (uint)fd.GetRelativeVirtualAddress(), SizeOfField(field));
         }
 
-        if ((a & 0x8000) != 0 && dumpBody)
+        if ((attrs & FieldAttributes.HasDefault) != 0 && dumpBody)
         {
-            DumpDefaultValue(tk, sb);
+            DumpDefaultValue(field, sb);
         }
 
         PrintLine(sb);
         if (dumpBody)
         {
-            DumpCustomAttributes(tk);
-            DumpPermissions(tk);
+            DumpCustomAttributes(field);
+            DumpPermissions(field);
         }
 
         return true;
@@ -1354,9 +1301,12 @@ internal sealed partial class Dasm
 
     // ---------------------------------------------------------------- events and properties
 
-    private List<(int Method, uint Semantics)> GetAssociates(int tk)
+    // The accessors of an event or property in table order. EventDefinition/PropertyDefinition.GetAccessors() group them
+    // by kind, keep only the last getter, setter, adder, remover or raiser, drop other semantics, and need a sorted
+    // table, while the output has every MethodSemantics row in table order: the rows are read from the table.
+    private List<(MethodDefinitionHandle Method, MethodSemanticsAttributes Semantics)> GetAssociates(EntityHandle association)
     {
-        List<(int, uint)> list = new();
+        List<(MethodDefinitionHandle, MethodSemanticsAttributes)> list = new();
         int rows = RowCount(TableIndex.MethodSemantics);
         if (rows == 0)
         {
@@ -1368,7 +1318,8 @@ internal sealed partial class Dasm
         int methodSize = RowCount(TableIndex.MethodDef) > ushort.MaxValue ? 4 : 2;
         int assocSize = CodedIndexSize(1, TableIndex.Event, TableIndex.Property);
         int baseOffset = _md.GetTableMetadataOffset(TableIndex.MethodSemantics);
-        uint target = (uint)(RidFromToken(tk) << 1 | (TypeFromToken(tk) == mdtProperty ? 1 : 0));
+        // HasSemantics: the tag is 0 for an event, 1 for a property.
+        uint target = (uint)(MetadataTokens.GetRowNumber(association) << 1 | (association.Kind == HandleKind.PropertyDefinition ? 1 : 0));
         BlobReader r = _metadataBlock.GetReader();
         for (int i = 0; i < rows; i++)
         {
@@ -1378,23 +1329,23 @@ internal sealed partial class Dasm
             uint assoc = assocSize == 2 ? r.ReadUInt16() : r.ReadUInt32();
             if (assoc == target)
             {
-                list.Add((mdtMethodDef | (int)method, sem));
+                list.Add((MetadataTokens.MethodDefinitionHandle((int)method), (MethodSemanticsAttributes)sem));
             }
         }
 
         return list;
     }
 
-    private bool AllAssociatesHidden(List<(int Method, uint Semantics)> assoc)
+    private bool AllAssociatesHidden(List<(MethodDefinitionHandle Method, MethodSemanticsAttributes Semantics)> assoc)
     {
         if (!_limitedVisibility || assoc.Count == 0)
         {
             return false;
         }
 
-        foreach ((int m, _) in assoc)
+        foreach ((MethodDefinitionHandle m, _) in assoc)
         {
-            if (TypeFromToken(m) == mdtMethodDef && IsValidToken(m) && !IsHiddenMethod(GetMethodDefAttrs(m)))
+            if (IsValid(m) && !IsHiddenMethod(_md.GetMethodDefinition(m).Attributes))
             {
                 return false;
             }
@@ -1403,18 +1354,30 @@ internal sealed partial class Dasm
         return true;
     }
 
-    private bool DumpEvent(int tk, string className, bool dumpBody)
+    private void AppendAccessor(StringBuilder sb, MethodDefinitionHandle m)
     {
-        EventDefinition ev = _md.GetEventDefinition((EventDefinitionHandle)Handle(tk));
-        string psz = MakeNameIfNone(Str(ev.Name), tk);
-        int attrs = (int)ev.Attributes;
-        int tkEventType = Token(ev.Type);
+        if (IsValid(m))
+        {
+            PrettyPrintToken(sb, m);
+        }
+        else
+        {
+            sb.Append(ERRORMSG($"INVALID TOKEN 0x{MetadataTokens.GetToken(m):X8}"));
+        }
+    }
+
+    private bool DumpEvent(EventDefinitionHandle evh, string className, bool dumpBody)
+    {
+        EventDefinition ev = _md.GetEventDefinition(evh);
+        string psz = MakeNameIfNone(Str(ev.Name), evh);
+        EventAttributes attrs = ev.Attributes;
+        EntityHandle eventType = ev.Type;
         if (_mode is DumpMode.ClassMethod or DumpMode.ClassMethodSig && psz != _methodToDump)
         {
             return false;
         }
 
-        List<(int Method, uint Semantics)> assoc = GetAssociates(tk);
+        List<(MethodDefinitionHandle Method, MethodSemanticsAttributes Semantics)> assoc = GetAssociates(evh);
         if (AllAssociatesHidden(assoc))
         {
             return false;
@@ -1426,7 +1389,7 @@ internal sealed partial class Dasm
             sb.Append(Indent).Append(KEYWORD(".event")).Append(' ');
             if (_options.ShowTokens)
             {
-                sb.Append(COMMENT($"/*{tk:X8}*/ "));
+                sb.Append(COMMENT($"/*{Token(evh):X8}*/ "));
             }
         }
         else
@@ -1434,26 +1397,19 @@ internal sealed partial class Dasm
             sb.Append(ProperName(psz)).Append(" : ");
         }
 
-        if ((attrs & 0x0200) != 0)
+        if ((attrs & EventAttributes.SpecialName) != 0)
         {
             sb.Append(KEYWORD("specialname "));
         }
 
-        if ((attrs & 0x0400) != 0)
+        if ((attrs & EventAttributes.RTSpecialName) != 0)
         {
             sb.Append(KEYWORD("rtspecialname "));
         }
 
-        if (RidFromToken(tkEventType) != 0 && IsValidToken(tkEventType))
+        if (IsValid(eventType) && eventType.Kind is HandleKind.TypeReference or HandleKind.TypeDefinition or HandleKind.TypeSpecification)
         {
-            switch (TypeFromToken(tkEventType))
-            {
-                case mdtTypeRef:
-                case mdtTypeDef:
-                case mdtTypeSpec:
-                    PrettyPrintToken(sb, tkEventType);
-                    break;
-            }
+            PrettyPrintToken(sb, eventType);
         }
 
         if (!dumpBody)
@@ -1466,25 +1422,18 @@ internal sealed partial class Dasm
         PrintLine(sb);
         PrintLine(Indent + SCOPE());
         PushIndent();
-        DumpCustomAttributes(tk);
-        DumpPermissions(tk);
-        foreach ((int m, uint sem) in assoc)
+        DumpCustomAttributes(evh);
+        DumpPermissions(evh);
+        foreach ((MethodDefinitionHandle m, MethodSemanticsAttributes sem) in assoc)
         {
             sb.Clear();
-            if ((sem & 0x0008) != 0) sb.Append(Indent).Append(KEYWORD(".addon")).Append(' ');
-            else if ((sem & 0x0010) != 0) sb.Append(Indent).Append(KEYWORD(".removeon")).Append(' ');
-            else if ((sem & 0x0020) != 0) sb.Append(Indent).Append(KEYWORD(".fire")).Append(' ');
-            else if ((sem & 0x0004) != 0) sb.Append(Indent).Append(KEYWORD(".other")).Append(' ');
-            else sb.Append(ERRORMSG($"UNKNOWN SEMANTICS: 0x{sem:X} "));
+            if ((sem & MethodSemanticsAttributes.Adder) != 0) sb.Append(Indent).Append(KEYWORD(".addon")).Append(' ');
+            else if ((sem & MethodSemanticsAttributes.Remover) != 0) sb.Append(Indent).Append(KEYWORD(".removeon")).Append(' ');
+            else if ((sem & MethodSemanticsAttributes.Raiser) != 0) sb.Append(Indent).Append(KEYWORD(".fire")).Append(' ');
+            else if ((sem & MethodSemanticsAttributes.Other) != 0) sb.Append(Indent).Append(KEYWORD(".other")).Append(' ');
+            else sb.Append(ERRORMSG($"UNKNOWN SEMANTICS: 0x{(int)sem:X} "));
 
-            if (IsValidToken(m))
-            {
-                PrettyPrintToken(sb, m);
-            }
-            else
-            {
-                sb.Append(ERRORMSG($"INVALID TOKEN 0x{m:X8}"));
-            }
+            AppendAccessor(sb, m);
 
             PrintLine(sb);
         }
@@ -1498,11 +1447,11 @@ internal sealed partial class Dasm
         return true;
     }
 
-    private bool DumpProp(int tk, string className, bool dumpBody)
+    private bool DumpProp(PropertyDefinitionHandle prh, string className, bool dumpBody)
     {
-        PropertyDefinition pr = _md.GetPropertyDefinition((PropertyDefinitionHandle)Handle(tk));
-        string psz = MakeNameIfNone(Str(pr.Name), tk);
-        int attrs = (int)pr.Attributes;
+        PropertyDefinition pr = _md.GetPropertyDefinition(prh);
+        string psz = MakeNameIfNone(Str(pr.Name), prh);
+        PropertyAttributes attrs = pr.Attributes;
         byte[] sig = Blob(pr.Signature);
         if (sig.Length == 0)
         {
@@ -1515,7 +1464,7 @@ internal sealed partial class Dasm
             return false;
         }
 
-        List<(int Method, uint Semantics)> assoc = GetAssociates(tk);
+        List<(MethodDefinitionHandle Method, MethodSemanticsAttributes Semantics)> assoc = GetAssociates(prh);
         if (AllAssociatesHidden(assoc))
         {
             return false;
@@ -1527,7 +1476,7 @@ internal sealed partial class Dasm
             sb.Append(Indent).Append(KEYWORD(".property")).Append(' ');
             if (_options.ShowTokens)
             {
-                sb.Append(COMMENT($"/*{tk:X8}*/ "));
+                sb.Append(COMMENT($"/*{Token(prh):X8}*/ "));
             }
         }
         else
@@ -1535,12 +1484,12 @@ internal sealed partial class Dasm
             sb.Append(ProperName(psz)).Append(" : ");
         }
 
-        if ((attrs & 0x0200) != 0)
+        if ((attrs & PropertyAttributes.SpecialName) != 0)
         {
             sb.Append(KEYWORD("specialname "));
         }
 
-        if ((attrs & 0x0400) != 0)
+        if ((attrs & PropertyAttributes.RTSpecialName) != 0)
         {
             sb.Append(KEYWORD("rtspecialname "));
         }
@@ -1548,9 +1497,9 @@ internal sealed partial class Dasm
         string line = PrettyPrintMethodSig(sb, sig, dumpBody ? ProperName(psz) : "", null);
         sb.Clear();
         sb.Append(line);
-        if ((attrs & 0x1000) != 0 && dumpBody)
+        if ((attrs & PropertyAttributes.HasDefault) != 0 && dumpBody)
         {
-            DumpDefaultValue(tk, sb);
+            DumpDefaultValue(prh, sb);
         }
 
         PrintLine(sb);
@@ -1558,24 +1507,17 @@ internal sealed partial class Dasm
         {
             PrintLine(Indent + SCOPE());
             PushIndent();
-            DumpCustomAttributes(tk);
-            DumpPermissions(tk);
-            foreach ((int m, uint sem) in assoc)
+            DumpCustomAttributes(prh);
+            DumpPermissions(prh);
+            foreach ((MethodDefinitionHandle m, MethodSemanticsAttributes sem) in assoc)
             {
                 sb.Clear();
-                if ((sem & 0x0001) != 0) sb.Append(Indent).Append(KEYWORD(".set")).Append(' ');
-                else if ((sem & 0x0002) != 0) sb.Append(Indent).Append(KEYWORD(".get")).Append(' ');
-                else if ((sem & 0x0004) != 0) sb.Append(Indent).Append(KEYWORD(".other")).Append(' ');
-                else sb.Append(ERRORMSG($"UNKNOWN SEMANTICS: 0x{sem:X} "));
+                if ((sem & MethodSemanticsAttributes.Setter) != 0) sb.Append(Indent).Append(KEYWORD(".set")).Append(' ');
+                else if ((sem & MethodSemanticsAttributes.Getter) != 0) sb.Append(Indent).Append(KEYWORD(".get")).Append(' ');
+                else if ((sem & MethodSemanticsAttributes.Other) != 0) sb.Append(Indent).Append(KEYWORD(".other")).Append(' ');
+                else sb.Append(ERRORMSG($"UNKNOWN SEMANTICS: 0x{(int)sem:X} "));
 
-                if (IsValidToken(m))
-                {
-                    PrettyPrintToken(sb, m);
-                }
-                else
-                {
-                    sb.Append(ERRORMSG($"INVALID TOKEN 0x{m:X8}"));
-                }
+                AppendAccessor(sb, m);
 
                 PrintLine(sb);
             }
@@ -1593,47 +1535,47 @@ internal sealed partial class Dasm
 
     // ---------------------------------------------------------------- classes
 
-    private void DumpMembers(int cl, string className, int entryPointToken)
+    private void DumpMembers(TypeDefinitionHandle cl, string className)
     {
-        TypeDefinition td = _md.GetTypeDefinition((TypeDefinitionHandle)Handle(cl));
-        List<int> members = new();
+        TypeDefinition td = _md.GetTypeDefinition(cl);
+        List<EntityHandle> members = new();
         foreach (FieldDefinitionHandle h in td.GetFields())
         {
-            members.Add(Token(h));
+            members.Add(h);
         }
 
         foreach (MethodDefinitionHandle h in td.GetMethods())
         {
-            members.Add(Token(h));
+            members.Add(h);
         }
 
         foreach (EventDefinitionHandle h in td.GetEvents())
         {
-            members.Add(Token(h));
+            members.Add(h);
         }
 
         foreach (PropertyDefinitionHandle h in td.GetProperties())
         {
-            members.Add(Token(h));
+            members.Add(h);
         }
 
-        foreach (int tk in members)
+        foreach (EntityHandle h in members)
         {
             bool ret;
-            if (IsValidToken(tk))
+            if (IsValid(h))
             {
-                ret = TypeFromToken(tk) switch
+                ret = h.Kind switch
                 {
-                    mdtFieldDef => DumpField(tk, className, true),
-                    mdtMethodDef => DumpMethod(tk, className, entryPointToken, true),
-                    mdtEvent => DumpEvent(tk, className, true),
-                    mdtProperty => DumpProp(tk, className, true),
+                    HandleKind.FieldDefinition => DumpField((FieldDefinitionHandle)h, className, true),
+                    HandleKind.MethodDefinition => DumpMethod((MethodDefinitionHandle)h, className, true),
+                    HandleKind.EventDefinition => DumpEvent((EventDefinitionHandle)h, className, true),
+                    HandleKind.PropertyDefinition => DumpProp((PropertyDefinitionHandle)h, className, true),
                     _ => false,
                 };
             }
             else
             {
-                PrintLine(ERRORMSG($"INVALID MEMBER TOKEN: 0x{tk:X8}"));
+                PrintLine(ERRORMSG($"INVALID MEMBER TOKEN: 0x{Token(h):X8}"));
                 ret = false;
             }
 
@@ -1644,18 +1586,18 @@ internal sealed partial class Dasm
         }
     }
 
-    private bool GetClassLayout(int cl, out uint packSize, out uint classSize)
+    private bool GetClassLayout(TypeDefinitionHandle cl, out uint packSize, out uint classSize)
     {
         _fieldOffsets.Clear();
         packSize = 0xFFFFFFFF;
         classSize = 0xFFFFFFFF;
-        if (RidFromToken(cl) == 0)
+        if (cl.IsNil)
         {
             return true;
         }
 
         bool ret = false;
-        TypeDefinition td = _md.GetTypeDefinition((TypeDefinitionHandle)Handle(cl));
+        TypeDefinition td = _md.GetTypeDefinition(cl);
         TypeLayout layout = td.GetLayout();
         if (HasClassLayoutRow(cl))
         {
@@ -1669,7 +1611,7 @@ internal sealed partial class Dasm
             int off = _md.GetFieldDefinition(fh).GetOffset();
             if (off != -1)
             {
-                _fieldOffsets[Token(fh)] = (uint)off;
+                _fieldOffsets[fh] = (uint)off;
                 ret = true;
             }
         }
@@ -1677,7 +1619,9 @@ internal sealed partial class Dasm
         return ret;
     }
 
-    private bool HasClassLayoutRow(int cl)
+    // Whether the type has a ClassLayout row: TypeDefinition.GetLayout() returns the same (default) layout for a row
+    // with zero packing and size and for no row, which print differently (.pack 0 .size 0, or nothing).
+    private bool HasClassLayoutRow(TypeDefinitionHandle cl)
     {
         int rows = RowCount(TableIndex.ClassLayout);
         if (rows == 0)
@@ -1685,6 +1629,7 @@ internal sealed partial class Dasm
             return false;
         }
 
+        // ClassLayout: PackingSize (2), ClassSize (4), Parent (TypeDef index)
         int rowSize = _md.GetTableRowSize(TableIndex.ClassLayout);
         int typeDefSize = RowCount(TableIndex.TypeDef) > ushort.MaxValue ? 4 : 2;
         int baseOffset = _md.GetTableMetadataOffset(TableIndex.ClassLayout);
@@ -1693,7 +1638,7 @@ internal sealed partial class Dasm
         {
             r.Offset = baseOffset + i * rowSize + 6;
             uint parent = typeDefSize == 2 ? r.ReadUInt16() : r.ReadUInt32();
-            if (parent == RidFromToken(cl))
+            if (parent == MetadataTokens.GetRowNumber(cl))
             {
                 return true;
             }
@@ -1702,7 +1647,7 @@ internal sealed partial class Dasm
         return false;
     }
 
-    private bool IsANestedInB(int a, int b)
+    private bool IsANestedInB(TypeDefinitionHandle a, TypeDefinitionHandle b)
     {
         while (true)
         {
@@ -1718,19 +1663,19 @@ internal sealed partial class Dasm
                 return true;
             }
 
-            if (a == mdTypeDefNil)
+            if (a.IsNil)
             {
                 return false;
             }
         }
     }
 
-    private int TopEncloser(int a)
+    private TypeDefinitionHandle TopEncloser(TypeDefinitionHandle a)
     {
         while (true)
         {
             int ix = _classList.IndexOf(a);
-            if (ix < 0 || _classEnclosing[ix] == mdTypeDefNil)
+            if (ix < 0 || _classEnclosing[ix].IsNil)
             {
                 return a;
             }
@@ -1739,11 +1684,23 @@ internal sealed partial class Dasm
         }
     }
 
-    // whatToDump: 0 - title, flags, extends, implements; +1 - pack, size and custom attributes; +2 - nested classes; +4 - members
-    private bool DumpClass(int cl, int entryPointToken, int whatToDump)
+    // The parts of a class to dump (DumpClass's whatToDump).
+    [Flags]
+    private enum ClassParts
     {
-        int savedVarOwner = _tkVarOwner;
-        int whatToDumpOrig = whatToDump;
+        // The title, flags, extends and implements.
+        Header = 0,
+        // The pack, size, custom attributes and the rest of the class declaration.
+        Declaration = 1,
+        NestedClasses = 2,
+        Members = 4,
+        All = Declaration | NestedClasses | Members,
+    }
+
+    private bool DumpClass(TypeDefinitionHandle cl, ClassParts whatToDump)
+    {
+        EntityHandle savedVarOwner = _varOwner;
+        ClassParts whatToDumpOrig = whatToDump;
         (string pc1, string pc2) = GetNameOfTypeDef(cl);
         pc1 = MakeNameIfNone(pc1, cl);
 
@@ -1753,7 +1710,7 @@ internal sealed partial class Dasm
             {
                 if (IsANestedInB(_classToDump, cl))
                 {
-                    whatToDump = 2;
+                    whatToDump = ClassParts.NestedClasses;
                 }
                 else
                 {
@@ -1762,20 +1719,21 @@ internal sealed partial class Dasm
             }
         }
 
-        (TypeAttributes attrs, int crExtends) = GetTypeDefProps(cl);
-        int a = (int)attrs;
+        TypeDefinition td = _md.GetTypeDefinition(cl);
+        TypeAttributes attrs = td.Attributes;
+        EntityHandle extends = td.BaseType;
+        TypeAttributes vis = attrs & TypeAttributes.VisibilityMask;
         if (_limitedVisibility)
         {
-            int vis = a & 0x7;
-            if (_hidePub && (vis == 1 || vis == 2)) return false;
-            if (_hidePriv && (vis == 0 || vis == 3)) return false;
-            if (_hideFam && vis == 4) return false;
-            if (_hideAsm && vis == 5) return false;
-            if (_hideFOA && vis == 7) return false;
-            if (_hideFAA && vis == 6) return false;
+            if (_hidePub && vis is TypeAttributes.Public or TypeAttributes.NestedPublic) return false;
+            if (_hidePriv && vis is TypeAttributes.NotPublic or TypeAttributes.NestedPrivate) return false;
+            if (_hideFam && vis == TypeAttributes.NestedFamily) return false;
+            if (_hideAsm && vis == TypeAttributes.NestedAssembly) return false;
+            if (_hideFOA && vis == TypeAttributes.NestedFamORAssem) return false;
+            if (_hideFAA && vis == TypeAttributes.NestedFamANDAssem) return false;
         }
 
-        _tkVarOwner = cl;
+        _varOwner = cl;
         string className = pc1;
         string ns = pc2;
 
@@ -1783,77 +1741,78 @@ internal sealed partial class Dasm
         sb.Append(Indent).Append(KEYWORD(".class")).Append(' ');
         if (_options.ShowTokens)
         {
-            sb.Append(COMMENT($"/*{cl:X8}*/ "));
+            sb.Append(COMMENT($"/*{Token(cl):X8}*/ "));
         }
 
         sb.Append(KeywordPrefix);
-        if ((a & 0x20) != 0) sb.Append("interface ");
-        switch (a & 0x7)
+        if ((attrs & TypeAttributes.Interface) != 0) sb.Append("interface ");
+        switch (vis)
         {
-            case 1: sb.Append("public "); break;
-            case 0: sb.Append("private "); break;
+            case TypeAttributes.Public: sb.Append("public "); break;
+            case TypeAttributes.NotPublic: sb.Append("private "); break;
         }
 
-        if ((a & 0x80) != 0) sb.Append("abstract ");
-        switch (a & 0x18)
+        if ((attrs & TypeAttributes.Abstract) != 0) sb.Append("abstract ");
+        switch (attrs & TypeAttributes.LayoutMask)
         {
-            case 0x00: sb.Append("auto "); break;
-            case 0x08: sb.Append("sequential "); break;
-            case 0x10: sb.Append("explicit "); break;
-            case 0x18: sb.Append("extended "); break;
+            case TypeAttributes.AutoLayout: sb.Append("auto "); break;
+            case TypeAttributes.SequentialLayout: sb.Append("sequential "); break;
+            case TypeAttributes.ExplicitLayout: sb.Append("explicit "); break;
+            case TypeAttributes.ExtendedLayout: sb.Append("extended "); break;
         }
 
-        switch (a & 0x30000)
+        switch (attrs & TypeAttributes.StringFormatMask)
         {
-            case 0x00000: sb.Append("ansi "); break;
-            case 0x10000: sb.Append("unicode "); break;
-            case 0x20000: sb.Append("autochar "); break;
+            case TypeAttributes.AnsiClass: sb.Append("ansi "); break;
+            case TypeAttributes.UnicodeClass: sb.Append("unicode "); break;
+            case TypeAttributes.AutoClass: sb.Append("autochar "); break;
         }
 
-        if ((a & 0x1000) != 0) sb.Append("import ");
-        if ((a & 0x4000) != 0) sb.Append("windowsruntime ");
-        if ((a & 0x2000) != 0) sb.Append("serializable ");
-        if ((a & 0x100) != 0) sb.Append("sealed ");
-        switch (a & 0x7)
+        if ((attrs & TypeAttributes.Import) != 0) sb.Append("import ");
+        if ((attrs & TypeAttributes.WindowsRuntime) != 0) sb.Append("windowsruntime ");
+#pragma warning disable SYSLIB0050 // Obsolete for formatter-based serialization, still a metadata flag.
+        if ((attrs & TypeAttributes.Serializable) != 0) sb.Append("serializable ");
+#pragma warning restore SYSLIB0050
+        if ((attrs & TypeAttributes.Sealed) != 0) sb.Append("sealed ");
+        switch (vis)
         {
-            case 2: sb.Append("nested public "); break;
-            case 3: sb.Append("nested private "); break;
-            case 4: sb.Append("nested family "); break;
-            case 5: sb.Append("nested assembly "); break;
-            case 6: sb.Append("nested famandassem "); break;
-            case 7: sb.Append("nested famorassem "); break;
+            case TypeAttributes.NestedPublic: sb.Append("nested public "); break;
+            case TypeAttributes.NestedPrivate: sb.Append("nested private "); break;
+            case TypeAttributes.NestedFamily: sb.Append("nested family "); break;
+            case TypeAttributes.NestedAssembly: sb.Append("nested assembly "); break;
+            case TypeAttributes.NestedFamANDAssem: sb.Append("nested famandassem "); break;
+            case TypeAttributes.NestedFamORAssem: sb.Append("nested famorassem "); break;
         }
 
-        if ((a & 0x100000) != 0) sb.Append("beforefieldinit ");
-        if ((a & 0x400) != 0) sb.Append("specialname ");
-        if ((a & 0x800) != 0) sb.Append("rtspecialname ");
+        if ((attrs & TypeAttributes.BeforeFieldInit) != 0) sb.Append("beforefieldinit ");
+        if ((attrs & TypeAttributes.SpecialName) != 0) sb.Append("specialname ");
+        if ((attrs & TypeAttributes.RTSpecialName) != 0) sb.Append("rtspecialname ");
         sb.Append(KeywordPostfix);
         if (ns.Length != 0)
         {
             sb.Append(ProperName(ns)).Append('.');
         }
 
-        sb.Append(whatToDump > 2 ? ANCHORPT(ProperName(className), cl) : JUMPPT(ProperName(className), cl));
+        sb.Append(whatToDump > ClassParts.NestedClasses ? ANCHORPT(ProperName(className), cl) : JUMPPT(ProperName(className), cl));
         string header = DumpGenericPars(cl, sb.ToString(), split: true);
         PrintLine(header);
 
-        if (!IsNilToken(crExtends))
+        if (!extends.IsNil)
         {
             sb.Clear();
             sb.Append(Indent).Append("       ").Append(KEYWORD("extends")).Append(' ');
-            if (IsValidToken(crExtends))
+            if (IsValid(extends))
             {
-                PrettyPrintToken(sb, crExtends);
+                PrettyPrintToken(sb, extends);
             }
             else
             {
-                sb.Append(ERRORMSG($"INVALID TOKEN: 0x{crExtends:X8}"));
+                sb.Append(ERRORMSG($"INVALID TOKEN: 0x{Token(extends):X8}"));
             }
 
             PrintLine(sb);
         }
 
-        TypeDefinition td = _md.GetTypeDefinition((TypeDefinitionHandle)Handle(cl));
         InterfaceImplementationHandleCollection iis = td.GetInterfaceImplementations();
         int numInterfaces = iis.Count;
         int i = 0;
@@ -1869,16 +1828,7 @@ internal sealed partial class Dasm
                 sb.Append(Indent).Append("       ").Append(KEYWORD("implements")).Append(' ');
             }
 
-            int crInterface = Token(_md.GetInterfaceImplementation(iih).Interface);
-            if (IsValidToken(crInterface))
-            {
-                PrettyPrintToken(sb, crInterface);
-            }
-            else
-            {
-                sb.Append(ERRORMSG($"INVALID TOKEN: 0x{crInterface:X8}"));
-            }
-
+            AppendInterface(sb, iih);
             if (i < numInterfaces - 1)
             {
                 sb.Append(',');
@@ -1888,17 +1838,17 @@ internal sealed partial class Dasm
             i++;
         }
 
-        if (whatToDump == 0)
+        if (whatToDump == ClassParts.Header)
         {
             PrintLine($"{Indent}{SCOPE()} {UNSCOPE()}");
-            _tkVarOwner = savedVarOwner;
+            _varOwner = savedVarOwner;
             return true;
         }
 
         PrintLine(Indent + SCOPE());
         PushIndent();
 
-        if ((whatToDump & 1) != 0)
+        if ((whatToDump & ClassParts.Declaration) != 0)
         {
             if (GetClassLayout(cl, out uint packSize, out uint classSize))
             {
@@ -1925,21 +1875,12 @@ internal sealed partial class Dasm
                         {
                             sb.Clear();
                             sb.Append(Indent).Append('.').Append(KEYWORD("interfaceimpl type")).Append(' ');
-                            int crInterface = Token(_md.GetInterfaceImplementation(iih).Interface);
-                            if (IsValidToken(crInterface))
-                            {
-                                PrettyPrintToken(sb, crInterface);
-                            }
-                            else
-                            {
-                                sb.Append(ERRORMSG($"INVALID TOKEN: 0x{crInterface:X8}"));
-                            }
-
+                            AppendInterface(sb, iih);
                             PrintLine(sb);
                             first = false;
                         }
 
-                        DumpCustomAttribute(Token(cah), withOwner: false);
+                        DumpCustomAttribute(cah, withOwner: false);
                     }
                 }
             }
@@ -1949,7 +1890,7 @@ internal sealed partial class Dasm
 
             foreach (MethodImplRecord mi in _methodImpls)
             {
-                if (mi.TkClass == cl && mi.TkBodyParent != cl)
+                if (mi.Class == cl && mi.BodyParent != cl)
                 {
                     sb.Clear();
                     sb.Append(PrettyPrintOverrideDecl(mi, cl, out bool overridingTypeSpec));
@@ -1959,7 +1900,7 @@ internal sealed partial class Dasm
                         sb.Append(KEYWORD("method "));
                     }
 
-                    PrettyPrintToken(sb, mi.TkBody);
+                    PrettyPrintToken(sb, mi.Body);
                     PrintLine(sb);
                 }
             }
@@ -1969,7 +1910,7 @@ internal sealed partial class Dasm
             _fieldOffsets.Clear();
         }
 
-        if ((whatToDump & 2) != 0)
+        if ((whatToDump & ClassParts.NestedClasses) != 0)
         {
             bool regetLayout = false;
             DumpMode mode = _mode;
@@ -1982,7 +1923,7 @@ internal sealed partial class Dasm
             {
                 if (_classEnclosing[k] == cl)
                 {
-                    DumpClass(_classList[k], entryPointToken, whatToDumpOrig);
+                    DumpClass(_classList[k], whatToDumpOrig);
                     regetLayout = true;
                 }
             }
@@ -1995,9 +1936,9 @@ internal sealed partial class Dasm
             _mode = mode;
         }
 
-        if ((whatToDump & 4) != 0)
+        if ((whatToDump & ClassParts.Members) != 0)
         {
-            DumpMembers(cl, className, entryPointToken);
+            DumpMembers(cl, className);
         }
 
         PopIndent();
@@ -2011,11 +1952,11 @@ internal sealed partial class Dasm
         sb.Append(ProperName(className)).Append(CommentPostfix);
         PrintLine(sb);
         PrintLine("");
-        _tkVarOwner = savedVarOwner;
+        _varOwner = savedVarOwner;
         return true;
     }
 
-    private void DumpGlobalMethods(int entryPointToken)
+    private void DumpGlobalMethods()
     {
         int i = 0;
         foreach (MethodDefinitionHandle h in GlobalType().GetMethods())
@@ -2028,7 +1969,7 @@ internal sealed partial class Dasm
             }
 
             i++;
-            if (DumpMethod(Token(h), null, entryPointToken, true) && _mode is DumpMode.ClassMethod or DumpMode.ClassMethodSig)
+            if (DumpMethod(h, null, true) && _mode is DumpMode.ClassMethod or DumpMode.ClassMethodSig)
             {
                 break;
             }
@@ -2055,7 +1996,7 @@ internal sealed partial class Dasm
             }
 
             i++;
-            if (DumpField(Token(h), null, true) && _mode is DumpMode.ClassMethod or DumpMode.ClassMethodSig)
+            if (DumpField(h, null, true) && _mode is DumpMode.ClassMethod or DumpMode.ClassMethodSig)
             {
                 break;
             }
@@ -2069,6 +2010,20 @@ internal sealed partial class Dasm
         }
     }
 
+    // The interface of an InterfaceImpl row.
+    private void AppendInterface(StringBuilder sb, InterfaceImplementationHandle h)
+    {
+        EntityHandle iface = _md.GetInterfaceImplementation(h).Interface;
+        if (IsValid(iface))
+        {
+            PrettyPrintToken(sb, iface);
+        }
+        else
+        {
+            sb.Append(ERRORMSG($"INVALID TOKEN: 0x{Token(iface):X8}"));
+        }
+    }
+
     private TypeDefinition GlobalType()
-        => RowCount(TableIndex.TypeDef) > 0 ? _md.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(1)) : default;
+        => RowCount(TableIndex.TypeDef) > 0 ? _md.GetTypeDefinition(s_moduleType) : default;
 }

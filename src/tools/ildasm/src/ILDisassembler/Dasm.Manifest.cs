@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -17,16 +16,17 @@ namespace ILDisassembler;
 // Assembly and manifest disassembly.
 internal sealed partial class Dasm
 {
-    private readonly List<(int Tok, string Name)> _files = new();
-    private readonly List<(int Tok, string Name)> _asmRefs = new();
+    private readonly List<(AssemblyFileHandle Handle, string Name)> _files = new();
+    private readonly List<(AssemblyReferenceHandle Handle, string Name)> _asmRefs = new();
 
     private sealed class ExportedTypeDescr
     {
-        public int Tok;
+        public ExportedTypeHandle Handle;
+        // The TypeDef id hint, printed as is.
         public int TypeDef;
-        public int Implementation;
+        public EntityHandle Implementation;
         public string Name = "";
-        public int Flags;
+        public TypeAttributes Flags;
     }
 
     private readonly List<ExportedTypeDescr> _exportedTypes = new();
@@ -54,43 +54,57 @@ internal sealed partial class Dasm
 
     private void DumpModuleRefs()
     {
+        // SRM has no ModuleReference collection.
         int n = RowCount(TableIndex.ModuleRef);
         for (int i = 1; i <= n; i++)
         {
-            int tk = mdtModuleRef | i;
-            string name = Str(_md.GetModuleReference(MetadataTokens.ModuleReferenceHandle(i)).Name);
+            ModuleReferenceHandle h = MetadataTokens.ModuleReferenceHandle(i);
+            string name = Str(_md.GetModuleReference(h).Name);
             if (name.Length == 0)
             {
                 continue; // the no-name ModuleRef is an IJW artifact
             }
 
             StringBuilder sb = new();
-            sb.Append(Indent).Append(KEYWORD(".module extern")).Append(' ').Append(ANCHORPT(ProperName(name), tk));
+            sb.Append(Indent).Append(KEYWORD(".module extern")).Append(' ').Append(ANCHORPT(ProperName(name), h));
             if (_options.ShowTokens)
             {
-                sb.Append(COMMENT($" /*{tk:X8}*/"));
+                sb.Append(COMMENT($" /*{Token(h):X8}*/"));
             }
 
             PrintLine(sb);
-            DumpCustomAttributes(tk);
-            DumpPermissions(tk);
+            DumpCustomAttributes(h);
+            DumpPermissions(h);
         }
+    }
+
+    // The processor architecture of an assembly (afPA_*), bits 4-7 of the flags, which AssemblyFlags does not define.
+    private enum ProcessorArchitecture
+    {
+        MSIL = 0x0010,
+        X86 = 0x0020,
+        AMD64 = 0x0040,
+        ARM = 0x0050,
+        ARM64 = 0x0060,
+        NoPlatform = 0x0070,
+        Mask = 0x0070,
+        FullMask = 0x00F0,
     }
 
     private static string AssemblyFlagsText(AssemblyFlags flags, bool isDef)
     {
-        int f = (int)flags;
         StringBuilder sb = new();
-        if ((f & 0x0100) != 0) sb.Append("retargetable ");
-        if ((f & 0x0E00) == 0x0200) sb.Append("windowsruntime ");
-        if (isDef && (f & 0x00F0) == 0x0070) sb.Append("noplatform ");
-        switch (f & 0x0070)
+        if ((flags & AssemblyFlags.Retargetable) != 0) sb.Append("retargetable ");
+        if ((flags & AssemblyFlags.ContentTypeMask) == AssemblyFlags.WindowsRuntime) sb.Append("windowsruntime ");
+        ProcessorArchitecture pa = (ProcessorArchitecture)flags;
+        if (isDef && (pa & ProcessorArchitecture.FullMask) == ProcessorArchitecture.NoPlatform) sb.Append("noplatform ");
+        switch (pa & ProcessorArchitecture.Mask)
         {
-            case 0x0010: sb.Append("cil "); break;
-            case 0x0020: sb.Append("x86 "); break;
-            case 0x0040: sb.Append("amd64 "); break;
-            case 0x0050: sb.Append("arm "); break;
-            case 0x0060: sb.Append("arm64 "); break;
+            case ProcessorArchitecture.MSIL: sb.Append("cil "); break;
+            case ProcessorArchitecture.X86: sb.Append("x86 "); break;
+            case ProcessorArchitecture.AMD64: sb.Append("amd64 "); break;
+            case ProcessorArchitecture.ARM: sb.Append("arm "); break;
+            case ProcessorArchitecture.ARM64: sb.Append("arm64 "); break;
         }
 
         return sb.ToString();
@@ -114,20 +128,19 @@ internal sealed partial class Dasm
     private void DumpAssemblyRefs()
     {
         _asmRefs.Clear();
-        int n = RowCount(TableIndex.AssemblyRef);
-        _asmRefNames = new string?[n];
-        for (int ix = 0; ix < n; ix++)
+        _asmRefNames = new string?[_md.AssemblyReferences.Count];
+        int ix = 0;
+        foreach (AssemblyReferenceHandle h in _md.AssemblyReferences)
         {
-            int tk = mdtAssemblyRef | (ix + 1);
-            AssemblyReference ar = _md.GetAssemblyReference(MetadataTokens.AssemblyReferenceHandle(ix + 1));
+            AssemblyReference ar = _md.GetAssemblyReference(h);
             string name = Str(ar.Name);
-            _asmRefs.Add((tk, name));
+            _asmRefs.Add((h, name));
 
             StringBuilder sb = new();
             sb.Append(Indent).Append(KEYWORD(".assembly extern")).Append(' ');
             if (_options.ShowTokens)
             {
-                sb.Append(COMMENT($"/*{tk:X8}*/ "));
+                sb.Append(COMMENT($"/*{Token(h):X8}*/ "));
             }
 
             foreach (string f in AssemblyFlagsText(ar.Flags, isDef: false).Split(' ', StringSplitOptions.RemoveEmptyEntries))
@@ -149,23 +162,23 @@ internal sealed partial class Dasm
             if (dup)
             {
                 alias = name + "_" + ix.ToString(CultureInfo.InvariantCulture);
-                sb.Append(ProperName(name)).Append(' ').Append(KEYWORD("as")).Append(' ').Append(ANCHORPT(ProperName(alias), tk));
+                sb.Append(ProperName(name)).Append(' ').Append(KEYWORD("as")).Append(' ').Append(ANCHORPT(ProperName(alias), h));
             }
             else
             {
-                sb.Append(ANCHORPT(ProperName(name), tk));
+                sb.Append(ANCHORPT(ProperName(name), h));
             }
 
             _asmRefNames[ix] = alias;
             PrintLine(sb);
             PrintLine(Indent + SCOPE());
             PushIndent();
-            DumpCustomAttributes(tk);
+            DumpCustomAttributes(h);
             byte[] key = Blob(ar.PublicKeyOrToken);
             if (key.Length != 0)
             {
                 sb.Clear();
-                sb.Append(Indent).Append(KEYWORD(((int)ar.Flags & 0x1) != 0 ? ".publickey" : ".publickeytoken")).Append(" = (");
+                sb.Append(Indent).Append(KEYWORD((ar.Flags & AssemblyFlags.PublicKey) != 0 ? ".publickey" : ".publickeytoken")).Append(" = (");
                 DumpByteArray(sb, key);
                 PrintLine(sb);
             }
@@ -182,6 +195,7 @@ internal sealed partial class Dasm
             DumpAssemblyMetaData(ar.Version, Str(ar.Culture));
             PopIndent();
             PrintLine(Indent + UNSCOPE());
+            ix++;
         }
     }
 
@@ -192,13 +206,13 @@ internal sealed partial class Dasm
             return;
         }
 
-        int tk = mdtAssembly | 1;
+        EntityHandle h = EntityHandle.AssemblyDefinition;
         AssemblyDefinition ad = _md.GetAssemblyDefinition();
         StringBuilder sb = new();
         sb.Append(Indent).Append(KEYWORD(".assembly")).Append(' ');
         if (_options.ShowTokens)
         {
-            sb.Append(COMMENT($"/*{tk:X8}*/ "));
+            sb.Append(COMMENT($"/*{Token(h):X8}*/ "));
         }
 
         string flags = AssemblyFlagsText(ad.Flags, isDef: true);
@@ -210,12 +224,12 @@ internal sealed partial class Dasm
             }
         }
 
-        sb.Append(ANCHORPT(ProperName(Str(ad.Name)), tk));
+        sb.Append(ANCHORPT(ProperName(Str(ad.Name)), h));
         PrintLine(sb);
         PrintLine(Indent + SCOPE());
         PushIndent();
-        DumpCustomAttributes(tk);
-        DumpPermissions(tk);
+        DumpCustomAttributes(h);
+        DumpPermissions(h);
         byte[] key = Blob(ad.PublicKey);
         if (key.Length != 0)
         {
@@ -238,19 +252,16 @@ internal sealed partial class Dasm
     private void DumpFiles()
     {
         _files.Clear();
-        int n = RowCount(TableIndex.File);
-        int entryPoint = _pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress;
-        for (int i = 1; i <= n; i++)
+        foreach (AssemblyFileHandle h in _md.AssemblyFiles)
         {
-            int tk = mdtFile | i;
-            AssemblyFile f = _md.GetAssemblyFile(MetadataTokens.AssemblyFileHandle(i));
+            AssemblyFile f = _md.GetAssemblyFile(h);
             string name = Str(f.Name);
-            _files.Add((tk, name));
+            _files.Add((h, name));
             StringBuilder sb = new();
             sb.Append(Indent).Append(KEYWORD(".file")).Append(' ');
             if (_options.ShowTokens)
             {
-                sb.Append(COMMENT($"/*{tk:X8}*/ "));
+                sb.Append(COMMENT($"/*{Token(h):X8}*/ "));
             }
 
             if (!f.ContainsMetadata)
@@ -258,9 +269,9 @@ internal sealed partial class Dasm
                 sb.Append(KEYWORD("nometadata "));
             }
 
-            sb.Append(ANCHORPT(ProperName(name), tk));
+            sb.Append(ANCHORPT(ProperName(name), h));
             PrintLine(sb);
-            if (entryPoint == tk)
+            if (_entryPoint == h)
             {
                 PrintLine(KEYWORD("    .entrypoint"));
             }
@@ -274,15 +285,15 @@ internal sealed partial class Dasm
                 PrintLine(sb);
             }
 
-            DumpCustomAttributes(tk);
+            DumpCustomAttributes(h);
         }
     }
 
     private void DumpExportedTypeFQN(ExportedTypeDescr e, StringBuilder sb)
     {
-        if (TypeFromToken(e.Implementation) == mdtExportedType)
+        if (e.Implementation.Kind == HandleKind.ExportedType)
         {
-            ExportedTypeDescr? outer = _exportedTypes.Find(x => x.Tok == e.Implementation);
+            ExportedTypeDescr? outer = _exportedTypes.Find(x => x.Handle == e.Implementation);
             if (outer is not null)
             {
                 DumpExportedTypeFQN(outer, sb);
@@ -290,28 +301,28 @@ internal sealed partial class Dasm
             }
         }
 
-        sb.Append(JUMPPT(ProperName(e.Name), e.Tok));
+        sb.Append(JUMPPT(ProperName(e.Name), e.Handle));
     }
 
-    private void DumpImplementation(int tkImpl, uint offset)
+    private void DumpImplementation(EntityHandle impl, uint offset)
     {
-        if (RidFromToken(tkImpl) == 0)
+        if (impl.IsNil)
         {
             return;
         }
 
         StringBuilder sb = new();
-        switch (TypeFromToken(tkImpl))
+        switch (impl.Kind)
         {
-            case mdtFile:
+            case HandleKind.AssemblyFile:
             {
-                int i = _files.FindIndex(f => f.Tok == tkImpl);
+                int i = _files.FindIndex(f => f.Handle == impl);
                 if (i >= 0)
                 {
-                    sb.Append(Indent).Append(KEYWORD(".file")).Append(' ').Append(JUMPPT(ProperName(_files[i].Name), tkImpl));
+                    sb.Append(Indent).Append(KEYWORD(".file")).Append(' ').Append(JUMPPT(ProperName(_files[i].Name), impl));
                     if (_options.ShowTokens)
                     {
-                        sb.Append(COMMENT($"/*{tkImpl:X8}*/ "));
+                        sb.Append(COMMENT($"/*{Token(impl):X8}*/ "));
                     }
 
                     if (offset != 0xFFFFFFFF)
@@ -325,15 +336,15 @@ internal sealed partial class Dasm
                 break;
             }
 
-            case mdtAssemblyRef:
+            case HandleKind.AssemblyReference:
             {
-                int i = _asmRefs.FindIndex(a => a.Tok == tkImpl);
+                int i = _asmRefs.FindIndex(a => a.Handle == impl);
                 if (i >= 0)
                 {
-                    sb.Append(Indent).Append(KEYWORD(".assembly extern")).Append(' ').Append(JUMPPT(ProperName(_asmRefNames[i] ?? _asmRefs[i].Name), tkImpl));
+                    sb.Append(Indent).Append(KEYWORD(".assembly extern")).Append(' ').Append(JUMPPT(ProperName(_asmRefNames[i] ?? _asmRefs[i].Name), impl));
                     if (_options.ShowTokens)
                     {
-                        sb.Append(COMMENT($" /*{tkImpl:X8}*/ "));
+                        sb.Append(COMMENT($" /*{Token(impl):X8}*/ "));
                     }
 
                     PrintLine(sb);
@@ -342,16 +353,16 @@ internal sealed partial class Dasm
                 break;
             }
 
-            case mdtExportedType:
+            case HandleKind.ExportedType:
             {
-                ExportedTypeDescr? e = _exportedTypes.Find(x => x.Tok == tkImpl);
+                ExportedTypeDescr? e = _exportedTypes.Find(x => x.Handle == impl);
                 if (e is not null)
                 {
                     sb.Append(Indent).Append(KEYWORD(".class extern")).Append(' ');
                     DumpExportedTypeFQN(e, sb);
                     if (_options.ShowTokens)
                     {
-                        sb.Append(COMMENT($" /*{tkImpl:X8}*/ "));
+                        sb.Append(COMMENT($" /*{Token(impl):X8}*/ "));
                     }
 
                     PrintLine(sb);
@@ -366,29 +377,29 @@ internal sealed partial class Dasm
     {
         if (_options.ShowTokens)
         {
-            sb.Append(COMMENT($"/*{e.Tok:X8}*/ "));
+            sb.Append(COMMENT($"/*{Token(e.Handle):X8}*/ "));
         }
 
-        int f = e.Flags;
-        if ((f & 0x7) == 1) sb.Append(KEYWORD("public "));
-        if ((f & 0x00200000) != 0) sb.Append(KEYWORD("forwarder "));
-        switch (f & 0x7)
+        TypeAttributes vis = e.Flags & TypeAttributes.VisibilityMask;
+        if (vis == TypeAttributes.Public) sb.Append(KEYWORD("public "));
+        if ((e.Flags & TypeAttributeForwarder) != 0) sb.Append(KEYWORD("forwarder "));
+        switch (vis)
         {
-            case 2: sb.Append(KEYWORD("nested public ")); break;
-            case 3: sb.Append(KEYWORD("nested private ")); break;
-            case 4: sb.Append(KEYWORD("nested family ")); break;
-            case 5: sb.Append(KEYWORD("nested assembly ")); break;
-            case 6: sb.Append(KEYWORD("nested famandassem ")); break;
-            case 7: sb.Append(KEYWORD("nested famorassem ")); break;
+            case TypeAttributes.NestedPublic: sb.Append(KEYWORD("nested public ")); break;
+            case TypeAttributes.NestedPrivate: sb.Append(KEYWORD("nested private ")); break;
+            case TypeAttributes.NestedFamily: sb.Append(KEYWORD("nested family ")); break;
+            case TypeAttributes.NestedAssembly: sb.Append(KEYWORD("nested assembly ")); break;
+            case TypeAttributes.NestedFamANDAssem: sb.Append(KEYWORD("nested famandassem ")); break;
+            case TypeAttributes.NestedFamORAssem: sb.Append(KEYWORD("nested famorassem ")); break;
         }
 
-        sb.Append(ANCHORPT(ProperName(e.Name), e.Tok));
+        sb.Append(ANCHORPT(ProperName(e.Name), e.Handle));
         PrintLine(sb);
         PrintLine(Indent + SCOPE());
         PushIndent();
-        DumpCustomAttributes(e.Tok);
+        DumpCustomAttributes(e.Handle);
         DumpImplementation(e.Implementation, 0xFFFFFFFF);
-        if (RidFromToken(e.TypeDef) != 0)
+        if ((e.TypeDef & 0xFFFFFF) != 0)
         {
             PrintLine($"{Indent}{KEYWORD(".class")} 0x{e.TypeDef:X8}");
         }
@@ -397,32 +408,34 @@ internal sealed partial class Dasm
         PrintLine(Indent + UNSCOPE());
     }
 
+    // tdForwarder: the exported type is a type forwarder.
+    private const TypeAttributes TypeAttributeForwarder = (TypeAttributes)0x00200000;
+
     private void DumpExportedTypes()
     {
         _exportedTypes.Clear();
-        int n = RowCount(TableIndex.ExportedType);
-        for (int i = 1; i <= n; i++)
+        foreach (ExportedTypeHandle h in _md.ExportedTypes)
         {
-            ExportedType et = _md.GetExportedType(MetadataTokens.ExportedTypeHandle(i));
+            ExportedType et = _md.GetExportedType(h);
             string ns = Str(et.Namespace);
             string name = Str(et.Name);
             _exportedTypes.Add(new ExportedTypeDescr
             {
-                Tok = mdtExportedType | i,
+                Handle = h,
                 TypeDef = et.GetTypeDefinitionId(),
-                Implementation = TokenOrNil(et.Implementation, mdtFile),
+                Implementation = et.Implementation,
                 Name = ns.Length != 0 ? ns + "." + name : name,
-                Flags = (int)et.Attributes,
+                Flags = et.Attributes,
             });
         }
 
         foreach (ExportedTypeDescr e in _exportedTypes)
         {
-            int impl = e.Implementation;
+            EntityHandle impl = e.Implementation;
             // The ComType of a nested class has its nester's ComType as implementation.
-            while (TypeFromToken(impl) == mdtExportedType)
+            while (impl.Kind == HandleKind.ExportedType)
             {
-                ExportedTypeDescr? outer = _exportedTypes.Find(x => x.Tok == impl);
+                ExportedTypeDescr? outer = _exportedTypes.Find(x => x.Handle == impl);
                 if (outer is null)
                 {
                     break;
@@ -431,7 +444,7 @@ internal sealed partial class Dasm
                 impl = outer.Implementation;
             }
 
-            if (RidFromToken(impl) != 0)
+            if (!impl.IsNil)
             {
                 StringBuilder sb = new();
                 sb.Append(Indent).Append(KEYWORD(".class extern")).Append(' ');
@@ -517,41 +530,35 @@ internal sealed partial class Dasm
 
     private void DumpManifestResources()
     {
-        int n = RowCount(TableIndex.ManifestResource);
-        if (n == 0)
+        List<string> names = new();
+        bool first = true;
+        bool resourcesRead = false;
+        ReadOnlySpan<byte> resources = default;
+        foreach (ManifestResourceHandle h in _md.ManifestResources)
         {
-            return;
-        }
+            if (first)
+            {
+                // The names of the resource files cannot conflict with the output and the Win32 resource file.
+                string outName = _resourceExtractor?.OutputFileName ?? "";
 
-        string outDir = "";
-        string outName = "";
-        if (_outputFileName.Length != 0)
-        {
-            outDir = Path.GetDirectoryName(_outputFileName) ?? "";
-            outName = Path.GetFileName(_outputFileName);
-        }
+                names.Add(outName);
+                int dot = outName.LastIndexOf('.');
+                names.Add((dot < 0 ? outName : outName.Substring(0, dot)) + ".res");
+                first = false;
+            }
 
-        List<string> names = new() { outName };
-        int dot = outName.LastIndexOf('.');
-        names.Add((dot < 0 ? outName : outName.Substring(0, dot)) + ".res");
-
-        ImmutableArray<byte> resources = default;
-        DirectoryEntry resDir = _pe.PEHeaders.CorHeader!.ResourcesDirectory;
-        for (int ix = 1; ix <= n; ix++)
-        {
-            int tk = mdtManifestResource | ix;
-            ManifestResource mr = _md.GetManifestResource(MetadataTokens.ManifestResourceHandle(ix));
+            ManifestResource mr = _md.GetManifestResource(h);
             string name = Str(mr.Name);
             StringBuilder sb = new();
             sb.Append(Indent).Append(KEYWORD(".mresource")).Append(' ');
             if (_options.ShowTokens)
             {
-                sb.Append(COMMENT($"/*{tk:X8}*/ "));
+                sb.Append(COMMENT($"/*{Token(h):X8}*/ "));
             }
 
-            int vis = (int)mr.Attributes & 0x7;
-            if (vis == 1) sb.Append(KEYWORD("public "));
-            if (vis == 2) sb.Append(KEYWORD("private "));
+            ManifestResourceAttributes vis = mr.Attributes & ManifestResourceAttributes.VisibilityMask;
+            if (vis == ManifestResourceAttributes.Public) sb.Append(KEYWORD("public "));
+            if (vis == ManifestResourceAttributes.Private) sb.Append(KEYWORD("private "));
             sb.Append(ProperName(name));
 
             string fileName = name;
@@ -590,28 +597,28 @@ internal sealed partial class Dasm
             PrintLine(sb);
             PrintLine(Indent + SCOPE());
             PushIndent();
-            DumpCustomAttributes(tk);
-            int impl = TokenOrNil(mr.Implementation, mdtFile);
+            DumpCustomAttributes(h);
+            EntityHandle impl = mr.Implementation;
             uint offset = (uint)mr.Offset;
-            if (RidFromToken(impl) == 0)
+            if (impl.IsNil)
             {
-                if (resources.IsDefault)
+                if (!resourcesRead)
                 {
-                    byte[]? r = resDir.RelativeVirtualAddress != 0 ? GetBytesAtRva((uint)resDir.RelativeVirtualAddress, resDir.Size) : null;
-                    if (r is null)
+                    DirectoryEntry resDir = _pe.PEHeaders.CorHeader!.ResourcesDirectory;
+                    resources = resDir.RelativeVirtualAddress != 0 ? SpanAtRva((uint)resDir.RelativeVirtualAddress) : default;
+                    if (resources.IsEmpty)
                     {
                         PrintError("Failed to read import data.");
-                        resources = ImmutableArray<byte>.Empty;
                     }
-                    else
-                    {
-                        resources = ImmutableArray.Create(r);
-                    }
+
+                    resources = resources.Slice(0, Math.Min(resDir.Size, resources.Length));
+
+                    resourcesRead = true;
                 }
 
                 if (!resources.IsEmpty)
                 {
-                    DumpResourceFile(resources, offset, name, Path.Combine(outDir, fileName), fileName);
+                    DumpResourceFile(resources, offset, name, fileName);
                 }
             }
             else
@@ -624,7 +631,7 @@ internal sealed partial class Dasm
         }
     }
 
-    private void DumpResourceFile(ImmutableArray<byte> res, uint offset, string name, string path, string displayName)
+    private void DumpResourceFile(ReadOnlySpan<byte> res, uint offset, string name, string fileName)
     {
         if (offset + 4 > res.Length)
         {
@@ -632,29 +639,28 @@ internal sealed partial class Dasm
             return;
         }
 
-        uint len = (uint)(res[(int)offset] | res[(int)offset + 1] << 8 | res[(int)offset + 2] << 16 | res[(int)offset + 3] << 24);
+        uint len = ReadUInt32(res, (int)offset);
         PrintLine(COMMENT($"{Indent}// Offset: 0x{offset:X8} Length: 0x{len:X8}"));
-        if (!_toFile)
+        if (_resourceExtractor is null)
         {
             return;
         }
 
         try
         {
-            using FileStream fs = new(path, FileMode.Create, FileAccess.Write);
             int start = (int)offset + 4;
             int count = (int)Math.Min(len, (uint)Math.Max(0, res.Length - start));
-            fs.Write(res.AsSpan().Slice(start, count));
+            _resourceExtractor.SaveManagedResource(fileName, res.Slice(start, count));
             if (count < len)
             {
                 throw new IOException();
             }
 
-            PrintLine(COMMENT($"{Indent}// WARNING: managed resource file {ProperName(displayName)} created"));
+            PrintLine(COMMENT($"{Indent}// WARNING: managed resource file {ProperName(fileName)} created"));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            PrintError($"{Indent}// ERROR: reading managed resource {ProperName(displayName)} at offset 0x{offset:X}");
+            PrintError($"{Indent}// ERROR: reading managed resource {ProperName(fileName)} at offset 0x{offset:X}");
         }
     }
 
@@ -670,7 +676,7 @@ internal sealed partial class Dasm
         PrintLine($"{Indent}{KEYWORD(".module")} {ProperName(name)}");
         Guid mvid = _md.GetGuid(mod.Mvid);
         PrintLine(COMMENT($"{Indent}// MVID: {{{mvid.ToString("D").ToLowerInvariant()}}}"));
-        DumpCustomAttributes(mdtModule | 1);
-        DumpPermissions(mdtModule | 1);
+        DumpCustomAttributes(EntityHandle.ModuleDefinition);
+        DumpPermissions(EntityHandle.ModuleDefinition);
     }
 }

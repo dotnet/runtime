@@ -4,34 +4,34 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection.Metadata;
 using System.Text;
 
 namespace ILDisassembler;
 
-// Output primitives: the line writer, the code indent, the HTML/RTF decorations, name quoting and
-// C runtime style number formatting. These mirror printLine, g_szAsmCodeIndent, KEYWORD/COMMENT/...,
-// Name quoting and the printf-style number formats of the output.
+// Output primitives: the line writer, the code indent, the decorations of the output format, name quoting and
+// C runtime style number formatting.
 internal sealed partial class Dasm
 {
     private readonly StringBuilder _indent = new();
 
-    private string Indent => _indent.ToString();
+    internal string Indent => _indent.ToString();
 
-    private void PushIndent(string s = "  ") => _indent.Append(s);
+    internal void PushIndent(string s = "  ") => _indent.Append(s);
 
-    private void PopIndent(int n = 2) => _indent.Length = Math.Max(0, _indent.Length - n);
+    internal void PopIndent(int n = 2) => _indent.Length = Math.Max(0, _indent.Length - n);
 
-    private void PrintLine(string line)
+    internal void PrintLine(string line)
     {
         _out.Write(line);
-        _out.Write(_rtf && _newLine == "\n" ? "\\line\n" : _newLine);
+        _out.Write(_lineTerminator);
     }
 
-    private void PrintLine(StringBuilder line) => PrintLine(line.ToString());
+    internal void PrintLine(StringBuilder line) => PrintLine(line.ToString());
 
-    private void PrintError(string line)
+    internal void PrintError(string line)
     {
-        if (_toFile)
+        if (_options.WriteErrorsToOutput)
         {
             PrintLine(ERRORMSG(line));
         }
@@ -41,33 +41,33 @@ internal sealed partial class Dasm
 
     // ---------------------------------------------------------------- decorations
 
-    private string KEYWORD(string s) => _html ? "<B><FONT COLOR=NAVY>" + s + "</FONT></B>" : _rtf ? "\\b\\cf1 " + s + "\\cf0\\b0 " : s;
+    internal string KEYWORD(string s) => _formatter.Keyword(s);
 
-    private string KeywordPrefix => _html ? "<B><FONT COLOR=NAVY>" : _rtf ? "\\b\\cf1 " : "";
+    internal string KeywordPrefix => _formatter.KeywordPrefix;
 
-    private string KeywordPostfix => _html ? "</FONT></B>" : _rtf ? "\\cf0\\b0 " : "";
+    internal string KeywordPostfix => _formatter.KeywordPostfix;
 
-    private string COMMENT(string s) => _html ? "<I><FONT COLOR=GREEN>" + s + "</FONT></I>" : _rtf ? "\\cf2\\i " + s + "\\i0\\cf0 " : s;
+    internal string COMMENT(string s) => _formatter.Comment(s);
 
-    private string CommentPrefix => _html ? "<I><FONT COLOR=GREEN>" : _rtf ? "\\cf2\\i " : "";
+    internal string CommentPrefix => _formatter.CommentPrefix;
 
-    private string CommentPostfix => _html ? "</FONT></I>" : _rtf ? "\\i0\\cf0 " : "";
+    internal string CommentPostfix => _formatter.CommentPostfix;
 
-    private string ERRORMSG(string s) => _html ? "<I><B><FONT COLOR=RED>" + s + "</FONT></B></I>" : _rtf ? "\\cf3\\i\\b " + s + "\\cf0\\b0\\i0 " : s;
+    internal string ERRORMSG(string s) => _formatter.Error(s);
 
-    private string ANCHORPT(string s, int tk) => _html ? $"<A NAME=A{tk:X8}>{s}</A>" : s;
+    private string ANCHORPT(string s, EntityHandle h) => _formatter.Anchor(s, Token(h));
 
-    private string JUMPPT(string s, int tk) => _html ? $"<A HREF=#A{tk:X8}>{s}</A>" : s;
+    private string JUMPPT(string s, EntityHandle h) => _formatter.Jump(s, Token(h));
 
-    private string SCOPE() => _rtf ? "\\{" : "{";
+    internal string SCOPE() => _formatter.OpenScope;
 
-    private string UNSCOPE() => _rtf ? "\\}" : "}";
+    internal string UNSCOPE() => _formatter.CloseScope;
 
-    private string LTN() => _html ? "&lt;" : "<";
+    private string LTN() => _formatter.LessThan;
 
-    private string GTN() => _html ? "&gt;" : ">";
+    private string GTN() => _formatter.GreaterThan;
 
-    private string AMP() => _html ? "&amp;" : "&";
+    private string AMP() => _formatter.Ampersand;
 
     // ---------------------------------------------------------------- names
 
@@ -280,7 +280,7 @@ internal sealed partial class Dasm
         }
     }
 
-    private static int Utf8Length(StringBuilder sb)
+    internal static int Utf8Length(StringBuilder sb)
     {
         int n = 0;
         foreach (ReadOnlyMemory<char> chunk in sb.GetChunks())
@@ -292,7 +292,7 @@ internal sealed partial class Dasm
     }
 
     // DumpByteArray: appends "XX XX ... ) // ascii", 16 bytes per line, continuation lines aligned to the current column.
-    private void DumpByteArray(StringBuilder sb, ReadOnlySpan<byte> blob)
+    internal void DumpByteArray(StringBuilder sb, ReadOnlySpan<byte> blob)
     {
         int ulStrOffset = sb.Length;
         int k = 0;
@@ -345,24 +345,7 @@ internal sealed partial class Dasm
             return;
         }
 
-        if (_rtf)
-        {
-            if (byt == '\\' || byt == '{' || byt == '}')
-            {
-                sz.Append('\\');
-            }
-
-            sz.Append((char)byt);
-        }
-        else if (_html)
-        {
-            sz.Append(byt == '<' ? LTN() : byt == '>' ? GTN() : ((char)byt).ToString());
-        }
-        else
-        {
-            sz.Append((char)byt);
-        }
-
+        _formatter.AppendCommentChar(sz, (char)byt);
         printsz = true;
     }
 
@@ -469,19 +452,19 @@ internal sealed partial class Dasm
         }
     }
 
-    private static bool IsSpecialNumber(string s)
+    internal static bool IsSpecialNumber(string s)
         => s.Contains('#') || s.Contains("nan", StringComparison.Ordinal) || s.Contains("NAN", StringComparison.Ordinal)
             || s.Contains("inf", StringComparison.Ordinal) || s.Contains("INF", StringComparison.Ordinal);
 
-    private static double Atof(string s)
+    internal static double Atof(string s)
         => double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double d) ? d : 0;
 
     // printf("%-10s", s)
     private static string Pad10(string s) => s.Length >= 10 ? s : s.PadRight(10);
 
-    private static string X8(int v) => v.ToString("X8", CultureInfo.InvariantCulture);
+    internal static string X8(int v) => v.ToString("X8", CultureInfo.InvariantCulture);
 
-    private static string X8(uint v) => v.ToString("X8", CultureInfo.InvariantCulture);
+    internal static string X8(uint v) => v.ToString("X8", CultureInfo.InvariantCulture);
 
-    private static string x8(uint v) => v.ToString("x8", CultureInfo.InvariantCulture);
+    internal static string x8(uint v) => v.ToString("x8", CultureInfo.InvariantCulture);
 }

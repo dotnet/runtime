@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 
 namespace ILDisassembler;
@@ -12,37 +14,38 @@ namespace ILDisassembler;
 // Method body disassembly: instructions, locals and EH clauses.
 internal sealed partial class Dasm
 {
-    private const uint COR_ILEXCEPTION_CLAUSE_FILTER = 0x0001;
-    private const uint COR_ILEXCEPTION_CLAUSE_FINALLY = 0x0002;
-    private const uint COR_ILEXCEPTION_CLAUSE_FAULT = 0x0004;
-    private const uint NEW_TRY_BLOCK = 0x80000000;
-    private const uint PUT_INTO_CODE = 0x40000000;
-    private const uint ERR_OUT_OF_CODE = 0x20000000;
-    private const uint SEH_NEW_PUT_MASK = NEW_TRY_BLOCK | PUT_INTO_CODE | ERR_OUT_OF_CODE;
-
     private sealed class EHClause
     {
-        public uint Flags;
+        // The raw clause flags.
+        public ExceptionRegionKind Kind;
         public uint TryOffset;
         public uint TryLength;
         public uint HandlerOffset;
         public uint HandlerLength;
         public uint ClassTokenOrFilterOffset;
         public bool IsFat;
+
+        // How the clause is printed: whether it starts a new .try, and whether it is put in the code (as nested blocks)
+        // rather than listed after it.
+        public bool NewTryBlock;
+        public bool PutIntoCode;
     }
 
-    // COR_ILMETHOD_DECODER
+    // The kinds of a clause that matter when comparing clauses.
+    private const ExceptionRegionKind KindMask = ExceptionRegionKind.Filter | ExceptionRegionKind.Finally | ExceptionRegionKind.Fault;
+
+    // A method body as decoded by MethodBodyBlock, or by DecodeMalformedMethodBody for one it rejects.
     private sealed class MethodBody
     {
-        public uint Flags;
+        public bool InitLocals;
         public int MaxStack;
+        // The code size from the header; Code is shorter when the image ends before the code does.
         public uint CodeSize;
+        // The local signature token from the header, which may not refer to a StandAloneSig row.
         public int LocalVarSigTok;
         public byte[] Code = Array.Empty<byte>();
         public List<EHClause>? EH;
     }
-
-    private const uint CorILMethod_InitLocals = 0x0010;
 
     private MethodBody? DecodeMethodBody(uint rva)
     {
@@ -52,26 +55,91 @@ internal sealed partial class Dasm
             return null;
         }
 
+        MethodBodyBlock block;
+        try
+        {
+            block = _pe.GetMethodBody((int)rva);
+        }
+        catch (BadImageFormatException)
+        {
+            return DecodeMalformedMethodBody(data);
+        }
+
+        byte[] code = block.GetILBytes()!;
+        MethodBody m = new()
+        {
+            InitLocals = block.LocalVariablesInitialized,
+            MaxStack = block.MaxStack,
+            CodeSize = (uint)code.Length,
+            LocalVarSigTok = Token(block.LocalSignature),
+            Code = code,
+        };
+
+        if (!block.ExceptionRegions.IsEmpty)
+        {
+            // MethodBodyBlock does not tell the format of the EH section, which follows the code (of a fat method)
+            // 4-byte aligned.
+            bool fat = (data[(FatMethodHeaderSize + code.Length + 3) & ~3] & SectionFatFormat) != 0;
+            m.EH = new List<EHClause>();
+            foreach (ExceptionRegion e in block.ExceptionRegions)
+            {
+                m.EH.Add(new EHClause
+                {
+                    Kind = e.Kind,
+                    TryOffset = (uint)e.TryOffset,
+                    TryLength = (uint)e.TryLength,
+                    HandlerOffset = (uint)e.HandlerOffset,
+                    HandlerLength = (uint)e.HandlerLength,
+                    ClassTokenOrFilterOffset = e.Kind switch
+                    {
+                        ExceptionRegionKind.Catch => (uint)MetadataTokens.GetToken(e.CatchType),
+                        ExceptionRegionKind.Filter => (uint)e.FilterOffset,
+                        _ => 0,
+                    },
+                    IsFat = fat,
+                });
+            }
+        }
+
+        return m;
+    }
+
+    // The method header and EH section formats (ECMA-335 II.25.4), which SRM does not expose.
+    internal const byte MethodHeaderFormatMask = 0x03;
+    internal const byte TinyFormat = 0x02;
+    internal const byte FatFormat = 0x03;
+    internal const byte FatFormatMoreSects = 0x08;
+    private const byte FatFormatInitLocals = 0x10;
+    private const int FatMethodHeaderSize = 12;
+    private const byte SectionEHTable = 0x01;
+    private const byte SectionKindMask = 0x3F;
+    internal const byte SectionFatFormat = 0x40;
+    internal const byte SectionMoreSects = 0x80;
+
+    // COR_ILMETHOD_DECODER for the bodies MethodBodyBlock rejects (code past the end of the section, an invalid local
+    // signature token, a header size other than 3 dwords, a first extra section that is not an EH table...), which are
+    // disassembled as far as possible.
+    private static MethodBody? DecodeMalformedMethodBody(ReadOnlySpan<byte> data)
+    {
         MethodBody m = new();
         int p;
+        bool moreSects = false;
         byte b0 = data[0];
-        if ((b0 & 0x3) == 0x2)
+        if ((b0 & MethodHeaderFormatMask) == TinyFormat)
         {
-            // tiny header
             m.CodeSize = (uint)(b0 >> 2);
             m.MaxStack = 8;
-            m.Flags = 0x2;
             p = 1;
         }
-        else if ((b0 & 0x3) == 0x3)
+        else if ((b0 & MethodHeaderFormatMask) == FatFormat)
         {
-            ushort flagsAndSize = (ushort)(data[0] | data[1] << 8);
-            m.Flags = (uint)(flagsAndSize & 0x0FFF);
-            int headerSize = (flagsAndSize >> 12) * 4;
+            // Flags (12 bits), header size in dwords (4 bits), MaxStack (2), CodeSize (4), LocalVarSigTok (4)
+            moreSects = (b0 & FatFormatMoreSects) != 0;
+            m.InitLocals = (b0 & FatFormatInitLocals) != 0;
+            p = (data[1] >> 4) * 4;
             m.MaxStack = data[2] | data[3] << 8;
             m.CodeSize = ReadUInt32(data, 4);
             m.LocalVarSigTok = (int)ReadUInt32(data, 8);
-            p = headerSize;
         }
         else
         {
@@ -81,7 +149,7 @@ internal sealed partial class Dasm
         int codeLen = (int)Math.Min(m.CodeSize, (uint)Math.Max(0, data.Length - p));
         m.Code = data.Slice(p, codeLen).ToArray();
 
-        if ((m.Flags & 0x8) != 0 && (b0 & 0x3) == 0x3)
+        if (moreSects)
         {
             // More sections follow the code, 4-byte aligned. Only the first EH section is used.
             int sect = (int)Math.Min(p + m.CodeSize, int.MaxValue - 8);
@@ -94,10 +162,10 @@ internal sealed partial class Dasm
                 }
 
                 byte kind = data[sect];
-                bool fat = (kind & 0x40) != 0;
-                bool more = (kind & 0x80) != 0;
+                bool fat = (kind & SectionFatFormat) != 0;
+                bool more = (kind & SectionMoreSects) != 0;
                 int dataSize = fat ? (data[sect + 1] | data[sect + 2] << 8 | data[sect + 3] << 16) : data[sect + 1];
-                if ((kind & 0x3F) == 0x1)
+                if ((kind & SectionKindMask) == SectionEHTable)
                 {
                     m.EH = new List<EHClause>();
                     int count = fat ? (dataSize - 4) / 24 : (dataSize - 4) / 12;
@@ -107,22 +175,22 @@ internal sealed partial class Dasm
                         EHClause e = new() { IsFat = fat };
                         if (fat)
                         {
-                            e.Flags = ReadUInt32(data, (int)c);
-                            e.TryOffset = ReadUInt32(data, (int)c + 4);
-                            e.TryLength = ReadUInt32(data, (int)c + 8);
-                            e.HandlerOffset = ReadUInt32(data, (int)c + 12);
-                            e.HandlerLength = ReadUInt32(data, (int)c + 16);
-                            e.ClassTokenOrFilterOffset = ReadUInt32(data, (int)c + 20);
+                            e.Kind = (ExceptionRegionKind)ReadUInt32(data, c);
+                            e.TryOffset = ReadUInt32(data, c + 4);
+                            e.TryLength = ReadUInt32(data, c + 8);
+                            e.HandlerOffset = ReadUInt32(data, c + 12);
+                            e.HandlerLength = ReadUInt32(data, c + 16);
+                            e.ClassTokenOrFilterOffset = ReadUInt32(data, c + 20);
                             c += 24;
                         }
                         else
                         {
-                            e.Flags = (uint)(data[c] | data[c + 1] << 8);
+                            e.Kind = (ExceptionRegionKind)(data[c] | data[c + 1] << 8);
                             e.TryOffset = (uint)(data[c + 2] | data[c + 3] << 8);
                             e.TryLength = data[c + 4];
                             e.HandlerOffset = (uint)(data[c + 5] | data[c + 6] << 8);
                             e.HandlerLength = data[c + 7];
-                            e.ClassTokenOrFilterOffset = ReadUInt32(data, (int)c + 8);
+                            e.ClassTokenOrFilterOffset = ReadUInt32(data, c + 8);
                             c += 12;
                         }
 
@@ -161,7 +229,7 @@ internal sealed partial class Dasm
         {
             _ehInfo.Add(new EHClause
             {
-                Flags = src.Flags & ~SEH_NEW_PUT_MASK,
+                Kind = src.Kind,
                 TryOffset = src.TryOffset,
                 TryLength = src.TryLength,
                 HandlerOffset = src.HandlerOffset,
@@ -178,38 +246,14 @@ internal sealed partial class Dasm
             if (e.TryOffset >= codeSize || e.TryOffset + e.TryLength >= codeSize
                 || e.HandlerOffset >= codeSize || e.HandlerOffset + e.HandlerLength > codeSize)
             {
-                e.Flags |= ERR_OUT_OF_CODE;
                 tryInCode = false;
             }
         }
 
         if (tryInCode)
         {
-            // qsort is not stable and the comparison has no further tie breaker, so equal clauses keep an unspecified order.
-            EHClause[] sorted = _ehInfo.ToArray();
-            QSort(sorted, static (a, b) =>
-            {
-                int d = (int)(a.TryOffset - b.TryOffset);
-                if (d != 0)
-                {
-                    return d;
-                }
-
-                d = (int)(a.TryLength - b.TryLength);
-                if (d != 0)
-                {
-                    return d;
-                }
-
-                d = (int)(a.HandlerOffset - b.HandlerOffset);
-                if (d != 0)
-                {
-                    return d;
-                }
-
-                return (int)(a.HandlerLength - b.HandlerLength);
-            });
-            _ehInfo = new List<EHClause>(sorted);
+            // A stable sort: clauses with the same try and handler blocks keep their order.
+            _ehInfo = _ehInfo.OrderBy(e => (int)e.TryOffset).ThenBy(e => (int)e.TryLength).ThenBy(e => (int)e.HandlerOffset).ThenBy(e => (int)e.HandlerLength).ToList();
 
             uint wasTryOffset = 0xFFFFFFFF, wasTryLength = 0xFFFFFFFF, lastOffset = 0xFFFFFFFF;
             int newTryBlock = 0;
@@ -218,30 +262,30 @@ internal sealed partial class Dasm
                 EHClause e = _ehInfo[i];
                 if (e.TryOffset != wasTryOffset || e.TryLength != wasTryLength)
                 {
-                    e.Flags |= NEW_TRY_BLOCK;
+                    e.NewTryBlock = true;
                     lastOffset = e.TryOffset + e.TryLength;
                     wasTryOffset = e.TryOffset;
                     wasTryLength = e.TryLength;
                     newTryBlock = i;
                 }
 
-                uint filterOrHandler = (e.Flags & COR_ILEXCEPTION_CLAUSE_FILTER) != 0 ? e.ClassTokenOrFilterOffset : e.HandlerOffset;
+                uint filterOrHandler = (e.Kind & ExceptionRegionKind.Filter) != 0 ? e.ClassTokenOrFilterOffset : e.HandlerOffset;
                 if (filterOrHandler == lastOffset)
                 {
-                    if (i == newTryBlock || (_ehInfo[newTryBlock].Flags & PUT_INTO_CODE) != 0)
+                    if (i == newTryBlock || _ehInfo[newTryBlock].PutIntoCode)
                     {
-                        e.Flags |= PUT_INTO_CODE;
+                        e.PutIntoCode = true;
                     }
                     else
                     {
-                        e.Flags |= NEW_TRY_BLOCK;
+                        e.NewTryBlock = true;
                     }
 
                     lastOffset = e.HandlerOffset + e.HandlerLength;
                 }
                 else
                 {
-                    e.Flags |= NEW_TRY_BLOCK;
+                    e.NewTryBlock = true;
                 }
             }
         }
@@ -249,46 +293,27 @@ internal sealed partial class Dasm
         {
             foreach (EHClause e in _ehInfo)
             {
-                e.Flags |= NEW_TRY_BLOCK;
+                e.NewTryBlock = true;
             }
         }
 
         return tryInCode;
     }
 
-    // Reproduces the element order of the C runtime qsort on arrays with equal keys as closely as practical:
-    // an insertion sort is stable, which matches glibc's merge sort based qsort for the small arrays seen here.
-    private static void QSort<T>(T[] a, Comparison<T> cmp)
-    {
-        for (int i = 1; i < a.Length; i++)
-        {
-            T x = a[i];
-            int j = i - 1;
-            while (j >= 0 && cmp(a[j], x) > 0)
-            {
-                a[j + 1] = a[j];
-                j--;
-            }
-
-            a[j + 1] = x;
-        }
-    }
-
     private void DumpHexEHInfo(EHClause e)
     {
         StringBuilder sb = new();
         sb.Append(Indent).Append("// HEX:");
-        e.Flags &= ~SEH_NEW_PUT_MASK;
         if (e.IsFat)
         {
-            foreach (uint v in new[] { e.Flags, e.TryOffset, e.TryLength, e.HandlerOffset, e.HandlerLength, e.ClassTokenOrFilterOffset })
+            foreach (uint v in new[] { (uint)e.Kind, e.TryOffset, e.TryLength, e.HandlerOffset, e.HandlerLength, e.ClassTokenOrFilterOffset })
             {
                 AppendHexBytes(sb, v, 4);
             }
         }
         else
         {
-            AppendHexBytes(sb, e.Flags, 2);
+            AppendHexBytes(sb, (uint)e.Kind, 2);
             AppendHexBytes(sb, e.TryOffset, 2);
             AppendHexBytes(sb, e.TryLength, 1);
             AppendHexBytes(sb, e.HandlerOffset, 2);
@@ -309,14 +334,13 @@ internal sealed partial class Dasm
 
     private void DumpOneEHInfo(EHClause e)
     {
-        uint flags = e.Flags;
-        if ((flags & PUT_INTO_CODE) != 0)
+        if (e.PutIntoCode)
         {
             return;
         }
 
         StringBuilder sb = new();
-        if ((flags & NEW_TRY_BLOCK) != 0)
+        if (e.NewTryBlock)
         {
             sb.Append(Indent).Append(KEYWORD(".try")).Append(' ').Append(EHLabel(e.TryOffset)).Append(' ');
             sb.Append(KEYWORD("to")).Append(' ').Append(EHLabel(e.TryOffset + e.TryLength)).Append(' ');
@@ -326,21 +350,21 @@ internal sealed partial class Dasm
             sb.Append(Indent).Append("                        ");
         }
 
-        if ((flags & COR_ILEXCEPTION_CLAUSE_FILTER) != 0)
+        if ((e.Kind & ExceptionRegionKind.Filter) != 0)
         {
             sb.Append(KEYWORD("filter")).Append(' ').Append(EHLabel(e.ClassTokenOrFilterOffset)).Append(' ');
         }
-        else if ((flags & COR_ILEXCEPTION_CLAUSE_FAULT) != 0)
+        else if ((e.Kind & ExceptionRegionKind.Fault) != 0)
         {
             sb.Append(KEYWORD("fault "));
         }
-        else if ((flags & COR_ILEXCEPTION_CLAUSE_FINALLY) != 0 || IsNilToken((int)e.ClassTokenOrFilterOffset))
+        else if ((e.Kind & ExceptionRegionKind.Finally) != 0 || IsNilCatchType(e))
         {
             sb.Append(KEYWORD("finally "));
         }
         else
         {
-            sb.Append(KEYWORD("catch")).Append(' ').Append(PrettyPrintClass((int)e.ClassTokenOrFilterOffset)).Append(' ');
+            sb.Append(KEYWORD("catch")).Append(' ').Append(PrettyPrintCatchType(e)).Append(' ');
         }
 
         sb.Append(KEYWORD("handler")).Append(' ').Append(EHLabel(e.HandlerOffset));
@@ -372,6 +396,16 @@ internal sealed partial class Dasm
 
     // ---------------------------------------------------------------- locals
 
+    // A catch clause without a class (a nil token) is shown as finally.
+    private static bool IsNilCatchType(EHClause e) => (e.ClassTokenOrFilterOffset & 0xFFFFFF) == 0;
+
+    private string PrettyPrintCatchType(EHClause e)
+    {
+        StringBuilder sb = new();
+        PrettyPrintSigClass(sb, (int)e.ClassTokenOrFilterOffset);
+        return sb.ToString();
+    }
+
     private void DumpLocals(MethodBody method)
     {
         if (method.LocalVarSigTok == 0)
@@ -379,22 +413,21 @@ internal sealed partial class Dasm
             return;
         }
 
-        int tok = method.LocalVarSigTok;
-        if (TypeFromToken(tok) != mdtSignature || !IsValidToken(tok))
+        if (!TryGetHandle(method.LocalVarSigTok, out EntityHandle h) || h.Kind != HandleKind.StandaloneSignature)
         {
             PrintLine("Invalid record");
             return;
         }
 
-        byte[] sig = GetStandaloneSig(tok);
+        byte[] sig = Blob(_md.GetStandaloneSignature((StandaloneSignatureHandle)h).Signature);
         StringBuilder sb = new();
         sb.Append(Indent).Append(KEYWORD(".locals "));
         if (_options.ShowTokens)
         {
-            sb.Append(COMMENT($"/*{tok:X8}*/ "));
+            sb.Append(COMMENT($"/*{Token(h):X8}*/ "));
         }
 
-        if ((method.Flags & CorILMethod_InitLocals) != 0)
+        if (method.InitLocals)
         {
             sb.Append(KEYWORD("init "));
         }
@@ -465,14 +498,21 @@ internal sealed partial class Dasm
     private HashSet<uint> _instrStarts = new();
     private uint _codeSize;
 
-    private const int CEE_NO = 0x100 + 0x19;
+    // The index of an opcode in OpcodeTable.Opcodes: the opcode byte, or 256 + the second byte of a 0xFE-prefixed opcode.
+    // An index past the table is an undefined opcode.
+    private static int UndefinedOpcode => OpcodeTable.Opcodes.Length;
 
-    // opcode.def has no 'no.' prefix (0xFE 0x19), which ilasm accepts as an instruction with a byte operand.
+    private static ILOpCode ToILOpCode(int instr) => (ILOpCode)(instr < 0x100 ? instr : 0xFE00 | (instr - 0x100));
+
+    // The 'no.' prefix (0xFE 0x19), which neither opcode.def nor ILOpCode define, and which ilasm accepts as an
+    // instruction with a byte operand.
+    private const ILOpCode NoPrefix = (ILOpCode)0xFE19;
+
     private static OpcodeInfo GetOpcodeInfo(int instr)
-        => instr == CEE_NO ? new OpcodeInfo("no.", OperandType.ShortInlineI) : OpcodeTable.Opcodes[instr];
+        => ToILOpCode(instr) == NoPrefix ? new OpcodeInfo("no.", OperandType.ShortInlineI) : OpcodeTable.Opcodes[instr];
 
     private static bool IsUndefinedOpcode(int instr)
-        => instr == CEE_COUNT || (instr != CEE_NO && OpcodeTable.Opcodes[instr].Name is "unused" or "illegal" or "endmac" or "codelabel");
+        => instr == UndefinedOpcode || (ToILOpCode(instr) != NoPrefix && OpcodeTable.Opcodes[instr].Name is "unused" or "illegal" or "endmac" or "codelabel");
 
     private static HashSet<uint> ComputeInstructionStarts(byte[] code, uint codeSize)
     {
@@ -484,7 +524,7 @@ internal sealed partial class Dasm
             starts.Add(pc);
             if (IsUndefinedOpcode(instr))
             {
-                pc += instr == CEE_COUNT && len == 3 ? 1u : (uint)len;
+                pc += instr == UndefinedOpcode && len == 3 ? 1u : (uint)len;
                 continue;
             }
 
@@ -525,23 +565,6 @@ internal sealed partial class Dasm
     private string EHLabel(uint offset)
         => _instrStarts.Contains(offset) || offset == _codeSize ? "IL_" + offset.ToString("x4", CultureInfo.InvariantCulture) : offset.ToString(CultureInfo.InvariantCulture);
 
-    private const int CEE_COUNT = 294;
-    private const int CEE_RET = 0x2A;
-    private const int CEE_THROW = 0x7A;
-    private const int CEE_LDSTR = 0x72;
-    private const int CEE_LDARG_S = 0x0E;
-    private const int CEE_LDARGA_S = 0x0F;
-    private const int CEE_STARG_S = 0x10;
-    private const int CEE_LDLOC_S = 0x11;
-    private const int CEE_LDLOCA_S = 0x12;
-    private const int CEE_STLOC_S = 0x13;
-    private const int CEE_LDARG = 0x100 + 0x09;
-    private const int CEE_LDARGA = 0x100 + 0x0A;
-    private const int CEE_STARG = 0x100 + 0x0B;
-    private const int CEE_LDLOC = 0x100 + 0x0C;
-    private const int CEE_LDLOCA = 0x100 + 0x0D;
-    private const int CEE_STLOC = 0x100 + 0x0E;
-
     private static int DecodeOpcode(byte[] code, int pc, out int len)
     {
         len = 1;
@@ -550,9 +573,9 @@ internal sealed partial class Dasm
         {
             case 0xFE:
                 op = (pc + 1 < code.Length ? code[pc + 1] : 0) + 256;
-                if (op >= CEE_COUNT)
+                if (op >= UndefinedOpcode)
                 {
-                    op = CEE_COUNT;
+                    op = UndefinedOpcode;
                 }
 
                 len = 2;
@@ -565,13 +588,13 @@ internal sealed partial class Dasm
             case 0xF9:
             case 0xF8:
                 len = 3;
-                return CEE_COUNT;
+                return UndefinedOpcode;
         }
 
         return op;
     }
 
-    private bool Disassemble(MethodBody method, int funcToken, ParamDescriptor[]? argNames, int ulArgs)
+    private bool Disassemble(MethodBody method, MethodDefinitionHandle methodHandle, ParamDescriptor[]? argNames, int ulArgs)
     {
         byte[] code = method.Code;
         PrintLine($"{Indent}// Code size       {method.CodeSize} (0x{method.CodeSize:x})");
@@ -604,7 +627,7 @@ internal sealed partial class Dasm
         }
 
         uint codeSize = method.CodeSize;
-        List<SequencePoint>? sequencePoints = GetSequencePoints(funcToken);
+        List<SequencePoint>? sequencePoints = GetSequencePoints(methodHandle);
         int spIndex = 0;
 
         while (pc < codeSize)
@@ -620,7 +643,7 @@ internal sealed partial class Dasm
             {
                 // Undefined opcodes have no unambiguous mnemonic: emit their bytes so that the IL reassembles
                 // exactly.
-                if (instr == CEE_COUNT && len == 3)
+                if (instr == UndefinedOpcode && len == 3)
                 {
                     // A reserved prefix byte: only that byte is undefined.
                     len = 1;
@@ -717,7 +740,7 @@ internal sealed partial class Dasm
                     }
 
                     sb.Append(name);
-                    if (instr == CEE_RET || instr == CEE_THROW)
+                    if (ToILOpCode(instr) is ILOpCode.Ret or ILOpCode.Throw)
                     {
                         fNeedNewLine = true;
                     }
@@ -736,16 +759,16 @@ internal sealed partial class Dasm
                         Pad();
                     }
 
-                    switch (instr)
+                    switch (ToILOpCode(instr))
                     {
-                        case CEE_LDARG_S:
-                        case CEE_LDARGA_S:
-                        case CEE_STARG_S:
+                        case ILOpCode.Ldarg_s:
+                        case ILOpCode.Ldarga_s:
+                        case ILOpCode.Starg_s:
                             AppendArg(sb, name, ch, argNames, ulArgs);
                             break;
-                        case CEE_LDLOC_S:
-                        case CEE_LDLOCA_S:
-                        case CEE_STLOC_S:
+                        case ILOpCode.Ldloc_s:
+                        case ILOpCode.Ldloca_s:
+                        case ILOpCode.Stloc_s:
                             sb.Append(Pad10(name)).Append(" V_").Append(ch.ToString(CultureInfo.InvariantCulture));
                             break;
                         default:
@@ -767,16 +790,16 @@ internal sealed partial class Dasm
                     }
 
                     ushort v = (ushort)(code[pc] | code[pc + 1] << 8);
-                    switch (instr)
+                    switch (ToILOpCode(instr))
                     {
-                        case CEE_LDARGA:
-                        case CEE_LDARG:
-                        case CEE_STARG:
+                        case ILOpCode.Ldarga:
+                        case ILOpCode.Ldarg:
+                        case ILOpCode.Starg:
                             AppendArg(sb, name, v, argNames, ulArgs);
                             break;
-                        case CEE_LDLOCA:
-                        case CEE_LDLOC:
-                        case CEE_STLOC:
+                        case ILOpCode.Ldloca:
+                        case ILOpCode.Ldloc:
+                        case ILOpCode.Stloc:
                             sb.Append(Pad10(name)).Append(" V_").Append(v.ToString(CultureInfo.InvariantCulture));
                             break;
                         default:
@@ -994,8 +1017,7 @@ internal sealed partial class Dasm
                 case OperandType.InlineMethod:
                 {
                     int tk = BitConverter.ToInt32(code, (int)pc);
-                    int tkType = TypeFromToken(tk);
-                    if (instr == CEE_LDSTR && tkType != mdtString)
+                    if (ToILOpCode(instr) == ILOpCode.Ldstr && (uint)tk >> 24 != (uint)HandleKind.UserString)
                     {
                         // Backwards compatible ldstr instruction: the operand is the RVA of a zero terminated UTF-16 string.
                         if (_options.ShowBytes)
@@ -1005,13 +1027,13 @@ internal sealed partial class Dasm
                             Pad();
                         }
 
-                        byte[]? str = GetBytesAtRva((uint)tk, -1);
-                        if (str is null)
+                        ReadOnlySpan<byte> str = SpanAtRva((uint)tk);
+                        if (str.IsEmpty)
                         {
                             PrintLine($"// Error: no section header for RVA 0x{tk:x}, defaulting to empty string");
                         }
 
-                        sb.Append(Pad10(name)).Append(' ').Append(ConvToLiteral(str ?? new byte[2]));
+                        sb.Append(Pad10(name)).Append(' ').Append(ConvToLiteral(str));
                         pc += 4;
                         break;
                     }
@@ -1031,30 +1053,36 @@ internal sealed partial class Dasm
                         break;
                     }
 
-                    if (!IsValidToken(tk))
+                    if (!TryGetHandle(tk, out Handle h))
                     {
                         sb.Append(ERRORMSG($" [ERROR: INVALID TOKEN 0x{tk:X8}] "));
                         break;
                     }
 
+                    if (h.Kind == HandleKind.UserString)
+                    {
+                        PrettyPrintUserString(sb, (UserStringHandle)h);
+                        break;
+                    }
+
                     if (info.Type == OperandType.InlineTok)
                     {
-                        switch (tkType)
+                        switch (h.Kind)
                         {
-                            case mdtMethodDef:
-                            case mdtMethodSpec:
+                            case HandleKind.MethodDefinition:
+                            case HandleKind.MethodSpecification:
                                 sb.Append(KEYWORD("method "));
                                 break;
-                            case mdtFieldDef:
+                            case HandleKind.FieldDefinition:
                                 sb.Append(KEYWORD("field "));
                                 break;
-                            case mdtMemberRef:
-                                sb.Append(KEYWORD(IsFieldMemberRef(tk) ? "field " : "method "));
+                            case HandleKind.MemberReference:
+                                sb.Append(KEYWORD(IsFieldMemberRef((MemberReferenceHandle)h) ? "field " : "method "));
                                 break;
                         }
                     }
 
-                    PrettyPrintToken(sb, tk);
+                    PrettyPrintToken(sb, (EntityHandle)h);
                     break;
                 }
 
@@ -1069,15 +1097,16 @@ internal sealed partial class Dasm
 
                     int tk = BitConverter.ToInt32(code, (int)pc);
                     pc += 4;
-                    if (TypeFromToken(tk) == mdtSignature && IsValidToken(tk))
+                    bool isSignature = (uint)tk >> 24 == (uint)HandleKind.StandaloneSignature;
+                    if (isSignature && TryGetHandle(tk, out EntityHandle sigHandle))
                     {
-                        sb.Append(Pad10(name)).Append(' ').Append(PrettyPrintSig(GetStandaloneSig(tk), ""));
+                        sb.Append(Pad10(name)).Append(' ').Append(PrettyPrintSig(Blob(_md.GetStandaloneSignature((StandaloneSignatureHandle)sigHandle).Signature), ""));
                         if (_options.ShowTokens)
                         {
                             sb.Append(COMMENT($" /*{tk:X8}*/"));
                         }
                     }
-                    else if (TypeFromToken(tk) == mdtSignature)
+                    else if (isSignature)
                     {
                         sb.Clear();
                         sb.Append(COMMENT($"// ERROR: Invalid {tk:X8} record"));
@@ -1107,7 +1136,7 @@ internal sealed partial class Dasm
                 foreach (EHClause e in _ehInfo)
                 {
                     uint theEnd = e.HandlerOffset + e.HandlerLength;
-                    if ((e.Flags & PUT_INTO_CODE) != 0 && pc == theEnd)
+                    if (e.PutIntoCode && pc == theEnd)
                     {
                         PopIndent();
                         PrintLine($"{Indent}{UNSCOPE()}  {COMMENT("// end handler")}");
@@ -1148,7 +1177,7 @@ internal sealed partial class Dasm
         {
             EHClause e = _ehInfo[i];
             uint theEnd = e.HandlerOffset + e.HandlerLength;
-            if ((e.Flags & PUT_INTO_CODE) != 0 && pc == theEnd)
+            if (e.PutIntoCode && pc == theEnd)
             {
                 PopIndent();
                 PrintLine($"{Indent}{UNSCOPE()}  {COMMENT("// end handler")}");
@@ -1165,12 +1194,12 @@ internal sealed partial class Dasm
         for (int i = 0; i < _ehInfo.Count; i++)
         {
             EHClause e = _ehInfo[i];
-            if ((e.Flags & PUT_INTO_CODE) == 0)
+            if (!e.PutIntoCode)
             {
                 continue;
             }
 
-            if ((e.Flags & NEW_TRY_BLOCK) != 0)
+            if (e.NewTryBlock)
             {
                 if (pc == e.TryOffset + e.TryLength)
                 {
@@ -1186,8 +1215,7 @@ internal sealed partial class Dasm
                 }
             }
 
-            uint flags = e.Flags;
-            if ((flags & COR_ILEXCEPTION_CLAUSE_FILTER) != 0 && pc == e.ClassTokenOrFilterOffset)
+            if ((e.Kind & ExceptionRegionKind.Filter) != 0 && pc == e.ClassTokenOrFilterOffset)
             {
                 PrintLine(Indent + KEYWORD("filter"));
                 PrintLine(Indent + SCOPE());
@@ -1196,7 +1224,7 @@ internal sealed partial class Dasm
 
             if (pc == e.HandlerOffset)
             {
-                if ((flags & COR_ILEXCEPTION_CLAUSE_FILTER) != 0)
+                if ((e.Kind & ExceptionRegionKind.Filter) != 0)
                 {
                     PopIndent();
                     PrintLine($"{Indent}{UNSCOPE()}  {COMMENT("// end filter")}");
@@ -1205,17 +1233,17 @@ internal sealed partial class Dasm
                 }
                 else
                 {
-                    if ((flags & COR_ILEXCEPTION_CLAUSE_FAULT) != 0)
+                    if ((e.Kind & ExceptionRegionKind.Fault) != 0)
                     {
                         PrintLine(Indent + KEYWORD("fault"));
                     }
-                    else if ((flags & COR_ILEXCEPTION_CLAUSE_FINALLY) != 0 || IsNilToken((int)e.ClassTokenOrFilterOffset))
+                    else if ((e.Kind & ExceptionRegionKind.Finally) != 0 || IsNilCatchType(e))
                     {
                         PrintLine(Indent + KEYWORD("finally"));
                     }
                     else
                     {
-                        PrintLine($"{Indent}{KEYWORD("catch")} {PrettyPrintClass((int)e.ClassTokenOrFilterOffset)} ");
+                        PrintLine($"{Indent}{KEYWORD("catch")} {PrettyPrintCatchType(e)} ");
                     }
 
                     PrintLine(Indent + SCOPE());
@@ -1249,7 +1277,7 @@ internal sealed partial class Dasm
         for (int i = 0; i < _ehInfo.Count; i++)
         {
             EHClause e = _ehInfo[i];
-            if ((e.Flags & PUT_INTO_CODE) == 0)
+            if (!e.PutIntoCode)
             {
                 raw.Add(e);
                 continue;
@@ -1258,7 +1286,7 @@ internal sealed partial class Dasm
             bool Boundary(uint o) => _instrStarts.Contains(o) || o == method.CodeSize;
             if (!Boundary(e.TryOffset) || !Boundary(e.TryOffset + e.TryLength) || !Boundary(e.HandlerOffset)
                 || !Boundary(e.HandlerOffset + e.HandlerLength)
-                || ((e.Flags & COR_ILEXCEPTION_CLAUSE_FILTER) != 0 && !Boundary(e.ClassTokenOrFilterOffset)))
+                || ((e.Kind & ExceptionRegionKind.Filter) != 0 && !Boundary(e.ClassTokenOrFilterOffset)))
             {
                 return false;
             }
@@ -1268,7 +1296,7 @@ internal sealed partial class Dasm
 
         // Handlers close in order of their end offset. Braces closing at the same offset are matched by ilasm with the
         // innermost open blocks first, whatever order the comments suggest: the block opened last closes first.
-        static uint OpenOffset(EHClause e) => (e.Flags & COR_ILEXCEPTION_CLAUSE_FILTER) != 0 ? e.ClassTokenOrFilterOffset : e.HandlerOffset;
+        static uint OpenOffset(EHClause e) => (e.Kind & ExceptionRegionKind.Filter) != 0 ? e.ClassTokenOrFilterOffset : e.HandlerOffset;
         inCode.Sort((a, b) =>
         {
             int c = (a.Clause.HandlerOffset + a.Clause.HandlerLength).CompareTo(b.Clause.HandlerOffset + b.Clause.HandlerLength);
@@ -1293,10 +1321,9 @@ internal sealed partial class Dasm
         {
             EHClause a = original[i];
             EHClause b = emitted[i];
-            uint mask = ~SEH_NEW_PUT_MASK & 0x7;
             uint classOrFilterA = a.ClassTokenOrFilterOffset;
             uint classOrFilterB = b.ClassTokenOrFilterOffset;
-            if ((a.Flags & mask) != (b.Flags & mask) || a.TryOffset != b.TryOffset || a.TryLength != b.TryLength
+            if ((a.Kind & KindMask) != (b.Kind & KindMask) || a.TryOffset != b.TryOffset || a.TryLength != b.TryLength
                 || a.HandlerOffset != b.HandlerOffset || a.HandlerLength != b.HandlerLength || classOrFilterA != classOrFilterB)
             {
                 return false;
@@ -1336,7 +1363,7 @@ internal sealed partial class Dasm
     }
 
     // ConvToLiteral: quoted string for the old style ldstr operand, or "" if it holds characters it cannot print.
-    private static string ConvToLiteral(byte[] utf16z)
+    private static string ConvToLiteral(ReadOnlySpan<byte> utf16z)
     {
         StringBuilder sb = new();
         sb.Append('"');

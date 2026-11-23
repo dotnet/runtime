@@ -41,7 +41,7 @@ public class RoundTripTests
     {
         using Disassembler disassembler = new(new MemoryStream(image), options);
         StringWriter writer = new();
-        Assert.True(disassembler.Disassemble(writer, TextWriter.Null, outputFilePath: null));
+        Assert.True(disassembler.Disassemble(writer, TextWriter.Null));
         return writer.ToString();
     }
 
@@ -451,7 +451,7 @@ public class RoundTripTests
     {
         _ = name;
         _ = expectedLines;
-        Options options = new() { RawExceptionHandling = true, ShowBytes = true, ShowTokens = true, CustomAttributesVerbal = true };
+        Options options = new() { RawExceptionHandling = true, ShowBytes = true, ShowTokens = true, CustomAttributeDisassembler = VerbalCustomAttributeDisassembler.Instance };
         string first = Disassemble(Assemble(Prolog + body), options);
         string second = Disassemble(Assemble(first), options);
         Assert.Equal(Normalize(first), Normalize(second));
