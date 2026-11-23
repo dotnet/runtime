@@ -538,6 +538,7 @@ public class WebcilInWasmSizesTests
         SL.Build build = RunPrecompressedTarget(pack, "_ComputeWasmBuildCandidates;_WriteWasmBuildWebcilStamp", "-p:EmptySelection=" + emptySelection);
         string selection = GetSelectionStamp(build);
         Assert.Equal(32, Convert.FromBase64String(selection).Length);
+        Assert.Equal(emptySelection, selection == Convert.ToBase64String(SHA256.HashData(Array.Empty<byte>())));
         string stamp = Path.Combine(pack.Directory, "obj", "wasm-webcil-build.stamp");
         Assert.Contains("_WasmPrecompressedSelectionStamp=" + selection, File.ReadAllLines(stamp));
         DateTime timestamp = File.GetLastWriteTimeUtc(stamp);
@@ -1194,7 +1195,8 @@ public class WebcilInWasmSizesTests
 
     private sealed class TempDirectory : IDisposable
     {
-        public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.IO.Path.GetRandomFileName());
+        public string Path { get; } = System.IO.Path.GetFullPath(
+            System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.IO.Path.GetRandomFileName()));
 
         public TempDirectory() => Directory.CreateDirectory(Path);
 
