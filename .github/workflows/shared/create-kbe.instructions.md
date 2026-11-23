@@ -115,6 +115,18 @@ relevant comments. A failed, filtered, incomplete, ambiguous, or unreadable
 lookup is not an empty result: classify it as `dnceng-lookup-blocked` and do not
 draft or publish a new issue.
 
+If a candidate is closed as a duplicate, follow only explicit duplicate links
+and read each linked issue body and relevant comments until reaching the
+canonical issue that is not itself a duplicate. Track visited issues. If a link
+is missing or ambiguous, the chain is cyclic, or any read is inconclusive,
+classify the result as `dnceng-lookup-blocked`.
+
+Use the canonical issue's state, closure time, and linked fix evidence for
+classification. An open canonical issue always yields `existing-dnceng-kbe`,
+even when the initially matched duplicate is closed. A closed duplicate does
+not establish that the failure was fixed and must not by itself produce a
+recurrence draft.
+
 Classify the result as exactly one of:
 
 - `existing-dnceng-kbe`: an open issue covers the same root cause;

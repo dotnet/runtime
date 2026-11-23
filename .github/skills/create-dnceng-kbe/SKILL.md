@@ -69,7 +69,11 @@ select a different action.
 
 ## Execute the requested action
 
-1. Verify the requested action and apply the requested lookup mode:
+1. Before using any candidate signature, error text, logs, or other supplied
+   evidence in an external lookup, stop when the candidate contains potential
+   security-sensitive material. Do not create any GitHub issue, AzDO work item,
+   comment, draft, lookup query, or other external artifact.
+2. Verify the requested action and apply the requested lookup mode:
    - With `reuse-supplied`, require a conclusive dnceng lookup.
    - With `complete-if-needed`, reuse conclusive supplied evidence; otherwise
      run the dnceng duplicate and recurrence lookup before drafting.
@@ -77,9 +81,6 @@ select a different action.
      `complete-if-needed`.
    The lookup may return an existing issue or block an unsafe duplicate, but it
    must not select a different draft action.
-2. Stop when the candidate contains potential security-sensitive material. Do
-   not create any GitHub issue, AzDO work item, comment, draft, or other
-   external artifact.
 3. Load the authoritative external form and guidance. Verify that the requested
    action and supplied evidence are compatible with the current form.
 4. Write one local Markdown review artifact. Prefer the session
