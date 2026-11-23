@@ -12182,6 +12182,11 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
     bool useNullCheck = true;
 #elif defined(TARGET_ARM)
+    // The result is discarded. LDRB can use a 16-bit Thumb encoding with an immediate offset.
+    if (ind->TypeIs(TYP_BYTE))
+    {
+        ind->ChangeType(TYP_UBYTE);
+    }
     bool useNullCheck = false;
 #else  // TARGET_XARCH
     bool useNullCheck = !ind->Addr()->isContained();
