@@ -278,9 +278,13 @@ test("UI dispatches worker output to configured callbacks and surfaces callback 
 });
 
 test("worker startup failure notifies normal exit listeners before teardown and preserves successful exit codes", async () => {
-    for (const scenario of ["initializer failure", "exit", "runMainAndExit"]) {
+    for (const scenario of ["symbols 404", "symbols network", "symbols preload", "initializer failure", "exit", "runMainAndExit"]) {
         const events = [];
-        const failure = new Error("UI initializer failed");
+        const beforeAttach = scenario.startsWith("symbols");
+        const failed = beforeAttach || scenario === "initializer failure";
+        let failure = beforeAttach
+            ? new TypeError(scenario === "symbols 404" ? "Required native symbols returned 404" : "Failed to fetch native symbols")
+            : new Error("UI initializer failed");
         const config = {
             resources: { jsModuleRuntime: [{}], jsModuleDiagnostics: [{ name: "diagnostics" }] },
             workerOptions: { timeoutMs: 0 }, logExitCode: true, appendElementOnExit: true,
@@ -302,12 +306,22 @@ test("worker startup failure notifies normal exit listeners before teardown and 
                 body: { appendChild: element => events.push(`exit element ${element.innerHTML}`) },
             },
             Worker: class {
-                constructor() { worker = this; }
+                constructor() {
+                    worker = this;
+                    assert.equal(events.filter(value => value === "diagnostics subscribed").length, 1);
+                    assert.equal(events.filter(value => value === "logging proxy").length, 1);
+                    assert.equal(dotnetInternals[0].role, "ui");
+                    assert.equal(dotnetInternals[0].memory, undefined);
+                    assert.throws(() => dotnetInternals[0].invoke(0), /native transport is not attached/);
+                }
                 postMessage(message) {
-                    if (message.type === "init") queueMicrotask(() => this.onmessage({ data: {
-                        type: "attach", signalBuffer: signal.buffer, nativeBuffer: new SharedArrayBuffer(16),
-                        wasmMemory: new WebAssembly.Memory({ initial: 1, maximum: 1, shared: true }),
-                    } }));
+                    if (message.type === "init") queueMicrotask(() => this.onmessage({ data: beforeAttach
+                        ? { type: "error", error: { name: failure.name, message: failure.message, stack: failure.stack } }
+                        : {
+                            type: "attach", signalBuffer: signal.buffer, nativeBuffer: new SharedArrayBuffer(16),
+                            wasmMemory: new WebAssembly.Memory({ initial: 1, maximum: 1, shared: true }),
+                        },
+                    }));
                     if (message.type === "attached") queueMicrotask(() => this.onmessage({ data: {
                         type: "ready", runtimeBuildInfo: {}, workerProxyCounts: [], appSettings: [],
                     } }));
@@ -389,19 +403,25 @@ test("worker startup failure notifies normal exit listeners before teardown and 
         loaderExports.addOnExitListener = addOnExitListener;
         addOnExitListener((code, reason) => {
             assert.equal(stopped, false);
-            assert.equal(code, scenario === "initializer failure" ? 1 : 0);
-            if (scenario === "initializer failure") {
+            assert.equal(code, failed ? 1 : 0);
+            if (beforeAttach) {
+                assert.equal(reason.name, failure.name);
+                assert.equal(reason.message, failure.message);
+                failure = reason;
+                assert.equal(runtimeState.nativeReady, false);
+            }
+            if (failed) {
                 assert.equal(reason, failure);
                 assert.equal(runtimeState.creatingRuntime, true);
-                dotnetApi.exit(7);
+                if (!beforeAttach) dotnetApi.exit(7);
             }
             events.push("exit listener");
             return false;
         });
         const module = await load("./worker-proxy");
         await module.evaluate();
-        const ready = module.namespace.createWorkerProxy(config);
-        if (scenario === "initializer failure") {
+        const ready = module.namespace.createWorkerProxy(config, scenario === "symbols preload");
+        if (failed) {
             await assert.rejects(ready, error => {
                 try { exit(1, error); } catch (reason) { assert.equal(reason, failure); }
                 return error === failure;
@@ -418,8 +438,11 @@ test("worker startup failure notifies normal exit listeners before teardown and 
         }
         assert.equal(events.filter(value => value === "exit listener").length, 1);
         assert.equal(events.filter(value => value === "terminate").length, 1);
-        assert.ok(events.indexOf("exit listener") < events.indexOf("stop channel"));
-        assert.equal(runtimeState.exitCode, scenario === "initializer failure" ? 1 : 0);
+        assert.ok(events.indexOf("exit listener") < events.indexOf("terminate"));
+        if (beforeAttach) assert.equal(events.includes("stop channel"), false);
+        else assert.ok(events.indexOf("exit listener") < events.indexOf("stop channel"));
+        assert.equal(dotnetInternals[0].memory instanceof WebAssembly.Memory, !beforeAttach);
+        assert.equal(runtimeState.exitCode, failed ? 1 : 0);
         assert.equal(runtimeState.creatingRuntime, false);
         assert.equal(worker.onmessage, null);
         assert.equal(events.filter(value => value === `WASM EXIT ${runtimeState.exitCode}`).length, 1);

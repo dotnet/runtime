@@ -55,6 +55,15 @@ async function createWorkerSession(config: LoaderConfig, preload: boolean): Prom
     // UI initializers retain this config, so resolve culture before cloning it for the worker.
     getIcuResourceName();
     const boot = createWorkerBootConfig(config);
+    // Startup can fail before native attachment; UI exit reporting must already be listening.
+    dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext] = {
+        role: "ui",
+        invoke: () => { throw new Error("runInWorker: native transport is not attached"); },
+    };
+    if (resources.jsModuleDiagnostics?.length) {
+        const diagnosticsModule = await loadDotnetModule(resources.jsModuleDiagnostics[0]);
+        await diagnosticsModule.dotnetInitializeModule<void>(dotnetInternals);
+    }
     const worker = new Worker(scriptUrl, { type: "module" });
     const ready = createPromiseCompletionSource<RuntimeAPI>();
     const downloaded = createPromiseCompletionSource<RuntimeAPI>();
@@ -212,10 +221,6 @@ async function createWorkerSession(config: LoaderConfig, preload: boolean): Prom
             },
         });
         runtimeState.nativeReady = true;
-        if (resources!.jsModuleDiagnostics?.length) {
-            const diagnosticsModule = await loadDotnetModule(resources!.jsModuleDiagnostics[0]);
-            await diagnosticsModule.dotnetInitializeModule<void>(dotnetInternals);
-        }
         const runtimeModule = await loadDotnetModule(resources!.jsModuleRuntime[0]);
         await runtimeModule.dotnetInitializeModule<void>(dotnetInternals);
         dotnetApi.INTERNAL.workerMemoryViews = new MemoryViewManager(message.wasmMemory, signal);

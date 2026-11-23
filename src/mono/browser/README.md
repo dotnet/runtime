@@ -116,6 +116,11 @@ WebAssembly renderer and set the managed environment variable
 `__BLAZOR_WEBASSEMBLY_OUT_OF_PROCESS_RENDERER=true`. The shared-heap renderer
 reads strings directly from shared memory, which browser `TextDecoder` rejects.
 The CoreCLR Blazor build-test fixtures enable this renderer.
+When using the ASP.NET Core Blazor development server, pass
+`--apply-cop-headers` to `dotnet run` so worker hosting is cross-origin isolated.
+The prototype's generated CoreCLR Blazor test apps use WasmAppHost instead of
+the newer Blazor Gateway, which does not yet provide isolation headers on its
+HTML endpoints.
 
 Bundlers must keep the loader as a separate entry point and support code-split
 dynamic imports. The native worker starts from the loader module URL, not the

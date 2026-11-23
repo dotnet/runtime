@@ -105,6 +105,12 @@ public class WebcilInWasmSizesTests
         DateTime timestamp = File.GetLastWriteTimeUtc(staged);
         Assert.True(task.Execute());
         Assert.Equal(timestamp, File.GetLastWriteTimeUtc(staged));
+        DateTime updated = timestamp.AddMinutes(1);
+        File.SetLastWriteTimeUtc(source, updated);
+        Assert.True(task.Execute());
+        Assert.Equal(updated, File.GetLastWriteTimeUtc(staged));
+        Assert.True(task.Execute());
+        Assert.Equal(updated, File.GetLastWriteTimeUtc(staged));
     }
 
     [Fact]

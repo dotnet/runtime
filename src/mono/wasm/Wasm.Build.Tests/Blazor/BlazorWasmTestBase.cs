@@ -227,7 +227,10 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     public override async Task<RunResult> RunForBuildWithDotnetRun(RunOptions runOptions) =>
         await base.RunForBuildWithDotnetRun(runOptions with {
             ExecuteAfterLoaded = runOptions.ExecuteAfterLoaded ?? _executeAfterLoaded,
-            ServerEnvironment = GetServerEnvironment(runOptions.ServerEnvironment)
+            ServerEnvironment = GetServerEnvironment(runOptions.ServerEnvironment),
+            ExtraArgs = IsCoreClrRuntime && !runOptions.ExtraArgs.Contains("--apply-cop-headers", StringComparison.Ordinal)
+                ? runOptions.ExtraArgs + " --apply-cop-headers"
+                : runOptions.ExtraArgs
         });
 
     public override async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)

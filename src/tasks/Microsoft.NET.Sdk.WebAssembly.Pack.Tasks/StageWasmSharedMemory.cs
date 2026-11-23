@@ -47,6 +47,9 @@ public sealed class StageWasmSharedMemory : Task
                 Directory.CreateDirectory(OutputPath);
                 if (!File.Exists(output) || !File.ReadAllBytes(output).AsSpan().SequenceEqual(shared))
                     File.WriteAllBytes(output, shared);
+                DateTime sourceTimestamp = File.GetLastWriteTimeUtc(candidate.ItemSpec);
+                if (sourceTimestamp > File.GetLastWriteTimeUtc(output))
+                    File.SetLastWriteTimeUtc(output, sourceTimestamp);
 
                 var staged = new TaskItem(output, candidate.CloneCustomMetadata());
                 staged.RemoveMetadata("Fingerprint");

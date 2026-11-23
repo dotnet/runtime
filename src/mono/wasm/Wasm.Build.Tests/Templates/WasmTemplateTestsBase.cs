@@ -107,6 +107,16 @@ public class WasmTemplateTestsBase : BuildTestBase
         AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
         AddWasmOptProjectProperties(ref extraProperties);
 
+        if (template == Template.BlazorWasm && IsCoreClrRuntime)
+        {
+            // Use WasmAppHost until the gateway supports isolation on its HTML endpoints.
+            extraItems += """
+                <PackageReference Remove="Microsoft.AspNetCore.Components.Gateway" />
+                <PackageReference Remove="Microsoft.AspNetCore.Components.WebAssembly.DevServer" />
+                <WasmEnvironmentVariable Include="__BLAZOR_WEBASSEMBLY_OUT_OF_PROCESS_RENDERER" Value="true" />
+                """;
+        }
+
         string projectFilePath = Path.Combine(_projectDir, $"{projectName}.csproj");
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(projectName, projectFilePath, logPath, nugetDir);
