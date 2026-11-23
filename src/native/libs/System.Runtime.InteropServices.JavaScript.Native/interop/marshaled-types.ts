@@ -7,7 +7,8 @@ import { dotnetApi, dotnetAssert, dotnetLoaderExports, dotnetLogger } from "./cr
 import { jsOwnedGcHandleSymbol, promiseHolderSymbol, teardownManagedProxy } from "./gc-handles";
 import { completeTask, getManagedStackTrace } from "./managed-exports";
 import { GCHandleNull, IMemoryView, MarshalerToCs } from "./types";
-import { isRuntimeRunning } from "./utils";
+import { fixupPointer, isRuntimeRunning } from "./utils";
+import Wasm64 from "consts:wasm64";
 
 export const enum MemoryViewType {
     Byte = 0,
@@ -27,13 +28,13 @@ abstract class MemoryView implements IMemoryView {
         // this view must be short lived so that it doesn't fail after wasm memory growth
         // for that reason we also don't give the view out to end user and provide set/slice/copyTo API instead
         if (this._viewType == MemoryViewType.Byte) {
-            return new Uint8Array(dotnetApi.localHeapViewU8().buffer, this._pointer as any >>> 0, this._length);
+            return new Uint8Array(dotnetApi.localHeapViewU8().buffer, Wasm64 ? fixupPointer(this._pointer, 0) : this._pointer as any >>> 0, this._length);
         } else if (this._viewType == MemoryViewType.Int32) {
-            return new Int32Array(dotnetApi.localHeapViewI32().buffer, this._pointer as any >>> 0, this._length);
+            return new Int32Array(dotnetApi.localHeapViewI32().buffer, Wasm64 ? fixupPointer(this._pointer, 0) : this._pointer as any >>> 0, this._length);
         } else if (this._viewType == MemoryViewType.Double) {
-            return new Float64Array(dotnetApi.localHeapViewF64().buffer, this._pointer as any >>> 0, this._length);
+            return new Float64Array(dotnetApi.localHeapViewF64().buffer, Wasm64 ? fixupPointer(this._pointer, 0) : this._pointer as any >>> 0, this._length);
         } else if (this._viewType == MemoryViewType.Single) {
-            return new Float32Array(dotnetApi.localHeapViewF32().buffer, this._pointer as any >>> 0, this._length);
+            return new Float32Array(dotnetApi.localHeapViewF32().buffer, Wasm64 ? fixupPointer(this._pointer, 0) : this._pointer as any >>> 0, this._length);
         } else {
             throw new Error("NotImplementedException");
         }

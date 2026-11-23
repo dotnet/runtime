@@ -57,8 +57,17 @@ function libBrowserHostFactory() {
     for (const exportName of Reflect.ownKeys(exports)) {
         const name = String(exportName);
         if (name === "dotnetInitializeModule") continue;
-        mergeBrowserHost[name] = () => "dummy";
-        assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
+        // On memory64 the native caller passes BigInt pointers, which only a library function with a
+        // __sig converts, so keep a stable wrapper and forward to the implementation.
+        if (name === "BrowserHost_ExternalAssemblyProbe" && MEMORY64) {
+            mergeBrowserHost[name] = function (path, data, size) {
+                return BROWSER_HOST.externalAssemblyProbe(path, data, size);
+            };
+            assignExportsBuilder += `BROWSER_HOST.externalAssemblyProbe = exports.${name};\n`;
+        } else {
+            mergeBrowserHost[name] = () => "dummy";
+            assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
+        }
     }
     for (const importName of explicitDeps) {
         explicitImportsBuilder += `_${importName}();\n`;
@@ -67,6 +76,9 @@ function libBrowserHostFactory() {
     mergeBrowserHost.$BROWSER_HOST.explicitImports = new Function(explicitImportsBuilder);
 
     autoAddDeps(mergeBrowserHost, "$BROWSER_HOST");
+    if (MEMORY64) {
+        mergeBrowserHost.BrowserHost_ExternalAssemblyProbe__sig = "ippp";
+    }
     addToLibrary(mergeBrowserHost);
 }
 

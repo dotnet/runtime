@@ -113,10 +113,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             yield return new object[] { (IntPtr)42 };
             yield return new object[] { IntPtr.Zero };
             yield return new object[] { (IntPtr)1 };
-            yield return new object[] { (IntPtr)(-1) };
-            yield return new object[] { IntPtr.MaxValue };
-            yield return new object[] { IntPtr.MinValue };
+            foreach (IntPtr value in WideIntPtrCases())
+            {
+                yield return new object[] { value };
+            }
         }
+
+        // An IntPtr crosses to JavaScript as a number. On 64-bit targets that is exact only up to 2^53,
+        // so use values above 4 GiB that a number represents exactly instead of the extremes.
+        private static IEnumerable<IntPtr> WideIntPtrCases() => IntPtr.Size == 8
+            ? [unchecked((IntPtr)0x1_0000_0000L), unchecked((IntPtr)((1L << 53) - 1))]
+            : [(IntPtr)(-1), IntPtr.MaxValue, IntPtr.MinValue];
 
         public static IEnumerable<object[]> MarshalDateTimeCases()
         {
@@ -262,9 +269,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             yield return new object[] { (IntPtr)42 };
             yield return new object[] { IntPtr.Zero };
             yield return new object[] { (IntPtr)1 };
-            yield return new object[] { (IntPtr)(-1) };
-            yield return new object[] { IntPtr.MaxValue };
-            yield return new object[] { IntPtr.MinValue };
+            foreach (IntPtr value in WideIntPtrCases())
+            {
+                yield return new object[] { value };
+            }
         }
 
         public static IEnumerable<object[]> MarshalNullableDoubleCases()
