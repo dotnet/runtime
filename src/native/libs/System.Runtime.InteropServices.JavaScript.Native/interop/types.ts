@@ -120,28 +120,28 @@ export const enum MeasuredBlock {
 }
 
 export const JavaScriptMarshalerArgSize = Wasm64 ? 56 : 32;
-// keep in sync with JSMarshalerArgumentImpl offsets
-export const enum JSMarshalerArgumentOffsets {
-    /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
-    BooleanValue = 0,
-    ByteValue = 0,
-    CharValue = 0,
-    Int16Value = 0,
-    Int32Value = 0,
-    Int64Value = 0,
-    SingleValue = 0,
-    DoubleValue = 0,
-    IntPtrValue = 0,
-    JSHandle = 4,
-    GCHandle = 4,
-    Length = 8,
-    Type = 12,
-    ElementType = 13,
-    ContextHandle = 16,
-    ReceiverShouldFree = 20,
-    CallerNativeTID = 24,
-    SyncDoneSemaphorePtr = 28,
-}
+// keep in sync with JSMarshalerArgumentImpl offsets; values are at offset 0
+export const JSMarshalerArgumentOffsets = Wasm64 ? {
+    JSHandle: 8,
+    GCHandle: 8,
+    Length: 16,
+    Type: 20,
+    ElementType: 21,
+    ContextHandle: 24,
+    ReceiverShouldFree: 32,
+    CallerNativeTID: 40,
+    SyncDoneSemaphorePtr: 48,
+} as const : {
+    JSHandle: 4,
+    GCHandle: 4,
+    Length: 8,
+    Type: 12,
+    ElementType: 13,
+    ContextHandle: 16,
+    ReceiverShouldFree: 20,
+    CallerNativeTID: 24,
+    SyncDoneSemaphorePtr: 28,
+} as const;
 export const JSMarshalerTypeSize = 32;
 // keep in sync with JSFunctionBinding.JSBindingType
 export const enum JSBindingTypeOffsets {

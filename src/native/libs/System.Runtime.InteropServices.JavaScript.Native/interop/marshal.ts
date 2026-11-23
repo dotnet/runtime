@@ -69,22 +69,22 @@ export function isArgsException(args: JSMarshalerArguments): boolean {
 
 export function isReceiverShouldFree(args: JSMarshalerArguments): boolean {
     dotnetAssert.check(args, "Null args");
-    return dotnetApi.getHeapB8(<any>args + (Wasm64 ? 32 : JSMarshalerArgumentOffsets.ReceiverShouldFree));
+    return dotnetApi.getHeapB8(<any>args + JSMarshalerArgumentOffsets.ReceiverShouldFree);
 }
 
 export function getSyncDoneSemaphorePtr(args: JSMarshalerArguments): VoidPtr {
     dotnetAssert.check(args, "Null args");
-    return (Wasm64 ? getArgIntptr(<any>args + 48) : dotnetApi.getHeapU32(<any>args + JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr)) as any;
+    return (Wasm64 ? getArgIntptr(<any>args + JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr) : dotnetApi.getHeapU32(<any>args + JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr)) as any;
 }
 
 export function getCallerNativeTid(args: JSMarshalerArguments): PThreadPtr {
     dotnetAssert.check(args, "Null args");
-    return (Wasm64 ? getHandle64(<any>args + 40) : dotnetApi.getHeapI32(<any>args + JSMarshalerArgumentOffsets.CallerNativeTID)) as any;
+    return (Wasm64 ? getHandle64(<any>args + JSMarshalerArgumentOffsets.CallerNativeTID) : dotnetApi.getHeapI32(<any>args + JSMarshalerArgumentOffsets.CallerNativeTID)) as any;
 }
 
 // TODO-MT: unused until threads are enabled, the cross-thread post paths set this in the Mono tree
 export function setReceiverShouldFree(args: JSMarshalerArguments): void {
-    dotnetApi.setHeapB8(<any>args + (Wasm64 ? 32 : JSMarshalerArgumentOffsets.ReceiverShouldFree), true);
+    dotnetApi.setHeapB8(<any>args + JSMarshalerArgumentOffsets.ReceiverShouldFree, true);
 }
 
 export function setArgsContext(args: JSMarshalerArguments): void {
@@ -164,24 +164,24 @@ export function getSigType(sig: JSMarshalerType): MarshalerType {
 
 export function getArgType(arg: JSMarshalerArgument): MarshalerType {
     dotnetAssert.check(arg, "Null arg");
-    const type = dotnetApi.getHeapU8(<any>arg + (Wasm64 ? 20 : JSMarshalerArgumentOffsets.Type));
+    const type = dotnetApi.getHeapU8(<any>arg + JSMarshalerArgumentOffsets.Type);
     return <any>type;
 }
 
 export function getArgElementType(arg: JSMarshalerArgument): MarshalerType {
     dotnetAssert.check(arg, "Null arg");
-    const type = dotnetApi.getHeapU8(<any>arg + (Wasm64 ? 21 : JSMarshalerArgumentOffsets.ElementType));
+    const type = dotnetApi.getHeapU8(<any>arg + JSMarshalerArgumentOffsets.ElementType);
     return <any>type;
 }
 
 export function setArgType(arg: JSMarshalerArgument, type: MarshalerType): void {
     dotnetAssert.check(arg, "Null arg");
-    dotnetApi.setHeapU8(<any>arg + (Wasm64 ? 20 : JSMarshalerArgumentOffsets.Type), type);
+    dotnetApi.setHeapU8(<any>arg + JSMarshalerArgumentOffsets.Type, type);
 }
 
 export function setArgElementType(arg: JSMarshalerArgument, type: MarshalerType): void {
     dotnetAssert.check(arg, "Null arg");
-    dotnetApi.setHeapU8(<any>arg + (Wasm64 ? 21 : JSMarshalerArgumentOffsets.ElementType), type);
+    dotnetApi.setHeapU8(<any>arg + JSMarshalerArgumentOffsets.ElementType, type);
 }
 
 export function getArgBool(arg: JSMarshalerArgument): boolean {
@@ -323,7 +323,7 @@ export function setArgF32(arg: JSMarshalerArgument, value: number): void {
 
 export function getArgJsHandle(arg: JSMarshalerArgument): JSHandle {
     dotnetAssert.check(arg, "Null arg");
-    return <any>(Wasm64 ? getHandle64(<any>arg + 8) : dotnetApi.getHeapI32(<any>arg + JSMarshalerArgumentOffsets.JSHandle));
+    return <any>(Wasm64 ? getHandle64(<any>arg + JSMarshalerArgumentOffsets.JSHandle) : dotnetApi.getHeapI32(<any>arg + JSMarshalerArgumentOffsets.JSHandle));
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -337,7 +337,7 @@ export function setArgProxyContext(arg: JSMarshalerArgument): void {
 export function setJsHandle(arg: JSMarshalerArgument, jsHandle: JSHandle): void {
     dotnetAssert.check(arg, "Null arg");
     if (Wasm64) {
-        setHandle64(<any>arg + 8, <any>jsHandle);
+        setHandle64(<any>arg + JSMarshalerArgumentOffsets.JSHandle, <any>jsHandle);
     } else {
         dotnetApi.setHeapI32(<any>arg + JSMarshalerArgumentOffsets.JSHandle, <any>jsHandle);
     }
@@ -346,13 +346,13 @@ export function setJsHandle(arg: JSMarshalerArgument, jsHandle: JSHandle): void 
 
 export function getArgGcHandle(arg: JSMarshalerArgument): GCHandle {
     dotnetAssert.check(arg, "Null arg");
-    return <any>(Wasm64 ? getHandle64(<any>arg + 8) : dotnetApi.getHeapI32(<any>arg + JSMarshalerArgumentOffsets.GCHandle));
+    return <any>(Wasm64 ? getHandle64(<any>arg + JSMarshalerArgumentOffsets.GCHandle) : dotnetApi.getHeapI32(<any>arg + JSMarshalerArgumentOffsets.GCHandle));
 }
 
 export function setGcHandle(arg: JSMarshalerArgument, gcHandle: GCHandle): void {
     dotnetAssert.check(arg, "Null arg");
     if (Wasm64) {
-        setHandle64(<any>arg + 8, <any>gcHandle);
+        setHandle64(<any>arg + JSMarshalerArgumentOffsets.GCHandle, <any>gcHandle);
     } else {
         dotnetApi.setHeapI32(<any>arg + JSMarshalerArgumentOffsets.GCHandle, <any>gcHandle);
     }
@@ -361,12 +361,12 @@ export function setGcHandle(arg: JSMarshalerArgument, gcHandle: GCHandle): void 
 
 export function getArgLength(arg: JSMarshalerArgument): number {
     dotnetAssert.check(arg, "Null arg");
-    return dotnetApi.getHeapI32(<any>arg + (Wasm64 ? 16 : JSMarshalerArgumentOffsets.Length));
+    return dotnetApi.getHeapI32(<any>arg + JSMarshalerArgumentOffsets.Length);
 }
 
 export function setArgLength(arg: JSMarshalerArgument, size: number): void {
     dotnetAssert.check(arg, "Null arg");
-    dotnetApi.setHeapI32(<any>arg + (Wasm64 ? 16 : JSMarshalerArgumentOffsets.Length), size);
+    dotnetApi.setHeapI32(<any>arg + JSMarshalerArgumentOffsets.Length, size);
 }
 
 export function getSignatureMarshaler(signature: JSFunctionSignature, index: number): JSHandle {
