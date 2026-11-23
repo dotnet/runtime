@@ -6,6 +6,7 @@ extern alias crossgen2;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -14,6 +15,7 @@ using System.Text;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
 using Internal.Runtime;
+using R2RDump;
 using Xunit;
 using WebCilObjectWriter = crossgen2::ILCompiler.ObjectWriter.WebCilObjectWriter;
 using WebcilConstants = crossgen2::Microsoft.NET.WebAssembly.Webcil.WebcilConstants;
@@ -54,7 +56,6 @@ internal static class WasmR2RAssert
     public static void AssertAuxiliaryModule(ReadyToRunReader reader)
     {
         const int RuntimeFunctionEntrySize = sizeof(uint) * 2;
-        const int EntryActivationStatusOffset = 3 * sizeof(uint);
         const byte GlobalGetOpcode = 0x23;
         const byte I32ConstOpcode = 0x41;
         const byte I32AddOpcode = 0x6A;
@@ -130,40 +131,33 @@ internal static class WasmR2RAssert
         Assert.Equal(0, ReadWasmByte(auxiliary, ref offset, end));
         Assert.Equal((uint)entry.MethodCount, ReadWasmUleb32(auxiliary, ref offset, end));
 
+        Assert.True(TryGetWasmSectionBounds(auxiliary, WasmSectionKind.Import, out importOffset, out importEnd));
+        uint auxiliaryImportedFunctions = CountWasmImports(ReadWasmImportSection(auxiliary, ref importOffset, importEnd), WasmImportKind.Function);
+
         Assert.True(TryGetWasmSectionBounds(auxiliary, WasmSectionKind.Code, out offset, out end));
         uint functionCount = ReadWasmUleb32(auxiliary, ref offset, end);
-        Assert.Equal(functionCount - 1, activateModule.Index);
-        for (uint i = 0; i < activateModule.Index; i++)
+        Assert.True(activateModule.Index >= auxiliaryImportedFunctions, "ActivateModule must be defined in the auxiliary module.");
+        uint activationBodyIndex = activateModule.Index - auxiliaryImportedFunctions;
+        Assert.True(activationBodyIndex < functionCount, "ActivateModule must have a body in the auxiliary module.");
+        for (uint i = 0; i < activationBodyIndex; i++)
         {
             uint size = ReadWasmUleb32(auxiliary, ref offset, end);
-            offset += checked((int)size);
+            Assert.True(size <= end - offset, "Function body extends beyond the Code section.");
+            offset += (int)size;
         }
         uint activateSize = ReadWasmUleb32(auxiliary, ref offset, end);
-        ReadOnlySpan<byte> activateBody = auxiliary.Slice(offset, checked((int)activateSize));
-
-        int statusRva = metadataSection.RelativeVirtualAddress + AuxiliaryModuleMetadataSection.HeaderSize + EntryActivationStatusOffset;
-        Assert.True(ContainsMemoryAccess(activateBody, opcode: 0x28, statusRva), "ActivateModule must check the activation status.");
-        Assert.True(ContainsMemoryAccess(activateBody, opcode: 0x36, statusRva), "ActivateModule must set the activation status.");
-        Assert.True(activateBody.IndexOf([(byte)0xFC, (byte)0x0C, (byte)0x00, (byte)0x00]) >= 0,
-            "ActivateModule must initialize the table from element segment 0.");
-
-        static bool ContainsMemoryAccess(ReadOnlySpan<byte> body, byte opcode, int address)
+        Assert.True(activateSize <= end - offset, "ActivateModule body extends beyond the Code section.");
+        int bodyEnd = offset + (int)activateSize;
+        uint localGroupCount = ReadWasmUleb32(auxiliary, ref offset, bodyEnd);
+        for (uint i = 0; i < localGroupCount; i++)
         {
-            Span<byte> pattern = stackalloc byte[8];
-            pattern[0] = opcode;
-            pattern[1] = 2;
-            int length = 2;
-            uint value = (uint)address;
-            do
-            {
-                byte b = (byte)(value & 0x7F);
-                value >>= 7;
-                pattern[length++] = value != 0 ? (byte)(b | 0x80) : b;
-            }
-            while (value != 0);
-
-            return body.IndexOf(pattern[..length]) >= 0;
+            _ = ReadWasmUleb32(auxiliary, ref offset, bodyEnd);
+            SkipWasmValueType(auxiliary, ref offset, bodyEnd);
         }
+
+        ImmutableArray<byte> instructions = ImmutableArray.Create(auxiliary[offset..bodyEnd]);
+        var disassembler = new WasmDisassembler(instructions, 0, instructions.Length);
+        Assert.Contains("table.init", disassembler.Disassemble(), StringComparison.Ordinal);
     }
 
     public static void AssertFrameIdentityPrologs(WebcilImageReader reader)

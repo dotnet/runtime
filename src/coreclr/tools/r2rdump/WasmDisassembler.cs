@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -22,7 +24,7 @@ namespace R2RDump
         private int _offset;
         private readonly int _baseOffset;
         private readonly int _endOffset;
-        private readonly Func<int, string> _rvaToName;
+        private readonly Func<int, string>? _rvaToName;
 
         /// <summary>
         /// Tracks whether the previous instruction was a global.get of the imageBase global (index 1).
@@ -30,7 +32,7 @@ namespace R2RDump
         /// </summary>
         private bool _prevWasImageBaseGet;
 
-        public WasmDisassembler(ImmutableArray<byte> code, int offset, int length, Func<int, string> rvaToName = null)
+        public WasmDisassembler(ImmutableArray<byte> code, int offset, int length, Func<int, string>? rvaToName = null)
         {
             _code = code;
             _baseOffset = offset;
@@ -52,7 +54,7 @@ namespace R2RDump
                 int instrOffset = _offset - _baseOffset;
                 string instr = DecodeInstruction(ref indent, out int postAdjust, out bool isImageBaseGet, out int rva);
 
-                string annotation = null;
+                string? annotation = null;
                 if (rva >= 0 && _prevWasImageBaseGet && _rvaToName is not null)
                 {
                     annotation = _rvaToName(rva);

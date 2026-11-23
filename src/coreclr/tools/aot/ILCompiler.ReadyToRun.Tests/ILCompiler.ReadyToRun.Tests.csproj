@@ -38,6 +38,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../../Common/Compiler/ObjectWriter/WasmGlobalImports.cs" Link="TestCasesRunner/WasmGlobalImports.cs" />
+    <Compile Include="../../r2rdump/WasmDisassembler.cs" Link="TestCasesRunner/WasmDisassembler.cs" />
     <Compile Remove="TestCases/*/**/*.cs" />
     <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
     <EmbeddedResource Include="$(LibrariesProjectRoot)System.Private.CoreLib/src/System/Runtime/SuppressReadyToRunCanonicalRootingAttribute.cs"
