@@ -4447,7 +4447,9 @@ extern initial_memory_details memory_details;
 
 #else //SERVER_GC
 
-#ifdef HOST_64BIT
+// WebAssembly reservations are backed by linear memory that is never returned,
+// so wasm64 keeps the wasm32 initial segment sizes.
+#if defined(HOST_64BIT) && !defined(HOST_WASMARCH)
 
 #define INITIAL_ALLOC ((size_t)(1024*1024*256))
 #define LHEAP_ALLOC   ((size_t)(1024*1024*128))
@@ -4457,7 +4459,7 @@ extern initial_memory_details memory_details;
 #define INITIAL_ALLOC ((size_t)(1024*1024*16))
 #define LHEAP_ALLOC   ((size_t)(1024*1024*16))
 
-#endif  // HOST_64BIT
+#endif  // HOST_64BIT && !HOST_WASMARCH
 
 #endif //SERVER_GC
 
