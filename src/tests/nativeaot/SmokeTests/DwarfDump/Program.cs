@@ -4,12 +4,15 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 public class Program
 {
     public static int Main(string[] args)
     {
+        UseTypesUnderTest();
+
         var llvmDwarfDumpPath = Path.Combine(
             Environment.GetEnvironmentVariable("CORE_ROOT"),
             "SuperFileCheck",
@@ -123,6 +126,78 @@ public class Program
             return 11;
         }
 
+        // Non-GC statics are stored directly in a data section, GC statics are reached through the static base.
+        string gcStaticLocation = GetStaticFieldLocation(llvmDwarfDumpPath, nameof(StaticFields.GcStaticDeclaredFirst));
+        string nonGcStaticLocation = GetStaticFieldLocation(llvmDwarfDumpPath, nameof(StaticFields.NonGcStaticDeclaredSecond));
+        if (gcStaticLocation is null || !gcStaticLocation.Contains("DW_OP_deref") ||
+            nonGcStaticLocation is null || nonGcStaticLocation.Contains("DW_OP_deref"))
+        {
+            Console.Error.WriteLine($"Unexpected static field locations. GC static: {gcStaticLocation}, non-GC static: {nonGcStaticLocation}.");
+            return 12;
+        }
+
         return 100;
+    }
+
+    // NativeAOT only describes the types and methods that the program uses,
+    // this uses the ones inspected by the checks of Main.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void UseTypesUnderTest()
+    {
+        StaticFields.Initialize();
+    }
+
+    private static ProcessTextOutput RunLlvmDwarfDump(string llvmDwarfDumpPath, params string[] arguments)
+    {
+        ProcessTextOutput result = Process.RunAndCaptureText(new ProcessStartInfo(llvmDwarfDumpPath, [.. arguments, Environment.ProcessPath])
+        {
+            InheritedHandles = [],
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        });
+
+        if (result.ExitStatus.ExitCode != 0)
+        {
+            Console.Error.WriteLine(result.StandardError);
+        }
+
+        return result;
+    }
+
+    // Static fields are matched both by their member declaration and by their variable definition, which has the location.
+    private static string GetStaticFieldLocation(string llvmDwarfDumpPath, string fieldName)
+    {
+        ProcessTextOutput result = RunLlvmDwarfDump(llvmDwarfDumpPath, "--debug-info", $"--name={fieldName}");
+
+        bool insideVariable = false;
+        foreach (string rawLine in result.StandardOutput.Split('\n'))
+        {
+            string line = rawLine.Trim();
+            if (line.Contains("DW_TAG_"))
+            {
+                insideVariable = line.EndsWith("DW_TAG_variable");
+            }
+            else if (insideVariable && line.StartsWith("DW_AT_location"))
+            {
+                return line;
+            }
+        }
+
+        return null;
+    }
+}
+
+static class StaticFields
+{
+    // Declared in the opposite order of the storage regions, which are emitted non-GC statics first.
+    public static string GcStaticDeclaredFirst;
+    public static int NonGcStaticDeclaredSecond;
+
+    // Types are only described in the debug info when something refers to them, like their methods.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Initialize()
+    {
+        GcStaticDeclaredFirst = "gc";
+        NonGcStaticDeclaredSecond = 42;
     }
 }
