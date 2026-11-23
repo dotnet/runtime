@@ -51,7 +51,9 @@ the execution result and logged errors. Bypassed invocations execute directly wi
 Share eligible results across clones/worktrees with equivalent relative layouts. Accept physical
 `SourceRoots` with stable logical `MappedPath` metadata (`/_/`, `/_1/`, etc.). Map known paths to
 tagged logical-root/relative-path identities during key construction; retain absolute external paths.
-Require distinct physical roots and noncolliding logical mappings. Missing or invalid mappings run uncached.
+Require distinct physical roots and noncolliding logical mappings. Roots without a logical `MappedPath`
+are ignored, and an invalid set of logical mappings is ignored entirely. Paths outside mapped roots keep
+physical identities, so such keys still store and hit, but only at the same physical paths.
 Independent roots, such as a checkout and a NuGet package directory, need not retain their physical
 placement relative to each other. Physically nested roots may also use independent logical prefixes;
 overlapping logical prefixes must agree with the physical layout to avoid identity collisions.
@@ -72,7 +74,7 @@ Runtime per-library, shared-framework, out-of-band, and SDK publish targets forw
 existing `@(SourceRoot)` items after `InitializeSourceRootMappedPaths`. Aggregate runtime projects
 import the managed compiler's mapping target explicitly because their SDK does not compile sources.
 Initialization uses the existing `DeterministicSourcePaths` setting: deterministic builds normally
-receive stable logical prefixes; other builds receive physical mappings and run uncached.
+receive stable logical prefixes; other builds receive physical mappings and get path-dependent keys.
 Root forwarding does not normalize upstream assemblies or
 enable symbol preservation or compiler path mapping.
 
@@ -92,8 +94,10 @@ Dependency tracking for the unusual missing-hash case, where Cecil can read the 
 compute an output hash, is deferred; such inputs are outside the cache's supported dependency model.
 
 Check symbol eligibility only when symbols are enabled. Portable PDB emission, including embedded
-PDBs, requires explicit `PreserveSymbolPaths=true` so newly written CodeView paths do not depend on
-the physical output location. Native PDB and MDB emission is not supported by the shared cache.
+PDBs, requires explicit `PreserveSymbolPaths=true` to share across locations, because otherwise newly
+written CodeView paths depend on the physical output location; when `PreserveSymbolPaths` is false and
+an input has symbols, the physical output directory is included in the key so entries only hit at the
+same output location. Native PDB and MDB emission is not supported by the shared cache.
 Do not inspect existing CodeView or document paths: they already participate in input content hashes,
 and preserving identical physical-path-bearing bytes is safe. Automatically discovered satellite
 assemblies are copied as bytes, so inventory only their DLLs without inspecting metadata or sidecars.

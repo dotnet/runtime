@@ -68,8 +68,8 @@ Tool arguments retain the task's original path values, independently of whether 
 Cache descriptions resolve relative paths against the caller's working directory and retain physical
 full paths; only key construction maps them to portable identities. Multiple roots, such as a checkout and a
 NuGet package directory, can be mapped independently. This does not change the working directory,
-mutate task inputs, or normalize bytes embedded in inputs or outputs. Missing logical mappings or
-unsuitable symbols bypass caching without changing execution. Unsupported opaque extra arguments
+mutate task inputs, or normalize bytes embedded in inputs or outputs. Without logical mappings, keys use
+physical paths and only hit at the same locations. Unsuitable symbols bypass caching without changing execution. Unsupported opaque extra arguments
 retain their original spelling.
 Bundled dependencies and configuration are not fingerprinted. Changes to those files require
 a cleared/isolated cache or disabled caching unless the linker binary also changes.
@@ -97,23 +97,25 @@ when they affect outputs or dependencies beyond the keyed inputs, or require too
 side effects such as startup hooks or profiling. Unreadable inputs or linker files also
 fall back to normal linking.
 
-Cache-enabled invocations that cannot meet the supported path-independence contract run
-uncached and store nothing, rather than create path-specific entries. Missing/invalid root
-mappings and unsupported symbol emission bypass caching.
+Roots without logical mappings are ignored, and invalid logical mappings, such as duplicate or
+inconsistent prefixes, are ignored entirely. Their paths keep physical identities, so entries are
+reused only at the same physical paths. Unsupported symbol emission bypasses caching.
 Additional modules are left to ILLink's existing failure behavior, and ordinary linked resources
 are covered by their stored metadata hashes. The unusual missing-resource-hash case is outside
 the supported dependency model. Path-shaped metadata assembly references also bypass caching because they
 can escape the declared search-directory inventory. Root and XML assembly-name strings are left to
 ILLink's existing unresolved-name handling.
 Portable PDB emission, including embedded PDBs, requires explicit `PreserveSymbolPaths=true`
-to avoid generating output-location-dependent CodeView paths. Existing physical symbol paths
+to share across locations; without it, emitted CodeView paths depend on the physical output
+directory, so the physical output directory is included in the key and entries only hit at the
+same output location. Existing physical symbol paths
 are covered by input content hashes, not rejected. Symbols-disabled inputs are not subject to
 symbol-format checks. Neither symbol preservation nor deterministic compiler paths are enabled
 automatically.
 SDK and runtime library targets initialize and forward the compiler's existing `@(SourceRoot)`
-items. Caching additionally requires stable logical `MappedPath` prefixes, normally supplied when
+items. Sharing across locations additionally requires stable logical `MappedPath` prefixes, normally supplied when
 `DeterministicSourcePaths=true`, such as deterministic CI builds; ordinary local SDK builds
-without usable mappings run uncached. These targets do not change how inputs are compiled.
+without usable mappings use path-dependent keys. These targets do not change how inputs are compiled.
 Normal runtime trimming uses structured task parameters
 and supported extra arguments; custom arguments and input/symbol eligibility checks can
 still cause a cache bypass. See the
@@ -228,9 +230,9 @@ Physical absolute roots for experimental cache identity. Pass
 `SourceRoots="@(SourceRoot)"` after running `InitializeSourceRootMappedPaths` to reuse the
 compiler's initialized source roots.
 
-Caching requires conventional `/_/`, `/_1/`, etc. logical prefixes that do not alias distinct files.
+Sharing across locations requires conventional `/_/`, `/_1/`, etc. logical prefixes that do not alias distinct files.
 Physically nested roots may use independent logical prefixes.
-Without those mappings the same prepared invocation runs uncached.
+Without those mappings the cache key uses physical paths.
 This parameter does not enable caching, change the tool's arguments or working directory,
 change compiler settings, or remap embedded paths in linker outputs.
 

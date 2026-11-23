@@ -64,7 +64,8 @@ independently of the file inventory's ordering. These values remain physical ful
 construction maps them, preserving their order. `Context` contains non-path task settings and item
 roles/metadata; it distinguishes null from empty values. It need not contain rendered arguments:
 the task identity and its effective inputs determine those arguments.
-Without a root map, identities remain physical absolute paths.
+Without a root map, identities remain physical absolute paths. The map ignores roots whose `MappedPath`
+is not a `/_/` or `/_N/` prefix, so paths under them also keep physical identities.
 
 Consumers must preserve complete within-root layouts and distinguish external paths rather than
 mapping unrelated files to the same identity. Root mappings are captured and validated at construction.

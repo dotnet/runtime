@@ -19,14 +19,15 @@ internal sealed class SourceRootPathMap
 
     internal SourceRootPathMap(ITaskItem[]? sourceRoots)
     {
-        if (sourceRoots is null || sourceRoots.Length == 0)
-            throw new NotSupportedException("SourceRoots are required for shared cache identity.");
-        foreach (ITaskItem root in sourceRoots)
+        foreach (ITaskItem root in sourceRoots ?? Array.Empty<ITaskItem>())
         {
+            string logical = root.GetMetadata("MappedPath");
+            // Nondeterministic builds keep physical MappedPath values; paths under them stay path-dependent.
+            if (!IsLogicalPath(logical) || logical[logical.Length - 1] != '/')
+                continue;
             if (!Path.IsPathRooted(root.ItemSpec))
                 throw new NotSupportedException("SourceRoots must be absolute.");
             string physical = Path.GetFullPath(root.ItemSpec).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            string logical = root.GetMetadata("MappedPath");
             if (physical.Length == 0 || physical.Equals(Path.GetPathRoot(physical), PathComparison))
                 throw new NotSupportedException("SourceRoots must not be filesystem roots.");
             if (_roots.Any(previous => physical.Equals(previous.Physical, PathComparison)))
@@ -37,13 +38,13 @@ internal sealed class SourceRootPathMap
         CheckMappings();
     }
 
+    internal bool HasLogicalRoots => _roots.Count > 0;
+
     private void CheckMappings()
     {
         for (int i = 0; i < _roots.Count; i++)
         {
             var (physical, logical) = _roots[i];
-            if (!IsLogicalPath(logical) || logical[logical.Length - 1] != '/')
-                throw new NotSupportedException("SourceRoots require stable /_/ or /_N/ MappedPath prefixes.");
             for (int j = 0; j < i; j++)
             {
                 var previous = _roots[j];

@@ -68,6 +68,7 @@ namespace ILLink.Tasks
         /// Gets or sets physical source roots with stable MappedPath metadata for cache identity.
         /// These mappings do not change the tool's arguments or working directory.
         /// These mappings do not normalize paths embedded in inputs or outputs.
+        /// Without stable mappings, cache keys use physical paths and only hit at the same locations.
         /// </summary>
         public ITaskItem[] SourceRoots { get; set; }
 
@@ -323,7 +324,21 @@ namespace ILLink.Tasks
                     Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: extra arguments are not supported.");
                     return null;
                 }
-                var paths = new SourceRootPathMap(SourceRoots);
+                SourceRootPathMap paths;
+                try
+                {
+                    paths = new SourceRootPathMap(SourceRoots);
+                    if (!paths.HasLogicalRoots)
+                        Log.LogMessage(MessageImportance.Low, "ILLink cache key is path-dependent: no SourceRoots have logical MappedPath prefixes.");
+                }
+                catch (Exception ex) when (ex is NotSupportedException or ArgumentException)
+                {
+                    // Physical identities cannot collide, so ambiguous mappings only limit sharing.
+                    Log.LogMessage(MessageImportance.Low, $"ILLink cache key is path-dependent: {ex.Message}");
+                    paths = new SourceRootPathMap(null);
+                }
+                string? outputDirectory = OutputDirectory is null ? null : GetFullInvocationPath(OutputDirectory.ItemSpec);
+                bool emitsSymbols = false;
                 var assemblies = new HashSet<string>(StringComparer.Ordinal);
                 string toolPath = AddPath(nameof(ILLinkPath), ILLinkPath);
                 foreach (ITaskItem descriptor in RootDescriptorFiles ?? Array.Empty<ITaskItem>())
@@ -388,9 +403,17 @@ namespace ILLink.Tasks
                     using var input = File.OpenRead(file);
                 }
 
+                if (emitsSymbols && !PreserveSymbolPaths)
+                {
+                    // Without preserved symbol paths, emitted CodeView paths name the physical output location.
+                    Log.LogMessage(MessageImportance.Low, "ILLink cache key is path-dependent: Portable PDB emission without PreserveSymbolPaths depends on the physical output directory.");
+                    context.Add("PhysicalOutputDirectory");
+                    context.Add(outputDirectory);
+                }
+
                 return new InvocationDescription(new InvocationInputs(files, orderedPaths),
                     context,
-                    new InvocationOutputs(OutputDirectory is null ? null : GetFullInvocationPath(OutputDirectory.ItemSpec), Array.Empty<string>()),
+                    new InvocationOutputs(outputDirectory, Array.Empty<string>()),
                     pathMap: paths);
 
                 string AddPath(string parameterName, string path)
@@ -435,7 +458,7 @@ namespace ILLink.Tasks
                         }
                     }
                     if (checkOutputSymbols)
-                        CheckCacheableSymbols(path, pe);
+                        emitsSymbols |= CheckCacheableSymbols(path, pe);
                     return true;
                 }
 
@@ -573,10 +596,10 @@ namespace ILLink.Tasks
             }
         }
 
-        private void CheckCacheableSymbols(string assemblyPath, PEReader pe)
+        private bool CheckCacheableSymbols(string assemblyPath, PEReader pe)
         {
             if (_removeSymbols != false)
-                return;
+                return false;
 
             if (File.Exists(assemblyPath + ".mdb"))
                 throw new NotSupportedException("MDB symbols are not supported by the shared cache.");
@@ -585,10 +608,7 @@ namespace ILLink.Tasks
             bool hasSidecar = File.Exists(pdbPath);
             bool hasEmbedded = pe.ReadDebugDirectory().Any(entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
             if (!hasSidecar && !hasEmbedded)
-                return;
-
-            if (!PreserveSymbolPaths)
-                throw new NotSupportedException("Portable PDB emission requires explicit PreserveSymbolPaths for the shared cache.");
+                return false;
 
             if (hasSidecar)
             {
@@ -596,6 +616,8 @@ namespace ILLink.Tasks
                 using var provider = MetadataReaderProvider.FromPortablePdbStream(input);
                 provider.GetMetadataReader();
             }
+
+            return true;
         }
 
         private string _illinkPath = "";

@@ -1998,10 +1998,16 @@ namespace ILLink.Tasks.Tests
         [InlineData("duplicate-logical")]
         [InlineData("overlapping-logical")]
         [InlineData("inconsistent-nested")]
-        public void CacheKeyRejectsInvalidSourceRoots(string reason)
+        public void CacheKeyUsesPhysicalPathsWithoutUsableSourceRoots(string reason)
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
+            Assert.True(test.Task.TryGetCacheKey(host, out string logical));
+            ITaskItem[] roots = test.Task.SourceRoots;
+            test.Task.SourceRoots = null;
+            Assert.True(test.Task.TryGetCacheKey(host, out string physical));
+            Assert.NotEqual(logical, physical);
+            test.Task.SourceRoots = roots;
             ITaskItem root = test.Task.SourceRoots[0];
             switch (reason)
             {
@@ -2033,9 +2039,10 @@ namespace ILLink.Tasks.Tests
                     test.Task.SourceRoots = new[] { root, new TaskItem(Path.Combine(test.Root, "inputs"), new Dictionary<string, string> { { "MappedPath", "/_/other/" } }) };
                     break;
             }
-            Assert.False(test.Task.TryGetCacheKey(host, out string key));
-            Assert.Empty(key);
-            Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache bypassed:"));
+            Assert.True(test.Task.TryGetCacheKey(host, out string key));
+            Assert.Equal(physical, key);
+            Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache key is path-dependent:"));
+            Assert.DoesNotContain(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache bypassed:"));
         }
 
         [Theory]
@@ -2103,23 +2110,49 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData(true, false, "/_/src/Input.cs", true)]
-        [InlineData(false, true, "/_/src/Input.cs", true)]
-        [InlineData(false, false, "/_/src/Input.cs", false)]
-        [InlineData(true, true, "src/Input.cs", true)]
-        [InlineData(false, true, "/physical/root/Input.cs", true)]
-        [InlineData(false, true, "C:\\physical\\root\\Input.cs", true)]
-        [InlineData(false, true, "../Input.cs", true)]
-        [InlineData(false, true, "/_/../Input.cs", true)]
-        public void CacheKeyRequiresPreservedSymbolEmission(bool removeSymbols, bool preserveSymbols, string document, bool eligible)
+        [InlineData(true, false, "/_/src/Input.cs", false, true)]
+        [InlineData(false, true, "/_/src/Input.cs", false, true)]
+        [InlineData(false, false, "/_/src/Input.cs", false, false)]
+        [InlineData(false, false, null, false, true)]
+        [InlineData(true, false, "/_/src/Input.cs", true, true)]
+        [InlineData(false, true, "/_/src/Input.cs", true, true)]
+        [InlineData(false, false, "/_/src/Input.cs", true, false)]
+        [InlineData(true, true, "src/Input.cs", false, true)]
+        [InlineData(false, true, "/physical/root/Input.cs", false, true)]
+        [InlineData(false, true, "C:\\physical\\root\\Input.cs", false, true)]
+        [InlineData(false, true, "../Input.cs", false, true)]
+        [InlineData(false, true, "/_/../Input.cs", false, true)]
+        public void CacheKeyRequiresPreservedSymbolPathsToShareSymbolEmission(bool removeSymbols, bool preserveSymbols, string document, bool embeddedSymbols, bool sharesAcrossRoots)
         {
-            using var test = new OutputDirectoryTest();
-            string host = PrepareCacheKeyTest(test);
-            WriteSymbolAssembly(test.Task.AssemblyPaths[0].ItemSpec, document);
-            test.Task.RemoveSymbols = removeSymbols;
-            test.Task.PreserveSymbolPaths = preserveSymbols;
-            Assert.Equal(eligible, test.Task.TryGetCacheKey(host, out string key));
-            Assert.Equal(eligible ? 64 : 0, key.Length);
+            using var first = new OutputDirectoryTest();
+            using var second = new OutputDirectoryTest();
+            string firstHost = PrepareCacheKeyTest(first);
+            string secondHost = PrepareCacheKeyTest(second);
+            if (document is not null)
+                WriteSymbolAssembly(first.Task.AssemblyPaths[0].ItemSpec, document, embeddedSymbols: embeddedSymbols);
+            foreach (string file in Directory.GetFiles(first.Root, "*", SearchOption.AllDirectories))
+            {
+                string relative = Path.GetRelativePath(first.Root, file);
+                string destination = Path.Combine(second.Root, relative);
+                Directory.CreateDirectory(Path.GetDirectoryName(destination));
+                File.Copy(file, destination, overwrite: true);
+            }
+            foreach (OutputDirectoryTest test in new[] { first, second })
+            {
+                test.Task.RemoveSymbols = removeSymbols;
+                test.Task.PreserveSymbolPaths = preserveSymbols;
+            }
+            Assert.True(first.Task.TryGetCacheKey(firstHost, out string firstKey));
+            Assert.True(first.Task.TryGetCacheKey(firstHost, out string firstRepeatKey));
+            Assert.True(second.Task.TryGetCacheKey(secondHost, out string secondKey));
+            Assert.Equal(64, firstKey.Length);
+            Assert.Equal(firstKey, firstRepeatKey);
+            Assert.Equal(sharesAcrossRoots, firstKey == secondKey);
+            if (!sharesAcrossRoots)
+            {
+                Assert.Contains(first.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache key is path-dependent:"));
+                Assert.DoesNotContain(first.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache bypassed:"));
+            }
         }
 
         [Theory]
@@ -2156,20 +2189,6 @@ namespace ILLink.Tasks.Tests
             bool eligible = removeSymbols || kind is not ("pdb" or "mdb");
             Assert.Equal(eligible, test.Task.TryGetCacheKey(host, out string key));
             Assert.Equal(eligible ? 64 : 0, key.Length);
-        }
-
-        [Theory]
-        [InlineData(true, false)]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        public void CacheKeyRequiresPreservationForEmbeddedSymbolEmission(bool removeSymbols, bool preserveSymbols)
-        {
-            using var test = new OutputDirectoryTest();
-            string host = PrepareCacheKeyTest(test);
-            WriteSymbolAssembly(test.Task.AssemblyPaths[0].ItemSpec, "/_/src/Input.cs", embeddedSymbols: true);
-            test.Task.RemoveSymbols = removeSymbols;
-            test.Task.PreserveSymbolPaths = preserveSymbols;
-            Assert.Equal(removeSymbols || preserveSymbols, test.Task.TryGetCacheKey(host, out _));
         }
 
         [Theory]
@@ -2214,43 +2233,63 @@ namespace ILLink.Tasks.Tests
         [InlineData(true, "missing")]
         [InlineData(true, "duplicate")]
         [InlineData(true, "nested")]
-        public void TaskPreservesPathsWithoutDeterministicSourceMappings(bool cacheEnabled, string mapping)
+        public void TaskCachesPathDependentlyWithoutDeterministicSourceMappings(bool cacheEnabled, string mapping)
         {
             RemoteExecutor.Invoke(static (enabled, mapping) =>
             {
-                using var test = new OutputDirectoryTest();
-                string inputDirectory = Path.Combine(test.Root, "inputs");
-                Directory.CreateDirectory(inputDirectory);
-                string input = Path.Combine(inputDirectory, "Input.dll");
-                WriteTestAssembly(input);
-                test.Task.AssemblyPaths = new ITaskItem[] { new TaskItem(input, new Dictionary<string, string> { { "TrimMode", "copy" } }) };
-                test.Task.RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") };
-                test.Task.ExtraArgs = null;
-                switch (mapping)
-                {
-                    case "missing":
-                        test.Task.SourceRoots[0].RemoveMetadata("MappedPath");
-                        break;
-                    case "physical":
-                        test.Task.SourceRoots[0].SetMetadata("MappedPath", test.Root + Path.DirectorySeparatorChar);
-                        break;
-                    default:
-                        test.Task.SourceRoots = test.Task.SourceRoots.Append(
-                            new TaskItem(inputDirectory, new Dictionary<string, string>
-                            {
-                                { "MappedPath", mapping == "duplicate" ? "/_/" : "/_/other/" }
-                            })).ToArray();
-                        break;
-                }
-                string cacheDirectory = Path.Combine(test.Root, "cache");
+                using var first = new OutputDirectoryTest();
+                using var second = new OutputDirectoryTest();
+                string cacheDirectory = Path.Combine(first.Root, "cache");
+                bool cacheEnabled = bool.Parse(enabled);
                 Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", enabled);
                 Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
 
-                Assert.True(test.Task.Execute());
-                Assert.Equal(Environment.CurrentDirectory, test.Task.WorkingDirectories.Last());
-                Assert.Contains($"\"{input}\"", Assert.Single(test.Task.ResponseFiles));
-                Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(Path.Combine(test.Output, "Input.dll")));
-                Assert.False(Directory.Exists(cacheDirectory));
+                string original = Path.Combine(first.Root, "inputs", "Input.dll");
+                Directory.CreateDirectory(Path.GetDirectoryName(original));
+                WriteTestAssembly(original);
+                Directory.CreateDirectory(Path.Combine(second.Root, "inputs"));
+                File.Copy(original, Path.Combine(second.Root, "inputs", "Input.dll"));
+
+                foreach (OutputDirectoryTest test in new[] { first, first, second })
+                {
+                    string inputDirectory = Path.Combine(test.Root, "inputs");
+                    string input = Path.Combine(inputDirectory, "Input.dll");
+                    test.Task.AssemblyPaths = new ITaskItem[] { new TaskItem(input, new Dictionary<string, string> { { "TrimMode", "copy" } }) };
+                    test.Task.RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") };
+                    test.Task.ExtraArgs = null;
+                    test.Task.SourceRoots = new ITaskItem[] { new TaskItem(test.Root, new Dictionary<string, string> { { "MappedPath", "/_/" } }) };
+                    switch (mapping)
+                    {
+                        case "missing":
+                            test.Task.SourceRoots[0].RemoveMetadata("MappedPath");
+                            break;
+                        case "physical":
+                            test.Task.SourceRoots[0].SetMetadata("MappedPath", test.Root + Path.DirectorySeparatorChar);
+                            break;
+                        default:
+                            test.Task.SourceRoots = test.Task.SourceRoots.Append(
+                                new TaskItem(inputDirectory, new Dictionary<string, string>
+                                {
+                                    { "MappedPath", mapping == "duplicate" ? "/_/" : "/_/other/" }
+                                })).ToArray();
+                            break;
+                    }
+                    test.BuildEngine.Messages.Clear();
+
+                    Assert.True(test.Task.Execute());
+                    Assert.Equal(Environment.CurrentDirectory, test.Task.WorkingDirectories.Last());
+                    Assert.Contains($"\"{input}\"", test.Task.ResponseFiles.Last());
+                    Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(Path.Combine(test.Output, "Input.dll")));
+                }
+                Assert.Equal(cacheEnabled, Directory.Exists(cacheDirectory));
+                if (cacheEnabled)
+                {
+                    Assert.Single(first.Task.ResponseFiles);
+                    Assert.Contains(first.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache hit:"));
+                    Assert.Single(second.Task.ResponseFiles);
+                    Assert.Contains(second.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
+                    Assert.Equal(2, Directory.GetDirectories(Path.Combine(cacheDirectory, "v1")).Length);
+                }
             }, cacheEnabled.ToString(), mapping).Dispose();
         }
 
@@ -2304,8 +2343,7 @@ namespace ILLink.Tasks.Tests
                     Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(Path.Combine(test.Output, "Input.dll")));
                 }
                 Assert.Equal(test.Task.ResponseFiles[0], test.Task.ResponseFiles[1]);
-                if (reason != "missing")
-                    Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
+                Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
             }, reason, relativeInputs.ToString()).Dispose();
         }
 
