@@ -203,6 +203,7 @@ public class WasmArgumentLayoutTests
 
     [Theory]
     [InlineData("", 0)]
+    [InlineData(" ", 0)]
     [InlineData("*", 2)]
     [InlineData("Callbacks:Inlinee", 1)]
     [InlineData("*", 0, "JitMinimalPrejitProfiling=1")]

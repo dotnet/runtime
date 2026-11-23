@@ -498,7 +498,8 @@ namespace ILCompiler
                         ReadOnlySpan<char> value = option.AsSpan(equals + 1);
                         if (name.Equals("WasmPgoInstrumentation", StringComparison.OrdinalIgnoreCase))
                         {
-                            wasmPgoInstrumentation = !value.IsEmpty;
+                            // Match the JIT, whose method set is empty for whitespace-only filters.
+                            wasmPgoInstrumentation = !value.IsWhiteSpace();
                             if (wasmPgoInstrumentation && Get(_command.StripILBodies))
                                 throw new CommandLineException(SR.ErrorWasmPgoRequiresIL);
                             continue;

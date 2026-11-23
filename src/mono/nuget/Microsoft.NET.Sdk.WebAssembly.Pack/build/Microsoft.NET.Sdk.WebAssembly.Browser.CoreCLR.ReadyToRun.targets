@@ -19,7 +19,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="_WasmCoreClrAddPgoInstrumentationToReadyToRun"
-          Condition="'$(WasmPgoInstrumentation)' != ''"
+          Condition="'$(WasmPgoInstrumentation.Trim())' != ''"
           DependsOnTargets="_ConfigureWasmPgoInstrumentation"
           BeforeTargets="_PrepareForReadyToRunCompilation">
     <PropertyGroup>

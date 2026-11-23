@@ -2499,6 +2499,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #if defined(TARGET_64BIT) || defined(TARGET_WASM)
     opts.compCollect64BitCounts = JitConfig.JitCollect64BitCounts() != 0;
+#else
+    opts.compCollect64BitCounts = false;
 #endif // TARGET_64BIT || TARGET_WASM
 
 #if defined(TARGET_64BIT) && defined(DEBUG)

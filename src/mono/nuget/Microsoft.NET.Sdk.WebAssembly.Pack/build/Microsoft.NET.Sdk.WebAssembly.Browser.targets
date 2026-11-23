@@ -672,7 +672,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="_ValidateWasmPgoInstrumentation"
-          Condition="'$(WasmPgoInstrumentation)' != ''"
+          Condition="'$(WasmPgoInstrumentation.Trim())' != ''"
           BeforeTargets="PrepareForBuild;_ResolveWasmConfiguration;_PrepareForReadyToRunCompilation">
     <Error Condition="'$(UseMonoRuntime)' != 'false' or '$(RuntimeIdentifier)' != 'browser-wasm'"
            Text="WasmPgoInstrumentation requires CoreCLR browser-wasm. Set UseMonoRuntime=false and RuntimeIdentifier=browser-wasm; Mono and other targets are not supported." />
@@ -687,10 +687,10 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="_ConfigureWasmPgoInstrumentation"
-          Condition="'$(WasmPgoInstrumentation)' != ''"
+          Condition="'$(WasmPgoInstrumentation.Trim())' != ''"
           DependsOnTargets="_ValidateWasmPgoInstrumentation">
     <PropertyGroup>
-      <_WasmPgoInstFilter>$(WasmPgoInstrumentation)</_WasmPgoInstFilter>
+      <_WasmPgoInstFilter>$(WasmPgoInstrumentation.Trim())</_WasmPgoInstFilter>
       <_WasmPgoInstFilter Condition="'$(_WasmPgoInstFilter)' == 'all'">*</_WasmPgoInstFilter>
     </PropertyGroup>
   </Target>

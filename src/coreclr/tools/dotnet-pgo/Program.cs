@@ -1412,6 +1412,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 Regex includeMethods = !string.IsNullOrEmpty(Get(_command.IncludeMethods)) ? new Regex(Get(_command.IncludeMethods)) : null;
                 Regex excludeMethods = !string.IsNullOrEmpty(Get(_command.ExcludeMethods)) ? new Regex(Get(_command.ExcludeMethods)) : null;
                 int unresolvedInterpretedRanges = 0;
+                // Instrumentation data is flushed when the session stops, so its timestamp does not describe execution.
+                HashSet<MethodDesc> methodsWithTimedLoadEvents = new HashSet<MethodDesc>();
 
                 void AddInterpretedMethodPresence(int eventClrInstanceId, long methodId, ulong startAddress,
                     int methodSize, MethodFlags flags, int methodToken, long eventIndex, double timestamp, string methodName)
@@ -1482,6 +1484,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             continue;
                         }
 
+                        methodsWithTimedLoadEvents.Add(method);
                         if (e.TimeStampRelativeMSec < excludeEventsBefore)
                         {
                             continue;
@@ -1622,6 +1625,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             continue;
                         }
 
+                        methodsWithTimedLoadEvents.Add(method);
                         if (e.TimeStampRelativeMSec < excludeEventsBefore)
                         {
                             continue;
@@ -1784,7 +1788,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         if ((methodFlags & FinalChunkFlag) == FinalChunkFlag)
                         {
                             perMethodChunks.Done = true;
-                            if (timestamp >= excludeEventsBefore && timestamp <= excludeEventsAfter &&
+                            // Load/JIT events already applied the time window; the flush time is a fallback only.
+                            if (!methodsWithTimedLoadEvents.Contains(method) &&
+                                timestamp >= excludeEventsBefore && timestamp <= excludeEventsAfter &&
                                 PassesMethodFilter(includeMethods, excludeMethods, methodName ?? method.ToString()))
                             {
                                 methodsToAttemptToPrepare.TryAdd(eventIndex,
