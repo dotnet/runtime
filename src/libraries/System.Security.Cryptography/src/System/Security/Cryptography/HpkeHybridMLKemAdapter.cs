@@ -122,6 +122,8 @@ namespace System.Security.Cryptography
                     traditionalCiphertext,
                     traditionalEncapsulationKey,
                     Label,
+                    // draft-irtf-cfrg-concrete-hybrid-kems-04, Section 4 specifies SHA3-256 as the KDF.
+                    HashAlgorithmName.SHA3_256,
                     sharedSecret);
             }
             finally
@@ -170,6 +172,8 @@ namespace System.Security.Cryptography
                     traditionalCiphertext,
                     traditionalEncapsulationKey,
                     Label,
+                    // draft-irtf-cfrg-concrete-hybrid-kems-04, Section 4 specifies SHA3-256 as the KDF.
+                    HashAlgorithmName.SHA3_256,
                     sharedSecret);
             }
             finally

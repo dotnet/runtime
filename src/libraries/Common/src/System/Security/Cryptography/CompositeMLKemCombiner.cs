@@ -15,9 +15,10 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> traditionalCiphertext,
             ReadOnlySpan<byte> traditionalEncapsulationKey,
             ReadOnlySpan<byte> label,
+            HashAlgorithmName hashAlgorithm,
             Span<byte> destination)
         {
-            using (IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA3_256))
+            using (IncrementalHash hash = IncrementalHash.CreateHash(hashAlgorithm))
             {
                 hash.AppendData(mlkemSharedSecret);
                 hash.AppendData(traditionalSharedSecret);
