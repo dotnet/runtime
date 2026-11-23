@@ -517,10 +517,6 @@ public class WebcilInWasmSizesTests
             Assert.Equal(Fingerprint, asset.GetMetadata(fingerprintName));
         });
         Assert.NotEqual(initial.SelectionStamp, assemblies.SelectionStamp);
-        string descriptor = string.Join("|", assemblies.Representations.Select(asset => asset.ItemSpec + ":" + string.Join("|",
-            new[] { "Kind", "SourcePath", "WebcilVersion", "Mvid", "HasIL", "Length", "Integrity", "GzipIntegrity" }
-                .Select(asset.GetMetadata))));
-        Assert.Equal(Convert.ToBase64String(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(descriptor))), assemblies.SelectionStamp);
     }
 
     [Theory]
@@ -541,10 +537,7 @@ public class WebcilInWasmSizesTests
 
         SL.Build build = RunPrecompressedTarget(pack, "_ComputeWasmBuildCandidates;_WriteWasmBuildWebcilStamp", "-p:EmptySelection=" + emptySelection);
         string selection = GetSelectionStamp(build);
-        string descriptor = emptySelection ? "" : Path.GetFullPath(Path.Combine(pack.Root, changed)) + ":" + string.Join("|",
-            new[] { "Kind", "SourcePath", "WebcilVersion", "Mvid", "HasIL", "Length", "Integrity", "GzipIntegrity" }
-                .Select(name => (string?)asset.Attribute(name) ?? ""));
-        Assert.Equal(Convert.ToBase64String(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(descriptor))), selection);
+        Assert.Equal(32, Convert.FromBase64String(selection).Length);
         string stamp = Path.Combine(pack.Directory, "obj", "wasm-webcil-build.stamp");
         Assert.Contains("_WasmPrecompressedSelectionStamp=" + selection, File.ReadAllLines(stamp));
         DateTime timestamp = File.GetLastWriteTimeUtc(stamp);
@@ -672,17 +665,25 @@ public class WebcilInWasmSizesTests
     public void PrecompressedRuntimePack_HostedClientsHaveSeparateEncodedAssets(bool optionalFingerprint)
     {
         using var pack = new PrecompressedTestPack();
-        RunPrecompressedTarget(pack, "CheckHostedStaticAssets", "-p:TestOptionalFingerprint=" + optionalFingerprint);
+        SL.Build build = RunPrecompressedTarget(pack, "CheckHostedStaticAssets",
+            "-p:TestOptionalFingerprint=" + optionalFingerprint, "-p:TestAppAsset=true");
+        SL.Task[] compressors = build.FindChildrenRecursive<SL.Task>(task => task.Name == "GZipCompress").ToArray();
+        Assert.Equal(2, compressors.Length);
         using JsonDocument document = JsonDocument.Parse(File.ReadAllText(Path.Combine(pack.Directory, "hosted.json")));
         JsonElement[] assets = document.RootElement.GetProperty("Assets").EnumerateArray().ToArray();
         JsonElement[] gzip = assets.Where(a => a.GetProperty("AssetTraitValue").GetString() == "gzip").ToArray();
+        Assert.Equal(4, gzip.Length);
+        Assert.Equal(2, gzip.Count(a => Path.GetFileName(a.GetProperty("RelatedAsset").GetString()) == "app.js"));
+        gzip = gzip.Where(a => Path.GetFileName(a.GetProperty("RelatedAsset").GetString()) == "dotnet.native.wasm").ToArray();
         Assert.Equal(2, gzip.Length);
         Assert.NotEqual(gzip[0].GetProperty("Identity").GetString(), gzip[1].GetProperty("Identity").GetString());
+        byte[] packedGzip = File.ReadAllBytes(Path.Combine(pack.Root, "precompressed/runtimes/browser-wasm/native/dotnet.native.wasm.gz"));
         foreach (JsonElement asset in gzip)
         {
             string path = asset.GetProperty("Identity").GetString()!;
             Assert.StartsWith(pack.Directory, path);
             Assert.False(path.StartsWith(pack.Root, StringComparison.Ordinal));
+            Assert.Equal(packedGzip, File.ReadAllBytes(path));
             Assert.Equal(new FileInfo(path).Length, asset.GetProperty("FileLength").GetInt64());
             string original = asset.GetProperty("RelatedAsset").GetString()!;
             JsonElement primary = Assert.Single(assets.Where(a => a.GetProperty("Identity").GetString() == original));

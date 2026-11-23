@@ -84,16 +84,13 @@
 
   <Target Name="_DefinePrecompressedWasmAssets"
           AfterTargets="_AddWasmStaticWebAssets"
-          Condition="'$(_WasmUsePrecompressedAssets)' == 'true' and '$(DisableBuildCompression)' != 'true' and Exists('$(_WasmPrecompressedManifest)')">
+          Condition="'$(_WasmUsePrecompressedAssets)' == 'true' and '$(DisableBuildCompression)' != 'true'">
     <DefinePrecompressedWasmAssets
         Representations="@(_WasmPrecompressedNativeRepresentations);@(_WasmPrecompressedAssemblyRepresentations)"
         Assets="@(StaticWebAsset)" Endpoints="@(StaticWebAssetEndpoint)"
         FrameworkAssets="@(_WasmFrameworkAssets)" MaterializedFrameworkAssets="@(_WasmMaterializedFrameworkAssets)">
-      <Output TaskParameter="GzipAssets" ItemName="_WasmPrecompressedGzipCandidates" />
+      <Output TaskParameter="GzipAssets" ItemName="_WasmPrecompressedGzipAssets" />
     </DefinePrecompressedWasmAssets>
-    <DefineStaticWebAssets CandidateAssets="@(_WasmPrecompressedGzipCandidates)">
-      <Output TaskParameter="Assets" ItemName="_WasmPrecompressedGzipAssets" />
-    </DefineStaticWebAssets>
     <UpdatePackageStaticWebAssets
         Assets="@(_WasmPrecompressedGzipAssets)"
         IntermediateOutputPath="$(IntermediateOutputPath)"

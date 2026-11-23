@@ -7,6 +7,7 @@
     <OutputPath>$(TestDirectory)/bin/</OutputPath>
     <IntermediateOutputPath>$(TestDirectory)/obj/</IntermediateOutputPath>
     <_WebAssemblySdkTasksAssembly>$(TaskAssembly)</_WebAssemblySdkTasksAssembly>
+    <StaticWebAssetsSdkBuildTasksAssembly>@(_StaticWebAssetsTasks)</StaticWebAssetsSdkBuildTasksAssembly>
     <PackageId Condition="'$(ProducerTest)' == 'true'">Microsoft.NETCore.App.Runtime.browser-wasm</PackageId>
     <PackageVersion Condition="'$(ProducerTest)' == 'true'">1.0.0</PackageVersion>
   </PropertyGroup>
@@ -22,9 +23,13 @@
   <UsingTask TaskName="Microsoft.AspNetCore.StaticWebAssets.Tasks.GenerateStaticWebAssetsManifest" AssemblyFile="@(_StaticWebAssetsTasks)" />
   <UsingTask TaskName="Microsoft.AspNetCore.StaticWebAssets.Tasks.ComputeReferenceStaticWebAssetItems" AssemblyFile="@(_StaticWebAssetsTasks)" />
   <UsingTask TaskName="Microsoft.AspNetCore.StaticWebAssets.Tasks.ComputeEndpointsForReferenceStaticWebAssets" AssemblyFile="@(_StaticWebAssetsTasks)" />
-  <UsingTask TaskName="Microsoft.AspNetCore.StaticWebAssets.Tasks.ApplyCompressionNegotiation" AssemblyFile="@(_StaticWebAssetsTasks)" />
+  <UsingTask TaskName="Microsoft.AspNetCore.StaticWebAssets.Tasks.FilterStaticWebAssetEndpoints" AssemblyFile="@(_StaticWebAssetsTasks)" />
   <Import Project="precompressed/Microsoft.NET.Sdk.WebAssembly.Browser.targets" />
+  <Import Project="$(MSBuildSDKsPath)/Microsoft.NET.Sdk.StaticWebAssets/targets/Microsoft.NET.Sdk.StaticWebAssets.Compression.targets" />
   <Import Project="precompressed/WasmRuntimePack.targets" Condition="'$(ProducerTest)' == 'true'" />
+  <PropertyGroup>
+    <ResolveCompressedFilesDependsOn />
+  </PropertyGroup>
   <Target Name="_CollectProducerFiles">
     <ItemGroup>
       <FilesToPackage Include="$(PackDirectory)/**/*" />
@@ -90,19 +95,21 @@
     <ItemGroup>
       <_WasmMaterializedFrameworkAssets Update="@(_WasmMaterializedFrameworkAssets)" AssetMode="All" />
       <StaticWebAsset Include="@(_WasmMaterializedFrameworkAssets)" />
+      <_AppAsset Include="$(TestDirectory)/app.js" RelativePath="app.js" Condition="'$(TestAppAsset)' == 'true'" />
     </ItemGroup>
+    <WriteLinesToFile Condition="'@(_AppAsset)' != ''" File="@(_AppAsset)" Lines="export default 1" Overwrite="true" />
+    <DefineStaticWebAssets Condition="'@(_AppAsset)' != ''" CandidateAssets="@(_AppAsset)"
+                           SourceId="$(PackageId)" SourceType="Computed" AssetKind="Build" AssetMode="All" AssetRole="Primary"
+                           ContentRoot="$(TestDirectory)" BasePath="$(PackageId)"
+                           CopyToOutputDirectory="Never" CopyToPublishDirectory="Never">
+      <Output TaskParameter="Assets" ItemName="StaticWebAsset" />
+    </DefineStaticWebAssets>
     <DefineStaticWebAssetEndpoints CandidateAssets="@(StaticWebAsset)" ContentTypeMappings="">
       <Output TaskParameter="Endpoints" ItemName="StaticWebAssetEndpoint" />
     </DefineStaticWebAssetEndpoints>
   </Target>
-  <Target Name="CheckStaticAssets" DependsOnTargets="_AddWasmStaticWebAssets" Returns="@(_TestOutput)">
-    <ApplyCompressionNegotiation CandidateAssets="@(StaticWebAsset)" CandidateEndpoints="@(StaticWebAssetEndpoint)">
-      <Output TaskParameter="UpdatedEndpoints" ItemName="_NegotiatedEndpoint" />
-    </ApplyCompressionNegotiation>
-    <ItemGroup>
-      <StaticWebAssetEndpoint Remove="@(_NegotiatedEndpoint)" />
-      <StaticWebAssetEndpoint Include="@(_NegotiatedEndpoint)" />
-    </ItemGroup>
+  <Target Name="ResolveStaticWebAssetsInputs" DependsOnTargets="_AddWasmStaticWebAssets" />
+  <Target Name="CheckStaticAssets" DependsOnTargets="ResolveStaticWebAssetsInputs;$(ResolveBuildRelatedStaticWebAssetsDependsOn)" Returns="@(_TestOutput)">
     <GenerateStaticWebAssetsManifest Source="$(PackageId)" BasePath="$(PackageId)" Mode="Default" ManifestType="Build"
         ReferencedProjectsConfigurations="" DiscoveryPatterns=""
         Assets="@(StaticWebAsset)" Endpoints="@(StaticWebAssetEndpoint)"

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Microsoft.Build.Framework;
@@ -82,13 +83,16 @@ public sealed class ResolvePrecompressedWasmAssemblies : Task
 
     public override bool Execute()
     {
-        Dictionary<string, ITaskItem> assets = PrecompressedWasmAssets.Read(RuntimePackDirectory)
-            .Where(a => a.GetMetadata("Kind") != "Native").ToDictionary(a => a.GetMetadata("SourcePath"), StringComparer.Ordinal);
-        Dictionary<string, ITaskItem> assetsByPath = assets.Values.ToDictionary(
-            a => PrecompressedWasmAssets.ResolvePath(RuntimePackDirectory, a.GetMetadata("SourcePath")), StringComparer.OrdinalIgnoreCase);
+        string webcilVersion = WebcilVersion.ToString(CultureInfo.InvariantCulture);
         string r2rDirectory = PrecompressedWasmAssets.ResolvePath(RuntimePackDirectory, PrecompressedWasmAssets.NativePath + "r2r/");
         bool useR2R = PrebuiltR2RDirectory.Length != 0 &&
             string.Equals(Path.GetFullPath(PrebuiltR2RDirectory).TrimEnd('/', '\\'), r2rDirectory.TrimEnd('/', '\\'), StringComparison.OrdinalIgnoreCase);
+        Dictionary<string, ITaskItem> assets = PrecompressedWasmAssets.Read(RuntimePackDirectory)
+            .Where(a => a.GetMetadata("WebcilVersion") == webcilVersion &&
+                (a.GetMetadata("Kind") == "Webcil" || (useR2R && a.GetMetadata("Kind") == "ReadyToRun")))
+            .ToDictionary(a => a.GetMetadata("SourcePath"), StringComparer.Ordinal);
+        Dictionary<string, ITaskItem> assetsByPath = assets.Values.ToDictionary(
+            a => PrecompressedWasmAssets.ResolvePath(RuntimePackDirectory, a.GetMetadata("SourcePath")), StringComparer.OrdinalIgnoreCase);
         var pending = new List<(ITaskItem Asset, string Output)>();
         var candidates = new List<ITaskItem>();
         var conversions = new List<ITaskItem>();
@@ -105,9 +109,7 @@ public sealed class ResolvePrecompressedWasmAssemblies : Task
             if (asset is not null && item.GetMetadata("AssetTraitName") != "Culture" &&
                 string.Equals(item.GetMetadata("NuGetPackageId"), asset.GetMetadata("NuGetPackageId"), StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(item.GetMetadata("NuGetPackageVersion"), asset.GetMetadata("NuGetPackageVersion"), StringComparison.OrdinalIgnoreCase) &&
-                item.GetMetadata("R2RWebcilPath").Length == 0 &&
-                asset.GetMetadata("WebcilVersion") == WebcilVersion.ToString(System.Globalization.CultureInfo.InvariantCulture) &&
-                (useR2R || asset.GetMetadata("Kind") != "ReadyToRun"))
+                item.GetMetadata("R2RWebcilPath").Length == 0)
             {
                 (Guid mvid, bool hasIL) = PrecompressedWasmAssets.ReadAssembly(item.ItemSpec);
                 selected = mvid.ToString() == asset.GetMetadata("Mvid") &&
