@@ -76,11 +76,15 @@ namespace System.Net.Security.Tests
                 int bytesRead = await client.ReadAsync(readBuffer, 0, readBuffer.Length);
                 // close_notify received by the client.
                 Assert.Equal(0, bytesRead);
+                Assert.Equal(0, await client.ReadAsync(readBuffer, 0, readBuffer.Length));
 
                 await client.ShutdownAsync();
                 bytesRead = await server.ReadAsync(readBuffer, 0, readBuffer.Length);
                 // close_notify received by the server.
                 Assert.Equal(0, bytesRead);
+
+                server.Dispose();
+                Assert.Equal(0, await client.ReadAsync(readBuffer, 0, readBuffer.Length));
             }
         }
 

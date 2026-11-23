@@ -1676,6 +1676,10 @@ namespace System.IO.Tests
 
         protected abstract Task<StreamPair> CreateConnectedStreamsAsync();
 
+        protected virtual void CloseWriteStream(Stream stream) => stream.Dispose();
+
+        protected virtual ValueTask CloseWriteStreamAsync(Stream stream) => stream.DisposeAsync();
+
         protected (Stream writeable, Stream readable) GetReadWritePair(StreamPair streams) =>
             GetReadWritePairs(streams).First();
 
@@ -1973,12 +1977,12 @@ namespace System.IO.Tests
                 write = Task.Run(async () =>
                 {
                     await writeable.WriteAsync("hello"u8.ToArray());
-                    await writeable.DisposeAsync();
+                    await CloseWriteStreamAsync(writeable);
                 });
             }
             else
             {
-                write = writeable.DisposeAsync().AsTask();
+                write = CloseWriteStreamAsync(writeable).AsTask();
             }
 
             if (dataAvailableFirst)
@@ -2051,7 +2055,7 @@ namespace System.IO.Tests
             Task write = Task.Run(async () =>
             {
                 await WriteAsync(mode, writeable, buffer, Offset, Count);
-                writeable.Dispose();
+                CloseWriteStream(writeable);
             });
 
             using (StreamReader reader = new StreamReader(readable))
@@ -2593,7 +2597,7 @@ namespace System.IO.Tests
                 writeable.Write(new ReadOnlySpan<byte>(dataToCopy));
             }
 
-            writeable.Dispose();
+            CloseWriteStream(writeable);
             await copyTask;
 
             AssertExtensions.SequenceEqual(dataToCopy, results.ToArray());

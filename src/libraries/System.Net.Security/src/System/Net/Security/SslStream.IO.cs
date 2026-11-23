@@ -941,7 +941,7 @@ namespace System.Net.Security
                 {
                     // there should be no frames waiting for processing
                     Debug.Assert(_buffer.EncryptedLength == 0);
-                    // We received EOF during previous read but had buffered data to return.
+                    // We received close_notify during a previous read.
                     return 0;
                 }
 
@@ -952,8 +952,7 @@ namespace System.Net.Security
                     int payloadBytes = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken, ReadBufferSize).ConfigureAwait(false);
                     if (payloadBytes == 0)
                     {
-                        _receivedEOF = true;
-                        break;
+                        throw new IOException(SR.net_io_eof);
                     }
 
                     // Pass the user buffer to DecryptData so PALs that support it can decrypt directly

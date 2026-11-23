@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Net.Http.Metrics;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Reflection;
@@ -1252,6 +1253,7 @@ namespace System.Net.Http.Functional.Tests
                     if (malformedResponse)
                     {
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync("!malformed!");
+                        await ((SslStream)connection.Stream).ShutdownAsync();
                     }
                     else
                     {

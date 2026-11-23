@@ -702,20 +702,24 @@ namespace System.Net.Http.Functional.Tests
 
                 if (sendGoAway)
                 {
-                    // Send GOAWAY instead of SETTINGS, then shut down.
+                    // Send GOAWAY instead of SETTINGS.
                     await connection.SendGoAway(0, ProtocolErrors.ENHANCE_YOUR_CALM);
-                    await connection.ShutdownSendAsync();
+                }
 
+                if (connection.Stream is SslStream sslStream)
+                {
+                    await sslStream.ShutdownAsync();
+                }
+                await connection.ShutdownSendAsync();
+
+                if (sendGoAway)
+                {
                     // The client should throw HttpRequestException(HttpProtocolError) wrapping
                     // HttpProtocolException with the GOAWAY error code.
                     await AssertProtocolErrorAsync(sendTask, ProtocolErrors.ENHANCE_YOUR_CALM);
                 }
                 else
                 {
-                    // Immediately shut down the connection without sending SETTINGS.
-                    // This simulates a server-side disconnect during HTTP/2 setup.
-                    await connection.ShutdownSendAsync();
-
                     // The client should throw HttpRequestException(InvalidResponse) wrapping
                     // HttpIOException(InvalidResponse) -> HttpIOException(ResponseEnded),
                     // indicating the server disconnected before sending SETTINGS.
@@ -1119,7 +1123,12 @@ namespace System.Net.Http.Functional.Tests
 
                 // Server sends GOAWAY frame
                 await connection.SendGoAway(streamId, ProtocolErrors.ENHANCE_YOUR_CALM);
+                if (connection.Stream is SslStream sslStream)
+                {
+                    await sslStream.ShutdownAsync();
+                }
                 await connection.ShutdownSendAsync();
+                await connection.WaitForClientDisconnectAsync(ignoreUnexpectedFrames: true);
             });
         }
 
