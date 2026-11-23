@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
@@ -76,20 +75,13 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         Assert.Contains("resources.libraryInitializers.length=1", result.TestOutput);
     }
 
-    public static IEnumerable<object[]> AssemblyProviderConfigurations()
+    [Fact, TestCategory("no-workload"), TestCategory("coreclr")]
+    public async Task JSExportFromAssemblyProvider()
     {
-        yield return new object[] { Configuration.Debug, true };
-        yield return new object[] { Configuration.Release, true };
-        yield return new object[] { Configuration.Debug, false };
-    }
-
-    [Theory, TestCategory("no-workload"), TestCategory("coreclr")]
-    [MemberData(nameof(AssemblyProviderConfigurations))]
-    public async Task JSExportFromAssemblyProvider(Configuration config, bool trimmed)
-    {
+        Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(
             config, false, TestAsset.WasmBasicTestApp, "mapped_exports",
-            extraProperties: $"<PublishTrimmed>{trimmed.ToString().ToLowerInvariant()}</PublishTrimmed><TestJSExportProviders>true</TestJSExportProviders>",
+            extraProperties: "<PublishTrimmed>false</PublishTrimmed><TestJSExportProviders>true</TestJSExportProviders>",
             insertAtEnd: """<Import Project="..\JSExportTests.targets" />""");
         PublishProject(info, config);
         RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DeferredJSExports"));

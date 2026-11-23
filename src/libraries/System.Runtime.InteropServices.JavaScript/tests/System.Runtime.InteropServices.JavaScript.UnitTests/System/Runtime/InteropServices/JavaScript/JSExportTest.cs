@@ -188,11 +188,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
-        public void PublicTypeMapStillFollowsAssemblyTargets()
+        public void PublicTypeMapDoesNotDiscoverReferencedJSExportProviders()
         {
             IReadOnlyDictionary<string, Type> map = TypeMapping.GetOrCreateExternalTypeMapping<JSExportProvider>();
-            Assert.True(map.TryGetValue("JavaScriptLibrary", out Type? libraryProvider));
-            Assert.True(typeof(JSExportProvider).IsAssignableFrom(libraryProvider));
+            Assert.False(map.TryGetValue("JavaScriptLibrary", out _));
             Assert.True(map.TryGetValue("System.Runtime.InteropServices.JavaScript.Tests", out Type? applicationProvider));
             Assert.True(typeof(JSExportProvider).IsAssignableFrom(applicationProvider));
         }

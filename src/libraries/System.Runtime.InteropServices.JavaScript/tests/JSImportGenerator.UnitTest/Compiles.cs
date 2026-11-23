@@ -362,7 +362,7 @@ namespace JSImportGenerator.Unit.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void ReferencedProvidersAreDiscoveredWithoutLocalExports(bool handwrittenProvider)
+        public void ReferencedProvidersDoNotGenerateSourcesWithoutLocalExports(bool handwrittenProvider)
         {
             const string Source = """
                 using System.Runtime.InteropServices.JavaScript;
@@ -397,14 +397,7 @@ namespace JSImportGenerator.Unit.Tests
             Assert.Empty(diagnostics);
             TestUtils.AssertPostSourceGeneratorCompilation(generatedCompilation);
 
-            AttributeData target = Assert.Single(generatedCompilation.Assembly.GetAttributes(),
-                static attribute => attribute.AttributeClass?.OriginalDefinition.ToDisplayString() ==
-                    "System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute<TTypeMapGroup>");
-            Assert.Equal("ExportLibrary", Assert.Single(target.ConstructorArguments).Value);
-            Assert.Equal("System.Runtime.InteropServices.JavaScript.JSExportProvider",
-                Assert.Single(target.AttributeClass!.TypeArguments).ToDisplayString());
-            Assert.Empty(generatedCompilation.Assembly.GetAttributes().Where(static attribute =>
-                attribute.AttributeClass?.Name == "TypeMapAttribute"));
+            Assert.All(driver.GetRunResult().Results, static result => Assert.Empty(result.GeneratedSources));
         }
 
         [Fact]

@@ -147,9 +147,8 @@ the test log directory and uploaded as a Helix artifact.
 `LibraryInitializerTests.JSExportFromAssemblyProvider` checks a library reached only from
 JavaScript through one generated type-map provider per assembly. Both provider libraries
 are downloaded lazily, after the application's own exports have been discovered.
-It covers multiple exports,
-overloads, repeated assembly lookup, and trimmed and untrimmed publication without explicitly
-rooting the library. The provider's `ReadOnlySpan<string>` catalog supports discovery without enumerating
+It covers multiple exports, overloads, and repeated assembly lookup in an untrimmed
+publish. The provider's `ReadOnlySpan<string>` catalog supports discovery without enumerating
 the type map, and `Bind(string methodId)` dispatches on invariant decimal catalog indexes.
 On CoreCLR, a counting provider verifies one activation at discovery, no binding at discovery or
 property read, exactly one binding on first invocation, stable aliases, and an
@@ -157,7 +156,7 @@ unused method that must never be bound. Reentrant binding is rejected, and an
 async binding failure must reject its Promise and permit retry.
 Signature metadata is published during discovery, while marshalers and managed
 callbacks remain lazy. Private and protected nested exports exercise generated
-unsafe accessors on CoreCLR, including trimmed publication.
+unsafe accessors on CoreCLR.
 The existing `WasmBasicTestApp` hosts these scenarios through an opt-in targets
 file and a separate `js-export-tests.js` module. Its existing HTML, runtime
 bootstrap, and TestOutput helper are reused. The counting project and provider

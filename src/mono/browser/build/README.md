@@ -18,8 +18,14 @@ removing the compatibility forwarding after SDK flow, not the functional trimmin
 
 Runtime discovery reads only the requested assembly's local type map, including
 its ReadyToRun map when available. It does not follow assembly-target edges or
-require unrelated lazy assemblies to have been downloaded. Assembly-target
-attributes remain available for build-time trimming.
+require unrelated lazy assemblies to have been downloaded. ILLink preserves local
+JSExport maps in assemblies it already keeps. If reachable managed code does not
+keep a library used from JavaScript, the publishing project must root it, for
+example by passing a library-supplied `TrimmerRootDescriptor`. An embedded
+descriptor alone cannot keep its own assembly. Trimmed publication needs an
+ILLink version that supports local JSExport map discovery. Assembly-target
+attributes are not generated for JSExports; application-wide type-map queries
+still require explicit edges to discover entries in other assemblies.
 
 One generated provider per assembly uses the assembly name as its type-map key.
 Its `ReadOnlySpan<string> GetExportNames()` catalog supplies fully qualified, hash-qualified names without

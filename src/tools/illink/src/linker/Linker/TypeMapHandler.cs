@@ -155,6 +155,27 @@ namespace Mono.Linker
                 MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapAssemblyTarget, callingMethod));
         }
 
+        internal void DiscoverLocalTypeMaps(AssemblyDefinition assembly)
+        {
+            if (_lazyTypeMapResolver.HasVisited(assembly) || _context.Annotations.GetAction(assembly) != AssemblyAction.Link)
+                return;
+
+            // JSExport lookup starts at the requested assembly, not at the application's type-map root.
+            foreach (CustomAttribute attr in assembly.CustomAttributes)
+            {
+                if (attr.AttributeType is GenericInstanceType
+                    {
+                        Namespace: "System.Runtime.InteropServices",
+                        Name: "TypeMapAttribute`1",
+                        GenericArguments: [TypeReference { Namespace: "System.Runtime.InteropServices.JavaScript", Name: "JSExportProvider" } group]
+                    } &&
+                    _context.Resolve(group)?.Module.Assembly.Name.Name == "System.Runtime.InteropServices.JavaScript")
+                {
+                    AddExternalTypeMapEntry(group, (attr, assembly));
+                }
+            }
+        }
+
         public void ProcessType(TypeDefinition definition)
         {
             EnsureInitialized();
@@ -311,12 +332,16 @@ namespace Mono.Linker
 
         class TypeMapResolver(AssemblyDefinition? _assembly)
         {
+            readonly HashSet<AssemblyDefinition> _seen = [];
+
+            public bool HasVisited(AssemblyDefinition assembly) => _seen.Contains(assembly);
+
             public void Resolve(LinkContext context, TypeMapHandler manager)
             {
                 if (_assembly is null)
                     return;
-                HashSet<AssemblyDefinition> seen = new();
                 Queue<AssemblyDefinition> toVisit = new();
+                _seen.Add(_assembly);
                 toVisit.Enqueue(_assembly);
                 while (toVisit.Count > 0)
                 {
@@ -349,7 +374,7 @@ namespace Mono.Linker
                                 if (nextAssemblyName is not null && context.TryResolve(nextAssemblyName) is AssemblyDefinition nextAssembly)
                                 {
                                     resolvedTargetAssembly = nextAssembly;
-                                    if (seen.Add(nextAssembly))
+                                    if (_seen.Add(nextAssembly))
                                     {
                                         toVisit.Enqueue(nextAssembly);
                                     }
