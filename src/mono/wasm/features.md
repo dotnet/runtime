@@ -475,10 +475,12 @@ Standalone Wasm cross-JITs enable the R2R profiling capability independently of
 the build host OS. Runtime counter storage and publishing remain limited to
 single-threaded Browser/CoreCLR applications.
 
-R2R profiling uses one direct 64-bit counter per probe. Inlinees share their
-root compilation's counter width. The compiler can use the ordinary minimal
-prejit profiling option, but it cannot initialize counter values during
-compilation: the import cell resolves to runtime storage only when loaded.
+R2R profiling uses one direct 64-bit counter per probe. Crossgen2 rejects
+`--codegenopt:JitCollect64BitCounts=0` when Wasm PGO instrumentation is enabled.
+Inlinees share their root compilation's counter width. The compiler can use the
+ordinary minimal prejit profiling option, but it cannot initialize counter
+values during compilation: the import cell resolves to runtime storage only
+when loaded.
 
 Instrumented R2R methods also collect sampled integer arguments at supported
 `Memmove` and `SequenceEqual` call sites. The value samples are exported in the

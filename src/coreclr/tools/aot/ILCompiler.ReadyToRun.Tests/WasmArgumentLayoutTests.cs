@@ -206,8 +206,11 @@ public class WasmArgumentLayoutTests
     [InlineData("*", 2)]
     [InlineData("Callbacks:Inlinee", 1)]
     [InlineData("*", 0, "JitMinimalPrejitProfiling=1")]
-    [InlineData("*", 2, "JitCollect64BitCounts=0")]
-    public void InlineeProfilingPreservesInlining(string filter, int expectedProbeCount, string? counterOption = null)
+    [InlineData("*", 2, "JitCollect64BitCounts=1")]
+    [InlineData("", 0, "JitCollect64BitCounts=0")]
+    [InlineData("*", null, "JitCollect64BitCounts=0")]
+    [InlineData("*", null, "jitcollect64bitcounts=00")]
+    public void InlineeProfilingPreservesInlining(string filter, int? expectedProbeCount, string? counterOption = null)
     {
         string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "inlinee-profiling", Path.GetRandomFileName()));
         Directory.CreateDirectory(directory);
@@ -244,11 +247,19 @@ public class WasmArgumentLayoutTests
             if (counterOption is not null)
                 args.Add($"--codegenopt:{counterOption}");
             R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            if (expectedProbeCount is null)
+            {
+                Assert.False(result.Success);
+                Assert.Contains("Wasm PGO instrumentation requires 64-bit counters. Remove the JitCollect64BitCounts override or set it to 1.",
+                    result.StandardError);
+                return;
+            }
+
             Assert.True(result.Success, result.StandardOutput + result.StandardError);
             string listing = File.ReadAllText(listingPath);
             Assert.Contains("; Assembly listing for method Callbacks:Caller", listing);
             Assert.DoesNotMatch(@"\b(?:deferred\.call|call_indirect|call)\b[^\r\n]*Callbacks:Inlinee", listing);
-            Assert.Equal(expectedProbeCount, Regex.Matches(listing, @"\bi64\.add\b").Count);
+            Assert.Equal(expectedProbeCount.Value, Regex.Matches(listing, @"\bi64\.add\b").Count);
         }
         finally
         {

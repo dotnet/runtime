@@ -7,6 +7,7 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -479,12 +480,28 @@ namespace ILCompiler
                         throw new Exception(SR.ErrorStripILBodiesRequiresComposite);
                     }
 
+                    bool wasmPgoInstrumentation = false;
+                    bool use64BitCounts = true;
                     foreach (string option in Get(_command.CodegenOptions))
                     {
-                        const string prefix = "WasmPgoInstrumentation=";
-                        if (Get(_command.StripILBodies) && option.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
-                            option.Length > prefix.Length)
-                            throw new CommandLineException(SR.ErrorWasmPgoRequiresIL);
+                        const string WasmPgoPrefix = "WasmPgoInstrumentation=";
+                        const string CountWidthPrefix = "JitCollect64BitCounts=";
+                        if (option.StartsWith(WasmPgoPrefix, StringComparison.OrdinalIgnoreCase))
+                        {
+                            wasmPgoInstrumentation = option.Length > WasmPgoPrefix.Length;
+                            if (wasmPgoInstrumentation && Get(_command.StripILBodies))
+                                throw new CommandLineException(SR.ErrorWasmPgoRequiresIL);
+                        }
+                        else if (option.StartsWith(CountWidthPrefix, StringComparison.OrdinalIgnoreCase))
+                        {
+                            use64BitCounts = !int.TryParse(option.AsSpan(CountWidthPrefix.Length),
+                                NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out int value) || value != 0;
+                        }
+                    }
+
+                    if (typeSystemContext.Target.IsWasm && wasmPgoInstrumentation && !use64BitCounts)
+                    {
+                        throw new CommandLineException(SR.ErrorWasmPgoRequires64BitCounts);
                     }
 
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
