@@ -9,6 +9,10 @@
     <Compile Include="CollectibleTLSStaticCollection.cs" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Widen the thread-startup race exercised by CleanupCollectibleThreadStaticsWhileStartingThreads on checked runtimes. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_ThreadStaticsInitDelayMs" Value="5" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

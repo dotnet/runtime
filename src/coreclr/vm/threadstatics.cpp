@@ -325,9 +325,17 @@ void TLSIndexToMethodTableMap::MarkReusable(TLSIndex index)
     VolatileStore(&pMap[index.GetIndexOffset()], ClearedEntryTag);
 }
 
+#ifdef _DEBUG
+static DWORD s_threadStaticsInitDelayMs;
+#endif // _DEBUG
+
 void InitializeThreadStaticData()
 {
     STANDARD_VM_CONTRACT;
+
+#ifdef _DEBUG
+    s_threadStaticsInitDelayMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadStaticsInitDelayMs);
+#endif // _DEBUG
 
     g_pThreadStaticCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::Collectible);
     g_pThreadStaticNonCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::NonCollectible);
@@ -342,6 +350,14 @@ void InitializeCurrentThreadsStaticData(Thread* pThread)
 
     t_ThreadStatics.pThread = pThread;
     t_ThreadStatics.pThread->m_ThreadLocalDataPtr = &t_ThreadStatics;
+#ifdef _DEBUG
+    // Widen the window in which other threads can observe published thread-static data
+    // before its TLS spin lock is initialized.
+    if (s_threadStaticsInitDelayMs != 0)
+    {
+        minipal_sleep(s_threadStaticsInitDelayMs);
+    }
+#endif // _DEBUG
     t_ThreadStatics.pThread->m_TlsSpinLock.Init(LOCK_TLSDATA, FALSE);
     t_ThreadStatics.managedThreadId = pThread->GetThreadId();
 }
