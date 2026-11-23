@@ -1179,7 +1179,8 @@ static bool ProbeMemory(const void *start, size_t len, bool writeAccess)
     for (uint8_t *current = (uint8_t *)start, *end = current + len; current < end;
          current = (uint8_t *)ALIGN_DOWN((size_t)current, pageSize) + pageSize)
     {
-        if (write(fds[1], current, 1) == -1 || (writeAccess && read(fds[0], current, 1) == -1))
+        uint8_t scratch;
+        if (write(fds[1], current, 1) == -1 || read(fds[0], writeAccess ? current : &scratch, 1) == -1)
         {
             _ASSERTE(errno == EFAULT);
             result = false;
