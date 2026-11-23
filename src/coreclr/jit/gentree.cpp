@@ -2995,6 +2995,13 @@ AGAIN:
                     }
                     break;
 
+                case GT_RECORD_ASYNC_RETURN_VALUE:
+                    if (op1->AsRecordAsyncReturnValue()->gtCallDI != op2->AsRecordAsyncReturnValue()->gtCallDI)
+                    {
+                        return false;
+                    }
+                    break;
+
                 // For the ones below no extra argument matters for comparison.
                 case GT_RUNTIMELOOKUP:
                     break;
@@ -3607,6 +3614,10 @@ AGAIN:
                     hash = genTreeHashAdd(hash, static_cast<unsigned>(reinterpret_cast<uintptr_t>(
                                                     tree->AsArrAddr()->GetElemClassHandle())));
                     hash = genTreeHashAdd(hash, tree->AsArrAddr()->GetFirstElemOffset());
+                    break;
+
+                case GT_RECORD_ASYNC_RETURN_VALUE:
+                    hash = genTreeHashAdd(hash, tree->AsRecordAsyncReturnValue()->gtCallDI.GetLocation().GetOffset());
                     break;
 
                 default:
@@ -11752,6 +11763,11 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 copy = new (this, oper) GenTreeOp(oper, tree->TypeGet(), tree->gtGetOp1(), tree->gtGetOp2());
                 break;
 
+            case GT_RECORD_ASYNC_RETURN_VALUE:
+                copy = new (this, GT_RECORD_ASYNC_RETURN_VALUE)
+                    GenTreeRecordAsyncReturnValue(tree->gtGetOp1(), tree->AsRecordAsyncReturnValue()->gtCallDI);
+                break;
+
             default:
                 assert(!GenTree::IsExOp(tree->OperKind()) && tree->OperIsSimple());
                 // We're in the SimpleOp case, so it's always unary or binary.
@@ -13664,6 +13680,12 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             if (tree->OperIs(GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND))
             {
                 printf(" (%u)", tree->AsMDArr()->Dim());
+            }
+
+            if (tree->OperIs(GT_RECORD_ASYNC_RETURN_VALUE))
+            {
+                printf(" ");
+                tree->AsRecordAsyncReturnValue()->gtCallDI.Dump(true);
             }
         }
 
