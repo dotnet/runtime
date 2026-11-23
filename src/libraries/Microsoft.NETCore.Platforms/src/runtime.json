@@ -1069,6 +1069,11 @@
         "browser"
       ]
     },
+    "browser-wasm64": {
+      "#import": [
+        "browser"
+      ]
+    },
     "centos": {
       "#import": [
         "rhel"

@@ -7,11 +7,15 @@
     <UseMonoRuntime Condition="'$(TargetsCurrent)' == 'true'">false</UseMonoRuntime>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm64' and '$(UseMonoRuntime)' == 'false'">
+    <_CoreClrBrowserWasm64>true</_CoreClrBrowserWasm64>
+  </PropertyGroup>
+
   <!-- Runtime feature defaults to trim unnecessary code -->
   <Import Project="$(MSBuildThisFileDirectory)WasmFeatures.props"
-          Condition="'$(TargetsCurrent)' == 'true' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm')" />
+          Condition="'$(TargetsCurrent)' == 'true' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm' or '$(_CoreClrBrowserWasm64)' == 'true')" />
 
-  <PropertyGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm'">
+  <PropertyGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(_CoreClrBrowserWasm64)' == 'true')">
     <WasmNativeWorkloadAvailable>$(WasmNativeWorkload12)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(WasmNativeWorkloadAvailable)' == '' or '$(WasmNativeWorkload)' == 'false'">false</WasmNativeWorkloadAvailable>
     <WasmNativeWorkload>$(WasmNativeWorkloadAvailable)</WasmNativeWorkload>
@@ -91,7 +95,7 @@
 
   <!-- CoreCLR uses WebAssembly.Sdk for native builds.
        The .NET SDK resolves the runtime and crossgen2 packs. -->
-  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
+  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(_CoreClrBrowserWasm64)' == 'true') and '$(UsingBrowserRuntimeWorkload)' == 'true'">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}" />
   </ImportGroup>

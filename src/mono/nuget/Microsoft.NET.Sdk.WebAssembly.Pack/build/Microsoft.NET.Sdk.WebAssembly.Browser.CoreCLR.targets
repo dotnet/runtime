@@ -11,6 +11,17 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project>
 
+  <!-- browser-wasm64 runs on the interpreter until ReadyToRun support is added. -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm64'">
+    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">false</PublishReadyToRun>
+  </PropertyGroup>
+
+  <Target Name="_WasmCoreClrValidateWasm64"
+          Condition="'$(RuntimeIdentifier)' == 'browser-wasm64' and '$(PublishReadyToRun)' == 'true'"
+          BeforeTargets="_ResolveWasmConfiguration;_CreateR2RImages">
+    <Error Text="CoreCLR browser-wasm64 does not support ReadyToRun yet. Set PublishReadyToRun=false." />
+  </Target>
+
   <!-- Compute build-only selection before defaulting PublishReadyToRun so its explicit overrides
        remain effective without introducing a separate public build setting. -->
   <PropertyGroup>
