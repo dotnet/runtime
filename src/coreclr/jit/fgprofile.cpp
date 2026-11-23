@@ -2321,11 +2321,11 @@ public:
         GenTree*       storeLenToTemp = compiler->gtNewTempStore(lenTmpNum, *lenArgRef);
         GenTree*       lengthLocal    = compiler->gtNewLclvNode(lenTmpNum, genActualType(*lenArgRef));
         GenTreeOp* lengthNode = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), storeLenToTemp, lengthLocal);
-        GenTree*       histNode =
+        GenTree*   histNode =
             compiler->compR2RPgoInstrumentation()
-                      ? BlockCountInstrumentor::GetR2RProfileAddress(compiler, m_profileMemory, countEntry.Offset)
-                      : compiler->gtNewIconNode(reinterpret_cast<ssize_t>(m_profileMemory + countEntry.Offset), TYP_I_IMPL);
-        unsigned   helper     = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
+                  ? BlockCountInstrumentor::GetR2RProfileAddress(compiler, m_profileMemory, countEntry.Offset)
+                  : compiler->gtNewIconNode(reinterpret_cast<ssize_t>(m_profileMemory + countEntry.Offset), TYP_I_IMPL);
+        unsigned     helper         = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
         GenTreeCall* helperCallNode = compiler->gtNewHelperCallNode(helper, TYP_VOID, lengthNode, histNode);
 
         *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), helperCallNode,

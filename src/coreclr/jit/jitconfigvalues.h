@@ -815,10 +815,10 @@ RELEASE_CONFIG_INTEGER(JitProfileCasts, "JitProfileCasts", 1)   // Profile castc
 RELEASE_CONFIG_INTEGER(JitConsumeProfileForCasts, "JitConsumeProfileForCasts", 1) // Consume profile data (if any)
                                                                                   // for castclass/isinst
 
-RELEASE_CONFIG_INTEGER(JitClassProfiling, "JitClassProfiling", 1)         // Profile virtual and interface calls
-RELEASE_CONFIG_INTEGER(JitDelegateProfiling, "JitDelegateProfiling", 1)   // Profile resolved delegate call targets
-RELEASE_CONFIG_INTEGER(JitVTableProfiling, "JitVTableProfiling", 0)       // Profile resolved vtable call targets
-RELEASE_CONFIG_INTEGER(JitEdgeProfiling, "JitEdgeProfiling", 1)           // Profile edges instead of blocks
+RELEASE_CONFIG_INTEGER(JitClassProfiling, "JitClassProfiling", 1)       // Profile virtual and interface calls
+RELEASE_CONFIG_INTEGER(JitDelegateProfiling, "JitDelegateProfiling", 1) // Profile resolved delegate call targets
+RELEASE_CONFIG_INTEGER(JitVTableProfiling, "JitVTableProfiling", 0)     // Profile resolved vtable call targets
+RELEASE_CONFIG_INTEGER(JitEdgeProfiling, "JitEdgeProfiling", 1)         // Profile edges instead of blocks
 #ifdef FEATURE_R2R_PGO
 RELEASE_CONFIG_INTEGER(JitCollect64BitCounts, "JitCollect64BitCounts", 1) // Collect counts as 64-bit values.
 #else
