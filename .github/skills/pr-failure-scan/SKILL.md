@@ -4,7 +4,8 @@ description: >
   Analyze a dotnet/runtime PR's CI failures, skip failures already known to
   Build Analysis, find matching Known Build Errors, and create or draft new
   KBEs for the remaining failures. Supports dry-run output to local markdown
-  files instead of creating GitHub issues.
+  files instead of creating GitHub issues. Also handles exact check-run links,
+  servicing propagation, and dnceng infrastructure KBE outcomes.
 ---
 
 # PR Failure Scan Skill
@@ -12,6 +13,7 @@ description: >
 Use this skill for requests like:
 
 - `/pr-failure-scan <PR URL>`
+- `/pr-failure-scan <PR check-run URL>`
 - `/pr-failure-scan <PR URL> dryrun`
 - `create KBEs for PR <number>`
 
@@ -35,6 +37,7 @@ Accept one of:
 
 - a PR number,
 - a PR URL,
+- a deep link to a PR check run with a numeric `check_run_id`,
 - text containing a PR reference,
 - an optional trailing `dryrun` token.
 
@@ -45,6 +48,7 @@ Examples:
 
 - `/pr-failure-scan 123456`
 - `/pr-failure-scan https://github.com/dotnet/runtime/pull/123456`
+- `/pr-failure-scan https://github.com/dotnet/runtime/pull/123456/checks?check_run_id=123456789`
 - `/pr-failure-scan https://github.com/dotnet/runtime/pull/123456 dryrun`
 
 ## Step 1: Resolve identities and require explicit permission for non-owned PRs
@@ -65,13 +69,24 @@ If the user declines, stop immediately.
 
 ## Step 2: Gather PR CI context
 
-Use the latest completed check runs for the PR head SHA.
+If the input identifies a specific check run, resolve that exact completed run,
+verify that it belongs to the referenced PR, and use its check suite or workflow
+attempt and head SHA. Otherwise, use the latest completed check runs for the PR
+head SHA.
 
 Collect all of:
 
-1. The `Build Analysis` check run payload from the GitHub REST API.
-2. The non-success CI check runs for the PR head SHA.
-3. The AzDO build URLs linked from those check runs.
+1. The selected check run, when one was supplied.
+2. The `Build Analysis` check run payload from the GitHub REST API for the
+   selected suite or workflow attempt, or for the PR head SHA when no exact
+   check run was supplied.
+3. The non-success CI check runs associated with that same suite or attempt.
+4. The AzDO build URLs linked from those check runs.
+
+Do not silently replace a selected historical run with the latest run. When
+sibling checks cannot be correlated unambiguously, keep the selected run as an
+explicit candidate and report unavailable evidence rather than mixing attempts
+that share a SHA.
 
 The local skill has a different candidate-source model than the scheduled
 workflow:
@@ -86,8 +101,11 @@ workflow:
 Build the candidate list from two sources:
 
 1. **Build Analysis unknowns on analyzed pipelines.**
-   - Parse the `Build Analysis` check text for `Create issue in this repo` links
-     and the surrounding failure description.
+   - Parse the `Build Analysis` check text for both `Create issue in this repo`
+     and `Create issue against infrastructure team` links and their surrounding
+     failure descriptions.
+   - Record the proposed destination, issue form, labels, build, build leg, and
+     PR encoded in the link as hints; verify them against the selected evidence.
    - Each such entry is an in-scope candidate unless you later find an existing
      matching KBE.
 2. **Failed pipelines explicitly excluded from Build Analysis.**
@@ -112,13 +130,28 @@ For each candidate failure, do the following:
    - the relevant build or task log,
    - for Helix-submitted legs, the Helix console log or failure details when
      accessible.
-2. Extract the narrowest signature that fits the shared rules.
-3. Run the shared KBE lookup flow from
+2. Decide whether the failure is **related**, **unrelated**, or **unclear** with
+   respect to the current PR:
+   - **related**: report that the PR must be fixed and stop KBE processing for
+     this candidate;
+   - **unrelated**: continue with KBE lookup and handling;
+   - **unclear**: search for existing tracking, but keep any proposed new issue
+     as a non-publishable review draft until the relationship is resolved.
+3. Use the shared destination-classification section when runtime ownership is
+   not already established.
+4. For a runtime candidate, extract the narrowest signature and run the existing
+   shared runtime KBE lookup flow from
    `.github/workflows/shared/create-kbe.instructions.md`.
-4. Classify the candidate into exactly one of these buckets:
+5. Classify the runtime candidate into exactly one of these buckets:
    - **new KBE needed**
    - **existing KBE matched but Build Analysis likely missed it**
    - **unhandled**
+6. For a dnceng candidate, preserve the shared dnceng classification and either
+   report the existing issue, prepare a new/recurrence draft, prepare a
+   non-publishable review draft, or mark the failure unhandled.
+7. When the PR targets `release/<major>.<minor>`, read and follow
+   [`references/servicing-triage.md`](references/servicing-triage.md) after the
+   normal runtime lookup and before any live publication.
 
 ### PR-specific guidance for excluded or partially-analyzed pipelines
 
@@ -168,11 +201,11 @@ In particular:
 
 ## Step 5: Write draft files and optionally create live issues
 
-### Draft files for all new KBEs
+### Draft files for all new runtime KBEs
 
-For every item in the **new KBE needed** bucket, always write a markdown draft
-file before deciding whether to create a GitHub issue. This applies to both
-`dryrun` and live mode.
+For every runtime item in the **new KBE needed** bucket, always write a markdown
+draft file before deciding whether to create a GitHub issue. This applies to
+both `dryrun` and live mode.
 
 1. Write one markdown file per `new KBE needed` item.
 2. Prefer the session artifact directory if it is available. Otherwise, use a
@@ -190,7 +223,9 @@ Each draft file should contain:
 These dry-run files are **review artifacts**, not necessarily byte-for-byte live
 issue bodies. Keep them easy to compare and edit on disk.
 
-Prefer this layout for dry-run files:
+Prefer this layout for runtime dry-run files. Do not use it for dnceng drafts;
+those must follow the authoritative dnceng issue form through
+[`create-dnceng-kbe`](../create-dnceng-kbe/SKILL.md).
 
 ````markdown
 # Draft KBE issue
@@ -295,9 +330,27 @@ for example:
 > [!NOTE]
 > This issue was prepared with GitHub Copilot assistance.
 
+### Infrastructure KBE drafts and publication
+
+For every shared result classified as a new dnceng KBE, dnceng recurrence, or
+useful infrastructure review draft, use
+[`create-dnceng-kbe`](../create-dnceng-kbe/SKILL.md) to create the local draft.
+The runtime draft layout above does not apply to these drafts.
+
+- In `dryrun`, stop after producing local drafts.
+- A review draft or any caller-selected draft-only result is never publishable;
+  do not check for permission and do not ask the user whether to publish it.
+- In live mode, a publishable new or recurrence draft may be published only
+  after the complete batch and servicing analysis are finished and the user
+  explicitly authorizes publication to `dotnet/dnceng`.
+- Agent Merge/runtime publication authorization does not transfer to dnceng.
+- Before publication, show the proposed title, labels, complete form body,
+  authenticated account, affected failures, and local draft path, then run a
+  final narrow dnceng duplicate check.
+
 ## Step 6: Final output format
 
-The final response must contain all four sections below.
+The final response must contain all six sections below.
 
 ### 1. New issues created or draft files
 
@@ -324,7 +377,18 @@ For every such failure, provide:
 - why it appears to match,
 - why Build Analysis likely missed it.
 
-### 4. Failures not handled
+### 4. Infrastructure KBE outcomes
+
+List existing dnceng issues, local draft paths, created dnceng issue URLs,
+recurrence findings, blocked lookups, and ownership uncertainty.
+
+### 5. Servicing findings
+
+For release-targeted PRs, report tracker reuse, matcher gaps, main/release/VMR
+propagation, and any recommended maintainer `/backport` command. Never invoke
+the backport workflow.
+
+### 6. Failures not handled
 
 For every unhandled failure, provide:
 
