@@ -24,10 +24,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="ILCompiler.ReadyToRun.Tests" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="System.CommandLine">
       <Version>$(SystemCommandLineVersion)</Version>
     </PackageReference>

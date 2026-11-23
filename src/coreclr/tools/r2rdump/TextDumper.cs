@@ -15,9 +15,21 @@ using Internal.Runtime;
 
 namespace R2RDump
 {
-    internal sealed class TextDumper : Dumper
+    /// <summary>
+    /// Writes ReadyToRun dump output as text.
+    /// </summary>
+    public sealed class TextDumper : Dumper
     {
-        public TextDumper(ReadyToRunReader r2r, TextWriter writer, Disassembler disassembler, DumpModel model)
+        /// <summary>Initializes a text dumper for a ReadyToRun image.</summary>
+        /// <param name="r2r">The image reader.</param>
+        /// <param name="writer">The destination for dump output.</param>
+        /// <param name="model">The output options.</param>
+        public TextDumper(ReadyToRunReader r2r, TextWriter writer, DumpModel model)
+            : this(r2r, writer, disassembler: null, model)
+        {
+        }
+
+        internal TextDumper(ReadyToRunReader r2r, TextWriter writer, Disassembler disassembler, DumpModel model)
             : base(r2r, writer, disassembler, model)
         {
         }

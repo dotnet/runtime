@@ -847,7 +847,14 @@ namespace ILCompiler.Reflection.ReadyToRun
             return 2 * sizeof(int);
         }
 
-        internal static int GetWasmRuntimeFunctionCount(ReadyToRunSection section)
+        /// <summary>
+        /// Gets the number of logical runtime-function entries represented by a WebAssembly runtime-functions section,
+        /// including padding entries.
+        /// </summary>
+        /// <param name="section">The runtime-functions section.</param>
+        /// <returns>The number of entries.</returns>
+        /// <exception cref="BadImageFormatException">The section size is not a valid number of WebAssembly runtime-function groups.</exception>
+        public static int GetWasmRuntimeFunctionCount(ReadyToRunSection section)
         {
             if (section.Size < 0 || section.Size % WasmRuntimeFunctionGroupSize != 0)
             {
@@ -857,7 +864,16 @@ namespace ILCompiler.Reflection.ReadyToRun
             return section.Size / sizeof(int);
         }
 
-        internal bool TryReadWasmRuntimeFunction(int ordinal, out int beginAddress, out int unwindRva, out bool isFunclet)
+        /// <summary>
+        /// Reads a WebAssembly runtime-function entry.
+        /// </summary>
+        /// <param name="ordinal">The zero-based entry ordinal.</param>
+        /// <param name="beginAddress">Receives the virtual instruction pointer for a non-padding entry.</param>
+        /// <param name="unwindRva">Receives the unwind information RVA for a non-padding entry.</param>
+        /// <param name="isFunclet">Receives whether the entry represents a funclet.</param>
+        /// <returns><see langword="true"/> if the entry contains a runtime function; otherwise, <see langword="false"/> if it is padding.</returns>
+        /// <exception cref="BadImageFormatException">The ordinal or entry encoding is invalid.</exception>
+        public bool TryReadWasmRuntimeFunction(int ordinal, out int beginAddress, out int unwindRva, out bool isFunclet)
         {
             ReadyToRunSection section = ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
             int count = GetWasmRuntimeFunctionCount(section);

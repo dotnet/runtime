@@ -107,7 +107,7 @@ globals and tags its code uses; emit its function table as an active element seg
 `(global.get __table_base)` containing `tableSize` entries; and export `patchWebcilHeader`, which fills
 in the `TableBase` field of the installed `WebcilHeader`.
 
-A host loads a version 2 module by reserving a 16-byte-aligned range of `payloadSize` bytes in linear
+A host loads a version 2 module by reserving a 128-byte-aligned range of `payloadSize` bytes in linear
 memory and `tableSize` table slots, instantiating the module with `__memory_base` and `__table_base`
 set to the start of those ranges, and then, if `tableSize` is non-zero, calling
 `patchWebcilHeader(__memory_base, payloadSize)`. The host must reject any other `webcilVersion`.
@@ -204,9 +204,10 @@ mapped image rather than from a Wasm global, and an unwritten field reads as 0, 
 every function index by `tableBase`. Keeping this one step in the module lets the runtime implement
 the relocation scheme in its own code, reducing the volume of code needed in each Webcil file.)
 
-(**Rationale**: Requiring an alignment of 16 bytes allows for both efficient memory usage for loading
-images into linear memory, as well as for allowing for efficient storage of 128 bit vector constants
-within the binary.)
+(**Rationale**: CoreCLR's Wasm runtime-function table is stored in 128-byte groups and the runtime
+validates that the loaded table address is aligned to a group. Since the table's RVA is 128-byte
+aligned within the image, aligning the payload base keeps the loaded table address aligned as well.
+This alignment also satisfies the 16-byte alignment used for vector constants.)
 
 ##### WASI host composition
 

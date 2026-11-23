@@ -68,10 +68,8 @@ if (CLR_CMAKE_TARGET_ARCH_WASM)
   install_clr(TARGETS gcinfo_unix_wasm DESTINATIONS sharedFramework COMPONENT runtime)
 endif()
 
-# Wasm needs the interpreter's GC-info encoder, but cannot run JITs or cross-compilers.
-if (CLR_CMAKE_HOST_ARCH_WASM)
-  return()
-endif()
+# Wasm needs the interpreter's GC-info encoder. Hosts without the .NET SDK cannot build cross-target libraries.
+if (NOT CLR_CMAKE_HOST_WITHOUT_DOTNET_SDK)
 
 if (CLR_CMAKE_TARGET_UNIX)
 set(TARGET_OS_NAME unix)
@@ -111,3 +109,5 @@ endif (NOT CLR_CMAKE_TARGET_ARCH_RISCV64)
 if (CLR_CMAKE_TARGET_ARCH_WASM)
   create_gcinfo_lib(TARGET gcinfo_universal_wasm OS universal ARCH wasm)
 endif (CLR_CMAKE_TARGET_ARCH_WASM)
+
+endif()

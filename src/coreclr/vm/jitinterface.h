@@ -763,7 +763,7 @@ public:
     void WriteCodeBytes();
     void WriteCode(EECodeGenManager * jitMgr) CORINFO_OVERRIDE;
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_JIT_UNWIND_INFO
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) CORINFO_OVERRIDE;
 
     void allocUnwindInfo (
@@ -775,7 +775,7 @@ public:
             uint8_t * pUnwindBlock,          /* IN */
             CorJitFuncKind funcKind       /* IN */
             ) CORINFO_OVERRIDE;
-#endif // !TARGET_WASM
+#endif // FEATURE_JIT_UNWIND_INFO
 
     void recordCallSite(
             uint32_t                     instrOffset,  /* IN */

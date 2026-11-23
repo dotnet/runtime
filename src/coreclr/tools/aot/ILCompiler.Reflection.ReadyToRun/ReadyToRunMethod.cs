@@ -79,7 +79,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         public Dictionary<int, List<BaseGcTransition>> Transitions { get; set; }
         public List<List<BaseGcSlot>> LiveSlotsAtSafepoints { get; set; }
 
-        internal static int ReadyToRunVersionToGcInfoVersion(int readyToRunMajorVersion, int readyToRunMinorVersion)
+        /// <summary>Gets the GC-info version associated with a ReadyToRun format version.</summary>
+        /// <param name="readyToRunMajorVersion">The major ReadyToRun format version.</param>
+        /// <param name="readyToRunMinorVersion">The minor ReadyToRun format version.</param>
+        /// <returns>The corresponding GC-info version.</returns>
+        public static int ReadyToRunVersionToGcInfoVersion(int readyToRunMajorVersion, int readyToRunMinorVersion)
         {
             if (readyToRunMajorVersion == 1)
                 return 1;

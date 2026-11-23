@@ -1,8 +1,6 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-if (CLR_CMAKE_HOST_ARCH_WASM)
-  return()
-endif()
+if (NOT CLR_CMAKE_HOST_WITHOUT_DOTNET_SDK)
 
 include_directories("./jitstd")
 include_directories("../inc")
@@ -793,3 +791,5 @@ if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_PGO_INSTRUMENT)
   install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX})
   install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX}/sharedFramework)
 endif ()
+
+endif()

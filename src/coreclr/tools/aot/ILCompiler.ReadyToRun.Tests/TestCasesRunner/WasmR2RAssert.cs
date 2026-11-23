@@ -127,7 +127,7 @@ internal static class WasmR2RAssert
     private static string DumpSection(ReadyToRunReader reader, ReadyToRunSection section)
     {
         using StringWriter writer = new(CultureInfo.InvariantCulture);
-        TextDumper dumper = new(reader, writer, disassembler: null, new DumpModel { SectionContents = true });
+        TextDumper dumper = new(reader, writer, new DumpModel { SectionContents = true });
         dumper.DumpSection(section);
         return writer.ToString();
     }

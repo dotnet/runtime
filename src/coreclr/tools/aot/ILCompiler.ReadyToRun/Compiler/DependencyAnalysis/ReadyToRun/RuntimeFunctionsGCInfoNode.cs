@@ -22,6 +22,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return base.GetData(factory, relocsOnly);
             }
 
+            // RuntimeFunctionsTableNode materializes this data early to assign GC-info offsets;
+            // the object writer requests it again for emission.
             return _wasmData ??= base.GetData(factory, relocsOnly);
         }
 
@@ -33,6 +35,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return;
             }
 
+            // Frequently reused blobs need small offsets to avoid escape entries and padding in the
+            // grouped runtime-functions table. Prefer smaller blobs when reuse counts are equal.
             Dictionary<MethodGCInfoNode, int> duplicationCounts = new Dictionary<MethodGCInfoNode, int>(nodes.Count, Deduplicator.Comparer);
             foreach (MethodGCInfoNode node in nodes)
             {

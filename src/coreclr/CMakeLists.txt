@@ -6,6 +6,14 @@ project(CoreCLR)
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
+# These hosts cannot run the .NET SDK tools needed to build cross-target JIT and GC-info libraries.
+set(CLR_CMAKE_HOST_WITHOUT_DOTNET_SDK FALSE)
+if (CLR_CMAKE_HOST_ARCH_WASM OR CLR_CMAKE_HOST_ARCH_ARMV6 OR CLR_CMAKE_HOST_ANDROID OR
+    CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_MACCATALYST OR
+    CLR_CMAKE_HOST_BROWSER OR CLR_CMAKE_HOST_WASI OR CLR_CMAKE_HOST_OPENHARMONY)
+  set(CLR_CMAKE_HOST_WITHOUT_DOTNET_SDK TRUE)
+endif()
+
 if(CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE_TARGET_WIN32)
   message(FATAL_ERROR "CoreCLR does not support x86 on non-Windows platforms.")
 endif()

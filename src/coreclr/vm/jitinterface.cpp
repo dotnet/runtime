@@ -11689,7 +11689,7 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
     EE_TO_JIT_TRANSITION();
 }
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_JIT_UNWIND_INFO
 void reservePersonalityRoutineSpace(uint32_t &unwindSize)
 {
 #ifdef TARGET_AMD64
@@ -11911,7 +11911,7 @@ void CEEJitInfo::allocUnwindInfo (
     EE_TO_JIT_TRANSITION();
 }
 
-#endif // !TARGET_WASM
+#endif // FEATURE_JIT_UNWIND_INFO
 
 void CEEJitInfo::recordCallSite(uint32_t              instrOffset,
                                 CORINFO_SIG_INFO *    callSig,

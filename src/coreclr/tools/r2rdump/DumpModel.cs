@@ -13,7 +13,7 @@ using ILCompiler.Reflection.ReadyToRun;
 
 namespace R2RDump
 {
-    internal sealed class DumpModel : IAssemblyResolver
+    public sealed class DumpModel : IAssemblyResolver
     {
         /// <summary>
         /// Probing extensions to use when looking up assemblies under reference paths.

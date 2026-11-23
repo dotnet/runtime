@@ -191,6 +191,7 @@ set(FEATURE_READYTORUN 1)
 
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
   add_compile_definitions(FEATURE_COLD_R2R_CODE)
+  add_compile_definitions(FEATURE_JIT_UNWIND_INFO)
 endif()
 
 if(FEATURE_REJIT)
