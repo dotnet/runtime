@@ -492,7 +492,7 @@ uint32_t
 ep_rt_aot_current_process_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return PalGetCurrentProcessId ();
+    return minipal_get_current_process_id ();
 }
 
 ep_rt_thread_id_t
