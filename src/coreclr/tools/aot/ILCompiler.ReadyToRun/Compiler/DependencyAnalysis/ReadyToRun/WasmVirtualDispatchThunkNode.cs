@@ -73,8 +73,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)
         {
-            Debug.Assert(!instructionEncoder.Is64Bit);
-
+            WasmTargetPtr ptr = instructionEncoder.Ptr;
             MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
             Debug.Assert(!methodSignature.IsStatic);
 
@@ -82,37 +81,37 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             int targetPortableEntrypointLocalIndex = _typeNode.Type.Params.Types.Length;
             int targetCodeLocalIndex = targetPortableEntrypointLocalIndex + 1;
             const int ThisLocalIndex = 1;
-            const ulong PackedDispatchOffsetsField = 4;
-            const ulong InitialEntryField = 8;
+            ulong packedDispatchOffsetsField = (ulong)ptr.Size;
+            ulong initialEntryField = 2 * packedDispatchOffsetsField;
 
             List<WasmExpr> expressions = new List<WasmExpr>();
 
             // targetPEP = *(*(*(this) + pep->offsetOfIndirection) + pep->offsetAfterIndirection)
             expressions.Add(Local.Get(ThisLocalIndex));
-            expressions.Add(I32.Load(0));
+            expressions.Add(ptr.Load(0));
             expressions.Add(Local.Get(portableEntrypointLocalIndex));
-            expressions.Add(I32.Load16_u(PackedDispatchOffsetsField));
-            expressions.Add(I32.Add);
-            expressions.Add(I32.Load(0));
+            expressions.Add(ptr.Load16_u(packedDispatchOffsetsField));
+            expressions.Add(ptr.Add);
+            expressions.Add(ptr.Load(0));
             expressions.Add(Local.Get(portableEntrypointLocalIndex));
-            expressions.Add(I32.Load16_u(PackedDispatchOffsetsField + sizeof(ushort)));
-            expressions.Add(I32.Add);
-            expressions.Add(I32.Load(0));
+            expressions.Add(ptr.Load16_u(packedDispatchOffsetsField + sizeof(ushort)));
+            expressions.Add(ptr.Add);
+            expressions.Add(ptr.Load(0));
             expressions.Add(Local.Set(targetPortableEntrypointLocalIndex));
 
             expressions.Add(Local.Get(targetPortableEntrypointLocalIndex));
-            expressions.Add(I32.Load(0));
+            expressions.Add(ptr.Load(0));
             expressions.Add(Local.Set(targetCodeLocalIndex));
 
             // Redispatch through the original entrypoint if this receiver's target is not yet callable from R2R.
             expressions.Add(Local.Get(targetCodeLocalIndex));
-            expressions.Add(I32.Eqz);
+            expressions.Add(ptr.Eqz);
             expressions.Add(Block.If(WasmBlockType.Empty));
             expressions.Add(Local.Get(portableEntrypointLocalIndex));
-            expressions.Add(I32.Load(InitialEntryField));
+            expressions.Add(ptr.Load(initialEntryField));
             expressions.Add(Local.Set(targetPortableEntrypointLocalIndex));
             expressions.Add(Local.Get(targetPortableEntrypointLocalIndex));
-            expressions.Add(I32.Load(0));
+            expressions.Add(ptr.Load(0));
             expressions.Add(Local.Set(targetCodeLocalIndex));
             expressions.Add(Block.End);
 
@@ -126,7 +125,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             instructionEncoder.FunctionBody = new WasmFunctionBody(
                 _typeNode.Type,
-                new[] { WasmValueType.I32, WasmValueType.I32 },
+                new[] { ptr.Type, ptr.Type },
                 expressions.ToArray());
         }
 

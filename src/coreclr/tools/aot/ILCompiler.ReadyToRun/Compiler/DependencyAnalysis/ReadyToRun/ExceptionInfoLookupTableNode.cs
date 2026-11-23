@@ -118,7 +118,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Add the symbol representing this object node
             exceptionInfoLookupBuilder.AddSymbol(this);
 
-            bool isWasm = factory.Target.Architecture == TargetArchitecture.Wasm32;
+            bool isWasm = factory.Target.IsWasm;
 
             // First, emit the actual EH records in sequence and store map from methods to the EH record symbols
             for (int index = 0; index < _methodNodes.Count; index++)

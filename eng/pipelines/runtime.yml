@@ -279,8 +279,6 @@ extends:
           platforms:
           - browser_wasm64
           nameSuffix: CoreCLR_ReleaseLibraries
-          # browser-wasm64 runs on the interpreter until ReadyToRun support is added.
-          runReadyToRunTests: false
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           condition: >-
             or(

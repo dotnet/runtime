@@ -16,7 +16,7 @@
     <_TargetArchitectureForJitLibraryName>$(TargetArchitecture)</_TargetArchitectureForJitLibraryName>
     <_TargetArchitectureForJitLibraryName Condition="'$(_TargetArchitectureForJitLibraryName)' == 'armel'">arm</_TargetArchitectureForJitLibraryName>
     <_TargetArchitectureForJitLibraryName Condition="'$(_TargetArchitectureForJitLibraryName)' == 'wasm'">wasm</_TargetArchitectureForJitLibraryName>
-    <_TargetOSForJitLibraryName Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'wasm'">universal</_TargetOSForJitLibraryName>
+    <_TargetOSForJitLibraryName Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'arm64' or '$(TargetsWasm)' == 'true'">universal</_TargetOSForJitLibraryName>
     <_TargetOSForJitLibraryName Condition="'$(_TargetOSForJitLibraryName)' == '' and '$(TargetOS)' == 'windows'">win</_TargetOSForJitLibraryName>
     <_TargetOSForJitLibraryName Condition="'$(_TargetOSForJitLibraryName)' == ''">unix</_TargetOSForJitLibraryName>
     <SingleJitLibraryName>$(_LibPrefix)clrjit_$(_TargetOSForJitLibraryName)_$(_TargetArchitectureForJitLibraryName)_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)</SingleJitLibraryName>
@@ -39,7 +39,7 @@
       CopyToPublishDirectory="PreserveNewest"
       ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="$(SingleJitLibraryName)"
-      Condition="'$(CrossHostArch)' != '' and '$(CopyAllJitLibrariesToAotCompilerOutput)' != 'true' and '$(TargetsWasm64)' != 'true'"
+      Condition="'$(CrossHostArch)' != '' and '$(CopyAllJitLibrariesToAotCompilerOutput)' != 'true'"
       />
   </ItemGroup>
 
