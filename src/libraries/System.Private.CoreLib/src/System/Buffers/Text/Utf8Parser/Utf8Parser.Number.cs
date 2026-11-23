@@ -96,9 +96,9 @@ namespace System.Buffers.Text
                 if (digitCount > maxDigitCount)
                 {
                     // For decimal and binary floating-point numbers, we only
-                    // need to store digits up to maxDigCount. However, we still
+                    // need to store digits up to maxDigitCount. However, we still
                     // need to keep track of whether any additional digits past
-                    // maxDigCount were non-zero, as that can impact rounding
+                    // maxDigitCount were non-zero, as that can impact rounding
                     // for an input that falls evenly between two representable
                     // results.
 
@@ -167,9 +167,9 @@ namespace System.Buffers.Text
                     if (digitCount > maxDigitCount)
                     {
                         // For decimal and binary floating-point numbers, we only
-                        // need to store digits up to maxDigCount. However, we still
+                        // need to store digits up to maxDigitCount. However, we still
                         // need to keep track of whether any additional digits past
-                        // maxDigCount were non-zero, as that can impact rounding
+                        // maxDigitCount were non-zero, as that can impact rounding
                         // for an input that falls evenly between two representable
                         // results.
 
@@ -187,7 +187,6 @@ namespace System.Buffers.Text
                 int numDigitsAfterDecimalToCopy = Math.Min(srcIndex - startIndexOfDigitsAfterDecimalToCopy, maxDigitCount - dstIndex);
                 source.Slice(startIndexOfDigitsAfterDecimalToCopy, numDigitsAfterDecimalToCopy).CopyTo(digits.Slice(dstIndex));
                 dstIndex += numDigitsAfterDecimalToCopy;
-                // We "should" really NUL terminate, but there are multiple places we'd have to do this and it is a precondition that the caller pass in a fully zero=initialized Number.
 
                 if (srcIndex == source.Length)
                 {
