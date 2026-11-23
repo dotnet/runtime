@@ -5224,13 +5224,6 @@ namespace Internal.JitInterface
             {
 #if READYTORUN
                 PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData.GetAllowSynthesis(_compilation, methodDesc, out bool isSynthesized)?.SchemaData;
-                if (pgoResultsSchemas is null)
-                {
-                    MethodDesc canonical = methodDesc.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    pgoResultsSchemas = _compilation.ProfileData[canonical]?.SchemaData;
-                    if (pgoResultsSchemas is not null)
-                        isSynthesized = false;
-                }
 
                 if (pgoResultsSchemas != null && isSynthesized && _compilation.ProfileData.EmbedPgoDataInR2RImage)
                 {
