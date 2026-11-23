@@ -704,14 +704,17 @@ namespace ILCompiler.ObjectWriter
             // DW_AT_location
             uint length = 1 + (uint)writer.TargetPointerSize; // DW_OP_addr <addr>
             if (_descriptor.IsStaticDataInObject != 0)
-                length += 2; // DW_OP_deref, DW_OP_deref
+                length += 1; // DW_OP_deref
             if (_descriptor.StaticOffset != 0)
                 length += 1 + DwarfHelper.SizeOfULEB128(_descriptor.StaticOffset); // DW_OP_plus_uconst <const>
             writer.WriteULEB128(length);
             writer.Write([DW_OP_addr]);
             writer.WriteCodeReference(sectionSymbolName, address);
+
+            // The symbol holds a reference to the object storing the statics, and the offset of the
+            // static field includes the MethodTable pointer at the start of that object.
             if (_descriptor.IsStaticDataInObject != 0)
-                writer.Write([DW_OP_deref, DW_OP_deref]);
+                writer.Write([DW_OP_deref]);
             if (_descriptor.StaticOffset != 0)
             {
                 writer.Write([DW_OP_plus_uconst]);

@@ -126,10 +126,11 @@ public class Program
             return 11;
         }
 
-        // Non-GC statics are stored directly in a data section, GC statics are reached through the static base.
+        // Non-GC statics are stored directly in a data section, GC statics are stored in an object referenced
+        // by the static base, so their location dereferences the static base once.
         string gcStaticLocation = GetStaticFieldLocation(llvmDwarfDumpPath, nameof(StaticFields.GcStaticDeclaredFirst));
         string nonGcStaticLocation = GetStaticFieldLocation(llvmDwarfDumpPath, nameof(StaticFields.NonGcStaticDeclaredSecond));
-        if (gcStaticLocation is null || !gcStaticLocation.Contains("DW_OP_deref") ||
+        if (gcStaticLocation is null || gcStaticLocation.Split("DW_OP_deref").Length - 1 != 1 ||
             nonGcStaticLocation is null || nonGcStaticLocation.Contains("DW_OP_deref"))
         {
             Console.Error.WriteLine($"Unexpected static field locations. GC static: {gcStaticLocation}, non-GC static: {nonGcStaticLocation}.");
