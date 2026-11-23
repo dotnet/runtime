@@ -577,7 +577,11 @@ namespace ILCompiler
             else if (type.IsInterface)
             {
                 // Allows debuggers to vtcast the types and see the real instance types.
-                classTypeDescriptor.BaseClassId = GetTypeIndex(type.Context.GetWellKnownType(WellKnownType.Object), true);
+                DefType objectType = type.Context.GetWellKnownType(WellKnownType.Object);
+                classTypeDescriptor.BaseClassId = GetTypeIndex(objectType, true);
+
+                // Interfaces have no instance size of their own, but must be at least as large as their base class.
+                classTypeDescriptor.InstanceSize = (ulong)objectType.InstanceByteCount.AsInt;
             }
 
             List<DataFieldDescriptor> fieldsDescs = new List<DataFieldDescriptor>();

@@ -159,6 +159,15 @@ public class Program
             return 14;
         }
 
+        // Interfaces are described as classes deriving from Object, so they can't be smaller than Object.
+        (ulong objectSize, _) = GetClassLayout(llvmDwarfDumpPath, "Object");
+        (ulong interfaceSize, _) = GetClassLayout(llvmDwarfDumpPath, $".*_{nameof(ITestInterface)}$", isRegex: true);
+        if (objectSize == 0 || interfaceSize < objectSize)
+        {
+            Console.Error.WriteLine($"Unexpected size of {nameof(ITestInterface)}: {interfaceSize}, Object: {objectSize}.");
+            return 15;
+        }
+
         return 100;
     }
 
@@ -170,7 +179,11 @@ public class Program
         StaticFields.Initialize();
         new ThreadStaticHolder<string>().Set(42);
         GC.KeepAlive(new int[] { 1, 2, 3 });
+        GetValue(new TestInterfaceImplementation());
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int GetValue(ITestInterface value) => value.GetValue();
 
     private static ProcessTextOutput RunLlvmDwarfDump(string llvmDwarfDumpPath, params string[] arguments)
     {
@@ -212,9 +225,11 @@ public class Program
     }
 
     // Returns the size and the instance fields of the complete class types with the given name.
-    private static (ulong Size, List<(string Name, ulong Offset)> Members) GetClassLayout(string llvmDwarfDumpPath, string className)
+    private static (ulong Size, List<(string Name, ulong Offset)> Members) GetClassLayout(string llvmDwarfDumpPath, string className, bool isRegex = false)
     {
-        ProcessTextOutput result = RunLlvmDwarfDump(llvmDwarfDumpPath, "--debug-info", "--show-children", $"--name={className}");
+        ProcessTextOutput result = isRegex ?
+            RunLlvmDwarfDump(llvmDwarfDumpPath, "--debug-info", "--show-children", "--regex", $"--name={className}") :
+            RunLlvmDwarfDump(llvmDwarfDumpPath, "--debug-info", "--show-children", $"--name={className}");
 
         ulong size = 0;
         List<(string Name, ulong Offset)> members = new();
@@ -277,4 +292,14 @@ class ThreadStaticHolder<T>
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public void Set(int value) => ThreadStaticField = value;
+}
+
+interface ITestInterface
+{
+    int GetValue();
+}
+
+class TestInterfaceImplementation : ITestInterface
+{
+    public int GetValue() => 42;
 }
