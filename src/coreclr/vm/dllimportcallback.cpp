@@ -318,6 +318,7 @@ void UMEntryThunkData::Terminate()
     CONTRACTL
     {
         NOTHROW;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -334,6 +335,7 @@ void UMEntryThunkData::Terminate()
 
     if (pObjectHandle != NULL)
     {
+        GCX_COOP();
         DestroyLongWeakHandle(pObjectHandle);
     }
 

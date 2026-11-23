@@ -1,6 +1,7 @@
 set(SOURCES
     ${RUNTIME_DIR}/unix/CLREventBase.cpp
     dn-u16.cpp
+    dn-safecrt.cpp
     dn-stdio.cpp
     memory.cpp
 )
