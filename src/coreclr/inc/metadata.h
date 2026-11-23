@@ -125,9 +125,7 @@ struct HENUMInternal
         HENUMInternal   *pEnum)
     {
         // we use this to avoid the memset that will happen otherwise.
-        // this should be inlined in its caller. we are seeing a large
-        // number of calls to memset from MDInternalRO::EnumPermissionSetsInit
-        // on x64 which we can eliminate with this code.
+        // this should be inlined in its caller.
         pEnum->m_tkKind = 0;
         pEnum->m_ulCount = 0;
         pEnum->m_EnumType =  MDSimpleEnum;
@@ -793,17 +791,6 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         ASSOCIATE_RECORD *pAssociateRec,    // [OUT] struct to fill for output
         ULONG       cAssociateRec) PURE;    // [IN] size of the buffer
 
-
-    //**********************************
-    // Get info about a PermissionSet.
-    //**********************************
-    // returned void in v1.0/v1.1
-    __checkReturn
-    STDMETHOD(GetPermissionSetProps)(
-        mdPermission pm,                    // [IN] the permission token.
-        DWORD       *pdwAction,             // [OUT] CorDeclSecurity.
-        void const  **ppvPermission,        // [OUT] permission blob.
-        ULONG       *pcbPermission) PURE;   // [OUT] count of bytes of pvPermission.
 
     //****************************************
     // Get the String given the String token.

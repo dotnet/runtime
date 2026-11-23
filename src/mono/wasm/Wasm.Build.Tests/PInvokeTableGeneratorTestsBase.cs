@@ -24,10 +24,10 @@ namespace Wasm.Build.Tests
         protected string PublishForVariadicFunctionTests(ProjectInfo info, Configuration config, bool aot, string? verbosity = null, bool isNativeBuild = true)
         {
             string verbosityArg = verbosity == null ? string.Empty : $" -v:{verbosity}";
-            // NativeFileReference forces native build
+            string nativeBuildArg = isNativeBuild ? " -p:WasmBuildNative=true" : string.Empty;
             (_, string output) = PublishProject(info,
                 config,
-                new PublishOptions(ExtraMSBuildArgs: verbosityArg, AOT: aot),
+                new PublishOptions(ExtraMSBuildArgs: verbosityArg + nativeBuildArg, AOT: aot),
                 isNativeBuild: isNativeBuild);
             return output;
         }

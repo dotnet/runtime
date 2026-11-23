@@ -11,6 +11,7 @@
 
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
+#include <minipal/instructioncache.h>
 
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
@@ -146,7 +147,7 @@ inline void CORDbgInsertBreakpoint(UNALIGNED CORDB_ADDRESS_TYPE *address)
     LIMITED_METHOD_CONTRACT;
 
     *((unsigned char*)address) = 0xCC; // int 3 (single byte patch)
-    FlushInstructionCache(GetCurrentProcess(), address, 1);
+    minipal_flush_instruction_cache(address, 1);
 }
 
 inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
@@ -157,7 +158,7 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
 
     *((unsigned char*)address)
           = (unsigned char) instruction; // setting one byte is important
-    FlushInstructionCache(GetCurrentProcess(), address, 1);
+    minipal_flush_instruction_cache(address, 1);
 }
 
 // After a breakpoint exception, the CPU points to _after_ the break instruction.

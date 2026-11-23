@@ -101,6 +101,7 @@
 // ======================================================================================
 
 #include "common.h"
+#include <minipal/thread.h>
 #include <posterror.h>
 #include "proftoeeinterfaceimpl.h"
 #include "proftoeeinterfaceimpl.inl"
@@ -119,6 +120,7 @@
 #include "threadsuspend.h"
 #include "inlinetracking.h"
 #include "frozenobjectheap.h"
+#include "gcenv.h"
 
 #ifdef PROFILING_SUPPORTED
 #include "profilinghelper.h"
@@ -1147,8 +1149,6 @@ bool SaveContainedObjectRef(Object * pBO, void * context)
 //      TRUE=continue
 //      FALSE=stop
 //
-extern bool s_forcedGCInProgress;
-
 bool HeapWalkHelper(Object * pBO, void * pvContext)
 {
     CONTRACTL
@@ -5513,7 +5513,9 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
     }
 
     if (pProcessId)
-        *pProcessId = (ProcessID) GetCurrentProcessId();
+    {
+        *pProcessId = (ProcessID) minipal_get_current_process_id();
+    }
 
     return hr;
 }

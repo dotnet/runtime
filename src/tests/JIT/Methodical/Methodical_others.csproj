@@ -2,9 +2,7 @@
   <PropertyGroup>
     <HasMergedInTests>true</HasMergedInTests>
     <!-- ActiveIssue https://github.com/dotnet/runtime/issues/132855 -->
-    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
-    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'minifullaot' or '$(RuntimeVariant)' == 'llvmfullaot')">true</CLRTestTargetUnsupported>
+    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm'">true</R2RIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.??proj" />

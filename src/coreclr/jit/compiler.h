@@ -4454,6 +4454,8 @@ public:
     };
     jitstd::vector<WasmSpillSlot>* m_wasmSpillSlots = nullptr;
     BitVec* m_wasmGCRefCandidates = nullptr;
+    ArrayStack<BasicBlock*>* m_wasmLocalCopyBlocks = nullptr; // Blocks with local-to-local copies, set by lowering
+    ArrayStack<BasicBlock*>* m_wasmRematBlocks     = nullptr; // Blocks with stores of invariant values, set by lowering
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -7075,6 +7077,9 @@ public:
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmRepairTryEntries();
     PhaseStatus fgWasmVirtualIP();
+    PhaseStatus fgWasmForwardLocalCopies();
+    bool        fgWasmRematerializeInvariantLocals();
+    static bool fgWasmIsRematerializableValue(GenTree* node);
     bool        fgWasmMayEmitCall();
     PhaseStatus fgWasmFindGCRefCandidates();
     PhaseStatus fgWasmSpillRefs();
@@ -7375,6 +7380,7 @@ private:
 
     void fgMarkAddrModeForFieldAddr(GenTreeIndir* indir);
 
+    bool     fgTreeMayModifyLocal(GenTree* tree, unsigned lclNum);
     GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
     GenTree* fgMorphExpandCast(GenTreeCast* tree);
     GenTreeFieldList* fgMorphLclToFieldList(GenTreeLclVar* lcl);

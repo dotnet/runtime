@@ -1205,6 +1205,10 @@ bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
                 case INS_call:
                     return PEEPHOLE_ABORT;
 
+                // cmpxchg writes RAX only when the comparison fails.
+                case INS_cmpxchg:
+                    return PEEPHOLE_ABORT;
+
                 // These instructions sign-extend.
                 case INS_cwde:
                 case INS_cdq:
@@ -1409,7 +1413,7 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
             }
             break;
 
-        // Always writes to RAX.
+        // Writes to RAX only when the comparison fails.
         case INS_cmpxchg:
             if (reg == REG_RAX)
             {

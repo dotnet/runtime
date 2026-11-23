@@ -57,7 +57,7 @@ namespace System.Formats.Cbor
 
         private void WriteStartArrayIndefiniteLength()
         {
-            if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
+            if (!ConvertIndefiniteLengthEncodings && _requiresDefiniteLengthItems)
             {
                 throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }

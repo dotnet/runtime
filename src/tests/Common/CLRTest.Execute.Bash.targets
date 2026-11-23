@@ -102,7 +102,7 @@ then
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
-      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true' And '$(RuntimeFlavor)' != 'mono' and '$(TestBuildMode)' != 'nativeaot'">
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true' And '$(TestBuildMode)' != 'nativeaot'">
     <![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
 if [[ ( ! -z "$DOTNET_JitStress" ) || ( ! -z "$DOTNET_JitStressRegs" ) || ( ! -z "$DOTNET_JITMinOpts" ) || ( ! -z "$DOTNET_TailcallStress" ) ]]

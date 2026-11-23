@@ -10,6 +10,7 @@ We have the following goals related to interop code being used in dotnet/runtime
   - We should only define a given interop signature in a single place. This stuff is tricky, and we shouldn't be copy-and-pasting it.
 - Minimize unnecessary IL in assemblies.
   - Interop signatures should only be compiled into the assemblies that actually consume them. Having extra signatures bloats assemblies and makes it more difficult to do static analysis over assemblies to understand what they actually use. It also leads to problems when such static verification is used as a gate, e.g. if a store verifies that only certain APIs are used by apps in the store.
+  - An assembly's `unix` build serves several Unix OSes, so it compiles the OS-specific signatures each of them consumes. Calls to OS-specific signatures must be guarded by `OperatingSystem.IsXxx()` checks. These checks are constants in the implementation assemblies the libraries are trimmed against, so the shipped assembly for a given OS only contains the signatures that OS uses (see [Project Files](#project-files)).
 - Keep interop code isolated and consolidated.
   - This is both for good hygiene and to help keep platform-specific code separated from platform-neutral code, which is important for maximizing reusable code above PAL layers.
 - Ensure maximal managed code reuse across different OS flavors which have  the same API but not the same ABI.
@@ -61,7 +62,7 @@ internal static partial class Interop
             ... interop files
 ```
 
-As shown above, platforms may be additive, in that an assembly may use functionality from multiple folders, e.g. System.IO.FileSystem's Linux build will use functionality both from Unix (common across all Unix systems) and from Linux (specific to Linux and not available across non-Linux Unix systems).
+As shown above, platforms may be additive, in that an assembly may use functionality from multiple folders, e.g. System.Diagnostics.Process's `unix` build uses functionality from Unix (common across all Unix systems) as well as from Linux, FreeBSD, OpenBSD and SunOS (each specific to that OS and not available on the other Unix systems), selecting the OS-specific functionality with `OperatingSystem.IsXxx()` checks.
 
 - Interop.*.cs files are created in a way such that every assembly consuming the file will need every DllImport it contains.
   - If multiple related DllImports will all be needed by every consumer, they may be declared in the same file, named for the functionality grouping, e.g. Interop.IOErrors.cs.
@@ -125,6 +126,8 @@ When building dotnet/runtime, we use the "TargetOS" property to control what tar
 
 #### Project Files
 Whenever possible, a single .csproj should be used per assembly, spanning all target platforms, e.g. System.Console.csproj includes conditional entries for when targeting Windows vs when targeting Linux. A property can be passed to dotnet build to control which flavor is built, e.g. `dotnet build /p:TargetOS=osx System.Console.csproj`.
+
+Unix OSes should share a single `unix` target framework (e.g. `$(NetCoreAppCurrent)-unix`) rather than having a target framework per OS. The interop files for each OS are included for `unix`, and the code that calls them is guarded with `OperatingSystem.IsXxx()` checks. When the libraries are built for a given `TargetOS`, they are trimmed against the implementation assemblies of that OS, where these checks are constants, so the code paths and interop signatures of the other OSes are removed from the shipped assembly. Separate target frameworks are still appropriate when the platform needs a different build altogether, e.g. Apple platforms, or Apple mobile platforms that get a PlatformNotSupported assembly.
 
 ### Constants
 - Wherever possible, constants should be defined as "const". Only if the data type doesn't support this (e.g. IntPtr) should they instead be static readonly fields.

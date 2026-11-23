@@ -40,6 +40,11 @@ void logf(unsigned level, const char* fmt, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3)
 
 extern "C" void ANALYZER_NORETURN assertAbort(const char* why, const char* file, unsigned line);
 
+// Fail the build if a later UCRT <assert.h> replaces the JIT's assert, which then calls _wassert.
+#ifdef _MSC_VER
+#pragma deprecated(_wassert)
+#endif
+
 #undef assert
 #define assert(p) (void)((p) || (assertAbort(#p, __FILE__, __LINE__), 0))
 
