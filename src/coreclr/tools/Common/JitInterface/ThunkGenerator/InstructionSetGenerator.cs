@@ -122,9 +122,13 @@ namespace Thunkerator
             if (arch == "RiscV64")
                 return "RISCV64";
             if (arch is "Wasm32" or "Wasm64")
-                return arch.ToUpperInvariant();
+                return "WASM";
             return arch;
         }
+
+        // Architectures that share an ifdef (Wasm32 and Wasm64) have identical native definitions, so the
+        // native headers emit each ifdef block once.
+        private IEnumerable<string> NativeArchitectures => _architectures.DistinctBy(ArchToIfDefArch);
 
 
         private string ArchToInstructionSetSuffixArch(string arch)
@@ -1061,7 +1065,7 @@ enum CORINFO_InstructionSet
             tr.WriteLine($"    InstructionSet_Vector = {lastAvailableBit},");
             tr.WriteLine($"    InstructionSet_NONE = {lastAvailableBit + 1},");
 
-            foreach (string architecture in _architectures)
+            foreach (string architecture in NativeArchitectures)
             {
                 tr.WriteLine($"#ifdef TARGET_{ArchToIfDefArch(architecture)}");
                 int counter = 1;
@@ -1168,7 +1172,7 @@ public:
     void Set64BitInstructionSetVariants()
     {
 ");
-            foreach (string architecture in _architectures)
+            foreach (string architecture in NativeArchitectures)
             {
                 tr.WriteLine($"#ifdef TARGET_{ArchToIfDefArch(architecture)}");
                 HashSet<string> handledJitNames = new HashSet<string>();
@@ -1203,7 +1207,7 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
     {
         oldflags = resultflags;
 ");
-            foreach (string architecture in _architectures)
+            foreach (string architecture in NativeArchitectures)
             {
                 tr.WriteLine($"#ifdef TARGET_{ArchToIfDefArch(architecture)}");
                 HashSet<string> handledJitNames = new HashSet<string>();
@@ -1240,7 +1244,7 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
     switch (instructionSet)
     {
 ");
-            foreach (string architecture in _architectures)
+            foreach (string architecture in NativeArchitectures)
             {
                 tr.WriteLine($"#ifdef TARGET_{ArchToIfDefArch(architecture)}");
                 HashSet<string> handledJitNames = new HashSet<string>();
@@ -1278,7 +1282,7 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
     switch (r2rSet)
     {
 ");
-            foreach (string architecture in _architectures)
+            foreach (string architecture in NativeArchitectures)
             {
                 tr.WriteLine($"#ifdef TARGET_{ArchToIfDefArch(architecture)}");
                 HashSet<string> handledR2rNames = new HashSet<string>();
