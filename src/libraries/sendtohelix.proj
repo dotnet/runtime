@@ -84,14 +84,13 @@
       </_BaseProjectsToBuild>
     </ItemGroup>
 
-    <!-- BuildWasmApps covers workload, WebCIL, and asset-fingerprinting combinations. -->
+    <!-- BuildWasmApps covers workload and asset-fingerprinting combinations. -->
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
       <_TestUsingWorkloadsValues Include="false" />
       <_TestUsingWorkloadsValues Include="true" />
-      <_TestUsingWebcilValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
       <_TestUsingFingerprintingValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
 
-      <!-- now make the cartesian product of true and false values for three categories -->
+      <!-- now make the cartesian product of true and false values for two categories -->
       <_TestUsingCrossProductValuesTemp Include="@(_TestUsingWorkloadsValues)">
         <Workloads>%(_TestUsingWorkloadsValues.Identity)</Workloads>
         <BundlerFriendly>false</BundlerFriendly>
