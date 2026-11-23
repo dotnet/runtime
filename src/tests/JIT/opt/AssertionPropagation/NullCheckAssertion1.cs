@@ -36,6 +36,47 @@ public class Sample3
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool UnusedField(Box box) => 0u > (uint)box.Value;
 
+    private sealed class Cache
+    {
+        public long? Value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool HasCachedValue(Cache cache)
+    {
+        // ARM64-NOT: ldr{{s?}}b wzr,
+        // ARM64: ret
+        _ = cache.Value.GetValueOrDefault();
+        return cache.Value.HasValue;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CountCall(ref int calls) => calls++;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool HasCachedValueAfterCall(Cache cache, ref int calls)
+    {
+        _ = cache.Value.GetValueOrDefault();
+        CountCall(ref calls);
+        return cache.Value.HasValue;
+    }
+
+    [Fact]
+    public static void FieldAddressNullCheck()
+    {
+        var cache = new Cache();
+        Assert.False(HasCachedValue(cache));
+        cache.Value = 42;
+        Assert.True(HasCachedValue(cache));
+        Assert.Throws<NullReferenceException>(() => HasCachedValue(null));
+
+        int calls = 0;
+        Assert.Throws<NullReferenceException>(() => HasCachedValueAfterCall(null, ref calls));
+        Assert.Equal(0, calls);
+        Assert.True(HasCachedValueAfterCall(cache, ref calls));
+        Assert.Equal(1, calls);
+    }
+
     [Fact]
     public static void UnusedValues()
     {
