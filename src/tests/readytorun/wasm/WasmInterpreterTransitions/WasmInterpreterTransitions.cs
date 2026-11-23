@@ -449,12 +449,10 @@ public class WasmInterpreterTransitions
     private static unsafe void AssertStringConstructors()
     {
         char[] chars = ['w', 'a', 's', 'm'];
+        char* p = stackalloc char[] { 'w', 'a', 's', 'm', '\0' };
         sbyte* ascii = stackalloc sbyte[] { (sbyte)'6', (sbyte)'4', 0 };
-        fixed (char* p = chars)
-        {
-            Assert.Equal(s_expectedStrings, ConstructStringsR2R(chars, p, ascii));
-            Assert.Equal(s_expectedStrings, ConstructStringsInterpreted(chars, p, ascii));
-        }
+        Assert.Equal(s_expectedStrings, ConstructStringsR2R(chars, p, ascii));
+        Assert.Equal(s_expectedStrings, ConstructStringsInterpreted(chars, p, ascii));
     }
 
     // ConstructStringsR2R and ConstructStringsInterpreted must stay identical apart from where they run:
