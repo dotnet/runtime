@@ -82,6 +82,24 @@
     <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == ''">$(WasmNativeWorkloadAvailable)</UsingBrowserRuntimeWorkload>
   </PropertyGroup>
 
+  <!-- Trigger the workload acquisition flow when CoreCLR native items require it. -->
+  <PropertyGroup>
+    <_WasmCoreCLRNativeItemsNeedWorkload Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetsCurrent)' == 'true' and '$(UseMonoRuntime)' == 'false' and
+                                                     '$(UsingBrowserRuntimeWorkload)' != 'true' and '$(_BrowserWorkloadDisabled)' != 'true'">true</_WasmCoreCLRNativeItemsNeedWorkload>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(_WasmCoreCLRNativeItemsNeedWorkload)' == 'true'">
+    <MissingWorkloadPack Include="Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}"
+                         Condition="@(NativeFileReference->Count()) > 0 or @(NativeLibrary->Count()) > 0 or @(DirectPInvoke->Count()) > 0 or @(DirectPInvokeList->Count()) > 0" />
+  </ItemGroup>
+  <Target Name="_WasmAddMissingWorkloadPackForNativeItems"
+          BeforeTargets="_CheckForMissingWorkload;GetSuggestedWorkloads"
+          Condition="'$(_WasmCoreCLRNativeItemsNeedWorkload)' == 'true' and
+                     (@(NativeFileReference->Count()) > 0 or @(NativeLibrary->Count()) > 0 or @(DirectPInvoke->Count()) > 0 or @(DirectPInvokeList->Count()) > 0)">
+    <ItemGroup>
+      <MissingWorkloadPack Include="Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}" Exclude="@(MissingWorkloadPack)" />
+    </ItemGroup>
+  </Target>
+
   <!-- Mono AOT library mode support -->
   <PropertyGroup Condition="'$(PublishAot)' != 'true' and '$(NativeLib)' != ''">
     <_IsAndroidLibraryMode Condition="'$(RuntimeIdentifier)' == 'android-arm64' or '$(RuntimeIdentifier)' == 'android-arm' or '$(RuntimeIdentifier)' == 'android-x64' or ('$(TargetsCurrent)' != 'true' and '$(RuntimeIdentifier)' == 'android-x86')">true</_IsAndroidLibraryMode>
